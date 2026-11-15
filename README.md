@@ -36,6 +36,10 @@ LUST_TCC_HOME=/absolute/tcc CARGO_TARGET_DIR=/absolute/lustr-native-build \
 
 ## Compiler entry candidate
 
+The [native preview 2026.11.15-1 record](docs/compiler-set/native-preview-2026.11.15-1.md)
+describes the packaged runtime, corresponding source, exact host dependencies,
+executed checks and remaining coverage/performance requirements.
+
 The assembled candidate provides `bin/lustr`, the rustc-compatible `bin/rustc`,
 unchanged `bin/lust`/`bin/lust-core`, and the unchanged upstream full Rust core as
 `bin/rustc-full`. Native examples use:
