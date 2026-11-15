@@ -9,14 +9,20 @@ the missing Rust language, library and crate support in its own code. Full, unch
 projects with measured fast compilation are the requirement. Forwarding them to
 rustc does not satisfy it. See the [native compiler contract](docs/compiler-set/native-contract.md).
 
-Full native Rust coverage and the Lustr expansion interface are incomplete.
+Full native Rust coverage is incomplete. Lustr now supplies bounded native
+source-library additions; frontend and crate/metadata expansion remain open.
 `compiler/native` is the unchanged upstream Lust source, pinned by
 [`upstream/lust.pin`](upstream/lust.pin). Lustr-owned expansion belongs outside
 that baseline. No Lust divergence is admitted. Any exception must demonstrate
 both necessity and faster results under the [upstream preservation policy](docs/compiler-set/upstream-lust.md).
-The current root Cargo workspace still builds the separate
-compatibility coordinator. That workspace and the published rustc-based previews
-are transitional tools, not the completed native compiler.
+The root Cargo project now builds the native-first compiler entry candidate in
+`src/`. Its [execution and artifact contracts](docs/compiler-set/native-driver.md)
+identify the unchanged native engine, the C ABI cold entry and the inherited full
+Rust core. Preview packaging does not establish a complete native compiler.
+The separate compatibility coordinator remains in `crates/lustr`.
+The [entry contract proofs](docs/compiler-set/proofs/native-entry-contracts.md)
+cover target identity, bounded cancellation and copied-artifact publication;
+their assumptions and performance limits are explicit.
 
 Build the native compiler with an existing Rust bootstrap toolchain and the
 pinned TinyCC assets. Keep generated output outside the source checkout:
@@ -28,7 +34,45 @@ LUST_TCC_HOME=/absolute/tcc CARGO_TARGET_DIR=/absolute/lustr-native-build \
 /absolute/lustr-native-build/release/lust build unchanged.rs -o application
 ```
 
-## Compatibility toolchain
+## Compiler entry candidate
+
+The assembled candidate provides `bin/lustr`, the rustc-compatible `bin/rustc`,
+unchanged `bin/lust`/`bin/lust-core`, and the unchanged upstream full Rust core as
+`bin/rustc-full`. Native examples use:
+
+```sh
+/absolute/candidate/bin/lustr build program.rs -o application
+/absolute/candidate/bin/lustr check program.rs
+/absolute/candidate/bin/lustr build src/main.rs --manifest-path Cargo.toml -o application
+```
+
+Full Cargo artifact requests can use the matched tools explicitly:
+
+```sh
+CARGO=/absolute/candidate/bin/cargo RUSTC=/absolute/candidate/bin/rustc \
+  RUSTDOC=/absolute/candidate/bin/rustdoc /absolute/candidate/bin/cargo test --locked
+```
+
+These commands describe the candidate interface. Versioned previews record
+their exact source, runtime, notices, host requirements and qualification.
+Full Rust still uses the inherited Rust implementation. Native Rust library
+metadata, general mixed-engine crate interoperability and full native expansion
+remain unfinished. Working routing is not proof that those tasks are complete.
+
+The Linux x86_64 GNU candidate adds executable/shared-library naming constants,
+borrowed OS-string/path conversions to `PathBuf`, and `reserve`/`reserve_exact`
+for `OsString` and `PathBuf`. These compile the original program through unchanged Lust with
+an explicitly composed source library. Retained sessions verify the installed
+source inventory and hashes and use a separate component identity. Explicit
+source overrides stay cold. See the [entry contract](docs/compiler-set/native-driver.md)
+for qualification and limits. The current host binary requires GLIBC 2.39,
+libgcc and zlib, and the recorded `/usr/lib/ld-linux-x86-64.so.2` and
+`/lib64/ld-linux-x86-64.so.2` loader paths. The payload was exercised on AerynOS
+2026.08; its ELF report records each object's actual interpreter and dependencies.
+Other native hosts are unqualified. Cold compilation and edits still regress
+against stock Rust on the measured expansion fixtures.
+
+## Historical compatibility toolchain
 
 For versioned binary bundles, see [BlueFe releases](https://github.com/glopyglerky/blueFe/releases)
 and [Lustr releases](https://github.com/glopyglerky/lustr/releases). Use a release's
@@ -53,8 +97,8 @@ lustr --bluefe-root /absolute/toolchain build --target wasm32-unknown-unknown
 lustr --bluefe-root /absolute/toolchain doctor
 ```
 
-The assembled BlueFe directory supplies Cargo, rustc, rustdoc and the produced
-sysroot. Full Rust currently goes through rustc. `lustr build` without a root
+The older assembled BlueFe directory supplies Cargo, rustc, rustdoc and the produced
+sysroot. In that historical coordinator, `lustr build` without a root
 preserves the project's existing Cargo toolchain. Arguments, profiles, features,
 compiler wrappers and failure status remain effective. Builds install nothing
 and failed programs are never retried through another compiler.
@@ -80,7 +124,7 @@ limits; measured speed claims require fixed-workload evidence.
 Building the coordinator itself is optional contributor work:
 
 ```sh
-cargo build --release --locked
+cargo build --manifest-path crates/lustr/Cargo.toml --release --locked
 cargo install --path crates/lustr --locked
 ```
 
@@ -88,11 +132,15 @@ cargo install --path crates/lustr --locked
 
 | Path | Responsibility |
 | --- | --- |
+| `src/`, `Cargo.toml`, `build.rs` | Primary compiler entry candidate, request contracts, native loading and full-core invocation. |
+| `crates/lustr-native-core` | Owned C ABI entry around unchanged native Lust modules; compiled separately with PIC TinyCC. |
+| `library/lustr`, `library/lust` | Owned source-library additions and an explicit link to the unchanged baseline. No protected source is patched or copied into a divergent compiler. |
 | `compiler/native` | Exact pinned upstream Lust source, including its native compiler, libraries, TinyCC integration and differential fixtures. No Lustr-owned edits are admitted here. |
 | `crates/lustr` | Transitional Cargo/rustc coordinator, BlueFe tool selection and compatibility qualification. |
-| `upstream/lust.pin` and `tools/lust-upstream-check.rs` | Upstream revision/tree identity and the Rust source-preservation guard. |
+| `upstream/lust.pin`, `upstream/bluefe-core.pin` and `tools/lust-upstream-check.rs` | Upstream source identity, exact compiler-component bindings and the Lust source-preservation guard. |
 | `crates/lustr-semantic` | Optional version-pinned rustc inspection. It exports inspection data, not executable MIR. |
 | `crates/lustr-bench` | Standalone paired benchmark runner and correctness gates. It is outside the coordinator workspace. |
+| `examples/native_*` | Rust delivery, checksum-pinned notice collection and native measurement helpers; generated output belongs in an explicit build filesystem. |
 | `docs/compiler-set` | Current design, decisions, divergence records, measured evidence and future work. |
 
 The coordinator does not depend on TinyCC or registry packages. `cargo-lustr` and

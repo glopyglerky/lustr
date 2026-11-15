@@ -11,12 +11,17 @@ toward memory-safe Rust remains a separate, later optimization goal.
 
 `compiler/native` is the exact upstream Lust baseline, not an unrestricted
 Lustr editing area. Keep its complete tracked tree identical to `upstream/lust.pin`.
-Lustr-owned expansion, fixtures and helpers belong outside that tree. No generated
+Lustr-owned expansion, fixtures and helpers belong outside that tree. The same
+necessity and faster-results requirement applies to Rust implementation changes
+in blueFe, under its upstream source pin. No generated
 overlay, vendored copy rename or build-time patch may conceal a Lust divergence.
 Any proposed Lust change needs both a reproducible necessity case and faster
 equivalent-workload results before admission. Correctness tests alone are insufficient.
-The current root Cargo workspace builds the transitional coordinator in
-`crates/lustr`; do not mistake that layout for completed native coverage. The
+The current root Cargo project builds the compiler entry candidate in `src/`.
+The owned C ABI native entry is `crates/lustr-native-core`; the transitional
+coordinator is a separate project in `crates/lustr`. Read
+[the entry contract](docs/compiler-set/native-driver.md) before changing routing.
+Do not mistake this integration for completed native language coverage. The
 optional pinned semantic driver is `crates/lustr-semantic`. Keep the primary
 README, source map, decisions and divergence records about this fork's actual
 behavior. Preserve required upstream compatibility, licensing and source history.

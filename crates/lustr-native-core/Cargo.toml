@@ -1,0 +1,22 @@
+[package]
+name = "lustr-native-core"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "MIT"
+
+[workspace]
+resolver = "3"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+mimalloc = { version = "=0.1.52", default-features = false }
+libmimalloc-sys = { version = "=0.1.49", default-features = false }
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+lto = "thin"
+debug = "line-tables-only"

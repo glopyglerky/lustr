@@ -1,8 +1,23 @@
+[package]
+name = "lustr-compiler"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "MIT"
+
+[dependencies]
+serde_json = "=1.0.154"
+
 [workspace]
 resolver = "3"
-members = ["crates/lustr"]
-default-members = ["crates/lustr"]
-exclude = ["compiler/native", "crates/lustr-semantic"]
+exclude = ["compiler/native", "crates/lustr", "crates/lustr-semantic", "crates/lustr-native-core"]
+
+[[bin]]
+name = "lustr"
+path = "src/main.rs"
 
 [profile.release]
+opt-level = 3
+codegen-units = 1
+lto = "thin"
 strip = true

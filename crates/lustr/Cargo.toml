@@ -8,6 +8,12 @@ description = "Lustr compiler coordinator for BlueFe and complete Cargo projects
 publish = false
 default-run = "lustr"
 
+[workspace]
+resolver = "3"
+
+[profile.release]
+strip = true
+
 [lib]
 name = "cargo_lust"
 

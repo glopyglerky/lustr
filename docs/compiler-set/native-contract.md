@@ -22,7 +22,8 @@ equivalent-workload speed are both requirements. Neither follows from a
 wrapper, a successful parse, an optimized rustc build, or a few fixtures.
 
 The integration must compose existing Lust-supported code and Lustr's additions
-in the same program. Its native extension interface is not implemented yet.
+in the same program. A bounded source-library interface now supplies native
+additions; full frontend and crate/metadata extension remain incomplete.
 Do not replace that work with source keyword guesses, a rustc wrapper, or an
 unproved edit to the upstream compiler.
 

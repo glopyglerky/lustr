@@ -14,9 +14,9 @@ It must remain accurately identified and cannot close native compiler tasks.
 
 | Area | Status |
 | --- | --- |
-| Native compiler | Exact upstream Lust baseline in `compiler/native`. Full Rust coverage and the Lustr-owned extension interface remain incomplete. |
+| Native compiler | Exact upstream Lust baseline in `compiler/native`. Owned source-library additions work through a bounded interface; full frontend, Rust language and crate/metadata coverage remain incomplete. |
 | Native frontend | Existing parser, expansion, resolution, trait/type checking, borrow checking and monomorphization. Remaining language gaps must be reproduced and implemented here. |
-| Native libraries and generation | Existing source libraries, adapters and C/TinyCC generation. Missing APIs and semantic support remain native implementation work. |
+| Native libraries and generation | Existing source libraries, adapters and C/TinyCC generation, plus owned naming constants, borrowed path conversions and OS-string/path capacity methods. Other APIs and semantic support remain native implementation work. |
 | Fast edit path | Existing daemon, query reads, retained state and caches. Every expansion needs warm/cold and edit invalidation checks. |
 | Cargo/crate support | Partial native resolver and whole-target compilation. Native Rust rlib emission and general artifact interoperability remain open. |
 | Full Rust compatibility | Currently supplied by rustc through the separate coordinator. This is not native compiler coverage. |

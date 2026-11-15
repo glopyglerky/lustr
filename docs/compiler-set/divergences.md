@@ -7,11 +7,13 @@ research are identified rather than pasted into the primary project README.
 
 ## Lustr
 
-The root Cargo workspace builds `crates/lustr`. It has no registry or C build
-dependencies and its Rust source forbids unsafe code. The native component lives
-in `compiler/native` with a separate workspace, fixtures, runtime assets and build
-helpers. This preserves the native compiler's relative-path contracts while
-removing those dependencies from the coordinator's default build.
+The root Cargo workspace builds the compiler entry in `src/`. It uses
+`serde_json`, a bounded native C ABI loader and the separately pinned full Rust
+executable. The compatibility coordinator in `crates/lustr` remains independent,
+with no registry or C build dependencies and Rust source that forbids unsafe
+code. `crates/lustr-native-core` wraps unchanged native modules outside the
+protected tree. Owned library additions live in `library/lustr`; explicit links
+share original source instead of changing the protected baseline.
 
 `crates/lustr-semantic` remains independent because its rustc-private interface
 requires a different pinned development toolchain. It is not part of the normal
@@ -23,24 +25,26 @@ commands and protocol names remain compatibility interfaces. The optional pinned
 ts-rust source is a native qualification fixture, not another product entry point.
 Upstream licenses and source history remain intact.
 
-Current fork changes include explicit BlueFe selection; corrected Unix startup
-and variadic FFI; command-scoped backend selection; panic and bidirectional Rust
-ABI gates; Cargo build-script layout handling; native cache invalidation repairs;
-and performance evidence tied to exact tools and source. The verification record
-separates historical experiments from current qualifications.
+Current owned changes include compiler request routing, Cargo target identity,
+bounded foreground cleanup, source-library APIs and separately identified
+retained library sessions. Compatibility backend selection and its qualification
+remain separate. Earlier Lust kernel patches and experiments are historical;
+they are not admitted to the exact active upstream tree. Correctness alone does
+not admit a protected kernel divergence: necessity and faster equivalent-workload
+evidence are both required by the preservation policy.
 
 ## BlueFe
 
-BlueFe retains the Rust compiler and bootstrap layout because the current
-compiler, standard libraries, platform support, release tools and upstream sync
-use those paths. That compiler source is the working BlueFe implementation.
-Removing it before a replacement exists would remove full Rust support.
+BlueFe retains exact pinned upstream Rust compiler, library, bootstrap and
+stage0 source under its preservation guard. Its owned integration pins Lustr
+and records dependency boundaries. The compiler candidate currently ships an
+official unmodified SDK, not a newly bootstrapped fork-produced Rust compiler.
+That dependency supplies full Rust compatibility while native replacement is
+unfinished.
 
-BlueFe's owned integration is visible through its primary README, root Lustr
-submodule and bootstrap changes. It pins Lustr, uses the coordinator for ordinary
-Cargo build operations, updates stage0 through its native generator, and enables
-unwinding when explicitly building its in-tree Cranelift backend. Default LLVM
-compilation and specialized upstream tool launchers retain their tested roles.
+Old compiler/bootstrap overrides and heuristic stage0 selection were removed
+from the active fork. Optional Cranelift research does not implement native
+Lustr coverage and retains its separate unwind/drop and ABI obligations.
 
 ## Iteration policy
 
@@ -60,12 +64,12 @@ The same ownership and evidence policy applies when working on the user's other
 forks. Public repositories can supply frozen performance workloads without
 changing their source, default branches, services or deployment state.
 
-## Retired native experiments
+## Historical native retirement
 
-The old `compiler/native/spikes` directory contained standalone C/FFI probes
-and their drivers. No active compiler, manifest, CI gate or qualification helper
-references that directory. These unneeded inherited experiments were removed
-from the default source tree. Their complete source and results remain in
+An earlier fork revision removed `compiler/native/spikes`. Exact upstream
+preservation subsequently restored the complete tree, including those probes.
+They remain historical upstream research, not native language coverage or
+current package acceptance. The earlier fork state remains in
 [the prior source snapshot](https://github.com/glopyglerky/lustr/tree/39349b63b976e76702ca14fbb5f19718eaf0ed2d/compiler/native/spikes).
 
 Required non-Rust code remains explicit: the current native compiler's C runtime
