@@ -30,6 +30,13 @@ fn main() {
     fs::create_dir(&work).unwrap();
     let work = work.canonicalize().unwrap();
     retain(&compiler, &work.join("actual-driver-bytes"));
+    let driver = if compiler.file_name().is_some_and(|n| n == "lustr") {
+        compiler.with_file_name("rustc-full").canonicalize().unwrap()
+    } else {
+        compiler.canonicalize().unwrap()
+    };
+    retain(&driver, &work.join("actual-mixed-driver-bytes"));
+    retain(&driver.with_file_name("lust-core"), &work.join("actual-native-core-bytes"));
     put(&work.join("Cargo.toml"), "[workspace]\nmembers=['app','mixed-macro','tiny-core']\nresolver='3'\n[profile.dev]\ndebug=0\n");
     put(&work.join("tiny-core/Cargo.toml"), "[package]\nname='tiny-core'\nversion='0.1.0'\nedition='2024'\n");
     let library = "#![no_std]\nextern crate alloc;\npub fn adjustment()->u64{let v=alloc::vec::Vec::from([0u64]);v.iter().sum()}\n";

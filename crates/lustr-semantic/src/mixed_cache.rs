@@ -1,5 +1,9 @@
 //! Retain checked Rust work, with fresh Rust expansion and actual HIR hashes.
 //! No rustc arena reference or local compiler id crosses an invocation.
+use rustc_data_structures::{
+    fingerprint::Fingerprint,
+    stable_hash::{StableHash, StableHasher},
+};
 use rustc_middle::ty::TyCtxt;
 use serde_json::{Value, json};
 use std::{
@@ -14,8 +18,31 @@ pub fn context(tcx: TyCtxt<'_>, native: &BTreeSet<String>) -> Option<Value> {
     let mut owners = std::collections::BTreeMap::new();
     for owner in tcx.hir_crate_items(()).owners() {
         let key = format!("{:?}", tcx.def_path_hash(owner.def_id.to_def_id()));
-        let attrs = format!("{:?}", tcx.hir_attr_map(owner).opt_hash?);
-        let body = if native.contains(&key) { "native-body".into() } else { format!("{:?}", tcx.hir_owner_nodes(owner).opt_hash?) };
+        // Same hashing as pinned rustc_middle::hir::hash_owner_nodes
+        // (Rust Project Developers, MIT OR Apache-2.0). Cargo need not request
+        // rustc incremental compilation for this separate retained boundary.
+        let (attrs, body) = tcx.with_stable_hashing_context(|mut hcx| {
+            let attributes = tcx.hir_attr_map(owner);
+            let attrs = attributes.opt_hash.unwrap_or_else(|| {
+                let mut h = StableHasher::new();
+                attributes.map.stable_hash(&mut hcx, &mut h);
+                attributes.define_opaque.stable_hash(&mut hcx, &mut h);
+                h.finish::<Fingerprint>()
+            });
+            let body = if native.contains(&key) {
+                "native-body".into()
+            } else {
+                let nodes = tcx.hir_owner_nodes(owner);
+                let value = nodes.opt_hash.unwrap_or_else(|| {
+                    let mut h = StableHasher::new();
+                    nodes.node().stable_hash(&mut hcx, &mut h);
+                    nodes.bodies.stable_hash(&mut hcx, &mut h);
+                    h.finish::<Fingerprint>()
+                });
+                format!("{value:?}")
+            };
+            (format!("{attrs:?}"), body)
+        });
         owners.insert(key, json!([attrs, body]));
     }
     let mut dependencies = std::collections::BTreeMap::new();

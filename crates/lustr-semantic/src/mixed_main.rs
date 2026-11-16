@@ -51,6 +51,7 @@ mod native {
         overflow: bool,
         assertions: bool,
     ) -> Option<(i32, String, String)> {
+        if env_on("LUST_NO_DAEMON") || protocol::source_override().is_some() {return None;}
         let args = vec!["build".into(), file.to_str()?.into(), "-o".into(), output.to_str()?.into()];
         let Some(Invocation::Compile { mut req, .. }) = protocol::parse_args(&args) else { return None };
         req.session.krate.target_kind = "lustr-mixed-native".into();
@@ -64,6 +65,17 @@ mod native {
         let original_socket = protocol::socket_path();
         let socket =
             original_socket.with_file_name(format!("mixed-{}.sock", super::hash(&(original_socket.as_os_str(), env!("LUST_BUILD_HASH")))));
+        // Linux's sockaddr_un limit applies to the supplied pathname, even
+        // when the requested directory itself is perfectly valid. An open
+        // directory preserves that exact namespace while /proc supplies a
+        // short pathname. The daemon inherits the descriptor for its lifetime.
+        use std::os::unix::ffi::OsStrExt;
+        let directory = if socket.as_os_str().as_bytes().len() >= 108 {
+            Some(std::fs::File::open(socket.parent()?).ok()?)
+        } else { None };
+        let socket = if let Some(directory) = &directory {
+            PathBuf::from(format!("/proc/self/fd/{}/{}", directory.as_raw_fd(), socket.file_name()?.to_str()?))
+        } else { socket };
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
         loop {
             if let Some(r) = protocol::request(&socket, &req) {
@@ -89,8 +101,10 @@ mod native {
                     .stdout(log.try_clone().ok()?)
                     .stderr(log);
                 unsafe {
+                    let directory_fd=directory.as_ref().map(|f|f.as_raw_fd());
                     command.pre_exec(move || {
-                        if setsid() < 0 || fcntl(fd, F_SETFD, 0) < 0 {
+                        if setsid() < 0 || fcntl(fd, F_SETFD, 0) < 0
+                            || directory_fd.is_some_and(|fd|fcntl(fd,F_SETFD,0)<0) {
                             return Err(std::io::Error::last_os_error());
                         }
                         Ok(())

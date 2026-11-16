@@ -61,8 +61,12 @@ layout, drop behavior or aggregate ABI is fabricated.
 After success, the driver retains Rust's actual version-bound link recipe and
 the checked Rust objects. On another invocation it refreshes Rust expansion,
 including procedural macros, and compares actual stable HIR owner/attribute
-hashes and dependency crate identities. This intentionally reruns expansion:
-procedural macros can observe inputs they do not report. It does not claim a
+hashes and dependency crate identities.
+When Rust has not precomputed HIR hashes, the bridge uses the same original
+stable-hash functions as the pinned `hash_owner_nodes` implementation. It does
+not enable a different Cargo incremental setting to obtain them.
+Expansion is refreshed because procedural macros can observe inputs they do
+not report. This does not claim a
 retained Rust frontend or zero Rust work.
 
 The first warm certificate accepts a decimal-literal change in a direct
