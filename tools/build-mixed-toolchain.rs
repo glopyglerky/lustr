@@ -9,6 +9,13 @@ use std::{
     process::Command,
 };
 
+#[allow(dead_code)]
+#[path = "../src/native_expansion.rs"]
+mod native_expansion;
+#[allow(dead_code)]
+#[path = "../src/owned_child.rs"]
+mod owned_child;
+
 #[derive(Clone, Copy)]
 enum BuildProfile {
     Development,
@@ -46,6 +53,44 @@ fn checked(label: &str, command: &mut Command, logs: &Path) -> Vec<u8> {
 fn copy(source: &Path, target: &Path) {
     fs::copy(source, target).unwrap();
     fs::File::open(target).unwrap().sync_all().unwrap();
+}
+fn copy_sources(source: &Path, target: &Path) {
+    fs::create_dir(target).unwrap();
+    for entry in fs::read_dir(source).unwrap() {
+        let entry = entry.unwrap();
+        let kind = entry.file_type().unwrap();
+        let destination = target.join(entry.file_name());
+        if kind.is_dir() {
+            copy_sources(&entry.path(), &destination);
+        } else {
+            assert!(kind.is_file(), "installed adapter source must be regular: {}", entry.path().display());
+            copy(&entry.path(), &destination);
+        }
+    }
+    fs::File::open(target).unwrap().sync_all().unwrap();
+}
+fn source_library(repo: &Path, package: &Path) {
+    let library = package.join("lib/lustr");
+    fs::create_dir(&library).unwrap();
+    copy_sources(&repo.join("library/lustr/std"), &library.join("std"));
+    symlink("../lust/library/deps", library.join("deps")).unwrap();
+    let expanded = package.join("lib/lustr-expanded");
+    fs::create_dir_all(expanded.join("bin")).unwrap();
+    fs::create_dir_all(expanded.join("lib/lust")).unwrap();
+    symlink("../../../lustr", expanded.join("lib/lust/library")).unwrap();
+    symlink("../../../lust/tcc", expanded.join("lib/lust/tcc")).unwrap();
+    // The executable path selects the expanded support prefix, while its inode
+    // must retain the original core's wire identity.
+    fs::hard_link(package.join("bin/lust-core"), expanded.join("bin/lust-core")).unwrap();
+}
+fn seal_source_library(package: &Path, logs: &Path) -> String {
+    let library = package.join("lib/lustr");
+    let inputs = native_expansion::inputs(&library).unwrap();
+    let manifest = checked("seal-native-sources", Command::new("sha256sum").current_dir(&library).arg("--").args(&inputs), logs);
+    record(&library.join("sources.sha256"), &manifest);
+    native_expansion::sealed(&package.join("bin"), &package.join("source-library-identity.sock"))
+        .expect("installed source library must satisfy the runtime's seal and core identity checks")
+        .identity
 }
 fn native_receipts(directory: &Path, receipts: &mut Vec<PathBuf>) {
     for entry in fs::read_dir(directory).unwrap() {
@@ -163,11 +208,11 @@ fn main() {
     fs::create_dir(package.join("lib/lust")).unwrap();
     symlink(repo.join("compiler/native/library"), package.join("lib/lust/library")).unwrap();
     symlink(&tcc, package.join("lib/lust/tcc")).unwrap();
-    symlink(repo.join("library/lustr"), package.join("lib/lustr")).unwrap();
     symlink(&tcc, package.join("lib/tcc")).unwrap();
     for name in ["lust", "lust-core"] {
         copy(&work.join("native-target").join(profile.directory()).join(name), &package.join("bin").join(name));
     }
+    source_library(&repo, &package);
     let mut entry = cargo(&sdk, &repo, "Cargo.toml", &work, "entry", profile);
     entry
         .args(["--bin", "lustr", "--features", "source-native-runtime"])
@@ -189,6 +234,7 @@ fn main() {
     let identity = checked("hash-native-library", Command::new("sha256sum").arg(&library), &logs);
     let identity = std::str::from_utf8(&identity).unwrap().split_whitespace().next().unwrap();
     record(&package.join("lib/lustr-native.id"), format!("{identity}\n").as_bytes());
+    let source_identity = seal_source_library(&package, &logs);
     let mut mixed = cargo(&sdk, &repo, "crates/lustr-semantic/Cargo.toml", &work, "mixed", profile);
     mixed.args(["--features", "full-core", "--bin", "lustr-mixed"]).env("LUSTR_NATIVE_BUILD_HASH", hash);
     checked("mixed-build", &mut mixed, &logs);
@@ -197,12 +243,13 @@ fn main() {
     // native core and the original compiler used for non-UTF8 OS arguments.
     record(&output.join("NATIVE-BUILD-RECEIPT.txt"), native_output.as_bytes());
     let mut manifest = format!(
-        "Local source-built development candidate; release admission and broad mixed performance remain pending.\nReferenced source={}, SDK={}, TinyCC={}\nNative build={}\nCargo artifact profile={}\n",
+        "Local source-built development candidate; release admission and broad mixed performance remain pending.\nReferenced source={}, SDK={}, TinyCC={}\nNative build={}\nCargo artifact profile={}\nSource library identity={}\n",
         repo.display(),
         sdk.display(),
         tcc.display(),
         hash,
-        profile.directory()
+        profile.directory(),
+        source_identity
     );
     for name in ["lustr", "rustc-full", "lust", "lust-core", "cargo-lustr"] {
         let result = checked(&format!("hash-{name}"), Command::new("sha256sum").arg(package.join("bin").join(name)), &logs);

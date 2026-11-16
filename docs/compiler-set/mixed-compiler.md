@@ -150,6 +150,14 @@ matching pinned toolchain. The constructor checks its source identity before
 building native components. CI builds this complete composition and runs the
 real mixed-project qualifier through its lustr entry.
 
+The assembled toolchain owns its expanded standard-library source copy. Its
+dependency and support links retain the expected package layout, and the
+expanded compiler component is a hard link to the installed native core.
+After recording the native library identity, the constructor seals the
+complete source inventory and checks it through the same validator used by
+the runtime. Editing the installed copy cannot change the source checkout;
+changes to any sealed input invalidate retained source-library state.
+
 The constructor accepts a final `--release` option to build every owned
 component with its manifest's release profile. It selects the matching release
 artifacts and native build receipt; the imported Rust SDK remains unchanged.
