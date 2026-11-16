@@ -132,6 +132,10 @@ jobs:
         run: rustc --edition=2024 tools/mixed-compiler-qualification.rs -o "$RUNNER_TEMP/mixed-compiler-qualification"
       - name: Execute mixed Cargo graph, edits, invalidation, warnings and rejection
         run: '"$RUNNER_TEMP/mixed-compiler-qualification" "$RUNNER_TEMP/mixed-project" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/cargo" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/lustr"'
+      - name: Build retained Cargo check qualifier
+        run: rustc --edition=2024 tools/mixed-check-qualification.rs -o "$RUNNER_TEMP/mixed-check-qualification"
+      - name: Verify retained checks and freshly encoded Rust metadata
+        run: '"$RUNNER_TEMP/mixed-check-qualification" "$RUNNER_TEMP/mixed-check-project" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/lustr" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/rustc-reference"'
 
   compatibility:
     name: Cargo compatibility (${{ matrix.os }})

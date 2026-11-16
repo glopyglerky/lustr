@@ -32,6 +32,13 @@ pub fn reuse_checked_context() {
 fn analysis(tcx: TyCtxt<'_>, key: ()) {
     if !REUSED.load(Ordering::Acquire) {
         ANALYSIS.get().unwrap()(tcx, key);
+    } else {
+        // The pinned run_required_analyses establishes this definition-table
+        // transition after lowering. Rust's original metadata encoder needs
+        // it even when unchanged semantic checks are retained. Keep the table
+        // available for lazy queries rather than freezing before they run.
+        tcx.ensure_done().hir_crate_items(());
+        tcx.untracked().definitions.write().commit_end_of_determinism();
     }
 }
 pub fn providers(_: &Session, providers: &mut Providers) {

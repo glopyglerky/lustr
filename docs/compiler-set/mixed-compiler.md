@@ -101,6 +101,22 @@ Methods supplied by user traits stay with the complete compiler. Unchanged
 method bodies retain their checked bindings only while the full semantic
 context matches; edited bodies run the original Rust queries and binding check.
 
+Ordinary `lustr check` Cargo requests can retain this checked context for both
+binary and library targets, including the ordinary development debug profile.
+The first request uses complete Rust analysis and checks selected nongeneric
+scalar bodies with the original Lust checker. A certified subsequent body edit
+runs Rust's body queries and Lust's retained check, leaving unchanged analysis
+reusable. Lust emits no C or object for that check. Signature, dependency, macro
+or diagnostic changes still require complete analysis.
+
+Every check continues through Rust's original metadata encoder and dep-info
+writer. The current source determines the real crate hash and rmeta; an old
+metadata file is never relabeled. The retained path preserves the pinned Rust
+analysis phase's definition-table transition before entering its encoder.
+Its query results remain available lazily. The check certificate is published
+only after the complete invocation and metadata generation succeed without
+diagnostics. Compiler arenas and local definition IDs are not serialized.
+
 The native host declarations use libc's actual variadic `fcntl` interface.
 Fixed three-argument declarations conflicted with standard-library imports
 when the compiler itself was built using the pinned Cranelift complement.
@@ -166,6 +182,12 @@ macro invalidation. It retains actual compiler and application bytes before
 execution, per-case traces, statuses and output. The existing complete compiler
 contract additionally covers native/full entry behavior, real metadata,
 no_std wasm output, build scripts, doctests and panic/drop recovery.
+`tools/mixed-check-qualification.rs` exercises ordinary debug-profile Cargo
+checks of a real proc-macro graph, a no_std core/alloc dependency, retained
+application and library body edits, changed metadata consumed by the matching
+original compiler, type/signature/macro rejection and recovery, and warning/
+deny preservation. Both this check journey and the mixed execution regression
+passed with the same mixed driver on Linux x86-64.
 
 These bounded checks passed on Linux x86-64. Runtime artifacts and raw logs
 are retained separately from the public source. Broad full-project performance

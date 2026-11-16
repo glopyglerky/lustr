@@ -54,8 +54,28 @@ mod native {
         overflow: bool,
         assertions: bool,
     ) -> Option<(i32, String, String)> {
+        request(file, output, name, identity, overflow, assertions, false)
+    }
+    pub fn check(
+        file: &Path,
+        name: &str,
+        identity: &str,
+        overflow: bool,
+        assertions: bool,
+    ) -> Option<(i32, String, String)> {
+        request(file, file, name, identity, overflow, assertions, true)
+    }
+    fn request(
+        file: &Path,
+        output: &Path,
+        name: &str,
+        identity: &str,
+        overflow: bool,
+        assertions: bool,
+        check: bool,
+    ) -> Option<(i32, String, String)> {
         if env_on("LUST_NO_DAEMON") || protocol::source_override().is_some() {return None;}
-        let args = vec!["build".into(), file.to_str()?.into(), "-o".into(), output.to_str()?.into()];
+        let args = vec![if check {"check".into()} else {"build".into()}, file.to_str()?.into(), "-o".into(), output.to_str()?.into()];
         let Some(Invocation::Compile { mut req, .. }) = protocol::parse_args(&args) else { return None };
         req.session.krate.target_kind = "lustr-mixed-native".into();
         req.session.krate.target_name = name.into();
@@ -291,6 +311,7 @@ struct Compiler {
     selected: Vec<String>,
     frontend: bool,
     enabled: bool,
+    check_only: bool,
     reuse_allowed: bool,
     reused: bool,
     represented: bool,
@@ -300,18 +321,18 @@ struct Compiler {
 }
 impl Callbacks for Compiler {
     fn config(&mut self, config: &mut interface::Config) {
+        use rustc_session::config::OutputType;
+        self.check_only = config.opts.output_types.contains_key(&OutputType::Metadata)
+            && config.opts.output_types.keys().all(|kind| matches!(kind, OutputType::Metadata | OutputType::DepInfo));
         self.enabled = self.represented
             && cfg!(all(target_os = "linux", target_arch = "x86_64"))
             && config.opts.optimize == rustc_session::config::OptLevel::No
-            && config.opts.cg.debuginfo == rustc_session::config::DebugInfo::None
+            && (self.check_only || config.opts.cg.debuginfo == rustc_session::config::DebugInfo::None)
             && config.opts.target_triple.to_string() == env!("LUSTR_BUILD_RUSTC_HOST")
             && config.opts.unstable_opts.offload.is_empty()
-            && config.opts.crate_types == [rustc_structures::CrateType::Executable]
-            && config
-                .opts
-                .output_types
-                .keys()
-                .all(|kind| matches!(kind, rustc_session::config::OutputType::Exe | rustc_session::config::OutputType::DepInfo));
+            && (config.opts.crate_types == [rustc_structures::CrateType::Executable]
+                || self.check_only && config.opts.crate_types == [rustc_structures::CrateType::Rlib])
+            && (self.check_only || config.opts.output_types.keys().all(|kind| matches!(kind, OutputType::Exe | OutputType::DepInfo)));
         self.reuse_allowed &= config.opts.lint_opts.iter().all(|(name, _)| name == "unused_crate_dependencies");
         if self.enabled {
             let previous = config.psess_created.take();
@@ -372,13 +393,16 @@ impl Callbacks for Compiler {
     }
     fn after_analysis<'tcx>(&mut self, _: &interface::Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
         if self.reused {
-            return Compilation::Stop;
+            // Checks continue through Rust's original metadata encoder. Its
+            // current source/crate hash and real rmeta are never reused from
+            // the previous request. Link requests have already relinked.
+            return if self.check_only { Compilation::Continue } else { Compilation::Stop };
         }
         if !self.enabled
             || tcx.sess.dcx().has_errors().is_some()
-            || !tcx.sess.opts.output_types.should_codegen()
+            || !self.check_only && !tcx.sess.opts.output_types.should_codegen()
             || tcx.sess.opts.optimize != rustc_session::config::OptLevel::No
-            || tcx.sess.opts.cg.debuginfo != rustc_session::config::DebugInfo::None
+            || !self.check_only && tcx.sess.opts.cg.debuginfo != rustc_session::config::DebugInfo::None
             || tcx.sess.target.llvm_target.as_ref() != "x86_64-unknown-linux-gnu"
         {
             return Compilation::Continue;
@@ -396,73 +420,106 @@ impl Callbacks for Compiler {
             }
         }
         let mut entries = BTreeMap::new();
-        for unit in tcx.collect_and_partition_mono_items(()).codegen_units {
-            for (item, _) in unit.items() {
-                let MonoItem::Fn(instance) = *item else { continue };
-                let id = instance.def_id();
-                if !id.is_local() || tcx.generics_of(id).count() != 0 {
-                    continue;
-                }
-                let Some(name) = tcx.opt_item_name(id) else { continue };
-                let name = name.to_string();
-                let Some(candidate) = self.candidates.get(&name) else { continue };
-                if !represented_body(tcx, id.expect_local(), candidate, BodyBindings::Current) {
-                    continue;
-                }
-                let signature = tcx.fn_sig(id).instantiate_identity().skip_binder();
-                let mut c_signature = signature;
-                c_signature.fn_sig_kind = c_signature.fn_sig_kind.set_abi(rustc_abi::ExternAbi::C { unwind: false });
-                let environment = TypingEnv::fully_monomorphized();
-                let Ok(rust_abi) = tcx.fn_abi_of_instance(environment.as_query_input((instance, ty::List::empty()))) else { continue };
-                let Ok(c_abi) = tcx.fn_abi_of_fn_ptr(environment.as_query_input((ty::Binder::dummy(c_signature), ty::List::empty())))
+        let instances: Vec<_> = if self.check_only {
+            // A metadata request has no monomorphization/codegen units.
+            // Use actual nongeneric root definitions from the checked HIR.
+            tcx.hir_crate_items(())
+                .owners()
+                .filter_map(|owner| {
+                    let id = owner.def_id.to_def_id();
+                    (tcx.def_kind(id) == rustc_hir::def::DefKind::Fn
+                        && tcx.opt_local_parent(owner.def_id) == Some(rustc_span::def_id::CRATE_DEF_ID)
+                        && tcx.generics_of(id).count() == 0)
+                        .then(|| ty::Instance::mono(tcx, id))
+                })
+                .collect()
+        } else {
+            tcx.collect_and_partition_mono_items(())
+                .codegen_units
+                .iter()
+                .flat_map(|unit| {
+                    unit.items().keys().filter_map(|item| match item {
+                        MonoItem::Fn(instance) => Some(*instance),
+                        _ => None,
+                    })
+                })
+                .collect()
+        };
+        for instance in instances {
+            let id = instance.def_id();
+            if !id.is_local() || tcx.generics_of(id).count() != 0 {
+                continue;
+            }
+            let Some(name) = tcx.opt_item_name(id) else { continue };
+            let name = name.to_string();
+            let Some(candidate) = self.candidates.get(&name) else { continue };
+            if !represented_body(tcx, id.expect_local(), candidate, BodyBindings::Current) {
+                continue;
+            }
+            let signature = tcx.fn_sig(id).instantiate_identity().skip_binder();
+            let mut c_signature = signature;
+            c_signature.fn_sig_kind = c_signature.fn_sig_kind.set_abi(rustc_abi::ExternAbi::C { unwind: false });
+            let environment = TypingEnv::fully_monomorphized();
+            let Ok(rust_abi) = tcx.fn_abi_of_instance(environment.as_query_input((instance, ty::List::empty()))) else { continue };
+            let Ok(c_abi) = tcx.fn_abi_of_fn_ptr(environment.as_query_input((ty::Binder::dummy(c_signature), ty::List::empty()))) else {
+                continue;
+            };
+            let mode_equal = |a: &rustc_target::callconv::PassMode, b: &rustc_target::callconv::PassMode| {
+                matches!((a, b), (rustc_target::callconv::PassMode::Direct(_), rustc_target::callconv::PassMode::Direct(_)))
+                    && format!("{a:?}") == format!("{b:?}")
+            };
+            // The pinned LLVM backend maps canonical Rust and C to the
+            // same LLVM C calling convention (upstream abi.rs). Compare
+            // the actual argument/return modes too; a canonical ABI name
+            // alone neither establishes nor disproves compatibility.
+            let same_convention =
+                rust_abi.conv == c_abi.conv || matches!((rust_abi.conv, c_abi.conv), (rustc_abi::CanonAbi::Rust, rustc_abi::CanonAbi::C));
+            if !same_convention
+                || !mode_equal(&rust_abi.ret.mode, &c_abi.ret.mode)
+                || rust_abi.args.len() != c_abi.args.len()
+                || !rust_abi.args.iter().zip(&c_abi.args).all(|(a, b)| mode_equal(&a.mode, &b.mode))
+            {
+                continue;
+            }
+            let primitive = |t: ty::Ty<'tcx>| {
+                matches!(
+                    t.kind(),
+                    ty::TyKind::Int(ty::IntTy::I64 | ty::IntTy::Isize) | ty::TyKind::Uint(ty::UintTy::U64 | ty::UintTy::Usize)
+                )
+            };
+            if !primitive(signature.output())
+                || !signature.inputs().iter().all(|t| primitive(*t))
+                || candidate.params.len() != signature.inputs().len()
+            {
+                continue;
+            }
+            let symbol = tcx.symbol_name(instance).name.to_owned();
+            let identity = hash(&symbol);
+            let path = self.directory.join(&identity);
+            if fs::create_dir(&path).is_err() {
+                continue;
+            }
+            let source = path.join("kernel.rs");
+            let object = path.join("native.o");
+            let params = candidate.params.iter().zip(signature.inputs()).map(|(p, t)| format!("{p}:{t}")).collect::<Vec<_>>().join(",");
+            let zeros = candidate.params.iter().map(|_| "0").collect::<Vec<_>>().join(",");
+            let prefix = format!("fn {}({params})->{}", candidate.name, signature.output());
+            let suffix = format!("\nfn main(){{let _={}({zeros});}}\n", candidate.name);
+            let text = format!("{prefix}{}{suffix}", candidate.body);
+            if fs::write(&source, &text).is_err() {
+                continue;
+            }
+            if self.check_only {
+                let Some((code, _, diagnostic)) =
+                    native::check(&source, &name, &identity, tcx.sess.overflow_checks(), tcx.sess.opts.debug_assertions)
                 else {
                     continue;
                 };
-                let mode_equal = |a: &rustc_target::callconv::PassMode, b: &rustc_target::callconv::PassMode| {
-                    matches!((a, b), (rustc_target::callconv::PassMode::Direct(_), rustc_target::callconv::PassMode::Direct(_)))
-                        && format!("{a:?}") == format!("{b:?}")
-                };
-                // The pinned LLVM backend maps canonical Rust and C to the
-                // same LLVM C calling convention (upstream abi.rs). Compare
-                // the actual argument/return modes too; a canonical ABI name
-                // alone neither establishes nor disproves compatibility.
-                let same_convention = rust_abi.conv == c_abi.conv
-                    || matches!((rust_abi.conv, c_abi.conv), (rustc_abi::CanonAbi::Rust, rustc_abi::CanonAbi::C));
-                if !same_convention
-                    || !mode_equal(&rust_abi.ret.mode, &c_abi.ret.mode)
-                    || rust_abi.args.len() != c_abi.args.len()
-                    || !rust_abi.args.iter().zip(&c_abi.args).all(|(a, b)| mode_equal(&a.mode, &b.mode))
-                {
+                trace(&diagnostic);
+                if code != 0 {
                     continue;
                 }
-                let primitive = |t: ty::Ty<'tcx>| {
-                    matches!(
-                        t.kind(),
-                        ty::TyKind::Int(ty::IntTy::I64 | ty::IntTy::Isize) | ty::TyKind::Uint(ty::UintTy::U64 | ty::UintTy::Usize)
-                    )
-                };
-                if !primitive(signature.output())
-                    || !signature.inputs().iter().all(|t| primitive(*t))
-                    || candidate.params.len() != signature.inputs().len()
-                {
-                    continue;
-                }
-                let symbol = tcx.symbol_name(instance).name.to_owned();
-                let identity = hash(&symbol);
-                let path = self.directory.join(&identity);
-                if fs::create_dir(&path).is_err() {
-                    continue;
-                }
-                let source = path.join("kernel.rs");
-                let object = path.join("native.o");
-                let params = candidate.params.iter().zip(signature.inputs()).map(|(p, t)| format!("{p}:{t}")).collect::<Vec<_>>().join(",");
-                let zeros = candidate.params.iter().map(|_| "0").collect::<Vec<_>>().join(",");
-                let prefix = format!("fn {}({params})->{}", candidate.name, signature.output());
-                let suffix = format!("\nfn main(){{let _={}({zeros});}}\n", candidate.name);
-                let text = format!("{prefix}{}{suffix}", candidate.body);
-                if fs::write(&source, &text).is_err() {
-                    continue;
-                }
+            } else {
                 let Some((code, native_symbol, diagnostic)) =
                     native::compile(&source, &object, &name, &identity, tcx.sess.overflow_checks(), tcx.sess.opts.debug_assertions)
                 else {
@@ -485,18 +542,20 @@ impl Callbacks for Compiler {
                 if !result.status.success() {
                     continue;
                 }
-                self.records.push(serde_json::json!({"name":name,"symbol":symbol,"identity":identity,
+                entries.insert(symbol.clone(), linked);
+            }
+            self.records.push(serde_json::json!({"name":name,"symbol":symbol,"identity":identity,
                     "definition":format!("{:?}",tcx.def_path_hash(id)),"header":candidate.header,
                     "body":candidate.body,"prefix":prefix,"suffix":suffix}));
-                self.selected.push(symbol.clone());
-                entries.insert(symbol, linked);
-            }
+            self.selected.push(symbol.clone());
         }
-        trace(&format!("native-definitions={}", entries.len()));
-        if !entries.is_empty() {
+        trace(&format!("{}={}", if self.check_only { "native-checked-definitions" } else { "native-definitions" }, self.records.len()));
+        if !self.records.is_empty() {
             let excluded = self.records.iter().filter_map(|r| r["definition"].as_str().map(str::to_owned)).collect();
             self.context = mixed_cache::context(tcx, &excluded);
-            mixed_objects::install(self.directory.clone(), entries);
+            if !self.check_only {
+                mixed_objects::install(self.directory.clone(), entries);
+            }
         }
         Compilation::Continue
     }
@@ -550,6 +609,7 @@ fn main() -> ExitCode {
         selected: Vec::new(),
         frontend: false,
         enabled: false,
+        check_only: false,
         reuse_allowed: lock.is_some(),
         reused: false,
         represented: lock.is_some() && represented_request(&args),
@@ -562,12 +622,18 @@ fn main() -> ExitCode {
     rustc_driver::install_ctrlc_handler();
     let status = rustc_driver::catch_with_exit_code(|| rustc_driver::compiler_entrypoint(&args, &mut callbacks));
     if status == ExitCode::SUCCESS
-        && !callbacks.reused
+        && (callbacks.check_only || !callbacks.reused)
         && callbacks.reuse_allowed
         && mixed_diagnostics::quiet()
-        && callbacks.directory.join("checked.rlink").is_file()
+        && (callbacks.check_only || callbacks.directory.join("checked.rlink").is_file())
         && let Some(context) = callbacks.context.take()
-        && let Err(e) = mixed_cache::publish(&callbacks.index, &callbacks.directory, context, std::mem::take(&mut callbacks.records))
+        && let Err(e) = mixed_cache::publish(
+            &callbacks.index,
+            &callbacks.directory,
+            context,
+            std::mem::take(&mut callbacks.records),
+            callbacks.check_only,
+        )
     {
         trace(&format!("cache-not-retained={e}"));
     }

@@ -55,14 +55,14 @@ pub fn context(tcx: TyCtxt<'_>, native: &BTreeSet<String>) -> Option<Value> {
 pub fn read(index: &Path) -> Option<Value> {
     let state: Value = serde_json::from_slice(&fs::read(index).ok()?).ok()?;
     (state["schema"] == "lustr.checked-mixed-link"
-        && state["version"] == 2
+        && state["version"] == 3
         && state["rustc"] == env!("LUSTR_BUILD_RUSTC_COMMIT")
         && state["native"] == env!("LUST_BUILD_HASH"))
     .then_some(state)
 }
 
-pub fn publish(index: &Path, directory: &Path, context: Value, kernels: Vec<Value>) -> std::io::Result<()> {
-    let state = json!({"schema":"lustr.checked-mixed-link","version":2,
+pub fn publish(index: &Path, directory: &Path, context: Value, kernels: Vec<Value>, check_only: bool) -> std::io::Result<()> {
+    let state = json!({"schema":"lustr.checked-mixed-link","version":3,"check_only":check_only,
         "rustc":env!("LUSTR_BUILD_RUSTC_COMMIT"),"native":env!("LUST_BUILD_HASH"),
         "directory":directory,"context":context,"kernels":kernels});
     fs::create_dir_all(index.parent().unwrap())?;
@@ -127,6 +127,9 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
         return None;
     }
     let state = compiler.cached.clone()?;
+    if state["check_only"].as_bool()? != compiler.check_only {
+        return None;
+    }
     let kernels = state["kernels"].as_array()?;
     if kernels.is_empty() {
         return None;
@@ -216,9 +219,19 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
             return None;
         }
         let source = unit.join("kernel.rs");
-        let output = fresh(&unit, "edit", "o")?;
         let generated = format!("{}{}{}", text(kernel, "prefix")?, candidate.body, text(kernel, "suffix")?);
         fs::write(&source, generated).ok()?;
+        if compiler.check_only {
+            let (code, _, diagnostic) =
+                super::native::check(&source, &name, &identity, tcx.sess.overflow_checks(), tcx.sess.opts.debug_assertions)?;
+            super::trace(&diagnostic);
+            if code != 0 {
+                return None;
+            }
+            kernel["body"] = json!(candidate.body);
+            continue;
+        }
+        let output = fresh(&unit, "edit", "o")?;
         let (code, native_symbol, diagnostic) =
             super::native::compile(&source, &output, &name, &identity, tcx.sess.overflow_checks(), tcx.sess.opts.debug_assertions)?;
         super::trace(&diagnostic);
@@ -240,10 +253,19 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
         fs::rename(linked, unit.join("native-link.o")).ok()?;
         kernel["body"] = json!(candidate.body);
     }
-    super::mixed_objects::relink(tcx.sess, &owned).ok()?;
-    publish(&compiler.index, &owned, current, updated).ok()?;
+    if compiler.check_only {
+        // Publish only after the complete invocation, including the original
+        // metadata encoder and its diagnostics, has actually succeeded.
+        compiler.directory = owned;
+        compiler.context = Some(current);
+        compiler.records = updated;
+        super::trace(&format!("reused-check-context=1 full-analysis=0 native-check-edits={}", changed.len()));
+    } else {
+        super::mixed_objects::relink(tcx.sess, &owned).ok()?;
+        publish(&compiler.index, &owned, current, updated, false).ok()?;
+        super::trace("reused-rust-objects=1 full-analysis=0");
+    }
     compiler.reused = true;
-    super::trace("reused-rust-objects=1 full-analysis=0");
     Some(())
 }
 

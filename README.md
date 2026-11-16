@@ -24,7 +24,9 @@ and runs one unchanged Cargo executable containing Lust-generated scalar code,
 Rust-generated async code, a real procedural macro and a `no_std`/`alloc`
 dependency. Its first qualified body edit reuses the retained Lust session and
 checked Rust objects. Signature, macro and dependency changes invalidate that
-reuse; invalid Rust is rejected. General mixed-function coverage and equivalent
+reuse; invalid Rust is rejected. Ordinary Cargo checks can also reuse checked
+scalar bodies in application and library targets while Rust writes fresh,
+valid metadata for the edited source. General mixed-function coverage and equivalent
 complete-work performance remain open.
 
 The [source toolchain builder](tools/build-mixed-toolchain.rs) assembles the
