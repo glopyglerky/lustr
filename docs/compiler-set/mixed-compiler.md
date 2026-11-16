@@ -101,6 +101,16 @@ Methods supplied by user traits stay with the complete compiler. Unchanged
 method bodies retain their checked bindings only while the full semantic
 context matches; edited bodies run the original Rust queries and binding check.
 
+The native host declarations use libc's actual variadic `fcntl` interface.
+Fixed three-argument declarations conflicted with standard-library imports
+when the compiler itself was built using the pinned Cranelift complement.
+This is a host ABI correction; it does not change the Rust application language
+or substitute a compiler backend.
+The source-built native revision `c32b145b439c21fc` passed the mixed-project
+and complete-entry contracts, 380 native unit tests, independent Rust-caller
+object execution and both ordinary native unwind/drop fixtures. Qualification
+of the pinned Cranelift build in CI remains separate from these LLVM SDK builds.
+
 ## Build and qualify
 
 For a fresh local build, compile `tools/build-mixed-toolchain.rs` with Rust and
@@ -108,7 +118,13 @@ run it with the repository, matching upstream Rust SDK, built TinyCC directory
 and a new output directory outside the source checkout. It checks the declared
 native source identities, builds Lust, the lustr entry, Cargo integration and
 mixed driver and native C ABI library, and assembles `toolchain/bin/lustr`.
-The supplied TinyCC static archive must support shared linking. Dependencies must already be
+The supplied TinyCC static archive must support shared linking.
+`tools/build-tinycc-pic.rs` builds the pinned upstream source into a new
+directory with its normal optimization and position-independent code, then
+checks the complete archive through an actual shared link. Its arguments are
+the TinyCC source checkout and new output directory; use the resulting
+`install` directory as the toolchain constructor's TinyCC input.
+Dependencies must already be
 available for locked offline Cargo builds. No historical lustr package is
 required. The `source-native-runtime` feature binds the entry to Cargo's actual
 native build receipt; the complete Rust SDK keeps its existing exact pin.
@@ -140,7 +156,9 @@ toolchain using symlinks; keep the referenced baseline installed. It does not
 modify that baseline or claim to create a standalone release archive. The
 destination's `bin/lustr` provides normal Cargo commands automatically.
 
-`tools/native-mixed-qualification.rs` tests cold and retained native object
+Compile `tools/native-mixed-qualification.rs` beside the selected `lust-core`;
+the original wire protocol also binds the core's actual file identity.
+The qualifier tests cold and retained native object
 generation with an independent Rust caller. `tools/mixed-compiler-qualification.rs`
 tests the real Cargo graph, proc macro, async caller, real `core`/`alloc`
 library, native edit, invalid Rust/recovery, signature change and dependency/

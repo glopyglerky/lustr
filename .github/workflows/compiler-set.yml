@@ -18,6 +18,7 @@ on:
       - 'upstream/lust-integration.*'
       - 'tools/lust-upstream-check.rs'
       - 'tools/*mixed*'
+      - 'tools/build-tinycc-pic.rs'
       - '.github/workflows/compiler-set.yml'
   pull_request:
     paths:
@@ -35,6 +36,7 @@ on:
       - 'upstream/lust-integration.*'
       - 'tools/lust-upstream-check.rs'
       - 'tools/*mixed*'
+      - 'tools/build-tinycc-pic.rs'
       - '.github/workflows/compiler-set.yml'
   workflow_dispatch:
 
@@ -91,7 +93,6 @@ jobs:
     env:
       RUSTUP_TOOLCHAIN: nightly-2026-11-09
       CARGO_BUILD_JOBS: '2'
-      GIT_ALTERNATE_OBJECT_DIRECTORIES: ${{ github.workspace }}/.lust-pristine-reference/.git/objects
     steps:
       - uses: actions/checkout@v4
       - name: Obtain the exact pristine reference objects
@@ -103,8 +104,17 @@ jobs:
           persist-credentials: false
       - name: Install matching complete Rust development libraries
         run: rustup toolchain install nightly-2026-11-09 --profile minimal --component rustc-dev --component llvm-tools --component rustfmt --target wasm32-unknown-unknown
-      - name: Build upstream TinyCC
-        run: compiler/native/scripts/build-tcc.sh
+      - name: Obtain the pinned TinyCC source
+        uses: actions/checkout@v4
+        with:
+          repository: TinyCC/tinycc
+          ref: 43c7708b85681a2fd4451c8a541af4494a8919b2
+          path: .tinycc-pristine-reference
+          persist-credentials: false
+      - name: Build TinyCC constructor
+        run: rustc --edition=2024 tools/build-tinycc-pic.rs -o "$RUNNER_TEMP/build-tinycc-pic"
+      - name: Build upstream TinyCC with shared-library relocations
+        run: '"$RUNNER_TEMP/build-tinycc-pic" "$GITHUB_WORKSPACE/.tinycc-pristine-reference" "$RUNNER_TEMP/lustr-tinycc"'
       - name: Prepare locked dependencies for offline source builds
         run: |
           cargo fetch --manifest-path compiler/native/Cargo.toml --locked
@@ -115,7 +125,9 @@ jobs:
       - name: Build source toolchain constructor
         run: rustc --edition=2024 tools/build-mixed-toolchain.rs -o "$RUNNER_TEMP/build-mixed-toolchain"
       - name: Build complete local toolchain without a predecessor package
-        run: '"$RUNNER_TEMP/build-mixed-toolchain" "$GITHUB_WORKSPACE" --current-sdk "$GITHUB_WORKSPACE/compiler/native/third_party/tcc" "$RUNNER_TEMP/lustr-source-built"'
+        env:
+          GIT_ALTERNATE_OBJECT_DIRECTORIES: ${{ github.workspace }}/.lust-pristine-reference/.git/objects
+        run: '"$RUNNER_TEMP/build-mixed-toolchain" "$GITHUB_WORKSPACE" --current-sdk "$RUNNER_TEMP/lustr-tinycc/install" "$RUNNER_TEMP/lustr-source-built"'
       - name: Build real mixed-project qualifier
         run: rustc --edition=2024 tools/mixed-compiler-qualification.rs -o "$RUNNER_TEMP/mixed-compiler-qualification"
       - name: Execute mixed Cargo graph, edits, invalidation, warnings and rejection

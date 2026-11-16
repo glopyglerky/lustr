@@ -1040,6 +1040,32 @@ index 01217ad379d1e563a95cc34dfccbfd4ce4fbebca..00a9e7588a6cba4893f69482837a8e84
              continue;
          }
          let cx = Cx { regions: &p.regions, index: &p.gx.index };
+diff --git a/src/client.rs b/src/client.rs
+index 136b1f4aa7efc99f8e5bd2b23446fad2578f1851..289d016b344c2e753a3ded2f1e97f62cdda8fd95 100644
+--- a/src/client.rs
++++ b/src/client.rs
+@@ -24,7 +24,7 @@ use std::path::{Path, PathBuf};
+ unsafe extern "C" {
+     fn setsid() -> i32;
+     fn flock(fd: i32, operation: i32) -> i32;
+-    fn fcntl(fd: i32, cmd: i32, arg: i32) -> i32;
++    fn fcntl(fd: i32, cmd: i32, ...) -> i32;
+ }
+ const LOCK_EX: i32 = 2;
+ const LOCK_NB: i32 = 4;
+diff --git a/src/daemon.rs b/src/daemon.rs
+index db807083aa56d24a804b47f7ffd31e33c563ad52..adddcca6003fb6ff0d06bd1fe5cd477d9c6a5110 100644
+--- a/src/daemon.rs
++++ b/src/daemon.rs
+@@ -62,7 +62,7 @@ unsafe extern "C" {
+     fn signal(signum: i32, handler: usize) -> usize;
+     fn pipe(fds: *mut i32) -> i32;
+     fn write(fd: i32, buf: *const u8, count: usize) -> isize;
+-    fn fcntl(fd: i32, cmd: i32, arg: i32) -> i32;
++    fn fcntl(fd: i32, cmd: i32, ...) -> i32;
+     fn getuid() -> u32;
+     #[cfg(target_os = "linux")]
+     fn setpriority(which: i32, who: u32, prio: i32) -> i32;
 diff --git a/src/driver/cache.rs b/src/driver/cache.rs
 index da28835400f894866adb85f436e2cbdf109797d7..bec4630c3e8d1123c282a9dc2ccfcefe9c0f68a4 100644
 --- a/src/driver/cache.rs
@@ -1451,6 +1477,19 @@ index 8eabf97640455036f5f7c895cd034b98f4c5b9d3..5803e7fdd0e0f10d68e2587afa8ec68f
      /// Before a front image save (src/image.rs): joins the session's side
      /// threads, so the image holds no handle of a thread that ends with
      /// this process.
+diff --git a/src/image.rs b/src/image.rs
+index 44658f0437e5c4c89e442801c8c17b24afe69d5e..7f98b8ae867793b32fe1e36306b2dfb8ecda0bab 100644
+--- a/src/image.rs
++++ b/src/image.rs
+@@ -155,7 +155,7 @@ unsafe extern "C" {
+     fn pwrite(fd: c_int, buf: *const c_void, count: usize, off: i64) -> isize;
+     fn copy_file_range(fd_in: c_int, off_in: *mut i64, fd_out: c_int, off_out: *mut i64, len: usize, flags: u32) -> isize;
+     fn flock(fd: c_int, op: c_int) -> c_int;
+-    fn fcntl(fd: c_int, cmd: c_int, arg: c_int) -> c_int;
++    fn fcntl(fd: c_int, cmd: c_int, ...) -> c_int;
+     fn fork() -> c_int;
+     fn setsid() -> c_int;
+     fn setpriority(which: c_int, who: u32, prio: c_int) -> c_int;
 diff --git a/src/ir.rs b/src/ir.rs
 index e65c6c518a7494fab411cfad2249c8fda39b3ec1..10e48c8551bceb2fc23e8bf1fd03f71585a470c5 100644
 --- a/src/ir.rs
