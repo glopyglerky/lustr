@@ -71,6 +71,29 @@ models discard the pool. These frontend
 comparisons do not link or execute a foreign program. Native macOS CI remains
 required, including the original differential, daemon and runtime gates.
 
+## Darwin runtime corrections
+
+The candidate also restores the focused Darwin corrections from
+`cfc37793590d3c4bef4069447ce43f9abed366a7`, after checking each assumption against
+the matching Rust SDK and libc sources. Darwin permissions and file-type
+hashing use the platform's 16-bit `mode_t`; file debugging obtains its optional
+path through `F_GETPATH` with a `PATH_MAX` buffer; stopped and continued process
+statuses follow Darwin's wait macros; and command debugging includes
+`create_pidfd` only on Linux. The Linux implementations remain selected by
+their existing target configuration.
+
+The private diagnostic compiler builds with these corrections. The six
+affected inherited fixtures pass frontend checks for both Darwin target
+architectures. All six inherited differential filters also pass on Linux
+against the CI-pinned Rust 1.99.0 oracle: nine cases, zero failures. Two
+formatting differences observed against Rust 1.102 remain preserved as
+reference-version differences, rather than being counted as successful
+comparisons. An isolated test of the exact descriptor-path C body checks
+normal, empty, failed, unterminated and append-to-existing-buffer cases under
+AddressSanitizer and UndefinedBehaviorSanitizer. These checks do not establish
+native Darwin linking or execution; the original macOS CI gate remains
+required.
+
 The native CI workflow now retains source, platform and compiler identities
 and the complete original gate log on both success and failure. Its tests,
 runner labels and failing exit statuses remain unchanged. The recent empty
