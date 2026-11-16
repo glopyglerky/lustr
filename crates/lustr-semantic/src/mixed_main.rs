@@ -5,6 +5,7 @@ extern crate rustc_codegen_llvm;
 extern crate rustc_codegen_ssa;
 extern crate rustc_data_structures;
 extern crate rustc_driver;
+extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_interface;
 extern crate rustc_metadata;
@@ -37,6 +38,7 @@ use std::{
 rustc_driver::override_c_allocator_in_binary!();
 mod mixed_backend;
 mod mixed_cache;
+mod mixed_diagnostics;
 mod mixed_objects;
 
 #[allow(dead_code)]
@@ -271,6 +273,13 @@ impl Callbacks for Compiler {
                 .all(|kind| matches!(kind, rustc_session::config::OutputType::Exe | rustc_session::config::OutputType::DepInfo));
         self.reuse_allowed &= config.opts.lint_opts.iter().all(|(name, _)| name == "unused_crate_dependencies");
         if self.enabled {
+            let previous = config.psess_created.take();
+            config.psess_created = Some(Box::new(move |session| {
+                if let Some(previous) = previous {
+                    previous(session);
+                }
+                mixed_diagnostics::install();
+            }));
             config.make_codegen_backend = Some(Box::new(|_| Box::new(mixed_backend::Backend::new())));
             config.override_queries = Some(mixed_backend::providers);
         }
@@ -514,6 +523,7 @@ fn main() -> ExitCode {
     if status == ExitCode::SUCCESS
         && !callbacks.reused
         && callbacks.reuse_allowed
+        && mixed_diagnostics::quiet()
         && callbacks.directory.join("checked.rlink").is_file()
         && let Some(context) = callbacks.context.take()
         && let Err(e) = mixed_cache::publish(&callbacks.index, &callbacks.directory, context, std::mem::take(&mut callbacks.records))

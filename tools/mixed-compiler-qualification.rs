@@ -136,6 +136,24 @@ fn main() {
     build("macro", true);
     execute("macro", b"2105\n");
     assert!(!fs::read_to_string(&trace).unwrap().contains("reused-rust-objects=1"), "changed macro expansion reused stale work");
+    // Late Rust warnings must survive a body-only edit. Until diagnostic
+    // replay is connected, a warning-bearing context uses full analysis.
+    let warned = format!("{edited}\nfn unused_warning(){{}}\n");
+    fs::write(&trace, "").unwrap();
+    fs::write(&path, &warned).unwrap();
+    build("warning-cold", true);
+    execute("warning-cold", b"2105\n");
+    assert!(fs::read_to_string(work.join("warning-cold.stderr")).unwrap().contains("function `unused_warning` is never used"));
+    fs::write(&trace, "").unwrap();
+    fs::write(&path, warned.replace("x ^ 19", "x ^ 18")).unwrap();
+    build("warning-edit", true);
+    execute("warning-edit", b"2104\n");
+    assert!(fs::read_to_string(work.join("warning-edit.stderr")).unwrap().contains("function `unused_warning` is never used"));
+    assert!(!fs::read_to_string(&trace).unwrap().contains("reused-rust-objects=1"), "warning context skipped its late diagnostics");
+    fs::write(&trace, "").unwrap();
+    fs::write(&path, format!("#![deny(dead_code)]\n{warned}")).unwrap();
+    build("warning-denied", false);
+    assert!(fs::read_to_string(work.join("warning-denied.stderr")).unwrap().contains("function `unused_warning` is never used"));
     let mut daemons = 0;
     loop {
         let mut status = 0;
@@ -151,6 +169,6 @@ fn main() {
     fs::write(work.join("owned-daemons.status"), format!("{daemons} adopted native daemon(s), actual idle exit0; no remaining children\n"))
         .unwrap();
     println!(
-        "real Cargo/proc macro + core/alloc no_std library + mixed execution + native warm edit + rejection/recovery + signature/dependency/macro invalidation: actual0"
+        "real Cargo/proc macro + core/alloc no_std library + mixed execution + native warm edit + rejection/recovery + signature/dependency/macro invalidation + late warning/deny preservation: actual0"
     );
 }

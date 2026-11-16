@@ -55,14 +55,14 @@ pub fn context(tcx: TyCtxt<'_>, native: &BTreeSet<String>) -> Option<Value> {
 pub fn read(index: &Path) -> Option<Value> {
     let state: Value = serde_json::from_slice(&fs::read(index).ok()?).ok()?;
     (state["schema"] == "lustr.checked-mixed-link"
-        && state["version"] == 1
+        && state["version"] == 2
         && state["rustc"] == env!("LUSTR_BUILD_RUSTC_COMMIT")
         && state["native"] == env!("LUST_BUILD_HASH"))
     .then_some(state)
 }
 
 pub fn publish(index: &Path, directory: &Path, context: Value, kernels: Vec<Value>) -> std::io::Result<()> {
-    let state = json!({"schema":"lustr.checked-mixed-link","version":1,
+    let state = json!({"schema":"lustr.checked-mixed-link","version":2,
         "rustc":env!("LUSTR_BUILD_RUSTC_COMMIT"),"native":env!("LUST_BUILD_HASH"),
         "directory":directory,"context":context,"kernels":kernels});
     fs::create_dir_all(index.parent().unwrap())?;
@@ -110,7 +110,7 @@ fn literal_edit(old: &str, new: &str) -> bool {
 /// A changed expansion, definition, dependency or attribute returns to complete
 /// Rust analysis in the SAME invocation, reusing the expansion already done.
 pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
-    if !compiler.enabled || !compiler.reuse_allowed {
+    if !compiler.enabled || !compiler.reuse_allowed || !super::mixed_diagnostics::quiet() {
         return None;
     }
     let state = compiler.cached.clone()?;
@@ -176,6 +176,10 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
         }
     }
     tcx.sess.dcx().abort_if_errors();
+    if !super::mixed_diagnostics::quiet() {
+        super::trace("reuse-miss=diagnostics");
+        return None;
+    }
     let mut updated = kernels.clone();
     for kernel in &mut updated {
         let name = text(kernel, "name")?.to_owned();

@@ -90,6 +90,11 @@ working directory, environment and compiler binary identities.
 This small certificate is the first tested mixed edit, not a substitute for
 general dependency tracking. Expanding it requires preserving diagnostics,
 source locations, macro behavior, types, generics and global obligations.
+Only successful requests without Rust diagnostics establish this certificate.
+The bridge observes and forwards Rust's existing diagnostic-tracking callback;
+it keeps the original emitter and incremental diagnostic side effects. A
+request producing diagnostics uses complete analysis, preserving warnings
+until version-bound diagnostic replay is connected to the retained path.
 
 ## Build and qualify
 
