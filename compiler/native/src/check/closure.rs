@@ -893,7 +893,11 @@ impl<'p> Ctx<'p> {
         let saved_loops = std::mem::take(&mut self.loops);
         let returns_before = self.returns_seen;
         self.closure_rets.push(ret);
+        // Creating a closure in a const context does not execute its body.
+        // A const block inside that body still establishes its own context.
+        let const_context = std::mem::replace(&mut self.const_context, false);
         let bt = self.expr(body, (ret == output).then_some(ret));
+        self.const_context = const_context;
         // Edition 2024 never-type fallback: a body that only diverges
         // (`|| { ..; panic!(); }`) leaves the return type open, and rustc
         // makes it `!`. Without this the closure's signature zonks to

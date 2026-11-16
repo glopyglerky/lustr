@@ -239,9 +239,10 @@ fn forget_used(dir: &Path) {
 /// outside the source bytes (`env!`, `option_env!`, the `include!`
 /// family): such a request never enters this cache, since its key
 /// cannot see env vars or included files (added for W-MACRO).
+#[path = "../../../../crates/lustr-native-core/src/native_cache_inputs.rs"]
+mod native_inputs;
 fn src_reads_outside(src: &[u8]) -> bool {
-    const NEEDLES: &[&[u8]] = &[b"env!", b"option_env!", b"include!", b"include_str!", b"include_bytes!"];
-    NEEDLES.iter().any(|n| src.windows(n.len()).any(|w| w == *n))
+    native_inputs::reads_outside(src)
 }
 
 impl Cache {

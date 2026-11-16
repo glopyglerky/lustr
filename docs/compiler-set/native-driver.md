@@ -17,10 +17,10 @@ compiler's complete recheck; the formatter supplies only derived panic text.
 
 Status: source candidate, not a released or fully qualified replacement.
 
-The required architecture is two complementary native compilers in Lustr,
-composed through Cargo's existing unit graph and a Cargo-facing integration.
-The historical full-Rust compatibility route below remains identifiable; it
-does not meet the no-production-rustc replacement requirement. The new explicit
+The current architecture combines Lust's supported native path with an
+identified Rust implementation through lustr and Cargo. Importing that
+implementation is allowed. The full-Rust executable route below is relevant
+to delivery. The retained experimental
 `lustr_native_object_v1` phase experiment shares original native semantic/IR
 APIs and emits real freestanding objects without fake rlib/rmeta. Its primitive
 scope is under qualification. Crate resolution, metadata/imports, complete Rust

@@ -98,6 +98,11 @@ fn main() {
     if let Ok(bytes) = std::fs::read(root.join("Cargo.toml")) {
         bytes.hash(&mut h);
     }
+    // The explicit owned cache-policy join is a compiler input for both the
+    // standalone build and the native-core wrapper that runs this helper.
+    let input_policy = root.join("../../crates/lustr-native-core/src/native_cache_inputs.rs");
+    ("lustr-native-cache-inputs", std::fs::read(&input_policy).expect("native cache input policy is required")).hash(&mut h);
+    println!("cargo:rerun-if-changed={}", input_policy.display());
     hash_tree(&mut h, &tcc.join("bin"));
     hash_tree(&mut h, &lib);
     println!("cargo:rustc-env=LUST_BUILD_HASH={:016x}", h.finish());

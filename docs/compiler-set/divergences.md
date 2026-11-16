@@ -1,3 +1,14 @@
+# Current product direction
+
+lustr combines Lust's fast supported subset with complete Rust compilation
+through an identified upstream Rust implementation. Importing that
+implementation is allowed. The lack of a complete independent native frontend
+or image schema does not block this architecture. Preserve and qualify the
+actual Cargo/metadata and engine boundaries.
+
+The native experiments below retain their evidence and limitations. They are
+not prerequisites for the current combined toolchain.
+
 # Fork ownership and divergences
 
 Lustr and BlueFe are projects with their own entry points, source maps and design

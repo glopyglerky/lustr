@@ -4,8 +4,9 @@ This pre-alpha preview packages unchanged upstream Lust, bounded native Lustr
 library additions and the official unmodified Rust nightly compatibility SDK.
 The [Lustr release](https://github.com/glopyglerky/lustr/releases/tag/native-preview-2026.11.15-1)
 and [blueFe release](https://github.com/glopyglerky/blueFe/releases/tag/native-preview-2026.11.15-1)
-carry identical assets. Full native Rust, Rust library metadata, general native
-Cargo routing and required full-project speed remain incomplete.
+carry identical assets. Independent native Rust and metadata expansion remain
+incomplete research. Current delivery combines this Rust implementation with
+Lust's fast supported path; the [current contract](native-contract.md) applies.
 
 ## Source and delivery
 

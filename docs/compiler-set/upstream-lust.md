@@ -2,8 +2,9 @@
 
 Preserve the pristine pinned Lust reference and allow a small, explicit reviewed
 integration diff. Focused interfaces inside Lust may share phase results and
-retained state, eliminating duplicate parsing or rechecking. Substantive missing
-Rust support stays Lustr-owned. Preserve supported semantics and required speed.
+retained state, eliminating duplicate parsing or rechecking. Preserve supported
+semantics and speed. Imported Rust implementation is allowed as a separately
+identified component; independent semantic reconstruction is not required.
 The [native compiler contract](native-contract.md) remains the full-project goal.
 
 ## Pristine reference
@@ -15,7 +16,7 @@ their provenance. The upstream default was observed at that revision; this is
 not a claim about its current remote state.
 
 The integrated tree lives at `compiler/native`. Its declared diff is currently
-**empty**. No nonempty integration patch has been reviewed or qualified. Existing
+**empty**. No nonempty integration patch has been admitted. Existing
 experimental owned paths and historical compatibility artifacts retain their
 original scope; this policy does not promote them or relax blueFe's Rust pin.
 
@@ -37,11 +38,11 @@ Before admitting a nonempty integration, retain:
    benchmark. No zero-overhead or full-project gain is presumed.
 
 Keep proven improvements and unique experiments. Replace a working path only
-after its replacement is verified. No copied compiler, hidden overlay, arbitrary
+after its replacement is verified. No hidden overlay, arbitrary
 drift, generated source substitution or unrecorded build-time patch is allowed.
 Source/API compatibility and any promised prebuilt Rust-binary interoperability
-are distinct obligations. Production Rust compilation must not use rustc, directly
-or indirectly; bootstrap/oracle use stays explicitly identified.
+are distinct obligations. Production full Rust may use the pinned Rust
+implementation. Preserve its licenses and provenance and identify its role.
 
 ## Source guard
 

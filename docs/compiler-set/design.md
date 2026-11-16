@@ -1,3 +1,19 @@
+# lustr compiler design
+
+The current architecture combines the existing Lust implementation with a
+pinned/imported Rust compiler implementation in one delivered toolchain. Preserve
+Lust's fast supported path. Full Rust and no_std can use the Rust implementation;
+they do not require reconstructing semantics through the native image format.
+
+Use Cargo's existing graph and parallelism. Respect its artifact and metadata
+contracts; Lust currently has no compatible rlib/rmeta producer. Reuse the
+existing entry, runtime packaging and qualification first. The failed
+late-loaded compiler library and successful executable startup are distinct.
+See the [current contract](native-contract.md).
+
+The material below is retained design history. Its independent compiler,
+no-production-rustc and full-language speed requirements are superseded.
+
 # Native Lustr compiler design
 
 Status: native compiler requirement, following the user's clarification.

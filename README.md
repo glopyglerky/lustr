@@ -1,25 +1,24 @@
-# Lustr
+# lustr
 
-Lustr is being developed to extend the native [Lust compiler](https://github.com/t3dotgg/lust-lang)
-to full Rust while retaining its fast frontend, incremental daemon and
-development code generation. blueFe is the toolchain integration project.
+lustr combines [Lust](https://github.com/t3dotgg/lust-lang)'s fast native
+compilation of its supported subset with complete Rust compilation through a
+pinned Rust implementation. blueFe delivers the combined toolchain.
 
-Existing Lust-supported code must retain Lust's behavior and required speed. Lustr must supply
-the missing Rust language, library and crate support in its own code. Full, unchanged Rust
-projects with measured fast compilation are the requirement. Forwarding them to
-rustc does not satisfy it. See the [native compiler contract](docs/compiler-set/native-contract.md).
+Using or importing upstream rustc code is allowed. The project does not require
+rebuilding every Rust feature independently. Speed preservation applies to the
+Lust-supported path; upstream speed ratios are not measurements of this
+integration. See the [current contract](docs/compiler-set/native-contract.md).
 
-The active delivery is complete native replacement of rustc. Lust and Lustr are
-two complementary native compilers; a Cargo-facing integration entry composes
-qualified compilation units using Cargo's existing graph and parallelism.
-Lustr must implement the missing semantics and native artifacts, with no
-production rustc fallback. A freestanding object-phase experiment now reuses
-native parsing, checking, lowering and borrow checking in one pass, then emits
-an inspected object without the host runtime. It remains under qualification:
-full core/optional alloc, native crate metadata, Cargo interoperability and
-project speed are open. `no_std` remains required within full coverage, rather
-than a separate campaign. Optional formatter/unsafe-function expansion is paused.
-The [no_std corpus](tests/no-std-corpus/README.md) retains the full acceptance path.
+The existing candidate packages `lustr`, a Cargo-facing `rustc` entry, Lust,
+Cargo and the full Rust compiler/runtime. Start with its
+[commands and qualification](docs/compiler-set/native-preview-2026.11.15-1.md).
+Full-language requests retain real Rust metadata and Cargo behavior. Requests
+that Lust supports can compile through its native path. Further work must
+qualify this combined journey and preserve the fast path.
+
+The following native expansion experiments are retained research. Their
+incomplete language and metadata coverage is not a requirement to replace the
+imported full compiler before delivering lustr.
 
 An experimental [native semantic artifact](docs/compiler-set/proofs/native-crates.md)
 now binds checked structural signatures to their complete object and imports real
@@ -105,7 +104,7 @@ see the [interface and limits](docs/compiler-set/proofs/native-unsafe-blocks.md)
 `compiler/native` preserves the pristine reference pinned by
 [`upstream/lust.pin`](upstream/lust.pin) plus an explicit integration diff,
 currently empty. Focused shared phase/state interfaces may use that diff;
-substantive missing support stays Lustr-owned. The guard binds reference,
+imported Rust components retain separate identities. The guard binds reference,
 patch, qualification record and integrated result under the
 [source policy](docs/compiler-set/upstream-lust.md). Correctness, independent
 review and appropriate performance evidence are required. No hidden overlay or

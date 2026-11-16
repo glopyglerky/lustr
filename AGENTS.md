@@ -1,45 +1,31 @@
 # Work on this fork
 
+
 ## Current priority and ownership
 
-The user's later clarification makes native compiler expansion the current
-requirement: start with Lust, retain its fast compilation path for everything it
-supports, and extend that pipeline through Lustr to cover the full Rust language.
-blueFe delivers the combined toolchain. A coordinator that forwards full Rust
-to rustc and rustc build tuning do not complete this requirement. Migration
-toward memory-safe Rust remains a separate, later optimization goal.
+The current requirement is complete Rust compilation through lustr, preserving
+Lust's fast native compilation for its supported subset. lustr is the combined
+project/toolchain name. Importing and using upstream rustc implementation is
+explicitly allowed with licenses, notices and pinned provenance. Do not require
+independent reconstruction of all Rust semantics or equal speed for every
+full-Rust feature.
 
-Keep the pristine upstream Lust reference pinned by `upstream/lust.pin`.
-`compiler/native` may add a small, explicit, reviewed integration diff to that
-reference when focused interfaces are necessary to share semantic state and
-avoid duplicate parsing or rechecking. Substantive missing Rust support, fixtures
-and helpers remain Lustr-owned. Follow `docs/compiler-set/upstream-lust.md`:
-bind the reference, exact patch, qualification record and expected integrated
-tree in the source guard. The current integration diff is empty. No arbitrary
-drift, copied implementation, generated overlay or hidden build-time patch is
-allowed. Admission requires correctness, independent review and performance
-evidence appropriate to the change, preserving supported behavior and required
-speed. A necessary interface need not win an unrelated optimization benchmark.
-This policy does not relax blueFe's separate protected Rust pin or its rules.
-The current root Cargo project builds the compiler entry candidate in `src/`.
-The owned C ABI native entry is `crates/lustr-native-core`; the transitional
-coordinator is a separate project in `crates/lustr`. Read
-[the entry contract](docs/compiler-set/native-driver.md) before changing routing.
-Do not mistake this integration for completed native language coverage. The
-optional pinned semantic driver is `crates/lustr-semantic`. Keep the primary
-README, source map, decisions and divergence records about this fork's actual
-behavior. Preserve required upstream compatibility, licensing and source history.
-Do not claim complete native Rust or whole-toolchain memory safety prematurely.
+Use the simplest working combination. Preserve Cargo's real graph and artifact
+contracts. Reuse and investigate the prior integration before repeating a
+failed approach. The native semantic-image work stays retained research; do not
+continue feature-by-feature expansion as the assumed delivery architecture.
+
+Keep the pristine Lust reference and explicit integration guard. Imported Rust
+must remain separately identified; no hidden changes to Lust or blueFe's
+protected Rust pin. Read the current contract and entry contract before routing
+changes. Preserve published PR7, unique source and failed evidence.
 
 ## Product contract
 
-Follow [the native compiler contract](docs/compiler-set/native-contract.md).
-Use upstream Lust with only its declared integration diff for supported code and
-implement missing support in Lustr-owned code through qualified shared interfaces.
-Preserve accepted behavior and differential testing
-discipline. Added features must execute through native compilation, with actual
-runtime and rejection evidence. Do not rewrite applications into the subset,
-disable required checks, or count a rustc fallback as native feature support.
+Follow [the compiler contract](docs/compiler-set/native-contract.md). Full Rust
+may use the imported upstream implementation. Preserve Lust's supported path
+and qualify actual combined behavior. Never fabricate Rust metadata, rewrite
+applications into the subset or conceal the engine that produced an artifact.
 
 ## Correctness rules
 

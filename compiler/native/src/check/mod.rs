@@ -4005,7 +4005,8 @@ impl<'p> Ctx<'p> {
 
     fn check_native_const_call(&mut self, r: Res, span: Span) {
         if matches!(r, Res::NativeFn(_) | Res::Indirect)
-            && (self.const_context || self.f.loc.is_const_init() || self.f.is_const)
+            && (self.const_context
+                || (self.closure_rets.is_empty() && (self.f.loc.is_const_init() || self.f.is_const)))
         {
             self.err(crate::ty::consteval::C_NONCONST, span, "cannot call a non-const native function or function pointer in a constant context", "Move the call out of the constant context.");
         }

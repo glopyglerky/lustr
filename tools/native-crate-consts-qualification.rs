@@ -20,6 +20,8 @@ pub(super) fn run(root:&std::path::Path,generation:&native_crate::Generation,bac
         ("direct","use original::{ANSWER,value};use other::ANSWER as OTHER;use only::NUMBER;use privateconst::value as PRIVATE_VALUE;const LOCAL:i64=ANSWER+1;fn main(){assert!(ANSWER==42);assert!(value()==42);assert!(OTHER==9);assert!(LOCAL==43);assert!(NUMBER==31);assert!(PRIVATE_VALUE()==37);}",true,""),
         ("values","use values::*;fn main(){assert!(EXPORTED==11);assert!(AGAIN==11);assert!(FLAG);assert!(LETTER=='λ');assert!(BIG==340282366920938463463374607431768211455u128);assert!(LOW==(-170141183460469231731687303715884105728i128));assert!(FLOAT==1.5);assert!(PAIR.0==7);assert!(PAIR.1);assert!(ARRAY[2]==8);assert!(REPEAT[4]==3);let z:[u8;0]=ZERO;let u:()=UNIT;assert!(read(PACKET)==19);assert!(mode(MODE)==23);assert!(mode(OFF)==0);assert!(mode(RECORD)==29);assert!(read(PACKET)==19);}",true,""),
         ("patterns","use original::ANSWER;use values::{FLAG,LETTER};fn main(){let x=42;match x{ANSWER=>{},_=>panic!(\"constant pattern\")};match true{FLAG=>{},_=>panic!(\"bool pattern\")};match 'λ'{LETTER=>{},_=>panic!(\"char pattern\")};}",true,""),
+        ("const-created-import-call","use original::value;const fn make()->fn()->i64{||value()}fn main(){assert!(make()()==42);}",true,""),
+        ("const-inside-import-closure","use original::value;const fn make()->fn()->i64{||const{if false{value()}else{42}}}fn main(){}",false,"L0631"),
         ("private","use values::HIDDEN;fn main(){let x=HIDDEN;}",false,"private"),
         ("type","use original::ANSWER;fn main(){let x:bool=ANSWER;}",false,"L0110"),
         ("assign","use original::ANSWER;fn main(){ANSWER=0;}",false,""),

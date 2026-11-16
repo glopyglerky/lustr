@@ -138,17 +138,17 @@ jobs:
           LUST_TEST_ABI_EVIDENCE: ${{ github.workspace }}/compiler-set-mixed-abi
         run: cargo +nightly-2026-11-05 test --manifest-path crates/lustr/Cargo.toml --locked --offline --test mixed_abi actual_cranelift -- --ignored --nocapture
       - name: Compile and test the coordinator with its complementary backend
-        run: target/debug/cargo-lust --engine cranelift test --manifest-path crates/lustr/Cargo.toml --target-dir crates/lustr/target/complement-tests --locked --offline
+        run: crates/lustr/target/debug/cargo-lust --engine cranelift test --manifest-path crates/lustr/Cargo.toml --target-dir crates/lustr/target/complement-tests --locked --offline
       - name: Build coordinator for measurement
         run: cargo +nightly-2026-11-05 build --manifest-path crates/lustr/Cargo.toml --release --locked --offline
       - name: Measure the selected backend
-        run: python3 crates/lustr/bench/measure.py --coordinator target/release/cargo-lust --engine cranelift --samples 6 --output compiler-set-cranelift.json
+        run: python3 crates/lustr/bench/measure.py --coordinator crates/lustr/target/release/cargo-lust --engine cranelift --samples 6 --output compiler-set-cranelift.json
       - name: Build native dependency for real-project qualification
         run: compiler/native/scripts/build-tcc.sh
       - name: Compile, test, and measure unchanged Lust with both backends
         env:
           LUST_TCC_HOME: ${{ github.workspace }}/compiler/native/third_party/tcc
-        run: python3 crates/lustr/bench/measure-project.py --coordinator "$GITHUB_WORKSPACE/target/release/cargo-lust" --project compiler/native --samples 2 --output compiler-set-lust-project.json
+        run: python3 crates/lustr/bench/measure-project.py --coordinator "$GITHUB_WORKSPACE/crates/lustr/target/release/cargo-lust" --project compiler/native --samples 2 --output compiler-set-lust-project.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -1,3 +1,22 @@
+# lustr delivery roadmap
+
+1. Inspect the existing combined entry and packaged runtime. Reproduce the
+   specific earlier failures and preserve their evidence.
+2. Deliver matched Lust, full Rust implementation, Cargo, sysroot and runtime
+   components through lustr, with explicit identities and licenses.
+3. Qualify full Rust, dependencies, build scripts, proc macros, no_std,
+   rejection, panic/drop and actual Cargo artifact behavior.
+4. Verify that supported work reaches Lust, retains its incremental path,
+   and preserves its performance in the integration.
+5. Continue GitHub/default-branch delivery without losing PR7 or experiments.
+
+Imported/copied Rust implementation is allowed. Semantic-image expansion is
+retained research and is not the assumed route to full-language delivery.
+See the [current contract](native-contract.md).
+
+The former roadmap below is historical; conflicting reconstruction,
+no-production-rustc and full-language speed requirements are superseded.
+
 # Native compiler implementation roadmap
 
 The active delivery is complete native replacement of rustc under the
