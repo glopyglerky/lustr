@@ -1041,6 +1041,10 @@ fn bytes_array_lit(p: &Program, t: &CTy, bytes: &[u8]) -> String {
 /// The generated code for one function, plus the glue it needs.
 #[derive(Default)]
 pub struct FnOut {
+    /// A lowered scalar body whose operations cannot unwind or access a foreign
+    /// runtime. Used only by the mixed compiler's C boundary. Cached generated
+    /// code retains this result with the body it describes.
+    pub mixed_total: bool,
     /// The fn's C text (`code_text`, `code_len`, `has_code`).
     pub text: CText,
     pub glue: HashSet<(Glue, CTy)>,
@@ -1298,6 +1302,9 @@ impl<'s> Slots<'s> {
 
 struct FnGen<'b, 'p> {
     p: &'p Program,
+    unwind: bool,
+    unwind_tables: bool,
+    nounwind: bool,
     body: &'b Body<'p>,
     out: String,
     glue: HashSet<(Glue, CTy)>,
@@ -2456,6 +2463,15 @@ fn trampoline(p: &Program, f: LocalDefId, slot: u32) -> String {
 /// Generates C for one function body. `base_line` is the line of its `fn` keyword, in the
 /// file that defines it; `slots` maps every LocalDefId to its slot in `lust_fns`.
 pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32]) -> FnOut {
+    gen_fn_policy(p, body, map, base_line, slots, false)
+}
+
+/// Generate a body already proved total by the mixed object boundary.
+pub fn gen_fn_total(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32]) -> FnOut {
+    gen_fn_policy(p, body, map, base_line, slots, true)
+}
+
+fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32], nounwind: bool) -> FnOut {
     if !has_generated_body(p, body.fn_id) {
         return FnOut { error: Some(no_body_error(p, body, body.fn_id)), ..Default::default() };
     }
@@ -2481,7 +2497,7 @@ pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: 
         Err(e) => return FnOut { error: Some(e), ..Default::default() },
     };
     let slots = Slots::new(slots);
-    let mut g = FnGen::new(p, body, map, base_line, &slots);
+    let mut g = FnGen::new(p, body, map, base_line, &slots, nounwind);
     g.collect_move_paths();
     if g.bad_move {
         return FnOut { error: Some(bad_move_error(p, body)), ..Default::default() };
@@ -2573,6 +2589,7 @@ pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: 
     ll_c.shrink_to_fit();
     let externs = externs.into_iter().map(shared_extern).collect();
     FnOut {
+        mixed_total: false,
         text: CText::Plain(code),
         glue,
         types,
@@ -2666,7 +2683,7 @@ fn static_drop_flags(p: &Program) -> (bool, bool) {
 impl<'b, 'p> FnGen<'b, 'p> {
     /// A generator for `body` with nothing emitted yet (`gen_fn`; an
     /// `ItemShim` builtin method's one-call body, `prim_shim`).
-    fn new(p: &'p Program, body: &'b Body<'p>, map: &'b SourceMap, base_line: u32, slots: &'b Slots<'b>) -> Self {
+    fn new(p: &'p Program, body: &'b Body<'p>, map: &'b SourceMap, base_line: u32, slots: &'b Slots<'b>, nounwind: bool) -> Self {
         let local_cty: Vec<CTy> = body.locals.iter().map(|l| cty(&body.tys, l.ty)).collect();
         let byte_blobs = crate::ir::byte_blob_locals(body);
         let kstatic: crate::intern::FxMap<Local, crate::ty::consteval::ConstValue> = if names::release() {
@@ -2691,6 +2708,9 @@ impl<'b, 'p> FnGen<'b, 'p> {
         };
         FnGen {
             p,
+            unwind: p.unwind && !nounwind,
+            unwind_tables: p.unwind_tables && !nounwind,
+            nounwind,
             body,
             out: String::new(),
             glue: HashSet::new(),
@@ -2718,7 +2738,7 @@ impl<'b, 'p> FnGen<'b, 'p> {
             prelude: String::new(),
             adapters: 0,
             shims: HashMap::new(),
-            cleanup: if p.unwind { unwind::cleanup_blocks(body) } else { Vec::new() },
+            cleanup: if p.unwind && !nounwind { unwind::cleanup_blocks(body) } else { Vec::new() },
             byte_blobs,
             kstatic,
             kcx: kconst::StaticCx::default(),
@@ -2853,14 +2873,20 @@ impl FnGen<'_, '_> {
             if std::mem::replace(&mut reachable[b], true) {
                 continue;
             }
-            stack.extend(succ(&self.body.blocks[b].term).into_iter().map(|s| s.0 as usize));
-            stack.extend(self.body.stmt_unwind.iter().filter(|e| e.0.0 as usize == b).map(|e| e.2.0 as usize));
+            if self.nounwind && let Terminator::Call { next, .. } = &self.body.blocks[b].term {
+                stack.push(next.0 as usize);
+            } else {
+                stack.extend(succ(&self.body.blocks[b].term).into_iter().map(|s| s.0 as usize));
+            }
+            if !self.nounwind {
+                stack.extend(self.body.stmt_unwind.iter().filter(|e| e.0.0 as usize == b).map(|e| e.2.0 as usize));
+            }
         }
         let order: Vec<usize> = (0..n).filter(|&b| reachable[b]).collect();
         // Unwind tables: the cleanup blocks go to their own fn (`cleanup_fn`), and the frame
         // struct its cleanup variable points at holds the flags of the locals they read and
         // a pointer to each.
-        let zc = p.unwind && p.unwind_tables;
+        let zc = self.unwind && self.unwind_tables;
         let cl_order: Vec<usize> = if zc { order.iter().copied().filter(|&b| self.cleanup[b]).collect() } else { Vec::new() };
         let order: Vec<usize> = if zc { order.into_iter().filter(|&b| !self.cleanup[b]).collect() } else { order };
         let mut cl_text = String::new();
@@ -3045,7 +3071,7 @@ impl FnGen<'_, '_> {
         if zc {
             // A panic never returns with unwind tables: no entry check.
             self.out.push_str("  lust_exc ex;\n");
-        } else if p.unwind {
+        } else if self.unwind {
             // A call made while its thread has a pending exception comes
             // from code that runs on after a panic (glue, a runtime
             // callback): it returns at once, as if never called.
@@ -3081,7 +3107,7 @@ impl FnGen<'_, '_> {
     /// Emits the blocks `order` (reachable, in this order): their labels, statements with
     /// their unwind actions, and terminators.
     fn blocks(&mut self, order: &[usize]) {
-        let zc = self.p.unwind && self.p.unwind_tables;
+        let zc = self.unwind && self.unwind_tables;
         let entry = if zc && self.zc_frame && !self.zc_in_cleanup { self.zc_entry_states(order) } else { Vec::new() };
         for (k, &bi) in order.iter().enumerate() {
             self.zc_st = entry.get(bi).copied().flatten();
@@ -3177,7 +3203,7 @@ impl FnGen<'_, '_> {
     /// the statement count is the terminator): abort in a cleanup
     /// block, else its cleanup entry, if lowering gave it one.
     fn stmt_action(&self, bi: usize, si: usize) -> Option<Unw> {
-        if !self.p.unwind {
+        if !self.unwind {
             return None;
         }
         if self.cleanup[bi] {
@@ -3832,7 +3858,7 @@ impl FnGen<'_, '_> {
     /// cleanup at block `b` before any element is read. The `(void)`
     /// keeps `wrap_calls` from adding its own check in front of `b`.
     fn index_unw(&self, len: &str, base: &str, l: Local, loc: &str, b: u32) -> String {
-        if self.p.unwind_tables {
+        if self.unwind_tables {
             // The bounds panic never returns: the frame's cleanup runs from `L.st`.
             return format!(
                 "(*({{ if (__builtin_expect(l{l} >= {len}, 0)) {{ (void)lust_bounds(l{l}, {len}, {loc}); __builtin_unreachable(); }} &{base}[l{l}]; }}))"
@@ -3963,7 +3989,7 @@ impl FnGen<'_, '_> {
             for p in &post {
                 let _ = writeln!(self.out, "    {p}");
             }
-            let zc = self.p.unwind_tables;
+            let zc = self.unwind_tables;
             if !zc {
                 let _ = writeln!(self.out, "    {}", u.check());
             }
@@ -4152,9 +4178,9 @@ impl FnGen<'_, '_> {
                 // (cgen/unwind.rs); a call without one (a catch
                 // boundary) is not checked.
                 if self.unw != Some(Unw::Abort) {
-                    self.unw = unwind.filter(|_| self.p.unwind).map(|u| Unw::Goto(u.0));
+                    self.unw = unwind.filter(|_| self.unwind).map(|u| Unw::Goto(u.0));
                 }
-                let zc = self.p.unwind && self.p.unwind_tables;
+                let zc = self.unwind && self.unwind_tables;
                 if zc && let Some(Unw::Goto(b)) = self.unw {
                     self.zc_store(b);
                 }
@@ -4271,8 +4297,8 @@ impl FnGen<'_, '_> {
             }
             Terminator::MatchExhausted => self.term(&Terminator::Unreachable, span, next_block),
             Terminator::Panic(parts)
-                if self.p.unwind
-                    && self.p.unwind_tables
+                if self.unwind
+                    && self.unwind_tables
                     && parts.iter().any(|p| matches!(p, FmtPart::Arg { .. }))
                     && let Some(call) = self.panic_outlined(parts, &loc) =>
             {
@@ -4294,12 +4320,12 @@ impl FnGen<'_, '_> {
                     let _ = writeln!(self.out, "    lust_panic_lit(&{s}, {loc});\n  }}");
                 }
                 if let Some(Unw::Goto(b)) = self.unw
-                    && !(self.p.unwind && self.p.unwind_tables)
+                    && !(self.unwind && self.unwind_tables)
                 {
                     let _ = writeln!(self.out, "  lust_unw_take(&ex);\n  goto bb{b};");
                 }
                 // Unwind tables: the panic never returns.
-                if self.p.unwind && self.p.unwind_tables {
+                if self.unwind && self.unwind_tables {
                     self.out.push_str("  __builtin_unreachable();\n");
                 }
             }
@@ -4833,7 +4859,7 @@ impl FnGen<'_, '_> {
     /// here, and only the panic path calls the fn, with a copy. `args` are the call's C
     /// arguments (with the caller location); None for any other call.
     fn unwrap_inline(&mut self, f: LocalDefId, ops: &[Operand], args: &[String]) -> Option<String> {
-        if !names::release() || (self.p.unwind && !self.p.unwind_tables) {
+        if !names::release() || (self.unwind && !self.unwind_tables) {
             return None;
         }
         let def = self.p.fn_info(f).def(&self.p.ast);
@@ -5176,7 +5202,7 @@ impl FnGen<'_, '_> {
                 // Unwind tables: a capacity overflow panic never returns. The frame still owns
                 // the moved value (its drop flag clears at the end of the statement), so the
                 // frame's cleanup drops it.
-                if self.p.unwind && !self.p.unwind_tables {
+                if self.unwind && !self.unwind_tables {
                     // A capacity overflow panic returns here under panic=unwind:
                     // fill nothing, drop the value, and unwind.
                     let _ = writeln!(self.out, "    if ({} < {i}_n) {i}_n = 0;", vec_cap(&et, &format!("&{t}")));
@@ -6149,7 +6175,7 @@ impl FnGen<'_, '_> {
         // The shim's params have no drop flags: the builtin takes each by
         // a plain read (a by-value one, `drop`'s, is consumed there).
         let ops: Vec<Operand> = (1..=ins.len()).map(|i| Operand::Copy(Place::local(i as Local))).collect();
-        let mut g = FnGen::new(p, &body, self.map, self.base_line, self.slots);
+        let mut g = FnGen::new(p, &body, self.map, self.base_line, self.slots, !self.unwind);
         let mut post: Vec<String> = Vec::new();
         let value = if b == Builtin::PrimFromCast {
             g.rvalue(&Rvalue::Cast(ops[0].clone(), sig.output), &loc, &mut post)
@@ -6177,7 +6203,7 @@ impl FnGen<'_, '_> {
             let params = if decls.is_empty() { "void".to_string() } else { decls.join(", ") };
             (format!("static {rt} {name}({params})"), "return r;".to_string())
         };
-        let exc = if p.unwind { "  lust_exc ex; (void)ex;" } else { "" };
+        let exc = if self.unwind { "  lust_exc ex; (void)ex;" } else { "" };
         let _ = writeln!(
             self.prelude,
             "{}{head} {{{exc}{inits}\n{}  {rt} r = {value};\n{}  {tail}\n}}",
@@ -7406,7 +7432,7 @@ impl FnGen<'_, '_> {
             // check of a panic left pending by the range check; elsewhere a panic never returns.
             B::VecDrain | B::StringDrain => {
                 let f = if matches!(b, B::VecDrain) { "lust_vec_drain" } else { "lust_string_drain" };
-                let t = if self.p.unwind && !self.p.unwind_tables { "" } else { "_t" };
+                let t = if self.unwind && !self.unwind_tables { "" } else { "_t" };
                 format!("{f}{t}({}, {}, {}, {}, {}, {loc})", vals[0], vals[1], vals[2], vals[3], vals[4])
             }
             B::VecDrainLen => format!("({0}->back - {0}->front)", vals[0]),
@@ -8104,7 +8130,7 @@ impl FnGen<'_, '_> {
                 // Read the index and the value before the shift: both can
                 // read the Vec itself, as in `v.insert(0, v[1])`.
                 let _ = writeln!(self.out, "    uint64_t {ti} = {i}; {et} {tx} = {x};");
-                if self.p.unwind_tables {
+                if self.unwind_tables {
                     // A bad index panics with the value still owned by `insert`: a guard
                     // drops it as the panic unwinds.
                     let (gd, gdis) = self.zc_guard(&tx, e);
@@ -8114,14 +8140,14 @@ impl FnGen<'_, '_> {
                     );
                     return "((lust_Unit){})".into();
                 }
-                if self.p.unwind {
+                if self.unwind {
                     // A bad index panics with the value still owned by
                     // `insert`, which drops it as it unwinds.
                     let drop_x = self.unw_cleanup_drop(&tx, e);
                     let _ = writeln!(self.out, "    if ({ti} > {vv}->len) {{ (void)(lust_vec_insert_at({vv}, {ti}, sizeof({et}), _Alignof({et}), {loc}), 0);{drop_x} }} else {{");
                 }
                 let _ = writeln!(self.out, "    lust_vec_insert_at({vv}, {ti}, sizeof({et}), _Alignof({et}), {loc});\n    (({et}*){vv}->ptr)[{ti}] = {tx};");
-                if self.p.unwind {
+                if self.unwind {
                     let _ = writeln!(self.out, "    }}");
                 }
                 "((lust_Unit){})".into()
@@ -8238,11 +8264,11 @@ impl FnGen<'_, '_> {
                     );
                 }
                 let _ = writeln!(self.out, "    if ({n} <= {vv}->len) {{ {vv}->len = {n}; }} else {{");
-                if self.p.unwind_tables {
+                if self.unwind_tables {
                     // A capacity overflow panic never returns: a guard drops the value.
                     let (gd, gdis) = self.zc_guard(&tv, e);
                     let _ = writeln!(self.out, "      {{{gd} lust_vec_reserve({vv}, {n} - {vv}->len, sizeof({et}), _Alignof({et}));{gdis} }}");
-                } else if self.p.unwind {
+                } else if self.unwind {
                     // After a capacity overflow panic (panic=unwind) the Vec is
                     // unchanged and the value is dropped; `(void)` keeps
                     // `wrap_calls` from unwinding before that drop (the
@@ -8264,7 +8290,7 @@ impl FnGen<'_, '_> {
                         mangle(e)
                     );
                 }
-                if self.p.unwind && !self.p.unwind_tables {
+                if self.unwind && !self.unwind_tables {
                     if needs_drop_c(self.p, e) {
                         self.want(Glue::Drop, e);
                         // The frame holds the exception while the drop runs.
@@ -8307,7 +8333,7 @@ impl FnGen<'_, '_> {
                 let f = self.adapter_callee(&ops[1]);
                 let (w, r, c) = (self.tmp(), self.tmp(), self.tmp());
                 let mut body = String::new();
-                let zc = self.p.unwind_tables;
+                let zc = self.unwind_tables;
                 let rg = if zc { self.tmp() } else { String::new() };
                 if zc {
                     body.push_str("    {\n");
@@ -8334,7 +8360,7 @@ impl FnGen<'_, '_> {
                 // removed. Either way the rest moves down behind the kept
                 // ones (std's `BackshiftOnDrop`), so nothing is lost.
                 let mine = "lust_unw_pending && lust_unw_mine()";
-                if self.p.unwind && !zc {
+                if self.unwind && !zc {
                     let _ = writeln!(body, "      if ({mine}) break;");
                 }
                 // A removed element drops as soon as it is rejected,
@@ -8345,7 +8371,7 @@ impl FnGen<'_, '_> {
                         // The element counts removed while its drop runs.
                         format!("{r}++; drop_{}(&(({et}*){vv}->ptr)[{r} - 1]); {r}--; ", mangle(e))
                     } else {
-                        let after = if self.p.unwind { format!(" if ({mine}) {{ {r}++; break; }}") } else { String::new() };
+                        let after = if self.unwind { format!(" if ({mine}) {{ {r}++; break; }}") } else { String::new() };
                         format!("(void)(drop_{}(&(({et}*){vv}->ptr)[{r}]), 0);{after} ", mangle(e))
                     }
                 } else {
@@ -8358,7 +8384,7 @@ impl FnGen<'_, '_> {
                 let _ = writeln!(body, "    }}");
                 if zc {
                     let _ = writeln!(body, "    {rg}.armed = 0; {vv}->len = {w};");
-                } else if self.p.unwind {
+                } else if self.unwind {
                     let n = self.tmp();
                     let _ = writeln!(body, "    uint64_t {n} = {vv}->len - {r}; {vv}->len = {w} + {n};");
                     let _ = writeln!(body, "    if ({n} && {w} != {r}) lust_memmove((({et}*){vv}->ptr) + {w}, (({et}*){vv}->ptr) + {r}, {n} * sizeof({et}));");
@@ -8369,7 +8395,7 @@ impl FnGen<'_, '_> {
                     self.want(Glue::Drop, &tys[1]);
                     if zc {
                         let _ = writeln!(body, "   {env_disarm} drop_{}(&{c});", mangle(&tys[1]));
-                    } else if self.p.unwind {
+                    } else if self.unwind {
                         let drop_c = self.unw_cleanup_drop(&c, &tys[1]);
                         let _ = writeln!(body, "    if ({mine}) {{{drop_c} }} else drop_{}(&{c});", mangle(&tys[1]));
                     } else {
@@ -10424,6 +10450,14 @@ fn strip_impl_blocks(src: &str) -> String {
 /// The integer and size types units define in place of <stdint.h> and <stddef.h>
 /// (`runtime_decls`), from the compiler's predefined types.
 const INT_TYPEDEFS: &str = "typedef signed char int8_t; typedef unsigned char uint8_t; typedef short int16_t; typedef unsigned short uint16_t;\ntypedef int int32_t; typedef unsigned int uint32_t;\n#ifdef __INT64_TYPE__\ntypedef __INT64_TYPE__ int64_t; typedef unsigned __INT64_TYPE__ uint64_t;\n#else\ntypedef long long int64_t; typedef unsigned long long uint64_t;\n#endif\n#ifdef __SIZE_TYPE__\ntypedef __SIZE_TYPE__ size_t; typedef __PTRDIFF_TYPE__ ptrdiff_t; typedef __UINTPTR_TYPE__ uintptr_t; typedef __INTPTR_TYPE__ intptr_t;\n#else\ntypedef unsigned long size_t; typedef long ptrdiff_t; typedef unsigned long uintptr_t; typedef long intptr_t;\n#endif\n#define INT64_MIN (-9223372036854775807LL-1)\n#ifndef NULL\n#define NULL ((void*)0)\n#endif\n";
+
+/// The original generated scalar function needs no unrelated string, atomic or
+/// exception helpers. TinyCC emits unused inline helpers from the general unit
+/// header, so using that header would introduce foreign runtime references.
+pub fn mixed_scalar_unit(output: &FnOut) -> Option<String> {
+    if !output.mixed_total || !output.glue.is_empty() || !output.ll.is_empty() { return None; }
+    Some(format!("{INT_TYPEDEFS}\n{}", output.code_text()))
+}
 
 fn runtime_decls() -> &'static str {
     static DECLS: std::sync::OnceLock<String> = std::sync::OnceLock::new();

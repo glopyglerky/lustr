@@ -16,7 +16,7 @@ their provenance. The upstream default was observed at that revision; this is
 not a claim about its current remote state.
 
 The integrated tree lives at `compiler/native`. Its declared diff is currently
-**empty**. No nonempty integration patch has been admitted. Existing
+a source-bound **candidate**, with release admission pending. Existing
 experimental owned paths and historical compatibility artifacts retain their
 original scope; this policy does not promote them or relax blueFe's Rust pin.
 
@@ -64,14 +64,20 @@ Blob and tree identities use the repository's Git object format. The guard
 checks patch and qualification bytes with `git hash-object` without writing
 objects. It independently regenerates the complete tree diff and compares exact
 bytes. An empty patch requires the reference tree and `empty` qualification;
-nonempty declarations require `reviewed` status and all three evidence references.
+nonempty release declarations require `reviewed` status and all three evidence references.
 Changing the record or expected result without matching identities fails.
+
+CI uses `--candidate` to validate an explicitly unadmitted candidate's exact
+source identities. This mode preserves every tree, patch, record, worktree,
+index and drift check. It also accepts `candidate` status with honest scoped
+evidence and pending review/performance entries. The default mode still refuses
+that status. A green candidate identity check does not admit a compiler release.
 
 Evidence references are admission records, not executable proof. The guard
 cannot establish that a named review or benchmark actually happened; the owner
 must verify those results before declaring the integration reviewed. Synthetic
-guard-test records qualify the guard only. Current empty integration does not
-claim a new compiler performance result.
+guard-test records qualify the guard only. The current candidate does not
+claim a new compiler performance result or independent source approval.
 
 Build outside the source tree, then run from its root:
 

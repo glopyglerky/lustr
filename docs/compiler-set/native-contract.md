@@ -24,6 +24,14 @@ selection rules, runtime/sysroot, Cargo behavior and real user commands.
 
 ## Compiler and Cargo boundaries
 
+The finished destination includes automatic cooperation within mixed work,
+not only whole-target selection. An eligible native function and code requiring
+full Rust must execute in one unchanged output through real symbols, instance
+identities, layouts, FnAbi and drop/unwind contracts. Keep Lust's retained
+frontend and body-edit path useful without running full Rust analysis first.
+Repeated rustc_driver calls create fresh contexts; a daemon alone does not
+provide this reuse. Whole-target routing is an initial delivery step.
+
 Use one lustr-facing toolchain and Cargo's real graph, configuration, jobserver
 and parallel units. Preserve source, package/target selection, features, target,
 profiles, panic strategy, build scripts, proc macros and diagnostics.

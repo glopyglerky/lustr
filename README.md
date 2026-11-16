@@ -16,6 +16,17 @@ Full-language requests retain real Rust metadata and Cargo behavior. Requests
 that Lust supports can compile through its native path. Further work must
 qualify this combined journey and preserve the fast path.
 
+Whole-target selection is initial progress. The finished integration must also
+support mixed work while retaining Lust's frontend and body-edit acceleration.
+
+The [mixed compiler experiment](docs/compiler-set/mixed-compiler.md) now builds
+and runs one unchanged Cargo executable containing Lust-generated scalar code,
+Rust-generated async code, a real procedural macro and a `no_std`/`alloc`
+dependency. Its first qualified body edit reuses the retained Lust session and
+checked Rust objects. Signature, macro and dependency changes invalidate that
+reuse; invalid Rust is rejected. General mixed-function coverage and equivalent
+complete-work performance remain open.
+
 The following native expansion experiments are retained research. Their
 incomplete language and metadata coverage is not a requirement to replace the
 imported full compiler before delivering lustr.

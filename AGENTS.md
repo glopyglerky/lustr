@@ -14,6 +14,8 @@ Use the simplest working combination. Preserve Cargo's real graph and artifact
 contracts. Reuse and investigate the prior integration before repeating a
 failed approach. The native semantic-image work stays retained research; do not
 continue feature-by-feature expansion as the assumed delivery architecture.
+Whole-target selection is partial progress; preserve the automatic mixed-work
+destination and Lust's retained frontend/body-edit acceleration.
 
 Keep the pristine Lust reference and explicit integration guard. Imported Rust
 must remain separately identified; no hidden changes to Lust or blueFe's

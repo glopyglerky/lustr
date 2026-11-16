@@ -22,6 +22,8 @@ mod patch;
 pub(crate) mod sig_nodes;
 mod span_shift;
 mod session;
+#[path = "../../../../crates/lustr-native-core/src/mixed_unit.rs"]
+mod mixed;
 pub(crate) mod release_c;
 pub mod read_cover;
 

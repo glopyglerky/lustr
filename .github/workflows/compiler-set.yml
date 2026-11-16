@@ -50,12 +50,12 @@ jobs:
           persist-credentials: false
       - name: Install Rust
         run: rustup toolchain install 1.99.1 --profile minimal
-      - name: Check upstream source identity
+      - name: Check exact candidate source identity (release admission is separate)
         env:
           GIT_ALTERNATE_OBJECT_DIRECTORIES: ${{ github.workspace }}/.lust-pristine-reference/.git/objects
         run: |
           rustc +1.99.1 --edition=2024 tools/lust-upstream-check.rs -o "$RUNNER_TEMP/lust-upstream-check"
-          "$RUNNER_TEMP/lust-upstream-check"
+          "$RUNNER_TEMP/lust-upstream-check" --candidate
       - name: Verify exact integration and reject unexpected drift
         run: |
           rustc +1.99.1 --edition=2024 --test tools/lust-upstream-check.rs -o "$RUNNER_TEMP/lust-upstream-check-tests"

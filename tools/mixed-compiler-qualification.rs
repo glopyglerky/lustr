@@ -1,0 +1,145 @@
+//! Real Cargo/proc-macro execution, native edits, invalidation and rejection.
+use std::{
+    fs,
+    io::Write,
+    os::unix::fs::PermissionsExt,
+    path::{Path, PathBuf},
+    process::Command,
+};
+fn put(p: &Path, s: &str) {
+    fs::create_dir_all(p.parent().unwrap()).unwrap();
+    let mut f = fs::OpenOptions::new().write(true).create_new(true).open(p).unwrap();
+    f.write_all(s.as_bytes()).unwrap();
+}
+fn retain(source: &Path, target: &Path) {
+    fs::copy(source, target).unwrap();
+    fs::set_permissions(target, fs::Permissions::from_mode(0o644)).unwrap();
+}
+fn main() {
+    // Adopt the original Lust daemon after its short-lived compiler client
+    // exits, so the qualifier observes its real idle-exit status too.
+    unsafe extern "C" {
+        fn prctl(option: i32, ...) -> i32;
+        fn waitpid(pid: i32, status: *mut i32, options: i32) -> i32;
+    }
+    assert_eq!(unsafe { prctl(36, 1usize, 0usize, 0usize, 0usize) }, 0);
+    let mut a = std::env::args_os().skip(1);
+    let work = PathBuf::from(a.next().unwrap());
+    let cargo = PathBuf::from(a.next().unwrap());
+    let compiler = PathBuf::from(a.next().unwrap());
+    fs::create_dir(&work).unwrap();
+    let work = work.canonicalize().unwrap();
+    retain(&compiler, &work.join("actual-driver-bytes"));
+    put(&work.join("Cargo.toml"), "[workspace]\nmembers=['app','mixed-macro','tiny-core']\nresolver='3'\n[profile.dev]\ndebug=0\n");
+    put(&work.join("tiny-core/Cargo.toml"), "[package]\nname='tiny-core'\nversion='0.1.0'\nedition='2024'\n");
+    let library = "#![no_std]\nextern crate alloc;\npub fn adjustment()->u64{let v=alloc::vec::Vec::from([0u64]);v.iter().sum()}\n";
+    let library_path = work.join("tiny-core/src/lib.rs");
+    put(&library_path, library);
+    put(&work.join("mixed-macro/Cargo.toml"), "[package]\nname='mixed-macro'\nversion='0.1.0'\nedition='2024'\n[lib]\nproc-macro=true\n");
+    let macro_source = "use proc_macro::TokenStream;\n#[proc_macro]\npub fn general(_:TokenStream)->TokenStream{\"async fn general(x:u64)->u64{kernel(x)}\".parse().unwrap()}\n";
+    put(&work.join("mixed-macro/src/lib.rs"), macro_source);
+    put(
+        &work.join("app/Cargo.toml"),
+        "[package]\nname='mixed-app'\nversion='0.1.0'\nedition='2024'\n[dependencies]\nmixed-macro={path='../mixed-macro'}\ntiny-core={path='../tiny-core'}\n",
+    );
+    let source = "use mixed_macro::general;\ngeneral!();\nfn kernel(x:u64)->u64{x ^ 17}\nfn main(){let w=std::task::Waker::noop();let mut f=std::pin::pin!(general(42+tiny_core::adjustment()));let mut cx=std::task::Context::from_waker(w);match std::future::Future::poll(f.as_mut(),&mut cx){std::task::Poll::Ready(v)=>println!(\"{v}\"),std::task::Poll::Pending=>panic!(\"unexpected pending\")}}\n";
+    let path = work.join("app/src/main.rs");
+    put(&path, source);
+    let trace = work.join("mixed.trace");
+    let build = |label: &str, expected: bool| {
+        let before = fs::read(&path).unwrap();
+        let start = std::time::Instant::now();
+        // A packaged lustr entry owns Cargo selection. The standalone driver form
+        // exercises the identical compiler contract while constructing that package.
+        let packaged = compiler.file_name().is_some_and(|n| n == "lustr");
+        let mut command = Command::new(if packaged { &compiler } else { &cargo });
+        if !packaged {
+            command.env("RUSTC", &compiler);
+        }
+        let output = command
+            .current_dir(&work)
+            .args(["build", "--offline", "--jobs", "2", "-vv", "-p", "mixed-app", "--target-dir"])
+            .arg(work.join("target"))
+            .arg("--config")
+            .arg(format!("build.build-dir={:?}", work.join("intermediates")))
+            .env("LUSTR_MIXED_TRACE", &trace)
+            .env("LUSTR_MIXED_CACHE_DIR", work.join("mixed-state"))
+            .env("LUST_CACHE_DIR", work.join("native-cache"))
+            .env("LUST_DAEMON_SOCKET", work.join("native.sock"))
+            .env("LUST_DAEMON_IDLE", "2s")
+            .env_remove("LUST_LIBRARY")
+            .env_remove("LD_LIBRARY_PATH")
+            .output()
+            .unwrap();
+        fs::write(work.join(format!("{label}.stdout")), &output.stdout).unwrap();
+        fs::write(work.join(format!("{label}.stderr")), &output.stderr).unwrap();
+        fs::write(work.join(format!("{label}.status")), format!("{} elapsed_ns={}\n", output.status, start.elapsed().as_nanos())).unwrap();
+        fs::copy(&trace, work.join(format!("{label}.trace"))).unwrap();
+        assert_eq!(fs::read(&path).unwrap(), before, "compiler altered application source");
+        assert_eq!(output.status.success(), expected, "{label}: Cargo {}: {}", output.status, String::from_utf8_lossy(&output.stderr));
+    };
+    let execute = |label: &str, expected: &[u8]| {
+        let app = work.join("target/debug/mixed-app");
+        retain(&app, &work.join(format!("actual-app-{label}")));
+        let result = Command::new(&app).output().unwrap();
+        fs::write(work.join(format!("app-{label}.stdout")), &result.stdout).unwrap();
+        fs::write(work.join(format!("app-{label}.stderr")), &result.stderr).unwrap();
+        assert!(result.status.success());
+        assert_eq!(result.stdout, expected);
+    };
+    build("cold", true);
+    execute("cold", b"59\n");
+    let cold = fs::read_to_string(&trace).unwrap();
+    assert!(cold.contains("native-definitions=1") && cold.contains("native-definition-omitted="), "no mixed definition: {cold}");
+    fs::write(&trace, "").unwrap();
+    let edited = source.replace("x ^ 17", "x ^ 19");
+    fs::write(&path, &edited).unwrap();
+    build("body", true);
+    execute("body", b"57\n");
+    let warm = fs::read_to_string(&trace).unwrap();
+    assert!(warm.contains("reused-rust-objects=1 full-analysis=0"), "body edit did not reuse checked context: {warm}");
+    assert!(!warm.contains("native-definition-omitted="), "warm request ran LLVM codegen");
+    fs::write(&trace, "").unwrap();
+    fs::write(&path, edited.replace("x ^ 19", "x ^ true")).unwrap();
+    build("invalid", false);
+    fs::write(&trace, "").unwrap();
+    fs::write(&path, &edited).unwrap();
+    build("recovery", true);
+    execute("recovery", b"57\n");
+    fs::write(&trace, "").unwrap();
+    let signature = edited.replace("kernel(x:u64)->u64", "kernel(x:u64)->usize").replace("x ^ 19", "(x ^ 19) as usize");
+    fs::write(work.join("mixed-macro/src/lib.rs"), macro_source.replace("general(x:u64)->u64", "general(x:u64)->usize")).unwrap();
+    fs::write(&path, &signature).unwrap();
+    build("signature", true);
+    execute("signature", b"57\n");
+    assert!(!fs::read_to_string(&trace).unwrap().contains("reused-rust-objects=1"), "signature change reused stale work");
+    fs::write(&trace, "").unwrap();
+    fs::write(work.join("mixed-macro/src/lib.rs"), macro_source).unwrap();
+    fs::write(&path, &edited).unwrap();
+    fs::write(&library_path, library.replace("[0u64]", "[1u64]")).unwrap();
+    build("dependency", true);
+    execute("dependency", b"56\n");
+    assert!(!fs::read_to_string(&trace).unwrap().contains("reused-rust-objects=1"), "changed dependency reused stale work");
+    fs::write(&trace, "").unwrap();
+    fs::write(work.join("mixed-macro/src/lib.rs"), macro_source.replace("kernel(x)", "kernel(x) ^ 1")).unwrap();
+    build("macro", true);
+    execute("macro", b"57\n");
+    assert!(!fs::read_to_string(&trace).unwrap().contains("reused-rust-objects=1"), "changed macro expansion reused stale work");
+    let mut daemons = 0;
+    loop {
+        let mut status = 0;
+        let pid = unsafe { waitpid(-1, &mut status, 0) };
+        if pid < 0 {
+            assert_eq!(std::io::Error::last_os_error().raw_os_error(), Some(10));
+            break;
+        }
+        assert_eq!(status, 0, "owned daemon {pid} did not exit successfully");
+        daemons += 1;
+    }
+    assert!(daemons > 0, "no native daemon was observed");
+    fs::write(work.join("owned-daemons.status"), format!("{daemons} adopted native daemon(s), actual idle exit0; no remaining children\n"))
+        .unwrap();
+    println!(
+        "real Cargo/proc macro + core/alloc no_std library + mixed execution + native warm edit + rejection/recovery + signature/dependency/macro invalidation: actual0"
+    );
+}

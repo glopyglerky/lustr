@@ -5,6 +5,14 @@ edition = "2024"
 publish = false
 description = "Pinned rustc semantic inspection for the lustr compiler bridge"
 
+[features]
+full-core = []
+
+[[bin]]
+name = "lustr-mixed"
+path = "src/mixed_main.rs"
+required-features = ["full-core"]
+
 [workspace]
 
 [profile.dev]

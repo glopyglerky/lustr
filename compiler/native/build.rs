@@ -94,6 +94,11 @@ fn main() {
     // the binary by src/stdload.rs, S5), the manifest, and the tcc tree.
     let mut h = std::collections::hash_map::DefaultHasher::new();
     hash_tree(&mut h, &root.join("src"));
+    let mixed = root.join("../../crates/lustr-native-core/src/mixed_unit.rs");
+    if mixed.is_file() {
+        std::fs::read(&mixed).expect("read mixed compiler boundary").hash(&mut h);
+        println!("cargo:rerun-if-changed={}", mixed.display());
+    }
     hash_tree(&mut h, &root.join("library"));
     if let Ok(bytes) = std::fs::read(root.join("Cargo.toml")) {
         bytes.hash(&mut h);

@@ -1,5 +1,10 @@
 # lustr semantic inspection
 
+The default binary below remains the inspection tool. The separate experimental
+`lustr-mixed` binary, enabled by `full-core`, uses the matching complete Rust
+implementation and real Lust objects. It is pinned to a different compiler
+revision; see [its contract and build](../../docs/compiler-set/mixed-compiler.md).
+
 `lustr-semantic` is an executable development tool for inspecting the rustc
 semantics that a native Lust backend will need to share. It runs the pinned Rust
 compiler in process, reads checked compiler data, continues ordinary metadata

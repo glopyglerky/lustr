@@ -4086,7 +4086,8 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
     // switches, debug info, unwind tables) makes every slot's C again, as a one-shot build
     // does: its slot cache holds C of the other form (a front image saved by a tcc build,
     // then a release driver build). A check makes no C and keeps the key.
-    let release = super::release_c::on(caches.persistent, req.cc);
+    let mixed = req.session.krate.target_kind == "lustr-mixed-native";
+    let release = mixed || super::release_c::on(caches.persistent, req.cc);
     if req.cmd == Cmd::Build {
         let key = super::release_c::codegen_key(release, req.debug, program.unwind_tables);
         if caches.codegen_key != key {
@@ -4464,6 +4465,17 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
     // from cached IR above.
     let mut bodies: Vec<(usize, ir::Body)> = work.iter().copied().zip(results).filter_map(|(i, r)| r.0.map(|b| (i, b))).collect();
     bodies.extend(reemit);
+    if mixed {
+        let selected = program.fns.iter().enumerate().find(|(_, f)| program.interner.get(f.name) == req.session.krate.target_name);
+        let total = selected.is_some_and(|(i, _)| bodies.iter().find(|(n, _)| *n == i)
+            .map_or_else(|| caches.out.get(slot(i)).is_some_and(|o| o.mixed_total), |(_, b)| super::mixed::total(b)));
+        if !total {
+            return Response { code: 1, stderr: "lustr mixed boundary unavailable: function can access an unrepresented runtime\n".into(), ..Default::default() };
+        }
+        // This is a proved nounwind function, not a different panic strategy.
+        // Keep checking/lowering under the requested strategy; omit the native
+        // exception machinery only when generating this total scalar unit.
+    }
     // Each fn's base line: cgen stores its line numbers relative to it
     // and the main unit adds each slot's base back, so a reused body's
     // C stays right when its source text moves. An instance's base is
@@ -4512,7 +4524,16 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
     let (outs, cg_noted): (Vec<_>, Vec<_>) = par_map(&bodies, |(i, b)| {
         check::derive_delta::scoped(program.record_reads, || {
             cgen::in_layout_phase(layout_tag, || {
-                cgen::names::with(rn, || cgen::gen_fn(&program, b, &map, line_base_of(front, *i), &front.fn_slot))
+                cgen::names::with(rn, || {
+                    let total = mixed && super::mixed::total(b);
+                    let mut output = if total {
+                        cgen::gen_fn_total(&program, b, &map, line_base_of(front, *i), &front.fn_slot)
+                    } else {
+                        cgen::gen_fn(&program, b, &map, line_base_of(front, *i), &front.fn_slot)
+                    };
+                    output.mixed_total = total;
+                    output
+                })
             })
         })
     })
@@ -4695,6 +4716,15 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
     }
     let glue_changed = shared_changed || regenerated || statics_changed;
     t.lap("codegen (par)");
+    if mixed {
+        let response = cgen::names::with(rn, || super::mixed::emit(
+            req, &program, &caches.out, &caches.glue, &front.fn_slot,
+            rn.expect("mixed units use stable native names"), bodies.len(),
+        ));
+        program.verified = verified;
+        super::patch::keep(front, program);
+        return response;
+    }
     // Nothing reads the IR after codegen. A one-shot build leaks it at exit
     // (`leak_at_exit`), but on a large program it is the largest block
     // alive at the peak (ts-rust's bins: about 2.4 GB of 9.4 GB, through

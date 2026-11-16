@@ -124,6 +124,10 @@ fn patch(repo: &Path, reference: &str, integrated: &str) -> Result<Vec<u8>, Stri
 }
 
 fn check(repo: &Path, pin: &Pin, integration: &Integration, index: bool) -> Result<(), String> {
+    check_mode(repo, pin, integration, index, false)
+}
+
+fn check_mode(repo: &Path, pin: &Pin, integration: &Integration, index: bool, candidate: bool) -> Result<(), String> {
     let d = &integration.declaration;
     if d["reference_revision"] != pin.revision
         || d["reference_tree"] != pin.tree
@@ -157,7 +161,9 @@ fn check(repo: &Path, pin: &Pin, integration: &Integration, index: bool) -> Resu
         if d["integrated_tree"] != pin.tree || q["status"] != "empty" || evidence.iter().any(|k| q[*k] != "unchanged-reference") {
             return Err("empty integration must preserve the pristine tree".into());
         }
-    } else if q["status"] != "reviewed" || evidence.iter().any(|k| q[*k].trim().is_empty() || q[*k] == "unchanged-reference") {
+    } else if !(q["status"] == "reviewed" || candidate && q["status"] == "candidate")
+        || evidence.iter().any(|k| q[*k].trim().is_empty() || q[*k] == "unchanged-reference")
+    {
         return Err("nonempty integration requires exact reviewed qualification and evidence references".into());
     }
     if patch(repo, &pin.tree, &d["integrated_tree"])? != integration.patch {
@@ -191,27 +197,31 @@ fn check(repo: &Path, pin: &Pin, integration: &Integration, index: bool) -> Resu
 
 fn main() {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
-    let index = match args.as_slice() {
-        [] => false,
-        [arg] if arg == "--index" => true,
-        _ => {
-            eprintln!("usage: lust-upstream-check [--index]");
-            std::process::exit(2);
-        }
-    };
+    let index = args.iter().any(|arg| arg == "--index");
+    let candidate = args.iter().any(|arg| arg == "--candidate");
+    if args.len() != usize::from(index) + usize::from(candidate) || args.iter().any(|arg| arg != "--index" && arg != "--candidate") {
+        eprintln!("usage: lust-upstream-check [--index] [--candidate]");
+        std::process::exit(2);
+    }
     let result = pin().and_then(|pin| {
         let i = integration(
             include_str!("../upstream/lust.integration"),
             include_bytes!("../upstream/lust-integration.patch"),
             include_bytes!("../upstream/lust-integration.qualification"),
         )?;
-        check(Path::new("."), &pin, &i, index)?;
+        check_mode(Path::new("."), &pin, &i, index, candidate)?;
         println!(
             "Lust reference {}; exact declared integration tree {}; patch {}; {}",
             pin.revision,
             i.declaration["integrated_tree"],
             i.declaration["patch_blob"],
-            if i.patch.is_empty() { "empty integration" } else { "qualification record bound; evidence admission remains required" }
+            if i.patch.is_empty() {
+                "empty integration"
+            } else if candidate {
+                "candidate source identity only; release admission remains required"
+            } else {
+                "qualification record bound; evidence admission remains required"
+            }
         );
         Ok(())
     });
@@ -344,6 +354,19 @@ mod tests {
         assert!(check(&f.root, &f.pin, &i, true).is_err());
         f.commit();
         assert!(check(&f.root, &f.pin, &i, false).is_err());
+    }
+
+    #[test]
+    fn candidate_identity_check_preserves_the_release_hold() {
+        let f = Fixture::new();
+        fs::write(f.root.join("vendor/source.rs"), "fn upstream() {}\nfn candidate_interface() {}\n").unwrap();
+        git(&f.root, &["add", "--", "vendor"]).unwrap();
+        let tree = String::from_utf8(git(&f.root, &["write-tree", "--prefix=vendor/"]).unwrap()).unwrap().trim().to_owned();
+        let i = f.declaration(&tree, "candidate");
+        assert!(check(&f.root, &f.pin, &i, true).is_err());
+        check_mode(&f.root, &f.pin, &i, true, true).unwrap();
+        fs::write(f.root.join("vendor/source.rs"), "fn unexplained() {}\n").unwrap();
+        assert!(check_mode(&f.root, &f.pin, &i, true, true).is_err());
     }
 
     #[test]

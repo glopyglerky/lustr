@@ -1,0 +1,1796 @@
+diff --git a/build.rs b/build.rs
+index 302f9cb99f823cf7dac098971267b8e99e997188..5b14ae0884dd7b312dea7b51e5124eba61b731d8 100644
+--- a/build.rs
++++ b/build.rs
+@@ -94,10 +94,20 @@ fn main() {
+     // the binary by src/stdload.rs, S5), the manifest, and the tcc tree.
+     let mut h = std::collections::hash_map::DefaultHasher::new();
+     hash_tree(&mut h, &root.join("src"));
++    let mixed = root.join("../../crates/lustr-native-core/src/mixed_unit.rs");
++    if mixed.is_file() {
++        std::fs::read(&mixed).expect("read mixed compiler boundary").hash(&mut h);
++        println!("cargo:rerun-if-changed={}", mixed.display());
++    }
+     hash_tree(&mut h, &root.join("library"));
+     if let Ok(bytes) = std::fs::read(root.join("Cargo.toml")) {
+         bytes.hash(&mut h);
+     }
++    // The explicit owned cache-policy join is a compiler input for both the
++    // standalone build and the native-core wrapper that runs this helper.
++    let input_policy = root.join("../../crates/lustr-native-core/src/native_cache_inputs.rs");
++    ("lustr-native-cache-inputs", std::fs::read(&input_policy).expect("native cache input policy is required")).hash(&mut h);
++    println!("cargo:rerun-if-changed={}", input_policy.display());
+     hash_tree(&mut h, &tcc.join("bin"));
+     hash_tree(&mut h, &lib);
+     println!("cargo:rustc-env=LUST_BUILD_HASH={:016x}", h.finish());
+diff --git a/src/borrowck/mod.rs b/src/borrowck/mod.rs
+index 15c0a9acf2da0eb01c89b4e5d5be3295d2da8800..d59889712ef13c9b35f758f5c873fe4513ae0753 100644
+--- a/src/borrowck/mod.rs
++++ b/src/borrowck/mod.rs
+@@ -647,6 +647,7 @@ fn rvalue_operands<'r>(rv: &'r Rvalue, f: &mut impl FnMut(&'r Operand)) {
+         | Rvalue::StaticLoad(_)
+         | Rvalue::StaticRef(_)
+         | Rvalue::FnValue(..)
++        | Rvalue::NativeFnValue(..)
+         | Rvalue::ItemShim(..) => {}
+         Rvalue::Subslice { lo, hi, .. } => {
+             f(lo);
+diff --git a/src/borrowck/regions.rs b/src/borrowck/regions.rs
+index 945c07625319014b864745607e6837d97d3a24ba..2b2ad71f40e7ec8a61b1aa7331e1d12f5b325fa4 100644
+--- a/src/borrowck/regions.rs
++++ b/src/borrowck/regions.rs
+@@ -232,6 +232,9 @@ pub const RPIT_PARAM: u32 = u32::MAX;
+ /// are computed on first use.
+ #[derive(Default)]
+ pub struct RegionTables {
++    /// Independently checked native signatures, keyed by complete foreign ID.
++    /// The provider validates type shapes, bounds and generations before collect.
++    pub native_fns: FxMap<DefId, RegionSig>,
+     /// Source fns and methods, by local def.
+     pub fns: FxMap<LocalDefId, RegionSig>,
+     /// Trait method signatures by method def (the stubs' callee signatures).
+@@ -3746,6 +3749,10 @@ impl<'b, 'p> Builder<'b, 'p> {
+                 self.place(dest, &mut dv, &mut d);
+                 self.fn_item_to_ptr(*f, *ty, &dv);
+             }
++            Rvalue::NativeFnValue(def, ty) if matches!(self.body.tys.kind(*ty), TyKind::FnPtr(_)) => {
++                self.place(dest, &mut dv, &mut d);
++                self.native_item_to_ptr(*def, *ty, &dv);
++            }
+             Rvalue::Ref(_, place) | Rvalue::SliceOf(place) | Rvalue::Subslice { base: place, .. } => {
+                 let mut li = self.loan_at[self.stmt_base[bi] + si];
+                 // A reference to a slice pattern's subslice temporary holds
+@@ -4809,6 +4816,15 @@ impl<'b, 'p> Builder<'b, 'p> {
+             }
+             return;
+         }
++        if let CallTarget::NativeFn(def) = target
++            && let Some((params, ret, _)) = self.p.native_fn(def)
++            && let Some(sig) = self.p.regions.native_fns.get(&def)
++        {
++            if !self.call_sig_with(sig, params, ret, &avs, dt, &dv, &[]) {
++                self.call_opaque(&avs, dt, &dv);
++            }
++            return;
++        }
+         if let CallTarget::Fn(f) = target
+             && (self.call_fn_bound(f, &avs, dt, &dv) || self.call_param_item(f, &avs, dt, &dv))
+         {
+diff --git a/src/borrowck/regions/fnptr.rs b/src/borrowck/regions/fnptr.rs
+index f93372da15847f0d714ccd376706c74d8ac17099..366d6587fb96d7d7f50fe276151e172ba6650d1f 100644
+--- a/src/borrowck/regions/fnptr.rs
++++ b/src/borrowck/regions/fnptr.rs
+@@ -417,8 +417,6 @@ impl Builder<'_, '_> {
+     pub(super) fn fn_item_to_ptr(&mut self, f: LocalDefId, ptr: Ty, dv: &[u32]) {
+         let TyKind::FnPtr(s) = self.body.tys.kind(ptr) else { return };
+         let s = self.body.tys.sig(s).value;
+-        let ins: Vec<Ty> = self.body.tys.tys_of(s.inputs).to_vec();
+-        let free = if s.free_slots != 0 { dv.first().copied() } else { None };
+         let sig = match self.callee(f) {
+             Callee::Sig(sig) => sig.clone(),
+             _ => {
+@@ -428,6 +426,22 @@ impl Builder<'_, '_> {
+                 return;
+             }
+         };
++        self.item_sig_to_ptr(&sig, ptr, dv);
++    }
++
++    pub(super) fn native_item_to_ptr(&mut self, def: crate::def::DefId, ptr: Ty, dv: &[u32]) {
++        let Some(sig) = self.p.regions.native_fns.get(&def).cloned() else {
++            self.ptr_no_sig();
++            return;
++        };
++        self.item_sig_to_ptr(&sig, ptr, dv);
++    }
++
++    fn item_sig_to_ptr(&mut self, sig: &RegionSig, ptr: Ty, dv: &[u32]) {
++        let TyKind::FnPtr(s) = self.body.tys.kind(ptr) else { return };
++        let s = self.body.tys.sig(s).value;
++        let ins: Vec<Ty> = self.body.tys.tys_of(s.inputs).to_vec();
++        let free = if s.free_slots != 0 { dv.first().copied() } else { None };
+         let Some(dst) = self.ptr_nodes(ptr, free, true, 0) else { return };
+         let Some(src) = self.fn_nodes(&sig, &ins, s.output) else {
+             if s.free_slots != 0 {
+diff --git a/src/cgen.rs b/src/cgen.rs
+index ac6965592d3f4cc6ea1969df299fe33c974056b0..f16653fdfbea92770cb9500e956b5184edc72ed5 100644
+--- a/src/cgen.rs
++++ b/src/cgen.rs
+@@ -1041,6 +1041,10 @@ fn bytes_array_lit(p: &Program, t: &CTy, bytes: &[u8]) -> String {
+ /// The generated code for one function, plus the glue it needs.
+ #[derive(Default)]
+ pub struct FnOut {
++    /// A lowered scalar body whose operations cannot unwind or access a foreign
++    /// runtime. Used only by the mixed compiler's C boundary. Cached generated
++    /// code retains this result with the body it describes.
++    pub mixed_total: bool,
+     /// The fn's C text (`code_text`, `code_len`, `has_code`).
+     pub text: CText,
+     pub glue: HashSet<(Glue, CTy)>,
+@@ -1298,6 +1302,9 @@ impl<'s> Slots<'s> {
+ 
+ struct FnGen<'b, 'p> {
+     p: &'p Program,
++    unwind: bool,
++    unwind_tables: bool,
++    nounwind: bool,
+     body: &'b Body<'p>,
+     out: String,
+     glue: HashSet<(Glue, CTy)>,
+@@ -2068,6 +2075,29 @@ fn ret_is_large(p: &Program, f: LocalDefId) -> bool {
+     ret_by_out(p, &cty(&p.tys, p.fn_info(f).ret))
+ }
+ 
++/// The active C ABI can call this signature with direct scalar returns and
++/// by-value parameters. Providers check under the same naming/backend context
++/// as generation, including effective process-cached backend settings.
++pub fn native_direct_abi(p: &Program, params: &[Ty], ret: Ty) -> bool {
++    !ll::on(p) && !ret_by_out(p, &cty(&p.tys, ret))
++        && params.iter().all(|&t| !param_by_ptr(p, &cty(&p.tys, t)))
++}
++
++/// Actual emitted C representation and passing rules for a native type image.
++/// Layout and call ABI are distinct; the provider must retain both.
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub struct NativeTypeAbi {
++    pub size: u64, pub align: u64,
++    pub param_dropped: bool, pub param_by_ptr: bool, pub ret_by_out: bool,
++}
++pub fn native_type_abi(p: &Program, t: Ty) -> Option<NativeTypeAbi> {
++    if ll::on(p) { return None; }
++    let ct = cty(&p.tys, t);
++    let (size, align) = c_size_align(p, &ct);
++    Some(NativeTypeAbi { size, align, param_dropped: param_dropped(p, &ct),
++        param_by_ptr: param_by_ptr(p, &ct), ret_by_out: ret_by_out(p, &ct) })
++}
++
+ /// True when a C function returns `t` through a hidden out-pointer:
+ /// over 32 bytes, or a zero-sized type whose C struct holds an array
+ /// member (`[T; 0]`, `[No; 4]`, also in a tuple, struct, or `Cell`).
+@@ -2433,6 +2463,15 @@ fn trampoline(p: &Program, f: LocalDefId, slot: u32) -> String {
+ /// Generates C for one function body. `base_line` is the line of its `fn` keyword, in the
+ /// file that defines it; `slots` maps every LocalDefId to its slot in `lust_fns`.
+ pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32]) -> FnOut {
++    gen_fn_policy(p, body, map, base_line, slots, false)
++}
++
++/// Generate a body already proved total by the mixed object boundary.
++pub fn gen_fn_total(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32]) -> FnOut {
++    gen_fn_policy(p, body, map, base_line, slots, true)
++}
++
++fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32], nounwind: bool) -> FnOut {
+     if !has_generated_body(p, body.fn_id) {
+         return FnOut { error: Some(no_body_error(p, body, body.fn_id)), ..Default::default() };
+     }
+@@ -2458,7 +2497,7 @@ pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots:
+         Err(e) => return FnOut { error: Some(e), ..Default::default() },
+     };
+     let slots = Slots::new(slots);
+-    let mut g = FnGen::new(p, body, map, base_line, &slots);
++    let mut g = FnGen::new(p, body, map, base_line, &slots, nounwind);
+     g.collect_move_paths();
+     if g.bad_move {
+         return FnOut { error: Some(bad_move_error(p, body)), ..Default::default() };
+@@ -2550,6 +2589,7 @@ pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots:
+     ll_c.shrink_to_fit();
+     let externs = externs.into_iter().map(shared_extern).collect();
+     FnOut {
++        mixed_total: false,
+         text: CText::Plain(code),
+         glue,
+         types,
+@@ -2643,7 +2683,7 @@ fn static_drop_flags(p: &Program) -> (bool, bool) {
+ impl<'b, 'p> FnGen<'b, 'p> {
+     /// A generator for `body` with nothing emitted yet (`gen_fn`; an
+     /// `ItemShim` builtin method's one-call body, `prim_shim`).
+-    fn new(p: &'p Program, body: &'b Body<'p>, map: &'b SourceMap, base_line: u32, slots: &'b Slots<'b>) -> Self {
++    fn new(p: &'p Program, body: &'b Body<'p>, map: &'b SourceMap, base_line: u32, slots: &'b Slots<'b>, nounwind: bool) -> Self {
+         let local_cty: Vec<CTy> = body.locals.iter().map(|l| cty(&body.tys, l.ty)).collect();
+         let byte_blobs = crate::ir::byte_blob_locals(body);
+         let kstatic: crate::intern::FxMap<Local, crate::ty::consteval::ConstValue> = if names::release() {
+@@ -2668,6 +2708,9 @@ impl<'b, 'p> FnGen<'b, 'p> {
+         };
+         FnGen {
+             p,
++            unwind: p.unwind && !nounwind,
++            unwind_tables: p.unwind_tables && !nounwind,
++            nounwind,
+             body,
+             out: String::new(),
+             glue: HashSet::new(),
+@@ -2695,7 +2738,7 @@ impl<'b, 'p> FnGen<'b, 'p> {
+             prelude: String::new(),
+             adapters: 0,
+             shims: HashMap::new(),
+-            cleanup: if p.unwind { unwind::cleanup_blocks(body) } else { Vec::new() },
++            cleanup: if p.unwind && !nounwind { unwind::cleanup_blocks(body) } else { Vec::new() },
+             byte_blobs,
+             kstatic,
+             kcx: kconst::StaticCx::default(),
+@@ -2830,14 +2873,20 @@ impl FnGen<'_, '_> {
+             if std::mem::replace(&mut reachable[b], true) {
+                 continue;
+             }
+-            stack.extend(succ(&self.body.blocks[b].term).into_iter().map(|s| s.0 as usize));
+-            stack.extend(self.body.stmt_unwind.iter().filter(|e| e.0.0 as usize == b).map(|e| e.2.0 as usize));
++            if self.nounwind && let Terminator::Call { next, .. } = &self.body.blocks[b].term {
++                stack.push(next.0 as usize);
++            } else {
++                stack.extend(succ(&self.body.blocks[b].term).into_iter().map(|s| s.0 as usize));
++            }
++            if !self.nounwind {
++                stack.extend(self.body.stmt_unwind.iter().filter(|e| e.0.0 as usize == b).map(|e| e.2.0 as usize));
++            }
+         }
+         let order: Vec<usize> = (0..n).filter(|&b| reachable[b]).collect();
+         // Unwind tables: the cleanup blocks go to their own fn (`cleanup_fn`), and the frame
+         // struct its cleanup variable points at holds the flags of the locals they read and
+         // a pointer to each.
+-        let zc = p.unwind && p.unwind_tables;
++        let zc = self.unwind && self.unwind_tables;
+         let cl_order: Vec<usize> = if zc { order.iter().copied().filter(|&b| self.cleanup[b]).collect() } else { Vec::new() };
+         let order: Vec<usize> = if zc { order.into_iter().filter(|&b| !self.cleanup[b]).collect() } else { order };
+         let mut cl_text = String::new();
+@@ -3022,7 +3071,7 @@ impl FnGen<'_, '_> {
+         if zc {
+             // A panic never returns with unwind tables: no entry check.
+             self.out.push_str("  lust_exc ex;\n");
+-        } else if p.unwind {
++        } else if self.unwind {
+             // A call made while its thread has a pending exception comes
+             // from code that runs on after a panic (glue, a runtime
+             // callback): it returns at once, as if never called.
+@@ -3058,7 +3107,7 @@ impl FnGen<'_, '_> {
+     /// Emits the blocks `order` (reachable, in this order): their labels, statements with
+     /// their unwind actions, and terminators.
+     fn blocks(&mut self, order: &[usize]) {
+-        let zc = self.p.unwind && self.p.unwind_tables;
++        let zc = self.unwind && self.unwind_tables;
+         let entry = if zc && self.zc_frame && !self.zc_in_cleanup { self.zc_entry_states(order) } else { Vec::new() };
+         for (k, &bi) in order.iter().enumerate() {
+             self.zc_st = entry.get(bi).copied().flatten();
+@@ -3154,7 +3203,7 @@ impl FnGen<'_, '_> {
+     /// the statement count is the terminator): abort in a cleanup
+     /// block, else its cleanup entry, if lowering gave it one.
+     fn stmt_action(&self, bi: usize, si: usize) -> Option<Unw> {
+-        if !self.p.unwind {
++        if !self.unwind {
+             return None;
+         }
+         if self.cleanup[bi] {
+@@ -3809,7 +3858,7 @@ impl FnGen<'_, '_> {
+     /// cleanup at block `b` before any element is read. The `(void)`
+     /// keeps `wrap_calls` from adding its own check in front of `b`.
+     fn index_unw(&self, len: &str, base: &str, l: Local, loc: &str, b: u32) -> String {
+-        if self.p.unwind_tables {
++        if self.unwind_tables {
+             // The bounds panic never returns: the frame's cleanup runs from `L.st`.
+             return format!(
+                 "(*({{ if (__builtin_expect(l{l} >= {len}, 0)) {{ (void)lust_bounds(l{l}, {len}, {loc}); __builtin_unreachable(); }} &{base}[l{l}]; }}))"
+@@ -3940,7 +3989,7 @@ impl FnGen<'_, '_> {
+             for p in &post {
+                 let _ = writeln!(self.out, "    {p}");
+             }
+-            let zc = self.p.unwind_tables;
++            let zc = self.unwind_tables;
+             if !zc {
+                 let _ = writeln!(self.out, "    {}", u.check());
+             }
+@@ -4129,9 +4178,9 @@ impl FnGen<'_, '_> {
+                 // (cgen/unwind.rs); a call without one (a catch
+                 // boundary) is not checked.
+                 if self.unw != Some(Unw::Abort) {
+-                    self.unw = unwind.filter(|_| self.p.unwind).map(|u| Unw::Goto(u.0));
++                    self.unw = unwind.filter(|_| self.unwind).map(|u| Unw::Goto(u.0));
+                 }
+-                let zc = self.p.unwind && self.p.unwind_tables;
++                let zc = self.unwind && self.unwind_tables;
+                 if zc && let Some(Unw::Goto(b)) = self.unw {
+                     self.zc_store(b);
+                 }
+@@ -4144,6 +4193,7 @@ impl FnGen<'_, '_> {
+                 // dead assignment a zero of the destination type.
+                 let dest_cty = self.place(dest, &loc).1;
+                 let ret_unit = match target {
++                    CallTarget::NativeFn(def) => cty(&self.p.tys, self.p.native_fn(*def).expect("installed native signature").1) == CTy::Unit,
+                     CallTarget::Fn(f) => cty(&self.p.tys, self.p.fn_info(*f).ret) == CTy::Unit,
+                     CallTarget::Intrinsic(id) => lang::intrinsic(*id).ret == SigTy::Never,
+                     CallTarget::Indirect(c) => matches!(&self.local_cty[*c as usize], CTy::FnPtr(_, r) if **r == CTy::Unit),
+@@ -4247,8 +4297,8 @@ impl FnGen<'_, '_> {
+             }
+             Terminator::MatchExhausted => self.term(&Terminator::Unreachable, span, next_block),
+             Terminator::Panic(parts)
+-                if self.p.unwind
+-                    && self.p.unwind_tables
++                if self.unwind
++                    && self.unwind_tables
+                     && parts.iter().any(|p| matches!(p, FmtPart::Arg { .. }))
+                     && let Some(call) = self.panic_outlined(parts, &loc) =>
+             {
+@@ -4270,12 +4320,12 @@ impl FnGen<'_, '_> {
+                     let _ = writeln!(self.out, "    lust_panic_lit(&{s}, {loc});\n  }}");
+                 }
+                 if let Some(Unw::Goto(b)) = self.unw
+-                    && !(self.p.unwind && self.p.unwind_tables)
++                    && !(self.unwind && self.unwind_tables)
+                 {
+                     let _ = writeln!(self.out, "  lust_unw_take(&ex);\n  goto bb{b};");
+                 }
+                 // Unwind tables: the panic never returns.
+-                if self.p.unwind && self.p.unwind_tables {
++                if self.unwind && self.unwind_tables {
+                     self.out.push_str("  __builtin_unreachable();\n");
+                 }
+             }
+@@ -4449,6 +4499,23 @@ impl FnGen<'_, '_> {
+         }
+     }
+ 
++    /// Declare the actual independent symbol from installed typed linkage.
++    /// The provider has qualified its ABI; no local slot is allocated.
++    fn native_callee(&mut self, def: crate::def::DefId) -> String {
++        let (params, ret, link) = self.p.native_fn(def).expect("checked native function has linkage");
++        let ret = cty(&self.p.tys, ret);
++        self.note_held(&ret);
++        for &t in params { self.note_held(&cty(&self.p.tys, t)); }
++        let mut kept: Vec<String> = params.iter().map(|&t| cty(&self.p.tys, t))
++            .filter(|t| !param_dropped(self.p, t)).map(|t| param_ctype(self.p, &t)).collect();
++        let result = if ret_by_out(self.p, &ret) {
++            kept.insert(0, format!("{} *", ctype(&ret))); "void".into()
++        } else { ctype(&ret) };
++        let declaration = if kept.is_empty() { "void".into() } else { kept.join(", ") };
++        let _ = writeln!(self.out, "  extern {result} {}({declaration});", link.symbol);
++        link.symbol.clone()
++    }
++
+     fn call_value(&mut self, target: CallTarget, args: &[Operand], dest_cty: &CTy, loc: &str, post: &mut Vec<String>) -> String {
+         // Release C defines only what a unit holds by value or projects from
+         // (`type_decls_with`): a builtin may size or open what its operands and result
+@@ -4463,6 +4530,23 @@ impl FnGen<'_, '_> {
+             }
+         }
+         match target {
++            CallTarget::NativeFn(def) => {
++                let (params, ret, _) = self.p.native_fn(def).expect("checked native call has linkage");
++                let ret = cty(&self.p.tys, ret);
++                let types: Vec<CTy> = params.iter().map(|&t| cty(&self.p.tys, t)).collect();
++                let mut values: Vec<String> = args.iter().map(|o| self.operand(o, loc, post).0).collect();
++                let mut pre = String::new();
++                self.spill_by_ptr(&mut pre, &types, &mut values);
++                self.out.push_str(&pre);
++                let symbol = self.native_callee(def);
++                let values: Vec<_> = values.into_iter().zip(&types).filter_map(|(v,t)| (!param_dropped(self.p,t)).then_some(v)).collect();
++                if ret_by_out(self.p, &ret) {
++                    let (decl, t) = self.out_target(&ctype(&ret));
++                    let pre = if values.is_empty() { String::new() } else { format!(", {}", values.join(", ")) };
++                    let _ = writeln!(self.out, "    {decl}{symbol}(&{t}{pre});");
++                    t
++                } else { format!("{symbol}({})", values.join(", ")) }
++            }
+             CallTarget::Fn(f) => {
+                 self.note_callee(f);
+                 let info = self.p.fn_info(f);
+@@ -4775,7 +4859,7 @@ impl FnGen<'_, '_> {
+     /// here, and only the panic path calls the fn, with a copy. `args` are the call's C
+     /// arguments (with the caller location); None for any other call.
+     fn unwrap_inline(&mut self, f: LocalDefId, ops: &[Operand], args: &[String]) -> Option<String> {
+-        if !names::release() || (self.p.unwind && !self.p.unwind_tables) {
++        if !names::release() || (self.unwind && !self.unwind_tables) {
+             return None;
+         }
+         let def = self.p.fn_info(f).def(&self.p.ast);
+@@ -5118,7 +5202,7 @@ impl FnGen<'_, '_> {
+                 // Unwind tables: a capacity overflow panic never returns. The frame still owns
+                 // the moved value (its drop flag clears at the end of the statement), so the
+                 // frame's cleanup drops it.
+-                if self.p.unwind && !self.p.unwind_tables {
++                if self.unwind && !self.unwind_tables {
+                     // A capacity overflow panic returns here under panic=unwind:
+                     // fill nothing, drop the value, and unwind.
+                     let _ = writeln!(self.out, "    if ({} < {i}_n) {i}_n = 0;", vec_cap(&et, &format!("&{t}")));
+@@ -5264,6 +5348,18 @@ impl FnGen<'_, '_> {
+                     _ => "0".into(),
+                 }
+             }
++            Rvalue::NativeFnValue(def, ty) => {
++                let t = cty(&self.body.tys, *ty);
++                match t {
++                    CTy::FnPtr(..) => {
++                        self.note_held(&t);
++                        let symbol = self.native_callee(*def);
++                        format!("(({}){symbol})", ctype(&t))
++                    }
++                    CTy::Unit => "((lust_Unit){})".into(),
++                    _ => unreachable!("checked independent function value type"),
++                }
++            }
+             Rvalue::ItemShim(item, ty) => {
+                 let t = cty(&self.body.tys, *ty);
+                 self.note_fn_sig(&t);
+@@ -6079,7 +6175,7 @@ impl FnGen<'_, '_> {
+         // The shim's params have no drop flags: the builtin takes each by
+         // a plain read (a by-value one, `drop`'s, is consumed there).
+         let ops: Vec<Operand> = (1..=ins.len()).map(|i| Operand::Copy(Place::local(i as Local))).collect();
+-        let mut g = FnGen::new(p, &body, self.map, self.base_line, self.slots);
++        let mut g = FnGen::new(p, &body, self.map, self.base_line, self.slots, !self.unwind);
+         let mut post: Vec<String> = Vec::new();
+         let value = if b == Builtin::PrimFromCast {
+             g.rvalue(&Rvalue::Cast(ops[0].clone(), sig.output), &loc, &mut post)
+@@ -6107,7 +6203,7 @@ impl FnGen<'_, '_> {
+             let params = if decls.is_empty() { "void".to_string() } else { decls.join(", ") };
+             (format!("static {rt} {name}({params})"), "return r;".to_string())
+         };
+-        let exc = if p.unwind { "  lust_exc ex; (void)ex;" } else { "" };
++        let exc = if self.unwind { "  lust_exc ex; (void)ex;" } else { "" };
+         let _ = writeln!(
+             self.prelude,
+             "{}{head} {{{exc}{inits}\n{}  {rt} r = {value};\n{}  {tail}\n}}",
+@@ -7336,7 +7432,7 @@ impl FnGen<'_, '_> {
+             // check of a panic left pending by the range check; elsewhere a panic never returns.
+             B::VecDrain | B::StringDrain => {
+                 let f = if matches!(b, B::VecDrain) { "lust_vec_drain" } else { "lust_string_drain" };
+-                let t = if self.p.unwind && !self.p.unwind_tables { "" } else { "_t" };
++                let t = if self.unwind && !self.unwind_tables { "" } else { "_t" };
+                 format!("{f}{t}({}, {}, {}, {}, {}, {loc})", vals[0], vals[1], vals[2], vals[3], vals[4])
+             }
+             B::VecDrainLen => format!("({0}->back - {0}->front)", vals[0]),
+@@ -8034,7 +8130,7 @@ impl FnGen<'_, '_> {
+                 // Read the index and the value before the shift: both can
+                 // read the Vec itself, as in `v.insert(0, v[1])`.
+                 let _ = writeln!(self.out, "    uint64_t {ti} = {i}; {et} {tx} = {x};");
+-                if self.p.unwind_tables {
++                if self.unwind_tables {
+                     // A bad index panics with the value still owned by `insert`: a guard
+                     // drops it as the panic unwinds.
+                     let (gd, gdis) = self.zc_guard(&tx, e);
+@@ -8044,14 +8140,14 @@ impl FnGen<'_, '_> {
+                     );
+                     return "((lust_Unit){})".into();
+                 }
+-                if self.p.unwind {
++                if self.unwind {
+                     // A bad index panics with the value still owned by
+                     // `insert`, which drops it as it unwinds.
+                     let drop_x = self.unw_cleanup_drop(&tx, e);
+                     let _ = writeln!(self.out, "    if ({ti} > {vv}->len) {{ (void)(lust_vec_insert_at({vv}, {ti}, sizeof({et}), _Alignof({et}), {loc}), 0);{drop_x} }} else {{");
+                 }
+                 let _ = writeln!(self.out, "    lust_vec_insert_at({vv}, {ti}, sizeof({et}), _Alignof({et}), {loc});\n    (({et}*){vv}->ptr)[{ti}] = {tx};");
+-                if self.p.unwind {
++                if self.unwind {
+                     let _ = writeln!(self.out, "    }}");
+                 }
+                 "((lust_Unit){})".into()
+@@ -8168,11 +8264,11 @@ impl FnGen<'_, '_> {
+                     );
+                 }
+                 let _ = writeln!(self.out, "    if ({n} <= {vv}->len) {{ {vv}->len = {n}; }} else {{");
+-                if self.p.unwind_tables {
++                if self.unwind_tables {
+                     // A capacity overflow panic never returns: a guard drops the value.
+                     let (gd, gdis) = self.zc_guard(&tv, e);
+                     let _ = writeln!(self.out, "      {{{gd} lust_vec_reserve({vv}, {n} - {vv}->len, sizeof({et}), _Alignof({et}));{gdis} }}");
+-                } else if self.p.unwind {
++                } else if self.unwind {
+                     // After a capacity overflow panic (panic=unwind) the Vec is
+                     // unchanged and the value is dropped; `(void)` keeps
+                     // `wrap_calls` from unwinding before that drop (the
+@@ -8194,7 +8290,7 @@ impl FnGen<'_, '_> {
+                         mangle(e)
+                     );
+                 }
+-                if self.p.unwind && !self.p.unwind_tables {
++                if self.unwind && !self.unwind_tables {
+                     if needs_drop_c(self.p, e) {
+                         self.want(Glue::Drop, e);
+                         // The frame holds the exception while the drop runs.
+@@ -8237,7 +8333,7 @@ impl FnGen<'_, '_> {
+                 let f = self.adapter_callee(&ops[1]);
+                 let (w, r, c) = (self.tmp(), self.tmp(), self.tmp());
+                 let mut body = String::new();
+-                let zc = self.p.unwind_tables;
++                let zc = self.unwind_tables;
+                 let rg = if zc { self.tmp() } else { String::new() };
+                 if zc {
+                     body.push_str("    {\n");
+@@ -8264,7 +8360,7 @@ impl FnGen<'_, '_> {
+                 // removed. Either way the rest moves down behind the kept
+                 // ones (std's `BackshiftOnDrop`), so nothing is lost.
+                 let mine = "lust_unw_pending && lust_unw_mine()";
+-                if self.p.unwind && !zc {
++                if self.unwind && !zc {
+                     let _ = writeln!(body, "      if ({mine}) break;");
+                 }
+                 // A removed element drops as soon as it is rejected,
+@@ -8275,7 +8371,7 @@ impl FnGen<'_, '_> {
+                         // The element counts removed while its drop runs.
+                         format!("{r}++; drop_{}(&(({et}*){vv}->ptr)[{r} - 1]); {r}--; ", mangle(e))
+                     } else {
+-                        let after = if self.p.unwind { format!(" if ({mine}) {{ {r}++; break; }}") } else { String::new() };
++                        let after = if self.unwind { format!(" if ({mine}) {{ {r}++; break; }}") } else { String::new() };
+                         format!("(void)(drop_{}(&(({et}*){vv}->ptr)[{r}]), 0);{after} ", mangle(e))
+                     }
+                 } else {
+@@ -8288,7 +8384,7 @@ impl FnGen<'_, '_> {
+                 let _ = writeln!(body, "    }}");
+                 if zc {
+                     let _ = writeln!(body, "    {rg}.armed = 0; {vv}->len = {w};");
+-                } else if self.p.unwind {
++                } else if self.unwind {
+                     let n = self.tmp();
+                     let _ = writeln!(body, "    uint64_t {n} = {vv}->len - {r}; {vv}->len = {w} + {n};");
+                     let _ = writeln!(body, "    if ({n} && {w} != {r}) lust_memmove((({et}*){vv}->ptr) + {w}, (({et}*){vv}->ptr) + {r}, {n} * sizeof({et}));");
+@@ -8299,7 +8395,7 @@ impl FnGen<'_, '_> {
+                     self.want(Glue::Drop, &tys[1]);
+                     if zc {
+                         let _ = writeln!(body, "   {env_disarm} drop_{}(&{c});", mangle(&tys[1]));
+-                    } else if self.p.unwind {
++                    } else if self.unwind {
+                         let drop_c = self.unw_cleanup_drop(&c, &tys[1]);
+                         let _ = writeln!(body, "    if ({mine}) {{{drop_c} }} else drop_{}(&{c});", mangle(&tys[1]));
+                     } else {
+@@ -10355,6 +10451,14 @@ fn strip_impl_blocks(src: &str) -> String {
+ /// (`runtime_decls`), from the compiler's predefined types.
+ const INT_TYPEDEFS: &str = "typedef signed char int8_t; typedef unsigned char uint8_t; typedef short int16_t; typedef unsigned short uint16_t;\ntypedef int int32_t; typedef unsigned int uint32_t;\n#ifdef __INT64_TYPE__\ntypedef __INT64_TYPE__ int64_t; typedef unsigned __INT64_TYPE__ uint64_t;\n#else\ntypedef long long int64_t; typedef unsigned long long uint64_t;\n#endif\n#ifdef __SIZE_TYPE__\ntypedef __SIZE_TYPE__ size_t; typedef __PTRDIFF_TYPE__ ptrdiff_t; typedef __UINTPTR_TYPE__ uintptr_t; typedef __INTPTR_TYPE__ intptr_t;\n#else\ntypedef unsigned long size_t; typedef long ptrdiff_t; typedef unsigned long uintptr_t; typedef long intptr_t;\n#endif\n#define INT64_MIN (-9223372036854775807LL-1)\n#ifndef NULL\n#define NULL ((void*)0)\n#endif\n";
+ 
++/// The original generated scalar function needs no unrelated string, atomic or
++/// exception helpers. TinyCC emits unused inline helpers from the general unit
++/// header, so using that header would introduce foreign runtime references.
++pub fn mixed_scalar_unit(output: &FnOut) -> Option<String> {
++    if !output.mixed_total || !output.glue.is_empty() || !output.ll.is_empty() { return None; }
++    Some(format!("{INT_TYPEDEFS}\n{}", output.code_text()))
++}
++
+ fn runtime_decls() -> &'static str {
+     static DECLS: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+     DECLS.get_or_init(|| {
+diff --git a/src/check/closure.rs b/src/check/closure.rs
+index b345e1ed639e2ee95c51087067b2cda839893c6b..6138dc1153b080c82941d059232dbc0d04f0c6a4 100644
+--- a/src/check/closure.rs
++++ b/src/check/closure.rs
+@@ -893,7 +893,11 @@ impl<'p> Ctx<'p> {
+         let saved_loops = std::mem::take(&mut self.loops);
+         let returns_before = self.returns_seen;
+         self.closure_rets.push(ret);
++        // Creating a closure in a const context does not execute its body.
++        // A const block inside that body still establishes its own context.
++        let const_context = std::mem::replace(&mut self.const_context, false);
+         let bt = self.expr(body, (ret == output).then_some(ret));
++        self.const_context = const_context;
+         // Edition 2024 never-type fallback: a body that only diverges
+         // (`|| { ..; panic!(); }`) leaves the return type open, and rustc
+         // makes it `!`. Without this the closure's signature zonks to
+@@ -2320,6 +2324,7 @@ impl<'p> Ctx<'p> {
+             self.set_res(e, r);
+             self.note_fn_shim_call(e, ct, peeled);
+             self.check_args(&params, args, span);
++            self.check_native_const_call(r, span);
+             return ret;
+         }
+         let mut t = self.resolve(ct);
+diff --git a/src/check/collect.rs b/src/check/collect.rs
+index 2e10c71e2e73daf3132cabc36ffaa591a37f755d..466224cf30d5053a645655fd4e772aaabd8f6604 100644
+--- a/src/check/collect.rs
++++ b/src/check/collect.rs
+@@ -553,6 +553,25 @@ impl Program {
+     pub fn local_def(&self, hash: DefPathHash) -> Option<LocalDefId> {
+         self.def_by_hash.get(&hash).copied()
+     }
++    /// An installed independent native signature, never a local FnInfo.
++    pub fn native_fn(&self, def: DefId) -> Option<(&[Ty], Ty, &crate::ty::defs::NativeLinkage)> {
++        if def.krate == self.krate { return None; }
++        let data = self.defs.get(def)?;
++        let link = data.native_linkage.as_deref()?;
++        if data.kind != DefsKind::ForeignFn || link.id.hash != def.hash { return None; }
++        match &data.sig {
++            SigData::Fn { params, ret } => Some((params, *ret, link)),
++            _ => None,
++        }
++    }
++    /// A genuine independent function binding before signature installation.
++    /// No cross-crate const body is represented by the provider interface.
++    pub fn native_import(&self, name: Sym) -> Option<DefId> {
++        let tables = self.resolved.as_ref()?;
++        let def = *tables.flat[crate::resolve::imports::ns_index(crate::driver::graph::Namespace::Value)].get(&name)?;
++        (def.krate != self.krate && def.krate != BUILTIN_CRATE
++            && tables.def_info.get(&def)?.kind == crate::resolve::imports::ResKind::Fn).then_some(def)
++    }
+     /// A user Adt's stable identity, as carried by `TyKind::Adt(DefId, ArgsId)`.
+     #[allow(dead_code)] // First production readers are generic collect and mono; the store form is used now.
+     pub fn def_of_adt(&self, id: AdtId) -> DefId {
+@@ -3450,6 +3469,31 @@ pub fn collect_reuse(
+     reuse: &mut crate::driver::gen_reuse::GenReuse,
+     std_routes: &[&'static crate::ty::lang::StdFnDef],
+ ) -> Result<Program, Vec<Diag>> {
++    collect_with_definitions_inner(ast, interner, known, crate_ids, walk_instances, def_order, resolved, reuse, std_routes, None)
++}
++
++/// Fresh collection with independent definitions installed before any
++/// initializer or body check. Imported state never shares an unkeyed reuse
++/// cache. The provider owns the external signature and generation contract.
++#[allow(clippy::too_many_arguments)]
++pub fn collect_with_definitions(
++    ast: Arc<Ast>, interner: Arc<Interner>, known: Arc<Known>, crate_ids: CrateIds,
++    walk_instances: bool, def_order: &mut DefOrder,
++    resolved: Option<Arc<crate::resolve::imports::ResolvedTables>>,
++    definitions: &mut dyn FnMut(&mut Program) -> Result<(), Vec<Diag>>,
++) -> Result<Program, Vec<Diag>> {
++    collect_with_definitions_inner(ast, interner, known, crate_ids, walk_instances, def_order, resolved, &mut Default::default(), &[], Some(definitions))
++}
++
++#[allow(clippy::too_many_arguments)]
++fn collect_with_definitions_inner(
++    ast: Arc<Ast>, interner: Arc<Interner>, known: Arc<Known>, crate_ids: CrateIds,
++    walk_instances: bool, def_order: &mut DefOrder,
++    resolved: Option<Arc<crate::resolve::imports::ResolvedTables>>,
++    reuse: &mut crate::driver::gen_reuse::GenReuse,
++    std_routes: &[&'static crate::ty::lang::StdFnDef],
++    definitions: Option<&mut dyn FnMut(&mut Program) -> Result<(), Vec<Diag>>>,
++) -> Result<Program, Vec<Diag>> {
+     let mut p = Program {
+         ast: ast.clone(),
+         interner: interner.clone(),
+@@ -3571,6 +3615,7 @@ pub fn collect_reuse(
+     }
+     let mut errs = Vec::new();
+     let dup = |span: Span, n: &str| Diag::new("L0106", span, format!("`{n}` is defined more than once"), "Rename one of the definitions.");
++    if let Some(definitions) = definitions { definitions(&mut p)?; }
+     // Without resolver tables the file has no `use` at all (any `use`
+     // routes to the resolver), so a non-prelude std type lust knows by
+     // name cannot be in scope (W-STD-A; the resolver checks its paths).
+@@ -8394,7 +8439,10 @@ impl<'a> crate::ty::consteval::ConstCx<'a> for CollectCx<'a> {
+                 // A body const or static of this name shadows any
+                 // module fn: the call names no fn here.
+                 Some(_) => return CallTarget::Unknown,
+-                None => self.p.fn_names.get(&last).copied(),
++                None => {
++                    if self.p.native_import(last).is_some() { return CallTarget::NonConst; }
++                    self.p.fn_names.get(&last).copied()
++                }
+             }
+         } else if segs.len() == 2 {
+             // `Self::f(..)` names the impl type `Self` means here.
+diff --git a/src/check/const_body.rs b/src/check/const_body.rs
+index 426151d7ffb67fe4f3a3b59a955d8408a1113f12..97f30d7f400e5bc218292e112611def0a060984c 100644
+--- a/src/check/const_body.rs
++++ b/src/check/const_body.rs
+@@ -65,6 +65,18 @@ pub fn check_all(p: &mut Program, errs: &mut Vec<Diag>) {
+     p.const_sites_shape = Shape::of(&p.ast);
+ }
+ 
++/// Additive inspection of the original transient initializer checks. The
++/// caller supplies policy, without reconstructing bodies or function rows.
++pub fn check_all_with(
++    p: &mut Program,
++    errs: &mut Vec<Diag>,
++    checked: &(dyn Fn(&Program, LocalDefId, &super::Checked<'_>) -> Vec<Diag> + Sync),
++) {
++    p.const_body_reads.clear();
++    check_sites_with(p, errs, &|_| true, Some(checked));
++    p.const_sites_shape = Shape::of(&p.ast);
++}
++
+ /// The AST counts that bound the initializer sites (`sites`): anonymous
+ /// consts, items, and body items. A kept program's AST with the counts of
+ /// the last walk over every site holds the same sites, except in the
+@@ -172,6 +184,15 @@ pub fn check_dirty(
+ 
+ /// Checks the initializer bodies `keep` selects and stores their reads.
+ fn check_sites(p: &mut Program, errs: &mut Vec<Diag>, keep: &dyn Fn(FnLoc) -> bool) {
++    check_sites_with(p, errs, keep, None)
++}
++
++fn check_sites_with(
++    p: &mut Program,
++    errs: &mut Vec<Diag>,
++    keep: &dyn Fn(FnLoc) -> bool,
++    checked: Option<&(dyn Fn(&Program, LocalDefId, &super::Checked<'_>) -> Vec<Diag> + Sync)>,
++) {
+     let sites = sites(p, keep);
+     if sites.is_empty() {
+         return;
+@@ -183,6 +204,11 @@ fn check_sites(p: &mut Program, errs: &mut Vec<Diag>, keep: &dyn Fn(FnLoc) -> bo
+         // Every checker error counts: a value the evaluator takes but the
+         // checker does not type is a false reject, never a dropped error.
+         let (ck, mut e) = super::check_fn(prog, f);
++        if e.is_empty() {
++            if let Some(checked) = checked {
++                e.extend(checked(prog, f, &ck));
++            }
++        }
+         let reads = if e.is_empty() {
+             // Lowering and borrowck read derive lists too (Copy operands).
+             let ((mut reads, be), noted) = super::derive_delta::scoped(prog.record_reads, || {
+diff --git a/src/check/constfn.rs b/src/check/constfn.rs
+index 62bc7dabc5b1f5e49959722d11f669824fd534cb..4e9b7a23124dcb663d4853953226dae22ee24b56 100644
+--- a/src/check/constfn.rs
++++ b/src/check/constfn.rs
+@@ -38,8 +38,14 @@ use crate::ty::{Ty, TyIntern, TyKind};
+ /// `prior_errs` is true when the body already failed type checking:
+ /// unresolved calls then stay silent instead of adding a cascade.
+ pub fn check_const_fn(p: &Program, ck: &Checked, f: &FnInfo, prior_errs: bool) -> Vec<Diag> {
++    check_const_fn_with_inline(p, ck, f, prior_errs, false)
++}
++
++/// Reuse the original checked-body walk with explicit inline-const traversal.
++/// Ordinary callers retain their separate inline-evaluator policy above.
++pub fn check_const_fn_with_inline(p: &Program, ck: &Checked, f: &FnInfo, prior_errs: bool, inline: bool) -> Vec<Diag> {
+     let Some(body) = f.def(&p.ast).body else { return Vec::new() };
+-    let mut w = Walk { p, ck, errs: Vec::new(), drop_locals: Vec::new(), moved_out: Vec::new(), loop_consumed: Vec::new(), prior_errs };
++    let mut w = Walk { p, ck, errs: Vec::new(), drop_locals: Vec::new(), moved_out: Vec::new(), loop_consumed: Vec::new(), prior_errs, inline };
+     // Parameters by value are locals the function may drop. A pattern
+     // parameter's argument local only feeds the pattern, so the
+     // pattern bindings stand in for it.
+@@ -361,6 +367,7 @@ struct Walk<'p, 'c> {
+     /// Whether each enclosing loop's value is moved out (for `break`).
+     loop_consumed: Vec<bool>,
+     prior_errs: bool,
++    inline: bool,
+ }
+ 
+ impl Walk<'_, '_> {
+@@ -636,7 +643,7 @@ impl Walk<'_, '_> {
+             Expr::Block(b) | Expr::UnsafeBlock(b) => self.block(*b, consumed, depth),
+             Expr::LabeledBlock { body, .. } => self.block(*body, consumed, depth),
+             // The const evaluator checks inline const blocks.
+-            Expr::ConstBlock(_) => {}
++            Expr::ConstBlock(b) => {if self.inline{self.block(*b, consumed, depth);}},
+             Expr::If { cond, then, els } => {
+                 self.expr(*cond, false, depth, false);
+                 self.block(*then, consumed, depth + 1);
+diff --git a/src/check/generics.rs b/src/check/generics.rs
+index 084f420a96af81551cafc7aa39f3f8c23edf4d25..278d0d38e5c2008dd68b76d7c330477040e022e7 100644
+--- a/src/check/generics.rs
++++ b/src/check/generics.rs
+@@ -1493,6 +1493,9 @@ pub struct ResolveCx<'x> {
+     /// User Adt template def and declared type/const parameter
+     /// count, by session-local index.
+     pub adt_info: &'x [(DefId, usize)],
++    /// Already collected parameter kinds/types when a definition has no
++    /// written header in this crate (independent native semantic imports).
++    pub adt_generics: &'x [Generics],
+     /// Lifetime param names of user Adt templates (W-BORROW).
+     pub adt_lifetimes: &'x FxMap<DefId, Vec<Sym>>,
+     /// User trait name to its def. Lang traits answer after it.
+@@ -4537,7 +4540,10 @@ pub(crate) fn resolve_path_ty(
+                             })
+                             .collect()
+                     })
+-                    .unwrap_or_else(|| vec![false; n_params]);
++                    .unwrap_or_else(|| cx.adt_generics.get(adt.0 as usize)
++                        .filter(|g| g.params.len() == n_params)
++                        .map(|g| g.params.iter().map(|p| matches!(p.kind, ParamKind::Const(_))).collect())
++                        .unwrap_or_else(|| vec![false; n_params]));
+                 let min = g_ast.map_or(n_params, crate::check::defaults::required);
+                 resolve_generic_args(
+                     ast,
+@@ -4563,6 +4569,27 @@ pub(crate) fn resolve_path_ty(
+                 _ => &[],
+             };
+             check_const_arg_types(ast, interner, known, cx, tys, scope, g, written, &gargs, span)?;
++        } else if let Some(g) = cx.adt_generics.get(adt.0 as usize) {
++            // Use the original const typer and value/range checks with the
++            // actual collected declaration type; no producer AST is needed.
++            let written = match &seg.args { GenericArgs::Angle(a) => a.as_slice(), _ => &[] };
++            let forms = written.iter().filter(|a| !matches!(a, AstArg::Lifetime(_)));
++            let values = gargs.iter().filter(|a| !matches!(a, GenericArg::Lifetime(_)));
++            for ((param, arg), form) in g.params.iter().zip(values).zip(forms) {
++                let (ParamKind::Const(t), GenericArg::Const(c)) = (param.kind, arg) else { continue };
++                let Some(want) = ConstScalar::of(tys, t) else { return Err(not_yet("L0203", span, "this const parameter type")); };
++                match form {
++                    AstArg::Const(e) => check_const_expr_ty(ast, interner, known, cx, tys, scope, *e, *c, want, span, "this const argument")?,
++                    AstArg::Type(t) => {
++                        let typed = match ast.ty(*t) {
++                            TyExpr::Path(segs) if segs.len() == 1 => const_name_ty(ast, interner, known, cx, tys, scope, segs[0].name).is_none_or(|s| s == want),
++                            _ => true,
++                        };
++                        if !typed || !want.holds(tys, *c) { return Err(const_mismatch(want, span, "this const argument")); }
++                    }
++                    _ => {}
++                }
++            }
+         }
+         // Omitted trailing params take their defaults.
+         let n_written = gargs.iter().filter(|g| !matches!(g, GenericArg::Lifetime(_))).count();
+@@ -5929,6 +5956,7 @@ impl GenTables {
+         ResolveCx {
+             type_names: &NO_ADTS,
+             adt_info: &self.adt_info,
++            adt_generics: &self.adt_generics,
+             adt_lifetimes: &self.adt_lifetimes,
+             trait_names: &NO_DEFS,
+             aliases: &NO_TYS,
+@@ -5944,6 +5972,7 @@ impl GenTables {
+         ResolveCx {
+             type_names,
+             adt_info: &self.adt_info,
++            adt_generics: &self.adt_generics,
+             adt_lifetimes: &self.adt_lifetimes,
+             trait_names: &self.trait_names,
+             aliases,
+@@ -11002,7 +11031,11 @@ fn instance_adt_id(p: &mut Program, def: DefId, args: ArgsId) -> AdtId {
+     let mut key = p.instance_key_hash(&crate::driver::graph::InstanceKey { def, args }).0;
+     let at = loop {
+         let at = (p.gx.inst_order.base + p.gx.inst_order.place_of(key)) as usize;
+-        if p.gx.adt_instance_of.get(at).is_none_or(|i| i.is_none()) {
++        // An imported template can be appended after existing sparse
++        // instances. Its registered definition is an occupied row too.
++        if p.gx.adt_instance_of.get(at).is_none_or(|i| i.is_none())
++            && p.defs.def_of_adt(AdtId(at as u32)).is_none()
++        {
+             break at;
+         }
+         key = key.rotate_left(17) ^ 0x9e37_79b9_7f4a_7c15;
+@@ -13176,6 +13209,12 @@ fn made_among(p: &Program, t: Ty, before: &[AdtId], depth: u32) -> bool {
+ 
+ /// `ensure_adt_instances_in` for types already in the global
+ /// store (signatures and fields at collect time).
++pub fn materialize_native_adt_types(p: &mut Program, types: &[Ty]) {
++    for &t in types {
++        ensure_global_adt_instances(p, t, 0);
++    }
++}
++
+ fn ensure_global_adt_instances(p: &mut Program, t: Ty, depth: u32) {
+     if depth > 32 {
+         return;
+diff --git a/src/check/mod.rs b/src/check/mod.rs
+index 87ea220eacbf1765bd853a0afe6c1deb3a405988..a9e4339f0bf489fb537413687cf98a63296601b4 100644
+--- a/src/check/mod.rs
++++ b/src/check/mod.rs
+@@ -1367,6 +1367,8 @@ pub enum Res {
+         derefs: u8,
+         autoref: Autoref,
+     },
++    /// An independently checked native signature and object, by complete def.
++    NativeFn(DefId),
+ }
+ 
+ /// Which scalar comparison a `Res::PrimCmp` call computes. The
+@@ -2308,6 +2310,8 @@ struct Ctx<'p> {
+     /// anonymous const of a written type): the number of locals declared
+     /// before it, which it may not name (rustc E0435). 0 outside.
+     const_floor: u32,
++    /// Includes an inline const with zero surrounding locals.
++    const_context: bool,
+ }
+ 
+ /// One name bound by a pattern alternative, with the checker
+@@ -2705,6 +2709,7 @@ fn check_fn_mode<'p>(p: &'p Program, fid: LocalDefId, mode: opaque::OpaqueMode,
+         or_log: None,
+         pat_marks: Vec::new(),
+         const_floor: 0,
++        const_context: false,
+     };
+     if let Some(sibs) = p.fn_siblings.get(&fid) {
+         let layer: Vec<((Sym, CtxtId), u32)> = sibs
+@@ -3300,8 +3305,10 @@ impl<'p> Ctx<'p> {
+     /// of its scope (`const_floor`).
+     fn in_const<R>(&mut self, f: impl FnOnce(&mut Self) -> R) -> R {
+         let outer = std::mem::replace(&mut self.const_floor, self.out.locals.len() as u32);
++        let context = std::mem::replace(&mut self.const_context, true);
+         let r = f(self);
+         self.const_floor = outer;
++        self.const_context = context;
+         r
+     }
+ 
+@@ -3985,6 +3992,26 @@ impl<'p> Ctx<'p> {
+         self.tys.intern(TyKind::FnDef(self.p.def_id(f), EMPTY_ARGS))
+     }
+ 
++    /// An independently installed item keeps its full definition identity;
++    /// there is no local FnInfo or generic/qualifier reconstruction.
++    fn native_fn_value_ty(&mut self, e: ExprId, def: DefId, segs: &[ast::PathSeg], span: Span) -> Ty {
++        let _ = self.p.sig_of(&mut self.out.reads, def);
++        if segs.iter().any(|s| s.has_args()) {
++            self.err("L0105", span, "this native function has no generic arguments", "Remove the generic arguments.");
++        }
++        self.set_res(e, Res::NativeFn(def));
++        self.tys.intern(TyKind::FnDef(def, EMPTY_ARGS))
++    }
++
++    fn check_native_const_call(&mut self, r: Res, span: Span) {
++        if matches!(r, Res::NativeFn(_) | Res::Indirect)
++            && (self.const_context
++                || (self.closure_rets.is_empty() && (self.f.loc.is_const_init() || self.f.is_const)))
++        {
++            self.err(crate::ty::consteval::C_NONCONST, span, "cannot call a non-const native function or function pointer in a constant context", "Move the call out of the constant context.");
++        }
++    }
++
+     /// An inherent fn as a value through a qualified path (`<W<u16>>::get`):
+     /// a generic impl's fn instantiates as on a plain path, with the
+     /// written Self type fixing the impl's params.
+@@ -4528,7 +4555,11 @@ impl<'p> Ctx<'p> {
+                     let params = fields.into_iter().map(|t| self.subst_settled(t, &adt_args)).collect();
+                     Some((params, self.tys.mk_adt(def, &adt_args)))
+                 } else {
+-                    let f = p.local_def(def.hash)?;
++                    if let Some((params, ret, _)) = p.native_fn(def) {
++                        let _ = p.sig_of(&mut self.out.reads, def);
++                        return self.tys.args(args).is_empty().then(|| (params.to_vec(), ret));
++                    }
++                    let f = p.local_def(def.hash).filter(|&f| p.def_id(f) == def)?;
+                     let fargs: Vec<GenericArg> = self.tys.args(args).to_vec();
+                     match p.sig_of(&mut self.out.reads, def) {
+                         SigOf::Fn(info) if fargs.is_empty() => Some((info.params.clone(), p.ret_view(f))).map(|(ps, r)| (ps, self.callee_ret(r))),
+@@ -4680,7 +4711,7 @@ impl<'p> Ctx<'p> {
+     /// The free fn a value binding names, if it names one.
+     fn binding_fn(&mut self, name: Sym) -> Option<LocalDefId> {
+         match self.binding(Namespace::Value, name) {
+-            BindingRes::Def(def) if self.p.binding_kind(def) == Some(DefsKind::Fn) => self.p.local_def(def.hash),
++            BindingRes::Def(def) if self.p.binding_kind(def) == Some(DefsKind::Fn) => self.p.local_def(def.hash).filter(|&f| self.p.def_id(f) == def),
+             _ => None,
+         }
+     }
+@@ -12117,12 +12148,15 @@ impl<'p> Ctx<'p> {
+             let bound = self.binding(Namespace::Value, name);
+             if let BindingRes::Def(def) = bound
+                 && p.binding_kind(def) == Some(DefsKind::Fn)
+-                && let Some(f) = p.local_def(def.hash)
++                && let Some(f) = p.local_def(def.hash).filter(|&f| p.def_id(f) == def)
+             {
+                 self.set_res(e, Res::Fn(f));
+                 return self.fn_value_ty(e, f, span);
+             }
+             if let BindingRes::Def(def) = bound {
++                if p.native_fn(def).is_some() {
++                    return self.native_fn_value_ty(e, def, segs, span);
++                }
+                 match p.binding_kind(def) {
+                     Some(DefsKind::Const) => {
+                         if let Some(idx) = p.const_by_def(def) {
+@@ -14195,7 +14229,8 @@ impl<'p> Ctx<'p> {
+                     .builtin_item_res(def, cargs)
+                     .or_else(|| self.prim_item_res(def, cargs))
+                     .map(|(r, _, _)| r)
+-                    .or_else(|| self.p.local_def(def.hash).map(Res::Fn)),
++                    .or_else(|| self.p.native_fn(def).filter(|_| self.tys.args(cargs).is_empty()).map(|_| Res::NativeFn(def)))
++                    .or_else(|| self.p.local_def(def.hash).filter(|&f| self.p.def_id(f) == def).map(Res::Fn)),
+             },
+             _ => None,
+         }
+@@ -14464,6 +14499,23 @@ impl<'p> Ctx<'p> {
+         if is_value {
+             return self.value_call(e, callee, args, span);
+         }
++        // The resolver has already rewritten independent imports to their
++        // actual binding. The provider installed the checked signature before
++        // body checks; do not search a local function by its hash.
++        if let Expr::Path(segs) = p.ast.expr(callee)
++            && segs.len() == 1 && self.body_item_of(segs[0].name).is_none()
++            && let BindingRes::Def(def) = self.binding(Namespace::Value, segs[0].name)
++            && let Some((params, ret, _)) = p.native_fn(def)
++        {
++            let _ = p.sig_of(&mut self.out.reads, def);
++            if segs[0].has_args() {
++                self.err("L0105", span, "this native function has no generic arguments", "Remove the generic arguments.");
++            }
++            self.set_res(e, Res::NativeFn(def));
++            self.check_args(params, args, span);
++            self.check_native_const_call(Res::NativeFn(def), span);
++            return ret;
++        }
+         // `std::mem::drop(value)`: move the value and drop it now.
+         // A user fn or body item named `drop` shadows the prelude
+         // name, so the one-segment form checks those first.
+@@ -25536,7 +25588,14 @@ impl<'p> crate::ty::consteval::ConstCx<'p> for CheckCx<'_, 'p> {
+                 // A body const or static of this name shadows any
+                 // module fn: the call names no fn here.
+                 Some(_) => return CallTarget::Unknown,
+-                None => self.cx.binding_fn(last),
++                None => {
++                    if let Some(def) = p.native_import(last) {
++                        let _ = self.cx.binding(Namespace::Value, last);
++                        let _ = p.sig_of(&mut self.cx.out.reads, def);
++                        return CallTarget::NonConst;
++                    }
++                    self.cx.binding_fn(last)
++                }
+             }
+         } else {
+             match self.cx.resolve_assoc(segs, span) {
+diff --git a/src/check/outlives.rs b/src/check/outlives.rs
+index 01217ad379d1e563a95cc34dfccbfd4ce4fbebca..00a9e7588a6cba4893f69482837a8e84c518991f 100644
+--- a/src/check/outlives.rs
++++ b/src/check/outlives.rs
+@@ -743,10 +743,22 @@ fn infer_adts(p: &mut Program) {
+ fn check_adt_statics(p: &mut Program, errs: &mut Vec<Diag>) {
+     let mut defs: Vec<DefId> = p.regions.adt_fields.keys().copied().collect();
+     defs.sort_by_key(|d| (d.krate.0, d.hash.0));
+-    for d in defs {
++    check_adt_statics_in(p, &defs, true, errs);
++}
++
++/// Validate newly staged native shapes before semantic publication. This
++/// reuses the original inference and static-obligation walk, leaves queued
++/// consumer obligations intact, and grants no trusted-source span exemption.
++pub fn check_native_adts(p: &mut Program, defs: &[DefId], errs: &mut Vec<Diag>) {
++    infer_adts(p);
++    check_adt_statics_in(p, defs, false, errs);
++}
++
++fn check_adt_statics_in(p: &mut Program, defs: &[DefId], trusted_source: bool, errs: &mut Vec<Diag>) {
++    for &d in defs {
+         let Some(a) = p.adt_by_def(d) else { continue };
+         let span = p.adt(a).span;
+-        if p.shipped_crate_at(span).is_some() || p.in_lang_methods(span) {
++        if trusted_source && (p.shipped_crate_at(span).is_some() || p.in_lang_methods(span)) {
+             continue;
+         }
+         let cx = Cx { regions: &p.regions, index: &p.gx.index };
+diff --git a/src/driver/cache.rs b/src/driver/cache.rs
+index da28835400f894866adb85f436e2cbdf109797d7..bec4630c3e8d1123c282a9dc2ccfcefe9c0f68a4 100644
+--- a/src/driver/cache.rs
++++ b/src/driver/cache.rs
+@@ -239,9 +239,10 @@ fn forget_used(dir: &Path) {
+ /// outside the source bytes (`env!`, `option_env!`, the `include!`
+ /// family): such a request never enters this cache, since its key
+ /// cannot see env vars or included files (added for W-MACRO).
++#[path = "../../../../crates/lustr-native-core/src/native_cache_inputs.rs"]
++mod native_inputs;
+ fn src_reads_outside(src: &[u8]) -> bool {
+-    const NEEDLES: &[&[u8]] = &[b"env!", b"option_env!", b"include!", b"include_str!", b"include_bytes!"];
+-    NEEDLES.iter().any(|n| src.windows(n.len()).any(|w| w == *n))
++    native_inputs::reads_outside(src)
+ }
+ 
+ impl Cache {
+diff --git a/src/driver/compile.rs b/src/driver/compile.rs
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..5ff6d54646e896e05286532b4068e25be09e93c7 100644
+--- a/src/driver/compile.rs
++++ b/src/driver/compile.rs
+@@ -2552,6 +2552,11 @@ fn location_path(p: &str, library: &Path, display_root: Option<&Path>, client: &
+ }
+ 
+ pub fn compile(req: &Request, session: &mut Session) -> Response {
++    compile_observed(req, session, None)
++}
++
++pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&dyn super::PhaseObserver>) -> Response {
++    let phase_id = observer.map(|_| super::PhaseId::next());
+     let mut t = Timer::new();
+     crate::driver::cache::begin_build(&req.file);
+     if req.session != session.key {
+@@ -4081,7 +4086,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+     // switches, debug info, unwind tables) makes every slot's C again, as a one-shot build
+     // does: its slot cache holds C of the other form (a front image saved by a tcc build,
+     // then a release driver build). A check makes no C and keeps the key.
+-    let release = super::release_c::on(caches.persistent, req.cc);
++    let mixed = req.session.krate.target_kind == "lustr-mixed-native";
++    let release = mixed || super::release_c::on(caches.persistent, req.cc);
+     if req.cmd == Cmd::Build {
+         let key = super::release_c::codegen_key(release, req.debug, program.unwind_tables);
+         if caches.codegen_key != key {
+@@ -4296,17 +4302,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+         super::item_oracle::check(front, caches, Ok(&program), &work, fn_count, hashes, lines, visits.path, crate_ids, build, tables);
+         t.lap("item oracle");
+     }
++    let phase = phase_id.map(|id| super::Prepared { id, request: req, input: &front.ast, program: &program, map: &map, source: &src, work: &work });
++    if let (Some(observer), Some(phase)) = (observer, phase) { observer.prepared(phase); }
+     let results = par_map(&work, |&i| {
+         let f = LocalDefId(i as u32);
+         // Lowering and borrowck read derive lists too (Copy operands,
+         // moves): their notes join the body's reads (check/derive_delta.rs).
+         let ((body, errs), noted) = check::derive_delta::scoped(program.record_reads, || {
+             let (checked, mut errs) = check::check_fn(&program, f);
++            if let (Some(observer), Some(phase)) = (observer, phase) {
++                check::derive_delta::unlogged(|| observer.checked(phase, f, &checked, &errs));
++            }
+             if !errs.is_empty() {
+                 return (None, errs);
+             }
+             let body = lower::lower(&program, f, checked);
+             errs.extend(borrowck::borrowck(&program, &body));
++            if let (Some(observer), Some(phase)) = (observer, phase) {
++                check::derive_delta::unlogged(|| observer.lowered(phase, f, &body, &errs));
++            }
+             (Some(body), errs)
+         });
+         let body = body.filter(|_| keep_bodies).map(|mut b| {
+@@ -4370,6 +4384,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+         diags.push(Diag::new("L0130", diag::Span::default(), "no `main` function", "Add `fn main() { ... }`."));
+     }
+     t.lap(if mode == "full" { "check+borrowck (par)" } else { "check changed fns (par)" });
++    if let (Some(observer), Some(phase)) = (observer, phase) { observer.diagnostics(phase, &diags); }
+     // A one-shot process (`leak_at_exit`) exits right after this call. Freeing the IR and
+     // program arenas, mostly built on worker threads, costs about 10 ms on a 31k-line crate,
+     // so leak them on every return below and let the OS reclaim the memory at exit. A
+@@ -4450,6 +4465,17 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+     // from cached IR above.
+     let mut bodies: Vec<(usize, ir::Body)> = work.iter().copied().zip(results).filter_map(|(i, r)| r.0.map(|b| (i, b))).collect();
+     bodies.extend(reemit);
++    if mixed {
++        let selected = program.fns.iter().enumerate().find(|(_, f)| program.interner.get(f.name) == req.session.krate.target_name);
++        let total = selected.is_some_and(|(i, _)| bodies.iter().find(|(n, _)| *n == i)
++            .map_or_else(|| caches.out.get(slot(i)).is_some_and(|o| o.mixed_total), |(_, b)| super::mixed::total(b)));
++        if !total {
++            return Response { code: 1, stderr: "lustr mixed boundary unavailable: function can access an unrepresented runtime\n".into(), ..Default::default() };
++        }
++        // This is a proved nounwind function, not a different panic strategy.
++        // Keep checking/lowering under the requested strategy; omit the native
++        // exception machinery only when generating this total scalar unit.
++    }
+     // Each fn's base line: cgen stores its line numbers relative to it
+     // and the main unit adds each slot's base back, so a reused body's
+     // C stays right when its source text moves. An instance's base is
+@@ -4498,7 +4524,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+     let (outs, cg_noted): (Vec<_>, Vec<_>) = par_map(&bodies, |(i, b)| {
+         check::derive_delta::scoped(program.record_reads, || {
+             cgen::in_layout_phase(layout_tag, || {
+-                cgen::names::with(rn, || cgen::gen_fn(&program, b, &map, line_base_of(front, *i), &front.fn_slot))
++                cgen::names::with(rn, || {
++                    let total = mixed && super::mixed::total(b);
++                    let mut output = if total {
++                        cgen::gen_fn_total(&program, b, &map, line_base_of(front, *i), &front.fn_slot)
++                    } else {
++                        cgen::gen_fn(&program, b, &map, line_base_of(front, *i), &front.fn_slot)
++                    };
++                    output.mixed_total = total;
++                    output
++                })
+             })
+         })
+     })
+@@ -4681,6 +4716,15 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+     }
+     let glue_changed = shared_changed || regenerated || statics_changed;
+     t.lap("codegen (par)");
++    if mixed {
++        let response = cgen::names::with(rn, || super::mixed::emit(
++            req, &program, &caches.out, &caches.glue, &front.fn_slot,
++            rn.expect("mixed units use stable native names"), bodies.len(),
++        ));
++        program.verified = verified;
++        super::patch::keep(front, program);
++        return response;
++    }
+     // Nothing reads the IR after codegen. A one-shot build leaks it at exit
+     // (`leak_at_exit`), but on a large program it is the largest block
+     // alive at the peak (ts-rust's bins: about 2.4 GB of 9.4 GB, through
+@@ -4751,7 +4795,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+     // rebuilds and the base
+     // relinks over the existing unit objects. Unrelated units keep
+     // their objects, in the session and in the disk unit cache.
+-    let fresh_base = caches.objects != Some(req.debug) || !caches.persistent;
++    let standalone = caches.output == super::session::OutputKind::Standalone;
++    let fresh_base = caches.objects != Some(req.debug) || !caches.persistent || standalone;
+     let cap_grown = n_slots > caches.table_cap;
+     if fresh_base || cap_grown {
+         caches.table_cap = n_slots * 2 + 64;
+@@ -5807,6 +5852,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+     // this check keeps that a pin, not a hope.
+     if let Some(run_args) = &req.run_args
+         && !caches.persistent
++        && standalone
+         && fresh_base
+         && groups.len() == 1
+         && !req.debug
+@@ -5883,7 +5929,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+     caches.objects = Some(req.debug);
+     t.lap("tcc compile");
+     let all_base: Vec<PathBuf> = [1, 2, 3, LOC_UNIT].into_iter().chain(link_fn_units.iter().copied()).map(base_obj).collect();
+-    let linked = if !caches.persistent {
++    let linked = if standalone {
+         let mut objs = vec![base_obj(0)];
+         objs.extend(all_base);
+         crate::tcc::link(&objs, &req.out, req.debug)
+@@ -5958,7 +6004,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+     // a small grace count while no known output file still references them. A binary the user
+     // kept keeps its base; one that was overwritten or deleted does not. A running program
+     // keeps its mapped copy after unlink.
+-    if caches.persistent && !caches.base_name.is_empty() {
++    if !standalone && !caches.base_name.is_empty() {
+         let soname = format!("lib{}.so", caches.base_name);
+         if let Some(base_dir) = caches.base_dir.clone() {
+             record_base_user(&base_dir, &soname, &req.out);
+diff --git a/src/driver/graph.rs b/src/driver/graph.rs
+index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..f751db594f37ed510b0ffa7b0c9d0ae75d500d72 100644
+--- a/src/driver/graph.rs
++++ b/src/driver/graph.rs
+@@ -503,6 +503,8 @@ pub(crate) fn def_crate_hash(p: &Program, def: DefId) -> u64 {
+     } else if def.krate == BUILTIN_CRATE {
+         static BUILTIN: std::sync::OnceLock<u64> = std::sync::OnceLock::new();
+         *BUILTIN.get_or_init(|| crate::def::stable_crate_hash("lust-builtin-v1", "lib", "builtin", false).0)
++    } else if let Some((_, _, link)) = p.native_fn(def) {
++        link.id.krate.0
+     } else {
+         def.krate.0 as u64
+     }
+@@ -2344,7 +2346,14 @@ fn sig_fingerprint(p: &Program, def: DefId) -> Fingerprint {
+         2u8.hash(&mut h);
+         // Const and static payloads are found by def; aliases by flat
+         // name, which the def record carries.
+-        if let Some(item) = p.const_by_def(def).map(|i| &p.consts[i as usize]) {
++        if let Some((params, ret, link)) = p.native_fn(def) {
++            3u8.hash(&mut h);
++            link.id.krate.0.hash(&mut h);
++            link.symbol.hash(&mut h);
++            (params.len() as u64).hash(&mut h);
++            for &t in params { hash_ty(&mut h, p, &p.tys, t); }
++            hash_ty(&mut h, p, &p.tys, ret);
++        } else if let Some(item) = p.const_by_def(def).map(|i| &p.consts[i as usize]) {
+             0u8.hash(&mut h);
+             hash_ty_deep(&mut h, p, &p.tys, item.ty, &mut seen);
+             value_fp(p, &item.value, &item.value_fp).hash(&mut h);
+@@ -4187,7 +4196,7 @@ fn main() {}
+                 if let Terminator::Call { target, unwind, .. } = &b.term {
+                     assert!(unwind.is_some(), "every call carries a cleanup edge (W-CORELANG)");
+                     match target {
+-                        CallTarget::Fn(_) | CallTarget::Indirect(_) | CallTarget::Dyn(_) => fn_calls += 1,
++                        CallTarget::Fn(_) | CallTarget::NativeFn(_) | CallTarget::Indirect(_) | CallTarget::Dyn(_) => fn_calls += 1,
+                         CallTarget::Builtin(_) | CallTarget::Intrinsic(_) => builtin_calls += 1,
+                     }
+                 }
+diff --git a/src/driver/ir_cache.rs b/src/driver/ir_cache.rs
+index 8fbed03aaba6dac6347970d1fd7926ae705631a0..6f36947a858612928e941b3c81e6bd794cae18ff 100644
+--- a/src/driver/ir_cache.rs
++++ b/src/driver/ir_cache.rs
+@@ -265,6 +265,11 @@ fn hash_rvalue(h: &mut FxHasher, p: &Program, tys: &impl TyIntern, r: &Rvalue, s
+             hash_def(h, p, p.def_id(*f));
+             ty(h, *t, seen);
+         }
++        Rvalue::NativeFnValue(def, t) => {
++            51u8.hash(h);
++            hash_def(h, p, *def);
++            ty(h, *t, seen);
++        }
+         Rvalue::ItemShim(item, t) => {
+             50u8.hash(h);
+             ty(h, *item, seen);
+@@ -417,6 +422,7 @@ pub(crate) fn ir_fingerprint(p: &Program, body: &Body, map: &SourceMap, base_lin
+                     CallTarget::Intrinsic(i) => (2u8, i).hash(&mut h),
+                     CallTarget::Indirect(l) => (3u8, l).hash(&mut h),
+                     CallTarget::Dyn(k) => (4u8, k).hash(&mut h),
++                    CallTarget::NativeFn(def) => { 5u8.hash(&mut h); hash_def(&mut h, p, *def); }
+                 }
+                 (args.len() as u64).hash(&mut h);
+                 for a in args {
+@@ -584,6 +590,7 @@ enum CachedRvalue {
+     StaticLoad(DefId),
+     StaticRef(DefId),
+     FnValue(DiskDefId, u32),
++    NativeUnsupported,
+     ItemShim(u32, u32),
+     MakeDyn(CachedOperand, u32, u32),
+     DynUpcast(CachedOperand, Vec<u32>),
+@@ -612,6 +619,8 @@ enum CachedTarget {
+     Intrinsic(u32),
+     Indirect(Local),
+     Dyn(u32),
++    /// Independent native inputs do not yet have a retained-cache contract.
++    NativeUnsupported,
+ }
+ 
+ /// Builds `TyTree`s from one body's type store, memoized per `Ty`.
+@@ -914,6 +923,7 @@ fn cache_rvalue(b: &mut TreeBuilder, p: &Program, r: &Rvalue) -> CachedRvalue {
+         Rvalue::StaticLoad(i) => CachedRvalue::StaticLoad(p.static_defs[*i as usize]),
+         Rvalue::StaticRef(i) => CachedRvalue::StaticRef(p.static_defs[*i as usize]),
+         Rvalue::FnValue(f, t) => CachedRvalue::FnValue(p.disk_id(*f), b.ty(*t)),
++        Rvalue::NativeFnValue(..) => CachedRvalue::NativeUnsupported,
+         Rvalue::ItemShim(item, t) => CachedRvalue::ItemShim(b.ty(*item), b.ty(*t)),
+         Rvalue::MakeDyn { ptr, src, dyn_ty } => CachedRvalue::MakeDyn(cache_operand(b, p, ptr), b.ty(*src), b.ty(*dyn_ty)),
+         Rvalue::DynUpcast { ptr, path } => CachedRvalue::DynUpcast(cache_operand(b, p, ptr), path.clone()),
+@@ -960,6 +970,7 @@ pub(crate) fn cache_body(p: &Program, body: &Body, file_hash: u64, slot: u32, us
+                         CallTarget::Intrinsic(i) => CachedTarget::Intrinsic(*i),
+                         CallTarget::Indirect(l) => CachedTarget::Indirect(*l),
+                         CallTarget::Dyn(k) => CachedTarget::Dyn(*k),
++                        CallTarget::NativeFn(_) => CachedTarget::NativeUnsupported,
+                     },
+                     args: args.iter().map(|a| cache_operand(&mut b, p, a)).collect(),
+                     dest: dest.clone(),
+@@ -1107,6 +1118,7 @@ pub(crate) fn rebuild<'p>(p: &'p Program, cached: &CachedBody, fn_id: LocalDefId
+             CachedRvalue::StaticLoad(def) => Rvalue::StaticLoad(p.static_by_def(*def)?),
+             CachedRvalue::StaticRef(def) => Rvalue::StaticRef(p.static_by_def(*def)?),
+             CachedRvalue::FnValue(disk, t) => Rvalue::FnValue(local_of(disk)?, intern.ty(tys, *t)?),
++            CachedRvalue::NativeUnsupported => return None,
+             CachedRvalue::ItemShim(item, t) => Rvalue::ItemShim(intern.ty(tys, *item)?, intern.ty(tys, *t)?),
+             CachedRvalue::MakeDyn(o, src, dyn_ty) => {
+                 Rvalue::MakeDyn { ptr: operand(intern, tys, strings, o)?, src: intern.ty(tys, *src)?, dyn_ty: intern.ty(tys, *dyn_ty)? }
+@@ -1152,6 +1164,7 @@ pub(crate) fn rebuild<'p>(p: &'p Program, cached: &CachedBody, fn_id: LocalDefId
+                     CachedTarget::Intrinsic(i) => CallTarget::Intrinsic(*i),
+                     CachedTarget::Indirect(l) => CallTarget::Indirect(*l),
+                     CachedTarget::Dyn(k) => CallTarget::Dyn(*k),
++                    CachedTarget::NativeUnsupported => return None,
+                 },
+                 args: args.iter().map(|a| operand(&mut intern, &mut tys, &strings, a)).collect::<Option<Vec<_>>>()?,
+                 dest: dest.clone(),
+diff --git a/src/driver/mod.rs b/src/driver/mod.rs
+index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..06475058b58662ad8fed81e51873a0a7e4bbd4dd 100644
+--- a/src/driver/mod.rs
++++ b/src/driver/mod.rs
+@@ -22,6 +22,8 @@ mod patch;
+ pub(crate) mod sig_nodes;
+ mod span_shift;
+ mod session;
++#[path = "../../../../crates/lustr-native-core/src/mixed_unit.rs"]
++mod mixed;
+ pub(crate) mod release_c;
+ pub mod read_cover;
+ 
+@@ -34,7 +36,14 @@ pub(crate) use patch::drop_unkept;
+ /// patch oracle (`item_oracle.rs`) a daemon check request then compares
+ /// its answer with a fresh session's.
+ pub fn compile(req: &Request, session: &mut Session) -> Response {
+-    let resp = compile::compile(req, session);
++    compile_observed(req, session, None)
++}
++
++/// An optional, call-borrowed view of the actual body-checking phase. Early
++/// parse/collect failures and cached check answers produce no phase events.
++/// Observations do not grant acceptance or establish cross-request reuse.
++pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&dyn PhaseObserver>) -> Response {
++    let resp = compile::compile_observed(req, session, observer);
+     if item_oracle::on() {
+         item_oracle::compare_response(req, session, &resp);
+     }
+@@ -51,4 +60,44 @@ pub fn compile_background(req: &Request, session: &mut Session) -> Response {
+     }
+     resp
+ }
+-pub use session::Session;
++pub use session::{OutputKind, Session};
++
++/// Process-local identity of one observed driver invocation, not crate metadata
++/// or a semantic fingerprint. Allocated only when an observer is requested.
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub struct PhaseId(u64);
++impl PhaseId {
++    fn next() -> Self {
++        use std::sync::atomic::{AtomicU64, Ordering};
++        static NEXT: AtomicU64 = AtomicU64::new(1);
++        Self(NEXT.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1)).expect("native phase identity exhausted"))
++    }
++}
++
++/// All references are borrowed from the current invocation. `program.resolved`
++/// is its actual resolver table generation; neither it nor the input AST is a
++/// stable on-disk identity. No retained preferred program is consulted here.
++#[derive(Clone, Copy)]
++pub struct Prepared<'a> {
++    pub id: PhaseId,
++    pub request: &'a Request,
++    pub input: &'a std::sync::Arc<crate::ast::Ast>,
++    pub program: &'a crate::check::collect::Program,
++    pub map: &'a crate::diag::SourceMap,
++    /// Root text used when the single-file path has no SourceMap entry.
++    pub source: &'a str,
++    /// Functions actually checked now; others may have qualified native reuse.
++    pub work: &'a [usize],
++}
++
++/// Callbacks receive shared phase borrows. Body callbacks run on native workers,
++/// before Checked is consumed by lowering and before IR is discarded. Their
++/// order is unspecified; aggregate diagnostics run after all workers settle,
++/// before rendering/drop/keep_err. There is no synthesized Checked for reused
++/// functions and no change to the driver's worklist or error decisions.
++pub trait PhaseObserver: Sync {
++    fn prepared(&self, _phase: Prepared<'_>) {}
++    fn checked(&self, _phase: Prepared<'_>, _function: crate::def::LocalDefId, _checked: &crate::check::Checked<'_>, _diagnostics: &[crate::diag::Diag]) {}
++    fn lowered(&self, _phase: Prepared<'_>, _function: crate::def::LocalDefId, _body: &crate::ir::Body<'_>, _diagnostics: &[crate::diag::Diag]) {}
++    fn diagnostics(&self, _phase: Prepared<'_>, _diagnostics: &[crate::diag::Diag]) {}
++}
+diff --git a/src/driver/session.rs b/src/driver/session.rs
+index 8eabf97640455036f5f7c895cd034b98f4c5b9d3..5803e7fdd0e0f10d68e2587afa8ec68f407e0a2c 100644
+--- a/src/driver/session.rs
++++ b/src/driver/session.rs
+@@ -395,8 +395,11 @@ pub(crate) struct Caches {
+     pub(crate) obj_dir: PathBuf,
+     /// Units compiled into `obj_dir` with the current layout, and with which debug setting.
+     pub(crate) objects: Option<bool>,
+-    /// A daemon session builds against libbase.so; a one-shot session links statically.
++    /// Retain semantic read sets and incremental frontend state between requests.
+     pub(crate) persistent: bool,
++    /// Link layout is independent of semantic persistence. The constructor
++    /// preserves the original daemon/one-shot defaults.
++    pub(crate) output: OutputKind,
+     /// The process exits right after this session's request (`lust check` and `lust test`
+     /// one-shots set it): compile leaks the program and IR instead of freeing them. A
+     /// non-persistent session inside a daemon (the patch oracle's fresh compile) frees them.
+@@ -420,6 +423,14 @@ pub(crate) struct Caches {
+     pub(crate) overlays: std::collections::BTreeSet<usize>,
+ }
+ 
++/// The native driver's final link layout. This does not change checking,
++/// target/profile policy, or permit object reuse without its input proof.
++#[derive(Clone, Copy, PartialEq, Eq)]
++pub enum OutputKind {
++    Standalone,
++    SessionImage,
++}
++
+ pub struct Session {
+     /// The one crate selection this session serves. A request whose key does
+     /// not match is a routing bug; compile rejects it instead of mixing state.
+@@ -562,6 +573,7 @@ impl Session {
+                 obj_dir,
+                 objects: None,
+                 persistent,
++                output: if persistent { OutputKind::SessionImage } else { OutputKind::Standalone },
+                 leak_at_exit: false,
+                 image_one_shot: false,
+                 overlays: Default::default(),
+@@ -577,6 +589,19 @@ impl Session {
+         &self.caches.obj_dir
+     }
+ 
++    /// Select a link layout without discarding semantic state. Standalone
++    /// builds regenerate the complete base-form object set and link it once;
++    /// they never leave an executable dependent on this session's libbase.
++    /// A layout change invalidates compiled objects, not language checks.
++    pub fn set_output(&mut self, output: OutputKind) {
++        if self.caches.output != output {
++            self.caches.objects = None;
++            self.caches.overlays.clear();
++            self.caches.base_name.clear();
++            self.caches.output = output;
++        }
++    }
++
+     /// Before a front image save (src/image.rs): joins the session's side
+     /// threads, so the image holds no handle of a thread that ends with
+     /// this process.
+diff --git a/src/ir.rs b/src/ir.rs
+index e65c6c518a7494fab411cfad2249c8fda39b3ec1..10e48c8551bceb2fc23e8bf1fd03f71585a470c5 100644
+--- a/src/ir.rs
++++ b/src/ir.rs
+@@ -151,6 +151,9 @@ pub enum Rvalue {
+     /// then yields the slot trampoline address). Proposed by W-CGEN
+     /// for W-CORELANG's fn-pointer lowering.
+     FnValue(LocalDefId, Ty),
++    /// A genuinely independent native function item, or its reified pointer.
++    /// It names installed signature/linkage data, never a local function slot.
++    NativeFnValue(crate::def::DefId, Ty),
+     /// A constructor item (its `FnDef` type, `.0`: a tuple struct or
+     /// variant, `Some`, `Ok`, `Err`) or an integer type's primitive
+     /// builtin method item (`u32::isqrt`) coerced to fn pointer type
+@@ -239,6 +242,8 @@ pub enum CallTarget {
+     /// payload is the method's word index in that receiver's vtable.
+     /// The callee gets the data pointer, then `args[1..]`.
+     Dyn(u32),
++    /// An installed independent native definition. Never a local slot.
++    NativeFn(crate::def::DefId),
+ }
+ 
+ #[derive(Clone, Debug)]
+@@ -496,7 +501,7 @@ pub fn visit_rvalue_reads<'r>(rv: &'r Rvalue, op: &mut impl FnMut(&'r Operand),
+                 op(h);
+             }
+         }
+-        Rvalue::StaticLoad(_) | Rvalue::StaticRef(_) | Rvalue::FnValue(..) | Rvalue::ItemShim(..) => {}
++        Rvalue::StaticLoad(_) | Rvalue::StaticRef(_) | Rvalue::FnValue(..) | Rvalue::NativeFnValue(..) | Rvalue::ItemShim(..) => {}
+     }
+ }
+ 
+diff --git a/src/ir/dropflags.rs b/src/ir/dropflags.rs
+index 379cd03b29cd1295b2df1e5d1189e48c597701cb..a275b0e0afda125f8775f8c558693f1d7ed36473 100644
+--- a/src/ir/dropflags.rs
++++ b/src/ir/dropflags.rs
+@@ -530,7 +530,7 @@ pub(crate) fn may_panic_before_moves(dest: &Place, rv: &Rvalue) -> bool {
+         Rvalue::Use(o) | Rvalue::Opt(_, Some(o)) | Rvalue::Res(_, _, o) => op_indexed(o),
+         Rvalue::Ref(_, pl) | Rvalue::Discriminant(pl) | Rvalue::SliceOf(pl) | Rvalue::LenOf(pl) => indexed(pl),
+         Rvalue::Aggregate(_, _, os) | Rvalue::TupleAgg(_, os) | Rvalue::ArrayAgg(_, os) => os.iter().any(op_indexed),
+-        Rvalue::Opt(_, None) | Rvalue::StaticRef(_) | Rvalue::FnValue(..) | Rvalue::ItemShim(..) => false,
++        Rvalue::Opt(_, None) | Rvalue::StaticRef(_) | Rvalue::FnValue(..) | Rvalue::NativeFnValue(..) | Rvalue::ItemShim(..) => false,
+         Rvalue::MakeDyn { ptr, .. } | Rvalue::DynUpcast { ptr, .. } | Rvalue::DynMeta { ptr, .. } | Rvalue::DynData { ptr, .. } => {
+             op_indexed(ptr)
+         }
+diff --git a/src/lexer.rs b/src/lexer.rs
+index fcafe901776537f1806d71104b397fb537a3cf27..0b38fa2a9cf691c708a9022323ffb815d676bae8 100644
+--- a/src/lexer.rs
++++ b/src/lexer.rs
+@@ -774,6 +774,16 @@ fn is_nfc(s: &str) -> bool {
+     matches!(nfc_of(s), Cow::Borrowed(_))
+ }
+ 
++/// Validate an already interned lifetime name using the lexer's original
++/// Unicode XID and NFC rules. This consumes a name, not source tokens; item
++/// declaration policy (for example reserved `static`/`_`) belongs to its caller.
++pub fn lifetime_name(name: &str) -> bool {
++    let mut chars = name.chars();
++    chars.next().is_some_and(|c| c == '_' || is_xid_start(c))
++        && chars.all(is_xid_continue)
++        && is_nfc(name)
++}
++
+ fn suffix(s: &str) -> Option<Option<IntSuffix>> {
+     use IntSuffix::*;
+     Some(Some(match s {
+diff --git a/src/lower.rs b/src/lower.rs
+index 683a99e32a5ee2ef6f71e6ed568405cee685ede2..8a0ba94d01e817a561b424b48b66a8ed44166125 100644
+--- a/src/lower.rs
++++ b/src/lower.rs
+@@ -488,7 +488,7 @@ impl<'p> Lower<'p> {
+             }
+             Expr::Path(_) => {
+                 self.ck.const_value(e).is_some()
+-                    || matches!(self.ck.res(e), Res::OptNone | Res::Fn(_))
++                    || matches!(self.ck.res(e), Res::OptNone | Res::Fn(_) | Res::NativeFn(_))
+                     || (matches!(self.ck.res(e), Res::Variant(..)) && !matches!(self.kind(ty), TyKind::FnDef(..)))
+             }
+             Expr::StructLit { fields, update: None, .. } => fields.clone().iter().all(|f| self.promotable(f.2)),
+@@ -674,7 +674,7 @@ impl<'p> Lower<'p> {
+                     Rvalue::Use(o) | Rvalue::Opt(_, Some(o)) | Rvalue::Res(_, _, o) => op_indexed(o),
+                     Rvalue::Ref(_, pl) | Rvalue::Discriminant(pl) | Rvalue::SliceOf(pl) | Rvalue::LenOf(pl) => indexed(pl),
+                     Rvalue::Aggregate(_, _, os) | Rvalue::TupleAgg(_, os) | Rvalue::ArrayAgg(_, os) => os.iter().any(op_indexed),
+-                    Rvalue::Opt(_, None) | Rvalue::StaticRef(_) | Rvalue::FnValue(..) | Rvalue::ItemShim(..) => false,
++                    Rvalue::Opt(_, None) | Rvalue::StaticRef(_) | Rvalue::FnValue(..) | Rvalue::NativeFnValue(..) | Rvalue::ItemShim(..) => false,
+                     Rvalue::MakeDyn { ptr, .. } | Rvalue::DynUpcast { ptr, .. } | Rvalue::DynMeta { ptr, .. } | Rvalue::DynData { ptr, .. } => {
+                         op_indexed(ptr)
+                     }
+@@ -1718,7 +1718,12 @@ impl<'p> Lower<'p> {
+             self.assign(Place::local(t), Rvalue::ItemShim(found, target), span);
+             return Operand::Copy(Place::local(t));
+         }
+-        let f = self.p.local_def(def.hash).expect("ReifyFn names a local fn");
++        if self.p.native_fn(def).is_some() {
++            let t = self.temp(target);
++            self.assign(Place::local(t), Rvalue::NativeFnValue(def, target), span);
++            return Operand::Copy(Place::local(t));
++        }
++        let f = self.p.local_def(def.hash).filter(|&f| self.p.def_id(f) == def).expect("ReifyFn names a local fn");
+         let args = self.body.tys.args(args).to_vec();
+         let f = if args.is_empty() { f } else { crate::check::generics::instance_for(self.p, &self.body.tys, f, &args).unwrap_or(f) };
+         let t = self.temp(target);
+@@ -2130,6 +2135,10 @@ impl<'p> Lower<'p> {
+                     };
+                     self.set_or_temp(dest, Rvalue::FnValue(f, want), ty, span)
+                 }
++                Res::NativeFn(def) => {
++                    let want = self.fn_ptr_dest(dest).unwrap_or(ty);
++                    self.set_or_temp(dest, Rvalue::NativeFnValue(def, want), ty, span)
++                }
+                 // A static's value of a non-Copy type moves out of a
+                 // place reached through its address (`place`), which the
+                 // borrow checker rejects as a move out of a reference
+@@ -2325,7 +2334,11 @@ impl<'p> Lower<'p> {
+                     let op = self.operand(*callee);
+                     match op {
+                         Operand::Copy(pl) | Operand::Move(pl) if pl.proj.is_empty() && matches!(self.kind(ct), TyKind::FnPtr(_)) => {
+-                            Some(pl.local)
++                            // Evaluate the pointer value now: an argument
++                            // may assign a different pointer to its place.
++                            let t = self.temp(ct);
++                            self.assign(Place::local(t), Rvalue::Use(Operand::Copy(pl)), span);
++                            Some(t)
+                         }
+                         Operand::Copy(pl) | Operand::Move(pl) => {
+                             // A callee behind references or smart pointers
+@@ -2362,7 +2375,7 @@ impl<'p> Lower<'p> {
+                 // the call does not read it, but rustc borrows it to
+                 // autoderef, so borrowck must see that use. A temporary
+                 // callee drops at once (it holds no destructor of note).
+-                if matches!(res, Res::Fn(_) | Res::Variant(..) | Res::Builtin(_) | Res::Intrinsic(_)) {
++                if matches!(res, Res::Fn(_) | Res::NativeFn(_) | Res::Variant(..) | Res::Builtin(_) | Res::Intrinsic(_)) {
+                     let ct = self.ty(*callee);
+                     if matches!(self.kind(ct), TyKind::Ref(..)) || self.body.tys.smart_elem(ct).is_some() {
+                         if self.is_place_expr(*callee) {
+@@ -2386,13 +2399,24 @@ impl<'p> Lower<'p> {
+                                 self.push(StmtKind::Drop(t), span);
+                             }
+                         }
++                    } else if matches!(self.kind(ct), TyKind::FnDef(..)) {
++                        // Even a zero-sized item callee is evaluated before
++                        // its arguments. Copying the item records its place
++                        // use for borrowck and preserves non-path effects.
++                        let op = self.operand(*callee);
++                        let t = self.temp(ct);
++                        self.assign(Place::local(t), Rvalue::Use(op), span);
+                     }
+                 }
+                 let ops: Vec<Operand> = match res {
+-                    Res::Fn(_) | Res::Indirect => self.call_arg_operands(args, span),
++                    Res::Fn(_) | Res::NativeFn(_) | Res::Indirect => self.call_arg_operands(args, span),
+                     _ => self.ordered_operands(args),
+                 };
+                 match res {
++                    Res::NativeFn(def) => {
++                        let d = self.call_dest(dest, ty);
++                        self.call_into(CallTarget::NativeFn(def), ops, d, span);
++                    }
+                     Res::Fn(f) => {
+                         let f = self.resolve_generic_fn(e, f);
+                         let d = self.call_dest(dest, ty);
+diff --git a/src/lower/closure.rs b/src/lower/closure.rs
+index 777ac517920c120d986ee275601a6ec270468708..9c09f859e82a6fcff80b8691a979938e908247a0 100644
+--- a/src/lower/closure.rs
++++ b/src/lower/closure.rs
+@@ -417,6 +417,6 @@ fn rewrite_rvalue(up: &Upvars, rv: &mut Rvalue) -> bool {
+         Rvalue::Subslice { base, lo, hi, .. } => {
+             rewrite_place(up, base, false) & rewrite_operand(up, lo) & hi.as_mut().is_none_or(|h| rewrite_operand(up, h))
+         }
+-        Rvalue::StaticLoad(_) | Rvalue::StaticRef(_) | Rvalue::FnValue(..) | Rvalue::ItemShim(..) => true,
++        Rvalue::StaticLoad(_) | Rvalue::StaticRef(_) | Rvalue::FnValue(..) | Rvalue::NativeFnValue(..) | Rvalue::ItemShim(..) => true,
+     }
+ }
+diff --git a/src/resolve/imports.rs b/src/resolve/imports.rs
+index 05fa1af6472a45f59b544080121faf48c73f55eb..c8df2d5631259c9d935d02efbf47606a56095635 100644
+--- a/src/resolve/imports.rs
++++ b/src/resolve/imports.rs
+@@ -795,7 +795,7 @@ impl ResolvedTables {
+ 
+     /// True when the region of `vis` (at `def_module`) is inside the
+     /// region of `outer` (at `outer_module`).
+-    pub(super) fn vis_within(&self, vis: &VisKind, def_module: ModuleId, outer: &VisKind, outer_module: ModuleId, interner: &Interner) -> bool {
++    pub fn vis_within(&self, vis: &VisKind, def_module: ModuleId, outer: &VisKind, outer_module: ModuleId, interner: &Interner) -> bool {
+         let (ra, ma) = self.vis_region(vis, def_module, interner);
+         let (rb, mb) = self.vis_region(outer, outer_module, interner);
+         if rb == 2 {
+diff --git a/src/resolve/worklist.rs b/src/resolve/worklist.rs
+index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..c1464782595bb785c63c47eea33a8ea7407eaf10 100644
+--- a/src/resolve/worklist.rs
++++ b/src/resolve/worklist.rs
+@@ -1784,6 +1784,47 @@ pub fn resolve_crate_with(
+     cache: &mut ResolveCache,
+     with_platform: bool,
+ ) -> Result<ResolvedCrate, ResolveError> {
++    resolve_crate_seeded(input, interner, known, cache, with_platform, None, None)
++}
++
++/// Fresh resolution with caller-owned semantic imports installed before any
++/// source job registers items, resolves imports, or rewrites paths. Imports
++/// must carry real definitions; this interface does not manufacture source.
++/// A new one-shot cache prevents unkeyed import state from authorizing reuse.
++pub fn resolve_crate_with_imports(
++    input: &CrateInput,
++    interner: &Interner,
++    known: &Known,
++    with_platform: bool,
++    imports: &mut dyn FnMut(&mut ResolvedTables) -> Result<(), Diag>,
++) -> Result<ResolvedCrate, ResolveError> {
++    let mut cache = ResolveCache::new(true);
++    resolve_crate_seeded(input, interner, known, &mut cache, with_platform, Some(imports), None)
++}
++
++/// Original-root syntax supplied by a semantic entry's parser. The callback
++/// receives the real expanded stream, without token/source substitution. It
++/// runs only for the selected root in a fresh one-shot resolve; ordinary and
++/// retained parses keep their original interface and cache contract.
++pub type RootParser<'a> = dyn Fn(&lexer::Lexed, &Interner, &Known) -> Result<Ast, Diag> + Sync + 'a;
++pub fn resolve_crate_with_root_parser(
++    input: &CrateInput,
++    interner: &Interner,
++    known: &Known,
++    parse: &RootParser<'_>,
++) -> Result<ResolvedCrate, ResolveError> {
++    resolve_crate_seeded(input, interner, known, &mut ResolveCache::new(true), false, None, Some(parse))
++}
++
++fn resolve_crate_seeded(
++    input: &CrateInput,
++    interner: &Interner,
++    known: &Known,
++    cache: &mut ResolveCache,
++    with_platform: bool,
++    imports: Option<&mut dyn FnMut(&mut ResolvedTables) -> Result<(), Diag>>,
++    root_parser: Option<&RootParser<'_>>,
++) -> Result<ResolvedCrate, ResolveError> {
+     cache.begin(input);
+     let mut tables = ResolvedTables::new(interner.intern(&input.crate_name));
+     tables.std_splice_lo = input.std_splice_lo;
+@@ -1859,6 +1900,9 @@ pub fn resolve_crate_with(
+             }
+         }
+     }
++    if let Some(imports) = imports {
++        imports(&mut tables).map_err(build_err)?;
++    }
+     // After the extern preludes: the splice job's root module has the
+     // selected crate's prelude already.
+     let std_job = input.std_splice_lo.map(|lo| add_std_splice_job(input, lo, &mut jobs));
+@@ -1959,7 +2003,7 @@ pub fn resolve_crate_with(
+                 dep_exports.push((interner.get(jobs[d].magic).to_string(), sources.clone()));
+             }
+         }
+-        match resolve_one(&jobs[j], &mut tables, &mut shared, cache, &dep_exports, &input.client, interner, known) {
++        match resolve_one(&jobs[j], &mut tables, &mut shared, cache, &dep_exports, &input.client, interner, known, if j==0 {root_parser}else{None}) {
+             Ok(out) => {
+                 if let Some(exact_layout) = &jobs[j].adapter {
+                     tables.adapters.push(super::imports::AdapterCrate {
+@@ -3488,6 +3532,7 @@ fn resolve_one(
+     client: &crate::expand::ClientView,
+     interner: &Interner,
+     known: &Known,
++    root_parser: Option<&RootParser<'_>>,
+ ) -> Result<CrateOut, OneError> {
+     let input = &job.input;
+     let mut timings: Vec<(&'static str, f64)> = Vec::new();
+@@ -3792,7 +3837,9 @@ fn resolve_one(
+         // its missing `;` ends at the cut), and the answer must be the
+         // one-piece answer.
+         let segments = if keep { vec![0..lexed.tokens.len()] } else { item_segments(&lexed.tokens, interner) };
+-        let asts: Vec<Ast> = if segments.len() == 1 {
++        let asts: Vec<Ast> = if let Some(parse) = root_parser.filter(|_| disc.file_id == root_file_id) {
++            vec![parse(&lexed, interner, known)?]
++        } else if segments.len() == 1 {
+             vec![parser::parse(&lexed, interner, known)?]
+         } else {
+             // Later segments start under the file's inner allows, as
+diff --git a/src/ty/defs.rs b/src/ty/defs.rs
+index de742cbbaa061c33c832cf7c498c1a89b59ff9a5..3cd3249a89f36adf8d251cb325f6e5860f0e8c72 100644
+--- a/src/ty/defs.rs
++++ b/src/ty/defs.rs
+@@ -81,6 +81,14 @@ pub enum SigData {
+     Fn { params: Vec<Ty>, ret: Ty },
+ }
+ 
++/// Linkage supplied by an independently checked native definition provider.
++/// The provider owns format, ABI, generation and code-closure qualification.
++#[derive(Clone, Debug)]
++pub struct NativeLinkage {
++    pub id: crate::def::DiskDefId,
++    pub symbol: String,
++}
++
+ /// One definition record (ARCH 2.2 `DefData`).
+ #[allow(dead_code)] // Name, module, vis, and span are read by resolution and diagnostics in later waves.
+ #[derive(Clone, Debug)]
+@@ -93,13 +101,14 @@ pub struct DefData {
+     pub generics: Generics,
+     pub span: Span,
+     pub sig: SigData,
++    pub native_linkage: Option<Box<NativeLinkage>>,
+ }
+ 
+ impl DefData {
+     /// A record with empty generics and no payload, in the root module. Collect
+     /// fills the payload compat tables separately today.
+     pub fn skeleton(kind: DefKind, parent: Option<DefId>, name: Sym, vis: Vis, span: Span) -> DefData {
+-        DefData { kind, parent, name, module: ROOT_MODULE, vis, generics: Generics::default(), span, sig: SigData::Empty }
++        DefData { kind, parent, name, module: ROOT_MODULE, vis, generics: Generics::default(), span, sig: SigData::Empty, native_linkage: None }
+     }
+ }
+ 
+@@ -131,7 +140,7 @@ impl Defs {
+     /// generic parameters' spans (check/prog_shift.rs moves them).
+     pub fn for_each_span(&mut self, f: &mut dyn FnMut(&mut Span)) {
+         for (_, d) in &mut self.data {
+-            let DefData { kind: _, parent: _, name: _, module: _, vis: _, generics, span, sig: _ } = d;
++            let DefData { generics, span, .. } = d;
+             f(span);
+             generics.params.iter_mut().for_each(|p| f(&mut p.span));
+         }
+@@ -168,6 +177,14 @@ impl Defs {
+ 
+     /// Records one user Adt def and its session-local index, in both directions.
+     pub fn insert_adt(&mut self, def: DefId, local: AdtId, data: DefData) {
++        self.register_adt_shape(def, local);
++        self.insert(def, data);
++    }
++
++    /// Registers only the session-local shape bridge. Independent native
++    /// providers validate all pending shapes before publishing any definition
++    /// payload with `insert`; this method does not create `DefData`.
++    pub fn register_adt_shape(&mut self, def: DefId, local: AdtId) {
+         spec::wrote(spec::tab::DEF_ADT_LOCALS, &def);
+         self.adt_locals.insert(def, local);
+         let i = local.0 as usize;
+@@ -176,7 +193,6 @@ impl Defs {
+         }
+         spec::wrote(spec::tab::DEF_ADT_DEFS, &i);
+         self.adt_defs[i] = def;
+-        self.insert(def, data);
+     }
+ 
+     /// The record of a def, if this crate defines it.
