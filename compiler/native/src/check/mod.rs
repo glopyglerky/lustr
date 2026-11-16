@@ -1367,6 +1367,8 @@ pub enum Res {
         derefs: u8,
         autoref: Autoref,
     },
+    /// An independently checked native signature and object, by complete def.
+    NativeFn(DefId),
 }
 
 /// Which scalar comparison a `Res::PrimCmp` call computes. The
@@ -2308,6 +2310,8 @@ struct Ctx<'p> {
     /// anonymous const of a written type): the number of locals declared
     /// before it, which it may not name (rustc E0435). 0 outside.
     const_floor: u32,
+    /// Includes an inline const with zero surrounding locals.
+    const_context: bool,
 }
 
 /// One name bound by a pattern alternative, with the checker
@@ -2705,6 +2709,7 @@ fn check_fn_mode<'p>(p: &'p Program, fid: LocalDefId, mode: opaque::OpaqueMode, 
         or_log: None,
         pat_marks: Vec::new(),
         const_floor: 0,
+        const_context: false,
     };
     if let Some(sibs) = p.fn_siblings.get(&fid) {
         let layer: Vec<((Sym, CtxtId), u32)> = sibs
@@ -3300,8 +3305,10 @@ impl<'p> Ctx<'p> {
     /// of its scope (`const_floor`).
     fn in_const<R>(&mut self, f: impl FnOnce(&mut Self) -> R) -> R {
         let outer = std::mem::replace(&mut self.const_floor, self.out.locals.len() as u32);
+        let context = std::mem::replace(&mut self.const_context, true);
         let r = f(self);
         self.const_floor = outer;
+        self.const_context = context;
         r
     }
 
@@ -3985,6 +3992,25 @@ impl<'p> Ctx<'p> {
         self.tys.intern(TyKind::FnDef(self.p.def_id(f), EMPTY_ARGS))
     }
 
+    /// An independently installed item keeps its full definition identity;
+    /// there is no local FnInfo or generic/qualifier reconstruction.
+    fn native_fn_value_ty(&mut self, e: ExprId, def: DefId, segs: &[ast::PathSeg], span: Span) -> Ty {
+        let _ = self.p.sig_of(&mut self.out.reads, def);
+        if segs.iter().any(|s| s.has_args()) {
+            self.err("L0105", span, "this native function has no generic arguments", "Remove the generic arguments.");
+        }
+        self.set_res(e, Res::NativeFn(def));
+        self.tys.intern(TyKind::FnDef(def, EMPTY_ARGS))
+    }
+
+    fn check_native_const_call(&mut self, r: Res, span: Span) {
+        if matches!(r, Res::NativeFn(_) | Res::Indirect)
+            && (self.const_context || self.f.loc.is_const_init() || self.f.is_const)
+        {
+            self.err(crate::ty::consteval::C_NONCONST, span, "cannot call a non-const native function or function pointer in a constant context", "Move the call out of the constant context.");
+        }
+    }
+
     /// An inherent fn as a value through a qualified path (`<W<u16>>::get`):
     /// a generic impl's fn instantiates as on a plain path, with the
     /// written Self type fixing the impl's params.
@@ -4528,7 +4554,11 @@ impl<'p> Ctx<'p> {
                     let params = fields.into_iter().map(|t| self.subst_settled(t, &adt_args)).collect();
                     Some((params, self.tys.mk_adt(def, &adt_args)))
                 } else {
-                    let f = p.local_def(def.hash)?;
+                    if let Some((params, ret, _)) = p.native_fn(def) {
+                        let _ = p.sig_of(&mut self.out.reads, def);
+                        return self.tys.args(args).is_empty().then(|| (params.to_vec(), ret));
+                    }
+                    let f = p.local_def(def.hash).filter(|&f| p.def_id(f) == def)?;
                     let fargs: Vec<GenericArg> = self.tys.args(args).to_vec();
                     match p.sig_of(&mut self.out.reads, def) {
                         SigOf::Fn(info) if fargs.is_empty() => Some((info.params.clone(), p.ret_view(f))).map(|(ps, r)| (ps, self.callee_ret(r))),
@@ -4680,7 +4710,7 @@ impl<'p> Ctx<'p> {
     /// The free fn a value binding names, if it names one.
     fn binding_fn(&mut self, name: Sym) -> Option<LocalDefId> {
         match self.binding(Namespace::Value, name) {
-            BindingRes::Def(def) if self.p.binding_kind(def) == Some(DefsKind::Fn) => self.p.local_def(def.hash),
+            BindingRes::Def(def) if self.p.binding_kind(def) == Some(DefsKind::Fn) => self.p.local_def(def.hash).filter(|&f| self.p.def_id(f) == def),
             _ => None,
         }
     }
@@ -12117,12 +12147,15 @@ impl<'p> Ctx<'p> {
             let bound = self.binding(Namespace::Value, name);
             if let BindingRes::Def(def) = bound
                 && p.binding_kind(def) == Some(DefsKind::Fn)
-                && let Some(f) = p.local_def(def.hash)
+                && let Some(f) = p.local_def(def.hash).filter(|&f| p.def_id(f) == def)
             {
                 self.set_res(e, Res::Fn(f));
                 return self.fn_value_ty(e, f, span);
             }
             if let BindingRes::Def(def) = bound {
+                if p.native_fn(def).is_some() {
+                    return self.native_fn_value_ty(e, def, segs, span);
+                }
                 match p.binding_kind(def) {
                     Some(DefsKind::Const) => {
                         if let Some(idx) = p.const_by_def(def) {
@@ -14195,7 +14228,8 @@ impl<'p> Ctx<'p> {
                     .builtin_item_res(def, cargs)
                     .or_else(|| self.prim_item_res(def, cargs))
                     .map(|(r, _, _)| r)
-                    .or_else(|| self.p.local_def(def.hash).map(Res::Fn)),
+                    .or_else(|| self.p.native_fn(def).filter(|_| self.tys.args(cargs).is_empty()).map(|_| Res::NativeFn(def)))
+                    .or_else(|| self.p.local_def(def.hash).filter(|&f| self.p.def_id(f) == def).map(Res::Fn)),
             },
             _ => None,
         }
@@ -14463,6 +14497,23 @@ impl<'p> Ctx<'p> {
         };
         if is_value {
             return self.value_call(e, callee, args, span);
+        }
+        // The resolver has already rewritten independent imports to their
+        // actual binding. The provider installed the checked signature before
+        // body checks; do not search a local function by its hash.
+        if let Expr::Path(segs) = p.ast.expr(callee)
+            && segs.len() == 1 && self.body_item_of(segs[0].name).is_none()
+            && let BindingRes::Def(def) = self.binding(Namespace::Value, segs[0].name)
+            && let Some((params, ret, _)) = p.native_fn(def)
+        {
+            let _ = p.sig_of(&mut self.out.reads, def);
+            if segs[0].has_args() {
+                self.err("L0105", span, "this native function has no generic arguments", "Remove the generic arguments.");
+            }
+            self.set_res(e, Res::NativeFn(def));
+            self.check_args(params, args, span);
+            self.check_native_const_call(Res::NativeFn(def), span);
+            return ret;
         }
         // `std::mem::drop(value)`: move the value and drop it now.
         // A user fn or body item named `drop` shadows the prelude
@@ -25536,7 +25587,14 @@ impl<'p> crate::ty::consteval::ConstCx<'p> for CheckCx<'_, 'p> {
                 // A body const or static of this name shadows any
                 // module fn: the call names no fn here.
                 Some(_) => return CallTarget::Unknown,
-                None => self.cx.binding_fn(last),
+                None => {
+                    if let Some(def) = p.native_import(last) {
+                        let _ = self.cx.binding(Namespace::Value, last);
+                        let _ = p.sig_of(&mut self.cx.out.reads, def);
+                        return CallTarget::NonConst;
+                    }
+                    self.cx.binding_fn(last)
+                }
             }
         } else {
             match self.cx.resolve_assoc(segs, span) {

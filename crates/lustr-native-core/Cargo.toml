@@ -8,8 +8,26 @@ license = "MIT"
 [workspace]
 resolver = "3"
 
+[features]
+native-inference = []
+
 [lib]
 crate-type = ["cdylib"]
+
+[[example]]
+name = "native-output-layout-qualification"
+path = "../../tools/native-output-layout-qualification.rs"
+required-features = ["native-inference"]
+
+[[example]]
+name = "native-phase-qualification"
+path = "../../tools/native-phase-qualification.rs"
+required-features = ["native-inference"]
+
+[[example]]
+name = "native-crate-qualification"
+path = "../../tools/native-crate-qualification.rs"
+required-features = ["native-inference"]
 
 [dependencies]
 mimalloc = { version = "=0.1.52", default-features = false }

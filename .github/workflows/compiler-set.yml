@@ -10,6 +10,8 @@ on:
       - 'crates/lustr/**'
       - 'crates/lustr-semantic/**'
       - 'upstream/lust.pin'
+      - 'upstream/lust.integration'
+      - 'upstream/lust-integration.*'
       - 'tools/lust-upstream-check.rs'
       - '.github/workflows/compiler-set.yml'
   pull_request:
@@ -20,6 +22,8 @@ on:
       - 'crates/lustr/**'
       - 'crates/lustr-semantic/**'
       - 'upstream/lust.pin'
+      - 'upstream/lust.integration'
+      - 'upstream/lust-integration.*'
       - 'tools/lust-upstream-check.rs'
       - '.github/workflows/compiler-set.yml'
   workflow_dispatch:
@@ -33,17 +37,26 @@ concurrency:
 
 jobs:
   upstream-lust:
-    name: Unchanged upstream Lust source
+    name: Pinned Lust reference and declared integration
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - name: Obtain the exact pristine reference objects
+        uses: actions/checkout@v4
+        with:
+          repository: t3dotgg/lust-lang
+          ref: 240e08d91d4aed0299639f6f11fd522912b248f9
+          path: .lust-pristine-reference
+          persist-credentials: false
       - name: Install Rust
         run: rustup toolchain install 1.99.1 --profile minimal
       - name: Check upstream source identity
+        env:
+          GIT_ALTERNATE_OBJECT_DIRECTORIES: ${{ github.workspace }}/.lust-pristine-reference/.git/objects
         run: |
           rustc +1.99.1 --edition=2024 tools/lust-upstream-check.rs -o "$RUNNER_TEMP/lust-upstream-check"
           "$RUNNER_TEMP/lust-upstream-check"
-      - name: Verify the source guard rejects drift
+      - name: Verify exact integration and reject unexpected drift
         run: |
           rustc +1.99.1 --edition=2024 --test tools/lust-upstream-check.rs -o "$RUNNER_TEMP/lust-upstream-check-tests"
           "$RUNNER_TEMP/lust-upstream-check-tests"

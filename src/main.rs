@@ -289,6 +289,35 @@ fn main() -> ExitCode {
                 }
             };
         }
+        #[cfg(feature = "native-inference")]
+        if result.as_ref().is_some_and(|(code, _, _)| *code == 1)
+            && call.expansion_compatible()
+            && native_link::process_compatible()
+            && library.join("std/src/platform.rs").is_file()
+            && parent.join("lustr-native-worker").is_file()
+        {
+            let (_, _, stderr) = result.as_ref().unwrap();
+            trace_entry(if engine == "lust" { "lust-rejected" } else { "lustr-native-rejected" }, entry);
+            native_diagnostic(stderr);
+            engine = "lustr-native";
+            entry = "native-inference-worker";
+            result = match owned_child::output(
+                Command::new(parent.join("lustr-native-worker"))
+                    .args(&native)
+                    .env("LUST_LIBRARY", &library)
+                    .env("__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT", "1"),
+            ) {
+                Ok(output) if output.status.signal().is_none() => Some((output.status.code().unwrap_or(2), output.stdout, output.stderr)),
+                Ok(output) => {
+                    let _ = io::stderr().write_all(&output.stderr);
+                    propagate_signal(output.status.signal().unwrap());
+                }
+                Err(error) => {
+                    eprintln!("cannot execute native inference worker: {error}");
+                    return ExitCode::from(2);
+                }
+            };
+        }
         if let Some((code, stdout, stderr)) = result {
             if code == 0 {
                 trace_entry(engine, entry);

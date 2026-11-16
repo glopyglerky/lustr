@@ -9,14 +9,18 @@ blueFe delivers the combined toolchain. A coordinator that forwards full Rust
 to rustc and rustc build tuning do not complete this requirement. Migration
 toward memory-safe Rust remains a separate, later optimization goal.
 
-`compiler/native` is the exact upstream Lust baseline, not an unrestricted
-Lustr editing area. Keep its complete tracked tree identical to `upstream/lust.pin`.
-Lustr-owned expansion, fixtures and helpers belong outside that tree. The same
-necessity and faster-results requirement applies to Rust implementation changes
-in blueFe, under its upstream source pin. No generated
-overlay, vendored copy rename or build-time patch may conceal a Lust divergence.
-Any proposed Lust change needs both a reproducible necessity case and faster
-equivalent-workload results before admission. Correctness tests alone are insufficient.
+Keep the pristine upstream Lust reference pinned by `upstream/lust.pin`.
+`compiler/native` may add a small, explicit, reviewed integration diff to that
+reference when focused interfaces are necessary to share semantic state and
+avoid duplicate parsing or rechecking. Substantive missing Rust support, fixtures
+and helpers remain Lustr-owned. Follow `docs/compiler-set/upstream-lust.md`:
+bind the reference, exact patch, qualification record and expected integrated
+tree in the source guard. The current integration diff is empty. No arbitrary
+drift, copied implementation, generated overlay or hidden build-time patch is
+allowed. Admission requires correctness, independent review and performance
+evidence appropriate to the change, preserving supported behavior and required
+speed. A necessary interface need not win an unrelated optimization benchmark.
+This policy does not relax blueFe's separate protected Rust pin or its rules.
 The current root Cargo project builds the compiler entry candidate in `src/`.
 The owned C ABI native entry is `crates/lustr-native-core`; the transitional
 coordinator is a separate project in `crates/lustr`. Read
@@ -30,8 +34,9 @@ Do not claim complete native Rust or whole-toolchain memory safety prematurely.
 ## Product contract
 
 Follow [the native compiler contract](docs/compiler-set/native-contract.md).
-Use unchanged upstream Lust for its supported code and implement missing support
-in Lustr-owned code through explicit, qualified interfaces. Preserve accepted behavior and differential testing
+Use upstream Lust with only its declared integration diff for supported code and
+implement missing support in Lustr-owned code through qualified shared interfaces.
+Preserve accepted behavior and differential testing
 discipline. Added features must execute through native compilation, with actual
 runtime and rejection evidence. Do not rewrite applications into the subset,
 disable required checks, or count a rustc fallback as native feature support.

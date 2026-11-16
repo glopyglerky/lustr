@@ -1,64 +1,90 @@
-# Preserve upstream Lust
+# Upstream Lust reference and explicit integration
 
-Lust must remain unchanged from upstream. Lustr supplies the missing Rust
-support in separately owned code. Any proposed Lust divergence must demonstrate
-both why it is necessary and that it produces faster results. The
-[native compiler contract](native-contract.md) remains the full-project goal.
+Preserve the pristine pinned Lust reference and allow a small, explicit reviewed
+integration diff. Focused interfaces inside Lust may share phase results and
+retained state, eliminating duplicate parsing or rechecking. Substantive missing
+Rust support stays Lustr-owned. Preserve supported semantics and required speed.
+The [native compiler contract](native-contract.md) remains the full-project goal.
 
-## Exact source baseline
+## Pristine reference
 
-[`upstream/lust.pin`](../../upstream/lust.pin) pins
-`t3dotgg/lust-lang` revision `240e08d91d4aed0299639f6f11fd522912b248f9`,
-tree `0ab1b09815802894e6078de0af59273cbdf46cb0`, at `compiler/native`.
-The upstream default branch was verified to point to that revision.
+[`upstream/lust.pin`](../../upstream/lust.pin) pins `t3dotgg/lust-lang` revision
+`240e08d91d4aed0299639f6f11fd522912b248f9`, tree
+`0ab1b09815802894e6078de0af59273cbdf46cb0`. Keep those original Git objects and
+their provenance. The upstream default was observed at that revision; this is
+not a claim about its current remote state.
 
-The protected tree includes the original compiler, libraries, build files,
-tests, documentation, research probes and metadata. Moving it under a prefix
-does not alter its tracked contents. Required root-level submodule routing is
-Lustr integration metadata; gitlink targets remain pinned references. External
-submodule contents and generated dependencies need their own qualification.
+The integrated tree lives at `compiler/native`. Its declared diff is currently
+**empty**. No nonempty integration patch has been reviewed or qualified. Existing
+experimental owned paths and historical compatibility artifacts retain their
+original scope; this policy does not promote them or relax blueFe's Rust pin.
 
-Earlier fork overrides and an unpublished coverage-expansion candidate are
-preserved in history or restricted research records. They are not admitted to
-the active Lust baseline. Passing correctness tests or demonstrating additional
-coverage alone does not meet the faster-results requirement.
+## Admission
+
+Before admitting a nonempty integration, retain:
+
+1. The pristine revision/tree, a focused interface need, exact patch identity and
+   expected integrated tree. Prefer existing phase, session and optimizing
+   C/LLVM machinery over a duplicate frontend, type system, backend or daemon.
+2. Acceptance, rejection, runtime, ownership, panic/drop and relevant edit/reuse
+   evidence. Keep final rechecks when semantic inputs change and preserve firsts.
+3. Independent review of that exact source and the proposed interface contract.
+4. Appropriate performance evidence. Compare pristine Lust with the minimal
+   integration, then unused-extension cost, then mixed/native-complement work
+   against equivalent stock work. Preserve profiles, targets, features and input
+   proofs. Separate profiling from timing and retain individual supported-path
+   regressions. A necessary interface need not win an unrelated optimization
+   benchmark. No zero-overhead or full-project gain is presumed.
+
+Keep proven improvements and unique experiments. Replace a working path only
+after its replacement is verified. No copied compiler, hidden overlay, arbitrary
+drift, generated source substitution or unrecorded build-time patch is allowed.
+Source/API compatibility and any promised prebuilt Rust-binary interoperability
+are distinct obligations. Production Rust compilation must not use rustc, directly
+or indirectly; bootstrap/oracle use stays explicitly identified.
 
 ## Source guard
 
-The dependency-free Rust guard compares the complete committed or staged Lust
-tree with the pinned upstream tree, then rejects tracked worktree edits and
-untracked additions in that scope. Changes to independently owned project files
-do not fail the guard. CI runs the committed-tree check and its drift tests.
+The dependency-free Rust guard verifies the pinned revision's actual tree and
+the integrated committed tree (or staged tree with `--index`). It rejects scoped
+worktree changes, unexpected staged changes and nonignored untracked additions.
+It refuses assume-unchanged and skip-worktree flags within the protected scope.
+Patch generation explicitly includes gitlinks regardless of local Git settings.
+The declaration consists of:
 
-Build the helper outside the source tree and run it from the repository root:
+- [`lust.integration`](../../upstream/lust.integration): reference revision/tree,
+  patch blob identity, qualification-record blob identity and integrated tree.
+- [`lust-integration.patch`](../../upstream/lust-integration.patch): the exact
+  normalized full-index binary Git diff between reference and integrated trees.
+- [`lust-integration.qualification`](../../upstream/lust-integration.qualification):
+  matching identities, status and correctness/review/performance evidence references.
+
+Blob and tree identities use the repository's Git object format. The guard
+checks patch and qualification bytes with `git hash-object` without writing
+objects. It independently regenerates the complete tree diff and compares exact
+bytes. An empty patch requires the reference tree and `empty` qualification;
+nonempty declarations require `reviewed` status and all three evidence references.
+Changing the record or expected result without matching identities fails.
+
+Evidence references are admission records, not executable proof. The guard
+cannot establish that a named review or benchmark actually happened; the owner
+must verify those results before declaring the integration reviewed. Synthetic
+guard-test records qualify the guard only. Current empty integration does not
+claim a new compiler performance result.
+
+Build outside the source tree, then run from its root:
 
 ```sh
 rustc --edition=2024 tools/lust-upstream-check.rs -o /absolute/cache/lust-upstream-check
 /absolute/cache/lust-upstream-check
 ```
 
-`--index` checks a staged restoration before its commit. The check uses Git tree
-identity and scoped Git status. It does not certify ignored build artifacts,
-external dependencies, compiler correctness, or universal source/secret absence.
-
-## Admission evidence for a proposed divergence
-
-No exception is currently enabled. Before changing that decision, retain:
-
-1. The exact upstream revision, minimal proposed patch and affected interface.
-2. A reproducible need, including the failing unmodified-upstream case and why
-   the proposed change belongs in Lust rather than Lustr-owned implementation.
-3. Acceptance, rejection, runtime, ownership, panic/drop and warm/cold edit
-   evidence for the changed native behavior.
-4. Preregistered equivalent-workload comparisons of pristine upstream and the
-   candidate, including exact builds, semantic settings, cache state, raw
-   observations, regressions and replayable analysis. A failed compilation is
-   not a faster successful build. Comparing only against rustc cannot establish
-   a speed improvement over Lust.
-5. A justified faster-results conclusion with explicit mathematical or
-   statistical assumptions and a stated scope. Full Rust coverage and the
-   preservation of Lust's existing fast path remain separate requirements.
-
-An accepted future exception must have an explicit, reviewable record and guard
-support. A label, source relocation, correctness-only result or promised future
-benchmark cannot admit it.
+`--index` supports a staged exact restoration or integration before commit.
+CI obtains the exact pristine commit in a separate disposable checkout and gives
+the guard read access to those Git objects; the compiler source remains the
+declared integrated tree. The guard verifies the commit's actual tree, so shallow
+fork history alone is insufficient. CI also runs positive exact-diff and negative
+drift tests. The guard does not
+certify ignored outputs, external/submodule contents, compiler correctness,
+publication clearance or universal source/secret absence. Retain unique changes
+on failure; do not reset them to make the check pass.

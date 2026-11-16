@@ -647,6 +647,7 @@ fn rvalue_operands<'r>(rv: &'r Rvalue, f: &mut impl FnMut(&'r Operand)) {
         | Rvalue::StaticLoad(_)
         | Rvalue::StaticRef(_)
         | Rvalue::FnValue(..)
+        | Rvalue::NativeFnValue(..)
         | Rvalue::ItemShim(..) => {}
         Rvalue::Subslice { lo, hi, .. } => {
             f(lo);

@@ -2068,6 +2068,29 @@ fn ret_is_large(p: &Program, f: LocalDefId) -> bool {
     ret_by_out(p, &cty(&p.tys, p.fn_info(f).ret))
 }
 
+/// The active C ABI can call this signature with direct scalar returns and
+/// by-value parameters. Providers check under the same naming/backend context
+/// as generation, including effective process-cached backend settings.
+pub fn native_direct_abi(p: &Program, params: &[Ty], ret: Ty) -> bool {
+    !ll::on(p) && !ret_by_out(p, &cty(&p.tys, ret))
+        && params.iter().all(|&t| !param_by_ptr(p, &cty(&p.tys, t)))
+}
+
+/// Actual emitted C representation and passing rules for a native type image.
+/// Layout and call ABI are distinct; the provider must retain both.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct NativeTypeAbi {
+    pub size: u64, pub align: u64,
+    pub param_dropped: bool, pub param_by_ptr: bool, pub ret_by_out: bool,
+}
+pub fn native_type_abi(p: &Program, t: Ty) -> Option<NativeTypeAbi> {
+    if ll::on(p) { return None; }
+    let ct = cty(&p.tys, t);
+    let (size, align) = c_size_align(p, &ct);
+    Some(NativeTypeAbi { size, align, param_dropped: param_dropped(p, &ct),
+        param_by_ptr: param_by_ptr(p, &ct), ret_by_out: ret_by_out(p, &ct) })
+}
+
 /// True when a C function returns `t` through a hidden out-pointer:
 /// over 32 bytes, or a zero-sized type whose C struct holds an array
 /// member (`[T; 0]`, `[No; 4]`, also in a tuple, struct, or `Cell`).
@@ -4144,6 +4167,7 @@ impl FnGen<'_, '_> {
                 // dead assignment a zero of the destination type.
                 let dest_cty = self.place(dest, &loc).1;
                 let ret_unit = match target {
+                    CallTarget::NativeFn(def) => cty(&self.p.tys, self.p.native_fn(*def).expect("installed native signature").1) == CTy::Unit,
                     CallTarget::Fn(f) => cty(&self.p.tys, self.p.fn_info(*f).ret) == CTy::Unit,
                     CallTarget::Intrinsic(id) => lang::intrinsic(*id).ret == SigTy::Never,
                     CallTarget::Indirect(c) => matches!(&self.local_cty[*c as usize], CTy::FnPtr(_, r) if **r == CTy::Unit),
@@ -4449,6 +4473,23 @@ impl FnGen<'_, '_> {
         }
     }
 
+    /// Declare the actual independent symbol from installed typed linkage.
+    /// The provider has qualified its ABI; no local slot is allocated.
+    fn native_callee(&mut self, def: crate::def::DefId) -> String {
+        let (params, ret, link) = self.p.native_fn(def).expect("checked native function has linkage");
+        let ret = cty(&self.p.tys, ret);
+        self.note_held(&ret);
+        for &t in params { self.note_held(&cty(&self.p.tys, t)); }
+        let mut kept: Vec<String> = params.iter().map(|&t| cty(&self.p.tys, t))
+            .filter(|t| !param_dropped(self.p, t)).map(|t| param_ctype(self.p, &t)).collect();
+        let result = if ret_by_out(self.p, &ret) {
+            kept.insert(0, format!("{} *", ctype(&ret))); "void".into()
+        } else { ctype(&ret) };
+        let declaration = if kept.is_empty() { "void".into() } else { kept.join(", ") };
+        let _ = writeln!(self.out, "  extern {result} {}({declaration});", link.symbol);
+        link.symbol.clone()
+    }
+
     fn call_value(&mut self, target: CallTarget, args: &[Operand], dest_cty: &CTy, loc: &str, post: &mut Vec<String>) -> String {
         // Release C defines only what a unit holds by value or projects from
         // (`type_decls_with`): a builtin may size or open what its operands and result
@@ -4463,6 +4504,23 @@ impl FnGen<'_, '_> {
             }
         }
         match target {
+            CallTarget::NativeFn(def) => {
+                let (params, ret, _) = self.p.native_fn(def).expect("checked native call has linkage");
+                let ret = cty(&self.p.tys, ret);
+                let types: Vec<CTy> = params.iter().map(|&t| cty(&self.p.tys, t)).collect();
+                let mut values: Vec<String> = args.iter().map(|o| self.operand(o, loc, post).0).collect();
+                let mut pre = String::new();
+                self.spill_by_ptr(&mut pre, &types, &mut values);
+                self.out.push_str(&pre);
+                let symbol = self.native_callee(def);
+                let values: Vec<_> = values.into_iter().zip(&types).filter_map(|(v,t)| (!param_dropped(self.p,t)).then_some(v)).collect();
+                if ret_by_out(self.p, &ret) {
+                    let (decl, t) = self.out_target(&ctype(&ret));
+                    let pre = if values.is_empty() { String::new() } else { format!(", {}", values.join(", ")) };
+                    let _ = writeln!(self.out, "    {decl}{symbol}(&{t}{pre});");
+                    t
+                } else { format!("{symbol}({})", values.join(", ")) }
+            }
             CallTarget::Fn(f) => {
                 self.note_callee(f);
                 let info = self.p.fn_info(f);
@@ -5262,6 +5320,18 @@ impl FnGen<'_, '_> {
                     // A bare fn item value is a zero-sized type.
                     CTy::Unit => "((lust_Unit){})".into(),
                     _ => "0".into(),
+                }
+            }
+            Rvalue::NativeFnValue(def, ty) => {
+                let t = cty(&self.body.tys, *ty);
+                match t {
+                    CTy::FnPtr(..) => {
+                        self.note_held(&t);
+                        let symbol = self.native_callee(*def);
+                        format!("(({}){symbol})", ctype(&t))
+                    }
+                    CTy::Unit => "((lust_Unit){})".into(),
+                    _ => unreachable!("checked independent function value type"),
                 }
             }
             Rvalue::ItemShim(item, ty) => {

@@ -4,17 +4,61 @@ The user clarified the project requirement after the rustc-based preview work.
 This contract supersedes the earlier plan to treat a Cargo coordinator plus a
 full Rust compatibility compiler as the project's implementation.
 
+## Active objective: complete native Rust through Cargo
+
+The user's latest direction requires complete native replacement of rustc,
+including `no_std`, with native composition and equivalent complete-work speed.
+`no_std` is part of that complete coverage, not a separate delivery campaign.
+Cargo must invoke one Lustr compiler entry: upstream Lust handles the code it
+already supports, and Lustr implements the remainder natively. These are two
+complementary native compilers behind the Cargo-facing integration. Production
+compilation of user projects must not fall back to rustc. A separately identified
+stock compiler may bootstrap this compiler or act as an independent oracle.
+Reuse Cargo's real dependency graph and parallel compilation units. Do not
+replace its scheduler or force one engine for an entire project. The Lustr
+entry chooses native Lust or the native complement for qualified units. A unit
+mixing language features needs one complete native semantic session and shared
+qualified phase/IR interfaces. Cargo does not supply missing compiler semantics
+or library metadata. Native unit/artifact interoperability is an early gate.
+The admitted job limit bounds Cargo's parallel work.
+Historical compatibility tools and rollback artifacts remain preserved; they
+are not the required native implementation.
+
+`no_std` selects the target's real core identity and edition prelude and removes
+automatic std linking. It does not prohibit an explicit std dependency. `alloc`
+is a separate explicit dependency. Attribute acceptance, a core alias to std,
+or a binary linked to the host runtime does not qualify this requirement.
+Acceptance includes core and optional alloc APIs and lang items, panic and entry
+points, allocator policy, target ABI/runtime, typed crate dependencies, real
+native library artifacts and Cargo's metadata/dependency contracts. Freestanding
+artifacts must have no unintended libc, pthread or host-loader dependency.
+Positive, negative, runtime and object/link-closure evidence are required.
+
+Pause optional narrow feature expansion and isolated timing campaigns. Preserve
+checks and input soundness while replacing
+unnecessary rejection/recompilation/replay with qualified native phase interfaces.
+Compare inherited Lust, current Lustr and stock on the same complete work and
+semantic/profile inputs. Separate cold/check/build/edit/rejection/compile-plus-run
+time and account for staging, CPU, copies and host-input proofs. A win over a slow
+internal baseline or a standalone no-op result does not meet the speed requirement.
+No zero-overhead, universal coverage or project-speed claim follows from routing.
+
 ## Required behavior
 
-Lust is the starting compiler and must remain unchanged from its pinned upstream
-source. Everything it already supports must use Lust. Lustr-owned code must
-supply the remaining Rust language, library and crate behavior through qualified
-interfaces to that baseline. blueFe delivers the combined compiler.
+Lust is the starting compiler. Preserve its pristine pinned reference and a
+small, explicit integration diff under the [source policy](upstream-lust.md).
+Focused interfaces inside Lust may preserve semantic state and eliminate
+duplicate parsing/rechecking; substantive missing support remains Lustr-owned.
+Everything Lust already supports retains its native behavior and required speed.
+blueFe delivers the combined compiler. The declared integration diff is currently
+empty; no nonempty patch has been reviewed or qualified.
 
-The [upstream preservation policy](upstream-lust.md) requires both necessity and
-faster-results evidence for every proposed Lust divergence. No exception is
-currently admitted. Changing or renaming a copied Lust implementation, or
-applying an unrecorded generated patch, does not satisfy this rule.
+Admission binds the reference identity, exact patch, qualification record and
+expected integrated result. It requires correctness, independent review and
+appropriate performance evidence, rather than an unrelated speed win for every
+necessary interface. Guards reject unexplained changes. Copied implementations,
+hidden overlays and unrecorded build-time patches remain forbidden. blueFe's
+separate protected Rust pin is unaffected.
 
 The intended result accepts unchanged full Rust projects while retaining and
 extending Lust's fast development compilation. Full language coverage and
@@ -40,7 +84,8 @@ native acceleration, or project completion. rustc remains useful as a bootstrap
 compiler and a differential oracle. Its optional Cranelift, frontend scheduling
 and compiler-build experiments are separate research.
 
-The native compiler currently emits C/TinyCC development artifacts. It has no
+The native compiler has C/TinyCC development and optimizing C/LLVM machinery;
+general Cargo release/profile integration still needs qualification. It has no
 Rust rlib emitter, and its language and standard-library support remain
 incomplete. These are implementation gaps, not permission to reduce the full
 Rust requirement. A C object and an empty metadata file cannot substitute for
@@ -52,7 +97,8 @@ Rust library metadata and ABI compatibility.
   differing from rustc. Preserve the source and first failure.
 - Implement the expansion in Lustr-owned code. Do not change the application to
   avoid the feature or route its acceptance through rustc. Any necessary Lust
-  patch must first pass the separate necessity and faster-results admission gate.
+  integration patch needs the explicit source-policy review and evidence before
+  admission.
 - Check native compilation, emitted artifacts and runtime results against the
   oracle. Retain invalid-program rejection, ownership, panic and drop checks.
 - Test mixed programs containing existing and new native features. Check warm

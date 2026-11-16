@@ -38,8 +38,14 @@ use crate::ty::{Ty, TyIntern, TyKind};
 /// `prior_errs` is true when the body already failed type checking:
 /// unresolved calls then stay silent instead of adding a cascade.
 pub fn check_const_fn(p: &Program, ck: &Checked, f: &FnInfo, prior_errs: bool) -> Vec<Diag> {
+    check_const_fn_with_inline(p, ck, f, prior_errs, false)
+}
+
+/// Reuse the original checked-body walk with explicit inline-const traversal.
+/// Ordinary callers retain their separate inline-evaluator policy above.
+pub fn check_const_fn_with_inline(p: &Program, ck: &Checked, f: &FnInfo, prior_errs: bool, inline: bool) -> Vec<Diag> {
     let Some(body) = f.def(&p.ast).body else { return Vec::new() };
-    let mut w = Walk { p, ck, errs: Vec::new(), drop_locals: Vec::new(), moved_out: Vec::new(), loop_consumed: Vec::new(), prior_errs };
+    let mut w = Walk { p, ck, errs: Vec::new(), drop_locals: Vec::new(), moved_out: Vec::new(), loop_consumed: Vec::new(), prior_errs, inline };
     // Parameters by value are locals the function may drop. A pattern
     // parameter's argument local only feeds the pattern, so the
     // pattern bindings stand in for it.
@@ -361,6 +367,7 @@ struct Walk<'p, 'c> {
     /// Whether each enclosing loop's value is moved out (for `break`).
     loop_consumed: Vec<bool>,
     prior_errs: bool,
+    inline: bool,
 }
 
 impl Walk<'_, '_> {
@@ -636,7 +643,7 @@ impl Walk<'_, '_> {
             Expr::Block(b) | Expr::UnsafeBlock(b) => self.block(*b, consumed, depth),
             Expr::LabeledBlock { body, .. } => self.block(*body, consumed, depth),
             // The const evaluator checks inline const blocks.
-            Expr::ConstBlock(_) => {}
+            Expr::ConstBlock(b) => {if self.inline{self.block(*b, consumed, depth);}},
             Expr::If { cond, then, els } => {
                 self.expr(*cond, false, depth, false);
                 self.block(*then, consumed, depth + 1);

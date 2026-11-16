@@ -1,0 +1,225 @@
+//! Native freestanding object seam, under qualification.
+//! The existing native semantic pipeline; no std loader,
+//! host runtime unit, rustc acceptance, retry or retained-object replay.
+//! This is not yet the full core/alloc library or Cargo metadata interface.
+use crate::{ast, borrowck, cgen, check, def, diag, intern, lexer, lower, parser, ty};
+use std::{collections::BTreeSet, fs, path::PathBuf, process::Command, sync::Arc};
+use ty::TyIntern;
+
+struct Request { source: PathBuf, output: PathBuf, name: String, metadata: String, overflow: bool, debug: bool }
+fn request(args: &[String]) -> Result<Request, String> {
+    let mut source = None; let mut output = None; let mut name = None;
+    let mut edition = false; let mut lib = false; let mut obj = false; let mut abort = false;
+    let mut overflow = None; let mut debug = None; let mut metadata = None;
+    let mut target = false; let mut optimize = false; let mut debuginfo = false; let mut n = 0;
+    while n < args.len() {
+        let a = &args[n];
+        match a.as_str() {
+            "--crate-name" | "-o" => {
+                n += 1; let value = args.get(n).ok_or("missing unit argument")?;
+                if a == "-o" { if output.replace(PathBuf::from(value)).is_some() { return Err("duplicate output".into()); } }
+                else if name.replace(value.clone()).is_some() { return Err("duplicate crate name".into()); }
+            }
+            "--edition=2024" if !edition => edition = true,
+            "--crate-type=lib" if !lib => lib = true,
+            "--emit=obj" if !obj => obj = true,
+            "-Cpanic=abort" if !abort => abort = true,
+            "-Coverflow-checks=on" if overflow.is_none() => overflow = Some(true),
+            "-Coverflow-checks=off" if overflow.is_none() => overflow = Some(false),
+            "-Cdebug-assertions=on" if debug.is_none() => debug = Some(true),
+            "-Cdebug-assertions=off" if debug.is_none() => debug = Some(false),
+            "--target=x86_64-unknown-linux-gnu" if !target => target = true,
+            "-Copt-level=0" if !optimize => optimize = true,
+            "-Cdebuginfo=0" if !debuginfo => debuginfo = true,
+            _ if a.starts_with("-Cmetadata=") && metadata.is_none() => metadata = Some(a[11..].to_owned()),
+            _ if !a.starts_with('-') && a.ends_with(".rs") && source.is_none() => source = Some(PathBuf::from(a)),
+            _ => return Err(format!("native object interface does not yet implement argument {a:?}")),
+        }
+        n += 1;
+    }
+    if !(edition && lib && obj && abort && target && optimize && debuginfo) { return Err("native object interface requires explicit edition=2024, lib, obj, panic=abort, x86_64-unknown-linux-gnu, opt-level=0 and debuginfo=0".into()); }
+    let name = name.ok_or("explicit native crate name required")?;
+    if name.is_empty() || !name.bytes().enumerate().all(|(n,b)| b == b'_' || b.is_ascii_alphabetic() || (n != 0 && b.is_ascii_digit())) {
+        return Err("invalid native crate name".into());
+    }
+    let metadata = metadata.ok_or("explicit native unit metadata disambiguator required")?;
+    if metadata.is_empty() || metadata.len()>128 || !metadata.bytes().all(|b|b.is_ascii_alphanumeric() || b==b'_') { return Err("invalid native unit metadata disambiguator".into()); }
+    Ok(Request { source: source.ok_or("source required")?, output: output.ok_or("output required")?, name, metadata,
+        overflow: overflow.ok_or("explicit overflow policy required")?, debug: debug.ok_or("explicit assertion policy required")? })
+}
+
+pub(crate) fn core_type(tys: &impl TyIntern, t: ty::Ty, depth: usize) -> bool {
+    if depth > 128 { return false; }
+    match tys.kind(t) {
+        ty::TyKind::Unit | ty::TyKind::Bool | ty::TyKind::Char | ty::TyKind::Never | ty::TyKind::Int(_) => true,
+        ty::TyKind::Ref(_,_,t) | ty::TyKind::Slice(t) | ty::TyKind::Array(t,_) => core_type(tys,t,depth+1),
+        ty::TyKind::Tuple(ts) => tys.tys_of(ts).iter().all(|t| core_type(tys,*t,depth+1)),
+        // Actual builtin/local definitions decide this boundary; no spelling
+        // such as Vec or String grants or removes an allocation capability.
+        // ADT/lang-item and allocator images are not qualified at this seam.
+        _ => false,
+    }
+}
+
+enum Completion { Durable(String), PublishedUncertain(String) }
+
+fn compile(r: Request, artifact: Option<(&crate::native_crate::Generation,&crate::native_crate::Backend)>) -> Result<Completion, String> {
+    if r.output.exists() { return Err("object output already exists; use a fresh path".into()); }
+    let source = fs::read_to_string(&r.source).map_err(|e| format!("cannot read source: {e}"))?;
+    if source.len() > 2 * 1024 * 1024 { return Err("native object source exceeds current bound".into()); }
+    let i = Arc::new(intern::Interner::default()); let k = Arc::new(intern::Known::new(&i));
+    let mut map = diag::SourceMap::default(); let file = map.add_file(&r.source.to_string_lossy(), &source);
+    let lexed = lexer::lex(&source,file,0,&i).map_err(|e| diag::render(&mut vec![e], &map, &source, false, 20))?;
+    // This boundary consumes a real crate attribute and carries its policy
+    // into a freestanding object pipeline. Other root attributes still need
+    // their native policy interface; none are silently discarded.
+    let t = &lexed.tokens;
+    let pattern = [lexer::Tok::Pound, lexer::Tok::Bang, lexer::Tok::LBracket];
+    if t.len() < 6 || t[..3].iter().map(|t|t.tok).ne(pattern)
+        || !matches!(t[3].tok,lexer::Tok::Ident(s) if i.get(s)=="no_std") || t[4].tok != lexer::Tok::RBracket
+    { return Err("native freestanding object requires a complete original #![no_std] crate attribute".into()); }
+    let attr = ast::Attr { style: ast::AttrStyle::Inner, path: vec![ast::PathSeg::plain(i.intern("no_std"))], input: ast::AttrInput::None, span: t[0].span.to(t[4].span) };
+    // The artifact route uses the shared native resolver below. The bare
+    // object route retains its qualified-path refusal. Additional attributes
+    // need policy/input records at both boundaries; they are never discarded.
+    if t[5..].iter().any(|t|matches!(t.tok,lexer::Tok::Pound)||artifact.is_none()&&t.tok==lexer::Tok::PathSep) {
+        return Err("native unit resolution is required for attributes and qualified paths".into());
+    }
+    let identity = format!("lustr-native-object-v1/{}/{}/x86_64-unknown-linux-gnu/abort/opt0/debug0/overflow{}/assert{}",r.name,r.metadata,r.overflow,r.debug);
+    let ids = def::CrateIds { local: def::LOCAL_CRATE, stable: def::stable_crate_hash(&identity,"lib",&r.name,false) };
+    let (a,tables) = if artifact.is_some() {
+        // Macro effects and additional files need explicit input/expansion
+        // generations. Refuse them before treating this closed image as deps0.
+        if t.windows(2).any(|w|matches!(w[0].tok,lexer::Tok::Ident(_))&&w[1].tok==lexer::Tok::Bang){return Err("native producer needs macro semantic/input records".into());}
+        if t.iter().any(|t|t.tok==lexer::Tok::Extern){return Err("native producer needs extern dependency/ABI semantic records".into());}
+        let input=crate::resolve::worklist::CrateInput{root_path:r.source.clone(),root_text:source.clone(),env:crate::resolve::cfg::CfgEnv::new("x86_64-unknown-linux-gnu",&[],false,crate::protocol::ProfileFlags{panic_abort:true,overflow_checks:r.overflow,debug_assertions:r.debug}),crate_ids:ids,crate_name:r.name.clone(),cargo_env:Vec::new(),deps:Vec::new(),client:Default::default(),std_splice_lo:None,display_root:None};
+        let parse=|l:&lexer::Lexed,i:&intern::Interner,k:&intern::Known| {
+            // Consume the original, already admitted crate-policy attribute
+            // as syntax, preserving its exact span and AST record. This is
+            // not global parser acceptance or a core/std identity grant.
+            if l.tokens.len()<5||l.tokens[..5].iter().zip(&t[..5]).any(|(a,b)|a.tok!=b.tok||a.span!=b.span){return Err(diag::Diag::new("L0508",attr.span,"native producer root policy changed","Retain the original crate attribute."));}
+            let mut a=parser::parse_items(l,5..l.tokens.len(),i,k)?;a.inner_attrs.insert(0,attr.clone());Ok(a)
+        };
+        let resolved=crate::resolve::worklist::resolve_crate_with_root_parser(&input,&i,&k,&parse).map_err(|mut e|diag::render(&mut e.diags,&e.map,&e.all_text,false,20))?;
+        if resolved.map.file_count()!=1||!resolved.expand_deps.is_empty(){return Err("native producer needs additional source/expansion input records".into());}
+        map=resolved.map;(resolved.ast,Some(Arc::new(resolved.tables)))
+    } else {
+        let mut a=parser::parse_items(&lexed,5..t.len(),&i,&k).map_err(|e|diag::render(&mut vec![e],&map,&source,false,20))?;a.inner_attrs.insert(0,attr);(a,None)
+    };
+    if a.items.iter().chain(&a.stmt_items).any(|item|(artifact.is_none()&&matches!(item.vis,ast::Vis::Restricted{..})) || !matches!(item.kind,ast::ItemKind::Fn(_)|ast::ItemKind::Const(_)) && !(artifact.is_some() && matches!(item.kind,ast::ItemKind::Struct(_)|ast::ItemKind::Enum(_))))
+        || a.exprs.iter().any(|e|matches!(e,ast::Expr::Macro{..}|ast::Expr::MacroCall(_)))
+    { return Err("native unit resolution/expansion is required for these items or macros".into()); }
+    // The resolver must have bound each qualified path to a real local def.
+    // Its std compatibility paths cannot stand in for core/alloc identities.
+    let represented=|path:&[ast::PathSeg]|path.len()<=1||path.len()==2&&tables.as_ref().is_some_and(|t|t.flat[0].get(&path[0].name).and_then(|d|t.variants.get(d)).is_some_and(|vs|vs.contains(&path[1].name)));
+    if artifact.is_some()&&(a.exprs.iter().any(|e|matches!(e,ast::Expr::Path(p) if !represented(p)))||a.tys.iter().any(|t|matches!(t,ast::TyExpr::Path(p) if !represented(p)))){return Err("native producer needs external typed path records".into());}
+    let report = |mut d: Vec<diag::Diag>| diag::render(&mut d, &map, &source, false, 20);
+    let mut order=check::collect::DefOrder::default();
+    let mut p = check::collect::collect_with_order_resolved(Arc::new(a),i,k,ids,false,&mut order,tables).map_err(report)?;
+    p.unwind = false; p.overflow_checks = r.overflow; p.debug_assertions = r.debug; p.unwind_tables = false;
+    if artifact.is_some(){crate::native_crate::prepare_declared_types(&mut p)?;}
+    let mut errors = Vec::new();
+    if artifact.is_some(){crate::native_crate::check_initializers(&mut p,&mut errors);}else{check::const_body::check_all(&mut p,&mut errors);}
+    if !errors.is_empty() { return Err(report(errors)); }
+    if !p.statics.is_empty() { return Err("native freestanding statics artifact interface remains unqualified".into()); }
+    let slots: Vec<u32> = (0..p.fns.len()).map(|n|n as u32).collect();
+    let names = crate::native_crate::names(&p);
+    let mut out = Vec::new();
+    let mut methods:BTreeSet<u32>=p.ast.exprs.iter().enumerate().filter_map(|(n,e)|matches!(e,ast::Expr::MethodCall{..}).then_some(n as u32)).collect();
+    for (n,f) in p.fns.iter().enumerate() {
+        let id = def::LocalDefId(n as u32);
+        if p.gx.fn_class.get(n) != Some(&check::generics::FnClass::Plain) || f.def(&p.ast).body.is_none() {
+            return Err("native freestanding generic/import artifact interface remains unqualified".into());
+        }
+        if !f.params.iter().chain([&f.ret]).all(|&t|if artifact.is_some(){crate::native_crate::signature_type(&p,t)}else{core_type(&p.tys,t,0)}) {
+            return Err("native freestanding core/ADT signature image remains unqualified".into());
+        }
+        let (checked,errors) = check::check_fn(&p,id);
+        if !errors.is_empty() { return Err(report(errors)); }
+        if artifact.is_some()&&checked.expr_res.iter().any(|r|matches!(r,check::Res::Builtin(_)|check::Res::PrimAssoc{..}|check::Res::Intrinsic(_))){return Err("native producer needs builtin/library semantic records".into());}
+        for (slot,res) in checked.expr_res.iter().enumerate(){
+            let expression=checked.expr_base+slot as u32;
+            if !methods.contains(&expression) || *res==check::Res::None {continue;}
+            let Some(ast::Expr::MethodCall{recv,..})=p.ast.exprs.get(expression as usize) else{unreachable!()};
+            // These actual native operation IDs on canonical integer types
+            // denote inherent core arithmetic, requiring no imported trait.
+            // In particular, an alloc ToOwned call lowered to Clone is NOT
+            // qualified by an allocation-free result or identical machine code.
+            // Other method origins await the shared unit resolver; this proof
+            // must not grow into a method-name allowlist or trait-scope guess.
+            if !matches!(res,check::Res::BuiltinMethod{b:check::Builtin::WrappingMul|check::Builtin::RotateLeft,derefs:0,autoref:check::Autoref::None})
+                || !matches!(checked.tys.kind(checked.ty(*recv)),ty::TyKind::Int(_))
+            {return Err("native unit method-resolution scope is not qualified".into());}
+            methods.remove(&expression);
+        }
+        let body = lower::lower(&p,id,checked);
+        let errors = borrowck::borrowck(&p,&body);
+        if !errors.is_empty() { return Err(report(errors)); }
+        if !body.locals.iter().all(|l|if artifact.is_some(){crate::native_crate::consumer_type(&p,&body.tys,l.ty,0)}else{core_type(&body.tys,l.ty,0)}) {
+            return Err("native freestanding core/ADT body image remains unqualified".into());
+        }
+        if artifact.is_some() && !cgen::names::with(Some(&names),||f.params.iter().chain([&f.ret]).all(|&t|cgen::native_type_abi(&p,t).is_some())) {return Err("native producer effective C ABI differs from the image".into());}
+        let first_line=map.line_display_col(map.call_site(f.def(&p.ast).name_span)).0;
+        let generated = cgen::names::with(Some(&names),||cgen::gen_fn(&p,&body,&map,first_line,&slots));
+        if let Some(e)=&generated.error { return Err(e.clone()); }
+        out.push(generated);
+    }
+    if !methods.is_empty(){return Err("native unit has method obligations without original-context resolution evidence".into());}
+    let mut glue = cgen::GlueSet::default();
+    glue.add(&p,&slots,out.iter().flat_map(|f|f.glue.iter()));
+    let indexes: Vec<usize> = (0..out.len()).collect();
+    let register = format!("lustr_unit_register_{:016x}",ids.stable.0);
+    let text = cgen::names::with(Some(&names),||cgen::fn_unit(&p,&out,&indexes,&glue,&register,None));
+    let parent = r.output.parent().ok_or("object output parent required")?;
+    static NEXT:std::sync::atomic::AtomicU64=std::sync::atomic::AtomicU64::new(0);
+    let scratch = parent.join(format!(".lustr-object-{}-{}",std::process::id(),NEXT.fetch_add(1,std::sync::atomic::Ordering::Relaxed)));
+    fs::create_dir(&scratch).map_err(|e|format!("cannot own native object scratch: {e}"))?;
+    // Retain actual generated input on success and failure for the operation
+    // owner to checkpoint, then remove with its other disposable output.
+    let object=scratch.join("unit.o");
+    // Compile the original generated unit once using an explicit freestanding
+    // backend. Referenced symbols must pass the independent ELF closure gate.
+    let input=scratch.join("unit.c");fs::write(&input,text).map_err(|e|e.to_string())?;
+    if let Some((generation,backend))=artifact {backend.verify(generation)?;}
+    let backend=artifact.map_or_else(||std::path::Path::new("clang"),|(_,backend)|backend.executable());
+    let result=Command::new(backend).args(["--target=x86_64-unknown-linux-gnu","-x","c","-std=gnu11","-ffreestanding","-fno-builtin","-fno-strict-aliasing","-fwrapv","-fno-asynchronous-unwind-tables","-O0","-c"]).arg(&input).arg("-o").arg(&object).output().map_err(|e|format!("cannot start explicit native object C backend: {e}"))?;
+    if !result.status.success(){return Err(format!("native object C backend {}: {}",result.status,String::from_utf8_lossy(&result.stderr)));}
+    if let Some((generation,backend))=artifact {backend.verify(generation)?;}
+    let mut runtime=crate::native_crate::runtime::Requirements::capture(&p,&map)?;
+    let object=if let Some((generation,backend))=artifact{crate::native_crate::runtime::prepare(&object,&scratch,&mut runtime,generation,backend)?}else{object};
+    let bytes = fs::read(&object).map_err(|e|format!("cannot read native object: {e}"))?;
+    let symbols = super::unit_object::symbols(&bytes)?;
+    if artifact.is_none()&&!symbols.undefined.is_empty() { return Err(format!("native freestanding object has unprovided runtime symbols: {:?}",symbols.undefined)); }
+    if artifact.is_some()&&symbols.undefined!=runtime.imports{return Err("native artifact runtime edge proof changed".into());}
+    for n in names.fns.iter().flatten() {
+        if !symbols.functions.contains(format!("f_{n}").as_bytes()) { return Err("native object is missing a checked function definition".into()); }
+    }
+    // A real object only. Do not emit an empty rmeta/rlib or report Cargo
+    // metadata support until the typed producer/consumer contract exists.
+    let mut message=format!("native freestanding object: {} checked functions, {} bytes, no undefined symbols; core/alloc/metadata/Cargo completion remains open\n",p.fns.len(),bytes.len());
+    for (n,f) in p.fns.iter().enumerate(){message.push_str(&format!("native object export: {} f_{}\n",p.interner.get(f.name),names.fns[n].as_ref().unwrap()));}
+    let published = if let Some((generation,_)) = artifact {
+        let image=crate::native_crate::Artifact::produce(&p,&r.name,&r.metadata,&source,bytes,generation.clone(),runtime)?.encode()?;
+        let path=scratch.join("unit.lustr-native");fs::write(&path,&image).map_err(|e|e.to_string())?;
+        message=format!("native semantic artifact: {} actual checked structural function signatures and explicit proven native runtime dependencies; full-image/Cargo/full-language gates remain open\n",p.fns.len());
+        path
+    } else { object };
+    match super::unit_publication::publish(&published,&r.output).map_err(|e|format!("cannot publish native object: {e}"))? {
+        super::unit_publication::Publication::Durable=>Ok(Completion::Durable(message)),
+        super::unit_publication::Publication::DurabilityUnknown(error)=>Ok(Completion::PublishedUncertain(format!("{message}object publication occurred; final directory durability is unconfirmed: {error}; retain the output and do not automatically replay\n"))),
+    }
+}
+
+pub(crate) fn run(args: &[String]) -> (i32, String) {
+    result(request(args).and_then(|r|compile(r,None)))
+}
+
+// Internal component qualifier only. The C object ABI remains unchanged;
+// a native artifact is never represented to Cargo as an object/rlib/rmeta.
+pub(crate) fn run_artifact(args:&[String],generation:&crate::native_crate::Generation,backend:&crate::native_crate::Backend)->(i32,String){
+    if let Err(e)=crate::native_crate::fixed_abi(){return (1,format!("error: {e}\n"));}
+    let Some(at)=args.iter().position(|a|a=="--emit=lustr-native-crate") else{return (1,"explicit native semantic artifact output required\n".into())};
+    let mut args=args.to_vec();args[at]="--emit=obj".into();
+    result(backend.verify(generation).and_then(|_|request(&args)).and_then(|r|compile(r,Some((generation,backend)))))
+}
+fn result(value:Result<Completion,String>)->(i32,String){match value { Ok(Completion::Durable(s))=>(0,s),Ok(Completion::PublishedUncertain(s))=>(2,s),Err(e)=>(1,format!("error: {e}\n")) }}

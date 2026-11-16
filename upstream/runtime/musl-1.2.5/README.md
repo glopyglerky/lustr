@@ -1,0 +1,5 @@
+# Upstream byte fill dependency
+
+Unmodified `src/string/memset.c` and complete `COPYRIGHT` from musl v1.2.5, commit `0784374d561435f7c787a555aeab8ede699ed298`, observed 2026-11-16. Source: https://git.musl-libc.org/cgit/musl/plain/src/string/memset.c?id=0784374d561435f7c787a555aeab8ede699ed298 . License: MIT, retained in COPYRIGHT. The source includes the 2017 sequence-point correction `9d4c902c42b3fda368d7ea64bb9575c46228fa7f`.
+
+This C compatibility dependency supplies the actual import-free fill provider absent from Lust's five-function memory unit. It is compiled separately, checked for exact exports/no imports, and localized within each native producer. No provider source is generated or patched. It is not Lustr-owned Rust computation, whole-stack memory safety, core/alloc, panic-handler selection or complete no_std acceptance. Native Rust conversion remains an implementation frontier; the first attempted native Rust fill was refused by the existing unsafe function parser and was preserved privately.

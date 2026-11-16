@@ -1784,6 +1784,47 @@ pub fn resolve_crate_with(
     cache: &mut ResolveCache,
     with_platform: bool,
 ) -> Result<ResolvedCrate, ResolveError> {
+    resolve_crate_seeded(input, interner, known, cache, with_platform, None, None)
+}
+
+/// Fresh resolution with caller-owned semantic imports installed before any
+/// source job registers items, resolves imports, or rewrites paths. Imports
+/// must carry real definitions; this interface does not manufacture source.
+/// A new one-shot cache prevents unkeyed import state from authorizing reuse.
+pub fn resolve_crate_with_imports(
+    input: &CrateInput,
+    interner: &Interner,
+    known: &Known,
+    with_platform: bool,
+    imports: &mut dyn FnMut(&mut ResolvedTables) -> Result<(), Diag>,
+) -> Result<ResolvedCrate, ResolveError> {
+    let mut cache = ResolveCache::new(true);
+    resolve_crate_seeded(input, interner, known, &mut cache, with_platform, Some(imports), None)
+}
+
+/// Original-root syntax supplied by a semantic entry's parser. The callback
+/// receives the real expanded stream, without token/source substitution. It
+/// runs only for the selected root in a fresh one-shot resolve; ordinary and
+/// retained parses keep their original interface and cache contract.
+pub type RootParser<'a> = dyn Fn(&lexer::Lexed, &Interner, &Known) -> Result<Ast, Diag> + Sync + 'a;
+pub fn resolve_crate_with_root_parser(
+    input: &CrateInput,
+    interner: &Interner,
+    known: &Known,
+    parse: &RootParser<'_>,
+) -> Result<ResolvedCrate, ResolveError> {
+    resolve_crate_seeded(input, interner, known, &mut ResolveCache::new(true), false, None, Some(parse))
+}
+
+fn resolve_crate_seeded(
+    input: &CrateInput,
+    interner: &Interner,
+    known: &Known,
+    cache: &mut ResolveCache,
+    with_platform: bool,
+    imports: Option<&mut dyn FnMut(&mut ResolvedTables) -> Result<(), Diag>>,
+    root_parser: Option<&RootParser<'_>>,
+) -> Result<ResolvedCrate, ResolveError> {
     cache.begin(input);
     let mut tables = ResolvedTables::new(interner.intern(&input.crate_name));
     tables.std_splice_lo = input.std_splice_lo;
@@ -1858,6 +1899,9 @@ pub fn resolve_crate_with(
                 Err(why) => push_extern(&mut tables, input.crate_ids.local, root_module, name, false, None, Some(why.clone())),
             }
         }
+    }
+    if let Some(imports) = imports {
+        imports(&mut tables).map_err(build_err)?;
     }
     // After the extern preludes: the splice job's root module has the
     // selected crate's prelude already.
@@ -1959,7 +2003,7 @@ pub fn resolve_crate_with(
                 dep_exports.push((interner.get(jobs[d].magic).to_string(), sources.clone()));
             }
         }
-        match resolve_one(&jobs[j], &mut tables, &mut shared, cache, &dep_exports, &input.client, interner, known) {
+        match resolve_one(&jobs[j], &mut tables, &mut shared, cache, &dep_exports, &input.client, interner, known, if j==0 {root_parser}else{None}) {
             Ok(out) => {
                 if let Some(exact_layout) = &jobs[j].adapter {
                     tables.adapters.push(super::imports::AdapterCrate {
@@ -3488,6 +3532,7 @@ fn resolve_one(
     client: &crate::expand::ClientView,
     interner: &Interner,
     known: &Known,
+    root_parser: Option<&RootParser<'_>>,
 ) -> Result<CrateOut, OneError> {
     let input = &job.input;
     let mut timings: Vec<(&'static str, f64)> = Vec::new();
@@ -3792,7 +3837,9 @@ fn resolve_one(
         // its missing `;` ends at the cut), and the answer must be the
         // one-piece answer.
         let segments = if keep { vec![0..lexed.tokens.len()] } else { item_segments(&lexed.tokens, interner) };
-        let asts: Vec<Ast> = if segments.len() == 1 {
+        let asts: Vec<Ast> = if let Some(parse) = root_parser.filter(|_| disc.file_id == root_file_id) {
+            vec![parse(&lexed, interner, known)?]
+        } else if segments.len() == 1 {
             vec![parser::parse(&lexed, interner, known)?]
         } else {
             // Later segments start under the file's inner allows, as

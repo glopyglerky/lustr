@@ -395,8 +395,11 @@ pub(crate) struct Caches {
     pub(crate) obj_dir: PathBuf,
     /// Units compiled into `obj_dir` with the current layout, and with which debug setting.
     pub(crate) objects: Option<bool>,
-    /// A daemon session builds against libbase.so; a one-shot session links statically.
+    /// Retain semantic read sets and incremental frontend state between requests.
     pub(crate) persistent: bool,
+    /// Link layout is independent of semantic persistence. The constructor
+    /// preserves the original daemon/one-shot defaults.
+    pub(crate) output: OutputKind,
     /// The process exits right after this session's request (`lust check` and `lust test`
     /// one-shots set it): compile leaks the program and IR instead of freeing them. A
     /// non-persistent session inside a daemon (the patch oracle's fresh compile) frees them.
@@ -418,6 +421,14 @@ pub(crate) struct Caches {
     pub(crate) inst_ids: FxMap<u32, u64>,
     /// Units whose current code is in an overlay object, not in libbase.so.
     pub(crate) overlays: std::collections::BTreeSet<usize>,
+}
+
+/// The native driver's final link layout. This does not change checking,
+/// target/profile policy, or permit object reuse without its input proof.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum OutputKind {
+    Standalone,
+    SessionImage,
 }
 
 pub struct Session {
@@ -562,6 +573,7 @@ impl Session {
                 obj_dir,
                 objects: None,
                 persistent,
+                output: if persistent { OutputKind::SessionImage } else { OutputKind::Standalone },
                 leak_at_exit: false,
                 image_one_shot: false,
                 overlays: Default::default(),
@@ -575,6 +587,19 @@ impl Session {
     }
     pub fn obj_dir(&self) -> &Path {
         &self.caches.obj_dir
+    }
+
+    /// Select a link layout without discarding semantic state. Standalone
+    /// builds regenerate the complete base-form object set and link it once;
+    /// they never leave an executable dependent on this session's libbase.
+    /// A layout change invalidates compiled objects, not language checks.
+    pub fn set_output(&mut self, output: OutputKind) {
+        if self.caches.output != output {
+            self.caches.objects = None;
+            self.caches.overlays.clear();
+            self.caches.base_name.clear();
+            self.caches.output = output;
+        }
     }
 
     /// Before a front image save (src/image.rs): joins the session's side

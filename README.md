@@ -4,22 +4,140 @@ Lustr is being developed to extend the native [Lust compiler](https://github.com
 to full Rust while retaining its fast frontend, incremental daemon and
 development code generation. blueFe is the toolchain integration project.
 
-Existing Lust-supported code must use unchanged upstream Lust. Lustr must supply
+Existing Lust-supported code must retain Lust's behavior and required speed. Lustr must supply
 the missing Rust language, library and crate support in its own code. Full, unchanged Rust
 projects with measured fast compilation are the requirement. Forwarding them to
 rustc does not satisfy it. See the [native compiler contract](docs/compiler-set/native-contract.md).
 
+The active delivery is complete native replacement of rustc. Lust and Lustr are
+two complementary native compilers; a Cargo-facing integration entry composes
+qualified compilation units using Cargo's existing graph and parallelism.
+Lustr must implement the missing semantics and native artifacts, with no
+production rustc fallback. A freestanding object-phase experiment now reuses
+native parsing, checking, lowering and borrow checking in one pass, then emits
+an inspected object without the host runtime. It remains under qualification:
+full core/optional alloc, native crate metadata, Cargo interoperability and
+project speed are open. `no_std` remains required within full coverage, rather
+than a separate campaign. Optional formatter/unsafe-function expansion is paused.
+The [no_std corpus](tests/no-std-corpus/README.md) retains the full acceptance path.
+
+An experimental [native semantic artifact](docs/compiler-set/proofs/native-crates.md)
+now binds checked structural signatures to their complete object and imports real
+definitions before native resolver rewriting. Consumer-local IDs are remapped
+from independent stable crate identities. The development qualifier executes
+typed native calls and function values across independent producer and
+consumer units, including separate-process 128-bit pointer-call ABI checks.
+Callee evaluation preserves effects, borrow uses and the pointer read before
+arguments. General metadata, Cargo and
+full-language coverage remain open; the integration is unadmitted.
+The experimental producer now uses the existing resolver and records inline
+modules, visibility and re-export bindings. Native path/re-export/glob cases
+execute with stock-oracle parity; general core/alloc and input records remain open.
+Format sixteen retains bounded tuple, array, float and safe function-pointer
+graphs with native layout, Copy, drop and effective C ABI checks. Large and
+zero-sized returns use the existing backend rules. Compiler-generated memory
+calls use Lust's upstream C memory unit and an exact licensed musl fill
+dependency, localized within each object. This
+retains an explicit C dependency and does not qualify a general no_std runtime.
+It also records original native region signatures for shared and mutable
+references to represented sized types. Independent borrowed calls and local
+pointer coercions use the existing native region and loan rules. Region bounds,
+erased-type agreement, escapes, aliasing and static restrictions are checked;
+Borrowed callback exports retain the original pointer output-slot mask and
+width, including static distinctions, and use the original pointer proof.
+Unbounded named late-bound function lifetimes retain their exact original
+region records. Written declarations must match the native names, count and
+binding classification. Lifetime-only function bounds and early-bound parameters
+retain independent declaration names and canonical original constraints. Imported
+calls and pointer coercions use the original native region engine. Free item
+regions and general nominal/type-generic region images remain open.
+
+Sized references to slices and `str` retain their wide native layout and C ABI,
+mutability, lifetime and represented slice element type. The image constructs
+the original unsized referent type without assigning it a fabricated layout.
+Original native checking, borrow rules and code generation handle these values.
+This remains an experimental crate interface; real core, general unsized
+aggregates, native Cargo and no_std runtime qualification remain open.
+
+The experimental image also carries closed nongeneric struct and enum identities,
+variant shapes, discriminants, fields and privacy. Pending shapes validate across all images before any
+imported semantic definitions or signatures become visible. The unchanged
+`Packet` case has native direct, pointer and independent-identity runtime
+evidence. The unchanged array-backed nominal gate now executes large/nested
+and borrowed consumers through explicit native runtime dependencies. Actual
+original runtime and location providers validate before imported semantic
+definitions. Independent producer and consumer panic locations match the
+stock oracle. Tuple and unit constructors, enum imports and re-exports, tagged
+and niche layouts, and cross-crate matching have native runtime evidence.
+Empty enums, malformed records and consumer table remapping are also checked.
+General nominal semantics, core/alloc and a complete no_std
+runtime remain open.
+
+The candidate also records lifetime-only nominal declarations and their original
+kept field types, with separate applied lifetime arguments. It validates nested
+applications and applied enum layouts before imported semantic publication.
+Existing native variance, outlives and borrow checks consume fresh tables.
+Reference cycles now retain stable nominal identities and complete lifetime
+applications. Independent recursive and mutually recursive consumers pass runtime,
+borrow rejection and malformed-image checks through the original native engine.
+Separate symbolic nominal templates now preserve type and const parameter kinds,
+combined parameter indexes, implicit Sized obligations and scalar, tuple and array
+fields. Templates receive no invented layout or ABI. The original native
+instantiation engine builds consumer instances, including types and const values
+never instantiated by the producer. Independent struct/enum, array-length and
+bool/char const cases have native runtime and rejection evidence. A focused
+resolver interface reads collected parameter declarations when an imported item
+has no local AST header, retaining the original const type and range checks.
+General producer generic applications, lifetime-bearing template fields,
+defaults, derives, Drop, general predicates and generic bodies remain open,
+alongside borrowed nominal function-pointer images and complete crate support.
+
 Full native Rust coverage is incomplete. Lustr now supplies bounded native
-source-library additions; frontend and crate/metadata expansion remain open.
-`compiler/native` is the unchanged upstream Lust source, pinned by
-[`upstream/lust.pin`](upstream/lust.pin). Lustr-owned expansion belongs outside
-that baseline. No Lust divergence is admitted. Any exception must demonstrate
-both necessity and faster results under the [upstream preservation policy](docs/compiler-set/upstream-lust.md).
+source-library additions and an opt-in native constraint-inference experiment.
+Full frontend and crate/metadata expansion remain open.
+The opt-in ABI also has an owned original-token frontend for bounded boolean
+`unsafe` blocks, including initialized boolean locals with lexical scope and
+shadowing checks. Direct safe Rust calls with boolean inputs and output have
+separate native target, ABI and lexical-context checks before collection returns;
+local function items, including `const fn`, in affected enclosing blocks use native item parsing,
+arena integration and lexical item scopes;
+see the [interface and limits](docs/compiler-set/proofs/native-unsafe-blocks.md).
+`compiler/native` preserves the pristine reference pinned by
+[`upstream/lust.pin`](upstream/lust.pin) plus an explicit integration diff,
+currently empty. Focused shared phase/state interfaces may use that diff;
+substantive missing support stays Lustr-owned. The guard binds reference,
+patch, qualification record and integrated result under the
+[source policy](docs/compiler-set/upstream-lust.md). Correctness, independent
+review and appropriate performance evidence are required. No hidden overlay or
+unexplained drift is admitted.
 The root Cargo project now builds the native-first compiler entry candidate in
 `src/`. Its [execution and artifact contracts](docs/compiler-set/native-driver.md)
 identify the unchanged native engine, the C ABI cold entry and the inherited full
 Rust core. Preview packaging does not establish a complete native compiler.
 The separate compatibility coordinator remains in `crates/lustr`.
+The experimental `native-inference` features in the root and native ABI crate
+compile that unchanged coordinator through native Lust phases. They elaborate
+bounded checked `OsString` and `PathBuf` conversion constraints in an owned AST clone, then
+run full native checking and generation. The optional product worker uses a
+separate inference library after ordinary native rejection. This is not enabled
+in the published preview and does not supply general Rust metadata or Cargo
+library artifacts; see the [entry contract](docs/compiler-set/native-driver.md).
+An additional bounded ABI experiment reuses a validated successful executable
+within one process. It discards inference state after each compile, recompiles
+after semantic edits and retires on native runtime-source changes. Its host
+file-input proof now covers the pinned Linux TinyCC header/linker path through
+actual opens and identical-object replay. Its [fresh optimized measurements](docs/compiler-set/measurements/2026-11-15-native-host-inputs-v36/README.md)
+retain substantial cold/edit regressions and a coordinator no-op slower than
+stock Cargo. Runtime-loader closure and product integration remain open; this
+is not a general build cache or native Cargo freshness implementation.
+The owned original-token assertion formatter preserves nested source parentheses,
+binary operators, bounded struct expressions, tuple fields, tuple/list-array
+literals, array repeats and bounded const blocks,
+and exact long panic payloads through full native rechecking.
+Its [component51 qualification and measurements](docs/compiler-set/measurements/2026-11-15-native-array-repeat-v51/README.md)
+cover direct and retained execution, edits, rejection, Drop and unwind; full
+language coverage and full-project speed remain open. The const-block candidate
+has separate [design and qualification obligations](docs/compiler-set/proofs/native-assert-text.md).
 The [entry contract proofs](docs/compiler-set/proofs/native-entry-contracts.md)
 cover target identity, bounded cancellation and copied-artifact publication;
 their assumptions and performance limits are explicit.
@@ -137,9 +255,17 @@ cargo install --path crates/lustr --locked
 | Path | Responsibility |
 | --- | --- |
 | `src/`, `Cargo.toml`, `build.rs` | Primary compiler entry candidate, request contracts, native loading and full-core invocation. |
-| `crates/lustr-native-core` | Owned C ABI entry around unchanged native Lust modules; compiled separately with PIC TinyCC. |
+| `crates/lustr-native-core` | Owned C ABI entry around unchanged native Lust modules; optional checked constraint elaboration and arena reindexing; compiled separately with PIC TinyCC. |
+| `crates/lustr-native-core/src/{native_modules,expanded_parser,expanded_check}.rs` | Explicit opt-in module composition, original-token unsafe-block parsing and safety-qualified AST lowering; default pristine entry retained. |
+| `crates/lustr-native-core/src/collect/safe_calls.rs` | Original-context native call resolution and bounded target, safety, ABI and signature qualification. |
+| `crates/lustr-native-core/src/native_crate.rs`, `native_namespace.rs`, `native_types.rs`, `native_nominals.rs`, `native_generic_nominals.rs`, `native_regions.rs`, `native_runtime.rs`, `native_memory.rs`, `native_fill.rs`, `tools/native-crate-qualification.rs` | Experimental typed native artifact, concrete layout/ABI, symbolic nominal templates and original region records, explicit runtime/location dependencies, licensed memory providers, producer resolver projection and stable crate/definition/module remapping. Early imports and calls use no fabricated function ASTs. General metadata/Cargo integration remains open. |
+| `tools/native-crate-adts-qualification.rs` | Native tuple/unit struct and enum producers, constructor/privacy/move/matching runtime and rejection cases, checksum-valid malformed variant/layout records and consumer remapping. |
+| `tools/native-crate-borrowed-nominals-qualification.rs` | Lifetime-bearing nominal producer/consumer, kept-field/application completeness, applied-enum layouts, borrow rejection and malformed-image/remapping qualification. |
+| `crates/lustr-native-core/src/native_consts.rs`, `tools/native-crate-consts-qualification.rs` | Experimental closed constant identities, typed values and promotion qualifiers through original native checking and fresh consumer constant tables; generic bodies and reference/allocation/function identities remain open. |
+| `src/native_worker.rs`, `tests/native_inference.rs` | Opt-in inference child, direct native/oracle and product routing/failure qualification. |
+| `crates/lustr-native-core/src/inference/{reuse,host_inputs}.rs`, `tools/native-{retained-probe,tcc-input-observer}.rs`, `tests/native_reuse.rs` | Bounded artifact proof, native host-input observation and edit/cold-oracle qualification; not selected by the product. |
 | `library/lustr`, `library/lust` | Owned source-library additions and an explicit link to the unchanged baseline. No protected source is patched or copied into a divergent compiler. |
-| `compiler/native` | Exact pinned upstream Lust source, including its native compiler, libraries, TinyCC integration and differential fixtures. No Lustr-owned edits are admitted here. |
+| `compiler/native` | Pristine pinned Lust reference plus the declared reviewed integration diff, currently empty; compiler, libraries, generation and differential fixtures. Focused shared interfaces follow the source policy. |
 | `crates/lustr` | Transitional Cargo/rustc coordinator, BlueFe tool selection and compatibility qualification. |
 | `upstream/lust.pin`, `upstream/bluefe-core.pin` and `tools/lust-upstream-check.rs` | Upstream source identity, exact compiler-component bindings and the Lust source-preservation guard. |
 | `crates/lustr-semantic` | Optional version-pinned rustc inspection. It exports inspection data, not executable MIR. |

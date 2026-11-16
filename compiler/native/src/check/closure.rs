@@ -2320,6 +2320,7 @@ impl<'p> Ctx<'p> {
             self.set_res(e, r);
             self.note_fn_shim_call(e, ct, peeled);
             self.check_args(&params, args, span);
+            self.check_native_const_call(r, span);
             return ret;
         }
         let mut t = self.resolve(ct);

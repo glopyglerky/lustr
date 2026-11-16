@@ -4,9 +4,9 @@ Status: native compiler requirement, following the user's clarification.
 
 ## Goal
 
-Keep upstream Lust unchanged and supply full Rust support through Lustr-owned native implementation while retaining and expanding Lust's fast compilation model. Every construct Lust already supports must use Lust. Lustr supplies the missing language, library and crate support through qualified interfaces. blueFe delivers the combined compiler. This includes Cargo workspaces, dependencies, build scripts, proc macros, tests and release builds. Application rewrites into the subset do not satisfy the goal.
+Preserve the pristine upstream Lust reference plus a small declared integration diff, and supply full Rust support through Lustr-owned native implementation while retaining Lust's fast compilation model. Every construct Lust already supports must use Lust. Focused shared phase/state interfaces may live in the integration diff; substantive missing language, library and crate support remains Lustr-owned. blueFe delivers the combined compiler. This includes Cargo workspaces, dependencies, build scripts, proc macros, tests and release builds. Application rewrites into the subset do not satisfy the goal.
 
-The [native compiler contract](native-contract.md) and [upstream preservation policy](upstream-lust.md) are authoritative. No Lust divergence is admitted without demonstrated necessity and faster results. The existing Cargo coordinator obtains compatibility through rustc and does not replace its frontend. Cranelift and rustc build tuning are compatibility research. They do not implement full native Lustr coverage, and their speed measurements cannot be transferred to the native compiler.
+The [native compiler contract](native-contract.md) and [upstream preservation policy](upstream-lust.md) are authoritative. Integration needs correctness, independent review and appropriate performance evidence, with exact reference/patch/result identities. The current diff is empty. Necessary interfaces do not need an unrelated optimization win. The existing Cargo coordinator obtains compatibility through rustc and does not replace its frontend. Cranelift and rustc build tuning are compatibility research. They do not implement full native Lustr coverage, and their speed measurements cannot be transferred to the native compiler.
 
 ## Decision
 
@@ -14,11 +14,33 @@ The required execution paths are:
 
 | Path | Semantic frontend | Code generation | Intended use |
 | --- | --- | --- | --- |
-| Existing Lust support | Native Lust frontend | Native C output and TinyCC | Retain accepted behavior and the fast edit path |
-| Lustr expansions | Lustr-owned native support outside the upstream baseline | Qualified native generation with the required Rust behavior | Add missing Rust features without rewriting applications or hiding Lust patches |
+| Existing Lust support | Native Lust frontend | Existing C/TinyCC development and optimizing C/LLVM paths | Retain accepted behavior, fast edits and required profile semantics |
+| Lustr expansions | Lustr-owned native support through explicit shared interfaces | Qualified native generation with the required Rust behavior | Add missing Rust features without rewriting applications or hiding integration patches |
 | Explicit compatibility tools | rustc | Project-selected backend | Bootstrap, differential oracle and transitional compatibility; excluded from native coverage |
 
-Lustr's source-library interface supplies bounded additions through unchanged Lust. Its full frontend and crate interface remain unimplemented. Expansion must preserve resolution, trait selection, borrow checking, const evaluation, layout, monomorphization and incremental invalidation as coverage grows. Mixed programs containing existing Lust features and Lustr expansions must compile and execute natively. The current native coverage remains incomplete; routing a program to rustc does not close a native implementation gap.
+Lustr's source-library interface supplies bounded additions through unchanged Lust.
+An opt-in owned constraint-inference path also elaborates checked `OsString`/`PathBuf`
+conversion sites in an AST clone and runs complete native rechecking and
+generation. It compiles the unchanged compatibility coordinator as a whole native
+target. The optional product child is separate from the primary native ABI;
+unsupported inputs retain explicit compatibility behavior. This bounded rule is
+now driven from one retained native check rather than a discarded build followed
+by a second check. Final builds still run full native generation and linking;
+the product's cross-request inference/dependency reuse remains open. A separate
+bounded ABI prototype can reuse an unchanged successful ELF after request,
+source-tree, observed-read, Cargo-graph, path-binding and native-runtime checks.
+Edits compile from original source; no transformed AST is retained. The pinned
+Linux ELF prototype now observes host file opens and validates generated native
+objects against a framed-input replay. Unknown reads and clock macros recompute.
+Fresh optimized measurements retain substantial miss-time cost and a coordinator
+no-op slower than stock Cargo. Runtime-loader closure and product integration
+remain unqualified. The rule is
+not a full frontend or crate interface. Expansion must preserve resolution,
+trait selection, borrow checking, const evaluation, layout, monomorphization and
+incremental invalidation as coverage grows. Mixed programs containing existing
+Lust features and Lustr expansions must compile and execute natively. The current
+native coverage remains incomplete; routing a program to rustc does not close a
+native implementation gap.
 
 Do not create separate unsafe, async, generic, or proc-macro compilers. Those features overlap in the same functions and types. For example, a generic async function may hold a borrow across a suspension point, call an unsafe operation, and use a trait implementation emitted by a proc macro. Dividing that source by keywords would require the compilers to reconstruct the same global semantic decisions. It offers no demonstrated speed benefit.
 
@@ -108,7 +130,32 @@ overhead and is kept outside the coordinator's normal route.
 
 Extending Lust's persistent frontend to full Rust must account for macro expansion, coherence, negative lookups, trait candidate changes, generated source, const evaluation and cross-crate metadata. Retained work needs explicit ownership and invalidation rules, plus cold-session equivalence tests.
 
+Symbolic nominal metadata is distinct from concrete type layout. The candidate
+stores original type/const parameter kinds, implicit Sized obligations and
+symbolic fields, then asks the existing native materializer for consumer
+instances. A focused collected-declaration interface supplies parameter kinds
+and const types when no local AST header exists. It reuses the original argument
+and const checks. Concrete shape aliases and invented template layouts cannot
+replace this contract. General generic applications, predicates, bodies and
+native Cargo composition still need qualification.
+
 ## Performance decisions
+
+Reuse Lust's existing retained session and optimizing C/LLVM machinery before
+introducing another frontend, type system, backend project or daemon. Cross-call
+reuse needs an actual session lifetime; constructing a new session for each
+Cargo invocation loses edit state. Preserve final rechecks when semantic inputs
+change. A driver rejection followed by a second collector/read/lex/expand/parse
+is measurable duplicate work, not the target integration interface. Distinguish
+the inspected PR revision from the local owned source when evaluating routing.
+Existing native optimization and content-based units require real Cargo profile,
+target and dependency contracts; fixed O2 flags are not general profile support.
+
+Measure pristine Lust against the minimal integration, then unused-extension
+cost, then mixed/native-complement work against equivalent stock compilation.
+Keep detailed profiling separate from timing. Retain every supported-path
+regression separately; an average must not conceal one. No full-project or
+zero-overhead conclusion follows from the architecture alone.
 
 Native expansions must remove enough work to preserve Lust's fast development model after checking, invalidation, code generation, linking and executed tests. Keep compiler dispatch, duplicate analysis and optional compatibility work outside native speed claims. Do not infer a gain from the number of compilation paths.
 

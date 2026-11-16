@@ -2552,6 +2552,11 @@ fn location_path(p: &str, library: &Path, display_root: Option<&Path>, client: &
 }
 
 pub fn compile(req: &Request, session: &mut Session) -> Response {
+    compile_observed(req, session, None)
+}
+
+pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&dyn super::PhaseObserver>) -> Response {
+    let phase_id = observer.map(|_| super::PhaseId::next());
     let mut t = Timer::new();
     crate::driver::cache::begin_build(&req.file);
     if req.session != session.key {
@@ -4296,17 +4301,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
         super::item_oracle::check(front, caches, Ok(&program), &work, fn_count, hashes, lines, visits.path, crate_ids, build, tables);
         t.lap("item oracle");
     }
+    let phase = phase_id.map(|id| super::Prepared { id, request: req, input: &front.ast, program: &program, map: &map, source: &src, work: &work });
+    if let (Some(observer), Some(phase)) = (observer, phase) { observer.prepared(phase); }
     let results = par_map(&work, |&i| {
         let f = LocalDefId(i as u32);
         // Lowering and borrowck read derive lists too (Copy operands,
         // moves): their notes join the body's reads (check/derive_delta.rs).
         let ((body, errs), noted) = check::derive_delta::scoped(program.record_reads, || {
             let (checked, mut errs) = check::check_fn(&program, f);
+            if let (Some(observer), Some(phase)) = (observer, phase) {
+                check::derive_delta::unlogged(|| observer.checked(phase, f, &checked, &errs));
+            }
             if !errs.is_empty() {
                 return (None, errs);
             }
             let body = lower::lower(&program, f, checked);
             errs.extend(borrowck::borrowck(&program, &body));
+            if let (Some(observer), Some(phase)) = (observer, phase) {
+                check::derive_delta::unlogged(|| observer.lowered(phase, f, &body, &errs));
+            }
             (Some(body), errs)
         });
         let body = body.filter(|_| keep_bodies).map(|mut b| {
@@ -4370,6 +4383,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
         diags.push(Diag::new("L0130", diag::Span::default(), "no `main` function", "Add `fn main() { ... }`."));
     }
     t.lap(if mode == "full" { "check+borrowck (par)" } else { "check changed fns (par)" });
+    if let (Some(observer), Some(phase)) = (observer, phase) { observer.diagnostics(phase, &diags); }
     // A one-shot process (`leak_at_exit`) exits right after this call. Freeing the IR and
     // program arenas, mostly built on worker threads, costs about 10 ms on a 31k-line crate,
     // so leak them on every return below and let the OS reclaim the memory at exit. A
@@ -4751,7 +4765,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     // rebuilds and the base
     // relinks over the existing unit objects. Unrelated units keep
     // their objects, in the session and in the disk unit cache.
-    let fresh_base = caches.objects != Some(req.debug) || !caches.persistent;
+    let standalone = caches.output == super::session::OutputKind::Standalone;
+    let fresh_base = caches.objects != Some(req.debug) || !caches.persistent || standalone;
     let cap_grown = n_slots > caches.table_cap;
     if fresh_base || cap_grown {
         caches.table_cap = n_slots * 2 + 64;
@@ -5807,6 +5822,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     // this check keeps that a pin, not a hope.
     if let Some(run_args) = &req.run_args
         && !caches.persistent
+        && standalone
         && fresh_base
         && groups.len() == 1
         && !req.debug
@@ -5883,7 +5899,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     caches.objects = Some(req.debug);
     t.lap("tcc compile");
     let all_base: Vec<PathBuf> = [1, 2, 3, LOC_UNIT].into_iter().chain(link_fn_units.iter().copied()).map(base_obj).collect();
-    let linked = if !caches.persistent {
+    let linked = if standalone {
         let mut objs = vec![base_obj(0)];
         objs.extend(all_base);
         crate::tcc::link(&objs, &req.out, req.debug)
@@ -5958,7 +5974,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     // a small grace count while no known output file still references them. A binary the user
     // kept keeps its base; one that was overwritten or deleted does not. A running program
     // keeps its mapped copy after unlink.
-    if caches.persistent && !caches.base_name.is_empty() {
+    if !standalone && !caches.base_name.is_empty() {
         let soname = format!("lib{}.so", caches.base_name);
         if let Some(base_dir) = caches.base_dir.clone() {
             record_base_user(&base_dir, &soname, &req.out);

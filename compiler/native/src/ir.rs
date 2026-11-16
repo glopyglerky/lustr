@@ -151,6 +151,9 @@ pub enum Rvalue {
     /// then yields the slot trampoline address). Proposed by W-CGEN
     /// for W-CORELANG's fn-pointer lowering.
     FnValue(LocalDefId, Ty),
+    /// A genuinely independent native function item, or its reified pointer.
+    /// It names installed signature/linkage data, never a local function slot.
+    NativeFnValue(crate::def::DefId, Ty),
     /// A constructor item (its `FnDef` type, `.0`: a tuple struct or
     /// variant, `Some`, `Ok`, `Err`) or an integer type's primitive
     /// builtin method item (`u32::isqrt`) coerced to fn pointer type
@@ -239,6 +242,8 @@ pub enum CallTarget {
     /// payload is the method's word index in that receiver's vtable.
     /// The callee gets the data pointer, then `args[1..]`.
     Dyn(u32),
+    /// An installed independent native definition. Never a local slot.
+    NativeFn(crate::def::DefId),
 }
 
 #[derive(Clone, Debug)]
@@ -496,7 +501,7 @@ pub fn visit_rvalue_reads<'r>(rv: &'r Rvalue, op: &mut impl FnMut(&'r Operand), 
                 op(h);
             }
         }
-        Rvalue::StaticLoad(_) | Rvalue::StaticRef(_) | Rvalue::FnValue(..) | Rvalue::ItemShim(..) => {}
+        Rvalue::StaticLoad(_) | Rvalue::StaticRef(_) | Rvalue::FnValue(..) | Rvalue::NativeFnValue(..) | Rvalue::ItemShim(..) => {}
     }
 }
 

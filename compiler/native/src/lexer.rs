@@ -774,6 +774,16 @@ fn is_nfc(s: &str) -> bool {
     matches!(nfc_of(s), Cow::Borrowed(_))
 }
 
+/// Validate an already interned lifetime name using the lexer's original
+/// Unicode XID and NFC rules. This consumes a name, not source tokens; item
+/// declaration policy (for example reserved `static`/`_`) belongs to its caller.
+pub fn lifetime_name(name: &str) -> bool {
+    let mut chars = name.chars();
+    chars.next().is_some_and(|c| c == '_' || is_xid_start(c))
+        && chars.all(is_xid_continue)
+        && is_nfc(name)
+}
+
 fn suffix(s: &str) -> Option<Option<IntSuffix>> {
     use IntSuffix::*;
     Some(Some(match s {

@@ -553,6 +553,25 @@ impl Program {
     pub fn local_def(&self, hash: DefPathHash) -> Option<LocalDefId> {
         self.def_by_hash.get(&hash).copied()
     }
+    /// An installed independent native signature, never a local FnInfo.
+    pub fn native_fn(&self, def: DefId) -> Option<(&[Ty], Ty, &crate::ty::defs::NativeLinkage)> {
+        if def.krate == self.krate { return None; }
+        let data = self.defs.get(def)?;
+        let link = data.native_linkage.as_deref()?;
+        if data.kind != DefsKind::ForeignFn || link.id.hash != def.hash { return None; }
+        match &data.sig {
+            SigData::Fn { params, ret } => Some((params, *ret, link)),
+            _ => None,
+        }
+    }
+    /// A genuine independent function binding before signature installation.
+    /// No cross-crate const body is represented by the provider interface.
+    pub fn native_import(&self, name: Sym) -> Option<DefId> {
+        let tables = self.resolved.as_ref()?;
+        let def = *tables.flat[crate::resolve::imports::ns_index(crate::driver::graph::Namespace::Value)].get(&name)?;
+        (def.krate != self.krate && def.krate != BUILTIN_CRATE
+            && tables.def_info.get(&def)?.kind == crate::resolve::imports::ResKind::Fn).then_some(def)
+    }
     /// A user Adt's stable identity, as carried by `TyKind::Adt(DefId, ArgsId)`.
     #[allow(dead_code)] // First production readers are generic collect and mono; the store form is used now.
     pub fn def_of_adt(&self, id: AdtId) -> DefId {
@@ -3450,6 +3469,31 @@ pub fn collect_reuse(
     reuse: &mut crate::driver::gen_reuse::GenReuse,
     std_routes: &[&'static crate::ty::lang::StdFnDef],
 ) -> Result<Program, Vec<Diag>> {
+    collect_with_definitions_inner(ast, interner, known, crate_ids, walk_instances, def_order, resolved, reuse, std_routes, None)
+}
+
+/// Fresh collection with independent definitions installed before any
+/// initializer or body check. Imported state never shares an unkeyed reuse
+/// cache. The provider owns the external signature and generation contract.
+#[allow(clippy::too_many_arguments)]
+pub fn collect_with_definitions(
+    ast: Arc<Ast>, interner: Arc<Interner>, known: Arc<Known>, crate_ids: CrateIds,
+    walk_instances: bool, def_order: &mut DefOrder,
+    resolved: Option<Arc<crate::resolve::imports::ResolvedTables>>,
+    definitions: &mut dyn FnMut(&mut Program) -> Result<(), Vec<Diag>>,
+) -> Result<Program, Vec<Diag>> {
+    collect_with_definitions_inner(ast, interner, known, crate_ids, walk_instances, def_order, resolved, &mut Default::default(), &[], Some(definitions))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn collect_with_definitions_inner(
+    ast: Arc<Ast>, interner: Arc<Interner>, known: Arc<Known>, crate_ids: CrateIds,
+    walk_instances: bool, def_order: &mut DefOrder,
+    resolved: Option<Arc<crate::resolve::imports::ResolvedTables>>,
+    reuse: &mut crate::driver::gen_reuse::GenReuse,
+    std_routes: &[&'static crate::ty::lang::StdFnDef],
+    definitions: Option<&mut dyn FnMut(&mut Program) -> Result<(), Vec<Diag>>>,
+) -> Result<Program, Vec<Diag>> {
     let mut p = Program {
         ast: ast.clone(),
         interner: interner.clone(),
@@ -3571,6 +3615,7 @@ pub fn collect_reuse(
     }
     let mut errs = Vec::new();
     let dup = |span: Span, n: &str| Diag::new("L0106", span, format!("`{n}` is defined more than once"), "Rename one of the definitions.");
+    if let Some(definitions) = definitions { definitions(&mut p)?; }
     // Without resolver tables the file has no `use` at all (any `use`
     // routes to the resolver), so a non-prelude std type lust knows by
     // name cannot be in scope (W-STD-A; the resolver checks its paths).
@@ -8394,7 +8439,10 @@ impl<'a> crate::ty::consteval::ConstCx<'a> for CollectCx<'a> {
                 // A body const or static of this name shadows any
                 // module fn: the call names no fn here.
                 Some(_) => return CallTarget::Unknown,
-                None => self.p.fn_names.get(&last).copied(),
+                None => {
+                    if self.p.native_import(last).is_some() { return CallTarget::NonConst; }
+                    self.p.fn_names.get(&last).copied()
+                }
             }
         } else if segs.len() == 2 {
             // `Self::f(..)` names the impl type `Self` means here.
