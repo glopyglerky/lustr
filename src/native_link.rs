@@ -105,9 +105,13 @@ fn compile_entry(
         if handle.is_null() {
             return Err("cannot load the matched native compiler library");
         }
-        let entry_name = if shared { c"lustr_native_session_v1" }
-            else if client_env.is_some() { c"lustr_native_retained_v1" }
-            else { c"lustr_native_v2" };
+        let entry_name = if shared {
+            c"lustr_native_session_v1"
+        } else if client_env.is_some() {
+            c"lustr_native_retained_v1"
+        } else {
+            c"lustr_native_v2"
+        };
         let entry = unsafe { dlsym(handle, entry_name.as_ptr()) };
         if entry.is_null() {
             return Err("native compiler library has no matching entry point");

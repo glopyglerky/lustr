@@ -79,13 +79,26 @@ fn text<'a>(value: &'a Value, key: &str) -> Option<&'a str> {
 }
 
 // The first retained boundary permits only a decimal-literal edit in a direct
-// scalar `parameter ^ literal` body. This certificate has no new declarations,
+// scalar `parameter ^ literal` or primitive wrapping-method body. This
+// certificate has no new declarations,
 // lookups, calls, lint scopes or cross-function uses. General body edits still
 // use the complete compiler; expanding this certificate needs its own checks.
 fn literal_edit(old: &str, new: &str) -> bool {
     fn split(s: &str) -> Option<(&str, &str, &str)> {
         let body = s.trim().strip_prefix('{')?.strip_suffix('}')?.trim();
-        let (parameter, literal) = body.split_once('^')?;
+        let (parameter, literal) = if let Some(parts) = body.split_once('^') {
+            parts
+        } else {
+            let (parameter, call) = body.split_once('.')?;
+            let (method, argument) = call.split_once('(')?;
+            if !matches!(
+                method.trim(),
+                "wrapping_add" | "wrapping_sub" | "wrapping_mul" | "wrapping_shl" | "wrapping_shr" | "rotate_left" | "rotate_right"
+            ) {
+                return None;
+            }
+            (parameter, argument.strip_suffix(')')?)
+        };
         let parameter = parameter.trim();
         let literal = literal.trim();
         if parameter.is_empty()
@@ -138,7 +151,7 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
     for kernel in kernels {
         let name = text(kernel, "name")?;
         let candidate = compiler.candidates.get(name)?;
-        if !super::represented_body(tcx, *definitions.get(text(kernel, "definition")?)?, candidate) {
+        if !super::represented_body(tcx, *definitions.get(text(kernel, "definition")?)?, candidate, super::BodyBindings::Retained) {
             return None;
         }
         if candidate.header != text(kernel, "header")? {
@@ -173,6 +186,13 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
             tcx.ensure_ok().has_ffi_unwind_calls(owner.def_id);
             tcx.ensure_ok().check_liveness(owner.def_id);
             tcx.ensure_ok().mir_drops_elaborated_and_const_checked(owner.def_id);
+            let kernel = kernels
+                .iter()
+                .find(|k| text(k, "definition") == Some(format!("{:?}", tcx.def_path_hash(owner.def_id.to_def_id())).as_str()))?;
+            let candidate = compiler.candidates.get(text(kernel, "name")?)?;
+            if !super::represented_body(tcx, owner.def_id, candidate, super::BodyBindings::Current) {
+                return None;
+            }
         }
     }
     tcx.sess.dcx().abort_if_errors();

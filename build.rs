@@ -32,13 +32,36 @@ fn main() {
     verify(&core.join("bin/cargo"), pin["cargo_sha256"]);
     verify(&core.join("lib").join(pin["driver_file"]), pin["driver_sha256"]);
     verify(&core.join("lib").join(pin["llvm_file"]), pin["llvm_sha256"]);
-    verify(&lust.join("bin/lust"), pin["lust_sha256"]);
-    verify(&lust.join("bin/lust-core"), pin["lust_core_sha256"]);
-    println!("cargo:rustc-env=LUST_BUILD_HASH={}", pin["lust_build"]);
+    if cfg!(feature = "source-native-runtime") {
+        // A fresh, source-guarded build supplies Cargo's actual native build
+        // receipt. The frozen upstream Rust pin remains unchanged. The default
+        // feature set still verifies the historical complete package exactly.
+        let receipt = std::env::var_os("LUSTR_NATIVE_BUILD_OUTPUT").expect("select the native Cargo build receipt");
+        let receipt = Path::new(&receipt);
+        assert!(receipt.is_absolute());
+        let output = std::fs::read_to_string(receipt).expect("read native Cargo build receipt");
+        let hashes: Vec<_> = output.lines().filter_map(|line| line.strip_prefix("cargo:rustc-env=LUST_BUILD_HASH=")).collect();
+        assert_eq!(hashes.len(), 1, "one native compiler identity is required");
+        let hash = hashes[0];
+        assert!(hash.len() == 16 && hash.bytes().all(|b| b.is_ascii_hexdigit()));
+        assert!(lust.join("bin/lust-core").is_file());
+        let client = Command::new(lust.join("bin/lust")).arg("--version").output().expect("query selected native client");
+        assert!(client.status.success());
+        assert!(String::from_utf8(client.stdout).unwrap().contains(&format!("(build {})", &hash[..8])));
+        println!("cargo:rustc-env=LUST_BUILD_HASH={hash}");
+        println!("cargo:rerun-if-changed={}", receipt.display());
+        println!("cargo:rerun-if-changed={}", lust.join("bin/lust").display());
+        println!("cargo:rerun-if-changed={}", lust.join("bin/lust-core").display());
+    } else {
+        verify(&lust.join("bin/lust"), pin["lust_sha256"]);
+        verify(&lust.join("bin/lust-core"), pin["lust_core_sha256"]);
+        println!("cargo:rustc-env=LUST_BUILD_HASH={}", pin["lust_build"]);
+    }
     println!("cargo:rustc-env=LUSTR_CORE_SOURCE={}", pin["source"]);
     println!("cargo:rerun-if-changed=upstream/bluefe-core.pin");
     println!("cargo:rerun-if-changed=compiler/native/src/client.rs");
     println!("cargo:rerun-if-changed=compiler/native/src/protocol.rs");
     println!("cargo:rerun-if-env-changed=LUSTR_CORE_ROOT");
     println!("cargo:rerun-if-env-changed=LUSTR_LUST_ROOT");
+    println!("cargo:rerun-if-env-changed=LUSTR_NATIVE_BUILD_OUTPUT");
 }

@@ -49,7 +49,11 @@ fn main() {
         &work.join("app/Cargo.toml"),
         "[package]\nname='mixed-app'\nversion='0.1.0'\nedition='2024'\n[dependencies]\nmixed-macro={path='../mixed-macro'}\ntiny-core={path='../tiny-core'}\n",
     );
-    let source = "use mixed_macro::general;\n#[allow(non_camel_case_types)] type u64=i64;\nmod core{pub mod mem{pub fn size_of<T>()->usize{1}}}\nmod nested{pub fn kernel(x:i64)->i64{x ^ 31}}\nfn projected_size()->usize{core::mem::size_of::<u64>()}\nfn signed_alias(x:std::primitive::i64)->std::primitive::i64{if (x as u64)<0{1}else{2}}\ngeneral!();\nfn kernel(x:u64)->u64{x ^ 17}\nfn choose(x:u64)->u64{if x & 1 == 0 {x ^ 1024} else {x | 2048}}\nfn main(){assert_eq!(projected_size(),1);assert_eq!(signed_alias(-1),1);assert_eq!(nested::kernel(0),31);let w=std::task::Waker::noop();let mut f=std::pin::pin!(general((42+tiny_core::adjustment()) as _));let mut cx=std::task::Context::from_waker(w);match std::future::Future::poll(f.as_mut(),&mut cx){std::task::Poll::Ready(v)=>println!(\"{v}\"),std::task::Poll::Pending=>panic!(\"unexpected pending\")}}\n";
+    let source = concat!(
+        "use mixed_macro::general;\n#[allow(non_camel_case_types)] type u64=i64;\nmod core{pub mod mem{pub fn size_of<T>()->usize{1}}}\nmod nested{pub fn kernel(x:i64)->i64{x ^ 31}}\nfn projected_size()->usize{core::mem::size_of::<u64>()}\nfn signed_alias(x:std::primitive::i64)->std::primitive::i64{if (x as u64)<0{1}else{2}}\ngeneral!();\nfn kernel(x:u64)->u64{x ^ 17}\nfn choose(x:u64)->u64{if x & 1 == 0 {x ^ 1024} else {x | 2048}}\n",
+        "trait Counterfeit{fn wrapping_add(self,rhs:u64)->u64;}\nimpl Counterfeit for bool{fn wrapping_add(self,_:u64)->u64{99}}\nfn fake_wrapping(x:u64)->u64{(x==0).wrapping_add(17)}\nfn arithmetic(x:std::primitive::u64)->std::primitive::u64{x.wrapping_add(17)}\nfn rotation(x:std::primitive::u64)->std::primitive::u64{x.wrapping_sub(5).wrapping_mul(3).wrapping_neg().wrapping_shl(65).wrapping_shr(64).rotate_left(7).rotate_right(9)}\nfn signed_rotation(x:std::primitive::i64)->std::primitive::i64{x.wrapping_add(17).wrapping_sub(5).wrapping_mul(3).wrapping_neg().wrapping_shl(65).wrapping_shr(64).rotate_left(7).rotate_right(9)}\n",
+        "fn main(){assert_eq!(fake_wrapping(0),99);let literal=std::env::var(\"MIXED_ARITH_LITERAL\").unwrap_or_else(|_|\"17\".into()).parse::<std::primitive::u64>().unwrap();for value in [0,1,42,std::primitive::u64::MAX]{assert_eq!(arithmetic(value),value.wrapping_add(literal));assert_eq!(rotation(value),value.wrapping_sub(5).wrapping_mul(3).wrapping_neg().wrapping_shl(65).wrapping_shr(64).rotate_left(7).rotate_right(9));}for value in [std::primitive::i64::MIN,-1,0,1,std::primitive::i64::MAX]{assert_eq!(signed_rotation(value),value.wrapping_add(17).wrapping_sub(5).wrapping_mul(3).wrapping_neg().wrapping_shl(65).wrapping_shr(64).rotate_left(7).rotate_right(9));}assert_eq!(projected_size(),1);assert_eq!(signed_alias(-1),1);assert_eq!(nested::kernel(0),31);let w=std::task::Waker::noop();let mut f=std::pin::pin!(general((42+tiny_core::adjustment()) as _));let mut cx=std::task::Context::from_waker(w);match std::future::Future::poll(f.as_mut(),&mut cx){std::task::Poll::Ready(v)=>println!(\"{v}\"),std::task::Poll::Pending=>panic!(\"unexpected pending\")}}\n"
+    );
     let path = work.join("app/src/main.rs");
     put(&path, source);
     let trace = work.join("mixed.trace");
@@ -88,7 +92,7 @@ fn main() {
     let execute = |label: &str, expected: &[u8]| {
         let app = work.join("target/debug/mixed-app");
         retain(&app, &work.join(format!("actual-app-{label}")));
-        let result = Command::new(&app).output().unwrap();
+        let result = Command::new(&app).env("MIXED_ARITH_LITERAL", if label == "arithmetic-edit" { "19" } else { "17" }).output().unwrap();
         fs::write(work.join(format!("app-{label}.stdout")), &result.stdout).unwrap();
         fs::write(work.join(format!("app-{label}.stderr")), &result.stderr).unwrap();
         assert!(result.status.success());
@@ -98,7 +102,7 @@ fn main() {
     execute("cold", b"1083\n");
     let cold = fs::read_to_string(&trace).unwrap();
     assert!(
-        cold.contains("native-definitions=2") && cold.matches("native-definition-omitted=").count() == 2,
+        cold.contains("native-definitions=5") && cold.matches("native-definition-omitted=").count() == 5,
         "missing mixed definitions: {cold}"
     );
     fs::write(&trace, "").unwrap();
@@ -110,6 +114,14 @@ fn main() {
     assert!(warm.contains("reused-rust-objects=1 full-analysis=0"), "body edit did not reuse checked context: {warm}");
     assert!(!warm.contains("native-definition-omitted="), "warm request ran LLVM codegen");
     assert_eq!(warm.matches("lustr mixed native:").count(), 1, "unchanged native definition was regenerated: {warm}");
+    fs::write(&trace, "").unwrap();
+    fs::write(&path, edited.replacen("x.wrapping_add(17)", "x.wrapping_add(19)", 1)).unwrap();
+    build("arithmetic-edit", true);
+    execute("arithmetic-edit", b"1081\n");
+    let arithmetic = fs::read_to_string(&trace).unwrap();
+    assert!(arithmetic.contains("reused-rust-objects=1 full-analysis=0"), "wrapping edit did not reuse checked context: {arithmetic}");
+    assert!(!arithmetic.contains("native-definition-omitted="), "wrapping edit ran LLVM codegen");
+    assert_eq!(arithmetic.matches("lustr mixed native:").count(), 1, "wrapping edit regenerated unchanged definitions: {arithmetic}");
     fs::write(&trace, "").unwrap();
     fs::write(&path, edited.replace("x ^ 19", "x ^ true")).unwrap();
     build("invalid", false);

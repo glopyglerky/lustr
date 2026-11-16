@@ -417,8 +417,10 @@ fn native_and_full_compiler_contract() {
     let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
     assert_eq!(serde_json::from_str::<serde_json::Value>(trace.lines().last().unwrap()).unwrap()["entry"], "native-library");
     f.succeeds("native-daemon-first", f.command("lustr").arg("build").arg(&source).arg("-o").arg(&executable));
+    assert_eq!(f.entry(), "daemon");
     f.source("main.rs", "fn main(){println!(\"edited\");}\n");
     f.succeeds("native-daemon-edit", f.command("lustr").arg("build").arg(&source).arg("-o").arg(&executable));
+    assert_eq!(f.entry(), "daemon");
     assert_eq!(f.engine(), "lust");
     assert_eq!(f.succeeds("native-run", &mut Command::new(&executable)).stdout, b"edited\n");
     f.succeeds("raw-native", f.command("rustc").arg("--edition=2024").arg(&source).arg("-o").arg(&executable));

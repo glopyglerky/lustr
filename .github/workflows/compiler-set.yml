@@ -6,25 +6,35 @@ on:
     paths:
       - 'Cargo.toml'
       - 'Cargo.lock'
+      - 'build.rs'
+      - 'src/**'
+      - 'tests/compiler_contract.rs'
       - 'compiler/native/**'
+      - 'crates/lustr-native-core/**'
       - 'crates/lustr/**'
       - 'crates/lustr-semantic/**'
       - 'upstream/lust.pin'
       - 'upstream/lust.integration'
       - 'upstream/lust-integration.*'
       - 'tools/lust-upstream-check.rs'
+      - 'tools/*mixed*'
       - '.github/workflows/compiler-set.yml'
   pull_request:
     paths:
       - 'Cargo.toml'
       - 'Cargo.lock'
+      - 'build.rs'
+      - 'src/**'
+      - 'tests/compiler_contract.rs'
       - 'compiler/native/**'
+      - 'crates/lustr-native-core/**'
       - 'crates/lustr/**'
       - 'crates/lustr-semantic/**'
       - 'upstream/lust.pin'
       - 'upstream/lust.integration'
       - 'upstream/lust-integration.*'
       - 'tools/lust-upstream-check.rs'
+      - 'tools/*mixed*'
       - '.github/workflows/compiler-set.yml'
   workflow_dispatch:
 
@@ -74,6 +84,42 @@ jobs:
         run: cargo +nightly-2026-11-05 build --manifest-path crates/lustr-semantic/Cargo.toml --locked --offline
       - name: Verify actual compiler semantics and artifact interoperability
         run: python3 crates/lustr-semantic/tests/test_probe.py -v
+
+  mixed-source-build:
+    name: Source-built mixed Rust and Lust
+    runs-on: ubuntu-24.04
+    env:
+      RUSTUP_TOOLCHAIN: nightly-2026-11-09
+      CARGO_BUILD_JOBS: '2'
+      GIT_ALTERNATE_OBJECT_DIRECTORIES: ${{ github.workspace }}/.lust-pristine-reference/.git/objects
+    steps:
+      - uses: actions/checkout@v4
+      - name: Obtain the exact pristine reference objects
+        uses: actions/checkout@v4
+        with:
+          repository: t3dotgg/lust-lang
+          ref: 240e08d91d4aed0299639f6f11fd522912b248f9
+          path: .lust-pristine-reference
+          persist-credentials: false
+      - name: Install matching complete Rust development libraries
+        run: rustup toolchain install nightly-2026-11-09 --profile minimal --component rustc-dev --component llvm-tools --component rustfmt --target wasm32-unknown-unknown
+      - name: Build upstream TinyCC
+        run: compiler/native/scripts/build-tcc.sh
+      - name: Prepare locked dependencies for offline source builds
+        run: |
+          cargo fetch --manifest-path compiler/native/Cargo.toml --locked
+          cargo fetch --manifest-path crates/lustr-native-core/Cargo.toml --locked
+          cargo fetch --manifest-path crates/lustr/Cargo.toml --locked
+          cargo fetch --manifest-path crates/lustr-semantic/Cargo.toml --locked
+          cargo fetch --manifest-path Cargo.toml --locked
+      - name: Build source toolchain constructor
+        run: rustc --edition=2024 tools/build-mixed-toolchain.rs -o "$RUNNER_TEMP/build-mixed-toolchain"
+      - name: Build complete local toolchain without a predecessor package
+        run: '"$RUNNER_TEMP/build-mixed-toolchain" "$GITHUB_WORKSPACE" --current-sdk "$GITHUB_WORKSPACE/compiler/native/third_party/tcc" "$RUNNER_TEMP/lustr-source-built"'
+      - name: Build real mixed-project qualifier
+        run: rustc --edition=2024 tools/mixed-compiler-qualification.rs -o "$RUNNER_TEMP/mixed-compiler-qualification"
+      - name: Execute mixed Cargo graph, edits, invalidation, warnings and rejection
+        run: '"$RUNNER_TEMP/mixed-compiler-qualification" "$RUNNER_TEMP/mixed-project" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/cargo" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/lustr"'
 
   compatibility:
     name: Cargo compatibility (${{ matrix.os }})

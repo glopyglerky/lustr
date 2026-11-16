@@ -155,7 +155,14 @@ impl<'a> Visitor<'a> for Macros {
 
 /// The isolated native unit must see the same bindings as this Rust body.
 /// Carrying arbitrary Rust item/trait/const meanings into it is a later bridge.
-fn represented_body(tcx: TyCtxt<'_>, id: rustc_span::def_id::LocalDefId, candidate: &Candidate) -> bool {
+#[derive(Clone, Copy)]
+enum BodyBindings {
+    Current,
+    // Only after the unchanged semantic context and a previously checked
+    // body, or its certified literal edit, establish the same resolution.
+    Retained,
+}
+fn represented_body(tcx: TyCtxt<'_>, id: rustc_span::def_id::LocalDefId, candidate: &Candidate, bindings: BodyBindings) -> bool {
     use rustc_hir::{
         self as hir,
         def::{DefKind, Res},
@@ -169,37 +176,71 @@ fn represented_body(tcx: TyCtxt<'_>, id: rustc_span::def_id::LocalDefId, candida
     if (span.lo(), span.hi(), span.ctxt()) != (candidate.body_span.lo(), candidate.body_span.hi(), candidate.body_span.ctxt()) {
         return false;
     }
-    struct Scope(bool);
-    impl<'v> Visitor<'v> for Scope {
-        fn visit_path(&mut self, path: &hir::Path<'v>, _: hir::HirId) {
+    struct Scope<'tcx> {
+        valid: bool,
+        tcx: TyCtxt<'tcx>,
+        owner: rustc_span::def_id::LocalDefId,
+        bindings: BodyBindings,
+    }
+    impl<'tcx> Visitor<'tcx> for Scope<'tcx> {
+        fn visit_path(&mut self, path: &hir::Path<'tcx>, _: hir::HirId) {
             if !matches!(path.res, Res::Local(_) | Res::PrimTy(_)) {
-                self.0 = false;
+                self.valid = false;
             }
             intravisit::walk_path(self, path);
         }
-        fn visit_expr(&mut self, expr: &'v hir::Expr<'v>) {
+        fn visit_expr(&mut self, expr: &'tcx hir::Expr<'tcx>) {
             match expr.kind {
+                hir::ExprKind::MethodCall(segment, receiver, _, _) => {
+                    let named = matches!(
+                        segment.ident.name.as_str(),
+                        "wrapping_add"
+                            | "wrapping_sub"
+                            | "wrapping_mul"
+                            | "wrapping_neg"
+                            | "wrapping_shl"
+                            | "wrapping_shr"
+                            | "rotate_left"
+                            | "rotate_right"
+                    );
+                    let resolved = matches!(self.bindings, BodyBindings::Retained)
+                        || (|| {
+                            // Reuse the actual Rust method identity, not its spelling.
+                            // User traits and lookalike modules cannot establish it.
+                            let checked = self.tcx.typeck(self.owner);
+                            let method = checked.type_dependent_def_id(expr.hir_id)?;
+                            let implementation = self.tcx.inherent_impl_of_assoc(method)?;
+                            let core = self.tcx.lang_items().sized_trait()?.krate;
+                            let receiver = checked.expr_ty_adjusted(receiver);
+                            Some(
+                                method.krate == core
+                                    && matches!(receiver.kind(), ty::TyKind::Int(_) | ty::TyKind::Uint(_))
+                                    && self.tcx.type_of(implementation).instantiate_identity().skip_norm_wip() == receiver,
+                            )
+                        })()
+                        .unwrap_or(false);
+                    self.valid &= named && resolved;
+                }
                 hir::ExprKind::Call(..)
-                | hir::ExprKind::MethodCall(..)
                 | hir::ExprKind::ConstBlock(..)
                 | hir::ExprKind::Path(hir::QPath::TypeRelative(..))
                 | hir::ExprKind::Closure { .. }
-                | hir::ExprKind::InlineAsm(..) => self.0 = false,
-                hir::ExprKind::Lit(lit) if !matches!(lit.node, ast::LitKind::Int(..) | ast::LitKind::Bool(..)) => self.0 = false,
+                | hir::ExprKind::InlineAsm(..) => self.valid = false,
+                hir::ExprKind::Lit(lit) if !matches!(lit.node, ast::LitKind::Int(..) | ast::LitKind::Bool(..)) => self.valid = false,
                 _ => {}
             }
             intravisit::walk_expr(self, expr);
         }
         fn visit_nested_body(&mut self, _: hir::BodyId) {
-            self.0 = false;
+            self.valid = false;
         }
         fn visit_nested_item(&mut self, _: hir::ItemId) {
-            self.0 = false;
+            self.valid = false;
         }
     }
-    let mut scope = Scope(true);
+    let mut scope = Scope { valid: true, tcx, owner: id, bindings };
     scope.visit_body(body);
-    scope.0
+    scope.valid
 }
 
 // Unrepresented code-generation policies stay with the complete backend.
@@ -365,7 +406,7 @@ impl Callbacks for Compiler {
                 let Some(name) = tcx.opt_item_name(id) else { continue };
                 let name = name.to_string();
                 let Some(candidate) = self.candidates.get(&name) else { continue };
-                if !represented_body(tcx, id.expect_local(), candidate) {
+                if !represented_body(tcx, id.expect_local(), candidate, BodyBindings::Current) {
                     continue;
                 }
                 let signature = tcx.fn_sig(id).instantiate_identity().skip_binder();

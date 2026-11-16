@@ -27,6 +27,12 @@ checked Rust objects. Signature, macro and dependency changes invalidate that
 reuse; invalid Rust is rejected. General mixed-function coverage and equivalent
 complete-work performance remain open.
 
+The [source toolchain builder](tools/build-mixed-toolchain.rs) assembles the
+complete local development toolchain from this checkout, the matching upstream
+Rust SDK and TinyCC. It builds the lustr entry, Lust, native C ABI library,
+Cargo integration and mixed driver without an older prebuilt lustr package.
+See the [build instructions](docs/compiler-set/mixed-compiler.md#build-and-qualify).
+
 The following native expansion experiments are retained research. Their
 incomplete language and metadata coverage is not a requirement to replace the
 imported full compiler before delivering lustr.

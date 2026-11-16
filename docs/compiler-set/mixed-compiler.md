@@ -47,8 +47,8 @@ unattributed, root-level scalar function is considered only after checking its
 actual Rust instance, mangled symbol, parameter/return types and effective
 Rust/C argument-passing modes.
 The actual HIR definition must match the source body and root item. Its paths
-must resolve to local bindings or primitive types. Calls, associated items,
-aliases used within the body and nested definitions require further semantic
+must resolve to local bindings or primitive types. Free calls, unrepresented
+methods, associated paths, aliases used within the body and nested definitions require further semantic
 context and stay with Rust. This prevents shadowed modules, primitive aliases
 and same-named nested functions from being reinterpreted in the isolated unit.
 The first target is Linux x86-64, unoptimized code with debug information
@@ -75,8 +75,8 @@ Expansion is refreshed because procedural macros can observe inputs they do
 not report. This does not claim a
 retained Rust frontend or zero Rust work.
 
-The first warm certificate accepts a decimal-literal change in a direct
-`parameter ^ literal` scalar body, preserving its interface and source
+The warm certificate accepts a decimal-literal change in a direct
+`parameter ^ literal` or primitive wrapping-method scalar body, preserving its interface and source
 positions. Existing Rust body queries check the new body; the original Lust
 session generates the changed function. Unchanged native definitions keep
 their generated objects and do not repeat their body queries or compilation.
@@ -95,8 +95,33 @@ The bridge observes and forwards Rust's existing diagnostic-tracking callback;
 it keeps the original emitter and incremental diagnostic side effects. A
 request producing diagnostics uses complete analysis, preserving warnings
 until version-bound diagnostic replay is connected to the retained path.
+Primitive wrapping/rotation methods use Rust's actual selected inherent
+definition, the real `core` crate identity and the primitive receiver type.
+Methods supplied by user traits stay with the complete compiler. Unchanged
+method bodies retain their checked bindings only while the full semantic
+context matches; edited bodies run the original Rust queries and binding check.
 
 ## Build and qualify
+
+For a fresh local build, compile `tools/build-mixed-toolchain.rs` with Rust and
+run it with the repository, matching upstream Rust SDK, built TinyCC directory
+and a new output directory outside the source checkout. It checks the declared
+native source identities, builds Lust, the lustr entry, Cargo integration and
+mixed driver and native C ABI library, and assembles `toolchain/bin/lustr`.
+The supplied TinyCC static archive must support shared linking. Dependencies must already be
+available for locked offline Cargo builds. No historical lustr package is
+required. The `source-native-runtime` feature binds the entry to Cargo's actual
+native build receipt; the complete Rust SDK keeps its existing exact pin.
+The ordinary feature set retains the older package's binary checks.
+`--current-sdk` can replace the SDK directory when `rustc` already selects the
+matching pinned toolchain. The constructor checks its source identity before
+building native components. CI builds this complete composition and runs the
+real mixed-project qualifier through its lustr entry.
+
+This local composition references the selected source libraries, SDK and TinyCC
+installation. It is not a standalone release archive or a change to the host's
+default compiler. Retain its toolchain and logs, then remove its disposable
+`work` directory after qualification.
 
 Build the native compiler with the existing TinyCC setup. Take its actual
 `LUST_BUILD_HASH` from Cargo's build-script output, then build the matching
