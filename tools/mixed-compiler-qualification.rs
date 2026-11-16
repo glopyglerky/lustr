@@ -56,6 +56,14 @@ fn main() {
     );
     let path = work.join("app/src/main.rs");
     put(&path, source);
+    // Keep the linker command and compiler environment identical across the
+    // failure and recovery requests. Only its external failure marker changes.
+    let linker = work.join("controlled-linker");
+    put(
+        &linker,
+        "#!/bin/sh\nif [ -e \"$(dirname \"$0\")/fail-link\" ]; then\n  echo 'intentional retained-link failure' >&2\n  exit 75\nfi\nexec cc \"$@\"\n",
+    );
+    fs::set_permissions(&linker, fs::Permissions::from_mode(0o755)).unwrap();
     let trace = work.join("mixed.trace");
     let build = |label: &str, expected: bool| {
         let before = fs::read(&path).unwrap();
@@ -73,6 +81,8 @@ fn main() {
             .arg(work.join("target"))
             .arg("--config")
             .arg(format!("build.build-dir={:?}", work.join("intermediates")))
+            .arg("--config")
+            .arg(format!("target.x86_64-unknown-linux-gnu.linker={linker:?}"))
             .env("LUSTR_MIXED_TRACE", &trace)
             .env("LUSTR_MIXED_CACHE_DIR", work.join("mixed-state"))
             .env("LUST_CACHE_DIR", work.join("native-cache"))
@@ -96,7 +106,7 @@ fn main() {
         fs::write(work.join(format!("app-{label}.stdout")), &result.stdout).unwrap();
         fs::write(work.join(format!("app-{label}.stderr")), &result.stderr).unwrap();
         assert!(result.status.success());
-        assert_eq!(result.stdout, expected);
+        assert_eq!(result.stdout, expected, "{label}: wrong application result");
     };
     build("cold", true);
     execute("cold", b"1083\n");
@@ -129,6 +139,42 @@ fn main() {
     fs::write(&path, &edited).unwrap();
     build("recovery", true);
     execute("recovery", b"1081\n");
+    // A failed edited link must not change the native object described by
+    // the last successful certificate. Restoring that source must execute
+    // its original result even when its unchanged body needs no recompilation.
+    fs::write(&trace, "").unwrap();
+    fs::write(work.join("fail-link"), "").unwrap();
+    fs::write(&path, edited.replace("x ^ 19", "x ^ 18")).unwrap();
+    build("link-failure", false);
+    assert!(fs::read_to_string(work.join("link-failure.stderr")).unwrap().contains("intentional retained-link failure"));
+    let failed_link = fs::read_to_string(&trace).unwrap();
+    assert_eq!(failed_link.matches("lustr mixed native:").count(), 1, "failure did not follow one retained native edit: {failed_link}");
+    assert!(!failed_link.contains("native-definition-omitted="), "failed edit ran full LLVM code generation");
+    fs::remove_file(work.join("fail-link")).unwrap();
+    fs::write(&trace, "").unwrap();
+    fs::write(&path, &edited).unwrap();
+    build("link-failure-recovery", true);
+    execute("link-failure-recovery", b"1081\n");
+    let link_recovery = fs::read_to_string(&trace).unwrap();
+    assert!(
+        link_recovery.contains("reused-rust-objects=1 full-analysis=0"),
+        "recovery did not reuse its original certificate: {link_recovery}"
+    );
+    assert!(!link_recovery.contains("lustr mixed native:"), "restoring the successful source regenerated native code");
+    // A successful edit publishes the new object identity, including for
+    // a later request that reuses it without regenerating native code.
+    fs::write(&trace, "").unwrap();
+    let versioned = edited.replace("x ^ 19", "x ^ 18");
+    fs::write(&path, &versioned).unwrap();
+    build("versioned-object", true);
+    execute("versioned-object", b"1080\n");
+    fs::write(&trace, "").unwrap();
+    fs::write(&path, &versioned).unwrap();
+    build("versioned-object-noop", true);
+    execute("versioned-object-noop", b"1080\n");
+    let versioned_noop = fs::read_to_string(&trace).unwrap();
+    assert!(versioned_noop.contains("reused-rust-objects=1 full-analysis=0"), "published object was not reused: {versioned_noop}");
+    assert!(!versioned_noop.contains("lustr mixed native:"), "unchanged versioned object was regenerated");
     fs::write(&trace, "").unwrap();
     let signature = edited.replace("kernel(x:u64)->u64", "kernel(x:u64)->usize").replace("x ^ 19", "(x ^ 19) as usize");
     fs::write(work.join("mixed-macro/src/lib.rs"), macro_source.replace("general(x:u64)->u64", "general(x:u64)->usize")).unwrap();
@@ -181,6 +227,6 @@ fn main() {
     fs::write(work.join("owned-daemons.status"), format!("{daemons} adopted native daemon(s), actual idle exit0; no remaining children\n"))
         .unwrap();
     println!(
-        "real Cargo/proc macro + core/alloc no_std library + mixed execution + native warm edit + rejection/recovery + signature/dependency/macro invalidation + late warning/deny preservation: actual0"
+        "real Cargo/proc macro + core/alloc no_std library + mixed execution + native warm edit + rejection/recovery + failed-link cache isolation + versioned native object reuse + signature/dependency/macro invalidation + late warning/deny preservation: actual0"
     );
 }

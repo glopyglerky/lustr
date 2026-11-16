@@ -456,7 +456,10 @@ fn native_and_full_compiler_contract() {
     );
     assert_eq!(f.engine(), "full-rust-core");
     assert!(std::fs::metadata(f.root.join("library.rmeta")).unwrap().len() > 0);
-    let wasm = f.source("wasm.rs", "#![no_std]\n#[panic_handler]fn panic(_: &core::panic::PanicInfo)->!{loop{}}\n#[unsafe(no_mangle)]pub extern \"C\" fn answer()->u32{42}\n");
+    let wasm = f.source(
+        "wasm.rs",
+        "#![no_std]\n#[panic_handler]fn panic(_: &core::panic::PanicInfo)->!{loop{}}\n#[unsafe(no_mangle)]pub extern \"C\" fn answer()->u32{42}\n#[unsafe(no_mangle)]pub extern \"C\" fn bits(value:u32)->u32{value.count_ones()}\n#[unsafe(no_mangle)]pub extern \"C\" fn rotate(value:u32)->u32{value.rotate_left(8)}\n",
+    );
     f.succeeds(
         "wasm",
         f.command("rustc")
@@ -466,6 +469,30 @@ fn native_and_full_compiler_contract() {
             .arg(f.root.join("module.wasm")),
     );
     assert_eq!(&std::fs::read(f.root.join("module.wasm")).unwrap()[..8], b"\0asm\x01\0\0\0");
+    // Execute the emitted no_std module in an independent WebAssembly runtime.
+    // A valid header alone does not establish that the linked exports work.
+    let node = std::env::var_os("LUSTR_TEST_NODE").unwrap_or_else(|| "node".into());
+    let execution = f.succeeds(
+        "wasm-execution",
+        Command::new(node)
+            .current_dir(&f.root)
+            .arg("-e")
+            .arg(concat!(
+                "const assert = require('node:assert/strict');",
+                "const bytes = require('node:fs').readFileSync(process.argv[1]);",
+                "const module = new WebAssembly.Module(bytes);",
+                "assert.deepEqual(WebAssembly.Module.imports(module), []);",
+                "const api = new WebAssembly.Instance(module, {}).exports;",
+                "assert.equal(api.answer(), 42);",
+                "assert.equal(api.bits(0), 0);",
+                "assert.equal(api.bits(0xffffffff), 32);",
+                "assert.equal(api.bits(0xf0f00f0f), 16);",
+                "assert.equal(api.rotate(0x12345678), 0x34567812);",
+                "console.log('no_std WebAssembly execution passed');",
+            ))
+            .arg(f.root.join("module.wasm")),
+    );
+    assert_eq!(execution.stdout, b"no_std WebAssembly execution passed\n");
 
     let manifest =
         f.source("project/Cargo.toml", "[package]\nname=\"compiler_contract\"\nversion=\"0.1.0\"\nedition=\"2024\"\n[workspace]\n");

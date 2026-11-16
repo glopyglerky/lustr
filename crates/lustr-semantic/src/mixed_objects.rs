@@ -32,7 +32,10 @@ pub fn contains(symbol: &str) -> bool {
 pub(crate) fn append_objects(modules: &mut CompiledModules) {
     let Some(state) = STATE.get() else { return };
     for (n, object) in state.lock().unwrap().entries.values().enumerate() {
-        let link_object = object.with_extension("link-temp.o");
+        // Rust's archive writer uses each object's basename. Distinct names
+        // preserve every native member in a mixed rlib and its real metadata
+        // object inventory, even when functions live in separate directories.
+        let link_object = object.with_file_name(format!("lustr-native-{n}.link.o"));
         fs::copy(object, &link_object).expect("copy current native object for the Rust linker");
         modules.modules.push(CompiledModule {
             name: format!("lustr-native-{n}"),
@@ -64,6 +67,11 @@ pub(crate) fn retain_link(
     metadata: &EncodedMetadata,
     outputs: &OutputFilenames,
 ) -> io::Result<()> {
+    // Library metadata must be encoded anew on every source build. Only
+    // executable requests can retain and reuse this serialized link recipe.
+    if info.crate_types != [rustc_structures::CrateType::Executable] {
+        return Ok(());
+    }
     let Some(state) = STATE.get() else { return Ok(()) };
     let state = state.lock().unwrap();
     if state.entries.is_empty() {
@@ -89,8 +97,9 @@ pub(crate) fn retain_link(
     let mut n = 0;
     let mut native = state.entries.values();
     for module in cached.modules.iter_mut().chain(cached.allocator_module.iter_mut()) {
-        // Native objects have stable, request-owned paths. They are regenerated
-        // by Lust after edits; the retained Rust link references those paths.
+        // The original native objects stay immutable. Later successful edits
+        // select fresh object paths through the retained certificate; the Rust
+        // recipe keeps these original identities for versioned substitution.
         if module.name.starts_with("lustr-native-") {
             module.object = Some(native.next().unwrap().clone());
             continue;
@@ -110,7 +119,7 @@ pub(crate) fn retain_link(
 /// Decode Rust's real, version-bound link recipe and relink through its original
 /// backend. Temporary copies keep the checked objects intact when Rust removes
 /// its link inputs after success.
-pub(crate) fn relink(sess: &Session, directory: &Path) -> Result<(), String> {
+pub(crate) fn relink(sess: &Session, directory: &Path, native: &BTreeMap<PathBuf, PathBuf>) -> Result<(), String> {
     let bytes = fs::read(directory.join("checked.rlink")).map_err(|e| e.to_string())?;
     let (mut modules, info, metadata, outputs) =
         CompiledModules::deserialize_rlink(sess, bytes).map_err(|_| "Rust rejected the retained link recipe".to_owned())?;
@@ -119,9 +128,13 @@ pub(crate) fn relink(sess: &Session, directory: &Path) -> Result<(), String> {
     let mut n = 0;
     for module in modules.modules.iter_mut().chain(modules.allocator_module.iter_mut()) {
         for path in [&mut module.object, &mut module.global_asm_object, &mut module.dwarf_object, &mut module.bytecode] {
-            if path.as_ref().is_some_and(|p| !p.starts_with(directory)) {
+            let Some(source) = path.as_ref() else { continue };
+            let source = source.canonicalize().map_err(|e| e.to_string())?;
+            let selected = native.get(&source).unwrap_or(&source);
+            if !source.starts_with(directory) || !selected.starts_with(directory) {
                 return Err("cached object escaped its generation".into());
             }
+            *path = Some(selected.clone());
             retain_file(path, &temporary, &mut n).map_err(|e| e.to_string())?;
         }
     }

@@ -1,8 +1,21 @@
 diff --git a/build.rs b/build.rs
-index 302f9cb99f823cf7dac098971267b8e99e997188..5b14ae0884dd7b312dea7b51e5124eba61b731d8 100644
+index 302f9cb99f823cf7dac098971267b8e99e997188..faf5a1b8a5975aa73a50cef1a9a3153c18c5ecf2 100644
 --- a/build.rs
 +++ b/build.rs
-@@ -94,10 +94,20 @@ fn main() {
+@@ -76,6 +76,12 @@ fn main() {
+         println!("cargo:rustc-link-lib=dylib=pthread");
+         println!("cargo:rustc-link-lib=dylib=m");
+     }
++    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos") {
++        // Darwin caps the main stack's setrlimit growth. Reserve the same
++        // 256 MiB as pool::STACK_SIZE in the Mach-O entry point, so accepted
++        // deep expressions also fit on the compiler's main thread.
++        println!("cargo:rustc-link-arg-bin=lust-core=-Wl,-stack_size,0x10000000");
++    }
+     println!("cargo:rustc-env=LUST_TCC_LIB_PATH={}", lib.join("tcc").display());
+     println!("cargo:rustc-env=LUST_TCC_BIN={}", tcc.join("bin/tcc").display());
+     println!("cargo:rerun-if-env-changed=LUST_TCC_HOME");
+@@ -94,10 +100,20 @@ fn main() {
      // the binary by src/stdload.rs, S5), the manifest, and the tcc tree.
      let mut h = std::collections::hash_map::DefaultHasher::new();
      hash_tree(&mut h, &root.join("src"));
@@ -589,7 +602,7 @@ index b345e1ed639e2ee95c51087067b2cda839893c6b..6138dc1153b080c82941d059232dbc0d
          }
          let mut t = self.resolve(ct);
 diff --git a/src/check/collect.rs b/src/check/collect.rs
-index 2e10c71e2e73daf3132cabc36ffaa591a37f755d..466224cf30d5053a645655fd4e772aaabd8f6604 100644
+index 2e10c71e2e73daf3132cabc36ffaa591a37f755d..7459c59130254a5b338528305cfddc5e583f3a35 100644
 --- a/src/check/collect.rs
 +++ b/src/check/collect.rs
 @@ -553,6 +553,25 @@ impl Program {
@@ -618,7 +631,7 @@ index 2e10c71e2e73daf3132cabc36ffaa591a37f755d..466224cf30d5053a645655fd4e772aaa
      /// A user Adt's stable identity, as carried by `TyKind::Adt(DefId, ArgsId)`.
      #[allow(dead_code)] // First production readers are generic collect and mono; the store form is used now.
      pub fn def_of_adt(&self, id: AdtId) -> DefId {
-@@ -3450,6 +3469,31 @@ pub fn collect_reuse(
+@@ -3450,11 +3469,45 @@ pub fn collect_reuse(
      reuse: &mut crate::driver::gen_reuse::GenReuse,
      std_routes: &[&'static crate::ty::lang::StdFnDef],
  ) -> Result<Program, Vec<Diag>> {
@@ -647,10 +660,25 @@ index 2e10c71e2e73daf3132cabc36ffaa591a37f755d..466224cf30d5053a645655fd4e772aaa
 +    std_routes: &[&'static crate::ty::lang::StdFnDef],
 +    definitions: Option<&mut dyn FnMut(&mut Program) -> Result<(), Vec<Diag>>>,
 +) -> Result<Program, Vec<Diag>> {
++    let sync_layout = resolved.as_ref()
++        .and_then(|tables| tables.crate_cfgs.get(&crate::ty::defs::ROOT_MODULE))
++        .and_then(|(env, _)| env.pairs.iter().find(|(name, _)| name == "target_os"))
++        .map(|(_, os)| crate::ty::layout::SyncLayout::for_os(os))
++        .unwrap_or_else(crate::ty::layout::SyncLayout::host);
++    let mut tys = reuse.type_pool.take()
++        .and_then(|pool| pool.take(crate_ids.local, crate_ids.stable, &interner, sync_layout))
++        .unwrap_or_else(GlobalTys::new);
++    tys.sync_layout = sync_layout;
      let mut p = Program {
          ast: ast.clone(),
          interner: interner.clone(),
-@@ -3571,6 +3615,7 @@ pub fn collect_reuse(
+         known: known.clone(),
+-        tys: reuse.type_pool.take().and_then(|pool| pool.take(crate_ids.local, crate_ids.stable, &interner)).unwrap_or_else(GlobalTys::new),
++        tys,
+         defs: Defs::new(),
+         adts: Vec::new(),
+         fns: Vec::new(),
+@@ -3571,6 +3624,7 @@ pub fn collect_reuse(
      }
      let mut errs = Vec::new();
      let dup = |span: Span, n: &str| Diag::new("L0106", span, format!("`{n}` is defined more than once"), "Rename one of the definitions.");
@@ -658,7 +686,7 @@ index 2e10c71e2e73daf3132cabc36ffaa591a37f755d..466224cf30d5053a645655fd4e772aaa
      // Without resolver tables the file has no `use` at all (any `use`
      // routes to the resolver), so a non-prelude std type lust knows by
      // name cannot be in scope (W-STD-A; the resolver checks its paths).
-@@ -8394,7 +8439,10 @@ impl<'a> crate::ty::consteval::ConstCx<'a> for CollectCx<'a> {
+@@ -8394,7 +8448,10 @@ impl<'a> crate::ty::consteval::ConstCx<'a> for CollectCx<'a> {
                  // A body const or static of this name shadows any
                  // module fn: the call names no fn here.
                  Some(_) => return CallTarget::Unknown,
@@ -1231,6 +1259,19 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..5ff6d54646e896e05286532b4068e25b
          let soname = format!("lib{}.so", caches.base_name);
          if let Some(base_dir) = caches.base_dir.clone() {
              record_base_user(&base_dir, &soname, &req.out);
+diff --git a/src/driver/gen_reuse.rs b/src/driver/gen_reuse.rs
+index a985aebad215015e7099d8f75e73a0f0735078cb..0212059f42297d779ee5f1d4d56eae9b576eadac 100644
+--- a/src/driver/gen_reuse.rs
++++ b/src/driver/gen_reuse.rs
+@@ -1386,6 +1386,8 @@ pub fn trait_key(p: &Program, impl_traits: &FxMap<usize, (DefId, bool, DefId)>)
+     };
+     let mut h = FxHasher::default();
+     "trait-system-v3".hash(&mut h);
++    // Generic bodies may contain target-dependent synchronization layout queries.
++    p.tys.sync_layout.hash(&mut h);
+     // The crate's `#![recursion_limit]`: every body check reads it with no
+     // recorded read (check/where_overflow.rs `recursion_limit`), so a change
+     // checks every body again.
 diff --git a/src/driver/graph.rs b/src/driver/graph.rs
 index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..f751db594f37ed510b0ffa7b0c9d0ae75d500d72 100644
 --- a/src/driver/graph.rs
@@ -1833,3 +1874,187 @@ index de742cbbaa061c33c832cf7c498c1a89b59ff9a5..3cd3249a89f36adf8d251cb325f6e586
      }
  
      /// The record of a def, if this crate defines it.
+diff --git a/src/ty/layout.rs b/src/ty/layout.rs
+index 7e859a5c7143e70d2cf06ba763c8c4ed9cf0ea21..4dbc87c73b7650c7c3a9a8e7d2c642e9f057f228 100644
+--- a/src/ty/layout.rs
++++ b/src/ty/layout.rs
+@@ -14,6 +14,30 @@ use super::iter::IterKind;
+ use super::sync::SyncTy;
+ use super::{AdtId, BuiltinTy, FloatTy, IntTy, Ty, TyIntern, TyKind};
+ 
++/// The standard library's synchronization backing fields on the selected
++/// 64-bit target. Other targets retain the existing futex assumptions.
++#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
++pub enum SyncLayout {
++    #[default]
++    Futex,
++    Darwin,
++    Windows,
++}
++
++impl SyncLayout {
++    pub fn host() -> Self {
++        Self::for_os(std::env::consts::OS)
++    }
++
++    pub fn for_os(os: &str) -> Self {
++        match os {
++            "macos" => Self::Darwin,
++            "windows" => Self::Windows,
++            _ => Self::Futex,
++        }
++    }
++}
++
+ /// A niche: a scalar range inside a type whose unused values can hold enum tags
+ /// of an outer type. `free` counts the usable values; they start at `start`
+ /// (the first value in the niche scalar's bit pattern that is not a valid value
+@@ -1102,20 +1126,25 @@ fn compute(
+                 let v = no_niche(go(tys, shapes, tys.adt_first_ty_arg(t).ok_or(())?, env, frames, memo, active)?);
+                 struct_layout(&[int_layout(IntTy::Isize), v], Repr::default())
+             }
+-            // The futex locks (Linux): `Mutex<T>` is `{ futex: AtomicU32,
+-            // poison: AtomicBool, data: UnsafeCell<T> }`, `RwLock<T>` the
+-            // same with an 8-byte state (two `AtomicU32`).
+-            // `OnceLock<T>`: `{ once: Once (an AtomicU32 futex), value:
+-            // UnsafeCell<MaybeUninit<T>> }`.
++            // Linux uses a u32 futex (two for RwLock); Windows uses a u8
++            // SmallFutex for Mutex. Darwin's Mutex, RwLock and Once each
++            // hold a pointer-width state without a pointer niche.
++            // `OnceLock<T>` is `{ once: Once, value: UnsafeCell<MaybeUninit<T>> }`.
+             Some(BuiltinTy::Sync(crate::ty::sync::SyncTy::OnceLock)) => {
+                 // The value is a `MaybeUninit<T>`: inhabited for any `T`.
+                 let v = Layout { uninhabited: false, ..no_niche(go(tys, shapes, tys.adt_first_ty_arg(t).ok_or(())?, env, frames, memo, active)?) };
+-                struct_layout(&[Layout::simple(4, 4, None), v], Repr::default())
++                let state = if tys.sync_layout() == SyncLayout::Darwin { raw_ptr_layout() } else { Layout::simple(4, 4, None) };
++                struct_layout(&[state, v], Repr::default())
+             }
+             Some(BuiltinTy::Sync(k @ (crate::ty::sync::SyncTy::Mutex | crate::ty::sync::SyncTy::RwLock))) => {
+                 let v = no_niche(go(tys, shapes, tys.adt_first_ty_arg(t).ok_or(())?, env, frames, memo, active)?);
+-                let state = if k == crate::ty::sync::SyncTy::Mutex { 4 } else { 8 };
+-                struct_layout(&[Layout::simple(state, 4, None), Layout::simple(1, 1, None), v], Repr::default())
++                let state = match (tys.sync_layout(), k) {
++                    (SyncLayout::Darwin, _) => raw_ptr_layout(),
++                    (SyncLayout::Windows, crate::ty::sync::SyncTy::Mutex) => Layout::simple(1, 1, None),
++                    (_, crate::ty::sync::SyncTy::Mutex) => Layout::simple(4, 4, None),
++                    _ => Layout::simple(8, 4, None),
++                };
++                struct_layout(&[state, Layout::simple(1, 1, None), v], Repr::default())
+             }
+             // The std types below as Rust 1.99 lays them out on 64-bit
+             // Linux (checked with size_of and Option niches, tf-build): the
+@@ -1142,9 +1171,9 @@ fn compute(
+                     BuiltinTy::Sync(SyncTy::Sender | SyncTy::SyncSender | SyncTy::Receiver) => {
+                         return Ok(Layout::simple(16, 8, Some(Niche { offset: 0, scalar_size: 1, free: 253, start: 3 })));
+                     }
+-                    BuiltinTy::Sync(SyncTy::Condvar) => return Ok(Layout::simple(4, 4, None)),
++                    BuiltinTy::Sync(SyncTy::Condvar) => return Ok(if tys.sync_layout() == SyncLayout::Darwin { Layout::simple(16, 8, None) } else { Layout::simple(4, 4, None) }),
+                     // { lock: Mutex<BarrierState>, cvar: Condvar, num_threads }.
+-                    BuiltinTy::Sync(SyncTy::Barrier) => return Ok(Layout::simple(40, 8, None)),
++                    BuiltinTy::Sync(SyncTy::Barrier) => return Ok(Layout::simple(if tys.sync_layout() == SyncLayout::Darwin { 48 } else { 40 }, 8, None)),
+                     BuiltinTy::Sync(SyncTy::BarrierWaitResult) => return Ok(bool_layout()),
+                     BuiltinTy::Iter(IterKind::Range) => {
+                         let e = go(tys, shapes, arg(0).ok_or(())?, env, frames, memo, active)?;
+diff --git a/src/ty/mod.rs b/src/ty/mod.rs
+index d72108a0e4c91fe4c2bba4241bb3fa945212f00b..e9e08ce799e46ab9df6dcaa04e2a8dc80564b434 100644
+--- a/src/ty/mod.rs
++++ b/src/ty/mod.rs
+@@ -840,6 +840,8 @@ impl TyFlags {
+ /// methods are the compat helpers the builtin code paths use; new code should prefer
+ /// the general `TyKind` forms and reach a builtin only through them.
+ pub trait TyIntern {
++    /// The program target's synchronization layout, also read by body overlays.
++    fn sync_layout(&self) -> layout::SyncLayout;
+     fn intern(&mut self, k: TyKind) -> Ty;
+     fn kind(&self, t: Ty) -> TyKind;
+     /// The already-interned `Ty` for a kind, if any. Never interns.
+@@ -1436,8 +1438,9 @@ impl TypePool {
+         (total <= 2 * members.max(1)).then(|| TypePool { tys, krate, stable, interner: std::sync::Arc::as_ptr(interner) as usize })
+     }
+     /// The store for a new collect of crate `krate`/`stable` with `interner`, or None.
+-    pub fn take(self, krate: crate::def::CrateId, stable: crate::def::StableCrateHash, interner: &std::sync::Arc<crate::intern::Interner>) -> Option<GlobalTys> {
+-        let same = self.krate == krate && self.stable == stable && self.interner == std::sync::Arc::as_ptr(interner) as usize;
++    pub fn take(self, krate: crate::def::CrateId, stable: crate::def::StableCrateHash, interner: &std::sync::Arc<crate::intern::Interner>, sync_layout: layout::SyncLayout) -> Option<GlobalTys> {
++        let same = self.krate == krate && self.stable == stable && self.interner == std::sync::Arc::as_ptr(interner) as usize
++            && self.tys.sync_layout == sync_layout;
+         same.then(|| {
+             let mut tys = self.tys;
+             tys.begin_collect();
+@@ -1448,6 +1451,7 @@ impl TypePool {
+ 
+ /// The frozen signature store of one crate session, built during collection.
+ pub struct GlobalTys {
++    pub(crate) sync_layout: layout::SyncLayout,
+     kinds: Arena<TyKind, Ty>,
+     flags: Vec<TyFlags>,
+     args_a: Arena<Box<[GenericArg]>, ArgsId>,
+@@ -1509,6 +1513,7 @@ impl GlobalTys {
+             hash_tys: hash::HashTy::ALL.map(hash::hash_def),
+         };
+         let mut g = GlobalTys {
++            sync_layout: layout::SyncLayout::host(),
+             kinds: Arena::default(),
+             flags: Vec::new(),
+             args_a: Arena::default(),
+@@ -1581,6 +1586,7 @@ impl GlobalTys {
+         self.bounds.next_epoch();
+         self.bindings_a.next_epoch();
+         let GlobalTys {
++            sync_layout: _,
+             kinds: _,
+             flags: _,
+             args_a: _,
+@@ -1744,6 +1750,9 @@ impl GlobalTys {
+ }
+ 
+ impl TyIntern for GlobalTys {
++    fn sync_layout(&self) -> layout::SyncLayout {
++        self.sync_layout
++    }
+     fn intern(&mut self, k: TyKind) -> Ty {
+         if let Some(t) = self.kinds.get_id(&k) {
+             return t;
+@@ -1915,6 +1924,9 @@ impl<'g> Tys<'g> {
+ }
+ 
+ impl TyIntern for Tys<'_> {
++    fn sync_layout(&self) -> layout::SyncLayout {
++        self.global.sync_layout
++    }
+     fn intern(&mut self, k: TyKind) -> Ty {
+         if let Some(t) = self.global.kinds.get_id(&k) {
+             return t;
+@@ -2232,6 +2244,33 @@ pub fn lift_ty(t: Ty) -> Ty {
+ #[cfg(test)]
+ mod tests {
+     use super::*;
++
++    #[test]
++    fn type_pool_and_body_overlay_preserve_the_selected_sync_layout() {
++        use layout::SyncLayout::{Darwin, Futex, Windows};
++        let interner = std::sync::Arc::new(crate::intern::Interner::default());
++        let stable = crate::def::StableCrateHash(42);
++        for target in [Futex, Darwin, Windows] {
++            for next_target in [Futex, Darwin, Windows] {
++                let mut tys = GlobalTys::new();
++                tys.sync_layout = target;
++                let pool = TypePool {
++                    tys,
++                    krate: crate::def::LOCAL_CRATE,
++                    stable,
++                    interner: std::sync::Arc::as_ptr(&interner) as usize,
++                };
++                let reused = pool.take(crate::def::LOCAL_CRATE, stable, &interner, next_target);
++                if target == next_target {
++                    let reused = reused.expect("same target reuses the pool");
++                    assert_eq!(reused.sync_layout(), target);
++                    assert_eq!(Tys::new(&reused).sync_layout(), target);
++                } else {
++                    assert!(reused.is_none(), "a different target must discard pooled constants");
++                }
++            }
++        }
++    }
+     use crate::def::{DefPathHash, LOCAL_CRATE};
+ 
+     fn fake_def(hash: u64) -> DefId {

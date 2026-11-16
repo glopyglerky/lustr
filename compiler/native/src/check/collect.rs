@@ -3494,11 +3494,20 @@ fn collect_with_definitions_inner(
     std_routes: &[&'static crate::ty::lang::StdFnDef],
     definitions: Option<&mut dyn FnMut(&mut Program) -> Result<(), Vec<Diag>>>,
 ) -> Result<Program, Vec<Diag>> {
+    let sync_layout = resolved.as_ref()
+        .and_then(|tables| tables.crate_cfgs.get(&crate::ty::defs::ROOT_MODULE))
+        .and_then(|(env, _)| env.pairs.iter().find(|(name, _)| name == "target_os"))
+        .map(|(_, os)| crate::ty::layout::SyncLayout::for_os(os))
+        .unwrap_or_else(crate::ty::layout::SyncLayout::host);
+    let mut tys = reuse.type_pool.take()
+        .and_then(|pool| pool.take(crate_ids.local, crate_ids.stable, &interner, sync_layout))
+        .unwrap_or_else(GlobalTys::new);
+    tys.sync_layout = sync_layout;
     let mut p = Program {
         ast: ast.clone(),
         interner: interner.clone(),
         known: known.clone(),
-        tys: reuse.type_pool.take().and_then(|pool| pool.take(crate_ids.local, crate_ids.stable, &interner)).unwrap_or_else(GlobalTys::new),
+        tys,
         defs: Defs::new(),
         adts: Vec::new(),
         fns: Vec::new(),

@@ -7,7 +7,7 @@ use rustc_data_structures::{
 use rustc_middle::ty::TyCtxt;
 use serde_json::{Value, json};
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
     fs,
     io::Write,
     path::{Path, PathBuf},
@@ -55,14 +55,14 @@ pub fn context(tcx: TyCtxt<'_>, native: &BTreeSet<String>) -> Option<Value> {
 pub fn read(index: &Path) -> Option<Value> {
     let state: Value = serde_json::from_slice(&fs::read(index).ok()?).ok()?;
     (state["schema"] == "lustr.checked-mixed-link"
-        && state["version"] == 3
+        && state["version"] == 4
         && state["rustc"] == env!("LUSTR_BUILD_RUSTC_COMMIT")
         && state["native"] == env!("LUST_BUILD_HASH"))
     .then_some(state)
 }
 
 pub fn publish(index: &Path, directory: &Path, context: Value, kernels: Vec<Value>, check_only: bool) -> std::io::Result<()> {
-    let state = json!({"schema":"lustr.checked-mixed-link","version":3,"check_only":check_only,
+    let state = json!({"schema":"lustr.checked-mixed-link","version":4,"check_only":check_only,
         "rustc":env!("LUSTR_BUILD_RUSTC_COMMIT"),"native":env!("LUST_BUILD_HASH"),
         "directory":directory,"context":context,"kernels":kernels});
     fs::create_dir_all(index.parent().unwrap())?;
@@ -250,21 +250,41 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
         if !result.status.success() {
             return None;
         }
-        fs::rename(linked, unit.join("native-link.o")).ok()?;
+        // The current certificate still describes the previous successful
+        // body. Keep its object immutable if a later edit, link or dep-info
+        // step fails. Only the final-success publication selects this object.
+        fs::File::open(&linked).ok()?.sync_all().ok()?;
+        fs::File::open(&unit).ok()?.sync_all().ok()?;
+        kernel["object"] = json!(linked);
         kernel["body"] = json!(candidate.body);
     }
     if compiler.check_only {
-        // Publish only after the complete invocation, including the original
-        // metadata encoder and its diagnostics, has actually succeeded.
-        compiler.directory = owned;
-        compiler.context = Some(current);
-        compiler.records = updated;
         super::trace(&format!("reused-check-context=1 full-analysis=0 native-check-edits={}", changed.len()));
     } else {
-        super::mixed_objects::relink(tcx.sess, &owned).ok()?;
-        publish(&compiler.index, &owned, current, updated, false).ok()?;
+        let mut objects = BTreeMap::new();
+        for kernel in &updated {
+            let identity = text(kernel, "identity")?;
+            if identity.len() != 16 || !identity.bytes().all(|b| b.is_ascii_hexdigit()) {
+                return None;
+            }
+            let original = owned.join(identity).join("native-link.o").canonicalize().ok()?;
+            let selected = match text(kernel, "object") {
+                Some(path) => PathBuf::from(path).canonicalize().ok()?,
+                None => original.clone(),
+            };
+            if !original.starts_with(&owned) || !selected.starts_with(&owned) {
+                return None;
+            }
+            objects.insert(original, selected);
+        }
+        super::mixed_objects::relink(tcx.sess, &owned, &objects).ok()?;
         super::trace("reused-rust-objects=1 full-analysis=0");
     }
+    // Both check and link certificates commit only after the entire compiler
+    // invocation succeeds, including the original metadata/dep-info writers.
+    compiler.directory = owned;
+    compiler.context = Some(current);
+    compiler.records = updated;
     compiler.reused = true;
     Some(())
 }

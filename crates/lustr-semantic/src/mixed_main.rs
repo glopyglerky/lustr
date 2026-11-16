@@ -268,8 +268,23 @@ fn represented_body(tcx: TyCtxt<'_>, id: rustc_span::def_id::LocalDefId, candida
 fn represented_request(args: &[String]) -> bool {
     let mut args = args.iter().skip(1);
     while let Some(arg) = args.next() {
-        if arg.starts_with("-Z") || arg.starts_with('@') || arg.starts_with("--codegen") || arg == "--test" {
+        if arg.starts_with('@') || arg.starts_with("--codegen") || arg == "--test" {
             return false;
+        }
+        if let Some(option) = arg.strip_prefix("-Z") {
+            let option = if option.is_empty() {
+                let Some(next) = args.next() else { return false };
+                next.as_str()
+            } else {
+                option
+            };
+            // The matching Cargo requests split metadata for its rlibs.
+            // Rust's original encoder and archive writer retain this policy;
+            // no other unstable code-generation request is represented.
+            if !matches!(option, "embed-metadata=no" | "embed-metadata=yes") {
+                return false;
+            }
+            continue;
         }
         if let Some(option) = arg.strip_prefix("-C") {
             let option = if option.is_empty() {
@@ -324,15 +339,29 @@ impl Callbacks for Compiler {
         use rustc_session::config::OutputType;
         self.check_only = config.opts.output_types.contains_key(&OutputType::Metadata)
             && config.opts.output_types.keys().all(|kind| matches!(kind, OutputType::Metadata | OutputType::DepInfo));
+        let library = config.opts.crate_types == [rustc_structures::CrateType::Rlib];
         self.enabled = self.represented
             && cfg!(all(target_os = "linux", target_arch = "x86_64"))
             && config.opts.optimize == rustc_session::config::OptLevel::No
             && (self.check_only || config.opts.cg.debuginfo == rustc_session::config::DebugInfo::None)
             && config.opts.target_triple.to_string() == env!("LUSTR_BUILD_RUSTC_HOST")
             && config.opts.unstable_opts.offload.is_empty()
-            && (config.opts.crate_types == [rustc_structures::CrateType::Executable]
-                || self.check_only && config.opts.crate_types == [rustc_structures::CrateType::Rlib])
-            && (self.check_only || config.opts.output_types.keys().all(|kind| matches!(kind, OutputType::Exe | OutputType::DepInfo)));
+            && (config.opts.crate_types == [rustc_structures::CrateType::Executable] || library)
+            // Native scalar objects have no embedded LLVM bitcode. An rlib
+            // may mix them only when the request explicitly disables it;
+            // bitcode/LTO requests keep the complete original backend.
+            && (self.check_only || !library || !config.opts.cg.embed_bitcode)
+            && (self.check_only
+                || config
+                    .opts
+                    .output_types
+                    .keys()
+                    .all(|kind| matches!(kind, OutputType::Exe | OutputType::DepInfo) || library && *kind == OutputType::Metadata));
+        // An rlib edit must re-encode genuine metadata for its new source.
+        // The retained executable link recipe carries prior metadata and is
+        // never reused for linked libraries. Metadata-only checks keep their
+        // separately qualified fresh-encoding path.
+        self.reuse_allowed &= self.check_only || !library;
         self.reuse_allowed &= config.opts.lint_opts.iter().all(|(name, _)| name == "unused_crate_dependencies");
         if self.enabled {
             let previous = config.psess_created.take();
@@ -551,8 +580,10 @@ impl Callbacks for Compiler {
         }
         trace(&format!("{}={}", if self.check_only { "native-checked-definitions" } else { "native-definitions" }, self.records.len()));
         if !self.records.is_empty() {
-            let excluded = self.records.iter().filter_map(|r| r["definition"].as_str().map(str::to_owned)).collect();
-            self.context = mixed_cache::context(tcx, &excluded);
+            if self.reuse_allowed {
+                let excluded = self.records.iter().filter_map(|r| r["definition"].as_str().map(str::to_owned)).collect();
+                self.context = mixed_cache::context(tcx, &excluded);
+            }
             if !self.check_only {
                 mixed_objects::install(self.directory.clone(), entries);
             }
@@ -622,7 +653,6 @@ fn main() -> ExitCode {
     rustc_driver::install_ctrlc_handler();
     let status = rustc_driver::catch_with_exit_code(|| rustc_driver::compiler_entrypoint(&args, &mut callbacks));
     if status == ExitCode::SUCCESS
-        && (callbacks.check_only || !callbacks.reused)
         && callbacks.reuse_allowed
         && mixed_diagnostics::quiet()
         && (callbacks.check_only || callbacks.directory.join("checked.rlink").is_file())
