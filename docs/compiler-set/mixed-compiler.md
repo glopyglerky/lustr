@@ -45,8 +45,14 @@ provenance. They are not a stable third-party plugin protocol.
 For a cold mixed build, Rust performs its complete analysis. A nongeneric,
 unattributed, root-level scalar function is considered only after checking its
 actual Rust instance, mangled symbol, parameter/return types and effective
-Rust/C argument-passing modes. The first target is Linux x86-64, unoptimized
-code with debug information disabled. Other targets, requested code-generation
+Rust/C argument-passing modes.
+The actual HIR definition must match the source body and root item. Its paths
+must resolve to local bindings or primitive types. Calls, associated items,
+aliases used within the body and nested definitions require further semantic
+context and stay with Rust. This prevents shadowed modules, primitive aliases
+and same-named nested functions from being reinterpreted in the isolated unit.
+The first target is Linux x86-64, unoptimized code with debug information
+disabled. Other targets, requested code-generation
 policies and unrepresented functions use the complete implementation.
 
 The function's original body and canonical checked scalar signature enter
@@ -72,8 +78,10 @@ retained Rust frontend or zero Rust work.
 The first warm certificate accepts a decimal-literal change in a direct
 `parameter ^ literal` scalar body, preserving its interface and source
 positions. Existing Rust body queries check the new body; the original Lust
-session generates the changed function. The complete Rust analysis query and
-LLVM code generation are skipped only after this certificate succeeds. Rust's
+session generates the changed function. Unchanged native definitions keep
+their generated objects and do not repeat their body queries or compilation.
+The complete Rust analysis query and LLVM code generation are skipped only
+after this certificate succeeds. Rust's
 original dep-info writer still runs, followed by its original linker using
 the retained Rust objects. Other edits continue through full analysis in the
 same invocation. Requests are locked per cache identity, including arguments,

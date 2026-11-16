@@ -129,9 +129,18 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
         super::trace("reuse-miss=semantic-context");
         return None;
     }
+    let mut changed = BTreeSet::new();
+    let definitions: std::collections::BTreeMap<_, _> = tcx
+        .hir_crate_items(())
+        .owners()
+        .map(|owner| (format!("{:?}", tcx.def_path_hash(owner.def_id.to_def_id())), owner.def_id))
+        .collect();
     for kernel in kernels {
         let name = text(kernel, "name")?;
         let candidate = compiler.candidates.get(name)?;
+        if !super::represented_body(tcx, *definitions.get(text(kernel, "definition")?)?, candidate) {
+            return None;
+        }
         if candidate.header != text(kernel, "header")? {
             super::trace("reuse-miss=header");
             return None;
@@ -139,6 +148,10 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
         // Retained Rust code contains source locations. Until their remapping
         // is implemented, preserve the line/column after each edited body.
         let old = text(kernel, "body")?;
+        if old == candidate.body {
+            continue;
+        }
+        changed.insert(text(kernel, "definition")?.to_owned());
         if !literal_edit(old, &candidate.body) {
             super::trace("reuse-miss=uncertified-body-edit");
             return None;
@@ -150,7 +163,7 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
         }
     }
     for owner in tcx.hir_crate_items(()).owners() {
-        if excluded.contains(&format!("{:?}", tcx.def_path_hash(owner.def_id.to_def_id()))) {
+        if changed.contains(&format!("{:?}", tcx.def_path_hash(owner.def_id.to_def_id()))) {
             // Use the existing Rust body queries for new obligations and
             // rejection. This checks the changed body, not every Rust body.
             tcx.ensure_ok().typeck_root(owner.def_id);
@@ -167,6 +180,9 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
     for kernel in &mut updated {
         let name = text(kernel, "name")?.to_owned();
         let candidate = compiler.candidates.get(&name)?;
+        if candidate.body == text(kernel, "body")? {
+            continue;
+        }
         let identity = text(kernel, "identity")?.to_owned();
         if identity.len() != 16 || !identity.bytes().all(|b| b.is_ascii_hexdigit()) {
             return None;

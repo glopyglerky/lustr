@@ -43,13 +43,13 @@ fn main() {
     let library_path = work.join("tiny-core/src/lib.rs");
     put(&library_path, library);
     put(&work.join("mixed-macro/Cargo.toml"), "[package]\nname='mixed-macro'\nversion='0.1.0'\nedition='2024'\n[lib]\nproc-macro=true\n");
-    let macro_source = "use proc_macro::TokenStream;\n#[proc_macro]\npub fn general(_:TokenStream)->TokenStream{\"async fn general(x:u64)->u64{kernel(x)}\".parse().unwrap()}\n";
+    let macro_source = "use proc_macro::TokenStream;\n#[proc_macro]\npub fn general(_:TokenStream)->TokenStream{\"async fn general(x:u64)->u64{kernel(choose(x))}\".parse().unwrap()}\n";
     put(&work.join("mixed-macro/src/lib.rs"), macro_source);
     put(
         &work.join("app/Cargo.toml"),
         "[package]\nname='mixed-app'\nversion='0.1.0'\nedition='2024'\n[dependencies]\nmixed-macro={path='../mixed-macro'}\ntiny-core={path='../tiny-core'}\n",
     );
-    let source = "use mixed_macro::general;\ngeneral!();\nfn kernel(x:u64)->u64{x ^ 17}\nfn main(){let w=std::task::Waker::noop();let mut f=std::pin::pin!(general(42+tiny_core::adjustment()));let mut cx=std::task::Context::from_waker(w);match std::future::Future::poll(f.as_mut(),&mut cx){std::task::Poll::Ready(v)=>println!(\"{v}\"),std::task::Poll::Pending=>panic!(\"unexpected pending\")}}\n";
+    let source = "use mixed_macro::general;\n#[allow(non_camel_case_types)] type u64=i64;\nmod core{pub mod mem{pub fn size_of<T>()->usize{1}}}\nmod nested{pub fn kernel(x:i64)->i64{x ^ 31}}\nfn projected_size()->usize{core::mem::size_of::<u64>()}\nfn signed_alias(x:std::primitive::i64)->std::primitive::i64{if (x as u64)<0{1}else{2}}\ngeneral!();\nfn kernel(x:u64)->u64{x ^ 17}\nfn choose(x:u64)->u64{if x & 1 == 0 {x ^ 1024} else {x | 2048}}\nfn main(){assert_eq!(projected_size(),1);assert_eq!(signed_alias(-1),1);assert_eq!(nested::kernel(0),31);let w=std::task::Waker::noop();let mut f=std::pin::pin!(general((42+tiny_core::adjustment()) as _));let mut cx=std::task::Context::from_waker(w);match std::future::Future::poll(f.as_mut(),&mut cx){std::task::Poll::Ready(v)=>println!(\"{v}\"),std::task::Poll::Pending=>panic!(\"unexpected pending\")}}\n";
     let path = work.join("app/src/main.rs");
     put(&path, source);
     let trace = work.join("mixed.trace");
@@ -95,42 +95,46 @@ fn main() {
         assert_eq!(result.stdout, expected);
     };
     build("cold", true);
-    execute("cold", b"59\n");
+    execute("cold", b"1083\n");
     let cold = fs::read_to_string(&trace).unwrap();
-    assert!(cold.contains("native-definitions=1") && cold.contains("native-definition-omitted="), "no mixed definition: {cold}");
+    assert!(
+        cold.contains("native-definitions=2") && cold.matches("native-definition-omitted=").count() == 2,
+        "missing mixed definitions: {cold}"
+    );
     fs::write(&trace, "").unwrap();
     let edited = source.replace("x ^ 17", "x ^ 19");
     fs::write(&path, &edited).unwrap();
     build("body", true);
-    execute("body", b"57\n");
+    execute("body", b"1081\n");
     let warm = fs::read_to_string(&trace).unwrap();
     assert!(warm.contains("reused-rust-objects=1 full-analysis=0"), "body edit did not reuse checked context: {warm}");
     assert!(!warm.contains("native-definition-omitted="), "warm request ran LLVM codegen");
+    assert_eq!(warm.matches("lustr mixed native:").count(), 1, "unchanged native definition was regenerated: {warm}");
     fs::write(&trace, "").unwrap();
     fs::write(&path, edited.replace("x ^ 19", "x ^ true")).unwrap();
     build("invalid", false);
     fs::write(&trace, "").unwrap();
     fs::write(&path, &edited).unwrap();
     build("recovery", true);
-    execute("recovery", b"57\n");
+    execute("recovery", b"1081\n");
     fs::write(&trace, "").unwrap();
     let signature = edited.replace("kernel(x:u64)->u64", "kernel(x:u64)->usize").replace("x ^ 19", "(x ^ 19) as usize");
     fs::write(work.join("mixed-macro/src/lib.rs"), macro_source.replace("general(x:u64)->u64", "general(x:u64)->usize")).unwrap();
     fs::write(&path, &signature).unwrap();
     build("signature", true);
-    execute("signature", b"57\n");
+    execute("signature", b"1081\n");
     assert!(!fs::read_to_string(&trace).unwrap().contains("reused-rust-objects=1"), "signature change reused stale work");
     fs::write(&trace, "").unwrap();
     fs::write(work.join("mixed-macro/src/lib.rs"), macro_source).unwrap();
     fs::write(&path, &edited).unwrap();
     fs::write(&library_path, library.replace("[0u64]", "[1u64]")).unwrap();
     build("dependency", true);
-    execute("dependency", b"56\n");
+    execute("dependency", b"2104\n");
     assert!(!fs::read_to_string(&trace).unwrap().contains("reused-rust-objects=1"), "changed dependency reused stale work");
     fs::write(&trace, "").unwrap();
-    fs::write(work.join("mixed-macro/src/lib.rs"), macro_source.replace("kernel(x)", "kernel(x) ^ 1")).unwrap();
+    fs::write(work.join("mixed-macro/src/lib.rs"), macro_source.replace("kernel(choose(x))", "kernel(choose(x)) ^ 1")).unwrap();
     build("macro", true);
-    execute("macro", b"57\n");
+    execute("macro", b"2105\n");
     assert!(!fs::read_to_string(&trace).unwrap().contains("reused-rust-objects=1"), "changed macro expansion reused stale work");
     let mut daemons = 0;
     loop {

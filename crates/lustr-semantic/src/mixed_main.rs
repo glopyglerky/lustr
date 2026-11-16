@@ -5,6 +5,7 @@ extern crate rustc_codegen_llvm;
 extern crate rustc_codegen_ssa;
 extern crate rustc_data_structures;
 extern crate rustc_driver;
+extern crate rustc_hir;
 extern crate rustc_interface;
 extern crate rustc_metadata;
 extern crate rustc_middle;
@@ -137,6 +138,7 @@ struct Candidate {
     params: Vec<String>,
     header: String,
     body: String,
+    body_span: rustc_span::Span,
 }
 #[derive(Default)]
 struct Macros(bool);
@@ -147,6 +149,55 @@ impl<'a> Visitor<'a> for Macros {
     fn visit_attribute(&mut self, _: &'a ast::Attribute) {
         self.0 = true;
     }
+}
+
+/// The isolated native unit must see the same bindings as this Rust body.
+/// Carrying arbitrary Rust item/trait/const meanings into it is a later bridge.
+fn represented_body(tcx: TyCtxt<'_>, id: rustc_span::def_id::LocalDefId, candidate: &Candidate) -> bool {
+    use rustc_hir::{
+        self as hir,
+        def::{DefKind, Res},
+        intravisit::{self, Visitor},
+    };
+    if tcx.def_kind(id) != DefKind::Fn || tcx.opt_local_parent(id) != Some(rustc_span::def_id::CRATE_DEF_ID) {
+        return false;
+    }
+    let body = tcx.hir_body_owned_by(id);
+    let span = body.value.span;
+    if (span.lo(), span.hi(), span.ctxt()) != (candidate.body_span.lo(), candidate.body_span.hi(), candidate.body_span.ctxt()) {
+        return false;
+    }
+    struct Scope(bool);
+    impl<'v> Visitor<'v> for Scope {
+        fn visit_path(&mut self, path: &hir::Path<'v>, _: hir::HirId) {
+            if !matches!(path.res, Res::Local(_) | Res::PrimTy(_)) {
+                self.0 = false;
+            }
+            intravisit::walk_path(self, path);
+        }
+        fn visit_expr(&mut self, expr: &'v hir::Expr<'v>) {
+            match expr.kind {
+                hir::ExprKind::Call(..)
+                | hir::ExprKind::MethodCall(..)
+                | hir::ExprKind::ConstBlock(..)
+                | hir::ExprKind::Path(hir::QPath::TypeRelative(..))
+                | hir::ExprKind::Closure { .. }
+                | hir::ExprKind::InlineAsm(..) => self.0 = false,
+                hir::ExprKind::Lit(lit) if !matches!(lit.node, ast::LitKind::Int(..) | ast::LitKind::Bool(..)) => self.0 = false,
+                _ => {}
+            }
+            intravisit::walk_expr(self, expr);
+        }
+        fn visit_nested_body(&mut self, _: hir::BodyId) {
+            self.0 = false;
+        }
+        fn visit_nested_item(&mut self, _: hir::ItemId) {
+            self.0 = false;
+        }
+    }
+    let mut scope = Scope(true);
+    scope.visit_body(body);
+    scope.0
 }
 
 // Unrepresented code-generation policies stay with the complete backend.
@@ -227,6 +278,9 @@ impl Callbacks for Compiler {
     fn after_crate_root_parsing(&mut self, compiler: &interface::Compiler, krate: &mut ast::Crate) -> Compilation {
         self.frontend = true;
         trace("frontend=1");
+        if !self.enabled {
+            return Compilation::Continue;
+        }
         self.reuse_allowed &= krate.attrs.is_empty();
         for item in &krate.items {
             let ast::ItemKind::Fn(f) = &item.kind else { continue };
@@ -251,9 +305,10 @@ impl Callbacks for Compiler {
                 .collect();
             let Some(params) = params else { continue };
             let Ok(header) = compiler.sess.source_map().span_to_snippet(item.span.with_hi(body.span.lo())) else { continue };
-            let Ok(body) = compiler.sess.source_map().span_to_snippet(body.span) else { continue };
+            let body_span = body.span;
+            let Ok(body) = compiler.sess.source_map().span_to_snippet(body_span) else { continue };
             let name = f.ident.to_string();
-            self.candidates.insert(name.clone(), Candidate { name, params, header, body });
+            self.candidates.insert(name.clone(), Candidate { name, params, header, body, body_span });
         }
         Compilation::Continue
     }
@@ -301,6 +356,9 @@ impl Callbacks for Compiler {
                 let Some(name) = tcx.opt_item_name(id) else { continue };
                 let name = name.to_string();
                 let Some(candidate) = self.candidates.get(&name) else { continue };
+                if !represented_body(tcx, id.expect_local(), candidate) {
+                    continue;
+                }
                 let signature = tcx.fn_sig(id).instantiate_identity().skip_binder();
                 let mut c_signature = signature;
                 c_signature.fn_sig_kind = c_signature.fn_sig_kind.set_abi(rustc_abi::ExternAbi::C { unwind: false });
@@ -404,7 +462,13 @@ fn main() -> ExitCode {
         return ExitCode::from(2);
     }
     let args: Vec<String> = os.into_iter().map(|a| a.into_string().unwrap()).collect();
-    let root = std::env::var_os("LUSTR_MIXED_CACHE_DIR").map(PathBuf::from).unwrap_or_else(|| std::env::temp_dir().join("lustr-mixed"));
+    unsafe extern "C" {
+        fn geteuid() -> u32;
+    }
+    let uid = unsafe { geteuid() };
+    let root = std::env::var_os("LUSTR_MIXED_CACHE_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| std::env::temp_dir().join(format!("lustr-mixed-{uid}")));
     let environment: BTreeMap<_, _> =
         std::env::vars_os().filter(|(k, _)| !["CARGO_MAKEFLAGS", "MAKEFLAGS", "MFLAGS", "NUM_JOBS"].iter().any(|v| k == v)).collect();
     use std::os::unix::fs::MetadataExt;
@@ -414,8 +478,16 @@ fn main() -> ExitCode {
     let key = hash(&(&args, std::env::current_dir().ok(), environment, binaries));
     let directory = root.join(key);
     let index = directory.join("current.json");
-    let lock = fs::create_dir_all(&directory)
-        .ok()
+    use std::os::unix::fs::DirBuilderExt;
+    // Generated projections contain application source. Keep them private and
+    // refuse an existing writable/shared or substituted cache directory.
+    let private = |path: &std::path::Path, mask: u32| {
+        fs::DirBuilder::new().recursive(true).mode(0o700).create(path).ok()?;
+        let m = fs::symlink_metadata(path).ok()?;
+        (m.is_dir() && m.uid() == uid && m.mode() & mask == 0).then_some(())
+    };
+    let lock = private(&root, 0o022)
+        .and_then(|_| private(&directory, 0o077))
         .and_then(|_| fs::OpenOptions::new().create(true).write(true).truncate(false).open(directory.join("request.lock")).ok())
         .and_then(|f| f.try_lock().ok().map(|_| f));
     let cached = lock.as_ref().and_then(|_| mixed_cache::read(&index));
@@ -430,7 +502,7 @@ fn main() -> ExitCode {
         enabled: false,
         reuse_allowed: lock.is_some(),
         reused: false,
-        represented: represented_request(&args),
+        represented: lock.is_some() && represented_request(&args),
         context: None,
         records: Vec::new(),
         _lock: lock,
