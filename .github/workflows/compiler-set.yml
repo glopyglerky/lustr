@@ -13,12 +13,14 @@ on:
       - 'crates/lustr-native-core/**'
       - 'crates/lustr/**'
       - 'crates/lustr-semantic/**'
+      - 'crates/lustr-bench/**'
       - 'upstream/lust.pin'
       - 'upstream/lust.integration'
       - 'upstream/lust-integration.*'
       - 'tools/lust-upstream-check.rs'
       - 'tools/*mixed*'
       - 'tools/build-tinycc-pic.rs'
+      - 'tools/native-target-layout-qualification.rs'
       - '.github/workflows/compiler-set.yml'
   pull_request:
     paths:
@@ -31,12 +33,14 @@ on:
       - 'crates/lustr-native-core/**'
       - 'crates/lustr/**'
       - 'crates/lustr-semantic/**'
+      - 'crates/lustr-bench/**'
       - 'upstream/lust.pin'
       - 'upstream/lust.integration'
       - 'upstream/lust-integration.*'
       - 'tools/lust-upstream-check.rs'
       - 'tools/*mixed*'
       - 'tools/build-tinycc-pic.rs'
+      - 'tools/native-target-layout-qualification.rs'
       - '.github/workflows/compiler-set.yml'
   workflow_dispatch:
 
@@ -90,6 +94,7 @@ jobs:
   mixed-source-build:
     name: Source-built mixed Rust and Lust
     runs-on: ubuntu-24.04
+    timeout-minutes: 90
     env:
       RUSTUP_TOOLCHAIN: nightly-2026-11-09
       CARGO_BUILD_JOBS: '2'
@@ -102,8 +107,19 @@ jobs:
           ref: 240e08d91d4aed0299639f6f11fd522912b248f9
           path: .lust-pristine-reference
           persist-credentials: false
+      - name: Obtain the unchanged cache-regression baseline
+        uses: actions/checkout@v4
+        with:
+          repository: glopyglerky/lustr
+          ref: 2add988c6397ac5175fcdf89a3aac17d359bf283
+          path: .regression-baseline
+          persist-credentials: false
       - name: Install matching complete Rust development libraries
-        run: rustup toolchain install nightly-2026-11-09 --profile minimal --component rustc-dev --component llvm-tools --component rustfmt --target wasm32-unknown-unknown
+        run: rustup toolchain install nightly-2026-11-09 --profile minimal --component rustc-dev --component llvm-tools --component rustfmt --component clippy --target wasm32-unknown-unknown --target x86_64-apple-darwin --target aarch64-apple-darwin --target x86_64-pc-windows-gnu
+      - name: Install WebAssembly execution oracle
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - name: Obtain the pinned TinyCC source
         uses: actions/checkout@v4
         with:
@@ -124,18 +140,132 @@ jobs:
           cargo fetch --manifest-path Cargo.toml --locked
       - name: Build source toolchain constructor
         run: rustc --edition=2024 tools/build-mixed-toolchain.rs -o "$RUNNER_TEMP/build-mixed-toolchain"
-      - name: Build complete local toolchain without a predecessor package
+      - name: Record the exact checked-out source
+        run: git rev-parse HEAD 'HEAD^{tree}' > "$RUNNER_TEMP/lustr-source-revision.txt"
+      - name: Build optimized local toolchain without a predecessor package
         env:
           GIT_ALTERNATE_OBJECT_DIRECTORIES: ${{ github.workspace }}/.lust-pristine-reference/.git/objects
-        run: '"$RUNNER_TEMP/build-mixed-toolchain" "$GITHUB_WORKSPACE" --current-sdk "$RUNNER_TEMP/lustr-tinycc/install" "$RUNNER_TEMP/lustr-source-built"'
+        run: '"$RUNNER_TEMP/build-mixed-toolchain" "$GITHUB_WORKSPACE" --current-sdk "$RUNNER_TEMP/lustr-tinycc/install" "$RUNNER_TEMP/lustr-source-built" --release'
       - name: Build real mixed-project qualifier
         run: rustc --edition=2024 tools/mixed-compiler-qualification.rs -o "$RUNNER_TEMP/mixed-compiler-qualification"
+      - name: Build native target-layout qualification
+        run: rustc --edition=2024 tools/native-target-layout-qualification.rs -o "$RUNNER_TEMP/native-target-layout-qualification"
+      - name: Compare selected native frontend layouts with the matching Rust target metadata
+        run: '"$RUNNER_TEMP/native-target-layout-qualification" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/lust" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/rustc-reference" "$RUNNER_TEMP/native-target-layouts" x86_64-unknown-linux-gnu x86_64-apple-darwin aarch64-apple-darwin x86_64-pc-windows-gnu'
+      - name: Build the unchanged baseline for the failed-link regression
+        env:
+          GIT_ALTERNATE_OBJECT_DIRECTORIES: ${{ github.workspace }}/.lust-pristine-reference/.git/objects
+        run: '"$RUNNER_TEMP/build-mixed-toolchain" "$GITHUB_WORKSPACE/.regression-baseline" --current-sdk "$RUNNER_TEMP/lustr-tinycc/install" "$RUNNER_TEMP/lustr-regression-baseline" --release'
+      - name: Require the specific failed-link stale-output regression on the baseline
+        run: |
+          set +e
+          "$RUNNER_TEMP/mixed-compiler-qualification" "$RUNNER_TEMP/baseline-mixed-project" "$RUNNER_TEMP/lustr-regression-baseline/toolchain/bin/cargo" "$RUNNER_TEMP/lustr-regression-baseline/toolchain/bin/lustr" > "$RUNNER_TEMP/baseline-regression.stdout" 2> "$RUNNER_TEMP/baseline-regression.stderr"
+          regression_status=$?
+          set -e
+          printf '%s\n' "$regression_status" > "$RUNNER_TEMP/baseline-regression.status"
+          cat "$RUNNER_TEMP/baseline-regression.stdout" "$RUNNER_TEMP/baseline-regression.stderr"
+          test "$regression_status" -ne 0
+          rg --fixed-strings 'link-failure-recovery: wrong application result' "$RUNNER_TEMP/baseline-regression.stderr"
       - name: Execute mixed Cargo graph, edits, invalidation, warnings and rejection
         run: '"$RUNNER_TEMP/mixed-compiler-qualification" "$RUNNER_TEMP/mixed-project" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/cargo" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/lustr"'
       - name: Build retained Cargo check qualifier
         run: rustc --edition=2024 tools/mixed-check-qualification.rs -o "$RUNNER_TEMP/mixed-check-qualification"
       - name: Verify retained checks and freshly encoded Rust metadata
         run: '"$RUNNER_TEMP/mixed-check-qualification" "$RUNNER_TEMP/mixed-check-project" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/lustr" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/rustc-reference"'
+      - name: Build mixed library and full-language qualification
+        run: rustc --edition=2024 tools/mixed-library-qualification.rs -o "$RUNNER_TEMP/mixed-library-qualification"
+      - name: Execute mixed libraries with aggregates, references and generic callers
+        run: '"$RUNNER_TEMP/mixed-library-qualification" "$RUNNER_TEMP/mixed-library-project" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/lustr" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/rustc-reference"'
+      - name: Execute the complete compiler entry and runtime contract
+        env:
+          LUSTR_LUST_ROOT: ${{ runner.temp }}/lustr-source-built/toolchain
+          LUSTR_NATIVE_BUILD_OUTPUT: ${{ runner.temp }}/lustr-source-built/NATIVE-BUILD-RECEIPT.txt
+          LUSTR_TEST_PACKAGE: ${{ runner.temp }}/lustr-source-built/toolchain
+          LUSTR_TEST_OUTPUT: ${{ runner.temp }}/full-entry-contract
+        run: |
+          export LUSTR_CORE_ROOT="$(rustc --print sysroot)"
+          export RUSTC="$LUSTR_CORE_ROOT/bin/rustc"
+          set -o pipefail
+          cargo test --manifest-path Cargo.toml --release --features source-native-runtime --test compiler_contract --locked --offline --jobs 2 --target-dir "$RUNNER_TEMP/lustr-source-built/work/entry-target" --config "build.build-dir=\"$RUNNER_TEMP/lustr-source-built/work/entry-intermediates\"" -- --ignored --test-threads=1 2>&1 | tee "$RUNNER_TEMP/full-entry-contract.log"
+      - name: Build matched pristine Lust for the performance comparison
+        env:
+          LUST_TCC_HOME: ${{ runner.temp }}/lustr-tinycc/install
+        run: |
+          set -o pipefail
+          export RUSTC="$(rustc --print sysroot)/bin/rustc"
+          cargo build --manifest-path .lust-pristine-reference/Cargo.toml --release --locked --offline --jobs 2 --bin lust --bin lust-core --target-dir "$RUNNER_TEMP/lustr-pristine-target" --config "build.build-dir=\"$RUNNER_TEMP/lustr-pristine-intermediates\"" 2>&1 | tee "$RUNNER_TEMP/lustr-pristine-build.log"
+          sha256sum "$RUNNER_TEMP/lustr-pristine-target/release/lust" "$RUNNER_TEMP/lustr-pristine-target/release/lust-core" > "$RUNNER_TEMP/lustr-pristine-binaries.sha256"
+      - name: Build the paired native and mixed performance runner
+        run: cargo build --manifest-path crates/lustr-bench/Cargo.toml --release --locked --bin lustr-mixed-bench --target-dir "$RUNNER_TEMP/lustr-bench-target"
+      - name: Characterize complete supported and mixed work without granting release admission
+        run: '"$RUNNER_TEMP/lustr-bench-target/release/lustr-mixed-bench" "$GITHUB_WORKSPACE/.lust-pristine-reference" "$RUNNER_TEMP/lustr-pristine-target/release/lust" "$RUNNER_TEMP/lustr-source-built" "$RUNNER_TEMP/lustr-paired-measurements" 12'
+      - name: Retain exact source, build profiles and qualification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-built-mixed-qualification-${{ github.run_attempt }}
+          if-no-files-found: warn
+          path: |
+            ${{ runner.temp }}/lustr-source-revision.txt
+            ${{ runner.temp }}/lustr-source-built/BUILD-PROFILE.txt
+            ${{ runner.temp }}/lustr-source-built/COMPONENTS.txt
+            ${{ runner.temp }}/lustr-source-built/NATIVE-BUILD-RECEIPT.txt
+            ${{ runner.temp }}/lustr-source-built/logs
+            ${{ runner.temp }}/native-target-layouts
+            ${{ runner.temp }}/lustr-regression-baseline/BUILD-PROFILE.txt
+            ${{ runner.temp }}/lustr-regression-baseline/COMPONENTS.txt
+            ${{ runner.temp }}/lustr-regression-baseline/NATIVE-BUILD-RECEIPT.txt
+            ${{ runner.temp }}/lustr-regression-baseline/logs
+            ${{ runner.temp }}/baseline-regression.stdout
+            ${{ runner.temp }}/baseline-regression.stderr
+            ${{ runner.temp }}/baseline-regression.status
+            ${{ runner.temp }}/baseline-mixed-project/*.stdout
+            ${{ runner.temp }}/baseline-mixed-project/*.stderr
+            ${{ runner.temp }}/baseline-mixed-project/*.status
+            ${{ runner.temp }}/baseline-mixed-project/*.trace
+            ${{ runner.temp }}/mixed-project/*.stdout
+            ${{ runner.temp }}/mixed-project/*.stderr
+            ${{ runner.temp }}/mixed-project/*.status
+            ${{ runner.temp }}/mixed-project/*.trace
+            ${{ runner.temp }}/mixed-project/Cargo.toml
+            ${{ runner.temp }}/mixed-project/Cargo.lock
+            ${{ runner.temp }}/mixed-project/*/Cargo.toml
+            ${{ runner.temp }}/mixed-project/*/src/*.rs
+            ${{ runner.temp }}/mixed-check-project/*.stdout
+            ${{ runner.temp }}/mixed-check-project/*.stderr
+            ${{ runner.temp }}/mixed-check-project/*.status
+            ${{ runner.temp }}/mixed-check-project/*.trace
+            ${{ runner.temp }}/mixed-check-project/*.rmeta
+            ${{ runner.temp }}/mixed-check-project/consume.rs
+            ${{ runner.temp }}/mixed-check-project/Cargo.toml
+            ${{ runner.temp }}/mixed-check-project/Cargo.lock
+            ${{ runner.temp }}/mixed-check-project/*/Cargo.toml
+            ${{ runner.temp }}/mixed-check-project/*/src/*.rs
+            ${{ runner.temp }}/mixed-library-project/*.stdout
+            ${{ runner.temp }}/mixed-library-project/*.stderr
+            ${{ runner.temp }}/mixed-library-project/*.status
+            ${{ runner.temp }}/mixed-library-project/*.trace
+            ${{ runner.temp }}/mixed-library-project/*.rmeta
+            ${{ runner.temp }}/mixed-library-project/Cargo.toml
+            ${{ runner.temp }}/mixed-library-project/Cargo.lock
+            ${{ runner.temp }}/mixed-library-project/*/Cargo.toml
+            ${{ runner.temp }}/mixed-library-project/*/src/*.rs
+            ${{ runner.temp }}/full-entry-contract.log
+            ${{ runner.temp }}/full-entry-contract/**/*.stdout
+            ${{ runner.temp }}/full-entry-contract/**/*.stderr
+            ${{ runner.temp }}/full-entry-contract/**/*.status
+            ${{ runner.temp }}/full-entry-contract/**/*.jsonl
+            ${{ runner.temp }}/lustr-pristine-build.log
+            ${{ runner.temp }}/lustr-pristine-binaries.sha256
+            ${{ runner.temp }}/lustr-paired-measurements/*.json
+            ${{ runner.temp }}/lustr-paired-measurements/*.jsonl
+            ${{ runner.temp }}/lustr-paired-measurements/*.txt
+            ${{ runner.temp }}/lustr-paired-measurements/*.stdout
+            ${{ runner.temp }}/lustr-paired-measurements/*.stderr
+            ${{ runner.temp }}/lustr-paired-measurements/*-probes/*.trace
+            ${{ runner.temp }}/lustr-paired-measurements/**/source/**/*.rs
+            ${{ runner.temp }}/lustr-paired-measurements/**/source/**/Cargo.toml
+            ${{ runner.temp }}/lustr-paired-measurements/**/source/**/Cargo.lock
 
   compatibility:
     name: Cargo compatibility (${{ matrix.os }})

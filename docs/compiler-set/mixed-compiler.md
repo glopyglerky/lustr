@@ -150,6 +150,85 @@ matching pinned toolchain. The constructor checks its source identity before
 building native components. CI builds this complete composition and runs the
 real mixed-project qualifier through its lustr entry.
 
+The constructor accepts a final `--release` option to build every owned
+component with its manifest's release profile. It selects the matching release
+artifacts and native build receipt; the imported Rust SDK remains unchanged.
+The original four-argument command still uses development builds, and an
+explicit final `--debug` selects the same behavior. For example:
+
+```sh
+rustc --edition=2024 tools/build-mixed-toolchain.rs -o /absolute/build-mixed-toolchain
+/absolute/build-mixed-toolchain /absolute/lustr /absolute/rust-sdk \
+  /absolute/tinycc/install /absolute/new-output --release
+```
+
+`BUILD-PROFILE.txt` records the selection before compilation starts. Each build
+command and its output/status remain in `logs`, and `COMPONENTS.txt` binds the
+resulting compiler binaries and profile. Optimized builds remain development
+candidates until correctness, independent review and performance qualify them.
+Selecting a release profile does not establish a speed result.
+
+The source-built CI job uses `--release` and retains its exact source revision
+and tree, component identities, native build receipt, build commands, and mixed
+execution/check outputs even if a later step fails. Its artifact is named
+`source-built-mixed-qualification-<attempt>`. The retained workload sources,
+traces and statuses are evidence for those executed cases; they do not qualify
+unmeasured projects or general mixed coverage.
+
+### Paired integration measurements
+
+`crates/lustr-bench` supplies a separate `lustr-mixed-bench` executable for the
+current composition. Build it with the pinned SDK and run:
+
+```sh
+cargo build --manifest-path crates/lustr-bench/Cargo.toml --release --locked \
+  --bin lustr-mixed-bench --target-dir /absolute/benchmark-build
+/absolute/benchmark-build/release/lustr-mixed-bench \
+  /absolute/pristine-lust-source /absolute/pristine-lust-build/release/lust \
+  /absolute/source-built-output /absolute/new-measurement-output 12
+```
+
+The pristine checkout must be the exact pinned Lust commit and tree with no
+tracked modifications. Build its `lust` and `lust-core` binaries with the same
+SDK, TinyCC and release profile as the integrated native compiler. Keep that
+build command and log beside the report. The runner verifies the source pin,
+the matching Rust SDK and the candidate's release-profile declaration, then
+records hashes of the actual compiler binaries and component records. Binary
+hashes alone do not prove a source-to-binary relationship.
+
+The native comparison has three lanes: pristine Lust, integrated Lust, and the
+Lustr entry. It preserves one source across all lanes and compares native cold
+compilation, repeated builds, body/signature edits, checks, repeated checks,
+check body edits, rejection and actual compile-plus-test commands. The Cargo
+comparison uses the same pinned complete Rust implementation and Lustr on one
+unchanged dependency graph containing a procedural macro, async code and a
+`no_std`/`alloc` library. It measures the corresponding nine Cargo modes.
+
+Each of the twelve paired observations starts with independent compiler,
+mixed-state, Cargo-target, intermediate and XDG runtime-cache directories.
+Native cold samples disable the native daemon and disk compiler cache; Cargo
+cold samples include the normal mixed daemon startup. OS page caches remain
+untouched. Warm measurements retain the original daemons and same-lane state.
+Separate untimed probes require observed native frontend reuse and the mixed
+driver's retained build/check routes. Measured commands omit tracing and
+statistics instrumentation. The runner stops only its private sockets and
+observes actual exits of its adopted daemon children.
+
+`raw.jsonl` records commands, source hashes before and after, exact output
+hashes, statuses and pair identities. `report.json` contains separate paired
+ratios and bootstrap intervals for every mode using the existing statistics
+and position-balanced ordering implementation. Ratios are baseline time divided
+by candidate time. A ratio below one is slower. Missing pairs, wrong results,
+unexpected success on invalid input, absent reuse or failed daemon cleanup
+fail the run. A completed run reports timing regressions and inconclusive
+comparisons without granting performance or release admission.
+
+The source-built CI job runs this campaign on its optimized candidate after
+the regression, mixed-library and full entry-contract checks. It retains raw
+reports, failed output, fixture sources and the matched pristine build log.
+This corpus does not establish full-workload performance or universal speed
+preservation, and it does not substitute for independent integration review.
+
 This local composition references the selected source libraries, SDK and TinyCC
 installation. It is not a standalone release archive or a change to the host's
 default compiler. Retain its toolchain and logs, then remove its disposable

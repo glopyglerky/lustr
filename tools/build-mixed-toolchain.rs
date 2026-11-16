@@ -9,6 +9,25 @@ use std::{
     process::Command,
 };
 
+#[derive(Clone, Copy)]
+enum BuildProfile {
+    Development,
+    Release,
+}
+impl BuildProfile {
+    fn directory(self) -> &'static str {
+        match self {
+            Self::Development => "debug",
+            Self::Release => "release",
+        }
+    }
+    fn configure(self, command: &mut Command) {
+        if matches!(self, Self::Release) {
+            command.arg("--release");
+        }
+    }
+}
+
 fn record(path: &Path, bytes: &[u8]) {
     let mut file = fs::OpenOptions::new().write(true).create_new(true).open(path).unwrap();
     file.write_all(bytes).unwrap();
@@ -42,7 +61,7 @@ fn native_receipts(directory: &Path, receipts: &mut Vec<PathBuf>) {
         }
     }
 }
-fn cargo(sdk: &Path, repo: &Path, manifest: &str, work: &Path, name: &str) -> Command {
+fn cargo(sdk: &Path, repo: &Path, manifest: &str, work: &Path, name: &str, profile: BuildProfile) -> Command {
     let mut command = Command::new(sdk.join("bin/cargo"));
     command
         .current_dir(repo)
@@ -53,11 +72,12 @@ fn cargo(sdk: &Path, repo: &Path, manifest: &str, work: &Path, name: &str) -> Co
         .arg("--config")
         .arg(format!("build.build-dir={:?}", work.join(format!("{name}-intermediates"))))
         .env("RUSTC", sdk.join("bin/rustc"));
+    profile.configure(&mut command);
     command
 }
 fn main() {
     let mut args = std::env::args_os().skip(1);
-    let repo = PathBuf::from(args.next().expect("REPOSITORY RUST_SDK TINYCC NEW_OUTPUT")).canonicalize().unwrap();
+    let repo = PathBuf::from(args.next().expect("REPOSITORY RUST_SDK TINYCC NEW_OUTPUT [--release|--debug]")).canonicalize().unwrap();
     let sdk = args.next().unwrap();
     let sdk = if sdk == "--current-sdk" {
         let query = Command::new("rustc").args(["--print", "sysroot"]).env_remove("LD_LIBRARY_PATH").output().unwrap();
@@ -70,6 +90,12 @@ fn main() {
     .unwrap();
     let tcc = PathBuf::from(args.next().unwrap()).canonicalize().unwrap();
     let output = PathBuf::from(args.next().unwrap());
+    let profile = match args.next() {
+        None => BuildProfile::Development,
+        Some(flag) if flag == "--debug" => BuildProfile::Development,
+        Some(flag) if flag == "--release" => BuildProfile::Release,
+        Some(_) => panic!("expected --release or --debug after NEW_OUTPUT"),
+    };
     assert!(args.next().is_none() && output.is_absolute());
     assert!(!output.exists(), "output must be new; existing data is preserved");
     assert!(!output.parent().unwrap().canonicalize().unwrap().starts_with(&repo), "keep generated output outside source");
@@ -79,6 +105,15 @@ fn main() {
     let logs = output.join("logs");
     fs::create_dir(&work).unwrap();
     fs::create_dir(&logs).unwrap();
+    record(
+        &output.join("BUILD-PROFILE.txt"),
+        format!(
+            "Cargo artifact profile: {}\nEach component retains its manifest's profile settings. The imported Rust SDK is unchanged.\nSelecting release builds optimized components; it does not establish performance qualification or release admission.\n",
+            profile.directory()
+        )
+        .as_bytes(),
+    );
+    checked("source-revision", Command::new("git").arg("-C").arg(&repo).args(["rev-parse", "HEAD", "HEAD^{tree}"]), &logs);
     let version = checked("sdk-version", Command::new(sdk.join("bin/rustc")).arg("-vV"), &logs);
     let pin = fs::read_to_string(repo.join("upstream/bluefe-core.pin")).unwrap();
     let source = pin.lines().find_map(|line| line.strip_prefix("source = \"").and_then(|line| line.strip_suffix('"'))).unwrap();
@@ -98,11 +133,11 @@ fn main() {
         check.arg("--index");
     }
     checked("source-identity", &mut check, &logs);
-    let mut native = cargo(&sdk, &repo, "compiler/native/Cargo.toml", &work, "native");
+    let mut native = cargo(&sdk, &repo, "compiler/native/Cargo.toml", &work, "native", profile);
     native.args(["--bin", "lust", "--bin", "lust-core"]).env("LUST_TCC_HOME", &tcc);
     checked("native-build", &mut native, &logs);
     let mut receipts = Vec::new();
-    native_receipts(&work.join("native-intermediates/debug/build"), &mut receipts);
+    native_receipts(&work.join("native-intermediates").join(profile.directory()).join("build"), &mut receipts);
     assert_eq!(receipts.len(), 1, "one fresh native build receipt");
     let receipt = &receipts[0];
     let native_output = fs::read_to_string(receipt).unwrap();
@@ -131,42 +166,43 @@ fn main() {
     symlink(repo.join("library/lustr"), package.join("lib/lustr")).unwrap();
     symlink(&tcc, package.join("lib/tcc")).unwrap();
     for name in ["lust", "lust-core"] {
-        copy(&work.join("native-target/debug").join(name), &package.join("bin").join(name));
+        copy(&work.join("native-target").join(profile.directory()).join(name), &package.join("bin").join(name));
     }
-    let mut entry = cargo(&sdk, &repo, "Cargo.toml", &work, "entry");
+    let mut entry = cargo(&sdk, &repo, "Cargo.toml", &work, "entry", profile);
     entry
         .args(["--bin", "lustr", "--features", "source-native-runtime"])
         .env("LUSTR_CORE_ROOT", &sdk)
         .env("LUSTR_LUST_ROOT", &package)
         .env("LUSTR_NATIVE_BUILD_OUTPUT", receipt);
     checked("entry-build", &mut entry, &logs);
-    copy(&work.join("entry-target/debug/lustr"), &package.join("bin/lustr"));
+    copy(&work.join("entry-target").join(profile.directory()).join("lustr"), &package.join("bin/lustr"));
     symlink("lustr", package.join("bin/rustc")).unwrap();
-    let mut coordinator = cargo(&sdk, &repo, "crates/lustr/Cargo.toml", &work, "coordinator");
+    let mut coordinator = cargo(&sdk, &repo, "crates/lustr/Cargo.toml", &work, "coordinator", profile);
     coordinator.args(["--bin", "cargo-lustr"]);
     checked("cargo-entry-build", &mut coordinator, &logs);
-    copy(&work.join("coordinator-target/debug/cargo-lustr"), &package.join("bin/cargo-lustr"));
-    let mut library = cargo(&sdk, &repo, "crates/lustr-native-core/Cargo.toml", &work, "native-library");
+    copy(&work.join("coordinator-target").join(profile.directory()).join("cargo-lustr"), &package.join("bin/cargo-lustr"));
+    let mut library = cargo(&sdk, &repo, "crates/lustr-native-core/Cargo.toml", &work, "native-library", profile);
     library.env("LUST_TCC_HOME", &tcc);
     checked("native-library-build", &mut library, &logs);
     let library = package.join("lib/liblustr_native_core.so");
-    copy(&work.join("native-library-target/debug/liblustr_native_core.so"), &library);
+    copy(&work.join("native-library-target").join(profile.directory()).join("liblustr_native_core.so"), &library);
     let identity = checked("hash-native-library", Command::new("sha256sum").arg(&library), &logs);
     let identity = std::str::from_utf8(&identity).unwrap().split_whitespace().next().unwrap();
     record(&package.join("lib/lustr-native.id"), format!("{identity}\n").as_bytes());
-    let mut mixed = cargo(&sdk, &repo, "crates/lustr-semantic/Cargo.toml", &work, "mixed");
+    let mut mixed = cargo(&sdk, &repo, "crates/lustr-semantic/Cargo.toml", &work, "mixed", profile);
     mixed.args(["--features", "full-core", "--bin", "lustr-mixed"]).env("LUSTR_NATIVE_BUILD_HASH", hash);
     checked("mixed-build", &mut mixed, &logs);
-    copy(&work.join("mixed-target/debug/lustr-mixed"), &package.join("bin/rustc-full"));
+    copy(&work.join("mixed-target").join(profile.directory()).join("lustr-mixed"), &package.join("bin/rustc-full"));
     // rustc-full resolves current_exe to this directory, alongside its matching
     // native core and the original compiler used for non-UTF8 OS arguments.
     record(&output.join("NATIVE-BUILD-RECEIPT.txt"), native_output.as_bytes());
     let mut manifest = format!(
-        "Local source-built development candidate; release admission and broad mixed performance remain pending.\nReferenced source={}, SDK={}, TinyCC={}\nNative build={}\n",
+        "Local source-built development candidate; release admission and broad mixed performance remain pending.\nReferenced source={}, SDK={}, TinyCC={}\nNative build={}\nCargo artifact profile={}\n",
         repo.display(),
         sdk.display(),
         tcc.display(),
-        hash
+        hash,
+        profile.directory()
     );
     for name in ["lustr", "rustc-full", "lust", "lust-core", "cargo-lustr"] {
         let result = checked(&format!("hash-{name}"), Command::new("sha256sum").arg(package.join("bin").join(name)), &logs);

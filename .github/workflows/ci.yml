@@ -46,7 +46,35 @@ jobs:
       - name: Run CI gate
         env:
           LUST_TCC_HOME: ${{ github.workspace }}/compiler/native/third_party/tcc
-        run: bash scripts/ci.sh
+        run: |
+          set -euo pipefail
+          {
+            git rev-parse HEAD
+            printf 'run=%s\nattempt=%s\n' "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT"
+            uname -srm
+            rustc -vV
+            cargo --version
+            sha256sum Cargo.toml Cargo.lock build.rs scripts/ci.sh
+          } > "$RUNNER_TEMP/native-gate-identity.txt"
+          bash scripts/ci.sh 2>&1 | tee "$RUNNER_TEMP/native-gate.log"
+      - name: Record produced compiler identities
+        if: always()
+        run: |
+          for binary in target/release/lust target/release/lust-core; do
+            if test -f "$binary"; then
+              sha256sum "$binary"
+            fi
+          done > "$RUNNER_TEMP/native-gate-builds.sha256"
+      - name: Retain native gate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-gate-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/native-gate-identity.txt
+            ${{ runner.temp }}/native-gate.log
+            ${{ runner.temp }}/native-gate-builds.sha256
+          if-no-files-found: warn
 
   macos-arm64:
     # macOS 14 runners retired on 2026-11-02. macos-15 is the supported Arm64 image.
@@ -84,4 +112,33 @@ jobs:
       - name: Run CI gate
         env:
           LUST_TCC_HOME: ${{ github.workspace }}/compiler/native/third_party/tcc
-        run: bash scripts/ci.sh
+        run: |
+          set -euo pipefail
+          {
+            git rev-parse HEAD
+            printf 'run=%s\nattempt=%s\n' "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT"
+            uname -srm
+            sw_vers -productVersion
+            rustc -vV
+            cargo --version
+            sha256sum Cargo.toml Cargo.lock build.rs scripts/ci.sh
+          } > "$RUNNER_TEMP/native-gate-identity.txt"
+          bash scripts/ci.sh 2>&1 | tee "$RUNNER_TEMP/native-gate.log"
+      - name: Record produced compiler identities
+        if: always()
+        run: |
+          for binary in target/release/lust target/release/lust-core; do
+            if test -f "$binary"; then
+              sha256sum "$binary"
+            fi
+          done > "$RUNNER_TEMP/native-gate-builds.sha256"
+      - name: Retain native gate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-gate-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/native-gate-identity.txt
+            ${{ runner.temp }}/native-gate.log
+            ${{ runner.temp }}/native-gate-builds.sha256
+          if-no-files-found: warn

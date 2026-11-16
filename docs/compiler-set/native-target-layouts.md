@@ -62,7 +62,9 @@ rustc --edition=2024 tools/native-target-layout-qualification.rs \
 ```
 
 The unchanged PR7 compiler at `2add988` passes the selected Linux constants
-and fails both selected Darwin targets and Windows GNU. These frontend
+and fails both selected Darwin targets and Windows GNU. With this correction,
+the diagnostic native build passes all twenty-six assertions and rejects the
+deliberately wrong assertion on each of the four targets. These frontend
 comparisons do not link or execute a foreign program. Native macOS CI remains
 required, including the original differential, daemon and runtime gates.
 
