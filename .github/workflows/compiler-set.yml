@@ -114,6 +114,10 @@ jobs:
           ref: 2add988c6397ac5175fcdf89a3aac17d359bf283
           path: .regression-baseline
           persist-credentials: false
+      - name: Isolate unchanged comparison sources from the product workspace
+        run: |
+          cp -a "$GITHUB_WORKSPACE/.regression-baseline" "$RUNNER_TEMP/lustr-regression-source"
+          cp -a "$GITHUB_WORKSPACE/.lust-pristine-reference" "$RUNNER_TEMP/lustr-pristine-source"
       - name: Install matching complete Rust development libraries
         run: rustup toolchain install nightly-2026-11-09 --profile minimal --component rustc-dev --component llvm-tools --component rustfmt --component clippy --target wasm32-unknown-unknown --target x86_64-apple-darwin --target aarch64-apple-darwin --target x86_64-pc-windows-gnu
       - name: Install WebAssembly execution oracle
@@ -144,7 +148,7 @@ jobs:
         run: git rev-parse HEAD 'HEAD^{tree}' > "$RUNNER_TEMP/lustr-source-revision.txt"
       - name: Build optimized local toolchain without a predecessor package
         env:
-          GIT_ALTERNATE_OBJECT_DIRECTORIES: ${{ github.workspace }}/.lust-pristine-reference/.git/objects
+          GIT_ALTERNATE_OBJECT_DIRECTORIES: ${{ runner.temp }}/lustr-pristine-source/.git/objects
         run: '"$RUNNER_TEMP/build-mixed-toolchain" "$GITHUB_WORKSPACE" --current-sdk "$RUNNER_TEMP/lustr-tinycc/install" "$RUNNER_TEMP/lustr-source-built" --release'
       - name: Build real mixed-project qualifier
         run: rustc --edition=2024 tools/mixed-compiler-qualification.rs -o "$RUNNER_TEMP/mixed-compiler-qualification"
@@ -154,8 +158,8 @@ jobs:
         run: '"$RUNNER_TEMP/native-target-layout-qualification" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/lust" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/rustc-reference" "$RUNNER_TEMP/native-target-layouts" x86_64-unknown-linux-gnu x86_64-apple-darwin aarch64-apple-darwin x86_64-pc-windows-gnu'
       - name: Build the unchanged baseline for the failed-link regression
         env:
-          GIT_ALTERNATE_OBJECT_DIRECTORIES: ${{ github.workspace }}/.lust-pristine-reference/.git/objects
-        run: '"$RUNNER_TEMP/build-mixed-toolchain" "$GITHUB_WORKSPACE/.regression-baseline" --current-sdk "$RUNNER_TEMP/lustr-tinycc/install" "$RUNNER_TEMP/lustr-regression-baseline" --release'
+          GIT_ALTERNATE_OBJECT_DIRECTORIES: ${{ runner.temp }}/lustr-pristine-source/.git/objects
+        run: '"$RUNNER_TEMP/build-mixed-toolchain" "$RUNNER_TEMP/lustr-regression-source" --current-sdk "$RUNNER_TEMP/lustr-tinycc/install" "$RUNNER_TEMP/lustr-regression-baseline" --release'
       - name: Require the specific failed-link stale-output regression on the baseline
         run: |
           set +e
@@ -193,12 +197,12 @@ jobs:
         run: |
           set -o pipefail
           export RUSTC="$(rustc --print sysroot)/bin/rustc"
-          cargo build --manifest-path .lust-pristine-reference/Cargo.toml --release --locked --offline --jobs 2 --bin lust --bin lust-core --target-dir "$RUNNER_TEMP/lustr-pristine-target" --config "build.build-dir=\"$RUNNER_TEMP/lustr-pristine-intermediates\"" 2>&1 | tee "$RUNNER_TEMP/lustr-pristine-build.log"
+          cargo build --manifest-path "$RUNNER_TEMP/lustr-pristine-source/Cargo.toml" --release --locked --offline --jobs 2 --bin lust --bin lust-core --target-dir "$RUNNER_TEMP/lustr-pristine-target" --config "build.build-dir=\"$RUNNER_TEMP/lustr-pristine-intermediates\"" 2>&1 | tee "$RUNNER_TEMP/lustr-pristine-build.log"
           sha256sum "$RUNNER_TEMP/lustr-pristine-target/release/lust" "$RUNNER_TEMP/lustr-pristine-target/release/lust-core" > "$RUNNER_TEMP/lustr-pristine-binaries.sha256"
       - name: Build the paired native and mixed performance runner
         run: cargo build --manifest-path crates/lustr-bench/Cargo.toml --release --locked --bin lustr-mixed-bench --target-dir "$RUNNER_TEMP/lustr-bench-target"
       - name: Characterize complete supported and mixed work without granting release admission
-        run: '"$RUNNER_TEMP/lustr-bench-target/release/lustr-mixed-bench" "$GITHUB_WORKSPACE/.lust-pristine-reference" "$RUNNER_TEMP/lustr-pristine-target/release/lust" "$RUNNER_TEMP/lustr-source-built" "$RUNNER_TEMP/lustr-paired-measurements" 12'
+        run: '"$RUNNER_TEMP/lustr-bench-target/release/lustr-mixed-bench" "$RUNNER_TEMP/lustr-pristine-source" "$RUNNER_TEMP/lustr-pristine-target/release/lust" "$RUNNER_TEMP/lustr-source-built" "$RUNNER_TEMP/lustr-paired-measurements" 12'
       - name: Retain exact source, build profiles and qualification evidence
         if: always()
         uses: actions/upload-artifact@v4

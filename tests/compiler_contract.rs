@@ -531,6 +531,40 @@ fn native_and_full_compiler_contract() {
 
 #[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT"]
+fn native_file_tests_preserve_single_execution() {
+    let f = Fixture::new("native-file-tests");
+    let source = f.source("tests.rs", "fn main(){}\n#[test]\nfn works(){assert_eq!(21*2,42);}\n");
+    let summary = |out: &Output| {
+        let values: Vec<serde_json::Value> = out
+            .stdout
+            .split(|byte| *byte == b'\n')
+            .filter_map(|line| serde_json::from_slice(line).ok())
+            .filter(|value: &serde_json::Value| value["kind"] == "summary")
+            .collect();
+        assert_eq!(values.len(), 1, "one native test summary is required");
+        assert_eq!(values[0]["build"], "ok");
+        values.into_iter().next().unwrap()
+    };
+    let passed = f.succeeds("passed", f.command("lustr").arg("test").arg(&source).arg("--json"));
+    assert_eq!(summary(&passed)["passed"], 1);
+    assert_eq!(f.engine(), "upstream-lust-command");
+    f.source(
+        "tests.rs",
+        "fn main(){}\n#[test]\nfn fails(){use std::io::Write;let mut file=std::fs::OpenOptions::new().create(true).append(true).open(\"attempts\").unwrap();file.write_all(b\"x\").unwrap();panic!(\"expected failure\");}\n",
+    );
+    let failed = f.invoke("failed", f.command("lustr").arg("test").arg(&source).arg("--json"));
+    // The upstream native test runner follows Cargo's failed-test status.
+    assert_eq!(failed.status.code(), Some(101));
+    let result = summary(&failed);
+    assert_eq!(result["passed"], 0);
+    assert_eq!(result["failed"], 1);
+    assert_eq!(result["timed_out"], 0);
+    assert_eq!(std::fs::read(f.root.join("attempts")).unwrap(), b"x", "failed native test must execute exactly once");
+    assert_eq!(f.engine(), "upstream-lust-command");
+}
+
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT"]
 fn cargo_native_first_build_preserves_build_script_environment() {
     let f = Fixture::new("cargo-native-first");
     let manifest = f.source("project/Cargo.toml", "[package]\nname=\"native_project\"\nversion=\"0.1.0\"\nedition=\"2024\"\n[workspace]\n");

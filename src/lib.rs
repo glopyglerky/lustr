@@ -107,7 +107,8 @@ pub fn native_command(args: &[OsString]) -> Option<Vec<OsString>> {
 }
 
 pub fn is_native_command(args: &[OsString]) -> bool {
-    args.first().is_some_and(|a| a == "build" || a == "check") && args.get(1).and_then(|a| a.to_str()).is_some_and(|a| a.ends_with(".rs"))
+    args.first().is_some_and(|a| a == "build" || a == "check" || a == "test")
+        && args.get(1).and_then(|a| a.to_str()).is_some_and(|a| a.ends_with(".rs"))
 }
 
 pub fn cargo_command(args: &[OsString]) -> bool {

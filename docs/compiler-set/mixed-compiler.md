@@ -176,6 +176,13 @@ resulting compiler binaries and profile. Optimized builds remain development
 candidates until correctness, independent review and performance qualify them.
 Selecting a release profile does not establish a speed result.
 
+`lustr test FILE.rs` delegates to the installed Lust test command, preserving
+its native test harness, JSON output and exit status. This command has Lust's
+supported-language scope; a failed or executed test is never retried through
+the full compiler. `lustr test` without a source-file argument retains Cargo's
+complete Rust project tests. The runtime contract checks successful native
+tests and proves that a failed test's observable side effect occurs once.
+
 The source-built CI job uses `--release` and retains its exact source revision
 and tree, component identities, native build receipt, build commands, and mixed
 execution/check outputs even if a later step fails. Its artifact is named

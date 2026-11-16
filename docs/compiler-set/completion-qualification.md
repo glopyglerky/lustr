@@ -40,6 +40,7 @@ edits, package tools, panic/drop behavior and Cargo process ownership.
 | Linux runtime preservation | All six affected inherited differential filters pass with the exact CI Rust 1.99.0 oracle: nine cases, zero failures. Two differences against Rust 1.102 were separated as reference-version formatting changes. |
 | Darwin descriptor-path adapter | The exact C body passes five isolated buffer/error cases with AddressSanitizer and UndefinedBehaviorSanitizer. Real Darwin syscall behavior still requires macOS. |
 | no_std WebAssembly execution | Through the unchanged baseline's matched full Rust component, the new module executes its exported operations with correct results and no runtime imports. The final candidate's full contract repeats this gate. |
+| Single-file native test command | The old entry incorrectly forwarded the file command to Cargo. The corrected entry passes the public runtime gate: successful native test, upstream failed-test status 101, and one persisted side effect from one failed test. The unchanged baseline native core was used for this local check. |
 | Paired performance | Runner compiles and its statistical/order tests pass. Actual optimized observations and conclusions remain pending. |
 
 See [target layout qualification](native-target-layouts.md) for the target
@@ -78,3 +79,12 @@ results and uncertainty. Its small corpus does not establish arbitrary-project
 speed. The original native Linux and macOS gates remain unchanged in substance
 and retain logs and binary identities. Successful candidate source-identity
 checks do not grant release admission.
+
+The first [hosted source-built run](https://github.com/glopyglerky/lustr/actions/runs/43963000944/job/133635056742)
+built the optimized candidate and passed all four target-layout checks. It
+stopped before runtime qualification because Cargo found the unchanged
+baseline checkout inside the product's parent workspace. The workflow now
+copies both comparison checkouts into separate temporary roots; neither
+comparison's manifests or compiler source are changed. The failed run and
+its artifact remain retained, and do not count as the required baseline
+regression reproduction.
