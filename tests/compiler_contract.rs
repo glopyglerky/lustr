@@ -85,12 +85,14 @@ fn cargo_entry_runs_without_a_separate_coordinator_executable() {
     for tool in ["cargo", "rustc", "rustdoc"] {
         symlink(f.package.join("bin").join(tool), runtime.join("bin").join(tool)).unwrap();
     }
+    symlink(f.package.join("bin/rustc-reference"), runtime.join("bin/rustc-full")).unwrap();
     // A missing extension executable distinguishes the direct entry from an
     // accidental return to the old exec chain. Real Cargo still does the work.
     assert!(!runtime.join("bin/cargo-lustr").exists());
     let direct = Fixture { root: f.root.clone(), package: runtime };
     f.source("Cargo.toml", "[package]\nname=\"cargo-direct-entry\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
-    f.source("src/main.rs", "fn main() { std::process::exit(23); }\n");
+    f.source("src/main.rs", "fn main() { std::process::exit(23); }\n#[test]fn arithmetic(){assert_eq!(21*2,42);}\n");
+    f.source(".cargo/config.toml", "[alias]\nverify-entry = \"check --message-format=json\"\n");
     let planned = f.succeeds("plan", direct.command("lustr").args(["plan", "check", "--offline"]));
     let plan: serde_json::Value = serde_json::from_slice(&planned.stdout).unwrap();
     assert!(plan.to_string().contains("relocated runtime"));
@@ -114,8 +116,12 @@ fn cargo_entry_runs_without_a_separate_coordinator_executable() {
     assert_eq!(explicit["program"], "rustup");
     assert_eq!(explicit["args"], serde_json::json!(["run", "--", "explicit-toolchain-only-for-planning", "cargo", "check"]));
     assert!(!f.root.join("target").exists(), "planning executed Cargo");
-    for (label, fresh) in [("check", false), ("no-op-check", true)] {
-        let result = f.succeeds(label, direct.command("lustr").args(["check", "--offline", "--message-format=json"]));
+    let result = f.succeeds("metadata", direct.command("lustr").args(["metadata", "--offline", "--no-deps", "--format-version=1"]));
+    let metadata: serde_json::Value = serde_json::from_slice(&result.stdout).unwrap();
+    assert_eq!(metadata["packages"][0]["name"], "cargo-direct-entry");
+    assert_eq!(Path::new(metadata["workspace_root"].as_str().unwrap()), f.root);
+    for (label, command, fresh) in [("alias-check", "c", false), ("no-op-check", "check", true)] {
+        let result = f.succeeds(label, direct.command("lustr").args([command, "--offline", "--message-format=json"]));
         let artifacts: Vec<_> = String::from_utf8(result.stdout)
             .unwrap()
             .lines()
@@ -125,12 +131,49 @@ fn cargo_entry_runs_without_a_separate_coordinator_executable() {
         assert_eq!(artifacts.len(), 1);
         assert_eq!(artifacts[0]["fresh"], fresh);
     }
-    let result = f.invoke("program-exit", direct.command("lustr").args(["run", "--offline", "--quiet"]));
-    assert_eq!(result.status.code(), Some(23), "Cargo's program exit was changed");
+    let custom =
+        f.succeeds("custom-alias", direct.command("lustr").arg("--bluefe-root").arg(&direct.package).args(["verify-entry", "--offline"]));
+    assert!(String::from_utf8_lossy(&custom.stdout).contains("\"fresh\":true"));
+    f.succeeds("alias-build", direct.command("lustr").args(["b", "--offline"]));
+    for (label, command) in [("program-exit", "run"), ("alias-program-exit", "r")] {
+        let result = f.invoke(label, direct.command("lustr").args([command, "--offline", "--quiet"]));
+        assert_eq!(result.status.code(), Some(23), "Cargo's program exit was changed");
+    }
+    let tested = f.succeeds("alias-test", direct.command("lustr").args(["t", "--offline", "--quiet"]));
+    assert!(String::from_utf8_lossy(&tested.stdout).contains("1 passed; 0 failed"));
+
+    // An explicit Rust source remains a compiler request. When invoked as
+    // rustc, even a source named after a Cargo command must remain one.
+    let source = f.source("direct.rs", "pub fn answer()->u32 { 42 }\n");
+    f.succeeds(
+        "direct-rust-source",
+        direct.command("lustr").arg(source).args(["--crate-type=lib", "--emit=metadata", "-o", "direct.rmeta"]),
+    );
+    assert!(f.root.join("direct.rmeta").is_file());
+    let compiler_bin = f.root.join("compiler-entry/bin");
+    std::fs::create_dir_all(&compiler_bin).unwrap();
+    std::fs::copy(f.package.join("bin/lustr"), compiler_bin.join("rustc")).unwrap();
+    symlink(f.package.join("bin/rustc-reference"), compiler_bin.join("rustc-full")).unwrap();
+    f.source("clean", "pub fn answer()->u32 { 42 }\n");
+    f.succeeds(
+        "rustc-command-name-source",
+        &mut Command::new(compiler_bin.join("rustc")).current_dir(&f.root).env_remove("LD_LIBRARY_PATH").args([
+            "clean",
+            "--crate-type=lib",
+            "--emit=metadata",
+            "-o",
+            "command-name.rmeta",
+        ]),
+    );
+    assert!(f.root.join("command-name.rmeta").is_file());
     f.source("src/main.rs", "fn main() { let value: bool = 7u64; println!(\"{value}\"); }\n");
     let result = f.invoke("invalid-source", direct.command("lustr").args(["check", "--offline"]));
     assert_eq!(result.status.code(), Some(101));
     assert!(String::from_utf8_lossy(&result.stderr).contains("mismatched types"));
+    let executable = f.root.join("target/debug/cargo-direct-entry");
+    assert!(executable.is_file());
+    f.succeeds("clean", direct.command("lustr").args(["clean", "--offline"]));
+    assert!(!executable.exists(), "Cargo clean left its executable behind");
 }
 
 #[test]

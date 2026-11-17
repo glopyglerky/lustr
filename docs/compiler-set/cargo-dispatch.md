@@ -22,6 +22,21 @@ The root also recognizes the coordinator's `--engine=value`, `+toolchain` and
 frontend-job prefix forms. This uses the same parser and validation as the
 standalone extensions, without parsing the command twice.
 
+The entry also recognizes the packaged Cargo's standard subcommands, including
+`metadata`, `clean`, `tree`, `bench`, `doc`, `rustc` and `rustdoc`, and its built-in
+`b`, `c`, `d`, `r`, `t` and `rm` aliases. Cargo receives their arguments unchanged
+and owns alias expansion. Previously these commands fell through to the full
+Rust compiler as source arguments. For example, `lustr metadata --offline`
+failed because rustc does not accept Cargo's `--offline` option.
+
+Explicit native commands such as `lustr build source.rs` retain their existing
+selection priority. A direct `.rs` path, compiler options or an unknown bare
+name retain their compiler interpretation. The executable named `rustc` always
+interprets its arguments as compiler input, even when a source file is named
+`clean`. For a custom Cargo alias, select the coordinator explicitly, for example
+`lustr --bluefe-root /absolute/package verify-entry`. This avoids reading Cargo
+configuration or guessing whether an unknown name is a source path or an alias.
+
 This change does not broaden native eligibility, change a project's debug
 profile or bypass compiler analysis. It removes an entry cost; only a fresh
 complete benchmark can establish its effect on Cargo or native command latency.
@@ -36,9 +51,17 @@ Cargo artifact, a repeated check reports that artifact fresh, a program's exit
 code 23 survives, and invalid Rust still fails with Cargo's code 101 and its
 type error. Plans additionally verify that application options cannot change
 the compiler selection, while explicit engine and `+toolchain` options do.
+The same actual-entry test now parses real Cargo metadata JSON, exercises the
+`b`, `c`, `r` and `t` aliases, executes one passing test, and verifies that
+`clean` removes the built executable. An explicitly selected custom alias stays
+under Cargo's configuration handling. Direct Rust metadata emission and a
+`rustc` invocation with a source named `clean` check the compiler boundaries.
 
-The predecessor entry fails this test when it tries to execute the absent
-coordinator. The changed development entry passes with the matching Rust SDK.
+The original predecessor entry fails when it tries to execute the absent
+coordinator. The later command-dispatch predecessor fails the new metadata
+case with rustc's `Unrecognized option: 'offline'`. The corrected development
+entry passes the full expanded test with the matching Rust SDK, and all three
+root-library tests pass.
 That local test qualifies this dispatch behavior, not a complete rebuilt native
 package or a speed result. The source-built workflow executes the same test in
 the full entry/runtime contract before measurements.

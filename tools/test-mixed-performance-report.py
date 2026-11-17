@@ -71,6 +71,7 @@ def fixture(root, schema=1):
                                            "entry": "/synthetic/package/lustr", "rustc": "/synthetic/package/rustc-reference"}
         meta["compiler_sha256"] = {path: "c" * 64 for path in ("/synthetic/pristine/lust", "/synthetic/integrated/lust",
                                       "/synthetic/package/lustr", "/synthetic/package/rustc-reference", "/synthetic/runner")}
+    meta["compiler_sha256"].update({"/synthetic/package/cargo": "c" * 64, "/synthetic/package/lustr": "c" * 64})
     command_meta = dict(meta, native_lane_executables={
         "pristine": "/synthetic/pristine/lust", "integrated": "/synthetic/integrated/lust",
         "entry": "/synthetic/package/lustr", "rustc": "/synthetic/package/rustc-reference"})
@@ -106,10 +107,26 @@ def fixture(root, schema=1):
                         streams = native_record(row, command_meta)
                     else:
                         operation = "check" if phase.startswith("check") else "test" if phase == "compile-plus-test" else "build"
-                        target = f"/synthetic/state/cargo/{lane}/{i}/target"
+                        source = f"/synthetic/cargo-{i:03}/source"
+                        state = f"/synthetic/cargo-{i:03}/lane{lane_index}"
+                        target = state + "/target"
+                        row["source_sha256"] = {source + "/" + path: "d" * 64 for path in
+                                                ("Cargo.lock", "Cargo.toml", "app/Cargo.toml", "app/src/main.rs",
+                                                 "fixture-macro/Cargo.toml", "fixture-macro/src/lib.rs",
+                                                 "portable/Cargo.toml", "portable/src/lib.rs")}
+                        row["source_after_sha256"] = dict(row["source_sha256"])
+                        row["cwd"] = source
+                        executable = "/synthetic/package/" + ("cargo" if lane == "reference" else "lustr")
+                        args = [executable, operation, "--locked", "--offline", "--jobs", "2", "-p", "mixed-app",
+                                "--bin", "mixed-app", "--target-dir", target, "--config", f'build.build-dir="{state}/intermediates"']
+                        if operation == "test":
+                            args += ["--", "--test-threads=1"]
                         row["argv"] = [{"Unix": list(value.encode())} for value in
-                                       (f"/synthetic/{lane}/cargo", operation, "--target-dir", target)]
+                                       args]
                         streams = {s: b"synthetic output\n" for s in ("stdout", "stderr")}
+                        if operation == "test":
+                            streams["stdout"] = (b"\nrunning 1 test\ntest scalar_contract ... ok\n\n"
+                                                 b"test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n")
                     store(row, streams)
                     if phase in ("cold", "no-op", "body-edit", "signature-edit"):
                         args = [reporter.argument(value) for value in row["argv"]]
@@ -118,6 +135,8 @@ def fixture(root, schema=1):
                                    if not key.startswith(("stdout", "stderr"))}
                         runtime.update(phase=phase + "-runtime", sample=None, seconds=.001,
                                        argv=[{"Unix": list(output.encode())}])
+                        if family == "cargo":
+                            runtime["source_sha256"] = runtime["source_after_sha256"] = {source + "/app/src/main.rs": "d" * 64}
                         store(runtime, {"stdout": b"57\n" if phase == "body-edit" else b"59\n", "stderr": b""})
             rows.append(dict(kind="daemon-exits", scope=f"{family}-{i}", successful_exits=3 if family == "native" else 1))
     if schema == 2:
@@ -304,7 +323,97 @@ class ExecutionContractTests:
         self.rejected()
 
 
-class ReportTests(ExecutionContractTests, FixtureTestCase):
+class CargoCommandTests:
+    def cargo_command(self, lane="mixed", phase="compile-plus-test"):
+        return next(row for row in self.data["records"] if row.get("kind") == "command"
+                    and row.get("family") == "cargo" and row.get("lane") == lane and row.get("phase") == phase)
+
+    def test_cargo_lane_cannot_run_reference_under_mixed_label(self):
+        replacement = copy.deepcopy(self.cargo_command("reference", "cold")["argv"][0])
+        for row in self.data["records"]:
+            if row.get("family") == "cargo" and row.get("lane") == "mixed" and row.get("phase") in reporter.PHASES:
+                row["argv"][0] = replacement
+        self.rejected()
+
+    def test_cargo_compile_without_test_execution_is_rejected(self):
+        row = self.cargo_command()
+        row["argv"][1] = {"Unix": list(b"build")}
+        for stream in ("stdout", "stderr"):
+            path = self.root / "lustr-paired-measurements" / reporter.output_name(row[stream])
+            path.write_bytes(b"")
+            row[stream + "_bytes"], row[stream + "_sha256"] = 0, reporter.sha256(b"")
+        self.rejected()
+
+    def test_cargo_compiler_identities_must_be_unambiguous(self):
+        original = copy.deepcopy(self.data)
+        for mutation in ("missing-reference", "missing-entry", "ambiguous-reference", "different-entry"):
+            with self.subTest(mutation=mutation):
+                self.data = copy.deepcopy(original)
+                hashes = self.data["compiler_sha256"]
+                if mutation.startswith("missing"):
+                    del hashes["/synthetic/package/" + ("cargo" if mutation == "missing-reference" else "lustr")]
+                elif mutation == "ambiguous-reference":
+                    hashes["/unrelated/cargo"] = "c" * 64
+                else:
+                    del hashes["/synthetic/package/lustr"]
+                    hashes["/unrelated/lustr"] = "c" * 64
+                self.data["records"][0]["report"]["compiler_sha256"] = copy.deepcopy(hashes)
+                self.rejected()
+
+    def test_cargo_operation_and_flags_match_the_measured_phase(self):
+        original = copy.deepcopy(self.data)
+        mutations = (("check", "check", "build"), ("check-no-op", "check", "build"),
+                     ("rejection", "build", "check"), ("compile-plus-test", "test", "build"),
+                     ("cold", "--locked", "--release"), ("cold", "--offline", "--frozen"),
+                     ("cold", "2", "1"), ("cold", "mixed-app", "different-app"),
+                     ("compile-plus-test", "--test-threads=1", "--ignored"))
+        for phase, old, new in mutations:
+            with self.subTest(phase=phase, flag=old):
+                self.data = copy.deepcopy(original)
+                row = self.cargo_command(phase=phase)
+                row["argv"] = [{"Unix": list((new if reporter.argument(value) == old else reporter.argument(value)).encode())}
+                               for value in row["argv"]]
+                self.rejected()
+        for extra in (("--no-run",), ("--config", "profile.dev.debug=2"), ("--", "--skip", "scalar_contract")):
+            with self.subTest(extra=extra):
+                self.data = copy.deepcopy(original)
+                self.cargo_command()["argv"] += [{"Unix": list(value.encode())} for value in extra]
+                self.rejected()
+
+    def test_cargo_caches_cannot_be_shared_or_replaced(self):
+        original = copy.deepcopy(self.data)
+        for flag in ("--target-dir", "--config"):
+            with self.subTest(flag=flag):
+                self.data = copy.deepcopy(original)
+                row = self.cargo_command(phase="check-no-op")
+                reference = self.cargo_command("reference", "check-no-op")
+                position = [reporter.argument(value) for value in row["argv"]].index(flag) + 1
+                row["argv"][position] = copy.deepcopy(reference["argv"][position])
+                self.rejected()
+
+    def test_cargo_working_directory_must_select_the_recorded_workspace(self):
+        self.cargo_command(phase="check-no-op")["cwd"] = "/synthetic/unrelated-workspace"
+        self.rejected()
+
+    def test_cargo_test_receipt_requires_exactly_one_executed_scalar_test(self):
+        row = self.cargo_command()
+        path = self.root / "lustr-paired-measurements" / reporter.output_name(row["stdout"])
+        original = path.read_bytes()
+        replacements = (b"", b"Finished test profile\n",
+                        original.replace(b"1 passed", b"0 passed"),
+                        original.replace(b"0 ignored", b"1 ignored"),
+                        original.replace(b"0 filtered out", b"1 filtered out"),
+                        original.replace(b"scalar_contract", b"unrelated_test"),
+                        original.replace(b"running 1 test\n", b""),
+                        original + b"test scalar_contract ... ok\n", original + original)
+        for output in replacements:
+            with self.subTest(output=output):
+                path.write_bytes(output)
+                row["stdout_bytes"], row["stdout_sha256"] = len(output), reporter.sha256(output)
+                self.rejected()
+
+
+class ReportTests(CargoCommandTests, ExecutionContractTests, FixtureTestCase):
     def test_complete_report_and_markdown(self):
         result = self.verify()
         self.assertEqual(result["verified"]["comparisons"], 27)
@@ -522,7 +631,7 @@ class ReportTests(ExecutionContractTests, FixtureTestCase):
         self.assertFalse(missing.exists())
 
 
-class Schema2Tests(ExecutionContractTests, FixtureTestCase):
+class Schema2Tests(CargoCommandTests, ExecutionContractTests, FixtureTestCase):
     schema = 2
 
     def command(self, lane="rustc", phase="compile-plus-test"):

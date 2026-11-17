@@ -472,9 +472,12 @@ Across all 35 successful responses, the complete `nm` process-call span ranges
 from 30.808 to 34.545 ms, median 31.857 ms. It includes lookup, launch, execution,
 output capture and waiting. The actual child binary identity, emitted object
 bytes and child CPU/spawn breakdown are absent. This is a dominant observed
-span whose cause remains unresolved. The next diagnostic is same-runner tool
-and object identity plus spawn/wait attribution. Undefined-symbol validation
-and durable object/certificate synchronization remain required.
+span whose cause remains unresolved. Explaining that historical delay requires
+same-runner tool and object identity plus spawn/wait attribution. The current
+candidate removes this subprocess through checked in-process object validation;
+its next measurement must profile the rebuilt Cargo route and time complete
+commands. Undefined-symbol validation and durable object/certificate
+synchronization remain required.
 
 The [completed v1 profile](performance/2026-11-17-dec0ce2-profile.md) and the
 [later failed v2 original with separate reconstruction](performance/2026-11-17-40d2ac3-profile.md)
@@ -502,7 +505,8 @@ coverage; its default profile does not establish large native acceleration.
 
 The performance priority is complete Cargo work: cold builds, source body and
 signature edits, checks and executing tests. First qualify and measure the
-in-process symbol-check correction against the existing matched Cargo baseline.
+in-process symbol validator, in-process symbol renaming and shared direct Cargo
+entry together against the existing matched Cargo baseline.
 Then expand to unchanged projects with real source edits and observed native
 participation, while retaining default-profile fallback and no-op overhead.
 The full native sanitizer runtime failure and native macOS execution remain

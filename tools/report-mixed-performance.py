@@ -24,6 +24,8 @@ import zipfile
 PHASES = ("cold", "no-op", "body-edit", "signature-edit", "check", "check-no-op",
           "check-body-edit", "rejection", "compile-plus-test")
 BUILD_PHASES = ("cold", "no-op", "body-edit", "signature-edit")
+CARGO_SOURCES = ("Cargo.lock", "Cargo.toml", "app/Cargo.toml", "app/src/main.rs",
+                 "fixture-macro/Cargo.toml", "fixture-macro/src/lib.rs", "portable/Cargo.toml", "portable/src/lib.rs")
 LANES = {"native": ("pristine", "integrated", "entry"), "cargo": ("reference", "mixed")}
 LANES_V2 = {"native": ("pristine", "integrated", "entry", "rustc"), "cargo": ("reference", "mixed")}
 COMPARISONS = (("native", "pristine", "integrated"), ("native", "pristine", "entry"),
@@ -144,6 +146,51 @@ def native_command(row, streams, contract, lane_executables):
     if operation == "build":
         require(row["exit"] == 0, "native build did not succeed")
         return argv[-1] if lane == "rustc" else argv[4]
+
+
+def cargo_executables(report):
+    """Recover the fixed recorder's Cargo entries from its original identities."""
+    paths = report["compiler_sha256"]
+    references = [path for path in paths if PurePosixPath(path).name == "cargo"]
+    require(len(references) == 1 and PurePosixPath(references[0]).is_absolute(),
+            "missing/ambiguous Cargo executable identity")
+    reference = references[0]
+    mixed = str(PurePosixPath(reference).with_name("lustr"))
+    require(mixed in paths, "missing mixed Cargo executable identity")
+    if report["schema"] == 2:
+        require(report["native_lane_executables"]["entry"] == mixed,
+                "mixed Cargo entry differs from the identified product entry")
+    return {"reference": reference, "mixed": mixed}
+
+
+def cargo_command(row, streams, executables):
+    """Verify complete measured Cargo work in the original schema-1/2 corpus."""
+    lane, phase, sample = row["lane"], row["phase"], row["sample"]
+    source = source_map(row["source_sha256"])
+    applications = [PurePosixPath(path) for path in source if path.endswith("/app/src/main.rs")]
+    require(len(applications) == 1 and applications[0].is_absolute(), "measured Cargo source is ambiguous")
+    root = applications[0].parents[2]
+    require(root.name == "source" and root.parent.name == f"cargo-{sample:03}"
+            and row.get("cwd") == str(root)
+            and set(source) == {str(root / path) for path in CARGO_SOURCES},
+            "measured Cargo working directory/source contract differs")
+    state = root.parent / f"lane{LANES['cargo'].index(lane)}"
+    operation = "check" if phase.startswith("check") else "test" if phase == "compile-plus-test" else "build"
+    expected = [executables[lane], operation, "--locked", "--offline", "--jobs", "2", "-p", "mixed-app",
+                "--bin", "mixed-app", "--target-dir", str(state / "target"), "--config",
+                "build.build-dir=" + json.dumps(str(state / "intermediates"), ensure_ascii=False)]
+    if operation == "test":
+        expected += ["--", "--test-threads=1"]
+    require([argument(value) for value in row["argv"]] == expected,
+            "measured Cargo executable/operation/flags differ from its lane contract")
+    if operation == "test":
+        lines = streams["stdout"].decode("utf-8").splitlines()
+        summaries = [line for line in lines if line.startswith("test result:")]
+        tests = [line for line in lines if line.startswith("test ") and not line.startswith("test result:")]
+        summary = "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;"
+        require(lines.count("running 1 test") == 1 and tests == ["test scalar_contract ... ok"]
+                and len(summaries) == 1 and summaries[0].startswith(summary),
+                "Cargo scalar_contract test was not executed exactly once")
 
 
 def require(condition, message):
@@ -438,6 +485,7 @@ def verify(evidence):
                 and len(set(lane_executables.values())) == len(lane_executables), "missing or aliased native lane executable")
         require(lane_executables["rustc"] == reference["compiler"] and reference["test_driver"] not in lane_executables.values(),
                 "native rustc compiler/adapter identity differs")
+    cargo_lanes = cargo_executables(report)
     groups, outputs, orders, reference_probes, native_builds = {}, set(), {}, {}, {}
     counts = collections.Counter()
     for row in rows:
@@ -497,6 +545,8 @@ def verify(evidence):
         require(row["expected_exit"] == expected_exit, "wrong measured exit contract")
         before = source_map(row.get("source_sha256"))
         require(before == source_map(row.get("source_after_sha256")), "source changed during timing")
+        if family == "cargo":
+            cargo_command(row, streams, cargo_lanes)
         key = family, lane, phase, sample
         require(key not in groups, "duplicate timed sample")
         groups[key] = row
