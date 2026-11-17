@@ -1,0 +1,59 @@
+name: Mixed performance evidence
+
+on:
+  pull_request:
+    paths:
+      - 'README.md'
+      - 'PERFORMANCE.md'
+      - 'performance/**'
+      - 'tools/*mixed-performance*'
+      - '.github/workflows/mixed-performance-report.yml'
+  push:
+    branches: [next]
+    paths:
+      - 'README.md'
+      - 'PERFORMANCE.md'
+      - 'performance/**'
+      - 'tools/*mixed-performance*'
+      - '.github/workflows/mixed-performance-report.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reporting:
+    name: Reporting tests and committed timing replay (not compiler qualification)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Exercise strict evidence validation with synthetic regressions
+        run: |
+          set -o pipefail
+          python3 tools/test-mixed-performance-report.py 2>&1 | tee "$RUNNER_TEMP/reporting-tests.log"
+      - name: Replay all committed timing values and compare exact tables
+        run: |
+          set -o pipefail
+          python3 tools/check-mixed-performance-tables.py 2>&1 | tee "$RUNNER_TEMP/committed-timing-replay.log"
+      - name: Publish measured tables without granting speed or compiler admission
+        run: |
+          printf '%s\n\n' '# Historical paired evidence replay' 'These reporting checks do not execute a compiler or qualify current-head performance.' >> "$GITHUB_STEP_SUMMARY"
+          cat performance/2026-11-17-c70eb1c.md performance/2026-11-17-afb17a8.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve reporting checks and exact committed data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mixed-performance-report-${{ github.run_attempt }}
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/reporting-tests.log
+            ${{ runner.temp }}/committed-timing-replay.log
+            performance
+            PERFORMANCE.md

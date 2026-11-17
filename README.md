@@ -4,6 +4,39 @@ lustr combines [Lust](https://github.com/t3dotgg/lust-lang)'s fast native
 compilation of its supported subset with complete Rust compilation through a
 pinned Rust implementation. blueFe delivers the combined toolchain.
 
+## Numbers and current qualification
+
+**Not yet release-ready.** The latest measured source-built Compiler set passed
+all nine jobs, but native macOS CI still fails and mixed Cargo compilation has
+material performance regressions. Green measurement execution is not speed parity.
+
+[Full performance documentation](PERFORMANCE.md) records the exact source,
+compiler pins, workload, profiles, caches, uncertainty, retained failures and
+reproduction commands. Both completed campaigns have all 27 comparison tables
+and every timed value committed under [`performance/`](performance/).
+
+Latest campaign: 12 matched pairs per mode, Linux x86-64, PR9 head `afb17a8`.
+Times below are medians in milliseconds; the ratio is the paired geometric mean
+of baseline/candidate time, not the ratio of medians. Ratios below 1 mean slower.
+
+| Workload and reference | Reference | Lustr | Ratio [95% interval] |
+|---|---:|---:|---:|
+| Mixed Cargo cold build vs matched Cargo/rustc | 191.887 | 258.039 | 0.662 [0.522, 0.749] |
+| Mixed Cargo body edit vs matched Cargo/rustc | 61.529 | 105.185 | 0.581 [0.574, 0.588] |
+| Mixed Cargo signature edit vs matched Cargo/rustc | 66.527 | 119.235 | 0.558 [0.548, 0.570] |
+| Native packaged no-op vs pristine Lust | 4.769 | 4.352 | 1.109 [1.087, 1.135] |
+| Native packaged body edit vs pristine Lust | 7.201 | 7.205 | 1.003 [0.975, 1.032] |
+| Packaged rejection vs pristine Lust rejection | 2.621 | 23.128 | 0.120 [0.113, 0.128] |
+
+These small-corpus observations do not establish general speed preservation.
+The rejection routes perform different semantic validation; correctness and full
+Rust diagnostics must not be removed to improve the number. The full report
+includes every slower mode, p95 values, the retained cold-build outlier and the
+limits of shared-host inference. Upstream Lust's headline speedups are not
+measurements of this integration.
+
+## Compiler integration
+
 Using or importing upstream rustc code is allowed. The project does not require
 rebuilding every Rust feature independently. Speed preservation applies to the
 Lust-supported path; upstream speed ratios are not measurements of this
@@ -97,7 +130,7 @@ applications and applied enum layouts before imported semantic publication.
 Existing native variance, outlives and borrow checks consume fresh tables.
 Reference cycles now retain stable nominal identities and complete lifetime
 applications. Independent recursive and mutually recursive consumers pass runtime,
-borrow rejection and malformed-image checks through the original native engine.
+borrow rejection and malformed-image/remapping checks through the original native engine.
 Separate symbolic nominal templates now preserve type and const parameter kinds,
 combined parameter indexes, implicit Sized obligations and scalar, tuple and array
 fields. Templates receive no invented layout or ABI. The original native
@@ -121,8 +154,8 @@ local function items, including `const fn`, in affected enclosing blocks use nat
 arena integration and lexical item scopes;
 see the [interface and limits](docs/compiler-set/proofs/native-unsafe-blocks.md).
 `compiler/native` preserves the pristine reference pinned by
-[`upstream/lust.pin`](upstream/lust.pin) plus an explicit integration diff,
-currently empty. Focused shared phase/state interfaces may use that diff;
+[`upstream/lust.pin`](upstream/lust.pin) plus an explicit integration diff.
+Focused shared phase/state interfaces may use that diff;
 imported Rust components retain separate identities. The guard binds reference,
 patch, qualification record and integrated result under the
 [source policy](docs/compiler-set/upstream-lust.md). Correctness, independent
@@ -267,7 +300,6 @@ Building the coordinator itself is optional contributor work:
 cargo build --manifest-path crates/lustr/Cargo.toml --release --locked
 cargo install --path crates/lustr --locked
 ```
-
 ## Source map
 
 | Path | Responsibility |
@@ -283,7 +315,7 @@ cargo install --path crates/lustr --locked
 | `src/native_worker.rs`, `tests/native_inference.rs` | Opt-in inference child, direct native/oracle and product routing/failure qualification. |
 | `crates/lustr-native-core/src/inference/{reuse,host_inputs}.rs`, `tools/native-{retained-probe,tcc-input-observer}.rs`, `tests/native_reuse.rs` | Bounded artifact proof, native host-input observation and edit/cold-oracle qualification; not selected by the product. |
 | `library/lustr`, `library/lust` | Owned source-library additions and an explicit link to the unchanged baseline. No protected source is patched or copied into a divergent compiler. |
-| `compiler/native` | Pristine pinned Lust reference plus the declared reviewed integration diff, currently empty; compiler, libraries, generation and differential fixtures. Focused shared interfaces follow the source policy. |
+| `compiler/native` | Pristine pinned Lust reference plus the declared reviewed integration diff; compiler, libraries, generation and differential fixtures. Focused shared interfaces follow the source policy. |
 | `crates/lustr` | Transitional Cargo/rustc coordinator, BlueFe tool selection and compatibility qualification. |
 | `upstream/lust.pin`, `upstream/bluefe-core.pin` and `tools/lust-upstream-check.rs` | Upstream source identity, exact compiler-component bindings and the Lust source-preservation guard. |
 | `crates/lustr-semantic` | Optional version-pinned rustc inspection. It exports inspection data, not executable MIR. |

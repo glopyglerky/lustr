@@ -1,0 +1,42 @@
+{
+  "schema": "lustr-committed-campaigns-v1",
+  "kind": "Derived timing projections; original command evidence is in the identified artifacts.",
+  "pristine_revision": "240e08d91d4aed0299639f6f11fd522912b248f9",
+  "rust_reference_revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "campaigns": [
+    {
+      "head": "c70eb1c25085884622a95666021fce0528e7325b",
+      "run": 44056401150,
+      "artifact": 14318695838,
+      "artifact_name": "source-built-mixed-qualification-1",
+      "checkout": "e7e9cf2a224b2590b895298439e5ede814c6229b",
+      "tree": "bf575b9343774b50646a78a5aa22eb52960de840",
+      "archive_sha256": "dc6b49c7d8bfd543a79965f5e4299b8f6a9bf481c98c8ffb7d3482b32adf0ac9",
+      "raw_sha256": "75ebcfb474458760500a52fa6ef63ccbe4177009ed813a6135bdf8b15279288f",
+      "pairs": 12,
+      "seed": 327849038930,
+      "bootstrap_resamples": 10000,
+      "csv": "performance/2026-11-17-c70eb1c.csv",
+      "csv_sha256": "84c090bf6fba49380a48431a08c5bf7f1080921839c189217d22d51cc8b7da44",
+      "table": "performance/2026-11-17-c70eb1c.md",
+      "table_sha256": "b6c8f2990a60a3d81a805e7b7a6473bd1dd2fb904d95b9d24c630bc66be20c79"
+    },
+    {
+      "head": "afb17a8af2cce9facdf03ba6cf12b8533cb3a171",
+      "run": 44063047987,
+      "artifact": 14321378285,
+      "artifact_name": "source-built-mixed-qualification-1",
+      "checkout": "bc5e0f9cd1168b6b064b9cda9a1455f4fc97d143",
+      "tree": "3ccebbefb604e0c45715200bcabc3b32b182d3ef",
+      "archive_sha256": "3963c513a7a2e6d790cae2f576e80927039d9f7d4e1fe41786068b9650c29050",
+      "raw_sha256": "2fe01a5ecd484a42da2b6b198fc251a81eecdd569447de9f1d344dfba9f45a21",
+      "pairs": 12,
+      "seed": 327849038930,
+      "bootstrap_resamples": 10000,
+      "csv": "performance/2026-11-17-afb17a8.csv",
+      "csv_sha256": "b53132f4e4c802330d566ed1784f369f51349ab796a3d85800894882c5c6b7f8",
+      "table": "performance/2026-11-17-afb17a8.md",
+      "table_sha256": "9cdb7e457340d28e3d3504f8cd6dfb1d0ad8c666dac0f11b8425e91ac9847603"
+    }
+  ]
+}
