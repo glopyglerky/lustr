@@ -60,6 +60,6 @@ PR4's [native cache records](https://github.com/glopyglerky/lustr/tree/a5531b729
 and PR6's [matched release comparisons](https://github.com/glopyglerky/lustr/pull/6)
 retain their own identities, estimators, regressions and incomplete coverage.
 They must not be pooled with the current
-[four paired campaigns](../../performance/README.md) or presented as current
+[six paired campaigns](../../performance/README.md) or presented as current
 source speed. Current measurements and phase attribution determine the next
 performance investigation.

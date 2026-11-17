@@ -1,0 +1,18 @@
+{
+  "source_commit": "40d2ac3f0b71abaa1e73cd366d8c43f8eb4d4581",
+  "source_sha256": "5eedd86172eafa11a3f7ff2d8dfa0acccef64927ab71f151796f122f70d8acf0",
+  "command": [
+    "python3",
+    "tools/test-mixed-trace.py",
+    "--source",
+    "/workspace/scratch/6fe2645be9f1/evidence/40d2ac3-trace-writer-regression/original-mixed_main.rs",
+    "--rustc",
+    "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc",
+    "ConcurrentTraceTests.test_whole_records_under_concurrent_processes",
+    "-v"
+  ],
+  "exit_code": 1,
+  "expected_exit": 1,
+  "stdout_sha256": "eadd4f3ea2aadd9018f920b84ee5917598051ddda8314b86269422eb317c5634",
+  "stderr_sha256": "b53bc016b871de135534b58c8cd227d960c94b1245006c04aae0e36e5cfce948"
+}

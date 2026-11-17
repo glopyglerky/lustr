@@ -1,0 +1,97 @@
+{
+  "schema": "lustr-link-input-component-review-v1",
+  "scope": "temporary-link-copy-only-not-compiler-speed",
+  "head": "40d2ac3f0b71abaa1e73cd366d8c43f8eb4d4581",
+  "checkout": "3b4b0bd67401085129d26be1afbd20e96c9b9d02",
+  "tree": "78318c4b01f8eb6f9518ea331efe69f0c457b1ce",
+  "run": 44096292401,
+  "job": 134084163148,
+  "artifact": 14332549284,
+  "archive": "original.zip",
+  "archive_bytes": 2850,
+  "archive_sha256": "c485d971009cfe72ff1f193c1fc3499710b85ad313b3794f91012f24b05d346e",
+  "members": {
+    "link-input-identity.txt": {
+      "bytes": 3925,
+      "sha256": "521920ff41f0f4136bcffbb05977f254279acb1bc7e7f433a5742699490c1410"
+    },
+    "link-input-pairs.jsonl": {
+      "bytes": 2653,
+      "sha256": "d1403a09aab0bb077ccceb53c5538e2bf245cfe939d87de900866f2b4c423c42"
+    },
+    "link-input-tests.log": {
+      "bytes": 591,
+      "sha256": "d2e8953086ea6d5b68629e55be1a0251d0dcf68657dd39c856bc6ea8755301d3"
+    }
+  },
+  "source_sha256": {
+    "crates/lustr-semantic/src/mixed_link_input.rs": "781b71ebc8a01ad416b8bd2a5e252b861ffdff14d426dd7c4b2077720a54231f",
+    "crates/lustr-semantic/src/mixed_objects.rs": "9b5b2461debd7e0979877ae2600cc5be976c52c33c1d0baa78ca7cb5a6ca45c8",
+    "tools/measure-mixed-link-input.rs": "fbeff31c1794755a3327be8dbf04d417ab0ee53914ed20d959dcbdd0d028035e"
+  },
+  "recorded_probe_sha256": "dd049177234d4c552ffafd4b282690aece3cc5a6c8cb106abf630b270e0d2511",
+  "probe_binary_archived": false,
+  "helper_tests": {
+    "passed": 8,
+    "failed": 0,
+    "ignored": 0,
+    "names": [
+      "abandoned_inputs_are_rebuilt_from_the_committed_generation",
+      "absent_input_does_no_work",
+      "empty_object_is_still_copied",
+      "equal_basenames_stay_distinct",
+      "failed_copy_does_not_repoint_the_recipe",
+      "linker_cleanup_does_not_remove_retained_bytes",
+      "linker_writes_do_not_change_retained_bytes",
+      "missing_scratch_directory_does_not_change_the_source"
+    ]
+  },
+  "pairs": 24,
+  "predecessor_first": 12,
+  "candidate_first": 12,
+  "order_replayed_from_seed": true,
+  "all_pairs_retained": true,
+  "files_per_lane": 16,
+  "bytes_per_file": 65536,
+  "same_source_repeated": true,
+  "page_caches_flushed": false,
+  "medians_ns": {
+    "predecessor": 7866132.5,
+    "candidate": 729381.5,
+    "paired_saved": 7137086.5
+  },
+  "paired_baseline_over_candidate": {
+    "geometric_mean": 10.897277737452093,
+    "median": 10.385139257459668,
+    "min": 8.85573139044989,
+    "max": 20.684072379141583,
+    "raw": [
+      9.668259803632399,
+      12.031880507914364,
+      11.222586281634815,
+      11.680558529944292,
+      10.430165103057874,
+      8.85573139044989,
+      9.047701911057224,
+      9.858139855792619,
+      10.340113411861463,
+      10.194735204694902,
+      13.943792855359948,
+      10.042950282192287,
+      9.795328205719525,
+      9.487320939197813,
+      10.634010518173564,
+      9.06749875228291,
+      10.111876455447971,
+      11.161306702303664,
+      9.249451915903048,
+      12.316728135523201,
+      20.684072379141583,
+      12.553903403060245,
+      12.832927309655448,
+      11.04474859326809
+    ]
+  },
+  "candidate_faster_pairs": 24,
+  "interpretation": "Component-only cost of copy+file-sync versus production disposable copy; no application compiled and no compiler-performance admission."
+}

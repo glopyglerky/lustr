@@ -31,6 +31,7 @@ def main():
     total = values = 0
     for campaign in manifest["campaigns"]:
         n, seed = campaign["pairs"], campaign["seed"]
+        lanes_by_family, comparisons = r.campaign_layout(campaign.get("campaign_schema", 1))
         r.require(r.integer(n, 2, 10000) and r.integer(seed, 0, r.MASK), "invalid replay controls")
         data = checked_file(campaign["csv"], campaign["csv_sha256"])
         rows = list(csv.reader(data.decode("utf-8").splitlines()))
@@ -40,20 +41,19 @@ def main():
             r.require(len(row) == n + 1 and row[0] not in samples, "duplicate or malformed series")
             samples[row[0]] = [float(x) for x in row[1:]]
             r.require(all(r.positive(x) for x in samples[row[0]]), "invalid duration")
-        expected = {f + "/" + lane + "/" + phase for f, lanes in r.LANES.items()
+        expected = {f + "/" + lane + "/" + phase for f, lanes in lanes_by_family.items()
                     for lane in lanes for phase in r.PHASES}
         r.require(set(samples) == expected, "missing or unexpected series")
         summaries = []
-        for family, lanes in r.LANES.items():
-            for candidate in lanes[1:]:
-                for phase in r.PHASES:
-                    pairs = list(zip(samples[f"{family}/{lanes[0]}/{phase}"],
-                                     samples[f"{family}/{candidate}/{phase}"]))
-                    analysis = r.summarize(pairs, campaign["bootstrap_resamples"], seed)
-                    low, high = analysis["bootstrap_95"]
-                    observation = "faster-on-this-corpus" if low > 1 else "slower-on-this-corpus" if high < 1 else "inconclusive"
-                    summaries.append(dict(family=family, baseline=lanes[0], candidate=candidate,
-                                          phase=phase, analysis=analysis, observation=observation))
+        for family, baseline, candidate in comparisons:
+            for phase in r.PHASES:
+                pairs = list(zip(samples[f"{family}/{baseline}/{phase}"],
+                                 samples[f"{family}/{candidate}/{phase}"]))
+                analysis = r.summarize(pairs, campaign["bootstrap_resamples"], seed)
+                low, high = analysis["bootstrap_95"]
+                observation = "faster-on-this-corpus" if low > 1 else "slower-on-this-corpus" if high < 1 else "inconclusive"
+                summaries.append(dict(family=family, baseline=baseline, candidate=candidate,
+                                      phase=phase, analysis=analysis, observation=observation))
         expected_text = r.markdown(dict(campaign, summaries=summaries)).encode("utf-8")
         actual = checked_file(campaign["table"], campaign["table_sha256"])
         r.require(actual == expected_text, "committed table differs from timing replay")

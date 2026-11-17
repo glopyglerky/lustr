@@ -6,48 +6,62 @@ pinned Rust implementation. blueFe delivers the combined toolchain.
 
 ## Numbers and current qualification
 
-**Not yet release-ready.** Source-built mixed correctness and measurement runs
-have passed, but the latest completed native macOS CI failed and mixed Cargo
-compilation has material performance regressions. Green measurement execution
-is not speed parity.
+**Not yet release-ready.** The qualified source-built paths execute correctly,
+but mixed Cargo compilation remains materially slower. Native macOS execution
+is still blocked by hosted runner availability; earlier executed failures and
+their corrections remain recorded. Measurement completion is not speed parity.
 
-[Full performance documentation](PERFORMANCE.md) records the exact source,
-compiler pins, workload, profiles, caches, uncertainty, retained failures and
-reproduction commands. Four completed campaigns each have all 27 comparisons
-and every timed value committed under [`performance/`](performance/).
-The [performance index](performance/README.md) also links their byte-identical
-original qualification archives. CI replays their complete outputs and tables.
-The latest campaign records selected host facts and keeps phase profiling separate from
-timed measurements. The [upstream audit](docs/compiler-set/upstream-benchmark-audit.md)
-compares the actual breadth and limits of Lust's studies with this evidence.
+[PERFORMANCE.md](PERFORMANCE.md) records the workload, compiler/source pins,
+profiles, caches, uncertainty, failures and reproduction commands. The
+[performance index](performance/README.md) retains six fixed campaigns:
+**3,240 timed command values, 162 comparisons and 10,608 original output files**.
+All original ZIPs, lossless timing CSVs and exact table replays are committed.
+The separate actual-project campaign adds five comparisons and 120 timed values,
+with verified recovery of its encrypted original reports.
 
-Latest campaign: 12 matched pairs per mode, Linux x86-64, PR11 head `dec0ce2`.
-Times below are medians in milliseconds; the ratio is the paired geometric mean
-of baseline/candidate time, not the ratio of medians. Ratios below 1 mean slower.
+Latest retained fixed campaign: Linux x86-64, PR11 head `40d2ac3`, twelve matched pairs per
+mode. Times below are medians in milliseconds. Ratios are the paired geometric
+mean of reference/candidate time; below one means slower. They are not ratios
+of the displayed medians.
 
 | Workload and reference | Reference | Lustr | Ratio [95% interval] |
-|---|---:|---:|---:|
-| Mixed Cargo cold build vs matched Cargo/rustc | 144.432 | 198.492 | 0.717 [0.688, 0.741] |
-| Mixed Cargo body edit vs matched Cargo/rustc | 46.671 | 75.653 | 0.614 [0.608, 0.619] |
-| Mixed Cargo signature edit vs matched Cargo/rustc | 49.758 | 89.289 | 0.553 [0.549, 0.556] |
-| Native packaged no-op vs pristine Lust | 3.156 | 2.900 | 1.084 [1.062, 1.104] |
-| Native packaged body edit vs pristine Lust | 5.133 | 4.948 | 1.046 [0.993, 1.101] |
-| Native packaged compile plus test vs pristine Lust | 28.248 | 29.260 | 0.963 [0.940, 0.987] |
-| Packaged rejection vs pristine Lust rejection | 1.647 | 18.146 | 0.095 [0.089, 0.103] |
+| --- | ---: | ---: | --- |
+| Mixed Cargo cold build vs matched Cargo/rustc | 145.655 | 197.386 | 0.743 [0.734, 0.752] |
+| Mixed Cargo body edit vs matched Cargo/rustc | 46.737 | 75.151 | 0.622 [0.616, 0.628] |
+| Mixed Cargo signature edit vs matched Cargo/rustc | 49.842 | 89.481 | 0.558 [0.554, 0.563] |
+| Native packaged cold build vs pristine Lust | 40.036 | 40.598 | 0.995 [0.948, 1.042] |
+| Native packaged no-op vs pristine Lust | 3.138 | 2.947 | 1.070 [1.038, 1.103] |
+| Native packaged body edit vs pristine Lust | 5.177 | 4.997 | 1.027 [0.970, 1.090] |
+| Packaged rejection vs pristine Lust rejection | 1.759 | 18.025 | 0.099 [0.093, 0.104] |
 
-These small-corpus observations do not establish general speed preservation.
-The rejection routes perform different semantic validation; correctness and full
-Rust diagnostics must not be removed to improve the number. The full report
-includes every slower mode, p95 values, the retained cold-build outlier and the
-limits of shared-host inference. Upstream Lust's headline speedups are not
-measurements of this integration.
+The full [27-comparison table](performance/2026-11-17-40d2ac3.md) and
+[vector chart](performance/plots/2026-11-17-40d2ac3/README.md) retain every mode,
+including regressions, p95s and uncertainty. The native cold/body intervals are
+inconclusive, not proof of parity. Rejection performs different semantic work;
+full-Rust acceptance and diagnostics must not be removed to improve its timing.
+The current native corpus has no matched-rustc lane in these historical records;
+that direct comparison is being qualified separately from the Cargo graph.
 
-The separate [phase trace](performance/2026-11-17-dec0ce2-profile.md) records
-31.939 ms in native compilation/request handling and 15.420 ms in the linker
-for one body-edit command. It narrows the next investigation; it does not prove
-an optimization effect. An [unchanged coordinator project campaign](docs/compiler-set/coordinator-performance.md)
-is wired to measure the actual package under its normal dev/test profiles, with
-its own complete test/rejection gates. Its first full result is still pending.
+The [unchanged coordinator project](performance/projects/2026-11-17-40d2ac3/README.md)
+passes actual test/rejection gates under its normal dev/test defaults. At debug=2,
+outside current native-object eligibility, median build/test overhead is about
+1.5–2.4%, root-check overhead 5.5%, and no-op overhead 10.3%. All five conditional
+intervals favor matched Rust. This is real-project compatibility/overhead evidence,
+not native acceleration. Its 600 original files and 510 output streams were
+recovered and reconciled with the public report; original binaries remain absent.
+
+The [finer phase investigation](performance/2026-11-17-40d2ac3-profile.md)
+records 31.029 ms in the symbol-inspection child call within a 33.422 ms native
+request for one body edit. The original profiling validation failed on concurrent
+trace framing. Its records and separate reconstruction are retained, and the
+writer correction passes a regression that fails its predecessor. Fresh full
+CI must qualify that fix. This attribution identifies the next investigation;
+it does not prove why the child call is slow or establish an optimization effect.
+
+The [upstream audit](docs/compiler-set/upstream-benchmark-audit.md) compares these
+records with Lust's actual README/repo studies. Larger native projects, broader
+edit families, runtime and resource measurements remain separate work. No
+upstream headline speedup is presented as a measured Lustr speedup.
 
 ## Compiler integration
 

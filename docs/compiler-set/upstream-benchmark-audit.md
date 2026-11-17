@@ -44,27 +44,36 @@ modes, twelve matched observations per lane/mode, all 540 timed values,
 correctness prerequisites, compiler identities and independent statistics
 replay. The comparisons isolate pristine Lust, integrated Lust, the product
 entry and the matched complete Rust/Cargo path. Reported regressions remain
-visible. Four original qualification ZIPs are now committed byte for byte,
-preserving 2,160 timed values and 7,072 command outputs beyond Actions expiry.
-The latest campaign adds a hash-bound host record and a separate native-request
-phase profile. The missing work is broader measurement and measured overhead
-reduction, using the existing recorder.
+visible. Six original qualification ZIPs are committed byte for byte,
+preserving 3,240 timed values, 162 comparisons and 10,608 command outputs beyond
+Actions expiry. The `dec0ce2` and `40d2ac3` records contain hash-bound host facts;
+the other four do not. The completed v1 profile and the later failed v2 trace
+framing attempt are retained separately. The latter has a verified diagnostic
+reconstruction and a reviewed writer correction; it is not relabeled as a passed
+original profiling run. Broader measurement and measured overhead reduction
+remain work for the existing recorder.
 
 | Coverage | Existing Lustr evidence | Additional campaign needed |
 | --- | --- | --- |
 | Cold, no-op, body/signature edits, checks, rejection, compile plus test | Small native scalar corpus and fixed mixed Cargo graph | Larger unchanged workspaces and more function shapes, retaining every existing mode |
 | Upstream supported path | Direct pristine/integrated/entry comparison | Pinned upstream slices and full supported ts-rust edit workload |
+| Current native entry versus matched rustc | Absent from the six schema-1 native campaigns; historical older-architecture results stay separate | A new same-source, matched-flag standalone rustc lane, with fresh versioned measurements |
 | Edit invalidation | Current bounded body/signature fixtures | Generic, macro-body, trait-obligation, inference, cross-module signature, return-type, derive, type/impl/module-tree and multi-file edits |
 | Invalid programs | Dedicated rejection mode | Accepted and rejected states within each edit family, with cold/warm agreement and recovery |
 | Application execution | Correctness runs and compile-plus-test timing | Separate generated-program throughput and end-to-end edit/build/test latency |
+| Daemon startup and cached restart | Included where applicable in complete commands, without separate phase/case attribution | Explicit startup and cached-restart timing cases, with observed lifecycle and cache state |
 | Resources | Paired wall time | CPU, scoped peak RSS, aggregate process-tree memory if measured, daemon growth and restart costs |
 | Provenance | Exact source, tools, commands, durable original ZIPs; latest host/OS/affinity record with explicit unknowns | Maintain complete originals and source identities as larger/private-workspace campaigns are added |
 
-The [unchanged coordinator campaign](coordinator-performance.md) is wired to
-run the real package's normal dev/test profiles with five scenarios and full
-test/rejection gates. Its first candidate result is pending. The default
-debug-information profile excludes native object substitution, so even a
-successful result will not fill the larger native edit-loop evidence gap.
+The [unchanged coordinator campaign](../../performance/projects/2026-11-17-40d2ac3/README.md)
+completed five scenarios and 120 timed commands under the real package's normal
+dev/test profiles. Actual test/rejection gates passed; the test gate reports
+40 passed and nine existing ignores. Its original encrypted reports were
+recovered and reconciled with all five public comparisons. The debug=2 profile
+excludes native object substitution, and primed scenarios only change a source
+timestamp. This extends project compatibility/overhead evidence without filling
+the larger native edit-loop gap. The public projection and encrypted originals
+have a different publication boundary from the public fixed-fixture ZIPs.
 
 An unsupported case is a coverage result. A timeout is a failure to complete.
 Neither may become a fast successful sample. Compiler release-profile

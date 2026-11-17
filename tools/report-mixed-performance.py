@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Verify and render lustr-mixed-bench schema-1 evidence; never execute its argv.
+"""Verify and render lustr-mixed-bench evidence; never execute its argv.
 
 This is an evidence/statistics replay, not compiler qualification or release
 admission. The statistics mirror crates/lustr-bench/src/stats.rs (paired-log-v1).
-Only the existing nine-mode/five-lane campaign is accepted. A changed campaign
-requires a reviewed schema update, not silently dropping unfamiliar samples.
+Schema 1 retains the original nine-mode/five-lane campaign. Schema 2 adds the
+matched standalone rustc lane on exactly the same native corpus. Both have
+fixed coverage; unfamiliar or missing samples are never silently dropped.
 """
 from __future__ import annotations
 
@@ -23,6 +24,20 @@ import zipfile
 PHASES = ("cold", "no-op", "body-edit", "signature-edit", "check", "check-no-op",
           "check-body-edit", "rejection", "compile-plus-test")
 LANES = {"native": ("pristine", "integrated", "entry"), "cargo": ("reference", "mixed")}
+LANES_V2 = {"native": ("pristine", "integrated", "entry", "rustc"), "cargo": ("reference", "mixed")}
+COMPARISONS = (("native", "pristine", "integrated"), ("native", "pristine", "entry"),
+               ("cargo", "reference", "mixed"))
+COMPARISONS_V2 = COMPARISONS + (("native", "rustc", "entry"),)
+RUSTC_FLAGS = ["--edition=2024", "--target=x86_64-unknown-linux-gnu", "-C", "opt-level=0",
+               "-C", "debuginfo=0", "-C", "panic=unwind", "-C", "overflow-checks=on",
+               "-C", "debug-assertions=on"]
+NATIVE_FLAGS = ["--target", "x86_64-unknown-linux-gnu", "-C", "panic=unwind", "-C", "overflow-checks=on",
+                "-C", "debug-assertions=on"]
+TEST_RECEIPT = "lustr benchmark rustc-test: "
+REFERENCE_PROBES = {"reference-probe-check": 0, "reference-probe-build": 0,
+                    "reference-probe-build-runtime": 0, "reference-probe-test": 0,
+                    "reference-probe-invalid": 1, "reference-probe-failed-test": 101,
+                    "reference-probe-recovery": 0, "reference-probe-recovery-runtime": 0}
 METHOD = "paired-log-v1/splitmix64/rejection-index/percentile"
 DIRECTION = "baseline time / candidate time; greater than 1 is faster"
 UNTIMED = {"excluded-prime", "cold-runtime", "no-op-runtime", "body-edit-runtime",
@@ -31,6 +46,103 @@ UNTIMED = {"excluded-prime", "cold-runtime", "no-op-runtime", "body-edit-runtime
            "probe-check-body", "probe-rejection"}
 MASK = (1 << 64) - 1
 SHA = re.compile(r"[0-9a-f]{64}\Z")
+
+
+def campaign_layout(schema):
+    require(type(schema) is int and schema in (1, 2), "unsupported schema")
+    return (LANES, COMPARISONS) if schema == 1 else (LANES_V2, COMPARISONS_V2)
+
+
+def native_reference_contract(compiler, test_driver):
+    return dict(compiler=compiler, test_driver=test_driver, flags=RUSTC_FLAGS,
+                incremental="disabled; standalone rustc default", build="--emit=link", check="--emit=metadata",
+                test="--test then execute --test-threads=1 --color never; one outer wall-time measurement",
+                source="identical native_source bytes across all four native lanes",
+                native_profile="edition 2024, TinyCC dev/no debug; DEV_UNWIND with overflow checks and debug assertions; test uses the native test harness defaults")
+
+
+def argument(value):
+    require(isinstance(value, dict) and set(value) == {"Unix"} and isinstance(value["Unix"], list)
+            and all(integer(x, 0, 255) for x in value["Unix"]), "invalid command argument")
+    text = bytes(value["Unix"]).decode("utf-8")
+    require("\x00" not in text, "NUL in command argument")
+    return text
+
+
+def test_output(stdout, stderr, lane, passed, argv, contract):
+    if lane == "rustc":
+        expected = ("test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;" if passed else
+                    "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out;")
+        summaries = [line for line in stdout.decode().splitlines() if line.startswith("test result:")]
+        require(len(summaries) == 1 and summaries[0].startswith(expected), "rustc test was not executed exactly once")
+        require(f"test scalar_contract ... {'ok' if passed else 'FAILED'}" in stdout.decode().splitlines(),
+                "wrong executed rustc test")
+        receipts = [json_load(line[len(TEST_RECEIPT):]) for line in stderr.decode().splitlines() if line.startswith(TEST_RECEIPT)]
+        require(len(argv) == 5 and argv[:3] == [contract["test_driver"], "--native-rustc-test", contract["compiler"]],
+                "wrong rustc test driver")
+        expected_commands = [[contract["compiler"], argv[3], *RUSTC_FLAGS, "--test", "-o", argv[4]],
+                             [argv[4], "--test-threads=1", "--color", "never"]]
+        require(len(receipts) == 2, "missing/extra rustc test child receipt")
+        for record, phase, command, code in zip(receipts, ("compile", "execute"), expected_commands, (0, 0 if passed else 101)):
+            require(set(record) == {"phase", "argv", "exit", "signal"} and record["phase"] == phase
+                    and type(record["exit"]) is int and record["exit"] == code and record["signal"] is None
+                    and [argument(arg) for arg in record["argv"]] == command, "rustc test child contract differs")
+    else:
+        records = []
+        for line in stdout.splitlines():
+            try:
+                value = json_load(line)
+            except ValueError:
+                continue
+            if isinstance(value, dict) and value.get("kind") == "summary":
+                records.append(value)
+        require(len(records) == 1 and records[0].get("build") == "ok", "native test build/summary differs")
+        expected = dict(total=1, passed=int(passed), failed=int(not passed), timed_out=0, ignored=0, filtered_out=0)
+        require(all(type(records[0].get(k)) is int and records[0][k] == v for k, v in expected.items()),
+                "native test was not executed exactly once")
+
+
+def native_command(row, streams, contract, lane_executables):
+    """Schema-2 command semantics, including the real two-child test operation."""
+    lane, phase = row["lane"], row["phase"]
+    argv = [argument(arg) for arg in row["argv"]]
+    source = source_map(row["source_sha256"])
+    require(source == source_map(row["source_after_sha256"]) and len(source) == 1, "native source changed")
+    source = next(iter(source))
+    if phase.endswith("-runtime"):
+        require(len(argv) == 1 and streams["stdout"] == (b"57\n" if phase == "body-edit-runtime" else b"59\n")
+                and streams["stderr"] == b"" and row["exit"] == row["expected_exit"] == 0,
+                "native runtime result differs")
+        return
+    checks = {"check", "check-no-op", "check-body-edit", "rejection", "reference-probe-check", "reference-probe-invalid"}
+    tests = {"compile-plus-test", "reference-probe-test", "reference-probe-failed-test"}
+    builds = {"cold", "no-op", "body-edit", "signature-edit", "excluded-prime", "reference-probe-build", "reference-probe-recovery"}
+    executable = contract["test_driver"] if lane == "rustc" and phase in tests else lane_executables[lane]
+    require(argv and argv[0] == executable, "native command executable differs from declared lane")
+    if phase not in checks | tests | builds:
+        return  # Existing untimed retained-route probes have their own stats flags.
+    operation = "check" if phase in checks else "test" if phase in tests else "build"
+    if lane == "rustc":
+        if operation == "test":
+            require(len(argv) == 5 and argv[3] == source, "rustc test uses different source")
+        else:
+            require(len(argv) == len(RUSTC_FLAGS) + 5 and argv[:2] == [contract["compiler"], source]
+                    and argv[2:-3] == RUSTC_FLAGS and argv[-3:-1] == ["--emit=metadata" if operation == "check" else "--emit=link", "-o"],
+                    "rustc native reference flags/source differ")
+    else:
+        require(argv[1:3] == [operation, source], "native command uses different source/operation")
+        if operation == "test":
+            require(argv[3:] == ["--json"], "native test flags differ")
+        elif operation == "check":
+            require(argv[3:] == NATIVE_FLAGS, "native check flags differ")
+        else:
+            require(len(argv) == len(NATIVE_FLAGS) + 5 and argv[3] == "-o" and argv[5:] == NATIVE_FLAGS,
+                    "native build flags differ")
+    if operation == "test":
+        test_output(streams["stdout"], streams["stderr"], lane, phase != "reference-probe-failed-test", argv, contract)
+    if operation == "build":
+        require(row["exit"] == 0, "native build did not succeed")
+        return argv[-1] if lane == "rustc" else argv[4]
 
 
 def require(condition, message):
@@ -191,13 +303,16 @@ def verify(evidence):
     prefix = "lustr-paired-measurements/"
     raw = evidence.read(prefix + "raw.jsonl")
     report = json_load(evidence.read(prefix + "report.json"))
-    require(report.get("schema") == 1 and type(report.get("schema")) is int, "unsupported schema")
+    schema = report.get("schema")
+    lanes_by_family, comparisons = campaign_layout(schema)
     require(report.get("status") == "completed", "campaign is incomplete/failed")
     require(report.get("raw_sha256") == sha256(raw), "raw SHA-256 mismatch")
     rows = [json_load(line) for line in raw.splitlines()]
     require(report.get("records") == rows, "report/raw record mismatch")
     n = report.get("pairs")
     require(integer(n, 2, 10000), "invalid pair count")
+    if schema == 2:
+        require(12 <= n <= 96 and n % 4 == 0, "schema-2 pair count must complete four-lane blocks")
     require(report.get("order_method") == "randomized-cyclic-blocks-v1", "unrecognized order method")
     identities = [x for x in rows if x.get("kind") == "identities"]
     require(len(identities) == 1, "missing/duplicate identities record")
@@ -221,7 +336,22 @@ def verify(evidence):
         require(re.fullmatch(r"[0-9a-f]{40}", report[key]) is not None, f"invalid {key}")
     require(report["compiler_sha256"] and all(SHA.fullmatch(v) for v in report["compiler_sha256"].values()),
             "missing/malformed compiler identities")
-    groups, outputs, orders = {}, set(), {}
+    reference, lane_executables = None, None
+    if schema == 2:
+        reference = report.get("native_rustc_reference")
+        require(isinstance(reference, dict) and reference == initial.get("native_rustc_reference"), "native reference identity mismatch")
+        require(reference == native_reference_contract(reference.get("compiler"), reference.get("test_driver")),
+                "native reference command contract differs")
+        require(all(isinstance(reference[key], str) and reference[key] in report["compiler_sha256"]
+                    for key in ("compiler", "test_driver")), "native reference executable identity missing")
+        lane_executables = report.get("native_lane_executables")
+        require(isinstance(lane_executables, dict) and lane_executables == initial.get("native_lane_executables")
+                and set(lane_executables) == set(LANES_V2["native"]), "native lane executable identity mismatch")
+        require(all(isinstance(path, str) and path in report["compiler_sha256"] for path in lane_executables.values())
+                and len(set(lane_executables.values())) == len(lane_executables), "missing or aliased native lane executable")
+        require(lane_executables["rustc"] == reference["compiler"] and reference["test_driver"] not in lane_executables.values(),
+                "native rustc compiler/adapter identity differs")
+    groups, outputs, orders, reference_probes, native_builds = {}, set(), {}, {}, {}
     counts = collections.Counter()
     for row in rows:
         kind = row.get("kind")
@@ -230,12 +360,12 @@ def verify(evidence):
         counts[kind] += 1
         if kind == "order":
             family, sample = row.get("family"), row.get("sample")
-            require(family in LANES and integer(sample, 0, n - 1), "invalid order identity")
+            require(family in lanes_by_family and integer(sample, 0, n - 1), "invalid order identity")
             key = family, sample
             require(key not in orders, "duplicate order")
             order = row.get("lanes")
             require(isinstance(order, list) and all(type(x) is int for x in order) and
-                    sorted(order) == list(range(len(LANES[family]))), "invalid lane permutation")
+                    sorted(order) == list(range(len(lanes_by_family[family]))), "invalid lane permutation")
             orders[key] = order
         if kind != "command":
             continue
@@ -243,19 +373,38 @@ def verify(evidence):
         require(type(row.get("exit")) is int and type(row.get("expected_exit")) is int and
                 row["exit"] == row["expected_exit"], "unexpected command exit")
         require(positive(row.get("seconds")), "invalid command duration")
+        streams = {}
         for stream in ("stdout", "stderr"):
             name = output_name(row[stream])
             require(name not in outputs, "duplicate command output")
             outputs.add(name)
             data = evidence.read(prefix + name)
+            streams[stream] = data
             require(type(row.get(stream + "_bytes")) is int and len(data) == row[stream + "_bytes"] and
                     sha256(data) == row.get(stream + "_sha256"), f"changed/missing {stream} evidence")
+        if schema == 2 and row.get("family") == "native":
+            require(row.get("lane") in lanes_by_family["native"], "unknown native lane")
+            output = native_command(row, streams, reference, lane_executables)
+            if row["phase"].endswith("-runtime"):
+                build = native_builds.pop(row["lane"], None)
+                require(build is not None and row["phase"] == build["phase"] + "-runtime"
+                        and row["source_sha256"] == build["source"] and argument(row["argv"][0]) == build["output"],
+                        "native runtime is not the matching lane/source build output")
+            elif output is not None:
+                native_builds[row["lane"]] = dict(phase=row["phase"], source=row["source_sha256"], output=output)
         if row.get("phase") not in PHASES:
-            require(row.get("phase") in UNTIMED and row.get("sample") is None,
+            allowed = UNTIMED | (set(REFERENCE_PROBES) if schema == 2 else set())
+            require(row.get("phase") in allowed and row.get("sample") is None,
                     "unrecognized command phase/sample")
+            if row["phase"] in REFERENCE_PROBES:
+                key = row.get("lane"), row["phase"]
+                require(row.get("family") == "native" and key[0] in ("entry", "rustc")
+                        and key not in reference_probes and row["expected_exit"] == REFERENCE_PROBES[key[1]],
+                        "native reference correctness gate differs")
+                reference_probes[key] = row
             continue
         family, lane, phase, sample = (row.get(k) for k in ("family", "lane", "phase", "sample"))
-        require(family in LANES and lane in LANES[family] and integer(sample, 0, n - 1),
+        require(family in lanes_by_family and lane in lanes_by_family[family] and integer(sample, 0, n - 1),
                 "invalid timed sample identity")
         expected_exit = (1 if family == "native" else 101) if phase == "rejection" else 0
         require(row["expected_exit"] == expected_exit, "wrong measured exit contract")
@@ -264,11 +413,19 @@ def verify(evidence):
         key = family, lane, phase, sample
         require(key not in groups, "duplicate timed sample")
         groups[key] = row
-    expected_keys = {(f, lane, phase, i) for f, lanes in LANES.items() for lane in lanes
+    expected_keys = {(f, lane, phase, i) for f, lanes in lanes_by_family.items() for lane in lanes
                      for phase in PHASES for i in range(n)}
     require(set(groups) == expected_keys, "missing/unexpected timed samples")
-    require(set(orders) == {(f, i) for f in LANES for i in range(n)}, "missing orders")
-    for family, lanes in LANES.items():
+    require(set(orders) == {(f, i) for f in lanes_by_family for i in range(n)}, "missing orders")
+    if schema == 2:
+        require(set(reference_probes) == {(lane, phase) for lane in ("entry", "rustc") for phase in REFERENCE_PROBES},
+                "missing native reference correctness gates")
+        for phase in REFERENCE_PROBES:
+            a, b = (reference_probes[lane, phase] for lane in ("entry", "rustc"))
+            require(source_map(a["source_sha256"]) == source_map(a["source_after_sha256"])
+                    == source_map(b["source_sha256"]) == source_map(b["source_after_sha256"]),
+                    "native reference correctness gates use different source")
+    for family, lanes in lanes_by_family.items():
         for position in range(len(lanes)):
             positions = collections.Counter(orders[family, i][position] for i in range(n))
             amounts = [positions[x] for x in range(len(lanes))]
@@ -283,8 +440,7 @@ def verify(evidence):
             "missing/duplicate retained-check evidence")
     require(all(x.get("route") in ("reuse", "bodies-without-body-work") for x in retained),
             "unrecognized retained-check route")
-    expected_summaries = {(f, lanes[0], lane, phase) for f, lanes in LANES.items()
-                          for lane in lanes[1:] for phase in PHASES}
+    expected_summaries = {(family, baseline, candidate, phase) for family, baseline, candidate in comparisons for phase in PHASES}
     require(isinstance(report.get("summaries"), list), "missing summaries")
     seen = set()
     for item in report["summaries"]:
@@ -308,7 +464,7 @@ def verify(evidence):
             "invalid checkout/tree receipt")
     samples = {f + "/" + lane + "/" + phase:
                [groups[f, lane, phase, i]["seconds"] for i in range(n)]
-               for f, lanes in LANES.items() for lane in lanes for phase in PHASES}
+               for f, lanes in lanes_by_family.items() for lane in lanes for phase in PHASES}
     result = dict(schema="lustr-paired-replay-v1", kind="derived evidence; not original raw.jsonl",
                   checkout=source[0], tree=source[1], archive_sha256=evidence.archive_sha256,
                   raw_sha256=report["raw_sha256"], pairs=n, seed=report["seed"],
@@ -325,6 +481,9 @@ def verify(evidence):
                   performance_admission="not granted; replay is not compiler qualification")
     if host is not None:
         result["host"] = host
+    if schema == 2:
+        result.update(schema="lustr-paired-replay-v2", campaign_schema=2, native_rustc_reference=reference,
+                      native_lane_executables=lane_executables)
     return result
 
 
@@ -336,8 +495,11 @@ def markdown(result):
              "Medians/p95 are milliseconds; ratio is geometric paired mean, not ratio of medians.",
              "Exploratory shared-host intervals are not equivalence tests or full-workload speed proof.",
              "No compiler/release admission is granted by this replay.", ""]
-    for family, baseline, candidate in (("native", "pristine", "integrated"),
-                                         ("native", "pristine", "entry"), ("cargo", "reference", "mixed")):
+    if result.get("campaign_schema", 1) == 2:
+        lines += ["The native rustc lane uses the matching SDK on the identical standalone source, nonincrementally. "
+                  "Every no-op starts rustc again; it is not Cargo Fresh. Check emits metadata. "
+                  "Compile-plus-test includes rustc --test and actual execution of the one test, with both child receipts retained.", ""]
+    for family, baseline, candidate in campaign_layout(result.get("campaign_schema", 1))[1]:
         lines += [f"## {family}: {baseline} → {candidate}", "",
                   "| Mode | Baseline median | Candidate median | Baseline p95 | Candidate p95 | Ratio [95% interval] | Observation |",
                   "|---|---:|---:|---:|---:|---:|---|"]

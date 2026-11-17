@@ -13,13 +13,17 @@ parity or release readiness.
 | `afb17a8` | [27 comparisons](2026-11-17-afb17a8.md) | [540 values](2026-11-17-afb17a8.csv) | [Original ZIP](archives/2026-11-17-afb17a8-qualification.zip) |
 | `048d824` | [27 comparisons](2026-11-17-048d824.md) | [540 values](2026-11-17-048d824.csv) | [Original ZIP](archives/2026-11-17-048d824-qualification.zip) |
 | `dec0ce2` | [27 comparisons](2026-11-17-dec0ce2.md) | [540 values](2026-11-17-dec0ce2.csv) | [Original ZIP](archives/2026-11-17-dec0ce2-qualification.zip) |
+| `74e14e7` | [27 comparisons](2026-11-17-74e14e7.md) | [540 values](2026-11-17-74e14e7.csv) | [Original ZIP](archives/2026-11-17-74e14e7-qualification.zip) |
+| `40d2ac3` | [27 comparisons](2026-11-17-40d2ac3.md) | [540 values](2026-11-17-40d2ac3.csv) | [Original ZIP](archives/2026-11-17-40d2ac3-qualification.zip) |
 
 Each ZIP is byte-identical to the original GitHub Actions artifact. The
 [manifest](campaigns.json) binds its run, artifact, actual checkout/tree,
 archive/raw-data hashes and derived-file hashes. It is retained in Git so
 Actions expiration does not remove the original qualification record.
-The archives include all 7,072 recorded command-output files across the four
-campaigns. They do not contain the entire compiler binary toolchain.
+The six fixed campaigns retain 3,240 timed commands, 162 comparisons and all
+10,608 recorded command-output files. They do not contain the entire compiler
+binary toolchain. The `40d2ac3` paired campaign passed its own checks although
+its separate profiling step failed; the overall source-built job remains failed.
 
 These are the separate `lustr-mixed-bench` fixture campaigns produced and
 already published by this public repository's GitHub Actions workflow. Review
@@ -38,7 +42,7 @@ python3 tools/test-mixed-performance-report.py
 python3 tools/check-mixed-performance-tables.py
 python3 tools/check-mixed-performance-archives.py
 python3 tools/report-mixed-performance.py \
-  performance/archives/2026-11-17-dec0ce2-qualification.zip \
+  performance/archives/2026-11-17-40d2ac3-qualification.zip \
   --output /absolute/new-report-directory
 ```
 
@@ -55,6 +59,13 @@ All correctness prerequisites must pass before its paired measurements. It
 preserves cold, no-op, body/signature edits, check variants, rejection and
 compile-plus-test separately, with every slower sample.
 
+The current [schema-2 runner](../docs/compiler-set/native-rustc-comparison.md)
+also measures matching standalone rustc on the same native source. It requires
+648 timed commands and 36 summaries at twelve pairs, adding rustc→entry to the
+existing three contrasts. The six historical rows above remain schema 1 with
+their original 540 timings/27 comparisons; no new ratio is claimed before the
+extended campaign executes.
+
 The same workflow now captures selected host facts and performs phase profiling
 in a separate qualification directory. Host facts are bound into new campaign
 identities. Profiling is disabled for all paired samples. The full artifact
@@ -64,7 +75,11 @@ host records and failure information.
 The first [completed phase report](2026-11-17-dec0ce2-profile.md) is linked
 separately from its paired timings. Its original traces and host record are
 inside the fourth qualification ZIP; their instrumented values are not pooled
-with the 2,160 timed command values.
+with the 3,240 timed command values. The [v2 diagnosis at 40d2ac3](2026-11-17-40d2ac3-profile.md)
+retains its original framing failure, separately verified reconstruction and
+writer correction. It does not relabel the original profiling run as passed.
+Only `dec0ce2` and `40d2ac3` have host snapshots in these six archives;
+`74e14e7`, like the first three campaigns, does not.
 
 After a new completed campaign, download its **original ZIP**, verify its
 Actions artifact digest, and run the reporter against it. Keep the ZIP as a new
@@ -84,9 +99,49 @@ runs this repository's actual coordinator package under its normal dev/test
 profiles. Its five scenarios preserve test execution, declared cold/warm state,
 compiler identity and raw timing values. A strict public projection omits raw
 private output and environment paths while retaining their original digests.
-This differs from the complete original ZIPs above. The workflow has been wired;
-no project timing result is claimed before a real campaign completes.
-The private full logs are separately encrypted to a pinned public recipient;
-success and failure paths both attempt retention. Only the ciphertext and
-allowlisted receipt/status may be published. The decryption key stays private,
-and actual recovery must be verified before the retention record is complete.
+This differs from the complete original ZIPs above. The [completed 40d2ac3 project
+campaign](projects/2026-11-17-40d2ac3/README.md) retains five comparisons and all
+120 measured timings separately from the fixed-corpus totals. Normal dev/test
+debug=2 is outside current native-object eligibility; primed root rebuilds change
+only a timestamp and are not body/signature edits.
+
+The six public files and original public/encrypted ZIPs are retained byte for
+byte. Actual authenticated decryption, archive verification and source-bound
+public reconciliation passed for 600 original files and 510 output streams.
+The private key/plaintext remain private. Both success and failure paths attempt
+encrypted retention. CI verifies the public/ciphertext bindings and replays all
+five comparisons without claiming a new decryption or compiler execution.
+
+## Charts and exact source recovery
+
+The [40d2ac3 vector chart](plots/2026-11-17-40d2ac3/README.md) includes all 27
+comparisons with conditional intervals and exact source/data bindings. Its
+JSON projection and optional PNG accompany the SVG. Recreate a plot in a new
+directory with Python 3.10+ and Matplotlib 3.10.8:
+
+```bash
+python3 tools/plot-mixed-performance.py \
+  performance/archives/2026-11-17-40d2ac3-qualification.zip \
+  --output /absolute/new-plot-directory --png
+```
+
+The generator first runs the existing strict evidence replay; it adds no new
+estimator or excluded modes. These plots are individual campaigns, not a
+cross-run causal trend. The [exact merge source bundle](sources/2026-11-17-40d2ac3/README.md)
+preserves checkout `3b4b0bd` and its declared prerequisites after the live PR ref
+moves. Recovery requires those prerequisites and does not restore original
+compiler binaries or requalify a build.
+
+## Component copy-policy experiment
+
+The [separately retained component experiment](components/2026-11-17-40d2ac3-link-input/review.md)
+contains 24 matched pairs for sixteen copies of a generated 64 KiB input. It
+compares the historical copy-and-sync policy with disposable staging and retains
+the original ZIP, every pair, source hashes and eight passing isolation/recovery
+tests. These 48 component timings are outside the compiler campaign totals.
+
+This does not compile an application or measure a complete link. The pre-merge
+compiler already omitted synchronization of disposable copies, so this experiment
+does not establish an additional gain caused by the merge. Persistent retention
+keeps its synchronization, and complete-work compiler speed remains a separate
+measurement.

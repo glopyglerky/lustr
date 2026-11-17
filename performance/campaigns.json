@@ -75,6 +75,42 @@
       "csv_sha256": "f7bf667bb9ea93c788f90e74a961759fdcce27bb2c4757518741e2f29aa20551",
       "table": "performance/2026-11-17-dec0ce2.md",
       "table_sha256": "b18b50b3d675658cbf60fb77d20c36024c2a69610d584e9b571e4cc51950608d"
+    },
+    {
+      "head": "74e14e7a14cb283423465f665adf7288e2088a88",
+      "run": 44087680045,
+      "artifact": 14332781190,
+      "artifact_name": "source-built-mixed-qualification-1",
+      "archive": "performance/archives/2026-11-17-74e14e7-qualification.zip",
+      "checkout": "d0caf843d519763ae3b7bc8a3fdd1c26b12b307d",
+      "tree": "c15cdcb3481f2ee34651a8aa6c901d24df05ff8f",
+      "archive_sha256": "63d1e465eca483ff219da87c9e446058b1b754bc7c2a41a421cd1eee93445d97",
+      "raw_sha256": "9ce9fe4f00bcfc296e0b948cffffafa10dbab942bde3232132e9470be29a6430",
+      "pairs": 12,
+      "seed": 327849038930,
+      "bootstrap_resamples": 10000,
+      "csv": "performance/2026-11-17-74e14e7.csv",
+      "csv_sha256": "518f54c87337ca4ae2c7de2884c13b950222f260c30158383238561b60ea2243",
+      "table": "performance/2026-11-17-74e14e7.md",
+      "table_sha256": "50773ecd64bbce8f93c9a8f8fa6b4d182207d18b669c9f5ee4bd503db22e4290"
+    },
+    {
+      "head": "40d2ac3f0b71abaa1e73cd366d8c43f8eb4d4581",
+      "run": 44096292176,
+      "artifact": 14337905295,
+      "artifact_name": "source-built-mixed-qualification-1",
+      "archive": "performance/archives/2026-11-17-40d2ac3-qualification.zip",
+      "checkout": "3b4b0bd67401085129d26be1afbd20e96c9b9d02",
+      "tree": "78318c4b01f8eb6f9518ea331efe69f0c457b1ce",
+      "archive_sha256": "c7587488e892a93b6b3a9192393c5a451412c1fcf36963f08804f2bad1e8dd4d",
+      "raw_sha256": "3035b97176d0a152202e583f607fc432a15d99e63e04dcc0a943da6fac1c6ecb",
+      "pairs": 12,
+      "seed": 327849038930,
+      "bootstrap_resamples": 10000,
+      "csv": "performance/2026-11-17-40d2ac3.csv",
+      "table": "performance/2026-11-17-40d2ac3.md",
+      "csv_sha256": "7ef99c3215f03ddfe8ab62777f290dcb2fa16ebea2ab91b2d1b0b114ebf9db3d",
+      "table_sha256": "346a10d95cbad34638c0057ab95708091304ef13a2702fc074dd6a1ade3240b7"
     }
   ]
 }

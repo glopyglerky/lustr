@@ -33,9 +33,27 @@ paired campaign in
 [run 44083661006](https://github.com/glopyglerky/lustr/actions/runs/44083661006/job/134040390909).
 Eight non-macOS jobs passed. The macOS compatibility job was cancelled before
 starting; GitHub's annotations report unavailable hosted ARM64 runner capacity.
-This is a failed overall workflow, not an all-platform pass.
+This is not an all-platform pass.
 
-The four completed paired campaigns preserve 540 timed command values and 27
+The concurrently updated base at `74e14e7` completed its source-built job and
+fifth paired campaign in [run 44087680045](https://github.com/glopyglerky/lustr/actions/runs/44087680045/job/134054288275).
+It has no host snapshot or phase profile. Its older Linux native gate also
+passed; [the exact original archive](measurements/2026-11-17-native-linux-74e14e7/README.md)
+retains its 5,526-case corpus and later checks without applying that result to
+newer native source.
+
+At `40d2ac3`, [the combined source-built job](https://github.com/glopyglerky/lustr/actions/runs/44096292176/job/134084163908)
+passed all correctness prerequisites, including the new library-selection test
+in the fifteen-test entry/runtime contract, and completed the sixth fixed
+campaign. Its actual unchanged-project campaign and encrypted uploads also
+passed. The job still failed its separate v2 profiling validation: concurrent
+trace writes joined two request records. The [original failure, diagnostic
+reconstruction and correction](../../performance/2026-11-17-40d2ac3-profile.md)
+are retained. Seven other non-macOS jobs passed; macOS compatibility was
+cancelled without execution because hosted ARM64 capacity was unavailable.
+The corrected trace writer requires fresh source-built execution.
+
+The six completed paired campaigns preserve 540 timed command values and 27
 comparisons each. [PERFORMANCE.md](../../PERFORMANCE.md) reports the substantial
 mixed Cargo regressions, exact source identities, uncertainty and workload
 limits. [The original ZIP archives](../../performance/archives) preserve the
@@ -81,7 +99,7 @@ preserves an explicit `--lib` request across native process startup. It covers
 all six Cargo library kinds and rejects a bin-only package. Its recorded local
 qualification has 22 direct source states and an actual Lustr-entry regression
 with 52 command-output pairs. The full source-built contract also includes this
-new test; its result must be assessed on the final combined compiler source.
+new test; it passed in the combined `40d2ac3` source-built contract.
 
 ## Earlier local evidence and its limits
 
@@ -92,7 +110,7 @@ restriction itself was never counted as a compiler regression.
 | Check | Result and scope |
 | --- | --- |
 | Pinned compiler builds and format checks | Changed owned compiler and qualification tools compile; no daemon execution implied. |
-| Failed-link baseline reproduction | Originally blocked locally because Unix socket creation was denied. All four completed hosted source-built jobs subsequently reproduced the required baseline failure and passed corrected recovery. |
+| Failed-link baseline reproduction | Originally blocked locally because Unix socket creation was denied. All six hosted correctness campaigns subsequently reproduced the required baseline failure and passed corrected recovery; the sixth job's later profiling failure remains separate. |
 | Source-library package seal | Correct packages made from current and exact baseline source pass. Source mutation, added input, bad links and substituted core inode fail; restoring the package restores its identity. |
 | Target synchronization layout | Matching SDK supplies 26 independent size/alignment values for Linux x86_64, Darwin x86_64, Darwin aarch64 and Windows GNU x86_64. Baseline fails the three foreign targets; corrected native frontend passes all four and rejects a deliberate false assertion. |
 | Target pool retention | The native unit test passes all nine transitions among Futex, Darwin and Windows models, including body overlays and incompatible-pool rejection. |
@@ -101,7 +119,7 @@ restriction itself was never counted as a compiler regression.
 | Darwin descriptor-path adapter | The exact C body passes five isolated buffer/error cases with AddressSanitizer and UndefinedBehaviorSanitizer. Real Darwin syscall behavior still requires macOS. |
 | no_std WebAssembly execution | Through the unchanged baseline's matched full Rust component, the new module executes its exported operations with correct results and no runtime imports. The final candidate's full contract repeats this gate. |
 | Single-file native test command | The old entry incorrectly forwarded the file command to Cargo. The corrected entry passes the public runtime gate: successful native test, upstream failed-test status 101, and one persisted side effect from one failed test. The unchanged baseline native core was used for this local check. |
-| Paired performance | Four hosted campaigns completed. Their raw samples, comparisons and regressions are preserved in the performance report; general speed acceptance remains open. |
+| Paired performance | Six fixed hosted campaigns completed. Their raw samples, comparisons and regressions are preserved in the performance report; general speed acceptance remains open. The separate actual-project campaign adds five comparisons under normal dev/test defaults. |
 
 See [target layout qualification](native-target-layouts.md) for the target
 oracle and Darwin corrections, and [mixed compiler qualification](mixed-compiler.md)
@@ -135,8 +153,12 @@ evidence. The final declared native tree is
 Independent checks included 15 project-export tests, three ownership/lifecycle
 tests, 12 actual OpenSSL tests, 16 workflow controls and complete replay of the
 four archived fixed-fixture campaigns. No blocking source finding remained.
-Actual complete candidate execution and recovery of the new CI ciphertext are
-still required; passing helper tests does not establish those outcomes.
+Those helper checks did not establish complete candidate execution or recovery.
+Both subsequently executed at `40d2ac3` within the scope above. Actual authenticated
+recovery and source-bound reconciliation verified 600 retained files, 510 raw
+streams and all five public project comparisons. The [recovery receipts and
+limits](../../performance/projects/2026-11-17-40d2ac3/README.md) explicitly separate
+the locally rebuilt replay from unavailable original compiler/runner binaries.
 
 Both reviewers also passed the finer phase-attribution range ending at
 `fe18584021d9a9dbea02a6ea1f19aa5c295dbddd`. Review caught variable profiling
@@ -160,6 +182,20 @@ profiling spans surround those operations. Eight actual helper tests, 22
 profiling tests, 16 workflow controls, the exact source guard, matching-nightly
 component typecheck and formatting check pass after reconciliation. These local
 checks do not replace the new combined source-built campaign.
+
+The later trace-framing correction received independent Standards review.
+The production-helper regression uses eight concurrent processes and fails the
+original writer; all three fixed writer tests and 23 strict profiler tests pass.
+The validator remains strict, and original failed native diagnostics, cache
+behavior and durability operations are unchanged. The original failed v2 run
+and its separately verified reconstruction remain distinguishable.
+
+The actual project's public and encrypted archives were independently reviewed
+against GitHub's original digests and byte inventories. Public CI now checks
+the archive bindings and replays 120 timed values and five statistics. It does
+not decrypt or freshly requalify private originals. The recovery instruction
+preserves original file modes explicitly, retaining the initial extraction
+failure instead of weakening integrity checks.
 
 ## Hosted admission gates
 

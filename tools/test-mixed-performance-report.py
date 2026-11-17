@@ -18,19 +18,73 @@ reporter = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(reporter)
 
 
-def fixture(root):
-    n, seed = 6, 19
-    meta = dict(schema=1, pairs=n, seed=seed, pristine_revision="a" * 40,
+def native_record(row, meta):
+    """Synthetic command/output contract; these bytes never claim execution."""
+    lane, phase = row["lane"], row["phase"]
+    source = next(iter(row["source_sha256"]))
+    encode = lambda values: [{"Unix": list(value.encode())} for value in values]
+    executable = meta["native_lane_executables"][lane]
+    output = f"/synthetic/state/{lane}/{phase.removesuffix('-runtime')}-{row['sample']}"
+    stdout, stderr = b"synthetic output\n", b"synthetic output\n"
+    if phase.endswith("-runtime"):
+        argv = [output]
+        stdout, stderr = b"59\n", b""
+    else:
+        check = phase in {"check", "check-no-op", "check-body-edit", "rejection", "reference-probe-check", "reference-probe-invalid"}
+        test = phase in {"compile-plus-test", "reference-probe-test", "reference-probe-failed-test"}
+        operation = "test" if test else "check" if check else "build"
+        if lane == "rustc":
+            argv = ([meta["native_rustc_reference"]["test_driver"], "--native-rustc-test", executable, source, output] if test else
+                    [executable, source, *reporter.RUSTC_FLAGS, "--emit=metadata" if check else "--emit=link", "-o", output])
+        else:
+            argv = [executable, operation, source]
+            argv += ["--json"] if test else reporter.NATIVE_FLAGS if check else ["-o", output, *reporter.NATIVE_FLAGS]
+        if test:
+            passed = phase != "reference-probe-failed-test"
+            if lane == "rustc":
+                stdout = (f"test scalar_contract ... {'ok' if passed else 'FAILED'}\n"
+                          f"test result: {'ok' if passed else 'FAILED'}. {int(passed)} passed; {int(not passed)} failed; "
+                          "0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n").encode()
+                child_commands = [[executable, source, *reporter.RUSTC_FLAGS, "--test", "-o", output],
+                                  [output, "--test-threads=1", "--color", "never"]]
+                stderr = b"".join((reporter.TEST_RECEIPT + json.dumps(dict(phase=p, argv=encode(a), exit=c, signal=None)) + "\n").encode()
+                                  for p, a, c in zip(("compile", "execute"), child_commands, (0, 0 if passed else 101)))
+            else:
+                stdout = (json.dumps(dict(kind="summary", build="ok", total=1, passed=int(passed), failed=int(not passed),
+                                          timed_out=0, ignored=0, filtered_out=0)) + "\n").encode()
+    row["argv"] = encode(argv)
+    return {"stdout": stdout, "stderr": stderr}
+
+
+def fixture(root, schema=1):
+    n, seed = (6 if schema == 1 else 12), 19
+    lanes_by_family, comparisons = reporter.campaign_layout(schema)
+    meta = dict(schema=schema, pairs=n, seed=seed, pristine_revision="a" * 40,
                 pristine_tree="b" * 40, compiler_sha256={"synthetic/compiler": "c" * 64},
                 profiles="synthetic", rust_reference_version="synthetic", cold_scope="synthetic",
                 warm_scope="synthetic", timing_scope="synthetic", scope="synthetic",
                 inference_limits="synthetic", order_method="randomized-cyclic-blocks-v1",
                 performance_admission="not granted by this runner")
-    rows = [dict(kind="identities", report=dict(meta, status="failed", summaries=None))]
+    if schema == 2:
+        meta["native_rustc_reference"] = reporter.native_reference_contract("/synthetic/package/rustc-reference", "/synthetic/runner")
+        meta["native_lane_executables"] = {"pristine": "/synthetic/pristine/lust", "integrated": "/synthetic/integrated/lust",
+                                           "entry": "/synthetic/package/lustr", "rustc": "/synthetic/package/rustc-reference"}
+        meta["compiler_sha256"] = {path: "c" * 64 for path in ("/synthetic/pristine/lust", "/synthetic/integrated/lust",
+                                      "/synthetic/package/lustr", "/synthetic/package/rustc-reference", "/synthetic/runner")}
+    rows = [dict(kind="identities", report=copy.deepcopy(dict(meta, status="failed", summaries=None)))]
     durations = {}
     folder = root / "lustr-paired-measurements"
     folder.mkdir()
-    for family, lanes in reporter.LANES.items():
+    def store(row, streams):
+        for stream in ("stdout", "stderr"):
+            name = f"{row['family']}-{row['lane']}-{row['phase']}-{row['sample']}.{stream}"
+            data = streams[stream]
+            (folder / name).write_bytes(data)
+            row[stream] = {"Unix": list(name.encode())}
+            row[stream + "_bytes"] = len(data)
+            row[stream + "_sha256"] = reporter.sha256(data)
+        rows.append(row)
+    for family, lanes in lanes_by_family.items():
         for i in range(n):
             order = [(j + i) % len(lanes) for j in range(len(lanes))]
             rows.append(dict(kind="order", family=family, lanes=order, sample=i))
@@ -45,35 +99,36 @@ def fixture(root):
                                timed_out=False, signal=None,
                                source_sha256={"/synthetic/source/main.rs": "d" * 64},
                                source_after_sha256={"/synthetic/source/main.rs": "d" * 64})
-                    for stream in ("stdout", "stderr"):
-                        name = f"{family}-{lane}-{phase}-{i}.{stream}"
-                        data = b"synthetic output\n"
-                        (folder / name).write_bytes(data)
-                        row[stream] = {"Unix": list(name.encode())}
-                        row[stream + "_bytes"] = len(data)
-                        row[stream + "_sha256"] = reporter.sha256(data)
-                    rows.append(row)
+                    streams = native_record(row, meta) if schema == 2 and family == "native" else {s: b"synthetic output\n" for s in ("stdout", "stderr")}
+                    store(row, streams)
+    if schema == 2:
+        for phase, code in reporter.REFERENCE_PROBES.items():
+            for lane in ("entry", "rustc"):
+                row = dict(kind="command", family="native", lane=lane, phase=phase, sample=None,
+                           seconds=.01, expected_exit=code, exit=code, timed_out=False, signal=None,
+                           source_sha256={"/synthetic/source/main.rs": "d" * 64},
+                           source_after_sha256={"/synthetic/source/main.rs": "d" * 64})
+                store(row, native_record(row, meta))
     rows += [dict(kind="native-retained-check", lane=lane, route="bodies-without-body-work")
              for lane in reporter.LANES["native"]]
     summaries = []
-    for family, lanes in reporter.LANES.items():
-        for candidate in lanes[1:]:
-            for phase in reporter.PHASES:
-                pairs = [(durations[family, lanes[0], phase, i], durations[family, candidate, phase, i])
-                         for i in range(n)]
-                analysis = reporter.summarize(pairs, 100, seed)
-                summaries.append(dict(family=family, baseline=lanes[0], candidate=candidate,
-                                      phase=phase, analysis=analysis, ratio_direction=reporter.DIRECTION,
-                                      observation="slower-on-this-corpus"))
+    for family, baseline, candidate in comparisons:
+        for phase in reporter.PHASES:
+            pairs = [(durations[family, baseline, phase, i], durations[family, candidate, phase, i]) for i in range(n)]
+            analysis = reporter.summarize(pairs, 100, seed)
+            low, high = analysis["bootstrap_95"]
+            summaries.append(dict(family=family, baseline=baseline, candidate=candidate,
+                                  phase=phase, analysis=analysis, ratio_direction=reporter.DIRECTION,
+                                  observation="faster-on-this-corpus" if low > 1 else "slower-on-this-corpus" if high < 1 else "inconclusive"))
     (root / "lustr-source-revision.txt").write_text("e" * 40 + "\n" + "f" * 40 + "\n")
     return dict(meta, status="completed", records=rows, summaries=summaries)
 
 
-class ReportTests(unittest.TestCase):
+class FixtureTestCase(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
-        self.data = fixture(self.root)
+        self.data = fixture(self.root, getattr(self, "schema", 1))
         self.save()
 
     def tearDown(self):
@@ -102,6 +157,8 @@ class ReportTests(unittest.TestCase):
         with self.assertRaises((ValueError, KeyError, OSError)):
             self.verify()
 
+
+class ReportTests(FixtureTestCase):
     def test_complete_report_and_markdown(self):
         result = self.verify()
         self.assertEqual(result["verified"]["comparisons"], 27)
@@ -317,6 +374,138 @@ class ReportTests(unittest.TestCase):
                              capture_output=True, text=True)
         self.assertNotEqual(run.returncode, 0)
         self.assertFalse(missing.exists())
+
+
+class Schema2Tests(FixtureTestCase):
+    schema = 2
+
+    def command(self, lane="rustc", phase="compile-plus-test"):
+        return next(row for row in self.data["records"] if row.get("kind") == "command"
+                    and row.get("family") == "native" and row.get("lane") == lane and row.get("phase") == phase)
+
+    def stream(self, row, name, data):
+        path = self.root / "lustr-paired-measurements" / reporter.output_name(row[name])
+        path.write_bytes(data)
+        row[name + "_bytes"] = len(data)
+        row[name + "_sha256"] = reporter.sha256(data)
+
+    def test_four_native_lanes_and_exact_four_contrasts(self):
+        result = self.verify()
+        self.assertEqual(result["campaign_schema"], 2)
+        self.assertEqual(result["verified"]["comparisons"], 36)
+        self.assertEqual(result["verified"]["timed_commands"], 648)
+        self.assertEqual(len(result["timing_samples"]), 54)
+        self.assertEqual({(r["family"], r["baseline"], r["candidate"]) for r in result["summaries"]}, set(reporter.COMPARISONS_V2))
+        text = reporter.markdown(result)
+        self.assertIn("native: rustc → entry", text)
+        self.assertIn("not Cargo Fresh", text)
+        self.assertEqual(text.count("| rejection |"), 4)
+
+    def test_missing_rustc_sample_rejected(self):
+        self.data["records"].remove(self.command(phase="cold"))
+        self.rejected()
+
+    def test_cannot_relabel_new_samples_as_schema1(self):
+        self.data["schema"] = self.data["records"][0]["report"]["schema"] = 1
+        self.rejected()
+
+    def test_new_comparison_cannot_be_omitted_or_reversed(self):
+        original = copy.deepcopy(self.data)
+        for reverse in (False, True):
+            with self.subTest(reverse=reverse):
+                self.data = copy.deepcopy(original)
+                row = next(row for row in self.data["summaries"] if row["baseline"] == "rustc")
+                if reverse:
+                    row["baseline"], row["candidate"] = row["candidate"], row["baseline"]
+                else:
+                    self.data["summaries"].remove(row)
+                self.rejected()
+
+    def test_reference_flags_cannot_disable_checks_or_enable_incremental(self):
+        original = copy.deepcopy(self.data)
+        for old, new in (("panic=unwind", "panic=abort"), ("overflow-checks=on", "overflow-checks=off"),
+                         ("debug-assertions=on", "incremental=/tmp/cache")):
+            with self.subTest(flag=old):
+                self.data = copy.deepcopy(original)
+                row = self.command(phase="body-edit")
+                row["argv"] = [{"Unix": list((new if reporter.argument(value) == old else reporter.argument(value)).encode())}
+                               for value in row["argv"]]
+                self.rejected()
+
+    def test_rustc_cannot_compile_another_source(self):
+        row = self.command(phase="body-edit")
+        row["source_sha256"] = row["source_after_sha256"] = {"/other/source.rs": "d" * 64}
+        self.rejected()
+
+    def test_lane_cannot_use_another_identified_compiler(self):
+        # Review regression: all packaged-entry samples formerly accepted the
+        # hash-known integrated Lust executable under unchanged entry labels.
+        replacement = copy.deepcopy(self.command(lane="integrated", phase="cold")["argv"][0])
+        changed = 0
+        for row in self.data["records"]:
+            if row.get("kind") == "command" and row.get("family") == "native" and row.get("lane") == "entry" and not row["phase"].endswith("-runtime"):
+                row["argv"][0] = replacement
+                changed += 1
+        self.assertEqual(changed, 114)
+        self.rejected()
+
+    def test_native_lane_identity_must_be_complete_and_initially_bound(self):
+        original = copy.deepcopy(self.data)
+        for change in ("missing", "changed", "aliased", "unknown", "inconsistent-rustc"):
+            with self.subTest(change=change):
+                self.data = copy.deepcopy(original)
+                paths = self.data["native_lane_executables"]
+                if change == "missing":
+                    del paths["entry"]
+                elif change == "changed":
+                    paths["entry"], paths["integrated"] = paths["integrated"], paths["entry"]
+                else:
+                    if change == "aliased":
+                        paths["entry"] = paths["integrated"]
+                    elif change == "unknown":
+                        paths["entry"] = "/synthetic/unidentified/compiler"
+                    else:
+                        paths["entry"], paths["rustc"] = paths["rustc"], paths["entry"]
+                    self.data["records"][0]["report"]["native_lane_executables"] = copy.deepcopy(paths)
+                self.rejected()
+
+    def test_compiled_but_unexecuted_test_rejected_after_rehash(self):
+        row = self.command()
+        self.stream(row, "stdout", b"test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;\n")
+        self.rejected()
+
+    def test_missing_execute_receipt_rejected_after_rehash(self):
+        row = self.command()
+        path = self.root / "lustr-paired-measurements" / reporter.output_name(row["stderr"])
+        self.stream(row, "stderr", path.read_bytes().splitlines(keepends=True)[0])
+        self.rejected()
+
+    def test_negative_test_gate_is_required(self):
+        self.data["records"].remove(self.command(phase="reference-probe-failed-test"))
+        self.rejected()
+
+    def test_recovery_runtime_output_checked_after_rehash(self):
+        row = self.command(phase="reference-probe-recovery-runtime")
+        self.stream(row, "stdout", b"wrong\n")
+        self.rejected()
+
+    def test_runtime_must_execute_its_matching_build_output(self):
+        original = copy.deepcopy(self.data)
+        for change in ("executable", "source", "phase"):
+            with self.subTest(change=change):
+                self.data = copy.deepcopy(original)
+                row = self.command(phase="reference-probe-recovery-runtime")
+                if change == "executable":
+                    row["argv"][0] = {"Unix": list(b"/synthetic/unrelated-program")}
+                elif change == "source":
+                    row["source_sha256"] = row["source_after_sha256"] = {"/synthetic/other.rs": "d" * 64}
+                else:
+                    row["phase"] = "reference-probe-build-runtime"
+                self.rejected()
+
+    def test_rustc_cannot_claim_a_native_daemon_probe(self):
+        self.data["records"].append(dict(kind="native-retained-check", lane="rustc", route="reuse"))
+        self.rejected()
 
 
 if __name__ == "__main__":

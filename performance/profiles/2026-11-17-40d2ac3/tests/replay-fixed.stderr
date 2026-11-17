@@ -1,0 +1,9 @@
+test_changed_receipt_cannot_bypass_original_archive_binding (__main__.ReconstructionIntegrityTests.test_changed_receipt_cannot_bypass_original_archive_binding) ... ok
+test_changed_receipt_fails_bundle_checksum_in_both_modes (__main__.ReconstructionIntegrityTests.test_changed_receipt_fails_bundle_checksum_in_both_modes) ... ok
+test_changed_timing_cannot_bypass_exact_derived_replay (__main__.ReconstructionIntegrityTests.test_changed_timing_cannot_bypass_exact_derived_replay) ... ok
+test_original_reconstruction_in_both_modes (__main__.ReconstructionIntegrityTests.test_original_reconstruction_in_both_modes) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 1.170s
+
+OK

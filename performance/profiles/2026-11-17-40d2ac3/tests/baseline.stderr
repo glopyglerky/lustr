@@ -1,0 +1,14 @@
+test_whole_records_under_concurrent_processes (__main__.ConcurrentTraceTests.test_whole_records_under_concurrent_processes) ... FAIL
+
+======================================================================
+FAIL: test_whole_records_under_concurrent_processes (__main__.ConcurrentTraceTests.test_whole_records_under_concurrent_processes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/6fe2645be9f1/lustr-trace-framing/tools/test-mixed-trace.py", line 132, in test_whole_records_under_concurrent_processes
+    self.assertIsNotNone(diagnostic, f"interleaved or unknown trace record: {line[:200]!r}")
+AssertionError: unexpectedly None : interleaved or unknown trace record: 'request-key=0000000000000384 retained=falselustr mixed native: unit 00000000000004d3'
+
+----------------------------------------------------------------------
+Ran 1 test in 0.184s
+
+FAILED (failures=1)

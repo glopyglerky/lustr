@@ -31,6 +31,7 @@ def main():
         try:
             r.require(evidence.archive_sha256 == campaign["archive_sha256"], "original ZIP digest differs")
             result = r.verify(evidence)
+            r.require(result.get("campaign_schema", 1) == campaign.get("campaign_schema", 1), "campaign schema differs")
             for key in ("checkout", "tree", "raw_sha256", "pairs", "seed"):
                 r.require(result[key] == campaign[key], f"campaign identity differs: {key}")
             r.require(result["pristine_revision"] == manifest["pristine_revision"], "Lust pin differs")

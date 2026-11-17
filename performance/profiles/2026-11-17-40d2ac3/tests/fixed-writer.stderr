@@ -1,0 +1,8 @@
+test_disabled_or_unwritable_trace_preserves_the_result (__main__.ConcurrentTraceTests.test_disabled_or_unwritable_trace_preserves_the_result) ... ok
+test_existing_diagnostic_bytes_are_preserved (__main__.ConcurrentTraceTests.test_existing_diagnostic_bytes_are_preserved) ... ok
+test_whole_records_under_concurrent_processes (__main__.ConcurrentTraceTests.test_whole_records_under_concurrent_processes) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.255s
+
+OK

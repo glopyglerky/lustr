@@ -1,0 +1,33 @@
+{
+  "all_archived_originals_freshly_hashed": true,
+  "campaign_json_semantically_identical": true,
+  "compiler_binaries_freshly_rehashed": false,
+  "omitted_external_input_scope": "Recorded identity consistency only; absent compiler, runtime and constructor bytes were not requalified.",
+  "original_file_count": 600,
+  "original_report_count": 5,
+  "public_cases_semantically_identical": true,
+  "raw_stream_count": 510,
+  "replay_json_semantically_identical": true,
+  "samples_and_readme_byte_identical": true,
+  "scenario_count": 5,
+  "source_identity": {
+    "campaign_exporter_runtime_sha256": null,
+    "coordinator_git_tree": "3f72ccd2f1c5f83f952e2a43564a046a32d75305",
+    "exporter_git_blob": "4e0711beb4d31bbc37c7c4252a353be88e763cf1",
+    "exporter_loaded_from_recorded_revision": true,
+    "exporter_sha256": "c747680f1bbfd8e2c3dd59db664416646fa09e338d79c4ab0222add6e3ad892e",
+    "git_tree": "78318c4b01f8eb6f9518ea331efe69f0c457b1ce",
+    "replay_binary_source_equivalence": "not re-established by this check",
+    "replay_expected_source_git_tree": "2ac3fa9d6f6c281e1c7e36e3fe63d52691868efc",
+    "replay_local_binary_sha256": "8507386515f84245c4f3ae3005b05551c73384a7d0c0b07f2e9acf4964b3a537",
+    "replay_matches_recorded_binary": false,
+    "replay_recorded_binary_sha256": "7572ea1d52d26629eca33932eb9eeb9103bf4d331f42a917118b928b55fdb643",
+    "revision": "3b4b0bd67401085129d26be1afbd20e96c9b9d02",
+    "runner_binary_freshly_rehashed": false,
+    "runner_binary_source_equivalence": "not re-established; original self-hash and CI source provenance retained",
+    "runner_recorded_binary_sha256": "fa7a6a7df97ee270d4160cde8a3ccade92720e21f8055b0811e50f2997444c2f",
+    "runner_source_git_tree": "2ac3fa9d6f6c281e1c7e36e3fe63d52691868efc"
+  },
+  "status": "passed",
+  "verified_statistical_comparisons": 5
+}

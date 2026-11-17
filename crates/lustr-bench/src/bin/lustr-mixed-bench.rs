@@ -43,6 +43,95 @@ const PRISTINE_TREE: &str = "0ab1b09815802894e6078de0af59273cbdf46cb0";
 const RUST_SOURCE: &str = "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494";
 const TIMEOUT: Duration = Duration::from_secs(180);
 const OUTPUT_LIMIT: u64 = 64 * 1024 * 1024;
+const RUSTC_FLAGS: &[&str] = &[
+    "--edition=2024",
+    "--target=x86_64-unknown-linux-gnu",
+    "-C",
+    "opt-level=0",
+    "-C",
+    "debuginfo=0",
+    "-C",
+    "panic=unwind",
+    "-C",
+    "overflow-checks=on",
+    "-C",
+    "debug-assertions=on",
+];
+const TEST_RECEIPT: &str = "lustr benchmark rustc-test: ";
+
+fn rustc_arguments(command: &mut Command, source: &Path, output: &Path, operation: &str) {
+    command.arg(source).args(RUSTC_FLAGS);
+    command
+        .arg(match operation {
+            "build" => "--emit=link",
+            "check" => "--emit=metadata",
+            "test" => "--test",
+            _ => unreachable!("fixed native reference operation"),
+        })
+        .arg("-o")
+        .arg(output);
+}
+
+fn child_status(command: &mut Command, phase: &str) -> R<i32> {
+    let argv: Vec<_> = std::iter::once(command.get_program()).chain(command.get_args()).map(OsString::from).collect();
+    let status = command.status()?;
+    eprintln!("{TEST_RECEIPT}{}", json!({"phase":phase,"argv":argv,"exit":status.code(),"signal":status.signal()}));
+    if let Some(signal) = status.signal() {
+        // Preserve a failed child as a failed/signal result, never execute the
+        // test after compiler failure and never retry through another engine.
+        nix::sys::signal::raise(Signal::try_from(signal)?)?;
+        return Err("signalled child unexpectedly returned".into());
+    }
+    Ok(status.code().ok_or("missing child exit status")?)
+}
+
+/// The outer existing recorder times this complete compile-and-test command.
+/// This adapter adds no clock or estimator; both actual child commands and
+/// outcomes remain in its raw stderr alongside the compiler/test diagnostics.
+fn rustc_test(arguments: &[OsString]) -> R<i32> {
+    require(arguments.len() == 3, "internal rustc test requires RUSTC SOURCE NEW_TEST_BINARY")?;
+    let source = Path::new(&arguments[1]);
+    let output = Path::new(&arguments[2]);
+    require(!output.exists(), "test output must be fresh")?;
+    let mut compile = Command::new(&arguments[0]);
+    rustc_arguments(&mut compile, source, output, "test");
+    let code = child_status(&mut compile, "compile")?;
+    if code != 0 {
+        return Ok(code);
+    }
+    require(output.is_file(), "rustc did not publish the test binary")?;
+    child_status(Command::new(output).args(["--test-threads=1", "--color", "never"]), "execute")
+}
+
+fn verify_test_output(lane: usize, stdout: &[u8], passed: bool) -> R<()> {
+    if lane == 3 {
+        let text = std::str::from_utf8(stdout)?;
+        let expected = if passed {
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;"
+        } else {
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out;"
+        };
+        let summaries: Vec<_> = text.lines().filter(|line| line.starts_with("test result:")).collect();
+        require(summaries.len() == 1 && summaries[0].starts_with(expected), "matched rustc did not execute exactly the required test")
+    } else {
+        let summaries: Vec<Value> = stdout
+            .split(|b| *b == b'\n')
+            .filter_map(|line| serde_json::from_slice(line).ok())
+            .filter(|v: &Value| v["kind"] == "summary")
+            .collect();
+        require(
+            summaries.len() == 1
+                && summaries[0]["build"] == "ok"
+                && summaries[0]["total"] == 1
+                && summaries[0]["passed"] == usize::from(passed)
+                && summaries[0]["failed"] == usize::from(!passed)
+                && summaries[0]["timed_out"] == 0
+                && summaries[0]["ignored"] == 0
+                && summaries[0]["filtered_out"] == 0,
+            "native compile-plus-test did not execute exactly the required test",
+        )
+    }
+}
 
 fn require(condition: bool, message: impl Into<String>) -> R<()> {
     if condition { Ok(()) } else { Err(message.into().into()) }
@@ -216,19 +305,47 @@ impl Campaign {
         require(stdout_bytes + stderr_bytes <= OUTPUT_LIMIT, "command output exceeds measurement limit")?;
         Ok(Outcome { stdout: fs::read(stdout)?, stderr: fs::read(stderr)? })
     }
+    fn native_executable(&self, lane: usize) -> R<PathBuf> {
+        match lane {
+            0 => Ok(self.pristine.clone()),
+            1 => Ok(self.toolchain.join("bin/lust")),
+            2 => Ok(self.toolchain.join("bin/lustr")),
+            3 => Ok(self.toolchain.join("bin/rustc-reference")),
+            _ => Err("unknown native lane".into()),
+        }
+    }
     fn native(&self, lane: usize, source: &Path, state: &Path, sockets: &Daemons, operation: &str, cold: bool) -> R<Command> {
-        let exe = match lane {
-            0 => self.pristine.clone(),
-            1 => self.toolchain.join("bin/lust"),
-            2 => self.toolchain.join("bin/lustr"),
-            _ => return Err("unknown native lane".into()),
-        };
+        let exe = self.native_executable(lane)?;
+        if lane == 3 {
+            let socket = sockets.sockets.join("unused-rustc.sock");
+            if operation == "test" {
+                let mut command = self.command(&std::env::current_exe()?, source.parent().unwrap(), state, &socket)?;
+                command.arg("--native-rustc-test").arg(&exe).arg(source).arg(state.join(format!("test-program-{}", self.serial)));
+                return Ok(command);
+            }
+            let mut command = self.command(&exe, source.parent().unwrap(), state, &socket)?;
+            let output = state.join(if operation == "check" { "metadata.rmeta" } else { "program" });
+            rustc_arguments(&mut command, source, &output, operation);
+            return Ok(command);
+        }
         let mut command = self.command(&exe, source.parent().unwrap(), state, &sockets.sockets.join(format!("n{lane}.sock")))?;
         command.arg(operation).arg(source);
         if operation == "build" {
             command.arg("-o").arg(state.join("program"));
         } else if operation == "test" {
             command.arg("--json");
+        }
+        if operation != "test" {
+            command.args([
+                "--target",
+                "x86_64-unknown-linux-gnu",
+                "-C",
+                "panic=unwind",
+                "-C",
+                "overflow-checks=on",
+                "-C",
+                "debug-assertions=on",
+            ]);
         }
         if cold {
             command.env("LUST_NO_DAEMON", "1").env("LUST_NO_CACHE", "1");
@@ -361,8 +478,37 @@ impl Campaign {
         require(count > 0, "mixed probe did not start an observable native daemon")?;
         self.event(json!({"kind":"daemon-exits","scope":"mixed-probes","successful_exits":count}))
     }
+    fn native_reference_probes(&mut self) -> R<()> {
+        let root = self.root.join("native-reference-probes");
+        let source = root.join("source/main.rs");
+        put(&source, native_source("17", false))?;
+        let mut sockets = Daemons::new()?;
+        for (phase, operation, text, expected) in [
+            ("reference-probe-check", "check", native_source("17", false), 0),
+            ("reference-probe-build", "build", native_source("17", false), 0),
+            ("reference-probe-test", "test", native_source("17", false), 0),
+            ("reference-probe-invalid", "check", native_source("true", false), 1),
+            ("reference-probe-failed-test", "test", native_source("17", false).replace("kernel(42),59", "kernel(42),60"), 101),
+            ("reference-probe-recovery", "build", native_source("17", false), 0),
+        ] {
+            fs::write(&source, text)?;
+            for lane in [2, 3] {
+                let state = root.join(format!("lane{lane}"));
+                let mut command = self.native(lane, &source, &state, &sockets, operation, false)?;
+                let result = self.run("native", native_lane(lane), phase, None, &source, expected, &mut command)?;
+                if operation == "test" {
+                    verify_test_output(lane, &result.stdout, expected == 0)?;
+                } else if operation == "build" {
+                    self.runtime("native", native_lane(lane), phase, &source, &state, &state.join("program"), b"59\n")?;
+                }
+            }
+        }
+        let count = sockets.stop()?;
+        require(count > 0, "native/Rust reference probes lost native daemon execution")?;
+        self.event(json!({"kind":"daemon-exits","scope":"native-reference-probes","successful_exits":count}))
+    }
     fn native_samples(&mut self) -> R<()> {
-        let schedules = order::rounds(3, self.pairs, &mut self.rng);
+        let schedules = order::rounds(4, self.pairs, &mut self.rng);
         for (sample, lanes) in schedules.into_iter().enumerate() {
             let root = self.root.join(format!("native-{sample:03}"));
             let source = root.join("source/main.rs");
@@ -389,7 +535,7 @@ impl Campaign {
                         for prime in 0..2 {
                             let mut command = self.native(lane, &source, &state, &sockets, "build", false)?;
                             self.run("native", native_lane(lane), "excluded-prime", None, &source, 0, &mut command)?;
-                            if prime == 0 {
+                            if prime == 0 && lane < 3 {
                                 wait_socket(&sockets.sockets.join(format!("n{lane}.sock")))?;
                             }
                         }
@@ -400,20 +546,7 @@ impl Campaign {
                         let expected = if literal == "19" { b"57\n" } else { b"59\n" };
                         self.runtime("native", native_lane(lane), phase, &source, &state, &state.join("program"), expected)?;
                     } else if operation == "test" {
-                        let summaries: Vec<Value> = result
-                            .stdout
-                            .split(|b| *b == b'\n')
-                            .filter_map(|line| serde_json::from_slice(line).ok())
-                            .filter(|v: &Value| v["kind"] == "summary")
-                            .collect();
-                        require(
-                            summaries.len() == 1
-                                && summaries[0]["build"] == "ok"
-                                && summaries[0]["passed"] == 1
-                                && summaries[0]["failed"] == 0
-                                && summaries[0]["timed_out"] == 0,
-                            "native compile-plus-test did not execute the required test",
-                        )?;
+                        verify_test_output(lane, &result.stdout, true)?;
                     }
                 }
             }
@@ -483,7 +616,7 @@ impl Campaign {
         require(groups.len() == 18, "missing required native/Cargo measurement modes")?;
         let mut rows = Vec::new();
         for ((family, phase), mut lanes) in groups {
-            let expected = if family == "native" { vec!["pristine", "integrated", "entry"] } else { vec!["reference", "mixed"] };
+            let expected = if family == "native" { vec!["pristine", "integrated", "entry", "rustc"] } else { vec!["reference", "mixed"] };
             require(lanes.len() == expected.len(), "missing comparison lane")?;
             for name in &expected {
                 let samples = lanes.get_mut(*name).ok_or("missing required lane")?;
@@ -493,8 +626,13 @@ impl Campaign {
                     "incomplete or duplicate paired samples",
                 )?;
             }
-            for name in &expected[1..] {
-                let pairs: Vec<_> = lanes[expected[0]].iter().zip(&lanes[*name]).map(|(a, b)| (a.1, b.1)).collect();
+            let comparisons = if family == "native" {
+                vec![("pristine", "integrated"), ("pristine", "entry"), ("rustc", "entry")]
+            } else {
+                vec![("reference", "mixed")]
+            };
+            for (baseline, candidate) in comparisons {
+                let pairs: Vec<_> = lanes[baseline].iter().zip(&lanes[candidate]).map(|(a, b)| (a.1, b.1)).collect();
                 let summary = stats::summarize(&pairs, 10_000, 0x4c55535452)?;
                 let observation = if summary.bootstrap_95[1] < 1.0 {
                     "slower-on-this-corpus"
@@ -503,7 +641,7 @@ impl Campaign {
                 } else {
                     "inconclusive"
                 };
-                rows.push(json!({"family":family,"phase":phase,"baseline":expected[0],"candidate":name,"ratio_direction":"baseline time / candidate time; greater than 1 is faster","observation":observation,"analysis":summary}));
+                rows.push(json!({"family":family,"phase":phase,"baseline":baseline,"candidate":candidate,"ratio_direction":"baseline time / candidate time; greater than 1 is faster","observation":observation,"analysis":summary}));
             }
         }
         Ok(json!(rows))
@@ -511,7 +649,7 @@ impl Campaign {
 }
 
 fn native_lane(lane: usize) -> &'static str {
-    ["pristine", "integrated", "entry"][lane]
+    ["pristine", "integrated", "entry", "rustc"][lane]
 }
 fn cargo_lane(lane: usize) -> &'static str {
     ["reference", "mixed"][lane]
@@ -543,6 +681,10 @@ fn query(command: &mut Command) -> R<String> {
 }
 
 fn main() -> R<()> {
+    let all_arguments: Vec<OsString> = std::env::args_os().skip(1).collect();
+    if all_arguments.first().is_some_and(|value| value == "--native-rustc-test") {
+        std::process::exit(rustc_test(&all_arguments[1..])?);
+    }
     require(cfg!(all(target_os = "linux", target_arch = "x86_64")), "current mixed qualification requires Linux x86-64")?;
     let mut args = std::env::args_os().skip(1);
     let pristine_source =
@@ -555,7 +697,7 @@ fn main() -> R<()> {
         .map(|v| v.into_string().map_err(|_| "non-UTF8 sample count").and_then(|v| v.parse::<usize>().map_err(|_| "invalid sample count")))
         .transpose()?
         .unwrap_or(12);
-    require(args.next().is_none() && pairs >= 12 && pairs <= 96 && pairs % 6 == 0, "pairs must be a multiple of six between 12 and 96")?;
+    require(args.next().is_none() && pairs >= 12 && pairs <= 96 && pairs % 4 == 0, "pairs must be a multiple of four between 12 and 96")?;
     require(root.is_absolute() && !root.exists(), "output must be a new absolute path")?;
     let head = query(Command::new("git").arg("-C").arg(&pristine_source).args(["rev-parse", "HEAD"]))?;
     let tree = query(Command::new("git").arg("-C").arg(&pristine_source).args(["rev-parse", "HEAD^{tree}"]))?;
@@ -626,16 +768,29 @@ fn main() -> R<()> {
     } else {
         None
     };
+    let mut native_lane_executables = BTreeMap::new();
+    for lane in 0..4 {
+        native_lane_executables.insert(native_lane(lane), campaign.native_executable(lane)?);
+    }
     let mut report = json!({
-        "schema":1,"status":"failed","performance_admission":"not granted by this runner","pairs":pairs,
+        "schema":2,"status":"failed","performance_admission":"not granted by this runner","pairs":pairs,
         "pristine_revision":head,"pristine_tree":tree,"pristine_source":pristine_source,"compiler_sha256":identities,"rust_reference_version":rust,
         "order_method":order::METHOD,"seed":0x4c55535452u64,"summaries":null,
         "scope":"one native scalar corpus and one real Cargo/proc-macro/async/no_std+alloc graph; not full language, all workloads, all profiles or all platforms",
         "profiles":"owned compiler components: manifest release profiles; fixture applications: dev opt0/debug0, normal unwind/checks; full Rust reference is the matching imported SDK",
         "cold_scope":"fresh per-pair Cargo target, intermediate, mixed, native and XDG runtime cache directories; native cold disables daemon/disk compiler caches; OS page caches are not flushed",
-        "warm_scope":"same-lane retained caches and original native daemons; untimed probes separately require real retained checks/body edits; Cargo no-op is not a compiler request",
+        "warm_scope":"same-lane retained caches and original native daemons; matched standalone rustc is nonincremental and starts a process on every request; its no-op is not Cargo Fresh; untimed probes require retained checks/body edits",
         "timing_scope":"command wall time through observed child exit, 100us polling; tracing/stats disabled for all measured commands; runtime assertions after builds are outside compile-only timing; compile-plus-test executes actual tests",
-        "inference_limits":"shared-host paired observations; bootstrap assumes independent pairs; exploratory per-mode comparisons; pristine binary build recipe must accompany this source/binary identity record"
+        "inference_limits":"shared-host paired observations; bootstrap assumes independent pairs; exploratory per-mode comparisons; pristine binary build recipe must accompany this source/binary identity record",
+        "native_lane_executables":native_lane_executables,
+        "native_rustc_reference":{
+            "compiler":campaign.toolchain.join("bin/rustc-reference"),"test_driver":std::env::current_exe()?,
+            "flags":RUSTC_FLAGS,"incremental":"disabled; standalone rustc default",
+            "build":"--emit=link","check":"--emit=metadata",
+            "test":"--test then execute --test-threads=1 --color never; one outer wall-time measurement",
+            "source":"identical native_source bytes across all four native lanes",
+            "native_profile":"edition 2024, TinyCC dev/no debug; DEV_UNWIND with overflow checks and debug assertions; test uses the native test harness defaults"
+        }
     });
     if let Some(host) = host {
         report["host"] = host;
@@ -644,6 +799,7 @@ fn main() -> R<()> {
     let result = (|| -> R<Value> {
         set_child_subreaper(true)?;
         campaign.native_probes()?;
+        campaign.native_reference_probes()?;
         campaign.mixed_probes()?;
         campaign.native_samples()?;
         campaign.mixed_samples()?;
@@ -666,4 +822,76 @@ fn main() -> R<()> {
         campaign.root.join("report.json").display()
     );
     Ok(())
+}
+
+#[cfg(test)]
+mod reference_tests {
+    use super::*;
+
+    struct Scratch(PathBuf);
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+    fn scratch() -> Scratch {
+        let path = std::env::temp_dir().join(format!(
+            "lustr-rustc-reference-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
+        ));
+        fs::create_dir(&path).unwrap();
+        Scratch(path)
+    }
+    fn rustc() -> OsString {
+        std::env::var_os("LUSTR_BENCH_TEST_RUSTC").or_else(|| std::env::var_os("RUSTC")).unwrap_or_else(|| "rustc".into())
+    }
+
+    #[test]
+    fn reference_build_check_edits_and_rejection_execute_real_rustc() {
+        let directory = scratch();
+        let source = directory.0.join("main.rs");
+        for (literal, signature, expected) in [("17", false, b"59\n"), ("19", false, b"57\n"), ("17", true, b"59\n")] {
+            fs::write(&source, native_source(literal, signature)).unwrap();
+            let binary = directory.0.join("program");
+            let mut compile = Command::new(rustc());
+            rustc_arguments(&mut compile, &source, &binary, "build");
+            let output = compile.output().unwrap();
+            assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+            let result = Command::new(&binary).output().unwrap();
+            assert!(result.status.success());
+            assert_eq!(result.stdout, expected);
+            assert!(result.stderr.is_empty());
+            let mut check = Command::new(rustc());
+            rustc_arguments(&mut check, &source, &directory.0.join("metadata.rmeta"), "check");
+            assert!(check.output().unwrap().status.success());
+        }
+        fs::write(&source, native_source("true", false)).unwrap();
+        let metadata = directory.0.join("invalid.rmeta");
+        let mut check = Command::new(rustc());
+        rustc_arguments(&mut check, &source, &metadata, "check");
+        let result = check.output().unwrap();
+        assert_eq!(result.status.code(), Some(1));
+        assert!(!metadata.exists());
+        assert!(String::from_utf8_lossy(&result.stderr).contains("E0277"));
+    }
+
+    #[test]
+    fn reference_test_adapter_executes_once_and_preserves_failure() {
+        let directory = scratch();
+        let source = directory.0.join("tests.rs");
+        let marker = directory.0.join("executed");
+        for (name, passes, expected) in [("pass", true, 0), ("fail", false, 101)] {
+            fs::write(&source, format!(
+                "#[test] fn scalar_contract() {{ use std::io::Write; let mut f=std::fs::OpenOptions::new().create(true).append(true).open({marker:?}).unwrap(); f.write_all(b\"x\").unwrap(); assert!({passes}); }}\n"
+            )).unwrap();
+            assert_eq!(rustc_test(&[rustc(), source.clone().into_os_string(), directory.0.join(name).into_os_string()]).unwrap(), expected);
+        }
+        assert_eq!(fs::read(&marker).unwrap(), b"xx", "each accepted test binary must execute exactly once");
+        fs::write(&source, native_source("true", false)).unwrap();
+        let invalid = directory.0.join("invalid-test");
+        assert_eq!(rustc_test(&[rustc(), source.into_os_string(), invalid.clone().into_os_string()]).unwrap(), 1);
+        assert!(!invalid.exists());
+        assert_eq!(fs::read(&marker).unwrap(), b"xx", "a failed compile must not execute or retry a test");
+    }
 }

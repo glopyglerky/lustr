@@ -1,0 +1,36 @@
+{
+  "schema": "lustr-actual-project-recovery-v1",
+  "head": "40d2ac3f0b71abaa1e73cd366d8c43f8eb4d4581",
+  "run": 44096292176,
+  "job": 134084163908,
+  "encrypted_artifact": 14336433890,
+  "public_artifact": 14336054692,
+  "authenticated_decryption_exit": 0,
+  "archive_manifest_verification_exit": 0,
+  "documented_exact_mode_extraction_exit": 0,
+  "reconciliation_exit": 0,
+  "ciphertext_sha256": "80b908dc63f504729269569cf8e5aeeb87b71378cb9a1f03248d3c61d6525146",
+  "plaintext_archive_sha256": "e0123d8b4ab3520decc9a394023672fcd423528b0d670b5d08a7f889028136b2",
+  "original_file_count": 600,
+  "original_file_bytes": 9757580,
+  "reconciler_git_revision": "0e0e583ca27777afaa2df872b2b77af24b2c6e75",
+  "reconciler_sha256": "41eb1e7a6e4c3f991cd80505a21cb1208f61deb37b1f3b0175028c4204dc9ee7",
+  "reconciliation_result_sha256": "9ce02c2d8cc627a89f34253f3ed1066cd9c38324e372f314af9b208226fa7abd",
+  "initial_extraction_failure": {
+    "method": "Python tar data filter",
+    "changed_modes": {
+      "0664-to-0644": 61
+    },
+    "check": "private-file-mode",
+    "original_bytes_changed": false,
+    "correction": "Extract verified archive with tar --same-permissions into new private directory"
+  },
+  "openssl_version": "OpenSSL 3.5.7 9 Jun 2026 (Library: OpenSSL 3.5.7 9 Jun 2026)",
+  "retained_reconciler_source": {
+    "revision": "3a5b3192e6a33b4ae54f916c9a1441caa8f963dd",
+    "path": "tools/reconcile-coordinator-evidence.py",
+    "source_bundle": "docs/compiler-set/measurements/2026-11-17-project-profiler-source/recovery-source.bundle",
+    "sha256": "41eb1e7a6e4c3f991cd80505a21cb1208f61deb37b1f3b0175028c4204dc9ee7",
+    "matches_executed_source": true
+  }
+}

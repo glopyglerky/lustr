@@ -1,0 +1,10 @@
+{
+  "schema": "lustr-reviewed-source-bundle-v1",
+  "bundle": "recovery-source.bundle",
+  "sha256": "34102843e76b3f1cb8e88d7a44994aabba8feb9cc61194a33f22d448f2993c68",
+  "bytes": 12917,
+  "prerequisite": "fe18584021d9a9dbea02a6ea1f19aa5c295dbddd",
+  "head": "3a5b3192e6a33b4ae54f916c9a1441caa8f963dd",
+  "reproduced_predecessor": "8cd8c5291e048b9b14de95e3848126b26c2a524f",
+  "scope": "Recorded-source evidence reconciliation and correction of replacement-ref substitution; no compiler measurements."
+}

@@ -6,6 +6,28 @@ run is separate from every paired timing campaign. Its source, compiler
 identities, original JSONL records, command outputs and diagnostic traces stay
 with the generated report. Instrumented durations do not establish a speedup.
 
+## Executed status on 17 November 2026
+
+The [v1 profile at dec0ce2](../../performance/2026-11-17-dec0ce2-profile.md)
+completed. The [v2 attempt at 40d2ac3](../../performance/2026-11-17-40d2ac3-profile.md)
+completed its actual mixed qualifier but failed the independent request-coverage
+check because two concurrent request lines were concatenated. All corresponding
+profiles exist. The original failed record is preserved. A separately labeled
+one-boundary reconstruction, replayed by the unchanged recorded reporter,
+validates 26 compiler profiles, 15 qualification commands and 35 successful native
+responses. It is diagnostic evidence, not a new compiler qualification or a
+passed original profiling campaign.
+
+The shared writer now frames the complete record and holds an append-file lock
+through `write_all`, including short-write retries. Three actual helper tests
+pass; the concurrent-process regression fails the original helper. All 23 strict
+profile tests pass without relaxing the validator. Fresh source-built execution
+must qualify the corrected writer. Recorded symbol-inspection spans identify an
+expensive child call but do not establish its cause; the original artifact lacks
+the child executable identity and spawn/CPU breakdown.
+
+## Client request measurements
+
 The driver records `native-compile` and `native-check` around each native
 request. Their `native-request-setup` child covers argument construction,
 session configuration and socket-path preparation. Each

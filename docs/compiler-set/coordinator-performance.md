@@ -142,7 +142,9 @@ steps, so recovery is claimed only after the actual artifact is retrieved and
 verified.
 
 The focused regression workflow also exercises ownership and public-export
-validation when the runner or project-campaign tools change. These harness
+validation when the runner or project-campaign tools change. It also exercises
+relocated recovery, original/public tampering and Git replacement-ref handling
+with the existing statistical replay executable. These harness
 tests are separate from successful real package execution and speed evidence.
 
 ## Private originals and public evidence
@@ -261,8 +263,89 @@ python3 tools/encrypt-coordinator-evidence.py \
   --verify-archive "$RECOVERY_STAGE/originals.tar.gz" \
   --receipt "$ENCRYPTED_DIRECTORY/receipt.json"
 mkdir -m 700 -- "$RESTORE_DIRECTORY"
-tar -xzf "$RECOVERY_STAGE/originals.tar.gz" -C "$RESTORE_DIRECTORY"
+tar --same-permissions -xzf "$RECOVERY_STAGE/originals.tar.gz" -C "$RESTORE_DIRECTORY"
 ```
+
+Restore the verified permission bits explicitly. The private parent directory
+remains mode 0700, but a restrictive extraction umask or a tar data filter can
+otherwise change ordinary archived modes such as 0664 to 0644. Reconciliation
+checks the original modes as well as bytes and correctly rejects that change.
+
+### Reconcile the recovered originals with the public report
+
+For a successful five-scenario campaign, run
+[`tools/reconcile-coordinator-evidence.py`](../../tools/reconcile-coordinator-evidence.py)
+after the authenticated decryption and archive verification above. Keep the
+restored file modes intact. `RESTORE_DIRECTORY` must contain `MANIFEST.json`
+and `private/`; `PUBLIC_DIRECTORY` contains the six allowlisted public files.
+`SOURCE_REPOSITORY` must be a Git repository containing the campaign's exact
+recorded revision. Restore that source from the intended run's retained source
+evidence if necessary. The helper performs no fetch, checkout, extraction or
+compilation and has no private-key argument.
+
+Build the existing `crates/lustr-bench` replay example from the recorded source
+revision, or use a separately verified copy. Point `REPLAY_EXECUTABLE` at it:
+
+```bash
+python3 tools/reconcile-coordinator-evidence.py \
+  --restored "$RESTORE_DIRECTORY" \
+  --receipt "$ENCRYPTED_DIRECTORY/receipt.json" \
+  --public "$PUBLIC_DIRECTORY" \
+  --repository "$SOURCE_REPOSITORY" \
+  --replay "$REPLAY_EXECUTABLE"
+```
+
+The helper freshly hashes every recovered manifest original, checks sizes and
+modes, and verifies the exact file inventory. It verifies every public file
+against `SHA256SUMS`. All five report/specification digests and every raw
+stdout/stderr digest must agree with the public cases and private campaign
+result. It recomputes the frozen source's SHA-256 tree and checks its file
+inventory, Git blob identities and executable modes against the recorded
+coordinator Git subtree.
+
+The live exporter normally needs its original absolute paths and installed
+compiler binaries. Reconciliation preserves its original logical path
+comparisons while redirecting private-file reads to the restored tree. It
+loads the exporter from the recorded revision's Git blob, so an unrelated or
+modified working-tree exporter cannot replace it. Source paths cannot escape
+the restored tree through parent links or `..`. The regenerated public cases
+must match semantically, `samples.json` and the README must reproduce byte for
+byte, and campaign/host data must agree. The existing Rust replay verifies all
+five comparisons; its JSON receipt must also reproduce semantically.
+
+`source_identity` identifies the exact source revision/tree, exporter blob and
+SHA-256, runner source tree, recorded runner binary hash, and local and recorded
+replay binary hashes. Original reports must agree with the campaign's runner
+identity. A local replay build may have a different binary hash; the report
+states whether it matches the recorded binary. It does not claim that the
+helper established a binary-to-source build proof. Campaign version 1 did not
+record an exporter runtime hash, so that field remains explicitly null even
+though the expected exporter source is verified and used.
+
+Omitted compiler, runtime and constructor files receive recorded-identity
+consistency checks. Their bytes are unavailable in this archive and are never
+claimed freshly hashed. The result explicitly reports
+`compiler_binaries_freshly_rehashed: false` and
+`runner_binary_freshly_rehashed: false`. No source, original evidence or public
+file is rewritten; failures return fixed check categories without private
+paths or raw exceptions.
+
+This step requires a complete public projection. For a failed or partial
+campaign, the authenticated archive/manifest verification and allowlisted
+retention status establish what was retained; a complete public performance
+report is unavailable. Reconciliation does not execute compiler gates or
+measure a new campaign.
+
+The focused tests reuse the existing synthetic campaign-verifier fixture,
+delete its original host tree before reconciliation, and exercise source
+binding, relocation, private/public tampering, replay-receipt tampering and
+path rejection. They need only the existing replay executable:
+
+```bash
+python3 tools/test-reconciled-evidence.py --replay "$REPLAY_EXECUTABLE"
+```
+
+### Encryption and recovery tests
 
 Focused tests use temporary RSA keys and actual OpenSSL calls. They verify exact
 round trips of failed/partial evidence, exclusion of build state, path-free

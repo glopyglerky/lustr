@@ -6,6 +6,7 @@ on:
       - 'crates/lustr-bench/**'
       - 'tools/*coordinator*'
       - 'tools/*evidence*'
+      - 'performance/projects/**'
       - 'crates/lustr-semantic/src/mixed_link_input.rs'
       - 'crates/lustr-semantic/src/mixed_objects.rs'
       - 'tools/measure-mixed-link-input.rs'
@@ -33,6 +34,12 @@ jobs:
           python3 tools/test-coordinator-campaign.py --replay crates/lustr-bench/target/debug/examples/replay
       - name: Recover encrypted originals and reject corrupt or misdirected evidence
         run: python3 tools/test-encrypted-evidence.py
+      - name: Reconcile relocated originals with their recorded Git source
+        run: python3 tools/test-reconciled-evidence.py --replay crates/lustr-bench/target/debug/examples/replay
+      - name: Verify retained public and encrypted project archives and timing replay
+        run: |
+          set -o pipefail
+          python3 tools/check-coordinator-performance-archives.py --replay crates/lustr-bench/target/debug/examples/replay 2>&1 | tee "$RUNNER_TEMP/project-evidence-replay.log"
       - name: Test actual transient input isolation and failure recovery
         run: |
           set -euo pipefail
@@ -58,5 +65,6 @@ jobs:
           if-no-files-found: error
           path: |
             ${{ runner.temp }}/link-input-tests.log
+            ${{ runner.temp }}/project-evidence-replay.log
             ${{ runner.temp }}/link-input-identity.txt
             ${{ runner.temp }}/link-input-pairs.jsonl

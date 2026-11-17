@@ -72,6 +72,25 @@ class ProfileEvidenceTests(unittest.TestCase):
         row = next(line for line in REPORT.render(report).splitlines() if line.startswith("| cold |"))
         self.assertEqual([cell.strip() for cell in row.split("|")[1:-1]][5:7], ["not recorded", "not recorded"])
 
+    def test_concurrent_request_concatenation_is_rejected(self):
+        # The original 40d2ac3 dependency trace joined two concurrent request
+        # records before either final newline. All profiles were present, but
+        # the strict independent coverage check correctly rejected its framing.
+        keys = ["a8635c96722e5567", "27b2ad9f5eece79d", "002200ea77fa9450"]
+        names = ["123-10.jsonl", "124-10.jsonl", "125-10.jsonl"]
+        for key, name in zip(keys, names):
+            values = records()
+            values[0]["request_key"] = key
+            write(self.profiles / name, values)
+        (self.work / "dependency.profiles").write_text("\n".join(names) + "\n")
+        requests = [f"request-key={key} retained=false" for key in keys]
+        trace = self.work / "dependency.trace"
+        trace.write_text(requests[0] + requests[1] + "\n\n" + requests[2] + "\n")
+        with self.assertRaisesRegex(ValueError, "compiler profile relative to independent request trace for dependency"):
+            REPORT.summarize(self.root)
+        trace.write_text("\n".join(requests) + "\n")
+        self.assertEqual(len(REPORT.summarize(self.root)["modes"]["dependency"]["profiles"]), 3)
+
     def detailed(self):
         for n, (label, success) in enumerate(REPORT.EXPECTED.items()):
             values = detailed_records(success, label in {"body", "arithmetic-edit", "link-failure-recovery"})

@@ -211,19 +211,31 @@ the matching Rust SDK and the candidate's release-profile declaration, then
 records hashes of the actual compiler binaries and component records. Binary
 hashes alone do not prove a source-to-binary relationship.
 
-The native comparison has three lanes: pristine Lust, integrated Lust, and the
-Lustr entry. It preserves one source across all lanes and compares native cold
+The current schema-2 native comparison has four lanes: pristine Lust, integrated
+Lust, the Lustr entry and the matching standalone rustc. Historical schema-1
+campaigns retain their original three native lanes. The runner preserves one
+source across all lanes and compares native cold
 compilation, repeated builds, body/signature edits, checks, repeated checks,
 check body edits, rejection and actual compile-plus-test commands. The Cargo
 comparison uses the same pinned complete Rust implementation and Lustr on one
 unchanged dependency graph containing a procedural macro, async code and a
 `no_std`/`alloc` library. It measures the corresponding nine Cargo modes.
 
+Schema 2 adds rustc→entry to the three existing contrasts, producing 648 timed
+commands and 36 summaries at twelve pairs. The [direct-reference contract](native-rustc-comparison.md)
+specifies matching semantic flags, exact executable/child-command bindings,
+reference correctness gates and version-aware replay. Standalone rustc is
+explicitly nonincremental: its no-op starts a compiler process and is not
+Cargo Fresh. Its test operation compiles and actually executes the test within
+one outer wall-time measurement. Existing historical CSV/table bytes remain
+unchanged; no new ratio is claimed until a fresh campaign completes.
+
 Each of the twelve paired observations starts with independent compiler,
 mixed-state, Cargo-target, intermediate and XDG runtime-cache directories.
 Native cold samples disable the native daemon and disk compiler cache; Cargo
 cold samples include the normal mixed daemon startup. OS page caches remain
-untouched. Warm measurements retain the original daemons and same-lane state.
+untouched. Warm Lust measurements retain the original daemons and same-lane state;
+the standalone rustc lane has no persistent compiler daemon or incremental cache.
 Separate untimed probes require observed native frontend reuse and the mixed
 driver's retained build/check routes. Measured commands omit tracing and
 statistics instrumentation. The runner stops only its private sockets and

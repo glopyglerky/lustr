@@ -54,6 +54,11 @@ jobs:
         run: |
           set -o pipefail
           python3 tools/check-mixed-performance-archives.py 2>&1 | tee "$RUNNER_TEMP/archived-evidence-replay.log"
+      - name: Reproduce the separately labeled profile diagnosis and reject corrupt evidence
+        run: |
+          set -o pipefail
+          python3 performance/profiles/2026-11-17-40d2ac3/replay.py 2>&1 | tee "$RUNNER_TEMP/profile-reconstruction-replay.log"
+          python3 performance/profiles/2026-11-17-40d2ac3/test-replay.py 2>&1 | tee "$RUNNER_TEMP/profile-reconstruction-tests.log"
       - name: Publish measured tables without granting speed or compiler admission
         run: |
           printf '%s\n\n' '# Historical paired evidence replay' 'These reporting checks do not execute a compiler or qualify current-head performance.' >> "$GITHUB_STEP_SUMMARY"
@@ -76,5 +81,7 @@ jobs:
             ${{ runner.temp }}/archived-evidence-replay.log
             ${{ runner.temp }}/host-record-tests.log
             ${{ runner.temp }}/profile-record-tests.log
+            ${{ runner.temp }}/profile-reconstruction-replay.log
+            ${{ runner.temp }}/profile-reconstruction-tests.log
             performance
             PERFORMANCE.md

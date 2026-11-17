@@ -128,6 +128,12 @@ jobs:
           cp -a "$GITHUB_WORKSPACE/.lust-pristine-reference" "$RUNNER_TEMP/lustr-pristine-source"
       - name: Install matching complete Rust development libraries
         run: rustup toolchain install nightly-2026-11-09 --profile minimal --component rustc-dev --component llvm-tools --component rustfmt --component clippy --target wasm32-unknown-unknown --target x86_64-apple-darwin --target aarch64-apple-darwin --target x86_64-pc-windows-gnu
+      - name: Verify complete trace records under concurrent compiler processes
+        env:
+          RUSTUP_TOOLCHAIN: nightly-2026-11-09
+        run: |
+          set -o pipefail
+          python3 tools/test-mixed-trace.py 2>&1 | tee "$RUNNER_TEMP/mixed-trace-tests.log"
       - name: Install WebAssembly execution oracle
         uses: actions/setup-node@v4
         with:
@@ -311,6 +317,7 @@ jobs:
           if-no-files-found: warn
           path: |
             ${{ runner.temp }}/lustr-source-revision.txt
+            ${{ runner.temp }}/mixed-trace-tests.log
             ${{ runner.temp }}/lustr-source-built/BUILD-PROFILE.txt
             ${{ runner.temp }}/lustr-source-built/COMPONENTS.txt
             ${{ runner.temp }}/lustr-source-built/NATIVE-BUILD-RECEIPT.txt
