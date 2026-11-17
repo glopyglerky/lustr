@@ -81,10 +81,25 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
-      - name: Install GNU test utilities
+      - name: Install upstream gate's GNU Bash and command tools
         run: |
-          brew install coreutils
-          echo "$(brew --prefix coreutils)/libexec/gnubin" >> "$GITHUB_PATH"
+          # The upstream gate uses Bash associative arrays and wait -n.
+          # macOS /bin/bash 3.2 cannot run that test harness.
+          brew install bash coreutils findutils gnu-sed
+          echo "$(brew --prefix bash)/bin" >> "$GITHUB_PATH"
+          for tool in coreutils findutils gnu-sed; do
+            echo "$(brew --prefix "$tool")/libexec/gnubin" >> "$GITHUB_PATH"
+          done
+      - name: Verify actual Bash and GNU test commands
+        run: |
+          set -euo pipefail
+          bash -c 'test "${BASH_VERSINFO[0]}" -ge 4; declare -A values=([supported]=yes); test "${values[supported]}" = yes'
+          for tool in find sed sort xargs timeout; do
+            "$tool" --version | grep -q GNU
+          done
+          command -v bash
+          command -v sed
+          command -v find
       - name: Cache pinned tcc
         id: tcc
         uses: actions/cache@v4
