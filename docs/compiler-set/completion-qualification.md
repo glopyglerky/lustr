@@ -150,6 +150,17 @@ The [original project and profiler source bundle](measurements/2026-11-17-projec
 preserves the reviewed commits and the failed profiler predecessor. This review
 does not replace the final combined candidate's source-built execution.
 
+While PR11 was in preparation, its PR9 base advanced to
+`74e14e7a14cb283423465f665adf7288e2088a88`. The reconciliation preserves the
+base's separately tested temporary-input helper, component-only copy experiment
+and queued native-CI policy, together with PR11's profiler and project-evidence
+checks. Temporary relinking uses `mixed_link_input::stage`; persistent retention
+keeps copy, synchronization and only then recipe-path replacement. The existing
+profiling spans surround those operations. Eight actual helper tests, 22
+profiling tests, 16 workflow controls, the exact source guard, matching-nightly
+component typecheck and formatting check pass after reconciliation. These local
+checks do not replace the new combined source-built campaign.
+
 ## Hosted admission gates
 
 The compiler-set workflow builds optimized matched components from source,

@@ -11,6 +11,9 @@ use std::{
     sync::{Mutex, OnceLock},
 };
 
+#[path = "mixed_link_input.rs"]
+mod link_input;
+
 #[derive(Default)]
 struct State {
     entries: BTreeMap<String, PathBuf>,
@@ -50,21 +53,16 @@ pub(crate) fn append_objects(modules: &mut CompiledModules) {
     }
 }
 
-fn copy_file(path: &mut Option<PathBuf>, directory: &Path, n: &mut usize) -> io::Result<()> {
+fn retain_file(path: &mut Option<PathBuf>, directory: &Path, n: &mut usize) -> io::Result<()> {
     let Some(source) = path else { return Ok(()) };
     let target = directory.join(format!("object-{}-{}", *n, source.file_name().unwrap().to_string_lossy()));
     *n += 1;
     fs::copy(&*source, &target)?;
-    *source = target;
-    Ok(())
-}
-
-fn retain_file(path: &mut Option<PathBuf>, directory: &Path, n: &mut usize) -> io::Result<()> {
-    copy_file(path, directory, n)?;
-    if let Some(target) = path {
+    {
         let _profile = super::mixed_profile::span("retained-object-sync");
-        fs::File::open(target)?.sync_all()?;
+        fs::File::open(&target)?.sync_all()?;
     }
+    *source = target;
     Ok(())
 }
 
@@ -146,11 +144,7 @@ pub(crate) fn relink(sess: &Session, directory: &Path, native: &BTreeMap<PathBuf
                 return Err("cached object escaped its generation".into());
             }
             *path = Some(selected.clone());
-            // These copies belong only to this live linker invocation. No
-            // persisted certificate or link recipe points to them. The checked
-            // originals above remain immutable and durably retained; syncing
-            // disposable inputs adds no recovery guarantee.
-            copy_file(path, &temporary, &mut n).map_err(|e| e.to_string())?;
+            link_input::stage(path, &temporary, &mut n).map_err(|e| e.to_string())?;
         }
     }
     drop(copying);
