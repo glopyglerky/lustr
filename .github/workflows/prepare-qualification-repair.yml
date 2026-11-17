@@ -1,0 +1,37 @@
+name: Prepare bounded native qualification fixes
+
+on:
+  push:
+    branches: [lustr/prepare-qualification-fixes-20261117]
+    paths:
+      - '.github/workflows/prepare-qualification-repair.yml'
+      - 'tools/qualification-repair/**'
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    if: github.repository == 'glopyglerky/lustr' && github.ref == 'refs/heads/lustr/prepare-qualification-fixes-20261117'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install the pinned focused-test compiler
+        run: rustup toolchain install 1.99.1 --profile minimal --component rustfmt
+      - name: Apply exact-source fixes, test, bind provenance and create only the review branch
+        run: python3 tools/qualification-repair/prepare.py
+      - name: Retain focused results and exact proposed source diff
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-qualification-repair-${{ github.run_attempt }}
+          if-no-files-found: warn
+          path: |
+            ${{ runner.temp }}/lustr-qualification-repair-tools/*.log
+            ${{ runner.temp }}/lustr-qualification-repair-tools/*.txt
+            ${{ runner.temp }}/lustr-qualification-repair-tools/*.patch
