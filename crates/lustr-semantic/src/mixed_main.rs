@@ -41,6 +41,7 @@ mod mixed_cache;
 mod mixed_diagnostics;
 mod mixed_objects;
 mod mixed_profile;
+mod mixed_symbol_rename;
 
 #[allow(dead_code)]
 #[rustfmt::skip]
@@ -578,17 +579,9 @@ impl Callbacks for Compiler {
                 let linked = path.join("native-link.o");
                 let result = {
                     let _profile = mixed_profile::span("native-symbol-rename");
-                    Command::new("objcopy")
-                        .arg("--redefine-sym")
-                        .arg(format!("{native_symbol}={symbol}"))
-                        .arg(&object)
-                        .arg(&linked)
-                        .output()
+                    mixed_symbol_rename::rename(&object, &native_symbol, &symbol, &linked)
                 };
-                let Ok(result) = result else {
-                    continue;
-                };
-                if !result.status.success() {
+                if result.is_err() {
                     continue;
                 }
                 entries.insert(symbol.clone(), linked);

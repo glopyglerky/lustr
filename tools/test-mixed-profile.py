@@ -172,6 +172,48 @@ class ProfileEvidenceTests(unittest.TestCase):
         self.emitter_mutation(lambda value: value.update(extra="unreviewed"), "unknown native emitter fields")
         self.emitter_mutation(lambda value: value["phases"][0].update(elapsed_ns=True), "invalid native emitter phase duration")
 
+    def test_in_process_symbol_check_has_a_distinct_version_and_phase(self):
+        self.detailed()
+        for n, label in enumerate(REPORT.EXPECTED):
+            path = self.profiles / f"123-{n}.jsonl"
+            values = [json.loads(line) for line in path.read_text().splitlines()]
+            old = values[4]["emitter_records"][0]
+            emitter = json.loads(old)
+            emitter["version"] = 2
+            emitter["phases"][4]["phase"] = "symbol-check"
+            new = json.dumps(emitter)
+            values[4]["emitter_records"] = [new]
+            write(path, values)
+            trace = self.work / f"{label}.trace"
+            trace.write_text(trace.read_text().replace(old, new))
+        report = REPORT.summarize(self.root)
+        rendered = REPORT.render(report)
+        self.assertIn("| symbol-check |", rendered)
+        self.assertNotIn("| nm |", rendered)
+        self.assertIn("with no symbol-tool child", rendered)
+        self.assertEqual(report["modes"]["body"]["native_emitter"]["phase_nanoseconds"]["symbol-check"], 1)
+
+    def test_historical_nm_and_current_symbol_phases_cannot_be_relabeled(self):
+        self.emitter_mutation(lambda value: value.update(version=2), "phase order")
+        self.emitter_mutation(lambda value: value["phases"][4].update(phase="symbol-check"), "phase order")
+        self.emitter_mutation(lambda value: value.update(version=3), "unknown native emitter schema")
+
+    def test_one_campaign_cannot_mix_symbol_check_implementations(self):
+        self.detailed()
+        path = self.profiles / "123-1.jsonl"
+        values = [json.loads(line) for line in path.read_text().splitlines()]
+        old = values[4]["emitter_records"][0]
+        emitter = json.loads(old)
+        emitter["version"] = 2
+        emitter["phases"][4]["phase"] = "symbol-check"
+        new = json.dumps(emitter)
+        values[4]["emitter_records"] = [new]
+        write(path, values)
+        trace = self.work / "body.trace"
+        trace.write_text(trace.read_text().replace(old, new))
+        with self.assertRaisesRegex(ValueError, "mixed native emitter versions"):
+            REPORT.summarize(self.root)
+
     def test_failed_native_response_has_unavailable_detail_not_zero(self):
         values = detailed_records()
         values[4].update(response_code=1, emitter_status="unavailable-failed-response", emitter_records=[])

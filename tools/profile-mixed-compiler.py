@@ -46,6 +46,10 @@ EMITTER_PHASES = (
     "c-prepare", "output-prepare", "c-write", "libtcc", "nm",
     "rename", "file-sync", "directory-sync",
 )
+EMITTER_PHASES_BY_VERSION = {
+    1: EMITTER_PHASES,
+    2: tuple("symbol-check" if phase == "nm" else phase for phase in EMITTER_PHASES),
+}
 EMITTER_PREFIX = "lustr mixed native profile: "
 
 
@@ -101,16 +105,17 @@ def read_native_responses(records, spans, header):
         require(type(raw) is list and len(raw) == 1 and type(raw[0]) is str, "missing or duplicate native emitter record")
         emitter = json.loads(raw[0])
         require(type(emitter) is dict and set(emitter) == {"schema", "version", "native", "unit_identity", "success", "elapsed_ns", "phases"}, "unknown native emitter fields")
-        require(emitter["schema"] == "lustr.mixed-native-emitter" and type(emitter["version"]) is int and emitter["version"] == 1, "unknown native emitter schema")
+        require(emitter["schema"] == "lustr.mixed-native-emitter" and type(emitter["version"]) is int and emitter["version"] in EMITTER_PHASES_BY_VERSION, "unknown native emitter schema")
+        emitter_phases = EMITTER_PHASES_BY_VERSION[emitter["version"]]
         require(emitter["native"] == header["native"] and emitter["unit_identity"] == unit, "native emitter identity mismatch")
         success, elapsed = emitter["success"], emitter["elapsed_ns"]
         require(success is True, "native emitter outcome mismatch")
         require(type(elapsed) is int and 0 <= elapsed <= roundtrip["elapsed_ns"], "native emitter duration exceeds its roundtrip")
         phases = emitter["phases"]
-        require(type(phases) is list and 1 <= len(phases) <= len(EMITTER_PHASES), "incomplete native emitter phases")
+        require(type(phases) is list and 1 <= len(phases) <= len(emitter_phases), "incomplete native emitter phases")
         require(all(type(phase) is dict and set(phase) == {"phase", "elapsed_ns", "completed"} for phase in phases), "unknown native emitter phase fields")
-        require([phase["phase"] for phase in phases] == list(EMITTER_PHASES[:len(phases)]), "invalid native emitter phase order")
-        require(len(phases) == len(EMITTER_PHASES), "successful native emitter omitted phases")
+        require([phase["phase"] for phase in phases] == list(emitter_phases[:len(phases)]), "invalid native emitter phase order")
+        require(len(phases) == len(emitter_phases), "successful native emitter omitted phases")
         for phase in phases:
             require(type(phase["elapsed_ns"]) is int and phase["elapsed_ns"] >= 0, "invalid native emitter phase duration")
             require(phase["completed"] is True, "native emitter phase completion mismatch")
@@ -230,11 +235,19 @@ def summarize(root):
     identities = {(v["identity"]["rustc"], v["identity"]["native"]) for v in invocations.values()}
     require(len(identities) == 1, "profiling mixed compiler identities")
     require(len({v["identity"]["version"] for v in invocations.values()}) == 1, "profiling mixed schema versions")
+    emitter_versions = {request["emitter"]["version"] for value in invocations.values()
+                        for request in value["native_requests"] or [] if request["emitter"] is not None}
+    require(len(emitter_versions) <= 1, "profiling mixed native emitter versions")
     return {"schema": "lustr.mixed-phase-attribution", "version": 2, "instrumented": True,
             "paired_speed_evidence": False, "modes": modes, "invocations": invocations}
 
 
 def render(report):
+    emitter_versions = {request["emitter"]["version"] for value in report["invocations"].values()
+                        for request in value["native_requests"] or [] if request["emitter"] is not None}
+    require(len(emitter_versions) <= 1, "profiling mixed native emitter versions")
+    emitter_version = next(iter(emitter_versions), 1)
+    emitter_phases = EMITTER_PHASES_BY_VERSION[emitter_version]
     columns = ["driver", "context-fingerprint", "native-compile", "native-request-setup", "native-daemon-roundtrip", "native-symbol-rename",
                "temporary-link-copies", "original-linker", "edited-native-object-sync", "publish-certificate"]
     legacy = any(value["identity"]["version"] == 1 for value in report["invocations"].values())
@@ -248,7 +261,7 @@ def render(report):
         cells = ["not recorded" if phase in unrecorded else f"{mode['summed_phase_nanoseconds'].get(phase, 0) / 1e6:.3f}" for phase in columns]
         lines.append(f"| {label} | {len(mode['profiles'])} | " + " | ".join(cells) + " |")
     lines.extend(["", "The full JSON includes every named phase, per-process success/reuse/check state, exact compiler identities and record hashes. A zero in this table means no recorded duration for that phase. These observations do not isolate a before/after optimization effect or establish a compiler speedup.", ""])
-    remote_columns = ["emitter total", *EMITTER_PHASES, "roundtrip outside emitter"]
+    remote_columns = ["emitter total", *emitter_phases, "roundtrip outside emitter"]
     lines.extend(["## Native emitter durations", "",
                   "These durations come from the daemon response, separately from the driver clock. Each record is bound to its actual client request and successful protocol exchange, checked against that exchange's elapsed time, and matched to the original diagnostic trace. The daemon's sequential phase durations cover its emitter total; they do not partition the enclosing driver span.", "",
                   "Roundtrip outside emitter remains unattributed. It includes protocol transport and queueing, native frontend and generated-code work before the emitter, retained-state work after it, guard handling, and response production. It is not a frontend or codegen measurement. Client request setup is recorded separately; retries and daemon startup can also occupy the enclosing request.", "",
@@ -266,10 +279,11 @@ def render(report):
                 cells = ["unavailable"] * len(remote_columns)
             else:
                 cells = [f"{native['elapsed_ns'] / 1e6:.3f}"]
-                cells.extend(f"{native['phase_nanoseconds'][phase] / 1e6:.3f}" for phase in EMITTER_PHASES)
+                cells.extend(f"{native['phase_nanoseconds'][phase] / 1e6:.3f}" for phase in emitter_phases)
                 cells.append(f"{native['protocol_unattributed_ns'] / 1e6:.3f}")
         lines.append(f"| {label} | {count} | " + " | ".join(cells) + " |")
-    lines.extend(["", "Values are milliseconds summed only across the measured successful responses. Failed native responses retain their original error diagnostics, actual response code and complete client intervals, with emitter detail and outside-emitter residual explicitly unavailable. Their remote durations are null, never zero. Timing text must not alter the daemon's byte-for-byte comparison of failed warm/fresh responses. Missing success detail or unexpected failure decoration fails profiling qualification. Version 1 archives did not collect these records and remain labeled not recorded. The single-unit libtcc span includes its in-process compiler setup, compilation, object write and teardown; nm includes its child process. Rename and both synchronization operations remain unchanged.", ""])
+    symbol_detail = "nm includes its child process." if emitter_version == 1 else "symbol-check reads and validates the bounded ELF object in process, with no symbol-tool child. Emitter schema 2 names this operation separately from historical nm spans."
+    lines.extend(["", "Values are milliseconds summed only across the measured successful responses. Failed native responses retain their original error diagnostics, actual response code and complete client intervals, with emitter detail and outside-emitter residual explicitly unavailable. Their remote durations are null, never zero. Timing text must not alter the daemon's byte-for-byte comparison of failed warm/fresh responses. Missing success detail or unexpected failure decoration fails profiling qualification. Version 1 archives did not collect these records and remain labeled not recorded. The single-unit libtcc span includes its in-process compiler setup, compilation, object write and teardown; " + symbol_detail + " Rename and both synchronization operations remain unchanged.", ""])
     return "\n".join(lines)
 
 

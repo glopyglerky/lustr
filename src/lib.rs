@@ -115,6 +115,8 @@ pub fn cargo_command(args: &[OsString]) -> bool {
     args.first().is_some_and(|arg| {
         matches!(arg.to_str(), Some("doctor" | "plan" | "test" | "run" | "build" | "check" | "clippy" | "fmt" | "--engine" | "--explain"))
             || arg == OsStr::new("--bluefe-root")
+            || arg == OsStr::new("--frontend-jobs")
+            || arg.to_str().is_some_and(|arg| arg.starts_with("--engine=") || arg.starts_with("--frontend-jobs=") || arg.starts_with('+'))
     })
 }
 

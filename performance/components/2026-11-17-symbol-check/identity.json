@@ -1,0 +1,74 @@
+{
+  "scope": "local component operation, not whole compiler or CI performance",
+  "base_source": "4761f61c4139243ea1f0f83c185bf316219d3cba",
+  "source_sha256": {
+    "crates/lustr-native-core/src/mixed_symbols.rs": "46f1b241172d1a3b3d8ab8184ac55504be6c1ffc6ab2312c85c7ac74124d67e3",
+    "tools/check-mixed-symbols.rs": "cef3ec8d8ba6ccba5aaccd24c697ade121c6891638aff81c31edb359c5eed793"
+  },
+  "probe_sha256": "09b777df7410b7eaa6a89d826ad082d061a12dd20d8e8fdc5426ddcf5f560f51",
+  "fixture_sha256": "1f2c0965f5cbd7972ef008ded6da96bb6947572d2a2236059d043bbe9fc6fc2d",
+  "object_sha256": "19bc0378ad3e49fcead932fe6793c62b95f24749f36a8bbb3f25985079136523",
+  "object_bytes": 944,
+  "samples_sha256": "c9c1c26af7c3f1e11cc5f35c40657e1455b1170c807c6c0dd826b392ce83a1d7",
+  "tools": {
+    "rustc": {
+      "sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+      "version": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n"
+    },
+    "tcc": {
+      "sha256": "07f5f98d7f7028e8d97001bcd650215a12984896346ec120598b66f98dc848ce",
+      "source_revision": "43c7708b85681a2fd4451c8a541af4494a8919b2",
+      "version": "tcc version 0.9.28rc (x86_64 Linux)\n"
+    },
+    "nm": {
+      "sha256": "ddb55c0685721bf494aa2d090056b8b32a40614ad4464b305896f527d882c3c1",
+      "version": "GNU nm (GNU Binutils for Debian) 2.44\nCopyright (C) 2025 Free Software Foundation, Inc.\nThis program is free software; you may redistribute it under the terms of\nthe GNU General Public License version 3 or (at your option) any later version.\nThis program has absolutely no warranty.\n"
+    }
+  },
+  "host": {
+    "system": "Linux",
+    "release": "6.18.57",
+    "machine": "x86_64",
+    "affinity_cpu_count": 9,
+    "processor_model": "AMD EPYC 9V74 80-Core Processor"
+  },
+  "commands": {
+    "fixture": [
+      "TCC",
+      "-w",
+      "-fno-asynchronous-unwind-tables",
+      "-c",
+      "fixture.c",
+      "-o",
+      "fixture.o"
+    ],
+    "probe_build": [
+      "RUSTC",
+      "--edition=2024",
+      "-O",
+      "tools/check-mixed-symbols.rs",
+      "-o",
+      "PROBE"
+    ],
+    "timing": [
+      "PROBE",
+      "bench",
+      "fixture.o",
+      "lustr_mixed_0123456789abcdef",
+      "NM",
+      "64"
+    ]
+  },
+  "command_paths": "TCC, RUSTC, NM and PROBE identify the exact binary hashes above; temporary build locations omitted. Fixture/timing cwd is this evidence directory; probe-build cwd is repository root.",
+  "binaries_retained": "TinyCC object retained; probe and compiler executables are identified by hashes but not included.",
+  "limits": [
+    "One supported scalar TinyCC object, not a real project or mixed compiler run.",
+    "Candidate checks more structural conditions and expected export; both operations require no undefined symbols on the identical object.",
+    "Child-process startup is included for nm; candidate reads and validates in the existing process.",
+    "No isolated-host or cross-platform claim.",
+    "The historical hosted 31ms nm span is not reproduced or attributed by this local measurement."
+  ],
+  "summary_sha256": "78df4f64f4279db8b014653a2e73bce8774a46e90e8759db27b4aa6d229ae928",
+  "statistics_python_version": "3.12.14",
+  "statistics_replay": "tools/replay-mixed-symbol-measurement.py; MT19937 Random(seed).choices(log_ratios, k=64); paired geometric mean; 10000 replicates; linear endpoint interpolation"
+}

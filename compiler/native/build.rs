@@ -105,6 +105,9 @@ fn main() {
         std::fs::read(&mixed).expect("read mixed compiler boundary").hash(&mut h);
         println!("cargo:rerun-if-changed={}", mixed.display());
     }
+    let mixed_symbols = root.join("../../crates/lustr-native-core/src/mixed_symbols.rs");
+    ("lustr-mixed-symbols", std::fs::read(&mixed_symbols).expect("mixed object symbol validator is required")).hash(&mut h);
+    println!("cargo:rerun-if-changed={}", mixed_symbols.display());
     hash_tree(&mut h, &root.join("library"));
     if let Ok(bytes) = std::fs::read(root.join("Cargo.toml")) {
         bytes.hash(&mut h);

@@ -71,13 +71,16 @@ def fixture(root, schema=1):
                                            "entry": "/synthetic/package/lustr", "rustc": "/synthetic/package/rustc-reference"}
         meta["compiler_sha256"] = {path: "c" * 64 for path in ("/synthetic/pristine/lust", "/synthetic/integrated/lust",
                                       "/synthetic/package/lustr", "/synthetic/package/rustc-reference", "/synthetic/runner")}
+    command_meta = dict(meta, native_lane_executables={
+        "pristine": "/synthetic/pristine/lust", "integrated": "/synthetic/integrated/lust",
+        "entry": "/synthetic/package/lustr", "rustc": "/synthetic/package/rustc-reference"})
     rows = [dict(kind="identities", report=copy.deepcopy(dict(meta, status="failed", summaries=None)))]
     durations = {}
     folder = root / "lustr-paired-measurements"
     folder.mkdir()
     def store(row, streams):
         for stream in ("stdout", "stderr"):
-            name = f"{row['family']}-{row['lane']}-{row['phase']}-{row['sample']}.{stream}"
+            name = f"{len(rows):05}-{row['family']}-{row['lane']}-{row['phase']}-{row['sample']}.{stream}"
             data = streams[stream]
             (folder / name).write_bytes(data)
             row[stream] = {"Unix": list(name.encode())}
@@ -97,10 +100,26 @@ def fixture(root, schema=1):
                     row = dict(kind="command", family=family, lane=lane, phase=phase, sample=i,
                                seconds=value, expected_exit=outcome, exit=outcome,
                                timed_out=False, signal=None,
-                               source_sha256={"/synthetic/source/main.rs": "d" * 64},
-                               source_after_sha256={"/synthetic/source/main.rs": "d" * 64})
-                    streams = native_record(row, meta) if schema == 2 and family == "native" else {s: b"synthetic output\n" for s in ("stdout", "stderr")}
+                               source_sha256={f"/synthetic/source/{'app/src/' if family == 'cargo' else ''}main.rs": "d" * 64},
+                               source_after_sha256={f"/synthetic/source/{'app/src/' if family == 'cargo' else ''}main.rs": "d" * 64})
+                    if family == "native":
+                        streams = native_record(row, command_meta)
+                    else:
+                        operation = "check" if phase.startswith("check") else "test" if phase == "compile-plus-test" else "build"
+                        target = f"/synthetic/state/cargo/{lane}/{i}/target"
+                        row["argv"] = [{"Unix": list(value.encode())} for value in
+                                       (f"/synthetic/{lane}/cargo", operation, "--target-dir", target)]
+                        streams = {s: b"synthetic output\n" for s in ("stdout", "stderr")}
                     store(row, streams)
+                    if phase in ("cold", "no-op", "body-edit", "signature-edit"):
+                        args = [reporter.argument(value) for value in row["argv"]]
+                        output = args[args.index("-o") + 1] if family == "native" else target + "/debug/mixed-app"
+                        runtime = {key: copy.deepcopy(value) for key, value in row.items()
+                                   if not key.startswith(("stdout", "stderr"))}
+                        runtime.update(phase=phase + "-runtime", sample=None, seconds=.001,
+                                       argv=[{"Unix": list(output.encode())}])
+                        store(runtime, {"stdout": b"57\n" if phase == "body-edit" else b"59\n", "stderr": b""})
+            rows.append(dict(kind="daemon-exits", scope=f"{family}-{i}", successful_exits=3 if family == "native" else 1))
     if schema == 2:
         for phase, code in reporter.REFERENCE_PROBES.items():
             for lane in ("entry", "rustc"):
@@ -109,6 +128,9 @@ def fixture(root, schema=1):
                            source_sha256={"/synthetic/source/main.rs": "d" * 64},
                            source_after_sha256={"/synthetic/source/main.rs": "d" * 64})
                 store(row, native_record(row, meta))
+        rows.append(dict(kind="daemon-exits", scope="native-reference-probes", successful_exits=1))
+    rows += [dict(kind="daemon-exits", scope="native-probes", successful_exits=3),
+             dict(kind="daemon-exits", scope="mixed-probes", successful_exits=1)]
     rows += [dict(kind="native-retained-check", lane=lane, route="bodies-without-body-work")
              for lane in reporter.LANES["native"]]
     summaries = []
@@ -158,12 +180,136 @@ class FixtureTestCase(unittest.TestCase):
             self.verify()
 
 
-class ReportTests(FixtureTestCase):
+class ExecutionContractTests:
+    def test_recorded_order_must_match_executed_lane_order(self):
+        # Permutations stay balanced, but no longer describe the commands.
+        for row in self.data["records"]:
+            if row["kind"] == "order":
+                row["lanes"].reverse()
+        self.rejected()
+
+    def test_order_record_must_precede_its_commands(self):
+        rows = self.data["records"]
+        order = next(row for row in rows if row["kind"] == "order")
+        rows.remove(order)
+        rows.append(order)
+        self.rejected()
+
+    def test_measured_phase_order_cannot_change(self):
+        rows = self.data["records"]
+        first = next(i for i, row in enumerate(rows) if row.get("phase") == "check")
+        later = next(i for i, row in enumerate(rows) if row.get("phase") == "check-no-op")
+        rows[first], rows[later] = rows[later], rows[first]
+        self.rejected()
+
+    def test_every_measured_build_requires_its_runtime(self):
+        original = copy.deepcopy(self.data)
+        for family in ("native", "cargo"):
+            with self.subTest(family=family):
+                self.data = copy.deepcopy(original)
+                rows = self.data["records"]
+                rows.remove(next(row for row in rows if row.get("family") == family and row.get("phase") == "cold-runtime"))
+                self.rejected()
+
+    def test_runtime_cannot_be_moved_after_another_command(self):
+        rows = self.data["records"]
+        runtime = next(row for row in rows if row.get("phase") == "cold-runtime")
+        rows.remove(runtime)
+        rows.insert(rows.index(next(row for row in rows if row.get("phase") == "check")), runtime)
+        self.rejected()
+
+    def test_measured_runtime_must_use_its_own_artifact_and_source(self):
+        original = copy.deepcopy(self.data)
+        for family in ("native", "cargo"):
+            for mutation in ("artifact", "source"):
+                with self.subTest(family=family, mutation=mutation):
+                    self.data = copy.deepcopy(original)
+                    row = next(row for row in self.data["records"]
+                               if row.get("family") == family and row.get("phase") == "cold-runtime")
+                    if mutation == "artifact":
+                        row["argv"] = [{"Unix": list(b"/synthetic/unrelated-program")}]
+                    else:
+                        row["source_sha256"] = row["source_after_sha256"] = {"/other/source.rs": "d" * 64}
+                    self.rejected()
+
+    def test_measured_runtime_output_is_checked_after_rehash(self):
+        original = copy.deepcopy(self.data)
+        for family in ("native", "cargo"):
+            with self.subTest(family=family):
+                self.data = copy.deepcopy(original)
+                row = next(row for row in self.data["records"]
+                           if row.get("family") == family and row.get("phase") == "cold-runtime")
+                data = b"wrong\n"
+                path = self.root / "lustr-paired-measurements" / reporter.output_name(row["stdout"])
+                original_bytes = path.read_bytes()
+                try:
+                    path.write_bytes(data)
+                    row["stdout_bytes"], row["stdout_sha256"] = len(data), reporter.sha256(data)
+                    self.rejected()
+                finally:
+                    path.write_bytes(original_bytes)
+
+    def test_duplicate_runtime_with_distinct_outputs_is_rejected(self):
+        original = copy.deepcopy(self.data)
+        for family in ("native", "cargo"):
+            for placement in ("adjacent", "after-samples"):
+                with self.subTest(family=family, placement=placement):
+                    self.data = copy.deepcopy(original)
+                    rows = self.data["records"]
+                    index = next(i for i, row in enumerate(rows)
+                                 if row.get("family") == family and row.get("phase") == "cold-runtime")
+                    duplicate = copy.deepcopy(rows[index])
+                    for stream in ("stdout", "stderr"):
+                        name = reporter.output_name(duplicate[stream])
+                        folder = self.root / "lustr-paired-measurements"
+                        (folder / ("duplicate-" + name)).write_bytes((folder / name).read_bytes())
+                        duplicate[stream] = {"Unix": list(("duplicate-" + name).encode())}
+                    rows.insert(index + 1 if placement == "adjacent" else len(rows), duplicate)
+                    self.rejected()
+
+    def test_daemon_receipts_cannot_be_missing_or_duplicated(self):
+        original = copy.deepcopy(self.data)
+        for mutation in ("missing-one", "missing-all", "duplicate"):
+            with self.subTest(mutation=mutation):
+                self.data = copy.deepcopy(original)
+                rows = self.data["records"]
+                receipt = next(row for row in rows if row["kind"] == "daemon-exits")
+                if mutation == "missing-one":
+                    rows.remove(receipt)
+                elif mutation == "missing-all":
+                    self.data["records"] = [row for row in rows if row["kind"] != "daemon-exits"]
+                else:
+                    rows.append(copy.deepcopy(receipt))
+                self.rejected()
+
+    def test_daemon_counts_must_meet_the_executed_contract(self):
+        original = copy.deepcopy(self.data)
+        for scope, count in (("native-probes", 2), ("mixed-probes", 0), ("native-0", 2),
+                             ("cargo-0", 0), ("native-0", True), ("cargo-0", -1)):
+            with self.subTest(scope=scope, count=count):
+                self.data = copy.deepcopy(original)
+                next(row for row in self.data["records"] if row.get("scope") == scope)["successful_exits"] = count
+                self.rejected()
+
+    def test_sample_daemon_receipt_must_follow_all_sample_work(self):
+        rows = self.data["records"]
+        receipt = next(row for row in rows if row.get("scope") == "native-0")
+        rows.remove(receipt)
+        rows.insert(rows.index(next(row for row in rows if row.get("phase") == "check")), receipt)
+        self.rejected()
+
+    def test_unrecognized_daemon_scope_is_rejected(self):
+        receipt = next(row for row in self.data["records"] if row["kind"] == "daemon-exits")
+        receipt["scope"] = "unrecorded-probe"
+        self.rejected()
+
+
+class ReportTests(ExecutionContractTests, FixtureTestCase):
     def test_complete_report_and_markdown(self):
         result = self.verify()
         self.assertEqual(result["verified"]["comparisons"], 27)
         self.assertEqual(result["verified"]["timed_commands"], 270)
-        self.assertEqual(result["verified"]["command_outputs"], 540)
+        self.assertEqual(result["verified"]["command_outputs"], 780)
         self.assertEqual(len(result["timing_samples"]), 45)
         text = reporter.markdown(result)
         self.assertEqual(text.count("| rejection |"), 3)
@@ -376,7 +522,7 @@ class ReportTests(FixtureTestCase):
         self.assertFalse(missing.exists())
 
 
-class Schema2Tests(FixtureTestCase):
+class Schema2Tests(ExecutionContractTests, FixtureTestCase):
     schema = 2
 
     def command(self, lane="rustc", phase="compile-plus-test"):

@@ -11,7 +11,6 @@ use std::{
     fs,
     io::Write,
     path::{Path, PathBuf},
-    process::Command,
 };
 
 pub fn context(tcx: TyCtxt<'_>, native: &BTreeSet<String>) -> Option<Value> {
@@ -245,18 +244,9 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
         }
         let symbol = text(kernel, "symbol")?.to_owned();
         let linked = fresh(&unit, "renamed", "o")?;
-        let result = {
+        {
             let _profile = super::mixed_profile::span("native-symbol-rename");
-            Command::new("objcopy")
-                .arg("--redefine-sym")
-                .arg(format!("{native_symbol}={symbol}"))
-                .arg(&output)
-                .arg(&linked)
-                .output()
-                .ok()?
-        };
-        if !result.status.success() {
-            return None;
+            super::mixed_symbol_rename::rename(&output, &native_symbol, &symbol, &linked).ok()?;
         }
         // The current certificate still describes the previous successful
         // body. Keep its object immutable if a later edit, link or dep-info

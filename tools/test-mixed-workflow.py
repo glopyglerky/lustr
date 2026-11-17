@@ -62,6 +62,18 @@ class MixedWorkflowTests(unittest.TestCase):
         outcomes = self.success if outcomes is None else outcomes
         return not cancelled and all(outcomes.get(dep) == "success" for dep in dependencies(self.steps[step]))
 
+    def test_python_workflow_entries_exist_before_expensive_builds(self):
+        repository = WORKFLOW.parents[2]
+        scripts = re.findall(r"python3 (tools/[A-Za-z0-9_./-]+\.py)\b", self.section)
+        self.assertTrue(scripts)
+        for script in scripts:
+            with self.subTest(script=script):
+                self.assertTrue((repository / script).is_file(), f"missing workflow entry: {script}")
+        preflight = self.section.split("      - name: Obtain the exact pristine reference objects", 1)[0]
+        for script in ("test-mixed-profile.py", "test-mixed-performance-report.py",
+                       "test-mixed-symbol-measurement.py", "test-upstream-slice-benchmark.py"):
+            self.assertIn(f"python3 tools/{script}", preflight)
+
     def shell_probe(self, status, diagnostic, missing_command=False):
         block = self.steps["baseline_regression"].split("        run: |\n", 1)[1]
         lines = []
@@ -179,6 +191,27 @@ class MixedWorkflowTests(unittest.TestCase):
         self.assertNotIn("LUSTR_MIXED_PROFILE_DIR", self.steps["measurements"])
         self.assertIn("lustr-mixed-profile", self.steps["mixed_profile"])
         self.assertIn("lustr-paired-measurements", self.steps["measurements"])
+
+    def test_public_slice_requires_correctness_without_masking_other_campaign_failures(self):
+        required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution",
+                    "retained_checks", "mixed_libraries", "entry_contract", "pristine_build", "host_record"}
+        self.assertEqual(set(dependencies(self.steps["slice_measurements"])), required)
+        for gate in required:
+            for outcome in ("failure", "skipped", "cancelled"):
+                with self.subTest(gate=gate, outcome=outcome):
+                    self.assertFalse(self.eligible("slice_measurements", dict(self.success, **{gate: outcome})))
+        self.assertTrue(self.eligible("slice_measurements", dict(self.success, measurements="failure", mixed_profile="failure")))
+        self.assertNotIn("LUSTR_MIXED_PROFILE_DIR", self.steps["slice_measurements"])
+
+    def test_public_slice_retention_is_explicit_and_preserves_failures(self):
+        marker = "      - name: Retain public slice commands, source and all measured outcomes\n"
+        block = self.section.split(marker, 1)[1].split("      - name:", 1)[0]
+        self.assertIn("        if: always()\n", block)
+        paths = {line.strip() for line in block.splitlines() if "runner.temp" in line}
+        expected = {f"${{{{ runner.temp }}}}/lustr-public-slice/{name}" for name in
+                    ("report.json", "README.md", "raw.jsonl", "samples.csv", "fixture", "commands",
+                     "build-receipts", "runtime-oracle.stdout", "rejected.rs")}
+        self.assertEqual(paths, expected)
 
     def test_project_measurements_require_correctness_and_own_runner(self):
         required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution", "retained_checks", "mixed_libraries", "entry_contract", "project_bench_build", "host_record"}

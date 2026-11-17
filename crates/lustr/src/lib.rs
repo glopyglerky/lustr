@@ -6,7 +6,7 @@ mod toolchain;
 
 use std::ffi::{OsStr, OsString};
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 const HELP: &str = "lustr compiler set 0.1.0
@@ -71,11 +71,21 @@ doctor reports availability rather than semantic or backend qualification.
 /// Shared command entry point for the direct and both Cargo extension names.
 /// Cargo adds its subcommand name to argv; remove only that leading name.
 pub fn run_cli(args: &[OsString]) -> i32 {
+    run_cli_with_root(args, None)
+}
+
+/// Use the packaged compiler unless a coordinator option explicitly selects
+/// another engine/toolchain. Cargo and application arguments cannot select it.
+pub fn run_cli_with_default_root(args: &[OsString], root: &Path) -> i32 {
+    run_cli_with_root(args, Some(root))
+}
+
+fn run_cli_with_root(args: &[OsString], root: Option<&Path>) -> i32 {
     let args = if args.first().is_some_and(|arg| arg == "lust" || arg == "lustr") { &args[1..] } else { args };
-    if args == [OsString::from("doctor")] {
+    if root.is_none() && args == [OsString::from("doctor")] {
         return doctor::run();
     }
-    run(args)
+    run_with_default_root(args, root)
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -125,10 +135,15 @@ pub enum Action {
 }
 
 pub fn parse(args: &[OsString]) -> Result<Action, String> {
+    parse_with_default_root(args, None)
+}
+
+fn parse_with_default_root(args: &[OsString], default_root: Option<&Path>) -> Result<Action, String> {
     if args.is_empty() {
         return Ok(Action::Help);
     }
     let mut engine = Engine::Auto;
+    let mut explicit_engine = false;
     let mut explain = false;
     let mut toolchain = None;
     let mut bluefe_root = None;
@@ -147,8 +162,10 @@ pub fn parse(args: &[OsString]) -> Result<Action, String> {
         } else if arg == "--engine" {
             index += 1;
             engine = Engine::parse(args.get(index).ok_or("--engine requires a value")?)?;
+            explicit_engine = true;
         } else if let Some(value) = arg.to_str().and_then(|s| s.strip_prefix("--engine=")) {
             engine = Engine::parse(OsStr::new(value))?;
+            explicit_engine = true;
         } else if arg == "--frontend-jobs" || arg.to_str().is_some_and(|s| s.starts_with("--frontend-jobs=")) {
             let value = if arg == "--frontend-jobs" {
                 index += 1;
@@ -186,6 +203,9 @@ pub fn parse(args: &[OsString]) -> Result<Action, String> {
     }
     if index == args.len() {
         return Err("a command is required; run cargo lust --help".to_owned());
+    }
+    if bluefe_root.is_none() && toolchain.is_none() && !explicit_engine {
+        bluefe_root = default_root.map(Path::to_path_buf);
     }
     if engine == Engine::Lust && toolchain.is_some() {
         return Err("+toolchain selects Cargo, not the Lust compiler; omit it for --engine lust".to_owned());
@@ -520,7 +540,11 @@ fn string_json(value: &str) -> String {
 }
 
 pub fn run(args: &[OsString]) -> i32 {
-    let request = match parse(args) {
+    run_with_default_root(args, None)
+}
+
+fn run_with_default_root(args: &[OsString], default_root: Option<&Path>) -> i32 {
+    let request = match parse_with_default_root(args, default_root) {
         Ok(Action::Help) => {
             print!("{HELP}");
             return 0;

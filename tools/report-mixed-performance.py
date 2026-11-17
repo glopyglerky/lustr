@@ -23,6 +23,7 @@ import zipfile
 
 PHASES = ("cold", "no-op", "body-edit", "signature-edit", "check", "check-no-op",
           "check-body-edit", "rejection", "compile-plus-test")
+BUILD_PHASES = ("cold", "no-op", "body-edit", "signature-edit")
 LANES = {"native": ("pristine", "integrated", "entry"), "cargo": ("reference", "mixed")}
 LANES_V2 = {"native": ("pristine", "integrated", "entry", "rustc"), "cargo": ("reference", "mixed")}
 COMPARISONS = (("native", "pristine", "integrated"), ("native", "pristine", "entry"),
@@ -299,6 +300,92 @@ def source_map(value):
     return value
 
 
+def measured_runtime(evidence, build, runtime):
+    """Bind an immediate post-build execution to that lane's recorded artifact."""
+    require(runtime.get("kind") == "command" and runtime.get("family") == build["family"]
+            and runtime.get("lane") == build["lane"] and runtime.get("phase") == build["phase"] + "-runtime"
+            and runtime.get("sample") is None, "measured build is missing its immediate runtime receipt")
+    argv = [argument(value) for value in build["argv"]]
+    flag = "-o" if build["family"] == "native" else "--target-dir"
+    require(argv.count(flag) == 1 and argv.index(flag) + 1 < len(argv), "measured build output is ambiguous")
+    output = argv[argv.index(flag) + 1]
+    source = source_map(build["source_sha256"])
+    if build["family"] == "cargo":
+        # This fixed corpus uses Cargo's default dev output. This binding does
+        # not extend the native schema-2 flag validator to every Cargo argument.
+        output = str(PurePosixPath(output) / "debug/mixed-app")
+        app = [path for path in source if path.endswith("/app/src/main.rs")]
+        require(len(app) == 1, "measured Cargo application source is ambiguous")
+        source = {app[0]: source[app[0]]}
+    require([argument(value) for value in runtime["argv"]] == [output]
+            and source_map(runtime["source_sha256"]) == source_map(runtime["source_after_sha256"]) == source,
+            "measured runtime does not match its build artifact/source")
+    prefix = "lustr-paired-measurements/"
+    stdout = evidence.read(prefix + output_name(runtime["stdout"]))
+    stderr = evidence.read(prefix + output_name(runtime["stderr"]))
+    require(runtime["exit"] == runtime["expected_exit"] == 0 and stderr == b""
+            and stdout == (b"57\n" if build["phase"] == "body-edit" else b"59\n"),
+            "measured runtime result differs")
+
+
+def verify_execution(evidence, rows, lanes_by_family, pairs, schema):
+    """Require the recorder's lane order, post-build runs and owned shutdowns.
+
+    Both historical schemas record these operations. Schema 2 adds only the
+    reference-probe shutdown; schema-1 flags keep their original contract.
+    """
+    sample_scopes = {f"{family}-{sample}": 3 if family == "native" else 1
+                     for family in lanes_by_family for sample in range(pairs)}
+    expected_daemons = dict(sample_scopes, **{"native-probes": 3, "mixed-probes": 1})
+    if schema == 2:
+        expected_daemons["native-reference-probes"] = 1
+    seen_daemons = set()
+    active, schedule, position, pending = None, [], 0, None
+    for record_index, row in enumerate(rows):
+        if pending is not None:
+            measured_runtime(evidence, pending, row)
+            pending = None
+            continue
+        kind = row["kind"]
+        if kind == "order":
+            require(active is None, "sample was not completed and shut down before the next order")
+            active = row["family"], row["sample"]
+            lanes = lanes_by_family[row["family"]]
+            schedule = [(phase, lanes[lane_index]) for phase in PHASES for lane_index in row["lanes"]]
+            position = 0
+        elif kind == "command" and row["phase"] in PHASES:
+            require(active == (row["family"], row["sample"]), "measured command has no preceding sample order")
+            require(position < len(schedule) and (row["phase"], row["lane"]) == schedule[position],
+                    "recorded lane/phase order differs from executed commands")
+            position += 1
+            if row["phase"] in BUILD_PHASES:
+                pending = row
+        elif kind == "command" and row["phase"].endswith("-runtime"):
+            require(active is None, "runtime receipt has no immediately preceding measured build")
+            if row["phase"].removesuffix("-runtime") in BUILD_PHASES:
+                previous = rows[record_index - 1] if record_index else {}
+                # The historical mixed probe also names its untimed execution
+                # cold-runtime. No other runtime with these names is untimed.
+                require(row["family"] == "cargo" and row["lane"] == "mixed" and row["phase"] == "cold-runtime"
+                        and previous.get("kind") == "command" and previous.get("family") == "cargo"
+                        and previous.get("lane") == "mixed" and previous.get("phase") == "probe-cold",
+                        "unexpected or duplicated measured runtime receipt")
+        elif kind == "daemon-exits":
+            scope, count = row.get("scope"), row.get("successful_exits")
+            require(isinstance(scope, str) and scope in expected_daemons and scope not in seen_daemons,
+                    "missing/duplicate/unrecognized daemon shutdown scope")
+            require(type(count) is int and count >= expected_daemons[scope], "insufficient successful daemon exits")
+            if scope in sample_scopes:
+                require(active is not None and scope == f"{active[0]}-{active[1]}" and position == len(schedule),
+                        "sample daemon shutdown precedes or disagrees with its measured work")
+                active = None
+            else:
+                require(active is None, "probe shutdown interrupts a measured sample")
+            seen_daemons.add(scope)
+    require(pending is None and active is None, "last measured sample lacks execution or shutdown evidence")
+    require(seen_daemons == set(expected_daemons), "missing daemon shutdown receipts")
+
+
 def verify(evidence):
     prefix = "lustr-paired-measurements/"
     raw = evidence.read(prefix + "raw.jsonl")
@@ -413,6 +500,7 @@ def verify(evidence):
         key = family, lane, phase, sample
         require(key not in groups, "duplicate timed sample")
         groups[key] = row
+    verify_execution(evidence, rows, lanes_by_family, n, schema)
     expected_keys = {(f, lane, phase, i) for f, lanes in lanes_by_family.items() for lane in lanes
                      for phase in PHASES for i in range(n)}
     require(set(groups) == expected_keys, "missing/unexpected timed samples")

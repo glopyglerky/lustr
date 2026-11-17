@@ -4,6 +4,9 @@
 use crate::{ast::{BinOp, UnOp}, cgen, check::{Builtin, collect::Program}, ir, protocol::{Request, Response}, ty::{IntTy, Ty, TyIntern, TyKind}};
 use std::{fmt::Write as _, fs, path::Path, sync::Arc};
 
+#[path = "mixed_symbols.rs"]
+mod symbols;
+
 fn operand(o: &ir::Operand) -> bool {
     match o {
         ir::Operand::Copy(p) | ir::Operand::Move(p) => p.proj.is_empty(),
@@ -125,13 +128,9 @@ fn emit_inner(req: &Request, p: &Program, out: &[cgen::FnOut],
     fs::write(req.out.with_extension("c"), &c).map_err(|e| e.to_string())?;
     profile.advance("libtcc");
     crate::tcc::compile_units(&[(object.clone(), c)], false)?;
-    profile.advance("nm");
+    profile.advance("symbol-check");
     // Inspect the real relocatable output before linking it into a Rust process.
-    let symbols = std::process::Command::new("nm").args(["--undefined-only", "--format=posix"]).arg(&object)
-        .output().map_err(|e| e.to_string())?;
-    if !symbols.status.success() || !symbols.stdout.is_empty() {
-        return Err(format!("native object requires unrepresented symbols: {}", String::from_utf8_lossy(&symbols.stdout)));
-    }
+    symbols::check(&object, &symbol)?;
     profile.advance("rename");
     fs::rename(&object, &req.out).map_err(|e| e.to_string())?;
     profile.advance("file-sync");
@@ -185,7 +184,7 @@ mod emitter_profile {
             // not introduce arbitrary diagnostics into the structured record.
             let identity = if identity.len() <= 128 && identity.bytes().all(|b| b.is_ascii_hexdigit()) { identity } else { "" };
             let mut stderr = String::new();
-            let _ = write!(stderr, "lustr mixed native profile: {{\"schema\":\"lustr.mixed-native-emitter\",\"version\":1,\"native\":\"{}\",\"unit_identity\":\"{identity}\",\"success\":{success},\"elapsed_ns\":{},\"phases\":[", env!("LUST_BUILD_HASH"), end.duration_since(active.start).as_nanos());
+            let _ = write!(stderr, "lustr mixed native profile: {{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"{}\",\"unit_identity\":\"{identity}\",\"success\":{success},\"elapsed_ns\":{},\"phases\":[", env!("LUST_BUILD_HASH"), end.duration_since(active.start).as_nanos());
             for (n, (phase, elapsed, completed)) in active.phases.iter().enumerate() {
                 if n != 0 { stderr.push(','); }
                 let _ = write!(stderr, "{{\"phase\":\"{phase}\",\"elapsed_ns\":{elapsed},\"completed\":{completed}}}");

@@ -1,0 +1,20 @@
+{
+  "kind": "local component operation, not whole compiler or CI performance",
+  "pairs": 64,
+  "timed_values": 128,
+  "excluded_values": 0,
+  "medians_ns": {
+    "nm": 1400631.0,
+    "in-process": 8848.0
+  },
+  "geometric_mean_nm_over_in_process": 181.96764987209437,
+  "conditional_paired_bootstrap_95pct": [
+    157.87350875517558,
+    210.14227896170576
+  ],
+  "bootstrap_replicates": 10000,
+  "bootstrap_seed": 20261117,
+  "bootstrap_quantile": "linear interpolation at (N-1)*p",
+  "ordering": "alternating pair order, 32 positions first and second per lane",
+  "cache_state": "filesystem/page caches not cleared; prior compiler/tool verification and fixtures warm; no excluded warmup"
+}

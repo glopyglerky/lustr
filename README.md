@@ -6,12 +6,12 @@ pinned Rust implementation. blueFe delivers the combined toolchain.
 
 ## Numbers and current qualification
 
-**Not yet release-ready.** The latest source-built correctness, profiling and
-measurement campaign passed, but mixed Cargo compilation remains materially
-slower. The supported native path is faster than standalone rustc for warm
-work on this small corpus; cold native compilation and rejection are slower.
-Native macOS and the complete native Linux gate remain separate qualification
-requirements.
+**Not yet release-ready. Cargo acceleration is the main performance priority.**
+The latest completed mixed Cargo campaign is slower in eight of nine modes,
+including builds, edits, checks and tests. The supported native path has warm
+speed gains against standalone rustc on a small corpus; those results do not
+establish faster Cargo work. Native macOS and the complete native Linux gate
+remain separate qualification requirements.
 
 [PERFORMANCE.md](PERFORMANCE.md) records all workloads, source/compiler pins,
 profiles, caches, uncertainty, failures and reproduction commands. The
@@ -25,34 +25,13 @@ checkout `b3393a4`, twelve matched pairs per mode. Times are median milliseconds
 Ratios are paired geometric means of reference/candidate time; below one means
 Lustr took longer. Ratios are not calculated from the displayed medians.
 
-### Native Lustr, pristine Lust and matching rustc
-
-| Native workload | Pristine Lust median | Standalone rustc median | Lustr median | rustc / Lustr ratio [95% interval] |
-| --- | ---: | ---: | ---: | --- |
-| Cold build | 41.808 | 38.147 | 40.285 | 0.914 [0.876, 0.950] |
-| No-op build | 3.542 | 37.982 | 3.106 | 12.208 [12.037, 12.383] |
-| Body edit | 5.494 | 38.224 | 5.590 | 6.894 [6.797, 7.004] |
-| Signature edit | 4.841 | 38.424 | 4.856 | 7.935 [7.759, 8.131] |
-| Check | 2.217 | 11.619 | 2.069 | 5.621 [5.446, 5.812] |
-| No-op check | 1.761 | 11.356 | 1.778 | 6.426 [6.267, 6.605] |
-| Check after body edit | 2.051 | 11.285 | 1.882 | 5.970 [5.797, 6.179] |
-| Rejection | 2.255 | 17.038 | 18.016 | 0.945 [0.930, 0.959] |
-| Compile plus test | 30.535 | 53.267 | 30.960 | 1.740 [1.705, 1.776] |
-
-The standalone Rust reference uses the identical source, opt-level 0, debug 0,
-unwinding, overflow checks and debug assertions. It is **nonincremental**:
-a no-op launches rustc again. Cargo's cached no-op appears in the separate
-Cargo comparison below. Compile plus test includes compiling and actually
-executing the test. The [reference contract](docs/compiler-set/native-rustc-comparison.md)
-records exact commands, child receipts and cache behavior.
-
-Against pristine Lust, native cold, body/signature edits and compile-plus-test
-remain inconclusive. Native no-op favors Lustr at 1.153 [1.123, 1.186]. Packaged
-rejection is slower at 0.128 [0.121, 0.136]; the entry may perform full-Rust
-validation after native rejection. The full language and diagnostic contract
-remains part of that measured cost.
-
 ### Mixed Cargo compilation
+
+These are complete commands on a small unchanged Cargo graph with a real
+procedural macro, async code and a `no_std`/`alloc` dependency. Cargo and the
+matching Rust SDK retain the graph and metadata contracts; eligible scalar
+functions use Lust. This fixture explicitly uses dev debug=0. Normal debug=2
+project builds have a separate compatibility comparison below.
 
 | Cargo workload | Cargo/rustc median | Mixed Lustr median | Ratio [95% interval] |
 | --- | ---: | ---: | --- |
@@ -73,15 +52,51 @@ the [36-comparison table](performance/2026-11-17-5a3f493.md),
 [648-value CSV](performance/2026-11-17-5a3f493.csv) and
 [four-panel vector chart](performance/plots/2026-11-17-5a3f493/README.md).
 
-### Actual project and completed verification
+### Actual project under normal defaults
 
 The [unchanged coordinator project](performance/projects/2026-11-17-5a3f493/README.md)
 passed executing tests and rejection gates under normal dev/test defaults.
 At debug=2, outside native-object eligibility, median overhead was 2.5% for a
 primed root build, 3.8% for a primed check, 10.3% for no-op and 1.8% for compile
-plus test. Four intervals favor matching Rust; clean build is inconclusive.
+plus test. The forced build, check and test scenarios only change a source
+file's timestamp. They measure rebuilds without source edits and do not
+demonstrate native acceleration. Four intervals favor matching Rust; clean
+build is inconclusive.
 The newest campaign's 600 original files and 510 output streams were recovered
 and reconciled with its public report. The earlier campaign is also retained.
+
+### Historical full-project Cargo result
+
+The separate [November 8 Cranelift experiment](docs/compiler-set/verification.md#qualified-full-project-result)
+built the unchanged Lust compiler through Cargo with a custom unwind-enabled
+backend. Cold-build medians were 59.536 s for LLVM and 39.400 s for Cranelift,
+a 1.511 ratio of medians across only two measured pairs. No-op builds regressed
+from 19.532 to 21.149 ms. This was an explicit compatibility-coordinator route
+with an older matching SDK, not the current mixed compiler. Its
+[raw report and identities](docs/compiler-set/evidence/lust-project-42ab5dc-summary.json)
+remain separate; a current-package claim requires a fresh matched campaign.
+
+### Current correction and qualification
+
+The current candidate removes three costs from the Cargo path: external `nm`
+validation, external `objcopy` symbol renaming, and the intermediate
+`cargo-lustr` executable startup. The [symbol-renaming checks](docs/compiler-set/mixed-symbol-rename.md)
+exercise real objects and linking; the [direct entry regression](docs/compiler-set/cargo-dispatch.md)
+exercises real Cargo freshness, errors and program exit status. These are
+correctness checks. The tables above retain the earlier completed campaign
+until the changed package has fresh end-to-end measurements.
+
+The [in-process symbol checker](docs/compiler-set/mixed-symbol-validation.md)
+replaces the costly symbol-tool process in the mixed emitter. It has focused
+correctness and component measurements, but still needs a fresh complete
+source-built qualification and Cargo campaign. None of the tables above
+measure that change.
+
+The [larger upstream slice campaign](docs/compiler-set/upstream-slice-benchmark.md)
+compares supported native compilation with incremental Cargo on pruned upstream
+source. Its cold/no-op and runtime scenarios broaden the corpus; they do not
+measure edited-source mixed Cargo acceleration. Adding the runner supplies no
+new speed result.
 
 The [fresh v2 profile](performance/2026-11-17-5a3f493-profile.md) passed original
 validation: 26 compiler profiles, 15 qualification commands and 35 bound native
@@ -106,6 +121,37 @@ coverage with Lust's README and repository studies. Larger native projects,
 broader edit families, isolated application runtime, CPU/memory measurements
 and performance acceptance remain open. Upstream headline ratios remain
 attributed to their own compiler, corpus and methods.
+
+### Native Lustr, pristine Lust and matching rustc
+
+These native results use the same completed `5a3f493` campaign and twelve
+matched pairs per mode. Times are median milliseconds; ratios retain the
+paired geometric estimator.
+
+| Native workload | Pristine Lust median | Standalone rustc median | Lustr median | rustc / Lustr ratio [95% interval] |
+| --- | ---: | ---: | ---: | --- |
+| Cold build | 41.808 | 38.147 | 40.285 | 0.914 [0.876, 0.950] |
+| No-op build | 3.542 | 37.982 | 3.106 | 12.208 [12.037, 12.383] |
+| Body edit | 5.494 | 38.224 | 5.590 | 6.894 [6.797, 7.004] |
+| Signature edit | 4.841 | 38.424 | 4.856 | 7.935 [7.759, 8.131] |
+| Check | 2.217 | 11.619 | 2.069 | 5.621 [5.446, 5.812] |
+| No-op check | 1.761 | 11.356 | 1.778 | 6.426 [6.267, 6.605] |
+| Check after body edit | 2.051 | 11.285 | 1.882 | 5.970 [5.797, 6.179] |
+| Rejection | 2.255 | 17.038 | 18.016 | 0.945 [0.930, 0.959] |
+| Compile plus test | 30.535 | 53.267 | 30.960 | 1.740 [1.705, 1.776] |
+
+The standalone Rust reference uses the identical source, opt-level 0, debug 0,
+unwinding, overflow checks and debug assertions. It is **nonincremental**:
+a no-op launches rustc again. Cargo's cached no-op appears in the separate
+Cargo comparison above. Compile plus test includes compiling and actually
+executing the test. The [reference contract](docs/compiler-set/native-rustc-comparison.md)
+records exact commands, child receipts and cache behavior.
+
+Against pristine Lust, native cold, body/signature edits and compile-plus-test
+remain inconclusive. Native no-op favors Lustr at 1.153 [1.123, 1.186]. Packaged
+rejection is slower at 0.128 [0.121, 0.136]; the entry may perform full-Rust
+validation after native rejection. The full language and diagnostic contract
+remains part of that measured cost.
 
 ## Compiler integration
 

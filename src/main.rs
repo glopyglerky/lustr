@@ -190,13 +190,10 @@ fn main() -> ExitCode {
     let compiler_mode = program.is_some_and(|a| std::path::Path::new(&a).file_name().is_some_and(|n| n == "rustc"));
     let native_cli = !compiler_mode && lustr_compiler::is_native_command(&args);
     if !compiler_mode && !native_cli && lustr_compiler::cargo_command(&args) {
-        let mut command = Command::new(parent.join("cargo-lustr"));
-        if !args.iter().any(|a| a == "--bluefe-root" || a == "--engine" || a.to_str().is_some_and(|a| a.starts_with("--engine="))) {
-            command.arg("--bluefe-root").arg(parent.parent().unwrap());
-        }
-        let error = command.args(&args).exec();
-        eprintln!("cannot execute Cargo integration: {error}");
-        return ExitCode::from(2);
+        // Use the same coordinator as both Cargo extensions without loading an
+        // intermediate executable. Its Unix exec and exit-code handling still
+        // own the Cargo invocation, including explicit engines and plan output.
+        std::process::exit(cargo_lust::run_cli_with_default_root(&args, parent.parent().unwrap()));
     }
     let native = if native_cli {
         args.iter().map(|a| a.to_str().map(str::to_owned)).collect::<Option<Vec<_>>>()

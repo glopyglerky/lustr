@@ -21,6 +21,7 @@ on:
       - 'tools/*mixed*'
       - 'tools/*coordinator*'
       - 'tools/*evidence*'
+      - 'tools/*upstream-slice*'
       - 'tools/build-tinycc-pic.rs'
       - 'tools/native-target-layout-qualification.rs'
       - '.github/workflows/compiler-set.yml'
@@ -43,6 +44,7 @@ on:
       - 'tools/*mixed*'
       - 'tools/*coordinator*'
       - 'tools/*evidence*'
+      - 'tools/*upstream-slice*'
       - 'tools/build-tinycc-pic.rs'
       - 'tools/native-target-layout-qualification.rs'
       - '.github/workflows/compiler-set.yml'
@@ -108,6 +110,10 @@ jobs:
         run: |
           python3 tools/test-mixed-workflow.py
           python3 tools/test-encrypted-evidence.py
+          python3 tools/test-mixed-profile.py
+          python3 tools/test-mixed-performance-report.py
+          python3 tools/test-mixed-symbol-measurement.py
+          python3 tools/test-upstream-slice-benchmark.py
       - name: Obtain the exact pristine reference objects
         uses: actions/checkout@v4
         with:
@@ -149,6 +155,10 @@ jobs:
         run: rustc --edition=2024 tools/build-tinycc-pic.rs -o "$RUNNER_TEMP/build-tinycc-pic"
       - name: Build upstream TinyCC with shared-library relocations
         run: '"$RUNNER_TEMP/build-tinycc-pic" "$GITHUB_WORKSPACE/.tinycc-pristine-reference" "$RUNNER_TEMP/lustr-tinycc"'
+      - name: Verify in-process mixed object checks against actual TinyCC and GNU nm
+        run: |
+          python3 tools/test-mixed-symbols.py --tcc "$RUNNER_TEMP/lustr-tinycc/install/bin/tcc"
+          python3 tools/test-mixed-symbol-rename.py --tcc "$RUNNER_TEMP/lustr-tinycc/install/bin/tcc"
       - name: Prepare locked dependencies for offline source builds
         run: |
           cargo fetch --manifest-path compiler/native/Cargo.toml --locked
@@ -260,6 +270,33 @@ jobs:
         env:
           LUSTR_BENCH_HOST_RECORD: ${{ runner.temp }}/lustr-benchmark-host.json
         run: '"$RUNNER_TEMP/lustr-bench-target/release/lustr-mixed-bench" "$RUNNER_TEMP/lustr-pristine-source" "$RUNNER_TEMP/lustr-pristine-target/release/lust" "$RUNNER_TEMP/lustr-source-built" "$RUNNER_TEMP/lustr-paired-measurements" 12'
+      - name: Measure the public upstream slice against retained Lust and incremental Cargo
+        id: slice_measurements
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.target_layout.outcome == 'success' && steps.baseline_regression.outcome == 'success' && steps.mixed_execution.outcome == 'success' && steps.retained_checks.outcome == 'success' && steps.mixed_libraries.outcome == 'success' && steps.entry_contract.outcome == 'success' && steps.pristine_build.outcome == 'success' && steps.host_record.outcome == 'success' }}
+        run: |
+          python3 tools/run-upstream-slice-benchmark.py \
+            --repository "$GITHUB_WORKSPACE" \
+            --pristine-source "$RUNNER_TEMP/lustr-pristine-source" \
+            --pristine-lust "$RUNNER_TEMP/lustr-pristine-target/release/lust" \
+            --pristine-build-log "$RUNNER_TEMP/lustr-pristine-build.log" \
+            --built "$RUNNER_TEMP/lustr-source-built" \
+            --output "$RUNNER_TEMP/lustr-public-slice" --pairs 12
+      - name: Retain public slice commands, source and all measured outcomes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: upstream-public-slice-${{ github.run_attempt }}
+          if-no-files-found: warn
+          path: |
+            ${{ runner.temp }}/lustr-public-slice/report.json
+            ${{ runner.temp }}/lustr-public-slice/README.md
+            ${{ runner.temp }}/lustr-public-slice/raw.jsonl
+            ${{ runner.temp }}/lustr-public-slice/samples.csv
+            ${{ runner.temp }}/lustr-public-slice/fixture
+            ${{ runner.temp }}/lustr-public-slice/commands
+            ${{ runner.temp }}/lustr-public-slice/build-receipts
+            ${{ runner.temp }}/lustr-public-slice/runtime-oracle.stdout
+            ${{ runner.temp }}/lustr-public-slice/rejected.rs
       - name: Build and verify the unchanged-project campaign runner
         id: project_bench_build
         if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' }}
@@ -395,7 +432,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-15, windows-latest]
+        os: [ubuntu-24.04, macos-26, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4

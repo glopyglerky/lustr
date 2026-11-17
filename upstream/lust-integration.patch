@@ -1,5 +1,5 @@
 diff --git a/build.rs b/build.rs
-index 302f9cb99f823cf7dac098971267b8e99e997188..faf5a1b8a5975aa73a50cef1a9a3153c18c5ecf2 100644
+index 302f9cb99f823cf7dac098971267b8e99e997188..0501a41041184ba5e4111eb9f67ddb7954edd79d 100644
 --- a/build.rs
 +++ b/build.rs
 @@ -76,6 +76,12 @@ fn main() {
@@ -15,7 +15,7 @@ index 302f9cb99f823cf7dac098971267b8e99e997188..faf5a1b8a5975aa73a50cef1a9a3153c
      println!("cargo:rustc-env=LUST_TCC_LIB_PATH={}", lib.join("tcc").display());
      println!("cargo:rustc-env=LUST_TCC_BIN={}", tcc.join("bin/tcc").display());
      println!("cargo:rerun-if-env-changed=LUST_TCC_HOME");
-@@ -94,10 +100,20 @@ fn main() {
+@@ -94,10 +100,23 @@ fn main() {
      // the binary by src/stdload.rs, S5), the manifest, and the tcc tree.
      let mut h = std::collections::hash_map::DefaultHasher::new();
      hash_tree(&mut h, &root.join("src"));
@@ -24,6 +24,9 @@ index 302f9cb99f823cf7dac098971267b8e99e997188..faf5a1b8a5975aa73a50cef1a9a3153c
 +        std::fs::read(&mixed).expect("read mixed compiler boundary").hash(&mut h);
 +        println!("cargo:rerun-if-changed={}", mixed.display());
 +    }
++    let mixed_symbols = root.join("../../crates/lustr-native-core/src/mixed_symbols.rs");
++    ("lustr-mixed-symbols", std::fs::read(&mixed_symbols).expect("mixed object symbol validator is required")).hash(&mut h);
++    println!("cargo:rerun-if-changed={}", mixed_symbols.display());
      hash_tree(&mut h, &root.join("library"));
      if let Ok(bytes) = std::fs::read(root.join("Cargo.toml")) {
          bytes.hash(&mut h);

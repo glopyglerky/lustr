@@ -21,6 +21,11 @@ defaults:
 jobs:
   linux-x86_64:
     runs-on: ubuntu-24.04
+    env:
+      # The retained Unicode sanitizer diagnosis demonstrates contention at four
+      # concurrent executions on two physical cores. Keep every case and deadline;
+      # declare the correctness pool explicitly and record the actual host.
+      DIFFTEST_JOBS: '2'
     steps:
       - uses: actions/checkout@v4
       - name: Check actual Unix-address helper bounds with ASan and UBSan
@@ -54,11 +59,13 @@ jobs:
           {
             git rev-parse HEAD
             printf 'run=%s\nattempt=%s\n' "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT"
+            printf 'difftest_jobs=%s\n' "$DIFFTEST_JOBS"
             uname -srm
             rustc -vV
             cargo --version
             sha256sum Cargo.toml Cargo.lock build.rs scripts/ci.sh
           } > "$RUNNER_TEMP/native-gate-identity.txt"
+          python3 ../../tools/capture-benchmark-host.py "$RUNNER_TEMP/native-gate-host.json"
           bash scripts/ci.sh 2>&1 | tee "$RUNNER_TEMP/native-gate.log"
       - name: Record produced compiler identities
         if: always()
@@ -75,13 +82,15 @@ jobs:
           name: native-gate-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}-${{ github.run_attempt }}
           path: |
             ${{ runner.temp }}/native-gate-identity.txt
+            ${{ runner.temp }}/native-gate-host.json
             ${{ runner.temp }}/native-gate.log
             ${{ runner.temp }}/native-gate-builds.sha256
           if-no-files-found: warn
 
   macos-arm64:
-    # macOS 14 runners retired on 2026-11-02. macos-15 is the supported Arm64 image.
-    runs-on: macos-15
+    # Retry current corrections on the standard macOS 26 Arm64 image after
+    # macOS 15 jobs were cancelled before execution. This is not a prior pass.
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
       - name: Install upstream gate's GNU Bash and command tools

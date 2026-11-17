@@ -9,6 +9,7 @@ on:
       - 'tools/*mixed-performance*'
       - 'tools/*benchmark-host*'
       - 'tools/*mixed-profile*'
+      - 'tools/*mixed-symbol*'
       - 'tools/profile-mixed-compiler.py'
       - '.github/workflows/mixed-performance-report.yml'
   push:
@@ -20,6 +21,7 @@ on:
       - 'tools/*mixed-performance*'
       - 'tools/*benchmark-host*'
       - 'tools/*mixed-profile*'
+      - 'tools/*mixed-symbol*'
       - 'tools/profile-mixed-compiler.py'
       - '.github/workflows/mixed-performance-report.yml'
   workflow_dispatch:
@@ -46,6 +48,8 @@ jobs:
           python3 tools/test-mixed-performance-report.py 2>&1 | tee "$RUNNER_TEMP/reporting-tests.log"
           python3 tools/test-benchmark-host.py 2>&1 | tee "$RUNNER_TEMP/host-record-tests.log"
           python3 tools/test-mixed-profile.py 2>&1 | tee "$RUNNER_TEMP/profile-record-tests.log"
+          python3 tools/test-mixed-symbol-measurement.py 2>&1 | tee "$RUNNER_TEMP/symbol-measurement-tests.log"
+          python3 tools/replay-mixed-symbol-measurement.py performance/components/2026-11-17-symbol-check 2>&1 | tee "$RUNNER_TEMP/symbol-measurement-replay.log"
       - name: Replay all committed timing values and compare exact tables
         run: |
           set -o pipefail
@@ -81,6 +85,8 @@ jobs:
             ${{ runner.temp }}/archived-evidence-replay.log
             ${{ runner.temp }}/host-record-tests.log
             ${{ runner.temp }}/profile-record-tests.log
+            ${{ runner.temp }}/symbol-measurement-tests.log
+            ${{ runner.temp }}/symbol-measurement-replay.log
             ${{ runner.temp }}/profile-reconstruction-replay.log
             ${{ runner.temp }}/profile-reconstruction-tests.log
             performance

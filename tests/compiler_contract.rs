@@ -76,6 +76,65 @@ impl Fixture {
 
 #[test]
 #[ignore = "requires the complete frozen native/full runtime; set LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT"]
+fn cargo_entry_runs_without_a_separate_coordinator_executable() {
+    use std::os::unix::fs::symlink;
+    let f = Fixture::new("cargo-direct-entry");
+    let runtime = f.root.join("relocated runtime");
+    std::fs::create_dir_all(runtime.join("bin")).unwrap();
+    std::fs::copy(f.package.join("bin/lustr"), runtime.join("bin/lustr")).unwrap();
+    for tool in ["cargo", "rustc", "rustdoc"] {
+        symlink(f.package.join("bin").join(tool), runtime.join("bin").join(tool)).unwrap();
+    }
+    // A missing extension executable distinguishes the direct entry from an
+    // accidental return to the old exec chain. Real Cargo still does the work.
+    assert!(!runtime.join("bin/cargo-lustr").exists());
+    let direct = Fixture { root: f.root.clone(), package: runtime };
+    f.source("Cargo.toml", "[package]\nname=\"cargo-direct-entry\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    f.source("src/main.rs", "fn main() { std::process::exit(23); }\n");
+    let planned = f.succeeds("plan", direct.command("lustr").args(["plan", "check", "--offline"]));
+    let plan: serde_json::Value = serde_json::from_slice(&planned.stdout).unwrap();
+    assert!(plan.to_string().contains("relocated runtime"));
+    for (index, argument) in ["--engine", "--engine=rustc", "--bluefe-root", "+another-toolchain"].into_iter().enumerate() {
+        let output = f.succeeds(&format!("application-options-{index}"), direct.command("lustr").args(["plan", "run", "--", argument]));
+        let passed: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(passed["program"], plan["program"], "application option changed the toolchain: {argument}");
+        assert_eq!(passed["args"], serde_json::json!(["run", "--", argument]));
+    }
+    let output = f.succeeds(
+        "explicit-engine",
+        direct.command("lustr").args(["--engine=rustc", "plan", "check"]).env("LUST_CARGO", "explicit-cargo-only-for-planning"),
+    );
+    let explicit: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(explicit["program"], "explicit-cargo-only-for-planning");
+    let output = f.succeeds(
+        "explicit-toolchain",
+        direct.command("lustr").args(["+explicit-toolchain-only-for-planning", "plan", "check"]).env_remove("LUST_CARGO"),
+    );
+    let explicit: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(explicit["program"], "rustup");
+    assert_eq!(explicit["args"], serde_json::json!(["run", "--", "explicit-toolchain-only-for-planning", "cargo", "check"]));
+    assert!(!f.root.join("target").exists(), "planning executed Cargo");
+    for (label, fresh) in [("check", false), ("no-op-check", true)] {
+        let result = f.succeeds(label, direct.command("lustr").args(["check", "--offline", "--message-format=json"]));
+        let artifacts: Vec<_> = String::from_utf8(result.stdout)
+            .unwrap()
+            .lines()
+            .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
+            .filter(|message| message["reason"] == "compiler-artifact")
+            .collect();
+        assert_eq!(artifacts.len(), 1);
+        assert_eq!(artifacts[0]["fresh"], fresh);
+    }
+    let result = f.invoke("program-exit", direct.command("lustr").args(["run", "--offline", "--quiet"]));
+    assert_eq!(result.status.code(), Some(23), "Cargo's program exit was changed");
+    f.source("src/main.rs", "fn main() { let value: bool = 7u64; println!(\"{value}\"); }\n");
+    let result = f.invoke("invalid-source", direct.command("lustr").args(["check", "--offline"]));
+    assert_eq!(result.status.code(), Some(101));
+    assert!(String::from_utf8_lossy(&result.stderr).contains("mismatched types"));
+}
+
+#[test]
+#[ignore = "requires the complete frozen native/full runtime; set LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT"]
 fn official_sdk_clippy_and_rustfmt_execute_from_the_package() {
     let f = Fixture::new("official-sdk-tools");
     for tool in ["rustc-full", "cargo", "clippy-driver", "cargo-clippy", "rustfmt", "cargo-fmt"] {

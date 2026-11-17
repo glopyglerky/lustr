@@ -1,0 +1,13 @@
+{
+  "source_commit": "ddc633295fbc0eca012087d1c48932224810077a",
+  "upstream_revision": "240e08d91d4aed0299639f6f11fd522912b248f9",
+  "upstream_tree": "0ab1b09815802894e6078de0af59273cbdf46cb0",
+  "run_id": 42757628508,
+  "job_id": 129635586260,
+  "artifact_id": 13737065633,
+  "archive_sha256": "a16ddebc98a9d35a09c871e79780975ceb2de83d9b160fff46e4d6524b3cdd00",
+  "archive_files": 211,
+  "original_job_conclusion": "failure",
+  "scope": "Historical pristine-source contention diagnostic; not current full-suite qualification or compiler speed evidence",
+  "selected_files": "Copied byte for byte from original ZIP; full original evidence remains in ZIP."
+}

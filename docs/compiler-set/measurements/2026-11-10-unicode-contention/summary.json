@@ -1,0 +1,223 @@
+{
+  "binary_sha256": "f89012e1478394b1322b05178406e04637ef41938c70bcc2a996a80fcd38fcfe",
+  "exploratory_60s": {
+    "checks_pass": true,
+    "cleanup_verified": null,
+    "command": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/home/runner/work/_temp/lustr-unicode-diagnostic/exploratory-isolated-60s.time",
+      "timeout",
+      "60",
+      "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build/unicode_props_hash.san"
+    ],
+    "cwd": "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build",
+    "environment_overrides": {
+      "ASAN_OPTIONS": "detect_leaks=1:allocator_may_return_null=1"
+    },
+    "label": "exploratory-isolated-60s",
+    "load_after": [
+      2.84912109375,
+      1.58544921875,
+      0.77001953125
+    ],
+    "load_before": [
+      3.0986328125,
+      1.5888671875,
+      0.76171875
+    ],
+    "matches_oracle": true,
+    "max_rss_kib": 295104.0,
+    "outer_watchdog_fired": false,
+    "outer_watchdog_seconds": 120,
+    "returncode": 0,
+    "sanitizer_error": false,
+    "session_id": 15379,
+    "started_utc": "2026-11-10T04:52:06.586256+00:00",
+    "status": "finished",
+    "system_seconds": 0.3,
+    "timeout_seconds": 60,
+    "user_seconds": 6.3,
+    "wall_seconds": 6.6302922989999615
+  },
+  "fixture_sha256": "f68662c528f0a470b30856def6fade326b2154b4ebda5a0e5b83c8f70da28b7d",
+  "limitations": [
+    "No full-suite scheduling reproduction and no full CI pass claim.",
+    "unicode_ subset success cannot rule out full-suite contention.",
+    "Retained C and binary are an independent build, not the upstream run's deleted files.",
+    "Concurrent copies test runtime contention, not mixed compilation and cache locking.",
+    "60s success is diagnostic only and does not change any 10s failure."
+  ],
+  "nproc": 4,
+  "o0_fallback_units": [],
+  "original_10s_upstream_failed": false,
+  "reproduced_10s_failed": true,
+  "runtime_10s": [
+    {
+      "checks_pass": true,
+      "label": "isolated-0-10s",
+      "matches_oracle": true,
+      "max_rss_kib": 295152.0,
+      "returncode": 0,
+      "sanitizer_error": false,
+      "system_seconds": 0.24,
+      "user_seconds": 6.26,
+      "wall_seconds": 6.52971237700001
+    },
+    {
+      "checks_pass": false,
+      "label": "concurrent-0-0-10s",
+      "matches_oracle": false,
+      "max_rss_kib": 232992.0,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "system_seconds": 0.43,
+      "user_seconds": 9.32,
+      "wall_seconds": 10.05038085600006
+    },
+    {
+      "checks_pass": false,
+      "label": "concurrent-0-1-10s",
+      "matches_oracle": false,
+      "max_rss_kib": 231848.0,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "system_seconds": 0.47,
+      "user_seconds": 9.23,
+      "wall_seconds": 10.045939833000034
+    },
+    {
+      "checks_pass": false,
+      "label": "concurrent-0-2-10s",
+      "matches_oracle": false,
+      "max_rss_kib": 237976.0,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "system_seconds": 0.45,
+      "user_seconds": 9.48,
+      "wall_seconds": 10.045894392999912
+    },
+    {
+      "checks_pass": false,
+      "label": "concurrent-0-3-10s",
+      "matches_oracle": false,
+      "max_rss_kib": 234068.0,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "system_seconds": 0.44,
+      "user_seconds": 9.36,
+      "wall_seconds": 10.050354481
+    },
+    {
+      "checks_pass": false,
+      "label": "concurrent-1-0-10s",
+      "matches_oracle": false,
+      "max_rss_kib": 231048.0,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "system_seconds": 0.42,
+      "user_seconds": 9.26,
+      "wall_seconds": 10.043062574000032
+    },
+    {
+      "checks_pass": false,
+      "label": "concurrent-1-1-10s",
+      "matches_oracle": false,
+      "max_rss_kib": 239136.0,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "system_seconds": 0.47,
+      "user_seconds": 9.47,
+      "wall_seconds": 10.043442322000033
+    },
+    {
+      "checks_pass": false,
+      "label": "concurrent-1-2-10s",
+      "matches_oracle": false,
+      "max_rss_kib": 236444.0,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "system_seconds": 0.49,
+      "user_seconds": 9.35,
+      "wall_seconds": 10.042354699000043
+    },
+    {
+      "checks_pass": false,
+      "label": "concurrent-1-3-10s",
+      "matches_oracle": false,
+      "max_rss_kib": 233720.0,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "system_seconds": 0.49,
+      "user_seconds": 9.27,
+      "wall_seconds": 10.042859049000072
+    },
+    {
+      "checks_pass": true,
+      "label": "isolated-1-10s",
+      "matches_oracle": true,
+      "max_rss_kib": 295240.0,
+      "returncode": 0,
+      "sanitizer_error": false,
+      "system_seconds": 0.32,
+      "user_seconds": 6.23,
+      "wall_seconds": 6.581627968000021
+    },
+    {
+      "checks_pass": true,
+      "label": "isolated-2-10s",
+      "matches_oracle": true,
+      "max_rss_kib": 295132.0,
+      "returncode": 0,
+      "sanitizer_error": false,
+      "system_seconds": 0.38,
+      "user_seconds": 6.22,
+      "wall_seconds": 6.68001270100001
+    },
+    {
+      "checks_pass": false,
+      "label": "concurrent-2-0-10s",
+      "matches_oracle": false,
+      "max_rss_kib": 234812.0,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "system_seconds": 0.5,
+      "user_seconds": 9.33,
+      "wall_seconds": 10.049567424000088
+    },
+    {
+      "checks_pass": false,
+      "label": "concurrent-2-1-10s",
+      "matches_oracle": false,
+      "max_rss_kib": 231752.0,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "system_seconds": 0.47,
+      "user_seconds": 9.2,
+      "wall_seconds": 10.043586546000029
+    },
+    {
+      "checks_pass": false,
+      "label": "concurrent-2-2-10s",
+      "matches_oracle": false,
+      "max_rss_kib": 230116.0,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "system_seconds": 0.44,
+      "user_seconds": 9.19,
+      "wall_seconds": 10.043184904999976
+    },
+    {
+      "checks_pass": false,
+      "label": "concurrent-2-3-10s",
+      "matches_oracle": false,
+      "max_rss_kib": 234864.0,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "system_seconds": 0.41,
+      "user_seconds": 9.41,
+      "wall_seconds": 10.044460061999985
+    }
+  ]
+}
