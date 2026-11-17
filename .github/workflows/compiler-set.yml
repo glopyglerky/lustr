@@ -100,6 +100,8 @@ jobs:
       CARGO_BUILD_JOBS: '2'
     steps:
       - uses: actions/checkout@v4
+      - name: Validate qualification workflow controls before compiler builds
+        run: python3 tools/test-mixed-workflow.py
       - name: Obtain the exact pristine reference objects
         uses: actions/checkout@v4
         with:
@@ -147,20 +149,33 @@ jobs:
       - name: Record the exact checked-out source
         run: git rev-parse HEAD 'HEAD^{tree}' > "$RUNNER_TEMP/lustr-source-revision.txt"
       - name: Build optimized local toolchain without a predecessor package
+        id: source_toolchain
         env:
           GIT_ALTERNATE_OBJECT_DIRECTORIES: ${{ runner.temp }}/lustr-pristine-source/.git/objects
         run: '"$RUNNER_TEMP/build-mixed-toolchain" "$GITHUB_WORKSPACE" --current-sdk "$RUNNER_TEMP/lustr-tinycc/install" "$RUNNER_TEMP/lustr-source-built" --release'
+      # Continue independent suites after a failure, without masking that failure.
+      # Measurements still require every correctness prerequisite to pass.
       - name: Build real mixed-project qualifier
+        id: mixed_qualifier
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' }}
         run: rustc --edition=2024 tools/mixed-compiler-qualification.rs -o "$RUNNER_TEMP/mixed-compiler-qualification"
       - name: Build native target-layout qualification
+        id: layout_qualifier
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' }}
         run: rustc --edition=2024 tools/native-target-layout-qualification.rs -o "$RUNNER_TEMP/native-target-layout-qualification"
       - name: Compare selected native frontend layouts with the matching Rust target metadata
+        id: target_layout
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.layout_qualifier.outcome == 'success' }}
         run: '"$RUNNER_TEMP/native-target-layout-qualification" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/lust" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/rustc-reference" "$RUNNER_TEMP/native-target-layouts" x86_64-unknown-linux-gnu x86_64-apple-darwin aarch64-apple-darwin x86_64-pc-windows-gnu'
       - name: Build the unchanged baseline for the failed-link regression
+        id: baseline_toolchain
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' }}
         env:
           GIT_ALTERNATE_OBJECT_DIRECTORIES: ${{ runner.temp }}/lustr-pristine-source/.git/objects
         run: '"$RUNNER_TEMP/build-mixed-toolchain" "$RUNNER_TEMP/lustr-regression-source" --current-sdk "$RUNNER_TEMP/lustr-tinycc/install" "$RUNNER_TEMP/lustr-regression-baseline" --release'
       - name: Require the specific failed-link stale-output regression on the baseline
+        id: baseline_regression
+        if: ${{ !cancelled() && steps.baseline_toolchain.outcome == 'success' && steps.mixed_qualifier.outcome == 'success' }}
         run: |
           set +e
           "$RUNNER_TEMP/mixed-compiler-qualification" "$RUNNER_TEMP/baseline-mixed-project" "$RUNNER_TEMP/lustr-regression-baseline/toolchain/bin/cargo" "$RUNNER_TEMP/lustr-regression-baseline/toolchain/bin/lustr" > "$RUNNER_TEMP/baseline-regression.stdout" 2> "$RUNNER_TEMP/baseline-regression.stderr"
@@ -169,18 +184,30 @@ jobs:
           printf '%s\n' "$regression_status" > "$RUNNER_TEMP/baseline-regression.status"
           cat "$RUNNER_TEMP/baseline-regression.stdout" "$RUNNER_TEMP/baseline-regression.stderr"
           test "$regression_status" -ne 0
-          rg --fixed-strings 'link-failure-recovery: wrong application result' "$RUNNER_TEMP/baseline-regression.stderr"
+          grep -F -- 'link-failure-recovery: wrong application result' "$RUNNER_TEMP/baseline-regression.stderr"
       - name: Execute mixed Cargo graph, edits, invalidation, warnings and rejection
+        id: mixed_execution
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.mixed_qualifier.outcome == 'success' }}
         run: '"$RUNNER_TEMP/mixed-compiler-qualification" "$RUNNER_TEMP/mixed-project" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/cargo" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/lustr"'
       - name: Build retained Cargo check qualifier
+        id: check_qualifier
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' }}
         run: rustc --edition=2024 tools/mixed-check-qualification.rs -o "$RUNNER_TEMP/mixed-check-qualification"
       - name: Verify retained checks and freshly encoded Rust metadata
+        id: retained_checks
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.check_qualifier.outcome == 'success' }}
         run: '"$RUNNER_TEMP/mixed-check-qualification" "$RUNNER_TEMP/mixed-check-project" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/lustr" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/rustc-reference"'
       - name: Build mixed library and full-language qualification
+        id: library_qualifier
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' }}
         run: rustc --edition=2024 tools/mixed-library-qualification.rs -o "$RUNNER_TEMP/mixed-library-qualification"
       - name: Execute mixed libraries with aggregates, references and generic callers
+        id: mixed_libraries
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.library_qualifier.outcome == 'success' }}
         run: '"$RUNNER_TEMP/mixed-library-qualification" "$RUNNER_TEMP/mixed-library-project" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/lustr" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/rustc-reference"'
       - name: Execute the complete compiler entry and runtime contract
+        id: entry_contract
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' }}
         env:
           LUSTR_LUST_ROOT: ${{ runner.temp }}/lustr-source-built/toolchain
           LUSTR_NATIVE_BUILD_OUTPUT: ${{ runner.temp }}/lustr-source-built/NATIVE-BUILD-RECEIPT.txt
@@ -192,6 +219,8 @@ jobs:
           set -o pipefail
           cargo test --manifest-path Cargo.toml --release --features source-native-runtime --test compiler_contract --locked --offline --jobs 2 --target-dir "$RUNNER_TEMP/lustr-source-built/work/entry-target" --config "build.build-dir=\"$RUNNER_TEMP/lustr-source-built/work/entry-intermediates\"" -- --ignored --test-threads=1 2>&1 | tee "$RUNNER_TEMP/full-entry-contract.log"
       - name: Build matched pristine Lust for the performance comparison
+        id: pristine_build
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.target_layout.outcome == 'success' && steps.baseline_regression.outcome == 'success' && steps.mixed_execution.outcome == 'success' && steps.retained_checks.outcome == 'success' && steps.mixed_libraries.outcome == 'success' && steps.entry_contract.outcome == 'success' }}
         env:
           LUST_TCC_HOME: ${{ runner.temp }}/lustr-tinycc/install
         run: |
@@ -200,8 +229,12 @@ jobs:
           cargo build --manifest-path "$RUNNER_TEMP/lustr-pristine-source/Cargo.toml" --release --locked --offline --jobs 2 --bin lust --bin lust-core --target-dir "$RUNNER_TEMP/lustr-pristine-target" --config "build.build-dir=\"$RUNNER_TEMP/lustr-pristine-intermediates\"" 2>&1 | tee "$RUNNER_TEMP/lustr-pristine-build.log"
           sha256sum "$RUNNER_TEMP/lustr-pristine-target/release/lust" "$RUNNER_TEMP/lustr-pristine-target/release/lust-core" > "$RUNNER_TEMP/lustr-pristine-binaries.sha256"
       - name: Build the paired native and mixed performance runner
+        id: bench_build
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' }}
         run: cargo build --manifest-path crates/lustr-bench/Cargo.toml --release --locked --bin lustr-mixed-bench --target-dir "$RUNNER_TEMP/lustr-bench-target"
       - name: Characterize complete supported and mixed work without granting release admission
+        id: measurements
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.target_layout.outcome == 'success' && steps.baseline_regression.outcome == 'success' && steps.mixed_execution.outcome == 'success' && steps.retained_checks.outcome == 'success' && steps.mixed_libraries.outcome == 'success' && steps.entry_contract.outcome == 'success' && steps.pristine_build.outcome == 'success' && steps.bench_build.outcome == 'success' }}
         run: '"$RUNNER_TEMP/lustr-bench-target/release/lustr-mixed-bench" "$RUNNER_TEMP/lustr-pristine-source" "$RUNNER_TEMP/lustr-pristine-target/release/lust" "$RUNNER_TEMP/lustr-source-built" "$RUNNER_TEMP/lustr-paired-measurements" 12'
       - name: Retain exact source, build profiles and qualification evidence
         if: always()
