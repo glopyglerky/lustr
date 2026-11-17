@@ -1,0 +1,22 @@
+name: Native probe regression tests
+
+on:
+  pull_request:
+    paths:
+      - 'crates/lustr-bench/**'
+      - '.github/workflows/native-probe-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the pinned focused-test compiler
+        run: rustup toolchain install 1.99.1 --profile minimal
+      - name: Reject missing, conflicting and nonzero-work retention evidence
+        run: cargo +1.99.1 test --manifest-path crates/lustr-bench/Cargo.toml --locked --bin lustr-mixed-bench
