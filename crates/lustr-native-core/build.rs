@@ -15,7 +15,13 @@ fn main() {
     assert!(status.success());
     let output = Command::new(helper).env("CARGO_MANIFEST_DIR", &source).output().unwrap();
     assert!(output.status.success(), "unchanged upstream build helper failed");
-    print!("{}", String::from_utf8(output.stdout).unwrap());
+    // The helper also builds a standalone executable. A cdylib has no
+    // `lust-core` bin target and must not receive its Mach-O stack argument.
+    for line in String::from_utf8(output.stdout).unwrap().lines() {
+        if !line.starts_with("cargo:rustc-link-arg-bin=") {
+            println!("{line}");
+        }
+    }
     // Included upstream code retains its original source-library location.
     println!("cargo:rustc-env=CARGO_MANIFEST_DIR={}", source.display());
     println!("cargo:rerun-if-changed={}", source.display());

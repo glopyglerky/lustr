@@ -10,7 +10,7 @@ fn main() {
     let Some(args) = std::env::args_os().skip(1).map(|a| a.into_string().ok()).collect::<Option<Vec<_>>>() else {
         std::process::exit(2);
     };
-    let response = native_link::compile(&parent.join("../lib/liblustr_inference_core.so"), &args);
+    let response = native_link::compile(&parent.join("../lib").join(native_link::INFERENCE_LIBRARY), &args);
     match response {
         Some(Ok((code, stdout, stderr))) => {
             std::io::stdout().write_all(&stdout).expect("native stdout");

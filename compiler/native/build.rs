@@ -100,6 +100,9 @@ fn main() {
     // the binary by src/stdload.rs, S5), the manifest, and the tcc tree.
     let mut h = std::collections::hash_map::DefaultHasher::new();
     hash_tree(&mut h, &root.join("src"));
+    let host_runtime = root.join("../../src/host_runtime.rs");
+    ("lustr-host-runtime", std::fs::read(&host_runtime).expect("native host adapter is required")).hash(&mut h);
+    println!("cargo:rerun-if-changed={}", host_runtime.display());
     let mixed = root.join("../../crates/lustr-native-core/src/mixed_unit.rs");
     if mixed.is_file() {
         std::fs::read(&mixed).expect("read mixed compiler boundary").hash(&mut h);

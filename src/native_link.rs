@@ -2,11 +2,17 @@ use std::ffi::{CString, c_char, c_void};
 use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
 
+#[path = "host_runtime.rs"]
+mod host_runtime;
+#[allow(unused_imports)]
+pub use host_runtime::{INFERENCE_LIBRARY, NATIVE_LIBRARY};
+
 unsafe extern "C" {
     fn dlopen(path: *const c_char, flags: i32) -> *mut c_void;
     fn dlsym(handle: *mut c_void, name: *const c_char) -> *mut c_void;
     fn getrlimit(resource: i32, limit: *mut Limit) -> i32;
     fn setrlimit(resource: i32, limit: *const Limit) -> i32;
+    #[cfg(target_os = "linux")]
     fn prctl(option: i32, ...) -> i32;
 }
 #[repr(C)]
@@ -32,7 +38,14 @@ unsafe extern "C" fn receive(context: *mut c_void, stream: i32, bytes: *const u8
 
 pub fn process_compatible() -> bool {
     // PR_GET_THP_DISABLE reads the current policy without changing it.
-    unsafe { prctl(42, 0u64, 0u64, 0u64, 0u64) == 0 }
+    #[cfg(target_os = "linux")]
+    {
+        unsafe { prctl(42, 0u64, 0u64, 0u64, 0u64) == 0 }
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        true
+    }
 }
 
 pub fn compile(library: &Path, args: &[String]) -> Option<Result<(i32, Vec<u8>, Vec<u8>), &'static str>> {
@@ -99,9 +112,9 @@ fn compile_entry(
         }
         let namespace = CString::new(namespace).unwrap();
         let mut output = (Vec::new(), Vec::new());
-        // Linux x86_64 is a build constraint. RTLD_NOW|RTLD_LOCAL keeps the
-        // unchanged compiler's Rust allocator and internals out of the client ABI.
-        let handle = unsafe { dlopen(path.as_ptr(), 2) };
+        // RTLD_NOW|RTLD_LOCAL keeps the compiler's Rust allocator and internals
+        // out of the client ABI. Darwin's RTLD_LOCAL has a distinct value.
+        let handle = unsafe { dlopen(path.as_ptr(), host_runtime::RTLD_NOW_LOCAL) };
         if handle.is_null() {
             return Err("cannot load the matched native compiler library");
         }

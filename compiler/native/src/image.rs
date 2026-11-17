@@ -154,6 +154,7 @@ unsafe extern "C" {
     fn lseek(fd: c_int, off: i64, whence: c_int) -> i64;
     fn pread(fd: c_int, buf: *mut c_void, count: usize, off: i64) -> isize;
     fn pwrite(fd: c_int, buf: *const c_void, count: usize, off: i64) -> isize;
+    #[cfg(target_os = "linux")]
     fn copy_file_range(fd_in: c_int, off_in: *mut i64, fd_out: c_int, off_out: *mut i64, len: usize, flags: u32) -> isize;
     fn flock(fd: c_int, op: c_int) -> c_int;
     fn fcntl(fd: c_int, cmd: c_int, ...) -> c_int;
@@ -163,7 +164,7 @@ unsafe extern "C" {
     fn sched_setscheduler(pid: c_int, policy: c_int, param: *const c_int) -> c_int;
     fn dup2(old: c_int, new: c_int) -> c_int;
     fn getppid() -> c_int;
-    fn poll(fds: *mut PollFd, n: std::ffi::c_ulong, timeout: c_int) -> c_int;
+    fn poll(fds: *mut PollFd, n: crate::protocol::host_runtime::PollCount, timeout: c_int) -> c_int;
     fn close(fd: c_int) -> c_int;
     fn _exit(code: c_int) -> !;
     fn mi_manage_os_memory_ex(
@@ -181,6 +182,7 @@ unsafe extern "C" {
     fn mi_usable_size(p: *const c_void) -> usize;
     fn dlopen(file: *const c_char, mode: c_int) -> *mut c_void;
     fn dlsym(handle: *mut c_void, name: *const c_char) -> *mut c_void;
+    #[cfg(target_os = "linux")]
     fn memfd_create(name: *const c_char, flags: std::ffi::c_uint) -> c_int;
     fn madvise(addr: *mut c_void, len: usize, advice: c_int) -> c_int;
     fn clone(f: extern "C" fn(*mut c_void) -> c_int, stack: *mut c_void, flags: c_int, arg: *mut c_void, ...) -> c_int;
@@ -234,7 +236,7 @@ fn start() {
     let mut mode = 1;
     // SAFETY: getenv reads the environment block; the name is NUL-terminated.
     let v = unsafe { getenv(c"LUST_FRONT_ARENA".as_ptr()) };
-    if let Some(base) = (!v.is_null()).then(|| parse_hex(v)).flatten().filter(|b| valid_base(*b)) {
+    if let Some(base) = (cfg!(target_os = "linux") && !v.is_null()).then(|| parse_hex(v)).flatten().filter(|b| valid_base(*b)) {
         // SAFETY: a fixed mapping that may not replace anything (NOREPLACE);
         // the result is checked before use.
         let p = unsafe {
@@ -1044,20 +1046,33 @@ fn pack(raw: &std::fs::File, len: u64, head: &[u8], out: &mut std::fs::File, z: 
     Ok(at)
 }
 
+/// Linux heap images use anonymous files. Other hosts keep the ordinary
+/// allocator and daemon but cannot accidentally invoke a Linux syscall ABI.
+fn anonymous_image_file(name: &std::ffi::CStr) -> Result<std::fs::File, String> {
+    #[cfg(target_os = "linux")]
+    {
+        use std::os::fd::FromRawFd;
+        // SAFETY: a new anonymous file; File owns the fresh descriptor.
+        let fd = unsafe { memfd_create(name.as_ptr(), MFD_CLOEXEC) };
+        if fd < 0 {
+            return Err("memfd_create failed".into());
+        }
+        Ok(unsafe { std::fs::File::from_raw_fd(fd) })
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = name;
+        Err("persistent front images are only supported on Linux".into())
+    }
+}
+
 /// Packed layer `path` back in its raw form, in a new memfd that the
 /// regions then map privately (`load`): the sections unpacked in parallel,
 /// only their nonzero pages written, so zero pages stay holes.
 fn unpack(path: &Path, raw_len: u64, sections: &[(u64, u64, u64)], z: &Zstd) -> Result<std::fs::File, String> {
-    use std::os::fd::FromRawFd;
     use std::os::unix::fs::FileExt;
     let src = std::fs::File::open(path).map_err(|e| format!("image: {e}"))?;
-    // SAFETY: a new anonymous file; the File below owns its descriptor.
-    let fd = unsafe { memfd_create(c"lust-front-layer".as_ptr(), MFD_CLOEXEC) };
-    if fd < 0 {
-        return Err("memfd_create failed".into());
-    }
-    // SAFETY: `fd` is a fresh descriptor no one else holds.
-    let mem = unsafe { std::fs::File::from_raw_fd(fd) };
+    let mem = anonymous_image_file(c"lust-front-layer")?;
     mem.set_len(raw_len).map_err(|e| format!("image memfd: {e}"))?;
     let next = AtomicUsize::new(0);
     let failed = std::sync::atomic::AtomicBool::new(false);
@@ -2133,8 +2148,8 @@ fn write_sparse_at(file: &std::fs::File, out: u64, a: usize, len: usize) -> bool
 /// kernel (`copy_file_range`), or through a stack buffer where that
 /// fails. Allocates nothing.
 fn copy_extents(src: c_int, mut off: u64, dst: c_int, mut out: u64, len: u64) -> bool {
-    const SEEK_DATA: c_int = 3;
-    const SEEK_HOLE: c_int = 4;
+    const SEEK_DATA: c_int = if cfg!(target_os = "macos") { 4 } else { 3 };
+    const SEEK_HOLE: c_int = if cfg!(target_os = "macos") { 3 } else { 4 };
     let end = off + len;
     while off < end {
         // SAFETY: lseek on an open fd; copies use explicit offsets.
@@ -2148,9 +2163,13 @@ fn copy_extents(src: c_int, mut off: u64, dst: c_int, mut out: u64, len: u64) ->
         let hole = unsafe { lseek(src, off as i64, SEEK_HOLE) };
         let stop = if hole < 0 { end } else { (hole as u64).min(end) };
         while off < stop {
+            #[cfg(target_os = "linux")]
             let (mut i, mut o) = (off as i64, out as i64);
             // SAFETY: two open fds, offsets owned here.
+            #[cfg(target_os = "linux")]
             let n = unsafe { copy_file_range(src, &mut i, dst, &mut o, (stop - off) as usize, 0) };
+            #[cfg(not(target_os = "linux"))]
+            let n = -1;
             let n = if n > 0 { n as u64 } else { copy_slow(src, off, dst, out, stop - off) };
             if n == 0 {
                 return false;
@@ -2560,14 +2579,7 @@ fn write_image(dir: &Path, mut roots: Box<Roots>) -> Result<String, String> {
     let packer = packer();
     let mut file = match packer {
         Some(_) => {
-            use std::os::fd::FromRawFd;
-            // SAFETY: a new anonymous file; the File owns its descriptor.
-            let fd = unsafe { memfd_create(c"lust-front-save".as_ptr(), MFD_CLOEXEC) };
-            if fd < 0 {
-                return Err("memfd_create failed".into());
-            }
-            // SAFETY: `fd` is a fresh descriptor no one else holds.
-            unsafe { std::fs::File::from_raw_fd(fd) }
+            anonymous_image_file(c"lust-front-save")?
         }
         None => std::fs::File::create(&tmp).map_err(|e| format!("image: {e}"))?,
     };
@@ -2795,6 +2807,7 @@ mod tests {
     /// A raw layer packs and unpacks to the same bytes, and its zero pages
     /// stay holes in the memfd. Skipped where libzstd is missing.
     #[test]
+    #[cfg(target_os = "linux")]
     fn pack_round_trip() {
         let Some(z) = zstd() else { return };
         let dir = std::env::temp_dir().join(format!("lust-pack-{}", std::process::id()));
@@ -2921,7 +2934,7 @@ mod tests {
         // The gap is a hole on file systems that keep them (data starts
         // again only at the second page's copy).
         // SAFETY: lseek on an open fd.
-        let next = unsafe { lseek(dst.as_raw_fd(), 2 * PAGE as i64, 3) };
+        let next = unsafe { lseek(dst.as_raw_fd(), 2 * PAGE as i64, if cfg!(target_os = "macos") { 4 } else { 3 }) };
         assert!(next < 0 || next as usize >= 2 * PAGE, "data at {next}");
         let _ = std::fs::remove_dir_all(&dir);
     }
@@ -3041,4 +3054,6 @@ fn front_images_are_disabled_without_linux_syscalls() {
     assert!(state_dir().is_none());
     assert_eq!(reexec_now(Path::new("unused-image-state")), "persistent front images are only supported on Linux");
     process_start();
+    assert!(anonymous_image_file(c"unsupported-image").is_err());
+    assert!(!arena_on());
 }

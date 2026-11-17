@@ -24,6 +24,10 @@ use std::io::{BufRead, BufReader, Read, Write};
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
 
+// Lustr owns the host adapter; the retained compiler/session core is shared.
+#[path = "../../../src/host_runtime.rs"]
+pub mod host_runtime;
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Cmd {
     Check,
@@ -1026,6 +1030,8 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
 /// field exits by itself; an older one is stopped by removing its socket
 /// (its stop request), so the next command starts a daemon of this build.
 pub fn request(sock: &Path, req: &Request) -> Option<Response> {
+    let address = host_runtime::DaemonSocket::resolve(sock).ok()?;
+    let sock = address.path();
     let mut conn = UnixStream::connect(sock).ok()?;
     conn.write_all(&encode(req)).ok()?;
     let mut reader = BufReader::new(conn);

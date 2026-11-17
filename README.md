@@ -4,6 +4,12 @@ lustr combines [Lust](https://github.com/t3dotgg/lust-lang)'s fast native
 compilation of its supported subset with complete Rust compilation through a
 pinned Rust implementation. blueFe delivers the combined toolchain.
 
+The daemon starts directly and does not require systemd. The
+[native host runtime](docs/compiler-set/host-portability.md) documents the Linux
+and Darwin adapters, source-built SDK receipts, focused tests and remaining
+native macOS qualification. The primary native daemon is not yet a Windows
+runtime; the independent Cargo coordinator remains the portable entry there.
+
 ## Numbers and current qualification
 
 **Cargo body-edit builds now have a measured win; general Cargo acceleration

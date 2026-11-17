@@ -58,7 +58,7 @@ static GLOBAL: image::Alloc = image::Alloc;
 const BIG_FILE: u64 = 256 << 10;
 fn own_env(req: &mut driver::Request) { req.client.env = None; }
 
-// Linux host ABI, kept narrow. The opt-in component uses the same native stack
+// Linux/Darwin host ABI, kept narrow. The opt-in component uses the same native stack
 // budget; this is platform access, not an all-Rust runtime safety claim.
 fn raise_stack_limit() {
     #[repr(C)] struct Limit { soft: u64, hard: u64 }
@@ -67,7 +67,7 @@ fn raise_stack_limit() {
         fn setrlimit(resource: i32, limit: *const Limit) -> i32;
     }
     let mut limit = Limit { soft: 0, hard: 0 };
-    // SAFETY: both calls receive a live correctly represented Linux rlimit.
+    // SAFETY: both calls receive the two u64 fields of the native rlimit.
     if unsafe { getrlimit(3, &mut limit) } == 0 {
         let wanted = (pool::STACK_SIZE as u64).min(limit.hard);
         if wanted > limit.soft {

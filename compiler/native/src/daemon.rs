@@ -57,7 +57,7 @@ use std::sync::mpsc::{Receiver, Sender};
 
 unsafe extern "C" {
     fn flock(fd: i32, operation: i32) -> i32;
-    fn poll(fds: *mut PollFd, nfds: u64, timeout_ms: i32) -> i32;
+    fn poll(fds: *mut PollFd, nfds: protocol::host_runtime::PollCount, timeout_ms: i32) -> i32;
     fn kill(pid: i32, sig: i32) -> i32;
     fn signal(signum: i32, handler: usize) -> usize;
     fn pipe(fds: *mut i32) -> i32;
@@ -184,6 +184,12 @@ fn wait_readable(listener: &UnixListener, wake: i32, socket_watch: i32, timeout:
         PollFd { fd: wake, events: POLLIN, revents: 0 },
         PollFd { fd: socket_watch, events: POLLIN, revents: 0 },
     ];
+    // When the host has no active removal watch, observe unlink requests once
+    // per second. poll still wakes immediately for connections and signals.
+    let timeout = if socket_watch < 0 {
+        let cap = std::time::Duration::from_secs(1);
+        Some(timeout.map_or(cap, |d| d.min(cap)))
+    } else { timeout };
     let ms = timeout.map_or(-1, |d| d.as_millis().min(i32::MAX as u128) as i32);
     // SAFETY: valid pollfds over live fds (an unavailable socket watch is
     // -1, which poll ignores), for the duration of the call.
@@ -249,7 +255,7 @@ fn socket_removal_event(buf: &[u8], name: &[u8]) -> bool {
 #[cfg(target_os = "linux")]
 fn socket_removed(watch: i32, sock: &Path) -> bool {
     if watch < 0 {
-        return false;
+        return sock.symlink_metadata().is_err_and(|error| error.kind() == std::io::ErrorKind::NotFound);
     }
     let Some(name) = sock.file_name() else { return false };
     let mut buf = [0u8; 4096];
@@ -264,12 +270,11 @@ fn socket_removed(watch: i32, sock: &Path) -> bool {
     socket_removal_event(&buf[..n as usize], name.as_bytes()) || sock.symlink_metadata().is_err()
 }
 
-/// True when the watched socket was removed since the last call. A call
-/// with no pending events is one nonblocking read, so the serve loop can
-/// ask after every wait at no polling cost.
+/// Hosts without inotify inspect the actual bound path after poll wakes.
+/// Permission and other transient failures are not removal requests.
 #[cfg(not(target_os = "linux"))]
-fn socket_removed(_watch: i32, _sock: &Path) -> bool {
-    false
+fn socket_removed(_watch: i32, sock: &Path) -> bool {
+    sock.symlink_metadata().is_err_and(|error| error.kind() == std::io::ErrorKind::NotFound)
 }
 
 /// The pid in a lust temp name (`lust-daemon-<pid>`, `lust-<pid>`,
@@ -291,12 +296,10 @@ fn stale_temp_pid(name: &str) -> Option<u32> {
     None
 }
 
-/// True when a process with `pid` exists. Signal 0 plus the /proc
-/// fallback for a pid owned by another user (where signal 0 fails).
+/// True unless the host proves a positive process ID no longer exists.
 /// A reused pid reads as alive, which only keeps a stale dir longer.
 fn pid_alive(pid: u32) -> bool {
-    // SAFETY: signal 0 only probes whether the pid exists.
-    (pid > 0 && unsafe { kill(pid as i32, 0) } == 0) || Path::new(&format!("/proc/{pid}")).exists()
+    protocol::host_runtime::process_exists(pid)
 }
 
 /// Deletes lust temp dirs and files from processes that are gone:
@@ -985,6 +988,19 @@ fn log_stats(served: u64, sessions: usize) {
 
 /// Serves requests until idle. Each crate selection (`SessionKey`) has its own session.
 pub fn serve(sock: &Path) -> ! {
+    let address = protocol::host_runtime::DaemonSocket::resolve(sock).unwrap_or_else(|error| {
+        eprintln!("error: cannot resolve daemon socket {}: {error}", sock.display());
+        std::process::exit(2);
+    });
+    let sock = address.path();
+    // A Linux long-path client passes a directory descriptor. Keep it for the
+    // daemon's lifetime, but do not leak it into compiler subprocesses.
+    if let Some(fd) = std::env::var("LUST_DAEMON_DIRECTORY_FD").ok().and_then(|v| v.parse::<i32>().ok()) {
+        if unsafe { fcntl(fd, F_SETFD, FD_CLOEXEC) } < 0 {
+            eprintln!("error: daemon socket directory descriptor is unavailable");
+            std::process::exit(2);
+        }
+    }
     // Sessions load std once; a std or adapter source override must be
     // read fresh by every compile (see `protocol::source_override`).
     if let Some(var) = protocol::source_override() {

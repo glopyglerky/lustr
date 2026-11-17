@@ -3,7 +3,9 @@
 use std::hash::{Hash, Hasher};
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+
+#[path = "host_runtime.rs"]
+mod host_runtime;
 
 pub fn inputs(library: &Path) -> std::io::Result<Vec<String>> {
     fn visit(base: &Path, directory: &Path, paths: &mut Vec<String>, prefix: &str) -> std::io::Result<()> {
@@ -66,7 +68,8 @@ pub fn sealed(parent: &Path, socket: &Path) -> Option<Sealed> {
     // emitted source records must exactly equal the sealed manifest, including
     // inventory order; the final record hashes that manifest itself.
     let checked =
-        crate::owned_child::output(Command::new("sha256sum").current_dir(&library).arg("--").args(&inputs).arg("sources.sha256")).ok()?;
+        crate::owned_child::output(host_runtime::sha256_command().current_dir(&library).arg("--").args(&inputs).arg("sources.sha256"))
+            .ok()?;
     if !checked.status.success() {
         return None;
     }

@@ -19,8 +19,54 @@ defaults:
     working-directory: compiler/native
 
 jobs:
+  runner-source:
+    name: Runner source provenance
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
+    timeout-minutes: 5
+    steps:
+      - name: Record original workflow and source
+        uses: actions/github-script@v7
+        env:
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+        with:
+          script: |
+            const fs = require('fs');
+            const pr = context.payload.pull_request;
+            const receipt = {
+              schema: 1,
+              repository: context.repo.owner + '/' + context.repo.repo,
+              run_id: String(context.runId),
+              run_attempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+              event_name: context.eventName,
+              sha: context.sha,
+              ref: context.ref,
+              workflow_sha: process.env.WORKFLOW_SHA,
+              workflow_ref: process.env.WORKFLOW_REF,
+              actor: context.actor,
+              triggering_actor: process.env.TRIGGERING_ACTOR,
+              pull_request: pr ? {
+                number: pr.number,
+                head_sha: pr.head.sha,
+                base_sha: pr.base.sha,
+                head_repository_id: String(pr.head.repo.id),
+                base_repository_id: String(pr.base.repo.id),
+              } : null,
+            };
+            const encoded = JSON.stringify(receipt);
+            fs.writeFileSync(process.env.RUNNER_TEMP + '/runner-source.json', encoded);
+            core.notice(encoded, {title: 'runner-source-v1'});
+      - name: Retain original source receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: runner-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/runner-source.json
+          if-no-files-found: error
+          retention-days: 14
+
   linux-x86_64:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
     env:
       # The retained Unicode sanitizer diagnosis demonstrates contention at four
       # concurrent executions on two physical cores. Keep every case and deadline;
@@ -51,6 +97,16 @@ jobs:
         with:
           path: ~/.cargo/registry
           key: cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('compiler/native/Cargo.lock') }}
+      - name: Qualify portable process, IPC, and SDK boundaries
+        env:
+          LUST_TCC_HOME: ${{ github.workspace }}/compiler/native/third_party/tcc
+        run: |
+          set -euo pipefail
+          LUST_BUILD_HASH=0123456789abcdef rustc --edition=2024 --test ../../tools/host-runtime-qualification.rs -o "$RUNNER_TEMP/host-runtime"
+          "$RUNNER_TEMP/host-runtime" --test-threads=1
+          rustc --edition=2024 --test ../../tools/host-sdk.rs -o "$RUNNER_TEMP/host-sdk"
+          "$RUNNER_TEMP/host-sdk" --test-threads=1
+          cargo test --locked
       - name: Run CI gate
         env:
           LUST_TCC_HOME: ${{ github.workspace }}/compiler/native/third_party/tcc
@@ -67,6 +123,8 @@ jobs:
           } > "$RUNNER_TEMP/native-gate-identity.txt"
           python3 ../../tools/capture-benchmark-host.py "$RUNNER_TEMP/native-gate-host.json"
           bash scripts/ci.sh 2>&1 | tee "$RUNNER_TEMP/native-gate.log"
+      - name: Verify base image lifetime through a real daemon
+        run: python3 scripts/test-base-lifetime.py "$GITHUB_WORKSPACE/compiler/native/target/release/lust"
       - name: Record produced compiler identities
         if: always()
         run: |
@@ -90,7 +148,7 @@ jobs:
   macos-arm64:
     # Retry current corrections on the standard macOS 26 Arm64 image after
     # macOS 15 jobs were cancelled before execution. This is not a prior pass.
-    runs-on: macos-26
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['macos-26'] || 'macos-26' }}
     steps:
       - uses: actions/checkout@v4
       - name: Install upstream gate's GNU Bash and command tools
@@ -151,9 +209,17 @@ jobs:
         with:
           path: ~/.cargo/registry
           key: cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('compiler/native/Cargo.lock') }}
-      # Known macOS risks, tracked outside this file: tcc Mach-O output,
-      # the hardcoded libbase.so name, and BSD userland differences in
-      # bench scripts. This job exists to find them; expect red at first.
+      # This gate exercises the Darwin loader and real daemon on Apple silicon.
+      - name: Qualify portable process, IPC, and SDK boundaries
+        env:
+          LUST_TCC_HOME: ${{ github.workspace }}/compiler/native/third_party/tcc
+        run: |
+          set -euo pipefail
+          LUST_BUILD_HASH=0123456789abcdef rustc --edition=2024 --test ../../tools/host-runtime-qualification.rs -o "$RUNNER_TEMP/host-runtime"
+          "$RUNNER_TEMP/host-runtime" --test-threads=1
+          rustc --edition=2024 --test ../../tools/host-sdk.rs -o "$RUNNER_TEMP/host-sdk"
+          "$RUNNER_TEMP/host-sdk" --test-threads=1
+          cargo test --locked
       - name: Run CI gate
         env:
           LUST_TCC_HOME: ${{ github.workspace }}/compiler/native/third_party/tcc
@@ -169,6 +235,8 @@ jobs:
             sha256sum Cargo.toml Cargo.lock build.rs scripts/ci.sh
           } > "$RUNNER_TEMP/native-gate-identity.txt"
           bash scripts/ci.sh 2>&1 | tee "$RUNNER_TEMP/native-gate.log"
+      - name: Verify base image lifetime through a real daemon
+        run: python3 scripts/test-base-lifetime.py "$GITHUB_WORKSPACE/compiler/native/target/release/lust"
       - name: Record produced compiler identities
         if: always()
         run: |

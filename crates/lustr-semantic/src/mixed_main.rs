@@ -92,17 +92,8 @@ mod native {
         let original_socket = protocol::socket_path();
         let socket =
             original_socket.with_file_name(format!("mixed-{}.sock", super::hash(&(original_socket.as_os_str(), env!("LUST_BUILD_HASH")))));
-        // Linux's sockaddr_un limit applies to the supplied pathname, even
-        // when the requested directory itself is perfectly valid. An open
-        // directory preserves that exact namespace while /proc supplies a
-        // short pathname. The daemon inherits the descriptor for its lifetime.
-        use std::os::unix::ffi::OsStrExt;
-        let directory = if socket.as_os_str().as_bytes().len() >= 108 {
-            Some(std::fs::File::open(socket.parent()?).ok()?)
-        } else { None };
-        let socket = if let Some(directory) = &directory {
-            PathBuf::from(format!("/proc/self/fd/{}/{}", directory.as_raw_fd(), socket.file_name()?.to_str()?))
-        } else { socket };
+        let address = protocol::host_runtime::DaemonSocket::resolve(&socket).ok()?;
+        let socket = address.path();
         drop(setup);
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
         loop {
@@ -132,8 +123,13 @@ mod native {
                     .stdin(std::process::Stdio::null())
                     .stdout(log.try_clone().ok()?)
                     .stderr(log);
+                let directory_fd = address.inherited_fd();
+                if let Some(fd) = directory_fd {
+                    command.env("LUST_DAEMON_DIRECTORY_FD", fd.to_string());
+                } else {
+                    command.env_remove("LUST_DAEMON_DIRECTORY_FD");
+                }
                 unsafe {
-                    let directory_fd=directory.as_ref().map(|f|f.as_raw_fd());
                     command.pre_exec(move || {
                         if setsid() < 0 || fcntl(fd, F_SETFD, 0) < 0
                             || directory_fd.is_some_and(|fd|fcntl(fd,F_SETFD,0)<0) {

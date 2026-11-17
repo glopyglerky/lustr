@@ -9,6 +9,10 @@ use std::{
     process::Command,
 };
 
+#[path = "../src/host_runtime.rs"]
+mod host_runtime;
+#[path = "host-sdk.rs"]
+mod host_sdk;
 #[allow(dead_code)]
 #[path = "../src/native_expansion.rs"]
 mod native_expansion;
@@ -86,7 +90,7 @@ fn source_library(repo: &Path, package: &Path) {
 fn seal_source_library(package: &Path, logs: &Path) -> String {
     let library = package.join("lib/lustr");
     let inputs = native_expansion::inputs(&library).unwrap();
-    let manifest = checked("seal-native-sources", Command::new("sha256sum").current_dir(&library).arg("--").args(&inputs), logs);
+    let manifest = checked("seal-native-sources", host_runtime::sha256_command().current_dir(&library).arg("--").args(&inputs), logs);
     record(&library.join("sources.sha256"), &manifest);
     native_expansion::sealed(&package.join("bin"), &package.join("source-library-identity.sock"))
         .expect("installed source library must satisfy the runtime's seal and core identity checks")
@@ -166,6 +170,16 @@ fn main() {
         std::str::from_utf8(&version).unwrap().lines().any(|line| line == format!("commit-hash: {source}")),
         "select the matching pinned Rust SDK before building native components"
     );
+    let host = std::str::from_utf8(&version).unwrap().lines().find_map(|line| line.strip_prefix("host: ")).expect("SDK host triple");
+    let expected_host = match (std::env::consts::OS, std::env::consts::ARCH) {
+        ("linux", "x86_64") => "x86_64-unknown-linux-gnu",
+        ("macos", "aarch64") => "aarch64-apple-darwin",
+        ("macos", "x86_64") => "x86_64-apple-darwin",
+        _ => panic!("the primary native runtime has no adapter for this build host"),
+    };
+    assert_eq!(host, expected_host, "select an SDK for this native build host");
+    let host_receipt = output.join("HOST-SDK-RECEIPT.txt");
+    record(&host_receipt, host_sdk::snapshot(&sdk, source, host).expect("record selected host SDK identity").as_bytes());
     let guard = work.join("source-guard");
     checked(
         "guard-build",
@@ -218,7 +232,8 @@ fn main() {
         .args(["--bin", "lustr", "--features", "source-native-runtime"])
         .env("LUSTR_CORE_ROOT", &sdk)
         .env("LUSTR_LUST_ROOT", &package)
-        .env("LUSTR_NATIVE_BUILD_OUTPUT", receipt);
+        .env("LUSTR_NATIVE_BUILD_OUTPUT", receipt)
+        .env("LUSTR_HOST_SDK_RECEIPT", &host_receipt);
     checked("entry-build", &mut entry, &logs);
     copy(&work.join("entry-target").join(profile.directory()).join("lustr"), &package.join("bin/lustr"));
     symlink("lustr", package.join("bin/rustc")).unwrap();
@@ -229,30 +244,41 @@ fn main() {
     let mut library = cargo(&sdk, &repo, "crates/lustr-native-core/Cargo.toml", &work, "native-library", profile);
     library.env("LUST_TCC_HOME", &tcc);
     checked("native-library-build", &mut library, &logs);
-    let library = package.join("lib/liblustr_native_core.so");
-    copy(&work.join("native-library-target").join(profile.directory()).join("liblustr_native_core.so"), &library);
-    let identity = checked("hash-native-library", Command::new("sha256sum").arg(&library), &logs);
+    let library = package.join("lib").join(host_runtime::NATIVE_LIBRARY);
+    copy(&work.join("native-library-target").join(profile.directory()).join(host_runtime::NATIVE_LIBRARY), &library);
+    let identity = checked("hash-native-library", host_runtime::sha256_command().arg(&library), &logs);
     let identity = std::str::from_utf8(&identity).unwrap().split_whitespace().next().unwrap();
     record(&package.join("lib/lustr-native.id"), format!("{identity}\n").as_bytes());
     let source_identity = seal_source_library(&package, &logs);
-    let mut mixed = cargo(&sdk, &repo, "crates/lustr-semantic/Cargo.toml", &work, "mixed", profile);
-    mixed.args(["--features", "full-core", "--bin", "lustr-mixed"]).env("LUSTR_NATIVE_BUILD_HASH", hash);
-    checked("mixed-build", &mut mixed, &logs);
-    copy(&work.join("mixed-target").join(profile.directory()).join("lustr-mixed"), &package.join("bin/rustc-full"));
+    let mixed_route = if host == "x86_64-unknown-linux-gnu" {
+        let mut mixed = cargo(&sdk, &repo, "crates/lustr-semantic/Cargo.toml", &work, "mixed", profile);
+        mixed.args(["--features", "full-core", "--bin", "lustr-mixed"]).env("LUSTR_NATIVE_BUILD_HASH", hash);
+        checked("mixed-build", &mut mixed, &logs);
+        copy(&work.join("mixed-target").join(profile.directory()).join("lustr-mixed"), &package.join("bin/rustc-full"));
+        "ELF mixed-object candidate"
+    } else {
+        // The current bridge validates ELF objects only. Darwin keeps native
+        // whole-target Lust and the complete, matching upstream Rust fallback.
+        symlink(sdk.join("bin/rustc"), package.join("bin/rustc-full")).unwrap();
+        "whole-target native Lust plus matching upstream Rust; no mixed Mach-O bridge"
+    };
     // rustc-full resolves current_exe to this directory, alongside its matching
     // native core and the original compiler used for non-UTF8 OS arguments.
     record(&output.join("NATIVE-BUILD-RECEIPT.txt"), native_output.as_bytes());
     let mut manifest = format!(
-        "Local source-built development candidate; release admission and broad mixed performance remain pending.\nReferenced source={}, SDK={}, TinyCC={}\nNative build={}\nCargo artifact profile={}\nSource library identity={}\n",
+        "Local source-built development candidate; native host qualification, release admission and broad mixed performance remain pending.\nReferenced source={}, SDK={}, TinyCC={}\nNative build={}\nCargo artifact profile={}\nSource library identity={}\nHost={}\nRoute={}\nSDK receipt={}\n",
         repo.display(),
         sdk.display(),
         tcc.display(),
         hash,
         profile.directory(),
-        source_identity
+        source_identity,
+        host,
+        mixed_route,
+        host_receipt.display()
     );
     for name in ["lustr", "rustc-full", "lust", "lust-core", "cargo-lustr"] {
-        let result = checked(&format!("hash-{name}"), Command::new("sha256sum").arg(package.join("bin").join(name)), &logs);
+        let result = checked(&format!("hash-{name}"), host_runtime::sha256_command().arg(package.join("bin").join(name)), &logs);
         manifest.push_str(std::str::from_utf8(&result).unwrap());
     }
     record(&output.join("COMPONENTS.txt"), manifest.as_bytes());

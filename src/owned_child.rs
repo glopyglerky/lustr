@@ -1,5 +1,7 @@
-//! One owned foreground process group. The Linux x86_64 build gate fixes the
-//! ABI below. Signal handlers call only async-signal-safe libc functions.
+//! One owned foreground process group. Host signal/wait constants are explicit;
+//! signal handlers call only async-signal-safe libc functions.
+#[path = "host_runtime.rs"]
+mod host_runtime;
 use std::io::{self, Read};
 use std::os::unix::process::CommandExt;
 use std::process::{Child, Command, ExitStatus, Output, Stdio};
@@ -9,7 +11,7 @@ const SIGNALS: [i32; 4] = [1, 2, 3, 15];
 const KILL: i32 = 9;
 static GROUP: AtomicI32 = AtomicI32::new(0);
 static PENDING: AtomicI32 = AtomicI32::new(0);
-type SigSet = [u64; 16];
+use host_runtime::{EMPTY_SIGSET, SIG_BLOCK, SIG_SETMASK, SigSet, WNOWAIT};
 unsafe extern "C" {
     fn kill(pid: i32, signal: i32) -> i32;
     fn getpid() -> i32;
@@ -43,14 +45,14 @@ extern "C" fn cancel(signal: i32) {
 struct Blocked(SigSet);
 impl Blocked {
     fn new() -> io::Result<Self> {
-        let mut set = [0; 16];
-        let mut old = [0; 16];
+        let mut set = EMPTY_SIGSET;
+        let mut old = EMPTY_SIGSET;
         unsafe {
             sigemptyset(&mut set);
             for signal in SIGNALS {
                 sigaddset(&mut set, signal);
             }
-            let result = pthread_sigmask(0, &set, &mut old); // SIG_BLOCK
+            let result = pthread_sigmask(SIG_BLOCK, &set, &mut old);
             if result != 0 {
                 return Err(io::Error::from_raw_os_error(result));
             }
@@ -61,7 +63,7 @@ impl Blocked {
 impl Drop for Blocked {
     fn drop(&mut self) {
         unsafe {
-            pthread_sigmask(2, &self.0, std::ptr::null_mut());
+            pthread_sigmask(SIG_SETMASK, &self.0, std::ptr::null_mut());
         }
     }
 }
@@ -77,7 +79,7 @@ fn observe_exit(pid: u32) -> io::Result<()> {
     loop {
         // Retain the leader until the owner reaps it. Killing descendants
         // here also closes inherited pipes while the owner is draining them.
-        if unsafe { waitid(1, pid, &mut info, 4 | 0x0100_0000) } == 0 {
+        if unsafe { waitid(1, pid, &mut info, 4 | WNOWAIT) } == 0 {
             unsafe {
                 kill(-(pid as i32), KILL);
             }
@@ -118,7 +120,7 @@ impl OwnedChild {
                 for &(signal, old) in &handlers {
                     set_signal(signal, if old == 1 { 1 } else { 0 });
                 }
-                let result = pthread_sigmask(2, &mask, std::ptr::null_mut());
+                let result = pthread_sigmask(SIG_SETMASK, &mask, std::ptr::null_mut());
                 if result != 0 {
                     return Err(io::Error::from_raw_os_error(result));
                 }
@@ -250,10 +252,18 @@ mod tests {
             assert_eq!(status.code(), Some(17));
             assert!(start.elapsed() < std::time::Duration::from_secs(3), "pipe drain waited for leaf timeout");
             let pid: i32 = std::fs::read_to_string(&marker).unwrap().parse().unwrap();
+            #[cfg(target_os = "linux")]
             let active = std::fs::read_to_string(format!("/proc/{pid}/stat"))
                 .ok()
                 .and_then(|s| s.rsplit_once(')').map(|(_, rest)| !rest.trim_start().starts_with('Z')))
                 .unwrap_or(false);
+            #[cfg(target_os = "macos")]
+            let active = {
+                let output = std::process::Command::new("ps").args(["-o", "stat=", "-p", &pid.to_string()]).output().unwrap();
+                assert!(matches!(output.status.code(), Some(0 | 1)), "cannot inspect descendant status");
+                let status = std::str::from_utf8(&output.stdout).unwrap().trim();
+                !status.is_empty() && !status.starts_with('Z')
+            };
             assert!(!active, "leaf survived leader cleanup");
         }
         std::fs::remove_dir_all(root).unwrap();

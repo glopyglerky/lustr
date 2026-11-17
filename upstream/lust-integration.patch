@@ -1,5 +1,5 @@
 diff --git a/build.rs b/build.rs
-index 302f9cb99f823cf7dac098971267b8e99e997188..0501a41041184ba5e4111eb9f67ddb7954edd79d 100644
+index 302f9cb99f823cf7dac098971267b8e99e997188..4341d153d26d251db52069407f3f9b56cb363364 100644
 --- a/build.rs
 +++ b/build.rs
 @@ -76,6 +76,12 @@ fn main() {
@@ -15,10 +15,13 @@ index 302f9cb99f823cf7dac098971267b8e99e997188..0501a41041184ba5e4111eb9f67ddb79
      println!("cargo:rustc-env=LUST_TCC_LIB_PATH={}", lib.join("tcc").display());
      println!("cargo:rustc-env=LUST_TCC_BIN={}", tcc.join("bin/tcc").display());
      println!("cargo:rerun-if-env-changed=LUST_TCC_HOME");
-@@ -94,10 +100,23 @@ fn main() {
+@@ -94,10 +100,26 @@ fn main() {
      // the binary by src/stdload.rs, S5), the manifest, and the tcc tree.
      let mut h = std::collections::hash_map::DefaultHasher::new();
      hash_tree(&mut h, &root.join("src"));
++    let host_runtime = root.join("../../src/host_runtime.rs");
++    ("lustr-host-runtime", std::fs::read(&host_runtime).expect("native host adapter is required")).hash(&mut h);
++    println!("cargo:rerun-if-changed={}", host_runtime.display());
 +    let mixed = root.join("../../crates/lustr-native-core/src/mixed_unit.rs");
 +    if mixed.is_file() {
 +        std::fs::read(&mixed).expect("read mixed compiler boundary").hash(&mut h);
@@ -221,6 +224,255 @@ index bc70f5dff30e5988ab943557202dbe6a91b1709a..1e9d2b9783532f07097fd87787fcc903
      }
  
      /// True for an unnamed address.
+diff --git a/scripts/test-base-lifetime.py b/scripts/test-base-lifetime.py
+new file mode 100755
+index 0000000000000000000000000000000000000000..a35bcdfe446570d7070f2d39d7cde9275556e346
+--- /dev/null
++++ b/scripts/test-base-lifetime.py
+@@ -0,0 +1,243 @@
++#!/usr/bin/env python3
++"""Native daemon base-library lifetime regression.
++
++Usage: python3 scripts/test-base-lifetime.py [path/to/lust]
++Default compiler: LUST_BIN, else target/release/lust. Requires rustc and
++otool on Darwin or readelf on Linux. Unsupported hosts fail setup.
++
++Checks actual warm builds against cold native/Rust output, native loader
++metadata, immutable replacement, missing-base healing, and kept binaries
++after daemon shutdown. Both semantic oracles run throughout the warm
++sequence. Commands, relevant metadata, and oracle/daemon logs go to stdout.
++"""
++
++import argparse
++import hashlib
++import os
++from pathlib import Path
++import re
++import shlex
++import shutil
++import subprocess
++import sys
++import tempfile
++import time
++
++import oracle_log
++
++
++ROOT = Path(__file__).resolve().parent.parent
++DARWIN = sys.platform == "darwin"
++SUFFIX = ".dylib" if DARWIN else ".so"
++
++
++def require(condition, message):
++    if not condition:
++        raise RuntimeError(message)
++
++
++def run(args, work, env, show=True):
++    args = [str(arg) for arg in args]
++    print("+ " + shlex.join(args), flush=True)
++    result = subprocess.run(args, cwd=work, env=env, capture_output=True, text=True,
++                            errors="replace", timeout=60)
++    if result.stderr:
++        print(result.stderr, end="" if result.stderr.endswith("\n") else "\n", flush=True)
++    if result.stdout and (show or result.returncode):
++        print(result.stdout, end="" if result.stdout.endswith("\n") else "\n", flush=True)
++    require(result.returncode == 0, f"command exited {result.returncode}: {shlex.join(args)}")
++    return result
++
++
++def macho_fields(path, work, env):
++    text = run(["otool", "-l", path], work, env, show=False).stdout
++    fields = {}
++    for block in re.split(r"(?m)^Load command \d+\s*$", text)[1:]:
++        command = re.search(r"(?m)^\s*cmd (LC_\w+)\s*$", block)
++        if not command or command[1] not in ("LC_LOAD_DYLIB", "LC_ID_DYLIB", "LC_RPATH"):
++            continue
++        value = re.search(r"(?m)^\s*(?:name|path) (.+) \(offset \d+\)\s*$", block)
++        require(value is not None, f"unreadable Mach-O load command in {path}: {block}")
++        fields.setdefault(command[1], []).append(value[1])
++        print(f"metadata {path.name}: {command[1]}={value[1]}", flush=True)
++    return fields
++
++
++def base_dependency(exe, base_dir, owner, work, env):
++    if DARWIN:
++        fields = macho_fields(exe, work, env)
++        loads = fields.get("LC_LOAD_DYLIB", [])
++        deps = [name for name in loads if "libbase-" in name]
++        require(str(base_dir) in fields.get("LC_RPATH", []),
++                f"{exe.name}: no matching LC_RPATH for {base_dir}: {fields}")
++        prefix = "@rpath/"
++    else:
++        text = run(["readelf", "-d", exe], work, env).stdout
++        deps = [name for name in re.findall(r"\(NEEDED\).*?\[([^]]+)\]", text) if "libbase-" in name]
++        rpaths = re.findall(r"\((?:RUNPATH|RPATH)\).*?\[([^]]+)\]", text)
++        require(any(str(base_dir) in path.split(":") for path in rpaths),
++                f"{exe.name}: no matching runtime search path for {base_dir}")
++        prefix = ""
++    require(len(deps) == 1, f"{exe.name}: expected one daemon base dependency, got {deps}")
++    pattern = re.escape(prefix) + rf"libbase-{owner}-[0-9a-f]{{32}}" + re.escape(SUFFIX)
++    require(re.fullmatch(pattern, deps[0]) is not None,
++            f"{exe.name}: dependency is not an immutable base owned by daemon {owner}: {deps[0]}")
++    base = base_dir / deps[0].removeprefix(prefix)
++    require(base.is_file(), f"{exe.name}: linked base does not exist: {base}")
++    if DARWIN:
++        fields = macho_fields(base, work, env)
++        require(fields.get("LC_ID_DYLIB") == [deps[0]],
++                f"{base.name}: install name does not equal the executable's load name: {fields}")
++    print(f"base {exe.name}: {base.name}", flush=True)
++    return base
++
++
++def output(exe, expected, work, env):
++    got = run([exe], work, env).stdout
++    require(got == expected, f"{exe.name}: expected {expected!r}, got {got!r}")
++
++
++def case(lust, work):
++    source = work / "main.rs"
++    socket = work / "d.sock"
++    # Exercise the existing rpath option's quoting as well as its native
++    # load-command emission. The socket itself stays in a short path.
++    cache = work / 'cache space # café "quoted"'
++    base_dir = cache / "bases"
++    tmp = work / "tmp"
++    tmp.mkdir()
++    oracle_path = work / "oracle.log"
++    log_path = work / "daemon.log"
++    env = dict(os.environ, LUST_DAEMON_SOCKET=str(socket), LUST_CACHE_DIR=str(cache),
++               LUST_NO_CACHE="1", LUST_DAEMON_IDLE="0", LUST_STATS="1", TMPDIR=str(tmp),
++               LUST_CHECK_ITEMPATCH="1", LUST_CHECK_RESOLVE="1",
++               LUST_ITEMPATCH_LOG=str(oracle_path), LUST_RESOLVE_LOG=str(oracle_path))
++    for key in ("LUST_NO_DAEMON", "LUST_FRONT_STATE", "LUST_FRONT_STATE_VERBOSE"):
++        env.pop(key, None)
++    problems = []
++    daemon = None
++    with log_path.open("w") as log:
++        try:
++            print(f"+ {shlex.quote(str(lust))} daemon", flush=True)
++            daemon = subprocess.Popen([str(lust), "daemon"], cwd=work, env=env,
++                                      stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
++            deadline = time.monotonic() + 10
++            while not socket.is_socket():
++                require(daemon.poll() is None, "daemon exited before binding its socket")
++                require(time.monotonic() < deadline, "daemon did not bind its socket")
++                time.sleep(0.01)
++            bases = []
++            old_hash = None
++            for version, value in enumerate((41, 42)):
++                # A static-data edit forces a new base, while keeping the
++                # crate, function identities, and daemon session fixed.
++                source.write_text(
++                    "mod values {\n"
++                    f"    pub static ANSWER: i32 = {value};\n"
++                    "    pub fn read() -> i32 { ANSWER }\n"
++                    "}\nfn main() { println!(\"{}\", values::read()); }\n", encoding="utf-8")
++                stamp = time.time() + version + 1
++                os.utime(source, (stamp, stamp))
++                expected = f"{value}\n"
++                exe = work / f"warm-{version}"
++                run([lust, "check", source], work, env)
++                run([lust, "build", source, "-o", exe], work, env)
++                require(daemon.poll() is None, "the requested warm daemon exited during a build")
++                base = base_dependency(exe, base_dir, daemon.pid, work, env)
++                bases.append(base)
++                output(exe, expected, work, env)
++                # Oracle counts below must come from the warm daemon.
++                cold_env = dict(env, LUST_NO_DAEMON="1", LUST_CHECK_ITEMPATCH="0", LUST_CHECK_RESOLVE="0")
++                cold_env.pop("LUST_ITEMPATCH_LOG", None)
++                cold_env.pop("LUST_RESOLVE_LOG", None)
++                cold = work / f"cold-{version}"
++                run([lust, "build", source, "-o", cold], work, cold_env)
++                output(cold, expected, work, cold_env)
++                reference = work / f"rust-{version}"
++                run(["rustc", "--edition", "2024", "-C", "overflow-checks=on", source, "-o", reference], work, env)
++                output(reference, expected, work, env)
++                if version == 0:
++                    old_hash = hashlib.sha256(base.read_bytes()).digest()
++                else:
++                    require(bases[0] != base, "the static edit did not replace the base")
++                    require(hashlib.sha256(bases[0].read_bytes()).digest() == old_hash,
++                            "replacement changed the older immutable base")
++                    output(work / "warm-0", "41\n", work, env)
++
++            # Delete only this test's current library. The unchanged warm
++            # build must heal from retained objects under the same name.
++            bases[1].unlink()
++            healed = work / "healed"
++            built = run([lust, "build", source, "-o", healed], work, env)
++            stats = re.findall(r"(?m)^lust-stats: (.+)$", built.stderr)
++            require(stats, "healing build did not report warm compilation counters")
++            counters = dict(re.findall(r"(\w+)=(\d+)", stats[-1]))
++            require(counters.get("table_rebuilt") == "0" and counters.get("dirty_units") == "0"
++                    and int(counters.get("units_compiled", "999")) <= 1,
++                    f"healing rebuilt the base objects instead of retaining them: {stats[-1]}")
++            require(base_dependency(healed, base_dir, daemon.pid, work, env) == bases[1],
++                    "healing changed the base's immutable name")
++            output(work / "warm-1", "42\n", work, env)
++            output(healed, "42\n", work, env)
++
++            print("+ terminate daemon and wait for cleanup", flush=True)
++            daemon.terminate()
++            daemon.wait(timeout=15)
++            require(not socket.exists(), "daemon did not remove its socket on shutdown")
++            require(not (tmp / f"lust-daemon-{daemon.pid}").exists(), "daemon did not remove its temporary object directory")
++            require(hashlib.sha256(bases[0].read_bytes()).digest() == old_hash,
++                    "shutdown changed or removed the older immutable base")
++            for name, expected in (("warm-0", "41\n"), ("warm-1", "42\n"), ("healed", "42\n")):
++                output(work / name, expected, work, env)
++        except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
++            problems.append(str(exc))
++        finally:
++            if daemon is not None and daemon.poll() is None:
++                daemon.terminate()
++                try:
++                    daemon.wait(timeout=10)
++                except subprocess.TimeoutExpired:
++                    daemon.kill()
++                    daemon.wait(timeout=10)
++                    problems.append("daemon required SIGKILL during cleanup")
++
++    text = log_path.read_text(errors="replace")
++    print("daemon log:\n" + text, flush=True)
++    problems.extend(line for line in text.splitlines() if line.startswith("guard:"))
++    starts = len(re.findall(r"(?m)^guard-check: start ", text))
++    dones = len(re.findall(r"(?m)^guard-check: done ", text))
++    if dones < starts:
++        problems.append(f"{starts - dones} background guard checks did not finish")
++    oracle_text = oracle_path.read_text(errors="replace") if oracle_path.exists() else ""
++    print("semantic oracle log:\n" + oracle_text, flush=True)
++    _, failures = oracle_log.collect(str(oracle_path))
++    problems.extend(failures)
++    for prefix in ("itempatch oracle: ok", "resolve oracle: ok"):
++        count = sum(line.startswith(prefix) for line in oracle_text.splitlines())
++        print(f"oracle checks {prefix}: {count}", flush=True)
++        if count == 0:
++            problems.append(f"no {prefix} checks recorded")
++    for problem in problems:
++        print(f"FAIL base lifetime: {problem}", file=sys.stderr)
++    if problems:
++        return 1
++    print(f"PASS base lifetime ({sys.platform}): native metadata, replacement, healing, shutdown", flush=True)
++    return 0
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("lust", nargs="?", default=os.environ.get("LUST_BIN", str(ROOT / "target/release/lust")))
++    args = parser.parse_args()
++    lust = Path(args.lust).resolve()
++    tool = "otool" if DARWIN else "readelf"
++    if sys.platform not in ("darwin", "linux") or not os.access(lust, os.X_OK) or any(shutil.which(t) is None for t in (tool, "rustc")):
++        print(f"setup error: requires Linux/Darwin, an executable compiler ({lust}), {tool}, and rustc", file=sys.stderr)
++        return 2
++    # /tmp keeps the Unix socket below both native sockaddr_un limits.
++    with tempfile.TemporaryDirectory(prefix="lust-base-", dir="/tmp") as directory:
++        return case(lust, Path(directory).resolve())
++
++
++if __name__ == "__main__":
++    sys.exit(main())
 diff --git a/src/borrowck/mod.rs b/src/borrowck/mod.rs
 index 15c0a9acf2da0eb01c89b4e5d5be3295d2da8800..d59889712ef13c9b35f758f5c873fe4513ae0753 100644
 --- a/src/borrowck/mod.rs
@@ -1254,7 +1506,7 @@ index 01217ad379d1e563a95cc34dfccbfd4ce4fbebca..00a9e7588a6cba4893f69482837a8e84
          }
          let cx = Cx { regions: &p.regions, index: &p.gx.index };
 diff --git a/src/client.rs b/src/client.rs
-index 136b1f4aa7efc99f8e5bd2b23446fad2578f1851..289d016b344c2e753a3ded2f1e97f62cdda8fd95 100644
+index 136b1f4aa7efc99f8e5bd2b23446fad2578f1851..152a1682786f42b20d3a09f2b195a74a1ede40c7 100644
 --- a/src/client.rs
 +++ b/src/client.rs
 @@ -24,7 +24,7 @@ use std::path::{Path, PathBuf};
@@ -1266,11 +1518,53 @@ index 136b1f4aa7efc99f8e5bd2b23446fad2578f1851..289d016b344c2e753a3ded2f1e97f62c
  }
  const LOCK_EX: i32 = 2;
  const LOCK_NB: i32 = 4;
+@@ -69,6 +69,8 @@ fn maybe_autostart(sock: &Path, file: &Path, core: &Path) {
+     if env_on("LUST_NO_DAEMON") || protocol::source_override().is_some() {
+         return;
+     }
++    let Ok(address) = protocol::host_runtime::DaemonSocket::resolve(sock) else { return };
++    let sock = address.path();
+     let Some(lock) = claim_start(&protocol::daemon_lock_path(sock)) else { return };
+     let lock_fd = lock.as_raw_fd();
+     let dir = log_dir(file);
+@@ -83,7 +85,14 @@ fn maybe_autostart(sock: &Path, file: &Path, core: &Path) {
+         .env("LUST_DAEMON_PREWARM", file)
+         .env("LUST_DAEMON_PREWARM_AFTER", std::process::id().to_string())
+         .env("LUST_DAEMON_LOCK_FD", lock_fd.to_string())
++        .env("LUST_DAEMON_SOCKET", sock)
+         .stdin(std::process::Stdio::null());
++    let directory_fd = address.inherited_fd();
++    if let Some(fd) = directory_fd {
++        cmd.env("LUST_DAEMON_DIRECTORY_FD", fd.to_string());
++    } else {
++        cmd.env_remove("LUST_DAEMON_DIRECTORY_FD");
++    }
+     if let Ok(f) = log {
+         if let Ok(f2) = f.try_clone() {
+             cmd.stdout(f).stderr(f2);
+@@ -95,8 +104,9 @@ fn maybe_autostart(sock: &Path, file: &Path, core: &Path) {
+     // plain syscalls; no Rust code runs.
+     unsafe {
+         cmd.pre_exec(move || {
+-            setsid();
+-            fcntl(lock_fd, F_SETFD, 0);
++            if setsid() < 0 || fcntl(lock_fd, F_SETFD, 0) < 0 || directory_fd.is_some_and(|fd| fcntl(fd, F_SETFD, 0) < 0) {
++                return Err(std::io::Error::last_os_error());
++            }
+             Ok(())
+         });
+     }
 diff --git a/src/daemon.rs b/src/daemon.rs
-index db807083aa56d24a804b47f7ffd31e33c563ad52..adddcca6003fb6ff0d06bd1fe5cd477d9c6a5110 100644
+index db807083aa56d24a804b47f7ffd31e33c563ad52..b0c46b58b8272288399a5ee1dc7fc0a25e1e4125 100644
 --- a/src/daemon.rs
 +++ b/src/daemon.rs
-@@ -62,7 +62,7 @@ unsafe extern "C" {
+@@ -57,12 +57,12 @@ use std::sync::mpsc::{Receiver, Sender};
+ 
+ unsafe extern "C" {
+     fn flock(fd: i32, operation: i32) -> i32;
+-    fn poll(fds: *mut PollFd, nfds: u64, timeout_ms: i32) -> i32;
++    fn poll(fds: *mut PollFd, nfds: protocol::host_runtime::PollCount, timeout_ms: i32) -> i32;
+     fn kill(pid: i32, sig: i32) -> i32;
      fn signal(signum: i32, handler: usize) -> usize;
      fn pipe(fds: *mut i32) -> i32;
      fn write(fd: i32, buf: *const u8, count: usize) -> isize;
@@ -1279,11 +1573,94 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..adddcca6003fb6ff0d06bd1fe5cd477d
      fn getuid() -> u32;
      #[cfg(target_os = "linux")]
      fn setpriority(which: i32, who: u32, prio: i32) -> i32;
+@@ -184,6 +184,12 @@ fn wait_readable(listener: &UnixListener, wake: i32, socket_watch: i32, timeout:
+         PollFd { fd: wake, events: POLLIN, revents: 0 },
+         PollFd { fd: socket_watch, events: POLLIN, revents: 0 },
+     ];
++    // When the host has no active removal watch, observe unlink requests once
++    // per second. poll still wakes immediately for connections and signals.
++    let timeout = if socket_watch < 0 {
++        let cap = std::time::Duration::from_secs(1);
++        Some(timeout.map_or(cap, |d| d.min(cap)))
++    } else { timeout };
+     let ms = timeout.map_or(-1, |d| d.as_millis().min(i32::MAX as u128) as i32);
+     // SAFETY: valid pollfds over live fds (an unavailable socket watch is
+     // -1, which poll ignores), for the duration of the call.
+@@ -249,7 +255,7 @@ fn socket_removal_event(buf: &[u8], name: &[u8]) -> bool {
+ #[cfg(target_os = "linux")]
+ fn socket_removed(watch: i32, sock: &Path) -> bool {
+     if watch < 0 {
+-        return false;
++        return sock.symlink_metadata().is_err_and(|error| error.kind() == std::io::ErrorKind::NotFound);
+     }
+     let Some(name) = sock.file_name() else { return false };
+     let mut buf = [0u8; 4096];
+@@ -264,12 +270,11 @@ fn socket_removed(watch: i32, sock: &Path) -> bool {
+     socket_removal_event(&buf[..n as usize], name.as_bytes()) || sock.symlink_metadata().is_err()
+ }
+ 
+-/// True when the watched socket was removed since the last call. A call
+-/// with no pending events is one nonblocking read, so the serve loop can
+-/// ask after every wait at no polling cost.
++/// Hosts without inotify inspect the actual bound path after poll wakes.
++/// Permission and other transient failures are not removal requests.
+ #[cfg(not(target_os = "linux"))]
+-fn socket_removed(_watch: i32, _sock: &Path) -> bool {
+-    false
++fn socket_removed(_watch: i32, sock: &Path) -> bool {
++    sock.symlink_metadata().is_err_and(|error| error.kind() == std::io::ErrorKind::NotFound)
+ }
+ 
+ /// The pid in a lust temp name (`lust-daemon-<pid>`, `lust-<pid>`,
+@@ -291,12 +296,10 @@ fn stale_temp_pid(name: &str) -> Option<u32> {
+     None
+ }
+ 
+-/// True when a process with `pid` exists. Signal 0 plus the /proc
+-/// fallback for a pid owned by another user (where signal 0 fails).
++/// True unless the host proves a positive process ID no longer exists.
+ /// A reused pid reads as alive, which only keeps a stale dir longer.
+ fn pid_alive(pid: u32) -> bool {
+-    // SAFETY: signal 0 only probes whether the pid exists.
+-    (pid > 0 && unsafe { kill(pid as i32, 0) } == 0) || Path::new(&format!("/proc/{pid}")).exists()
++    protocol::host_runtime::process_exists(pid)
+ }
+ 
+ /// Deletes lust temp dirs and files from processes that are gone:
+@@ -985,6 +988,19 @@ fn log_stats(served: u64, sessions: usize) {
+ 
+ /// Serves requests until idle. Each crate selection (`SessionKey`) has its own session.
+ pub fn serve(sock: &Path) -> ! {
++    let address = protocol::host_runtime::DaemonSocket::resolve(sock).unwrap_or_else(|error| {
++        eprintln!("error: cannot resolve daemon socket {}: {error}", sock.display());
++        std::process::exit(2);
++    });
++    let sock = address.path();
++    // A Linux long-path client passes a directory descriptor. Keep it for the
++    // daemon's lifetime, but do not leak it into compiler subprocesses.
++    if let Some(fd) = std::env::var("LUST_DAEMON_DIRECTORY_FD").ok().and_then(|v| v.parse::<i32>().ok()) {
++        if unsafe { fcntl(fd, F_SETFD, FD_CLOEXEC) } < 0 {
++            eprintln!("error: daemon socket directory descriptor is unavailable");
++            std::process::exit(2);
++        }
++    }
+     // Sessions load std once; a std or adapter source override must be
+     // read fresh by every compile (see `protocol::source_override`).
+     if let Some(var) = protocol::source_override() {
 diff --git a/src/driver/cache.rs b/src/driver/cache.rs
-index da28835400f894866adb85f436e2cbdf109797d7..bec4630c3e8d1123c282a9dc2ccfcefe9c0f68a4 100644
+index da28835400f894866adb85f436e2cbdf109797d7..295f0673c543b50ffbb088b9f1bddec97c94ed54 100644
 --- a/src/driver/cache.rs
 +++ b/src/driver/cache.rs
-@@ -239,9 +239,10 @@ fn forget_used(dir: &Path) {
+@@ -131,7 +131,7 @@ fn tcc_hash() -> (u64, u64) {
+ }
+ 
+ /// The compiler id for cache keys. See the module docs.
+-fn compiler_id() -> (u64, u64) {
++pub(crate) fn compiler_id() -> (u64, u64) {
+     let tcc = tcc_hash();
+     let extra = std::env::var("LUST_CACHE_COMPILER_ID").unwrap_or_default();
+     hash128(&[env!("LUST_BUILD_HASH").as_bytes(), &tcc.0.to_le_bytes(), &tcc.1.to_le_bytes(), extra.as_bytes()], 7)
+@@ -239,12 +239,18 @@ fn forget_used(dir: &Path) {
  /// outside the source bytes (`env!`, `option_env!`, the `include!`
  /// family): such a request never enters this cache, since its key
  /// cannot see env vars or included files (added for W-MACRO).
@@ -1296,11 +1673,120 @@ index da28835400f894866adb85f436e2cbdf109797d7..bec4630c3e8d1123c282a9dc2ccfcefe
  }
  
  impl Cache {
++    /// The compiler identity already read when this cache was opened.
++    pub(crate) fn compiler_id(&self) -> (u64, u64) {
++        self.id
++    }
++
+     /// Opens the cache for `src_file`. None when turned off or the dir cannot be made.
+     pub fn open(src_file: &Path) -> Option<Cache> {
+         // A std or adapter source override: the compiler id does not cover that tree.
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..5ff6d54646e896e05286532b4068e25be09e93c7 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..9b486e6866eaa5c7a7e97ef4282096e96a642490 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
-@@ -2552,6 +2552,11 @@ fn location_path(p: &str, library: &Path, display_root: Option<&Path>, client: &
+@@ -559,6 +559,43 @@ fn base_tmp_seq() -> u64 {
+     SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+ }
+ 
++/// Mach-O embeds its final install name while linking, so a Darwin base
++/// is named from the ordered link inputs before the single link. The
++/// object dir preserves per-session ownership, as in the ELF bytes key.
++/// All other identities are stable for the same build inputs; output and
++/// temporary paths, timestamps, and generation counters are not keyed.
++/// This adds one object-byte hash pass on a Darwin base rebuild only.
++fn darwin_base_name(
++    objs: &[PathBuf],
++    obj_dir: &Path,
++    compiler_id: (u64, u64),
++    session: &str,
++    target: &str,
++    debug: bool,
++) -> Result<String, String> {
++    use crate::driver::cache::hash128;
++    let (mut a, mut b) = hash128(
++        &[
++            b"darwin-base-v1:@rpath",
++            &compiler_id.0.to_le_bytes(),
++            &compiler_id.1.to_le_bytes(),
++            &[debug as u8],
++            target.as_bytes(),
++            session.as_bytes(),
++            obj_dir.as_os_str().as_encoded_bytes(),
++            &(objs.len() as u64).to_le_bytes(),
++        ],
++        41,
++    );
++    // Fold in link order, holding at most one object's bytes at a time.
++    // Both lanes remain part of the next step's state.
++    for obj in objs {
++        let bytes = std::fs::read(obj).map_err(|e| format!("cannot read {}: {e}", obj.display()))?;
++        (a, b) = hash128(&[&a.to_le_bytes(), &b.to_le_bytes(), &bytes], 41);
++    }
++    Ok(format!("base-{}-{a:016x}{b:016x}", std::process::id()))
++}
++
+ /// True if `out` exists and still names `soname` (an overwritten output names its newer base instead).
+ fn output_names_base(out: &Path, soname: &str) -> bool {
+     std::fs::read(out).is_ok_and(|bytes| bytes.windows(soname.len()).any(|w| w == soname.as_bytes()))
+@@ -647,7 +684,7 @@ fn record_base_user(base_dir: &Path, soname: &str, out: &Path) {
+     }
+ }
+ 
+-/// The pid in a base file name (`libbase-<pid>-<hash>.so`): the process
++/// The pid in a base file name (`libbase-<pid>-<hash>.so` or `.dylib`): the process
+ /// that built it. Base files are also unique per session instance (the
+ /// session's object dir is mixed into the hash), so one session never
+ /// links against, and must never delete, another live session's file.
+@@ -657,6 +694,12 @@ fn base_owner_pid(soname: &str) -> Option<u32> {
+     if !pid.is_empty() && pid.bytes().all(|b| b.is_ascii_digit()) { pid.parse().ok() } else { None }
+ }
+ 
++/// A reused PID conservatively keeps a stale base longer. Only a positive
++/// process ID proven gone permits cleanup; no host depends on /proc here.
++fn base_owner_alive(pid: u32) -> bool {
++    crate::protocol::host_runtime::process_exists(pid)
++}
++
+ /// Deletes base files in `base_dir` that the manifest proves dead: every
+ /// recorded output for the base is gone or now names a different base.
+ /// A base whose owning process is still alive is never deleted: it may
+@@ -667,20 +710,19 @@ fn base_owner_pid(soname: &str) -> Option<u32> {
+ /// entry are kept (an entry is appended right after its executable
+ /// links, so an unrecorded file may be in use by a concurrent build).
+ /// Also deletes half-written rebuild temp files
+-/// (`libbase-tmp-<pid>-*.so`) whose pid is gone. The manifest is
++/// (`libbase-tmp-<pid>-*` with the native suffix) whose pid is gone. The manifest is
+ /// rewritten with only the kept, deduplicated entries. Called on a
+ /// session's first base build and on daemon exit.
+ pub fn sweep_bases(base_dir: &Path, exiting_pid: u32) {
+-    // Half-written temp bases from crashed builds. /proc presence is
+-    // the liveness probe (Linux hosts only; elsewhere the file stays).
++    // Half-written temp bases from crashed builds. A live native owner
++    // may still be writing its temporary file.
+     if let Ok(rd) = std::fs::read_dir(base_dir) {
+         for e in rd.flatten() {
+             let name = e.file_name().to_string_lossy().into_owned();
+             if let Some(rest) = name.strip_prefix("libbase-tmp-")
+                 && let Some(pid) = rest.split('-').next()
+-                && pid.parse::<u32>().is_ok()
+-                && pid != std::process::id().to_string()
+-                && !Path::new(&format!("/proc/{pid}")).exists()
++                && let Ok(pid) = pid.parse::<u32>()
++                && !base_owner_alive(pid)
+             {
+                 let _ = std::fs::remove_file(e.path());
+             }
+@@ -707,7 +749,7 @@ pub fn sweep_bases(base_dir: &Path, exiting_pid: u32) {
+     }
+     let owner_alive = |soname: &str| match base_owner_pid(soname) {
+         Some(pid) if pid == exiting_pid => false,
+-        Some(pid) => pid == std::process::id() || Path::new(&format!("/proc/{pid}")).exists(),
++        Some(pid) => base_owner_alive(pid),
+         None => false,
+     };
+     let mut kept = String::new();
+@@ -2552,6 +2594,11 @@ fn location_path(p: &str, library: &Path, display_root: Option<&Path>, client: &
  }
  
  pub fn compile(req: &Request, session: &mut Session) -> Response {
@@ -1312,7 +1798,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..5ff6d54646e896e05286532b4068e25b
      let mut t = Timer::new();
      crate::driver::cache::begin_build(&req.file);
      if req.session != session.key {
-@@ -4081,7 +4086,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4081,7 +4128,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // switches, debug info, unwind tables) makes every slot's C again, as a one-shot build
      // does: its slot cache holds C of the other form (a front image saved by a tcc build,
      // then a release driver build). A check makes no C and keeps the key.
@@ -1322,7 +1808,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..5ff6d54646e896e05286532b4068e25b
      if req.cmd == Cmd::Build {
          let key = super::release_c::codegen_key(release, req.debug, program.unwind_tables);
          if caches.codegen_key != key {
-@@ -4296,17 +4302,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4296,17 +4344,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          super::item_oracle::check(front, caches, Ok(&program), &work, fn_count, hashes, lines, visits.path, crate_ids, build, tables);
          t.lap("item oracle");
      }
@@ -1348,7 +1834,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..5ff6d54646e896e05286532b4068e25b
              (Some(body), errs)
          });
          let body = body.filter(|_| keep_bodies).map(|mut b| {
-@@ -4370,6 +4384,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4370,6 +4426,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          diags.push(Diag::new("L0130", diag::Span::default(), "no `main` function", "Add `fn main() { ... }`."));
      }
      t.lap(if mode == "full" { "check+borrowck (par)" } else { "check changed fns (par)" });
@@ -1356,7 +1842,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..5ff6d54646e896e05286532b4068e25b
      // A one-shot process (`leak_at_exit`) exits right after this call. Freeing the IR and
      // program arenas, mostly built on worker threads, costs about 10 ms on a 31k-line crate,
      // so leak them on every return below and let the OS reclaim the memory at exit. A
-@@ -4450,6 +4465,17 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4450,6 +4507,17 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // from cached IR above.
      let mut bodies: Vec<(usize, ir::Body)> = work.iter().copied().zip(results).filter_map(|(i, r)| r.0.map(|b| (i, b))).collect();
      bodies.extend(reemit);
@@ -1374,7 +1860,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..5ff6d54646e896e05286532b4068e25b
      // Each fn's base line: cgen stores its line numbers relative to it
      // and the main unit adds each slot's base back, so a reused body's
      // C stays right when its source text moves. An instance's base is
-@@ -4498,7 +4524,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4498,7 +4566,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let (outs, cg_noted): (Vec<_>, Vec<_>) = par_map(&bodies, |(i, b)| {
          check::derive_delta::scoped(program.record_reads, || {
              cgen::in_layout_phase(layout_tag, || {
@@ -1392,7 +1878,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..5ff6d54646e896e05286532b4068e25b
              })
          })
      })
-@@ -4681,6 +4716,15 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4681,6 +4758,15 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      }
      let glue_changed = shared_changed || regenerated || statics_changed;
      t.lap("codegen (par)");
@@ -1408,7 +1894,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..5ff6d54646e896e05286532b4068e25b
      // Nothing reads the IR after codegen. A one-shot build leaks it at exit
      // (`leak_at_exit`), but on a large program it is the largest block
      // alive at the peak (ts-rust's bins: about 2.4 GB of 9.4 GB, through
-@@ -4751,7 +4795,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4751,7 +4837,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // rebuilds and the base
      // relinks over the existing unit objects. Unrelated units keep
      // their objects, in the session and in the disk unit cache.
@@ -1418,7 +1904,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..5ff6d54646e896e05286532b4068e25b
      let cap_grown = n_slots > caches.table_cap;
      if fresh_base || cap_grown {
          caches.table_cap = n_slots * 2 + 64;
-@@ -5807,6 +5852,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5807,6 +5894,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // this check keeps that a pin, not a hope.
      if let Some(run_args) = &req.run_args
          && !caches.persistent
@@ -1426,7 +1912,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..5ff6d54646e896e05286532b4068e25b
          && fresh_base
          && groups.len() == 1
          && !req.debug
-@@ -5883,7 +5929,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5883,7 +5971,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      caches.objects = Some(req.debug);
      t.lap("tcc compile");
      let all_base: Vec<PathBuf> = [1, 2, 3, LOC_UNIT].into_iter().chain(link_fn_units.iter().copied()).map(base_obj).collect();
@@ -1435,15 +1921,157 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..5ff6d54646e896e05286532b4068e25b
          let mut objs = vec![base_obj(0)];
          objs.extend(all_base);
          crate::tcc::link(&objs, &req.out, req.debug)
-@@ -5958,7 +6004,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5901,18 +5989,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+         }
+         let base = if rebuild_base {
+             caches.base_gen += 1;
+-            let tmp = base_dir.join(format!("libbase-tmp-{}-{}-{}.so", std::process::id(), caches.base_gen, base_tmp_seq()));
++            let tmp = base_dir.join(format!(
++                "libbase-tmp-{}-{}-{}{}",
++                std::process::id(), caches.base_gen, base_tmp_seq(), crate::tcc::SHARED_LIBRARY_SUFFIX
++            ));
+             let built = std::fs::create_dir_all(&base_dir)
+                 .map_err(|e| format!("cannot create {}: {e}", base_dir.display()))
+-                .and_then(|_| crate::tcc::link_shared(&all_base, &tmp, req.debug))
+                 .and_then(|_| {
+-                    let bytes = std::fs::read(&tmp).map_err(|e| format!("cannot read {}: {e}", tmp.display()))?;
+-                    // The object dir in the hash makes the name unique to this
+-                    // session instance, and the pid names the owning process:
+-                    // see `base_owner_pid`.
+-                    let (a, b) = crate::driver::cache::hash128(&[&bytes, caches.obj_dir.to_string_lossy().as_bytes()], 41);
+-                    caches.base_name = format!("base-{}-{a:016x}{b:016x}", std::process::id());
+-                    let soname = format!("lib{}.so", caches.base_name);
++                    let install_name = if cfg!(target_os = "macos") {
++                        let compiler_id = disk_cache.as_ref().map_or_else(crate::driver::cache::compiler_id, |cache| cache.compiler_id());
++                        caches.base_name = darwin_base_name(
++                            &all_base, &caches.obj_dir, compiler_id, &req.session.describe(), crate::protocol::host_triple(), req.debug,
++                        )?;
++                        Some(caches.base_name.as_str())
++                    } else {
++                        None
++                    };
++                    crate::tcc::link_shared(&all_base, &tmp, req.debug, install_name)?;
++                    if !cfg!(target_os = "macos") {
++                        let bytes = std::fs::read(&tmp).map_err(|e| format!("cannot read {}: {e}", tmp.display()))?;
++                        // Keep the ELF identity on the linked bytes plus this
++                        // session's object dir. The pid names the owner.
++                        let (a, b) = crate::driver::cache::hash128(&[&bytes, caches.obj_dir.to_string_lossy().as_bytes()], 41);
++                        caches.base_name = format!("base-{}-{a:016x}{b:016x}", std::process::id());
++                    }
++                    let soname = crate::tcc::shared_library_filename(&caches.base_name);
+                     install_base(&tmp, &base_dir.join(&soname))?;
+                     if !caches.base_files.contains(&soname) {
+                         caches.base_files.push_back(soname);
+@@ -5922,24 +6023,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+             if built.is_err() {
+                 let _ = std::fs::remove_file(&tmp);
+             }
+-            t.lap("link libbase.so");
++            t.lap(if cfg!(target_os = "macos") { "link base library" } else { "link libbase.so" });
+             built
+-        } else if !caches.base_name.is_empty() && !base_dir.join(format!("lib{}.so", caches.base_name)).exists() {
++        } else if !caches.base_name.is_empty() && !base_dir.join(crate::tcc::shared_library_filename(&caches.base_name)).exists() {
+             // The base file vanished under a live session. The bases dir
+             // is in `.lust-cache`, state outside tools may delete as a
+             // cache (the edit fuzzer rewrites the crate tree every edit).
+             // The base objects still live in the session object dir, so
+             // relink the same base under the same name.
+-            let dest = base_dir.join(format!("lib{}.so", caches.base_name));
+-            let tmp = base_dir.join(format!("libbase-tmp-{}-relink-{}.so", std::process::id(), base_tmp_seq()));
++            let dest = base_dir.join(crate::tcc::shared_library_filename(&caches.base_name));
++            let tmp = base_dir.join(format!("libbase-tmp-{}-relink-{}{}", std::process::id(), base_tmp_seq(), crate::tcc::SHARED_LIBRARY_SUFFIX));
++            let install_name = cfg!(target_os = "macos").then_some(caches.base_name.as_str());
+             let built = std::fs::create_dir_all(&base_dir)
+                 .map_err(|e| format!("cannot create {}: {e}", base_dir.display()))
+-                .and_then(|_| crate::tcc::link_shared(&all_base, &tmp, req.debug))
++                .and_then(|_| crate::tcc::link_shared(&all_base, &tmp, req.debug, install_name))
+                 .and_then(|_| install_base(&tmp, &dest));
+             if built.is_err() {
+                 let _ = std::fs::remove_file(&tmp);
+             }
+-            t.lap("link libbase.so");
++            t.lap(if cfg!(target_os = "macos") { "link base library" } else { "link libbase.so" });
+             built
+         } else {
+             Ok(())
+@@ -5958,8 +6060,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // a small grace count while no known output file still references them. A binary the user
      // kept keeps its base; one that was overwritten or deleted does not. A running program
      // keeps its mapped copy after unlink.
 -    if caches.persistent && !caches.base_name.is_empty() {
+-        let soname = format!("lib{}.so", caches.base_name);
 +    if !standalone && !caches.base_name.is_empty() {
-         let soname = format!("lib{}.so", caches.base_name);
++        let soname = crate::tcc::shared_library_filename(&caches.base_name);
          if let Some(base_dir) = caches.base_dir.clone() {
              record_base_user(&base_dir, &soname, &req.out);
+         }
+@@ -6058,6 +6160,66 @@ mod tests {
+         panic!("{}: still busy", bin.display())
+     }
+ 
++    #[test]
++    fn darwin_base_names_cover_inputs_and_owner() {
++        let dir = std::env::temp_dir().join(format!("lust-base-key-test-{}-{}", std::process::id(), base_tmp_seq()));
++        std::fs::create_dir_all(&dir).unwrap();
++        let objs = vec![dir.join("one.o"), dir.join("two.o")];
++        std::fs::write(&objs[0], b"one").unwrap();
++        std::fs::write(&objs[1], b"two").unwrap();
++        let key = || darwin_base_name(&objs, &dir, (1, 2), "session", "target", false).unwrap();
++        let original = key();
++        assert_eq!(key(), original, "identical inputs retain their immutable name");
++        assert!(original.starts_with(&format!("base-{}-", std::process::id())), "the pid names the owner");
++        assert_ne!(darwin_base_name(&[objs[1].clone(), objs[0].clone()], &dir, (1, 2), "session", "target", false).unwrap(), original);
++        assert_ne!(darwin_base_name(&objs[..1], &dir, (1, 2), "session", "target", false).unwrap(), original);
++        std::fs::write(&objs[0], b"changed").unwrap();
++        assert_ne!(key(), original, "changed bytes cannot replace an older base in place");
++        std::fs::write(&objs[0], b"one").unwrap();
++        assert_eq!(key(), original);
++        for different in [
++            darwin_base_name(&objs, &dir.join("another-session"), (1, 2), "session", "target", false),
++            darwin_base_name(&objs, &dir, (3, 2), "session", "target", false),
++            darwin_base_name(&objs, &dir, (1, 3), "session", "target", false),
++            darwin_base_name(&objs, &dir, (1, 2), "another-session", "target", false),
++            darwin_base_name(&objs, &dir, (1, 2), "session", "another-target", false),
++            darwin_base_name(&objs, &dir, (1, 2), "session", "target", true),
++        ] {
++            assert_ne!(different.unwrap(), original);
++        }
++        std::fs::remove_file(&objs[0]).unwrap();
++        assert!(darwin_base_name(&objs, &dir, (1, 2), "session", "target", false).is_err(), "a missing input cannot acquire a name");
++        std::fs::remove_dir_all(dir).unwrap();
++    }
++
++    #[test]
++    #[cfg(any(target_os = "linux", target_os = "macos"))]
++    fn base_owner_liveness() {
++        unsafe extern "C" {
++            fn getppid() -> i32;
++        }
++        // SAFETY: getppid has no arguments or memory preconditions.
++        let parent = u32::try_from(unsafe { getppid() }).unwrap();
++        assert!(parent > 0);
++        assert!(base_owner_alive(parent), "another live native process is protected");
++        assert!(base_owner_alive(std::process::id()));
++        assert!(!base_owner_alive(0), "zero must not probe the process group");
++        assert!(!base_owner_alive(u32::MAX), "an overflowing pid must not become -1");
++        let dir = std::env::temp_dir().join(format!("lust-base-owner-test-{}-{}", std::process::id(), base_tmp_seq()));
++        std::fs::create_dir_all(&dir).unwrap();
++        let base = crate::tcc::shared_library_filename(&format!("base-{parent}-aaaa"));
++        let tmp = crate::tcc::shared_library_filename(&format!("base-tmp-{parent}-1"));
++        std::fs::write(dir.join(&base), b"base").unwrap();
++        std::fs::write(dir.join(&tmp), b"in progress").unwrap();
++        std::fs::write(dir.join("manifest"), format!("{base}\t{}\n", dir.join("gone.bin").display())).unwrap();
++        sweep_bases(&dir, 0);
++        assert!(dir.join(&base).exists(), "another live owner's unreferenced base stays");
++        assert!(dir.join(&tmp).exists(), "another live owner's unfinished link stays");
++        sweep_bases(&dir, parent);
++        assert!(!dir.join(&base).exists(), "an exiting owner's unreferenced base is swept");
++        std::fs::remove_dir_all(dir).unwrap();
++    }
++
+     /// The base sweep never deletes a live owner's base (it may be a live
+     /// session's current base, found by fuzz seed 7 multi when a guard
+     /// session's first-build sweep deleted the warm session's base), but
 diff --git a/src/driver/gen_reuse.rs b/src/driver/gen_reuse.rs
 index a985aebad215015e7099d8f75e73a0f0735078cb..0212059f42297d779ee5f1d4d56eae9b576eadac 100644
 --- a/src/driver/gen_reuse.rs
@@ -1704,10 +2332,10 @@ index 8eabf97640455036f5f7c895cd034b98f4c5b9d3..5803e7fdd0e0f10d68e2587afa8ec68f
      /// threads, so the image holds no handle of a thread that ends with
      /// this process.
 diff --git a/src/image.rs b/src/image.rs
-index 44658f0437e5c4c89e442801c8c17b24afe69d5e..67925ea2bfbdfe5c66435f5acae6e8fad16d7ed4 100644
+index 44658f0437e5c4c89e442801c8c17b24afe69d5e..1cbdb9906cc0307921725c7164eec624974374c5 100644
 --- a/src/image.rs
 +++ b/src/image.rs
-@@ -148,6 +148,7 @@ unsafe extern "C" {
+@@ -148,21 +148,23 @@ unsafe extern "C" {
      fn getenv(name: *const c_char) -> *const c_char;
      fn mmap(addr: *mut c_void, len: usize, prot: c_int, flags: c_int, fd: c_int, off: i64) -> *mut c_void;
      fn munmap(addr: *mut c_void, len: usize) -> c_int;
@@ -1715,8 +2343,9 @@ index 44658f0437e5c4c89e442801c8c17b24afe69d5e..67925ea2bfbdfe5c66435f5acae6e8fa
      fn personality(persona: u64) -> c_int;
      fn writev(fd: c_int, iov: *const IoVec, cnt: c_int) -> isize;
      fn lseek(fd: c_int, off: i64, whence: c_int) -> i64;
-@@ -155,7 +156,7 @@ unsafe extern "C" {
+     fn pread(fd: c_int, buf: *mut c_void, count: usize, off: i64) -> isize;
      fn pwrite(fd: c_int, buf: *const c_void, count: usize, off: i64) -> isize;
++    #[cfg(target_os = "linux")]
      fn copy_file_range(fd_in: c_int, off_in: *mut i64, fd_out: c_int, off_out: *mut i64, len: usize, flags: u32) -> isize;
      fn flock(fd: c_int, op: c_int) -> c_int;
 -    fn fcntl(fd: c_int, cmd: c_int, arg: c_int) -> c_int;
@@ -1724,7 +2353,32 @@ index 44658f0437e5c4c89e442801c8c17b24afe69d5e..67925ea2bfbdfe5c66435f5acae6e8fa
      fn fork() -> c_int;
      fn setsid() -> c_int;
      fn setpriority(which: c_int, who: u32, prio: c_int) -> c_int;
-@@ -441,6 +442,12 @@ pub fn reexec(dir: &Path) -> String {
+     fn sched_setscheduler(pid: c_int, policy: c_int, param: *const c_int) -> c_int;
+     fn dup2(old: c_int, new: c_int) -> c_int;
+     fn getppid() -> c_int;
+-    fn poll(fds: *mut PollFd, n: std::ffi::c_ulong, timeout: c_int) -> c_int;
++    fn poll(fds: *mut PollFd, n: crate::protocol::host_runtime::PollCount, timeout: c_int) -> c_int;
+     fn close(fd: c_int) -> c_int;
+     fn _exit(code: c_int) -> !;
+     fn mi_manage_os_memory_ex(
+@@ -180,6 +182,7 @@ unsafe extern "C" {
+     fn mi_usable_size(p: *const c_void) -> usize;
+     fn dlopen(file: *const c_char, mode: c_int) -> *mut c_void;
+     fn dlsym(handle: *mut c_void, name: *const c_char) -> *mut c_void;
++    #[cfg(target_os = "linux")]
+     fn memfd_create(name: *const c_char, flags: std::ffi::c_uint) -> c_int;
+     fn madvise(addr: *mut c_void, len: usize, advice: c_int) -> c_int;
+     fn clone(f: extern "C" fn(*mut c_void) -> c_int, stack: *mut c_void, flags: c_int, arg: *mut c_void, ...) -> c_int;
+@@ -233,7 +236,7 @@ fn start() {
+     let mut mode = 1;
+     // SAFETY: getenv reads the environment block; the name is NUL-terminated.
+     let v = unsafe { getenv(c"LUST_FRONT_ARENA".as_ptr()) };
+-    if let Some(base) = (!v.is_null()).then(|| parse_hex(v)).flatten().filter(|b| valid_base(*b)) {
++    if let Some(base) = (cfg!(target_os = "linux") && !v.is_null()).then(|| parse_hex(v)).flatten().filter(|b| valid_base(*b)) {
+         // SAFETY: a fixed mapping that may not replace anything (NOREPLACE);
+         // the result is checked before use.
+         let p = unsafe {
+@@ -441,6 +444,12 @@ pub fn reexec(dir: &Path) -> String {
      WHY.get_or_init(|| reexec_now(dir)).clone()
  }
  
@@ -1737,7 +2391,7 @@ index 44658f0437e5c4c89e442801c8c17b24afe69d5e..67925ea2bfbdfe5c66435f5acae6e8fa
  fn reexec_now(dir: &Path) -> String {
      // The re-executed process itself, when its arena did not start: never
      // again (that would loop).
-@@ -488,6 +495,7 @@ static REEXECED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::
+@@ -488,6 +497,7 @@ static REEXECED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::
  /// Start of main, single-threaded. In a process `reexec` started (arena
  /// or not), children (cargo, tcc, user programs) get randomization back
  /// and no arena variable.
@@ -1745,7 +2399,107 @@ index 44658f0437e5c4c89e442801c8c17b24afe69d5e..67925ea2bfbdfe5c66435f5acae6e8fa
  pub fn process_start() {
      if std::env::var_os(ARENA_ENV).is_none() {
          return;
-@@ -3021,3 +3029,16 @@ mod tests {
+@@ -1036,20 +1046,33 @@ fn pack(raw: &std::fs::File, len: u64, head: &[u8], out: &mut std::fs::File, z:
+     Ok(at)
+ }
+ 
++/// Linux heap images use anonymous files. Other hosts keep the ordinary
++/// allocator and daemon but cannot accidentally invoke a Linux syscall ABI.
++fn anonymous_image_file(name: &std::ffi::CStr) -> Result<std::fs::File, String> {
++    #[cfg(target_os = "linux")]
++    {
++        use std::os::fd::FromRawFd;
++        // SAFETY: a new anonymous file; File owns the fresh descriptor.
++        let fd = unsafe { memfd_create(name.as_ptr(), MFD_CLOEXEC) };
++        if fd < 0 {
++            return Err("memfd_create failed".into());
++        }
++        Ok(unsafe { std::fs::File::from_raw_fd(fd) })
++    }
++    #[cfg(not(target_os = "linux"))]
++    {
++        let _ = name;
++        Err("persistent front images are only supported on Linux".into())
++    }
++}
++
+ /// Packed layer `path` back in its raw form, in a new memfd that the
+ /// regions then map privately (`load`): the sections unpacked in parallel,
+ /// only their nonzero pages written, so zero pages stay holes.
+ fn unpack(path: &Path, raw_len: u64, sections: &[(u64, u64, u64)], z: &Zstd) -> Result<std::fs::File, String> {
+-    use std::os::fd::FromRawFd;
+     use std::os::unix::fs::FileExt;
+     let src = std::fs::File::open(path).map_err(|e| format!("image: {e}"))?;
+-    // SAFETY: a new anonymous file; the File below owns its descriptor.
+-    let fd = unsafe { memfd_create(c"lust-front-layer".as_ptr(), MFD_CLOEXEC) };
+-    if fd < 0 {
+-        return Err("memfd_create failed".into());
+-    }
+-    // SAFETY: `fd` is a fresh descriptor no one else holds.
+-    let mem = unsafe { std::fs::File::from_raw_fd(fd) };
++    let mem = anonymous_image_file(c"lust-front-layer")?;
+     mem.set_len(raw_len).map_err(|e| format!("image memfd: {e}"))?;
+     let next = AtomicUsize::new(0);
+     let failed = std::sync::atomic::AtomicBool::new(false);
+@@ -2125,8 +2148,8 @@ fn write_sparse_at(file: &std::fs::File, out: u64, a: usize, len: usize) -> bool
+ /// kernel (`copy_file_range`), or through a stack buffer where that
+ /// fails. Allocates nothing.
+ fn copy_extents(src: c_int, mut off: u64, dst: c_int, mut out: u64, len: u64) -> bool {
+-    const SEEK_DATA: c_int = 3;
+-    const SEEK_HOLE: c_int = 4;
++    const SEEK_DATA: c_int = if cfg!(target_os = "macos") { 4 } else { 3 };
++    const SEEK_HOLE: c_int = if cfg!(target_os = "macos") { 3 } else { 4 };
+     let end = off + len;
+     while off < end {
+         // SAFETY: lseek on an open fd; copies use explicit offsets.
+@@ -2140,9 +2163,13 @@ fn copy_extents(src: c_int, mut off: u64, dst: c_int, mut out: u64, len: u64) ->
+         let hole = unsafe { lseek(src, off as i64, SEEK_HOLE) };
+         let stop = if hole < 0 { end } else { (hole as u64).min(end) };
+         while off < stop {
++            #[cfg(target_os = "linux")]
+             let (mut i, mut o) = (off as i64, out as i64);
+             // SAFETY: two open fds, offsets owned here.
++            #[cfg(target_os = "linux")]
+             let n = unsafe { copy_file_range(src, &mut i, dst, &mut o, (stop - off) as usize, 0) };
++            #[cfg(not(target_os = "linux"))]
++            let n = -1;
+             let n = if n > 0 { n as u64 } else { copy_slow(src, off, dst, out, stop - off) };
+             if n == 0 {
+                 return false;
+@@ -2552,14 +2579,7 @@ fn write_image(dir: &Path, mut roots: Box<Roots>) -> Result<String, String> {
+     let packer = packer();
+     let mut file = match packer {
+         Some(_) => {
+-            use std::os::fd::FromRawFd;
+-            // SAFETY: a new anonymous file; the File owns its descriptor.
+-            let fd = unsafe { memfd_create(c"lust-front-save".as_ptr(), MFD_CLOEXEC) };
+-            if fd < 0 {
+-                return Err("memfd_create failed".into());
+-            }
+-            // SAFETY: `fd` is a fresh descriptor no one else holds.
+-            unsafe { std::fs::File::from_raw_fd(fd) }
++            anonymous_image_file(c"lust-front-save")?
+         }
+         None => std::fs::File::create(&tmp).map_err(|e| format!("image: {e}"))?,
+     };
+@@ -2787,6 +2807,7 @@ mod tests {
+     /// A raw layer packs and unpacks to the same bytes, and its zero pages
+     /// stay holes in the memfd. Skipped where libzstd is missing.
+     #[test]
++    #[cfg(target_os = "linux")]
+     fn pack_round_trip() {
+         let Some(z) = zstd() else { return };
+         let dir = std::env::temp_dir().join(format!("lust-pack-{}", std::process::id()));
+@@ -2913,7 +2934,7 @@ mod tests {
+         // The gap is a hole on file systems that keep them (data starts
+         // again only at the second page's copy).
+         // SAFETY: lseek on an open fd.
+-        let next = unsafe { lseek(dst.as_raw_fd(), 2 * PAGE as i64, 3) };
++        let next = unsafe { lseek(dst.as_raw_fd(), 2 * PAGE as i64, if cfg!(target_os = "macos") { 4 } else { 3 }) };
+         assert!(next < 0 || next as usize >= 2 * PAGE, "data at {next}");
+         let _ = std::fs::remove_dir_all(&dir);
+     }
+@@ -3021,3 +3042,18 @@ mod tests {
          assert!(!valid_base(0));
      }
  }
@@ -1761,6 +2515,8 @@ index 44658f0437e5c4c89e442801c8c17b24afe69d5e..67925ea2bfbdfe5c66435f5acae6e8fa
 +    assert!(state_dir().is_none());
 +    assert_eq!(reexec_now(Path::new("unused-image-state")), "persistent front images are only supported on Linux");
 +    process_start();
++    assert!(anonymous_image_file(c"unsupported-image").is_err());
++    assert!(!arena_on());
 +}
 diff --git a/src/ir.rs b/src/ir.rs
 index e65c6c518a7494fab411cfad2249c8fda39b3ec1..10e48c8551bceb2fc23e8bf1fd03f71585a470c5 100644
@@ -1935,6 +2691,30 @@ index 777ac517920c120d986ee275601a6ec270468708..9c09f859e82a6fcff80b8691a979938e
 +        Rvalue::StaticLoad(_) | Rvalue::StaticRef(_) | Rvalue::FnValue(..) | Rvalue::NativeFnValue(..) | Rvalue::ItemShim(..) => true,
      }
  }
+diff --git a/src/protocol.rs b/src/protocol.rs
+index 504b467a9d240272c85f999b59f57a5d52b3cd4e..165493acc0f121b3e44335e326c53eef33a7642f 100644
+--- a/src/protocol.rs
++++ b/src/protocol.rs
+@@ -24,6 +24,10 @@ use std::io::{BufRead, BufReader, Read, Write};
+ use std::os::unix::net::UnixStream;
+ use std::path::{Path, PathBuf};
+ 
++// Lustr owns the host adapter; the retained compiler/session core is shared.
++#[path = "../../../src/host_runtime.rs"]
++pub mod host_runtime;
++
+ #[derive(Clone, Copy, PartialEq, Eq)]
+ pub enum Cmd {
+     Check,
+@@ -1026,6 +1030,8 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
+ /// field exits by itself; an older one is stopped by removing its socket
+ /// (its stop request), so the next command starts a daemon of this build.
+ pub fn request(sock: &Path, req: &Request) -> Option<Response> {
++    let address = host_runtime::DaemonSocket::resolve(sock).ok()?;
++    let sock = address.path();
+     let mut conn = UnixStream::connect(sock).ok()?;
+     conn.write_all(&encode(req)).ok()?;
+     let mut reader = BufReader::new(conn);
 diff --git a/src/resolve/cargo.rs b/src/resolve/cargo.rs
 index 203135afe54ba9bb04d1295435f9424670379c71..a6e774e289a99ebebac566f33b6aa7fd02910a59 100644
 --- a/src/resolve/cargo.rs
@@ -2230,6 +3010,58 @@ index 1100e4d56fb0f6e433358506cd99fee962353b54..d7722f2c4e00f299145da553c2e5fd2e
      socklen_t ll = sizeof un;
      int rc = peer ? getpeername(fd, (struct sockaddr *)&un, &ll) : getsockname(fd, (struct sockaddr *)&un, &ll);
      if (rc != 0) return errno;
+diff --git a/src/tcc.rs b/src/tcc.rs
+index b978e5092190f63396af29c882284e1446de35d8..cddd2ff213111602607c73ce2ee49115bd568511 100644
+--- a/src/tcc.rs
++++ b/src/tcc.rs
+@@ -298,13 +298,35 @@ fn link_executable(tcc: &Tcc, objs: &[PathBuf], out: &Path) -> Result<(), String
+     linked
+ }
+ 
+-/// Links object files into a shared library at `out`.
+-pub fn link_shared(objs: &[PathBuf], out: &Path, debug: bool) -> Result<(), String> {
++/// The native library suffix used by tcc's library search.
++pub const SHARED_LIBRARY_SUFFIX: &str = if cfg!(target_os = "macos") { ".dylib" } else { ".so" };
++
++pub fn shared_library_filename(base: &str) -> String {
++    format!("lib{base}{SHARED_LIBRARY_SUFFIX}")
++}
++
++/// Links object files into a shared library at `out`. On Darwin `base`
++/// is the final immutable library name, even though `out` is a temporary
++/// path: the Mach-O install name must survive the final atomic rename.
++pub fn link_shared(objs: &[PathBuf], out: &Path, debug: bool, base: Option<&str>) -> Result<(), String> {
+     let tcc = Tcc::new(TCC_OUTPUT_DLL, debug)?;
++    if cfg!(target_os = "macos") {
++        let base = base.ok_or_else(|| "a Darwin base library needs its final install name".to_string())?;
++        let name = format!("@rpath/{}", shared_library_filename(base)).replace('\\', "\\\\").replace('"', "\\\"");
++        // The top-level option sets Mach-O's LC_ID_DYLIB. The linker
++        // option -Wl,install_name= sets the ELF soname instead in tcc.
++        // link_with_base emits the matching LC_RPATH on the executable.
++        let opts = CString::new(format!("-install_name \"{name}\"")).unwrap();
++        // SAFETY: valid state and a NUL-terminated string that outlives the call.
++        if unsafe { tcc_set_options(tcc.s, opts.as_ptr()) } != 0 {
++            return Err(tcc.fail("set the base library install name"));
++        }
++    }
+     link_objects(&tcc, objs, out)
+ }
+ 
+-/// Links an executable from `objs` plus `<dir>/lib<base>.so`, which it loads at run time.
++/// Links an executable from `objs` plus `<dir>/lib<base>` with the native
++/// library suffix, which it loads at run time.
+ /// The base name is versioned (for example `base-3`), so a rebuilt base never changes what an
+ /// executable built earlier loads.
+ pub fn link_with_base(objs: &[PathBuf], dir: &Path, base: &str, out: &Path, debug: bool) -> Result<(), String> {
+@@ -320,7 +342,7 @@ pub fn link_with_base(objs: &[PathBuf], dir: &Path, base: &str, out: &Path, debu
+         tcc_set_options(tcc.s, rpath.as_ptr());
+         tcc_add_library_path(tcc.s, cstr(dir).as_ptr());
+         if tcc_add_library(tcc.s, base.as_ptr()) != 0 {
+-            return Err(tcc.fail("load libbase.so"));
++            return Err(tcc.fail("load the base library"));
+         }
+     }
+     link_executable(&tcc, objs, out)
 diff --git a/src/ty/defs.rs b/src/ty/defs.rs
 index de742cbbaa061c33c832cf7c498c1a89b59ff9a5..3cd3249a89f36adf8d251cb325f6e5860f0e8c72 100644
 --- a/src/ty/defs.rs

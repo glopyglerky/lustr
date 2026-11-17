@@ -58,9 +58,55 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  runner-source:
+    name: Runner source provenance
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
+    timeout-minutes: 5
+    steps:
+      - name: Record original workflow and source
+        uses: actions/github-script@v7
+        env:
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+        with:
+          script: |
+            const fs = require('fs');
+            const pr = context.payload.pull_request;
+            const receipt = {
+              schema: 1,
+              repository: context.repo.owner + '/' + context.repo.repo,
+              run_id: String(context.runId),
+              run_attempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+              event_name: context.eventName,
+              sha: context.sha,
+              ref: context.ref,
+              workflow_sha: process.env.WORKFLOW_SHA,
+              workflow_ref: process.env.WORKFLOW_REF,
+              actor: context.actor,
+              triggering_actor: process.env.TRIGGERING_ACTOR,
+              pull_request: pr ? {
+                number: pr.number,
+                head_sha: pr.head.sha,
+                base_sha: pr.base.sha,
+                head_repository_id: String(pr.head.repo.id),
+                base_repository_id: String(pr.base.repo.id),
+              } : null,
+            };
+            const encoded = JSON.stringify(receipt);
+            fs.writeFileSync(process.env.RUNNER_TEMP + '/runner-source.json', encoded);
+            core.notice(encoded, {title: 'runner-source-v1'});
+      - name: Retain original source receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: runner-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/runner-source.json
+          if-no-files-found: error
+          retention-days: 14
+
   upstream-lust:
     name: Pinned Lust reference and declared integration
-    runs-on: ubuntu-24.04
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@v4
       - name: Obtain the exact pristine reference objects
@@ -85,7 +131,7 @@ jobs:
 
   semantic:
     name: Checked rustc semantic inspection
-    runs-on: ubuntu-24.04
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@v4
       - name: Install pinned compiler development libraries
@@ -99,7 +145,7 @@ jobs:
 
   mixed-source-build:
     name: Source-built mixed Rust and Lust
-    runs-on: ubuntu-24.04
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
     timeout-minutes: 90
     env:
       RUSTUP_TOOLCHAIN: nightly-2026-11-09
@@ -433,7 +479,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-24.04, macos-26, windows-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')[matrix.os] || matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Install Rust
@@ -447,7 +493,7 @@ jobs:
 
   minimum-rust:
     name: Coordinator minimum Rust
-    runs-on: ubuntu-24.04
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@v4
       - name: Install minimum supported Rust
@@ -457,7 +503,7 @@ jobs:
 
   lust:
     name: Actual Lust subset qualification
-    runs-on: ubuntu-24.04
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@v4
       - name: Install Rust
@@ -473,7 +519,7 @@ jobs:
 
   cranelift:
     name: Cranelift with unwinding qualification
-    runs-on: ubuntu-24.04
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
     env:
       RUSTUP_TOOLCHAIN: nightly-2026-11-05
     steps:

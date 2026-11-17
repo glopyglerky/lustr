@@ -25,7 +25,7 @@ mod lust {
         }
         pub fn needs_rust_artifact(&self) -> bool {
             matches!(self.0.cmd, protocol::Cmd::Build) && self.0.session.krate.target_kind == "lib"
-                || !matches!(self.0.session.target_triple.as_str(), "" | "x86_64-unknown-linux-gnu")
+                || !(self.0.session.target_triple.is_empty() || self.0.session.target_triple == protocol::host_triple())
                 || self.0.session.krate.manifest_path.is_some()
                     && std::env::var("__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT").is_ok_and(|v| v != "1")
         }
@@ -101,15 +101,8 @@ mod lust {
     }
 
     fn answer_at(call: &Call, core: &Path, socket: &Path) -> Option<(i32, Vec<u8>, Vec<u8>)> {
-        // Keep the requested socket directory even when the complete pathname
-        // exceeds Linux's sockaddr_un limit. The daemon inherits the directory
-        // descriptor; the ordinary short-path request adds no allocation.
-        let directory =
-            if socket.as_os_str().as_encoded_bytes().len() >= 108 { Some(std::fs::File::open(socket.parent()?).ok()?) } else { None };
-        let alias = directory
-            .as_ref()
-            .map(|directory| PathBuf::from(format!("/proc/self/fd/{}", directory.as_raw_fd())).join(socket.file_name().unwrap()));
-        let socket = alias.as_deref().unwrap_or(socket);
+        let address = protocol::host_runtime::DaemonSocket::resolve(socket).ok()?;
+        let socket = address.path();
         if let Some(r) = protocol::request(&socket, &call.0) {
             return Some((r.code, r.stdout.into_bytes(), r.stderr.into_bytes()));
         }
@@ -136,8 +129,13 @@ mod lust {
                         .stderr(log);
                     // Start the unchanged daemon once. The first request compiles in that
                     // retained session instead of compiling cold and prewarming it again.
+                    let directory_fd = address.inherited_fd();
+                    if let Some(fd) = directory_fd {
+                        command.env("LUST_DAEMON_DIRECTORY_FD", fd.to_string());
+                    } else {
+                        command.env_remove("LUST_DAEMON_DIRECTORY_FD");
+                    }
                     unsafe {
-                        let directory_fd = directory.as_ref().map(|directory| directory.as_raw_fd());
                         command.pre_exec(move || {
                             if setsid() < 0 || fcntl(fd, F_SETFD, 0) < 0 || directory_fd.is_some_and(|fd| fcntl(fd, F_SETFD, 0) < 0) {
                                 return Err(std::io::Error::last_os_error());
@@ -220,7 +218,7 @@ fn main() -> ExitCode {
             entry = "daemon";
             Some(response)
         } else if let Some(result) =
-            call.library_compatible().then(|| native_link::compile(&parent.join("../lib/liblustr_native_core.so"), &native)).flatten()
+            call.library_compatible().then(|| native_link::compile(&parent.join("../lib").join(native_link::NATIVE_LIBRARY), &native)).flatten()
         {
             entry = "native-library";
             match result {

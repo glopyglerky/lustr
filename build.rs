@@ -1,18 +1,20 @@
 use std::{collections::BTreeMap, path::Path, process::Command};
 
+#[path = "tools/host-sdk.rs"]
+mod host_sdk;
+
 fn verify(path: &Path, expected: &str) {
-    let result = Command::new("sha256sum").arg(path).output().expect("sha256sum is required on the build host");
-    assert!(result.status.success(), "cannot hash compiler input");
-    assert_eq!(
-        String::from_utf8(result.stdout).unwrap().split_whitespace().next(),
-        Some(expected),
-        "compiler input does not match the frozen core pin"
-    );
+    assert_eq!(host_sdk::sha256(path).expect("hash compiler input"), expected, "compiler input does not match the frozen core pin");
 }
 
 fn main() {
-    assert_eq!(std::env::var("CARGO_CFG_TARGET_OS").as_deref(), Ok("linux"));
-    assert_eq!(std::env::var("CARGO_CFG_TARGET_ARCH").as_deref(), Ok("x86_64"));
+    let host = std::env::var("HOST").expect("Cargo build host");
+    let target = std::env::var("TARGET").expect("Cargo build target");
+    assert_eq!(host, target, "build a native compiler on its destination host");
+    assert!(
+        matches!(target.as_str(), "x86_64-unknown-linux-gnu" | "aarch64-apple-darwin" | "x86_64-apple-darwin"),
+        "the primary native runtime currently has Linux x86_64 and Darwin host adapters; use crates/lustr for other hosts"
+    );
     let pin: BTreeMap<_, _> = include_str!("upstream/bluefe-core.pin")
         .lines()
         .filter(|l| !l.trim().is_empty())
@@ -27,11 +29,27 @@ fn main() {
     let lust = Path::new(&lust);
     assert!(core.is_absolute() && lust.is_absolute());
     let compiler = if core.join("bin/rustc-full").is_file() { core.join("bin/rustc-full") } else { core.join("bin/rustc") };
-    verify(&compiler, pin["rustc_sha256"]);
-    verify(Path::new(&std::env::var_os("RUSTC").unwrap()), pin["rustc_sha256"]);
-    verify(&core.join("bin/cargo"), pin["cargo_sha256"]);
-    verify(&core.join("lib").join(pin["driver_file"]), pin["driver_sha256"]);
-    verify(&core.join("lib").join(pin["llvm_file"]), pin["llvm_sha256"]);
+    if target == "x86_64-unknown-linux-gnu" {
+        verify(&compiler, pin["rustc_sha256"]);
+        verify(Path::new(&std::env::var_os("RUSTC").unwrap()), pin["rustc_sha256"]);
+        verify(&core.join("bin/cargo"), pin["cargo_sha256"]);
+        verify(&core.join("lib").join(pin["driver_file"]), pin["driver_sha256"]);
+        verify(&core.join("lib").join(pin["llvm_file"]), pin["llvm_sha256"]);
+    } else {
+        assert!(cfg!(feature = "source-native-runtime"), "Darwin requires a source-built development runtime and explicit SDK receipt");
+        // The primary entry can run the compiler in-process. Reserve the same
+        // main-thread stack as lust-core; Darwin cannot grow it with setrlimit.
+        println!("cargo:rustc-link-arg-bin=lustr=-Wl,-stack_size,0x10000000");
+        if cfg!(feature = "native-inference") {
+            println!("cargo:rustc-link-arg-bin=lustr-native-worker=-Wl,-stack_size,0x10000000");
+        }
+        let receipt = std::env::var_os("LUSTR_HOST_SDK_RECEIPT").expect("LUSTR_HOST_SDK_RECEIPT must name the selected Darwin SDK receipt");
+        let receipt = Path::new(&receipt);
+        assert!(receipt.is_absolute(), "host SDK receipt must have an absolute path");
+        host_sdk::verify_receipt(core, receipt, pin["source"], &target, Path::new(&std::env::var_os("RUSTC").unwrap()))
+            .expect("verify the selected development host SDK");
+        println!("cargo:rerun-if-changed={}", receipt.display());
+    }
     if cfg!(feature = "source-native-runtime") {
         // A fresh, source-guarded build supplies Cargo's actual native build
         // receipt. The frozen upstream Rust pin remains unchanged. The default
@@ -61,7 +79,10 @@ fn main() {
     println!("cargo:rerun-if-changed=upstream/bluefe-core.pin");
     println!("cargo:rerun-if-changed=compiler/native/src/client.rs");
     println!("cargo:rerun-if-changed=compiler/native/src/protocol.rs");
+    println!("cargo:rerun-if-changed=src/host_runtime.rs");
+    println!("cargo:rerun-if-changed=tools/host-sdk.rs");
     println!("cargo:rerun-if-env-changed=LUSTR_CORE_ROOT");
     println!("cargo:rerun-if-env-changed=LUSTR_LUST_ROOT");
     println!("cargo:rerun-if-env-changed=LUSTR_NATIVE_BUILD_OUTPUT");
+    println!("cargo:rerun-if-env-changed=LUSTR_HOST_SDK_RECEIPT");
 }
