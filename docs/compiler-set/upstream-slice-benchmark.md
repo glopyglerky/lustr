@@ -13,6 +13,21 @@ therefore cannot establish a Cargo acceleration result. The separate
 [mixed Cargo campaign](../../crates/lustr-bench/src/bin/lustr-mixed-bench.rs)
 measures that path and its real source edits.
 
+## First hosted attempt and recorder correction
+
+The first hosted attempt at `6bf6e3e` failed before timing. Its
+[original archive and diagnosis](../../performance/slices/2026-11-17-6bf6e3e/README.md)
+retain all 98 files and zero measured samples. The daemon lacked `LUST_STATS=1`;
+setting it only on the client cannot enable the daemon's diagnostic renderer.
+
+The corrected runner enables statistics on the untimed qualification daemon
+and both qualification requests. Measured commands and daemons remain
+uninstrumented, which replay now verifies. It accepts the upstream's exact
+`reuse/reuse/-`, `bodies/patch/-` and `bodies/chunks/bodies` retained routes,
+while retaining all zero-repeated-work checks. Its 27 tests include compiling
+and running the actual pinned statistics reader/renderer. They do not establish
+a completed daemon campaign; fresh hosted execution is required.
+
 ## Corpus and exact work
 
 The input is `compiler/native/bench/slices/goport-util-small`, preserved from

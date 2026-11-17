@@ -26,5 +26,10 @@ Rust executables exercise both outputs. Tests also check unchanged original
 bytes outside the three edited fields, malformed input, imports, collisions,
 size limits, output ownership and failed publication.
 
-These are component correctness checks. A fresh complete source-built Cargo
-qualification and paired campaign must establish any end-to-end speed change.
+These component checks are separate from the completed `6bf6e3e` source-built
+qualification. That complete package passed mixed correctness, all sixteen
+entry/runtime tests and the [paired campaign](../../performance/2026-11-17-6bf6e3e.md).
+Its body-edit Cargo ratio is 1.079×; seven other Cargo modes remain slower.
+The [original profile](../../performance/2026-11-17-6bf6e3e-profile.md) records
+0.043122 ms in body-edit renaming. The measurements cover all three Cargo cost
+corrections together and do not isolate this change's causal effect.

@@ -13,7 +13,39 @@ investigation and historical performance evidence.
 
 ## Completed hosted evidence
 
-### Current recorded candidate: `5a3f493`
+### Current recorded candidate: `6bf6e3e`
+
+The [source-built job in run 44179667793](https://github.com/glopyglerky/lustr/actions/runs/44179667793/job/134380277750)
+records head `6bf6e3e3384a99fbaeab2c66aa7c97bc73231996`, actual merge checkout
+`5a3c5666a16d46629a4787e37ca9b20e65720ccc`, and source tree
+`02652f033e84c0957dd2b99eb562db8171289e50`. The package removes external
+symbol validation/renaming processes and the intermediate Cargo coordinator
+startup. Standard Cargo commands and aliases now route through Cargo correctly.
+
+Target layouts, the unchanged failed-link negative control and recovery, mixed
+graph/edit/rejection checks, retained metadata, mixed libraries and all sixteen
+entry/runtime tests passed. The [original phase profile](../../performance/2026-11-17-6bf6e3e-profile.md)
+and [complete paired campaign](../../performance/2026-11-17-6bf6e3e.md) passed.
+The latter retains all 648 timings and 36 comparisons. Body-edit Cargo builds
+favor Lustr at 1.079× [1.070, 1.088]; rejection also favors Lustr, while seven
+other modes remain slower. The [actual coordinator campaign](../../performance/projects/2026-11-17-6bf6e3e/README.md)
+completed all five scenarios, with 120 timings and authenticated recovery of
+600 originals / 510 streams. Default-profile project work still shows overhead.
+
+The enclosing job **failed** its separate public-slice recorder before timing.
+The [original zero-sample failure](../../performance/slices/2026-11-17-6bf6e3e/README.md)
+remains retained. Diagnostics were enabled on the client but absent from its
+daemon. The recorder correction passes 27 tests, including the actual upstream
+statistics reader/renderer, and requires fresh hosted execution. None of those
+tests silently converts the original attempt into a completed campaign.
+
+Seven other non-macOS Compiler set jobs passed. macOS compatibility was cancelled
+before any step; the separate current full native Linux gate remains pending.
+Its two-worker setting preserves the same corpus, sanitizer settings and
+execution deadlines. Original earlier native failures remain below. Current
+source review and completed measurements do not establish a release pass.
+
+### Preceding recorded candidate: `5a3f493`
 
 The [source-built job in run 44111326777](https://github.com/glopyglerky/lustr/actions/runs/44111326777/job/134137398335)
 passed at PR head `5a3f4937d94e8f028dd85385ea65d51fcfe35a3b`, actual merge
@@ -84,8 +116,8 @@ execution. The `5a3f493` result above supplies that execution without changing
 the original failure's status.
 
 The six schema-1 campaigns preserve 540 timed values and 27 comparisons each.
-Together with the first schema-2 result, the seven fixed campaigns retain
-**3,888 timings, 198 comparisons and 12,768 command-output files**.
+Together with the two schema-2 results, the eight fixed campaigns retain
+**4,536 timings, 234 comparisons and 14,928 command-output files**.
 [PERFORMANCE.md](../../PERFORMANCE.md) reports the mixed Cargo regressions, exact
 source identities, uncertainty and workload limits. The native rustc comparison
 also retains its cold-build and rejection losses. [The original ZIP
@@ -93,10 +125,10 @@ archives](../../performance/archives) preserve the full qualification outputs
 as well as timing data. Measurement completion does not establish speed
 preservation.
 
-The two actual coordinator campaigns retain another **240 timings and 10
+The three actual coordinator campaigns retain another **360 timings and 15
 comparisons**. Each recovered and reconciled 600 original files and 510 output
-streams. Both use normal dev/test debug=2 and timestamp-forced root rebuilds;
-neither is a native acceleration or body/signature-edit campaign.
+streams. All use normal dev/test debug=2 and timestamp-forced root rebuilds;
+none is a native acceleration or body/signature-edit campaign.
 
 The earlier `afb17a8` [native CI run](https://github.com/glopyglerky/lustr/actions/runs/44063047989)
 passed Linux but failed macOS after 5,522 passing differential cases and four
@@ -165,7 +197,7 @@ restriction itself was never counted as a compiler regression.
 | Check | Result and scope |
 | --- | --- |
 | Pinned compiler builds and format checks | Changed owned compiler and qualification tools compile; no daemon execution implied. |
-| Failed-link baseline reproduction | Originally blocked locally because Unix socket creation was denied. All seven hosted correctness campaigns subsequently reproduced the required baseline failure and passed corrected recovery; the sixth job's later profiling failure remains separate. |
+| Failed-link baseline reproduction | Originally blocked locally because Unix socket creation was denied. All eight hosted correctness campaigns subsequently reproduced the required baseline failure and passed corrected recovery; the sixth job's later profiling failure remains separate. |
 | Source-library package seal | Correct packages made from current and exact baseline source pass. Source mutation, added input, bad links and substituted core inode fail; restoring the package restores its identity. |
 | Target synchronization layout | Matching SDK supplies 26 independent size/alignment values for Linux x86_64, Darwin x86_64, Darwin aarch64 and Windows GNU x86_64. Baseline fails the three foreign targets; corrected native frontend passes all four and rejects a deliberate false assertion. |
 | Target pool retention | The native unit test passes all nine transitions among Futex, Darwin and Windows models, including body overlays and incompatible-pool rejection. |
@@ -174,7 +206,7 @@ restriction itself was never counted as a compiler regression.
 | Darwin descriptor-path adapter | The exact C body passes five isolated buffer/error cases with AddressSanitizer and UndefinedBehaviorSanitizer. Real Darwin syscall behavior still requires macOS. |
 | no_std WebAssembly execution | Through the unchanged baseline's matched full Rust component, the new module executes its exported operations with correct results and no runtime imports. The final candidate's full contract repeats this gate. |
 | Single-file native test command | The old entry incorrectly forwarded the file command to Cargo. The corrected entry passes the public runtime gate: successful native test, upstream failed-test status 101, and one persisted side effect from one failed test. The unchanged baseline native core was used for this local check. |
-| Paired performance | Seven fixed hosted campaigns completed, including the first matched native-rustc lane. Their raw samples, comparisons and regressions are preserved in the performance report; general speed acceptance remains open. Two actual-project campaigns add ten comparisons under normal dev/test defaults. |
+| Paired performance | Eight fixed hosted campaigns completed, including two with matched native-rustc lanes. Their raw samples, comparisons and regressions are preserved in the performance report; general speed acceptance remains open. Three actual-project campaigns add fifteen comparisons under normal dev/test defaults. |
 
 See [target layout qualification](native-target-layouts.md) for the target
 oracle and Darwin corrections, and [mixed compiler qualification](mixed-compiler.md)
@@ -247,7 +279,7 @@ and its separately verified reconstruction remain distinguishable.
 
 The first actual project's public and encrypted archives were independently
 reviewed against GitHub's original digests and byte inventories. The public
-archive checker now covers both retained campaigns: 240 timed values and ten
+archive checker at that point covered both retained campaigns: 240 timed values and ten
 statistics. It does not decrypt or freshly requalify private originals. Each
 campaign also has its own completed authenticated recovery and source-bound
 reconciliation receipt. The recovery instruction preserves original file modes

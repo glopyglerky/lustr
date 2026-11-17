@@ -16,23 +16,28 @@ See the [current contract](native-contract.md).
 
 ## Cargo performance delivery
 
-The next deliverable is a qualified Cargo speed improvement from the existing
-mixed implementation. The last completed campaign is still slower than matched
-Cargo/rustc in eight of nine modes. See [the full results](../../PERFORMANCE.md)
-and [current qualification](completion-qualification.md).
+The latest complete paired campaign at `6bf6e3e` measures a body-edit Cargo
+ratio of **1.079× [1.070, 1.088]** and faster rejection. Seven other Cargo modes
+remain slower, and normal-profile project builds still show overhead. See
+[the full results](../../PERFORMANCE.md) and
+[current qualification](completion-qualification.md).
 
-1. Qualify the current source-built package after replacing symbol-tool
-   subprocesses and the intermediate Cargo coordinator executable. Preserve
-   mixed libraries, build scripts, proc macros, real metadata, invalid-source
-   rejection, link-failure recovery and panic/drop behavior.
-2. Run the complete paired native and Cargo campaign, with profiling in a
-   separate directory. Keep cold, no-op, body/signature edits, checks, rejection
-   and executing tests separate. Record exact source and compiler identities,
-   host facts, raw outputs, every sample, uncertainty and regressions.
-3. Publish the original evidence and regenerated README/performance tables.
-   A component timing, source guard or passing correctness test does not
-   establish a whole-Cargo speedup. The matched stock Lust lanes separately
-   measure whether integration preserves the supported native path.
+1. Completed: qualify the package after replacing symbol-tool subprocesses
+   and the intermediate Cargo coordinator executable. The source-built package
+   passes mixed correctness and sixteen entry/runtime tests while preserving
+   libraries, build scripts, proc macros, metadata, rejection, link-failure
+   recovery and panic/drop behavior.
+2. Completed: retain the full paired native/Cargo campaign, separate profile,
+   normal-profile project evidence and updated README. Eight fixed campaigns
+   preserve 4,536 timings and 234 comparisons; three project campaigns add
+   360 timings and fifteen comparisons. Each result retains exact source,
+   original output, uncertainty and regressions.
+3. Next: reduce cold/signature/check overhead and broaden Cargo gains. The fresh
+   body profile records about 8 microseconds in symbol validation and 15 ms in
+   linking; the former process cost is no longer the dominant observed span.
+   Preserve full Rust metadata and complete linking when selecting the next
+   change. The separate public-slice recorder is corrected after its original
+   zero-sample failure and still requires fresh hosted execution.
 4. Extend actual Cargo coverage to unchanged larger projects and real source
    edits. Keep normal debug profiles visible. The current mixed-object path
    does not support default debug=2 generation, and retained literal-edit reuse

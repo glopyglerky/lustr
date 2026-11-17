@@ -40,6 +40,7 @@ configuration or guessing whether an unknown name is a source path or an alias.
 This change does not broaden native eligibility, change a project's debug
 profile or bypass compiler analysis. It removes an entry cost; only a fresh
 complete benchmark can establish its effect on Cargo or native command latency.
+The completed combined measurement is recorded below.
 
 ## Regression and qualification
 
@@ -79,3 +80,13 @@ Use the source-builder's matching `LUSTR_CORE_ROOT`, `LUSTR_LUST_ROOT`,
 `LUSTR_NATIVE_BUILD_OUTPUT`, `LUSTR_TEST_PACKAGE` and new `LUSTR_TEST_OUTPUT`
 directories, as in the full contract step. Old package or compiler identities
 cannot qualify this source.
+
+## Hosted complete-package result
+
+The expanded direct-entry regression passed inside the sixteen-test contract
+in [run 44179667793](https://github.com/glopyglerky/lustr/actions/runs/44179667793/job/134380277750).
+The same source-built package completed the fixed paired Cargo/native campaign
+and the normal-profile coordinator project campaign. See [PERFORMANCE.md](../../PERFORMANCE.md)
+for every timing and regression. Its body-edit Cargo win does not prove the
+size of this entry change alone. The job remains failed because its separate
+public-slice recorder failed before timing, with the original failure retained.

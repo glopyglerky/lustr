@@ -1,0 +1,20 @@
+{
+  "schema": "lustr-public-slice-failure-v1",
+  "head": "6bf6e3e3384a99fbaeab2c66aa7c97bc73231996",
+  "checkout": "5a3c5666a16d46629a4787e37ca9b20e65720ccc",
+  "tree": "02652f033e84c0957dd2b99eb562db8171289e50",
+  "run": 44179667793,
+  "job": 134380277750,
+  "artifact": 14374800386,
+  "artifact_name": "upstream-public-slice-1",
+  "archive": "performance/slices/2026-11-17-6bf6e3e/original-qualification.zip",
+  "archive_bytes": 130666,
+  "archive_sha256": "9f62b09d95c87af2ff3ea380ce68a06263a4acd5017cc5f20ed70c7572ce2eea",
+  "status": "failed",
+  "error": "ValueError: missing or repeated native diagnostic record",
+  "timed_samples": 0,
+  "original_files": 98,
+  "report_sha256": "b1585826bca3db4b27ad8ed724f28d397d52c1208d507abf2f6db645dd3dd400",
+  "raw_sha256": "0672246970ea0f05377fd0cf2c9fc714f2579a6acb198efec87060acb4654ad2",
+  "retained_probe_stderr_sha256": "08d6d83d16308cd424ce35760a4c4821284125631d7e6aca92c714c1653d44aa"
+}

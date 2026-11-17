@@ -16,23 +16,27 @@ parity or release readiness.
 | `74e14e7` | [27 comparisons](2026-11-17-74e14e7.md) | [540 values](2026-11-17-74e14e7.csv) | [Original ZIP](archives/2026-11-17-74e14e7-qualification.zip) |
 | `40d2ac3` | [27 comparisons](2026-11-17-40d2ac3.md) | [540 values](2026-11-17-40d2ac3.csv) | [Original ZIP](archives/2026-11-17-40d2ac3-qualification.zip) |
 | `5a3f493` (schema 2) | [36 comparisons](2026-11-17-5a3f493.md) | [648 values](2026-11-17-5a3f493.csv) | [Original ZIP](archives/2026-11-17-5a3f493-qualification.zip) |
+| `6bf6e3e` (schema 2) | [36 comparisons](2026-11-17-6bf6e3e.md) | [648 values](2026-11-17-6bf6e3e.csv) | [Original ZIP](archives/2026-11-17-6bf6e3e-qualification.zip) |
 
 Each ZIP is byte-identical to the original GitHub Actions artifact. The
 [manifest](campaigns.json) binds its run, artifact, actual checkout/tree,
 archive/raw-data hashes and derived-file hashes. It is retained in Git so
 Actions expiration does not remove the original qualification record.
-The seven fixed campaigns retain **3,888 timed commands, 198 comparisons and
-12,768 recorded command-output files**. The first six preserve their original
-schema-1 scope: 540 timings and 27 comparisons each. The seventh adds matched
-standalone rustc, with 648 timings and 36 comparisons. Its 1,135 raw records
-include 1,080 recorded commands: 648 timed and 432 untimed, with 2,160 output
+The eight fixed campaigns retain **4,536 timed commands, 234 comparisons and
+14,928 recorded command-output files**. The first six preserve their original
+schema-1 scope: 540 timings and 27 comparisons each. The seventh and eighth have
+matched standalone rustc, with 648 timings and 36 comparisons each. Each has
+1,135 raw records including 1,080 recorded commands: 648 timed and 432 untimed, with 2,160 output
 files. These counts describe recorded commands, not every descendant process.
 
 The archives do not contain the entire compiler binary toolchain. The
 `40d2ac3` paired campaign passed its own checks although its separate profiling
 step failed; that original source-built job remains failed. The new `5a3f493`
-source-built job and its original profile validation both passed. Their source,
-results and qualification limits remain separately identified.
+source-built job and its original profile validation both passed. The latest
+`6bf6e3e` source-built job passed mixed correctness, all sixteen entry/runtime
+tests, profiling and both completed measurement campaigns, then failed its
+separate public-slice recorder before timing. The original zero-sample failure
+is retained below. Sources, results and qualification limits remain separate.
 
 These are the separate `lustr-mixed-bench` fixture campaigns produced and
 already published by this public repository's GitHub Actions workflow. Review
@@ -51,7 +55,7 @@ python3 tools/test-mixed-performance-report.py
 python3 tools/check-mixed-performance-tables.py
 python3 tools/check-mixed-performance-archives.py
 python3 tools/report-mixed-performance.py \
-  performance/archives/2026-11-17-5a3f493-qualification.zip \
+  performance/archives/2026-11-17-6bf6e3e-qualification.zip \
   --output /absolute/new-report-directory
 ```
 
@@ -93,8 +97,12 @@ The [fresh v2 profile at 5a3f493](2026-11-17-5a3f493-profile.md) passed its
 original validation. It retains 26 compiler profiles across 15 qualification
 commands and 35 successful native responses. Its original summary and Markdown
 replay byte for byte without trace reconstruction. Instrumented durations remain
-separate from the 3,888 paired timing values. Host snapshots exist for `dec0ce2`,
-`40d2ac3` and `5a3f493`; the other four archives contain no host snapshot.
+separate from paired timing values. The
+[current profile at `6bf6e3e`](2026-11-17-6bf6e3e-profile.md) also replays byte
+for byte, with the same profile/command/response counts and in-process symbol
+validation. Its exact-source receipt binds all 132 original profile files.
+Host snapshots exist for `dec0ce2`, `40d2ac3`, `5a3f493` and `6bf6e3e`; the
+other four archives contain no host snapshot.
 
 After a new completed campaign, download its **original ZIP**, verify its
 Actions artifact digest, and run the reporter against it. Keep the ZIP as a new
@@ -120,13 +128,14 @@ This differs from the complete original ZIPs above.
 | --- | --- | ---: | ---: |
 | `40d2ac3` | [Completed campaign](projects/2026-11-17-40d2ac3/README.md) | 120 | 5 |
 | `5a3f493` | [Completed campaign](projects/2026-11-17-5a3f493/README.md) | 120 | 5 |
+| `6bf6e3e` | [Completed campaign](projects/2026-11-17-6bf6e3e/README.md) | 120 | 5 |
 
-These two campaigns retain **240 measured timings and 10 comparisons** outside
+These three campaigns retain **360 measured timings and 15 comparisons** outside
 the fixed-corpus totals. They measure the same actual coordinator package, not
-two different large projects. Normal dev/test debug=2 is outside current
+three different large projects. Normal dev/test debug=2 is outside current
 native-object eligibility; primed root rebuilds change only a timestamp and are
-not body/signature edits. The latest clean-build comparison is inconclusive;
-its other four intervals favor matched Rust. Both full result tables remain
+not body/signature edits. The latest primed-build comparison is inconclusive;
+its other four intervals favor matched Rust. All three full result tables remain
 visible, without a pooled or cross-run improvement claim.
 
 For each campaign, the six public files and original public/encrypted ZIPs are
@@ -134,11 +143,18 @@ retained byte for byte. Actual authenticated decryption, archive verification
 and source-bound public reconciliation passed for **600 original files and
 510 output streams in each campaign**.
 The private key/plaintext remain private. Both success and failure paths attempt
-encrypted retention. The public archive checker verifies both campaigns'
-public/ciphertext bindings and replays all ten comparisons without claiming a
+encrypted retention. The public archive checker verifies all three campaigns'
+public/ciphertext bindings and replays all fifteen comparisons without claiming a
 new decryption or compiler execution.
 
 ## Charts and exact source recovery
+
+The latest [6bf6e3e four-panel chart](plots/2026-11-17-6bf6e3e/README.md) keeps
+all 36 comparisons and conditional intervals, including seven slower Cargo
+modes. Its [exact merge source bundle](sources/2026-11-17-6bf6e3e/README.md)
+preserves checkout `5a3c566` and verifies all 13,521 source-entry object IDs in
+an isolated filtered local clone. Its prerequisites, initial clone limitation
+and inventory-only scope are explicit. Compiler binaries are not in the bundle.
 
 The [5a3f493 four-panel chart](plots/2026-11-17-5a3f493/README.md) includes all
 36 comparisons, including native cold/rejection losses against matched rustc.
@@ -149,7 +165,7 @@ directory with Python 3.10+ and Matplotlib 3.10.8:
 
 ```bash
 python3 tools/plot-mixed-performance.py \
-  performance/archives/2026-11-17-5a3f493-qualification.zip \
+  performance/archives/2026-11-17-6bf6e3e-qualification.zip \
   --output /absolute/new-plot-directory --png
 ```
 
@@ -161,7 +177,25 @@ cross-run causal trend. The exact merge source bundles preserve
 prerequisites, after live PR refs move. Recovery requires those prerequisites
 and does not restore original compiler binaries or requalify a build.
 
+## Public upstream slice
+
+The [first hosted slice attempt](slices/2026-11-17-6bf6e3e/README.md) retains
+its byte-identical original ZIP and all 98 recorded files. It failed during
+untimed qualification because the recorder enabled statistics on its client
+but not its daemon. It contains zero timing samples and no completed comparison.
+The corrected runner enables statistics only for untimed qualification and
+accepts the pinned upstream's exact retained routes without relaxing work
+counters. All 27 recorder tests pass; a complete hosted rerun remains required.
+The failure does not invalidate the separately completed fixed or project
+campaigns, and their success does not relabel the failed enclosing job.
+
 ## Qualification limits
+
+The latest `6bf6e3e` source-built correctness, profiling, fixed measurements and
+normal-profile project campaign passed. Its separate public-slice recorder
+failure makes the enclosing job fail. Seven other non-macOS Compiler set jobs
+passed, macOS was cancelled before execution, and the separate full native
+Linux gate is pending. No release or all-platform pass is claimed.
 
 The [40d2ac3 native Linux gate](../docs/compiler-set/measurements/2026-11-17-native-linux-40d2ac3/README.md)
 passed 5,527 ordinary differential cases, then failed one of the 5,527 sanitized

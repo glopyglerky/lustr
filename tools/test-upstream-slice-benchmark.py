@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -33,7 +34,7 @@ def encoded(values):
     return b"\n".join(json.dumps(value).encode() for value in values) + b"\n"
 
 
-def synthetic_campaign(output):
+def synthetic_campaign(output, diagnostics=None):
     """Drive real campaign orchestration with explicitly synthetic child results."""
     args = SimpleNamespace(output=output, timeout=10, pairs=12, built=output / "synthetic-tools",
                            pristine_lust=output / "synthetic-pristine/lust",
@@ -50,6 +51,7 @@ def synthetic_campaign(output):
     campaign.report["rejection_input"] = {"file": "rejected.rs", "sha256": bench.digest(reject)}
     recorder = campaign.recorder
     serial_pid = 500
+    active_daemons = {}
 
     def run(argv, env, cwd, lane, phase, expected=0):
         argv = [str(value) for value in argv]
@@ -57,8 +59,9 @@ def synthetic_campaign(output):
         if phase == "gate-reject":
             data = b'{"code":"L0110","severity":"error"}\n'
         elif phase == "gate-retained":
-            error = (b"lust-stats: mode=reuse fns=4 rechecked=0 invalidated=0 c_bytes=0 dirty_units=0 units_compiled=0 reemitted=0 discovered=0\n"
-                     b"lust-visits: path=reuse why=noop checked=0\n")
+            error = (diagnostics(active_daemons[lane], "patch" if lane == "entry" else "reuse") if diagnostics else
+                     b"lust-stats: mode=reuse fns=4 rechecked=0 invalidated=0 c_bytes=0 dirty_units=0 units_compiled=0 reemitted=0 discovered=0\n"
+                     b"lust-visits: path=reuse why=- checked=0\n")
         elif len(argv) == 1:
             data = b"synthetic runtime output\n"
         elif lane in bench.LANES and argv[1] in ("build", "check"):
@@ -91,6 +94,7 @@ def synthetic_campaign(output):
             self.pid, self.lane, self.executable, self.scope, self.env, self.cwd = serial_pid, lane, executable, scope, env, cwd
 
         def __enter__(self):
+            active_daemons[self.lane] = self.env
             recorder.event({"kind": "daemon-start", "lane": self.lane, "pid": self.pid,
                             "executable": str(self.executable), "scope": self.scope, "socket": self.env["LUST_DAEMON_SOCKET"],
                             "environment": self.env, "cwd": str(self.cwd)})
@@ -100,6 +104,7 @@ def synthetic_campaign(output):
             pass
 
         def __exit__(self, *arguments):
+            del active_daemons[self.lane]
             streams = []
             for name in ("stdout", "stderr"):
                 path = output / "commands" / f"{len(recorder.records):05}.daemon.{name}"
@@ -108,7 +113,7 @@ def synthetic_campaign(output):
             recorder.event({"kind": "daemon-stop", "lane": self.lane, "scope": self.scope, "pid": self.pid,
                             "exit": 0, "error": None, "streams": streams})
 
-    with patch.object(recorder, "run", side_effect=run), patch.object(bench, "Daemon", SyntheticDaemon):
+    with recorder.raw, patch.object(recorder, "run", side_effect=run), patch.object(bench, "Daemon", SyntheticDaemon):
         for lane, phase in (("source", "pristine-identity"), ("source", "pristine-identity"),
                             ("source", "pristine-clean"), ("source", "candidate-identity"),
                             ("source", "candidate-clean"), ("cargo", "rust-identity")):
@@ -140,7 +145,6 @@ def synthetic_campaign(output):
             recorder.event({"kind": "sample-end", "sample": sample})
         campaign.qualification(sockets, "final")
     campaign.report.update(status="completed", samples=campaign.samples, summaries=bench.summaries(campaign.samples, 12))
-    recorder.raw.close()
     campaign.report["raw_sha256"] = bench.digest(output / "raw.jsonl")
     bench.write_json(output / "report.json", campaign.report)
     (output / "README.md").write_text(bench.render(campaign.report))
@@ -209,6 +213,119 @@ class FullReplayTests(unittest.TestCase):
         target = self.corrupted(lambda rows: rows.__setitem__(slice(None), [row for row in rows if row.get("kind") not in ("entry-route", "retained-route")]))
         with self.assertRaises(ValueError):
             bench.replay(target)
+
+    def test_qualification_daemon_requires_its_own_stats_environment(self):
+        def mutate(rows):
+            row = next(row for row in rows if row.get("kind") == "daemon-start"
+                       and row["scope"].startswith("qualification-"))
+            row["environment"].pop("LUST_STATS", None)
+        with self.assertRaises(ValueError):
+            bench.replay(self.corrupted(mutate))
+
+    def test_stats_cannot_leak_into_measured_daemons(self):
+        def mutate(rows):
+            row = next(row for row in rows if row.get("kind") == "daemon-start"
+                       and row["scope"].startswith("sample-"))
+            row["environment"]["LUST_STATS"] = "1"
+        with self.assertRaises(ValueError):
+            bench.replay(self.corrupted(mutate))
+
+    def test_prime_and_probe_keep_the_same_stats_setting(self):
+        def mutate(rows):
+            row = next(row for row in rows if row.get("phase") == "gate-warm-prime")
+            row["environment"].pop("LUST_STATS", None)
+        with self.assertRaises(ValueError):
+            bench.replay(self.corrupted(mutate))
+
+
+class UpstreamDiagnosticTests(unittest.TestCase):
+    """Execute the pinned renderer and stats switch, not a simulated compiler.
+
+    This small Rust extraction needs no dependencies or daemon/socket access.
+    Campaign orchestration remains synthetic and makes no performance claim.
+    """
+    @classmethod
+    def setUpClass(cls):
+        compiler = os.environ.get("RUSTC") or shutil.which("rustc")
+        if compiler is None:
+            raise unittest.SkipTest("Rust compiler unavailable for actual upstream diagnostic renderer")
+        cls.temporary = tempfile.TemporaryDirectory()
+        cls.root = Path(cls.temporary.name)
+        source = (Path(__file__).resolve().parent.parent / "compiler/native/src/driver/compile.rs").read_text()
+        start = source.index("fn stats_on() -> bool {")
+        enabled = source[start:source.index("\n}\n", start) + 3]
+        start = source.index("#[derive(Default)]\nstruct Stats {")
+        stats = source[start:source.index("\n/// What each front-end", start)]
+        start = source.index("#[derive(Default)]\nstruct Visits {")
+        visits = source[start:source.index("\n/// Appends one", start)]
+        probe = cls.root / "diagnostics.rs"
+        probe.write_text('use std::fmt::Write;\n' + enabled + stats + visits + r'''
+fn main() {
+    let mut out = String::new();
+    if stats_on() {
+        let (mode, path, why) = match std::env::args().nth(1).as_deref() {
+            Some("reuse") => ("reuse", "reuse", ""),
+            Some("patch") => ("bodies", "patch", ""),
+            Some("chunks") => ("bodies", "chunks", "bodies"),
+            _ => panic!("unknown diagnostic case"),
+        };
+        Stats { mode, fns: 1797, ..Default::default() }.render(&mut out);
+        Visits { path, why, ..Default::default() }.render(&mut out);
+    }
+    eprint!("{out}");
+}
+''')
+        cls.executable = cls.root / "diagnostics"
+        # The workflow runs Python preflight before installing its matching
+        # nightly. This standalone renderer works with the host default Rust.
+        env = dict(os.environ)
+        env.pop("RUSTUP_TOOLCHAIN", None)
+        subprocess.run([compiler, "--edition=2024", str(probe), "-o", str(cls.executable)],
+                       cwd=cls.root, env=env, check=True, capture_output=True)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.temporary.cleanup()
+
+    @classmethod
+    def diagnostics(cls, daemon_environment, route):
+        result = subprocess.run([str(cls.executable), route], env=daemon_environment,
+                                check=True, capture_output=True)
+        return result.stderr
+
+    def test_client_stats_cannot_enable_daemon_process_diagnostics(self):
+        output = self.diagnostics({}, "reuse")
+        self.assertEqual(output, b"")
+        with self.assertRaisesRegex(ValueError, "missing or repeated native diagnostic record"):
+            bench.retained_check(output)
+
+    def test_exact_upstream_retained_routes_are_accepted(self):
+        for case, route in (("reuse", ("reuse", "reuse", "-")),
+                            ("patch", ("bodies", "patch", "-")),
+                            ("chunks", ("bodies", "chunks", "bodies"))):
+            with self.subTest(case=case):
+                self.assertEqual(bench.retained_check(self.diagnostics({"LUST_STATS": "1"}, case)), route)
+
+    def test_retained_routes_reject_reasons_the_upstream_path_does_not_emit(self):
+        for case, old, new in (("reuse", b"why=-", b"why=noop"),
+                               ("patch", b"why=-", b"why=bodies"),
+                               ("chunks", b"why=bodies", b"why=-")):
+            with self.subTest(case=case), self.assertRaises(ValueError):
+                bench.retained_check(self.diagnostics({"LUST_STATS": "1"}, case).replace(old, new))
+
+    def test_upstream_retained_routes_still_require_zero_repeated_work(self):
+        for case in ("reuse", "patch", "chunks"):
+            observed = self.diagnostics({"LUST_STATS": "1"}, case)
+            for key in ("rechecked", "invalidated", "c_bytes", "dirty_units", "units_compiled", "reemitted", "discovered", "checked"):
+                with self.subTest(case=case, counter=key), self.assertRaises(ValueError):
+                    bench.retained_check(observed.replace(f" {key}=0".encode(), f" {key}=1".encode()))
+
+    def test_qualification_enables_stats_where_upstream_reads_them(self):
+        output = self.root / "actual-renderer-synthetic-campaign"
+        output.mkdir()
+        report = synthetic_campaign(output, self.diagnostics)
+        self.assertEqual(report["status"], "completed")
+        bench.replay(output)
 
 
 class EvidenceTests(unittest.TestCase):

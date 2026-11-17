@@ -144,6 +144,39 @@
       "plot": "performance/plots/2026-11-17-5a3f493/performance.svg",
       "profile": "performance/2026-11-17-5a3f493-profile.md",
       "profile_verification": "performance/profiles/2026-11-17-5a3f493/verification.json"
+    },
+    {
+      "head": "6bf6e3e3384a99fbaeab2c66aa7c97bc73231996",
+      "run": 44179667793,
+      "job": 134380277750,
+      "artifact": 14374511846,
+      "artifact_name": "source-built-mixed-qualification-1",
+      "campaign_schema": 2,
+      "archive": "performance/archives/2026-11-17-6bf6e3e-qualification.zip",
+      "checkout": "5a3c5666a16d46629a4787e37ca9b20e65720ccc",
+      "tree": "02652f033e84c0957dd2b99eb562db8171289e50",
+      "archive_sha256": "c2126b1dd44170adf52cd66c53059c2447f54ad8a2483dfaec1b97f1c60fcd01",
+      "archive_bytes": 1357741,
+      "raw_sha256": "3ed362da12116a92f9dfcaf5c4dc07e9c3dd8f9b3a8f1add3f659bbb90d342d5",
+      "pairs": 12,
+      "seed": 327849038930,
+      "bootstrap_resamples": 10000,
+      "csv": "performance/2026-11-17-6bf6e3e.csv",
+      "csv_sha256": "d3f16efe721cdd0bcc79720a429c7c4ae124f4b5d163e7a00f59976154c3bf60",
+      "table": "performance/2026-11-17-6bf6e3e.md",
+      "table_sha256": "579034b00e4917289d229001b936efadd1ca84f6bb5c709c6c29d4f0063bbca6",
+      "verified": {
+        "records": 1135,
+        "command_outputs": 2160,
+        "timed_commands": 648,
+        "comparisons": 36,
+        "recorded_commands": 1080,
+        "untimed_commands": 432
+      },
+      "host_record_sha256": "036f31d6a69bd2a81a3cc04e929b1eb54f00321c9f50994984b4c7ff7781f62b",
+      "plot": "performance/plots/2026-11-17-6bf6e3e/performance.svg",
+      "profile": "performance/2026-11-17-6bf6e3e-profile.md",
+      "profile_verification": "performance/profiles/2026-11-17-6bf6e3e/verification.json"
     }
   ]
 }

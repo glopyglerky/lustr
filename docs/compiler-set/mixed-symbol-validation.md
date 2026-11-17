@@ -6,7 +6,7 @@ unrepresented imports and requires the exact expected function export. The
 ordinary Lust pipeline, compiler selection, retries, retained publication,
 failed-link recovery and full Rust behavior are unchanged.
 
-The [last qualified profile](../../performance/2026-11-17-5a3f493-profile.md)
+The [preceding qualified profile](../../performance/2026-11-17-5a3f493-profile.md)
 recorded a median 31.857 ms in the complete `nm` process call across 35 native
 responses. Its body-edit request recorded 34.545 ms there within a 37.681 ms
 native request. Those observations identify a costly operation; they do not
@@ -106,3 +106,14 @@ source-built package contract, including mixed libraries, invalid source,
 failed-link recovery and all matched native/Cargo timing modes. Keep all new
 results attributed to their exact source. The earlier passing campaigns do
 not qualify this change.
+
+## Complete-package measurement
+
+The `6bf6e3e` source-built package passed mixed correctness, all sixteen entry
+and runtime tests, and the complete paired Cargo/native campaign. Its
+[original profile](../../performance/2026-11-17-6bf6e3e-profile.md) records a body
+symbol-check span of 0.008261 ms. The [complete timing table](../../performance/2026-11-17-6bf6e3e.md)
+records a 1.079× body-edit Cargo ratio with seven other Cargo modes slower.
+These results cover symbol validation, renaming and direct Cargo entry together;
+they do not isolate this component's causal contribution. The separate slice
+recorder failure still makes the enclosing job fail.

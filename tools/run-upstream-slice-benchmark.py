@@ -146,8 +146,9 @@ def retained_check(data):
                 ("rechecked", "invalidated", "c_bytes", "dirty_units", "units_compiled", "reemitted", "discovered"))
             and number(visits, "checked") == 0, "native no-op repeated body or generated-code work")
     route = (stats.get("mode"), visits.get("path"), visits.get("why"))
-    require(route[:2] == ("reuse", "reuse") or
-            route[0] == "bodies" and route[1] in ("chunks", "patch") and route[2] == "bodies",
+    # Visits::render uses '-' for the empty reason on answer reuse and
+    # resolver body patches. Only the chunk path assigns its mode to why.
+    require(route in (("reuse", "reuse", "-"), ("bodies", "patch", "-"), ("bodies", "chunks", "bodies")),
             "native no-op did not use a known retained route")
     return route
 
@@ -376,12 +377,16 @@ class Campaign:
                     "rejection was not the required type mismatch")
         for lane in LANES[:3]:
             state = self.output / "work" / stage / "warm-gates" / lane
-            env = self.environment(state, sockets / (lane + ".sock"))
+            # stats_on() reads the daemon process environment. Enabling it on
+            # a client request alone cannot instrument the retained compiler.
+            # Keep the prime/probe setting equal because check_fingerprint()
+            # includes the client environment. Measured daemons stay uninstrumented.
+            env = dict(self.environment(state, sockets / (lane + ".sock")), LUST_STATS="1")
             daemon_tool = self.tools["integrated"] if lane == "entry" else self.tools[lane]
             with Daemon(self.recorder, daemon_tool, env, self.fixture, lane, f"qualification-{stage}-{lane}") as daemon:
                 self.compile(lane, "check", state, env, "gate-warm-prime", trace=True)
                 argv = self.command(lane, "check", state) + ["--timings"]
-                command, _, stderr = self.recorder.run(argv, dict(env, LUST_STATS="1"), self.fixture, lane, "gate-retained")
+                command, _, stderr = self.recorder.run(argv, env, self.fixture, lane, "gate-retained")
                 route = retained_check(stderr)
                 daemon.alive()
                 self.recorder.event({"kind": "retained-route", "command": command["id"], "lane": lane, "route": list(route)})
@@ -577,6 +582,9 @@ def verify_schedule(records, report, stream):
                 "compiler state or Rust reference differs")
         require((env.get("LUST_NO_DAEMON") == "1" and env.get("LUST_NO_CACHE") == "1") if cold else
                 "LUST_NO_DAEMON" not in env and "LUST_NO_CACHE" not in env, "cold/warm native state differs")
+        instrumented = phase in ("gate-warm-prime", "gate-retained")
+        require(env.get("LUST_STATS") == "1" if instrumented else "LUST_STATS" not in env,
+                "qualification diagnostics are missing or leaked into other compiler commands")
         if lane == "cargo":
             expected = [tools[lane], operation, "--offline", "--locked", "--manifest-path", str(fixture / "Cargo.toml"),
                         "--bin", "slice", "--target", TARGET, "--message-format=json-render-diagnostics"]
@@ -589,9 +597,6 @@ def verify_schedule(records, report, stream):
                 expected += ["-o", binary]
             if phase == "gate-retained":
                 expected += ["--timings"]
-                require(env.get("LUST_STATS") == "1", "retained probe lost its diagnostics")
-            else:
-                require("LUST_STATS" not in env, "unexpected native instrumentation")
             if not cold:
                 require(lane in active and env.get("LUST_DAEMON_SOCKET") == active[lane]["socket"],
                         "native command is not bound to its active daemon")
@@ -618,13 +623,15 @@ def verify_schedule(records, report, stream):
             take("runtime-oracle", command=row["id"], sha256=report["runtime_oracle_sha256"])
         return row
 
-    def start(lane, scope, state):
+    def start(lane, scope, state, instrumented=False):
         require(lane not in active, "daemon lane was started twice")
         row = take("daemon-start", lane=lane, scope=scope, cwd=str(fixture),
                    executable=tools["integrated"] if lane == "entry" else tools[lane])
         require(type(row.get("pid")) is int and row["pid"] > 0 and row.get("socket") not in [d["socket"] for d in active.values()]
                 and row["environment"].get("LUST_DAEMON_SOCKET") == row["socket"]
                 and row["environment"].get("LUST_CACHE_DIR") == str(state / "native-cache"), "daemon ownership differs")
+        require(row["environment"].get("LUST_STATS") == "1" if instrumented else "LUST_STATS" not in row["environment"],
+                "qualification daemon diagnostics are missing or leaked into measured daemons")
         active[lane] = row
 
     def stop(lane):
@@ -660,7 +667,7 @@ def verify_schedule(records, report, stream):
             require("L0110" in codes or "E0308" in codes or b"error[E0308]" in err, "missing expected rejection diagnostic")
         for lane in LANES[:3]:
             state = root / "work" / stage / "warm-gates" / lane
-            start(lane, f"qualification-{stage}-{lane}", state)
+            start(lane, f"qualification-{stage}-{lane}", state, instrumented=True)
             compile(lane, "gate-warm-prime", "check", state, traced=True)
             row, _ = compile(lane, "gate-retained", "check", state)
             route = list(retained_check(stream(row["stderr"])))
