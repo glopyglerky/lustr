@@ -10,6 +10,7 @@ on:
       - 'tools/*benchmark-host*'
       - 'tools/*mixed-profile*'
       - 'tools/*mixed-symbol*'
+      - 'tools/*upstream-slice*'
       - 'tools/profile-mixed-compiler.py'
       - '.github/workflows/mixed-performance-report.yml'
   push:
@@ -22,6 +23,7 @@ on:
       - 'tools/*benchmark-host*'
       - 'tools/*mixed-profile*'
       - 'tools/*mixed-symbol*'
+      - 'tools/*upstream-slice*'
       - 'tools/profile-mixed-compiler.py'
       - '.github/workflows/mixed-performance-report.yml'
   workflow_dispatch:
@@ -104,6 +106,14 @@ jobs:
         run: |
           set -o pipefail
           python3 tools/check-mixed-performance-archives.py 2>&1 | tee "$RUNNER_TEMP/archived-evidence-replay.log"
+      - name: Replay original public-slice commands, outputs and timing tables
+        run: |
+          set -o pipefail
+          python3 tools/check-upstream-slice-archives.py 2>&1 | tee "$RUNNER_TEMP/public-slice-replay.log"
+      - name: Verify pending-project original archives without claiming private recovery
+        run: |
+          set -o pipefail
+          python3 tools/check-pending-project-archives.py 2>&1 | tee "$RUNNER_TEMP/pending-project-archives.log"
       - name: Reproduce the separately labeled profile diagnosis and reject corrupt evidence
         run: |
           set -o pipefail
@@ -129,6 +139,8 @@ jobs:
             ${{ runner.temp }}/reporting-tests.log
             ${{ runner.temp }}/committed-timing-replay.log
             ${{ runner.temp }}/archived-evidence-replay.log
+            ${{ runner.temp }}/public-slice-replay.log
+            ${{ runner.temp }}/pending-project-archives.log
             ${{ runner.temp }}/host-record-tests.log
             ${{ runner.temp }}/profile-record-tests.log
             ${{ runner.temp }}/symbol-measurement-tests.log

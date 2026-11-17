@@ -13,7 +13,7 @@ therefore cannot establish a Cargo acceleration result. The separate
 [mixed Cargo campaign](../../crates/lustr-bench/src/bin/lustr-mixed-bench.rs)
 measures that path and its real source edits.
 
-## First hosted attempt and recorder correction
+## Hosted attempts, correction and completed result
 
 The first hosted attempt at `6bf6e3e` failed before timing. Its
 [original archive and diagnosis](../../performance/slices/2026-11-17-6bf6e3e/README.md)
@@ -25,8 +25,25 @@ and both qualification requests. Measured commands and daemons remain
 uninstrumented, which replay now verifies. It accepts the upstream's exact
 `reuse/reuse/-`, `bodies/patch/-` and `bodies/chunks/bodies` retained routes,
 while retaining all zero-repeated-work checks. Its 27 tests include compiling
-and running the actual pinned statistics reader/renderer. They do not establish
-a completed daemon campaign; fresh hosted execution is required.
+and running the actual pinned statistics reader/renderer.
+
+The fresh [source-built hosted job 134408105819](https://github.com/glopyglerky/lustr/actions/runs/44187580063/job/134408105819)
+completed the corrected qualification and all 12 paired rounds. The
+[original ZIP and complete result](../../performance/slices/2026-11-17-3e24029/README.md)
+retain 1,547 files, 288 timings, 18 comparisons, runner and source identity,
+all commands, outputs and runtime checks. An independent offline replay passed.
+The recorded PR head `3e24029` and actual merge checkout `5711bb9` are distinct.
+The older attempt still has zero timings and remains failed.
+
+The public slice's standalone entry beat matching Cargo on cold check (1.516×)
+and cold build (1.153×), but was much slower for no-op check (0.293×), no-op
+build (0.283×) and compile plus run (0.294×). Pristine native Lust's retained
+no-op check was 1.565 ms versus the entry's 35.689 ms. These exact differences
+justify profiling target-selection and entry costs, but do not establish their
+individual causes. The packaged entry first validates explicit Cargo target
+selection through `src/full.rs::select`; eliminating that validation or reusing
+stale metadata merely to improve speed would violate the target contract.
+This campaign never enters the mixed-Cargo route and makes no source edit.
 
 ## Corpus and exact work
 
@@ -141,6 +158,7 @@ never executes a command from the log:
 
 ```bash
 python3 tools/run-upstream-slice-benchmark.py --replay /absolute/retained-campaign
+python3 tools/check-upstream-slice-archives.py
 ```
 
 Replay does not freshly build the compiler or restore omitted executable
@@ -170,5 +188,6 @@ schema-1/2 scalar and mixed-Cargo archives.
 Local feasibility checks can use development binaries, but their timings
 cannot satisfy the release-composition contract. Environments that refuse
 Unix socket binding cannot qualify the retained native path; the actual
-failure must be kept and the complete campaign executed elsewhere. No speed
-result is implied by adding this runner.
+failure must be kept and the complete campaign executed elsewhere. The
+completed hosted campaign meets the declared source-built slice contract;
+it does not qualify larger projects, mixed Cargo, other platforms or release.

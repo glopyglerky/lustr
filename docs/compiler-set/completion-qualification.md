@@ -13,7 +13,29 @@ investigation and historical performance evidence.
 
 ## Completed hosted evidence
 
-### Current recorded candidate: `6bf6e3e`
+### Latest completed source-built campaign: `3e24029`
+
+The [fresh PR13 source-built run 44187580063, job 134408105819](https://github.com/glopyglerky/lustr/actions/runs/44187580063/job/134408105819)
+passed source-built mixed Cargo correctness, the profile recorder, the ninth
+fixed paired campaign (648 timings, 36 comparisons), a normal-profile
+unchanged-project campaign (120 timings, 5 comparisons), and the corrected
+pruned public upstream-slice campaign (288 timings, 18 comparisons).
+It measured actual merge checkout `5711bb91b9a9fde3343b345c6ec23632de597741`,
+tree `f083723dbf0e1c078306febd755c22aa2115161d` from PR head
+`3e24029f75ee9837f3493be8900f7899e2b52e5f`.
+The [original fixed artifact](../../performance/archives/2026-11-17-3e24029-qualification.zip)
+and [original public slice](../../performance/slices/2026-11-17-3e24029/README.md)
+are retained and replayed; the newest actual-project result does not yet
+have the prior campaigns' authenticated private-original recovery.
+Body-edit builds favor Lustr 1.046× [1.036, 1.055] on the small mixed fixture,
+and rejection favors Lustr. Seven other Cargo modes are slower, so this is
+not general Cargo acceleration. PR13's native macOS job was cancelled before
+execution. PR14's subsequent native macOS job executed and failed two daemon
+dependency tests because they invoked Linux `ldd` on macOS; the successor
+change uses `otool -L` and `.dylib` on Darwin. Fresh hosted qualification is
+required before accepting that fix or calling the compiler release-ready.
+
+### Preceding recorded candidate: `6bf6e3e`
 
 The [source-built job in run 44179667793](https://github.com/glopyglerky/lustr/actions/runs/44179667793/job/134380277750)
 records head `6bf6e3e3384a99fbaeab2c66aa7c97bc73231996`, actual merge checkout
@@ -36,8 +58,9 @@ The enclosing job **failed** its separate public-slice recorder before timing.
 The [original zero-sample failure](../../performance/slices/2026-11-17-6bf6e3e/README.md)
 remains retained. Diagnostics were enabled on the client but absent from its
 daemon. The recorder correction passes 27 tests, including the actual upstream
-statistics reader/renderer, and requires fresh hosted execution. None of those
-tests silently converts the original attempt into a completed campaign.
+statistics reader/renderer, and the independent `3e24029` run above supplies
+fresh hosted execution. That does not convert the original failed attempt
+into a completed campaign.
 
 Seven other non-macOS Compiler set jobs passed. macOS compatibility was cancelled
 before any step; the separate current full native Linux gate remains pending.
@@ -116,8 +139,8 @@ execution. The `5a3f493` result above supplies that execution without changing
 the original failure's status.
 
 The six schema-1 campaigns preserve 540 timed values and 27 comparisons each.
-Together with the two schema-2 results, the eight fixed campaigns retain
-**4,536 timings, 234 comparisons and 14,928 command-output files**.
+Together with the three schema-2 results, the nine fixed campaigns retain
+**5,184 timings, 270 comparisons and 17,088 command-output files**.
 [PERFORMANCE.md](../../PERFORMANCE.md) reports the mixed Cargo regressions, exact
 source identities, uncertainty and workload limits. The native rustc comparison
 also retains its cold-build and rejection losses. [The original ZIP

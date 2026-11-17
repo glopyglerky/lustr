@@ -1,0 +1,24 @@
+{
+  "schema": "lustr-unrecovered-project-archive-v1",
+  "repository": "glopyglerky/lustr",
+  "head_sha": "3e24029f75ee9837f3493be8900f7899e2b52e5f",
+  "measured_checkout": "5711bb91b9a9fde3343b345c6ec23632de597741",
+  "measured_tree": "f083723dbf0e1c078306febd755c22aa2115161d",
+  "run": 44187580063,
+  "job": 134408105819,
+  "timings": 120,
+  "comparisons": 5,
+  "public": {
+    "file": "public-original.zip",
+    "artifact_id": 14378396776,
+    "bytes": 32230,
+    "sha256": "b334d34241552b4cd583345c49eb83cb6e62ac9ed1322d4a5dfa8b85479827ae"
+  },
+  "encrypted": {
+    "file": "encrypted-original.zip",
+    "artifact_id": 14376978784,
+    "bytes": 1247670,
+    "sha256": "aa71fedf06ac9d6fcc1ae4271dbc1a9d39d96c10c746f4d47bbe395dd757fddc"
+  },
+  "authenticated_recovery": "not-performed"
+}

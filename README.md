@@ -21,13 +21,16 @@ workloads and platform qualification remain distinct requirements.
 
 [PERFORMANCE.md](PERFORMANCE.md) records every workload, source/compiler pin,
 profile, cache condition, interval, failure and reproduction command. The
-[performance index](performance/README.md) retains **eight fixed campaigns:
-4,536 timed command values, 234 comparisons and 14,928 original output files**.
+[performance index](performance/README.md) retains **nine fixed campaigns:
+5,184 timed command values, 270 comparisons and 17,088 original output files**.
 Three separate actual-project campaigns retain another **360 timings and 15
-comparisons**, with authenticated recovery and source-bound reconciliation.
+comparisons**, with authenticated recovery and source-bound reconciliation;
+a fourth fresh project campaign has its
+[original public and encrypted ZIPs retained](performance/projects-pending/2026-11-17-3e24029/README.md)
+but has not undergone authenticated private-original recovery.
 
-Latest retained measurements: Linux x86-64, PR13 candidate `6bf6e3e`, actual
-checkout `5a3c566`, twelve matched pairs per mode. Times are median milliseconds.
+Latest retained fixed measurements: Linux x86-64, PR13 head `3e24029`, actual
+merge checkout `5711bb9`, twelve matched pairs per mode. Times are median milliseconds.
 Ratios are paired geometric means of reference/candidate time; below one means
 Lustr took longer. Ratios are not calculated from the displayed medians.
 
@@ -41,27 +44,29 @@ separate compatibility comparison below.
 
 | Cargo workload | Cargo/rustc median | Mixed Lustr median | Ratio [95% interval] |
 | --- | ---: | ---: | --- |
-| Cold build | 123.510 | 143.232 | 0.862 [0.848, 0.873] |
-| No-op build | 7.955 | 8.434 | 0.950 [0.938, 0.962] |
-| Body edit | 38.612 | 35.761 | 1.079 [1.070, 1.088] |
-| Signature edit | 40.552 | 47.090 | 0.857 [0.854, 0.861] |
-| Check | 30.699 | 35.375 | 0.867 [0.856, 0.878] |
-| No-op check | 7.762 | 8.138 | 0.945 [0.937, 0.952] |
-| Check after body edit | 19.068 | 20.267 | 0.944 [0.935, 0.954] |
-| Rejection | 26.971 | 25.604 | 1.059 [1.045, 1.074] |
-| Compile plus test | 60.414 | 61.512 | 0.979 [0.970, 0.988] |
+| Cold build | 168.135 | 194.613 | 0.847 [0.799, 0.877] |
+| No-op build | 10.109 | 10.730 | 0.947 [0.920, 0.975] |
+| Body edit | 55.296 | 53.101 | 1.046 [1.036, 1.055] |
+| Signature edit | 59.561 | 69.471 | 0.852 [0.845, 0.860] |
+| Check | 46.012 | 51.969 | 0.826 [0.712, 0.898] |
+| No-op check | 10.272 | 10.800 | 0.954 [0.919, 0.991] |
+| Check after body edit | 28.767 | 30.800 | 0.896 [0.823, 0.941] |
+| Rejection | 39.364 | 37.976 | 1.055 [1.022, 1.101] |
+| Compile plus test | 82.475 | 84.234 | 0.979 [0.974, 0.984] |
 
-The body-edit build takes **7.4% less median time**, with a paired estimate of
-**1.079× [1.070, 1.088]** against matching Cargo/rustc. Rejection also favors
+The body-edit build takes **4.0% less median time**, with a paired estimate of
+**1.046× [1.036, 1.055]** against matching Cargo/rustc. Rejection also favors
 Lustr. Seven other modes remain slower: cold builds take about **16% longer**,
-signature edits **16% longer**, and checks **15% longer** by the medians.
+signature edits **17% longer**, and checks **13% longer** by the medians.
 This is a narrow Cargo improvement on the retained scalar-body fixture, not
-general Cargo acceleration. No historical sample was removed or replaced.
+general Cargo acceleration. The preceding `6bf6e3e` campaign measured a
+1.079× body-edit gain on a different hosted run; cross-run changes do not
+isolate a code optimization. No historical sample was removed or replaced.
 
 Every mode, p95 and conditional interval appears in the
-[36-comparison table](performance/2026-11-17-6bf6e3e.md),
-[648-value CSV](performance/2026-11-17-6bf6e3e.csv) and
-[four-panel chart](performance/plots/2026-11-17-6bf6e3e/README.md).
+[36-comparison table](performance/2026-11-17-3e24029.md),
+[648-value CSV](performance/2026-11-17-3e24029.csv) and
+[four-panel chart](performance/plots/2026-11-17-3e24029/README.md).
 
 ### Actual project under normal defaults
 
@@ -74,6 +79,11 @@ primed build is inconclusive. The forced build, check and test scenarios change
 only a source file's timestamp. They measure rebuilds without source edits.
 The newest campaign's 600 original files and 510 output streams were recovered
 and reconciled with its public report. Both earlier campaigns remain retained.
+The newer [PR13 merge checkout project result](performance/projects-pending/2026-11-17-3e24029/README.md)
+also completed five scenarios, but is not yet a fourth *authenticated recovered*
+archive. On its different host the no-op paired ratio was 0.785 [0.572, 0.930],
+with a 76.868 ms candidate p95 outlier. Retain this slowdown rather than
+substituting the older stable samples or claiming a causal regression.
 
 ### Historical full-project Cargo result
 
@@ -108,12 +118,25 @@ recording; its child process identity and launch/wait breakdown were absent.
 [Source-built CI](https://github.com/glopyglerky/lustr/actions/runs/44179667793/job/134380277750)
 passed all sixteen entry/runtime tests, the mixed compiler prerequisites,
 profiling, fixed paired measurements and the normal-profile project campaign.
-The job **failed its separate public-slice recorder before timing** because
+That job **failed its separate public-slice recorder before timing** because
 statistics were enabled only in the client, not its daemon. The
 [original zero-sample failure](performance/slices/2026-11-17-6bf6e3e/README.md)
-is retained; the correction passes 27 tests and requires fresh hosted execution.
-Seven other non-macOS Compiler set jobs passed. macOS was cancelled before
-execution; the separate current full native Linux gate is still pending.
+remains failed. The corrected recorder subsequently **passed on a fresh hosted
+compiler build** in [run 44187580063](https://github.com/glopyglerky/lustr/actions/runs/44187580063/job/134408105819).
+Its [byte-identical public-slice archive](performance/slices/2026-11-17-3e24029/README.md)
+contains 288 timings and 18 independently replayed comparisons. The latest
+completed PR13 compiler-set run still includes a macOS job cancelled before
+execution; source-built success is not an all-platform gate.
+
+On the adapted larger upstream slice, the standalone Lustr entry has a
+**1.516× [1.475, 1.571] cold-check ratio** against matched incremental Cargo,
+but a **0.293× [0.288, 0.298] no-op-check ratio**. Its 35.689 ms no-op-check
+median also trails pristine Lust's 1.565 ms. This is a standalone native
+entry comparison, **not** a mixed Cargo build or source-edit speedup. The
+[full slice table and replay instructions](performance/slices/2026-11-17-3e24029/README.md)
+retain all the regressions. The next Cargo priority is separating package/target
+validation, daemon entry and Rust fallback costs without losing Cargo's graph
+or semantic guarantees.
 
 Earlier full native Linux attempts at `40d2ac3` and `5a3f493` each passed 5,527
 ordinary differential cases, then passed 5,526 sanitized cases and timed out
@@ -129,20 +152,20 @@ remain attributed to their own compiler, corpus and methods.
 
 ### Native Lustr, pristine Lust and matching rustc
 
-These native results use the same completed `6bf6e3e` paired campaign. Times
+These native results use the same completed `3e24029` paired campaign. Times
 are median milliseconds; ratios retain the paired geometric estimator.
 
 | Native workload | Pristine Lust median | Standalone rustc median | Lustr median | rustc / Lustr ratio [95% interval] |
 | --- | ---: | ---: | ---: | --- |
-| Cold build | 38.140 | 33.773 | 41.044 | 0.823 [0.788, 0.861] |
-| No-op build | 3.071 | 30.632 | 2.788 | 11.038 [10.858, 11.223] |
-| Body edit | 4.913 | 33.449 | 4.878 | 6.893 [6.580, 7.208] |
-| Signature edit | 4.102 | 31.613 | 3.949 | 8.017 [7.800, 8.251] |
-| Check | 1.758 | 8.695 | 1.597 | 5.402 [5.167, 5.614] |
-| No-op check | 1.431 | 8.771 | 1.432 | 6.050 [5.843, 6.286] |
-| Check after body edit | 1.456 | 8.433 | 1.445 | 5.768 [5.574, 5.929] |
-| Rejection | 1.619 | 13.642 | 14.160 | 0.967 [0.949, 0.986] |
-| Compile plus test | 27.539 | 46.894 | 27.595 | 1.696 [1.640, 1.758] |
+| Cold build | 48.204 | 41.666 | 47.016 | 0.859 [0.830, 0.888] |
+| No-op build | 4.070 | 42.418 | 3.525 | 12.040 [11.895, 12.192] |
+| Body edit | 5.961 | 41.854 | 6.033 | 6.924 [6.805, 7.037] |
+| Signature edit | 5.333 | 41.810 | 5.396 | 7.817 [7.620, 8.035] |
+| Check | 2.435 | 12.856 | 2.449 | 5.459 [5.254, 5.683] |
+| No-op check | 2.067 | 12.719 | 2.120 | 6.075 [5.894, 6.260] |
+| Check after body edit | 2.272 | 12.817 | 2.174 | 5.907 [5.700, 6.136] |
+| Rejection | 2.650 | 19.314 | 20.810 | 0.925 [0.908, 0.945] |
+| Compile plus test | 26.053 | 59.128 | 26.322 | 2.250 [2.214, 2.290] |
 
 The standalone Rust reference uses the identical source, opt-level 0, debug 0,
 unwinding, overflow checks and debug assertions. It is **nonincremental**:
@@ -152,9 +175,9 @@ executing the test. The [reference contract](docs/compiler-set/native-rustc-comp
 records exact commands, child receipts and cache behavior.
 
 Against pristine Lust, native cold, body edits and compile-plus-test are
-inconclusive. Native no-op favors Lustr at 1.092 [1.070, 1.113], signature edit
-at 1.045 [1.010, 1.078], and check at 1.046 [1.008, 1.081]. Packaged rejection
-is slower at 0.122 [0.113, 0.132]; the entry may perform full-Rust validation
+inconclusive. Native no-op favors Lustr at 1.154 [1.138, 1.168] and check
+at 1.047 [1.006, 1.088]. Packaged rejection is slower at
+0.127 [0.121, 0.133]; the entry may perform full-Rust validation
 after native rejection. The full language and diagnostic contract remains
 part of that measured cost.
 

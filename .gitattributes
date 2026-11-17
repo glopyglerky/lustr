@@ -1,0 +1,5 @@
+# Preserve the exact generated evidence bytes used by the strict replay gates.
+# Matplotlib SVG paths intentionally contain trailing spaces before newlines.
+performance/plots/**/performance.svg whitespace=-blank-at-eol
+# The upstream report renderer intentionally emits a final blank line.
+performance/20*-*.md whitespace=-blank-at-eof

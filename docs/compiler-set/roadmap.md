@@ -16,8 +16,9 @@ See the [current contract](native-contract.md).
 
 ## Cargo performance delivery
 
-The latest complete paired campaign at `6bf6e3e` measures a body-edit Cargo
-ratio of **1.079× [1.070, 1.088]** and faster rejection. Seven other Cargo modes
+The latest complete paired campaign at PR13 head `3e24029` (actual merge
+checkout `5711bb9`) measures a body-edit Cargo ratio of
+**1.046× [1.036, 1.055]** and faster rejection. Seven other Cargo modes
 remain slower, and normal-profile project builds still show overhead. See
 [the full results](../../PERFORMANCE.md) and
 [current qualification](completion-qualification.md).
@@ -28,16 +29,21 @@ remain slower, and normal-profile project builds still show overhead. See
    libraries, build scripts, proc macros, metadata, rejection, link-failure
    recovery and panic/drop behavior.
 2. Completed: retain the full paired native/Cargo campaign, separate profile,
-   normal-profile project evidence and updated README. Eight fixed campaigns
-   preserve 4,536 timings and 234 comparisons; three project campaigns add
+   normal-profile project evidence and updated README. Nine fixed campaigns
+   preserve 5,184 timings and 270 comparisons; three authenticated recovered
+   project campaigns add
    360 timings and fifteen comparisons. Each result retains exact source,
    original output, uncertainty and regressions.
 3. Next: reduce cold/signature/check overhead and broaden Cargo gains. The fresh
    body profile records about 8 microseconds in symbol validation and 15 ms in
    linking; the former process cost is no longer the dominant observed span.
    Preserve full Rust metadata and complete linking when selecting the next
-   change. The separate public-slice recorder is corrected after its original
-   zero-sample failure and still requires fresh hosted execution.
+   change. The corrected public-slice recorder now passes a fresh source-built
+   hosted campaign with 288 timings and 18 comparisons. Its standalone entry
+   is slower than matching Cargo for no-op check/build, despite faster cold
+   checks/builds on the pruned slice. Separately profile per-request Cargo
+   metadata target selection, native-daemon request and Rust fallback before
+   changing correctness-sensitive routing or caching.
 4. Extend actual Cargo coverage to unchanged larger projects and real source
    edits. Keep normal debug profiles visible. The current mixed-object path
    does not support default debug=2 generation, and retained literal-edit reuse
