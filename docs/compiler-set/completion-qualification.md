@@ -4,14 +4,42 @@ This candidate extends PR7 from
 `2add988c6397ac5175fcdf89a3aac17d359bf283`. It preserves the pinned Lust
 reference, the matched full Rust implementation, and the existing Cargo graph.
 It is not an admitted release. Hosted mixed correctness and paired measurement
-execution now have completed evidence. Native macOS execution and performance
-acceptance remain separate requirements.
+execution now have completed evidence. The complete native gate, native macOS
+execution and performance acceptance remain separate requirements.
 
 [Retained work disposition](retained-work-disposition.md) records what was
 carried forward from older PRs and preserves the unresolved Darwin base-library
 investigation and historical performance evidence.
 
 ## Completed hosted evidence
+
+### Current recorded candidate: `5a3f493`
+
+The [source-built job in run 44111326777](https://github.com/glopyglerky/lustr/actions/runs/44111326777/job/134137398335)
+passed at PR head `5a3f4937d94e8f028dd85385ea65d51fcfe35a3b`, actual merge
+checkout `b3393a4a2907228516546cd34f1a5c60aaf6aaaa`. It passed the unchanged
+baseline regression requirement, mixed graph/edit/rejection checks, retained
+metadata checks, mixed-library qualification and full entry/runtime contract.
+Its first completed [schema-2 campaign](../../performance/2026-11-17-5a3f493.md)
+adds matched standalone rustc and retains all 648 timings and 36 comparisons.
+
+The [original v2 profiling qualification](../../performance/2026-11-17-5a3f493-profile.md)
+also passed: 26 compiler profiles, 15 qualification commands and 35 successful
+native responses validate and replay without trace reconstruction. The
+[unchanged coordinator campaign](../../performance/projects/2026-11-17-5a3f493/README.md)
+completed all five scenarios and 120 timings, and its encrypted originals were
+authenticated, recovered and reconciled. These are separate measurements with
+separate publication and workload boundaries.
+
+Eight non-macOS Compiler set jobs passed. The macOS compatibility job was
+cancelled before any step executed. The [fresh full native gate](measurements/2026-11-17-native-linux-5a3f493/README.md)
+failed after 5,527 ordinary passes and 5,526 sanitized passes, at the same
+`unicode_props_hash` execution deadline as the preceding native gate. Its
+original artifact and source identities are retained separately;
+source-built success and performance recording are not an all-platform or
+release pass. The failed `40d2ac3` native gate remains recorded below.
+
+### Earlier hosted campaigns
 
 The source-built Compiler set campaigns at `c70eb1c` and `afb17a8` completed all
 nine jobs, including baseline stale-output reproduction, corrected recovery,
@@ -51,16 +79,26 @@ trace writes joined two request records. The [original failure, diagnostic
 reconstruction and correction](../../performance/2026-11-17-40d2ac3-profile.md)
 are retained. Seven other non-macOS jobs passed; macOS compatibility was
 cancelled without execution because hosted ARM64 capacity was unavailable.
-The corrected trace writer requires fresh source-built execution.
+At that revision the corrected trace writer still required fresh source-built
+execution. The `5a3f493` result above supplies that execution without changing
+the original failure's status.
 
-The six completed paired campaigns preserve 540 timed command values and 27
-comparisons each. [PERFORMANCE.md](../../PERFORMANCE.md) reports the substantial
-mixed Cargo regressions, exact source identities, uncertainty and workload
-limits. [The original ZIP archives](../../performance/archives) preserve the
-full qualification outputs as well as timing data. Measurement completion does
-not establish speed preservation.
+The six schema-1 campaigns preserve 540 timed values and 27 comparisons each.
+Together with the first schema-2 result, the seven fixed campaigns retain
+**3,888 timings, 198 comparisons and 12,768 command-output files**.
+[PERFORMANCE.md](../../PERFORMANCE.md) reports the mixed Cargo regressions, exact
+source identities, uncertainty and workload limits. The native rustc comparison
+also retains its cold-build and rejection losses. [The original ZIP
+archives](../../performance/archives) preserve the full qualification outputs
+as well as timing data. Measurement completion does not establish speed
+preservation.
 
-The corresponding [native CI run](https://github.com/glopyglerky/lustr/actions/runs/44063047989)
+The two actual coordinator campaigns retain another **240 timings and 10
+comparisons**. Each recovered and reconciled 600 original files and 510 output
+streams. Both use normal dev/test debug=2 and timestamp-forced root rebuilds;
+neither is a native acceleration or body/signature-edit campaign.
+
+The earlier `afb17a8` [native CI run](https://github.com/glopyglerky/lustr/actions/runs/44063047989)
 passed Linux but failed macOS after 5,522 passing differential cases and four
 failures. Those observed failures motivated the [portable fixture and Unix
 address correction](native-differential-portability.md). The correction and
@@ -72,6 +110,23 @@ either run. The [original artifact and scope](measurements/2026-11-17-native-lin
 also retain the later suites. The macOS ARM64 job was cancelled before starting
 with a hosted capacity error. Linux success is not native macOS qualification
 for the correction.
+
+The subsequent combined `40d2ac3` Linux native gate
+[failed at sanitized program execution](measurements/2026-11-17-native-linux-40d2ac3/README.md).
+Its ordinary differential suite passed all 5,527 cases; the sanitized repeat
+passed 5,526 and timed out while executing `unicode_props_hash` at the unchanged
+10-second deadline. Despite the diagnostic's wording, GCC linking had succeeded.
+Fuzz, benchmark smoke and the final completion check were not reached. The
+original ZIP and all reached suite counts remain retained. Its exact native
+subtree also belongs to `5a3f493`; source equality does not convert that failure
+into a passing qualification. The fresh candidate has a separate full CI run.
+
+The [single bounded local diagnosis](measurements/2026-11-17-unicode-sanitizer-diagnosis/README.md)
+instead failed with a LeakSanitizer fatal error. It used separately identified
+local debug binaries and preserved the original sanitizer settings and limits.
+It did not reproduce the hosted timeout or produce a passing sanitizer result.
+The cause remains unresolved; neither selected source equality nor this local
+blocker establishes a host-load explanation.
 
 ## Correctness changes
 
@@ -99,7 +154,7 @@ preserves an explicit `--lib` request across native process startup. It covers
 all six Cargo library kinds and rejects a bin-only package. Its recorded local
 qualification has 22 direct source states and an actual Lustr-entry regression
 with 52 command-output pairs. The full source-built contract also includes this
-new test; it passed in the combined `40d2ac3` source-built contract.
+new test; it passed in the combined `40d2ac3` and `5a3f493` source-built contracts.
 
 ## Earlier local evidence and its limits
 
@@ -110,7 +165,7 @@ restriction itself was never counted as a compiler regression.
 | Check | Result and scope |
 | --- | --- |
 | Pinned compiler builds and format checks | Changed owned compiler and qualification tools compile; no daemon execution implied. |
-| Failed-link baseline reproduction | Originally blocked locally because Unix socket creation was denied. All six hosted correctness campaigns subsequently reproduced the required baseline failure and passed corrected recovery; the sixth job's later profiling failure remains separate. |
+| Failed-link baseline reproduction | Originally blocked locally because Unix socket creation was denied. All seven hosted correctness campaigns subsequently reproduced the required baseline failure and passed corrected recovery; the sixth job's later profiling failure remains separate. |
 | Source-library package seal | Correct packages made from current and exact baseline source pass. Source mutation, added input, bad links and substituted core inode fail; restoring the package restores its identity. |
 | Target synchronization layout | Matching SDK supplies 26 independent size/alignment values for Linux x86_64, Darwin x86_64, Darwin aarch64 and Windows GNU x86_64. Baseline fails the three foreign targets; corrected native frontend passes all four and rejects a deliberate false assertion. |
 | Target pool retention | The native unit test passes all nine transitions among Futex, Darwin and Windows models, including body overlays and incompatible-pool rejection. |
@@ -119,7 +174,7 @@ restriction itself was never counted as a compiler regression.
 | Darwin descriptor-path adapter | The exact C body passes five isolated buffer/error cases with AddressSanitizer and UndefinedBehaviorSanitizer. Real Darwin syscall behavior still requires macOS. |
 | no_std WebAssembly execution | Through the unchanged baseline's matched full Rust component, the new module executes its exported operations with correct results and no runtime imports. The final candidate's full contract repeats this gate. |
 | Single-file native test command | The old entry incorrectly forwarded the file command to Cargo. The corrected entry passes the public runtime gate: successful native test, upstream failed-test status 101, and one persisted side effect from one failed test. The unchanged baseline native core was used for this local check. |
-| Paired performance | Six fixed hosted campaigns completed. Their raw samples, comparisons and regressions are preserved in the performance report; general speed acceptance remains open. The separate actual-project campaign adds five comparisons under normal dev/test defaults. |
+| Paired performance | Seven fixed hosted campaigns completed, including the first matched native-rustc lane. Their raw samples, comparisons and regressions are preserved in the performance report; general speed acceptance remains open. Two actual-project campaigns add ten comparisons under normal dev/test defaults. |
 
 See [target layout qualification](native-target-layouts.md) for the target
 oracle and Darwin corrections, and [mixed compiler qualification](mixed-compiler.md)
@@ -190,20 +245,23 @@ The validator remains strict, and original failed native diagnostics, cache
 behavior and durability operations are unchanged. The original failed v2 run
 and its separately verified reconstruction remain distinguishable.
 
-The actual project's public and encrypted archives were independently reviewed
-against GitHub's original digests and byte inventories. Public CI now checks
-the archive bindings and replays 120 timed values and five statistics. It does
-not decrypt or freshly requalify private originals. The recovery instruction
-preserves original file modes explicitly, retaining the initial extraction
-failure instead of weakening integrity checks.
+The first actual project's public and encrypted archives were independently
+reviewed against GitHub's original digests and byte inventories. The public
+archive checker now covers both retained campaigns: 240 timed values and ten
+statistics. It does not decrypt or freshly requalify private originals. Each
+campaign also has its own completed authenticated recovery and source-bound
+reconciliation receipt. The recovery instruction preserves original file modes
+explicitly, retaining the first campaign's initial extraction failure instead
+of weakening integrity checks.
 
 ## Hosted admission gates
 
 The compiler-set workflow builds optimized matched components from source,
 reproduces the baseline regression, executes mixed Cargo and library
 qualifications, and runs the complete compiler contract. It then measures
-pristine Lust, integrated Lust and the lustr entry on equivalent native work,
-plus original Rust and mixed lustr on the same Cargo graph. Cold, no-op,
+pristine Lust, integrated Lust, the lustr entry and matched standalone rustc on
+equivalent native work, plus original Rust and mixed lustr on the same Cargo
+graph. Cold, no-op,
 body edit, signature edit, check, check no-op, check body edit, rejection and
 compile-plus-test observations remain separate.
 

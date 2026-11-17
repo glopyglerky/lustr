@@ -1,0 +1,215 @@
+{
+  "schema": "lustr-native-gate-archive-v1",
+  "head": "5a3f4937d94e8f028dd85385ea65d51fcfe35a3b",
+  "checkout": "b3393a4a2907228516546cd34f1a5c60aaf6aaaa",
+  "tree": "2fca60e57829890b10a4a23da57bafab2581b092",
+  "native_tree": "cb797ce8ce82192b87b3835267fc223c295dba70",
+  "same_native_tree_as_head": "40d2ac3f0b71abaa1e73cd366d8c43f8eb4d4581",
+  "run": 44111327211,
+  "job": 134137399589,
+  "artifact": 14348831217,
+  "artifact_name": "native-gate-Linux-X64-b3393a4a2907228516546cd34f1a5c60aaf6aaaa-1",
+  "artifact_created_at": "2026-11-17T16:37:27Z",
+  "archive": "native-gate-original.zip",
+  "archive_sha256": "1f037771e512b8ac83d8e22446ad2645757e47703bc0a221fa7af59500360b90",
+  "archive_bytes": 14321,
+  "github_api_digest": "sha256:1f037771e512b8ac83d8e22446ad2645757e47703bc0a221fa7af59500360b90",
+  "github_api_size_in_bytes": 14321,
+  "job_conclusion": "failure",
+  "macos_job": 134137400303,
+  "macos_conclusion": "cancelled-before-execution",
+  "files": [
+    {
+      "path": "native-gate-identity.txt",
+      "bytes": 638,
+      "sha256": "0b192fca3f0002c3443c529942e47017cc2538426432022d096adfab1d2b7679"
+    },
+    {
+      "path": "native-gate.log",
+      "bytes": 50728,
+      "sha256": "ef67e9ee80ecf6192dd135fe11cd600d14dadc21674724b2c32ce8637c9d0ce8"
+    },
+    {
+      "path": "native-gate-builds.sha256",
+      "bytes": 177,
+      "sha256": "ff1d7f12628e91f2ac940616d7b7cd16452e30f7ddd6979a340d80bdddbc2bdc"
+    }
+  ],
+  "source_inputs": [
+    {
+      "path": "compiler/native/Cargo.toml",
+      "sha256": "6407db968e9c39583c15ce987deb95ae840b0069935a95d767d6babb5e6fb868",
+      "git_blob": "23f51988c14da29b6c32cfa193862cb3693001a1",
+      "verification": "fresh-checkout-blob-sha256-matches-original-receipt"
+    },
+    {
+      "path": "compiler/native/Cargo.lock",
+      "sha256": "88353a6a0b836d08de3a7e6916c6846b797995b05e35191e6a0098fe0540aa9f",
+      "git_blob": "9e3bf4d8cb0c3e50b3b19cedff6e67ac874e290f",
+      "verification": "fresh-checkout-blob-sha256-matches-original-receipt"
+    },
+    {
+      "path": "compiler/native/build.rs",
+      "sha256": "37baca96c78d2defd6c2aa4651431d546148ef7c9dcb33c24c21bc9caee9b674",
+      "git_blob": "faf5a1b8a5975aa73a50cef1a9a3153c18c5ecf2",
+      "verification": "fresh-checkout-blob-sha256-matches-original-receipt"
+    },
+    {
+      "path": "compiler/native/scripts/ci.sh",
+      "sha256": "a075fd6c10a20f2455aacbaa939de9772f826d8fac354429cc6c6a11835fd94d",
+      "git_blob": "0e9a337896d21c8e1e032ce61197a50d37e145bd",
+      "verification": "fresh-checkout-blob-sha256-matches-original-receipt"
+    }
+  ],
+  "produced_compilers": [
+    {
+      "path": "target/release/lust",
+      "sha256": "a93151e870e747d5b0af484763a2f69c5da0e9ba2ca1bafe4f369377ebae31bf",
+      "archive_includes_binary": false,
+      "verification": "original-recorded-identity-only"
+    },
+    {
+      "path": "target/release/lust-core",
+      "sha256": "f89e0ab6d752cbc13eec0864d65063dd00ff84a3f212382000f2733525be6feb",
+      "archive_includes_binary": false,
+      "verification": "original-recorded-identity-only"
+    }
+  ],
+  "failure": {
+    "case": "unicode_props_hash",
+    "stage": "sanitized-generated-program-execution",
+    "timeout_seconds": 10,
+    "gcc_link_completed": true,
+    "original_diagnostic": "FAIL unicode_props_hash: sanitized build: sanitized build timed out after 10s",
+    "diagnostic_interpretation_source": {
+      "revision": "b3393a4a2907228516546cd34f1a5c60aaf6aaaa",
+      "path": "compiler/native/scripts/difftest.sh",
+      "sha256": "e6553b35a7199ad61fb59274756494725c7cc47b3be4029eb820fa73b6d9bb6f",
+      "explanation": "The diagnostic reads the status from run_to ./<case>.san after successful GCC linking; the generated program execution reached its deadline. The original diagnostic uses the words sanitized build."
+    },
+    "underlying_cause": "not-established"
+  },
+  "reached_suites": [
+    {
+      "name": "release-build",
+      "status": "passed"
+    },
+    {
+      "name": "diagnostic-code-registry",
+      "status": "passed",
+      "codes_in_use": 112,
+      "reserved_codes": 108,
+      "failed": 0
+    },
+    {
+      "name": "lust-port",
+      "status": "passed",
+      "passed": 13,
+      "failed": 0,
+      "unit_tests": 8,
+      "fixture_tests": 5
+    },
+    {
+      "name": "differential",
+      "status": "passed",
+      "passed": 5527,
+      "failed": 0
+    },
+    {
+      "name": "macro-corpus",
+      "engine": "Rust-reference",
+      "status": "passed",
+      "passed": 58,
+      "failed": 0,
+      "named_macro_fixture_coverage": {
+        "covered": 70,
+        "total": 70
+      }
+    },
+    {
+      "name": "macro-dependencies",
+      "engine": "native-Lust",
+      "status": "passed",
+      "passed": 13,
+      "failed": 0
+    },
+    {
+      "name": "kernels-and-compatibility",
+      "engine": "Rust-Cargo-reference",
+      "status": "passed",
+      "passed": 43,
+      "failed": 0
+    },
+    {
+      "name": "client",
+      "status": "passed",
+      "passed": 89,
+      "failed": 0
+    },
+    {
+      "name": "crate-fixtures",
+      "status": "passed",
+      "passed": 85,
+      "failed": 0
+    },
+    {
+      "name": "daemon-edit-scenarios",
+      "status": "passed",
+      "passed": 363,
+      "total": 363,
+      "unsupported_versions": 28
+    },
+    {
+      "name": "slot-identity",
+      "status": "passed",
+      "logged_successful_checks": 8
+    },
+    {
+      "name": "sanitized-differential",
+      "status": "failed",
+      "passed": 5526,
+      "failed": 1
+    }
+  ],
+  "unreached_suites": [
+    "fuzz",
+    "benchmark-smoke",
+    "done"
+  ],
+  "workflow_observation": {
+    "source": "GitHub workflow job steps API",
+    "separate_checks": [
+      {
+        "number": 3,
+        "name": "Check actual Unix-address helper bounds with ASan and UBSan",
+        "conclusion": "success",
+        "output_in_original_zip": false
+      }
+    ],
+    "gate_step": {
+      "number": 8,
+      "name": "Run CI gate",
+      "conclusion": "failure"
+    },
+    "post_failure_steps": [
+      {
+        "number": 9,
+        "name": "Record produced compiler identities",
+        "conclusion": "success"
+      },
+      {
+        "number": 10,
+        "name": "Retain native gate evidence",
+        "conclusion": "success"
+      }
+    ],
+    "macos_executed_steps": 0,
+    "observed_on": "2026-11-17"
+  },
+  "qualification": {
+    "complete_linux_gate_pass": false,
+    "macos_execution": false,
+    "release_admission": false,
+    "benchmark_smoke_reached": false
+  }
+}

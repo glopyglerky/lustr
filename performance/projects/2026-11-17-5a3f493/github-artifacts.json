@@ -1,0 +1,80 @@
+{
+  "artifacts": [
+    {
+      "id": 14344840716,
+      "name": "source-built-mixed-qualification-1",
+      "size_in_bytes": 1346935,
+      "url": "https://api.github.com/repos/glopyglerky/lustr/actions/artifacts/14344840716",
+      "archive_download_url": "https://api.github.com/repos/glopyglerky/lustr/actions/artifacts/14344840716/zip",
+      "expired": false,
+      "created_at": "2026-11-17T15:50:48Z",
+      "expires_at": "2027-02-15T15:10:46Z",
+      "updated_at": "2026-11-17T15:50:48Z",
+      "digest": "sha256:552a841ad416f4075f91aec29d8f83ac7a2b092cee7e8a5fda4c7cb513b5da4e",
+      "workflow_run": {
+        "id": 44111326777,
+        "repository_id": 1450430441,
+        "head_repository_id": 1450430441,
+        "head_branch": "lustr/complete-speed-comparisons-20261117",
+        "head_sha": "5a3f4937d94e8f028dd85385ea65d51fcfe35a3b"
+      }
+    },
+    {
+      "id": 14344745989,
+      "name": "coordinator-project-performance-1",
+      "size_in_bytes": 32227,
+      "url": "https://api.github.com/repos/glopyglerky/lustr/actions/artifacts/14344745989",
+      "archive_download_url": "https://api.github.com/repos/glopyglerky/lustr/actions/artifacts/14344745989/zip",
+      "expired": false,
+      "created_at": "2026-11-17T15:50:43Z",
+      "expires_at": "2027-02-15T15:10:46Z",
+      "updated_at": "2026-11-17T15:50:43Z",
+      "digest": "sha256:6ab9dfb03080c48a406745ec90bf2ac79bca12db3c76f7553011f984deb107b5",
+      "workflow_run": {
+        "id": 44111326777,
+        "repository_id": 1450430441,
+        "head_repository_id": 1450430441,
+        "head_branch": "lustr/complete-speed-comparisons-20261117",
+        "head_sha": "5a3f4937d94e8f028dd85385ea65d51fcfe35a3b"
+      }
+    },
+    {
+      "id": 14342605233,
+      "name": "compiler-set-cranelift",
+      "size_in_bytes": 1653540,
+      "url": "https://api.github.com/repos/glopyglerky/lustr/actions/artifacts/14342605233",
+      "archive_download_url": "https://api.github.com/repos/glopyglerky/lustr/actions/artifacts/14342605233/zip",
+      "expired": false,
+      "created_at": "2026-11-17T15:22:42Z",
+      "expires_at": "2027-02-15T15:10:46Z",
+      "updated_at": "2026-11-17T15:22:42Z",
+      "digest": "sha256:43ea787d24a0a53792f14b242bb8d9383e08f555373a71a0262810fd80268839",
+      "workflow_run": {
+        "id": 44111326777,
+        "repository_id": 1450430441,
+        "head_repository_id": 1450430441,
+        "head_branch": "lustr/complete-speed-comparisons-20261117",
+        "head_sha": "5a3f4937d94e8f028dd85385ea65d51fcfe35a3b"
+      }
+    },
+    {
+      "id": 14342529953,
+      "name": "coordinator-project-originals-encrypted-1",
+      "size_in_bytes": 1244118,
+      "url": "https://api.github.com/repos/glopyglerky/lustr/actions/artifacts/14342529953",
+      "archive_download_url": "https://api.github.com/repos/glopyglerky/lustr/actions/artifacts/14342529953/zip",
+      "expired": false,
+      "created_at": "2026-11-17T15:50:42Z",
+      "expires_at": "2027-02-15T15:10:46Z",
+      "updated_at": "2026-11-17T15:50:42Z",
+      "digest": "sha256:169470e0ca04a023ebb745b5f695aa4f559527b68004d2530655883c387797f5",
+      "workflow_run": {
+        "id": 44111326777,
+        "repository_id": 1450430441,
+        "head_repository_id": 1450430441,
+        "head_branch": "lustr/complete-speed-comparisons-20261117",
+        "head_sha": "5a3f4937d94e8f028dd85385ea65d51fcfe35a3b"
+      }
+    }
+  ]
+}

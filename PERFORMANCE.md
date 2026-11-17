@@ -3,376 +3,452 @@
 ## Status on 17 November 2026
 
 Lustr is **not yet a generally qualified, speed-preserving full-Rust compiler**.
-The qualified mixed Cargo graph executes correctly, but its compilation has
-material overhead. A completed measurement campaign does not mean Lustr won.
-Upstream Lust's headline speedups are not measurements of this integration.
+The supported native path shows substantial warm-work gains over matching
+standalone rustc on the small measured corpus. Cold native compilation and
+rejection are slower, and the fixed mixed Cargo graph has material overhead.
+A completed campaign does not mean Lustr won. Upstream Lust's headline speedups
+are measurements of its own sources and workloads.
 
-The latest retained fixed campaign measures PR11 head
-`40d2ac3f0b71abaa1e73cd366d8c43f8eb4d4581`. In
-[run 44096292176](https://github.com/glopyglerky/lustr/actions/runs/44096292176/job/134084163908),
-the source-built compiler passed target layouts, the unchanged failed-link
-negative control and corrected recovery, mixed execution, retained checking
-with fresh Rust metadata, mixed libraries, and all fifteen entry/runtime tests.
-Both the fixed paired campaign and the unchanged-project campaign passed.
+The latest retained fixed and project campaigns measure PR12 candidate
+`5a3f4937d94e8f028dd85385ea65d51fcfe35a3b`, at actual merge checkout
+`b3393a4a2907228516546cd34f1a5c60aaf6aaaa`. In
+[source-built run 44111326777](https://github.com/glopyglerky/lustr/actions/runs/44111326777/job/134137398335),
+the package passed target layouts, the unchanged failed-link negative control
+and corrected recovery, mixed execution, retained checks with fresh Rust
+metadata, mixed libraries, and all fifteen entry/runtime tests. The original
+v2 profiling validation, expanded fixed benchmark and unchanged-project
+campaign all passed. Eight non-macOS jobs succeeded; macOS compatibility was
+cancelled without executing steps. This is not an all-platform pass.
 
-The source-built job nevertheless **failed its separate profiling validation**:
-concurrent processes joined two independent trace records. All corresponding
-compiler profiles exist. The [diagnosis and correction](performance/2026-11-17-40d2ac3-profile.md)
-retain the original failure and a separately labeled reconstruction. The fixed
-writer passes the same concurrent-process test that fails against its predecessor;
-fresh source-built execution is still required to qualify that correction.
-Seven other non-macOS jobs passed. The macOS compatibility job was cancelled
-without executing any steps because GitHub could not acquire hosted ARM64
-capacity; a retry does not count as execution before it runs.
+The prior `40d2ac3` source-built job failed its separate profiling validation
+when concurrent writes joined two trace records. Its paired measurements and
+project campaign had passed independently. The [original failure and diagnostic
+reconstruction](performance/2026-11-17-40d2ac3-profile.md) remain retained.
+The corrected writer now has [successful original hosted profiling evidence](performance/2026-11-17-5a3f493-profile.md),
+without changing the strict validator or repairing the new traces.
 
-The earlier [complete Linux native gate at dec0ce2](docs/compiler-set/measurements/2026-11-17-native-linux-dec0ce2/README.md)
-passed 5,527 differential checks and the same case set with sanitizer-configured
-generated C, plus later native suites. The concurrently updated
-[base at 74e14e7](docs/compiler-set/measurements/2026-11-17-native-linux-74e14e7/README.md)
-also passed its older 5,526-case Linux gate. Default macro-corpus and kernel
-checks are Rust/Cargo reference checks, not native Lust coverage. The combined
-40d native gate has its own [run](https://github.com/glopyglerky/lustr/actions/runs/44096292187).
-Its result must be assessed on that exact source. Latest native macOS attempts
-were cancelled before execution; the earlier four executed failures and their
-[portable-fixture/Unix-bound correction](docs/compiler-set/native-differential-portability.md)
-remain recorded. Linux and cross-target layout results do not establish native
-macOS execution or all-platform admission.
+The separate [combined Linux native gate at `40d2ac3`](docs/compiler-set/measurements/2026-11-17-native-linux-40d2ac3/README.md)
+failed after 5,527 ordinary differential passes: the sanitized repeat recorded
+5,526 passes and one `unicode_props_hash` generated-program execution timeout
+at its unchanged ten-second deadline. GCC linking had completed. Fuzz and
+benchmark smoke were not reached. The [bounded diagnosis](docs/compiler-set/measurements/2026-11-17-unicode-sanitizer-diagnosis/README.md)
+retains selected-source equality and a separate local LeakSanitizer tracing
+failure; the hosted timeout's cause remains unresolved. Its exact native tree
+is unchanged in `5a3f493`, whose [fresh full native CI](docs/compiler-set/measurements/2026-11-17-native-linux-5a3f493/README.md)
+also failed after 5,527 ordinary passes and 5,526 sanitized passes, at the same
+generated-program execution deadline. Its original ZIP and source-bound
+manifest are retained separately. Source equality does not supply a passing gate.
+
+Earlier complete native Linux gates at [dec0ce2](docs/compiler-set/measurements/2026-11-17-native-linux-dec0ce2/README.md)
+and [74e14e7](docs/compiler-set/measurements/2026-11-17-native-linux-74e14e7/README.md)
+remain attributed to their own sources and case sets. Default macro-corpus and
+kernel checks are Rust/Cargo reference checks, not native coverage of those
+whole corpora. Latest completed native macOS attempts were cancelled before execution;
+earlier executed failures and their [portable fixture/Unix-address corrections](docs/compiler-set/native-differential-portability.md)
+remain recorded. Cross-target layout checks do not establish native execution
+on those operating systems.
 
 ## Which work is being compared?
 
-| Workload | References and candidate | Evidence and boundary |
+| Workload | Reference and candidate | Evidence and boundary |
 | --- | --- | --- |
-| Supported native scalar corpus | Pristine Lust → integrated Lust | Direct preservation check for the declared native integration. |
-| Same native corpus | Pristine Lust → packaged Lustr entry | Includes routing and request handling; rejection may require additional full-Rust validation. |
-| Fixed real Cargo graph | Matched Cargo/rustc → mixed Lustr | Real proc macro, async code and a no_std/alloc dependency, with native objects and complete Rust compilation. |
-| Same supported native corpus | Matched standalone rustc → packaged native entry | Not measured by the six schema-1 campaigns. A new reference lane is being qualified separately; no cross-corpus ratio fills this cell. |
-| Unchanged coordinator package | Matched Cargo/rustc → primary Lustr entry | Five completed scenarios with normal dev/test defaults, including debug=2; outside current mixed-object eligibility. |
-| Daemon startup/cached restart, broad edit families, larger native projects, runtime/resources | Separate required campaigns | Not established by these complete-work timing tables or CI's one-repetition smoke. |
+| Supported native scalar corpus | Pristine Lust → integrated Lust | Preservation check for the declared native integration. |
+| Same native corpus | Pristine Lust → packaged Lustr entry | Includes entry routing; rejection can add full-Rust validation. |
+| Same native corpus | Matching standalone rustc → packaged native entry | Identical source and explicit dev semantics; rustc is nonincremental. First measured in schema 2 at `5a3f493`. |
+| Fixed real Cargo graph | Matching Cargo/rustc → mixed Lustr | Real procedural macro, async code and a no_std/alloc dependency, with native objects and complete Rust compilation. |
+| Actual unchanged coordinator package | Matching Cargo/rustc → primary Lustr entry | Five scenarios under normal dev/test defaults, including debug=2; outside native-object eligibility. |
+| Larger native workspaces, broad edit families, startup/restart, isolated runtime and resources | Separate campaigns | Not established by these tables or a one-repetition CI smoke check. |
 
-The native corpus and fixed Cargo graph are small. Historical
+The fixed native corpus and Cargo graph are small. Older
 [native product experiments](docs/compiler-set/measurements/2026-11-15-native-inference-v34/README.md)
-include older direct product/Lust/stock comparisons, with different architecture,
-producer-version confounds and retained limits. They are not current-entry
-measurements. The [upstream audit](docs/compiler-set/upstream-benchmark-audit.md)
-maps Lust's actual studies and their scope against this coverage.
+have different architectures, producer-version confounds and retained limits.
+They remain separate from current-entry measurements. The
+[upstream audit](docs/compiler-set/upstream-benchmark-audit.md) maps Lust's
+actual studies against this coverage.
 
 ## Latest fixed-corpus results
 
-Twelve matched pairs per mode, Linux x86-64, head `40d2ac3`. Times are milliseconds.
-The ratio is the geometric mean of **baseline time divided by candidate time**,
-with a conditional paired bootstrap 95% interval. Below one means the candidate
-took longer. This is not the ratio of the displayed medians.
+Twelve matched pairs per mode, Linux x86-64, candidate `5a3f493`. Times are
+milliseconds. The ratio is the geometric mean of **baseline time divided by
+candidate time**, with a conditional paired-bootstrap 95% interval. Below one
+means the candidate took longer. It is not the ratio of the displayed medians.
+
+### Native entry versus pristine Lust and matching rustc
+
+| Native workload | Pristine Lust median | Standalone rustc median | Lustr median | rustc / Lustr ratio [95% interval] |
+| --- | ---: | ---: | ---: | --- |
+| Cold build | 41.808 | 38.147 | 40.285 | 0.914 [0.876, 0.950] |
+| No-op build | 3.542 | 37.982 | 3.106 | 12.208 [12.037, 12.383] |
+| Body edit | 5.494 | 38.224 | 5.590 | 6.894 [6.797, 7.004] |
+| Signature edit | 4.841 | 38.424 | 4.856 | 7.935 [7.759, 8.131] |
+| Check | 2.217 | 11.619 | 2.069 | 5.621 [5.446, 5.812] |
+| No-op check | 1.761 | 11.356 | 1.778 | 6.426 [6.267, 6.605] |
+| Check after body edit | 2.051 | 11.285 | 1.882 | 5.970 [5.797, 6.179] |
+| Rejection | 2.255 | 17.038 | 18.016 | 0.945 [0.930, 0.959] |
+| Compile plus test | 30.535 | 53.267 | 30.960 | 1.740 [1.705, 1.776] |
+
+Seven native comparisons favor Lustr over this standalone rustc configuration;
+cold and rejection favor rustc. Body edits are 6.894× and signature edits
+7.935× faster by the paired estimate. Native no-op is 12.208× faster, with
+3.106 ms versus 37.982 ms medians. **Every rustc no-op starts a nonincremental
+compiler invocation.** This is not Cargo's cached no-op or a comparison against
+the fastest possible rustc configuration.
+
+The [exact reference contract](docs/compiler-set/native-rustc-comparison.md)
+uses identical supported source and edition 2024, target x86_64 Linux, opt-level
+0, debug 0, unwind, overflow checks and debug assertions. Build emits a linked
+program; check emits metadata. Rust compile-plus-test includes `rustc --test`,
+actual execution with one test thread, and the adapter process's overhead.
+Both child commands and exit/signal receipts are retained. Passing/failing
+tests, invalid-source rejection, accepted runtime and recovery are required.
+
+Against pristine Lust, packaged cold is inconclusive at 1.005 [0.945, 1.063],
+body edit at 0.979 [0.954, 1.006], signature edit at 1.003 [0.975, 1.034], and
+compile plus test at 1.001 [0.973, 1.028]. No-op favors Lustr at 1.153
+[1.123, 1.186]. Check and check-after-body also favor Lustr on this corpus;
+no-op check remains inconclusive. The separate pristine→integrated comparison
+contains four intervals above one and five inconclusive intervals. An
+inconclusive interval does not prove equivalence; classification uses
+unrounded bounds.
+
+Packaged rejection takes 18.016 ms versus pristine Lust's 2.255 ms:
+0.128 [0.121, 0.136]. Against standalone rustc's 17.038 ms it is also slower,
+0.945 [0.930, 0.959]. The entry may invoke full-Rust validation after native
+rejection. Returning the first native error could incorrectly reject valid
+full Rust. This is a complete user-visible negative path with differing
+semantic work, not a claim about equivalent frontend phases.
+
+### Mixed Cargo graph
 
 | Cargo workload | Cargo/rustc median | Mixed Lustr median | Ratio [95% interval] |
 | --- | ---: | ---: | --- |
-| Cold build | 145.655 | 197.386 | 0.743 [0.734, 0.752] |
-| No-op build | 8.664 | 9.557 | 0.914 [0.888, 0.941] |
-| Body edit | 46.737 | 75.151 | 0.622 [0.616, 0.628] |
-| Signature edit | 49.842 | 89.481 | 0.558 [0.554, 0.563] |
-| Check | 39.102 | 43.810 | 0.885 [0.864, 0.906] |
-| No-op check | 8.621 | 9.411 | 0.920 [0.900, 0.942] |
-| Check after body edit | 23.264 | 24.940 | 0.928 [0.920, 0.936] |
-| Rejection | 32.086 | 30.935 | 1.036 [1.028, 1.043] |
-| Compile plus test | 71.230 | 72.311 | 0.981 [0.974, 0.987] |
+| Cold build | 151.860 | 206.257 | 0.773 [0.739, 0.823] |
+| No-op build | 8.869 | 9.666 | 0.910 [0.886, 0.933] |
+| Body edit | 48.793 | 78.386 | 0.624 [0.619, 0.629] |
+| Signature edit | 51.841 | 94.646 | 0.548 [0.545, 0.552] |
+| Check | 40.938 | 46.584 | 0.888 [0.879, 0.898] |
+| No-op check | 8.779 | 9.723 | 0.916 [0.896, 0.937] |
+| Check after body edit | 24.750 | 26.424 | 0.939 [0.933, 0.946] |
+| Rejection | 34.027 | 33.405 | 1.020 [1.014, 1.026] |
+| Compile plus test | 74.531 | 75.719 | 0.978 [0.972, 0.985] |
 
-By the displayed medians, cold builds take approximately 36% longer, body edits
-61% longer and signature edits 80% longer. Eight mixed modes are slower in this
-campaign; the faster rejection result does not offset them. The earlier `afb17a8`
-cold candidate outlier of 1,026.532 ms remains in its original samples.
+By the displayed medians, cold builds take approximately **36% longer**, body
+edits **61% longer** and signature edits **83% longer**. Eight mixed modes are
+slower; the rejection result does not establish an overall speed win. The
+approximately 0.8 ms no-op gap does not account for the 30–43 ms edit gaps.
 
-For the native entry, cold and body editing are inconclusive at
-0.995 [0.948, 1.042] and 1.027 [0.970, 1.090]. No-op is faster on this corpus at
-1.070 [1.038, 1.103]: 3.138 ms for pristine Lust and 2.947 ms for the entry.
-Compile plus test is inconclusive at 0.984 [0.959, 1.008], after the preceding
-`dec0ce2` campaign recorded a slowdown. An inconclusive interval does not prove
-parity; classification uses unrounded bounds.
+[All 36 comparisons and p95s](performance/2026-11-17-5a3f493.md),
+[all 648 timed values](performance/2026-11-17-5a3f493.csv), and the
+[vector chart with exact source data](performance/plots/2026-11-17-5a3f493/README.md)
+are retained. No average across unrelated modes serves as a headline.
 
-Packaged rejection is much slower: 1.759 ms versus 18.025 ms,
-0.099 [0.093, 0.104]. The entry may invoke full-Rust validation and diagnostics
-after native rejection. Returning the first native error could reject valid
-full Rust and is not a valid optimization. This is an end-user negative-path
-cost, not a claim that equivalent frontend phases became ten times slower.
+![All four paired comparisons, including slower modes and conditional intervals](performance/plots/2026-11-17-5a3f493/performance.svg)
 
-[All 27 comparisons and p95s](performance/2026-11-17-40d2ac3.md),
-[all 540 timed values](performance/2026-11-17-40d2ac3.csv), and
-[the vector chart with source data](performance/plots/2026-11-17-40d2ac3/README.md)
-are retained. No average across unrelated modes is used as a headline.
-
-![All fixed-corpus paired ratios, including slower modes and conditional intervals](performance/plots/2026-11-17-40d2ac3/performance.svg)
-
-The six campaigns' mixed cold/body/signature ratios are respectively
+The seven campaigns' mixed cold/body/signature ratios are respectively
 0.726/0.596/0.552, 0.662/0.581/0.558, 0.732/0.601/0.554,
-0.717/0.614/0.553, 0.756/0.612/0.547 and 0.743/0.622/0.558.
-Source revisions differ, and shared-host conditions were uncontrolled. Absolute differences across campaigns do
-not isolate a causal effect from portability, temporary-copy, library-selection,
-profiling or reporting changes.
+0.717/0.614/0.553, 0.756/0.612/0.547, 0.743/0.622/0.558 and
+0.773/0.624/0.548. Different source revisions and uncontrolled shared-host
+conditions prevent a causal cross-run improvement claim. The earlier `afb17a8`
+cold candidate outlier of 1,026.532 ms remains in its original samples; no
+slower observation was excluded to obtain the published results.
 
-## Real project under its normal defaults
+## Actual project under its normal defaults
 
-The [verified coordinator campaign](performance/projects/2026-11-17-40d2ac3/README.md)
-uses the unchanged actual `crates/lustr` package, including its library, three
-executables, integration tests and existing fixture builds. Both lanes retain
-normal dev/test profiles, debug=2, features and panic behavior. This profile
-falls outside current native-object eligibility, so these numbers measure
-compatibility and overhead rather than native acceleration.
+The [latest verified coordinator campaign](performance/projects/2026-11-17-5a3f493/README.md)
+uses the unchanged actual `crates/lustr` package, its library, executables,
+integration tests and existing fixture builds. Both lanes retain normal dev/test
+profiles, debug=2, features and panic behavior. This profile falls outside
+native-object eligibility; these results measure compatibility and overhead.
 
-| Scenario | Matched Rust median (ms) | Lustr median (ms) | Ratio [95% interval] |
+| Project scenario | Matched Rust median (ms) | Lustr median (ms) | Ratio [95% interval] |
 | --- | ---: | ---: | --- |
-| Clean dependency build | 523.001 | 530.715 | 0.9868 [0.9797, 0.9931] |
-| Primed root build | 152.428 | 156.120 | 0.9820 [0.9682, 0.9959] |
-| Primed root check | 58.046 | 61.243 | 0.9564 [0.9432, 0.9696] |
-| No-op build | 10.017 | 11.046 | 0.9125 [0.8759, 0.9506] |
-| Compile plus test | 4961.250 | 5041.113 | 0.9860 [0.9802, 0.9922] |
+| Clean dependency build | 536.577 | 537.211 | 0.9974 [0.9911, 1.0048] |
+| Primed root build | 159.417 | 163.345 | 0.9775 [0.9653, 0.9900] |
+| Primed root check | 61.293 | 63.611 | 0.9533 [0.9415, 0.9667] |
+| No-op build | 10.062 | 11.098 | 0.9319 [0.9109, 0.9560] |
+| Compile plus test | 5099.683 | 5191.029 | 0.9814 [0.9768, 0.9861] |
 
-All five conditional intervals favor matched Rust in this campaign. Build/test
-median overhead is roughly 1.5–2.4%, root checking 5.5%, and no-op 10.3%. These
-percentages describe the displayed medians, not a new pooled estimator.
+Four intervals favor matched Rust; clean build is inconclusive. Median overhead
+is about 2.5% for primed root build, 3.8% for primed check, 10.3% for no-op and
+1.8% for compile plus test. These descriptive percentages are calculated from
+the displayed medians, without a pooled estimator. The
+[preceding project campaign](performance/projects/2026-11-17-40d2ac3/README.md)
+remains retained with its original values; differences do not establish a
+causal optimization effect.
+
 The three primed scenarios change only a source timestamp; they are root
 rebuilds, not body/signature edits. The project has no registry dependencies.
 Cold state clearing leaves OS page caches and dependency sources warm.
+Each scenario contains twelve measured pairs after two excluded warmup pairs.
+Both lanes pass initial/final executing tests and structured E0502 rejection
+gates. The test gate reports 40 passed and nine existing explicitly ignored
+tests. Source/tool guards, command contracts, Cargo fingerprints, owned state
+transitions and observed successful daemon shutdown are required. Shutdown
+receipts observe zero native child exits and do not claim native work.
 
-Each scenario has twelve pairs after two excluded warmup pairs. Both lanes
-pass actual initial/final test execution and structured E0502 rejection gates.
-The gate reports 40 passed and nine existing explicitly ignored tests. Source,
-compiler, flag and Cargo fingerprint checks, owned state transitions and final
-daemon shutdown are required. Observed shutdown receipts have zero daemon child
-exits; they do not claim native work. All 120 measured values, warmups, command
-contracts, gate results, host facts and original digests remain in the public
-projection. Its timings are separate from the fixed-corpus totals.
+Each original campaign contains 120 measured values plus warmups and gates.
+The two campaigns retain **240 timings and ten comparisons**, separately from
+the fixed-corpus totals. Their public projections contain every timing, pair
+order, original stream hash, host snapshot and gate count. They do not expose
+private original command streams or environments.
 
 ## Exact source, retention and replay
 
-All six fixed campaigns use pristine Lust revision
+All seven fixed campaigns use pristine Lust revision
 `240e08d91d4aed0299639f6f11fd522912b248f9`, tree
 `0ab1b09815802894e6078de0af59273cbdf46cb0`. The matching imported Rust SDK is
 rustc 1.102.0-nightly, commit `5b7b37aefcb5b2fba3c2392bc9065b9e4602d494`,
 commit date 2026-11-08, host x86_64-unknown-linux-gnu, LLVM 23.1.5.
-The native gate's Rust 1.99.0 oracle is a different identity.
+The native correctness gate uses a separate Rust 1.99.0 oracle.
 
-| Candidate | Actual measured checkout | Repository tree | Host/profile availability |
+| Candidate / schema | Actual measured checkout | Repository tree | Host / profile availability |
 | --- | --- | --- | --- |
-| `c70eb1c` | `e7e9cf2a224b2590b895298439e5ede814c6229b` | `bf575b9343774b50646a78a5aa22eb52960de840` | Neither recorded |
-| `afb17a8` | `bc5e0f9cd1168b6b064b9cda9a1455f4fc97d143` | `3ccebbefb604e0c45715200bcabc3b32b182d3ef` | Neither recorded |
-| `048d824` | `fe4704ec6951b8c22c003476886602368810f637` | `5aec709fcd0df39004973a33320492ba82eb4fc1` | Neither recorded |
-| `dec0ce2` | `dbacce1d14c8df60427eeca8dc7865156c98dcb4` | `c29f3bda282c0870c163303d865abb9be81bd066` | Host record; completed v1 profile |
-| `74e14e7` | `d0caf843d519763ae3b7bc8a3fdd1c26b12b307d` | `c15cdcb3481f2ee34651a8aa6c901d24df05ff8f` | Neither recorded |
-| `40d2ac3` | `3b4b0bd67401085129d26be1afbd20e96c9b9d02` | `78318c4b01f8eb6f9518ea331efe69f0c457b1ce` | Host record; failed original v2 profile with separate verified diagnostic reconstruction |
+| `c70eb1c` / 1 | `e7e9cf2a224b2590b895298439e5ede814c6229b` | `bf575b9343774b50646a78a5aa22eb52960de840` | Neither recorded |
+| `afb17a8` / 1 | `bc5e0f9cd1168b6b064b9cda9a1455f4fc97d143` | `3ccebbefb604e0c45715200bcabc3b32b182d3ef` | Neither recorded |
+| `048d824` / 1 | `fe4704ec6951b8c22c003476886602368810f637` | `5aec709fcd0df39004973a33320492ba82eb4fc1` | Neither recorded |
+| `dec0ce2` / 1 | `dbacce1d14c8df60427eeca8dc7865156c98dcb4` | `c29f3bda282c0870c163303d865abb9be81bd066` | Host; completed v1 profile |
+| `74e14e7` / 1 | `d0caf843d519763ae3b7bc8a3fdd1c26b12b307d` | `c15cdcb3481f2ee34651a8aa6c901d24df05ff8f` | Neither recorded |
+| `40d2ac3` / 1 | `3b4b0bd67401085129d26be1afbd20e96c9b9d02` | `78318c4b01f8eb6f9518ea331efe69f0c457b1ce` | Host; failed v2 original, separate diagnostic reconstruction |
+| `5a3f493` / 2 | `b3393a4a2907228516546cd34f1a5c60aaf6aaaa` | `2fca60e57829890b10a4a23da57bafab2581b092` | Host; completed original v2 profile |
 
-The latest retained campaign's actual checkout is a GitHub merge commit whose tree equals the
-recorded PR head. Its [incremental source bundle](performance/sources/2026-11-17-40d2ac3/README.md)
-preserves that exact object. [campaigns.json](performance/campaigns.json) records
-every full head, run/artifact ID and original/derived digest. For the latest
-[original artifact](https://github.com/glopyglerky/lustr/actions/runs/44096292176/artifacts/14337905295),
-ZIP SHA256 is `c7587488e892a93b6b3a9192393c5a451412c1fcf36963f08804f2bad1e8dd4d`;
-original raw JSONL SHA256 is `3035b97176d0a152202e583f607fc432a15d99e63e04dcc0a943da6fac1c6ecb`.
+The latest actual checkout is a GitHub merge commit whose tree equals its
+recorded PR head. Its [incremental source bundle](performance/sources/2026-11-17-5a3f493/README.md)
+preserves that exact object and declares both prerequisites. An isolated restore
+reproduced the tree and all 13,443 source-entry names, modes and blob IDs.
+That inventory check does not freshly hash every blob or recover the compiler
+binaries. [campaigns.json](performance/campaigns.json) records every full head,
+run/artifact ID and original/derived digest.
 
-The six original fixed-fixture ZIPs are committed byte for byte, preserving
-**3,240 timed command values, 162 comparisons and 10,608 command-output files**
-beyond Actions expiry. They contain exact commands, exits, stdout/stderr,
-source/build receipts, component hashes, correctness artifacts, cache probes,
-profiles where recorded, and failures. They do not contain every compiler binary.
-CSVs and tables are derived projections; no timing sample has been removed.
-CI replays every archive and verifies the published table bytes.
+The latest [original qualification artifact](https://github.com/glopyglerky/lustr/actions/runs/44111326777/artifacts/14344840716)
+has ZIP SHA-256
+`552a841ad416f4075f91aec29d8f83ac7a2b092cee7e8a5fda4c7cb513b5da4e`;
+its original raw JSONL SHA-256 is
+`665419794f90acb84369c0d78be6a3f41b12fdff03001d602933194fea1759dc`.
 
-The project campaign has a separate publication boundary. Its six allowlisted
-public files and their original ZIP are retained byte for byte. Private source,
-reports and raw output remain in authenticated ciphertext, with the original
-encrypted ZIP and receipt preserved beyond Actions expiry. Actual decryption,
-archive verification and source-bound public reconciliation passed: **600
-original files, 510 raw output streams and all five comparisons**. The
-[recovery record](performance/projects/2026-11-17-40d2ac3/recovery/result.json)
-reports unavailable original binaries and unrecorded exporter runtime identity
-explicitly. A locally rebuilt existing replay executable is identified separately.
-Public CI rechecks hashes, ciphertext binding, all 120 CSV values and statistical
-replay without pretending to decrypt or freshly qualify the private originals.
+Seven byte-identical original fixed-fixture ZIPs preserve **3,888 timed values,
+198 comparisons and 12,768 command-output files** beyond Actions expiry. They
+contain exact commands, exits, stdout/stderr, source/build receipts, component
+hashes, correctness outputs, cache probes, host/profile records where collected,
+and original failures. They do not contain every compiler binary. CSVs and
+tables are derived projections. CI replays each archive and verifies exact
+published table bytes; older artifacts are not overwritten.
+
+Actual-project evidence has a separate publication boundary. Each campaign's
+six public files and original public/encrypted ZIPs are retained byte for byte.
+Authenticated recovery and source-bound reconciliation passed for **600 private
+original files and 510 streams in each campaign**. The newest restored archive
+contains 9,757,639 bytes across those files. The original private plaintext and
+key remain private. Public CI checks file inventories, original ZIP digests,
+ciphertext bindings, all 240 CSV rows and ten statistical comparisons.
+
+[Recovery receipts](performance/projects/2026-11-17-5a3f493/recovery/result.json)
+distinguish the locally rebuilt existing replay from the unavailable original
+CI binaries. The recorded-source exporter reproduces public samples and README
+byte for byte; other projection receipts agree semantically. Original compiler,
+runtime, constructor and runner binaries are not freshly requalified. Exporter
+runtime identity was not recorded by campaign version 1 and remains null.
+Public replay does not perform another decryption or compiler execution.
 
 ## Work and statistical protocol
 
+Compiler components use their manifest release profiles. Fixed-fixture
+applications use dev opt-level 0, debug 0 and normal unwind/checks. The matched
+SDK and identical paired inputs remain part of each recording. The actual
+project keeps its separate normal debug=2 dev/test profile.
 
-Compiler components use their manifest release profiles. Fixture applications
-use dev opt-level 0, debug 0 and normal unwind/checks. The reference and candidate
-use the matched SDK and equivalent fixture inputs. Native retained-state probes
-are separate untimed checks; their accepted `bodies-without-body-work` route
-means zero checked bodies/codegen in the specified counters, not zero total work.
-An earlier pristine trace still performed collection. It is kept distinct from
-an explicit `reuse` route.
+Schema 2 has four native lanes and two Cargo lanes, nine modes and twelve
+measured observations per lane/mode: **648 timed commands and 36 summaries**.
+Its original record contains 1,135 raw records, including 1,080 timed/untimed
+commands and 2,160 output files. The six schema-1 campaigns remain five-lane,
+540-command, 27-summary recordings, each with 938 raw records, 884 commands
+and 1,768 outputs. Untimed priming, correctness, lockfile work and probes remain
+in the archives without becoming timing samples. The different contrasts reuse
+some measured lanes; the displayed comparisons are not independent experiments.
 
-Cold trials use fresh per-pair Cargo target, intermediate, mixed, native and XDG
-runtime cache directories. Native cold disables daemon/disk compiler caches.
-OS page caches are **not** flushed. Warm trials retain each lane's caches and
-original native daemons. A Cargo no-op may not invoke the compiler at all.
+Native retention probes are separate untimed checks. A
+`bodies-without-body-work` route requires zero relevant checked-body/codegen
+counters; it does not mean zero total work. Earlier pristine traces still
+performed collection, distinct from an explicit `reuse` route.
 
-The runner uses randomized cyclic lane order, seed `327849038930`. The six retained schema-1 campaigns each have five lanes, nine modes and twelve
-observations: 540 timed commands, producing 27 paired summaries. The complete artifact has 938 records, including 884 timed
-and untimed commands and 1,768 corresponding output files. Untimed priming,
-correctness execution, lockfile preparation and probes are retained but are not
-silently counted as timing samples. No timed samples were excluded.
+Cold trials use fresh per-pair Cargo target, intermediate, mixed, native and
+XDG runtime cache directories. Native cold disables daemon/disk compiler
+caches. OS page caches are not flushed. Warm trials retain each lane's native
+daemon and caches. Matching standalone rustc remains nonincremental and starts
+a compiler process on every request. A Cargo no-op may not invoke a compiler.
+These are declared tool behaviors, not equivalent cache implementations.
 
-The measurement is command wall time through observed child exit with 100 µs
-polling. Tracing and compiler statistics are disabled for measured commands.
-Runtime assertions after ordinary builds are outside compile-only timing;
-`compile-plus-test` executes the defined tests. It is not an isolated benchmark
-of generated application execution speed.
+The recorder uses randomized cyclic lane order, seed `327849038930`. Schema 2
+accepts pair counts that are multiples of four from twelve through ninety-six,
+so complete cyclic blocks cover all four native lanes. It measures command
+wall time through observed child exit, with 100-microsecond polling. Tracing
+and compiler statistics are disabled for measured commands. Runtime assertions
+after ordinary builds are outside compile-only timing; compile-plus-test
+includes actual execution. It is not an isolated runtime-throughput benchmark.
 
 For matched times `(a_i, b_i)`, the estimate is
-`exp(mean(log(a_i) - log(b_i)))`. The implementation uses 10,000 paired bootstrap
-resamples, SplitMix64 with rejection-index sampling, percentile intervals and an
-exact sign-flip calculation for these twelve-pair series. The independent replay
-checks the existing Rust implementation's results, not a different estimator.
-The p95 is nearest rank. With twelve samples it equals the sample maximum; this
-is a descriptive number, not a well-established tail-latency guarantee.
+`exp(mean(log(a_i) - log(b_i)))`. The existing statistics implementation uses
+10,000 paired bootstrap resamples, SplitMix64 with rejection-index sampling,
+and percentile intervals. Sign-flip calculation is exact for the recorded
+twelve-pair campaigns and through sixteen pairs; it is unavailable above
+sixteen. The replay checks this existing implementation, not a replacement
+estimator. The p95 is nearest rank; with twelve samples it equals the sample
+maximum and is descriptive rather than a strong tail guarantee.
 
-Intervals are exploratory, conditional on this workload and sampling setup.
-Bootstrap independence and sign-flip exchangeability can be compromised by
-shared-host/cache effects. There is no multiple-comparison correction and no
-predeclared equivalence margin. An interval containing 1 is **inconclusive**, not
-proof of parity. An interval excluding 1 on this corpus is not universal speed
-preservation or release admission. Both paired and absolute data must remain
-visible when evaluating a proposed fix.
+Intervals are exploratory and conditional on the workload and sampling setup.
+Shared-host/cache effects can compromise bootstrap independence and sign-flip
+exchangeability. There is no multiple-comparison correction or predeclared
+equivalence margin. An interval containing one is inconclusive. An interval
+excluding one does not establish universal performance or release admission.
+Absolute observations, paired results and every slower sample remain visible.
 
-## Reproduce the report without running a compiler
+## Reproduce the evidence
 
-Python 3.10 or newer, standard library only:
+Fixed-fixture reporting uses Python 3.10 or newer and the standard library:
 
 ```sh
 python3 tools/test-mixed-performance-report.py
+python3 tools/check-mixed-performance-tables.py
 python3 tools/check-mixed-performance-archives.py
 python3 tools/report-mixed-performance.py \
-  performance/archives/2026-11-17-40d2ac3-qualification.zip \
+  performance/archives/2026-11-17-5a3f493-qualification.zip \
   --output /absolute/new-report-directory
 ```
 
-The output directory must not already exist. The command verifies the entire
-input before creating its report and never executes recorded command arguments.
-It writes `README.md`, `timings.csv` and a fuller derived `samples.json` containing
-identities, samples and original verified summaries. Compare generated Markdown
-and CSV bytes with the committed campaign files. ZIP input records its archive
-hash; extracted-directory input cannot claim a ZIP digest.
+The output directory must not exist. Validation finishes before publication;
+no recorded command arguments are executed. Outputs are `README.md`,
+`timings.csv` and a fuller derived `samples.json` with identities and original
+summaries. ZIP input binds its archive digest; an extracted directory cannot
+claim a ZIP hash. All seven original CSV/Markdown reports replay byte for byte.
 
-Verification covers final completed status, original raw digest, matching report
-records, output sizes/digests, source stability and paired inputs, exact mode/lane
-coverage, unique sample IDs, expected exits, no timeout/signal, order balance,
-retained-route records and replay of all 27 summaries. Unknown measurement
-phases, altered evidence and missing comparisons fail closed. The initial raw
-identity record is intentionally marked failed until the campaign completes;
-that initial state is not the final result.
+Verification covers completed status, raw digest, matching records, all output
+sizes/hashes, source stability, identical paired inputs, exact schema-aware
+coverage, unique sample IDs, expected exits, no timeout/signal, balanced order,
+retention probes and statistical replay. Schema 2 additionally binds every
+native compiler receipt to its declared executable. Its exact
+source/operation/flag validation covers timed native commands and the new
+reference gates, including the two-child rustc test receipts; that contract
+does not extend to schema-1 records, Cargo argv or older untimed probe argv.
+Under schema 2, altered flags, substituted executables, missing comparisons
+and compiled-but-unexecuted tests fail verification.
 
-The reporting implementation retains its 28 original regression tests, adds
-strict schema-2 coverage, and replays the six original artifacts: 162 summaries, 3,240 timed
-command values and 10,608 command-output files. These are reporting/evidence checks,
-**not new compiler tests**. They do not rerun the actual programs or independently
-establish all semantic properties represented by the original correctness jobs.
+All 42 reporting regressions passed. Archive/table replay covers 198 summaries,
+3,888 timing values and 12,768 output files. These checks validate evidence;
+they do not rerun the measured compilers. Original correctness gates supply
+their separate executed evidence.
 
-To rerun actual compilation, use the exact source and the
-[existing source-build workflow](.github/workflows/compiler-set.yml) and
+For public project replay, with the matching SDK installed:
+
+```bash
+cargo +nightly-2026-11-09 build --manifest-path crates/lustr-bench/Cargo.toml \
+  --release --locked --example replay --target-dir target/project-replay
+python3 tools/check-coordinator-performance-archives.py \
+  --replay target/project-replay/release/examples/replay
+```
+
+Private recovery additionally requires the authorized recipient key, authenticated
+decryption, archive verification before extraction, exact ordinary-file modes
+and the recorded Git source. The [recovery procedure](docs/compiler-set/coordinator-performance.md)
+and per-campaign receipts distinguish that operation from public replay.
+
+To execute another actual campaign, use the exact source and
+[source-built workflow](.github/workflows/compiler-set.yml) or
 [build-and-qualify instructions](docs/compiler-set/mixed-compiler.md#build-and-qualify).
-Build pinned pristine Lust and the candidate under matched profiles and TinyCC,
-run every correctness prerequisite, then the existing `lustr-mixed-bench` runner.
-Do not use an unmatched previous binary package, rerun only winning modes, or
-replace original commands with dry runs. Profiling must be a separate run so
-instrumentation does not contaminate the paired timing campaign.
+Build matching pristine, integrated and packaged components with the pinned
+SDK/TinyCC, run every correctness prerequisite, then the existing recorder.
+Keep all modes and original outcomes; a historical or unmatched package is
+not a newly qualified candidate. Profiling runs separately from paired timing.
+New completed artifacts receive new files and manifest entries.
 
 ## Host and measurement limits
 
-The `40d2ac3` fixed campaign records Intel Xeon 6975P-C, four logical CPUs with
-observed affinity 0–3, 16,464,297,984 bytes of physical memory, Linux
-7.0.0-1014-aws and Ubuntu image 20261111.127.1. Frequency governors and visible
-cgroup CPU/memory limits were unavailable. The project campaign has a separate
-before-campaign host snapshot from the same job. Earlier per-campaign
-availability is listed above; do not infer missing historical facts from another
-runner or upstream Lust's machine.
+The latest fixed campaign records Intel Xeon 6975P-C, four visible logical CPUs
+and observed affinity 0–3, 16,464,297,984 bytes of physical memory, Linux
+7.0.0-1014-aws and Ubuntu image 20261111.127.1. CPU quota, memory limit and
+frequency governors are unreported. The project has its own before-campaign
+snapshot from the same job. Only `dec0ce2`, `40d2ac3` and `5a3f493` have fixed
+host snapshots; missing facts in the other four campaigns remain unknown.
+Matching model/image descriptions do not establish controlled physical-host
+or load equivalence between jobs.
 
-`tools/capture-benchmark-host.py` records selected CPU, affinity, memory, cgroup,
-OS/kernel and runner-image facts with explicit unknowns. The fixed runner binds
-its exact host bytes and parsed content into the initial/final identities.
-These are observations, not resource controls: affinity is not pinned, physical
-memory is not a process budget, and host load/frequency can change. No CPU time,
-RSS, aggregate memory, daemon growth or energy is measured. Twelve samples are
-insufficient for strong tail guarantees.
+The host collector binds its exact bytes and parsed facts to campaign identities.
+These are observations: affinity is not pinned, physical memory is not a process
+budget, and load/frequency can change. CPU time, RSS, aggregate process memory,
+daemon growth, energy and isolated application runtime are unmeasured. Twelve
+observations do not support broad tail-latency claims. Upstream Lust's reported
+hardware and corpus facts are not substituted for Lustr's missing measurements.
 
 ## Phase attribution and the trace correction
 
-Profiling runs separately under `LUSTR_MIXED_PROFILE_DIR`. Paired commands clear
-their environments and do not inherit that variable. Nested spans overlap;
-summing them does not produce command wall time. A profiling failure remains a
-failed step while independent qualified timing campaigns can retain valid results.
+The [new original v2 qualification](performance/2026-11-17-5a3f493-profile.md)
+passed with 26 compiler profiles, 15 qualification commands and 35 successful
+native responses containing measured emitter detail. Its 132 original input
+files remain in the qualification ZIP. The original summary and Markdown
+reproduce byte for byte, without reconstructing a trace or weakening validation.
 
-The [completed v1 report at dec0ce2](performance/2026-11-17-dec0ce2-profile.md)
-records 31.939 ms in the complete native request and 15.420 ms in the original
-linker for one body edit. The [v2 diagnosis at 40d2ac3](performance/2026-11-17-40d2ac3-profile.md)
-uses individual original profiles and a separately verified reconstruction of
-one malformed trace boundary. It does not turn the failed original profiling
-run into a success or supply another paired performance sample.
+Profiling is separate under `LUSTR_MIXED_PROFILE_DIR`; paired commands clear
+their environments and do not inherit it. Spans can nest and compiler processes
+can overlap. Summing spans does not produce command wall time. The following
+values are instrumented observations, not additional paired speed samples.
 
-| Instrumented duration (ms) | Body edit: one request | Signature invalidation: five requests summed |
+| Instrumented duration (ms) | Body: one request | Signature: five requests summed |
 | --- | ---: | ---: |
-| Complete native request | 33.421821 | 166.793622 |
-| Client request setup | 0.086228 | 0.367055 |
-| Protocol exchange | 33.328673 | 166.385546 |
-| Remote emitter | 31.647793 | 154.239738 |
-| libtcc | 0.216794 | 1.453701 |
-| Symbol-inspection child call (`nm`) | 31.028722 | 150.747534 |
-| Native-object file synchronization | 0.325109 | 1.680901 |
-| Directory synchronization | 0.006944 | 0.023887 |
-| Exchange outside emitter, unattributed | 1.680880 | 12.145808 |
+| Complete native request | 37.680779 | 176.700542 |
+| Client request setup | 0.119698 | 0.377320 |
+| Protocol exchange | 37.551081 | 176.282993 |
+| Remote emitter | 35.257744 | 162.980178 |
+| libtcc | 0.197719 | 2.016269 |
+| Symbol-inspection process call (`nm`) | 34.545005 | 158.645402 |
+| Native-object file synchronization | 0.409056 | 1.888154 |
+| Directory synchronization | 0.009334 | 0.038698 |
+| Exchange outside emitter, unattributed | 2.293337 | 13.302815 |
 
-Remote durations retain their own clock domain. The residual includes transport,
-queueing, native frontend work before emission, retained-state work afterward,
-guards and response production; it is not a measured frontend phase. Signature
-values aggregate multiple requests and compiler invocations and must not be
-compared directly with command wall time.
+Remote emitter durations retain their own clock domain. The outside-emitter
+residual includes transport, queueing, native frontend work before emission,
+retained-state work afterward, guards and response production; it is not a
+measured frontend phase. Signature values sum five requests and must not be
+compared directly with the command's wall duration.
 
-Across the 35 successful recorded native responses, the `nm` child-call span
-ranges from 27.061 to 31.982 ms, median 29.830 ms. It includes program lookup,
-launch, execution, output capture and wait. This identifies a dominant observed
-span, not the reason it is slow. The artifact lacks the actual `nm` binary
-identity, emitted object bytes and child CPU/spawn breakdown. Same-runner
-identity and launch/wait evidence are the next diagnostic step; deleting the
-undefined-symbol safety check would be an invalid shortcut.
+Across all 35 successful responses, the complete `nm` process-call span ranges
+from 30.808 to 34.545 ms, median 31.857 ms. It includes lookup, launch, execution,
+output capture and waiting. The actual child binary identity, emitted object
+bytes and child CPU/spawn breakdown are absent. This is a dominant observed
+span whose cause remains unresolved. The next diagnostic is same-runner tool
+and object identity plus spawn/wait attribution. Undefined-symbol validation
+and durable object/certificate synchronization remain required.
 
-The writer correction constructs a complete record and holds the append-file
-lock through all writes. Three production-helper tests pass, including eight
-concurrent processes; the same test fails the predecessor. All 23 strict
-profiler tests pass without weakening coverage validation. Original error
-responses remain byte-identical so the daemon's fresh/warm guard keeps its
-meaning. Fresh source-built execution is required for the corrected writer.
+The [completed v1 profile](performance/2026-11-17-dec0ce2-profile.md) and the
+[later failed v2 original with separate reconstruction](performance/2026-11-17-40d2ac3-profile.md)
+keep their original status. The writer correction constructs a complete record
+and holds the append-file lock through all writes. Its concurrent-process test
+fails the predecessor and passes the correction; the new hosted profile now
+validates that correction in the source-built toolchain. All 23 strict profiler
+tests pass. Failed native responses keep their original diagnostic bytes so
+the daemon's fresh/warm comparison preserves its meaning.
 
-Temporary linker copies no longer force disk synchronization; durable retained
-objects and certificates still do. The [24-pair copy-policy experiment](performance/components/2026-11-17-40d2ac3-link-input/review.md)
-is a separate component result. It does not measure a complete link or prove
-an additional compiler gain from the merge; the earlier candidate already
-omitted synchronization on disposable copies.
+The [24-pair temporary-copy experiment](performance/components/2026-11-17-40d2ac3-link-input/review.md)
+is a component result, outside compiler timing totals. Disposable copies omit
+synchronization, while durable retained objects and certificates keep it.
+The experiment neither measures a complete link nor establishes an additional
+merge gain; the preceding candidate already omitted disposable-copy synchronization.
 
 ## Remaining performance work
 
-The [upstream audit](docs/compiler-set/upstream-benchmark-audit.md) maps Lust's
-README, larger edit studies, generated-program runtime and resource observations
-against the evidence here. Repeating the small fixed graph cannot substitute
-for broader native/mixed workloads. Large supported projects, additional edit
-families, accepted/rejected recovery timing, daemon startup/cached restart,
-release compilation, isolated application runtime and CPU/memory campaigns
-remain distinct work. The unchanged coordinator extends real-project coverage
-under its default profile but does not establish large native acceleration.
+The [upstream audit](docs/compiler-set/upstream-benchmark-audit.md) identifies
+larger native workspaces, wider edit families, accepted/rejected recovery timing,
+daemon startup/cached restart, release compilation, isolated application runtime
+and CPU/memory studies. The direct same-source native/rustc comparison is now
+measured. The unchanged coordinator adds real-project compatibility and overhead
+coverage; its default profile does not establish large native acceleration.
 
-The direct native-entry/matched-rustc comparison must use the same supported
-source and semantic flags with an explicit standalone compiler-cache contract.
-The [schema-2 reference implementation](docs/compiler-set/native-rustc-comparison.md)
-adds that standalone lane, complete reference gates and exact executable/child
-bindings, retaining the three existing comparisons. At twelve pairs it requires
-648 commands and 36 summaries. Its first full hosted result is still pending.
-Schema-1 native data contain only pristine, integrated and entry lanes; mixed
-Cargo timings cannot be reinterpreted as that missing baseline. New reference
-lanes require fresh measurements and separately versioned evidence.
+The priority remains the measured mixed cold/body/signature overhead, together
+with the full native sanitizer runtime failure and native macOS execution.
+An optimization must preserve checked Rust objects, retained native state,
+real metadata, invalidation, diagnostics, panic behavior and complete work.
+Retain its predecessor, exact sources, correctness results and all slower
+observations, then rerun the complete paired campaign. Cross-run changes alone
+do not isolate the optimization's effect.
 
-A performance change must preserve checked Rust objects, retained native state,
-real metadata, invalidation, diagnostics, panic semantics and complete work.
-Keep its failed predecessor, exact sources, correctness gates, controlled paired
-comparison and all slower observations. The roughly 0.9 ms mixed no-op gap does
-not explain the 28–40 ms edit gaps. The product rejection route also needs
-measurement without narrowing full-Rust acceptance or suppressing diagnostics.
-
-Native macOS execution, broader mixed coverage, representative speed evidence
-and release admission remain open. [Older work](docs/compiler-set/retained-work-disposition.md)
-and the unresolved Darwin loader/lifetime investigation retain their original
-scope. Neither a source-identity check, a replayed table nor green measurement
-execution closes those requirements.
+Broader mixed coverage, representative workload speed and release admission
+remain open. [Older work and the Darwin loader/lifetime investigation](docs/compiler-set/retained-work-disposition.md)
+retain their own scope. Source identity, successful replay and a green
+measurement step cannot substitute for those requirements.

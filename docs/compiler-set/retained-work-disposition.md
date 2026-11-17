@@ -47,12 +47,27 @@ for the current candidate. Its
 [matched package artifact](https://github.com/glopyglerky/lustr/actions/runs/43363880870/artifacts/14010850498)
 and failure logs belong to that exact old source.
 
-Current native code still uses the inherited `.so` base path. The new ARM64
+Current native code still uses the inherited `.so` base path. Earlier ARM64
 hosted jobs were cancelled before execution because GitHub could not acquire
-capacity. Once a native macOS runner is available, reproduce the current warm
+capacity. The `5a3f493` Compiler set macOS job was also cancelled before any
+step executed. Its eight successful non-macOS jobs supply no new Darwin
+execution. Once a native macOS runner is available, reproduce the current warm
 loader/lifetime behavior, carry forward a bounded correction if required,
 and rerun the complete native gate. Cross-target layout tests, Linux success,
 C buffer models and mixed Linux campaigns cannot qualify Darwin loader work.
+
+## Native Linux failure remains open
+
+The [40d2ac3 original native gate](measurements/2026-11-17-native-linux-40d2ac3/README.md)
+passed 5,527 ordinary cases, then reported 5,526 sanitized passes and one failure:
+the generated `unicode_props_hash` program exceeded its ten-second execution
+deadline after successful GCC linking. The original log and unreached later
+suites remain retained. The [bounded local investigation](measurements/2026-11-17-unicode-sanitizer-diagnosis/README.md)
+encountered a LeakSanitizer fatal error with separately identified debug
+binaries, not the hosted timeout. It changed no fixture, deadline or sanitizer
+setting and supplies no passing result. The fresh [`5a3f493` full native gate](measurements/2026-11-17-native-linux-5a3f493/README.md)
+also failed at the same sanitized case after 5,527 ordinary and 5,526 sanitized
+passes. Its original artifact remains retained separately.
 
 ## Historical performance remains separate
 
@@ -60,6 +75,16 @@ PR4's [native cache records](https://github.com/glopyglerky/lustr/tree/a5531b729
 and PR6's [matched release comparisons](https://github.com/glopyglerky/lustr/pull/6)
 retain their own identities, estimators, regressions and incomplete coverage.
 They must not be pooled with the current
-[six paired campaigns](../../performance/README.md) or presented as current
-source speed. Current measurements and phase attribution determine the next
-performance investigation.
+[seven fixed paired campaigns](../../performance/README.md) or presented as
+current source speed. The first schema-2 campaign at `5a3f493` now measures
+matched standalone rustc, preserving cold/rejection losses alongside warm
+supported-path gains. Two separate unchanged-coordinator campaigns retain
+240 timings and ten comparisons under normal dev/test defaults; they do not
+establish larger native acceleration.
+
+The [fresh original v2 profile](../../performance/2026-11-17-5a3f493-profile.md)
+passed validation and replays 26 profiles, 15 qualification commands and 35
+successful native responses. The older `40d2ac3` failed profile and its separate
+diagnostic reconstruction remain historical evidence. Current measurements and
+phase attribution determine the next performance investigation without turning
+instrumented observations or differences between campaigns into causal gains.

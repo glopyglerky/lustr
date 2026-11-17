@@ -6,62 +6,106 @@ pinned Rust implementation. blueFe delivers the combined toolchain.
 
 ## Numbers and current qualification
 
-**Not yet release-ready.** The qualified source-built paths execute correctly,
-but mixed Cargo compilation remains materially slower. Native macOS execution
-is still blocked by hosted runner availability; earlier executed failures and
-their corrections remain recorded. Measurement completion is not speed parity.
+**Not yet release-ready.** The latest source-built correctness, profiling and
+measurement campaign passed, but mixed Cargo compilation remains materially
+slower. The supported native path is faster than standalone rustc for warm
+work on this small corpus; cold native compilation and rejection are slower.
+Native macOS and the complete native Linux gate remain separate qualification
+requirements.
 
-[PERFORMANCE.md](PERFORMANCE.md) records the workload, compiler/source pins,
+[PERFORMANCE.md](PERFORMANCE.md) records all workloads, source/compiler pins,
 profiles, caches, uncertainty, failures and reproduction commands. The
-[performance index](performance/README.md) retains six fixed campaigns:
-**3,240 timed command values, 162 comparisons and 10,608 original output files**.
-All original ZIPs, lossless timing CSVs and exact table replays are committed.
-The separate actual-project campaign adds five comparisons and 120 timed values,
-with verified recovery of its encrypted original reports.
+[performance index](performance/README.md) retains **seven fixed campaigns:
+3,888 timed command values, 198 comparisons and 12,768 original output files**.
+Two separate actual-project campaigns retain another 240 timings and ten
+comparisons, with successful authenticated recovery of both sets of originals.
 
-Latest retained fixed campaign: Linux x86-64, PR11 head `40d2ac3`, twelve matched pairs per
-mode. Times below are medians in milliseconds. Ratios are the paired geometric
-mean of reference/candidate time; below one means slower. They are not ratios
-of the displayed medians.
+Latest retained measurements: Linux x86-64, PR12 candidate `5a3f493`, actual
+checkout `b3393a4`, twelve matched pairs per mode. Times are median milliseconds.
+Ratios are paired geometric means of reference/candidate time; below one means
+Lustr took longer. Ratios are not calculated from the displayed medians.
 
-| Workload and reference | Reference | Lustr | Ratio [95% interval] |
+### Native Lustr, pristine Lust and matching rustc
+
+| Native workload | Pristine Lust median | Standalone rustc median | Lustr median | rustc / Lustr ratio [95% interval] |
+| --- | ---: | ---: | ---: | --- |
+| Cold build | 41.808 | 38.147 | 40.285 | 0.914 [0.876, 0.950] |
+| No-op build | 3.542 | 37.982 | 3.106 | 12.208 [12.037, 12.383] |
+| Body edit | 5.494 | 38.224 | 5.590 | 6.894 [6.797, 7.004] |
+| Signature edit | 4.841 | 38.424 | 4.856 | 7.935 [7.759, 8.131] |
+| Check | 2.217 | 11.619 | 2.069 | 5.621 [5.446, 5.812] |
+| No-op check | 1.761 | 11.356 | 1.778 | 6.426 [6.267, 6.605] |
+| Check after body edit | 2.051 | 11.285 | 1.882 | 5.970 [5.797, 6.179] |
+| Rejection | 2.255 | 17.038 | 18.016 | 0.945 [0.930, 0.959] |
+| Compile plus test | 30.535 | 53.267 | 30.960 | 1.740 [1.705, 1.776] |
+
+The standalone Rust reference uses the identical source, opt-level 0, debug 0,
+unwinding, overflow checks and debug assertions. It is **nonincremental**:
+a no-op launches rustc again. Cargo's cached no-op appears in the separate
+Cargo comparison below. Compile plus test includes compiling and actually
+executing the test. The [reference contract](docs/compiler-set/native-rustc-comparison.md)
+records exact commands, child receipts and cache behavior.
+
+Against pristine Lust, native cold, body/signature edits and compile-plus-test
+remain inconclusive. Native no-op favors Lustr at 1.153 [1.123, 1.186]. Packaged
+rejection is slower at 0.128 [0.121, 0.136]; the entry may perform full-Rust
+validation after native rejection. The full language and diagnostic contract
+remains part of that measured cost.
+
+### Mixed Cargo compilation
+
+| Cargo workload | Cargo/rustc median | Mixed Lustr median | Ratio [95% interval] |
 | --- | ---: | ---: | --- |
-| Mixed Cargo cold build vs matched Cargo/rustc | 145.655 | 197.386 | 0.743 [0.734, 0.752] |
-| Mixed Cargo body edit vs matched Cargo/rustc | 46.737 | 75.151 | 0.622 [0.616, 0.628] |
-| Mixed Cargo signature edit vs matched Cargo/rustc | 49.842 | 89.481 | 0.558 [0.554, 0.563] |
-| Native packaged cold build vs pristine Lust | 40.036 | 40.598 | 0.995 [0.948, 1.042] |
-| Native packaged no-op vs pristine Lust | 3.138 | 2.947 | 1.070 [1.038, 1.103] |
-| Native packaged body edit vs pristine Lust | 5.177 | 4.997 | 1.027 [0.970, 1.090] |
-| Packaged rejection vs pristine Lust rejection | 1.759 | 18.025 | 0.099 [0.093, 0.104] |
+| Cold build | 151.860 | 206.257 | 0.773 [0.739, 0.823] |
+| No-op build | 8.869 | 9.666 | 0.910 [0.886, 0.933] |
+| Body edit | 48.793 | 78.386 | 0.624 [0.619, 0.629] |
+| Signature edit | 51.841 | 94.646 | 0.548 [0.545, 0.552] |
+| Check | 40.938 | 46.584 | 0.888 [0.879, 0.898] |
+| No-op check | 8.779 | 9.723 | 0.916 [0.896, 0.937] |
+| Check after body edit | 24.750 | 26.424 | 0.939 [0.933, 0.946] |
+| Rejection | 34.027 | 33.405 | 1.020 [1.014, 1.026] |
+| Compile plus test | 74.531 | 75.719 | 0.978 [0.972, 0.985] |
 
-The full [27-comparison table](performance/2026-11-17-40d2ac3.md) and
-[vector chart](performance/plots/2026-11-17-40d2ac3/README.md) retain every mode,
-including regressions, p95s and uncertainty. The native cold/body intervals are
-inconclusive, not proof of parity. Rejection performs different semantic work;
-full-Rust acceptance and diagnostics must not be removed to improve its timing.
-The current native corpus has no matched-rustc lane in these historical records;
-that direct comparison is being qualified separately from the Cargo graph.
+By the displayed medians, cold builds take approximately **36% longer**, body
+edits **61% longer** and signature edits **83% longer**. Eight mixed modes are
+slower in this campaign. Every mode, p95 and conditional interval appears in
+the [36-comparison table](performance/2026-11-17-5a3f493.md),
+[648-value CSV](performance/2026-11-17-5a3f493.csv) and
+[four-panel vector chart](performance/plots/2026-11-17-5a3f493/README.md).
 
-The [unchanged coordinator project](performance/projects/2026-11-17-40d2ac3/README.md)
-passes actual test/rejection gates under its normal dev/test defaults. At debug=2,
-outside current native-object eligibility, median build/test overhead is about
-1.5–2.4%, root-check overhead 5.5%, and no-op overhead 10.3%. All five conditional
-intervals favor matched Rust. This is real-project compatibility/overhead evidence,
-not native acceleration. Its 600 original files and 510 output streams were
-recovered and reconciled with the public report; original binaries remain absent.
+### Actual project and completed verification
 
-The [finer phase investigation](performance/2026-11-17-40d2ac3-profile.md)
-records 31.029 ms in the symbol-inspection child call within a 33.422 ms native
-request for one body edit. The original profiling validation failed on concurrent
-trace framing. Its records and separate reconstruction are retained, and the
-writer correction passes a regression that fails its predecessor. Fresh full
-CI must qualify that fix. This attribution identifies the next investigation;
-it does not prove why the child call is slow or establish an optimization effect.
+The [unchanged coordinator project](performance/projects/2026-11-17-5a3f493/README.md)
+passed executing tests and rejection gates under normal dev/test defaults.
+At debug=2, outside native-object eligibility, median overhead was 2.5% for a
+primed root build, 3.8% for a primed check, 10.3% for no-op and 1.8% for compile
+plus test. Four intervals favor matching Rust; clean build is inconclusive.
+The newest campaign's 600 original files and 510 output streams were recovered
+and reconciled with its public report. The earlier campaign is also retained.
 
-The [upstream audit](docs/compiler-set/upstream-benchmark-audit.md) compares these
-records with Lust's actual README/repo studies. Larger native projects, broader
-edit families, runtime and resource measurements remain separate work. No
-upstream headline speedup is presented as a measured Lustr speedup.
+The [fresh v2 profile](performance/2026-11-17-5a3f493-profile.md) passed original
+validation: 26 compiler profiles, 15 qualification commands and 35 bound native
+responses. One instrumented body request took 37.681 ms, including 34.545 ms
+in the complete symbol-inspection process call. This identifies a dominant
+observed span; the child binary and launch/wait breakdown were not recorded,
+so its cause remains unresolved. The earlier concurrent trace-framing failure,
+its separate reconstruction and the correction stay in the evidence history.
+
+[Source-built CI](https://github.com/glopyglerky/lustr/actions/runs/44111326777/job/134137398335)
+passed all correctness prerequisites, profiling and both measurement campaigns.
+Eight non-macOS jobs passed; macOS compatibility was cancelled before execution.
+The separate [combined native Linux gate at `40d2ac3`](docs/compiler-set/measurements/2026-11-17-native-linux-40d2ac3/README.md)
+passed 5,527 ordinary differential cases, then recorded 5,526 sanitized passes
+and a ten-second generated-program execution timeout. Fuzz and benchmark smoke
+were not reached. The [fresh `5a3f493` full native gate](docs/compiler-set/measurements/2026-11-17-native-linux-5a3f493/README.md)
+also failed at the same sanitized case after 5,527 ordinary and 5,526 sanitized
+passes. Both original failures remain recorded; their cause is not established.
+
+The [upstream audit](docs/compiler-set/upstream-benchmark-audit.md) compares this
+coverage with Lust's README and repository studies. Larger native projects,
+broader edit families, isolated application runtime, CPU/memory measurements
+and performance acceptance remain open. Upstream headline ratios remain
+attributed to their own compiler, corpus and methods.
 
 ## Compiler integration
 

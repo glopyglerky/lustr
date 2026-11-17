@@ -111,6 +111,39 @@
       "table": "performance/2026-11-17-40d2ac3.md",
       "csv_sha256": "7ef99c3215f03ddfe8ab62777f290dcb2fa16ebea2ab91b2d1b0b114ebf9db3d",
       "table_sha256": "346a10d95cbad34638c0057ab95708091304ef13a2702fc074dd6a1ade3240b7"
+    },
+    {
+      "head": "5a3f4937d94e8f028dd85385ea65d51fcfe35a3b",
+      "run": 44111326777,
+      "job": 134137398335,
+      "artifact": 14344840716,
+      "artifact_name": "source-built-mixed-qualification-1",
+      "campaign_schema": 2,
+      "archive": "performance/archives/2026-11-17-5a3f493-qualification.zip",
+      "checkout": "b3393a4a2907228516546cd34f1a5c60aaf6aaaa",
+      "tree": "2fca60e57829890b10a4a23da57bafab2581b092",
+      "archive_sha256": "552a841ad416f4075f91aec29d8f83ac7a2b092cee7e8a5fda4c7cb513b5da4e",
+      "archive_bytes": 1346935,
+      "raw_sha256": "665419794f90acb84369c0d78be6a3f41b12fdff03001d602933194fea1759dc",
+      "pairs": 12,
+      "seed": 327849038930,
+      "bootstrap_resamples": 10000,
+      "csv": "performance/2026-11-17-5a3f493.csv",
+      "csv_sha256": "d6c131175cae4e8bbf2804432830edb45c90c8039926717a9994cf1f9dcd7795",
+      "table": "performance/2026-11-17-5a3f493.md",
+      "table_sha256": "8f8282107c5857145245323e9f6e88a82be9d86b2953ca437266e5b3a81d8002",
+      "verified": {
+        "records": 1135,
+        "command_outputs": 2160,
+        "timed_commands": 648,
+        "comparisons": 36,
+        "recorded_commands": 1080,
+        "untimed_commands": 432
+      },
+      "host_record_sha256": "8d6322e08883c3f47e5e5d99af63611861a903bb6c46757f707dd0f50365f126",
+      "plot": "performance/plots/2026-11-17-5a3f493/performance.svg",
+      "profile": "performance/2026-11-17-5a3f493-profile.md",
+      "profile_verification": "performance/profiles/2026-11-17-5a3f493/verification.json"
     }
   ]
 }

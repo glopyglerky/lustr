@@ -8,6 +8,44 @@ with the generated report. Instrumented durations do not establish a speedup.
 
 ## Executed status on 17 November 2026
 
+The [original v2 profile at 5a3f493](../../performance/2026-11-17-5a3f493-profile.md)
+passed its complete qualification and strict profile validation. Actual checkout
+`b3393a4a2907228516546cd34f1a5c60aaf6aaaa` produced **26 compiler profiles across
+15 qualification commands and 35 successful native responses**. The original
+run records `completed: true` and qualifier exit zero. Its summary and Markdown
+replay byte for byte with the recorded profiler, without reconstruction. The
+[verification receipt](../../performance/profiles/2026-11-17-5a3f493/verification.json)
+binds all 132 original files from the profiling directory to the retained
+qualification ZIP. Recorded
+package binary identities agree with the paired run; absent binaries were not
+freshly hashed during recovery.
+
+The body and signature observations below sum named phases across their actual
+requests. The signature column sums five requests; it is not a per-request
+median. Units are milliseconds, and nested spans must not be added together.
+
+| Phase | Body, 1 request | Signature, 5 requests |
+| --- | ---: | ---: |
+| Complete native request | 37.681 | 176.701 |
+| Client setup | 0.120 | 0.377 |
+| Daemon roundtrip | 37.551 | 176.283 |
+| Remote emitter | 35.258 | 162.980 |
+| libtcc | 0.198 | 2.016 |
+| `nm` | 34.545 | 158.645 |
+| Emitter object synchronization | 0.409 | 1.888 |
+| Emitter directory synchronization | 0.009 | 0.039 |
+| Roundtrip outside emitter, unattributed | 2.293 | 13.303 |
+
+Across all 35 measured responses, the `nm` span ranges from 30.808 to 34.545 ms,
+with a median of 31.857 ms. This identifies the measured complete process call,
+not its underlying cause: the archive lacks the resolved child binary identity,
+object bytes and child CPU/startup breakdown. These instrumented observations
+are separate from the paired performance campaign and establish no optimization
+effect. The complete report retains every qualification command; its JSON
+preserves every recorded phase.
+
+### Earlier profiles remain unchanged
+
 The [v1 profile at dec0ce2](../../performance/2026-11-17-dec0ce2-profile.md)
 completed. The [v2 attempt at 40d2ac3](../../performance/2026-11-17-40d2ac3-profile.md)
 completed its actual mixed qualifier but failed the independent request-coverage
@@ -21,10 +59,10 @@ passed original profiling campaign.
 The shared writer now frames the complete record and holds an append-file lock
 through `write_all`, including short-write retries. Three actual helper tests
 pass; the concurrent-process regression fails the original helper. All 23 strict
-profile tests pass without relaxing the validator. Fresh source-built execution
-must qualify the corrected writer. Recorded symbol-inspection spans identify an
-expensive child call but do not establish its cause; the original artifact lacks
-the child executable identity and spawn/CPU breakdown.
+profile tests pass without relaxing the validator. The fresh `5a3f493`
+source-built execution above qualified the corrected writer. It does not change
+the failed status, values or reconstruction limits of the original `40d2ac3`
+profile.
 
 ## Client request measurements
 

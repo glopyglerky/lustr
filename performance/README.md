@@ -5,7 +5,7 @@ regressions and remaining coverage. The [README summary](../README.md#numbers-an
 keeps the headline table visible. Neither document claims general Rust speed
 parity or release readiness.
 
-## Complete historical campaigns
+## Completed fixed-corpus campaigns
 
 | Measured candidate | Full table | Every timed value | Original qualification artifact |
 | --- | --- | --- | --- |
@@ -15,15 +15,24 @@ parity or release readiness.
 | `dec0ce2` | [27 comparisons](2026-11-17-dec0ce2.md) | [540 values](2026-11-17-dec0ce2.csv) | [Original ZIP](archives/2026-11-17-dec0ce2-qualification.zip) |
 | `74e14e7` | [27 comparisons](2026-11-17-74e14e7.md) | [540 values](2026-11-17-74e14e7.csv) | [Original ZIP](archives/2026-11-17-74e14e7-qualification.zip) |
 | `40d2ac3` | [27 comparisons](2026-11-17-40d2ac3.md) | [540 values](2026-11-17-40d2ac3.csv) | [Original ZIP](archives/2026-11-17-40d2ac3-qualification.zip) |
+| `5a3f493` (schema 2) | [36 comparisons](2026-11-17-5a3f493.md) | [648 values](2026-11-17-5a3f493.csv) | [Original ZIP](archives/2026-11-17-5a3f493-qualification.zip) |
 
 Each ZIP is byte-identical to the original GitHub Actions artifact. The
 [manifest](campaigns.json) binds its run, artifact, actual checkout/tree,
 archive/raw-data hashes and derived-file hashes. It is retained in Git so
 Actions expiration does not remove the original qualification record.
-The six fixed campaigns retain 3,240 timed commands, 162 comparisons and all
-10,608 recorded command-output files. They do not contain the entire compiler
-binary toolchain. The `40d2ac3` paired campaign passed its own checks although
-its separate profiling step failed; the overall source-built job remains failed.
+The seven fixed campaigns retain **3,888 timed commands, 198 comparisons and
+12,768 recorded command-output files**. The first six preserve their original
+schema-1 scope: 540 timings and 27 comparisons each. The seventh adds matched
+standalone rustc, with 648 timings and 36 comparisons. Its 1,135 raw records
+include 1,080 recorded commands: 648 timed and 432 untimed, with 2,160 output
+files. These counts describe recorded commands, not every descendant process.
+
+The archives do not contain the entire compiler binary toolchain. The
+`40d2ac3` paired campaign passed its own checks although its separate profiling
+step failed; that original source-built job remains failed. The new `5a3f493`
+source-built job and its original profile validation both passed. Their source,
+results and qualification limits remain separately identified.
 
 These are the separate `lustr-mixed-bench` fixture campaigns produced and
 already published by this public repository's GitHub Actions workflow. Review
@@ -42,7 +51,7 @@ python3 tools/test-mixed-performance-report.py
 python3 tools/check-mixed-performance-tables.py
 python3 tools/check-mixed-performance-archives.py
 python3 tools/report-mixed-performance.py \
-  performance/archives/2026-11-17-40d2ac3-qualification.zip \
+  performance/archives/2026-11-17-5a3f493-qualification.zip \
   --output /absolute/new-report-directory
 ```
 
@@ -62,9 +71,10 @@ compile-plus-test separately, with every slower sample.
 The current [schema-2 runner](../docs/compiler-set/native-rustc-comparison.md)
 also measures matching standalone rustc on the same native source. It requires
 648 timed commands and 36 summaries at twelve pairs, adding rustc→entry to the
-existing three contrasts. The six historical rows above remain schema 1 with
-their original 540 timings/27 comparisons; no new ratio is claimed before the
-extended campaign executes.
+existing three contrasts. Its first completed campaign is `5a3f493`, actual
+checkout `b3393a4a2907228516546cd34f1a5c60aaf6aaaa`. The six earlier rows remain
+schema 1 with their original 540 timings/27 comparisons. They have no native
+rustc lane and cannot be retroactively interpreted as that comparison.
 
 The same workflow now captures selected host facts and performs phase profiling
 in a separate qualification directory. Host facts are bound into new campaign
@@ -75,11 +85,16 @@ host records and failure information.
 The first [completed phase report](2026-11-17-dec0ce2-profile.md) is linked
 separately from its paired timings. Its original traces and host record are
 inside the fourth qualification ZIP; their instrumented values are not pooled
-with the 3,240 timed command values. The [v2 diagnosis at 40d2ac3](2026-11-17-40d2ac3-profile.md)
+with the paired timing values. The [v2 diagnosis at 40d2ac3](2026-11-17-40d2ac3-profile.md)
 retains its original framing failure, separately verified reconstruction and
 writer correction. It does not relabel the original profiling run as passed.
-Only `dec0ce2` and `40d2ac3` have host snapshots in these six archives;
-`74e14e7`, like the first three campaigns, does not.
+
+The [fresh v2 profile at 5a3f493](2026-11-17-5a3f493-profile.md) passed its
+original validation. It retains 26 compiler profiles across 15 qualification
+commands and 35 successful native responses. Its original summary and Markdown
+replay byte for byte without trace reconstruction. Instrumented durations remain
+separate from the 3,888 paired timing values. Host snapshots exist for `dec0ce2`,
+`40d2ac3` and `5a3f493`; the other four archives contain no host snapshot.
 
 After a new completed campaign, download its **original ZIP**, verify its
 Actions artifact digest, and run the reporter against it. Keep the ZIP as a new
@@ -99,38 +114,70 @@ runs this repository's actual coordinator package under its normal dev/test
 profiles. Its five scenarios preserve test execution, declared cold/warm state,
 compiler identity and raw timing values. A strict public projection omits raw
 private output and environment paths while retaining their original digests.
-This differs from the complete original ZIPs above. The [completed 40d2ac3 project
-campaign](projects/2026-11-17-40d2ac3/README.md) retains five comparisons and all
-120 measured timings separately from the fixed-corpus totals. Normal dev/test
-debug=2 is outside current native-object eligibility; primed root rebuilds change
-only a timestamp and are not body/signature edits.
+This differs from the complete original ZIPs above.
 
-The six public files and original public/encrypted ZIPs are retained byte for
-byte. Actual authenticated decryption, archive verification and source-bound
-public reconciliation passed for 600 original files and 510 output streams.
+| Measured candidate | Original project evidence and recovery | Timed values | Comparisons |
+| --- | --- | ---: | ---: |
+| `40d2ac3` | [Completed campaign](projects/2026-11-17-40d2ac3/README.md) | 120 | 5 |
+| `5a3f493` | [Completed campaign](projects/2026-11-17-5a3f493/README.md) | 120 | 5 |
+
+These two campaigns retain **240 measured timings and 10 comparisons** outside
+the fixed-corpus totals. They measure the same actual coordinator package, not
+two different large projects. Normal dev/test debug=2 is outside current
+native-object eligibility; primed root rebuilds change only a timestamp and are
+not body/signature edits. The latest clean-build comparison is inconclusive;
+its other four intervals favor matched Rust. Both full result tables remain
+visible, without a pooled or cross-run improvement claim.
+
+For each campaign, the six public files and original public/encrypted ZIPs are
+retained byte for byte. Actual authenticated decryption, archive verification
+and source-bound public reconciliation passed for **600 original files and
+510 output streams in each campaign**.
 The private key/plaintext remain private. Both success and failure paths attempt
-encrypted retention. CI verifies the public/ciphertext bindings and replays all
-five comparisons without claiming a new decryption or compiler execution.
+encrypted retention. The public archive checker verifies both campaigns'
+public/ciphertext bindings and replays all ten comparisons without claiming a
+new decryption or compiler execution.
 
 ## Charts and exact source recovery
 
-The [40d2ac3 vector chart](plots/2026-11-17-40d2ac3/README.md) includes all 27
-comparisons with conditional intervals and exact source/data bindings. Its
-JSON projection and optional PNG accompany the SVG. Recreate a plot in a new
+The [5a3f493 four-panel chart](plots/2026-11-17-5a3f493/README.md) includes all
+36 comparisons, including native cold/rejection losses against matched rustc.
+The [40d2ac3 chart](plots/2026-11-17-40d2ac3/README.md) retains its original
+27-comparison scope. Both show conditional intervals and exact source/data
+bindings, with a JSON projection and PNG beside the SVG. Recreate a plot in a new
 directory with Python 3.10+ and Matplotlib 3.10.8:
 
 ```bash
 python3 tools/plot-mixed-performance.py \
-  performance/archives/2026-11-17-40d2ac3-qualification.zip \
+  performance/archives/2026-11-17-5a3f493-qualification.zip \
   --output /absolute/new-plot-directory --png
 ```
 
 The generator first runs the existing strict evidence replay; it adds no new
 estimator or excluded modes. These plots are individual campaigns, not a
-cross-run causal trend. The [exact merge source bundle](sources/2026-11-17-40d2ac3/README.md)
-preserves checkout `3b4b0bd` and its declared prerequisites after the live PR ref
-moves. Recovery requires those prerequisites and does not restore original
-compiler binaries or requalify a build.
+cross-run causal trend. The exact merge source bundles preserve
+[`b3393a4` for 5a3f493](sources/2026-11-17-5a3f493/README.md) and
+[`3b4b0bd` for 40d2ac3](sources/2026-11-17-40d2ac3/README.md), with their declared
+prerequisites, after live PR refs move. Recovery requires those prerequisites
+and does not restore original compiler binaries or requalify a build.
+
+## Qualification limits
+
+The [40d2ac3 native Linux gate](../docs/compiler-set/measurements/2026-11-17-native-linux-40d2ac3/README.md)
+passed 5,527 ordinary differential cases, then failed one of the 5,527 sanitized
+cases: the generated `unicode_props_hash` program exceeded its ten-second
+execution deadline after successful linking. Later fuzz and benchmark-smoke
+stages were not reached. The [bounded local diagnosis](../docs/compiler-set/measurements/2026-11-17-unicode-sanitizer-diagnosis/README.md)
+instead encountered a LeakSanitizer fatal error; it neither reproduced the
+hosted timeout nor supplied a passing sanitizer result.
+
+The fresh [`5a3f493` full native gate](../docs/compiler-set/measurements/2026-11-17-native-linux-5a3f493/README.md)
+also failed at `unicode_props_hash`, after 5,527 ordinary and 5,526 sanitized
+passes. Its original ZIP and source identities are retained. The separate
+Compiler set run passed eight non-macOS jobs,
+while macOS compatibility was cancelled before
+any step executed. Source-built correctness, completed timing and source
+equality do not convert the failed native gate into a pass or qualify macOS.
 
 ## Component copy-policy experiment
 

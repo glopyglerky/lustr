@@ -13,6 +13,14 @@ speed. The complete imported compiler remains available for every request
 outside the accelerated boundary. No independent full-language implementation
 is required first.
 
+The [recorded source-built run at 5a3f493](completion-qualification.md#current-recorded-candidate-5a3f493)
+passed its mixed correctness, full entry/runtime, original v2 profiling and
+first schema-2 timing gates. This does not change the bounded acceleration
+scope or qualify the separate full native gate and macOS execution. The
+[performance index](../../performance/README.md) preserves seven fixed campaigns
+and two unchanged coordinator campaigns, including regressions and original
+failed evidence.
+
 ## Imported implementation and original fast path
 
 The complete implementation is the upstream Rust compiler at
@@ -228,7 +236,12 @@ reference correctness gates and version-aware replay. Standalone rustc is
 explicitly nonincremental: its no-op starts a compiler process and is not
 Cargo Fresh. Its test operation compiles and actually executes the test within
 one outer wall-time measurement. Existing historical CSV/table bytes remain
-unchanged; no new ratio is claimed until a fresh campaign completes.
+unchanged. The first complete schema-2 campaign is now
+[recorded at 5a3f493](../../performance/2026-11-17-5a3f493.md), actual checkout
+`b3393a4a2907228516546cd34f1a5c60aaf6aaaa`. Its native cold-build and rejection
+intervals favor rustc; seven other native-reference intervals favor the
+packaged entry on this scalar corpus. The mixed Cargo table still records
+slower body and signature edits. These workloads and comparisons remain separate.
 
 Each of the twelve paired observations starts with independent compiler,
 mixed-state, Cargo-target, intermediate and XDG runtime-cache directories.
@@ -295,9 +308,18 @@ original compiler, type/signature/macro rejection and recovery, and warning/
 deny preservation. Both this check journey and the mixed execution regression
 passed with the same mixed driver on Linux x86-64.
 
-These bounded checks passed on Linux x86-64. Runtime artifacts and raw logs
-are retained separately from the public source. Broad full-project performance
-and general mixed libraries, traits, aggregates, references and generic bodies
-remain unqualified. The hosted compiler uses `std`, TinyCC/C, LLVM and the host
+These bounded checks passed on Linux x86-64. The public fixed-fixture
+[qualification ZIPs](../../performance/README.md#completed-fixed-corpus-campaigns)
+retain original commands, outputs, source/profile identities and timing data in
+Git. The separate actual coordinator campaigns preserve private originals in
+authenticated encrypted archives and expose reviewed public projections. They
+measure normal dev/test debug=2, outside native-object eligibility; timestamp
+rebuilds do not measure body or signature changes.
+
+General performance beyond these fixed corpora and one actual coordinator
+package remains unqualified, as does general native acceleration of mixed
+libraries, traits, aggregates, references and generic bodies. Complete Rust
+semantics outside the eligible boundary remain supplied by the imported
+implementation. The hosted compiler uses `std`, TinyCC/C, LLVM and the host
 loader; its no_std output checks do not make that compiler runtime no_std or
 establish whole-stack memory safety.

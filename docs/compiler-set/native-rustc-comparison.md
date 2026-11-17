@@ -7,10 +7,41 @@ Cargo/rustc→mixed comparisons. The existing recorder and statistical method
 remain unchanged. The six retained schema-1 campaigns have no such native
 rustc lane and cannot be reinterpreted as measurements of this comparison.
 
-Implementation and local gates are distinct from a completed hosted campaign.
-Fresh CI must construct the whole toolchain, pass all existing correctness
-prerequisites and execute the extended measurement before any new ratio is
-published.
+The first complete schema-2 campaign executed at `5a3f493`, actual checkout
+`b3393a4a2907228516546cd34f1a5c60aaf6aaaa`, in
+[source-built run 44111326777](https://github.com/glopyglerky/lustr/actions/runs/44111326777/job/134137398335).
+That job constructed the toolchain, passed the existing correctness prerequisites
+and completed all 648 timed commands and 36 comparisons. The
+[original archive](../../performance/archives/2026-11-17-5a3f493-qualification.zip)
+and [complete table](../../performance/2026-11-17-5a3f493.md) record the actual
+result. Source-built qualification and these bounded timing
+results do not supply a complete native-gate, all-platform or release pass.
+
+## First measured result
+
+All values below come from that single campaign. Medians are milliseconds;
+ratios are paired geometric means of rustc time divided by packaged Lustr time,
+with conditional 95% intervals. They are not ratios of the displayed medians.
+
+| Mode | Matched rustc median | Packaged Lustr median | Ratio [95% interval] |
+| --- | ---: | ---: | --- |
+| Cold build | 38.147 | 40.285 | 0.914 [0.876, 0.950] |
+| No-op build | 37.982 | 3.106 | 12.208 [12.037, 12.383] |
+| Body edit | 38.224 | 5.590 | 6.894 [6.797, 7.004] |
+| Signature edit | 38.424 | 4.856 | 7.935 [7.759, 8.131] |
+| Check | 11.619 | 2.069 | 5.621 [5.446, 5.812] |
+| No-op check | 11.356 | 1.778 | 6.426 [6.267, 6.605] |
+| Check after body edit | 11.285 | 1.882 | 5.970 [5.797, 6.179] |
+| Rejection | 17.038 | 18.016 | 0.945 [0.930, 0.959] |
+| Compile plus test | 53.267 | 30.960 | 1.740 [1.705, 1.776] |
+
+**Cold build and rejection favor rustc.** The seven other intervals favor the
+packaged native entry on this supported scalar corpus. Warm native state is
+being compared with new nonincremental rustc invocations, as specified below.
+These ratios do not describe Cargo Fresh, arbitrary Rust projects or mixed
+Cargo acceleration. The same campaign records slower mixed Cargo body and
+signature edits; the [four-panel chart](../../performance/plots/2026-11-17-5a3f493/README.md)
+retains every contrast and regression.
 
 ## Exact work and compiler settings
 
@@ -24,7 +55,11 @@ checked against the pinned [protocol defaults](../../compiler/native/src/protoco
 and [native harness](../../compiler/native/src/testrun.rs).
 
 The reference is the constructor's `rustc-reference`, using the same pinned
-complete Rust SDK as the mixed compiler. Its command flags are:
+complete Rust SDK as the mixed compiler. The first campaign's
+[recorded identity](../../performance/plots/2026-11-17-5a3f493/plot-data.json)
+is Rust 1.102.0-nightly, commit `5b7b37aefcb5b2fba3c2392bc9065b9e4602d494`,
+with LLVM 23.1.5. The separate native correctness gate's Rust 1.99.0 oracle
+is a different reference. The measured command flags are:
 
 ```text
 --edition=2024 --target=x86_64-unknown-linux-gnu
