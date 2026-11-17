@@ -769,6 +769,139 @@ fn cargo_selection_preserves_explicit_package_target_and_source() {
 }
 
 #[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT"]
+fn native_library_selection_survives_process_startup() {
+    let f = Fixture::new("native-library-selection");
+    for (directory, package, library, kind) in [
+        ("hyphen", "hyphen-lib", None, None),
+        ("renamed", "app", Some("app_library"), None),
+        ("rlib", "library_kind_rlib", None, Some("rlib")),
+        ("staticlib", "library_kind_staticlib", None, Some("staticlib")),
+        ("cdylib", "library_kind_cdylib", None, Some("cdylib")),
+        ("dylib", "library_kind_dylib", None, Some("dylib")),
+        ("proc-macro", "library_kind_proc_macro", None, Some("proc-macro")),
+    ] {
+        let mut library_config = if library.is_some() || kind.is_some() { "\n[lib]\n".to_owned() } else { String::new() };
+        if let Some(name) = library {
+            library_config.push_str(&format!("name={name:?}\n"));
+        }
+        if let Some(kind) = kind {
+            library_config.push_str(&if kind == "proc-macro" {
+                "proc-macro=true\n".to_owned()
+            } else {
+                format!("crate-type=[{kind:?}]\n")
+            });
+        }
+        // A proc-macro library may not export an ordinary public function.
+        // A private helper checks target selection without claiming macro execution.
+        let visibility = if kind == Some("proc-macro") { "" } else { "pub " };
+        let valid = format!("{visibility}fn answer()->u32{{42}}\n");
+        let invalid = format!("{visibility}fn answer()->u32{{\"wrong library\"}}\n");
+        let manifest = f.source(
+            &format!("{directory}/Cargo.toml"),
+            &format!("[package]\nname={package:?}\nversion=\"0.1.0\"\nedition=\"2024\"\n[workspace]\n{library_config}"),
+        );
+        let source = f.source(&format!("{directory}/src/lib.rs"), &valid);
+        if library.is_some() {
+            // A mistaken fallback to the package-named binary must fail this
+            // positive library check, even though both targets exist.
+            f.source(&format!("{directory}/src/main.rs"), "fn main(){let _:u32=\"wrong bin\";}\n");
+        }
+        f.succeeds(
+            &format!("{directory}-cargo-library"),
+            f.command("cargo")
+                .args(["check", "--offline", "--lib", "--manifest-path"])
+                .arg(&manifest)
+                .env("RUSTC", f.package.join("bin/rustc-reference")),
+        );
+        for tool in ["lust", "lustr"] {
+            f.succeeds(
+                &format!("{directory}-{tool}-library"),
+                f.command(tool)
+                    .arg("check")
+                    .arg(&source)
+                    .arg("--manifest-path")
+                    .arg(&manifest)
+                    .args(["--lib", "--offline"])
+                    .env("LUST_NO_DAEMON", "1")
+                    .env("LUST_NO_CACHE", "1"),
+            );
+            if tool == "lustr" {
+                assert_eq!(f.engine(), "lust", "valid library must use native checking");
+                assert_eq!(f.entry(), "upstream-process", "the process must reparse the original library selection");
+            }
+        }
+        // The same selection must reject an invalid library even when a
+        // package-named binary is valid; accepted-to-rejected edits stay real.
+        f.source(&format!("{directory}/src/lib.rs"), &invalid);
+        if library.is_some() {
+            f.source(&format!("{directory}/src/main.rs"), "fn main(){}\n");
+        }
+        for tool in ["lust", "lustr"] {
+            let rejected = f.invoke(
+                &format!("{directory}-{tool}-rejected-library"),
+                f.command(tool)
+                    .arg("check")
+                    .arg(&source)
+                    .arg("--manifest-path")
+                    .arg(&manifest)
+                    .args(["--lib", "--offline"])
+                    .env("LUST_NO_DAEMON", "1")
+                    .env("LUST_NO_CACHE", "1"),
+            );
+            assert!(!rejected.status.success(), "{tool} accepted the invalid {directory} library");
+            assert!(!rejected.stderr.is_empty(), "{tool} lost the library diagnostic");
+        }
+        f.source(&format!("{directory}/src/lib.rs"), &valid);
+        if library.is_some() {
+            f.source(&format!("{directory}/src/main.rs"), "fn main(){let _:u32=\"wrong bin\";}\n");
+        }
+        for tool in ["lust", "lustr"] {
+            f.succeeds(
+                &format!("{directory}-{tool}-recovered-library"),
+                f.command(tool)
+                    .arg("check")
+                    .arg(&source)
+                    .arg("--manifest-path")
+                    .arg(&manifest)
+                    .args(["--lib", "--offline"])
+                    .env("LUST_NO_DAEMON", "1")
+                    .env("LUST_NO_CACHE", "1"),
+            );
+            if tool == "lustr" {
+                assert_eq!(f.engine(), "lust", "recovered library must return to native checking");
+                assert_eq!(f.entry(), "upstream-process");
+            }
+        }
+    }
+    let manifest = f.source("bin-only/Cargo.toml", "[package]\nname=\"binary_only\"\nversion=\"0.1.0\"\nedition=\"2024\"\n[workspace]\n");
+    let source = f.source("bin-only/src/main.rs", "fn main(){}\n");
+    let oracle = f.invoke(
+        "bin-only-cargo-library",
+        f.command("cargo")
+            .args(["check", "--offline", "--lib", "--manifest-path"])
+            .arg(&manifest)
+            .env("RUSTC", f.package.join("bin/rustc-reference")),
+    );
+    assert!(!oracle.status.success(), "Cargo unexpectedly found a library in the bin-only fixture");
+    for tool in ["lust", "lustr"] {
+        let rejected = f.invoke(
+            &format!("bin-only-{tool}-library"),
+            f.command(tool)
+                .arg("check")
+                .arg(&source)
+                .arg("--manifest-path")
+                .arg(&manifest)
+                .args(["--lib", "--offline"])
+                .env("LUST_NO_DAEMON", "1")
+                .env("LUST_NO_CACHE", "1"),
+        );
+        assert_eq!(rejected.status.code(), Some(2), "{tool} substituted a binary for the absent library");
+        assert!(!rejected.stderr.is_empty(), "{tool} lost the target-selection diagnostic");
+    }
+}
+
+#[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT on Linux"]
 fn cancellation_terminates_owned_cargo_and_build_script_descendants() {
     use std::os::unix::process::{CommandExt, ExitStatusExt};

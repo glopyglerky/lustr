@@ -932,15 +932,24 @@ pub fn select_unit(
         .or_else(|| graph.packages.iter().find(|p| p.manifest_path == req.manifest_path))
         .or_else(|| graph.packages.iter().find(|p| graph.workspace_members.contains(&p.id_repr)))
         .ok_or_else(|| format!("no package in the Cargo graph matches {}", req.manifest_path.display()))?;
-    let target = pkg
-        .targets
-        .iter()
-        .find(|t| {
-            t.name == target_name
-                && (t.kind.iter().any(|k| k == target_kind) || target_kind == "lib" && t.kind.iter().any(|k| k == "lib" || k == "rlib"))
+    // Adapted from upstream Lust b1c95c0d5253ee60e286faaeada7c958f1e8b78e.
+    // `--lib` selects the package's lib target by kind, not by name: Cargo
+    // names it after `[lib] name`, defaulting to the package name with `-`
+    // replaced by `_`. Matching the package name rejected hyphenated libs
+    // and could instead select a same-named bin beside a renamed library.
+    // Refuse a missing library rather than falling back to a same-named bin.
+    // Other target kinds keep their original selection behavior.
+    let target = if target_kind == "lib" {
+        pkg.targets.iter().find(|t| {
+            t.kind.iter().any(|k| matches!(k.as_str(), "lib" | "rlib" | "dylib" | "cdylib" | "staticlib" | "proc-macro"))
         })
-        .or_else(|| pkg.targets.iter().find(|t| t.name == target_name))
-        .ok_or_else(|| format!("package `{}` has no {target_kind} target named `{target_name}`", pkg.name))?;
+    } else {
+        pkg.targets
+            .iter()
+            .find(|t| t.name == target_name && t.kind.iter().any(|k| k == target_kind))
+            .or_else(|| pkg.targets.iter().find(|t| t.name == target_name))
+    }
+    .ok_or_else(|| format!("package `{}` has no {target_kind} target named `{target_name}`", pkg.name))?;
     let simple_graph = graph.workspace_members.len() <= 1 && pkg.dependencies.is_empty();
     let check_map = if simple_graph { None } else { unit_features_via_check(req, graph) };
     let features = check_map

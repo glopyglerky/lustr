@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'crates/lustr-bench/**'
+      - 'tools/*coordinator*'
+      - 'tools/*evidence*'
       - '.github/workflows/native-probe-tests.yml'
   workflow_dispatch:
 
@@ -20,3 +22,11 @@ jobs:
         run: rustup toolchain install 1.99.1 --profile minimal
       - name: Reject missing, conflicting and nonzero-work retention evidence
         run: cargo +1.99.1 test --manifest-path crates/lustr-bench/Cargo.toml --locked --bin lustr-mixed-bench
+      - name: Verify owned daemon exit and cold-state lifecycle
+        run: cargo +1.99.1 test --manifest-path crates/lustr-bench/Cargo.toml --locked --bin lustr-bench --test native_state -- --test-threads=1
+      - name: Replay strict public project projections and reject private-field leakage
+        run: |
+          cargo +1.99.1 build --manifest-path crates/lustr-bench/Cargo.toml --locked --example replay
+          python3 tools/test-coordinator-campaign.py --replay crates/lustr-bench/target/debug/examples/replay
+      - name: Recover encrypted originals and reject corrupt or misdirected evidence
+        run: python3 tools/test-encrypted-evidence.py

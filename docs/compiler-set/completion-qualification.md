@@ -7,6 +7,10 @@ It is not an admitted release. Hosted mixed correctness and paired measurement
 execution now have completed evidence. Native macOS execution and performance
 acceptance remain separate requirements.
 
+[Retained work disposition](retained-work-disposition.md) records what was
+carried forward from older PRs and preserves the unresolved Darwin base-library
+investigation and historical performance evidence.
+
 ## Completed hosted evidence
 
 The source-built Compiler set campaigns at `c70eb1c` and `afb17a8` completed all
@@ -17,7 +21,21 @@ comparisons. The latter are cross-target layout checks, not native execution.
 See [run 44056401150](https://github.com/glopyglerky/lustr/actions/runs/44056401150)
 and [run 44063047987](https://github.com/glopyglerky/lustr/actions/runs/44063047987).
 
-Both completed paired campaigns preserve 540 timed command values and 27
+A third source-built job at `048d824` also passed its correctness gates and
+complete paired campaign in
+[run 44079784399](https://github.com/glopyglerky/lustr/actions/runs/44079784399/job/134027063238).
+The whole run is not an all-platform pass: its macOS Cargo-compatibility job
+was cancelled, while the eight non-macOS jobs passed.
+
+A fourth source-built job at `dec0ce2` passed the same correctness gates,
+its separate instrumented phase qualification, host-record capture and complete
+paired campaign in
+[run 44083661006](https://github.com/glopyglerky/lustr/actions/runs/44083661006/job/134040390909).
+Eight non-macOS jobs passed. The macOS compatibility job was cancelled before
+starting; GitHub's annotations report unavailable hosted ARM64 runner capacity.
+This is a failed overall workflow, not an all-platform pass.
+
+The four completed paired campaigns preserve 540 timed command values and 27
 comparisons each. [PERFORMANCE.md](../../PERFORMANCE.md) reports the substantial
 mixed Cargo regressions, exact source identities, uncertainty and workload
 limits. [The original ZIP archives](../../performance/archives) preserve the
@@ -28,8 +46,14 @@ The corresponding [native CI run](https://github.com/glopyglerky/lustr/actions/r
 passed Linux but failed macOS after 5,522 passing differential cases and four
 failures. Those observed failures motivated the [portable fixture and Unix
 address correction](native-differential-portability.md). The correction and
-separate mixed profiling work require their own exact-source CI; earlier
-success is not a result for the new candidate.
+separate mixed profiling work have their own exact-source CI. The latter
+passed in the fourth source-built campaign. Its complete native Linux gate
+passed in [run 44083661066](https://github.com/glopyglerky/lustr/actions/runs/44083661066),
+with 5,527 ordinary and 5,527 sanitizer differential cases and zero failures in
+either run. The [original artifact and scope](measurements/2026-11-17-native-linux-dec0ce2/README.md)
+also retain the later suites. The macOS ARM64 job was cancelled before starting
+with a hosted capacity error. Linux success is not native macOS qualification
+for the correction.
 
 ## Correctness changes
 
@@ -52,6 +76,13 @@ It verifies the result through the runtime's actual seal validator. The full
 existing compiler contract remains required, including retained source-library
 edits, package tools, panic/drop behavior and Cargo process ownership.
 
+The subsequent [native library-selection correction](native-library-selection.md)
+preserves an explicit `--lib` request across native process startup. It covers
+all six Cargo library kinds and rejects a bin-only package. Its recorded local
+qualification has 22 direct source states and an actual Lustr-entry regression
+with 52 command-output pairs. The full source-built contract also includes this
+new test; its result must be assessed on the final combined compiler source.
+
 ## Earlier local evidence and its limits
 
 This table preserves the original local preparation record. Its pending items
@@ -61,7 +92,7 @@ restriction itself was never counted as a compiler regression.
 | Check | Result and scope |
 | --- | --- |
 | Pinned compiler builds and format checks | Changed owned compiler and qualification tools compile; no daemon execution implied. |
-| Failed-link baseline reproduction | Originally blocked locally because Unix socket creation was denied. Both completed hosted campaigns subsequently reproduced the required baseline failure and passed corrected recovery. |
+| Failed-link baseline reproduction | Originally blocked locally because Unix socket creation was denied. All four completed hosted source-built jobs subsequently reproduced the required baseline failure and passed corrected recovery. |
 | Source-library package seal | Correct packages made from current and exact baseline source pass. Source mutation, added input, bad links and substituted core inode fail; restoring the package restores its identity. |
 | Target synchronization layout | Matching SDK supplies 26 independent size/alignment values for Linux x86_64, Darwin x86_64, Darwin aarch64 and Windows GNU x86_64. Baseline fails the three foreign targets; corrected native frontend passes all four and rejects a deliberate false assertion. |
 | Target pool retention | The native unit test passes all nine transitions among Futex, Darwin and Windows models, including body overlays and incompatible-pool rejection. |
@@ -70,7 +101,7 @@ restriction itself was never counted as a compiler regression.
 | Darwin descriptor-path adapter | The exact C body passes five isolated buffer/error cases with AddressSanitizer and UndefinedBehaviorSanitizer. Real Darwin syscall behavior still requires macOS. |
 | no_std WebAssembly execution | Through the unchanged baseline's matched full Rust component, the new module executes its exported operations with correct results and no runtime imports. The final candidate's full contract repeats this gate. |
 | Single-file native test command | The old entry incorrectly forwarded the file command to Cargo. The corrected entry passes the public runtime gate: successful native test, upstream failed-test status 101, and one persisted side effect from one failed test. The unchanged baseline native core was used for this local check. |
-| Paired performance | Both hosted campaigns completed. Their raw samples, comparisons and regressions are preserved in the performance report; general speed acceptance remains open. |
+| Paired performance | Four hosted campaigns completed. Their raw samples, comparisons and regressions are preserved in the performance report; general speed acceptance remains open. |
 
 See [target layout qualification](native-target-layouts.md) for the target
 oracle and Darwin corrections, and [mixed compiler qualification](mixed-compiler.md)
@@ -92,6 +123,32 @@ semantics. Together these reviews cover the protected integrated native tree
 root tree `c7a8e2e96dded79901b29c075a3791de941e77f9` before the Darwin patch.
 These are automated source reviews; they do not substitute for execution or
 performance evidence.
+
+The follow-through received separate automated Standards and Spec reviews of
+the native library selector and its retained failures, the project campaign at
+`857a5fc93a8251902651ae63218fb0b73c720b29`, authenticated-retention helper at
+`e67c8fc96c48bb06f2c9274f9dfa19634e6d41f2`, and combined workflow at
+`4f502f4e258fd90b917bcea451a56eb183fa1ae7`. Review found and closed two library
+selection regressions, a public-export schema gap and loss of failed-run private
+evidence. The final declared native tree is
+`cb797ce8ce82192b87b3835267fc223c295dba70`; the pristine reference is unchanged.
+Independent checks included 15 project-export tests, three ownership/lifecycle
+tests, 12 actual OpenSSL tests, 16 workflow controls and complete replay of the
+four archived fixed-fixture campaigns. No blocking source finding remained.
+Actual complete candidate execution and recovery of the new CI ciphertext are
+still required; passing helper tests does not establish those outcomes.
+
+Both reviewers also passed the finer phase-attribution range ending at
+`fe18584021d9a9dbea02a6ea1f19aa5c295dbddd`. Review caught variable profiling
+text in failed native responses, which would invalidate the daemon's diagnostic
+comparison and discard retained state. The corrected emitter preserves those
+error bytes exactly; the client records unavailable emitter detail explicitly.
+Twenty-two reporter tests pass, and replay of all 26 historical profiles leaves
+their existing fields unchanged. Remote emitter durations remain separate from
+the client clock, and unmeasured exchange time is explicitly unattributed.
+The [original project and profiler source bundle](measurements/2026-11-17-project-profiler-source/README.md)
+preserves the reviewed commits and the failed profiler predecessor. This review
+does not replace the final combined candidate's source-built execution.
 
 ## Hosted admission gates
 

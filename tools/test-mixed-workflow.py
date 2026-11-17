@@ -180,6 +180,49 @@ class MixedWorkflowTests(unittest.TestCase):
         self.assertIn("lustr-mixed-profile", self.steps["mixed_profile"])
         self.assertIn("lustr-paired-measurements", self.steps["measurements"])
 
+    def test_project_measurements_require_correctness_and_own_runner(self):
+        required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution", "retained_checks", "mixed_libraries", "entry_contract", "project_bench_build", "host_record"}
+        self.assertEqual(set(dependencies(self.steps["project_measurements"])), required)
+        for gate in required:
+            for outcome in ("failure", "skipped", "cancelled"):
+                with self.subTest(gate=gate, outcome=outcome):
+                    self.assertFalse(self.eligible("project_measurements", dict(self.success, **{gate: outcome})))
+        # Independent complete campaigns keep their evidence after a different
+        # measurement/profiling failure, without making the overall job green.
+        self.assertTrue(self.eligible("project_measurements", dict(self.success, measurements="failure", mixed_profile="failure")))
+        self.assertNotIn("LUSTR_MIXED_PROFILE_DIR", self.steps["project_measurements"])
+
+    def test_project_artifact_cannot_publish_private_raw_reports(self):
+        marker = "      - name: Retain only the sanitized unchanged-project performance export\n"
+        block = self.section.split(marker, 1)[1].split("      - name:", 1)[0]
+        self.assertIn("        if: always()\n", block)
+        paths = [line.strip() for line in block.splitlines() if "runner.temp" in line]
+        expected = {f"${{{{ runner.temp }}}}/lustr-coordinator-campaign/public/{name}" for name in
+                    ("README.md", "campaign.json", "samples.json", "replay.json", "host.json", "SHA256SUMS")}
+        self.assertEqual(set(paths), expected)
+        self.assertNotIn("/private", block)
+
+    def test_originals_are_encrypted_after_failure_without_masking_it(self):
+        marker = "      - name: Encrypt original project evidence after success or failure\n"
+        block = self.section.split(marker, 1)[1].split("      - name:", 1)[0]
+        self.assertIn("        if: always()\n", block)
+        self.assertIn("--expected-certificate-sha256 69e1167422ba3edfc45139eda5bdcec97d5bebcdf3e764054f3457488aaa5c4f", block)
+        self.assertIn('tools/benchmark-evidence-recipient.pem"', block)
+        self.assertNotIn("continue-on-error", block)
+        self.assertNotIn("|| true", block)
+        self.assertNotIn("PRIVATE", block)
+
+    def test_encrypted_artifact_upload_has_only_fixed_outputs(self):
+        marker = "      - name: Retain encrypted project originals and explicit retention status\n"
+        block = self.section.split(marker, 1)[1].split("      - name:", 1)[0]
+        self.assertIn("        if: always()\n", block)
+        self.assertIn("          if-no-files-found: error\n", block)
+        paths = [line.strip() for line in block.splitlines() if "runner.temp" in line]
+        expected = {f"${{{{ runner.temp }}}}/lustr-coordinator-campaign/encrypted/{name}" for name in
+                    ("private-evidence.tar.gz.cms", "receipt.json", "status.json")}
+        self.assertEqual(set(paths), expected)
+        self.assertNotIn("/private/", block)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

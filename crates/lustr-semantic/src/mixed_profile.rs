@@ -9,10 +9,19 @@ use std::{
     time::{Instant, SystemTime, UNIX_EPOCH},
 };
 
-struct Event {
-    phase: &'static str,
-    start_ns: u128,
-    end_ns: u128,
+enum Event {
+    Span {
+        phase: &'static str,
+        start_ns: u128,
+        end_ns: u128,
+    },
+    NativeResponse {
+        parent_start_ns: u128,
+        roundtrip: Option<(u128, u128)>,
+        unit_identity: String,
+        response_code: i32,
+        emitter_records: Vec<String>,
+    },
 }
 struct Recorder {
     directory: PathBuf,
@@ -42,14 +51,47 @@ pub fn span(phase: &'static str) -> Span {
     Span(recorder().map(|recorder| (recorder, phase, recorder.start.elapsed().as_nanos())))
 }
 
-impl Drop for Span {
-    fn drop(&mut self) {
-        if let Some((recorder, phase, start_ns)) = self.0 {
+impl Span {
+    /// Close the client interval before inspecting its response's diagnostic
+    /// profile. The returned values are only coordinates on this client clock.
+    pub fn close(mut self) -> Option<(u128, u128)> {
+        self.record()
+    }
+
+    fn record(&mut self) -> Option<(u128, u128)> {
+        if let Some((recorder, phase, start_ns)) = self.0.take() {
             let end_ns = recorder.start.elapsed().as_nanos();
             if let Ok(mut events) = recorder.events.lock() {
-                events.push(Event { phase, start_ns, end_ns });
+                events.push(Event::Span { phase, start_ns, end_ns });
             }
+            Some((start_ns, end_ns))
+        } else {
+            None
         }
+    }
+}
+
+impl Drop for Span {
+    fn drop(&mut self) {
+        self.record();
+    }
+}
+
+/// Keep the exact remote record with the request that returned it. Server
+/// durations have their own clock and are never converted into client spans.
+/// Missing or malformed records remain evidence for the external validator;
+/// profiling cannot change the compiler response or turn a failure into zero.
+pub fn native_response(parent: &Span, roundtrip: Option<(u128, u128)>, unit_identity: &str, response_code: i32, stderr: &str) {
+    let Some((recorder, "native-compile", parent_start_ns)) = parent.0 else { return };
+    let emitter_records = stderr.lines().filter_map(|line| line.strip_prefix("lustr mixed native profile: ").map(str::to_owned)).collect();
+    if let Ok(mut events) = recorder.events.lock() {
+        events.push(Event::NativeResponse {
+            parent_start_ns,
+            roundtrip,
+            unit_identity: unit_identity.to_owned(),
+            response_code,
+            emitter_records,
+        });
     }
 }
 
@@ -65,19 +107,25 @@ pub fn finish(success: bool, reused: bool, check_only: bool, request_key: &str) 
         writeln!(
             file,
             "{}",
-            serde_json::json!({"schema":"lustr.mixed-phase-profile","version":1,
+            serde_json::json!({"schema":"lustr.mixed-phase-profile","version":2,
                 "pid":std::process::id(),"started_unix_ns":recorder.stamp,
                 "request_key":request_key,
                 "rustc":env!("LUSTR_BUILD_RUSTC_COMMIT"),"native":env!("LUST_BUILD_HASH"),
                 "instrumented":true,"nested_spans":true})
         )?;
         for event in events.iter() {
-            writeln!(
-                file,
-                "{}",
-                serde_json::json!({"phase":event.phase,"start_ns":event.start_ns,"end_ns":event.end_ns,
-                    "elapsed_ns":event.end_ns-event.start_ns})
-            )?;
+            let record = match event {
+                Event::Span { phase, start_ns, end_ns } => {
+                    serde_json::json!({"phase":phase,"start_ns":start_ns,"end_ns":end_ns,"elapsed_ns":end_ns-start_ns})
+                }
+                Event::NativeResponse { parent_start_ns, roundtrip, unit_identity, response_code, emitter_records } => {
+                    serde_json::json!({"kind":"native-response","parent_start_ns":parent_start_ns,
+                        "roundtrip":roundtrip,"unit_identity":unit_identity,"response_code":response_code,
+                        "emitter_status":if *response_code == 0 { "reported" } else { "unavailable-failed-response" },
+                        "emitter_records":emitter_records})
+                }
+            };
+            writeln!(file, "{record}")?;
         }
         writeln!(file, "{}", serde_json::json!({"completed":true,"success":success,"reused":reused,"check_only":check_only}))
     };

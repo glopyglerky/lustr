@@ -29,6 +29,23 @@ def write(path, values):
     path.write_text("".join(json.dumps(value) + "\n" for value in values))
 
 
+def detailed_records(success=True, reused=False):
+    values = records(success, reused)
+    values[0]["version"] = 2
+    emitter = {"schema": "lustr.mixed-native-emitter", "version": 1,
+               "native": "b" * 16, "unit_identity": "e" * 16, "success": True,
+               "elapsed_ns": len(REPORT.EMITTER_PHASES),
+               "phases": [{"phase": phase, "elapsed_ns": 1, "completed": True} for phase in REPORT.EMITTER_PHASES]}
+    return [values[0], values[1],
+            {"phase": "native-request-setup", "start_ns": 3, "end_ns": 5, "elapsed_ns": 2},
+            {"phase": "native-daemon-roundtrip", "start_ns": 5, "end_ns": 24, "elapsed_ns": 19},
+            {"kind": "native-response", "parent_start_ns": 3, "roundtrip": [5, 24],
+             "unit_identity": "e" * 16, "response_code": 0, "emitter_status": "reported", "emitter_records": [json.dumps(emitter)]},
+            {"phase": "native-compile", "start_ns": 3, "end_ns": 25, "elapsed_ns": 22},
+            {"phase": "rustc-driver", "start_ns": 2, "end_ns": 29, "elapsed_ns": 27},
+            {"phase": "driver", "start_ns": 0, "end_ns": 30, "elapsed_ns": 30}, values[-1]]
+
+
 class ProfileEvidenceTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -50,6 +67,155 @@ class ProfileEvidenceTests(unittest.TestCase):
         self.assertFalse(report["paired_speed_evidence"])
         self.assertEqual(len(report["invocations"]), len(REPORT.EXPECTED))
         self.assertIn("columns must not be added", REPORT.render(report))
+        self.assertIsNone(report["modes"]["body"]["native_emitter"])
+        self.assertIn("not recorded", REPORT.render(report))
+        row = next(line for line in REPORT.render(report).splitlines() if line.startswith("| cold |"))
+        self.assertEqual([cell.strip() for cell in row.split("|")[1:-1]][5:7], ["not recorded", "not recorded"])
+
+    def detailed(self):
+        for n, (label, success) in enumerate(REPORT.EXPECTED.items()):
+            values = detailed_records(success, label in {"body", "arithmetic-edit", "link-failure-recovery"})
+            write(self.profiles / f"123-{n}.jsonl", values)
+            with (self.work / f"{label}.trace").open("a") as trace:
+                trace.write(REPORT.EMITTER_PREFIX + values[4]["emitter_records"][0] + "\n")
+
+    def test_remote_durations_are_bound_without_aligned_timestamps(self):
+        self.detailed()
+        report = REPORT.summarize(self.root)
+        result = report["invocations"]["123-1.jsonl"]
+        request = result["native_requests"][0]
+        self.assertEqual(request["client_request_elapsed_ns"], 22)
+        self.assertEqual(request["roundtrip_elapsed_ns"], 19)
+        self.assertEqual(request["protocol_unattributed_ns"], 11)
+        self.assertEqual(request["emitter"]["elapsed_ns"], 8)
+        self.assertNotIn("libtcc", result["phase_nanoseconds"])
+        self.assertNotIn("start_ns", request["emitter"])
+        self.assertEqual(report["modes"]["body"]["native_emitter"]["phase_nanoseconds"]["libtcc"], 1)
+        row = next(line for line in REPORT.render(report).splitlines() if line.startswith("| cold |"))
+        self.assertEqual([cell.strip() for cell in row.split("|")[1:-1]][5:7], ["0.000", "0.000"])
+
+    def test_native_response_needs_actual_parent_and_roundtrip(self):
+        for field, value, message in (("parent_start_ns", 9, "no enclosing request"),
+                                      ("roundtrip", [6, 24], "no unique roundtrip")):
+            with self.subTest(field=field):
+                values = detailed_records()
+                values[4][field] = value
+                path = self.profiles / "123-0.jsonl"
+                write(path, values)
+                with self.assertRaisesRegex(ValueError, message):
+                    REPORT.read_profile(path)
+
+    def test_missing_or_duplicate_remote_detail_is_not_zero(self):
+        for raw in ([], ["{}", "{}"]):
+            with self.subTest(raw=raw):
+                values = detailed_records()
+                values[4]["emitter_records"] = raw
+                path = self.profiles / "123-0.jsonl"
+                write(path, values)
+                with self.assertRaisesRegex(ValueError, "missing or duplicate native emitter"):
+                    REPORT.read_profile(path)
+        values = detailed_records()
+        del values[4]
+        write(path, values)
+        with self.assertRaisesRegex(ValueError, "missing or extra native response"):
+            REPORT.read_profile(path)
+
+    def test_native_record_is_also_required_in_original_trace(self):
+        self.detailed()
+        (self.work / "body.trace").write_text("request-key=" + "c" * 16 + " retained=true\n")
+        with self.assertRaisesRegex(ValueError, "independent diagnostic trace"):
+            REPORT.summarize(self.root)
+
+    def emitter_mutation(self, update, message):
+        values = detailed_records()
+        emitter = json.loads(values[4]["emitter_records"][0])
+        update(emitter)
+        values[4]["emitter_records"] = [json.dumps(emitter)]
+        path = self.profiles / "123-0.jsonl"
+        write(path, values)
+        with self.assertRaisesRegex(ValueError, message):
+            REPORT.read_profile(path)
+
+    def test_remote_duration_cannot_exceed_actual_exchange(self):
+        self.emitter_mutation(lambda value: value.update(elapsed_ns=20), "exceeds its roundtrip")
+
+    def test_remote_stages_must_cover_the_reported_duration(self):
+        self.emitter_mutation(lambda value: value.update(elapsed_ns=9), "do not cover its duration")
+
+    def test_remote_build_and_unit_identity_must_match(self):
+        for field in ("native", "unit_identity"):
+            with self.subTest(field=field):
+                self.emitter_mutation(lambda value: value.update({field: "a" * 16}), "identity mismatch")
+
+    def test_remote_phase_order_completion_and_schema_are_checked(self):
+        self.emitter_mutation(lambda value: value["phases"].reverse(), "phase order")
+        self.emitter_mutation(lambda value: value["phases"][0].update(completed=False), "completion mismatch")
+        self.emitter_mutation(lambda value: value.update(extra="unreviewed"), "unknown native emitter fields")
+        self.emitter_mutation(lambda value: value["phases"][0].update(elapsed_ns=True), "invalid native emitter phase duration")
+
+    def test_failed_native_response_has_unavailable_detail_not_zero(self):
+        values = detailed_records()
+        values[4].update(response_code=1, emitter_status="unavailable-failed-response", emitter_records=[])
+        path = self.profiles / "123-0.jsonl"
+        write(path, values)
+        response = REPORT.read_profile(path)["native_requests"][0]
+        self.assertEqual(response["response_code"], 1)
+        self.assertEqual(response["client_request_elapsed_ns"], 22)
+        self.assertIsNone(response["emitter"])
+        self.assertIsNone(response["protocol_unattributed_ns"])
+        # Even a supplied partial timing record cannot qualify a failed native
+        # response: timing text must never decorate the guard's error channel.
+        values[4]["emitter_records"] = detailed_records()[4]["emitter_records"]
+        write(path, values)
+        with self.assertRaisesRegex(ValueError, "error diagnostics undecorated"):
+            REPORT.read_profile(path)
+        values[4].update(response_code=0, emitter_records=[])
+        write(path, values)
+        with self.assertRaisesRegex(ValueError, "successful native response requires"):
+            REPORT.read_profile(path)
+
+    def test_failed_response_denominators_remain_visible(self):
+        self.detailed()
+        values = detailed_records()
+        values[4].update(response_code=1, emitter_status="unavailable-failed-response", emitter_records=[])
+        path = self.profiles / "123-0.jsonl"
+        write(path, values)
+        (self.work / "cold.trace").write_text("request-key=" + "c" * 16 + " retained=true\n")
+        report = REPORT.summarize(self.root)
+        native = report["modes"]["cold"]["native_emitter"]
+        self.assertEqual((native["response_count"], native["measured_count"], native["unavailable_failed_count"]), (1, 0, 1))
+        self.assertIsNone(native["elapsed_ns"])
+        self.assertIsNone(native["protocol_unattributed_ns"])
+        self.assertEqual(native["phase_nanoseconds"], {})
+        self.assertIn("| cold | 1 / 0 / 1 | unavailable |", REPORT.render(report))
+
+        values = detailed_records()
+        values[-3].update(end_ns=59, elapsed_ns=57)
+        values[-2].update(end_ns=60, elapsed_ns=60)
+        values[6:6] = [
+            {"phase": "native-request-setup", "start_ns": 26, "end_ns": 28, "elapsed_ns": 2},
+            {"phase": "native-daemon-roundtrip", "start_ns": 28, "end_ns": 47, "elapsed_ns": 19},
+            {"kind": "native-response", "parent_start_ns": 26, "roundtrip": [28, 47], "unit_identity": "f" * 16,
+             "response_code": 1, "emitter_status": "unavailable-failed-response", "emitter_records": []},
+            {"phase": "native-compile", "start_ns": 26, "end_ns": 48, "elapsed_ns": 22},
+        ]
+        write(path, values)
+        with (self.work / "cold.trace").open("a") as trace:
+            trace.write(REPORT.EMITTER_PREFIX + values[4]["emitter_records"][0] + "\n")
+        report = REPORT.summarize(self.root)
+        native = report["modes"]["cold"]["native_emitter"]
+        self.assertEqual((native["response_count"], native["measured_count"], native["unavailable_failed_count"]), (2, 1, 1))
+        self.assertEqual(native["elapsed_ns"], 8)
+        self.assertEqual(native["protocol_unattributed_ns"], 11)
+        self.assertIn("| cold | 2 / 1 / 1 |", REPORT.render(report))
+
+    def test_malformed_remote_json_is_rejected(self):
+        values = detailed_records()
+        values[4]["emitter_records"] = ["{"]
+        path = self.profiles / "123-0.jsonl"
+        write(path, values)
+        with self.assertRaises(json.JSONDecodeError):
+            REPORT.read_profile(path)
 
     def test_missing_process_is_detected_by_independent_trace(self):
         (self.work / "body.profiles").write_text("")

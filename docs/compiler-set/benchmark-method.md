@@ -36,6 +36,7 @@ interpolation, or lossy decoding is involved. File path fields use UTF-8 paths.
 | Spec field | Type and meaning |
 | --- | --- |
 | `schema` | Integer `1`. |
+| `native_state` | Optional explicit owned-Lustr state policy, disabled when absent. See the [unchanged coordinator campaign](coordinator-performance.md) for constructor receipts, cache/daemon ownership, cold boundaries and separate private/public evidence. Resource measurement must remain disabled for this policy. |
 | `source` | Absolute canonical frozen source directory outside canonical repositories. |
 | `repository`, `revision` | Public upstream URL and pinned revision or complete fixture identity; declarations retained with content hashes. The runner does not fetch or authenticate revisions. |
 | `package`, `root_crate` | Package label and actual rustc `--crate-name` root name. |

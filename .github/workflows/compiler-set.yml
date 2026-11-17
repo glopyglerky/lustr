@@ -19,6 +19,8 @@ on:
       - 'upstream/lust-integration.*'
       - 'tools/lust-upstream-check.rs'
       - 'tools/*mixed*'
+      - 'tools/*coordinator*'
+      - 'tools/*evidence*'
       - 'tools/build-tinycc-pic.rs'
       - 'tools/native-target-layout-qualification.rs'
       - '.github/workflows/compiler-set.yml'
@@ -39,6 +41,8 @@ on:
       - 'upstream/lust-integration.*'
       - 'tools/lust-upstream-check.rs'
       - 'tools/*mixed*'
+      - 'tools/*coordinator*'
+      - 'tools/*evidence*'
       - 'tools/build-tinycc-pic.rs'
       - 'tools/native-target-layout-qualification.rs'
       - '.github/workflows/compiler-set.yml'
@@ -101,7 +105,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate qualification workflow controls before compiler builds
-        run: python3 tools/test-mixed-workflow.py
+        run: |
+          python3 tools/test-mixed-workflow.py
+          python3 tools/test-encrypted-evidence.py
       - name: Obtain the exact pristine reference objects
         uses: actions/checkout@v4
         with:
@@ -248,6 +254,55 @@ jobs:
         env:
           LUSTR_BENCH_HOST_RECORD: ${{ runner.temp }}/lustr-benchmark-host.json
         run: '"$RUNNER_TEMP/lustr-bench-target/release/lustr-mixed-bench" "$RUNNER_TEMP/lustr-pristine-source" "$RUNNER_TEMP/lustr-pristine-target/release/lust" "$RUNNER_TEMP/lustr-source-built" "$RUNNER_TEMP/lustr-paired-measurements" 12'
+      - name: Build and verify the unchanged-project campaign runner
+        id: project_bench_build
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' }}
+        run: |
+          cargo build --manifest-path crates/lustr-bench/Cargo.toml --release --locked --offline --bin lustr-bench --bin lustr-bench-gate --example replay --target-dir "$RUNNER_TEMP/lustr-bench-target"
+          cargo test --manifest-path crates/lustr-bench/Cargo.toml --locked --offline --bin lustr-bench --test native_state --target-dir "$RUNNER_TEMP/lustr-bench-target" -- --test-threads=1
+          python3 tools/test-coordinator-campaign.py --replay "$RUNNER_TEMP/lustr-bench-target/release/examples/replay"
+      - name: Measure the unchanged coordinator under its default development profile
+        id: project_measurements
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.target_layout.outcome == 'success' && steps.baseline_regression.outcome == 'success' && steps.mixed_execution.outcome == 'success' && steps.retained_checks.outcome == 'success' && steps.mixed_libraries.outcome == 'success' && steps.entry_contract.outcome == 'success' && steps.project_bench_build.outcome == 'success' && steps.host_record.outcome == 'success' }}
+        run: |
+          python3 tools/measure-coordinator-project.py \
+            --repository "$GITHUB_WORKSPACE" \
+            --toolchain "$RUNNER_TEMP/lustr-source-built/toolchain" \
+            --runner "$RUNNER_TEMP/lustr-bench-target/release/lustr-bench" \
+            --gate "$RUNNER_TEMP/lustr-bench-target/release/lustr-bench-gate" \
+            --replay "$RUNNER_TEMP/lustr-bench-target/release/examples/replay" \
+            --output "$RUNNER_TEMP/lustr-coordinator-campaign" --jobs 2
+      - name: Encrypt original project evidence after success or failure
+        if: always()
+        run: |
+          python3 tools/encrypt-coordinator-evidence.py \
+            --campaign "$RUNNER_TEMP/lustr-coordinator-campaign" \
+            --certificate "$GITHUB_WORKSPACE/tools/benchmark-evidence-recipient.pem" \
+            --expected-certificate-sha256 69e1167422ba3edfc45139eda5bdcec97d5bebcdf3e764054f3457488aaa5c4f \
+            --output "$RUNNER_TEMP/lustr-coordinator-campaign/encrypted"
+      - name: Retain encrypted project originals and explicit retention status
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coordinator-project-originals-encrypted-${{ github.run_attempt }}
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/lustr-coordinator-campaign/encrypted/private-evidence.tar.gz.cms
+            ${{ runner.temp }}/lustr-coordinator-campaign/encrypted/receipt.json
+            ${{ runner.temp }}/lustr-coordinator-campaign/encrypted/status.json
+      - name: Retain only the sanitized unchanged-project performance export
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coordinator-project-performance-${{ github.run_attempt }}
+          if-no-files-found: warn
+          path: |
+            ${{ runner.temp }}/lustr-coordinator-campaign/public/README.md
+            ${{ runner.temp }}/lustr-coordinator-campaign/public/campaign.json
+            ${{ runner.temp }}/lustr-coordinator-campaign/public/samples.json
+            ${{ runner.temp }}/lustr-coordinator-campaign/public/replay.json
+            ${{ runner.temp }}/lustr-coordinator-campaign/public/host.json
+            ${{ runner.temp }}/lustr-coordinator-campaign/public/SHA256SUMS
       - name: Retain exact source, build profiles and qualification evidence
         if: always()
         uses: actions/upload-artifact@v4

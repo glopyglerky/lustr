@@ -6,32 +6,34 @@ pinned Rust implementation. blueFe delivers the combined toolchain.
 
 ## Numbers and current qualification
 
-**Not yet release-ready.** The latest measured source-built Compiler set passed
-all nine jobs, but the latest completed native macOS CI failed and mixed Cargo compilation has
-material performance regressions. Green measurement execution is not speed parity.
+**Not yet release-ready.** Source-built mixed correctness and measurement runs
+have passed, but the latest completed native macOS CI failed and mixed Cargo
+compilation has material performance regressions. Green measurement execution
+is not speed parity.
 
 [Full performance documentation](PERFORMANCE.md) records the exact source,
 compiler pins, workload, profiles, caches, uncertainty, retained failures and
-reproduction commands. Both completed campaigns have all 27 comparison tables
+reproduction commands. Four completed campaigns each have all 27 comparisons
 and every timed value committed under [`performance/`](performance/).
-The [performance index](performance/README.md) also links both byte-identical
+The [performance index](performance/README.md) also links their byte-identical
 original qualification archives. CI replays their complete outputs and tables.
-New campaigns record selected host facts and keep phase profiling separate from
+The latest campaign records selected host facts and keeps phase profiling separate from
 timed measurements. The [upstream audit](docs/compiler-set/upstream-benchmark-audit.md)
 compares the actual breadth and limits of Lust's studies with this evidence.
 
-Latest campaign: 12 matched pairs per mode, Linux x86-64, PR9 head `afb17a8`.
+Latest campaign: 12 matched pairs per mode, Linux x86-64, PR11 head `dec0ce2`.
 Times below are medians in milliseconds; the ratio is the paired geometric mean
 of baseline/candidate time, not the ratio of medians. Ratios below 1 mean slower.
 
 | Workload and reference | Reference | Lustr | Ratio [95% interval] |
 |---|---:|---:|---:|
-| Mixed Cargo cold build vs matched Cargo/rustc | 191.887 | 258.039 | 0.662 [0.522, 0.749] |
-| Mixed Cargo body edit vs matched Cargo/rustc | 61.529 | 105.185 | 0.581 [0.574, 0.588] |
-| Mixed Cargo signature edit vs matched Cargo/rustc | 66.527 | 119.235 | 0.558 [0.548, 0.570] |
-| Native packaged no-op vs pristine Lust | 4.769 | 4.352 | 1.109 [1.087, 1.135] |
-| Native packaged body edit vs pristine Lust | 7.201 | 7.205 | 1.003 [0.975, 1.032] |
-| Packaged rejection vs pristine Lust rejection | 2.621 | 23.128 | 0.120 [0.113, 0.128] |
+| Mixed Cargo cold build vs matched Cargo/rustc | 144.432 | 198.492 | 0.717 [0.688, 0.741] |
+| Mixed Cargo body edit vs matched Cargo/rustc | 46.671 | 75.653 | 0.614 [0.608, 0.619] |
+| Mixed Cargo signature edit vs matched Cargo/rustc | 49.758 | 89.289 | 0.553 [0.549, 0.556] |
+| Native packaged no-op vs pristine Lust | 3.156 | 2.900 | 1.084 [1.062, 1.104] |
+| Native packaged body edit vs pristine Lust | 5.133 | 4.948 | 1.046 [0.993, 1.101] |
+| Native packaged compile plus test vs pristine Lust | 28.248 | 29.260 | 0.963 [0.940, 0.987] |
+| Packaged rejection vs pristine Lust rejection | 1.647 | 18.146 | 0.095 [0.089, 0.103] |
 
 These small-corpus observations do not establish general speed preservation.
 The rejection routes perform different semantic validation; correctness and full
@@ -39,6 +41,13 @@ Rust diagnostics must not be removed to improve the number. The full report
 includes every slower mode, p95 values, the retained cold-build outlier and the
 limits of shared-host inference. Upstream Lust's headline speedups are not
 measurements of this integration.
+
+The separate [phase trace](performance/2026-11-17-dec0ce2-profile.md) records
+31.939 ms in native compilation/request handling and 15.420 ms in the linker
+for one body-edit command. It narrows the next investigation; it does not prove
+an optimization effect. An [unchanged coordinator project campaign](docs/compiler-set/coordinator-performance.md)
+is wired to measure the actual package under its normal dev/test profiles, with
+its own complete test/rejection gates. Its first full result is still pending.
 
 ## Compiler integration
 

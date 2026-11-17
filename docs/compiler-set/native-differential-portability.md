@@ -105,7 +105,13 @@ Qualification remains `candidate`.
 The complete native Linux and macOS CI gates must execute the corrected fixtures
 and all later suites before native platform qualification is complete. A source
 review or successful Rust-oracle compile alone cannot establish Lust execution.
-The earlier paired measurements remain evidence for their recorded revisions;
-this correction supplies no new timing result or release admission. The added
-constant bound check is not presumed free; the ordinary paired campaign remains
-required for the new compiler identity.
+The [paired campaign at `dec0ce2`](../../performance/2026-11-17-dec0ce2.md)
+subsequently completed for this correction, including its source-built mixed
+correctness gates. Its complete native Linux gate also passed: 5,527 ordinary
+and 5,527 sanitizer differential cases, zero failures, and all later suites.
+The [original artifact](measurements/2026-11-17-native-linux-dec0ce2/README.md)
+preserves the exact source and test scope. macOS was cancelled before starting
+because hosted ARM64 capacity was unavailable. The measurements retain mixed
+and packaged-path regressions and grant no release admission. The subsequent
+library-selection change requires its own complete source-built and performance
+qualification.

@@ -57,7 +57,13 @@ jobs:
       - name: Publish measured tables without granting speed or compiler admission
         run: |
           printf '%s\n\n' '# Historical paired evidence replay' 'These reporting checks do not execute a compiler or qualify current-head performance.' >> "$GITHUB_STEP_SUMMARY"
-          cat performance/2026-11-17-c70eb1c.md performance/2026-11-17-afb17a8.md >> "$GITHUB_STEP_SUMMARY"
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          from pathlib import Path
+          manifest = json.loads(Path('performance/campaigns.json').read_text())
+          for campaign in manifest['campaigns']:
+              print(Path(campaign['table']).read_text())
+          PY
       - name: Preserve reporting checks and exact committed data
         if: always()
         uses: actions/upload-artifact@v4

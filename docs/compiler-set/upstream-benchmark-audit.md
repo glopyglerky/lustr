@@ -44,8 +44,11 @@ modes, twelve matched observations per lane/mode, all 540 timed values,
 correctness prerequisites, compiler identities and independent statistics
 replay. The comparisons isolate pristine Lust, integrated Lust, the product
 entry and the matched complete Rust/Cargo path. Reported regressions remain
-visible. The missing work is broader measurement and durable full evidence,
-not inventing a replacement for this recorder.
+visible. Four original qualification ZIPs are now committed byte for byte,
+preserving 2,160 timed values and 7,072 command outputs beyond Actions expiry.
+The latest campaign adds a hash-bound host record and a separate native-request
+phase profile. The missing work is broader measurement and measured overhead
+reduction, using the existing recorder.
 
 | Coverage | Existing Lustr evidence | Additional campaign needed |
 | --- | --- | --- |
@@ -55,7 +58,13 @@ not inventing a replacement for this recorder.
 | Invalid programs | Dedicated rejection mode | Accepted and rejected states within each edit family, with cold/warm agreement and recovery |
 | Application execution | Correctness runs and compile-plus-test timing | Separate generated-program throughput and end-to-end edit/build/test latency |
 | Resources | Paired wall time | CPU, scoped peak RSS, aggregate process-tree memory if measured, daemon growth and restart costs |
-| Provenance | Exact source, tools, commands and raw evidence digests | Hardware/OS/affinity fields with explicit unknowns, and durable complete logs beyond Actions retention |
+| Provenance | Exact source, tools, commands, durable original ZIPs; latest host/OS/affinity record with explicit unknowns | Maintain complete originals and source identities as larger/private-workspace campaigns are added |
+
+The [unchanged coordinator campaign](coordinator-performance.md) is wired to
+run the real package's normal dev/test profiles with five scenarios and full
+test/rejection gates. Its first candidate result is pending. The default
+debug-information profile excludes native object substitution, so even a
+successful result will not fill the larger native edit-loop evidence gap.
 
 An unsupported case is a coverage result. A timeout is a failure to complete.
 Neither may become a fast successful sample. Compiler release-profile

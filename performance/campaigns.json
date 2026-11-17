@@ -39,6 +39,42 @@
       "csv_sha256": "b53132f4e4c802330d566ed1784f369f51349ab796a3d85800894882c5c6b7f8",
       "table": "performance/2026-11-17-afb17a8.md",
       "table_sha256": "9cdb7e457340d28e3d3504f8cd6dfb1d0ad8c666dac0f11b8425e91ac9847603"
+    },
+    {
+      "head": "048d824ea0289af513b5dc306eb1d4dc6521c539",
+      "run": 44079784399,
+      "artifact": 14328762034,
+      "artifact_name": "source-built-mixed-qualification-1",
+      "archive": "performance/archives/2026-11-17-048d824-qualification.zip",
+      "checkout": "fe4704ec6951b8c22c003476886602368810f637",
+      "tree": "5aec709fcd0df39004973a33320492ba82eb4fc1",
+      "archive_sha256": "43d2125f28fbcae923f66a60457d0db91a6cd9a2685c0c8066b896246654e1a4",
+      "raw_sha256": "6a4bd2c321a15ef3a7530b9d13ae68733958361590baef137690aecb4f6d20f9",
+      "pairs": 12,
+      "seed": 327849038930,
+      "bootstrap_resamples": 10000,
+      "csv": "performance/2026-11-17-048d824.csv",
+      "csv_sha256": "56670a3115bddf5212b1a268f2d83047bef906416142f8c7f7910830b2e0b670",
+      "table": "performance/2026-11-17-048d824.md",
+      "table_sha256": "6b85d1a33a242a4d67579bbcc256ba0c226d112a2116ff7fb2ae6916dec9940c"
+    },
+    {
+      "head": "dec0ce2e3a68b82cac16eae238fc51b16e534e5e",
+      "run": 44083661006,
+      "artifact": 14330845856,
+      "artifact_name": "source-built-mixed-qualification-1",
+      "archive": "performance/archives/2026-11-17-dec0ce2-qualification.zip",
+      "checkout": "dbacce1d14c8df60427eeca8dc7865156c98dcb4",
+      "tree": "c29f3bda282c0870c163303d865abb9be81bd066",
+      "archive_sha256": "2d3aba09e9981244f8beb2526804352e61de00b269d0ff6bcbb6daf20c824d88",
+      "raw_sha256": "fd1b511f19b5f8ab9b556d75f621a978810cb44f9da91cb67abba9c209e898b2",
+      "pairs": 12,
+      "seed": 327849038930,
+      "bootstrap_resamples": 10000,
+      "csv": "performance/2026-11-17-dec0ce2.csv",
+      "csv_sha256": "f7bf667bb9ea93c788f90e74a961759fdcce27bb2c4757518741e2f29aa20551",
+      "table": "performance/2026-11-17-dec0ce2.md",
+      "table_sha256": "b18b50b3d675658cbf60fb77d20c36024c2a69610d584e9b571e4cc51950608d"
     }
   ]
 }

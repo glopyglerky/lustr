@@ -76,6 +76,7 @@ mod native {
         check: bool,
     ) -> Option<(i32, String, String)> {
         let _profile = super::mixed_profile::span(if check { "native-check" } else { "native-compile" });
+        let setup = super::mixed_profile::span("native-request-setup");
         if env_on("LUST_NO_DAEMON") || protocol::source_override().is_some() {return None;}
         let args = vec![if check {"check".into()} else {"build".into()}, file.to_str()?.into(), "-o".into(), output.to_str()?.into()];
         let Some(Invocation::Compile { mut req, .. }) = protocol::parse_args(&args) else { return None };
@@ -101,9 +102,14 @@ mod native {
         let socket = if let Some(directory) = &directory {
             PathBuf::from(format!("/proc/self/fd/{}/{}", directory.as_raw_fd(), socket.file_name()?.to_str()?))
         } else { socket };
+        drop(setup);
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
         loop {
-            if let Some(r) = protocol::request(&socket, &req) {
+            let roundtrip = super::mixed_profile::span("native-daemon-roundtrip");
+            let response = protocol::request(&socket, &req);
+            let bounds = roundtrip.close();
+            if let Some(r) = response {
+                super::mixed_profile::native_response(&_profile, bounds, identity, r.code, &r.stderr);
                 return Some((r.code, r.stdout, r.stderr));
             }
             if std::time::Instant::now() >= deadline {
