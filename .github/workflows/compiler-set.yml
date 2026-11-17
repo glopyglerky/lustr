@@ -231,7 +231,9 @@ jobs:
       - name: Build the paired native and mixed performance runner
         id: bench_build
         if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' }}
-        run: cargo build --manifest-path crates/lustr-bench/Cargo.toml --release --locked --bin lustr-mixed-bench --target-dir "$RUNNER_TEMP/lustr-bench-target"
+        run: |
+          cargo test --manifest-path crates/lustr-bench/Cargo.toml --release --locked --offline --bin lustr-mixed-bench --target-dir "$RUNNER_TEMP/lustr-bench-target"
+          cargo build --manifest-path crates/lustr-bench/Cargo.toml --release --locked --offline --bin lustr-mixed-bench --target-dir "$RUNNER_TEMP/lustr-bench-target"
       - name: Characterize complete supported and mixed work without granting release admission
         id: measurements
         if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.target_layout.outcome == 'success' && steps.baseline_regression.outcome == 'success' && steps.mixed_execution.outcome == 'success' && steps.retained_checks.outcome == 'success' && steps.mixed_libraries.outcome == 'success' && steps.entry_contract.outcome == 'success' && steps.pristine_build.outcome == 'success' && steps.bench_build.outcome == 'success' }}

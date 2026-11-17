@@ -150,6 +150,43 @@ struct Outcome {
     stdout: Vec<u8>,
     stderr: Vec<u8>,
 }
+/// Recognize a retained check using the original compiler's counters, not just
+/// its routing label. Upstream may route a completely unchanged body through
+/// "bodies/chunks": there is still collector work, but no function is rechecked
+/// and no native unit is regenerated. Never classify actual body work as reuse.
+fn stat_field<'a>(line: &'a str, name: &str) -> Option<&'a str> {
+    line.split_ascii_whitespace()
+        .filter_map(|entry| entry.split_once('='))
+        .find_map(|(key, value)| (key == name).then_some(value))
+}
+fn native_retained_check(stderr: &[u8]) -> bool {
+    let Ok(text) = std::str::from_utf8(stderr) else { return false };
+    let mut stats = text.lines().filter_map(|line| line.strip_prefix("lust-stats: "));
+    let Some(stats) = stats.next() else { return false };
+    if stats.next().is_some() || !text.lines().any(|line| line.starts_with("lust check ") && line.contains(": ok (")) {
+        return false;
+    }
+    let mode = stat_field(stats, "mode");
+    if mode == Some("reuse") {
+        return true;
+    }
+    let mut visits = text.lines().filter_map(|line| line.strip_prefix("lust-visits: "));
+    let Some(visits) = visits.next() else { return false };
+    if visits.next().is_some() || mode == Some("full") {
+        return false;
+    }
+    if stat_field(visits, "path") == Some("reuse") {
+        return true;
+    }
+    mode == Some("bodies")
+        && stat_field(visits, "path") == Some("chunks")
+        && stat_field(visits, "why") == Some("bodies")
+        && ["rechecked", "c_bytes", "dirty_units", "units_compiled", "table_rebuilt", "reemitted"]
+            .iter().all(|name| stat_field(stats, name) == Some("0"))
+        && ["nodes", "spans", "scanned", "slot_fns", "discovery", "checked"]
+            .iter().all(|name| stat_field(visits, name) == Some("0"))
+}
+
 struct Campaign {
     root: PathBuf,
     raw: File,
@@ -358,7 +395,7 @@ impl Campaign {
                 if phase == "reuse" {
                     let text = String::from_utf8_lossy(&result.stderr);
                     require(
-                        text.contains("mode=reuse") || text.contains("path=reuse"),
+                        native_retained_check(&result.stderr),
                         format!("{}: no native retained check evidence: {text}", native_lane(lane)),
                     )?;
                 }
@@ -595,6 +632,55 @@ fn query(command: &mut Command) -> R<String> {
     let output = command.output()?;
     require(output.status.success(), format!("identity query failed: {}", String::from_utf8_lossy(&output.stderr)))?;
     Ok(String::from_utf8(output.stdout)?.trim().into())
+}
+
+#[cfg(test)]
+mod native_probe_tests {
+    use super::native_retained_check;
+    const NO_RECHECK: &str = "lust-stats: mode=bodies fns=2 rechecked=0 reused=0 invalidated=0 c_bytes=0 dirty_units=0 units_compiled=0 unit_cache_hits=0 table_rebuilt=0 instances=2 reemitted=0 templates=0 discovered=0\nlust-visits: path=chunks why=bodies files=1 nodes=0 spans=0 scanned=0 slot_fns=0 collect=4 discovery=0 checked=0 kept=none\nlust check /tmp/main.rs: ok (2 functions, bodies: 0 rechecked, 0 reused by reads)\n";
+
+    #[test]
+    fn untouched_body_chunks_are_valid_retention_not_recompilation() {
+        assert!(native_retained_check(NO_RECHECK.as_bytes()));
+    }
+
+    #[test]
+    fn actual_body_or_codegen_work_must_not_be_mislabeled_reuse() {
+        for changed in ["rechecked=1", "c_bytes=8", "dirty_units=1", "units_compiled=1", "table_rebuilt=1", "reemitted=1"] {
+            let key = changed.split_once('=').unwrap().0;
+            let bad = NO_RECHECK.replace(&format!("{key}=0"), changed);
+            assert!(!native_retained_check(bad.as_bytes()), "accepted {changed}");
+        }
+        for changed in ["nodes=1", "spans=1", "scanned=1", "slot_fns=1", "discovery=1", "checked=1"] {
+            let key = changed.split_once('=').unwrap().0;
+            let bad = NO_RECHECK.replace(&format!("{key}=0"), changed);
+            assert!(!native_retained_check(bad.as_bytes()), "accepted {changed}");
+        }
+    }
+
+    #[test]
+    fn original_reuse_routes_remain_accepted() {
+        let explicit = "lust-stats: mode=reuse fns=2 rechecked=0\nlust check /tmp/main.rs: ok (2 functions)\n";
+        assert!(native_retained_check(explicit.as_bytes()));
+        let visited = "lust-stats: mode=bodies fns=2 rechecked=0\nlust-visits: path=reuse why=unchanged\nlust check /tmp/main.rs: ok (2 functions)\n";
+        assert!(native_retained_check(visited.as_bytes()));
+    }
+
+    #[test]
+    fn incomplete_failed_or_full_compilations_are_not_reuse() {
+        for bad in [
+            NO_RECHECK.replace("mode=bodies", "mode=full"),
+            NO_RECHECK.replace("lust check /tmp/main.rs: ok", "lust check /tmp/main.rs: error"),
+            NO_RECHECK.replace("lust-stats: ", ""),
+            NO_RECHECK.replace("lust-visits: ", ""),
+            NO_RECHECK.replace("rechecked=0", "rechecked=1"),
+            NO_RECHECK.replace("path=chunks", "path=full"),
+            format!("{NO_RECHECK}lust-stats: mode=reuse\n"),
+            format!("{NO_RECHECK}lust-visits: path=reuse\n"),
+        ] {
+            assert!(!native_retained_check(bad.as_bytes()), "accepted incomplete report: {bad}");
+        }
+    }
 }
 
 fn main() -> R<()> {
