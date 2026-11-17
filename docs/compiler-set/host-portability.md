@@ -179,7 +179,24 @@ does not lower the recursion cap, omit the test, strip code signatures or change
 compiler algorithms. Apple ld derives its signing identifier from the output's
 install path basename; see
 [the primary code-signing implementation](https://github.com/apple-oss-distributions/ld64/blob/main/src/ld/LinkEdit.hpp).
-The Linux parser and stream equivalence regressions pass after the correction;
-the follow-up native Darwin gate remains required. Full differential, package
-and matched performance campaigns remain required. Earlier Linux measurements
-keep their original source identities and are not attributed to this correction.
+The follow-up at `f510fd9db32d7ad5ab4393b95c9cd4b80d3a4b25` passed all 385 native
+compiler tests, 15 client tests, 23 host tests and six SDK tests on actual
+macOS 26 arm64. Its release build passed, followed by 5,527 differential cases,
+58 macro cases, 13 macro dependency cases and 43 kernel cases. The full gate
+then stopped at two client assertions that used Linux `ldd` to inspect a Mach-O
+executable. The other 87 client assertions passed. That failure is retained in
+[the follow-up native run](https://github.com/glopyglerky/lustr/actions/runs/44197714419).
+
+Client and fuzz base checks now inspect actual native loader metadata: Mach-O
+load commands, runtime search paths and the base install name on Darwin, or ELF
+dependencies and runtime search paths on Linux. They require the exact daemon
+owner, immutable content name and existing base file. A missing inspection tool
+or malformed executable cannot pass a standalone assertion. The fuzz gate also
+uses the native library suffix and actual Darwin resident-memory observation;
+the scenario gate respects Darwin's shorter Unix socket path. Two focused
+loader tests pass against actual Linux C-linker artifacts, including rejection
+of missing bases, wrong owners, misleading embedded names and missing tools.
+Their native Darwin execution and the remainder of the full compiler gate are
+still required, along with package and matched performance campaigns. Earlier
+Linux measurements keep their original source identities and are not attributed
+to these corrections.
