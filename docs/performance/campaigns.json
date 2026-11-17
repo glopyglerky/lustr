@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "repository": "glopyglerky/lustr",
+  "latest_run": 44063047987,
+  "campaigns": [
+    {
+      "run_id": 44056401150,
+      "artifact_id": 14318695838,
+      "head_sha": "c70eb1c25085884622a95666021fce0528e7325b",
+      "checkout_sha": "e7e9cf2a224b2590b895298439e5ede814c6229b",
+      "sha256": "dc6b49c7d8bfd543a79965f5e4299b8f6a9bf481c98c8ffb7d3482b32adf0ac9"
+    },
+    {
+      "run_id": 44063047987,
+      "artifact_id": 14321378285,
+      "head_sha": "afb17a8af2cce9facdf03ba6cf12b8533cb3a171",
+      "checkout_sha": "bc5e0f9cd1168b6b064b9cda9a1455f4fc97d143",
+      "sha256": "3963c513a7a2e6d790cae2f576e80927039d9f7d4e1fe41786068b9650c29050"
+    }
+  ]
+}
