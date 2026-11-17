@@ -1665,10 +1665,18 @@ index 8eabf97640455036f5f7c895cd034b98f4c5b9d3..5803e7fdd0e0f10d68e2587afa8ec68f
      /// threads, so the image holds no handle of a thread that ends with
      /// this process.
 diff --git a/src/image.rs b/src/image.rs
-index 44658f0437e5c4c89e442801c8c17b24afe69d5e..7f98b8ae867793b32fe1e36306b2dfb8ecda0bab 100644
+index 44658f0437e5c4c89e442801c8c17b24afe69d5e..67925ea2bfbdfe5c66435f5acae6e8fad16d7ed4 100644
 --- a/src/image.rs
 +++ b/src/image.rs
-@@ -155,7 +155,7 @@ unsafe extern "C" {
+@@ -148,6 +148,7 @@ unsafe extern "C" {
+     fn getenv(name: *const c_char) -> *const c_char;
+     fn mmap(addr: *mut c_void, len: usize, prot: c_int, flags: c_int, fd: c_int, off: i64) -> *mut c_void;
+     fn munmap(addr: *mut c_void, len: usize) -> c_int;
++    #[cfg(target_os = "linux")]
+     fn personality(persona: u64) -> c_int;
+     fn writev(fd: c_int, iov: *const IoVec, cnt: c_int) -> isize;
+     fn lseek(fd: c_int, off: i64, whence: c_int) -> i64;
+@@ -155,7 +156,7 @@ unsafe extern "C" {
      fn pwrite(fd: c_int, buf: *const c_void, count: usize, off: i64) -> isize;
      fn copy_file_range(fd_in: c_int, off_in: *mut i64, fd_out: c_int, off_out: *mut i64, len: usize, flags: u32) -> isize;
      fn flock(fd: c_int, op: c_int) -> c_int;
@@ -1677,6 +1685,44 @@ index 44658f0437e5c4c89e442801c8c17b24afe69d5e..7f98b8ae867793b32fe1e36306b2dfb8
      fn fork() -> c_int;
      fn setsid() -> c_int;
      fn setpriority(which: c_int, who: u32, prio: c_int) -> c_int;
+@@ -441,6 +442,12 @@ pub fn reexec(dir: &Path) -> String {
+     WHY.get_or_init(|| reexec_now(dir)).clone()
+ }
+ 
++#[cfg(not(target_os = "linux"))]
++fn reexec_now(_dir: &Path) -> String {
++    "persistent front images are only supported on Linux".into()
++}
++
++#[cfg(target_os = "linux")]
+ fn reexec_now(dir: &Path) -> String {
+     // The re-executed process itself, when its arena did not start: never
+     // again (that would loop).
+@@ -488,6 +495,7 @@ static REEXECED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::
+ /// Start of main, single-threaded. In a process `reexec` started (arena
+ /// or not), children (cargo, tcc, user programs) get randomization back
+ /// and no arena variable.
++#[cfg(target_os = "linux")]
+ pub fn process_start() {
+     if std::env::var_os(ARENA_ENV).is_none() {
+         return;
+@@ -3021,3 +3029,16 @@ mod tests {
+         assert!(!valid_base(0));
+     }
+ }
++
++// Image controls must not introduce Linux syscall references into other hosts.
++// The ordinary allocator and daemon remain available without front images.
++#[cfg(not(target_os = "linux"))]
++pub fn process_start() {}
++
++#[cfg(all(test, not(target_os = "linux")))]
++#[test]
++fn front_images_are_disabled_without_linux_syscalls() {
++    assert!(state_dir().is_none());
++    assert_eq!(reexec_now(Path::new("unused-image-state")), "persistent front images are only supported on Linux");
++    process_start();
++}
 diff --git a/src/ir.rs b/src/ir.rs
 index e65c6c518a7494fab411cfad2249c8fda39b3ec1..10e48c8551bceb2fc23e8bf1fd03f71585a470c5 100644
 --- a/src/ir.rs

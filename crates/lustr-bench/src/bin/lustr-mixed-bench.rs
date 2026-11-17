@@ -3,6 +3,8 @@
 //! Successful execution establishes only this corpus; timing never admits a release.
 #![forbid(unsafe_code)]
 
+#[path = "../native_evidence.rs"]
+mod native_evidence;
 #[path = "../order.rs"]
 mod order;
 #[path = "../stats.rs"]
@@ -357,10 +359,9 @@ impl Campaign {
                 }
                 if phase == "reuse" {
                     let text = String::from_utf8_lossy(&result.stderr);
-                    require(
-                        text.contains("mode=reuse") || text.contains("path=reuse"),
-                        format!("{}: no native retained check evidence: {text}", native_lane(lane)),
-                    )?;
+                    let route = native_evidence::retained_check(&text)
+                        .map_err(|reason| format!("{}: invalid native retained check evidence ({reason}): {text}", native_lane(lane)))?;
+                    self.event(json!({"kind":"native-retained-check","lane":native_lane(lane),"route":route}))?;
                 }
             }
             fs::write(&source, native_source("19", false))?;

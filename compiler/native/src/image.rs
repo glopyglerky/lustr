@@ -148,6 +148,7 @@ unsafe extern "C" {
     fn getenv(name: *const c_char) -> *const c_char;
     fn mmap(addr: *mut c_void, len: usize, prot: c_int, flags: c_int, fd: c_int, off: i64) -> *mut c_void;
     fn munmap(addr: *mut c_void, len: usize) -> c_int;
+    #[cfg(target_os = "linux")]
     fn personality(persona: u64) -> c_int;
     fn writev(fd: c_int, iov: *const IoVec, cnt: c_int) -> isize;
     fn lseek(fd: c_int, off: i64, whence: c_int) -> i64;
@@ -441,6 +442,12 @@ pub fn reexec(dir: &Path) -> String {
     WHY.get_or_init(|| reexec_now(dir)).clone()
 }
 
+#[cfg(not(target_os = "linux"))]
+fn reexec_now(_dir: &Path) -> String {
+    "persistent front images are only supported on Linux".into()
+}
+
+#[cfg(target_os = "linux")]
 fn reexec_now(dir: &Path) -> String {
     // The re-executed process itself, when its arena did not start: never
     // again (that would loop).
@@ -488,6 +495,7 @@ static REEXECED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::
 /// Start of main, single-threaded. In a process `reexec` started (arena
 /// or not), children (cargo, tcc, user programs) get randomization back
 /// and no arena variable.
+#[cfg(target_os = "linux")]
 pub fn process_start() {
     if std::env::var_os(ARENA_ENV).is_none() {
         return;
@@ -3020,4 +3028,17 @@ mod tests {
         assert!(!valid_base(WINDOW_LO + 4096), "not 1 GiB aligned");
         assert!(!valid_base(0));
     }
+}
+
+// Image controls must not introduce Linux syscall references into other hosts.
+// The ordinary allocator and daemon remain available without front images.
+#[cfg(not(target_os = "linux"))]
+pub fn process_start() {}
+
+#[cfg(all(test, not(target_os = "linux")))]
+#[test]
+fn front_images_are_disabled_without_linux_syscalls() {
+    assert!(state_dir().is_none());
+    assert_eq!(reexec_now(Path::new("unused-image-state")), "persistent front images are only supported on Linux");
+    process_start();
 }
