@@ -164,13 +164,21 @@ class MixedWorkflowTests(unittest.TestCase):
                     self.assertTrue(self.eligible("entry_contract", outcomes))
 
     def test_measurements_require_every_correctness_gate(self):
-        required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution", "retained_checks", "mixed_libraries", "entry_contract", "pristine_build", "bench_build"}
+        required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution", "retained_checks", "mixed_libraries", "entry_contract", "pristine_build", "bench_build", "host_record"}
         self.assertEqual(set(dependencies(self.steps["measurements"])), required)
         self.assertTrue(self.eligible("measurements"))
         for gate in required:
             for outcome in ("failure", "skipped", "cancelled"):
                 with self.subTest(gate=gate, outcome=outcome):
                     self.assertFalse(self.eligible("measurements", dict(self.success, **{gate: outcome})))
+
+    def test_profiling_is_separate_from_timing_and_keeps_its_failure(self):
+        self.assertTrue(self.eligible("mixed_profile"))
+        self.assertFalse(self.eligible("mixed_profile", dict(self.success, mixed_execution="failure")))
+        self.assertTrue(self.eligible("measurements", dict(self.success, mixed_profile="failure")))
+        self.assertNotIn("LUSTR_MIXED_PROFILE_DIR", self.steps["measurements"])
+        self.assertIn("lustr-mixed-profile", self.steps["mixed_profile"])
+        self.assertIn("lustr-paired-measurements", self.steps["measurements"])
 
 
 if __name__ == "__main__":

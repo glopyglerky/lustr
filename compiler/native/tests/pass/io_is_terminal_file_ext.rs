@@ -2,17 +2,25 @@
 // EINVAL offsets), and SocketAddrExt::from_abstract_name over AsRef<[u8]>
 // (tf-p6 R23); std const_error Debug forms of the SUN_LEN errors.
 use std::io::IsTerminal;
+#[cfg(target_os = "linux")]
 use std::os::linux::net::SocketAddrExt;
 use std::os::unix::fs::FileExt;
-use std::os::unix::net::{SocketAddr, UnixStream};
+#[cfg(target_os = "linux")]
+use std::os::unix::net::SocketAddr;
+use std::os::unix::net::UnixStream;
 fn main() {
     println!("{} {} {}", std::io::stdout().is_terminal(), std::io::stdin().is_terminal(), std::io::stderr().lock().is_terminal());
-    let e = SocketAddr::from_abstract_name([b'a'; 200]).unwrap_err();
-    println!("{:?} | {}", e, e);
-    let a = SocketAddr::from_abstract_name("name").unwrap();
-    println!("{:?} {:?}", a, a.as_abstract_name());
-    let a2 = SocketAddr::from_abstract_name(String::from("n2")).unwrap();
-    println!("{:?}", a2);
+    // Abstract socket names are a Linux API. Keep the Unix/file checks below
+    // active on every host, including macOS.
+    #[cfg(target_os = "linux")]
+    {
+        let e = SocketAddr::from_abstract_name([b'a'; 200]).unwrap_err();
+        println!("{:?} | {}", e, e);
+        let a = SocketAddr::from_abstract_name("name").unwrap();
+        println!("{:?} {:?}", a, a.as_abstract_name());
+        let a2 = SocketAddr::from_abstract_name(String::from("n2")).unwrap();
+        println!("{:?}", a2);
+    }
     let e2 = UnixStream::connect("/nonexistent/x/y/z").unwrap_err();
     println!("{:?}", e2.kind());
     let long = "/".repeat(120);

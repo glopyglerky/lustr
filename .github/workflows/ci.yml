@@ -22,6 +22,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - name: Check actual Unix-address helper bounds with ASan and UBSan
+        run: python3 ../../tools/test-native-unix-address.py
       - name: Cache pinned tcc
         id: tcc
         uses: actions/cache@v4
@@ -85,7 +87,7 @@ jobs:
         run: |
           # The upstream gate uses Bash associative arrays and wait -n.
           # macOS /bin/bash 3.2 cannot run that test harness.
-          brew install bash coreutils findutils gnu-sed
+          brew install bash coreutils findutils gnu-sed flock
           echo "$(brew --prefix bash)/bin" >> "$GITHUB_PATH"
           for tool in coreutils findutils gnu-sed; do
             echo "$(brew --prefix "$tool")/libexec/gnubin" >> "$GITHUB_PATH"
@@ -100,6 +102,24 @@ jobs:
           command -v bash
           command -v sed
           command -v find
+          # The original client and sanitizer gates require fd-based locking.
+          # Verify contention and release, not just the executable's presence.
+          command -v flock
+          lock=$(mktemp)
+          (
+            exec 9>"$lock"
+            flock -n 9
+            if flock -n "$lock" true; then
+              echo 'flock accepted a second lock while fd 9 held it' >&2
+              exit 1
+            else
+              test "$?" -eq 1
+            fi
+          )
+          flock -n "$lock" true
+          rm -f "$lock"
+      - name: Check actual Unix-address helper bounds with ASan and UBSan
+        run: python3 ../../tools/test-native-unix-address.py
       - name: Cache pinned tcc
         id: tcc
         uses: actions/cache@v4

@@ -1,5 +1,6 @@
 //! Real Cargo/proc-macro execution, native edits, invalidation and rejection.
 use std::{
+    collections::BTreeSet,
     fs,
     io::Write,
     os::unix::fs::PermissionsExt,
@@ -14,6 +15,13 @@ fn put(p: &Path, s: &str) {
 fn retain(source: &Path, target: &Path) {
     fs::copy(source, target).unwrap();
     fs::set_permissions(target, fs::Permissions::from_mode(0o644)).unwrap();
+}
+fn profile_files(directory: &Path) -> BTreeSet<String> {
+    fs::read_dir(directory)
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().into_string().expect("profiling names must be UTF-8"))
+        .filter(|name| name.ends_with(".jsonl"))
+        .collect()
 }
 fn main() {
     // Adopt the original Lust daemon after its short-lived compiler client
@@ -65,8 +73,12 @@ fn main() {
     );
     fs::set_permissions(&linker, fs::Permissions::from_mode(0o755)).unwrap();
     let trace = work.join("mixed.trace");
+    // This is only enabled by a separate profiling run. Keep one directory and
+    // environment value across edits so profiling cannot change the cache key.
+    let profile_directory = std::env::var_os("LUSTR_MIXED_PROFILE_DIR").map(PathBuf::from);
     let build = |label: &str, expected: bool| {
         let before = fs::read(&path).unwrap();
+        let profiles_before = profile_directory.as_ref().map(|path| profile_files(path));
         let start = std::time::Instant::now();
         // A packaged lustr entry owns Cargo selection. The standalone driver form
         // exercises the identical compiler contract while constructing that package.
@@ -96,6 +108,11 @@ fn main() {
         fs::write(work.join(format!("{label}.stderr")), &output.stderr).unwrap();
         fs::write(work.join(format!("{label}.status")), format!("{} elapsed_ns={}\n", output.status, start.elapsed().as_nanos())).unwrap();
         fs::copy(&trace, work.join(format!("{label}.trace"))).unwrap();
+        if let Some(directory) = &profile_directory {
+            let profiles_after = profile_files(directory);
+            let added = profiles_after.difference(profiles_before.as_ref().unwrap()).cloned().collect::<Vec<_>>();
+            fs::write(work.join(format!("{label}.profiles")), added.join("\n") + "\n").unwrap();
+        }
         assert_eq!(fs::read(&path).unwrap(), before, "compiler altered application source");
         assert_eq!(output.status.success(), expected, "{label}: Cargo {}: {}", output.status, String::from_utf8_lossy(&output.stderr));
     };

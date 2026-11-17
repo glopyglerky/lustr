@@ -228,13 +228,25 @@ jobs:
           export RUSTC="$(rustc --print sysroot)/bin/rustc"
           cargo build --manifest-path "$RUNNER_TEMP/lustr-pristine-source/Cargo.toml" --release --locked --offline --jobs 2 --bin lust --bin lust-core --target-dir "$RUNNER_TEMP/lustr-pristine-target" --config "build.build-dir=\"$RUNNER_TEMP/lustr-pristine-intermediates\"" 2>&1 | tee "$RUNNER_TEMP/lustr-pristine-build.log"
           sha256sum "$RUNNER_TEMP/lustr-pristine-target/release/lust" "$RUNNER_TEMP/lustr-pristine-target/release/lust-core" > "$RUNNER_TEMP/lustr-pristine-binaries.sha256"
+      - name: Profile mixed phases in a separate instrumented qualification
+        id: mixed_profile
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.mixed_qualifier.outcome == 'success' && steps.target_layout.outcome == 'success' && steps.baseline_regression.outcome == 'success' && steps.mixed_execution.outcome == 'success' && steps.retained_checks.outcome == 'success' && steps.mixed_libraries.outcome == 'success' && steps.entry_contract.outcome == 'success' }}
+        run: python3 tools/profile-mixed-compiler.py --qualifier "$RUNNER_TEMP/mixed-compiler-qualification" --cargo "$RUNNER_TEMP/lustr-source-built/toolchain/bin/cargo" --lustr "$RUNNER_TEMP/lustr-source-built/toolchain/bin/lustr" --output "$RUNNER_TEMP/lustr-mixed-profile"
+      - name: Record benchmark host facts before timing
+        id: host_record
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' }}
+        run: |
+          python3 tools/test-benchmark-host.py
+          python3 tools/capture-benchmark-host.py "$RUNNER_TEMP/lustr-benchmark-host.json"
       - name: Build the paired native and mixed performance runner
         id: bench_build
         if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' }}
         run: cargo build --manifest-path crates/lustr-bench/Cargo.toml --release --locked --bin lustr-mixed-bench --target-dir "$RUNNER_TEMP/lustr-bench-target"
       - name: Characterize complete supported and mixed work without granting release admission
         id: measurements
-        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.target_layout.outcome == 'success' && steps.baseline_regression.outcome == 'success' && steps.mixed_execution.outcome == 'success' && steps.retained_checks.outcome == 'success' && steps.mixed_libraries.outcome == 'success' && steps.entry_contract.outcome == 'success' && steps.pristine_build.outcome == 'success' && steps.bench_build.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.target_layout.outcome == 'success' && steps.baseline_regression.outcome == 'success' && steps.mixed_execution.outcome == 'success' && steps.retained_checks.outcome == 'success' && steps.mixed_libraries.outcome == 'success' && steps.entry_contract.outcome == 'success' && steps.pristine_build.outcome == 'success' && steps.bench_build.outcome == 'success' && steps.host_record.outcome == 'success' }}
+        env:
+          LUSTR_BENCH_HOST_RECORD: ${{ runner.temp }}/lustr-benchmark-host.json
         run: '"$RUNNER_TEMP/lustr-bench-target/release/lustr-mixed-bench" "$RUNNER_TEMP/lustr-pristine-source" "$RUNNER_TEMP/lustr-pristine-target/release/lust" "$RUNNER_TEMP/lustr-source-built" "$RUNNER_TEMP/lustr-paired-measurements" 12'
       - name: Retain exact source, build profiles and qualification evidence
         if: always()
@@ -294,6 +306,18 @@ jobs:
             ${{ runner.temp }}/full-entry-contract/**/*.jsonl
             ${{ runner.temp }}/lustr-pristine-build.log
             ${{ runner.temp }}/lustr-pristine-binaries.sha256
+            ${{ runner.temp }}/lustr-benchmark-host.json
+            ${{ runner.temp }}/lustr-mixed-profile/run.json
+            ${{ runner.temp }}/lustr-mixed-profile/summary.json
+            ${{ runner.temp }}/lustr-mixed-profile/README.md
+            ${{ runner.temp }}/lustr-mixed-profile/qualifier.stdout
+            ${{ runner.temp }}/lustr-mixed-profile/qualifier.stderr
+            ${{ runner.temp }}/lustr-mixed-profile/profiles/*.jsonl
+            ${{ runner.temp }}/lustr-mixed-profile/qualification/*.profiles
+            ${{ runner.temp }}/lustr-mixed-profile/qualification/*.stdout
+            ${{ runner.temp }}/lustr-mixed-profile/qualification/*.stderr
+            ${{ runner.temp }}/lustr-mixed-profile/qualification/*.status
+            ${{ runner.temp }}/lustr-mixed-profile/qualification/*.trace
             ${{ runner.temp }}/lustr-paired-measurements/*.json
             ${{ runner.temp }}/lustr-paired-measurements/*.jsonl
             ${{ runner.temp }}/lustr-paired-measurements/*.txt

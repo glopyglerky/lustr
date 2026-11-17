@@ -7,13 +7,18 @@ pinned Rust implementation. blueFe delivers the combined toolchain.
 ## Numbers and current qualification
 
 **Not yet release-ready.** The latest measured source-built Compiler set passed
-all nine jobs, but native macOS CI still fails and mixed Cargo compilation has
+all nine jobs, but the latest completed native macOS CI failed and mixed Cargo compilation has
 material performance regressions. Green measurement execution is not speed parity.
 
 [Full performance documentation](PERFORMANCE.md) records the exact source,
 compiler pins, workload, profiles, caches, uncertainty, retained failures and
 reproduction commands. Both completed campaigns have all 27 comparison tables
 and every timed value committed under [`performance/`](performance/).
+The [performance index](performance/README.md) also links both byte-identical
+original qualification archives. CI replays their complete outputs and tables.
+New campaigns record selected host facts and keep phase profiling separate from
+timed measurements. The [upstream audit](docs/compiler-set/upstream-benchmark-audit.md)
+compares the actual breadth and limits of Lust's studies with this evidence.
 
 Latest campaign: 12 matched pairs per mode, Linux x86-64, PR9 head `afb17a8`.
 Times below are medians in milliseconds; the ratio is the paired geometric mean
@@ -163,7 +168,7 @@ review and appropriate performance evidence are required. No hidden overlay or
 unexplained drift is admitted.
 The root Cargo project now builds the native-first compiler entry candidate in
 `src/`. Its [execution and artifact contracts](docs/compiler-set/native-driver.md)
-identify the unchanged native engine, the C ABI cold entry and the inherited full
+identify the declared native integration, the C ABI cold entry and the inherited full
 Rust core. Preview packaging does not establish a complete native compiler.
 The separate compatibility coordinator remains in `crates/lustr`.
 The experimental `native-inference` features in the root and native ABI crate
@@ -210,7 +215,7 @@ describes the packaged runtime, corresponding source, exact host dependencies,
 executed checks and remaining coverage/performance requirements.
 
 The assembled candidate provides `bin/lustr`, the rustc-compatible `bin/rustc`,
-unchanged `bin/lust`/`bin/lust-core`, and the unchanged upstream full Rust core as
+the declared integrated `bin/lust`/`bin/lust-core`, and the unchanged upstream full Rust core as
 `bin/rustc-full`. Native examples use:
 
 ```sh
@@ -234,7 +239,7 @@ remain unfinished. Working routing is not proof that those tasks are complete.
 
 The Linux x86_64 GNU candidate adds executable/shared-library naming constants,
 borrowed OS-string/path conversions to `PathBuf`, and `reserve`/`reserve_exact`
-for `OsString` and `PathBuf`. These compile the original program through unchanged Lust with
+for `OsString` and `PathBuf`. These compile the original program through Lust with
 an explicitly composed source library. Retained sessions verify the installed
 source inventory and hashes and use a separate component identity. Explicit
 source overrides stay cold. See the [entry contract](docs/compiler-set/native-driver.md)
@@ -305,7 +310,7 @@ cargo install --path crates/lustr --locked
 | Path | Responsibility |
 | --- | --- |
 | `src/`, `Cargo.toml`, `build.rs` | Primary compiler entry candidate, request contracts, native loading and full-core invocation. |
-| `crates/lustr-native-core` | Owned C ABI entry around unchanged native Lust modules; optional checked constraint elaboration and arena reindexing; compiled separately with PIC TinyCC. |
+| `crates/lustr-native-core` | Owned C ABI entry around the declared native Lust integration; optional checked constraint elaboration and arena reindexing; compiled separately with PIC TinyCC. |
 | `crates/lustr-native-core/src/{native_modules,expanded_parser,expanded_check}.rs` | Explicit opt-in module composition, original-token unsafe-block parsing and safety-qualified AST lowering; default pristine entry retained. |
 | `crates/lustr-native-core/src/collect/safe_calls.rs` | Original-context native call resolution and bounded target, safety, ABI and signature qualification. |
 | `crates/lustr-native-core/src/native_crate.rs`, `native_namespace.rs`, `native_types.rs`, `native_nominals.rs`, `native_generic_nominals.rs`, `native_regions.rs`, `native_runtime.rs`, `native_memory.rs`, `native_fill.rs`, `tools/native-crate-qualification.rs` | Experimental typed native artifact, concrete layout/ABI, symbolic nominal templates and original region records, explicit runtime/location dependencies, licensed memory providers, producer resolver projection and stable crate/definition/module remapping. Early imports and calls use no fabricated function ASTs. General metadata/Cargo integration remains open. |
@@ -314,7 +319,7 @@ cargo install --path crates/lustr --locked
 | `crates/lustr-native-core/src/native_consts.rs`, `tools/native-crate-consts-qualification.rs` | Experimental closed constant identities, typed values and promotion qualifiers through original native checking and fresh consumer constant tables; generic bodies and reference/allocation/function identities remain open. |
 | `src/native_worker.rs`, `tests/native_inference.rs` | Opt-in inference child, direct native/oracle and product routing/failure qualification. |
 | `crates/lustr-native-core/src/inference/{reuse,host_inputs}.rs`, `tools/native-{retained-probe,tcc-input-observer}.rs`, `tests/native_reuse.rs` | Bounded artifact proof, native host-input observation and edit/cold-oracle qualification; not selected by the product. |
-| `library/lustr`, `library/lust` | Owned source-library additions and an explicit link to the unchanged baseline. No protected source is patched or copied into a divergent compiler. |
+| `library/lustr`, `library/lust` | Owned source-library additions and an explicit link to the guarded native component. Protected changes are recorded in the complete declared integration diff. |
 | `compiler/native` | Pristine pinned Lust reference plus the declared reviewed integration diff; compiler, libraries, generation and differential fixtures. Focused shared interfaces follow the source policy. |
 | `crates/lustr` | Transitional Cargo/rustc coordinator, BlueFe tool selection and compatibility qualification. |
 | `upstream/lust.pin`, `upstream/bluefe-core.pin` and `tools/lust-upstream-check.rs` | Upstream source identity, exact compiler-component bindings and the Lust source-preservation guard. |

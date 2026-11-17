@@ -118,6 +118,36 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(rows[0][1:], [f"pair_{i}_seconds" for i in range(6)])
         self.assertEqual({x[0]: list(map(float, x[1:])) for x in rows[1:]}, result["timing_samples"])
 
+    def host_record(self):
+        value = {"schema": "lustr-benchmark-host-v1", "cpu_model": {"value": None, "unavailable_reason": "not available"}}
+        raw = (json.dumps(value) + "\n").encode()
+        host = {"record": value, "sha256": reporter.sha256(raw)}
+        (self.root / "lustr-paired-measurements/host.json").write_bytes(raw)
+        self.data["host"] = host
+        self.data["records"][0]["report"]["host"] = copy.deepcopy(host)
+        self.save()
+        return host
+
+    def test_host_record_is_preserved_without_inventing_historical_facts(self):
+        self.assertNotIn("host", self.verify())
+        host = self.host_record()
+        self.assertEqual(self.verify()["host"], host)
+
+    def test_changed_host_file_is_rejected(self):
+        self.host_record()
+        (self.root / "lustr-paired-measurements/host.json").write_text('{}\n')
+        self.rejected()
+
+    def test_missing_host_file_is_rejected(self):
+        self.host_record()
+        (self.root / "lustr-paired-measurements/host.json").unlink()
+        self.rejected()
+
+    def test_changed_host_identity_is_rejected(self):
+        self.host_record()
+        self.data["host"]["record"]["cpu_model"]["value"] = "invented"
+        self.rejected()
+
     def test_unknown_phase_and_replay_capacity(self):
         self.first_command()["phase"] = "new-unrecognized-work"
         self.rejected()

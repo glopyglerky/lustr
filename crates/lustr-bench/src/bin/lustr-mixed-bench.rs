@@ -668,6 +668,20 @@ fn main() -> R<()> {
     fs::copy(campaign.built.join("BUILD-PROFILE.txt"), campaign.root.join("BUILD-PROFILE.txt"))?;
     fs::copy(campaign.built.join("COMPONENTS.txt"), campaign.root.join("COMPONENTS.txt"))?;
     fs::copy(campaign.built.join("NATIVE-BUILD-RECEIPT.txt"), campaign.root.join("NATIVE-BUILD-RECEIPT.txt"))?;
+    // Collected before timing. Preserve exactly what the collector observed;
+    // old campaigns without this input must not acquire invented host facts.
+    let host = if let Some(path) = std::env::var_os("LUSTR_BENCH_HOST_RECORD") {
+        let path = PathBuf::from(path);
+        require(fs::metadata(&path)?.len() <= 65536, "host record is too large")?;
+        let bytes = fs::read(&path)?;
+        let record: Value = serde_json::from_slice(&bytes)?;
+        require(record["schema"] == "lustr-benchmark-host-v1", "unsupported host record")?;
+        let output = campaign.root.join("host.json");
+        put(&output, bytes)?;
+        Some(json!({"sha256":digest(&output)?,"record":record}))
+    } else {
+        None
+    };
     let mut report = json!({
         "schema":1,"status":"failed","performance_admission":"not granted by this runner","pairs":pairs,
         "pristine_revision":head,"pristine_tree":tree,"pristine_source":pristine_source,"compiler_sha256":identities,"rust_reference_version":rust,
@@ -679,6 +693,9 @@ fn main() -> R<()> {
         "timing_scope":"command wall time through observed child exit, 100us polling; tracing/stats disabled for all measured commands; runtime assertions after builds are outside compile-only timing; compile-plus-test executes actual tests",
         "inference_limits":"shared-host paired observations; bootstrap assumes independent pairs; exploratory per-mode comparisons; pristine binary build recipe must accompany this source/binary identity record"
     });
+    if let Some(host) = host {
+        report["host"] = host;
+    }
     campaign.event(json!({"kind":"identities","report":report}))?;
     let result = (|| -> R<Value> {
         set_child_subreaper(true)?;

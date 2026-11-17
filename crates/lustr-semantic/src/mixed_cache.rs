@@ -15,6 +15,7 @@ use std::{
 };
 
 pub fn context(tcx: TyCtxt<'_>, native: &BTreeSet<String>) -> Option<Value> {
+    let _profile = super::mixed_profile::span("context-fingerprint");
     let mut owners = std::collections::BTreeMap::new();
     for owner in tcx.hir_crate_items(()).owners() {
         let key = format!("{:?}", tcx.def_path_hash(owner.def_id.to_def_id()));
@@ -62,6 +63,7 @@ pub fn read(index: &Path) -> Option<Value> {
 }
 
 pub fn publish(index: &Path, directory: &Path, context: Value, kernels: Vec<Value>, check_only: bool) -> std::io::Result<()> {
+    let _profile = super::mixed_profile::span("publish-certificate");
     let state = json!({"schema":"lustr.checked-mixed-link","version":4,"check_only":check_only,
         "rustc":env!("LUSTR_BUILD_RUSTC_COMMIT"),"native":env!("LUST_BUILD_HASH"),
         "directory":directory,"context":context,"kernels":kernels});
@@ -123,6 +125,7 @@ fn literal_edit(old: &str, new: &str) -> bool {
 /// A changed expansion, definition, dependency or attribute returns to complete
 /// Rust analysis in the SAME invocation, reusing the expansion already done.
 pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
+    let _profile = super::mixed_profile::span("retained-attempt");
     if !compiler.enabled || !compiler.reuse_allowed || !super::mixed_diagnostics::quiet() {
         return None;
     }
@@ -178,6 +181,7 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
             return None;
         }
     }
+    let body_queries = super::mixed_profile::span("changed-body-queries");
     for owner in tcx.hir_crate_items(()).owners() {
         if changed.contains(&format!("{:?}", tcx.def_path_hash(owner.def_id.to_def_id()))) {
             // Use the existing Rust body queries for new obligations and
@@ -198,6 +202,7 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
             }
         }
     }
+    drop(body_queries);
     tcx.sess.dcx().abort_if_errors();
     if !super::mixed_diagnostics::quiet() {
         super::trace("reuse-miss=diagnostics");
@@ -240,21 +245,27 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
         }
         let symbol = text(kernel, "symbol")?.to_owned();
         let linked = fresh(&unit, "renamed", "o")?;
-        let result = Command::new("objcopy")
-            .arg("--redefine-sym")
-            .arg(format!("{native_symbol}={symbol}"))
-            .arg(&output)
-            .arg(&linked)
-            .output()
-            .ok()?;
+        let result = {
+            let _profile = super::mixed_profile::span("native-symbol-rename");
+            Command::new("objcopy")
+                .arg("--redefine-sym")
+                .arg(format!("{native_symbol}={symbol}"))
+                .arg(&output)
+                .arg(&linked)
+                .output()
+                .ok()?
+        };
         if !result.status.success() {
             return None;
         }
         // The current certificate still describes the previous successful
         // body. Keep its object immutable if a later edit, link or dep-info
         // step fails. Only the final-success publication selects this object.
-        fs::File::open(&linked).ok()?.sync_all().ok()?;
-        fs::File::open(&unit).ok()?.sync_all().ok()?;
+        {
+            let _profile = super::mixed_profile::span("edited-native-object-sync");
+            fs::File::open(&linked).ok()?.sync_all().ok()?;
+            fs::File::open(&unit).ok()?.sync_all().ok()?;
+        }
         kernel["object"] = json!(linked);
         kernel["body"] = json!(candidate.body);
     }

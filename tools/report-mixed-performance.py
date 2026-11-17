@@ -208,6 +208,15 @@ def verify(evidence):
                 "scope", "inference_limits", "order_method", "performance_admission"):
         require(report.get(key) == initial.get(key) and key in report, f"identity mismatch: {key}")
     require(report["performance_admission"] == "not granted by this runner", "unexpected admission claim")
+    host = None
+    if "host" in report or "host" in initial:
+        require("host" in report and report["host"] == initial.get("host"), "host identity mismatch")
+        host = report["host"]
+        require(isinstance(host, dict) and set(host) == {"sha256", "record"}, "invalid host identity")
+        raw_host = evidence.read(prefix + "host.json")
+        require(sha256(raw_host) == host["sha256"], "host record digest mismatch")
+        require(isinstance(host["record"], dict) and json_load(raw_host) == host["record"] and
+                host["record"].get("schema") == "lustr-benchmark-host-v1", "host record mismatch")
     for key in ("pristine_revision", "pristine_tree"):
         require(re.fullmatch(r"[0-9a-f]{40}", report[key]) is not None, f"invalid {key}")
     require(report["compiler_sha256"] and all(SHA.fullmatch(v) for v in report["compiler_sha256"].values()),
@@ -314,6 +323,8 @@ def verify(evidence):
                   verified=dict(records=len(rows), command_outputs=len(outputs), timed_commands=len(groups),
                                 comparisons=len(seen)),
                   performance_admission="not granted; replay is not compiler qualification")
+    if host is not None:
+        result["host"] = host
     return result
 
 

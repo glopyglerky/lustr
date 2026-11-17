@@ -1,6 +1,6 @@
 {
   "schema": "lustr-committed-campaigns-v1",
-  "kind": "Derived timing projections; original command evidence is in the identified artifacts.",
+  "kind": "Derived timing projections and byte-identical archived original qualification artifacts.",
   "pristine_revision": "240e08d91d4aed0299639f6f11fd522912b248f9",
   "rust_reference_revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
   "campaigns": [
@@ -9,6 +9,7 @@
       "run": 44056401150,
       "artifact": 14318695838,
       "artifact_name": "source-built-mixed-qualification-1",
+      "archive": "performance/archives/2026-11-17-c70eb1c-qualification.zip",
       "checkout": "e7e9cf2a224b2590b895298439e5ede814c6229b",
       "tree": "bf575b9343774b50646a78a5aa22eb52960de840",
       "archive_sha256": "dc6b49c7d8bfd543a79965f5e4299b8f6a9bf481c98c8ffb7d3482b32adf0ac9",
@@ -26,6 +27,7 @@
       "run": 44063047987,
       "artifact": 14321378285,
       "artifact_name": "source-built-mixed-qualification-1",
+      "archive": "performance/archives/2026-11-17-afb17a8-qualification.zip",
       "checkout": "bc5e0f9cd1168b6b064b9cda9a1455f4fc97d143",
       "tree": "3ccebbefb604e0c45715200bcabc3b32b182d3ef",
       "archive_sha256": "3963c513a7a2e6d790cae2f576e80927039d9f7d4e1fe41786068b9650c29050",

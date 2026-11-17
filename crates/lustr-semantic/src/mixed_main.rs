@@ -40,6 +40,7 @@ mod mixed_backend;
 mod mixed_cache;
 mod mixed_diagnostics;
 mod mixed_objects;
+mod mixed_profile;
 
 #[allow(dead_code)]
 #[rustfmt::skip]
@@ -74,6 +75,7 @@ mod native {
         assertions: bool,
         check: bool,
     ) -> Option<(i32, String, String)> {
+        let _profile = super::mixed_profile::span(if check { "native-check" } else { "native-compile" });
         if env_on("LUST_NO_DAEMON") || protocol::source_override().is_some() {return None;}
         let args = vec![if check {"check".into()} else {"build".into()}, file.to_str()?.into(), "-o".into(), output.to_str()?.into()];
         let Some(Invocation::Compile { mut req, .. }) = protocol::parse_args(&args) else { return None };
@@ -376,6 +378,7 @@ impl Callbacks for Compiler {
         }
     }
     fn after_crate_root_parsing(&mut self, compiler: &interface::Compiler, krate: &mut ast::Crate) -> Compilation {
+        let _profile = mixed_profile::span("parse-candidates");
         self.frontend = true;
         trace("frontend=1");
         if !self.enabled {
@@ -413,6 +416,7 @@ impl Callbacks for Compiler {
         Compilation::Continue
     }
     fn after_expansion<'tcx>(&mut self, _: &interface::Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
+        let _profile = mixed_profile::span("after-expansion");
         // Continue through the driver's original dep-info writer. Only its
         // analysis query is skipped after the retained boundary is verified.
         if mixed_cache::attempt(self, tcx).is_some() {
@@ -421,6 +425,7 @@ impl Callbacks for Compiler {
         Compilation::Continue
     }
     fn after_analysis<'tcx>(&mut self, _: &interface::Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
+        let _profile = mixed_profile::span("select-native-after-analysis");
         if self.reused {
             // Checks continue through Rust's original metadata encoder. Its
             // current source/crate hash and real rmeta are never reused from
@@ -559,13 +564,16 @@ impl Callbacks for Compiler {
                     continue;
                 }
                 let linked = path.join("native-link.o");
-                let Ok(result) = Command::new("objcopy")
-                    .arg("--redefine-sym")
-                    .arg(format!("{native_symbol}={symbol}"))
-                    .arg(&object)
-                    .arg(&linked)
-                    .output()
-                else {
+                let result = {
+                    let _profile = mixed_profile::span("native-symbol-rename");
+                    Command::new("objcopy")
+                        .arg("--redefine-sym")
+                        .arg(format!("{native_symbol}={symbol}"))
+                        .arg(&object)
+                        .arg(&linked)
+                        .output()
+                };
+                let Ok(result) = result else {
                     continue;
                 };
                 if !result.status.success() {
@@ -602,6 +610,8 @@ fn main() -> ExitCode {
         return ExitCode::from(2);
     }
     let args: Vec<String> = os.into_iter().map(|a| a.into_string().unwrap()).collect();
+    let request = mixed_profile::span("driver");
+    let setup = mixed_profile::span("request-setup");
     unsafe extern "C" {
         fn geteuid() -> u32;
     }
@@ -616,7 +626,7 @@ fn main() -> ExitCode {
     let identity = |p: &std::path::Path| fs::metadata(p).ok().map(|m| (m.dev(), m.ino(), m.len(), m.mtime(), m.mtime_nsec()));
     let binaries = executable.as_ref().map(|p| (identity(p), identity(&p.with_file_name("lust-core"))));
     let key = hash(&(&args, std::env::current_dir().ok(), environment, binaries));
-    let directory = root.join(key);
+    let directory = root.join(&key);
     let index = directory.join("current.json");
     use std::os::unix::fs::DirBuilderExt;
     // Generated projections contain application source. Keep them private and
@@ -651,7 +661,10 @@ fn main() -> ExitCode {
     let dcx = rustc_session::EarlyDiagCtxt::new(rustc_session::config::ErrorOutputType::default());
     rustc_driver::init_rustc_env_logger(&dcx);
     rustc_driver::install_ctrlc_handler();
+    drop(setup);
+    let driver = mixed_profile::span("rustc-driver");
     let status = rustc_driver::catch_with_exit_code(|| rustc_driver::compiler_entrypoint(&args, &mut callbacks));
+    drop(driver);
     if status == ExitCode::SUCCESS
         && callbacks.reuse_allowed
         && mixed_diagnostics::quiet()
@@ -667,5 +680,7 @@ fn main() -> ExitCode {
     {
         trace(&format!("cache-not-retained={e}"));
     }
+    drop(request);
+    mixed_profile::finish(status == ExitCode::SUCCESS, callbacks.reused, callbacks.check_only, &key);
     status
 }

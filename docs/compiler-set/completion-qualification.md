@@ -3,8 +3,33 @@
 This candidate extends PR7 from
 `2add988c6397ac5175fcdf89a3aac17d359bf283`. It preserves the pinned Lust
 reference, the matched full Rust implementation, and the existing Cargo graph.
-It is not an admitted release. Hosted runtime, performance and native macOS
-results remain required.
+It is not an admitted release. Hosted mixed correctness and paired measurement
+execution now have completed evidence. Native macOS execution and performance
+acceptance remain separate requirements.
+
+## Completed hosted evidence
+
+The source-built Compiler set campaigns at `c70eb1c` and `afb17a8` completed all
+nine jobs, including baseline stale-output reproduction, corrected recovery,
+mixed Cargo execution, retained checks with fresh metadata, mixed libraries,
+the fourteen-test entry/runtime contract and all four selected target-layout
+comparisons. The latter are cross-target layout checks, not native execution.
+See [run 44056401150](https://github.com/glopyglerky/lustr/actions/runs/44056401150)
+and [run 44063047987](https://github.com/glopyglerky/lustr/actions/runs/44063047987).
+
+Both completed paired campaigns preserve 540 timed command values and 27
+comparisons each. [PERFORMANCE.md](../../PERFORMANCE.md) reports the substantial
+mixed Cargo regressions, exact source identities, uncertainty and workload
+limits. [The original ZIP archives](../../performance/archives) preserve the
+full qualification outputs as well as timing data. Measurement completion does
+not establish speed preservation.
+
+The corresponding [native CI run](https://github.com/glopyglerky/lustr/actions/runs/44063047989)
+passed Linux but failed macOS after 5,522 passing differential cases and four
+failures. Those observed failures motivated the [portable fixture and Unix
+address correction](native-differential-portability.md). The correction and
+separate mixed profiling work require their own exact-source CI; earlier
+success is not a result for the new candidate.
 
 ## Correctness changes
 
@@ -27,12 +52,16 @@ It verifies the result through the runtime's actual seal validator. The full
 existing compiler contract remains required, including retained source-library
 edits, package tools, panic/drop behavior and Cargo process ownership.
 
-## Local evidence and its limits
+## Earlier local evidence and its limits
+
+This table preserves the original local preparation record. Its pending items
+were subsequently executed by the hosted campaigns above; the local socket
+restriction itself was never counted as a compiler regression.
 
 | Check | Result and scope |
 | --- | --- |
 | Pinned compiler builds and format checks | Changed owned compiler and qualification tools compile; no daemon execution implied. |
-| Failed-link baseline reproduction | Pending hosted execution. The local environment rejects Unix socket creation, so its failed attempt is infrastructure evidence, not the required regression. |
+| Failed-link baseline reproduction | Originally blocked locally because Unix socket creation was denied. Both completed hosted campaigns subsequently reproduced the required baseline failure and passed corrected recovery. |
 | Source-library package seal | Correct packages made from current and exact baseline source pass. Source mutation, added input, bad links and substituted core inode fail; restoring the package restores its identity. |
 | Target synchronization layout | Matching SDK supplies 26 independent size/alignment values for Linux x86_64, Darwin x86_64, Darwin aarch64 and Windows GNU x86_64. Baseline fails the three foreign targets; corrected native frontend passes all four and rejects a deliberate false assertion. |
 | Target pool retention | The native unit test passes all nine transitions among Futex, Darwin and Windows models, including body overlays and incompatible-pool rejection. |
@@ -41,7 +70,7 @@ edits, package tools, panic/drop behavior and Cargo process ownership.
 | Darwin descriptor-path adapter | The exact C body passes five isolated buffer/error cases with AddressSanitizer and UndefinedBehaviorSanitizer. Real Darwin syscall behavior still requires macOS. |
 | no_std WebAssembly execution | Through the unchanged baseline's matched full Rust component, the new module executes its exported operations with correct results and no runtime imports. The final candidate's full contract repeats this gate. |
 | Single-file native test command | The old entry incorrectly forwarded the file command to Cargo. The corrected entry passes the public runtime gate: successful native test, upstream failed-test status 101, and one persisted side effect from one failed test. The unchanged baseline native core was used for this local check. |
-| Paired performance | Runner compiles and its statistical/order tests pass. Actual optimized observations and conclusions remain pending. |
+| Paired performance | Both hosted campaigns completed. Their raw samples, comparisons and regressions are preserved in the performance report; general speed acceptance remains open. |
 
 See [target layout qualification](native-target-layouts.md) for the target
 oracle and Darwin corrections, and [mixed compiler qualification](mixed-compiler.md)

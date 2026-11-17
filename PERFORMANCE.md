@@ -1,6 +1,6 @@
 # Lustr performance: measured work, not inherited speed claims
 
-## Status — 17 November 2026
+## Status on 17 November 2026
 
 Lustr is **not yet a generally qualified, speed-preserving full-Rust compiler**.
 The source-built mixed compiler executes the qualified Cargo graph correctly,
@@ -21,8 +21,11 @@ passed Linux x86-64 but failed macOS ARM64. macOS now builds and reaches the
 original differential suite: 5,522 cases passed and four failed. Three fixtures
 import Linux-only socket extensions; `runtime_inline_helpers` differs on signed
 zero output. These remain unresolved failures, not skipped successes. Subsequent
-native suites that the failed gate did not reach are unqualified. The reporting
-changes described here do not repair those compiler/test portability issues.
+native suites that the failed gate did not reach are unqualified. The
+[portability correction](docs/compiler-set/native-differential-portability.md)
+addresses those fixtures and a separately reproduced Unix-address buffer bound
+bug. Its exact-source native CI result must be assessed independently of these
+historical runs.
 
 ## The three comparisons
 
@@ -122,10 +125,18 @@ logs. Their columns preserve original pair IDs, seconds and every timed value.
 The generated tables bind them to the original raw digest and checkout.
 
 GitHub artifacts have finite retention: the latest was reported to expire on
-2027-02-15. The committed tables and timing values survive artifact expiry, but
-are not a permanent archive of all command output and compiler qualification
-files. A durable full-evidence archive remains a retention requirement; do not
-claim that CSV alone preserves all proof material.
+2027-02-15. Both original ZIP files are now committed byte for byte under
+[`performance/archives`](performance/archives), with their existing SHA-256
+identities bound by [`campaigns.json`](performance/campaigns.json). This preserves
+the complete original qualification artifacts after Actions expiry, including
+all command outputs, source/build receipts and timing records. The CSV remains
+a derived projection. The archive does not contain every compiler binary or
+reproduce an execution by itself.
+
+`python3 tools/check-mixed-performance-archives.py` verifies both original ZIPs,
+all 3,536 recorded command-output files and exact replay of all 54 published
+comparisons. CI performs this check alongside the CSV replay. No timing samples
+were removed.
 
 ## Work and statistical protocol
 
@@ -177,8 +188,9 @@ Python 3.10 or newer, standard library only:
 
 ```sh
 python3 tools/test-mixed-performance-report.py
-# Download the original ZIP from the artifact link above, then:
-python3 tools/report-mixed-performance.py /absolute/qualification.zip \
+python3 tools/check-mixed-performance-archives.py
+python3 tools/report-mixed-performance.py \
+  performance/archives/2026-11-17-afb17a8-qualification.zip \
   --output /absolute/new-report-directory
 ```
 
@@ -197,7 +209,7 @@ phases, altered evidence and missing comparisons fail closed. The initial raw
 identity record is intentionally marked failed until the campaign completes;
 that initial state is not the final result.
 
-On 17 November, the reporting implementation passed 24 synthetic regression
+The original reporting implementation passed 24 synthetic regression
 tests and replayed both original artifacts: 54 summaries, 1,080 timed command
 values and 3,536 command-output files. These are reporting/evidence checks,
 **not new compiler tests**. They do not rerun the actual programs or independently
@@ -222,6 +234,54 @@ CPU model, RAM, affinity and governor information were not present in the paired
 report. Do not infer them from another runner or upstream Lust's hardware.
 Future campaigns should record those fields explicitly where available, including
 unknown values, and use enough repetitions for the desired tail conclusions.
+
+The current workflow now collects selected host facts before timing, through
+`tools/capture-benchmark-host.py`. It records CPU model, logical CPU count,
+process affinity, physical memory, visible cgroup limits, available frequency
+governors, OS/kernel/architecture and selected runner image/run identities.
+Unreadable fields remain null with an explicit reason. It omits hostnames,
+usernames and arbitrary environment variables. These are observations, not
+resource controls: affinity is not pinned, physical memory is not a process
+budget, and a shared host can change frequency and load during the run.
+
+`LUSTR_BENCH_HOST_RECORD` supplies that record to the paired runner. The runner
+copies its original bytes to `host.json`, binds its SHA-256 and parsed contents
+into the initial/final campaign identities, and the reporter verifies the
+binding. Older campaigns remain without host facts. The collector does not
+add CPU/RSS, energy or application-throughput measurements.
+
+## Profile overhead without contaminating timing
+
+The mixed driver has optional phase profiling under `LUSTR_MIXED_PROFILE_DIR`.
+The default path performs no profiling clock or file operations. A separate
+`tools/profile-mixed-compiler.py` run invokes the existing real mixed qualifier
+in a new work directory. It records per-process spans and exact command labels
+for the same execution, edit, invalidation, failure and recovery journey.
+Nested span durations overlap; their sum is not a command duration. Instrumented
+values diagnose where time is spent and are not paired benchmark samples.
+
+The paired runner clears its command environment, so it does not pass the
+profiling variable into measured compiler invocations. Its original correctness
+requirements and timing modes remain intact. A profiling failure stays a failed
+workflow step; an independent valid timing campaign can still run and retain
+its evidence.
+
+The current candidate also removes forced disk synchronization from temporary
+object copies used only by the current relink. Persistent retained objects,
+native object publication and success certificates keep their durability
+operations. The temporary files are never named by a persisted certificate.
+This targets avoidable work; it is not a measured speedup until an exact-source
+campaign completes. The existing failed-link/recovery qualification remains
+mandatory.
+
+## Broader coverage and upstream comparison
+
+The [upstream benchmark audit](docs/compiler-set/upstream-benchmark-audit.md)
+maps Lust's actual README, large edit workloads, generated-program runtime,
+memory observations and CI behavior against these Lustr campaigns. It preserves
+their different corpora, compiler versions, dependency adapters and estimators.
+The [performance index](performance/README.md) explains where each original
+archive, projection and reproduction command lives.
 
 The next performance work is to profile mixed body/signature/cold compilation,
 then remove measured redundant work while preserving checked Rust objects, native

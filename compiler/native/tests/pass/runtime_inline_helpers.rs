@@ -106,7 +106,17 @@ fn main() {
         let row: Vec<String> = vals
             .iter()
             .map(|&y| {
-                let (lo, hi) = (black_box(x).min(y), black_box(x).max(y));
+                let (mut lo, mut hi) = (black_box(x).min(y), black_box(x).max(y));
+                // Rust permits either input for equal min/max operands. The
+                // two signed zeros are the only unequal bit patterns here
+                // that compare equal. Validate both results before choosing
+                // one printable representative for differential comparison.
+                if x == 0.0 && y == 0.0 && x.is_sign_negative() != y.is_sign_negative() {
+                    assert!(lo.to_bits() == x.to_bits() || lo.to_bits() == y.to_bits());
+                    assert!(hi.to_bits() == x.to_bits() || hi.to_bits() == y.to_bits());
+                    lo = 0.0;
+                    hi = 0.0;
+                }
                 format!("{lo:?}{} {hi:?}{}", if lo.is_sign_negative() { "-" } else { "" }, if hi.is_sign_negative() { "-" } else { "" })
             })
             .collect();
@@ -114,7 +124,16 @@ fn main() {
     }
     let fs = [0.0f32, -0.0, f32::NAN, 2.5];
     for &x in &fs {
-        let row: Vec<String> = fs.iter().map(|&y| format!("{:?} {:?}", black_box(x).min(y), black_box(x).max(y))).collect();
+        let row: Vec<String> = fs.iter().map(|&y| {
+            let (mut lo, mut hi) = (black_box(x).min(y), black_box(x).max(y));
+            if x == 0.0 && y == 0.0 && x.is_sign_negative() != y.is_sign_negative() {
+                assert!(lo.to_bits() == x.to_bits() || lo.to_bits() == y.to_bits());
+                assert!(hi.to_bits() == x.to_bits() || hi.to_bits() == y.to_bits());
+                lo = 0.0;
+                hi = 0.0;
+            }
+            format!("{lo:?} {hi:?}")
+        }).collect();
         println!("{}", row.join(" "));
     }
 

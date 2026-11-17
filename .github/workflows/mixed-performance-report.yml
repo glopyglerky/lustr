@@ -7,6 +7,9 @@ on:
       - 'PERFORMANCE.md'
       - 'performance/**'
       - 'tools/*mixed-performance*'
+      - 'tools/*benchmark-host*'
+      - 'tools/*mixed-profile*'
+      - 'tools/profile-mixed-compiler.py'
       - '.github/workflows/mixed-performance-report.yml'
   push:
     branches: [next]
@@ -15,6 +18,9 @@ on:
       - 'PERFORMANCE.md'
       - 'performance/**'
       - 'tools/*mixed-performance*'
+      - 'tools/*benchmark-host*'
+      - 'tools/*mixed-profile*'
+      - 'tools/profile-mixed-compiler.py'
       - '.github/workflows/mixed-performance-report.yml'
   workflow_dispatch:
 
@@ -38,10 +44,16 @@ jobs:
         run: |
           set -o pipefail
           python3 tools/test-mixed-performance-report.py 2>&1 | tee "$RUNNER_TEMP/reporting-tests.log"
+          python3 tools/test-benchmark-host.py 2>&1 | tee "$RUNNER_TEMP/host-record-tests.log"
+          python3 tools/test-mixed-profile.py 2>&1 | tee "$RUNNER_TEMP/profile-record-tests.log"
       - name: Replay all committed timing values and compare exact tables
         run: |
           set -o pipefail
           python3 tools/check-mixed-performance-tables.py 2>&1 | tee "$RUNNER_TEMP/committed-timing-replay.log"
+      - name: Verify archived original logs and replay their exact published tables
+        run: |
+          set -o pipefail
+          python3 tools/check-mixed-performance-archives.py 2>&1 | tee "$RUNNER_TEMP/archived-evidence-replay.log"
       - name: Publish measured tables without granting speed or compiler admission
         run: |
           printf '%s\n\n' '# Historical paired evidence replay' 'These reporting checks do not execute a compiler or qualify current-head performance.' >> "$GITHUB_STEP_SUMMARY"
@@ -55,5 +67,8 @@ jobs:
           path: |
             ${{ runner.temp }}/reporting-tests.log
             ${{ runner.temp }}/committed-timing-replay.log
+            ${{ runner.temp }}/archived-evidence-replay.log
+            ${{ runner.temp }}/host-record-tests.log
+            ${{ runner.temp }}/profile-record-tests.log
             performance
             PERFORMANCE.md

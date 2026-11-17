@@ -182,6 +182,42 @@ index 7828e6613930dd92e58d3e84100d9bdacb3d1440..abc0b49b3b3f549c633d1f5be30448be
              s.field("create_pidfd", &false);
              return s.finish();
          }
+diff --git a/library/std/src/unix_net.rs b/library/std/src/unix_net.rs
+index bc70f5dff30e5988ab943557202dbe6a91b1709a..1e9d2b9783532f07097fd87787fcc9030af4eb04 100644
+--- a/library/std/src/unix_net.rs
++++ b/library/std/src/unix_net.rs
+@@ -120,9 +120,19 @@ fn sun_len_err(abstract_name: bool) -> io::Error {
+     io::Error::__lust_adapter_simple_message(io::ErrorKind::InvalidInput, what)
+ }
+ 
+-/// Checks a pathname against SUN_LEN (108 with the terminator).
++// Darwin's sockaddr_un has 104 path bytes, including the terminator.
++// Linux and the other currently supported runtime targets use 108.
++#[cfg(target_os = "macos")]
++const SUN_PATH_CAPACITY: usize = 104;
++#[cfg(not(target_os = "macos"))]
++const SUN_PATH_CAPACITY: usize = 108;
++
++/// Checks pathname bytes before constructing or passing a native address.
+ fn check_pathname(bytes: &[u8]) -> io::Result<()> {
+-    if bytes.len() >= 108 { Err(sun_len_err(false)) } else { Ok(()) }
++    if bytes.contains(&0) {
++        return Err(io::Error::__lust_adapter_simple_message(io::ErrorKind::InvalidInput, "paths must not contain interior null bytes"));
++    }
++    if bytes.len() >= SUN_PATH_CAPACITY { Err(sun_len_err(false)) } else { Ok(()) }
+ }
+ 
+ impl SocketAddr {
+@@ -130,7 +140,8 @@ impl SocketAddr {
+     pub fn from_pathname<P: AsRef<Path>>(path: P) -> io::Result<SocketAddr> {
+         let bytes = path.as_ref().as_os_str().as_encoded_bytes();
+         check_pathname(bytes)?;
+-        Ok(SocketAddr { kind: KIND_PATHNAME, name: bytes.to_vec() })
++        let kind = if bytes.is_empty() { KIND_UNNAMED } else { KIND_PATHNAME };
++        Ok(SocketAddr { kind, name: bytes.to_vec() })
+     }
+ 
+     /// True for an unnamed address.
 diff --git a/src/borrowck/mod.rs b/src/borrowck/mod.rs
 index 15c0a9acf2da0eb01c89b4e5d5be3295d2da8800..d59889712ef13c9b35f758f5c873fe4513ae0753 100644
 --- a/src/borrowck/mod.rs
@@ -2051,6 +2087,109 @@ index 22a75de9aa13a1b6b1dc8a92ecfad0c954a5f15d..968a926c699bb92016cb5985b41d3cbc
  
  /* Files and directories (std::fs): read a whole file into the Vec,
     write (create or truncate, 0666; -2 for a zero-length write), mkdir
+diff --git a/src/runtime/sysnet.c b/src/runtime/sysnet.c
+index 1100e4d56fb0f6e433358506cd99fee962353b54..d7722f2c4e00f299145da553c2e5fd2e052301ea 100644
+--- a/src/runtime/sysnet.c
++++ b/src/runtime/sysnet.c
+@@ -435,17 +435,23 @@ int64_t lust_sys_net_recvfrom(int32_t fd, uint64_t max, int32_t flags, lust_Vec
+ /* ---- Unix domain sockets (sysnet.h has the record forms) ---- */
+ 
+ /* One sockaddr_un and its length from path bytes + abstract flag.
+-   The Rust side checked the SUN_LEN limits. */
++   Independently enforce the actual C target's capacity before copying;
++   source-library validation must never be the only memory-safety boundary.
++   Zero signals EINVAL and is never a valid address length. */
+ static socklen_t lust_sysnet_unix_addr(const uint8_t *p, uint64_t len, int32_t abstract, struct sockaddr_un *un) {
++    if (len >= sizeof un->sun_path) {
++        errno = EINVAL;
++        return 0;
++    }
+     memset(un, 0, sizeof *un);
+     un->sun_family = AF_UNIX;
+     socklen_t sl;
+     if (abstract) {
+-        memcpy(un->sun_path + 1, p, (size_t)len);
++        if (len != 0) memcpy(un->sun_path + 1, p, (size_t)len);
+         sl = (socklen_t)(offsetof(struct sockaddr_un, sun_path) + 1 + len);
+     } else {
+-        memcpy(un->sun_path, p, (size_t)len);
+-        sl = (socklen_t)(offsetof(struct sockaddr_un, sun_path) + len + 1);
++        if (len != 0) memcpy(un->sun_path, p, (size_t)len);
++        sl = (socklen_t)(offsetof(struct sockaddr_un, sun_path) + len + (len != 0));
+     }
+ #ifdef __APPLE__
+     /* Darwin's sockaddr_un carries its length in sun_len (its first
+@@ -464,13 +470,18 @@ static void lust_sysnet_push_unix_addr(lust_Vec *out, const struct sockaddr_un *
+         return;
+     }
+     uint64_t n = ll - off;
++    if (n > sizeof un->sun_path) n = sizeof un->sun_path;
+     if (un->sun_path[0] == 0) {
+-        if (n <= 1) {
+-            lust_sysnet_put64(out, 0);
+-            return;
+-        }
++#ifdef __APPLE__
++        /* Darwin returns a padded address for unnamed socket pairs. It
++           has no Linux abstract namespace, regardless of the byte count. */
++        lust_sysnet_put64(out, 0);
++#else
++        /* A leading NUL with length offset + 1 is an empty abstract
++           name on Linux. Only a length at or below offset is unnamed. */
+         lust_sysnet_put64(out, 2);
+         lust_sysnet_push(out, un->sun_path + 1, n - 1);
++#endif
+         return;
+     }
+     uint64_t sl = 0;
+@@ -489,11 +500,12 @@ int32_t lust_sys_net_unix_pair(lust_Vec *out) {
+ }
+ 
+ int32_t lust_sys_net_unix_bind(const uint8_t *p, uint64_t len, int32_t abstract) {
++    struct sockaddr_un un;
++    socklen_t sl = lust_sysnet_unix_addr(p, len, abstract, &un);
++    if (sl == 0) return -errno;
+     int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+     if (fd < 0) return -errno;
+     lust_sock_after_create(fd, 0);
+-    struct sockaddr_un un;
+-    socklen_t sl = lust_sysnet_unix_addr(p, len, abstract, &un);
+     if (bind(fd, (struct sockaddr *)&un, sl) != 0 || listen(fd, 128) != 0) {
+         int e = errno;
+         close(fd);
+@@ -503,11 +515,12 @@ int32_t lust_sys_net_unix_bind(const uint8_t *p, uint64_t len, int32_t abstract)
+ }
+ 
+ int32_t lust_sys_net_unix_connect(const uint8_t *p, uint64_t len, int32_t abstract) {
++    struct sockaddr_un un;
++    socklen_t sl = lust_sysnet_unix_addr(p, len, abstract, &un);
++    if (sl == 0) return -errno;
+     int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+     if (fd < 0) return -errno;
+     lust_sock_after_create(fd, 0);
+-    struct sockaddr_un un;
+-    socklen_t sl = lust_sysnet_unix_addr(p, len, abstract, &un);
+     if (connect(fd, (struct sockaddr *)&un, sl) != 0) {
+         int e = errno;
+         close(fd);
+@@ -517,7 +530,7 @@ int32_t lust_sys_net_unix_connect(const uint8_t *p, uint64_t len, int32_t abstra
+ }
+ 
+ int32_t lust_sys_net_unix_accept(int32_t fd, lust_Vec *out) {
+-    struct sockaddr_un un;
++    struct sockaddr_un un = {0};
+     socklen_t ll = sizeof un;
+     int n = lust_accept_cloexec(fd, (struct sockaddr *)&un, &ll);
+     if (n < 0) return -errno;
+@@ -526,7 +539,7 @@ int32_t lust_sys_net_unix_accept(int32_t fd, lust_Vec *out) {
+ }
+ 
+ int32_t lust_sys_net_unix_addr(int32_t fd, int32_t peer, lust_Vec *out) {
+-    struct sockaddr_un un;
++    struct sockaddr_un un = {0};
+     socklen_t ll = sizeof un;
+     int rc = peer ? getpeername(fd, (struct sockaddr *)&un, &ll) : getsockname(fd, (struct sockaddr *)&un, &ll);
+     if (rc != 0) return errno;
 diff --git a/src/ty/defs.rs b/src/ty/defs.rs
 index de742cbbaa061c33c832cf7c498c1a89b59ff9a5..3cd3249a89f36adf8d251cb325f6e5860f0e8c72 100644
 --- a/src/ty/defs.rs
@@ -2316,3 +2455,242 @@ index d72108a0e4c91fe4c2bba4241bb3fa945212f00b..e9e08ce799e46ab9df6dcaa04e2a8dc8
      use crate::def::{DefPathHash, LOCAL_CRATE};
  
      fn fake_def(hash: u64) -> DefId {
+diff --git a/tests/pass/io_is_terminal_file_ext.rs b/tests/pass/io_is_terminal_file_ext.rs
+index fabf90c35adb57daf130baa1a80987d74ce1d77c..6fc3b74f3af208e147c6d63a4f92c4ea82ac34d4 100644
+--- a/tests/pass/io_is_terminal_file_ext.rs
++++ b/tests/pass/io_is_terminal_file_ext.rs
+@@ -2,17 +2,25 @@
+ // EINVAL offsets), and SocketAddrExt::from_abstract_name over AsRef<[u8]>
+ // (tf-p6 R23); std const_error Debug forms of the SUN_LEN errors.
+ use std::io::IsTerminal;
++#[cfg(target_os = "linux")]
+ use std::os::linux::net::SocketAddrExt;
+ use std::os::unix::fs::FileExt;
+-use std::os::unix::net::{SocketAddr, UnixStream};
++#[cfg(target_os = "linux")]
++use std::os::unix::net::SocketAddr;
++use std::os::unix::net::UnixStream;
+ fn main() {
+     println!("{} {} {}", std::io::stdout().is_terminal(), std::io::stdin().is_terminal(), std::io::stderr().lock().is_terminal());
+-    let e = SocketAddr::from_abstract_name([b'a'; 200]).unwrap_err();
+-    println!("{:?} | {}", e, e);
+-    let a = SocketAddr::from_abstract_name("name").unwrap();
+-    println!("{:?} {:?}", a, a.as_abstract_name());
+-    let a2 = SocketAddr::from_abstract_name(String::from("n2")).unwrap();
+-    println!("{:?}", a2);
++    // Abstract socket names are a Linux API. Keep the Unix/file checks below
++    // active on every host, including macOS.
++    #[cfg(target_os = "linux")]
++    {
++        let e = SocketAddr::from_abstract_name([b'a'; 200]).unwrap_err();
++        println!("{:?} | {}", e, e);
++        let a = SocketAddr::from_abstract_name("name").unwrap();
++        println!("{:?} {:?}", a, a.as_abstract_name());
++        let a2 = SocketAddr::from_abstract_name(String::from("n2")).unwrap();
++        println!("{:?}", a2);
++    }
+     let e2 = UnixStream::connect("/nonexistent/x/y/z").unwrap_err();
+     println!("{:?}", e2.kind());
+     let long = "/".repeat(120);
+diff --git a/tests/pass/runtime_inline_helpers.rs b/tests/pass/runtime_inline_helpers.rs
+index 758148c04ba36342cd804323be7c948ab8d58c2c..43d1df8a5580cf876e8354b449371f6d90eb2991 100644
+--- a/tests/pass/runtime_inline_helpers.rs
++++ b/tests/pass/runtime_inline_helpers.rs
+@@ -106,7 +106,17 @@ fn main() {
+         let row: Vec<String> = vals
+             .iter()
+             .map(|&y| {
+-                let (lo, hi) = (black_box(x).min(y), black_box(x).max(y));
++                let (mut lo, mut hi) = (black_box(x).min(y), black_box(x).max(y));
++                // Rust permits either input for equal min/max operands. The
++                // two signed zeros are the only unequal bit patterns here
++                // that compare equal. Validate both results before choosing
++                // one printable representative for differential comparison.
++                if x == 0.0 && y == 0.0 && x.is_sign_negative() != y.is_sign_negative() {
++                    assert!(lo.to_bits() == x.to_bits() || lo.to_bits() == y.to_bits());
++                    assert!(hi.to_bits() == x.to_bits() || hi.to_bits() == y.to_bits());
++                    lo = 0.0;
++                    hi = 0.0;
++                }
+                 format!("{lo:?}{} {hi:?}{}", if lo.is_sign_negative() { "-" } else { "" }, if hi.is_sign_negative() { "-" } else { "" })
+             })
+             .collect();
+@@ -114,7 +124,16 @@ fn main() {
+     }
+     let fs = [0.0f32, -0.0, f32::NAN, 2.5];
+     for &x in &fs {
+-        let row: Vec<String> = fs.iter().map(|&y| format!("{:?} {:?}", black_box(x).min(y), black_box(x).max(y))).collect();
++        let row: Vec<String> = fs.iter().map(|&y| {
++            let (mut lo, mut hi) = (black_box(x).min(y), black_box(x).max(y));
++            if x == 0.0 && y == 0.0 && x.is_sign_negative() != y.is_sign_negative() {
++                assert!(lo.to_bits() == x.to_bits() || lo.to_bits() == y.to_bits());
++                assert!(hi.to_bits() == x.to_bits() || hi.to_bits() == y.to_bits());
++                lo = 0.0;
++                hi = 0.0;
++            }
++            format!("{lo:?} {hi:?}")
++        }).collect();
+         println!("{}", row.join(" "));
+     }
+ 
+diff --git a/tests/pass/std_bytestr_debug_forms.rs b/tests/pass/std_bytestr_debug_forms.rs
+index 48a5f1e04926f997b256a284fead99777a568dd7..63f8e188ae9bd1de6af31e3aa58cc17be6ce38be 100644
+--- a/tests/pass/std_bytestr_debug_forms.rs
++++ b/tests/pass/std_bytestr_debug_forms.rs
+@@ -2,8 +2,10 @@
+ // Command's program, argv[0], args (alternate form), and cwd; an abstract
+ // socket name (tf-p6). `'` is `\'`, controls `\xNN`, NUL `\0`,
+ // valid non-ASCII text by char::escape_debug, invalid bytes `\xNN`.
++#[cfg(target_os = "linux")]
+ use std::os::linux::net::SocketAddrExt;
+ use std::os::unix::ffi::OsStrExt;
++#[cfg(target_os = "linux")]
+ use std::os::unix::net::SocketAddr;
+ use std::os::unix::process::CommandExt;
+ use std::process::Command;
+@@ -16,11 +18,13 @@ fn main() {
+         let mut d = Command::new("p");
+         d.arg0(t).arg(t).env("K", t);
+         println!("{:?}", d);
++        #[cfg(target_os = "linux")]
+         println!("{:?}", SocketAddr::from_abstract_name(t).unwrap());
+     }
+     let p = std::ffi::OsStr::from_bytes(b"x\xff\xfey");
+     let mut c = Command::new(p);
+     c.arg0(p).arg(p);
+     println!("{:?}", c);
++    #[cfg(target_os = "linux")]
+     println!("{:?}", SocketAddr::from_abstract_name(b"x\xff\xc3y\0").unwrap());
+ }
+diff --git a/tests/pass/std_unix_net.rs b/tests/pass/std_unix_net.rs
+index 5021c0d9ae30539a05b751dfd8d8877270c4d4f5..86af54f44ab5177942c53acf87a838bae148bd8a 100644
+--- a/tests/pass/std_unix_net.rs
++++ b/tests/pass/std_unix_net.rs
+@@ -2,6 +2,7 @@
+ // abstract name, addresses, shutdown, and io errors.
+ use std::io::{Read, Write};
+ use std::net::Shutdown;
++#[cfg(target_os = "linux")]
+ use std::os::linux::net::SocketAddrExt;
+ use std::os::unix::net::{SocketAddr, UnixListener, UnixStream};
+ 
+@@ -14,8 +15,11 @@ fn main() {
+     println!("{} {}", a.local_addr().unwrap().is_unnamed(), a.peer_addr().unwrap().is_unnamed());
+     let named = SocketAddr::from_pathname("rel.sock").unwrap();
+     println!("{:?}", named);
+-    let abs = SocketAddr::from_abstract_name(b"lust-test").unwrap();
+-    println!("{:?} {:?}", abs, abs.as_abstract_name().map(|x| String::from_utf8_lossy(x).into_owned()));
++    #[cfg(target_os = "linux")]
++    {
++        let abs = SocketAddr::from_abstract_name(b"lust-test").unwrap();
++        println!("{:?} {:?}", abs, abs.as_abstract_name().map(|x| String::from_utf8_lossy(x).into_owned()));
++    }
+     println!("{:?}", SocketAddr::from_pathname("x".repeat(200)).map_err(|e| e.kind()));
+     let dir = std::env::temp_dir().join(format!("lust-unix-{}", std::process::id()));
+     let _ = std::fs::remove_dir_all(&dir);
+@@ -34,11 +38,15 @@ fn main() {
+     c.shutdown(Shutdown::Write).unwrap();
+     println!("{}", s.read(&mut buf).unwrap());
+     println!("{:?}", UnixStream::connect(dir.join("missing")).map_err(|e| e.kind()));
+-    let al = UnixListener::bind_addr(&abs).unwrap();
+-    println!("{}", al.local_addr().unwrap().as_abstract_name().map_or(false, |x| String::from_utf8_lossy(x) == "lust-test"));
+-    let mut ac = UnixStream::connect_addr(&abs).unwrap();
+-    let (mut asrv, _) = al.accept().unwrap();
+-    ac.write_all(b"z").unwrap();
+-    println!("{}", asrv.read(&mut buf).unwrap());
++    #[cfg(target_os = "linux")]
++    {
++        let abs = SocketAddr::from_abstract_name(b"lust-test").unwrap();
++        let al = UnixListener::bind_addr(&abs).unwrap();
++        println!("{}", al.local_addr().unwrap().as_abstract_name().map_or(false, |x| String::from_utf8_lossy(x) == "lust-test"));
++        let mut ac = UnixStream::connect_addr(&abs).unwrap();
++        let (mut asrv, _) = al.accept().unwrap();
++        ac.write_all(b"z").unwrap();
++        println!("{}", asrv.read(&mut buf).unwrap());
++    }
+     std::fs::remove_dir_all(&dir).unwrap();
+ }
+diff --git a/tests/pass/std_unix_path_bounds.rs b/tests/pass/std_unix_path_bounds.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..8c753c5ce62ffbb6a577f1554bb330fce9bf7e0c
+--- /dev/null
++++ b/tests/pass/std_unix_path_bounds.rs
+@@ -0,0 +1,78 @@
++// A pathname reserves one byte of sockaddr_un.sun_path for its terminator.
++// Linux has 108 path bytes; Darwin has 104. Count bytes, not Unicode chars.
++use std::io::ErrorKind;
++#[cfg(target_os = "linux")]
++use std::os::linux::net::SocketAddrExt;
++use std::os::unix::net::{SocketAddr, UnixListener, UnixStream};
++use std::path::Path;
++
++fn round_trip(path: &str) {
++    let addr = SocketAddr::from_pathname(path).unwrap();
++    assert_eq!(addr.as_pathname(), Some(Path::new(path)));
++    let _ = std::fs::remove_file(path);
++    let listener = UnixListener::bind_addr(&addr).unwrap();
++    let client = UnixStream::connect_addr(&addr).unwrap();
++    let (server, peer) = listener.accept().unwrap();
++    assert!(peer.is_unnamed());
++    assert_eq!(listener.local_addr().unwrap().as_pathname(), Some(Path::new(path)));
++    assert_eq!(client.peer_addr().unwrap().as_pathname(), Some(Path::new(path)));
++    drop(server);
++    drop(client);
++    drop(listener);
++    std::fs::remove_file(path).unwrap();
++}
++
++fn main() {
++    let capacity = if cfg!(target_os = "macos") { 104usize } else { 108usize };
++    let maximum = capacity - 1;
++    let ascii = "p".repeat(maximum);
++    round_trip(&ascii);
++    let unicode = format!("{}x", "é".repeat(maximum / 2));
++    assert_eq!(unicode.len(), maximum);
++    round_trip(&unicode);
++
++    // Include every byte count that the previous Linux bound wrongly admitted
++    // on Darwin, plus both targets' immediately adjacent bounds.
++    for n in [103usize, 104, 105, 106, 107, 108, 109] {
++        let path = "p".repeat(n);
++        let result = SocketAddr::from_pathname(&path);
++        assert_eq!(result.is_ok(), n < capacity);
++        if n >= capacity {
++            assert_eq!(result.unwrap_err().kind(), ErrorKind::InvalidInput);
++            assert_eq!(UnixListener::bind(&path).unwrap_err().kind(), ErrorKind::InvalidInput);
++            assert_eq!(UnixStream::connect(&path).unwrap_err().kind(), ErrorKind::InvalidInput);
++        }
++    }
++    let too_many_bytes = "é".repeat(capacity / 2);
++    assert_eq!(too_many_bytes.len(), capacity);
++    assert_eq!(SocketAddr::from_pathname(&too_many_bytes).unwrap_err().kind(), ErrorKind::InvalidInput);
++
++    for path in ["\0", "p\0q"] {
++        println!("{:?}", SocketAddr::from_pathname(path).unwrap_err());
++        assert_eq!(UnixListener::bind(path).unwrap_err().kind(), ErrorKind::InvalidInput);
++        assert_eq!(UnixStream::connect(path).unwrap_err().kind(), ErrorKind::InvalidInput);
++    }
++    let empty = SocketAddr::from_pathname("").unwrap();
++    assert!(empty.is_unnamed());
++    assert_eq!(empty.as_pathname(), None);
++    println!("{:?}", empty);
++    #[cfg(target_os = "linux")]
++    {
++        // An empty abstract name is named, unlike an empty pathname or an
++        // unbound endpoint. Check the address after the kernel round trip.
++        let addr = SocketAddr::from_abstract_name("").unwrap();
++        let listener = UnixListener::bind_addr(&addr).unwrap();
++        let local = listener.local_addr().unwrap();
++        assert!(!local.is_unnamed());
++        assert_eq!(local.as_abstract_name(), Some(&b""[..]));
++        let client = UnixStream::connect_addr(&addr).unwrap();
++        let (server, peer) = listener.accept().unwrap();
++        assert!(peer.is_unnamed());
++        assert_eq!(client.peer_addr().unwrap().as_abstract_name(), Some(&b""[..]));
++        drop(server);
++        drop(client);
++        drop(listener);
++        println!("empty abstract socket round trip passed");
++    }
++    println!("pathname bounds and real maximum-length socket round trips passed");
++}

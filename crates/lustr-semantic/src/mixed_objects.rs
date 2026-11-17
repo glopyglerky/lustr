@@ -50,13 +50,21 @@ pub(crate) fn append_objects(modules: &mut CompiledModules) {
     }
 }
 
-fn retain_file(path: &mut Option<PathBuf>, directory: &Path, n: &mut usize) -> io::Result<()> {
+fn copy_file(path: &mut Option<PathBuf>, directory: &Path, n: &mut usize) -> io::Result<()> {
     let Some(source) = path else { return Ok(()) };
     let target = directory.join(format!("object-{}-{}", *n, source.file_name().unwrap().to_string_lossy()));
     *n += 1;
     fs::copy(&*source, &target)?;
-    fs::File::open(&target)?.sync_all()?;
     *source = target;
+    Ok(())
+}
+
+fn retain_file(path: &mut Option<PathBuf>, directory: &Path, n: &mut usize) -> io::Result<()> {
+    copy_file(path, directory, n)?;
+    if let Some(target) = path {
+        let _profile = super::mixed_profile::span("retained-object-sync");
+        fs::File::open(target)?.sync_all()?;
+    }
     Ok(())
 }
 
@@ -67,6 +75,7 @@ pub(crate) fn retain_link(
     metadata: &EncodedMetadata,
     outputs: &OutputFilenames,
 ) -> io::Result<()> {
+    let _profile = super::mixed_profile::span("retain-link-recipe");
     // Library metadata must be encoded anew on every source build. Only
     // executable requests can retain and reuse this serialized link recipe.
     if info.crate_types != [rustc_structures::CrateType::Executable] {
@@ -120,12 +129,14 @@ pub(crate) fn retain_link(
 /// backend. Temporary copies keep the checked objects intact when Rust removes
 /// its link inputs after success.
 pub(crate) fn relink(sess: &Session, directory: &Path, native: &BTreeMap<PathBuf, PathBuf>) -> Result<(), String> {
+    let _profile = super::mixed_profile::span("relink");
     let bytes = fs::read(directory.join("checked.rlink")).map_err(|e| e.to_string())?;
     let (mut modules, info, metadata, outputs) =
         CompiledModules::deserialize_rlink(sess, bytes).map_err(|_| "Rust rejected the retained link recipe".to_owned())?;
     let temporary = super::mixed_cache::fresh(directory, "link", "tmp").ok_or("link generation")?;
     fs::create_dir(&temporary).map_err(|e| e.to_string())?;
     let mut n = 0;
+    let copying = super::mixed_profile::span("temporary-link-copies");
     for module in modules.modules.iter_mut().chain(modules.allocator_module.iter_mut()) {
         for path in [&mut module.object, &mut module.global_asm_object, &mut module.dwarf_object, &mut module.bytecode] {
             let Some(source) = path.as_ref() else { continue };
@@ -135,10 +146,16 @@ pub(crate) fn relink(sess: &Session, directory: &Path, native: &BTreeMap<PathBuf
                 return Err("cached object escaped its generation".into());
             }
             *path = Some(selected.clone());
-            retain_file(path, &temporary, &mut n).map_err(|e| e.to_string())?;
+            // These copies belong only to this live linker invocation. No
+            // persisted certificate or link recipe points to them. The checked
+            // originals above remain immutable and durably retained; syncing
+            // disposable inputs adds no recovery guarantee.
+            copy_file(path, &temporary, &mut n).map_err(|e| e.to_string())?;
         }
     }
+    drop(copying);
     let backend = rustc_codegen_llvm::LlvmCodegenBackend::new();
+    let _link = super::mixed_profile::span("original-linker");
     backend.link(sess, modules, info, metadata, &outputs);
     Ok(())
 }

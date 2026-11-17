@@ -120,9 +120,19 @@ fn sun_len_err(abstract_name: bool) -> io::Error {
     io::Error::__lust_adapter_simple_message(io::ErrorKind::InvalidInput, what)
 }
 
-/// Checks a pathname against SUN_LEN (108 with the terminator).
+// Darwin's sockaddr_un has 104 path bytes, including the terminator.
+// Linux and the other currently supported runtime targets use 108.
+#[cfg(target_os = "macos")]
+const SUN_PATH_CAPACITY: usize = 104;
+#[cfg(not(target_os = "macos"))]
+const SUN_PATH_CAPACITY: usize = 108;
+
+/// Checks pathname bytes before constructing or passing a native address.
 fn check_pathname(bytes: &[u8]) -> io::Result<()> {
-    if bytes.len() >= 108 { Err(sun_len_err(false)) } else { Ok(()) }
+    if bytes.contains(&0) {
+        return Err(io::Error::__lust_adapter_simple_message(io::ErrorKind::InvalidInput, "paths must not contain interior null bytes"));
+    }
+    if bytes.len() >= SUN_PATH_CAPACITY { Err(sun_len_err(false)) } else { Ok(()) }
 }
 
 impl SocketAddr {
@@ -130,7 +140,8 @@ impl SocketAddr {
     pub fn from_pathname<P: AsRef<Path>>(path: P) -> io::Result<SocketAddr> {
         let bytes = path.as_ref().as_os_str().as_encoded_bytes();
         check_pathname(bytes)?;
-        Ok(SocketAddr { kind: KIND_PATHNAME, name: bytes.to_vec() })
+        let kind = if bytes.is_empty() { KIND_UNNAMED } else { KIND_PATHNAME };
+        Ok(SocketAddr { kind, name: bytes.to_vec() })
     }
 
     /// True for an unnamed address.
