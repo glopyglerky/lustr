@@ -185,7 +185,10 @@ run('git', 'add', '--', *paths)
 actual = set(run('git', 'diff', '--cached', '--name-only').decode().splitlines())
 if actual != set(paths):
     raise RuntimeError(f'unexpected changed file set: {actual}')
-run('git', 'diff', '--cached', '--check')
+# A serialized unified diff contains mandatory single-space blank context lines.
+# Check the real source/doc edits; the original source guard checks every byte
+# of the generated reference-to-integrated patch separately below.
+run('git', 'diff', '--cached', '--check', '--', '.', ':(exclude)upstream/lust-integration.patch')
 run('rustc', '+1.99.1', '--edition=2024', 'tools/lust-upstream-check.rs', '-o', str(TOOLS / 'source-guard'))
 result = run(str(TOOLS / 'source-guard'), '--candidate', '--index')
 sys.stdout.buffer.write(result)
