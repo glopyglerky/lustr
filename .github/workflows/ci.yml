@@ -11,7 +11,8 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  # Preserve running exact-source qualification when an additive fix arrives.
+  cancel-in-progress: false
 
 defaults:
   run:

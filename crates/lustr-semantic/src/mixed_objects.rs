@@ -11,6 +11,9 @@ use std::{
     sync::{Mutex, OnceLock},
 };
 
+#[path = "mixed_link_input.rs"]
+mod link_input;
+
 #[derive(Default)]
 struct State {
     entries: BTreeMap<String, PathBuf>,
@@ -135,7 +138,7 @@ pub(crate) fn relink(sess: &Session, directory: &Path, native: &BTreeMap<PathBuf
                 return Err("cached object escaped its generation".into());
             }
             *path = Some(selected.clone());
-            retain_file(path, &temporary, &mut n).map_err(|e| e.to_string())?;
+            link_input::stage(path, &temporary, &mut n).map_err(|e| e.to_string())?;
         }
     }
     let backend = rustc_codegen_llvm::LlvmCodegenBackend::new();

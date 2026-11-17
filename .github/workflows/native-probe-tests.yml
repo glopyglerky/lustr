@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - 'crates/lustr-bench/**'
+      - 'crates/lustr-semantic/src/mixed_link_input.rs'
+      - 'crates/lustr-semantic/src/mixed_objects.rs'
+      - 'tools/measure-mixed-link-input.rs'
       - '.github/workflows/native-probe-tests.yml'
   workflow_dispatch:
 
@@ -20,3 +23,30 @@ jobs:
         run: rustup toolchain install 1.99.1 --profile minimal
       - name: Reject missing, conflicting and nonzero-work retention evidence
         run: cargo +1.99.1 test --manifest-path crates/lustr-bench/Cargo.toml --locked --bin lustr-mixed-bench
+      - name: Test actual transient input isolation and failure recovery
+        run: |
+          set -euo pipefail
+          rustc +1.99.1 --edition=2024 --test crates/lustr-semantic/src/mixed_link_input.rs -o "$RUNNER_TEMP/link-input-tests"
+          "$RUNNER_TEMP/link-input-tests" 2>&1 | tee "$RUNNER_TEMP/link-input-tests.log"
+      - name: Measure only the changed copy policy (not compiler speed)
+        run: |
+          set -euo pipefail
+          rustc +1.99.1 --edition=2024 -C opt-level=3 tools/measure-mixed-link-input.rs -o "$RUNNER_TEMP/link-input-probe"
+          {
+            git rev-parse HEAD HEAD^{tree}
+            rustc +1.99.1 -vV
+            uname -srm
+            lscpu
+            sha256sum crates/lustr-semantic/src/mixed_link_input.rs crates/lustr-semantic/src/mixed_objects.rs tools/measure-mixed-link-input.rs "$RUNNER_TEMP/link-input-probe"
+          } > "$RUNNER_TEMP/link-input-identity.txt"
+          "$RUNNER_TEMP/link-input-probe" "$RUNNER_TEMP/link-input-measurements" | tee "$RUNNER_TEMP/link-input-pairs.jsonl"
+      - name: Preserve focused results including failed attempts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: link-input-evidence-${{ github.sha }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/link-input-tests.log
+            ${{ runner.temp }}/link-input-identity.txt
+            ${{ runner.temp }}/link-input-pairs.jsonl
