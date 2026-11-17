@@ -163,6 +163,23 @@ with `EPERM`, before any bind or pathname lookup. The real IPC test is retained
 as a required native-host test; it is not counted as passed. Darwin Rust
 metadata compilation checks source and target types only. It does not execute
 Darwin code, link a native Mac package, or qualify TinyCC/Mach-O behavior.
-Native Apple silicon execution, the full differential gates and matched performance
-campaign remain required. Earlier Linux measurements keep their original
-source identities and are not attributed to this host correction.
+The first hosted native campaign at `17571bcc8242573448a701a7e76d6aced71146a3`
+ran on actual macOS 26 arm64. Its host suite passed 23 tests, including native
+C-header ABI checks and the long-directory request, its SDK suite passed six,
+and the thin client passed 15 tests. The full compiler test run then exposed a
+Darwin peer-close check, a Mach-O output-name comparison, and a parser test that
+used libtest's small stack rather than the compiler's stack. The Linux campaign
+also reproduced that parser-test overflow. The original failure is retained in
+[the native gate run](https://github.com/glopyglerky/lustr/actions/runs/44196344927).
+
+The follow-up uses Darwin readable-EOF detection without consuming queued data,
+holds the output filename fixed for byte-for-byte signed Mach-O comparison, and
+runs the deep parser assertion on the existing production compiler stack. It
+does not lower the recursion cap, omit the test, strip code signatures or change
+compiler algorithms. Apple ld derives its signing identifier from the output's
+install path basename; see
+[the primary code-signing implementation](https://github.com/apple-oss-distributions/ld64/blob/main/src/ld/LinkEdit.hpp).
+The Linux parser and stream equivalence regressions pass after the correction;
+the follow-up native Darwin gate remains required. Full differential, package
+and matched performance campaigns remain required. Earlier Linux measurements
+keep their original source identities and are not attributed to this correction.

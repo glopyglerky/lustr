@@ -5894,16 +5894,21 @@ mod tests {
     /// the error is L9001, not a parser stack overflow (fx-parsehang).
     #[test]
     fn right_recursion_depth_cap() {
-        let n = 100_000;
-        let cases = [
-            format!("fn f(a: bool) {{ if a {{}}{} }}", " else if a {}".repeat(n)),
-            format!("fn f() {{ let mut a = 0; a{} = 0; }}", " = a".repeat(n)),
-            format!("fn f() {{ let _ = {}0; }}", "|| ".repeat(n)),
-            format!("fn f(y: i32) {{ let {}x = y; }}", "&".repeat(n)),
-            format!("fn f(y: i32) {{ let {}x = y; }}", "a @ ".repeat(n)),
-        ];
-        for src in &cases {
-            assert_eq!(parse_src(src).err().expect("deep shape rejects").code, "L9001", "{}", &src[..40]);
-        }
+        // Exercise the production compiler stack contract. The default libtest
+        // thread stack is smaller than pool::STACK_SIZE, especially on Darwin;
+        // overflowing that unrelated stack does not test the parser's guard.
+        crate::pool::thread("parser-depth-test").spawn(|| {
+            let n = 100_000;
+            let cases = [
+                format!("fn f(a: bool) {{ if a {{}}{} }}", " else if a {}".repeat(n)),
+                format!("fn f() {{ let mut a = 0; a{} = 0; }}", " = a".repeat(n)),
+                format!("fn f() {{ let _ = {}0; }}", "|| ".repeat(n)),
+                format!("fn f(y: i32) {{ let {}x = y; }}", "&".repeat(n)),
+                format!("fn f(y: i32) {{ let {}x = y; }}", "a @ ".repeat(n)),
+            ];
+            for src in &cases {
+                assert_eq!(parse_src(src).err().expect("deep shape rejects").code, "L9001", "{}", &src[..40]);
+            }
+        }).unwrap().join().unwrap();
     }
 }

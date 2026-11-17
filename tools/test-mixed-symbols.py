@@ -212,13 +212,16 @@ class MixedSymbolTests(unittest.TestCase):
             stream.truncate(64 * 1024 * 1024 + 1)
         self.assertEqual(self.candidate(huge).returncode, 1)
 
-    def test_production_build_identity_hashes_the_validator_and_requires_its_source(self):
+    def test_production_build_identity_requires_and_hashes_host_and_validator_sources(self):
         repository = self.root / "identity-repo"
         native = repository / "compiler/native"
         owned = repository / "crates/lustr-native-core/src"
         output = self.root / "identity-output"
         native.mkdir(parents=True)
         owned.mkdir(parents=True)
+        host = repository / "src/host_runtime.rs"
+        host.parent.mkdir()
+        shutil.copyfile(ROOT / "src/host_runtime.rs", host)
         output.mkdir()
         helper = self.root / "native-build-helper"
         build = command([RUSTC, "--edition=2024", ROOT / "compiler/native/build.rs", "-o", helper])
@@ -233,8 +236,19 @@ class MixedSymbolTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             lines = result.stdout.decode().splitlines()
             self.assertIn(f"cargo:rerun-if-changed={native}/../../crates/lustr-native-core/src/mixed_symbols.rs", lines)
+            self.assertIn(f"cargo:rerun-if-changed={native}/../../src/host_runtime.rs", lines)
             return next(line for line in lines if line.startswith("cargo:rustc-env=LUST_BUILD_HASH="))
         original = identity()
+        host_bytes = host.read_bytes()
+        host.write_bytes(host_bytes + b"\n// host identity mutation probe\n")
+        self.assertNotEqual(identity(), original)
+        host.write_bytes(host_bytes)
+        self.assertEqual(identity(), original)
+        host.unlink()
+        missing_host = command([helper], env=environment)
+        self.assertNotEqual(missing_host.returncode, 0)
+        self.assertIn(b"native host adapter is required", missing_host.stderr)
+        host.write_bytes(host_bytes)
         source = owned / "mixed_symbols.rs"
         original_bytes = source.read_bytes()
         source.write_bytes(original_bytes + b"\n// identity mutation probe\n")

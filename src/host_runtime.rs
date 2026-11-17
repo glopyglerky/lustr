@@ -25,6 +25,8 @@ pub const RTLD_NOW_LOCAL: i32 = if cfg!(target_os = "macos") { 2 | 4 } else { 2 
 pub const NATIVE_LIBRARY: &str = if cfg!(target_os = "macos") { "liblustr_native_core.dylib" } else { "liblustr_native_core.so" };
 pub const INFERENCE_LIBRARY: &str = if cfg!(target_os = "macos") { "liblustr_inference_core.dylib" } else { "liblustr_inference_core.so" };
 pub const SOCKET_PATH_CAPACITY: usize = if cfg!(target_os = "macos") { 104 } else { 108 };
+pub const MSG_PEEK: i32 = 2;
+pub const MSG_DONTWAIT: i32 = if cfg!(target_os = "macos") { 0x80 } else { 0x40 };
 #[cfg(target_os = "linux")]
 pub type PollCount = u64;
 #[cfg(target_os = "macos")]

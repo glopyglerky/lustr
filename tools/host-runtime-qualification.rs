@@ -84,13 +84,14 @@ mod tests {
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/un.h>
+#include <sys/socket.h>
 #include <poll.h>
 #include <dlfcn.h>
 int main(void) {
-    printf("%zu %zu %zu %d %d %d %d %zu %zu %d %d\n",
+    printf("%zu %zu %zu %d %d %d %d %zu %zu %d %d %d %d\n",
         sizeof(sigset_t), sizeof(siginfo_t), _Alignof(siginfo_t),
         SIG_BLOCK, SIG_SETMASK, WNOWAIT, RTLD_NOW | RTLD_LOCAL,
-        sizeof(((struct sockaddr_un *)0)->sun_path), sizeof(nfds_t), P_PID, WEXITED);
+        sizeof(((struct sockaddr_un *)0)->sun_path), sizeof(nfds_t), P_PID, WEXITED, MSG_PEEK, MSG_DONTWAIT);
     return 0;
 }
 "#,
@@ -101,7 +102,7 @@ int main(void) {
         let output = std::process::Command::new(binary).output().unwrap();
         assert!(output.status.success());
         let values: Vec<usize> = std::str::from_utf8(&output.stdout).unwrap().split_whitespace().map(|v| v.parse().unwrap()).collect();
-        assert_eq!(values.len(), 11);
+        assert_eq!(values.len(), 13);
         assert_eq!(values[0], std::mem::size_of::<host::SigSet>());
         assert!(values[1] <= std::mem::size_of::<[u64; 16]>());
         assert!(values[2] <= std::mem::align_of::<[u64; 16]>());
@@ -116,6 +117,8 @@ int main(void) {
                 std::mem::size_of::<host::PollCount>(),
                 1,
                 4,
+                host::MSG_PEEK as usize,
+                host::MSG_DONTWAIT as usize,
             ]
         );
     }

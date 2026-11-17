@@ -131,9 +131,32 @@ fn hang_limit() -> Option<std::time::Duration> {
 /// killed, timed out, or got Ctrl-C). A client that still waits for its
 /// answer has sent its whole request and reads, so no event is pending.
 fn client_gone(fd: i32) -> bool {
-    let mut pfd = PollFd { fd, events: POLLRDHUP, revents: 0 };
+    // Darwin reports a closed read side as readable EOF, without Linux's
+    // POLLRDHUP. Ask for readability there and peek without consuming data or
+    // changing the connection's blocking flags while the serve loop owns it.
+    let events = if cfg!(target_os = "macos") { POLLIN } else { POLLRDHUP };
+    let mut pfd = PollFd { fd, events, revents: 0 };
     // SAFETY: one valid pollfd for the duration of the call; timeout 0.
-    unsafe { poll(&mut pfd, 1, 0) > 0 && pfd.revents & (POLLRDHUP | POLLHUP | POLLERR) != 0 }
+    if unsafe { poll(&mut pfd, 1, 0) } <= 0 {
+        return false;
+    }
+    if pfd.revents & (POLLRDHUP | POLLHUP | POLLERR) != 0 {
+        return true;
+    }
+    #[cfg(target_os = "macos")]
+    if pfd.revents & POLLIN != 0 {
+        unsafe extern "C" {
+            fn recv(fd: i32, buffer: *mut u8, length: usize, flags: i32) -> isize;
+        }
+        let mut byte = 0u8;
+        // SAFETY: one writable byte; fd remains borrowed and MSG_PEEK preserves
+        // queued data. Only an actual EOF proves the peer gone. EAGAIN/EINTR or
+        // another transient receive failure conservatively keeps it alive.
+        return unsafe {
+            recv(fd, &mut byte, 1, crate::protocol::host_runtime::MSG_PEEK | crate::protocol::host_runtime::MSG_DONTWAIT) == 0
+        };
+    }
+    false
 }
 
 /// Starts the hang watchdog. The daemon compiles one request at a time,
@@ -1626,6 +1649,12 @@ mod tests {
     fn client_gone_sees_a_closed_peer_only() {
         let (ours, theirs) = std::os::unix::net::UnixStream::pair().unwrap();
         assert!(!client_gone(ours.as_raw_fd()));
+        use std::io::{Read, Write};
+        (&theirs).write_all(b"pending").unwrap();
+        assert!(!client_gone(ours.as_raw_fd()), "pending input is not a disconnected client");
+        let mut pending = [0u8; 7];
+        (&ours).read_exact(&mut pending).unwrap();
+        assert_eq!(&pending, b"pending", "peer inspection must not consume input");
         drop(theirs);
         assert!(client_gone(ours.as_raw_fd()));
     }

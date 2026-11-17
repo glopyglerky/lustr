@@ -562,6 +562,36 @@ index f93372da15847f0d714ccd376706c74d8ac17099..366d6587fb96d7d7f50fe276151e172b
          let Some(dst) = self.ptr_nodes(ptr, free, true, 0) else { return };
          let Some(src) = self.fn_nodes(&sig, &ins, s.output) else {
              if s.free_slots != 0 {
+diff --git a/src/cc.rs b/src/cc.rs
+index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..5dbdf6c033155477089e366530256df5575e2314 100644
+--- a/src/cc.rs
++++ b/src/cc.rs
+@@ -1199,6 +1199,8 @@ mod tests {
+         let units = || vec![UnitIn::text("u0", main.into()), UnitIn::text("u1", f.into()), UnitIn::text("u2", g.into())];
+         let plain = crate::driver::cache::Cache::at(&root.join("c1"));
+         super::build(&units(), &spec, &root.join("a"), false, Some(&plain), &root.join("w1")).unwrap();
++        let plain_bytes = std::fs::read(root.join("a")).unwrap();
++        assert_eq!(std::process::Command::new(root.join("a")).status().ok().and_then(|s| s.code()), Some(7));
+         // The stream's cache already holds g's object (a build of another main and g): u2 is a
+         // hit, u1 a miss the stream compiles, u0 a miss build compiles.
+         let streamed = crate::driver::cache::Cache::at(&root.join("c2"));
+@@ -1207,10 +1209,13 @@ mod tests {
+         let Some(stream) = super::Stream::start(&spec.triple, false, Some(crate::driver::cache::Cache::at(&root.join("c2"))), root.join("w2")) else { return };
+         stream.add("u1", f);
+         stream.add("u2", g);
+-        let r = super::build_with(&units(), &spec, &root.join("b"), false, Some(&streamed), &root.join("w2"), Some(stream)).unwrap();
++        // Apple ld includes the output filename in its required ad-hoc code
++        // signature. Hold that filename fixed while comparing the two paths;
++        // no signature or executable bytes are stripped from this assertion.
++        let r = super::build_with(&units(), &spec, &root.join("a"), false, Some(&streamed), &root.join("w2"), Some(stream)).unwrap();
+         assert!(r.contains("3 units (1 from cache"), "u2 hit, u1 compiled by the stream, u0 by build: {r}");
+-        assert_eq!(std::fs::read(root.join("a")).unwrap(), std::fs::read(root.join("b")).unwrap(), "the same binary");
+-        assert_eq!(std::process::Command::new(root.join("b")).status().ok().and_then(|s| s.code()), Some(7));
++        assert_eq!(plain_bytes, std::fs::read(root.join("a")).unwrap(), "the same binary");
++        assert_eq!(std::process::Command::new(root.join("a")).status().ok().and_then(|s| s.code()), Some(7));
+         let _ = std::fs::remove_dir_all(&root);
+     }
+ 
 diff --git a/src/cgen.rs b/src/cgen.rs
 index ac6965592d3f4cc6ea1969df299fe33c974056b0..f16653fdfbea92770cb9500e956b5184edc72ed5 100644
 --- a/src/cgen.rs
@@ -1555,7 +1585,7 @@ index 136b1f4aa7efc99f8e5bd2b23446fad2578f1851..152a1682786f42b20d3a09f2b195a74a
          });
      }
 diff --git a/src/daemon.rs b/src/daemon.rs
-index db807083aa56d24a804b47f7ffd31e33c563ad52..b0c46b58b8272288399a5ee1dc7fc0a25e1e4125 100644
+index db807083aa56d24a804b47f7ffd31e33c563ad52..0475e441312e02a8fe1d7518f658b7b7202862e7 100644
 --- a/src/daemon.rs
 +++ b/src/daemon.rs
 @@ -57,12 +57,12 @@ use std::sync::mpsc::{Receiver, Sender};
@@ -1573,7 +1603,42 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..b0c46b58b8272288399a5ee1dc7fc0a2
      fn getuid() -> u32;
      #[cfg(target_os = "linux")]
      fn setpriority(which: i32, who: u32, prio: i32) -> i32;
-@@ -184,6 +184,12 @@ fn wait_readable(listener: &UnixListener, wake: i32, socket_watch: i32, timeout:
+@@ -131,9 +131,32 @@ fn hang_limit() -> Option<std::time::Duration> {
+ /// killed, timed out, or got Ctrl-C). A client that still waits for its
+ /// answer has sent its whole request and reads, so no event is pending.
+ fn client_gone(fd: i32) -> bool {
+-    let mut pfd = PollFd { fd, events: POLLRDHUP, revents: 0 };
++    // Darwin reports a closed read side as readable EOF, without Linux's
++    // POLLRDHUP. Ask for readability there and peek without consuming data or
++    // changing the connection's blocking flags while the serve loop owns it.
++    let events = if cfg!(target_os = "macos") { POLLIN } else { POLLRDHUP };
++    let mut pfd = PollFd { fd, events, revents: 0 };
+     // SAFETY: one valid pollfd for the duration of the call; timeout 0.
+-    unsafe { poll(&mut pfd, 1, 0) > 0 && pfd.revents & (POLLRDHUP | POLLHUP | POLLERR) != 0 }
++    if unsafe { poll(&mut pfd, 1, 0) } <= 0 {
++        return false;
++    }
++    if pfd.revents & (POLLRDHUP | POLLHUP | POLLERR) != 0 {
++        return true;
++    }
++    #[cfg(target_os = "macos")]
++    if pfd.revents & POLLIN != 0 {
++        unsafe extern "C" {
++            fn recv(fd: i32, buffer: *mut u8, length: usize, flags: i32) -> isize;
++        }
++        let mut byte = 0u8;
++        // SAFETY: one writable byte; fd remains borrowed and MSG_PEEK preserves
++        // queued data. Only an actual EOF proves the peer gone. EAGAIN/EINTR or
++        // another transient receive failure conservatively keeps it alive.
++        return unsafe {
++            recv(fd, &mut byte, 1, crate::protocol::host_runtime::MSG_PEEK | crate::protocol::host_runtime::MSG_DONTWAIT) == 0
++        };
++    }
++    false
+ }
+ 
+ /// Starts the hang watchdog. The daemon compiles one request at a time,
+@@ -184,6 +207,12 @@ fn wait_readable(listener: &UnixListener, wake: i32, socket_watch: i32, timeout:
          PollFd { fd: wake, events: POLLIN, revents: 0 },
          PollFd { fd: socket_watch, events: POLLIN, revents: 0 },
      ];
@@ -1586,7 +1651,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..b0c46b58b8272288399a5ee1dc7fc0a2
      let ms = timeout.map_or(-1, |d| d.as_millis().min(i32::MAX as u128) as i32);
      // SAFETY: valid pollfds over live fds (an unavailable socket watch is
      // -1, which poll ignores), for the duration of the call.
-@@ -249,7 +255,7 @@ fn socket_removal_event(buf: &[u8], name: &[u8]) -> bool {
+@@ -249,7 +278,7 @@ fn socket_removal_event(buf: &[u8], name: &[u8]) -> bool {
  #[cfg(target_os = "linux")]
  fn socket_removed(watch: i32, sock: &Path) -> bool {
      if watch < 0 {
@@ -1595,7 +1660,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..b0c46b58b8272288399a5ee1dc7fc0a2
      }
      let Some(name) = sock.file_name() else { return false };
      let mut buf = [0u8; 4096];
-@@ -264,12 +270,11 @@ fn socket_removed(watch: i32, sock: &Path) -> bool {
+@@ -264,12 +293,11 @@ fn socket_removed(watch: i32, sock: &Path) -> bool {
      socket_removal_event(&buf[..n as usize], name.as_bytes()) || sock.symlink_metadata().is_err()
  }
  
@@ -1612,7 +1677,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..b0c46b58b8272288399a5ee1dc7fc0a2
  }
  
  /// The pid in a lust temp name (`lust-daemon-<pid>`, `lust-<pid>`,
-@@ -291,12 +296,10 @@ fn stale_temp_pid(name: &str) -> Option<u32> {
+@@ -291,12 +319,10 @@ fn stale_temp_pid(name: &str) -> Option<u32> {
      None
  }
  
@@ -1627,7 +1692,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..b0c46b58b8272288399a5ee1dc7fc0a2
  }
  
  /// Deletes lust temp dirs and files from processes that are gone:
-@@ -985,6 +988,19 @@ fn log_stats(served: u64, sessions: usize) {
+@@ -985,6 +1011,19 @@ fn log_stats(served: u64, sessions: usize) {
  
  /// Serves requests until idle. Each crate selection (`SessionKey`) has its own session.
  pub fn serve(sock: &Path) -> ! {
@@ -1647,6 +1712,19 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..b0c46b58b8272288399a5ee1dc7fc0a2
      // Sessions load std once; a std or adapter source override must be
      // read fresh by every compile (see `protocol::source_override`).
      if let Some(var) = protocol::source_override() {
+@@ -1610,6 +1649,12 @@ mod tests {
+     fn client_gone_sees_a_closed_peer_only() {
+         let (ours, theirs) = std::os::unix::net::UnixStream::pair().unwrap();
+         assert!(!client_gone(ours.as_raw_fd()));
++        use std::io::{Read, Write};
++        (&theirs).write_all(b"pending").unwrap();
++        assert!(!client_gone(ours.as_raw_fd()), "pending input is not a disconnected client");
++        let mut pending = [0u8; 7];
++        (&ours).read_exact(&mut pending).unwrap();
++        assert_eq!(&pending, b"pending", "peer inspection must not consume input");
+         drop(theirs);
+         assert!(client_gone(ours.as_raw_fd()));
+     }
 diff --git a/src/driver/cache.rs b/src/driver/cache.rs
 index da28835400f894866adb85f436e2cbdf109797d7..295f0673c543b50ffbb088b9f1bddec97c94ed54 100644
 --- a/src/driver/cache.rs
@@ -2689,6 +2767,43 @@ index 777ac517920c120d986ee275601a6ec270468708..9c09f859e82a6fcff80b8691a979938e
          }
 -        Rvalue::StaticLoad(_) | Rvalue::StaticRef(_) | Rvalue::FnValue(..) | Rvalue::ItemShim(..) => true,
 +        Rvalue::StaticLoad(_) | Rvalue::StaticRef(_) | Rvalue::FnValue(..) | Rvalue::NativeFnValue(..) | Rvalue::ItemShim(..) => true,
+     }
+ }
+diff --git a/src/parser.rs b/src/parser.rs
+index 804532cf1694c50fff28771d72bde34d998afb59..8de28d3e5ea8a4f52abf00b86938b101aeea59a7 100644
+--- a/src/parser.rs
++++ b/src/parser.rs
+@@ -5894,16 +5894,21 @@ mod tests {
+     /// the error is L9001, not a parser stack overflow (fx-parsehang).
+     #[test]
+     fn right_recursion_depth_cap() {
+-        let n = 100_000;
+-        let cases = [
+-            format!("fn f(a: bool) {{ if a {{}}{} }}", " else if a {}".repeat(n)),
+-            format!("fn f() {{ let mut a = 0; a{} = 0; }}", " = a".repeat(n)),
+-            format!("fn f() {{ let _ = {}0; }}", "|| ".repeat(n)),
+-            format!("fn f(y: i32) {{ let {}x = y; }}", "&".repeat(n)),
+-            format!("fn f(y: i32) {{ let {}x = y; }}", "a @ ".repeat(n)),
+-        ];
+-        for src in &cases {
+-            assert_eq!(parse_src(src).err().expect("deep shape rejects").code, "L9001", "{}", &src[..40]);
+-        }
++        // Exercise the production compiler stack contract. The default libtest
++        // thread stack is smaller than pool::STACK_SIZE, especially on Darwin;
++        // overflowing that unrelated stack does not test the parser's guard.
++        crate::pool::thread("parser-depth-test").spawn(|| {
++            let n = 100_000;
++            let cases = [
++                format!("fn f(a: bool) {{ if a {{}}{} }}", " else if a {}".repeat(n)),
++                format!("fn f() {{ let mut a = 0; a{} = 0; }}", " = a".repeat(n)),
++                format!("fn f() {{ let _ = {}0; }}", "|| ".repeat(n)),
++                format!("fn f(y: i32) {{ let {}x = y; }}", "&".repeat(n)),
++                format!("fn f(y: i32) {{ let {}x = y; }}", "a @ ".repeat(n)),
++            ];
++            for src in &cases {
++                assert_eq!(parse_src(src).err().expect("deep shape rejects").code, "L9001", "{}", &src[..40]);
++            }
++        }).unwrap().join().unwrap();
      }
  }
 diff --git a/src/protocol.rs b/src/protocol.rs
