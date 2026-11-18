@@ -40,6 +40,7 @@ def main():
         "TMPDIR": str(root / "tmp"),
         "LUST_CACHE_DIR": str(root / "native-cache"),
         "LUSTR_SELECTION_DIAGNOSTICS": str(root / "selection-diagnostics.jsonl"),
+        "LUSTR_PROFILE_SELECTION_DETAIL": "1",
     }
     manifest = project / "Cargo.toml"
     source = project / "src/main.rs"
@@ -103,6 +104,10 @@ def main():
         events = [json.loads(line) for line in diagnostic.read_text().splitlines()]
         decoded = json.loads(completed.stdout)
         semantic = {key: value for key, value in decoded.items() if key != "elapsed_ns"}
+        if decoded.get("success"):
+            selected = decoded["selection"]
+            assert selected["manifest"] == decoded["manifest"] and selected["name"] == decoded["target"]
+            assert selected["package"]["id"] and selected["target"]["kind"] and selected["target"]["src_path"]
         record = {"label": label, "sequence": sequence, "argv": command, "cwd": str(cwd),
                   "uncached": uncached, "exit": completed.returncode, "selection": semantic,
                   "diagnostics": events, "stdout_file": prefix + ".stdout", "stderr_file": prefix + ".stderr",
@@ -222,7 +227,7 @@ def main():
                         # An unused context may still hold the preceding malformed
                         # record. Corrupt the regenerated current context below.
                         continue
-                    record["payload"]["metadata"]["packages"][0]["id"] = "corrupted-package-id"
+                    record["payload"]["selection"]["package"]["id"] = "corrupted-package-id"
                     entry.write_text(json.dumps(record))
                 else:
                     entry.chmod(0o666)

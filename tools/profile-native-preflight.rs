@@ -7,12 +7,21 @@
 
 #[path = "../compiler/native/src/protocol.rs"]
 mod protocol;
-#[path = "../src/full.rs"]
-mod full;
+mod full {
+    include!("../src/full.rs");
+
+    // Test-only inspection: the actual Selection carries more than the name
+    // printed by the component timer. Preserve every fallback artifact field.
+    pub fn selection_evidence(selected: &Selection) -> Value {
+        serde_json::json!({"manifest":selected.manifest, "name":selected.name,
+            "package":selected.package, "target":selected.target})
+    }
+}
 #[path = "../src/owned_child.rs"]
 mod owned_child;
 
 use std::{io::Write, path::PathBuf, process::{Command, ExitCode}, time::Instant};
+use std::os::unix::process::ExitStatusExt;
 
 fn main() -> ExitCode {
     let mut arguments = std::env::args().skip(1);
@@ -38,11 +47,34 @@ fn main() -> ExitCode {
         return ExitCode::from(2);
     };
 
+    if phase == "selection-fallback" {
+        let result = (|| -> std::io::Result<_> {
+            let selected = full::select(&req, &parent, &args)?;
+            let evidence = full::selection_evidence(&selected);
+            let mut bound = req.clone();
+            bound.session.krate.manifest_path = Some(selected.manifest.clone());
+            bound.session.krate.target_name = selected.name.clone();
+            let status = full::run(&bound, &parent, Some(&selected))?;
+            Ok((status, evidence))
+        })();
+        return match result {
+            Ok((status, selection)) => {
+                println!("{}", serde_json::json!({"phase":phase, "exit":status.code(),
+                    "signal":status.signal(), "success":status.success(), "selection":selection}));
+                ExitCode::from(status.code().unwrap_or(2) as u8)
+            }
+            Err(error) => {
+                eprintln!("{error}");
+                ExitCode::from(2)
+            }
+        };
+    }
+
     if phase == "selection" {
         let start = Instant::now();
         let result = full::select(&req, &parent, &args);
         let elapsed_ns = start.elapsed().as_nanos();
-        let record = match &result {
+        let mut record = match &result {
             Ok(selection) => serde_json::json!({
                 "phase": phase, "elapsed_ns": elapsed_ns, "success": true,
                 "manifest": selection.manifest, "target": selection.name,
@@ -52,6 +84,11 @@ fn main() -> ExitCode {
                 "error": error.to_string(),
             }),
         };
+        if std::env::var_os("LUSTR_PROFILE_SELECTION_DETAIL").is_some() {
+            if let Ok(selection) = &result {
+                record["selection"] = full::selection_evidence(selection);
+            }
+        }
         println!("{record}");
         return if result.is_ok() { ExitCode::SUCCESS } else { ExitCode::from(2) };
     }

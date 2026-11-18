@@ -70,6 +70,35 @@ pub struct Selection {
     pub name: String,
 }
 
+impl Selection {
+    fn retained(&self) -> Value {
+        serde_json::json!({"manifest":self.manifest, "name":self.name, "package":self.package, "target":self.target})
+    }
+
+    fn from_retained(mut value: Value) -> Option<Self> {
+        if value.as_object()?.len() != 4 {
+            return None;
+        }
+        let manifest = PathBuf::from(value["manifest"].as_str()?);
+        let name = value["name"].as_str()?.to_owned();
+        let package = value.get_mut("package")?.take();
+        let target = value.get_mut("target")?.take();
+        if !package.is_object()
+            || !target.is_object()
+            || package["manifest_path"].as_str()? != manifest.to_str()?
+            || target["name"].as_str()? != name
+            || package["id"].as_str()?.is_empty()
+            || target["src_path"].as_str()?.is_empty()
+            || target["kind"].as_array()?.is_empty()
+            || target["kind"].as_array()?.iter().any(|kind| !kind.is_string())
+            || !package["targets"].as_array()?.contains(&target)
+        {
+            return None;
+        }
+        Some(Self { package, target, manifest, name })
+    }
+}
+
 fn selector<'a>(args: &'a [String], names: &[&str]) -> Option<&'a str> {
     let mut selected = None;
     // prepare() already parsed this exact native CLI. Skip its command and
@@ -142,13 +171,11 @@ fn output(command: &mut Command) -> io::Result<std::process::Output> {
 pub fn select(request: &Request, parent: &Path, args: &[String]) -> io::Result<Selection> {
     let manifest = request.session.krate.manifest_path.as_ref().ok_or_else(|| error("missing Cargo manifest"))?;
     let before = selection_cache::Snapshot::capture(request, parent, args);
-    if let Some((metadata, package_id)) = before.as_ref().and_then(selection_cache::Snapshot::load) {
-        // Cached Cargo output passes the same identity and uniqueness filter as
-        // fresh Cargo output. The retained native graph is not a substitute.
-        if let Ok(selected) = select_metadata(request, args, &metadata, package_id.as_deref()) {
-            selection_cache::diagnostic("hit");
-            return Ok(selected);
-        }
+    if let Some(selected) = before.as_ref().and_then(selection_cache::Snapshot::load) {
+        // Only the successful Cargo admission and unique selection below can
+        // create this record. Exact input and every target binding still agree.
+        selection_cache::diagnostic("hit");
+        return Ok(selected);
     }
     selection_cache::diagnostic(if before.is_some() { "miss" } else { "ineligible" });
     let metadata = output(
@@ -169,7 +196,7 @@ pub fn select(request: &Request, parent: &Path, args: &[String]) -> io::Result<S
     if let Some(before) = before {
         if let Some(after) = selection_cache::Snapshot::capture(request, parent, args) {
             if before == after {
-                after.store(&metadata, package_id.as_deref());
+                after.store(&metadata, &selected);
             }
         }
     }

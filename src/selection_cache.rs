@@ -1,7 +1,7 @@
 // A deliberately bounded cache of successful public-entry Cargo selection.
 // Cargo remains the parser and package-spec resolver. This admission grammar
 // only excludes manifests whose metadata can depend on unobserved input.
-use super::{Request, Value};
+use super::{Request, Selection, Value};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use std::fs::{self, File, OpenOptions};
@@ -13,6 +13,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 const LIMIT: u64 = 1024 * 1024;
 const SCHEMA: &str = "lustr-cargo-selection-v2";
+// Tool verification certificates keep their existing schema and seed behavior.
+// This separate version memoizes only a previously validated unique selection.
+const SELECTION_SCHEMA: &str = "lustr-cargo-selection-v3";
 
 unsafe extern "C" {
     fn geteuid() -> u32;
@@ -511,8 +514,12 @@ fn discovery(root: &Path, explicit: &[PathBuf]) -> Option<Value> {
 }
 
 fn target_bindings(metadata: &Value) -> Option<Value> {
+    package_target_bindings(metadata["packages"].as_array()?)
+}
+
+fn package_target_bindings(packages: &[Value]) -> Option<Value> {
     let mut paths = Vec::new();
-    for package in metadata["packages"].as_array()? {
+    for package in packages {
         for target in package["targets"].as_array()? {
             paths.push(PathBuf::from(target["src_path"].as_str()?));
         }
@@ -551,7 +558,7 @@ impl Snapshot {
         let lock = text(&project.join("Cargo.lock"))?;
         let home = cargo_home(&cwd)?;
         let environment = environment()?;
-        let context = json!([SCHEMA, args, path_text(parent)?, path_text(&cwd)?, environment]);
+        let context = json!([SELECTION_SCHEMA, args, path_text(parent)?, path_text(&cwd)?, environment]);
         let tools = toolchain(parent)?;
         let state = json!({"context":context, "manifest":manifest_text, "lock":lock,
             "manifest_binding":binding(shown)?, "source":binding(&request.file)?,
@@ -569,46 +576,67 @@ impl Snapshot {
     fn admitted_metadata(&self, metadata: &Value) -> Option<()> {
         let packages = metadata["packages"].as_array()?;
         if packages.len() != 1
-            || !packages[0]["dependencies"].as_array()?.is_empty()
             || metadata["workspace_members"].as_array()?.len() != 1
             || metadata["workspace_root"].as_str()? != self.manifest.parent()?.to_str()?
-            || packages[0]["manifest_path"].as_str()? != self.manifest.to_str()?
-            || packages[0]["source"] != Value::Null
-            || packages[0]["targets"].as_array()?.iter().any(|t| t["kind"].as_array().is_none_or(|k| k.iter().any(|v| v == "custom-build")))
+        {
+            return None;
+        }
+        self.admitted_package(&packages[0])
+    }
+
+    fn admitted_package(&self, package: &Value) -> Option<()> {
+        if !package["dependencies"].as_array()?.is_empty()
+            || package["manifest_path"].as_str()? != self.manifest.to_str()?
+            || package["source"] != Value::Null
+            || package["targets"].as_array()?.iter().any(|t| t["kind"].as_array().is_none_or(|k| k.iter().any(|v| v == "custom-build")))
         {
             return None;
         }
         Some(())
     }
 
-    pub fn load(&self) -> Option<(Value, Option<String>)> {
-        let payload = private_record(&self.root, &self.entry)?;
-        if payload["schema"] != SCHEMA || payload["state"] != self.state {
-            return None;
-        }
-        let metadata = &payload["metadata"];
-        self.admitted_metadata(metadata)?;
-        if payload["targets"] != target_bindings(metadata)? {
-            return None;
-        }
-        let package_id = match &payload["package_id"] {
-            Value::Null => None,
-            Value::String(id) => Some(id.clone()),
-            _ => return None,
-        };
-        Some((metadata.clone(), package_id))
+    fn state_digest(&self) -> Option<String> {
+        // The existing context includes this selection schema. All previous
+        // live observations remain in state; only its disk representation shrinks.
+        Some(digest(&serde_json::to_vec(&self.state).ok()?))
     }
 
-    pub fn store(&self, metadata: &Value, package_id: Option<&str>) {
-        let _ = self.store_inner(metadata, package_id);
+    pub fn load(&self) -> Option<Selection> {
+        let mut payload = private_record(&self.root, &self.entry)?;
+        if payload["schema"] != SELECTION_SCHEMA || payload["state_sha256"].as_str()? != self.state_digest()? {
+            return None;
+        }
+        let provenance = payload["metadata_sha256"].as_str()?;
+        if provenance.len() != 64 || !provenance.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte)) {
+            return None;
+        }
+        let selected = Selection::from_retained(payload.get_mut("selection")?.take())?;
+        self.admitted_package(&selected.package)?;
+        // Admission has exactly one package. Its complete target list remains
+        // in Selection, including unselected targets that can become aliases.
+        if payload["targets"] != package_target_bindings(std::slice::from_ref(&selected.package))? {
+            return None;
+        }
+        Some(selected)
     }
 
-    fn store_inner(&self, metadata: &Value, package_id: Option<&str>) -> Option<()> {
+    pub fn store(&self, metadata: &Value, selected: &Selection) {
+        let _ = self.store_inner(metadata, selected);
+    }
+
+    fn store_inner(&self, metadata: &Value, selected: &Selection) -> Option<()> {
         self.admitted_metadata(metadata)?;
+        if metadata["packages"].as_array()?.first()? != &selected.package {
+            return None;
+        }
         fs::DirBuilder::new().recursive(true).mode(0o700).create(self.root.parent()?).ok()?;
         self.tools.verify(&self.root)?;
-        let payload = json!({"schema":SCHEMA, "state":self.state, "metadata":metadata,
-            "package_id":package_id, "targets":target_bindings(metadata)?});
+        // The metadata digest records the exact parsed Cargo value used by
+        // the sole successful writer. It is provenance, not a substitute for
+        // the admission, unique-selection and before/after checks at that writer.
+        let payload = json!({"schema":SELECTION_SCHEMA, "state_sha256":self.state_digest()?,
+            "metadata_sha256":digest(&serde_json::to_vec(metadata).ok()?),
+            "selection":selected.retained(), "targets":target_bindings(metadata)?});
         write_record(&self.root, &self.entry, &payload)
     }
 }
