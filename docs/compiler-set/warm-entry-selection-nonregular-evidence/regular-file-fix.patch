@@ -1,0 +1,28 @@
+diff --git a/src/selection_cache.rs b/src/selection_cache.rs
+index 3c2523fb0..8c82d10a3 100644
+--- a/src/selection_cache.rs
++++ b/src/selection_cache.rs
+@@ -39,6 +39,11 @@ fn digest(bytes: &[u8]) -> String {
+ }
+ 
+ fn read(path: &Path) -> Option<Vec<u8>> {
++    // Cache-specific files must not block Cargo selection when replaced by a
++    // FIFO or device. Keep the descriptor check as well as this pre-open check.
++    if !path.metadata().ok()?.is_file() {
++        return None;
++    }
+     let file = File::open(path).ok()?;
+     if !file.metadata().ok()?.is_file() {
+         return None;
+@@ -208,6 +213,11 @@ fn file_stamp(path: &Path, canonical: &Path, m: &fs::Metadata) -> Option<Value>
+ }
+ 
+ fn native_executable(path: &Path) -> Option<Value> {
++    // Opening a FIFO can wait forever before there is a descriptor to inspect.
++    // Unsupported tool types must fall through to Cargo's normal exec error.
++    if !path.metadata().ok()?.is_file() {
++        return None;
++    }
+     let canonical = path.canonicalize().ok()?;
+     if canonical.file_name()?.to_str()? == "rustup" {
+         return None;

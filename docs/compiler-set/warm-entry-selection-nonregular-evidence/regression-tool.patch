@@ -1,0 +1,78 @@
+diff --git a/tools/test-native-selection-cache.py b/tools/test-native-selection-cache.py
+index 3e8b6e47d..74b53c326 100755
+--- a/tools/test-native-selection-cache.py
++++ b/tools/test-native-selection-cache.py
+@@ -74,7 +74,7 @@ def main():
+         if not condition:
+             raise AssertionError(description)
+ 
+-    def invoke(label, *, cwd=project, extra_env=None, selected_args=None, bin_path=package_bin, uncached=False):
++    def invoke(label, *, cwd=project, extra_env=None, selected_args=None, bin_path=package_bin, uncached=False, timeout=30):
+         nonlocal sequence
+         sequence += 1
+         env = dict(environment)
+@@ -84,8 +84,20 @@ def main():
+         diagnostic = Path(env["LUSTR_SELECTION_DIAGNOSTICS"])
+         diagnostic.write_text("")
+         command = [str(profiler), "selection", str(bin_path)] + (native_args if selected_args is None else selected_args)
+-        completed = subprocess.run(command, cwd=cwd, env=env, capture_output=True, timeout=30)
+         prefix = f"{sequence:03d}-{label}"
++        try:
++            completed = subprocess.run(command, cwd=cwd, env=env, capture_output=True, timeout=timeout)
++        except subprocess.TimeoutExpired as error:
++            stdout, stderr = error.stdout or b"", error.stderr or b""
++            (root / (prefix + ".stdout")).write_bytes(stdout)
++            (root / (prefix + ".stderr")).write_bytes(stderr)
++            records.append({"label": label, "sequence": sequence, "argv": command, "cwd": str(cwd),
++                            "uncached": uncached, "exit": None, "status": "timeout", "timeout_seconds": timeout,
++                            "diagnostics": diagnostic.read_text(), "stdout_file": prefix + ".stdout",
++                            "stderr_file": prefix + ".stderr", "stdout_sha256": hashlib.sha256(stdout).hexdigest(),
++                            "stderr_sha256": hashlib.sha256(stderr).hexdigest()})
++            save()
++            raise
+         (root / (prefix + ".stdout")).write_bytes(completed.stdout)
+         (root / (prefix + ".stderr")).write_bytes(completed.stderr)
+         events = [json.loads(line) for line in diagnostic.read_text().splitlines()]
+@@ -230,7 +242,11 @@ def main():
+         projection = root / "package"
+         projection_bin = projection / "bin"
+         projection_bin.mkdir(parents=True)
+-        (projection / "lib").symlink_to(package_bin.parent / "lib", target_is_directory=True)
++        projection_lib = projection / "lib"
++        projection_lib.mkdir()
++        for original in (package_bin.parent / "lib").iterdir():
++            if original.name != "lustr-selection-verified":
++                (projection_lib / original.name).symlink_to(original, target_is_directory=original.is_dir())
+         for name in ["cargo", "rustc-full", "rustdoc", "rustc-reference"]:
+             original = package_bin / name
+             if not original.exists():
+@@ -251,6 +267,29 @@ def main():
+         (projection_bin / "cargo").chmod(mode)
+         warm("cargo-execute-permission-restored", bin_path=projection_bin)
+ 
++        # These paths are controlled copies or symlinks in the projection. A
++        # cache preflight must not wait for a FIFO writer before Cargo executes.
++        projected_cargo = projection_bin / "cargo"
++        saved_cargo = projection_bin / "cargo.regular"
++        projected_cargo.rename(saved_cargo)
++        try:
++            os.mkfifo(projected_cargo, 0o700)
++            pair("cargo-replaced-by-fifo", bin_path=projection_bin, expected=2, event="ineligible", timeout=3)
++        finally:
++            projected_cargo.unlink(missing_ok=True)
++            saved_cargo.rename(projected_cargo)
++        warm("cargo-fifo-removed", bin_path=projection_bin)
++
++        projected_receipt = projection_lib / "lustr-selection-tools.txt"
++        receipt_target = projected_receipt.readlink()
++        projected_receipt.unlink()
++        try:
++            os.mkfifo(projected_receipt, 0o600)
++            pair("tool-receipt-replaced-by-fifo", bin_path=projection_bin, event="ineligible", timeout=3)
++        finally:
++            projected_receipt.unlink(missing_ok=True)
++            projected_receipt.symlink_to(receipt_target)
++
+         # A native executable header is not proof that this is the qualified
+         # Cargo implementation. This delegate reads an external file that is
+         # deliberately absent from Cargo's admitted selection inputs.

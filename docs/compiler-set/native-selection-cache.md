@@ -34,6 +34,9 @@ All of these conditions must hold:
   settings and unrecognized Cargo environment settings do not use the cache.
 - The normal Cargo package-cache lock is an accessible regular file. Cache
   reuse cannot hide its replacement by a directory or an inaccessible path.
+- Tool paths and the tool receipt must be regular files before opening.
+  Replacing the tool receipt or Cargo with a FIFO cannot block the cache before
+  the original Cargo selection runs.
 
 These restrictions deliberately exclude general dependency graphs and
 multi-package workspaces. Such requests still run the existing Cargo selection.
@@ -120,6 +123,13 @@ The seed gate checks verified initialization, malformed or shared seeds,
 package relocation, changed receipts, and the same unknown-tool counterexample.
 Repeating a gate after an implementation change verifies that
 revision; its invocation count is not added as new coverage.
+
+The [nonregular-input review evidence](warm-entry-selection-nonregular-evidence/README.md)
+preserves two later reproduced hangs: a Cargo FIFO timed out instead of returning
+Cargo's execution error, and a receipt FIFO timed out instead of allowing normal
+selection. The pre-open file-type correction passed the expanded 140-invocation,
+265-assertion gate. That archive also records a separately tested descriptor-path
+experiment; the production implementation still uses canonical path resolution.
 
 The warm comparison must use public Lustr commands, the exact earlier public
 launcher, pristine Lust and rustc through Cargo on the same runner. The two

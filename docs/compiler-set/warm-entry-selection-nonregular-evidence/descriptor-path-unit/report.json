@@ -1,0 +1,31 @@
+{
+  "argv": [
+    "env",
+    "CARGO_HOME=<RUST_SDK_WORKSPACE>/toolchains/cargo",
+    "RUSTC=<RUST_SDK_WORKSPACE>/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc",
+    "LUSTR_CORE_ROOT=<RUST_SDK_WORKSPACE>/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu",
+    "LUSTR_LUST_ROOT=<REFERENCE_PACKAGE_WORKSPACE>/native-eligibility-evidence/baseline-build/toolchain",
+    "LUSTR_NATIVE_BUILD_OUTPUT=<REFERENCE_PACKAGE_WORKSPACE>/native-eligibility-evidence/baseline-build/work/native-intermediates/release/build/lust/dabdb40893bca91a/run/stdout",
+    "<RUST_SDK_WORKSPACE>/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+    "test",
+    "--offline",
+    "--locked",
+    "--features",
+    "source-native-runtime",
+    "--target-dir",
+    "<REVIEW_WORKSPACE>/warm-fd-entry-test",
+    "--bin",
+    "lustr",
+    "opened_executable_paths_preserve_canonical_file_identities"
+  ],
+  "elapsed_ns": 769316298,
+  "exit": 0,
+  "public_stderr_sha256": "bbaa21b970717b1a652247302f85d1f79e133719d05487b792abb06a5da7cc08",
+  "public_stdout_sha256": "be9092f4596b63b38478b155525cb28be5ba48e601093f0105f30fad667e30df",
+  "scope": "actual-filesystem path/identity equivalence unit on exact FIFO-corrected fd implementation",
+  "source_revision": "ddf84bc779d4aef0b866708624940eed5815ae1a",
+  "source_sha256": "4622d61d898c56c886d52caa3a2198a7aebe7e9cd258fc73f8ed18aa74c1fb81",
+  "source_tree": "ee13a019e62c3140817deb3232eb329ef80cb272",
+  "stderr_sha256": "0aa5bd3c4f19d489b4c5cf8d0a7ae3bfd12bacc745001e0f5287a889121ea0b4",
+  "stdout_sha256": "be9092f4596b63b38478b155525cb28be5ba48e601093f0105f30fad667e30df"
+}

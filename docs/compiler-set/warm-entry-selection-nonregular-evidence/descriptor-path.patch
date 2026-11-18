@@ -1,0 +1,130 @@
+diff --git a/src/selection_cache.rs b/src/selection_cache.rs
+index 8c82d10a3..803dd2ba9 100644
+--- a/src/selection_cache.rs
++++ b/src/selection_cache.rs
+@@ -212,18 +212,47 @@ fn file_stamp(path: &Path, canonical: &Path, m: &fs::Metadata) -> Option<Value>
+     ]))
+ }
+ 
+-fn native_executable(path: &Path) -> Option<Value> {
++#[cfg(target_os = "linux")]
++fn opened_path(file: &File) -> Option<PathBuf> {
++    use std::os::fd::AsRawFd;
++    let resolved = fs::read_link(format!("/proc/self/fd/{}", file.as_raw_fd())).ok()?;
++    if !resolved.is_absolute()
++        || resolved.as_os_str().as_bytes().ends_with(b" (deleted)")
++        || !resolved.components().all(|c| matches!(c, Component::RootDir | Component::Normal(_)))
++    {
++        return None;
++    }
++    Some(resolved)
++}
++
++fn open_executable(path: &Path) -> Option<(PathBuf, File)> {
+     // Opening a FIFO can wait forever before there is a descriptor to inspect.
+     // Unsupported tool types must fall through to Cargo's normal exec error.
+     if !path.metadata().ok()?.is_file() {
+         return None;
+     }
++    // Linux already resolves the complete symlink chain when opening a file.
++    // Keep that actual readable descriptor and its resolved path together.
++    // Procfs is optional; ambiguous/deleted paths and any access failure take
++    // the original canonicalize-then-open route. As with the other snapshots,
++    // inputs must not be concurrently mutated during this request.
++    #[cfg(target_os = "linux")]
++    if let Ok(file) = File::open(path) {
++        if let Some(canonical) = opened_path(&file) {
++            return Some((canonical, file));
++        }
++    }
+     let canonical = path.canonicalize().ok()?;
++    let file = File::open(&canonical).ok()?;
++    Some((canonical, file))
++}
++
++fn native_executable(path: &Path) -> Option<Value> {
++    let (canonical, mut file) = open_executable(path)?;
+     if canonical.file_name()?.to_str()? == "rustup" {
+         return None;
+     }
+     let mut magic = [0; 4];
+-    let mut file = File::open(&canonical).ok()?;
+     file.read_exact(&mut magic).ok()?;
+     if magic != *b"\x7fELF"
+         && !matches!(
+@@ -648,4 +677,75 @@ mod tests {
+         assert!(admitted_manifest(&base.replace("[workspace]", "")).is_none());
+         assert!(admitted_manifest(&base.replace("src/main.rs", "../main.rs")).is_none());
+     }
++
++    #[cfg(target_os = "linux")]
++    #[test]
++    fn opened_executable_paths_preserve_canonical_file_identities() {
++        use std::os::unix::fs::{PermissionsExt, symlink};
++        static SERIAL: AtomicU64 = AtomicU64::new(0);
++        let root =
++            std::env::temp_dir().join(format!("lustr-selection-fd-{}-{}", std::process::id(), SERIAL.fetch_add(1, Ordering::Relaxed)));
++        fs::create_dir(&root).unwrap();
++        struct Remove(PathBuf);
++        impl Drop for Remove {
++            fn drop(&mut self) {
++                let _ = fs::remove_dir_all(&self.0);
++            }
++        }
++        let _remove = Remove(root.clone());
++        let tool = root.join("tool");
++        fs::write(&tool, b"\x7fELFtest").unwrap();
++        fs::create_dir(root.join("nested")).unwrap();
++        symlink("../tool", root.join("nested/relative")).unwrap();
++        symlink("nested/relative", root.join("chain")).unwrap();
++        fs::hard_link(&tool, root.join("hard-link")).unwrap();
++        let literal = root.join("literal (deleted)");
++        fs::copy(&tool, &literal).unwrap();
++        let unreadable = root.join("unreadable");
++        fs::copy(&tool, &unreadable).unwrap();
++        fs::set_permissions(&unreadable, fs::Permissions::from_mode(0)).unwrap();
++
++        fn original(path: &Path) -> Option<Value> {
++            let canonical = path.canonicalize().ok()?;
++            let file = File::open(&canonical).ok()?;
++            file_stamp(path, &canonical, &file.metadata().ok()?)
++        }
++        fn current(path: &Path) -> Option<Value> {
++            let (canonical, file) = open_executable(path)?;
++            file_stamp(path, &canonical, &file.metadata().ok()?)
++        }
++        let mut relative = PathBuf::new();
++        for _ in std::env::current_dir().unwrap().components().filter(|c| matches!(c, Component::Normal(_))) {
++            relative.push("..");
++        }
++        relative.push(tool.strip_prefix("/").unwrap());
++        for path in [
++            tool.clone(),
++            root.join("nested/relative"),
++            root.join("chain"),
++            root.join("hard-link"),
++            literal.clone(),
++            unreadable.clone(),
++            root.join("missing"),
++            relative,
++        ] {
++            assert_eq!(current(&path), original(&path), "{}", path.display());
++        }
++        // A live filename with the kernel's deleted suffix remains valid via
++        // the original path. An actually unlinked descriptor is never used.
++        assert!(opened_path(&File::open(&literal).unwrap()).is_none());
++        assert!(current(&literal).is_some());
++        if unsafe { geteuid() } != 0 {
++            assert!(current(&unreadable).is_none());
++        }
++        let opened = File::open(&tool).unwrap();
++        let renamed = root.join("renamed");
++        fs::rename(&tool, &renamed).unwrap();
++        assert_eq!(current(&tool), original(&tool));
++        assert!(current(&tool).is_none());
++        assert_eq!(current(&renamed), original(&renamed));
++        fs::remove_file(&renamed).unwrap();
++        assert!(opened_path(&opened).is_none());
++        assert_eq!(current(&renamed), original(&renamed));
++    }
+ }

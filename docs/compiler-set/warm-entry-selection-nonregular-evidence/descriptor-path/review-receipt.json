@@ -1,0 +1,23 @@
+{
+  "assertions": 265,
+  "invocations": 140,
+  "profiler_sha256": "badee2554f4d6f5bae77c02338200f874a8d8ed97ef8d56651d1928c32ab00d2",
+  "results_sha256": "7371d1101372065aa84dc6e4e86f1aff1172a495d6f0cf2a4f04adeb67604802",
+  "schema": "lustr-selection-correctness-review-v1",
+  "scope": "Exact production selection component with fd-derived executable path and nonregular input guards; no native compile or performance claim.",
+  "source": {
+    "revision": "ddf84bc779d4aef0b866708624940eed5815ae1a",
+    "tree": "ee13a019e62c3140817deb3232eb329ef80cb272"
+  },
+  "source_sha256": {
+    "<DESCRIPTOR_PATH_SOURCE>/compiler/native/src/protocol.rs": "4da4c32fb16b62f3819a3d774ef63b76e201e2414c3b4540b4a6ccb27133fe1c",
+    "<DESCRIPTOR_PATH_SOURCE>/src/full.rs": "04836e406a227fcf0f831bc0214c301eb2302973a1257fc82b8a0ef3dc32248d",
+    "<DESCRIPTOR_PATH_SOURCE>/src/host_runtime.rs": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223",
+    "<DESCRIPTOR_PATH_SOURCE>/src/owned_child.rs": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20",
+    "<DESCRIPTOR_PATH_SOURCE>/src/selection_cache.rs": "4622d61d898c56c886d52caa3a2198a7aebe7e9cd258fc73f8ed18aa74c1fb81",
+    "<DESCRIPTOR_PATH_SOURCE>/tools/profile-native-preflight.rs": "70a406ab61f69da2710d0215bdcc8acb6c57f7aa20719530cebed9a6693628f7"
+  },
+  "status": "completed",
+  "success": true,
+  "test_sha256": "a1d018d05702bcf5ac06bf8024e17914ca05e2f8931c1a95eae2c2df9791963b"
+}

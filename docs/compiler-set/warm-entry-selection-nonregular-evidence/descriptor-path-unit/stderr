@@ -1,0 +1,3 @@
+   Compiling lustr-compiler v0.1.0 (<DESCRIPTOR_PATH_SOURCE>)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.75s
+     Running unittests src/main.rs (<REVIEW_WORKSPACE>/warm-fd-entry-test/debug/build/lustr-compiler/081c95a11a92234f/out/lustr-081c95a11a92234f)

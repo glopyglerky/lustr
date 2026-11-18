@@ -1,0 +1,23 @@
+{
+  "assertions": 265,
+  "invocations": 140,
+  "profiler_sha256": "4c9f61c8826097c1afd5808241e05ed4a1a3a6e15f7035c03c5a416c9eafa481",
+  "results_sha256": "e95f394c9a5dfb77f7800d75725b182083e5964249f6ae2a21fadbf3eafba08e",
+  "schema": "lustr-selection-correctness-review-v1",
+  "scope": "Exact production selection component, including original unknown native Cargo and new nonregular tool/receipt controls; no native compile or performance claim.",
+  "source": {
+    "revision": "e997dde3361d9a17e46727f331832211ce8a0d05",
+    "tree": "3dafe1c9d972fca573c21c304500b3b0e983e5b6"
+  },
+  "source_sha256": {
+    "<REGULAR_FILE_SOURCE>/compiler/native/src/protocol.rs": "4da4c32fb16b62f3819a3d774ef63b76e201e2414c3b4540b4a6ccb27133fe1c",
+    "<REGULAR_FILE_SOURCE>/src/full.rs": "04836e406a227fcf0f831bc0214c301eb2302973a1257fc82b8a0ef3dc32248d",
+    "<REGULAR_FILE_SOURCE>/src/host_runtime.rs": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223",
+    "<REGULAR_FILE_SOURCE>/src/owned_child.rs": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20",
+    "<REGULAR_FILE_SOURCE>/src/selection_cache.rs": "0712718312cf16ab0fa494ab7c22374e15419a367d5bed42b527da5dab3ce92c",
+    "<REGULAR_FILE_SOURCE>/tools/profile-native-preflight.rs": "70a406ab61f69da2710d0215bdcc8acb6c57f7aa20719530cebed9a6693628f7"
+  },
+  "status": "completed",
+  "success": true,
+  "test_sha256": "a1d018d05702bcf5ac06bf8024e17914ca05e2f8931c1a95eae2c2df9791963b"
+}
