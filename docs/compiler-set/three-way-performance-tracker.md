@@ -93,3 +93,21 @@ None of these five paired intervals established a Lustr speedup. The clean depen
 6. Keep failed and historical campaigns immutable and linked. A missing Rust/Lust lane must be conspicuous in the published results, not silently omitted.
 
 This first snapshot is fully sourced from the completed [PR #18 Compiler set run](https://github.com/glopyglerky/lustr/actions/runs/44245528716), checked-out merge `df8f55aa0430ef81f27e7f403d102256b7fc298b`, tree `fdb6af7d1ea50c4b63fd8b6a217633979deedf22`, compiled full-Rust SDK `5b7b37aefcb5b2fba3c2392bc9065b9e4602d494`. Existing source heads and archived artifacts were not changed for this report. See the [PR #16 tracking acceptance contract](https://github.com/glopyglerky/lustr/pull/16#issuecomment-6972172800) for implementation and CI requirements.
+
+## New automatic CI projection
+
+The source-built Compiler set job now runs `tools/report-three-way-performance.py` after the fixed, slice, and unchanged-project campaigns. It uploads `three-compiler-performance-<attempt>` with only `README.md`, `report.json`, and `SHA256SUMS`. This report is an additional derived view; the existing original benchmark artifacts and encrypted private evidence remain separate and unchanged.
+
+The reporter replays the fixed native/Cargo raw records through the existing strict benchmark verifier and the public slice through its original replay. The unchanged-project report checks the public export's five SHA-256 digests, exact source revision, complete paired timing records, calculated medians/p95/geometric ratio, and agreement with the retained Rust replay comparisons. Every measured family must match the workflow checkout. The new JSON retains per-lane median/p95 milliseconds, paired intervals, source/tree and input hashes, while the Markdown keeps the requested visible `Lustr | Lust | rustc` columns. It never executes a compiler or combines timings from different workloads.
+
+Each benchmark step's actual GitHub Actions outcome is passed explicitly. `success` with complete verified evidence produces measurements; `skipped` produces `NT`; `failure` or `cancelled` produces `FAIL`, explicitly describing the campaign rather than falsely blaming each compiler. A success with missing, changed, or invalid evidence also produces `FAIL` and fails the reporting step. The artifact is uploaded even when preceding benchmark steps fail. It does not turn an upstream CI failure into success.
+
+There is intentionally **no automatic N/A inference** from a missing Lust measurement. An optional future `--lust-coverage` receipt can mark N/A only when it binds the same source revision and the independently measured pristine Lust compiler binary hash, hashes the rejected source and original structured diagnostic, and verifies an actual Lust `not supported` error with a nonzero exit and no timeout or signal. Invalid receipts produce a failed report, not N/A. The current CI does not supply such receipts, so its unmeasured Lust Cargo/project cells remain NT.
+
+Replay a downloaded dashboard without running code from the log:
+
+```sh
+python3 tools/report-three-way-performance.py --replay /path/to/three-compiler-performance
+```
+
+This checks the derived JSON/Markdown bytes and SHA-256 manifest. Original compiler/benchmark execution remains established by the separate source-built CI and its retained artifacts, not by this derived dashboard alone.

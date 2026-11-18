@@ -22,6 +22,7 @@ on:
       - 'tools/*coordinator*'
       - 'tools/*evidence*'
       - 'tools/*upstream-slice*'
+      - 'tools/*three-way*'
       - 'tools/build-tinycc-pic.rs'
       - 'tools/native-target-layout-qualification.rs'
       - '.github/workflows/compiler-set.yml'
@@ -45,6 +46,7 @@ on:
       - 'tools/*coordinator*'
       - 'tools/*evidence*'
       - 'tools/*upstream-slice*'
+      - 'tools/*three-way*'
       - 'tools/build-tinycc-pic.rs'
       - 'tools/native-target-layout-qualification.rs'
       - '.github/workflows/compiler-set.yml'
@@ -160,6 +162,7 @@ jobs:
           python3 tools/test-encrypted-evidence.py
           python3 tools/test-mixed-profile.py
           python3 tools/test-mixed-performance-report.py
+          python3 tools/test-three-way-performance-report.py
           python3 tools/test-mixed-symbol-measurement.py
           python3 tools/test-upstream-slice-benchmark.py
       - name: Obtain the exact pristine reference objects
@@ -367,6 +370,28 @@ jobs:
             --gate "$RUNNER_TEMP/lustr-bench-target/release/lustr-bench-gate" \
             --replay "$RUNNER_TEMP/lustr-bench-target/release/examples/replay" \
             --output "$RUNNER_TEMP/lustr-coordinator-campaign" --jobs 2
+      - name: Render Lustr, pristine Lust and rustc results from qualified benchmark evidence
+        if: always()
+        run: |
+          python3 tools/report-three-way-performance.py \
+            --source-revision "${{ github.sha }}" \
+            --fixed-root "$RUNNER_TEMP" \
+            --slice-dir "$RUNNER_TEMP/lustr-public-slice" \
+            --project-public "$RUNNER_TEMP/lustr-coordinator-campaign/public" \
+            --fixed-outcome "${{ steps.measurements.outcome }}" \
+            --slice-outcome "${{ steps.slice_measurements.outcome }}" \
+            --project-outcome "${{ steps.project_measurements.outcome }}" \
+            --output "$RUNNER_TEMP/lustr-three-way-performance"
+      - name: Retain three-compiler performance table and replayable source identities
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: three-compiler-performance-${{ github.run_attempt }}
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/lustr-three-way-performance/README.md
+            ${{ runner.temp }}/lustr-three-way-performance/report.json
+            ${{ runner.temp }}/lustr-three-way-performance/SHA256SUMS
       - name: Encrypt original project evidence after success or failure
         if: always()
         run: |
