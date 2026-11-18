@@ -274,6 +274,23 @@ def main():
         (projection_bin / "cargo").chmod(mode)
         warm("cargo-execute-permission-restored", bin_path=projection_bin)
 
+        # A private copy of one included library permits an access transition
+        # without chmod following a symlink into the caller's actual SDK.
+        library = min((path for path in projection_lib.iterdir()
+                       if ".so" in path.name or path.name.endswith(".dylib")),
+                      key=lambda path: path.stat().st_size)
+        library_source = library.readlink()
+        library.unlink()
+        shutil.copy2(library_source, library)
+        warm("projected-library-access", bin_path=projection_bin)
+        library_mode = library.stat().st_mode
+        try:
+            library.chmod(0)
+            pair("included-library-unreadable", bin_path=projection_bin, event="ineligible")
+        finally:
+            library.chmod(library_mode)
+        warm("included-library-access-restored", bin_path=projection_bin)
+
         # These paths are controlled copies or symlinks in the projection. A
         # cache preflight must not wait for a FIFO writer before Cargo executes.
         projected_cargo = projection_bin / "cargo"
