@@ -1,0 +1,106 @@
+{
+  "artifacts": [
+    {
+      "created_at": "2026-11-18T08:50:40Z",
+      "digest": "sha256:25fdcc7f128394ce3024e555ee538d03257ca585526b8aa1d0966e865be8cbff",
+      "expires_at": "2027-02-16T08:07:05Z",
+      "id": 14412282024,
+      "name": "three-compiler-performance-1",
+      "size_in_bytes": 5586
+    },
+    {
+      "created_at": "2026-11-18T08:50:46Z",
+      "digest": "sha256:cf6e7197d0ec824faafdaad228bd4b3aad8f5dddadf0114de6fde4f04bf7805a",
+      "expires_at": "2027-02-16T08:07:05Z",
+      "id": 14411713670,
+      "name": "source-built-mixed-qualification-1",
+      "size_in_bytes": 1359021
+    },
+    {
+      "created_at": "2026-11-18T08:50:42Z",
+      "digest": "sha256:daadb4ca372e1ae6b3b62d35f65b2e77ec10bff5e9c3178eb2b8f8792e659377",
+      "expires_at": "2027-02-16T08:07:05Z",
+      "id": 14411603894,
+      "name": "coordinator-project-performance-1",
+      "size_in_bytes": 32560
+    },
+    {
+      "created_at": "2026-11-18T08:50:41Z",
+      "digest": "sha256:0cb054333d16c5785aa3b09bccd03212ad0aa7c9a6594857f6dca029bfe39a81",
+      "expires_at": "2027-02-16T08:07:05Z",
+      "id": 14411254940,
+      "name": "coordinator-project-originals-encrypted-1",
+      "size_in_bytes": 1247576
+    },
+    {
+      "created_at": "2026-11-18T08:42:09Z",
+      "digest": "sha256:6b4785ba725084bcee05e6953e13c3ace5e5d6587b2b8c17a82ea7984d99726b",
+      "expires_at": "2027-02-16T08:07:05Z",
+      "id": 14411118875,
+      "name": "upstream-public-slice-1",
+      "size_in_bytes": 590948
+    },
+    {
+      "created_at": "2026-11-18T08:07:33Z",
+      "digest": "sha256:3d3321f144a90c09d0ac33dbe9f87fac6eccff8d1c1b701af43d3cd8d3859b47",
+      "expires_at": "2026-12-02T08:07:32Z",
+      "id": 14409731745,
+      "name": "runner-source-44264239249-1",
+      "size_in_bytes": 460
+    }
+  ],
+  "base_head": "761b11005bcf1e35daa37e27f7c735384a21b9f6",
+  "cargo_sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+  "checkout": "9480f81232f6c5730cd537a1f6f633fa90e79b85",
+  "compiler_components_sha256": {
+    "cargo-lustr": "8674bc8324bf815e35b5dc19e0f4dbf3320137d0a71b85292281fcc44ba57745",
+    "lust": "a3bf7a31b1d1f4481e6f484246cc003a2f9ad0ec5df74f787f09ad829789ef47",
+    "lust-core": "ea268c8276835890154899ccb7fb2f8e749d0cba216fb348f82e6fc3d08779f9",
+    "lustr": "332f6dd1509c85bfc878c1935c3102f352449b65e2845e25beffd64788e374c9",
+    "rustc-full": "6cd4eaf08591065468934b7933db40d64aee5d7c8dfbc060a1459a38c3f4c2c5"
+  },
+  "compiler_set_run": 44264239249,
+  "constructor_receipts_sha256": {
+    "BUILD-PROFILE.txt": "edf9b8898c74458b11349cff0402ec3b3ded7721038627101e4ece564454a121",
+    "COMPONENTS.txt": "ab2bb046337f1d8e78c81bb4d0e76b1e864b4412ee3c3f0597cd68859006669d",
+    "NATIVE-BUILD-RECEIPT.txt": "38c30f545618b6f7e719626212faccaaf2297652391e255c478bbaa8a540c50e"
+  },
+  "fixed_profiles": "owned compiler components: manifest release profiles; fixture applications: dev opt0/debug0, normal unwind/checks; full Rust reference is the matching imported SDK",
+  "native_shared_library_sha256": "98d14cea59217f7c23b05670aa508d6ab512bb24998e44299ff5a3d5f6a85e09",
+  "pristine_executables_sha256": {
+    "lust": "4dcd3743c75f1524132882b5cd59d4cdc2cd355b8beb6faa839d860bc1bb571a",
+    "lust-core": "dafcd3b0193fc9f7d878b6caf6050d11836a92d0250adef5e845b788714c6feb"
+  },
+  "pristine_revision": "240e08d91d4aed0299639f6f11fd522912b248f9",
+  "pristine_tree": "0ab1b09815802894e6078de0af59273cbdf46cb0",
+  "project_profiles": "unchanged dev and test defaults",
+  "pull_request": 21,
+  "reference_rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+  "repository": "https://github.com/glopyglerky/lustr",
+  "runner_source": {
+    "actor": "glopyglerky",
+    "event_name": "pull_request",
+    "pull_request": {
+      "base_repository_id": "1450430441",
+      "base_sha": "761b11005bcf1e35daa37e27f7c735384a21b9f6",
+      "head_repository_id": "1450430441",
+      "head_sha": "28a2842635ee994db492b43f8c956eddce57a803",
+      "number": 21
+    },
+    "ref": "refs/pull/21/merge",
+    "repository": "glopyglerky/lustr",
+    "run_attempt": 1,
+    "run_id": "44264239249",
+    "schema": 1,
+    "sha": "9480f81232f6c5730cd537a1f6f633fa90e79b85",
+    "triggering_actor": "glopyglerky",
+    "workflow_ref": "glopyglerky/lustr/.github/workflows/compiler-set.yml@refs/pull/21/merge",
+    "workflow_sha": "9480f81232f6c5730cd537a1f6f633fa90e79b85"
+  },
+  "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "rust_version": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5",
+  "schema": "lustr-three-way-hosted-evidence-v1",
+  "source_built_job": 134664876762,
+  "source_head": "28a2842635ee994db492b43f8c956eddce57a803",
+  "tree": "67fb0c88762b8d278dc7c53ab8a4858a00230673"
+}

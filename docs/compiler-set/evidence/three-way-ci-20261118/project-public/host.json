@@ -1,0 +1,85 @@
+{
+  "cgroup_v2_cpu_max": {
+    "source": "/sys/fs/cgroup/cpu.max",
+    "unavailable_reason": "not reported on this host",
+    "value": null
+  },
+  "cgroup_v2_cpuset_effective": {
+    "source": "/sys/fs/cgroup/cpuset.cpus.effective",
+    "value": "0-3"
+  },
+  "cgroup_v2_memory_max": {
+    "source": "/sys/fs/cgroup/memory.max",
+    "unavailable_reason": "not reported on this host",
+    "value": null
+  },
+  "cpu_model": {
+    "source": "/proc/cpuinfo: model name or Processor",
+    "value": "Intel(R) Xeon(R) 6975P-C"
+  },
+  "frequency_governors": {
+    "source": "/sys/devices/system/cpu/cpufreq/policy*/scaling_governor",
+    "unavailable_reason": "not reported on this host",
+    "value": null
+  },
+  "limits": [
+    "Container-visible host facts; physical memory is not a process budget.",
+    "Cgroup files describe the visible cgroup root; nested constraints may differ.",
+    "Affinity is observed, not pinned. CPU frequency and host load can change.",
+    "No process CPU time, RSS, energy or isolated application runtime is measured."
+  ],
+  "logical_cpus": {
+    "source": "os.cpu_count",
+    "value": 4
+  },
+  "physical_memory_bytes": {
+    "source": "/proc/meminfo: MemTotal",
+    "value": 16464306176
+  },
+  "platform": {
+    "machine": "x86_64",
+    "release": "7.0.0-1014-aws",
+    "system": "Linux"
+  },
+  "process_affinity": {
+    "source": "os.sched_getaffinity(0)",
+    "value": [
+      0,
+      1,
+      2,
+      3
+    ]
+  },
+  "recorded_utc": "2026-11-18T08:42:24.309046+00:00",
+  "runner": {
+    "GITHUB_RUN_ATTEMPT": {
+      "source": "environment:GITHUB_RUN_ATTEMPT",
+      "value": "1"
+    },
+    "GITHUB_RUN_ID": {
+      "source": "environment:GITHUB_RUN_ID",
+      "value": "44264239249"
+    },
+    "GITHUB_SHA": {
+      "source": "environment:GITHUB_SHA",
+      "value": "9480f81232f6c5730cd537a1f6f633fa90e79b85"
+    },
+    "ImageOS": {
+      "source": "environment:ImageOS",
+      "value": "ubuntu24"
+    },
+    "ImageVersion": {
+      "source": "environment:ImageVersion",
+      "value": "20261111.127.1"
+    },
+    "RUNNER_ARCH": {
+      "source": "environment:RUNNER_ARCH",
+      "value": "X64"
+    },
+    "RUNNER_OS": {
+      "source": "environment:RUNNER_OS",
+      "value": "Linux"
+    }
+  },
+  "schema": "lustr-benchmark-host-v1"
+}

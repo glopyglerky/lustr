@@ -1,0 +1,409 @@
+{
+  "broader_ci": {
+    "linux_job_id": 134664704033,
+    "macos_conclusion": "failure",
+    "macos_expected_clang": "23.1.5",
+    "macos_failure_step": "Select a sanitizer runtime with native leak detection",
+    "macos_installed_clang": "23.1.6",
+    "macos_job_id": 134664704136,
+    "macos_native_tests_executed": false,
+    "run_id": 44264239099,
+    "status": "in_progress_at_observation"
+  },
+  "compiler_or_benchmark_reexecution_during_review": false,
+  "compiler_set_jobs": [
+    {
+      "conclusion": "success",
+      "id": 134664876762,
+      "name": "Source-built mixed Rust and Lust",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "id": 134664877123,
+      "name": "Actual Lust subset qualification",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "id": 134664877154,
+      "name": "Cargo compatibility (ubuntu-24.04)",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "id": 134664877173,
+      "name": "Runner source provenance",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "id": 134664877202,
+      "name": "Cargo compatibility (windows-latest)",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "id": 134664877282,
+      "name": "Cargo compatibility (macos-26)",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "id": 134664877283,
+      "name": "Pinned Lust reference and declared integration",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "id": 134664877297,
+      "name": "Checked rustc semantic inspection",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "id": 134664877411,
+      "name": "Coordinator minimum Rust",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "id": 134664877506,
+      "name": "Cranelift with unwinding qualification",
+      "status": "completed"
+    }
+  ],
+  "compiler_set_status": "success",
+  "dashboard": {
+    "cells": {
+      "MEASURED": 73,
+      "NT": 14
+    },
+    "regenerated_bytes_identical_to_hosted": true,
+    "regenerated_from_original_inputs": true,
+    "row_count": 29,
+    "standalone_output_replay": "passed"
+  },
+  "entry_contract": {
+    "failed": 0,
+    "ignored": 0,
+    "passed": 16
+  },
+  "fixed_original_replay": {
+    "command_outputs": 2160,
+    "comparisons": 36,
+    "records": 1135,
+    "timed_commands": 648
+  },
+  "head_tree_matches_checkout": true,
+  "merge_admission": false,
+  "performance_admission": false,
+  "public_slice_replay": {
+    "comparisons": 18,
+    "measured_commands": 288,
+    "pairs_per_comparison": 12
+  },
+  "schema": "lustr-three-way-hosted-qualification-v1",
+  "source_built_steps": [
+    {
+      "conclusion": "success",
+      "name": "Set up job",
+      "number": 1,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Run actions/checkout@v4",
+      "number": 2,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Validate qualification workflow controls before compiler builds",
+      "number": 3,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Obtain the exact pristine reference objects",
+      "number": 4,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Obtain the unchanged cache-regression baseline",
+      "number": 5,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Isolate unchanged comparison sources from the product workspace",
+      "number": 6,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Install matching complete Rust development libraries",
+      "number": 7,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Verify complete trace records under concurrent compiler processes",
+      "number": 8,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Install WebAssembly execution oracle",
+      "number": 9,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Obtain the pinned TinyCC source",
+      "number": 10,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Build TinyCC constructor",
+      "number": 11,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Build upstream TinyCC with shared-library relocations",
+      "number": 12,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Verify in-process mixed object checks against actual TinyCC and GNU nm",
+      "number": 13,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Prepare locked dependencies for offline source builds",
+      "number": 14,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Build source toolchain constructor",
+      "number": 15,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Record the exact checked-out source",
+      "number": 16,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Build optimized local toolchain without a predecessor package",
+      "number": 17,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Build real mixed-project qualifier",
+      "number": 18,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Build native target-layout qualification",
+      "number": 19,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Compare selected native frontend layouts with the matching Rust target metadata",
+      "number": 20,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Build the unchanged baseline for the failed-link regression",
+      "number": 21,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Require the specific failed-link stale-output regression on the baseline",
+      "number": 22,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Execute mixed Cargo graph, edits, invalidation, warnings and rejection",
+      "number": 23,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Build retained Cargo check qualifier",
+      "number": 24,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Verify retained checks and freshly encoded Rust metadata",
+      "number": 25,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Build mixed library and full-language qualification",
+      "number": 26,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Execute mixed libraries with aggregates, references and generic callers",
+      "number": 27,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Execute the complete compiler entry and runtime contract",
+      "number": 28,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Build matched pristine Lust for the performance comparison",
+      "number": 29,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Profile mixed phases in a separate instrumented qualification",
+      "number": 30,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Record benchmark host facts before timing",
+      "number": 31,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Build the paired native and mixed performance runner",
+      "number": 32,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Characterize complete supported and mixed work without granting release admission",
+      "number": 33,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Measure the public upstream slice against retained Lust and incremental Cargo",
+      "number": 34,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Retain public slice commands, source and all measured outcomes",
+      "number": 35,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Build and verify the unchanged-project campaign runner",
+      "number": 36,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Measure the unchanged coordinator under its default development profile",
+      "number": 37,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Render Lustr, pristine Lust and rustc results from qualified benchmark evidence",
+      "number": 38,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Retain three-compiler performance table and replayable source identities",
+      "number": 39,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Encrypt original project evidence after success or failure",
+      "number": 40,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Retain encrypted project originals and explicit retention status",
+      "number": 41,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Retain only the sanitized unchanged-project performance export",
+      "number": 42,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Retain exact source, build profiles and qualification evidence",
+      "number": 43,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Post Obtain the pinned TinyCC source",
+      "number": 82,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Post Install WebAssembly execution oracle",
+      "number": 83,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Post Obtain the unchanged cache-regression baseline",
+      "number": 84,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Post Obtain the exact pristine reference objects",
+      "number": 85,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Post Run actions/checkout@v4",
+      "number": 86,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Complete job",
+      "number": 87,
+      "status": "completed"
+    }
+  ],
+  "unchanged_project_replay": {
+    "comparisons": 5,
+    "excluded_warmup_commands": 20,
+    "measured_commands": 120,
+    "method": "original retained Rust replay plus Python recomputation of public samples"
+  }
+}
