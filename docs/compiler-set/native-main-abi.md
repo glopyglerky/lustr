@@ -8,7 +8,7 @@ qualification still fail.
 
 ## Defect and repair
 
-The [preserved macOS gate](evidence/prior-macos-native-gate-20261118/README.md)
+The [preserved macOS gate](https://github.com/glopyglerky/lustr/blob/53c494dd40f48b192e9fac27c24566f0bc238d7c/docs/compiler-set/evidence/prior-macos-native-gate-20261118/README.md)
 recorded 2,218 incompatible-function-pointer sanitizer failures. A new minimal
 `fn main()` fixture reproduces that diagnostic with the original compiler and
 the pinned Clang 23.1.5 runtime. The candidate passes the same fixture with the
