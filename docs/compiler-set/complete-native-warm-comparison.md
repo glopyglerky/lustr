@@ -164,13 +164,22 @@ behavior; they do not measure edit speed.
 
 All observations, regressions, priming costs and failed commands are retained.
 The report includes baseline/candidate comparisons and each package's
-comparison with pristine Lust. The target remains strict: **both warm modes
-must have a paired pristine-Lust/candidate geometric speed ratio whose
-conditional bootstrap 95% lower bound is at least 1.0**. An interval crossing
-one does not prove equality. A completed target miss exits 2 while preserving
-the full result and allowing replay. An incomplete build, gate or campaign
-fails without a performance table. No speedup or parity claim may be made
-before a real complete run satisfies the rule.
+comparison with pristine Lust. The original recorder retains its strict target: both warm modes must have a
+paired pristine-Lust/candidate geometric speed ratio whose conditional bootstrap
+95% lower bound is at least 1.0. An interval crossing one does not prove equality.
+A completed strict-target miss still exits 2 and preserves the full result.
+An incomplete build, gate or campaign fails without a performance table.
+
+The continuation workflow applies a separate
+[practical warm acceptance policy](practical-performance.md) after this complete
+record has passed original replay. It records the measurement's actual exit
+status and accepts only completed status 0 or 2 for assessment. Missing, failed,
+tampered or unexpectedly terminated evidence remains a failure. Each warm mode
+must fit the 10% or 0.5 ms budget and retain a demonstrated win over matching
+Cargo/rustc. The assessor writes separate JSON and Markdown; original raw
+records, statistics and strict-target fields remain unchanged. Passing the warm
+budget does not waive runtime/platform qualification or establish a universal
+Rust speed ratio.
 
 ## Execution and replay
 

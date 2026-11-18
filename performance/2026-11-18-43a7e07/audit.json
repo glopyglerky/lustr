@@ -1,0 +1,82 @@
+{
+  "artifacts": {
+    "coordinator-project-originals-encrypted-1": {
+      "bytes": 1249782,
+      "id": 14444452602,
+      "local_archive": "project-originals-encrypted.zip",
+      "name": "coordinator-project-originals-encrypted-1",
+      "sha256": "7dc757a10b7c69fe964156796020a15b3b8a89deb2c34f9d3edac6fefa415e20",
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44337186349/artifacts/14444452602"
+    },
+    "coordinator-project-performance-1": {
+      "bytes": 31977,
+      "id": 14443883811,
+      "local_archive": "project.zip",
+      "name": "coordinator-project-performance-1",
+      "sha256": "d48037291f7ce3b3b5e4f6b68cfe18e5b0f84050dc536ef59e9572738c6d710b",
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44337186349/artifacts/14443883811"
+    },
+    "runner-source-44337186349-1": {
+      "bytes": 460,
+      "id": 14442271569,
+      "local_archive": "runner-source.zip",
+      "name": "runner-source-44337186349-1",
+      "sha256": "4c057b33ada72c2011626617531e565a151608ee209f18fef4f75df9cc3ab05d",
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44337186349/artifacts/14442271569"
+    },
+    "source-built-mixed-qualification-1": {
+      "bytes": 1354430,
+      "id": 14444082989,
+      "local_archive": "source-built.zip",
+      "name": "source-built-mixed-qualification-1",
+      "sha256": "64cb6a4fed94a12b6fc69a4f1c32d7c575617938a441094e33b534b7eb1eefa7",
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44337186349/artifacts/14444082989"
+    },
+    "three-compiler-performance-1": {
+      "bytes": 5567,
+      "id": 14443254589,
+      "local_archive": "three-way.zip",
+      "name": "three-compiler-performance-1",
+      "sha256": "c74d551cc63b56f07fa6c570e4338cbb59d494bf74da8fd394d9f3573250039c",
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44337186349/artifacts/14443254589"
+    },
+    "upstream-public-slice-1": {
+      "bytes": 590665,
+      "id": 14443288234,
+      "local_archive": "public-slice.zip",
+      "name": "upstream-public-slice-1",
+      "sha256": "e15ce3dce10c667f827b112c87d0abbfd21c04ae01776093652f3326391e1a61",
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44337186349/artifacts/14443288234"
+    }
+  },
+  "audit_type": "offline evidence replay, no compiler timing rerun",
+  "dashboard_rows": 29,
+  "execution_revision": "8a7af2e1e2c21743d14dad45c83283232e2bc102",
+  "measured_timings": {
+    "fixed": 648,
+    "public_slice": 288,
+    "total": 1056,
+    "unchanged_project": 120
+  },
+  "original_comparisons": {
+    "fixed": 36,
+    "public_slice": 18,
+    "total": 59,
+    "unchanged_project": 5
+  },
+  "pr_head": "43a7e07d32929309fc6e402d7bca6b5673e186a2",
+  "qualification": "All ten Compiler set jobs passed at this source; complete native platform and broad full-Rust speed release admission remain unproven.",
+  "regenerated_exact": {
+    "README.md": true,
+    "SHA256SUMS": true,
+    "report.json": true
+  },
+  "replay_sources": {
+    "tools/report-mixed-performance.py": "5f3fe49eb7898854b41fd76b7b643adcf8a72c1e434127fec67404005712e8a5",
+    "tools/report-three-way-performance.py": "6b9453a5a295ed850a1f19bd2316daa191ddac76b397048611a0bcca674d2212",
+    "tools/run-upstream-slice-benchmark.py": "ad7c4e2f74629ecf46c6c8e30bc2c7d62d5a22c8db37e6e346575c5edf3eb4c3"
+  },
+  "run_id": 44337186349,
+  "run_url": "https://github.com/glopyglerky/lustr/actions/runs/44337186349",
+  "tree": "853e22bc16d1a9d96c00369f13a8fec267162dfc"
+}

@@ -14,6 +14,18 @@ Imported/copied Rust implementation is allowed. Semantic-image expansion is
 retained research and is not the assumed route to full-language delivery.
 See the [current contract](native-contract.md).
 
+## Current acceptance and priority, 18 November 2026
+
+The current goal is close-to-Lust supported work plus near-stock ordinary full
+Rust, as defined in [the practical criteria](practical-performance.md). Substantial
+speed gains outside Lust's subset are not required. The latest normal-profile
+project medians range from 0.06% faster to 1.04% slower than matching Rust.
+Keep the separate mixed opt0/debug0 regressions visible. Complete native runtime
+and platform qualification before publishing an installable package, and
+investigate the remaining public-entry cost without risking working semantics.
+The [current snapshot](../../performance/2026-11-18-43a7e07/README.md) supersedes
+the older status below; it does not rewrite its original evidence.
+
 ## Cargo performance delivery
 
 The latest complete paired campaign at `6bf6e3e` measures a body-edit Cargo

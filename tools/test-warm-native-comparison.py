@@ -400,6 +400,16 @@ class WorkflowControls(unittest.TestCase):
         self.assertIn("if: always()", upload)
         for fragment in ("native-*-build/receipt.json", "native-*-build/commands", "native-*-built/logs", "native-*-gates/commands", "native-warm-comparison/raw.jsonl", "native-warm-comparison/samples.csv"):
             self.assertIn(fragment, upload)
+        for fragment in ("native-warm-measurement.status", "native-warm-assessment/assessment.json", "native-warm-assessment/README.md"):
+            self.assertIn(fragment, upload)
+
+    def test_practical_assessment_is_separate_and_has_no_ignored_failure(self):
+        block, = [block for block in self.blocks if "Assess practical warm performance after full evidence replay" in block]
+        self.assertIn("if: always() && steps.comparison.outputs.completed == 'true'", block)
+        self.assertIn("python3 tools/assess-warm-performance.py", block)
+        self.assertIn('--measurement-status "$RUNNER_TEMP/native-warm-measurement.status"', block)
+        self.assertNotIn("continue-on-error", self.text)
+        self.assertNotIn("|| true", block)
 
     def comparison_script(self):
         block = self.steps["comparison"].split("        run: |\n", 1)[1]
@@ -424,15 +434,26 @@ class WorkflowControls(unittest.TestCase):
             shim.chmod(0o755)
             env = dict(os.environ, PATH=str(shim.parent) + os.pathsep + os.environ.get("PATH", ""), RUNNER_TEMP=str(root), GITHUB_WORKSPACE=str(root / "source"), GITHUB_OUTPUT=str(root / "outputs"))
             result = subprocess.run(["bash", "-c", self.comparison_script()], env=env, capture_output=True)
-            return result.returncode, (root / "outputs").read_text(), result.stderr
+            return result.returncode, (root / "outputs").read_text(), (root / "native-warm-measurement.status").read_text(), result.stderr
 
-    def test_complete_target_miss_stays_exit_two_and_replayable(self):
-        code, outputs, error = self.run_status_probe(True, 2)
-        self.assertEqual((code, outputs), (2, "completed=true\n"), error)
+    def test_complete_target_miss_retains_exit_two_for_separate_assessment(self):
+        code, outputs, status, error = self.run_status_probe(True, 2)
+        self.assertEqual((code, outputs, status), (0, "completed=true\nmeasurement_status=2\n", "2\n"), error)
 
     def test_incomplete_failure_stays_failed_and_not_replayable(self):
-        code, outputs, error = self.run_status_probe(False, 1)
-        self.assertEqual((code, outputs), (1, "completed=false\n"), error)
+        code, outputs, status, error = self.run_status_probe(False, 1)
+        self.assertEqual((code, outputs, status), (1, "completed=false\nmeasurement_status=1\n", "1\n"), error)
+
+    def test_unexpected_exit_is_not_normalized_despite_completed_report(self):
+        for original in (1, 3, 124):
+            with self.subTest(original=original):
+                code, outputs, status, error = self.run_status_probe(True, original)
+                self.assertEqual(code, original, error)
+                self.assertEqual(status, str(original) + "\n")
+
+    def test_zero_exit_with_incomplete_report_is_not_success(self):
+        code, outputs, status, error = self.run_status_probe(False, 0)
+        self.assertEqual((code, outputs, status), (1, "completed=false\nmeasurement_status=0\n", "0\n"), error)
 
 
 if __name__ == "__main__":
