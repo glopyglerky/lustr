@@ -54,6 +54,8 @@ def main():
     records = []
     assertions = []
     sequence = 0
+    completed = False
+    failure = None
 
     def save():
         (root / "results.json").write_text(json.dumps({
@@ -61,7 +63,9 @@ def main():
             "scope": "actual public Cargo target selection only; no native compile or performance claim",
             "profiler_sha256": hashlib.sha256(profiler.read_bytes()).hexdigest(),
             "records": records, "assertions": assertions,
-            "success": all(item["passed"] for item in assertions),
+            "status": "failed" if failure is not None else "completed" if completed else "incomplete",
+            "error": failure,
+            "success": completed and failure is None and all(item["passed"] for item in assertions),
         }, indent=2) + "\n")
 
     def require(condition, description):
@@ -270,9 +274,11 @@ def main():
             pair("unknown-native-cargo-" + str(index), bin_path=projection_bin, event=("miss", "ineligible"))
         external.touch()
         pair("unknown-native-cargo-external-change", bin_path=projection_bin, expected=2, event=("miss", "ineligible"))
+        completed = True
         save()
         print(json.dumps({"success": True, "invocations": len(records), "assertions": len(assertions), "report": str(root / "results.json")}))
     except BaseException as error:
+        failure = f"{type(error).__name__}: {error}"
         save()
         print(json.dumps({"success": False, "error": str(error), "report": str(root / "results.json")}), file=sys.stderr)
         raise
