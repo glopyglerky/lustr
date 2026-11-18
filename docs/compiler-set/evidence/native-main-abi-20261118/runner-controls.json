@@ -1,0 +1,12 @@
+{
+  "runner_sha256": "1f391308d2bb4671b211408282ef0ab7a446ccfc38a1450e78a477d9ff56879e",
+  "controls": {
+    "timeout_keeps_partial_streams": true,
+    "timeout_status_saved_before_cleanup": true,
+    "unrelated_live_group_preserved": true,
+    "reaped_leader_not_signaled": true,
+    "missing_binary_records_setup_failure": true,
+    "cleanup_failure_revokes_pass": true
+  },
+  "proxy_control_receipt_sha256": "6a322af70416d873754ddd02569fe6b6db24e3e32dda69cb5ca1db7ce8548783"
+}

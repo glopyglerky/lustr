@@ -1,0 +1,22 @@
+{
+  "native_tree": "cfc7a49a820f7fbeed2e8b725bf779ccedf641dd",
+  "checks": [
+    {
+      "arguments": [
+        "--index",
+        "--candidate"
+      ],
+      "exit": 0,
+      "stdout": "Lust reference 240e08d91d4aed0299639f6f11fd522912b248f9; exact declared integration tree cfc7a49a820f7fbeed2e8b725bf779ccedf641dd; patch 78b7306c0591110444adc16523c42b736bc2a19d; candidate source identity only; release admission remains required\n",
+      "stderr": ""
+    },
+    {
+      "arguments": [
+        "--index"
+      ],
+      "exit": 1,
+      "stdout": "",
+      "stderr": "nonempty integration requires exact reviewed qualification and evidence references\n"
+    }
+  ]
+}
