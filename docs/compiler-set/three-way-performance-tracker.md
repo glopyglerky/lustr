@@ -12,27 +12,27 @@ All durations below are **median wall-clock milliseconds (ms), lower is better**
 
 ## Missing-result labels
 
-- **N/A:** standalone pristine Lust cannot perform that exact operation/graph/semantics as the declared workflow. Full Cargo coordinator/project rows have no standalone Lust Cargo lane, even when Lust can compile some functions in a separate native fixture. An unsupported language feature must likewise be N/A, with the reason retained.
-- **NT:** the operation is supported in principle but that lane was not measured, or a prior attempt failed to qualify. Do not substitute a timing from a different fixture, host, profile or run. Do not report zero, a guessed duration or a speed ratio.
+- **N/A:** a concrete source feature or operation is demonstrated to be outside pristine Lust's supported subset for the declared workload. Record the unsupported feature and the gate/source evidence. A missing Cargo adapter or missing measurement, on its own, is **not** proof of source-language incompatibility.
+- **NT:** the lane has no matched qualifying measurement, including when support has not been established or a prior attempt failed. This is the status for all pristine Lust cells in the Cargo and unchanged full-project campaigns below. Do not substitute a timing from a different fixture, host, profile or run. Do not report zero, a guessed duration or a speed ratio.
 - **Measured:** pass matching source, behavior/output, target, flags and profile gates first; retain raw command/timing records and hash-pinned tool identities. An unsuccessful gate makes the campaign NT until it is rerun successfully, with the failure retained separately.
 
 For every subsequent source revision, retain an additional source-bound snapshot instead of overwriting these historical numbers. Present all compiler columns in the requested order **Lustr | Lust | rustc**. Identify when rustc is standalone versus Cargo, and which Lustr entry was timed. Keep the separately recorded *integrated Lust* performance lane available as underlying evidence, but do not conflate it with pristine Lust.
 
 ## Fixed Cargo workflow, same-run snapshot
 
-This is the mixed **Cargo** workload with opt0/debug0 on the fixed corpus. There is no pristine Lust Cargo coordinator lane for these same operations. These N/A cells say nothing about pristine Lust's separate native-supported fixture. Source-bound [fixed-workload table](https://github.com/glopyglerky/lustr/blob/84bb8997117b1a582e90a9c9d3ab88985b51753e/docs/compiler-set/evidence/native-eligibility-hosted-20261118/fixed-workload/README.md).
+This is the mixed **Cargo** workload with opt0/debug0 on the fixed corpus. There is no matched pristine Lust measurement for these exact Cargo commands. These **NT** cells are unmeasured, not evidence that the underlying source is unsupported by Lust. A separate native-supported fixture is measured below. Source-bound [fixed-workload table](https://github.com/glopyglerky/lustr/blob/84bb8997117b1a582e90a9c9d3ab88985b51753e/docs/compiler-set/evidence/native-eligibility-hosted-20261118/fixed-workload/README.md).
 
 | Operation | Lustr (ms) | Lust (ms) | rustc via Cargo (ms) |
 | --- | ---: | ---: | ---: |
-| Body edit | 41.462 | N/A | 45.679 |
-| Invalid-code rejection | 29.376 | N/A | 31.010 |
-| Compile and test | 69.912 | N/A | 69.378 |
-| No-op | 8.969 | N/A | 8.640 |
-| No-op check | 8.831 | N/A | 8.338 |
-| Check after body edit | 23.306 | N/A | 22.469 |
-| Ordinary check | 41.290 | N/A | 37.233 |
-| Cold build | 160.697 | N/A | 143.185 |
-| Signature edit | 55.081 | N/A | 48.044 |
+| Body edit | 41.462 | NT | 45.679 |
+| Invalid-code rejection | 29.376 | NT | 31.010 |
+| Compile and test | 69.912 | NT | 69.378 |
+| No-op | 8.969 | NT | 8.640 |
+| No-op check | 8.831 | NT | 8.338 |
+| Check after body edit | 23.306 | NT | 22.469 |
+| Ordinary check | 41.290 | NT | 37.233 |
+| Cold build | 160.697 | NT | 143.185 |
+| Signature edit | 55.081 | NT | 48.044 |
 
 Two Lustr modes had matched speedups against standard Cargo; seven had matched slowdowns. Original ratios and paired 95% intervals are in the linked evidence. They are more defensible for the direction of a speed comparison than dividing the two displayed medians.
 
@@ -71,21 +71,21 @@ Warm primary-entry operations are substantially slower than pristine Lust on thi
 
 ## Unchanged full-Rust coordinator project, same-run snapshot
 
-This campaign uses the actual `crates/lustr` project with normal dev/test defaults, including debuginfo=2 and two Cargo jobs. Standalone Lust cannot compile that full Rust graph, so its cells are N/A. These workloads are **not** native object acceleration. Source-bound [project timing table](https://github.com/glopyglerky/lustr/blob/84bb8997117b1a582e90a9c9d3ab88985b51753e/docs/compiler-set/evidence/native-eligibility-hosted-20261118/project-public/README.md).
+This campaign uses the actual `crates/lustr` project with normal dev/test defaults, including debuginfo=2 and two Cargo jobs. No pristine Lust measurement or qualified unsupported-feature gate for this exact project was retained, so those cells are **NT**, not N/A. This debug profile is currently outside mixed-object acceleration eligibility; that alone does not prove standalone Lust's source-language coverage. These workloads are **not** native object acceleration. Source-bound [project timing table](https://github.com/glopyglerky/lustr/blob/84bb8997117b1a582e90a9c9d3ab88985b51753e/docs/compiler-set/evidence/native-eligibility-hosted-20261118/project-public/README.md).
 
 | Operation | Lustr (ms) | Lust (ms) | rustc via Cargo (ms) |
 | --- | ---: | ---: | ---: |
-| Clean dependency build | 522.133 | N/A | 518.860 |
-| Primed root build | 146.981 | N/A | 147.217 |
-| Primed root check | 57.071 | N/A | 56.018 |
-| No-op | 9.989 | N/A | 9.987 |
-| Compile and test | 4801.302 | N/A | 4775.826 |
+| Clean dependency build | 522.133 | NT | 518.860 |
+| Primed root build | 146.981 | NT | 147.217 |
+| Primed root check | 57.071 | NT | 56.018 |
+| No-op | 9.989 | NT | 9.987 |
+| Compile and test | 4801.302 | NT | 4775.826 |
 
 None of these five paired intervals established a Lustr speedup. The clean dependency build and no-op intervals were below one; the other three crossed one. Do not interpret the latter as proven equivalence.
 
 ## Future campaign and report requirements
 
-1. Emit a source-bound **three-column table in every new benchmark report**. For fixed native and public slice, populate all three from the same qualified campaign, using pristine Lust. For mixed Cargo and full-Rust projects, retain explicit Lust N/A with a scope reason. If an otherwise supported lane was not measured or failed an execution/qualification gate, report NT with the observed reason. If the source itself uses unsupported Lust features, report N/A instead.
+1. Emit a source-bound **three-column table in every new benchmark report**. For fixed native and public slice, populate all three from the same qualified campaign, using pristine Lust. For mixed Cargo and full-Rust projects, publish Lust NT until a matched measurement is qualified or a specific unsupported feature/operation is proven. If an otherwise supported lane was not measured or failed an execution/qualification gate, report NT with the observed reason. If the source itself uses proven unsupported Lust features, report N/A with the evidence instead.
 2. Print both median and p95 **milliseconds per lane** and keep all raw timing samples, pairing/order, source/tool hashes, host, compiler/version flags, cache policy, oracle/correctness and coverage results. Separately retain paired ratios and confidence intervals; do not calculate them as ratios of displayed medians.
 3. Distinguish **native standalone**, **mixed Cargo**, **public slice**, and **unchanged real project**. Never cross-fill a missing value with a timing taken from a different benchmark family. Include a compiler-coverage/support matrix or a per-row N/A reason.
 4. Keep **pristine Lust** source and the full Rust implementation pinned and unchanged. The integration's internal Lust lane remains a separate fourth trace for speed-retention diagnosis, not a substitute for a pristine baseline.
