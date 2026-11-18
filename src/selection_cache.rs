@@ -274,16 +274,17 @@ fn toolchain(parent: &Path) -> Option<Tools> {
     {
         return None;
     }
-    let mut files = vec![std::env::current_exe().ok()?, parent.join("cargo"), parent.join("rustc-full"), parent.join("rustdoc")];
-    if !absent(&parent.join("rustc-reference")) {
-        files.push(parent.join("rustc-reference"));
-    }
-    let mut identities = files.iter().map(|p| native_executable(p)).collect::<Option<Vec<_>>>()?;
+    let mut identities = vec![native_executable(&std::env::current_exe().ok()?)?];
     let mut verified = Vec::new();
     for name in ["cargo", "rustc-full", "rustdoc", "rustc-reference"] {
         let path = parent.join(name);
         let hash = expected.remove(&Path::new("bin").join(name))?;
-        verified.push((path.clone(), hash, stamp(&path)?));
+        // The native-executable check already opened and stamped this exact
+        // path. Use that same observation for both the lookup identity and
+        // later byte verification; do not canonicalize/stat each tool twice.
+        let identity = native_executable(&path)?;
+        identities.push(identity.clone());
+        verified.push((path, hash, identity));
     }
     let lib = parent.parent()?.join("lib");
     let mut libraries = Vec::new();
