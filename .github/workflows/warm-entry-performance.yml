@@ -7,6 +7,10 @@ on:
       - 'tests/compiler_contract.rs'
       - 'tools/run-warm-entry-comparison.py'
       - 'tools/test-warm-entry-comparison.py'
+      - 'tools/test-native-selection-cache.py'
+      - 'tools/test-native-selection-seed.py'
+      - 'tools/build-mixed-toolchain.rs'
+      - 'tools/selection-toolchain-receipt.rs'
       - '.github/workflows/warm-entry-performance.yml'
   workflow_dispatch:
 
@@ -85,6 +89,13 @@ jobs:
             --profiler "$RUNNER_TEMP/lustr-warm-selector-build/target/release/profile-native-preflight" \
             --package-bin "$RUNNER_TEMP/lustr-warm-built/toolchain/bin" \
             --output "$RUNNER_TEMP/lustr-warm-selection-contract"
+      - name: Require seeded verification and safe fallback behavior
+        id: selection_seed_contract
+        run: |
+          python3 tools/test-native-selection-seed.py \
+            --profiler "$RUNNER_TEMP/lustr-warm-selector-build/target/release/profile-native-preflight" \
+            --package-bin "$RUNNER_TEMP/lustr-warm-built/toolchain/bin" \
+            --output "$RUNNER_TEMP/lustr-warm-selection-seed-contract"
       - name: Build the pinned baseline public entry with the identical native runtime
         id: baseline_build
         run: |
@@ -146,6 +157,8 @@ jobs:
             ${{ runner.temp }}/lustr-warm-built/COMPONENTS.txt
             ${{ runner.temp }}/lustr-warm-built/BUILD-PROFILE.txt
             ${{ runner.temp }}/lustr-warm-built/NATIVE-BUILD-RECEIPT.txt
+            ${{ runner.temp }}/lustr-warm-built/toolchain/lib/lustr-selection-tools.txt
+            ${{ runner.temp }}/lustr-warm-built/toolchain/lib/lustr-selection-verified
             ${{ runner.temp }}/lustr-warm-built/logs
             ${{ runner.temp }}/lustr-warm-pristine-build.log
             ${{ runner.temp }}/lustr-warm-entry-contract.log
@@ -161,3 +174,7 @@ jobs:
             ${{ runner.temp }}/lustr-warm-selection-contract/results.json
             ${{ runner.temp }}/lustr-warm-selection-contract/*.stdout
             ${{ runner.temp }}/lustr-warm-selection-contract/*.stderr
+            ${{ runner.temp }}/lustr-warm-selection-seed-contract/results.json
+            ${{ runner.temp }}/lustr-warm-selection-seed-contract/*.stdout
+            ${{ runner.temp }}/lustr-warm-selection-seed-contract/*.stderr
+            ${{ runner.temp }}/lustr-warm-selection-seed-contract/package/lib/lustr-selection-verified
