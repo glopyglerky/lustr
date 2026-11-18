@@ -131,6 +131,7 @@ jobs:
       - name: Measure complete cold and retained public commands
         id: comparison
         run: |
+          set +e
           python3 tools/run-warm-entry-comparison.py measure \
             --repository "$GITHUB_WORKSPACE" \
             --built "$RUNNER_TEMP/lustr-warm-built" \
@@ -139,8 +140,19 @@ jobs:
             --pristine-lust "$RUNNER_TEMP/lustr-warm-pristine-target/release/lust" \
             --pristine-build-log "$RUNNER_TEMP/lustr-warm-pristine-build.log" \
             --output "$RUNNER_TEMP/lustr-warm-comparison" --pairs 24
+          measurement_status=$?
+          python3 - "$RUNNER_TEMP/lustr-warm-comparison/report.json" "$GITHUB_OUTPUT" <<'PY'
+          import json, pathlib, sys
+          try:
+              completed = json.loads(pathlib.Path(sys.argv[1]).read_text()).get('status') == 'completed'
+          except (OSError, ValueError, AttributeError):
+              completed = False
+          with open(sys.argv[2], 'a') as output:
+              output.write('completed=' + str(completed).lower() + '\n')
+          PY
+          exit "$measurement_status"
       - name: Diagnose matched retained entries and selector costs
-        if: always() && steps.entry_contract.outcome == 'success'
+        if: always() && steps.comparison.outputs.completed == 'true'
         run: |
           python3 tools/run-warm-entry-diagnostics.py run \
             --campaign "$RUNNER_TEMP/lustr-warm-comparison" \

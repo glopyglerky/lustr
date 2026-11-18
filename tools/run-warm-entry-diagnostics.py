@@ -208,7 +208,7 @@ def verify(output):
         path=Path(binding['file'])
         require(not path.is_absolute() and '..' not in path.parts and not (output/path).is_symlink(),'unsafe diagnostic stream')
         data=(output/path).read_bytes()
-        require(S.digest(output/path)==binding['sha256'] and len(data)==binding['bytes'],'diagnostic stream changed')
+        require(S.digest(output/path)==binding['sha256'] and ('bytes' not in binding or len(data)==binding['bytes']),'diagnostic stream changed')
         return data
     oracle=(output/'runtime-oracle.stdout').read_bytes()
     require(S.digest(output/'runtime-oracle.stdout')==report['runtime_oracle_sha256']==primary['runtime_oracle_sha256'],'diagnostic oracle changed')

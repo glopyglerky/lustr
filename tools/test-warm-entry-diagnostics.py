@@ -59,7 +59,11 @@ def synthetic(output):
             self.row={'kind':'daemon-start','lane':lane,'pid':len(recorder.records)+100,'scope':scope,'environment':dict(env),'executable':str(executable),'cwd':str(cwd),'socket':env['LUST_DAEMON_SOCKET']}
         def __enter__(self): recorder.event(self.row); return self
         def alive(self): pass
-        def __exit__(self,*args): recorder.event({'kind':'daemon-stop',**{key:self.row[key] for key in ('lane','pid','scope')},'exit':0,'error':None,'streams':[]})
+        def __exit__(self,*args):
+            # Actual S.Daemon.close records file and hash without byte counts.
+            path=output/'commands'/f"daemon-{self.row['pid']}.stderr"; path.write_bytes(b'synthetic daemon stream\n')
+            recorder.event({'kind':'daemon-stop',**{key:self.row[key] for key in ('lane','pid','scope')},'exit':0,'error':None,
+                            'streams':[{'file':str(path.relative_to(output)),'sha256':D.S.digest(path)}]})
     with recorder.raw,patch.object(recorder,'run',side_effect=command),patch.object(D.S,'Daemon',Daemon),patch.object(D.B,'source_identity',return_value=primary['candidate_identity']): run.execute()
     run.report['raw_sha256']=D.S.digest(output/'raw.jsonl'); D.S.write_json(output/'report.json',run.report); (output/'README.md').write_text(D.render(run.report))
 
@@ -77,6 +81,9 @@ class Controls(unittest.TestCase):
         report=json.loads((output/'report.json').read_text()); report['raw_sha256']=D.S.digest(output/'raw.jsonl'); D.S.write_json(output/'report.json',report)
         return output
     def test_complete_synthetic_orchestration_replays(self): self.assertEqual(len(D.verify(self.original)['native_timings']),72)
+    def test_corrupt_real_shape_daemon_stream_is_rejected(self):
+        def mutate(rows): next(r for r in rows if r['kind']=='daemon-stop')['streams'][0]['sha256']='0'*64
+        with self.assertRaises(ValueError): D.verify(self.corrupted(mutate))
     def test_wrong_integrated_executable_is_rejected(self):
         def mutate(rows): next(r for r in rows if r['kind']=='command' and r['phase']=='diagnostic-check' and r['lane']=='integrated')['argv'][0]='/unrelated/lust'
         with self.assertRaises(ValueError): D.verify(self.corrupted(mutate))
