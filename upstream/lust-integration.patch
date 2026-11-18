@@ -2778,7 +2778,7 @@ index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..06475058b58662ad8fed81e51873a0a7
 +    fn diagnostics(&self, _phase: Prepared<'_>, _diagnostics: &[crate::diag::Diag]) {}
 +}
 diff --git a/src/driver/patch.rs b/src/driver/patch.rs
-index a42971cf10bbbdd13511f51c07aef68556044221..7eade35a56537d69de2d93136447888786873cfd 100644
+index a42971cf10bbbdd13511f51c07aef68556044221..aaae36a3eb972000d1b1122e39b6f3d89d10649d 100644
 --- a/src/driver/patch.rs
 +++ b/src/driver/patch.rs
 @@ -447,6 +447,13 @@ pub(super) struct Patched {
@@ -2849,7 +2849,7 @@ index a42971cf10bbbdd13511f51c07aef68556044221..7eade35a56537d69de2d931364478887
  }
  
  /// Rescans the edited fn's item after its new body landed: the item
-@@ -3396,6 +3414,116 @@ pub fn run() -> i64 {
+@@ -3396,6 +3414,119 @@ pub fn run() -> i64 {
          warm.front.last_visits.clone()
      }
  
@@ -2918,9 +2918,12 @@ index a42971cf10bbbdd13511f51c07aef68556044221..7eade35a56537d69de2d931364478887
 +        let _ = std::fs::remove_dir_all(&dir);
 +        std::fs::create_dir_all(&dir).unwrap();
 +        let root = dir.join("main.rs");
-+        std::fs::write(&root, "const fn no_change_late_const_marker() -> usize {\n    2\n}\nfn main() { let _n = no_change_late_const_marker(); }\n").unwrap();
++        // A const item enters the resolver route; a const fn alone uses
++        // the chunk front end, which has no patch base to exercise.
++        std::fs::write(&root, "const ROUTE: usize = 0;\nconst fn no_change_late_const_marker() -> usize {\n    2\n}\nfn main() { let _n = no_change_late_const_marker(); }\n").unwrap();
 +        let mut warm = Session::new(dir.join("obj"), true, SessionKey::synthetic(&root, false));
 +        assert_eq!(check(&mut warm, &root), (0, String::new()));
++        assert_eq!(field(&warm.front.last_visits, "path"), "resolve");
 +        let index = warm.front.fn_loc.iter().position(|&(item, sub)| {
 +            let def = super::fn_def_at(&warm.front.ast, item, sub);
 +            crate::intern::source_name(warm.front.interner.get(def.name)) == "no_change_late_const_marker"

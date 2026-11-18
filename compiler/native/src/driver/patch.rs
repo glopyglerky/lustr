@@ -3479,9 +3479,12 @@ pub fn run() -> i64 {
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let root = dir.join("main.rs");
-        std::fs::write(&root, "const fn no_change_late_const_marker() -> usize {\n    2\n}\nfn main() { let _n = no_change_late_const_marker(); }\n").unwrap();
+        // A const item enters the resolver route; a const fn alone uses
+        // the chunk front end, which has no patch base to exercise.
+        std::fs::write(&root, "const ROUTE: usize = 0;\nconst fn no_change_late_const_marker() -> usize {\n    2\n}\nfn main() { let _n = no_change_late_const_marker(); }\n").unwrap();
         let mut warm = Session::new(dir.join("obj"), true, SessionKey::synthetic(&root, false));
         assert_eq!(check(&mut warm, &root), (0, String::new()));
+        assert_eq!(field(&warm.front.last_visits, "path"), "resolve");
         let index = warm.front.fn_loc.iter().position(|&(item, sub)| {
             let def = super::fn_def_at(&warm.front.ast, item, sub);
             crate::intern::source_name(warm.front.interner.get(def.name)) == "no_change_late_const_marker"

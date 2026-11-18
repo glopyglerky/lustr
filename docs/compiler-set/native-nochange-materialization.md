@@ -1,6 +1,8 @@
 # Avoid unused setup materialization on a retained check
 
-Status: isolated source candidate. The new focused tests have not executed yet.
+Status: isolated source candidate. The first focused run passed the real
+edit/error/runtime transition test and exposed a setup error in the internal
+const-state test. The corrected fixture has not executed yet.
 No compiler speedup, parity, runtime qualification or release admission is
 claimed. This candidate is based on PR25 revision
 `3c378a11d60149a3ec99fa49ea1b336e9406fca8`; its public selector and its existing
@@ -64,7 +66,16 @@ then repeat in a new process with `LUST_CHECK_RESOLVE=1` so its process-wide
 OnceLock is initialized for the oracle path. The `gate` profile is for
 correctness; its timings must not be used as release performance evidence.
 
-The new tests are pending actual execution. Existing unit, differential,
+The first run at source `3724211b45a3f8cc2bcf8539c8d549c3c2cbae7d` built
+successfully and reported one pass and one failure. The internal-state test had
+used a standalone const function, which takes the chunk frontend and creates no
+patch base. Its attempted patch-base inspection therefore panicked before the
+arranged state or the shortcut was exercised. The fixture now adds an unrelated
+const item to enter the resolver and asserts that route before arranging state.
+The original source, test executable identity and failing logs remain preserved.
+This is a test setup correction; the product shortcut is unchanged.
+
+The corrected focused run is pending. Existing unit, differential,
 runtime/panic/drop, edit and public-entry gates remain relevant to admission of
 the changed native source. Failures and unsupported operations must remain
 visible. The candidate source guard checks the declared exact diff only.
