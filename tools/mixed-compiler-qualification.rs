@@ -23,6 +23,63 @@ fn profile_files(directory: &Path) -> BTreeSet<String> {
         .filter(|name| name.ends_with(".jsonl"))
         .collect()
 }
+fn retained_kernel(work: &Path, expected_source: &str) -> (PathBuf, PathBuf) {
+    // Select only this fixture's current generation, by its exact checked
+    // projection and certificate. Do not guess a request key or edit number.
+    let mut found = Vec::new();
+    for request in fs::read_dir(work.join("mixed-state")).unwrap() {
+        let request = request.unwrap();
+        if !request.file_type().unwrap().is_dir() { continue; }
+        let index = request.path().join("current.json");
+        if !index.is_file() { continue; }
+        let certificate = fs::read_to_string(&index).unwrap();
+        for generation in fs::read_dir(request.path()).unwrap() {
+            let generation = generation.unwrap();
+            if !generation.file_type().unwrap().is_dir() { continue; }
+            let generation = generation.path();
+            // These owned fixture paths have the JSON/Rust string spelling
+            // used by the existing compact certificate writer.
+            if !certificate.contains(&format!("\"directory\":{generation:?}")) { continue; }
+            for unit in fs::read_dir(&generation).unwrap() {
+                let unit = unit.unwrap();
+                if !unit.file_type().unwrap().is_dir() { continue; }
+                let unit = unit.path();
+                if fs::read(unit.join("kernel.rs")).ok().as_deref() != Some(expected_source.as_bytes()) { continue; }
+                let identity = unit.file_name().unwrap().to_str().unwrap();
+                assert_eq!(identity.len(), 16);
+                assert!(identity.bytes().all(|b| b.is_ascii_hexdigit()));
+                assert!(certificate.contains(&format!("\"identity\":\"{identity}\"")));
+                assert!(certificate.contains("\"name\":\"kernel\""));
+                assert!(certificate.contains("\"body\":\"{x ^ 18}\""));
+                assert!(unit.join("native-link.o").is_file());
+                found.push((index.clone(), unit));
+            }
+        }
+    }
+    assert_eq!(found.len(), 1, "expected one current owned kernel projection, found {found:?}");
+    found.pop().unwrap()
+}
+fn retained_files(index: &Path, unit: &Path) -> Vec<(PathBuf, Vec<u8>)> {
+    let mut files = vec![(index.to_owned(), fs::read(index).unwrap())];
+    for entry in fs::read_dir(unit).unwrap() {
+        let entry = entry.unwrap();
+        if entry.file_type().unwrap().is_file() && entry.path().extension().is_some_and(|e| e == "o") {
+            files.push((entry.path(), fs::read(entry.path()).unwrap()));
+        }
+    }
+    assert!(files.len() > 1, "missing previously successful native objects");
+    files
+}
+fn unchanged_retained_files(files: &[(PathBuf, Vec<u8>)], label: &str) {
+    for (path, before) in files {
+        assert_eq!(&fs::read(path).unwrap(), before, "{label}: changed successful retained file {path:?}");
+    }
+}
+fn no_replacement_success(trace: &str, label: &str) {
+    assert!(!trace.contains("native-definition-omitted="), "{label}: failed native work ran full LLVM generation: {trace}");
+    assert!(!trace.contains("reused-rust-objects=1"), "{label}: failure reported successful retained Rust execution: {trace}");
+    assert!(!trace.contains("native-boundary=complementary-before-emission"), "{label}: failure became complementary work: {trace}");
+}
 fn main() {
     // Adopt the original Lust daemon after its short-lived compiler client
     // exits, so the qualifier observes its real idle-exit status too.
@@ -192,6 +249,64 @@ fn main() {
     let versioned_noop = fs::read_to_string(&trace).unwrap();
     assert!(versioned_noop.contains("reused-rust-objects=1 full-analysis=0"), "published object was not reused: {versioned_noop}");
     assert!(!versioned_noop.contains("lustr mixed native:"), "unchanged versioned object was regenerated");
+    // Real native output failure after positive admission must stay a failure.
+    // Keep these cases after the historical failed-link witness above, so the
+    // unchanged baseline still fails for its original, specifically checked bug.
+    let (index, unit) = retained_kernel(&work, "fn kernel(x:i64)->i64{x ^ 18}\nfn main(){let _=kernel(0);}\n");
+    let retained = retained_files(&index, &unit);
+    let output = (0u64..).map(|n| unit.join(format!("edit-{n}.o"))).find(|p| !p.exists()).unwrap();
+    let c_output = output.with_extension("c");
+    fs::create_dir(&c_output).unwrap();
+    fs::write(&trace, "").unwrap();
+    fs::write(&path, versioned.replace("x ^ 18", "x ^ 16")).unwrap();
+    build("native-output-failure", false);
+    let failed_native = fs::read_to_string(&trace).unwrap();
+    let failed_native_stderr = fs::read_to_string(work.join("native-output-failure.stderr")).unwrap();
+    assert!(failed_native.contains("lustr mixed emission failed:"), "missing actual native emission failure: {failed_native}");
+    assert!(failed_native_stderr.contains("native compilation failed (status 3)"), "missing explicit native failure: {failed_native_stderr}");
+    assert!(failed_native_stderr.contains("os error 21"), "native output did not reach the blocked directory: {failed_native_stderr}");
+    no_replacement_success(&failed_native, "native-output-failure");
+    unchanged_retained_files(&retained, "native-output-failure");
+    assert!(c_output.is_dir() && !output.exists() && !output.with_extension("unit.o").exists());
+    fs::remove_dir(&c_output).unwrap();
+    fs::write(&trace, "").unwrap();
+    fs::write(&path, &versioned).unwrap();
+    build("native-output-recovery", true);
+    execute("native-output-recovery", b"1080\n");
+    let native_recovery = fs::read_to_string(&trace).unwrap();
+    assert!(native_recovery.contains("reused-rust-objects=1 full-analysis=0"), "native failure lost the successful certificate: {native_recovery}");
+    assert!(!native_recovery.contains("lustr mixed native:"), "native recovery regenerated the original object: {native_recovery}");
+    assert!(!native_recovery.contains("native-definition-omitted="), "native recovery ran full LLVM generation: {native_recovery}");
+    // Replace only the owned real recipe with a directory. A new certified
+    // native edit succeeds, then the actual retained-recipe read must fail.
+    let retained = retained_files(&index, &unit);
+    let recipe = unit.parent().unwrap().join("checked.rlink");
+    let held_recipe = recipe.with_extension("rlink.failure-test-original");
+    let recipe_bytes = fs::read(&recipe).unwrap();
+    assert!(!held_recipe.exists());
+    fs::rename(&recipe, &held_recipe).unwrap();
+    fs::create_dir(&recipe).unwrap();
+    fs::write(&trace, "").unwrap();
+    fs::write(&path, versioned.replace("x ^ 18", "x ^ 15")).unwrap();
+    build("retained-recipe-failure", false);
+    let failed_recipe = fs::read_to_string(&trace).unwrap();
+    let failed_recipe_stderr = fs::read_to_string(work.join("retained-recipe-failure.stderr")).unwrap();
+    assert!(failed_recipe_stderr.contains("lustr relink checked mixed compilation:"), "missing actual relink failure: {failed_recipe_stderr}");
+    assert!(failed_recipe_stderr.contains("os error 21"), "relink did not read the blocked recipe: {failed_recipe_stderr}");
+    assert_eq!(failed_recipe.matches("lustr mixed native:").count(), 1, "recipe failure did not follow one admitted native edit: {failed_recipe}");
+    no_replacement_success(&failed_recipe, "retained-recipe-failure");
+    unchanged_retained_files(&retained, "retained-recipe-failure");
+    assert_eq!(fs::read(&held_recipe).unwrap(), recipe_bytes);
+    fs::remove_dir(&recipe).unwrap();
+    fs::rename(&held_recipe, &recipe).unwrap();
+    fs::write(&trace, "").unwrap();
+    fs::write(&path, &versioned).unwrap();
+    build("retained-recipe-recovery", true);
+    execute("retained-recipe-recovery", b"1080\n");
+    let recipe_recovery = fs::read_to_string(&trace).unwrap();
+    assert!(recipe_recovery.contains("reused-rust-objects=1 full-analysis=0"), "recipe failure lost the successful certificate: {recipe_recovery}");
+    assert!(!recipe_recovery.contains("lustr mixed native:"), "recipe recovery regenerated the original object: {recipe_recovery}");
+    assert!(!recipe_recovery.contains("native-definition-omitted="), "recipe recovery ran full LLVM generation: {recipe_recovery}");
     fs::write(&trace, "").unwrap();
     let signature = edited.replace("kernel(x:u64)->u64", "kernel(x:u64)->usize").replace("x ^ 19", "(x ^ 19) as usize");
     fs::write(work.join("mixed-macro/src/lib.rs"), macro_source.replace("general(x:u64)->u64", "general(x:u64)->usize")).unwrap();
@@ -244,6 +359,6 @@ fn main() {
     fs::write(work.join("owned-daemons.status"), format!("{daemons} adopted native daemon(s), actual idle exit0; no remaining children\n"))
         .unwrap();
     println!(
-        "real Cargo/proc macro + core/alloc no_std library + mixed execution + native warm edit + rejection/recovery + failed-link cache isolation + versioned native object reuse + signature/dependency/macro invalidation + late warning/deny preservation: actual0"
+        "real Cargo/proc macro + core/alloc no_std library + mixed execution + native warm edit + rejection/recovery + failed-link cache isolation + versioned native object reuse + native output/retained recipe failure isolation and recovery + signature/dependency/macro invalidation + late warning/deny preservation: actual0"
     );
 }

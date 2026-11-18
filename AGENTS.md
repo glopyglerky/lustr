@@ -35,6 +35,13 @@ Investigate previous failures before repeating an approach. The native
 semantic-image experiments remain retained research, not a requirement to
 reimplement every missing Rust feature independently.
 
+The [first native admission boundary](docs/compiler-set/native-admission.md)
+uses typed outcomes from checked state before emission. Preserve that contract:
+only an explicit complementary capability decision may leave work with the
+imported implementation. A compiler, transport, emitter, object or linker failure
+must fail the request, including retained body edits. Passing `check` without an
+admission proof, or retrying a failed generation, cannot establish capability.
+
 Keep the pristine Lust reference and explicit integration guard. Imported Rust
 must remain separately identified; no hidden changes to Lust or blueFe's
 protected Rust pin. Read the current contract and entry contract before routing
@@ -65,6 +72,7 @@ or conceal the implementation that produced an artifact.
 - Lust currently has no Rust rlib format. Do not place its output in Cargo's artifact graph as a Rust library or forge metadata or dep-info. Whole-target Lust compilation and a future verified semantic-IR bridge are separate routes.
 - Preserve the project's source, features, target, profiles, Cargo flags, dependency versions, panic strategy, and build-script behavior. Adapter substitutions and reduced features require explicit qualification against the requested Cargo build.
 - Never turn compiler errors into success. Never retry an executed program or test automatically through another compiler. Do not change panic behavior to obtain a passing or faster result.
+- Bind language and standard-library semantics to the declared Rust source, independently of the compiler build host. The [Unicode const/runtime mismatch](docs/compiler-set/unicode-semantics.md) is an explicit release blocker. Changing only a reported version or weakening the frozen comparison does not repair it.
 - The stock rustup Cranelift preview failed the real panic-recovery gate. Build the pinned complement with its `unwinding` feature and use the matching compiler plus explicit backend path. A panic flag cannot supply backend code that was not compiled in. Preserve the recovery/drop gate.
 - Keep stdout usable for Cargo JSON and program output. Pass OS arguments without a shell or lossy decoding. Preserve subprocess failures and signals.
 - Scope compiler backend settings to the current Cargo invocation. Injected `CARGO_PROFILE_*_CODEGEN_BACKEND` environment variables leak into programs and tests and can break nested Cargo commands. Place generated Cargo configuration after the subcommand and before caller arguments so later package overrides preserve it. Retain the real configuration-precedence and nested-Cargo regression gates. Verify actual compiler flags when qualifying a backend; a requested plan or successful program alone is insufficient.

@@ -75,7 +75,7 @@ response decoding. That interval closes before profile-record inspection.
 Failed connection attempts also have intervals. Daemon launch and retry sleeps
 remain inside the enclosing request, outside those child intervals.
 
-## Native object measurements
+## Historical native object measurements (original v2 campaign)
 
 The owned mixed emitter reads the opt-in from the requesting client's
 environment. It sends one structured duration record in a successful response's
@@ -104,7 +104,7 @@ serialization and the surrounding native frontend, code generation,
 retained-state update, daemon guard and response transport are outside the
 emitter interval.
 
-## Binding and validation
+## Historical v2 binding and validation
 
 Compiler profile version 2 retains the exact remote JSON string, the native
 unit identity, the actual response code, and the enclosing request and
@@ -134,9 +134,50 @@ failure counts; phase totals cover only the measured successes. A command with
 only failed native responses displays unavailable emitter measurements. A
 command without a native compilation has no emitter observation.
 
-The default path reads no profiling clocks and writes no profiling files.
-The inline emitter helper stays inside `mixed_unit.rs`, which the existing
-native build identity already hashes. Protected native sources, cache keys,
-admission, symbol verification and all publication synchronization operations
-remain unchanged. The real failed-link/recovery qualification still runs;
-local schema tests and compiler typechecks do not replace it.
+The original v2 instrumentation left native admission and cache identity
+policy unchanged. Its default path read no profiling clocks and wrote no
+profiling files. The inline emitter helper stayed inside `mixed_unit.rs`, which
+the native build identity already hashed. Those statements describe the
+original instrumentation change; the later admission work below has a different
+source and contract.
+
+
+## Current schema 3: explicit native outcomes
+
+The [native admission boundary](native-admission.md) now decides scalar request,
+IR and ABI eligibility before C generation, retaining the checked program into
+emission. Profile schema 3 records that actual typed outcome alongside the
+response code. It does not treat a zero status as evidence of emitted code.
+
+| Native outcome | Required profile evidence |
+| --- | --- |
+| Emitted | Status zero and exactly one complete successful emitter record |
+| Complementary | Status zero, `unavailable-complementary`, no emitter record |
+| Failed | Nonzero status, `unavailable-failed-response`, no emitter record; the enclosing compiler must fail |
+
+A compile response marked checked, unclassified or inconsistent fails profile
+validation. Complementary and failed counts remain separate. Their absent
+emitter duration and unattributed residual remain null; a complementary-only
+row says `not emitted`. Genuine emitted responses retain the existing strict
+identity, timing and trace bindings.
+
+The current emitter's `c-prepare` span constructs C and the wrapper from an
+already admitted unit, with invariant checks on the generated helper closure.
+It no longer measures capability admission or ABI selection. The existing
+owned ELF reader is timed as `symbol-check`; the historical table's `nm` span
+continues to mean the original process call at that source. Native preparation,
+frontend work and C generation still happen outside the emitter interval.
+
+The current qualifier has **19 commands**. Four new operations exercise actual
+retained C-output and link-recipe filesystem failures, then restoration and
+retained recovery. The validator requires those operations and their actual
+outcomes for schema 3. Historical schemas 1 and 2 retain their original
+15-command scope and remain readable with the original meanings. A current
+profile cannot claim the shorter historical qualification.
+
+All 36 local profile controls passed; those use synthetic records to test the
+validator. The updated real qualifier compiled locally and awaits hosted daemon
+execution. These results are not compiler-speed measurements or an end-to-end
+pass. Ordinary profiling-disabled runs still read no profiling clocks and write
+no profiling files. The admission, certificate-schema and mixed transport
+changes require their own exact-source qualification.

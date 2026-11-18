@@ -274,6 +274,9 @@ pub(crate) struct Caches {
     pub(crate) ok: Vec<bool>,
     pub(crate) out: Vec<FnOut>,
     pub(crate) has_out: Vec<bool>,
+    /// The one selected mixed body's checked IR boundary, retained separately
+    /// from generated C so metadata-only checks can reuse it honestly.
+    pub(super) mixed_checked: Option<super::mixed::CheckedTotal>,
     /// The read set of the slot's last passing check (docs/ARCH.md
     /// section 8.2), stored with the result. On later edits the dirty
     /// walk (`Program::reads_dirty`) replays these reads against the
@@ -540,6 +543,7 @@ impl Session {
                 ok: Vec::new(),
                 out: Vec::new(),
                 has_out: Vec::new(),
+                mixed_checked: None,
                 slot_reads: Vec::new(),
                 read_keys: Default::default(),
                 unit_reads: Default::default(),

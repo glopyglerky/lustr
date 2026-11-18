@@ -4348,7 +4348,7 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
     // A one-shot check needs no IR after borrowck: dropping each body on
     // its worker lets the allocator reuse the memory for the next body,
     // instead of touching fresh pages for every function.
-    let keep_bodies = req.cmd == Cmd::Build || caches.persistent;
+    let keep_bodies = req.cmd == Cmd::Build || caches.persistent || mixed;
     // `lust check` skips std platform bodies (`Program::check_skips`).
     // A skipped slot keeps its last marks; one that needed a check lost
     // its C above, so the next build checks it.
@@ -4470,8 +4470,45 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
         }
         return resp;
     }
+    // The mixed bridge admits work from the same checked/lowered state that
+    // codegen consumes below. Ordinary checks, including the early NoChange
+    // return, do not allocate a mixed plan or compute release names.
+    let mixed_names = mixed.then(|| super::release_c::names(&program, &front.fn_slot, front.slot_of.len().max(caches.out.len()), &inst_adt_ids(&program)));
+    let prepared_mixed = if mixed {
+        let admission = cgen::names::with(mixed_names.as_ref(), || super::mixed::prepare(
+            req, &program, &front.fn_slot,
+            |id| work.iter().position(|&i| i == id).and_then(|k| results[k].0.as_ref())
+                .or_else(|| reemit.iter().find(|(i, _)| *i == id).map(|(_, body)| body)),
+            |id| work.contains(&id),
+            &front.slot_hash, &front.slot_head, &caches.ok, &mut caches.mixed_checked,
+        ));
+        match admission {
+            Ok(super::mixed::Admission::Native(prepared)) => Some(prepared),
+            Ok(super::mixed::Admission::Complementary(reason)) => {
+                let response = super::mixed::complementary(reason);
+                if req.cmd == Cmd::Check && let Some(fp) = check_fp {
+                    front.last_check = Some((fp, response.clone()));
+                }
+                if leak_at_exit {
+                    std::mem::forget(results);
+                    std::mem::forget(program);
+                } else {
+                    drop(results);
+                    program.verified = verified;
+                    super::patch::keep(front, program);
+                }
+                return response;
+            }
+            Err(error) => return Response { code: 3, mixed: Some(crate::protocol::MixedOutcome::Failed),
+                stderr: format!("lustr mixed preparation failed: {error}\n"), ..Default::default() },
+        }
+    } else { None };
     let mut resp = Response::default();
     if req.cmd == Cmd::Check {
+        if prepared_mixed.is_some() {
+            resp.mixed = Some(crate::protocol::MixedOutcome::Checked);
+        }
+        drop(prepared_mixed);
         // The answer, before the timing and stats lines, for a no-op
         // check of the same request to reuse.
         if let Some(fp) = check_fp {
@@ -4522,17 +4559,8 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
     // from cached IR above.
     let mut bodies: Vec<(usize, ir::Body)> = work.iter().copied().zip(results).filter_map(|(i, r)| r.0.map(|b| (i, b))).collect();
     bodies.extend(reemit);
-    if mixed {
-        let selected = program.fns.iter().enumerate().find(|(_, f)| program.interner.get(f.name) == req.session.krate.target_name);
-        let total = selected.is_some_and(|(i, _)| bodies.iter().find(|(n, _)| *n == i)
-            .map_or_else(|| caches.out.get(slot(i)).is_some_and(|o| o.mixed_total), |(_, b)| super::mixed::total(b)));
-        if !total {
-            return Response { code: 1, stderr: "lustr mixed boundary unavailable: function can access an unrepresented runtime\n".into(), ..Default::default() };
-        }
-        // This is a proved nounwind function, not a different panic strategy.
-        // Keep checking/lowering under the requested strategy; omit the native
-        // exception machinery only when generating this total scalar unit.
-    }
+    // An admitted mixed function is proved nounwind, not a different panic
+    // strategy. Checking/lowering above retained the requested strategy.
     // Each fn's base line: cgen stores its line numbers relative to it
     // and the main unit adds each slot's base back, so a reused body's
     // C stays right when its source text moves. An instance's base is
@@ -4554,7 +4582,7 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
     let line_base_of = |_: &Front, i: usize| -> u32 { line_bases.get(i).copied().unwrap_or(0) };
     // Release C (driver/release_c.rs): content-addressed names, set as cgen's naming
     // context around every step that prints C.
-    let rnames = release.then(|| super::release_c::names(&program, &front.fn_slot, front.slot_of.len().max(caches.out.len()), &inst_adt_ids(&program)));
+    let rnames = mixed_names.or_else(|| release.then(|| super::release_c::names(&program, &front.fn_slot, front.slot_of.len().max(caches.out.len()), &inst_adt_ids(&program))));
     let rn = rnames.as_ref();
     // A release C build to the release driver streams its cc step (`cc::Stream`): each unit the
     // assembly makes compiles from the time its text exists. Not with --emit-c nor LLVM units.
@@ -4773,10 +4801,9 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
     }
     let glue_changed = shared_changed || regenerated || statics_changed;
     t.lap("codegen (par)");
-    if mixed {
+    if let Some(prepared) = prepared_mixed {
         let response = cgen::names::with(rn, || super::mixed::emit(
-            req, &program, &caches.out, &caches.glue, &front.fn_slot,
-            rn.expect("mixed units use stable native names"), bodies.len(),
+            prepared, &caches.out, rn.expect("mixed units use stable native names"), bodies.len(),
         ));
         program.verified = verified;
         super::patch::keep(front, program);
@@ -6595,6 +6622,222 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
             run_args: None,
             harness: false, cc: false,
             client: Default::default(),
+        }
+    }
+
+    #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+    mod mixed_admission {
+        use super::*;
+        use crate::protocol::MixedOutcome;
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        struct Fixture { root: PathBuf, req: Request, session: Session }
+        impl Fixture {
+            fn new(source: &str, persistent: bool) -> Self {
+                static NEXT: AtomicUsize = AtomicUsize::new(0);
+                let root = std::env::temp_dir().join(format!("lust-mixed-admission-{}-{}", std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)));
+                std::fs::create_dir(&root).unwrap();
+                let file = root.join("kernel.rs");
+                std::fs::write(&file, source).unwrap();
+                let mut key = crate::protocol::SessionKey::synthetic(&file, false);
+                key.krate.target_kind = "lustr-mixed-native".into();
+                key.krate.target_name = "kernel".into();
+                key.krate.package_id = "lustr-mixed-1234".into();
+                let req = Request { out: root.join("native.o"), ..req_for(key.clone()) };
+                let session = Session::new(root.join("state"), persistent, key);
+                Self { root, req, session }
+            }
+            fn run(&mut self) -> Response { crate::driver::compile(&self.req, &mut self.session) }
+        }
+        impl Drop for Fixture {
+            fn drop(&mut self) {
+                if !std::thread::panicking() { let _ = std::fs::remove_dir_all(&self.root); }
+            }
+        }
+        const SCALAR: &str = "fn kernel(x:u64)->u64{x ^ 17}\nfn main(){let _=kernel(0);}\n";
+
+        #[test]
+        fn check_retains_lowered_proof_without_generating_c() {
+            let mut f = Fixture::new(SCALAR, true);
+            for pass in 0..2 {
+                let response = f.run();
+                assert_eq!(response.code, 0, "{}", response.stderr);
+                assert_eq!(response.mixed, Some(MixedOutcome::Checked));
+                assert!(!f.req.out.exists());
+                assert!(!f.req.out.with_extension("c").exists());
+                assert!(f.session.caches.has_out.iter().all(|generated| !generated));
+                assert!(f.session.caches.mixed_checked.is_some());
+                if pass == 1 { assert!(f.session.front.last_visits.contains("checked=0"), "{}", f.session.front.last_visits); }
+            }
+            std::fs::write(&f.req.file, SCALAR.replace("x ^ 17", "x ^ true")).unwrap();
+            let failed = f.run();
+            assert_eq!(failed.code, 1);
+            assert_eq!(failed.mixed, Some(MixedOutcome::Failed));
+            std::fs::write(&f.req.file, SCALAR.replace("x ^ 17", "x ^ 19")).unwrap();
+            let recovered = f.run();
+            assert_eq!(recovered.code, 0, "{}", recovered.stderr);
+            assert_eq!(recovered.mixed, Some(MixedOutcome::Checked));
+        }
+
+        #[test]
+        fn runtime_and_wide_types_decline_before_c_generation() {
+            for body in ["x / 2", "(x as u128).wrapping_add(1) as u64", "{let unit=(); let _=unit; x}"] {
+                for cmd in [Cmd::Check, Cmd::Build] {
+                    let mut f = Fixture::new(&format!("fn kernel(x:u64)->u64{{{body}}}\nfn main(){{let _=kernel(0);}}\n"), false);
+                    f.req.cmd = cmd;
+                    let response = f.run();
+                    assert_eq!(response.code, 0, "{body}: {}", response.stderr);
+                    assert_eq!(response.mixed, Some(MixedOutcome::Complementary), "{body}: {}", response.stderr);
+                    assert!(!f.req.out.exists());
+                    assert!(!f.req.out.with_extension("c").exists());
+                    assert!(f.session.caches.has_out.iter().all(|generated| !generated));
+                }
+            }
+        }
+
+        #[test]
+        fn admitted_output_error_is_failure_and_preserves_existing_bytes() {
+            let mut f = Fixture::new(SCALAR, true);
+            f.req.cmd = Cmd::Build;
+            std::fs::write(&f.req.out, b"existing caller output").unwrap();
+            let response = f.run();
+            assert_eq!(response.code, 3, "{}", response.stderr);
+            assert_eq!(response.mixed, Some(MixedOutcome::Failed));
+            assert!(response.stderr.contains("mixed output already exists"));
+            assert_eq!(std::fs::read(&f.req.out).unwrap(), b"existing caller output");
+            assert!(f.session.caches.mixed_checked.is_some(), "the failure happened after admission");
+            assert!(f.session.caches.has_out.iter().any(|generated| *generated));
+            assert!(!f.req.out.with_extension("c").exists());
+        }
+
+        #[test]
+        fn emits_from_the_same_checked_state_and_keeps_reuse() {
+            #[derive(Default)]
+            struct Probe { prepared: AtomicUsize, checked: AtomicUsize, lowered: AtomicUsize }
+            impl crate::driver::PhaseObserver for Probe {
+                fn prepared(&self, _: crate::driver::Prepared<'_>) { self.prepared.fetch_add(1, Ordering::Relaxed); }
+                fn checked(&self, _: crate::driver::Prepared<'_>, _: LocalDefId, _: &crate::check::Checked<'_>, _: &[Diag]) {
+                    self.checked.fetch_add(1, Ordering::Relaxed);
+                }
+                fn lowered(&self, _: crate::driver::Prepared<'_>, _: LocalDefId, _: &crate::ir::Body<'_>, _: &[Diag]) {
+                    self.lowered.fetch_add(1, Ordering::Relaxed);
+                }
+            }
+            let mut f = Fixture::new(SCALAR, true);
+            f.req.cmd = Cmd::Build;
+            let bounded = |command: &mut std::process::Command| {
+                command.stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped());
+                let mut child = command.spawn().unwrap();
+                let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+                loop {
+                    if child.try_wait().unwrap().is_some() { break child.wait_with_output().unwrap(); }
+                    if std::time::Instant::now() >= deadline {
+                        let _ = child.kill();
+                        let output = child.wait_with_output().unwrap();
+                        panic!("mixed object caller child timed out: {command:?}: {}", String::from_utf8_lossy(&output.stderr));
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(5));
+                }
+            };
+            for (index, operand) in [17, 17, 19].into_iter().enumerate() {
+                f.req.out = f.root.join(format!("native-{index}.o"));
+                std::fs::write(&f.req.file, SCALAR.replace("x ^ 17", &format!("x ^ {operand}"))).unwrap();
+                let probe = Probe::default();
+                let response = crate::driver::compile_observed(&f.req, &mut f.session, Some(&probe));
+                assert_eq!(response.code, 0, "{}", response.stderr);
+                assert_eq!(response.mixed, Some(MixedOutcome::Emitted));
+                assert_eq!(response.stdout, "lustr_mixed_1234");
+                assert_eq!(&std::fs::read(&f.req.out).unwrap()[..4], b"\x7fELF");
+                assert_eq!(probe.prepared.load(Ordering::Relaxed), 1);
+                assert_eq!(probe.checked.load(Ordering::Relaxed), probe.lowered.load(Ordering::Relaxed));
+                assert!(probe.checked.load(Ordering::Relaxed) <= 2, "no repeated checking after admission");
+                if index == 1 {
+                    assert_eq!(probe.checked.load(Ordering::Relaxed), 0);
+                    assert!(response.stderr.contains("0 function(s) generated"), "{}", response.stderr);
+                }
+                // Exercise the actual wrapper, slot and parameter handoff.
+                // ELF shape alone cannot establish the generated function's
+                // meaning, especially after a retained literal edit.
+                let caller = f.root.join(format!("caller-{index}.rs"));
+                let executable = f.root.join(format!("caller-{index}"));
+                std::fs::write(&caller, format!(
+                    "unsafe extern \"C\"{{fn lustr_mixed_1234(x:u64)->u64;}}\n\
+                     fn main(){{for x in [0u64,1,42,u64::MAX]{{let actual=unsafe{{lustr_mixed_1234(x)}};\
+                     assert_eq!(actual,x ^ {operand});println!(\"{{x}}:{{actual}}\");}}}}\n"
+                )).unwrap();
+                let rustc = std::env::var_os("RUSTC").unwrap_or_else(|| "rustc".into());
+                let built = bounded(std::process::Command::new(rustc)
+                    .env_remove("LD_LIBRARY_PATH")
+                    .args(["--edition=2024", "--crate-name", "mixed_native_caller"])
+                    .arg(&caller).arg("-o").arg(&executable)
+                    .arg(format!("-Clink-arg={}", f.req.out.display())));
+                assert!(built.status.success(), "Rust caller {index}: {}", String::from_utf8_lossy(&built.stderr));
+                let runtime = bounded(std::process::Command::new(&executable).env_remove("LD_LIBRARY_PATH"));
+                assert!(runtime.status.success(), "native object caller {index}: {}", String::from_utf8_lossy(&runtime.stderr));
+                let expected = [0u64, 1, 42, u64::MAX].into_iter().map(|x| format!("{x}:{}\n", x ^ operand)).collect::<String>();
+                assert_eq!(runtime.stdout, expected.as_bytes());
+                assert!(runtime.stderr.is_empty(), "native object caller {index}: {}", String::from_utf8_lossy(&runtime.stderr));
+            }
+        }
+
+        #[test]
+        fn target_and_request_contracts_are_explicit_complements() {
+            for variant in 0..5 {
+                let mut f = Fixture::new(SCALAR, false);
+                match variant {
+                    0 => {
+                        f.req.session.target_triple = "wasm32-wasip1".into();
+                        f.session = Session::new(f.root.join("foreign-state"), false, f.req.session.clone());
+                    }
+                    1 => f.req.debug = true,
+                    2 => f.req.cc = true,
+                    3 => f.req.emit_c = Some(f.root.join("requested.c")),
+                    4 => f.req.harness = true,
+                    _ => unreachable!(),
+                }
+                for cmd in [Cmd::Check, Cmd::Build] {
+                    f.req.cmd = cmd;
+                    let response = f.run();
+                    assert_eq!(response.code, 0, "{}", response.stderr);
+                    assert_eq!(response.mixed, Some(MixedOutcome::Complementary));
+                    assert!(!f.req.out.exists());
+                    assert!(!f.root.join("requested.c").exists());
+                }
+            }
+            let mut f = Fixture::new(SCALAR, false);
+            f.req.run_args = Some(Vec::new());
+            let response = f.run();
+            assert_eq!(response.mixed, Some(MixedOutcome::Complementary));
+            assert!(!response.ran);
+        }
+
+        #[test]
+        fn missing_definition_and_invalid_rust_are_failures() {
+            let mut f = Fixture::new(SCALAR, false);
+            f.req.session.krate.target_name = "missing".into();
+            f.session = Session::new(f.root.join("missing-state"), false, f.req.session.clone());
+            let response = f.run();
+            assert_eq!(response.code, 3, "{}", response.stderr);
+            assert_eq!(response.mixed, Some(MixedOutcome::Failed));
+            let mut invalid = Fixture::new(&SCALAR.replace("x ^ 17", "x ^ true"), false);
+            let response = invalid.run();
+            assert_eq!(response.code, 1);
+            assert_eq!(response.mixed, Some(MixedOutcome::Failed));
+        }
+
+        #[test]
+        fn wrong_session_is_not_a_request_complement() {
+            let mut f = Fixture::new(SCALAR, false);
+            f.req.session.target_triple = "wasm32-wasip1".into();
+            for background in [false, true] {
+                let response = if background {
+                    crate::driver::compile_background(&f.req, &mut f.session)
+                } else { f.run() };
+                assert_eq!(response.code, 3, "{}", response.stderr);
+                assert_eq!(response.mixed, Some(MixedOutcome::Failed));
+                assert!(response.stderr.contains("wrong session"), "{}", response.stderr);
+                assert!(!f.req.out.exists());
+            }
         }
     }
 

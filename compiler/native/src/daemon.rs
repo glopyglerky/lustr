@@ -897,6 +897,17 @@ fn compile_fresh(entry: &mut Entry, req: &Request) -> (Response, bool) {
 fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Response {
     entry.served += 1;
     let served = entry.served;
+    if req.session.krate.target_kind == "lustr-mixed-native" {
+        // Admission has its own explicit complementary outcome. A broken
+        // native attempt must not become success in a fresh session, and must
+        // not launch a second compilation as background verification.
+        if entry.recompute_next {
+            entry.recompute_next = false;
+            replace_session(entry, &req.session);
+        }
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| driver::compile(req, &mut entry.session)));
+        return mixed_answer(entry, req, result);
+    }
     if entry.recompute_next {
         entry.recompute_next = false;
         eprintln!("guard-check: recomputing {} in a fresh session (marked by a background mismatch)", req.file.display());
@@ -940,6 +951,25 @@ fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Re
                 );
             }
             r
+        }
+    }
+}
+
+fn mixed_answer(entry: &mut Entry, req: &Request, result: std::thread::Result<Response>) -> Response {
+    match result {
+        Ok(response) => {
+            if response.code == 3 && response.mixed == Some(crate::protocol::MixedOutcome::Failed) {
+                replace_session(entry, &req.session);
+            }
+            response
+        }
+        Err(payload) => {
+            let detail = driver::oracle_failure(&*payload).unwrap_or_else(|| "mixed native compilation panicked".into());
+            // Discard state damaged by the panic, but do not run this request
+            // again. A later user request may start from this fresh session.
+            replace_session(entry, &req.session);
+            Response { code: 3, mixed: Some(crate::protocol::MixedOutcome::Failed),
+                stderr: format!("error: internal: {detail}; mixed request was not retried\n"), ..Default::default() }
         }
     }
 }
@@ -1229,8 +1259,38 @@ pub fn serve(sock: &Path) -> ! {
 mod tests {
     use super::*;
 
+    #[test]
+    fn mixed_admission_daemon_keeps_internal_failure_and_panic_without_retry() {
+        let base = std::env::temp_dir().join(format!("lust-mixed-guard-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(&base).unwrap();
+        let mut req = check_req(&base.join("absent.rs"));
+        req.session.krate.target_kind = "lustr-mixed-native".into();
+        req.session.krate.target_name = "kernel".into();
+        req.session.krate.package_id = "lustr-mixed-1234".into();
+        let mut sessions = HashMap::new();
+        let entry = entry_for(&mut sessions, &base.join("sessions"), &req.session, None, &mut 0);
+        let first = entry.session.obj_dir().to_owned();
+        let failure = Response { code: 3, stderr: "original emission failure".into(),
+            mixed: Some(crate::protocol::MixedOutcome::Failed), ..Default::default() };
+        let failed = mixed_answer(entry, &req, Ok(failure));
+        assert_eq!(failed.code, 3);
+        assert_eq!(failed.stderr, "original emission failure");
+        assert_eq!(failed.mixed, Some(crate::protocol::MixedOutcome::Failed));
+        assert_ne!(entry.session.obj_dir(), first);
+        let second = entry.session.obj_dir().to_owned();
+        let panicked = mixed_answer(entry, &req, Err(Box::new("injected panic")));
+        assert_eq!(panicked.code, 3);
+        assert_eq!(panicked.mixed, Some(crate::protocol::MixedOutcome::Failed));
+        assert!(panicked.stderr.contains("not retried"));
+        assert_ne!(entry.session.obj_dir(), second);
+        assert!(!req.file.exists(), "there was no source for a hidden second compile");
+        drop(sessions);
+        let _ = std::fs::remove_dir_all(base);
+    }
+
     fn resp(code: i32, stderr: &str) -> Response {
-        Response { stdout: String::new(), stderr: stderr.into(), code, ran: false }
+        Response { stdout: String::new(), stderr: stderr.into(), code, ran: false, mixed: None }
     }
 
     fn done(key: &SessionKey, seq: u64, served: u64, warm: Response, fresh: Response, dir: PathBuf) -> GuardDone {

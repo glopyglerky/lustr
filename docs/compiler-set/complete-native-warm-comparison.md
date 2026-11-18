@@ -2,11 +2,13 @@
 
 Status: separately named measurement infrastructure. Local controls exercise
 the real orchestration and replay with explicitly synthetic child results. They
-are not compiler execution or speed evidence. Both hosted attempts stopped
-before measurement. The latest built both packages and passed the baseline's
-native unit tests, then failed its differential gate with the wrong Rust oracle.
-A completed, correctly qualified hosted comparison is still required. No native
-speedup, Lust parity or release admission follows from this infrastructure change.
+are not compiler execution or speed evidence. All three hosted complete-package
+attempts stopped before measurement. The latest built both packages, passed the
+baseline's native unit tests and selected the correct Rust 1.99 oracle, then
+failed one differential case because the frozen compiler reports its build
+host's Unicode version. A completed, correctly qualified hosted comparison is
+still required. No native speedup, Lust parity or release admission follows
+from this infrastructure change.
 
 The retained-check materialization candidate changes native source. PR25's
 existing entry-only comparison requires identical native runtime source and
@@ -80,8 +82,9 @@ declares Rust 1.99 as its oracle, and its
 installs and selects 1.99.0. The unchanged `case-pool.sh` calls literal `rustc`
 through `PATH`; the receipt records the newer nightly's directory first. Its
 script hashes match the frozen source. This establishes the oracle-selection
-error. It does **not** establish that all 99 failures will disappear under 1.99;
-that corrected corpus has not been executed in this continuation.
+error. At the time of this correction, no execution under 1.99 had established
+which failures would disappear. The third hosted attempt below provides the
+subsequent result.
 
 The original evidence remains in
 [artifact 14453918048](https://github.com/glopyglerky/lustr/actions/runs/44351483409/artifacts/14453918048),
@@ -111,8 +114,9 @@ replay checks the recorded identity, command, environment and paired bindings.
 The new gate receipt schema is `lustr-complete-package-gates-v2`; the original
 failed v1 receipts remain unchanged. The full corpus, expected diagnostics and
 output comparisons, frozen baseline, package sources, build and measurement
-schemas, and strict timing result are unchanged. No new campaign or hosted
-rerun was started to validate this second correction.
+schemas, and strict timing result are unchanged. The correction itself did not
+launch a new campaign or hosted rerun; the third attempt below is later hosted
+execution evidence.
 
 The corrected harness passes **43 complete-package and workflow controls**,
 **eight startup controls** and **14 practical-assessment controls**, all with
@@ -122,6 +126,95 @@ different oracles between packages, and a differential `PATH` or `RUSTC` that
 falls back to the build SDK. Recomputed evidence checksums do not bypass these
 checks. The positive fixture still replays all 384 synthetic measurements with
 the original SDK and complete gate sequence. These are harness results only.
+
+## Third hosted failure: build-host Unicode identity
+
+[Run 44363351381](https://github.com/glopyglerky/lustr/actions/runs/44363351381),
+job `135018909736`, used published head
+`429fe6054e6119221e598b95c2661665ecdd7be2` on
+`lustr/practical-performance-20261118`. The actual checkout was PR merge
+`84257ab1e63469a3162f1ebd3b9177b3fd4a371e`, tree
+`7caaeb641eba6dda5b26b9d3d6761ca3a5a79581`. The published head and the local
+review commit `a1cd906cb90d2430611f39d7f3c3450d02d42299` have that same tree.
+The [source-bound summary](evidence/hosted-warm-failures-20261118/summary.json)
+records the package identities, original artifact digests and both failed runs.
+
+Both normal release constructors completed. The baseline again passed **15
+client and 387 core unit tests**, including the build-script regression. Its
+recorded native oracle was the required **Rust 1.99.0**, source
+`b940084d7eb6a299eb4bfeb8e34901bc051e7ac4`, compiler SHA256
+`f3834d26669b03f6855fa54bd2381443123e860167bc0c7a8dd137e5cf6e5e4f`.
+The v2 gate retained 154 oracle inventory entries, and the actual differential
+command used its recorded `PATH` and `RUSTC`. This verifies the oracle-selection
+correction on the hosted runner.
+
+The original ordinary corpus then reported **5,526 passed and one failed out
+of 5,527**. `unicode_props` differed on its first output line: Rust reported
+`char::UNICODE_VERSION` as **`(17, 0, 0)`**, while the frozen Lust package
+reported **`(18, 0, 0)`**. The command exited 1 without a timeout or output-limit
+failure. Its original fixture and comparisons were unchanged.
+
+The frozen compiler's
+[`src/ty/consteval.rs`](https://github.com/glopyglerky/lustr/blob/3c378a11d60149a3ec99fa49ea1b336e9406fca8/compiler/native/src/ty/consteval.rs)
+and
+[`src/check/mod.rs`](https://github.com/glopyglerky/lustr/blob/3c378a11d60149a3ec99fa49ea1b336e9406fca8/compiler/native/src/check/mod.rs)
+both obtain that associated constant from the Rust compiler host's
+`char::UNICODE_VERSION`. The normal complete-package constructor builds the
+native compiler with the required Rust 1.102 nightly SDK. Its checked-in
+Unicode predicate table, by contrast, declares generation with Rust 1.99 and
+Unicode 17. The failed output therefore exposes a compiler source dependency
+on the build host's standard library. It is not another incorrect oracle
+selection or an infrastructure timeout.
+
+Changing the oracle, rewriting the expected output or omitting the fixture
+would hide this mismatch. The frozen source, constructor and zero-failure gate
+remain intact. There is no narrow harness-only correction that establishes
+this package's required semantics. Candidate qualification, pristine build,
+measurement, practical assessment and startup diagnostics were skipped:
+**zero timing samples were admitted**.
+
+The original
+[artifact 14459352593](https://github.com/glopyglerky/lustr/actions/runs/44363351381/artifacts/14459352593),
+`complete-native-warm-1`, is 1,095,844 bytes with 363 files, ZIP SHA256
+`1f9bc20f38c93469e8b791e0f7ce98a860c069815e47d6d9b41e275919aa5e2c`.
+All ten original build/gate command rows and their captured streams were
+verified against their receipts. As before, the differential script retains
+only its emitted failure diff after deleting its per-case temporary work.
+
+### The historical entry-only comparison also stopped
+
+[Warm entry run 44363351457](https://github.com/glopyglerky/lustr/actions/runs/44363351457),
+job `135010409296`, used the same head, merge and tree. Its complete candidate
+package and three real target-selection correctness suites completed:
+
+| Selector suite | Recorded commands | Passing assertions |
+| --- | ---: | ---: |
+| Cache selection and invalidation | 154 | 290 |
+| Seed verification and safe fallback | 38 | 85 |
+| Complete compact-selection equivalence | 103 | 486 |
+
+All 590 recorded stdout/stderr streams match their hashes. These successes
+qualify the tested selector behavior; they are not full compiler or timing
+qualification.
+
+The next step stopped at the existing guard with
+`shared runtime source differs: compiler/native`, before compiling the baseline
+entry. That comparison requires the frozen entry baseline
+`d57f485eeb2b638d1f95a0594294d11e8001fe8e` and candidate to share the same native
+runtime source. Their native trees are respectively
+`12ae35ee30f81d11f55b184134f8a0c4a977a496` and
+`d9ca06dc18dde19bf5bd2af688adf75a041b12a5`; the candidate includes retained-check
+and main-return changes. The guard correctly rejects a comparison outside its
+scope. No baseline compiler build failed, and weakening the guard would make
+the comparison misleading.
+
+Pristine build, the complete entry contract, measurement and diagnostics were
+skipped, with **zero admitted timing samples**. The original
+[artifact 14455049372](https://github.com/glopyglerky/lustr/actions/runs/44363351457/artifacts/14455049372),
+`warm-entry-comparison-1`, is 350,543 bytes with 679 files, ZIP SHA256
+`275a3c15bab97fbf3ae16aa05104530e29670181dc5165470ed5660640d5e1b5`.
+Both failed outcomes remain failed. This diagnosis changed documentation only;
+it launched no compiler execution, timing campaign or hosted rerun.
 
 ## Independently built packages
 

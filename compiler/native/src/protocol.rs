@@ -17,6 +17,8 @@
 // (`ReadError::OtherBuild`), and a client drops an answer from another build or from a
 // daemon that predates the field (`request`). A stale compiler never answers warm.
 // Response: "<code> <stdout len> <stderr len> <build>\n" followed by the two byte strings.
+// Mixed-only replies add a fifth `mixed-v1:<outcome>` header field. Ordinary
+// replies retain their original four-field form.
 // Both binaries include this module and each uses only part of it.
 #![allow(dead_code)]
 
@@ -329,6 +331,38 @@ pub struct Response {
     pub code: i32,
     /// The program already ran in memory; `code` is its exit code. Do not run `out` again.
     pub ran: bool,
+    /// Explicit result of the bounded mixed admission/emission contract.
+    /// An ordinary native request never supplies this field.
+    pub mixed: Option<MixedOutcome>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MixedOutcome {
+    Checked,
+    Emitted,
+    Complementary,
+    Failed,
+}
+
+impl MixedOutcome {
+    fn tag(self) -> &'static str {
+        match self {
+            Self::Checked => "mixed-v1:checked",
+            Self::Emitted => "mixed-v1:emitted",
+            Self::Complementary => "mixed-v1:complementary",
+            Self::Failed => "mixed-v1:failed",
+        }
+    }
+
+    fn parse(tag: &str) -> Option<Self> {
+        Some(match tag {
+            "mixed-v1:checked" => Self::Checked,
+            "mixed-v1:emitted" => Self::Emitted,
+            "mixed-v1:complementary" => Self::Complementary,
+            "mixed-v1:failed" => Self::Failed,
+            _ => return None,
+        })
+    }
 }
 
 pub enum Invocation {
@@ -1015,7 +1049,11 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
 }
 
 pub fn write_response(w: &mut impl Write, r: &Response) -> std::io::Result<()> {
-    write!(w, "{} {} {} {}\n{}{}", r.code, r.stdout.len(), r.stderr.len(), build_id(), r.stdout, r.stderr)
+    if let Some(outcome) = r.mixed {
+        write!(w, "{} {} {} {} {}\n{}{}", r.code, r.stdout.len(), r.stderr.len(), build_id(), outcome.tag(), r.stdout, r.stderr)
+    } else {
+        write!(w, "{} {} {} {}\n{}{}", r.code, r.stdout.len(), r.stderr.len(), build_id(), r.stdout, r.stderr)
+    }
 }
 
 /// The whole answer to a request of another build: a head no client takes
@@ -1044,9 +1082,10 @@ pub fn request(sock: &Path, req: &Request) -> Option<Response> {
         let _ = std::fs::remove_file(sock);
         return None;
     }
-    if nums.len() != 3 || words.len() != 4 || words[3] != build_id() {
+    if nums.len() != 3 || !matches!(words.len(), 4 | 5) || words[3] != build_id() {
         return None;
     }
+    let mixed = if words.len() == 5 { Some(MixedOutcome::parse(words[4])?) } else { None };
     let mut out = vec![0; nums[1]];
     let mut err = vec![0; nums[2]];
     reader.read_exact(&mut out).ok()?;
@@ -1056,7 +1095,54 @@ pub fn request(sock: &Path, req: &Request) -> Option<Response> {
         stdout: String::from_utf8_lossy(&out).into_owned(),
         stderr: String::from_utf8_lossy(&err).into_owned(),
         ran: false,
+        mixed,
     })
+}
+
+/// The mixed caller may start a daemon only when no connection accepted its
+/// request, or a stale build explicitly rejected it before compilation. Once
+/// writing starts, a failed or malformed exchange is not a retryable miss.
+pub fn request_mixed(sock: &Path, req: &Request) -> Result<Option<Response>, String> {
+    let address = host_runtime::DaemonSocket::resolve(sock).map_err(|e| format!("mixed daemon address: {e}"))?;
+    let mut conn = match UnixStream::connect(address.path()) {
+        Ok(conn) => conn,
+        Err(e) if matches!(e.kind(), std::io::ErrorKind::NotFound | std::io::ErrorKind::ConnectionRefused) => return Ok(None),
+        Err(e) => return Err(format!("mixed daemon connection: {e}")),
+    };
+    conn.write_all(&encode(req)).map_err(|e| format!("mixed daemon request write: {e}"))?;
+    read_mixed_response(&mut BufReader::new(conn))
+}
+
+fn read_mixed_response(reader: &mut impl BufRead) -> Result<Option<Response>, String> {
+    let mut head = String::new();
+    reader.read_line(&mut head).map_err(|e| format!("mixed daemon response header: {e}"))?;
+    if !head.ends_with('\n') {
+        return Err("mixed daemon returned a truncated response header".into());
+    }
+    let words: Vec<&str> = head.split_whitespace().collect();
+    if words.len() == 4 && words[..3] == ["-", "-", "-"] && words[3] != build_id() {
+        return Ok(None);
+    }
+    if words.len() != 5 || words[3] != build_id() {
+        return Err("mixed daemon returned an unclassified response or a different compiler build".into());
+    }
+    let number = |at: usize| words[at].parse::<usize>().map_err(|_| "mixed daemon returned an invalid response size/status".to_owned());
+    let code = i32::try_from(number(0)?).map_err(|_| "mixed daemon returned an invalid response status".to_owned())?;
+    let (out_len, err_len) = (number(1)?, number(2)?);
+    let mixed = MixedOutcome::parse(words[4]).ok_or("mixed daemon returned an unknown admission outcome")?;
+    if (mixed == MixedOutcome::Failed) == (code == 0) {
+        return Err("mixed daemon admission outcome disagrees with its status".into());
+    }
+    fn text(reader: &mut impl BufRead, length: usize) -> Result<String, String> {
+        let mut bytes = Vec::new();
+        bytes.try_reserve_exact(length).map_err(|_| "mixed daemon response is too large".to_owned())?;
+        bytes.resize(length, 0);
+        reader.read_exact(&mut bytes).map_err(|e| format!("mixed daemon response body: {e}"))?;
+        String::from_utf8(bytes).map_err(|_| "mixed daemon response is not UTF-8".to_owned())
+    }
+    let stdout = text(reader, out_len)?;
+    let stderr = text(reader, err_len)?;
+    Ok(Some(Response { code, stdout, stderr, ran: false, mixed: Some(mixed) }))
 }
 
 /// Prints a response. For `run`, runs the program after a successful build. Never returns.
@@ -1466,6 +1552,53 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn mixed_admission_wire_keeps_ordinary_response_bytes() {
+        let response = Response { stdout: "out".into(), stderr: "err".into(), code: 1, ..Default::default() };
+        let mut bytes = Vec::new();
+        write_response(&mut bytes, &response).unwrap();
+        assert_eq!(bytes, format!("1 3 3 {}\nouterr", build_id()).as_bytes());
+        assert!(read_mixed_response(&mut std::io::Cursor::new(bytes)).is_err(), "ordinary success/error is not mixed admission");
+    }
+
+    #[test]
+    fn mixed_admission_wire_roundtrips_all_outcomes() {
+        for outcome in [MixedOutcome::Checked, MixedOutcome::Emitted, MixedOutcome::Complementary, MixedOutcome::Failed] {
+            let response = Response { code: if outcome == MixedOutcome::Failed { 3 } else { 0 },
+                stdout: "native symbol".into(), stderr: "diagnostic λ\n".into(), mixed: Some(outcome), ..Default::default() };
+            let mut bytes = Vec::new();
+            write_response(&mut bytes, &response).unwrap();
+            let back = read_mixed_response(&mut std::io::Cursor::new(bytes)).unwrap().expect("classified response");
+            assert_eq!(back.code, response.code);
+            assert_eq!(back.mixed, response.mixed);
+            assert_eq!(back.stdout, response.stdout);
+            assert_eq!(back.stderr, response.stderr);
+        }
+    }
+
+    #[test]
+    fn mixed_admission_wire_errors_are_not_retryable_misses() {
+        for text in [
+            String::new(),
+            format!("0 0 0 {} mixed-v1:checked", build_id()),
+            format!("0 0 0 {} mixed-v2:checked\n", build_id()),
+            format!("0 0 0 {} mixed-v1:unknown\n", build_id()),
+            format!("0 0 0 {} mixed-v1:failed\n", build_id()),
+            format!("3 0 0 {} mixed-v1:emitted\n", build_id()),
+            format!("0 1 0 {} mixed-v1:emitted\n", build_id()),
+            format!("0 0 1 {} mixed-v1:checked\n", build_id()),
+            "0 0 0 another-build mixed-v1:checked\n".into(),
+            format!("- - - {}\n", build_id()),
+        ] {
+            assert!(read_mixed_response(&mut std::io::Cursor::new(text.as_bytes())).is_err(), "{text:?}");
+        }
+        let mut bytes = format!("0 1 0 {} mixed-v1:emitted\n", build_id()).into_bytes();
+        bytes.push(0xff);
+        assert!(read_mixed_response(&mut std::io::Cursor::new(bytes)).is_err());
+        assert!(read_mixed_response(&mut std::io::Cursor::new(b"- - - another-build\n")).unwrap().is_none(),
+            "only an explicit pre-compilation stale-build refusal may restart startup");
+    }
 
     fn args(list: &[&str]) -> Vec<String> {
         list.iter().map(|s| s.to_string()).collect()

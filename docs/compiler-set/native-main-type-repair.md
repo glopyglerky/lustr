@@ -90,6 +90,23 @@ No pinned Clang executable was available for this local run, and a real
 Unix-domain daemon is blocked by the observed socket `EPERM` restriction. No
 current-tree function-sanitizer or warm-transition pass is claimed. The local
 run did not reconstruct the combined package or measure compiler performance.
-Hosted exact-source sanitizer, strict retained-return transitions and platform
-qualification remain required. The integration declaration retains `candidate`
+At the time of those local checks, hosted exact-source sanitizer, strict
+retained-return transitions and platform qualification remained required. The integration declaration retains `candidate`
 status; these scoped checks do not admit an installable package.
+
+## Later hosted qualification of this source
+
+The [PR28 hosted audit](hosted-qualification-2026-11-18.md) records exact-source
+Linux results for head `429fe6054e6119221e598b95c2661665ecdd7be2` and merge
+`84257ab1e63469a3162f1ebd3b9177b3fd4a371e`, both tree
+`7caaeb641eba6dda5b26b9d3d6761ca3a5a79581`. Native tree
+`d9ca06dc18dde19bf5bd2af688adf75a041b12a5` passed the ordinary and GCC sanitizer
+corpora (5,528 cases each), the 364-scenario daemon suite and the strict
+main-return transition gate (33 commands). The source-built compiler/entry
+qualification also passed, including the metadata cleanup regression.
+
+Both macOS jobs were cancelled before their first step; their scheduling cause
+is not established. Linux GCC sanitizer coverage does not replace the pinned
+macOS Clang function-type gate. Later compiler-boundary edits require their own
+qualification and do not inherit these passes. No new timing or package release
+is established by this campaign.

@@ -1,0 +1,502 @@
+{
+  "schema": 1,
+  "scope": "Bounded local verification of typed native admission and its imported Rust caller; candidate only.",
+  "date_utc": "2026-11-18",
+  "evidence_method": "Read back existing receipts and streams and verify their hashes. No compiler, test or timing command was rerun to produce this record.",
+  "source": {
+    "parent_commit": "a1cd906cb90d2430611f39d7f3c3450d02d42299",
+    "upstream_lust_revision": "240e08d91d4aed0299639f6f11fd522912b248f9",
+    "upstream_lust_tree": "0ab1b09815802894e6078de0af59273cbdf46cb0",
+    "candidate_native_tree": "072691a23b7a5f664d3c07500315de3ce051a22f",
+    "integration_patch_git_blob": "3a3081611057cd3c269a05b4da0dbe28a5aa8c5e",
+    "qualification_git_blob": "adf57900e3947458f0455f006724e6db509cc824",
+    "qualification_status": "candidate",
+    "native_build_id": "baea78ae8589c84b",
+    "native_change_patch": {
+      "private_record": "mixed-admission-native/native-boundary-final.patch",
+      "sha256": "10317ef04a62f348c8d70258d2d4e7663bf3cb7eb7fdf9cc78eae92cf5f99620"
+    },
+    "current_source_sha256": {
+      "compiler/native/src/protocol.rs": "7c7e7871dbf757659cc8d027fe65d19ac68a43e5f0f02c0cf9b94afcb6a967d7",
+      "compiler/native/src/driver/mod.rs": "4f4c2fb48e52cb56ec5a7bcd39275a28ec8f07d78ac8724c19053c704ddcc7ed",
+      "compiler/native/src/driver/compile.rs": "511eb285be06bbb24bf0dd11355997c24cf3e680364143d14deef3b114fad150",
+      "compiler/native/src/driver/session.rs": "4dd3d143eff6aabeb5713eb1affba69de1ed93ab211903962ffc48680a6f7224",
+      "compiler/native/src/driver/cache.rs": "d852c5f4b37fd1d33029e731510cf14afd952fc1765d9bb02b87b915e5ff854a",
+      "compiler/native/src/daemon.rs": "b0b50a1dbf082044c2e2afcff3b14d8deb0ec7f9e15a4b3b081c49745052a077",
+      "crates/lustr-native-core/src/mixed_unit.rs": "709f8d6752423b7aa5b58aaeed163bad2a52b8d75db3e9548e99586271eae6e9",
+      "crates/lustr-semantic/src/mixed_main.rs": "c858d850c28d4a049f15e6aee63b3b8676869ff0c57ea35c339ee75e2636c9d1",
+      "crates/lustr-semantic/src/mixed_cache.rs": "19d5638787a82eb0b12f86b5789d7e00934c62265f103ba7ec8fd91685bcd328",
+      "crates/lustr-semantic/src/mixed_profile.rs": "25d0f42c098c208ee28ac2ee3c413270f2e66b25c728e3b9f0f1b0572ec6f0d1",
+      "tools/profile-mixed-compiler.py": "eaa9ba3733d2e4609564bc69718b91660311014a2dc72f496e608ba5da3042d8",
+      "tools/test-mixed-profile.py": "54c2d501f71fec17c1e3f7bf69d58ef96a8cdd1ae1689c467771b114941bed39",
+      "tools/mixed-compiler-qualification.rs": "01827ad319d5b713be8e794ad6cc80fcab75812d0441deb9e2a92a315198c5de",
+      "tools/lust-upstream-check.rs": "e0e7423043772133457f6d60a799ad90a27b78ffd6468d801ce2128a9aacd92e"
+    }
+  },
+  "tools_and_binaries": {
+    "platform": "x86_64 Linux",
+    "rust_sdk": "nightly-2026-11-09-x86_64-unknown-linux-gnu",
+    "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+    "sdk_sha256": {
+      "bin/rustc": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+      "bin/cargo": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+      "lib/librustc_driver-f21b5e769b80ce6a.so": "ace7e2aa6ae11ca4c9b1edaf70701fc9390de38dd86bcf16bb8f22d5e658bd72",
+      "lib/libLLVM.so.23.1-rust-1.102.0-nightly": "5b12901d3a06a2eca8eae8e0781f678a6b2213740e2754f90dc22aef3f23dc21"
+    },
+    "native_profile": "gate",
+    "lust_sha256": "8dbc4596864b61c7a9767c6579332c27989600dbb2d6e3bbe7ca539c6f94b8d7",
+    "lust_core_sha256": "8e29ace0ed8b3fc7f5a85d1162756c301c2cc3e954995ab586fb4061e632eda5",
+    "semantic_profile": "dev",
+    "lustr_mixed_sha256": "9e284ce0e9279b6668e11f8631e49c57ad97f43d00f75b0d2ec086041b901d97",
+    "complement_control_copy_sha256": "9e284ce0e9279b6668e11f8631e49c57ad97f43d00f75b0d2ec086041b901d97",
+    "qualifier_sha256": "4518a487bc8bc4de1c3090877f606c3699ff1800e762fb44483d2a0fc4882df4",
+    "scope": "Diagnostic local builds and a byte-identical semantic driver copy named rustc-full for the control. These are not a constructor-built package."
+  },
+  "native_focused_tests": {
+    "exit_code": 0,
+    "client_passed": 3,
+    "core_passed": 11,
+    "failed": 0,
+    "client_filtered_out": 15,
+    "core_filtered_out": 389,
+    "direct_session_tests": {
+      "module": "driver::compile::tests::mixed_admission",
+      "passed": 7,
+      "tests": [
+        "admitted_output_error_is_failure_and_preserves_existing_bytes",
+        "check_retains_lowered_proof_without_generating_c",
+        "emits_from_the_same_checked_state_and_keeps_reuse",
+        "missing_definition_and_invalid_rust_are_failures",
+        "runtime_and_wide_types_decline_before_c_generation",
+        "target_and_request_contracts_are_explicit_complements",
+        "wrong_session_is_not_a_request_complement"
+      ]
+    },
+    "synthetic_controls": {
+      "wire_tests": [
+        "protocol::tests::mixed_admission_wire_errors_are_not_retryable_misses",
+        "protocol::tests::mixed_admission_wire_keeps_ordinary_response_bytes",
+        "protocol::tests::mixed_admission_wire_roundtrips_all_outcomes"
+      ],
+      "wire_executions": 6,
+      "wire_scope": "The same three serialization and validation tests run in both client and core test binaries.",
+      "daemon_guard_test": "daemon::tests::mixed_admission_daemon_keeps_internal_failure_and_panic_without_retry",
+      "daemon_guard_executions": 1,
+      "daemon_guard_scope": "Injected function outcomes exercise the production guard; no daemon socket or transport process is run."
+    },
+    "argv": [
+      "$SDK/bin/cargo",
+      "test",
+      "--manifest-path",
+      "$SOURCE/compiler/native/Cargo.toml",
+      "--locked",
+      "--offline",
+      "--jobs",
+      "2",
+      "--target-dir",
+      "$NATIVE_TARGET",
+      "--config",
+      "build.build-dir=\"$NATIVE_BUILD\"",
+      "--profile",
+      "gate",
+      "--bin",
+      "lust",
+      "--bin",
+      "lust-core",
+      "mixed_admission",
+      "--",
+      "--test-threads=1"
+    ],
+    "original_records": {
+      "command.json": {
+        "private_record": "mixed-admission-native/logs/native-focused-runtime-clean-tests.command.json",
+        "sha256": "e334cc15d2d290979564f155b9329a6417f19a726c75eac17700685823b9ffd8"
+      },
+      "result.json": {
+        "private_record": "mixed-admission-native/logs/native-focused-runtime-clean-tests.result.json",
+        "sha256": "817eda4ed5e93f44b52e40da1f023c9c240135520968d9751f94430ae38ffd0d"
+      },
+      "stdout": {
+        "private_record": "mixed-admission-native/logs/native-focused-runtime-clean-tests.stdout",
+        "sha256": "e1ddaf08fa36b80935850621d3fe9ac76514d5039fa41dee5948b8ce87f20bd3"
+      },
+      "stderr": {
+        "private_record": "mixed-admission-native/logs/native-focused-runtime-clean-tests.stderr",
+        "sha256": "d806249da5216890f297a34889116b008d0514a6df46dd7631cf213b1fe4eb6b"
+      }
+    }
+  },
+  "rust_to_native_runtime": {
+    "test": "driver::compile::tests::mixed_admission::emits_from_the_same_checked_state_and_keeps_reuse",
+    "states": [
+      {
+        "state": "cold",
+        "xor_operand": 17
+      },
+      {
+        "state": "unchanged",
+        "xor_operand": 17
+      },
+      {
+        "state": "literal edit",
+        "xor_operand": 19
+      }
+    ],
+    "scalar_inputs": [
+      "0",
+      "1",
+      "42",
+      "18446744073709551615"
+    ],
+    "rust_caller_compilations": 3,
+    "runtime_processes": 3,
+    "scalar_value_assertions": 12,
+    "all_child_exit_codes": 0,
+    "assertions": "Each actual Rust caller links the generated native object, asserts result == input XOR operand for all four inputs, and prints exact input:result lines. The passing test checks exact stdout and empty runtime stderr.",
+    "child_timeout_seconds": 10,
+    "ld_library_path": "Removed from both compiler and runtime children.",
+    "retained_child_stream_scope": "Nested child output is asserted in the passing source-bound test; separate raw nested child streams are not saved by that test.",
+    "scope": "Direct retained native Session and scalar ABI handoff only; no whole mixed compiler invocation or daemon socket."
+  },
+  "native_diagnostic_build": {
+    "exit_code": 0,
+    "argv": [
+      "$SDK/bin/cargo",
+      "build",
+      "--manifest-path",
+      "$SOURCE/compiler/native/Cargo.toml",
+      "--locked",
+      "--offline",
+      "--jobs",
+      "2",
+      "--target-dir",
+      "$NATIVE_TARGET",
+      "--config",
+      "build.build-dir=\"$NATIVE_BUILD\"",
+      "--profile",
+      "gate",
+      "--bin",
+      "lust",
+      "--bin",
+      "lust-core"
+    ],
+    "original_records": {
+      "command.json": {
+        "private_record": "mixed-admission-native/logs/native-runtime-build.command.json",
+        "sha256": "a4fbfde98442ac171447cdc704396964b05ef684a31d159de1c68c22fa4ca7e0"
+      },
+      "result.json": {
+        "private_record": "mixed-admission-native/logs/native-runtime-build.result.json",
+        "sha256": "e626e96b27fe1ec514c05e7922158d93d8a42eb734907a8cbc52a813706c2cfe"
+      },
+      "stdout": {
+        "private_record": "mixed-admission-native/logs/native-runtime-build.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "private_record": "mixed-admission-native/logs/native-runtime-build.stderr",
+        "sha256": "bdd704c23728f0096a3c4e608b80c53582341242d5d504630e035fca86787531"
+      }
+    },
+    "canonical_receipt": {
+      "private_record": "mixed-admission-native/native-boundary-receipt.json",
+      "sha256": "4ff15979e3d0bac85fd446d687246c0161c7f2a38a06938de1ead83a960f840a"
+    }
+  },
+  "semantic_typed_response_control": {
+    "test": "native::tests::only_explicit_admission_or_complement_can_succeed",
+    "passed": 1,
+    "failed": 0,
+    "filtered_out": 28,
+    "exit_code": 0,
+    "native_build_id": "baea78ae8589c84b",
+    "scope": "Constructed Response values exercise typed outcome, status and exact-symbol validation; no native request is sent.",
+    "argv": [
+      "$SDK/bin/cargo",
+      "test",
+      "--manifest-path",
+      "$SOURCE/crates/lustr-semantic/Cargo.toml",
+      "--locked",
+      "--offline",
+      "--jobs",
+      "2",
+      "--target-dir",
+      "$SEMANTIC_TARGET",
+      "--config",
+      "build.build-dir=\"$SEMANTIC_BUILD\"",
+      "--features",
+      "full-core",
+      "--bin",
+      "lustr-mixed",
+      "native::tests::only_explicit_admission_or_complement_can_succeed",
+      "--",
+      "--exact",
+      "--nocapture"
+    ],
+    "original_records": {
+      "command.json": {
+        "private_record": "mixed-admission-validation/logs/semantic-outcome-baea78ae.command.json",
+        "sha256": "1b0b05d9b23a020daea357d0db7317e226eb41ac80498ef923a55b2e6b77de74"
+      },
+      "status.json": {
+        "private_record": "mixed-admission-validation/logs/semantic-outcome-baea78ae.status.json",
+        "sha256": "9ec14e84862812f48e714f5126e23373976b5c3ee841ae32df5582e026d02e11"
+      },
+      "stdout": {
+        "private_record": "mixed-admission-validation/logs/semantic-outcome-baea78ae.stdout",
+        "sha256": "438c611943f84aee2ee355e9a527fb3ac8f31c39ca510c66ea3413716475f759"
+      },
+      "stderr": {
+        "private_record": "mixed-admission-validation/logs/semantic-outcome-baea78ae.stderr",
+        "sha256": "bd5fd6b960dded120c6dbcd0afe8ceb6912f5a00589effd47cad2cab7f875cf7"
+      }
+    },
+    "matching_binary_build": {
+      "exit_code": 0,
+      "original_records": {
+        "command.json": {
+          "private_record": "mixed-admission-validation/logs/semantic-build-baea78ae.command.json",
+          "sha256": "42ee4362afda3bafbcf710f449cd81787c21dc64e3bf0f5a53664f7b67f9d1d2"
+        },
+        "status.json": {
+          "private_record": "mixed-admission-validation/logs/semantic-build-baea78ae.status.json",
+          "sha256": "4130f08fa669704570e3dab793fe0053c01a2c28113920dd75e5c19411135a53"
+        },
+        "stdout": {
+          "private_record": "mixed-admission-validation/logs/semantic-build-baea78ae.stdout",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr": {
+          "private_record": "mixed-admission-validation/logs/semantic-build-baea78ae.stderr",
+          "sha256": "32f250c5349f53354454e962c4b2ac306ceeb40cf6704f1b522db0df75eefa47"
+        }
+      }
+    }
+  },
+  "imported_rust_only_control": {
+    "passed": true,
+    "commands_completed": 6,
+    "candidate_sha256": "9e284ce0e9279b6668e11f8631e49c57ad97f43d00f75b0d2ec086041b901d97",
+    "reference_rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "fixtures_sha256": {
+      "valid.rs": "e2845d907de00ace0a5bced35eca0f462e380f3ad2875088e6017c8581eba637",
+      "invalid.rs": "aefd9da8a755fd18978b8d8b19f776602d7e597d62c22b8c0d3556cd91c01369"
+    },
+    "valid_source_scope": "Trait and generic dispatch over Vec, observable Drop through Rc<Cell>, and an async function whose future is created and dropped without polling.",
+    "runtime_stdout": "6 1\n",
+    "runtime_exit_codes": [
+      0,
+      0
+    ],
+    "runtime_stderr": "empty in both runs",
+    "invalid_source": "fn main() { let _: u64 = \"wrong type\"; }\n",
+    "rejection_diagnostic": "E0308",
+    "rejection_exit_codes": [
+      1,
+      1
+    ],
+    "rejected_metadata_artifacts_exist": false,
+    "candidate_trace": {
+      "frontend_invocations": 1,
+      "native_definitions": 0,
+      "native_request_observed": false,
+      "native_definition_omission_observed": false
+    },
+    "scope": "Actual final semantic driver and pinned Rust compilation/execution. No native object or daemon was requested, so this does not establish mixed participation.",
+    "commands": [
+      {
+        "label": "candidate build",
+        "argv": [
+          "$CONTROL/rustc-full",
+          "--edition=2024",
+          "--crate-type=bin",
+          "-Cdebuginfo=0",
+          "$CONTROL/valid.rs",
+          "-o",
+          "$CONTROL/candidate-app"
+        ],
+        "exit_code": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "label": "candidate run",
+        "argv": [
+          "$CONTROL/candidate-app"
+        ],
+        "exit_code": 0,
+        "stdout_sha256": "114271b048fd9ae9cf0d82b545d208ea7b1e2c1d6b53be67169a1587dcb429a6",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "label": "candidate reject",
+        "argv": [
+          "$CONTROL/rustc-full",
+          "--edition=2024",
+          "--crate-type=bin",
+          "--emit=metadata",
+          "--error-format=json",
+          "$CONTROL/invalid.rs",
+          "-o",
+          "$CONTROL/candidate-invalid.rmeta"
+        ],
+        "exit_code": 1,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "cbd0aadc48df19a80ebf24c7e3f5ec842a6e61c0beb7fdbb6285003081805732"
+      },
+      {
+        "label": "reference build",
+        "argv": [
+          "$SDK/bin/rustc",
+          "--edition=2024",
+          "--crate-type=bin",
+          "-Cdebuginfo=0",
+          "$CONTROL/valid.rs",
+          "-o",
+          "$CONTROL/reference-app"
+        ],
+        "exit_code": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "label": "reference run",
+        "argv": [
+          "$CONTROL/reference-app"
+        ],
+        "exit_code": 0,
+        "stdout_sha256": "114271b048fd9ae9cf0d82b545d208ea7b1e2c1d6b53be67169a1587dcb429a6",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "label": "reference reject",
+        "argv": [
+          "$SDK/bin/rustc",
+          "--edition=2024",
+          "--crate-type=bin",
+          "--emit=metadata",
+          "--error-format=json",
+          "$CONTROL/invalid.rs",
+          "-o",
+          "$CONTROL/reference-invalid.rmeta"
+        ],
+        "exit_code": 1,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "cbd0aadc48df19a80ebf24c7e3f5ec842a6e61c0beb7fdbb6285003081805732"
+      }
+    ],
+    "original_receipt": {
+      "private_record": "mixed-admission-validation/complement-controls-final/verification.json",
+      "sha256": "aebd6f2599da03e27494faa2c47da9e456feee57639fbe32d37561fe9654dbbe"
+    },
+    "original_commands": {
+      "private_record": "mixed-admission-validation/complement-controls-final/commands.json",
+      "sha256": "9dae98eece26524f0118d950a0650911b36cd8d1f46068bec78d4d61c5c6aa61"
+    },
+    "trace_records": [
+      {
+        "private_record": "mixed-admission-validation/complement-controls-final/candidate-build.trace",
+        "sha256": "8642eee482955d393c2811fcd54a4385194c00846cdeda0ac517e20d34e5ca3b"
+      },
+      {
+        "private_record": "mixed-admission-validation/complement-controls-final/candidate-reject.trace",
+        "sha256": "d98659e1f9dbb53dcf8b3d64bb2a1ea751a161127501d43d6fb56b145f99c220"
+      }
+    ]
+  },
+  "profile_synthetic_controls": {
+    "command": [
+      "python3",
+      "tools/test-mixed-profile.py"
+    ],
+    "passed": 36,
+    "failed": 0,
+    "scope": "Synthetic schema 1, 2 and 3 profile records and phase/reuse/outcome validation; no compiler timing or daemon execution.",
+    "provenance": "Original conversation tool output reported 36 tests passed. No separate raw stdout, stderr or command receipt was saved for this run.",
+    "tested_profiler_sha256": "eaa9ba3733d2e4609564bc69718b91660311014a2dc72f496e608ba5da3042d8",
+    "tested_tests_sha256": "54c2d501f71fec17c1e3f7bf69d58ef96a8cdd1ae1689c467771b114941bed39",
+    "raw_log_available": false,
+    "rerun_for_this_record": false
+  },
+  "mixed_qualifier": {
+    "compilation_exit_code": 0,
+    "executed": false,
+    "source_sha256": "01827ad319d5b713be8e794ad6cc80fcab75812d0441deb9e2a92a315198c5de",
+    "binary_sha256": "4518a487bc8bc4de1c3090877f606c3699ff1800e762fb44483d2a0fc4882df4",
+    "argv": [
+      "$SDK/bin/rustc",
+      "--edition=2024",
+      "tools/mixed-compiler-qualification.rs",
+      "-o",
+      "$QUALIFIER/mixed-compiler-qualification"
+    ],
+    "original_receipt": {
+      "private_record": "capability-boundary-qualification/qualifier-build.json",
+      "sha256": "7fcbec4d296df8a2f60d55edfa5c76b49ef561018d0b3db443e6aa5eeab7d43c"
+    },
+    "scope": "Compile-only check. The real retained emitter I/O and relink-recipe failure/recovery cases require hosted daemon execution."
+  },
+  "source_guard": {
+    "passed": true,
+    "candidate_identity_accepted": true,
+    "release_admission_accepted": false,
+    "release_rejection_expected": true,
+    "release_rejection": "nonempty integration requires exact reviewed qualification and evidence references",
+    "commands": [
+      {
+        "label": "compile",
+        "argv": [
+          "$SDK/bin/rustc",
+          "--edition=2024",
+          "tools/lust-upstream-check.rs",
+          "-o",
+          "$GUARD/lust-upstream-check"
+        ],
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "458d2d4d5476f5a641d970700fd345d3bc91fa610de721ba46b648fc359b4f96"
+      },
+      {
+        "label": "candidate",
+        "argv": [
+          "$GUARD/lust-upstream-check",
+          "--index",
+          "--candidate"
+        ],
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "stdout_sha256": "19206d55a153eb5b6d1dd78593221fc262b1fb3eeb9079df756c51beaabeff56",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "label": "release admission",
+        "argv": [
+          "$GUARD/lust-upstream-check",
+          "--index"
+        ],
+        "exit_code": 1,
+        "expected_exit_code": 1,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "1c4eeb850ecf9cddc44efacb564688155f5937c61753989a21eff520ddcfba84"
+      }
+    ],
+    "original_receipt": {
+      "private_record": "mixed-admission-validation/source-guard/verification.json",
+      "sha256": "cad5ed887611a8274d72f6db62827e40b5eb7f9d6bc9fa4f05a2e638b0333af1"
+    },
+    "original_commands": {
+      "private_record": "mixed-admission-validation/source-guard/commands.json",
+      "sha256": "8351ed304551f17f6f4d7b660d4c1c9ced8b407c44205c97e8e2ff784dc8714b"
+    }
+  },
+  "limits": [
+    "No local daemon socket or whole mixed Cargo qualification was executed; local AF_UNIX setup is blocked by the previously retained EPERM infrastructure result.",
+    "No new ordinary full differential, sanitizer, macOS or full source-built package qualification is claimed for this source.",
+    "No compiler performance measurement or speed claim is established by these checks.",
+    "Earlier hosted results at 429fe605 qualify their own source and do not transfer to this admission change.",
+    "The scalar bridge and existing whole-program retry path do not complete the required integrated Lust and Rust architecture.",
+    "The separately documented Unicode const/runtime mismatch remains a release blocker.",
+    "Original private receipts and streams remain separate from this sanitized projection; their hashes are retained here. Absolute local paths were replaced with named placeholders in command projections."
+  ]
+}

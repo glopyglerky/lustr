@@ -1,0 +1,231 @@
+{
+  "schema": "lustr-hosted-warm-failures-v1",
+  "date": "2026-11-18",
+  "scope": "Disposition of two hosted qualification failures. No timing admitted; no new campaign was executed during this diagnosis.",
+  "branch": "lustr/practical-performance-20261118",
+  "published_head": "429fe6054e6119221e598b95c2661665ecdd7be2",
+  "checkout_merge": {
+    "revision": "84257ab1e63469a3162f1ebd3b9177b3fd4a371e",
+    "tree": "7caaeb641eba6dda5b26b9d3d6761ca3a5a79581"
+  },
+  "published_head_tree": "7caaeb641eba6dda5b26b9d3d6761ca3a5a79581",
+  "local_review_commit": "a1cd906cb90d2430611f39d7f3c3450d02d42299",
+  "local_review_tree": "7caaeb641eba6dda5b26b9d3d6761ca3a5a79581",
+  "native_complete": {
+    "run_id": 44363351381,
+    "run_url": "https://github.com/glopyglerky/lustr/actions/runs/44363351381",
+    "job_id": 135018909736,
+    "conclusion": "failure",
+    "failed_step": "Qualify the actual baseline source and package",
+    "failed_phase": "ordinary-native-differential",
+    "classification": "Frozen compiler source depends on the build host Unicode version; the native oracle is now correct.",
+    "artifact": {
+      "id": 14459352593,
+      "name": "complete-native-warm-1",
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44363351381/artifacts/14459352593",
+      "zip_bytes": 1095844,
+      "zip_sha256": "1f9bc20f38c93469e8b791e0f7ce98a860c069815e47d6d9b41e275919aa5e2c",
+      "zip_files": 363
+    },
+    "packages": {
+      "baseline": {
+        "source": {
+          "revision": "3c378a11d60149a3ec99fa49ea1b336e9406fca8",
+          "tree": "0256606d5793bfb890130f05fae013d0c5c5f9e1"
+        },
+        "native_source_tree": "12ae35ee30f81d11f55b184134f8a0c4a977a496",
+        "constructor_status": "completed",
+        "component_sha256": {
+          "bin/lustr": "a35f58357c5f0c0242699f50b92662bb8d9dd1d67294186665cfb4bd235ed146",
+          "bin/lust": "504bbf22d5995174555459ae507f7c6f3262b948c68e878760569b39fbc9fe9e",
+          "bin/lust-core": "49f3635a1fda1db20a1bcd54e8e98107f9554854e928624204923d6fbd8a29ff",
+          "lib/liblustr_native_core.so": "831b59b4cfa33a105156d12284a2caf6ec458e23094fffd707cae8777880d185"
+        }
+      },
+      "candidate": {
+        "source": {
+          "revision": "84257ab1e63469a3162f1ebd3b9177b3fd4a371e",
+          "tree": "7caaeb641eba6dda5b26b9d3d6761ca3a5a79581"
+        },
+        "native_source_tree": "d9ca06dc18dde19bf5bd2af688adf75a041b12a5",
+        "constructor_status": "completed",
+        "component_sha256": {
+          "bin/lustr": "60aa2937d6b90cae00729178744c6fb78799feb6685a0ced1e79d6896f2e4380",
+          "bin/lust": "d252d07d2e08f85ace29d2dfb6c6c41c945ebd3dc9349c3b2f6e317dcc16df09",
+          "bin/lust-core": "cdc1882da64b56530bc12182d32e54f6a0feee3a5422b2748d5d527293e36e49",
+          "lib/liblustr_native_core.so": "f34d73f9084d4a8f3653617ea36cc79dad1bf3b2ccf3154fb82eb7ee15cb9ae1"
+        }
+      }
+    },
+    "build_sdk": {
+      "rustc_version": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+      "compiler_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de"
+    },
+    "native_oracle": {
+      "rustc_version": "rustc 1.99.0 (b940084d7 2026-09-28)\nbinary: rustc\ncommit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4\ncommit-date: 2026-09-28\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.0\nLLVM version: 23.1.1\n",
+      "compiler_sha256": "f3834d26669b03f6855fa54bd2381443123e860167bc0c7a8dd137e5cf6e5e4f"
+    },
+    "native_oracle_inventory_files": 154,
+    "baseline_units": {
+      "client_passed": 15,
+      "core_passed": 387,
+      "failed": 0,
+      "buildscript_regression": "passed"
+    },
+    "differential": {
+      "passed": 5526,
+      "failed": 1,
+      "total": 5527,
+      "exit": 1,
+      "timed_out": false,
+      "output_limit": false,
+      "failed_case": "unicode_props",
+      "failure_kind": "stdout differs",
+      "rustc_unicode_version": [
+        17,
+        0,
+        0
+      ],
+      "lust_unicode_version": [
+        18,
+        0,
+        0
+      ],
+      "stdout_sha256": "47d9483de941688f1b07ec9c55ef3548baea3a41c560cfb90df022f32e9aa45b",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "fixture_files": {
+        "pass": 2229,
+        "fail": 3140,
+        "reject": 158
+      }
+    },
+    "source_proof": [
+      {
+        "path": "compiler/native/src/ty/consteval.rs",
+        "revision": "3c378a11d60149a3ec99fa49ea1b336e9406fca8",
+        "git_blob": "22458d8e8e678b885bef0622eeb976c9e96041fa",
+        "sha256": "ced1bfa7cd73aab0e35e093868cc33007ab6c6626c7bd9f2769d439b6a37dad5",
+        "bytes": 323508,
+        "host_unicode_constant_line": 2981,
+        "expression": "let (maj, min, pat) = char::UNICODE_VERSION;"
+      },
+      {
+        "path": "compiler/native/src/check/mod.rs",
+        "revision": "3c378a11d60149a3ec99fa49ea1b336e9406fca8",
+        "git_blob": "a9e4339f0bf489fb537413687cf98a63296601b4",
+        "sha256": "840046d349473148a5693567b67039b863094afafc27eae020eb9397ce13b578",
+        "bytes": 1249367,
+        "host_unicode_constant_line": 12299,
+        "expression": "let (maj, min, pat) = char::UNICODE_VERSION;"
+      }
+    ],
+    "runtime_unicode_table": {
+      "path": "compiler/native/src/runtime/unicode_table.h",
+      "revision": "3c378a11d60149a3ec99fa49ea1b336e9406fca8",
+      "git_blob": "6b5053f1cc059ba82df93f7e97f36383b11a1484",
+      "sha256": "86e693d5339c8d90bd7e72c4c84f94617a347bc8dc73755f523f0fb243ad1e52",
+      "bytes": 42504
+    },
+    "runtime_unicode_table_version": [
+      17,
+      0,
+      0
+    ],
+    "original_command_rows_and_streams_verified": 10,
+    "not_executed": [
+      "candidate package qualification",
+      "pristine build",
+      "complete-package timing",
+      "practical assessment",
+      "startup diagnostic"
+    ],
+    "admitted_timing_samples": 0,
+    "disposition": "Keep the failure. No frozen-source edit, oracle substitution, output normalization, fixture exclusion or assertion relaxation is justified as a harness correction."
+  },
+  "entry_only": {
+    "run_id": 44363351457,
+    "run_url": "https://github.com/glopyglerky/lustr/actions/runs/44363351457",
+    "job_id": 135010409296,
+    "conclusion": "failure",
+    "failed_step": "Build the pinned baseline public entry with the identical native runtime",
+    "error": "ValueError: shared runtime source differs: compiler/native",
+    "classification": "Comparison applicability guard rejected different native source; not a baseline compiler build failure or infrastructure failure.",
+    "artifact": {
+      "id": 14455049372,
+      "name": "warm-entry-comparison-1",
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44363351457/artifacts/14455049372",
+      "zip_bytes": 350543,
+      "zip_sha256": "275a3c15bab97fbf3ae16aa05104530e29670181dc5165470ed5660640d5e1b5",
+      "zip_files": 679
+    },
+    "baseline_source": {
+      "revision": "d57f485eeb2b638d1f95a0594294d11e8001fe8e",
+      "tree": "07235def43af3ffbdc218353d40f3f9e22b8dfd9"
+    },
+    "candidate_source": {
+      "revision": "84257ab1e63469a3162f1ebd3b9177b3fd4a371e",
+      "tree": "7caaeb641eba6dda5b26b9d3d6761ca3a5a79581"
+    },
+    "native_source_objects": {
+      "baseline": "12ae35ee30f81d11f55b184134f8a0c4a977a496",
+      "candidate": "d9ca06dc18dde19bf5bd2af688adf75a041b12a5"
+    },
+    "native_changed_files": [
+      "compiler/native/src/cgen.rs",
+      "compiler/native/src/driver/compile.rs",
+      "compiler/native/src/driver/patch.rs",
+      "compiler/native/tests/daemon/mainret04_typed_entry_transition/v1.rs",
+      "compiler/native/tests/daemon/mainret04_typed_entry_transition/v2.rs",
+      "compiler/native/tests/daemon/mainret04_typed_entry_transition/v3.rs",
+      "compiler/native/tests/daemon/mainret04_typed_entry_transition/v4.rs",
+      "compiler/native/tests/pass/main_unit_abi.rs"
+    ],
+    "completed_selection_controls": [
+      {
+        "suite": "lustr-warm-compact-selection-contract",
+        "schema": "lustr-compact-selection-regression-v1",
+        "status": "completed",
+        "assertions": 486,
+        "sha256": "3ca3eeddd33c97805c759f5a237ce3ba968f26ee761118fe484270cc01a74e27",
+        "profiler_sha256": "592ba9dbcd87c5333f02d8d51d8e0044aa447ce14fdd76759543e4fa1d760502",
+        "command_records": 103,
+        "streams_verified": 206
+      },
+      {
+        "suite": "lustr-warm-selection-contract",
+        "schema": "lustr-selection-cache-regression-v1",
+        "status": "completed",
+        "assertions": 290,
+        "sha256": "0c14d25b8b3e582bb92b29f4e8147a270c23a19ff2eedfc3843cd29ff5c334a2",
+        "profiler_sha256": "592ba9dbcd87c5333f02d8d51d8e0044aa447ce14fdd76759543e4fa1d760502",
+        "command_records": 154,
+        "streams_verified": 308
+      },
+      {
+        "suite": "lustr-warm-selection-seed-contract",
+        "schema": "lustr-selection-seed-regression-v1",
+        "status": "completed",
+        "assertions": 85,
+        "sha256": "b371d785ad4d4d513ab02a2a1f0dcab503c7f7f9c8dea2217a78a580a423cf11",
+        "profiler_sha256": "592ba9dbcd87c5333f02d8d51d8e0044aa447ce14fdd76759543e4fa1d760502",
+        "command_records": 38,
+        "streams_verified": 76
+      }
+    ],
+    "selection_control_streams_verified": 590,
+    "not_executed": [
+      "baseline entry compilation",
+      "pristine build",
+      "complete entry contract",
+      "entry timing",
+      "entry diagnostics"
+    ],
+    "admitted_timing_samples": 0,
+    "disposition": "Keep the identical-native guard and failed receipt. This historical entry-only comparison cannot qualify the changed native compiler."
+  },
+  "limits": [
+    "The original differential script prints bounded failure diffs and removes per-case temporary work; full case stdout is not present beyond the emitted diff.",
+    "Native unit and selector-control successes are scoped correctness evidence, not complete compiler qualification or performance evidence.",
+    "No package was rebuilt and no compiler, timing campaign or hosted rerun was launched during diagnosis."
+  ]
+}
