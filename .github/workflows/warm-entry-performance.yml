@@ -11,6 +11,7 @@ on:
       - 'tools/test-warm-entry-diagnostics.py'
       - 'tools/test-native-selection-cache.py'
       - 'tools/test-native-selection-seed.py'
+      - 'tools/test-native-compact-selection.py'
       - 'tools/build-mixed-toolchain.rs'
       - 'tools/selection-toolchain-receipt.rs'
       - '.github/workflows/warm-entry-performance.yml'
@@ -40,7 +41,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: glopyglerky/lustr
-          ref: 28a2842635ee994db492b43f8c956eddce57a803
+          ref: d57f485eeb2b638d1f95a0594294d11e8001fe8e
           path: .warm-entry-baseline
           persist-credentials: false
       - uses: actions/checkout@v4
@@ -100,6 +101,13 @@ jobs:
             --profiler "$RUNNER_TEMP/lustr-warm-selector-build/target/release/profile-native-preflight" \
             --package-bin "$RUNNER_TEMP/lustr-warm-built/toolchain/bin" \
             --output "$RUNNER_TEMP/lustr-warm-selection-seed-contract"
+      - name: Require complete compact-selection equivalence
+        id: compact_selection_contract
+        run: |
+          python3 tools/test-native-compact-selection.py \
+            --profiler "$RUNNER_TEMP/lustr-warm-selector-build/target/release/profile-native-preflight" \
+            --package-bin "$RUNNER_TEMP/lustr-warm-built/toolchain/bin" \
+            --output "$RUNNER_TEMP/lustr-warm-compact-selection-contract"
       - name: Build the pinned baseline public entry with the identical native runtime
         id: baseline_build
         run: |
@@ -178,6 +186,10 @@ jobs:
             ${{ runner.temp }}/lustr-warm-baseline-build/receipt.json
             ${{ runner.temp }}/lustr-warm-baseline-build/build.stdout
             ${{ runner.temp }}/lustr-warm-baseline-build/build.stderr
+            ${{ runner.temp }}/lustr-warm-baseline-build/seed.stdout
+            ${{ runner.temp }}/lustr-warm-baseline-build/seed.stderr
+            ${{ runner.temp }}/lustr-warm-baseline-build/baseline-selection-seed.json
+            ${{ runner.temp }}/lustr-warm-baseline-build/candidate-selection-seed.json
             ${{ runner.temp }}/lustr-warm-built/COMPONENTS.txt
             ${{ runner.temp }}/lustr-warm-built/BUILD-PROFILE.txt
             ${{ runner.temp }}/lustr-warm-built/NATIVE-BUILD-RECEIPT.txt
@@ -202,6 +214,8 @@ jobs:
             ${{ runner.temp }}/lustr-warm-selection-seed-contract/*.stdout
             ${{ runner.temp }}/lustr-warm-selection-seed-contract/*.stderr
             ${{ runner.temp }}/lustr-warm-selection-seed-contract/package/lib/lustr-selection-verified
+            ${{ runner.temp }}/lustr-warm-compact-selection-contract/results.json
+            ${{ runner.temp }}/lustr-warm-compact-selection-contract/streams
             ${{ runner.temp }}/lustr-warm-diagnostics/report.json
             ${{ runner.temp }}/lustr-warm-diagnostics/README.md
             ${{ runner.temp }}/lustr-warm-diagnostics/raw.jsonl

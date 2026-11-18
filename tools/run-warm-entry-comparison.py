@@ -8,6 +8,7 @@ This measures entry changes only; it is not a second complete toolchain build.
 import argparse
 from contextlib import ExitStack
 import csv
+import hashlib
 import importlib.util
 import json
 import os
@@ -26,7 +27,7 @@ spec = importlib.util.spec_from_file_location("public_slice", HERE / "run-upstre
 S = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(S)
 require = S.require
-BASELINE = "28a2842635ee994db492b43f8c956eddce57a803"
+BASELINE = "d57f485eeb2b638d1f95a0594294d11e8001fe8e"
 SCHEMA = "lustr-warm-entry-comparison-v1"
 LANES = ("baseline", "entry", "pristine", "cargo")
 PHASES = ("cold-check", "no-op-check", "cold-build", "no-op-build")
@@ -42,6 +43,50 @@ def git(source, *args):
 def source_identity(source):
     require(not git(source, "status", "--porcelain", "--untracked-files=no"), "tracked source changed")
     return {"revision": git(source, "rev-parse", "HEAD"), "tree": git(source, "rev-parse", "HEAD^{tree}")}
+
+
+def selection_seed(data, executable, receipt):
+    """Bind an archived constructor record to its actual installed launcher."""
+    record = json.loads(data)
+    payload, tools = record["payload"], record["payload"]["tools"]
+    encoded = lambda value: json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()
+    require(record["sha256"] == hashlib.sha256(encoded(payload)).hexdigest()
+            and payload["schema"] == "lustr-cargo-selection-v2"
+            and tools["identities"][0][:2] == [str(executable), str(executable)]
+            and tools["receipt"].encode() == receipt, "selection seed belongs to another launcher or receipt")
+    return "tools-" + hashlib.sha256(encoded(tools)).hexdigest() + ".json"
+
+
+def seed_baseline(package, output, environment, receipt):
+    """Run the baseline's own installation step without changing the candidate seed."""
+    target = package / "bin/lustr-warm-baseline"
+    directory = package / "lib/lustr-selection-verified"
+    tools = (package / "lib/lustr-selection-tools.txt").read_bytes()
+    existing = list(directory.glob("tools-*.json"))
+    require(len(existing) == 1 and existing[0].is_file() and not existing[0].is_symlink(), "candidate constructor seed is missing or ambiguous")
+    candidate = existing[0]
+    original = candidate.read_bytes()
+    require(candidate.name == selection_seed(original, package / "bin/lustr", tools), "candidate seed filename differs")
+    command = [str(target), "--lustr-prime-selection-tools"]
+    receipt["baseline_seed"] = {"argv": command, "cwd": str(package)}
+    with (output / "seed.stdout").open("xb") as out, (output / "seed.stderr").open("xb") as err:
+        result = subprocess.run(command, cwd=package, env=environment, stdin=subprocess.DEVNULL, stdout=out, stderr=err)
+    seed = receipt["baseline_seed"]
+    seed["exit"] = result.returncode
+    seed["streams"] = {name:{"file":"seed." + name, "sha256":S.digest(output / ("seed." + name))}
+                       for name in ("stdout", "stderr")}
+    require(result.returncode == 0, "baseline constructor initialization failed; original streams retained")
+    require(candidate.read_bytes() == original, "baseline initialization changed the candidate seed")
+    added = [path for path in directory.glob("tools-*.json") if path != candidate]
+    require(len(added) == 1 and added[0].is_file() and not added[0].is_symlink(), "baseline constructor seed is missing or ambiguous")
+    baseline = added[0]
+    data = baseline.read_bytes()
+    require(baseline.name == selection_seed(data, target, tools), "baseline seed filename differs")
+    for label, path, contents in (("baseline", baseline, data), ("candidate", candidate, original)):
+        archived = output / (label + "-selection-seed.json")
+        archived.write_bytes(contents)
+        seed[label + "_certificate"] = {"path":str(path), "file":archived.name, "sha256":S.digest(archived)}
+    return [candidate, baseline]
 
 
 def build_baseline(args):
@@ -77,11 +122,12 @@ def build_baseline(args):
         require(not target.exists(), "baseline entry already exists")
         shutil.copy2(args.output / "target/release/lustr", target)
         receipt["baseline_binary"] = {"path": str(target), "sha256": S.digest(target)}
+        seeds = seed_baseline(package, args.output, env, receipt)
         files = [package / "bin/lustr", package / "bin/lust", package / "bin/lust-core", package / "bin/rustc-full",
                  package / "bin/rustc-reference", package / "bin/cargo", package / "lib/liblustr_native_core.so",
                  package / "lib/lustr-selection-tools.txt",
                  args.built / "NATIVE-BUILD-RECEIPT.txt", args.built / "HOST-SDK-RECEIPT.txt", args.built / "COMPONENTS.txt"]
-        receipt["shared_package_sha256"] = {str(p):S.digest(p) for p in files}
+        receipt["shared_package_sha256"] = {str(p):S.digest(p) for p in files + seeds}
         receipt["build_streams"] = {name:S.digest(args.output / name) for name in ("build.stdout", "build.stderr")}
         receipt["status"] = "completed"
     except BaseException as error:
@@ -282,11 +328,11 @@ class Campaign(S.Campaign):
                 state = self.output / "work" / stage / ("retained-" + operation) / lane
                 env = dict(self.environment(state, sockets / (lane + ".sock")), LUST_STATS="1")
                 selection_trace = state / "selection-events.jsonl"
-                if lane == "entry":
+                if lane in ("baseline", "entry"):
                     env["LUSTR_SELECTION_DIAGNOSTICS"] = str(selection_trace)
                 with S.Daemon(self.recorder, self.daemon_tool(lane), env, self.fixture, lane, f"{stage}-{operation}-{lane}") as daemon:
                     self.compile(lane, operation, state, env, "gate-warm-prime", trace=True)
-                    if lane == "entry":
+                    if lane in ("baseline", "entry"):
                         for _ in range(3):
                             self.compile(lane, operation, state, env, "gate-selection-prime")
                         before = selection_trace.read_bytes()
@@ -294,10 +340,10 @@ class Campaign(S.Campaign):
                         after = selection_trace.read_bytes()
                         require(after.startswith(before), "selection diagnostics were replaced")
                         rows = [json.loads(line) for line in after[len(before):].splitlines()]
-                        require(rows == [{"selection_cache":"hit"}], "warm candidate did not reuse exact target selection")
+                        require(rows == [{"selection_cache":"hit"}], "warm public entry did not reuse exact target selection")
                         archive = self.output / "commands" / f"{command['id']:05}.selection.trace"
                         archive.write_bytes(after[len(before):])
-                        self.recorder.event({"kind":"selection-cache", "command":command["id"], "operation":operation,
+                        self.recorder.event({"kind":"selection-cache", "lane":lane, "command":command["id"], "operation":operation,
                                              "trace":{"file":str(archive.relative_to(self.output)), "sha256":S.digest(archive), "bytes":archive.stat().st_size}})
                     command, _, stderr = self.recorder.run(self.command(lane, operation, state) + ["--timings"],
                                                           env, self.fixture, lane, "gate-retained-" + operation)
@@ -450,7 +496,9 @@ class Campaign(S.Campaign):
         self.report["build_receipts"] = {}
         for path in (self.args.baseline_receipt, self.args.pristine_build_log, self.args.built / "COMPONENTS.txt",
                      self.args.built / "NATIVE-BUILD-RECEIPT.txt", self.args.built / "BUILD-PROFILE.txt",
-                     self.args.built / "toolchain/lib/lustr-selection-tools.txt"):
+                     self.args.built / "toolchain/lib/lustr-selection-tools.txt",
+                     *(self.args.baseline_receipt.parent / name for name in
+                       ("seed.stdout", "seed.stderr", "baseline-selection-seed.json", "candidate-selection-seed.json"))):
             shutil.copyfile(path, receipts / path.name)
             self.report["build_receipts"][path.name] = {"file":str(Path("build-receipts") / path.name), "sha256":S.digest(path)}
         with tempfile.TemporaryDirectory(prefix="lustr-warm-") as temporary:
@@ -490,6 +538,7 @@ def render(report):
     if report["status"] != "completed":
         return "\n".join(lines + ["No completed performance result. All original streams and failure records remain retained.", ""])
     lines += ["All times are measured end-to-end command medians in milliseconds.", "",
+              f"Baseline public source: `{report['baseline_composition']['baseline']['revision']}`. Both installed public launchers run their own source-built constructor tool initialization before the campaign; their separate seed records are retained.", "",
               "| Operation | Baseline Lustr | Candidate Lustr | Pristine Lust | rustc via Cargo |", "| --- | ---: | ---: | ---: | ---: |"]
     for phase in PHASES:
         values = [statistics.median(row["seconds"] for row in report["samples"] if row["lane"] == lane and row["phase"] == phase) * 1000 for lane in LANES]
@@ -536,6 +585,19 @@ def verify(output):
     selection_receipt = str(Path(report["tool_paths"]["entry"]).parent.parent / "lib/lustr-selection-tools.txt")
     require(report["build_receipts"]["lustr-selection-tools.txt"]["sha256"] == before["shared_package_sha256"][selection_receipt],
             "selection-toolchain receipt bytes differ from the executed package")
+    seed = before["baseline_seed"]
+    require(seed["argv"] == [report["tool_paths"]["baseline"], "--lustr-prime-selection-tools"] and seed["exit"] == 0
+            and seed["cwd"] == str(Path(report["tool_paths"]["entry"]).parent.parent), "baseline constructor command differs")
+    require(set(seed["streams"]) == {"stdout", "stderr"}, "baseline constructor streams are incomplete")
+    for binding in seed["streams"].values():
+        archived = report["build_receipts"][binding["file"]]
+        require(archived["sha256"] == binding["sha256"] and stream(archived) == b"", "baseline constructor stream differs")
+    for label, lane in (("baseline", "baseline"), ("candidate", "entry")):
+        binding = seed[label + "_certificate"]
+        archived = report["build_receipts"][binding["file"]]
+        require(archived["sha256"] == binding["sha256"] == before["shared_package_sha256"][binding["path"]], "constructor certificate binding differs")
+        name = selection_seed(stream(archived), report["tool_paths"][lane], stream(report["build_receipts"]["lustr-selection-tools.txt"]))
+        require(binding["path"] == str(Path(selection_receipt).parent / "lustr-selection-verified" / name), "constructor seed path differs")
     commands, retained, active, built, runtime_commands, runtime_builds, selection = {}, [], {}, {}, set(), {}, []
     edit_active, edit_done, edit_sources, edit_proofs, edit_steps = False, False, [], [], []
     variants = edit_variants((output / "fixture/src/slice_main.rs").read_bytes())
@@ -641,10 +703,10 @@ def verify(output):
             edit_active, edit_done = False, True
         if row["kind"] == "selection-cache":
             command = commands[row["command"]]
-            require(command["lane"] == "entry" and command["phase"] == "gate-selection-hit"
-                    and command["argv"][0] == report["tool_paths"]["entry"], "selection-cache proof uses another command")
+            require(row["lane"] in ("baseline", "entry") and command["lane"] == row["lane"] and command["phase"] == "gate-selection-hit"
+                    and command["argv"][0] == report["tool_paths"][row["lane"]], "selection-cache proof uses another command")
             require([json.loads(line) for line in stream(row["trace"]).splitlines()] == [{"selection_cache":"hit"}], "selection-cache hit missing")
-            selection.append(row["operation"])
+            selection.append((row["lane"], row["operation"]))
         if row["kind"] == "entry-route":
             trace = [json.loads(x) for x in stream(row["trace"]).splitlines()]
             command = commands[row["command"]]
@@ -663,7 +725,7 @@ def verify(output):
     require(runtime_commands == {row["id"] for row in commands.values() if row["phase"].endswith("runtime") or row["phase"] == "cache-edit-execute"}, "runtime identity missing")
     require(edit_done and not edit_active, "cache-hit edit transition qualification is missing")
     require(retained == [(lane,op) for _ in range(2) for lane in ("pristine", "baseline", "entry") for op in ("check", "build")], "missing retained check/build proof")
-    require(selection == ["check","build","check","build"], "missing initial/final selection reuse proof")
+    require(selection == [(lane,op) for _ in range(2) for lane in ("baseline", "entry") for op in ("check", "build")], "missing initial/final selection reuse proof")
     samples = [dict((k,v) for k,v in row.items() if k != "kind") for row in records if row["kind"] == "timing"]
     require(samples == report["samples"], "sample log differs")
     for sample in samples:

@@ -168,9 +168,24 @@ def synthetic_campaign(output):
     (receipts/"lustr-selection-tools.txt").write_text("synthetic trusted-tool receipt\n")
     receipt={"status":"completed","baseline":{"revision":B.BASELINE},"candidate":identity,"baseline_binary":{"path":tools["baseline"],"sha256":"a"*64},
              "shared_package_sha256":{str(Path(tools["entry"]).parent.parent/"lib/lustr-selection-tools.txt"):B.S.digest(receipts/"lustr-selection-tools.txt")}}
+    seed={"argv":[tools["baseline"],"--lustr-prime-selection-tools"],"cwd":str(Path(tools["entry"]).parent.parent),"exit":0,"streams":{}}
+    receipt["baseline_seed"]=seed
+    receipt_names=["receipt.json","lustr-selection-tools.txt"]
+    for kind in ("stdout","stderr"):
+        name="seed."+kind; (receipts/name).write_bytes(b"");receipt_names.append(name)
+        seed["streams"][kind]={"file":name,"sha256":B.S.digest(receipts/name)}
+    for label,lane in (("baseline","baseline"),("candidate","entry")):
+        payload={"schema":"lustr-cargo-selection-v2","tools":{"receipt":(receipts/"lustr-selection-tools.txt").read_text(),"identities":[[tools[lane],tools[lane]]]}}
+        encoded=json.dumps(payload,sort_keys=True,ensure_ascii=False,separators=(",",":")).encode()
+        data=json.dumps({"payload":payload,"sha256":B.hashlib.sha256(encoded).hexdigest()}).encode()
+        name=label+"-selection-seed.json";(receipts/name).write_bytes(data);receipt_names.append(name)
+        key=B.selection_seed(data,tools[lane],(receipts/"lustr-selection-tools.txt").read_bytes())
+        path=str(Path(tools["entry"]).parent.parent/"lib/lustr-selection-verified"/key)
+        seed[label+"_certificate"]={"path":path,"file":name,"sha256":B.S.digest(receipts/name)}
+        receipt["shared_package_sha256"][path]=B.S.digest(receipts/name)
     B.S.write_json(receipts/"receipt.json",receipt)
     campaign.report.update(tool_paths=tools,compiler_and_runner_sha256={tools["baseline"]:"a"*64},fixture_files=B.S.inventory(campaign.fixture),
-        candidate_identity=identity,baseline_composition=receipt,build_receipts={name:{"file":"build-receipts/"+name,"sha256":B.S.digest(receipts/name)} for name in ("receipt.json","lustr-selection-tools.txt")},
+        candidate_identity=identity,baseline_composition=receipt,build_receipts={name:{"file":"build-receipts/"+name,"sha256":B.S.digest(receipts/name)} for name in receipt_names},
         rustc_version=f"commit-hash: {B.S.RUST}\n")
     recorder.event({"kind":"identities",**{key:campaign.report[key] for key in
         ("tool_paths","compiler_and_runner_sha256","fixture_files","candidate_identity","baseline_composition","build_receipts","rustc_version")}})
@@ -212,6 +227,9 @@ class ReplayControls(unittest.TestCase):
         with self.assertRaises(ValueError): B.verify(self.corruption(mutate))
     def test_missing_selection_reuse_proof_is_rejected(self):
         def mutate(rows): next(r for r in rows if r["kind"]=="selection-cache")["kind"]="unrelated"
+        with self.assertRaises(ValueError): B.verify(self.corruption(mutate))
+    def test_baseline_reuse_cannot_be_claimed_by_candidate(self):
+        def mutate(rows): next(r for r in rows if r["kind"]=="selection-cache" and r["lane"]=="baseline")["lane"]="entry"
         with self.assertRaises(ValueError): B.verify(self.corruption(mutate))
     def test_missing_actual_cached_edit_proof_is_rejected(self):
         def mutate(rows): next(r for r in rows if r["kind"]=="cache-edit-proof" and r["stage"]=="edited")["kind"]="unrelated"
