@@ -106,8 +106,17 @@ Instrumentation is excluded from timed measurements.
 ## Qualification
 
 The production selector can be exercised without compiling an application by
-the unchanged `tools/profile-native-preflight.rs` helper from PR #22. This is a
-selection-only seam. It cannot establish end-to-end compiler performance.
+the `tools/profile-native-preflight.rs` helper derived from PR #22. It now also
+exposes the production package-verification operation for the seed gate. This
+is a selection-only seam. It cannot establish end-to-end compiler performance.
+
+The [independent review evidence](warm-entry-selection-evidence/README.md)
+preserves the initial candidate's real stale-success failure, its exact source
+snapshot, and the corrected selector's completed 132-invocation, 250-assertion
+gate. The seed gate separately checks verified initialization, malformed or
+shared seeds, package relocation, changed receipts, and the same unknown-tool
+counterexample. Repeating a gate after an implementation change verifies that
+revision; its invocation count is not added as new coverage.
 
 The warm comparison must use public Lustr commands, the exact earlier public
 launcher, pristine Lust and rustc through Cargo on the same runner. The two

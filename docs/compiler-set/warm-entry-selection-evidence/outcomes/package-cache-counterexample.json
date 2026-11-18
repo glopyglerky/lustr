@@ -1,0 +1,20 @@
+[
+  {
+    "exit": 0,
+    "label": "baseline-home-valid",
+    "stderr": "",
+    "stdout": "{\"elapsed_ns\":135663368,\"manifest\":\"<REVIEW_WORKSPACE>/warm-review/baseline-counterexamples/project/Cargo.toml\",\"phase\":\"selection\",\"success\":true,\"target\":\"first\"}\n"
+  },
+  {
+    "exit": 2,
+    "label": "cargo-package-cache-is-directory",
+    "stderr": "error: failed to acquire package cache lock\n\nCaused by:\n  failed to open: <REVIEW_WORKSPACE>/warm-review/baseline-counterexamples/cargo-home/.package-cache\n\nCaused by:\n  Is a directory (os error 21)\n",
+    "stdout": "{\"elapsed_ns\":44692379,\"error\":\"Cargo rejected the package or manifest selection\",\"phase\":\"selection\",\"success\":false}\n"
+  },
+  {
+    "exit": 0,
+    "label": "cargo-global-cache-corrupt",
+    "stderr": "",
+    "stdout": "{\"elapsed_ns\":90030237,\"manifest\":\"<REVIEW_WORKSPACE>/warm-review/baseline-counterexamples/project/Cargo.toml\",\"phase\":\"selection\",\"success\":true,\"target\":\"first\"}\n"
+  }
+]
