@@ -325,7 +325,8 @@ class Campaign(S.Campaign):
         receipts.mkdir()
         self.report["build_receipts"] = {}
         for path in (self.args.baseline_receipt, self.args.pristine_build_log, self.args.built / "COMPONENTS.txt",
-                     self.args.built / "NATIVE-BUILD-RECEIPT.txt", self.args.built / "BUILD-PROFILE.txt"):
+                     self.args.built / "NATIVE-BUILD-RECEIPT.txt", self.args.built / "BUILD-PROFILE.txt",
+                     self.args.built / "toolchain/lib/lustr-selection-tools.txt"):
             shutil.copyfile(path, receipts / path.name)
             self.report["build_receipts"][path.name] = {"file":str(Path("build-receipts") / path.name), "sha256":S.digest(path)}
         with tempfile.TemporaryDirectory(prefix="lustr-warm-") as temporary:
@@ -405,6 +406,9 @@ def verify(output):
             and before["candidate"] == report["candidate_identity"], "baseline composition differs")
     require(before["baseline_binary"]["path"] == report["tool_paths"]["baseline"] and before["baseline_binary"]["sha256"] ==
             report["compiler_and_runner_sha256"][report["tool_paths"]["baseline"]], "baseline binary binding differs")
+    selection_receipt = str(Path(report["tool_paths"]["entry"]).parent.parent / "lib/lustr-selection-tools.txt")
+    require(report["build_receipts"]["lustr-selection-tools.txt"]["sha256"] == before["shared_package_sha256"][selection_receipt],
+            "selection-toolchain receipt bytes differ from the executed package")
     commands, retained, active, built, runtime_commands, selection = {}, [], {}, {}, set(), []
     group = None
     oracle = (output / "runtime-oracle.stdout").read_bytes()

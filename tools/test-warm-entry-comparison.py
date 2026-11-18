@@ -112,10 +112,13 @@ def synthetic_campaign(output):
         def __exit__(self,*args): recorder.event({"kind":"daemon-stop",**{k:self.row[k] for k in ("lane","pid","scope")},"exit":0,"error":None,"streams":[]})
     tools={key:str(value) for key,value in campaign.tools.items()}
     identity={"revision":"c"*40,"tree":"d"*40}
-    receipt={"status":"completed","baseline":{"revision":B.BASELINE},"candidate":identity,"baseline_binary":{"path":tools["baseline"],"sha256":"a"*64}}
-    receipts=output/"build-receipts"; receipts.mkdir(); B.S.write_json(receipts/"receipt.json",receipt)
+    receipts=output/"build-receipts"; receipts.mkdir()
+    (receipts/"lustr-selection-tools.txt").write_text("synthetic trusted-tool receipt\n")
+    receipt={"status":"completed","baseline":{"revision":B.BASELINE},"candidate":identity,"baseline_binary":{"path":tools["baseline"],"sha256":"a"*64},
+             "shared_package_sha256":{str(Path(tools["entry"]).parent.parent/"lib/lustr-selection-tools.txt"):B.S.digest(receipts/"lustr-selection-tools.txt")}}
+    B.S.write_json(receipts/"receipt.json",receipt)
     campaign.report.update(tool_paths=tools,compiler_and_runner_sha256={tools["baseline"]:"a"*64},fixture_files=B.S.inventory(campaign.fixture),
-        candidate_identity=identity,baseline_composition=receipt,build_receipts={"receipt.json":{"file":"build-receipts/receipt.json","sha256":B.S.digest(receipts/"receipt.json")}},
+        candidate_identity=identity,baseline_composition=receipt,build_receipts={name:{"file":"build-receipts/"+name,"sha256":B.S.digest(receipts/name)} for name in ("receipt.json","lustr-selection-tools.txt")},
         rustc_version=f"commit-hash: {B.S.RUST}\n")
     recorder.event({"kind":"identities",**{key:campaign.report[key] for key in
         ("tool_paths","compiler_and_runner_sha256","fixture_files","candidate_identity","baseline_composition","build_receipts","rustc_version")}})
