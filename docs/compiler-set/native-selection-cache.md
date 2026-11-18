@@ -7,9 +7,10 @@ candidate reuses a successful selection for a bounded class of requests.
 
 The optimization does not reuse the native resolver's graph as the public
 selection. Those queries have different working-directory and filtering
-semantics. It retains the exact metadata and optional package ID produced by
-the public entry's original Cargo commands, then runs the original source,
-package, target-name, target-kind and uniqueness filter on that data.
+semantics. Fresh requests still run the original Cargo metadata and optional
+package-ID commands, followed by the original source, package, target-name,
+target-kind and uniqueness filter. A successful request can retain that exact
+selected package and target, including every field used by Rust fallback.
 
 ## Admission
 
@@ -53,8 +54,9 @@ Every candidate lookup records and compares:
 - Discovery locations for automatic binary, library, example, test, benchmark
   and build-script targets. Directory entries and nested `main.rs` bindings
   invalidate an old answer when a target appears or disappears.
-- Every target-source canonical binding in the cached Cargo output. Changing
-  another target's symlink can make a formerly unique source ambiguous.
+- Every target-source canonical binding in the selected package. Admission has
+  exactly one package, so this retains every target from the Cargo output.
+  Changing another target's symlink can make a formerly unique source ambiguous.
 - Packaged executable and shared compiler-library identities, including inode,
   device, size, modification/change timestamps, ownership, mode and resolved
   symlink destination. The launcher itself is part of this identity.
@@ -92,6 +94,32 @@ requests are observed. File identities are filesystem stamps, not a claim of
 protection against a malicious owner able to replace both the compiler and its
 cache.
 
+## Compact selection records
+
+Selection record version 3 stores the complete selected package and target,
+the manifest and selected name, a digest of the complete live input snapshot,
+and all target-source bindings. It avoids parsing a second copy of the full
+snapshot and the full Cargo metadata graph or rebuilding the already validated
+unique-target set on a hit. The live snapshot observations, actual tool opens,
+permission checks and discovery checks remain unchanged.
+
+Only the successful original Cargo path can create this record. The writer
+requires the original admission checks, a unique selection and matching
+before/after input snapshots. On lookup, the input digest must match; the
+selected fields must be structurally consistent with the complete package;
+and every target-source binding must still match. Failed selection is never
+stored. The request arguments, including package, target and profile options,
+remain part of the context.
+
+The record also retains the SHA-256 of the exact parsed Cargo metadata used by
+the writer. This is provenance, not authentication or an independent proof that
+the metadata was admitted. The cache trusts its sole successful writer and its
+private owner, with a checksum for accidental corruption. It is not protected
+from a trusted owner deliberately forging a coherent record and recomputing
+that checksum. Selection version 3 uses a new context domain, so earlier
+selection records cannot be hits. Tool certificates and package seeds keep
+their existing version and verification behavior.
+
 ## Storage and controls
 
 Records live in `cargo-selection-v1` below `LUST_CACHE_DIR`, or below the same
@@ -111,7 +139,10 @@ Instrumentation is excluded from timed measurements.
 The production selector can be exercised without compiling an application by
 the `tools/profile-native-preflight.rs` helper derived from PR #22. It now also
 exposes the production package-verification operation for the seed gate. This
-is a selection-only seam. It cannot establish end-to-end compiler performance.
+is a component seam. Its optional complete-selection output and
+selection-fallback phase inspect the actual selected values and call the
+production Cargo/Rust fallback. They do not run the native compiler or establish
+end-to-end compiler performance.
 
 The [independent review evidence](warm-entry-selection-evidence/README.md)
 preserves the initial candidate's real stale-success failure, its exact source
