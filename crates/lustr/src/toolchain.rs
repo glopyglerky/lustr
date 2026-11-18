@@ -12,7 +12,7 @@ pub(crate) fn environment(root: &Path) -> Vec<(OsString, OsString)> {
     // the public launcher for standalone subset and compiler commands.
     // Keep the executable basename `rustc`: Clippy's compiler wrapper uses it
     // to distinguish its wrapped rustc argument from a source filename.
-    let direct = program(root, "lustr-cargo/rustc");
+    let direct = program(root, "lustr-cargo").join(format!("rustc{}", std::env::consts::EXE_SUFFIX));
     let cargo_rustc = if direct.is_file() { direct } else { program(root, "rustc") };
     [("CARGO", "cargo"), ("LUST_CARGO", "cargo"), ("RUSTC", "rustc"), ("RUSTDOC", "rustdoc")]
         .into_iter()
