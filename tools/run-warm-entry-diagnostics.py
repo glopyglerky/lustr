@@ -227,7 +227,11 @@ def verify(output):
             require(row['id']==index and row['exit']==row['expected_exit']==0 and row['signal'] is None and not row['timed_out'] and not row['output_limit'] and not row.get('launch_error'),'failed diagnostic command')
             stream(row['stdout']); stream(row['stderr']); commands[row['id']]=row
         if kind=='daemon-start':
-            require(row['lane'] not in active,'diagnostic daemon overlap'); active[row['lane']]=row
+            require(row['lane'] in LANES and row['lane'] not in active,'diagnostic daemon overlap or unknown lane')
+            executable=report['tool_paths']['pristine' if row['lane']=='pristine' else 'integrated']
+            require(row['executable']==executable and row['cwd']==report['fixture'] and row['socket']==row['environment'].get('LUST_DAEMON_SOCKET')
+                    and row['environment'].get(OPT_OUT)=='1','diagnostic daemon executable or context differs')
+            active[row['lane']]=row
         if kind=='daemon-stop':
             require(row['lane'] in active and all(row[key]==active[row['lane']][key] for key in ('pid','scope')) and row['exit']==0 and row['error'] is None,'diagnostic daemon failed')
             del active[row['lane']]

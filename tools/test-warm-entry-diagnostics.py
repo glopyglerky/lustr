@@ -94,6 +94,9 @@ class Controls(unittest.TestCase):
     def test_wrong_integrated_executable_is_rejected(self):
         def mutate(rows): next(r for r in rows if r['kind']=='command' and r['phase']=='diagnostic-check' and r['lane']=='integrated')['argv'][0]='/unrelated/lust'
         with self.assertRaises(ValueError): D.verify(self.corrupted(mutate))
+    def test_wrong_daemon_executable_is_rejected(self):
+        def mutate(rows): next(r for r in rows if r['kind']=='daemon-start' and r['lane']=='entry')['executable']='/unrelated/lust'
+        with self.assertRaises(ValueError): D.verify(self.corrupted(mutate))
     def test_timed_trace_is_rejected(self):
         def mutate(rows): next(r for r in rows if r['kind']=='command' and r['phase']=='diagnostic-check')['environment']['LUST_STATS']='1'
         with self.assertRaises(ValueError): D.verify(self.corrupted(mutate))
