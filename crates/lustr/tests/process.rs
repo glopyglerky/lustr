@@ -6,16 +6,29 @@ use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+static SCRATCH_SERIAL: AtomicU64 = AtomicU64::new(0);
 
 struct Scratch(PathBuf);
 
 impl Scratch {
     fn new() -> Self {
         let nonce = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
-        let path = std::env::temp_dir().join(format!("cargo-lust-process-{}-{nonce}", std::process::id()));
-        fs::create_dir_all(&path).unwrap();
-        Self(path)
+        Self::with_timestamp(nonce)
+    }
+
+    fn with_timestamp(nonce: u128) -> Self {
+        loop {
+            let serial = SCRATCH_SERIAL.fetch_add(1, Ordering::Relaxed);
+            let path = std::env::temp_dir().join(format!("cargo-lust-process-{}-{nonce}-{serial}", std::process::id()));
+            match fs::create_dir(&path) {
+                Ok(()) => return Self(path),
+                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+                Err(error) => panic!("failed to create an owned process fixture: {error}"),
+            }
+        }
     }
 }
 
@@ -23,6 +36,25 @@ impl Drop for Scratch {
     fn drop(&mut self) {
         let _ = fs::remove_dir_all(&self.0);
     }
+}
+
+#[test]
+fn repeated_timestamps_keep_scratch_ownership_separate() {
+    // Concurrent tests can read the same clock tick. Keep both owners alive
+    // with that timestamp, then exercise the cleanup that races a Cargo build.
+    let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+    let first = Scratch::with_timestamp(timestamp);
+    let second = Scratch::with_timestamp(timestamp);
+    let first_path = first.0.clone();
+    let dependencies = second.0.join("target/release/deps");
+    fs::create_dir_all(&dependencies).unwrap();
+    let dep_info = dependencies.join("ownership-proof.d");
+    fs::write(&dep_info, b"owned by the second fixture\n").unwrap();
+
+    drop(first);
+
+    assert!(!first_path.exists(), "fixture cleanup did not remove its own root");
+    assert_eq!(fs::read(&dep_info).expect("another fixture's cleanup removed the live Cargo target"), b"owned by the second fixture\n");
 }
 
 fn hex(bytes: &[u8]) -> String {
