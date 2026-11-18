@@ -81,6 +81,13 @@ class Controls(unittest.TestCase):
         report=json.loads((output/'report.json').read_text()); report['raw_sha256']=D.S.digest(output/'raw.jsonl'); D.S.write_json(output/'report.json',report)
         return output
     def test_complete_synthetic_orchestration_replays(self): self.assertEqual(len(D.verify(self.original)['native_timings']),72)
+    def test_native_schedule_balances_orders_and_predecessors(self):
+        orders=D.orders(24)
+        unique=set(map(tuple,orders))
+        self.assertEqual(len(unique),6)
+        self.assertTrue(all(sum(tuple(row)==order for row in orders)==4 for order in unique))
+        for position in range(3):
+            self.assertTrue(all(sum(row[position]==lane for row in orders)==8 for lane in D.LANES))
     def test_corrupt_real_shape_daemon_stream_is_rejected(self):
         def mutate(rows): next(r for r in rows if r['kind']=='daemon-stop')['streams'][0]['sha256']='0'*64
         with self.assertRaises(ValueError): D.verify(self.corrupted(mutate))

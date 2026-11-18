@@ -9,8 +9,10 @@ additive decomposition of independently measured whole-command durations.
 import argparse
 from contextlib import ExitStack
 import importlib.util
+import itertools
 import json
 from pathlib import Path
+import random
 import shutil
 import statistics
 import tempfile
@@ -27,8 +29,13 @@ OPT_OUT = '__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT'
 
 
 def orders(pairs):
-    require(pairs >= 12 and pairs % 3 == 0, 'diagnostic pairs must be a multiple of three')
-    return [list(LANES[index % 3:]) + list(LANES[:index % 3]) for index in range(pairs)]
+    require(pairs >= 12 and pairs % 6 == 0, 'diagnostic pairs must be a multiple of six')
+    rng, result = random.Random(B.SEED + 1), []
+    while len(result) < pairs:
+        block = list(itertools.permutations(LANES))
+        rng.shuffle(block)
+        result.extend(list(order) for order in block)
+    return result
 
 
 def selector_result(data, fixture):
@@ -71,7 +78,7 @@ class Diagnostic(S.Campaign):
                        'fixture_files':primary['fixture_files'], 'runtime_oracle_sha256':S.digest(self.output / 'runtime-oracle.stdout'),
                        'selector_binary_sha256':selector_receipt['binary_sha256'],
                        'environment_note':f'All native lanes explicitly set {OPT_OUT}=1, matching the public parser injection. Lane state paths are separate.',
-                       'timing_note':'Twenty-four paired retained requests per operation on held native daemons, after three primes. No trace/stats in measured commands. Separate selector helper pairs follow.',
+                       'timing_note':'Paired retained requests on held native daemons after three primes, with all six lane orders balanced in seeded blocks. No trace/stats in measured commands. Separate selector helper pairs follow.',
                        'native_timings':[], 'selector_timings':[]}
 
     def environment(self, state, socket, cold=False):
