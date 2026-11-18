@@ -1,0 +1,142 @@
+{
+  "schema": "lustr-cargo-overhead-hosted-evidence-v1",
+  "repository": "https://github.com/glopyglerky/lustr",
+  "pull_request": 16,
+  "head": "34d847da3d90c3c2b253246a8ffdfdeb901c56b0",
+  "checkout": "480114c2dc973770fbfbbc3c2b32915b516c6716",
+  "tree": "e1c028f15e29a72fdbe338883613c23a6c8dccec",
+  "base": "dc1815caf49f2abbbdedf66052737197e1c53be5",
+  "run": 44242694462,
+  "run_attempt": 1,
+  "source_job": 134594250483,
+  "run_url": "https://github.com/glopyglerky/lustr/actions/runs/44242694462",
+  "qualification_review": "https://github.com/glopyglerky/lustr/pull/16#pullrequestreview-5951658481",
+  "source_job_conclusion": "success",
+  "compiler_set_jobs_completed_successfully": 10,
+  "separate_ci_run": {
+    "id": 44242694616,
+    "status_at_review": "in_progress"
+  },
+  "platform_scope": "Source-built mixed compilation and measurements: Linux x86-64. Separate Cargo compatibility passed Ubuntu 24.04, macOS 26 and Windows; identical mixed native coverage is not claimed.",
+  "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "coordinator_git_tree": "74f91068723cf2aa4a1dee168713281db7705a1f",
+  "compiler_components_sha256": {
+    "cargo-lustr": "8674bc8324bf815e35b5dc19e0f4dbf3320137d0a71b85292281fcc44ba57745",
+    "lust": "a3bf7a31b1d1f4481e6f484246cc003a2f9ad0ec5df74f787f09ad829789ef47",
+    "lust-core": "283f30b3c8b3eb42343bf069a9b558c9279fe2789398dface1407e9c7f6b70de",
+    "lustr": "332f6dd1509c85bfc878c1935c3102f352449b65e2845e25beffd64788e374c9",
+    "rustc-full": "6cd4eaf08591065468934b7933db40d64aee5d7c8dfbc060a1459a38c3f4c2c5"
+  },
+  "constructor_receipts_sha256": {
+    "BUILD-PROFILE.txt": "edf9b8898c74458b11349cff0402ec3b3ded7721038627101e4ece564454a121",
+    "COMPONENTS.txt": "e213a142bf18bc9a147eaf89e83a690b42f0d43c88901adab6999b06a109c530",
+    "NATIVE-BUILD-RECEIPT.txt": "38c30f545618b6f7e719626212faccaaf2297652391e255c478bbaa8a540c50e"
+  },
+  "artifacts": [
+    {
+      "id": 14403265065,
+      "name": "coordinator-project-performance-1",
+      "url": "https://api.github.com/repos/glopyglerky/lustr/actions/artifacts/14403265065",
+      "size_in_bytes": 32446,
+      "digest": "sha256:ada115375a8219243483b77794bc64dbb88535e8a022bc3a8aaa36be464be258",
+      "created_at": "2026-11-18T06:03:03Z",
+      "expires_at": "2027-02-16T05:13:13Z",
+      "workflow_run": {
+        "id": 44242694462,
+        "repository_id": 1450430441,
+        "head_repository_id": 1450430441,
+        "head_branch": "lustr/cargo-hot-path-20261118",
+        "head_sha": "34d847da3d90c3c2b253246a8ffdfdeb901c56b0"
+      }
+    },
+    {
+      "id": 14403070421,
+      "name": "coordinator-project-originals-encrypted-1",
+      "url": "https://api.github.com/repos/glopyglerky/lustr/actions/artifacts/14403070421",
+      "size_in_bytes": 1250113,
+      "digest": "sha256:24b481f80bb4e3c93195f7bf1b1563b3c3c11e118d1e1759ab837225d111c05b",
+      "created_at": "2026-11-18T06:03:02Z",
+      "expires_at": "2027-02-16T05:13:13Z",
+      "workflow_run": {
+        "id": 44242694462,
+        "repository_id": 1450430441,
+        "head_repository_id": 1450430441,
+        "head_branch": "lustr/cargo-hot-path-20261118",
+        "head_sha": "34d847da3d90c3c2b253246a8ffdfdeb901c56b0"
+      }
+    },
+    {
+      "id": 14401914209,
+      "name": "source-built-mixed-qualification-1",
+      "url": "https://api.github.com/repos/glopyglerky/lustr/actions/artifacts/14401914209",
+      "size_in_bytes": 1358781,
+      "digest": "sha256:df0699339896d1e527cd7233f0c1e3e564df21ae682936852f20be40a6b87617",
+      "created_at": "2026-11-18T06:03:10Z",
+      "expires_at": "2027-02-16T05:13:13Z",
+      "workflow_run": {
+        "id": 44242694462,
+        "repository_id": 1450430441,
+        "head_repository_id": 1450430441,
+        "head_branch": "lustr/cargo-hot-path-20261118",
+        "head_sha": "34d847da3d90c3c2b253246a8ffdfdeb901c56b0"
+      }
+    },
+    {
+      "id": 14401619234,
+      "name": "upstream-public-slice-1",
+      "url": "https://api.github.com/repos/glopyglerky/lustr/actions/artifacts/14401619234",
+      "size_in_bytes": 591328,
+      "digest": "sha256:9ebe483fce3be9c49f7ad83cacb1cdb73051b04ddf035ac1f545de6b11cbd99f",
+      "created_at": "2026-11-18T05:52:24Z",
+      "expires_at": "2027-02-16T05:13:13Z",
+      "workflow_run": {
+        "id": 44242694462,
+        "repository_id": 1450430441,
+        "head_repository_id": 1450430441,
+        "head_branch": "lustr/cargo-hot-path-20261118",
+        "head_sha": "34d847da3d90c3c2b253246a8ffdfdeb901c56b0"
+      }
+    },
+    {
+      "id": 14399499202,
+      "name": "runner-source-44242694462-1",
+      "url": "https://api.github.com/repos/glopyglerky/lustr/actions/artifacts/14399499202",
+      "size_in_bytes": 458,
+      "digest": "sha256:a597b45a26de14fa068713237bba8ae7d51235dc8a5616302373ea04ccd28766",
+      "created_at": "2026-11-18T05:13:39Z",
+      "expires_at": "2026-12-02T05:13:39Z",
+      "workflow_run": {
+        "id": 44242694462,
+        "repository_id": 1450430441,
+        "head_repository_id": 1450430441,
+        "head_branch": "lustr/cargo-hot-path-20261118",
+        "head_sha": "34d847da3d90c3c2b253246a8ffdfdeb901c56b0"
+      }
+    }
+  ],
+  "replay_executable_sha256": "8507386515f84245c4f3ae3005b05551c73384a7d0c0b07f2e9acf4964b3a537",
+  "replay_source_revision": "34d847da3d90c3c2b253246a8ffdfdeb901c56b0",
+  "replay_scope": "Existing Rust statistics executable rebuilt from the unchanged source. Review executes data replay only, no compiler or timed benchmark.",
+  "protected_source_objects": {
+    "compiler/native": "12ae35ee30f81d11f55b184134f8a0c4a977a496",
+    "upstream/lust.pin": "cce2d3a2a584a15bc2ab960eb0121c9afc484949",
+    "upstream/bluefe-core.pin": "ada26570137047454b8eba363cf7a7167077abe3"
+  },
+  "original_artifact_retention": {
+    "scope": "Five exact original GitHub artifact ZIPs, retrieval/job/replay records, preserved actual gate red/green evidence and producer/verifier source.",
+    "helper": "tools/encrypt-coordinator-evidence.py",
+    "helper_sha256": "506137173e35673db61a13af54309630fdf3d38b8e2614659578fc4ad6bfbd85",
+    "receipt": "original-artifacts-encrypted/receipt.json",
+    "receipt_sha256": "98dbb14bb2950358b2147316c0f9699d828b15e96d7a2d62d8c71836a1d35bfa",
+    "plaintext_archive_sha256": "b483f81ec4ce447b08d3cc41ad66bc46670a6486c01a7c85796992ad7af31215",
+    "encrypted_manifest_sha256": "582e4ffba1e68f2bac968644da65309ce7c747d9cb6a6487d38fd11afe42b549",
+    "ciphertext_sha256": "de3b703a2ac4dd05036362afa6887cfe6a043fb8f8c33cf4410c88847cb609ba",
+    "recipient_certificate_sha256": "69e1167422ba3edfc45139eda5bdcec97d5bebcdf3e764054f3457488aaa5c4f",
+    "original_file_count": 28,
+    "private_key_access": false,
+    "ciphertext_independently_decrypted": false,
+    "review_archive": "Deterministic reconstruction matches original plaintext and manifest hashes.",
+    "wrapper_status_scope": "not-observed refers to this artifact-retention wrapper; the original project campaign and its own encrypted-retention status passed.",
+    "nested_artifact_scope": "Exact original ZIP bytes are retained without filtering. Any helper receipt wording about excluding build/cache/home state describes the wrapper staging inventory only; nested qualification ZIPs may contain generated application binaries, native test objects or caches. Those retained qualification outputs are distinct from the absent compiled toolchain package."
+  }
+}

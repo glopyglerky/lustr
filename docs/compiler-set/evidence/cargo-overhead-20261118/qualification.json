@@ -1,0 +1,316 @@
+{
+  "artifacts": [
+    {
+      "expected_bytes": 32446,
+      "expected_sha256": "ada115375a8219243483b77794bc64dbb88535e8a022bc3a8aaa36be464be258",
+      "id": 14403265065,
+      "name": "project-public.zip"
+    },
+    {
+      "expected_bytes": 1250113,
+      "expected_sha256": "24b481f80bb4e3c93195f7bf1b1563b3c3c11e118d1e1759ab837225d111c05b",
+      "id": 14403070421,
+      "name": "project-encrypted.zip"
+    },
+    {
+      "expected_bytes": 1358781,
+      "expected_sha256": "df0699339896d1e527cd7233f0c1e3e564df21ae682936852f20be40a6b87617",
+      "id": 14401914209,
+      "name": "qualification.zip"
+    },
+    {
+      "expected_bytes": 591328,
+      "expected_sha256": "9ebe483fce3be9c49f7ad83cacb1cdb73051b04ddf035ac1f545de6b11cbd99f",
+      "id": 14401619234,
+      "name": "upstream-slice.zip"
+    },
+    {
+      "expected_bytes": 458,
+      "expected_sha256": "a597b45a26de14fa068713237bba8ae7d51235dc8a5616302373ea04ccd28766",
+      "id": 14399499202,
+      "name": "runner-source.zip"
+    }
+  ],
+  "checkout": "480114c2dc973770fbfbbc3c2b32915b516c6716",
+  "coordinator_git_tree": "74f91068723cf2aa4a1dee168713281db7705a1f",
+  "coordinator_lock_sha256": "dfc37a346b05044c835e089139d37ea83f2d752c237f370dd78dcd9714eb9fc8",
+  "coordinator_snapshot_sha256": "0e4d4ac997b698a770154f1d7949ba744156dfe21cc88b4ed3b8a6cb815dfed5",
+  "fixed_cargo_outcomes": {
+    "faster-on-this-corpus": 2,
+    "inconclusive": 1,
+    "slower-on-this-corpus": 6
+  },
+  "fixed_cargo_ratios": {
+    "body-edit": {
+      "bootstrap_95": [
+        1.06860511325106,
+        1.0966739947549922
+      ],
+      "observation": "faster-on-this-corpus",
+      "pairs": 12,
+      "ratio": 1.0806588890366133
+    },
+    "check": {
+      "bootstrap_95": [
+        0.889637824058918,
+        0.9158014271200614
+      ],
+      "observation": "slower-on-this-corpus",
+      "pairs": 12,
+      "ratio": 0.9034225960460502
+    },
+    "check-body-edit": {
+      "bootstrap_95": [
+        0.9410964291384473,
+        0.966444872010015
+      ],
+      "observation": "slower-on-this-corpus",
+      "pairs": 12,
+      "ratio": 0.9540458719787703
+    },
+    "check-no-op": {
+      "bootstrap_95": [
+        0.8854854878315155,
+        0.9565056848206208
+      ],
+      "observation": "slower-on-this-corpus",
+      "pairs": 12,
+      "ratio": 0.9222976761619447
+    },
+    "cold": {
+      "bootstrap_95": [
+        0.8712840689303825,
+        0.896572802327393
+      ],
+      "observation": "slower-on-this-corpus",
+      "pairs": 12,
+      "ratio": 0.8845127887654367
+    },
+    "compile-plus-test": {
+      "bootstrap_95": [
+        0.9851719996848584,
+        1.0160819536190993
+      ],
+      "observation": "inconclusive",
+      "pairs": 12,
+      "ratio": 1.001194833211229
+    },
+    "no-op": {
+      "bootstrap_95": [
+        0.9354442737479767,
+        0.9563248735970871
+      ],
+      "observation": "slower-on-this-corpus",
+      "pairs": 12,
+      "ratio": 0.9462128389260698
+    },
+    "rejection": {
+      "bootstrap_95": [
+        1.0520815233122183,
+        1.084772397710256
+      ],
+      "observation": "faster-on-this-corpus",
+      "pairs": 12,
+      "ratio": 1.068287497318358
+    },
+    "signature-edit": {
+      "bootstrap_95": [
+        0.827405052452181,
+        0.8662590013334102
+      ],
+      "observation": "slower-on-this-corpus",
+      "pairs": 12,
+      "ratio": 0.8496201337826191
+    }
+  },
+  "head": "34d847da3d90c3c2b253246a8ffdfdeb901c56b0",
+  "limits": [
+    "Exploratory shared-host paired intervals; no equivalence, overall performance or release admission.",
+    "Actual project uses unchanged dev/test debug=2; native object participation is not asserted.",
+    "Fixed mixed Cargo fixture uses dev opt0/debug0; ratios do not transfer to arbitrary Rust workloads.",
+    "Original raw private commands were source-validated in CI; this verification uses public projections, retained stream digests, records and statistical replays without decrypting originals.",
+    "Compiler binary identities are recorded CI receipts; the compiled package binaries are not present for independent rehash in these artifacts.",
+    "Earlier failed runs remain failed; no cross-run causal attribution."
+  ],
+  "pr": 16,
+  "project_ratios": {
+    "clean-dependency-build": {
+      "bootstrap_95": [
+        0.9966990008090277,
+        1.0107635574095382
+      ],
+      "pairs": 12,
+      "ratio": 1.0036887620410606
+    },
+    "compile-plus-test": {
+      "bootstrap_95": [
+        0.992910654697916,
+        1.0045134058452956
+      ],
+      "pairs": 12,
+      "ratio": 0.9992215547131361
+    },
+    "no-op": {
+      "bootstrap_95": [
+        0.9793670488940208,
+        1.0607221122553683
+      ],
+      "pairs": 12,
+      "ratio": 1.0120276970717388
+    },
+    "primed-root-build": {
+      "bootstrap_95": [
+        0.9923894005326918,
+        1.0113573023096865
+      ],
+      "pairs": 12,
+      "ratio": 1.0023360778509203
+    },
+    "primed-root-check": {
+      "bootstrap_95": [
+        0.9701659934719462,
+        0.9874806547914555
+      ],
+      "pairs": 12,
+      "ratio": 0.9790460571022767
+    }
+  },
+  "public_verification": {
+    "component_and_constructor_receipt_consistency": "passed",
+    "exact_source_snapshot_digest": "passed",
+    "fixed_original_records_replay": {
+      "command_outputs": 2160,
+      "comparisons": 36,
+      "records": 1135,
+      "timed_commands": 648
+    },
+    "gate_regression_in_source_job": "passed",
+    "original_zip_bytes_and_github_sha256": "passed",
+    "project_cases": [
+      {
+        "commands": 51,
+        "excluded_warmup_commands": 4,
+        "executing_test_gates": 4,
+        "invalid_borrow_gates": 4,
+        "pairs": 12,
+        "scenario": "clean-dependency-build",
+        "state_clears": 30,
+        "state_shutdowns": 31,
+        "status": "passed",
+        "test_gate_counts": {
+          "failed": 0,
+          "filtered_out": 0,
+          "ignored": 9,
+          "measured": 0,
+          "passed": 41
+        },
+        "timed_commands": 24
+      },
+      {
+        "commands": 51,
+        "excluded_warmup_commands": 4,
+        "executing_test_gates": 4,
+        "invalid_borrow_gates": 4,
+        "pairs": 12,
+        "scenario": "primed-root-build",
+        "state_clears": 0,
+        "state_shutdowns": 1,
+        "status": "passed",
+        "test_gate_counts": {
+          "failed": 0,
+          "filtered_out": 0,
+          "ignored": 9,
+          "measured": 0,
+          "passed": 41
+        },
+        "timed_commands": 24
+      },
+      {
+        "commands": 51,
+        "excluded_warmup_commands": 4,
+        "executing_test_gates": 4,
+        "invalid_borrow_gates": 4,
+        "pairs": 12,
+        "scenario": "primed-root-check",
+        "state_clears": 0,
+        "state_shutdowns": 1,
+        "status": "passed",
+        "test_gate_counts": {
+          "failed": 0,
+          "filtered_out": 0,
+          "ignored": 9,
+          "measured": 0,
+          "passed": 41
+        },
+        "timed_commands": 24
+      },
+      {
+        "commands": 51,
+        "excluded_warmup_commands": 4,
+        "executing_test_gates": 4,
+        "invalid_borrow_gates": 4,
+        "pairs": 12,
+        "scenario": "no-op",
+        "state_clears": 2,
+        "state_shutdowns": 3,
+        "status": "passed",
+        "test_gate_counts": {
+          "failed": 0,
+          "filtered_out": 0,
+          "ignored": 9,
+          "measured": 0,
+          "passed": 41
+        },
+        "timed_commands": 24
+      },
+      {
+        "commands": 51,
+        "excluded_warmup_commands": 4,
+        "executing_test_gates": 4,
+        "invalid_borrow_gates": 4,
+        "pairs": 12,
+        "scenario": "compile-plus-test",
+        "state_clears": 0,
+        "state_shutdowns": 1,
+        "status": "passed",
+        "test_gate_counts": {
+          "failed": 0,
+          "filtered_out": 0,
+          "ignored": 9,
+          "measured": 0,
+          "passed": 41
+        },
+        "timed_commands": 24
+      }
+    ],
+    "project_statistical_replay": "passed",
+    "public_checksums": "passed",
+    "source_entry_runtime_contract_tests": 16,
+    "upstream_slice_data_replay": {
+      "comparisons": 18,
+      "timings": 288
+    }
+  },
+  "repository": "glopyglerky/lustr",
+  "retention": {
+    "ciphertext_bytes": 1248386,
+    "ciphertext_sha256": "2bf60d8ff0de6cad19972c90a5598dc7ba7bb0ea521d593e1cf52f784073cf5c",
+    "decryption_performed": false,
+    "original_file_bytes": 9779904,
+    "original_files": 600,
+    "scenario_status": {
+      "clean-dependency-build": "passed",
+      "compile-plus-test": "passed",
+      "no-op": "passed",
+      "primed-root-build": "passed",
+      "primed-root-check": "passed"
+    },
+    "status": "retained"
+  },
+  "run": 44242694462,
+  "run_attempt": 1,
+  "schema": "lustr-pr16-public-qualification-verification-v1",
+  "source_job": 134594250483,
+  "status": "passed",
+  "tree": "e1c028f15e29a72fdbe338883613c23a6c8dccec"
+}
