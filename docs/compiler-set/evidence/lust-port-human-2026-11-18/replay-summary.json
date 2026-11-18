@@ -1,0 +1,22 @@
+{
+  "verified": true,
+  "archive_sha256": "2d03052a61241740dbe9da525c71e262bcc9dca10adecdb7dcc3d62b5f0d54ef",
+  "files": 345,
+  "commands": 10,
+  "hosted_tool_tests": {
+    "passed": 12,
+    "failed": 1
+  },
+  "original_local_tests": {
+    "passed": 13,
+    "failed": 0
+  },
+  "instrumented_local_test": {
+    "passed": 1,
+    "failed": 0,
+    "filtered": 4
+  },
+  "captured_feature_occurrences": 2,
+  "hosted_failure_resolved": false,
+  "scanner_fix_claimed": false
+}

@@ -1,0 +1,1401 @@
+{
+  "schema": "lust-port-human-diagnosis-evidence-v1",
+  "archive_sha256": "2d03052a61241740dbe9da525c71e262bcc9dca10adecdb7dcc3d62b5f0d54ef",
+  "archive_bytes": 445319,
+  "commands": [
+    "build-final-source-guard",
+    "build-source-guard",
+    "fetch-hosted-merge",
+    "final-source-guard-default",
+    "final-source-guard-index",
+    "install-rust-1.99",
+    "instrumented-human-test",
+    "original-tests",
+    "source-guard-candidate",
+    "source-guard-default"
+  ],
+  "files": {
+    "commands/build-final-source-guard/command.json": {
+      "sha256": "b3c5f3b18557a603b9e578343525ca41f43bccbfdba15317c98c0c5bb249275f",
+      "bytes": 466
+    },
+    "commands/build-final-source-guard/status.json": {
+      "sha256": "7efd0117c133437987a9c2634abe7648be3b187b5b7228fdc44cd234cb6d69ce",
+      "bytes": 298
+    },
+    "commands/build-final-source-guard/stderr": {
+      "sha256": "458d2d4d5476f5a641d970700fd345d3bc91fa610de721ba46b648fc359b4f96",
+      "bytes": 316
+    },
+    "commands/build-final-source-guard/stdout": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "commands/build-source-guard/command.json": {
+      "sha256": "72541ca626633f03564f396bbacd6dd2e3559c305c9e951163b2916c95959f28",
+      "bytes": 460
+    },
+    "commands/build-source-guard/status.json": {
+      "sha256": "d32439b7bc0e8007cd2a298541d9546beef5e66fd1cc434c36061889a355045c",
+      "bytes": 298
+    },
+    "commands/build-source-guard/stderr": {
+      "sha256": "458d2d4d5476f5a641d970700fd345d3bc91fa610de721ba46b648fc359b4f96",
+      "bytes": 316
+    },
+    "commands/build-source-guard/stdout": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "commands/fetch-hosted-merge/command.json": {
+      "sha256": "c316aa6bf04e4cd42a4ff198acf4fac01cd6580e7f7ebd5266f523e9ec7211fe",
+      "bytes": 348
+    },
+    "commands/fetch-hosted-merge/status.json": {
+      "sha256": "165f28554db21bbc98ed75596f58f95870ed0ae9cb0fedde46718b76d4877b78",
+      "bytes": 297
+    },
+    "commands/fetch-hosted-merge/stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "commands/fetch-hosted-merge/stdout": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "commands/final-source-guard-default/command.json": {
+      "sha256": "423bbc4c6e2dc29f81cf569838c78a5994d40b4617cdeb64013c07a9f3eaea4f",
+      "bytes": 293
+    },
+    "commands/final-source-guard-default/status.json": {
+      "sha256": "e2fa4f23f92f5b60cc65c43750fdbf681b5a026b11d471259c41666c416b96e6",
+      "bytes": 300
+    },
+    "commands/final-source-guard-default/stderr": {
+      "sha256": "1c4eeb850ecf9cddc44efacb564688155f5937c61753989a21eff520ddcfba84",
+      "bytes": 83
+    },
+    "commands/final-source-guard-default/stdout": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "commands/final-source-guard-index/command.json": {
+      "sha256": "a62e7ad5da2b7f651cdccef490d7a16d214cd4e63fd0472d6e135bafc237b5b3",
+      "bytes": 327
+    },
+    "commands/final-source-guard-index/status.json": {
+      "sha256": "81b05d276d1df8ad4090201cd7c1492b21439e34458da521e7ba6b238bfd5d21",
+      "bytes": 299
+    },
+    "commands/final-source-guard-index/stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "commands/final-source-guard-index/stdout": {
+      "sha256": "1bd9fb69672fce432857035975e4fe1c7bd0decbd04f1ce8b45cbf2f367d0419",
+      "bytes": 246
+    },
+    "commands/install-rust-1.99/command.json": {
+      "sha256": "72ac23eabc99baf94f5836fada52862adc96625b24e62abbf63676185e21340f",
+      "bytes": 511
+    },
+    "commands/install-rust-1.99/status.json": {
+      "sha256": "b3aab6ae02c9b484c0f330db1bd65e9468a77cd7a648335b93e8808546d258b2",
+      "bytes": 298
+    },
+    "commands/install-rust-1.99/stderr": {
+      "sha256": "849ff94b04aeb072be5ac4d7789b91dd28f410ecc46ec77689262e5af792c6ab",
+      "bytes": 173
+    },
+    "commands/install-rust-1.99/stdout": {
+      "sha256": "a162658ac6a697e415ded8bbad66b1cdabb9f58a0d240a248fc27fbf3844a9e3",
+      "bytes": 84
+    },
+    "commands/instrumented-human-test/command.json": {
+      "sha256": "ea52faa01c7c9d3c1a9f35896a418498915fbc1536ca66ff04e19374aacb632d",
+      "bytes": 1127
+    },
+    "commands/instrumented-human-test/status.json": {
+      "sha256": "67777a85f3444da540e3d0b1ae5055f77f206b42c25fafd2420d09bb1de39616",
+      "bytes": 298
+    },
+    "commands/instrumented-human-test/stderr": {
+      "sha256": "9d5d2095c2488dd56061b955090ab8c98ec3fcf71cac47e078b8500a4bcf52a2",
+      "bytes": 5547
+    },
+    "commands/instrumented-human-test/stdout": {
+      "sha256": "b7bf136d588701da22bd449efecbe01347318a087dc95c984d045589d4440116",
+      "bytes": 153
+    },
+    "commands/original-tests/command.json": {
+      "sha256": "d0160f75b6e83d8373efdccb5bddd1502bad7187d631d4b7f9f9d0c85a1f1d40",
+      "bytes": 1013
+    },
+    "commands/original-tests/status.json": {
+      "sha256": "212a648ed7b40e41689672c2bbaf72ff71991bad963eeee94b7e2905cb073908",
+      "bytes": 297
+    },
+    "commands/original-tests/stderr": {
+      "sha256": "fe1e0c6706b16426f84a8afa2bf9ca87bbd00ee1aae7852537154852d3aac5b4",
+      "bytes": 1080
+    },
+    "commands/original-tests/stdout": {
+      "sha256": "7077f613008a76e9d70b0f2891884693fc60570eeb95b87278439fdc771a6e73",
+      "bytes": 865
+    },
+    "commands/source-guard-candidate/command.json": {
+      "sha256": "63dc0064990118be18f13ae520a46683fbaf0d02ce90419be1f10ed2c0af29f7",
+      "bytes": 306
+    },
+    "commands/source-guard-candidate/status.json": {
+      "sha256": "7d22e88d7f3f121306692184142dbb414ed67cb65b7dc97c6dbcdd3c5f1ca2c7",
+      "bytes": 299
+    },
+    "commands/source-guard-candidate/stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "commands/source-guard-candidate/stdout": {
+      "sha256": "1bd9fb69672fce432857035975e4fe1c7bd0decbd04f1ce8b45cbf2f367d0419",
+      "bytes": 246
+    },
+    "commands/source-guard-default/command.json": {
+      "sha256": "9a4d313e781fa14656bcde9f94bcf08f6f682748aaaf045a5c08d778886a0aa3",
+      "bytes": 287
+    },
+    "commands/source-guard-default/status.json": {
+      "sha256": "3b0bcf25363388661c58bdb2f819292e3afa98115856fb46ecbd56d91faae04d",
+      "bytes": 300
+    },
+    "commands/source-guard-default/stderr": {
+      "sha256": "1c4eeb850ecf9cddc44efacb564688155f5937c61753989a21eff520ddcfba84",
+      "bytes": 83
+    },
+    "commands/source-guard-default/stdout": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "hosted/artifact.zip": {
+      "sha256": "0093ad3c49171757f0ca9c6e8cbf884216677338eac786b5b19439b0f8d16478",
+      "bytes": 9466
+    },
+    "hosted/artifact/native-gate-builds.sha256": {
+      "sha256": "120c87e511fa4c638a15fb0a189cf4cbfb69208ebd929528fd7456fee6237aef",
+      "bytes": 177
+    },
+    "hosted/artifact/native-gate-host.json": {
+      "sha256": "943a5210971c9442470e2e1661ce5905849de5eb23d97788193f8363255f890f",
+      "bytes": 2279
+    },
+    "hosted/artifact/native-gate-identity.txt": {
+      "sha256": "4ed0c5241f3512fbd5b70b5f5d37b38a2017a1cc47f5f1c5d109a639d03cd7ec",
+      "bytes": 654
+    },
+    "hosted/artifact/native-gate.log": {
+      "sha256": "bfc3690aaaf3eda2906d6e6f52469e609cda81152da074d32d776c4e678f4f1d",
+      "bytes": 29219
+    },
+    "hosted/full-job.log": {
+      "sha256": "83177df25fb74c79539c2d5197bc16c0c0223c7d0b06fbd5e20b6a8ac720a140",
+      "bytes": 167361
+    },
+    "instrumented-human-report.txt": {
+      "sha256": "ebc97aab3da7aa4d04e24084502809812cee1d8351fcb0e98285cd15a04e09d2",
+      "bytes": 5050
+    },
+    "instrumented-source-receipt.json": {
+      "sha256": "808dd25977a2a7d77b49828aa32d3a28703ad0750a8b3422f260cbf39d10631a",
+      "bytes": 22154
+    },
+    "original-binaries.json": {
+      "sha256": "4a226dff27c43a257fba82ea35325b3ac651b1cab4b4d150e89ae3277035fecc",
+      "bytes": 623
+    },
+    "original-source-receipt.json": {
+      "sha256": "a44231e6976bf7d2b21d7c943be7b7e648b214d94596b8f30f85ff91b83baa67",
+      "bytes": 21532
+    },
+    "run-command.py": {
+      "sha256": "8a071370d63a5172924d3b1282e28c8d5f3d66370bb22d0f4e0a18278b570c8d",
+      "bytes": 2120
+    },
+    "source/final-guard/tools/lust-upstream-check.rs": {
+      "sha256": "e0e7423043772133457f6d60a799ad90a27b78ffd6468d801ce2128a9aacd92e",
+      "bytes": 20572
+    },
+    "source/final-guard/upstream/lust-integration.patch": {
+      "sha256": "d5a5548c980959487d48ba34a4ae455179e65b460e1cfea527f861e3f247e8c6",
+      "bytes": 211340
+    },
+    "source/final-guard/upstream/lust-integration.qualification": {
+      "sha256": "ced83f65c298c6cc3790f47fb407972b82d2571ac6bb5a8250f418d2e00068e4",
+      "bytes": 5280
+    },
+    "source/final-guard/upstream/lust.integration": {
+      "sha256": "6c6be221e3d450e434dbcff9267044befb24b04f0c09c9e3b17dcf5069b83e67",
+      "bytes": 373
+    },
+    "source/instrumented/compiler/native/tools/lust-port/.gitignore": {
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "bytes": 8
+    },
+    "source/instrumented/compiler/native/tools/lust-port/Cargo.lock": {
+      "sha256": "a9d7a53a5a2057b7b874d785d803198e6d8a52846e0e8cb5f932abe049e97fb1",
+      "bytes": 2966
+    },
+    "source/instrumented/compiler/native/tools/lust-port/Cargo.toml": {
+      "sha256": "ca6f23d898a54a393a48780e041dedefb28abad06b73405e7f1812fe8acb8aa3",
+      "bytes": 629
+    },
+    "source/instrumented/compiler/native/tools/lust-port/README.md": {
+      "sha256": "fc455951db0f9a3c64074be1db62a79a74b65d43581d6f8a92d2f68e2ab0d525",
+      "bytes": 5623
+    },
+    "source/instrumented/compiler/native/tools/lust-port/dependencies.json": {
+      "sha256": "94665ec59c4a72c07c1567a3ed9e1b1a94c141baa674bdea9e2d68923bbf5c23",
+      "bytes": 9240
+    },
+    "source/instrumented/compiler/native/tools/lust-port/features.json": {
+      "sha256": "cd3d4c4c4da4eadc14c5f21ac946014aa9b08ef391f5b2c4891ea6f654f8d9f7",
+      "bytes": 75278
+    },
+    "source/instrumented/compiler/native/tools/lust-port/src/analyze.rs": {
+      "sha256": "87e93b2bc905e61ed642af03d5e7383a2359a37c0f58112fc0005a016c665703",
+      "bytes": 83990
+    },
+    "source/instrumented/compiler/native/tools/lust-port/src/cargo_meta.rs": {
+      "sha256": "1c04d34318f90b331bc8d3943a3649d4486464f20dcdbe57f59c6e3544b059a5",
+      "bytes": 4478
+    },
+    "source/instrumented/compiler/native/tools/lust-port/src/cfg_eval.rs": {
+      "sha256": "856c9df37289e0632114c4ba69ee16505a4f28933ad71c6664e0b73f0f93d8b9",
+      "bytes": 20869
+    },
+    "source/instrumented/compiler/native/tools/lust-port/src/devfeat.rs": {
+      "sha256": "0b49a54d42c2b0e1d6b43356dcb843b8cbc440393714168dcb10f5c3a8048415",
+      "bytes": 8768
+    },
+    "source/instrumented/compiler/native/tools/lust-port/src/features.rs": {
+      "sha256": "6a4ed82c733261498480fe5fd3e100909f464ae2b9c3477acbd35b8633640a9d",
+      "bytes": 12086
+    },
+    "source/instrumented/compiler/native/tools/lust-port/src/global.rs": {
+      "sha256": "184aa7c14e2ffcc3087fedc4203cabab0f62a445e984db94ae745db86656bb19",
+      "bytes": 9972
+    },
+    "source/instrumented/compiler/native/tools/lust-port/src/main.rs": {
+      "sha256": "ab77182f2437c27eae262b0c274ae618df109eb2c2cbad44b087e3f75c22f8c0",
+      "bytes": 12999
+    },
+    "source/instrumented/compiler/native/tools/lust-port/src/report.rs": {
+      "sha256": "a8ccf05e5151f4d62af01d63f9bc56f471143767e303e2083bb10b947f53ae3d",
+      "bytes": 31519
+    },
+    "source/instrumented/compiler/native/tools/lust-port/src/stats.rs": {
+      "sha256": "c742bf7f4eda650845181f57bb386d3744689989abdda94a57e08d76977c9984",
+      "bytes": 2920
+    },
+    "source/instrumented/compiler/native/tools/lust-port/src/walk.rs": {
+      "sha256": "1d2a7b883463f1a10e78509faef023df97167fab2e5de59fab859a6a933e4822",
+      "bytes": 12028
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/README.md": {
+      "sha256": "1596c2fbb7bf22dfc91a0b324e39719f48b96085e6ec0bc85d6595ad3dcf3431",
+      "bytes": 920
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/async_await.rs": {
+      "sha256": "293ad3f260ef088b055469084d672298dd9021ec0efc1f40b980739dc6f1a8b1",
+      "bytes": 209
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/attrs_cfg.rs": {
+      "sha256": "5bc60bf7916c6f23fc029cb397b6d7c2ed9cdbc098070ff3a302bf8f4bb401f2",
+      "bytes": 347
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/attrs_cfg_b.rs": {
+      "sha256": "0ba2f56a39d34b572a4adabc0ea28d8c30b6e8c37d3b95bed11f3d12593d5c36",
+      "bytes": 299
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/attrs_cfg_c.rs": {
+      "sha256": "6629fc5e5ae3584ef565fc5b175d3673c9ca479158b1dee766ae1b83d542709e",
+      "bytes": 134
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/attrs_cfg_d.rs": {
+      "sha256": "079c9103462b4e7ffecfb2bfdae9eac23443b0b373379ebcb53bfd88e3ffe585",
+      "bytes": 511
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/attrs_non_exhaustive.rs": {
+      "sha256": "51d40005f82b2bcaf407733923a6b0b78aca4726392653e1bb86f801dd7315b2",
+      "bytes": 355
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/attrs_serde.rs": {
+      "sha256": "6806efe49d4acf1d8ea0ab3fe0a14a2fc1e2ad0aeec499c326b0f2a0fe998e1a",
+      "bytes": 258
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/attrs_track_caller.rs": {
+      "sha256": "55c5683370785d2b0edcfa694538722d274a63ee4ac17cda5e1d0aeb46702d47",
+      "bytes": 519
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/attrs_unsupported.rs": {
+      "sha256": "da44162af302abae67aa218d8c3385263a0f30ebc42e0845dba4e56aa7303e85",
+      "bytes": 144
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/cinterop_extern.rs": {
+      "sha256": "bcc06b34c6a23de56704f2721418e50cdd3ba4e42ca33232ee5258a0aa527ad1",
+      "bytes": 271
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/cinterop_global_allocator.rs": {
+      "sha256": "7d44f82115d13b7daeafa5392a890f3d3bb11350bf5e2b0eb93460145a72ac61",
+      "bytes": 219
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/cinterop_raw_ptr.rs": {
+      "sha256": "6cf86be73919c491a7a282d196095d7d522189147e3555ba16202f56098c2f4b",
+      "bytes": 556
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/closures_fn_ptr_lifetime.rs": {
+      "sha256": "16ffbc27d3cf05b846269f2913a709ea354348b921eb16748dc996a738f4646d",
+      "bytes": 979
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/closures_fn_ptr_lifetime_b.rs": {
+      "sha256": "11df91079e2aef381bdc68c13d22d10723da05b396e3a3b23066bfcf06b6549e",
+      "bytes": 1036
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/closures_fn_ptr_lifetime_field.rs": {
+      "sha256": "969c48a6901efb6537fe887d4556b9f74544e257303dfbc8c080c246ada54eef",
+      "bytes": 316
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/closures_general.rs": {
+      "sha256": "fcc7424d588f0d17a8ab17f830d5feacea24f67ac13f40bd4174660a27433ce0",
+      "bytes": 352
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/closures_hrtb_bounds.rs": {
+      "sha256": "b08bbb321a6690e74ebf6dd537b10a26234dc5bf815d2f6a5c6b3e1fc9f8d43e",
+      "bytes": 324
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/core_derives_extra.rs": {
+      "sha256": "d36ea21a04830e76b5cfe5e0550af119f4e2234cc96d896ffc85d458ea27aabe",
+      "bytes": 409
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/core_drop_impl.rs": {
+      "sha256": "671f30098991b5a69a5d2f764a519b0eef1f9780b03bed0d84ee85234bfe82d6",
+      "bytes": 255
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/core_items.rs": {
+      "sha256": "63061ee726246e7cb332ade8e3772f3831c6c5b4a1def17620026f046b6182ea",
+      "bytes": 436
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/core_numbers_format.rs": {
+      "sha256": "a9b2c1c71a42a5493d3bf6aff75a7ad9174a5850a3e3a6ac784d2d75e742be1f",
+      "bytes": 300
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/core_numbers_format_b.rs": {
+      "sha256": "e8681eb39d7fd70345da9cb39fd1da96cbf4f79b5fb45f865d10f92a09bebf7c",
+      "bytes": 368
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/core_patterns_control.rs": {
+      "sha256": "fe5f4f3a98dc1e6e99eade3b25afd8ca60a842275d6a6d7bf861ce22c6c7530a",
+      "bytes": 643
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/core_patterns_control_b.rs": {
+      "sha256": "2382357ff6fae5a6f3d2846b1859304df0cb30fa918e9130761c60abb19f35c2",
+      "bytes": 293
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/core_patterns_control_c.rs": {
+      "sha256": "c6d59fe6195ae8b3c5074687db2f908fcc1502289e32585ca38d4bf9beaaa5ac",
+      "bytes": 591
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/core_result_try.rs": {
+      "sha256": "a132290abc4097e1e8d1170e10e4b6fb6349cae2ff485a2baf6ea7dac5a724dd",
+      "bytes": 554
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/core_result_try_b.rs": {
+      "sha256": "6f20aff5a2007a032e264e6e671be1b674c870efabfe0c8b33527b3263b731ca",
+      "bytes": 372
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/core_std_basics.rs": {
+      "sha256": "c9219a975bb056565f58bf66b5dc97c6fb184c22fc78be74c59c6fe62b89f122",
+      "bytes": 359
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/core_std_basics_b.rs": {
+      "sha256": "1b1a268994f492a5dcc600653308b98a2e9ec30be7e6716b8c760b6924378ba1",
+      "bytes": 245
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/core_std_basics_c.rs": {
+      "sha256": "22e21013ee2c2646aabb550d2fdd559959c47145ca4d4cbd16c715f6205436e3",
+      "bytes": 358
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/core_std_basics_d.rs": {
+      "sha256": "51e5b01de877d8ce96b9844e76446f7cd568a885cca3f4b11f9559e2bee49741",
+      "bytes": 273
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/core_tuples_arrays_slices.rs": {
+      "sha256": "0736ab16b1a5ba8ec3bde56445627e85194319e8f8a7fed7b9252c220b45892a",
+      "bytes": 412
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/derives_unknown.rs": {
+      "sha256": "612ac0f1693d4e78334813e8ce9e8b9239e1dc1d446db9eec0877bc642fc16be",
+      "bytes": 208
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/dyn_any.rs": {
+      "sha256": "11add491933ec72189e6662c55e7703cfccfc27fd1a5593e2f6d00da46f3c569",
+      "bytes": 323
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/dyn_any_b.rs": {
+      "sha256": "df80e05a5a019f1f4cd511bd6e7a8124ab1cbbbfb6890281275827c614dcc2df",
+      "bytes": 809
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/dyn_boxed.rs": {
+      "sha256": "388c03777f3ad97a332f9e89554aef1b60704659219972d85892323149205d36",
+      "bytes": 289
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/dyn_fn.rs": {
+      "sha256": "6868f00aa52c11b35f288532411169c0805b4c98f3dfdab4cd7d802328bfaed7",
+      "bytes": 157
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/dyn_fn_b.rs": {
+      "sha256": "bf119dd8ab1d0a9b59425bb2db543d4cd4f42f6c146b4c3c4d8c916fa6e29736",
+      "bytes": 322
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/dyn_fn_c.rs": {
+      "sha256": "b6830e5929888a3041624188880d0b0773cdd188a4b02ea115319949bbc6e1b7",
+      "bytes": 313
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/dyn_std.rs": {
+      "sha256": "3c10b45a46129d6a39f3ed0976fdc231d05ab064691eb1872b0d71d031f6e82f",
+      "bytes": 309
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/dyn_trait.rs": {
+      "sha256": "3af0f596e3cad7cf9201fc48d2eb3ac3ac580ed9ceea8255e167cc223334abb3",
+      "bytes": 547
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/ext_bumpalo.rs": {
+      "sha256": "d37d285d8699256f0acaed7f3cb37ac6bcb5ee361b1f13bde30be499ad78b18b",
+      "bytes": 501
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/ext_flate2.rs": {
+      "sha256": "73a05aaadb1da51452e69cdfa5a2e52544f56e5f66af675baf266ee49c1fd13a",
+      "bytes": 442
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/ext_indexmap.rs": {
+      "sha256": "d8d2d2c29f6098368af18a9009dff787d7add38cb7614b69aebf1a5a1e4bbc17",
+      "bytes": 383
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/ext_memchr.rs": {
+      "sha256": "534da90ba8b9ca1c726d1b0e5b8a6907c288330b1c6c755633befb3bb80af4b9",
+      "bytes": 433
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/ext_memchr_b.rs": {
+      "sha256": "b3a612c621123b92b597932f51af6c863944a2443df15dd50fb076e7226a2239",
+      "bytes": 375
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/ext_nix.rs": {
+      "sha256": "7f8ce3f03de4cca05fcc73db4360f3db002fdca2c1fb16a9c28dfbf20974f231",
+      "bytes": 399
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/ext_num_bigint.rs": {
+      "sha256": "705fa2b6ee0e393f7856e7747ce13d68eb6954b56857a0e29e8d32ea9845000a",
+      "bytes": 428
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/ext_num_traits.rs": {
+      "sha256": "4c4e3c94598919a3eff4374fec0d7c42db7e3a35c9f91262ec73a951f7cdae35",
+      "bytes": 286
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/ext_rustc_hash.rs": {
+      "sha256": "8c7d2a65d0099f20784f307e4933ac3cd39df46379ba6f1e67fddafa5f1ab33c",
+      "bytes": 329
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/ext_rustc_hash_b.rs": {
+      "sha256": "93a82f0cc6810fd8e9de80d351604756a6eb28a30af85dd20fcc3b077ac4e0e5",
+      "bytes": 812
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/ext_rustix.rs": {
+      "sha256": "8891f9791576275217abda463b2bcb70c57cc3d904b77faf15b48b0a72d2ef68",
+      "bytes": 533
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/ext_ryu_js.rs": {
+      "sha256": "fa49edad74c587a75fea054dc4c968fa00c14fa9b85e5741be5cbf55aecf45d7",
+      "bytes": 310
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/ext_same_file.rs": {
+      "sha256": "b40915cb62531e731913d74051c152a52d4bead9e90a82d1a87a6e0bfa586a24",
+      "bytes": 839
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/ext_serde.rs": {
+      "sha256": "97bb9fabf54ec6a19ac4d7af56f745e2f8cf5144a68d7000c535005c10ca4158",
+      "bytes": 358
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/ext_serde_json.rs": {
+      "sha256": "2baa0c9b51ebf6c152e1466820db649518c4e04029b45d7dee947253a0ba9ce9",
+      "bytes": 258
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/ext_signal_hook.rs": {
+      "sha256": "02920097b8414143fb6a0c4e65418db0b52b63a31187f777a1723390d5c36ca2",
+      "bytes": 627
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/ext_smallvec.rs": {
+      "sha256": "5b10f20f301713880828520d4821f5e347384f0db63862ebfbd25de59653f7e0",
+      "bytes": 374
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/ext_tikv_jemalloc_ctl.rs": {
+      "sha256": "032dc14466ecc943939b7b115d628225b04985b767acba7a4f2450bfed057c4a",
+      "bytes": 602
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/ext_tikv_jemallocator.rs": {
+      "sha256": "314fc91cec77103005b04e870bcbd8a3cf5c3d9df6214535def81bb25093368d",
+      "bytes": 429
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/ext_unknown_crate.rs": {
+      "sha256": "bd5021b16c0d09ee85b9d61eb238a3f5ca9f98c110432848b1c9139d2415bd8c",
+      "bytes": 176
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/ext_xxhash_rust.rs": {
+      "sha256": "9838a78d0d8fa4a89bdd1bd5bef934a57e24f9c88531561d093a1cd16aae7473",
+      "bytes": 458
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/generics_const_param.rs": {
+      "sha256": "d12cb12a915cd2893302461724c74ee371181f0e4f5249bfe269937003b31cb2",
+      "bytes": 314
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/imp_helper.rs": {
+      "sha256": "b7fafb4a975af797103902c5433112edb9681801156f384a9a7646c03e89eaa8",
+      "bytes": 45
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/iterators_chains.rs": {
+      "sha256": "6c3bf973520e0ffb4f79a3069a61b57a848a095d769ffe9ec21587693108462e",
+      "bytes": 434
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/iterators_chains_b.rs": {
+      "sha256": "bbb927ba79071f625ab483c859694551fb3559a5c5ba7d46eaa897a0ab87ca3d",
+      "bytes": 418
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/lifetimes_hrtb.rs": {
+      "sha256": "95fd042ad94b74e8614b24ec60b056884cba3d2973f34a6e5dd658fed8d6ef22",
+      "bytes": 350
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/lifetimes_hrtb_b.rs": {
+      "sha256": "510d5b413a1e08e672a1227f5ee2b6555a8fd9ab75a03db2dc828fe12053d828",
+      "bytes": 589
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/lifetimes_hrtb_general.rs": {
+      "sha256": "eaac9e841e768167ef0678940312704ea03e1efe932a7cbff921ed83cc60aaad",
+      "bytes": 240
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/lifetimes_named.rs": {
+      "sha256": "9446e1eb7d88b712ae6963fb544bd5db5df4c1b2f8fd57bc3172b3b2e3ff2779",
+      "bytes": 338
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/lifetimes_named_b.rs": {
+      "sha256": "588eaf95166b4316561f36f6735bf73a9d3d6cbb21ada4460bad892c63e212ec",
+      "bytes": 472
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/lifetimes_named_c.rs": {
+      "sha256": "1367677b1b425a51f5d4d1d80d4051d7684dac5fd2cddfee70937536251e32fa",
+      "bytes": 268
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/lifetimes_named_d.rs": {
+      "sha256": "659fd5f1df28e7d1033a80abd783132dc2950ede240e8dc34d2e62ab46cf1aba",
+      "bytes": 779
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/lifetimes_static_anon.rs": {
+      "sha256": "347350c1aad52ef3447cc3f0ab356a53170617c367c8f69aa0fb43272e3b2b4c",
+      "bytes": 319
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/lifetimes_static_anon_b.rs": {
+      "sha256": "71b4f8ed8ba4d82556056fa89f859f23af1e2c24837e22845cef04a6a6af59f7",
+      "bytes": 303
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/lifetimes_static_anon_c.rs": {
+      "sha256": "e70902519faea0ef3cd3bd7626773ad65ef4fac7378286258c4b9f9bdef30531",
+      "bytes": 235
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/macros_std_missing.rs": {
+      "sha256": "6f718a60e9abcafdd46420ec99417be66022f6d72d0b1f00f157c2b183b630fd",
+      "bytes": 225
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/macros_std_missing_c.rs": {
+      "sha256": "25cf1af8e1324fbb8557fd329cedb235da3b275714121d40e78f193da6a7f137",
+      "bytes": 404
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/macros_std_unsupported.rs": {
+      "sha256": "797f50467d2a4efed5052df75a18cda67d62f0214a06a9b899fa1ad46c794c74",
+      "bytes": 288
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/macros_std_unsupported_b.rs": {
+      "sha256": "c399b111408f62151a11269ddd3dc255d9e918ff317984b7c433129ffe09ad39",
+      "bytes": 202
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/macros_user.rs": {
+      "sha256": "50e780b7321b6bccc2d635f3d9fcf096604a5b735bd808fe836c48eee557bef3",
+      "bytes": 335
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/macros_user_b.rs": {
+      "sha256": "e40723f66c3f72f0b09f6539152043d94e28572b08e9b31e318726ec2cdbbea4",
+      "bytes": 353
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/modules_imports.rs": {
+      "sha256": "304cdf99d8a0df5b1ac1789fb893b05d54c3b19d79648b9ce38ea6c0f2066794",
+      "bytes": 494
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/modules_imports_b.rs": {
+      "sha256": "2584e5c4ce784a8b957e4a8c46f5f6a897c2358d2bfff2bd0df6a4e475a575ec",
+      "bytes": 149
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/modules_path_attr.rs": {
+      "sha256": "5cb54d4d0f466d61b60dee963abd4b17c0f5dbe20a6b8635f4612ccd25133d11",
+      "bytes": 207
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/panic_recovery.rs": {
+      "sha256": "d421e62acfe99fcca4ee40a14bb2a8be544a5822e83e70b3e1b08c4398c49b99",
+      "bytes": 319
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/panic_recovery_hooks.rs": {
+      "sha256": "c7daf82ec30b4a7490edf3fcff08399d6f32b516bd368d4a46591fba3fcc3ffa",
+      "bytes": 652
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/panic_recovery_threads.rs": {
+      "sha256": "5f2dd8561537f4616a1abf2d7d3fb9f4a4fef184606b654dcf25a42576c3d203",
+      "bytes": 489
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/path_attr_helper.rs": {
+      "sha256": "ebfc84da0059ba01984616162861458513b99cf055492a6519be61202cd88dca",
+      "bytes": 44
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/std_cow.rs": {
+      "sha256": "eaa04704aa790bf41d66c355350bd141b2185a2da9a68d36ba54b6ee452d4315",
+      "bytes": 441
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/std_cow_b.rs": {
+      "sha256": "b383f3938e7cfd05728c3c0b8c824236f64f7fb90dd3f534488dfa0c7bb0e4ea",
+      "bytes": 1701
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/std_error.rs": {
+      "sha256": "a4b549f493197a1cf6523bd2bd886314ca815014a7752101263c37f6a2e6823d",
+      "bytes": 447
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/std_float_consts.rs": {
+      "sha256": "e8a8ee3b078e5615ba32748b6f25e9df3ccb17cd4648318e50e5bb4d90fa3b1f",
+      "bytes": 377
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/std_hashmap.rs": {
+      "sha256": "3a113de3298e76853d25bf086c8f728960b85ebcaa63e6f81c74ef46f59fe78b",
+      "bytes": 469
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/std_hashmap_hasher.rs": {
+      "sha256": "c57036894755df4df9afacb27facd7f8086abfcb24df18cca6ca871755c05263",
+      "bytes": 467
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/std_lazy_once_lock.rs": {
+      "sha256": "5d91cc99ded4b1770812287697f1b497a391c6c85629b750765fe6e7d133cf44",
+      "bytes": 335
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/std_net.rs": {
+      "sha256": "5b2652b9ceb2a1f17ec9e27171833832c463acd61688c7bee6d25a461ce00fce",
+      "bytes": 342
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/std_net_addr.rs": {
+      "sha256": "67e1e25a807f19ef5cda6c821c706d9ed461581673c1d4117599eed726b12486",
+      "bytes": 527
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/std_net_b.rs": {
+      "sha256": "446e1c69ae909097d1db819671a9fcc2fbe47583f10c4d2d554ac56e8723e36c",
+      "bytes": 431
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/std_other.rs": {
+      "sha256": "a515b66393fef8372b2f9237a402f9af7807f10cd9c7a996107166f087ad0a92",
+      "bytes": 281
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/std_rc.rs": {
+      "sha256": "3bae1b33d21f71b78032ede75ee1abfdd8282edb2469f9b971da841b7f579168",
+      "bytes": 214
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/std_rc_refcell_b.rs": {
+      "sha256": "d8f676d3bfb950f2257c29991d7d25f1fee1d3e1f448cbe355112ce79fc6fd1a",
+      "bytes": 297
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/std_rc_refcell_c.rs": {
+      "sha256": "b2f8663c2c4ff4e0ad6c787344de09ae17ba99c37972fa776657a5831d565d1c",
+      "bytes": 407
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/std_rc_refcell_d.rs": {
+      "sha256": "395c7f0b5621f539bfd8fcd93644eb9be1ad5479304a6f3f2942339e2f8a592f",
+      "bytes": 329
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/std_runtime.rs": {
+      "sha256": "43bd194151f4a45e787d410dabfbfcf443c8fc44ac47fbc465cdb07864a78720",
+      "bytes": 402
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/std_runtime_b.rs": {
+      "sha256": "775a9c31eb9f45974641c80e0a840d9ced9012ad60ae59a94ccf97805c55b10c",
+      "bytes": 255
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/std_runtime_c.rs": {
+      "sha256": "d7454725e097da5ec50d11a9ee3a19d2988578a02df0bcf3ddd6247e0daf3b51",
+      "bytes": 281
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/std_unix_net.rs": {
+      "sha256": "89a2f33037add1e8c55a341fe1bc469138767625acdc1d8a65f764ee44f5528e",
+      "bytes": 396
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/std_vec_into_iter.rs": {
+      "sha256": "92f508cb44dfe48ab54a37c88eb8b3209842215655c4647642d96fa05f1ca141",
+      "bytes": 335
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/supported_baseline.rs": {
+      "sha256": "3313dc3f989d67456d4faf7b050e22f57c29fa945f81ee4f7c4d0443228d1e16",
+      "bytes": 378
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/supported_std_core.rs": {
+      "sha256": "b4c9ece09ec8252971fc0b08d7aed95e7f7120d372740c77a7674b1ae0c4cfb4",
+      "bytes": 263
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/threads_send_sync_bounds.rs": {
+      "sha256": "27e7e029e40eb9922b75e0594d701a16f423dde246f0142cea9b642760fc101f",
+      "bytes": 158
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/threads_send_sync_bounds_b.rs": {
+      "sha256": "797e2a195cfe2e866837c4f373a9ac90a2526f95e9f4120bf3788127a5fd09bd",
+      "bytes": 320
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/threads_sync.rs": {
+      "sha256": "875afdd9ef32c3f53724e0166269e439d830c63a9d201a25e405d77e662c1fae",
+      "bytes": 355
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/threads_sync_b.rs": {
+      "sha256": "4f4f0778d86f3e364ec4bbe3902b7ffe91a0c2ac46bba3496d89229c85089b8a",
+      "bytes": 472
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/threads_thread_local.rs": {
+      "sha256": "40a9e766eb315b7d918e05ff5eba8593eec4afcccfaf5816100e00be0f0c6370",
+      "bytes": 339
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/traits_gat.rs": {
+      "sha256": "d6c3c7a270f70796615869713aba556496390ea1e1ac805dd1e61d2dc3510aea",
+      "bytes": 400
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/traits_generics.rs": {
+      "sha256": "fe1e8bc574a9958792b763479368149e92dc28e93e8cf5783d319b200edd0635",
+      "bytes": 415
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/traits_generics_b.rs": {
+      "sha256": "59065e5fcf5803c9d7443db26210dba479b72c522fe472b480a3bc8c171bce31",
+      "bytes": 519
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/traits_generics_c.rs": {
+      "sha256": "923b5c148a58cf0d60a9bb4b79ce9601a9fba1fbf9e72efcd972a5584182de7b",
+      "bytes": 404
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/traits_impl_trait_arg.rs": {
+      "sha256": "199ecc0b40ad0ae08eef70b22f21c98027a226c02f5d0ee9b2181bc21df25e6f",
+      "bytes": 194
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/traits_impl_trait_arg_b.rs": {
+      "sha256": "b80b15247e507774083eee0167dad6439fcb39999c129c532564ff24e88d3936",
+      "bytes": 288
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/traits_impl_trait_arg_c.rs": {
+      "sha256": "42ee268035a186c82eb0a9e351ad3b96dd28aa594872c318f64ec866e44b7f0c",
+      "bytes": 217
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/traits_impl_trait_arg_d.rs": {
+      "sha256": "f662d0bcdb4412425f0a2bf3b9e0f6819fd5aa682135e92767e96cff96f0a7b1",
+      "bytes": 324
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/traits_impl_trait_ret.rs": {
+      "sha256": "8c776595983f893ef7df07bf7179c2b9d2b9499bc666fd298e58397599f6f4f2",
+      "bytes": 294
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/unsafe_blocks.rs": {
+      "sha256": "4d161e68006a8f65872f7b877a39099613ca0e8935d0c9c2f5ac2fa89bba3f48",
+      "bytes": 201
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/features/unsupported_other.rs": {
+      "sha256": "30fe4010b5550a687a791a75569360efa999265a0590d96c1b2f83944f07f14a",
+      "bytes": 216
+    },
+    "source/instrumented/compiler/native/tools/lust-port/tests/scan_fixture.rs": {
+      "sha256": "464401b32aedc9bd43d9aa546d0b09710ae24e63f50b61307e3bf459a2841c89",
+      "bytes": 12088
+    },
+    "source/original/compiler/native/tools/lust-port/.gitignore": {
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb",
+      "bytes": 8
+    },
+    "source/original/compiler/native/tools/lust-port/Cargo.lock": {
+      "sha256": "a9d7a53a5a2057b7b874d785d803198e6d8a52846e0e8cb5f932abe049e97fb1",
+      "bytes": 2966
+    },
+    "source/original/compiler/native/tools/lust-port/Cargo.toml": {
+      "sha256": "ca6f23d898a54a393a48780e041dedefb28abad06b73405e7f1812fe8acb8aa3",
+      "bytes": 629
+    },
+    "source/original/compiler/native/tools/lust-port/README.md": {
+      "sha256": "fc455951db0f9a3c64074be1db62a79a74b65d43581d6f8a92d2f68e2ab0d525",
+      "bytes": 5623
+    },
+    "source/original/compiler/native/tools/lust-port/dependencies.json": {
+      "sha256": "94665ec59c4a72c07c1567a3ed9e1b1a94c141baa674bdea9e2d68923bbf5c23",
+      "bytes": 9240
+    },
+    "source/original/compiler/native/tools/lust-port/features.json": {
+      "sha256": "cd3d4c4c4da4eadc14c5f21ac946014aa9b08ef391f5b2c4891ea6f654f8d9f7",
+      "bytes": 75278
+    },
+    "source/original/compiler/native/tools/lust-port/src/analyze.rs": {
+      "sha256": "87e93b2bc905e61ed642af03d5e7383a2359a37c0f58112fc0005a016c665703",
+      "bytes": 83990
+    },
+    "source/original/compiler/native/tools/lust-port/src/cargo_meta.rs": {
+      "sha256": "1c04d34318f90b331bc8d3943a3649d4486464f20dcdbe57f59c6e3544b059a5",
+      "bytes": 4478
+    },
+    "source/original/compiler/native/tools/lust-port/src/cfg_eval.rs": {
+      "sha256": "856c9df37289e0632114c4ba69ee16505a4f28933ad71c6664e0b73f0f93d8b9",
+      "bytes": 20869
+    },
+    "source/original/compiler/native/tools/lust-port/src/devfeat.rs": {
+      "sha256": "0b49a54d42c2b0e1d6b43356dcb843b8cbc440393714168dcb10f5c3a8048415",
+      "bytes": 8768
+    },
+    "source/original/compiler/native/tools/lust-port/src/features.rs": {
+      "sha256": "6a4ed82c733261498480fe5fd3e100909f464ae2b9c3477acbd35b8633640a9d",
+      "bytes": 12086
+    },
+    "source/original/compiler/native/tools/lust-port/src/global.rs": {
+      "sha256": "184aa7c14e2ffcc3087fedc4203cabab0f62a445e984db94ae745db86656bb19",
+      "bytes": 9972
+    },
+    "source/original/compiler/native/tools/lust-port/src/main.rs": {
+      "sha256": "ab77182f2437c27eae262b0c274ae618df109eb2c2cbad44b087e3f75c22f8c0",
+      "bytes": 12999
+    },
+    "source/original/compiler/native/tools/lust-port/src/report.rs": {
+      "sha256": "a8ccf05e5151f4d62af01d63f9bc56f471143767e303e2083bb10b947f53ae3d",
+      "bytes": 31519
+    },
+    "source/original/compiler/native/tools/lust-port/src/stats.rs": {
+      "sha256": "c742bf7f4eda650845181f57bb386d3744689989abdda94a57e08d76977c9984",
+      "bytes": 2920
+    },
+    "source/original/compiler/native/tools/lust-port/src/walk.rs": {
+      "sha256": "1d2a7b883463f1a10e78509faef023df97167fab2e5de59fab859a6a933e4822",
+      "bytes": 12028
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/README.md": {
+      "sha256": "1596c2fbb7bf22dfc91a0b324e39719f48b96085e6ec0bc85d6595ad3dcf3431",
+      "bytes": 920
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/async_await.rs": {
+      "sha256": "293ad3f260ef088b055469084d672298dd9021ec0efc1f40b980739dc6f1a8b1",
+      "bytes": 209
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/attrs_cfg.rs": {
+      "sha256": "5bc60bf7916c6f23fc029cb397b6d7c2ed9cdbc098070ff3a302bf8f4bb401f2",
+      "bytes": 347
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/attrs_cfg_b.rs": {
+      "sha256": "0ba2f56a39d34b572a4adabc0ea28d8c30b6e8c37d3b95bed11f3d12593d5c36",
+      "bytes": 299
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/attrs_cfg_c.rs": {
+      "sha256": "6629fc5e5ae3584ef565fc5b175d3673c9ca479158b1dee766ae1b83d542709e",
+      "bytes": 134
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/attrs_cfg_d.rs": {
+      "sha256": "079c9103462b4e7ffecfb2bfdae9eac23443b0b373379ebcb53bfd88e3ffe585",
+      "bytes": 511
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/attrs_non_exhaustive.rs": {
+      "sha256": "51d40005f82b2bcaf407733923a6b0b78aca4726392653e1bb86f801dd7315b2",
+      "bytes": 355
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/attrs_serde.rs": {
+      "sha256": "6806efe49d4acf1d8ea0ab3fe0a14a2fc1e2ad0aeec499c326b0f2a0fe998e1a",
+      "bytes": 258
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/attrs_track_caller.rs": {
+      "sha256": "55c5683370785d2b0edcfa694538722d274a63ee4ac17cda5e1d0aeb46702d47",
+      "bytes": 519
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/attrs_unsupported.rs": {
+      "sha256": "da44162af302abae67aa218d8c3385263a0f30ebc42e0845dba4e56aa7303e85",
+      "bytes": 144
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/cinterop_extern.rs": {
+      "sha256": "bcc06b34c6a23de56704f2721418e50cdd3ba4e42ca33232ee5258a0aa527ad1",
+      "bytes": 271
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/cinterop_global_allocator.rs": {
+      "sha256": "7d44f82115d13b7daeafa5392a890f3d3bb11350bf5e2b0eb93460145a72ac61",
+      "bytes": 219
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/cinterop_raw_ptr.rs": {
+      "sha256": "6cf86be73919c491a7a282d196095d7d522189147e3555ba16202f56098c2f4b",
+      "bytes": 556
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/closures_fn_ptr_lifetime.rs": {
+      "sha256": "16ffbc27d3cf05b846269f2913a709ea354348b921eb16748dc996a738f4646d",
+      "bytes": 979
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/closures_fn_ptr_lifetime_b.rs": {
+      "sha256": "11df91079e2aef381bdc68c13d22d10723da05b396e3a3b23066bfcf06b6549e",
+      "bytes": 1036
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/closures_fn_ptr_lifetime_field.rs": {
+      "sha256": "969c48a6901efb6537fe887d4556b9f74544e257303dfbc8c080c246ada54eef",
+      "bytes": 316
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/closures_general.rs": {
+      "sha256": "fcc7424d588f0d17a8ab17f830d5feacea24f67ac13f40bd4174660a27433ce0",
+      "bytes": 352
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/closures_hrtb_bounds.rs": {
+      "sha256": "b08bbb321a6690e74ebf6dd537b10a26234dc5bf815d2f6a5c6b3e1fc9f8d43e",
+      "bytes": 324
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/core_derives_extra.rs": {
+      "sha256": "d36ea21a04830e76b5cfe5e0550af119f4e2234cc96d896ffc85d458ea27aabe",
+      "bytes": 409
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/core_drop_impl.rs": {
+      "sha256": "671f30098991b5a69a5d2f764a519b0eef1f9780b03bed0d84ee85234bfe82d6",
+      "bytes": 255
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/core_items.rs": {
+      "sha256": "63061ee726246e7cb332ade8e3772f3831c6c5b4a1def17620026f046b6182ea",
+      "bytes": 436
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/core_numbers_format.rs": {
+      "sha256": "a9b2c1c71a42a5493d3bf6aff75a7ad9174a5850a3e3a6ac784d2d75e742be1f",
+      "bytes": 300
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/core_numbers_format_b.rs": {
+      "sha256": "e8681eb39d7fd70345da9cb39fd1da96cbf4f79b5fb45f865d10f92a09bebf7c",
+      "bytes": 368
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/core_patterns_control.rs": {
+      "sha256": "fe5f4f3a98dc1e6e99eade3b25afd8ca60a842275d6a6d7bf861ce22c6c7530a",
+      "bytes": 643
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/core_patterns_control_b.rs": {
+      "sha256": "2382357ff6fae5a6f3d2846b1859304df0cb30fa918e9130761c60abb19f35c2",
+      "bytes": 293
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/core_patterns_control_c.rs": {
+      "sha256": "c6d59fe6195ae8b3c5074687db2f908fcc1502289e32585ca38d4bf9beaaa5ac",
+      "bytes": 591
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/core_result_try.rs": {
+      "sha256": "a132290abc4097e1e8d1170e10e4b6fb6349cae2ff485a2baf6ea7dac5a724dd",
+      "bytes": 554
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/core_result_try_b.rs": {
+      "sha256": "6f20aff5a2007a032e264e6e671be1b674c870efabfe0c8b33527b3263b731ca",
+      "bytes": 372
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/core_std_basics.rs": {
+      "sha256": "c9219a975bb056565f58bf66b5dc97c6fb184c22fc78be74c59c6fe62b89f122",
+      "bytes": 359
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/core_std_basics_b.rs": {
+      "sha256": "1b1a268994f492a5dcc600653308b98a2e9ec30be7e6716b8c760b6924378ba1",
+      "bytes": 245
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/core_std_basics_c.rs": {
+      "sha256": "22e21013ee2c2646aabb550d2fdd559959c47145ca4d4cbd16c715f6205436e3",
+      "bytes": 358
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/core_std_basics_d.rs": {
+      "sha256": "51e5b01de877d8ce96b9844e76446f7cd568a885cca3f4b11f9559e2bee49741",
+      "bytes": 273
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/core_tuples_arrays_slices.rs": {
+      "sha256": "0736ab16b1a5ba8ec3bde56445627e85194319e8f8a7fed7b9252c220b45892a",
+      "bytes": 412
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/derives_unknown.rs": {
+      "sha256": "612ac0f1693d4e78334813e8ce9e8b9239e1dc1d446db9eec0877bc642fc16be",
+      "bytes": 208
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/dyn_any.rs": {
+      "sha256": "11add491933ec72189e6662c55e7703cfccfc27fd1a5593e2f6d00da46f3c569",
+      "bytes": 323
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/dyn_any_b.rs": {
+      "sha256": "df80e05a5a019f1f4cd511bd6e7a8124ab1cbbbfb6890281275827c614dcc2df",
+      "bytes": 809
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/dyn_boxed.rs": {
+      "sha256": "388c03777f3ad97a332f9e89554aef1b60704659219972d85892323149205d36",
+      "bytes": 289
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/dyn_fn.rs": {
+      "sha256": "6868f00aa52c11b35f288532411169c0805b4c98f3dfdab4cd7d802328bfaed7",
+      "bytes": 157
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/dyn_fn_b.rs": {
+      "sha256": "bf119dd8ab1d0a9b59425bb2db543d4cd4f42f6c146b4c3c4d8c916fa6e29736",
+      "bytes": 322
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/dyn_fn_c.rs": {
+      "sha256": "b6830e5929888a3041624188880d0b0773cdd188a4b02ea115319949bbc6e1b7",
+      "bytes": 313
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/dyn_std.rs": {
+      "sha256": "3c10b45a46129d6a39f3ed0976fdc231d05ab064691eb1872b0d71d031f6e82f",
+      "bytes": 309
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/dyn_trait.rs": {
+      "sha256": "3af0f596e3cad7cf9201fc48d2eb3ac3ac580ed9ceea8255e167cc223334abb3",
+      "bytes": 547
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/ext_bumpalo.rs": {
+      "sha256": "d37d285d8699256f0acaed7f3cb37ac6bcb5ee361b1f13bde30be499ad78b18b",
+      "bytes": 501
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/ext_flate2.rs": {
+      "sha256": "73a05aaadb1da51452e69cdfa5a2e52544f56e5f66af675baf266ee49c1fd13a",
+      "bytes": 442
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/ext_indexmap.rs": {
+      "sha256": "d8d2d2c29f6098368af18a9009dff787d7add38cb7614b69aebf1a5a1e4bbc17",
+      "bytes": 383
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/ext_memchr.rs": {
+      "sha256": "534da90ba8b9ca1c726d1b0e5b8a6907c288330b1c6c755633befb3bb80af4b9",
+      "bytes": 433
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/ext_memchr_b.rs": {
+      "sha256": "b3a612c621123b92b597932f51af6c863944a2443df15dd50fb076e7226a2239",
+      "bytes": 375
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/ext_nix.rs": {
+      "sha256": "7f8ce3f03de4cca05fcc73db4360f3db002fdca2c1fb16a9c28dfbf20974f231",
+      "bytes": 399
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/ext_num_bigint.rs": {
+      "sha256": "705fa2b6ee0e393f7856e7747ce13d68eb6954b56857a0e29e8d32ea9845000a",
+      "bytes": 428
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/ext_num_traits.rs": {
+      "sha256": "4c4e3c94598919a3eff4374fec0d7c42db7e3a35c9f91262ec73a951f7cdae35",
+      "bytes": 286
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/ext_rustc_hash.rs": {
+      "sha256": "8c7d2a65d0099f20784f307e4933ac3cd39df46379ba6f1e67fddafa5f1ab33c",
+      "bytes": 329
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/ext_rustc_hash_b.rs": {
+      "sha256": "93a82f0cc6810fd8e9de80d351604756a6eb28a30af85dd20fcc3b077ac4e0e5",
+      "bytes": 812
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/ext_rustix.rs": {
+      "sha256": "8891f9791576275217abda463b2bcb70c57cc3d904b77faf15b48b0a72d2ef68",
+      "bytes": 533
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/ext_ryu_js.rs": {
+      "sha256": "fa49edad74c587a75fea054dc4c968fa00c14fa9b85e5741be5cbf55aecf45d7",
+      "bytes": 310
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/ext_same_file.rs": {
+      "sha256": "b40915cb62531e731913d74051c152a52d4bead9e90a82d1a87a6e0bfa586a24",
+      "bytes": 839
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/ext_serde.rs": {
+      "sha256": "97bb9fabf54ec6a19ac4d7af56f745e2f8cf5144a68d7000c535005c10ca4158",
+      "bytes": 358
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/ext_serde_json.rs": {
+      "sha256": "2baa0c9b51ebf6c152e1466820db649518c4e04029b45d7dee947253a0ba9ce9",
+      "bytes": 258
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/ext_signal_hook.rs": {
+      "sha256": "02920097b8414143fb6a0c4e65418db0b52b63a31187f777a1723390d5c36ca2",
+      "bytes": 627
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/ext_smallvec.rs": {
+      "sha256": "5b10f20f301713880828520d4821f5e347384f0db63862ebfbd25de59653f7e0",
+      "bytes": 374
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/ext_tikv_jemalloc_ctl.rs": {
+      "sha256": "032dc14466ecc943939b7b115d628225b04985b767acba7a4f2450bfed057c4a",
+      "bytes": 602
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/ext_tikv_jemallocator.rs": {
+      "sha256": "314fc91cec77103005b04e870bcbd8a3cf5c3d9df6214535def81bb25093368d",
+      "bytes": 429
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/ext_unknown_crate.rs": {
+      "sha256": "bd5021b16c0d09ee85b9d61eb238a3f5ca9f98c110432848b1c9139d2415bd8c",
+      "bytes": 176
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/ext_xxhash_rust.rs": {
+      "sha256": "9838a78d0d8fa4a89bdd1bd5bef934a57e24f9c88531561d093a1cd16aae7473",
+      "bytes": 458
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/generics_const_param.rs": {
+      "sha256": "d12cb12a915cd2893302461724c74ee371181f0e4f5249bfe269937003b31cb2",
+      "bytes": 314
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/imp_helper.rs": {
+      "sha256": "b7fafb4a975af797103902c5433112edb9681801156f384a9a7646c03e89eaa8",
+      "bytes": 45
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/iterators_chains.rs": {
+      "sha256": "6c3bf973520e0ffb4f79a3069a61b57a848a095d769ffe9ec21587693108462e",
+      "bytes": 434
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/iterators_chains_b.rs": {
+      "sha256": "bbb927ba79071f625ab483c859694551fb3559a5c5ba7d46eaa897a0ab87ca3d",
+      "bytes": 418
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/lifetimes_hrtb.rs": {
+      "sha256": "95fd042ad94b74e8614b24ec60b056884cba3d2973f34a6e5dd658fed8d6ef22",
+      "bytes": 350
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/lifetimes_hrtb_b.rs": {
+      "sha256": "510d5b413a1e08e672a1227f5ee2b6555a8fd9ab75a03db2dc828fe12053d828",
+      "bytes": 589
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/lifetimes_hrtb_general.rs": {
+      "sha256": "eaac9e841e768167ef0678940312704ea03e1efe932a7cbff921ed83cc60aaad",
+      "bytes": 240
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/lifetimes_named.rs": {
+      "sha256": "9446e1eb7d88b712ae6963fb544bd5db5df4c1b2f8fd57bc3172b3b2e3ff2779",
+      "bytes": 338
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/lifetimes_named_b.rs": {
+      "sha256": "588eaf95166b4316561f36f6735bf73a9d3d6cbb21ada4460bad892c63e212ec",
+      "bytes": 472
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/lifetimes_named_c.rs": {
+      "sha256": "1367677b1b425a51f5d4d1d80d4051d7684dac5fd2cddfee70937536251e32fa",
+      "bytes": 268
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/lifetimes_named_d.rs": {
+      "sha256": "659fd5f1df28e7d1033a80abd783132dc2950ede240e8dc34d2e62ab46cf1aba",
+      "bytes": 779
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/lifetimes_static_anon.rs": {
+      "sha256": "347350c1aad52ef3447cc3f0ab356a53170617c367c8f69aa0fb43272e3b2b4c",
+      "bytes": 319
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/lifetimes_static_anon_b.rs": {
+      "sha256": "71b4f8ed8ba4d82556056fa89f859f23af1e2c24837e22845cef04a6a6af59f7",
+      "bytes": 303
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/lifetimes_static_anon_c.rs": {
+      "sha256": "e70902519faea0ef3cd3bd7626773ad65ef4fac7378286258c4b9f9bdef30531",
+      "bytes": 235
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/macros_std_missing.rs": {
+      "sha256": "6f718a60e9abcafdd46420ec99417be66022f6d72d0b1f00f157c2b183b630fd",
+      "bytes": 225
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/macros_std_missing_c.rs": {
+      "sha256": "25cf1af8e1324fbb8557fd329cedb235da3b275714121d40e78f193da6a7f137",
+      "bytes": 404
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/macros_std_unsupported.rs": {
+      "sha256": "797f50467d2a4efed5052df75a18cda67d62f0214a06a9b899fa1ad46c794c74",
+      "bytes": 288
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/macros_std_unsupported_b.rs": {
+      "sha256": "c399b111408f62151a11269ddd3dc255d9e918ff317984b7c433129ffe09ad39",
+      "bytes": 202
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/macros_user.rs": {
+      "sha256": "50e780b7321b6bccc2d635f3d9fcf096604a5b735bd808fe836c48eee557bef3",
+      "bytes": 335
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/macros_user_b.rs": {
+      "sha256": "e40723f66c3f72f0b09f6539152043d94e28572b08e9b31e318726ec2cdbbea4",
+      "bytes": 353
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/modules_imports.rs": {
+      "sha256": "304cdf99d8a0df5b1ac1789fb893b05d54c3b19d79648b9ce38ea6c0f2066794",
+      "bytes": 494
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/modules_imports_b.rs": {
+      "sha256": "2584e5c4ce784a8b957e4a8c46f5f6a897c2358d2bfff2bd0df6a4e475a575ec",
+      "bytes": 149
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/modules_path_attr.rs": {
+      "sha256": "5cb54d4d0f466d61b60dee963abd4b17c0f5dbe20a6b8635f4612ccd25133d11",
+      "bytes": 207
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/panic_recovery.rs": {
+      "sha256": "d421e62acfe99fcca4ee40a14bb2a8be544a5822e83e70b3e1b08c4398c49b99",
+      "bytes": 319
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/panic_recovery_hooks.rs": {
+      "sha256": "c7daf82ec30b4a7490edf3fcff08399d6f32b516bd368d4a46591fba3fcc3ffa",
+      "bytes": 652
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/panic_recovery_threads.rs": {
+      "sha256": "5f2dd8561537f4616a1abf2d7d3fb9f4a4fef184606b654dcf25a42576c3d203",
+      "bytes": 489
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/path_attr_helper.rs": {
+      "sha256": "ebfc84da0059ba01984616162861458513b99cf055492a6519be61202cd88dca",
+      "bytes": 44
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/std_cow.rs": {
+      "sha256": "eaa04704aa790bf41d66c355350bd141b2185a2da9a68d36ba54b6ee452d4315",
+      "bytes": 441
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/std_cow_b.rs": {
+      "sha256": "b383f3938e7cfd05728c3c0b8c824236f64f7fb90dd3f534488dfa0c7bb0e4ea",
+      "bytes": 1701
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/std_error.rs": {
+      "sha256": "a4b549f493197a1cf6523bd2bd886314ca815014a7752101263c37f6a2e6823d",
+      "bytes": 447
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/std_float_consts.rs": {
+      "sha256": "e8a8ee3b078e5615ba32748b6f25e9df3ccb17cd4648318e50e5bb4d90fa3b1f",
+      "bytes": 377
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/std_hashmap.rs": {
+      "sha256": "3a113de3298e76853d25bf086c8f728960b85ebcaa63e6f81c74ef46f59fe78b",
+      "bytes": 469
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/std_hashmap_hasher.rs": {
+      "sha256": "c57036894755df4df9afacb27facd7f8086abfcb24df18cca6ca871755c05263",
+      "bytes": 467
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/std_lazy_once_lock.rs": {
+      "sha256": "5d91cc99ded4b1770812287697f1b497a391c6c85629b750765fe6e7d133cf44",
+      "bytes": 335
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/std_net.rs": {
+      "sha256": "5b2652b9ceb2a1f17ec9e27171833832c463acd61688c7bee6d25a461ce00fce",
+      "bytes": 342
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/std_net_addr.rs": {
+      "sha256": "67e1e25a807f19ef5cda6c821c706d9ed461581673c1d4117599eed726b12486",
+      "bytes": 527
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/std_net_b.rs": {
+      "sha256": "446e1c69ae909097d1db819671a9fcc2fbe47583f10c4d2d554ac56e8723e36c",
+      "bytes": 431
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/std_other.rs": {
+      "sha256": "a515b66393fef8372b2f9237a402f9af7807f10cd9c7a996107166f087ad0a92",
+      "bytes": 281
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/std_rc.rs": {
+      "sha256": "3bae1b33d21f71b78032ede75ee1abfdd8282edb2469f9b971da841b7f579168",
+      "bytes": 214
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/std_rc_refcell_b.rs": {
+      "sha256": "d8f676d3bfb950f2257c29991d7d25f1fee1d3e1f448cbe355112ce79fc6fd1a",
+      "bytes": 297
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/std_rc_refcell_c.rs": {
+      "sha256": "b2f8663c2c4ff4e0ad6c787344de09ae17ba99c37972fa776657a5831d565d1c",
+      "bytes": 407
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/std_rc_refcell_d.rs": {
+      "sha256": "395c7f0b5621f539bfd8fcd93644eb9be1ad5479304a6f3f2942339e2f8a592f",
+      "bytes": 329
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/std_runtime.rs": {
+      "sha256": "43bd194151f4a45e787d410dabfbfcf443c8fc44ac47fbc465cdb07864a78720",
+      "bytes": 402
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/std_runtime_b.rs": {
+      "sha256": "775a9c31eb9f45974641c80e0a840d9ced9012ad60ae59a94ccf97805c55b10c",
+      "bytes": 255
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/std_runtime_c.rs": {
+      "sha256": "d7454725e097da5ec50d11a9ee3a19d2988578a02df0bcf3ddd6247e0daf3b51",
+      "bytes": 281
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/std_unix_net.rs": {
+      "sha256": "89a2f33037add1e8c55a341fe1bc469138767625acdc1d8a65f764ee44f5528e",
+      "bytes": 396
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/std_vec_into_iter.rs": {
+      "sha256": "92f508cb44dfe48ab54a37c88eb8b3209842215655c4647642d96fa05f1ca141",
+      "bytes": 335
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/supported_baseline.rs": {
+      "sha256": "3313dc3f989d67456d4faf7b050e22f57c29fa945f81ee4f7c4d0443228d1e16",
+      "bytes": 378
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/supported_std_core.rs": {
+      "sha256": "b4c9ece09ec8252971fc0b08d7aed95e7f7120d372740c77a7674b1ae0c4cfb4",
+      "bytes": 263
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/threads_send_sync_bounds.rs": {
+      "sha256": "27e7e029e40eb9922b75e0594d701a16f423dde246f0142cea9b642760fc101f",
+      "bytes": 158
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/threads_send_sync_bounds_b.rs": {
+      "sha256": "797e2a195cfe2e866837c4f373a9ac90a2526f95e9f4120bf3788127a5fd09bd",
+      "bytes": 320
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/threads_sync.rs": {
+      "sha256": "875afdd9ef32c3f53724e0166269e439d830c63a9d201a25e405d77e662c1fae",
+      "bytes": 355
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/threads_sync_b.rs": {
+      "sha256": "4f4f0778d86f3e364ec4bbe3902b7ffe91a0c2ac46bba3496d89229c85089b8a",
+      "bytes": 472
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/threads_thread_local.rs": {
+      "sha256": "40a9e766eb315b7d918e05ff5eba8593eec4afcccfaf5816100e00be0f0c6370",
+      "bytes": 339
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/traits_gat.rs": {
+      "sha256": "d6c3c7a270f70796615869713aba556496390ea1e1ac805dd1e61d2dc3510aea",
+      "bytes": 400
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/traits_generics.rs": {
+      "sha256": "fe1e8bc574a9958792b763479368149e92dc28e93e8cf5783d319b200edd0635",
+      "bytes": 415
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/traits_generics_b.rs": {
+      "sha256": "59065e5fcf5803c9d7443db26210dba479b72c522fe472b480a3bc8c171bce31",
+      "bytes": 519
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/traits_generics_c.rs": {
+      "sha256": "923b5c148a58cf0d60a9bb4b79ce9601a9fba1fbf9e72efcd972a5584182de7b",
+      "bytes": 404
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/traits_impl_trait_arg.rs": {
+      "sha256": "199ecc0b40ad0ae08eef70b22f21c98027a226c02f5d0ee9b2181bc21df25e6f",
+      "bytes": 194
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/traits_impl_trait_arg_b.rs": {
+      "sha256": "b80b15247e507774083eee0167dad6439fcb39999c129c532564ff24e88d3936",
+      "bytes": 288
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/traits_impl_trait_arg_c.rs": {
+      "sha256": "42ee268035a186c82eb0a9e351ad3b96dd28aa594872c318f64ec866e44b7f0c",
+      "bytes": 217
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/traits_impl_trait_arg_d.rs": {
+      "sha256": "f662d0bcdb4412425f0a2bf3b9e0f6819fd5aa682135e92767e96cff96f0a7b1",
+      "bytes": 324
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/traits_impl_trait_ret.rs": {
+      "sha256": "8c776595983f893ef7df07bf7179c2b9d2b9499bc666fd298e58397599f6f4f2",
+      "bytes": 294
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/unsafe_blocks.rs": {
+      "sha256": "4d161e68006a8f65872f7b877a39099613ca0e8935d0c9c2f5ac2fa89bba3f48",
+      "bytes": 201
+    },
+    "source/original/compiler/native/tools/lust-port/tests/features/unsupported_other.rs": {
+      "sha256": "30fe4010b5550a687a791a75569360efa999265a0590d96c1b2f83944f07f14a",
+      "bytes": 216
+    },
+    "source/original/compiler/native/tools/lust-port/tests/scan_fixture.rs": {
+      "sha256": "c2ac2b74cd84964f1d89d5b0e9b98ba50ed3435b7db5ed9fbdd0a184626d46f0",
+      "bytes": 11871
+    }
+  },
+  "hosted_failure_resolved": false,
+  "scanner_fix_claimed": false
+}

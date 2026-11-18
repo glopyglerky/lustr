@@ -24,10 +24,19 @@ show this diagnostic when the test fails; `--nocapture` also exposes it on a
 successful diagnostic run. No scanner, formatter or compiler behavior changes.
 
 The logging change has independent source review. One fixed instrumented
-exact-test execution is pending, with its source recorded separately from the
-unchanged run. The native integration declaration remains explicit because this
-test lives under the protected native source tree. Candidate source checks do
-not admit a release.
+exact-test execution passed at `fc94bc2b892a7e34e3133d4c6fb1e19a2e3ee8b0`.
+Its retained human report contains seven files, three findings across active,
+target-specific and test-only scope, one parse error, and two occurrences of
+`attrs.unsupported`. Four other integration tests were filtered in this
+diagnostic invocation. The scanner executable SHA-256 remained unchanged across
+the logging change:
+`5cb69d5e5d797afd3da06657f4d90fa4347ea89a60b430d79da628e4e22dc7b6`.
+
+The [portable evidence bundle](evidence/lust-port-human-2026-11-18/README.md)
+retains the original hosted failure, the one unchanged local success and the one
+instrumented local success. No run replaces another. The native integration
+declaration remains explicit because this test lives under the protected native
+source tree. Candidate source checks do not admit a release.
 
 The original hosted artifact is `14437914129`, SHA-256
 `0093ad3c49171757f0ca9c6e8cbf884216677338eac786b5b19439b0f8d16478`.
@@ -35,3 +44,7 @@ The decoded full job log is 167361 UTF-8 bytes, SHA-256
 `83177df25fb74c79539c2d5197bc16c0c0223c7d0b06fbd5e20b6a8ac720a140`.
 The original failure, local success, exact compiler/source identities and any
 instrumented outcome must remain together in the evidence.
+
+The hosted failure remains unresolved. This change makes its missing report
+observable if it happens again; it is not a scanner correction or an assertion
+relaxation.
