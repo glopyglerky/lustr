@@ -28,7 +28,7 @@ Only `compiler/native/src/cgen.rs` changes in production native source:
 
 The ported codegen file has SHA-256
 `1cbce6afffc8f3df96032b5588736cbd861033feba8111bec5047889472c12b1`.
-The main unit continues to regenerate on every request. Retained frontend and
+The main unit continues to regenerate on every build. Retained frontend and
 no-change materialization logic are unchanged.
 
 The focused fixtures are `main_unit_abi.rs` and the four-version
@@ -59,9 +59,37 @@ native library. Neither observation supersedes the other: they differ in
 source, platform and retained state. Cold runtime success also does not make
 the incompatible C function type correct.
 
-Current-port local qualification is being recorded separately. The local host
-has no available pinned Clang executable, and a real Unix-domain daemon is
-blocked by the observed socket `EPERM` restriction. No local sanitizer pass or
-warm-transition pass is claimed. Hosted exact-source qualification remains
-required. The integration declaration retains `candidate` status; source-guard
-success does not admit an installable package or establish a new speed result.
+## Current-tree local qualification
+
+An isolated build of commit `6ccd976bfa80a41a94810992b349cc39f0b1310f`
+produced a new standalone native client/core pair using the repository's
+`gate` correctness profile. SDK and TinyCC inputs were reused read-only;
+build outputs and intermediates were separate from the existing package.
+The original package's recorded bytes and inodes remained unchanged.
+
+Five focused fixtures ran twice: ordinary C generation and named release-C
+generation. Each of the ten native executables matched the pinned Rust oracle's
+numeric status, stdout and stderr exactly. All 40 compile/run commands completed.
+The daemon and native cache were disabled; no compiler retry occurred.
+
+| Fixture | Expected exit | Ordinary | Release C |
+| --- | ---: | --- | --- |
+| `main_unit_abi` | 0 | Pass | Pass |
+| `main_result_err` | 1 | Pass | Pass |
+| `exit_code_main` | 42 | Pass | Pass |
+| `exit_code_result_ok` | 4 | Pass | Pass |
+| `panic_hook_abort` | 101 | Pass | Pass |
+
+[Sanitized verification data](evidence/native-main-type-2026-11-18/verification.json)
+records exact source, compiler, fixture and stream hashes. The current native
+integration tree is `d9ca06dc18dde19bf5bd2af688adf75a041b12a5`, normalized
+patch `d026010dab63b9078f4f36eefcbe2f1b7868b64c`. Candidate source verification
+passed; ordinary release-admission mode correctly refused candidate status.
+
+No pinned Clang executable was available for this local run, and a real
+Unix-domain daemon is blocked by the observed socket `EPERM` restriction. No
+current-tree function-sanitizer or warm-transition pass is claimed. The local
+run did not reconstruct the combined package or measure compiler performance.
+Hosted exact-source sanitizer, strict retained-return transitions and platform
+qualification remain required. The integration declaration retains `candidate`
+status; these scoped checks do not admit an installable package.
