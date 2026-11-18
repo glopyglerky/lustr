@@ -68,6 +68,10 @@ The optional unwind-table mode was not exercised.
 The probe returns failure when a plain native run times out even if the
 separately compiled sanitized C succeeds. Aggregate failures below remain
 failures in [results.json](results.json).
+Because the original flags include `-w`, compilation success is not used as
+independent proof that incompatible declarations would produce a diagnostic.
+The function-type conclusion rests on emitted-source review and the actual
+UBSan regression.
 
 ## Minimal regression with pinned Clang 23.1.5
 
@@ -119,7 +123,7 @@ oracle statuses.
 | `panic_hook_abort` | 101 | Matches | Matches |
 
 All six release-C checks passed. This covers unit main, Result success/error,
-ExitCode, and the actual hook runner without incompatible-pointer warnings or
+ExitCode, and the actual hook runner with exact oracle exit/stdout and no
 sanitizer diagnostics. The two plain-runtime timeouts keep the complete probe
 failed. No unwind-table or full panic/drop qualification follows from these six
 cases.
