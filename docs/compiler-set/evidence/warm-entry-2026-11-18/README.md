@@ -200,3 +200,9 @@ in each complete primary campaign and the third run's 144 native plus 48 selecto
 diagnostic timings, and checks the archived constructor bindings. It also binds
 the third selector/seed gate results and complete entry log to their retained
 source and streams. Temporary extraction does not modify the evidence bundle.
+
+## Fourth completed campaign
+
+[Fourth results and limits](fourth-results.md) preserves the compact/access continuation at `3c378a11d`, measured against the already improved `d57f485e` public baseline. Warm check improves by paired ratio 1.042678 [1.002444, 1.085341]; warm build remains unestablished at 1.013003 [0.974849, 1.052925]. Candidate/pristine medians are 1.450204/1.143490 ms for check and 3.471401/3.121890 ms for build. Both strict Lust targets still fail. The new host is Intel Xeon 6975P-C; cross-host absolute changes are not attributed to source.
+
+The original fourth ZIP, exact executed runners, selector and constructor source closures, and both installed-launcher seed bindings are now included in the same portable replay. It verifies all 384 primary timings, 144 native diagnostic timings, 48 selector timings, 154/290 selector gate, 38/85 seed gate, 103/486 compact gate and 16/16 entry log. Earlier original archives and failed outcomes remain unchanged.
