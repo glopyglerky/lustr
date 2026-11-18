@@ -1,5 +1,12 @@
 # Warm-entry campaigns: target still missed
 
+The automatic repeat at `ff9c0de9` has unchanged measured product source from
+the fourth campaign. Warm check is 1.429239 ms versus pristine Lust's 1.095341 ms;
+warm build is 3.410951 ms versus 3.139076 ms. Both strict target modes still fail.
+This is a separate observation with no pooled samples or before/after gain
+claim for the documentation/CI revision. See
+[the automatic repeat's complete results and identities](ff9c-repeat-results.md).
+
 The third campaign measured the corrected source through the complete focused
 gates and all 384 primary timings. Public warm check is 2.195 ms versus pristine
 Lust's 1.481 ms; warm build is 4.595 ms versus 3.979 ms. The strict performance
@@ -7,7 +14,7 @@ target still fails. The same-host residual diagnostics locate substantial
 remaining cost in the public entry/selection path. See
 [the third campaign's results and limits](third-results.md).
 
-This directory preserves all three original artifact ZIPs, their published source
+This directory preserves all five original artifact ZIPs, their published source
 identities, frozen copies of the actually executed runner closures, and a
 portable replay. The first failed campaign and the second complete campaign's
 special-file correctness limitation remain intact. The second source's normal
@@ -21,6 +28,8 @@ correction. No source was merged by these campaigns.
 | First | `18fe6c3408e6d581961bcf7f2721f72ca74cfbfa` | `6c3e5a44d54d83f1bacbd2977fe2fb32e11c0621` | `b568e8bf4d9970418b7c1f4ef2984ce391ffa5f5` | Failed qualification before any timing sample |
 | Second | `3091e80fce0bf8db43b7526cb68073e6c7910f35` | `82fd75aa6e8fbe2b1d53624f7d2ea1610d76cc70` | `d6212e4ad0b816bf025b3aa17297c445d50d91a2` | All 384 timing samples completed; strict target failed |
 | Third | `d57f485eeb2b638d1f95a0594294d11e8001fe8e` | `f638b6cd9819f52b53b142bf688d7ef07e252906` | `07235def43af3ffbdc218353d40f3f9e22b8dfd9` | Corrected selector and public edit gates passed; 384 primary and 192 diagnostic samples completed; strict target failed |
+| Fourth | `3c378a11d60149a3ec99fa49ea1b336e9406fca8` | `d3b14dc637b6343bbb329dfcf6d5e1b420c06009` | `0256606d5793bfb890130f05fae013d0c5c5f9e1` | Compact selection and effective-access checks passed; 384 primary and 192 diagnostic samples completed; strict target failed |
+| Automatic ff9c repeat | `ff9c0de9d2a2c89edd8df48e74e64a5c9483f232` | `c3513db6bc32a57ec4ae48bc0e0c504582d3a5b5` | `52ab272cbed5d88b7126d35da5a7f7ff2607cc24` | Product source unchanged from fourth; all focused gates and samples completed; strict target failed |
 
 - First: [run 44293812634](https://github.com/glopyglerky/lustr/actions/runs/44293812634), job `134765521290`, artifact `14424121317`.
 - Second: [run 44298375054](https://github.com/glopyglerky/lustr/actions/runs/44298375054), job `134781261965`, artifact `14425773276`.

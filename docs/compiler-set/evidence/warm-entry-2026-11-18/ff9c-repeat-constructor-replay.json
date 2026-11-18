@@ -1,0 +1,38 @@
+{
+  "archive_sha256": "bc66c58469bf8de24fdc5544133ba4965fba26463cb84342da7c5d91e1865473",
+  "certificate": "tools-4c5aaead48e45548eed589a84b569ea594243f98bd5109a93a7977f7ef9cc5e2.json",
+  "constructor_source_sha256": {
+    "src/main.rs": "5503c02cc66cee00a1398f5cededd0c155fcbe52a8d122bed6d314e5dbe36c1c",
+    "src/selection_cache.rs": "dfead01bd5ef3c98f3da35250c15c37ea9ef19cdfc28de082fb8971d9591bbfd",
+    "tools/build-mixed-toolchain.rs": "cddb08678e6e6a82b7bb897adcf2928d0d872dc4956dd28b3829cba8e2e30469",
+    "tools/selection-toolchain-receipt.rs": "b412fd43bcdcd31e4756d2467a3854640a85f9e7489b07eb85a647c8c59b5d05"
+  },
+  "files": {
+    "lustr-warm-baseline-build/baseline-selection-seed.json": "b7ed03fded78c1b241e324d7abe599bb6af28158a95131fc9afad140db444e67",
+    "lustr-warm-baseline-build/candidate-selection-seed.json": "bbfa5da2600cd4be320702ef581bf10d8070def37920793dab50d29e15cfdd70",
+    "lustr-warm-baseline-build/receipt.json": "68a798a0b18f6d3af71c737821be12c5fcb76cb598c12c98bb103bda261f8ba9",
+    "lustr-warm-baseline-build/seed.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "lustr-warm-baseline-build/seed.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "lustr-warm-built/logs/preverify-selection-tools.command": "c6fdada80854073da49880f7fb4eed3ee2522d22ee49b7cfa73996663b51830d",
+    "lustr-warm-built/logs/preverify-selection-tools.status": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+    "lustr-warm-built/logs/preverify-selection-tools.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "lustr-warm-built/logs/preverify-selection-tools.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "lustr-warm-built/toolchain/lib/lustr-selection-tools.txt": "dbda62832f3732383541600b4307af62c96de4286d4412ed60b95963b87375b9",
+    "lustr-warm-built/toolchain/lib/lustr-selection-verified/tools-4c5aaead48e45548eed589a84b569ea594243f98bd5109a93a7977f7ef9cc5e2.json": "bbfa5da2600cd4be320702ef581bf10d8070def37920793dab50d29e15cfdd70",
+    "lustr-warm-comparison/build-receipts/lustr-selection-tools.txt": "dbda62832f3732383541600b4307af62c96de4286d4412ed60b95963b87375b9",
+    "lustr-warm-comparison/report.json": "def35fb3047aefe9cb0d196643262d5b17fa5439973798c7547c78dc299c417e"
+  },
+  "launcher": {
+    "path": "/home/runner/work/_temp/lustr-warm-built/toolchain/bin/lustr",
+    "sha256": "a01c8df892369002b7947e029121d0cc8459891d795113d3733879222dbefc81"
+  },
+  "limits": "The archive has no complete compiler binaries and does not preserve seed ownership/modes. Their live validation is the checked constructor source operation, whose success and exact source are retained. The separate helper seed regression does not substitute for the actual launcher seed. The rebuilt d57 baseline executes its own initialization; its command, empty streams and separate nine-identity certificate are also archive-bound by the executed main verifier.",
+  "schema": "lustr-constructor-evidence-replay-v1",
+  "scope": "Archive checks of actual constructor initialization in the automatic ff9c repeat; no new initialization or live-tool restamping.",
+  "source": {
+    "revision": "c3513db6bc32a57ec4ae48bc0e0c504582d3a5b5",
+    "tree": "52ab272cbed5d88b7126d35da5a7f7ff2607cc24"
+  },
+  "status": "completed",
+  "tool_identities": 9
+}

@@ -1,0 +1,174 @@
+{
+  "automatic_repeat": true,
+  "changed_non_document_paths": [
+    ".github/workflows/compiler-set.yml",
+    "tools/build-regression-baseline.py",
+    "tools/test-frozen-baseline-constructor.py",
+    "tools/test-mixed-workflow.py"
+  ],
+  "executed_binary_hashes": {
+    "/home/runner/work/_temp/lustr-warm-built/toolchain/bin/cargo": {
+      "fourth_sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+      "identical": true,
+      "repeat_sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530"
+    },
+    "/home/runner/work/_temp/lustr-warm-built/toolchain/bin/lust": {
+      "fourth_sha256": "ebe1e0c4fd9d146ed7a7ae787caee9a04b21d48e272082875767874b70ec1fbc",
+      "identical": true,
+      "repeat_sha256": "ebe1e0c4fd9d146ed7a7ae787caee9a04b21d48e272082875767874b70ec1fbc"
+    },
+    "/home/runner/work/_temp/lustr-warm-built/toolchain/bin/lust-core": {
+      "fourth_sha256": "6c5dbe7355cafad44c0799ed8d256d8f5818b27c16d6e7fd917b9a43e275bed2",
+      "identical": false,
+      "repeat_sha256": "fed5418cb28ff34970f3c21267fe2b7ec52e0d89b64311c2428ba26bf01f395c"
+    },
+    "/home/runner/work/_temp/lustr-warm-built/toolchain/bin/lustr": {
+      "fourth_sha256": "a01c8df892369002b7947e029121d0cc8459891d795113d3733879222dbefc81",
+      "identical": true,
+      "repeat_sha256": "a01c8df892369002b7947e029121d0cc8459891d795113d3733879222dbefc81"
+    },
+    "/home/runner/work/_temp/lustr-warm-built/toolchain/bin/lustr-warm-baseline": {
+      "fourth_sha256": "7848d6f318365a37a275d034aa9d5bb917abe1312ffa44feca99d17f03de304d",
+      "identical": true,
+      "repeat_sha256": "7848d6f318365a37a275d034aa9d5bb917abe1312ffa44feca99d17f03de304d"
+    },
+    "/home/runner/work/_temp/lustr-warm-built/toolchain/bin/rustc-full": {
+      "fourth_sha256": "65e74ddd11198e970277eb0997660df178e07f2f74ec536b903c3dbc853b5abc",
+      "identical": true,
+      "repeat_sha256": "65e74ddd11198e970277eb0997660df178e07f2f74ec536b903c3dbc853b5abc"
+    },
+    "/home/runner/work/_temp/lustr-warm-built/toolchain/bin/rustc-reference": {
+      "fourth_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+      "identical": true,
+      "repeat_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de"
+    },
+    "/home/runner/work/_temp/lustr-warm-built/toolchain/lib/liblustr_native_core.so": {
+      "fourth_sha256": "1b1300ef91f31547eda25e87f87e8c11136058f11d7726e25697b67e173a26a2",
+      "identical": false,
+      "repeat_sha256": "f35deea11773910db111290ec9f13d1b0c7ed40ddfe52c106a6ef8cc92115104"
+    },
+    "/home/runner/work/_temp/lustr-warm-pristine-target/release/lust": {
+      "fourth_sha256": "a51a4541ef0b28749327eae20e8c23c97307b5a2a2617d3281735066e3326821",
+      "identical": true,
+      "repeat_sha256": "a51a4541ef0b28749327eae20e8c23c97307b5a2a2617d3281735066e3326821"
+    },
+    "/home/runner/work/_temp/lustr-warm-pristine-target/release/lust-core": {
+      "fourth_sha256": "a3a68e2075fa5d9b260a4d9d1f779f1eb91d1e124e83a800e5389462973ba423",
+      "identical": false,
+      "repeat_sha256": "5e3bdf5b28ec533b890df72a90d068afcb203ed3feac385b15bab63f72b3ad81"
+    }
+  },
+  "limits": "Git source object equality and recorded executable hashes are distinct. Core binaries were rebuilt and some hashes differ. No cross-run timing change is attributed to ff9c; no original observation is discarded or pooled.",
+  "pooled_samples": false,
+  "previous_archive": "artifact-14432019846.zip",
+  "previous_archive_sha256": "1fa5cea1ac4a4165594583288393f6141fd74384608306cf6eb47627cd773c12",
+  "previous_published_revision": "3c378a11d60149a3ec99fa49ea1b336e9406fca8",
+  "previous_source": {
+    "revision": "d3b14dc637b6343bbb329dfcf6d5e1b420c06009",
+    "tree": "0256606d5793bfb890130f05fae013d0c5c5f9e1"
+  },
+  "repeat_published_revision": "ff9c0de9d2a2c89edd8df48e74e64a5c9483f232",
+  "repeat_source": {
+    "revision": "c3513db6bc32a57ec4ae48bc0e0c504582d3a5b5",
+    "tree": "52ab272cbed5d88b7126d35da5a7f7ff2607cc24"
+  },
+  "schema": "lustr-automatic-repeat-source-identity-v1",
+  "source_objects": {
+    ".github/workflows/warm-entry-performance.yml": {
+      "fourth": "7371d33731fb1c455ce241e4a5b5bee795cec97d",
+      "repeat": "7371d33731fb1c455ce241e4a5b5bee795cec97d"
+    },
+    "Cargo.lock": {
+      "fourth": "fe1471771a788b92271477d6a3eb79682f44c1b2",
+      "repeat": "fe1471771a788b92271477d6a3eb79682f44c1b2"
+    },
+    "Cargo.toml": {
+      "fourth": "a4fb236b930d16cc6f343a86ac5e21d1b2193ede",
+      "repeat": "a4fb236b930d16cc6f343a86ac5e21d1b2193ede"
+    },
+    "compiler/native": {
+      "fourth": "12ae35ee30f81d11f55b184134f8a0c4a977a496",
+      "repeat": "12ae35ee30f81d11f55b184134f8a0c4a977a496"
+    },
+    "compiler/native/src/protocol.rs": {
+      "fourth": "165493acc0f121b3e44335e326c53eef33a7642f",
+      "repeat": "165493acc0f121b3e44335e326c53eef33a7642f"
+    },
+    "crates": {
+      "fourth": "40093416d53b83eaa3c2450033a5c1588c3690f0",
+      "repeat": "40093416d53b83eaa3c2450033a5c1588c3690f0"
+    },
+    "src": {
+      "fourth": "22a586cb653de2676de0f548fb4be93ca4a0eb82",
+      "repeat": "22a586cb653de2676de0f548fb4be93ca4a0eb82"
+    },
+    "src/full.rs": {
+      "fourth": "8efbf8263527ca1d77ce62a5aa9d8101c0653912",
+      "repeat": "8efbf8263527ca1d77ce62a5aa9d8101c0653912"
+    },
+    "src/host_runtime.rs": {
+      "fourth": "748da275aba3250ca351c72dc850c771d63e4a1c",
+      "repeat": "748da275aba3250ca351c72dc850c771d63e4a1c"
+    },
+    "src/owned_child.rs": {
+      "fourth": "c53c96d267a3ebbcee2f296cde228afc2500478f",
+      "repeat": "c53c96d267a3ebbcee2f296cde228afc2500478f"
+    },
+    "src/selection_cache.rs": {
+      "fourth": "f56a733755da7d5ccccc21cee992485896ba34a0",
+      "repeat": "f56a733755da7d5ccccc21cee992485896ba34a0"
+    },
+    "tests/compiler_contract.rs": {
+      "fourth": "d15ab5e42e63cda08eec6469436d1391bab7eb20",
+      "repeat": "d15ab5e42e63cda08eec6469436d1391bab7eb20"
+    },
+    "tools/build-mixed-toolchain.rs": {
+      "fourth": "cdb93f2b376d1a043280889fd232cc9a7b2cf14d",
+      "repeat": "cdb93f2b376d1a043280889fd232cc9a7b2cf14d"
+    },
+    "tools/capture-benchmark-host.py": {
+      "fourth": "8440bd972bb1ad2b1da4589fc6c397b9ee36bf18",
+      "repeat": "8440bd972bb1ad2b1da4589fc6c397b9ee36bf18"
+    },
+    "tools/profile-native-preflight.rs": {
+      "fourth": "e03e23d4732bc13d3d6864e7be43e35ca9e93792",
+      "repeat": "e03e23d4732bc13d3d6864e7be43e35ca9e93792"
+    },
+    "tools/report-mixed-performance.py": {
+      "fourth": "647d52240320fa311ce33138ba521d67beba0aab",
+      "repeat": "647d52240320fa311ce33138ba521d67beba0aab"
+    },
+    "tools/run-upstream-slice-benchmark.py": {
+      "fourth": "47a790c803c09d98158b738877655ca1a7edb2b6",
+      "repeat": "47a790c803c09d98158b738877655ca1a7edb2b6"
+    },
+    "tools/run-warm-entry-comparison.py": {
+      "fourth": "562a754316b3eee7f64a515ea7d384d4adfcc34e",
+      "repeat": "562a754316b3eee7f64a515ea7d384d4adfcc34e"
+    },
+    "tools/run-warm-entry-diagnostics.py": {
+      "fourth": "4526307bd54edf7d38be166fd837c77f011ebd54",
+      "repeat": "4526307bd54edf7d38be166fd837c77f011ebd54"
+    },
+    "tools/selection-toolchain-receipt.rs": {
+      "fourth": "c2d9fc566d6225b0b724c852181715b367f427fd",
+      "repeat": "c2d9fc566d6225b0b724c852181715b367f427fd"
+    },
+    "tools/test-native-compact-selection.py": {
+      "fourth": "f8db2e6ab4bb8a997365fbe4d8d3c9428d143197",
+      "repeat": "f8db2e6ab4bb8a997365fbe4d8d3c9428d143197"
+    },
+    "tools/test-native-selection-cache.py": {
+      "fourth": "f475a8393f9380e501a0e86e39b3a7439dffff50",
+      "repeat": "f475a8393f9380e501a0e86e39b3a7439dffff50"
+    },
+    "tools/test-native-selection-seed.py": {
+      "fourth": "72bb8a37ebcc2115af846cec64265e711f9b17f9",
+      "repeat": "72bb8a37ebcc2115af846cec64265e711f9b17f9"
+    },
+    "upstream": {
+      "fourth": "fa852c1718f644409bbdc92de23ef06fc906dfb2",
+      "repeat": "fa852c1718f644409bbdc92de23ef06fc906dfb2"
+    }
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "archive_sha256": "bc66c58469bf8de24fdc5544133ba4965fba26463cb84342da7c5d91e1865473",
+  "gates": {
+    "entry-contract": {
+      "failed": 0,
+      "log_sha256": "f813bd61f8461fb2214b934ab010f48c5c910e733d0df47aee1ebf1028e5a87e",
+      "passed": 16
+    },
+    "lustr-warm-compact-selection-contract": {
+      "assertions": 486,
+      "invocations": 103,
+      "status": "completed"
+    },
+    "lustr-warm-selection-contract": {
+      "assertions": 290,
+      "invocations": 154,
+      "status": "completed"
+    },
+    "lustr-warm-selection-seed-contract": {
+      "assertions": 85,
+      "invocations": 38,
+      "status": "completed"
+    }
+  },
+  "lustr-warm-comparison": {
+    "kinds": {
+      "build-identity": 525,
+      "cache-edit-completed": 1,
+      "cache-edit-proof": 8,
+      "cache-edit-source": 4,
+      "cache-edit-start": 1,
+      "cache-edit-step": 4,
+      "command": 1268,
+      "daemon-start": 157,
+      "daemon-stop": 157,
+      "entry-route": 12,
+      "excluded-prime": 576,
+      "group-end": 48,
+      "group-start": 48,
+      "identities": 1,
+      "qualification": 2,
+      "qualification-start": 2,
+      "retained-route": 12,
+      "runtime-identity": 212,
+      "runtime-oracle": 1,
+      "selection-cache": 8,
+      "timing": 384
+    },
+    "records": 3431
+  },
+  "lustr-warm-diagnostics": {
+    "kinds": {
+      "build-identity": 105,
+      "command": 347,
+      "daemon-start": 18,
+      "daemon-stop": 18,
+      "diagnostic-timing": 144,
+      "public-proof": 4,
+      "retained-proof": 12,
+      "runtime-identity": 78,
+      "selector-hit": 2,
+      "selector-timing": 48
+    },
+    "records": 776
+  },
+  "notes": [
+    "Automatic workflow repeat after docs/CI constructor repair; measured product/runner source unchanged from 3c378a11.",
+    "All main and diagnostic observations remain separate from earlier campaigns; no pooling, fastest-run selection, or ff9c before/after gain claim.",
+    "Native/compiler binaries were rebuilt and actual differing hashes are retained; product source identity does not assert byte-identical core binaries."
+  ],
+  "schema": "lustr-automatic-ff9c-repeat-replay-summary-v1",
+  "source": {
+    "revision": "c3513db6bc32a57ec4ae48bc0e0c504582d3a5b5",
+    "tree": "52ab272cbed5d88b7126d35da5a7f7ff2607cc24"
+  },
+  "status": "completed",
+  "warm_target_met": false
+}

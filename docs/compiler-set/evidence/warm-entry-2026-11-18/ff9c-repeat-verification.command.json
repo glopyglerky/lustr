@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "python3",
+    "-B",
+    "docs/compiler-set/evidence/warm-entry-2026-11-18/replay.py"
+  ],
+  "cwd": "/workspace/scratch/3ff9b6fc98dd/lustr-ff9c-repeat-evidence",
+  "environment_overrides": {},
+  "environment_removed": [],
+  "timeout_seconds": 180,
+  "started_utc": "2026-11-18T15:29:51Z"
+}

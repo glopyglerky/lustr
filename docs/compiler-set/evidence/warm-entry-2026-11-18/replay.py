@@ -3,8 +3,10 @@
 import hashlib
 import json
 from collections import Counter
+import math
 from pathlib import Path
 import stat
+import statistics
 import subprocess
 import sys
 import tempfile
@@ -61,7 +63,7 @@ def third_checks(output,campaign,report):
 
 
 def fourth_checks(output,campaign,report):
-    summary=json.loads((ROOT/'fourth-replay-summary.json').read_text())
+    summary=json.loads((ROOT/campaign.get('replay_summary','fourth-replay-summary.json')).read_text())
     require(summary['source']==report['candidate_identity'] and summary['archive_sha256']==campaign['archive_sha256']
             and summary['warm_target_met'] is False,'fourth replay summary binding differs')
     require(report['baseline_composition']['baseline']['revision']=='d57f485eeb2b638d1f95a0594294d11e8001fe8e',
@@ -155,7 +157,53 @@ def fourth_checks(output,campaign,report):
     log=(output/'lustr-warm-entry-contract.log').read_bytes()
     require(digest(log)==summary['gates']['entry-contract']['log_sha256']
             and b'test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;' in log,'fourth entry contract log differs')
-    print('Fourth run: 144 native and 48 selector diagnostic timings replayed; 154/290 selector, 38/85 seed, 103/486 compact and 16/16 entry gates verified; 77 full-Selection selector pairs and eight exact fallback runtimes reconstructed.')
+    title='Fourth run' if campaign['label']=='fourth' else 'Automatic ff9c repeat'
+    print(title+': 144 native and 48 selector diagnostic timings replayed; 154/290 selector, 38/85 seed, 103/486 compact and 16/16 entry gates verified; 77 full-Selection selector pairs and eight exact fallback runtimes reconstructed.')
+
+
+def repeat_statistics(report,details):
+    def distributions(rows,phase_key):
+        groups={}
+        for row in rows:
+            groups.setdefault((row[phase_key],row['lane']),[]).append(row['seconds'])
+        return [{'operation':operation,'lane':lane,'count':len(values),
+                 'minimum_seconds':min(values),'median_seconds':statistics.median(values),
+                 'p95_seconds':sorted(values)[math.ceil(.95*len(values))-1],'maximum_seconds':max(values)}
+                for (operation,lane),values in sorted(groups.items())]
+    def estimates(rows):
+        return [{**{k:v for k,v in row.items() if k!='analysis'},
+                 'analysis':{k:v for k,v in row['analysis'].items() if k not in ('raw_ratios','log_ratios')}}
+                for row in rows]
+    return {'schema':'lustr-automatic-ff9c-repeat-statistics-v1','source':report['candidate_identity'],
+            'scope':'Automatic repeat with unchanged product source; no cross-run source gain or pooled samples.',
+            'primary':distributions(report['samples'],'phase'),'comparisons':estimates(report['summaries']),
+            'diagnostic_native':distributions(details['native_timings'],'operation'),
+            'diagnostic_comparisons':estimates(details['summaries']['native']),
+            'diagnostic_selector':{k:v for k,v in details['summaries']['selector'].items() if k not in ('raw_ratios','log_ratios')},
+            'warm_target':report['warm_target'],'all_measured_observations_retained':True}
+
+
+def repeat_checks(output,campaign,report):
+    details=json.loads((output/'lustr-warm-diagnostics/report.json').read_text())
+    require(json.loads((ROOT/campaign['statistics']).read_text())==repeat_statistics(report,details),
+            'automatic repeat statistics do not match all original observations')
+    proof=json.loads((ROOT/campaign['product_identity_proof']).read_text())
+    require(proof['repeat_source']==report['candidate_identity'] and proof['automatic_repeat'] is True
+            and proof['pooled_samples'] is False,'automatic repeat identity/scope differs')
+    for path,ids in proof['source_objects'].items():
+        require(ids['fourth']==ids['repeat'] and len(ids['fourth'])==40,'recorded unchanged source object differs: '+path)
+    previous_archive=ROOT/proof['previous_archive']
+    require(digest(previous_archive.read_bytes())==proof['previous_archive_sha256'],'previous campaign archive differs')
+    with zipfile.ZipFile(previous_archive) as z:
+        previous=json.loads(z.read('lustr-warm-comparison/report.json'))
+    require(previous['candidate_identity']==proof['previous_source'],'previous executed source differs')
+    actual={}
+    for path,current in report['compiler_and_runner_sha256'].items():
+        if '/bin/' in path or '/release/lust' in path or path.endswith('/liblustr_native_core.so'):
+            prior=previous['compiler_and_runner_sha256'][path]
+            actual[path]={'fourth_sha256':prior,'repeat_sha256':current,'identical':prior==current}
+    require(actual==proof['executed_binary_hashes'],'automatic repeat changed actual binary identity observations')
+    print('Automatic ff9c repeat: all primary/diagnostic distributions and paired estimates replayed; unchanged product-source object identities retained separately from rebuilt binary hash differences; no pooled or selected samples.')
 
 
 def main():
@@ -216,7 +264,8 @@ def main():
                             and stat.S_ISREG(identity[4]) and identity[7]>0,'constructor tool stamp shape differs')
                 print(title+'-run constructor: checked actual-launcher execution, certificate and receipt bindings verified; archive-only limitations retained.')
                 if campaign['label']=='third': third_checks(output,campaign,report)
-                if campaign['label']=='fourth': fourth_checks(output,campaign,report)
+                if campaign['label'] in ('fourth','automatic ff9c repeat'): fourth_checks(output,campaign,report)
+                if campaign['label']=='automatic ff9c repeat': repeat_checks(output,campaign,report)
 
 
 if __name__=='__main__': main()

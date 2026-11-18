@@ -1,0 +1,8 @@
+{
+  "returncode": 0,
+  "timed_out": false,
+  "wall_seconds": 9.947382903999824,
+  "finished_utc": "2026-11-18T15:30:01Z",
+  "stdout_sha256": "ea29b852c6e4af6857f66ab13e8a34308ec4f1329746e047e45ff47f587475d9",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

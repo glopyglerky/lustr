@@ -1,0 +1,13 @@
+First run: original failed gate and all streams verified; zero timing samples; incomplete-result rejection retained.
+Second run: Verified 384 timings; warm target met: False
+Second-run constructor: checked actual-launcher execution, certificate and receipt bindings verified; archive-only limitations retained.
+Third run: Verified 384 timings; warm target met: False
+Third-run constructor: checked actual-launcher execution, certificate and receipt bindings verified; archive-only limitations retained.
+Third run: 144 native and 48 selector diagnostic timings replayed; public cached-edit proof, 140/265 selector gate, 38/85 seed gate and 16/16 entry log verified.
+Fourth run: Verified 384 timings; warm target met: False
+Fourth-run constructor: checked actual-launcher execution, certificate and receipt bindings verified; archive-only limitations retained.
+Fourth run: 144 native and 48 selector diagnostic timings replayed; 154/290 selector, 38/85 seed, 103/486 compact and 16/16 entry gates verified; 77 full-Selection selector pairs and eight exact fallback runtimes reconstructed.
+Automatic ff9c repeat run: Verified 384 timings; warm target met: False
+Automatic ff9c repeat-run constructor: checked actual-launcher execution, certificate and receipt bindings verified; archive-only limitations retained.
+Automatic ff9c repeat: 144 native and 48 selector diagnostic timings replayed; 154/290 selector, 38/85 seed, 103/486 compact and 16/16 entry gates verified; 77 full-Selection selector pairs and eight exact fallback runtimes reconstructed.
+Automatic ff9c repeat: all primary/diagnostic distributions and paired estimates replayed; unchanged product-source object identities retained separately from rebuilt binary hash differences; no pooled or selected samples.

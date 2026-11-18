@@ -1,0 +1,12 @@
+{
+  "schema": "lustr-automatic-repeat-verification-v1",
+  "status": "passed",
+  "runner_sha256": "ac94b7a748861f4d6369126fc76d524fff5b676897739cd9872ebaa3fe7c27dc",
+  "manifest_sha256": "8087f9410de07806835fb87469239116e3fa1ca476432d6d8ca271938df4588b",
+  "command_record": "ff9c-repeat-verification.command.json",
+  "status_record": "ff9c-repeat-verification.status.json",
+  "stdout_record": "ff9c-repeat-verification.stdout",
+  "stderr_record": "ff9c-repeat-verification.stderr",
+  "all_campaigns_checked": 5,
+  "timings_reexecuted": false
+}
