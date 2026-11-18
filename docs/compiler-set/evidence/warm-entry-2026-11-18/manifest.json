@@ -1,0 +1,49 @@
+{
+  "schema": "lustr-warm-evidence-bundle-v1",
+  "campaigns": [
+    {
+      "label": "first",
+      "run_id": 44293812634,
+      "job_id": 134765521290,
+      "artifact_id": 14424121317,
+      "published_revision": "18fe6c3408e6d581961bcf7f2721f72ca74cfbfa",
+      "executed_source": {
+        "revision": "6c3e5a44d54d83f1bacbd2977fe2fb32e11c0621",
+        "tree": "b568e8bf4d9970418b7c1f4ef2984ce391ffa5f5"
+      },
+      "archive": "artifact-14424121317.zip",
+      "archive_sha256": "65bcf79991f5dc265fc96c306f15ec82b1e1d504fe93f70142d1208cd116c37d",
+      "runner_directory": "first-runner",
+      "runner_sha256": {
+        "run-warm-entry-comparison.py": "e271d398b9cb0da0df25daa19678714b0aca64d27092a8f08b100a61a8b5a7e8",
+        "run-upstream-slice-benchmark.py": "ad7c4e2f74629ecf46c6c8e30bc2c7d62d5a22c8db37e6e346575c5edf3eb4c3",
+        "report-mixed-performance.py": "5f3fe49eb7898854b41fd76b7b643adcf8a72c1e434127fec67404005712e8a5",
+        "capture-benchmark-host.py": "39d5c016d16a55ada0968b1cce2e0cb01d2319204e2011e13b32b7e262c30d57"
+      },
+      "report_status": "failed",
+      "sample_count": 0
+    },
+    {
+      "label": "second",
+      "run_id": 44298375054,
+      "job_id": 134781261965,
+      "artifact_id": 14425773276,
+      "published_revision": "3091e80fce0bf8db43b7526cb68073e6c7910f35",
+      "executed_source": {
+        "revision": "82fd75aa6e8fbe2b1d53624f7d2ea1610d76cc70",
+        "tree": "d6212e4ad0b816bf025b3aa17297c445d50d91a2"
+      },
+      "archive": "artifact-14425773276.zip",
+      "archive_sha256": "f73d4bdf646d3abd9a426bcc0282fad244097f8f600eb78787c29332f6912e9a",
+      "runner_directory": "second-runner",
+      "runner_sha256": {
+        "run-warm-entry-comparison.py": "d999613a08b3411102bd87bb0421e496755ccf16988b406c3fffee2fde71be53",
+        "run-upstream-slice-benchmark.py": "ad7c4e2f74629ecf46c6c8e30bc2c7d62d5a22c8db37e6e346575c5edf3eb4c3",
+        "report-mixed-performance.py": "5f3fe49eb7898854b41fd76b7b643adcf8a72c1e434127fec67404005712e8a5",
+        "capture-benchmark-host.py": "39d5c016d16a55ada0968b1cce2e0cb01d2319204e2011e13b32b7e262c30d57"
+      },
+      "report_status": "completed",
+      "sample_count": 384
+    }
+  ]
+}

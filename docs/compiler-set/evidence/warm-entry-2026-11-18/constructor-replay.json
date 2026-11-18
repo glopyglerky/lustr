@@ -1,0 +1,33 @@
+{
+  "archive_sha256": "f73d4bdf646d3abd9a426bcc0282fad244097f8f600eb78787c29332f6912e9a",
+  "certificate": "tools-12d96ca6d14b8a05f712e65da44c11287148a9d50d06c154b1e6f1320b34708a.json",
+  "constructor_source_sha256": {
+    "src/main.rs": "5503c02cc66cee00a1398f5cededd0c155fcbe52a8d122bed6d314e5dbe36c1c",
+    "src/selection_cache.rs": "c6fc392e1a46980292fb4813a6fadba8a0c96d2686301ced2b1dcad38981c3f2",
+    "tools/build-mixed-toolchain.rs": "cddb08678e6e6a82b7bb897adcf2928d0d872dc4956dd28b3829cba8e2e30469",
+    "tools/selection-toolchain-receipt.rs": "b412fd43bcdcd31e4756d2467a3854640a85f9e7489b07eb85a647c8c59b5d05"
+  },
+  "files": {
+    "lustr-warm-built/logs/preverify-selection-tools.command": "c6fdada80854073da49880f7fb4eed3ee2522d22ee49b7cfa73996663b51830d",
+    "lustr-warm-built/logs/preverify-selection-tools.status": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+    "lustr-warm-built/logs/preverify-selection-tools.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "lustr-warm-built/logs/preverify-selection-tools.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "lustr-warm-built/toolchain/lib/lustr-selection-tools.txt": "45b93212d825f73880372b8b7456f28a58e075da80c4e69933a41ceace2f1410",
+    "lustr-warm-built/toolchain/lib/lustr-selection-verified/tools-12d96ca6d14b8a05f712e65da44c11287148a9d50d06c154b1e6f1320b34708a.json": "6fee7146669029c53784cf8f71cd0367158a2fb69c4b13b26ee5f90c936fa7d0",
+    "lustr-warm-comparison/build-receipts/lustr-selection-tools.txt": "45b93212d825f73880372b8b7456f28a58e075da80c4e69933a41ceace2f1410",
+    "lustr-warm-comparison/report.json": "ac1c50f02fd3a0dff2bebed57abf8a89f9fe6bfc6ecc8312ffb1fae84e575da3"
+  },
+  "launcher": {
+    "path": "/home/runner/work/_temp/lustr-warm-built/toolchain/bin/lustr",
+    "sha256": "1a43e2c1dd34f64e09389838d3e1f8e0d04bd4284e46879b34353ff6ffdf29b9"
+  },
+  "limits": "The archive has no complete compiler binaries and does not preserve seed ownership/modes. Their live validation is the checked constructor source operation, whose success and exact source are retained. The separate helper seed regression does not substitute for the actual launcher seed.",
+  "schema": "lustr-constructor-evidence-replay-v1",
+  "scope": "Archive checks of source-built constructor logs and its actual installed-lustr seed; no new initialization or live-tool restamping.",
+  "source": {
+    "revision": "82fd75aa6e8fbe2b1d53624f7d2ea1610d76cc70",
+    "tree": "d6212e4ad0b816bf025b3aa17297c445d50d91a2"
+  },
+  "status": "completed",
+  "tool_identities": 9
+}
