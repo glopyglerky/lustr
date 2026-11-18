@@ -16,6 +16,10 @@ mod lust {
 
     pub struct Call(protocol::Request, Option<full::Selection>);
 
+    pub fn prime_selection_tools(parent: &Path) -> std::io::Result<()> {
+        full::prime_selection_tools(parent)
+    }
+
     impl Call {
         pub fn expanded(&self, identity: &str) -> Self {
             let mut request = self.0.clone();
@@ -186,6 +190,15 @@ fn main() -> ExitCode {
     }
     let parent = std::env::current_exe().unwrap().parent().unwrap().to_path_buf();
     let compiler_mode = program.is_some_and(|a| std::path::Path::new(&a).file_name().is_some_and(|n| n == "rustc"));
+    if !compiler_mode && args == ["--lustr-prime-selection-tools"] {
+        return match lust::prime_selection_tools(&parent) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(error) => {
+                eprintln!("cannot preverify Cargo selection tools: {error}");
+                ExitCode::from(2)
+            }
+        };
+    }
     let native_cli = !compiler_mode && lustr_compiler::is_native_command(&args);
     if !compiler_mode && !native_cli && lustr_compiler::cargo_command(&args) {
         // Use the same coordinator as both Cargo extensions without loading an

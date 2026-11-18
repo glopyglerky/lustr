@@ -19,6 +19,15 @@ fn main() -> ExitCode {
     let phase = arguments.next().expect("PHASE PACKAGE_BIN NATIVE_ARGUMENTS...");
     let parent = PathBuf::from(arguments.next().expect("PACKAGE_BIN"));
     assert!(parent.is_absolute(), "PACKAGE_BIN must be absolute");
+    if phase == "prime-selection-tools" {
+        return match full::prime_selection_tools(&parent) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(error) => {
+                eprintln!("{error}");
+                ExitCode::from(2)
+            }
+        };
+    }
     let args: Vec<_> = arguments.collect();
     let Some(protocol::Invocation::Compile { req, run: false, .. }) = protocol::parse_args(&args) else {
         eprintln!("expected the same native check/build arguments as the public entry");

@@ -63,6 +63,15 @@ can use the same certificate while those identities remain unchanged. The
 first population cost is separate from the steady-state cache-hit cost and
 must be reported; it is not hidden inside a warm-speed claim.
 
+Normal source package construction now invokes the final installed launcher
+with `--lustr-prime-selection-tools` after placing all tools and writing the
+receipt. This uses the same actual byte verification and stores a private seed
+under `lib/lustr-selection-verified`. A new project's cache can copy that
+certificate only if the live launcher, tool and library identities and receipt
+still match. This moves verification cost into package construction. A missing,
+relocated, changed, corrupt or differently owned seed falls back to actual byte
+verification in the project cache; it cannot authorize unknown tools.
+
 Selection does not read Rust function bodies. A body edit therefore retains a
 valid target selection and still reaches the native compiler's existing source
 invalidation and checking. This cache does not store successful compilations,

@@ -296,6 +296,9 @@ fn main() {
     }
     record(&output.join("COMPONENTS.txt"), manifest.as_bytes());
     selection_toolchain_receipt::write(&package, source, &host);
+    if host == "x86_64-unknown-linux-gnu" {
+        checked("preverify-selection-tools", Command::new(package.join("bin/lustr")).arg("--lustr-prime-selection-tools"), &logs);
+    }
     for p in [package.join("bin/lustr-cargo"), package.join("bin"), package.join("lib"), package, logs, output.clone()] {
         fs::File::open(p).unwrap().sync_all().unwrap();
     }

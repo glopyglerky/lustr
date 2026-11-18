@@ -24,6 +24,10 @@ fn private_directory(root: &Path) -> Option<()> {
         Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
         Err(_) => return None,
     }
+    private_directory_exists(root)
+}
+
+fn private_directory_exists(root: &Path) -> Option<()> {
     let metadata = root.symlink_metadata().ok()?;
     // SAFETY: geteuid has no arguments or preconditions and does not mutate
     // process state. The directory itself must not be a symlink.
@@ -235,6 +239,7 @@ fn pin(key: &str) -> Option<&'static str> {
 struct Tools {
     state: Value,
     files: Vec<(PathBuf, String, Value)>,
+    seed: PathBuf,
 }
 
 fn toolchain(parent: &Path) -> Option<Tools> {
@@ -304,18 +309,36 @@ fn toolchain(parent: &Path) -> Option<Tools> {
     if !expected.is_empty() {
         return None;
     }
-    Some(Tools { state: json!({"receipt":receipt, "identities":identities}), files: verified })
+    Some(Tools {
+        state: json!({"receipt":receipt, "identities":identities}),
+        files: verified,
+        seed: package.join("lib/lustr-selection-verified"),
+    })
 }
 
 impl Tools {
+    fn certificate(&self, root: &Path) -> Option<PathBuf> {
+        let key = digest(&serde_json::to_vec(&self.state).ok()?);
+        Some(root.join(format!("tools-{key}.json")))
+    }
+
+    fn certified(&self, root: &Path) -> bool {
+        self.certificate(root)
+            .and_then(|path| private_record(root, &path))
+            .is_some_and(|value| value["schema"] == SCHEMA && value["tools"] == self.state)
+    }
+
     fn verify(&self, root: &Path) -> Option<()> {
         private_directory(root)?;
-        let key = digest(&serde_json::to_vec(&self.state).ok()?);
-        let certificate = root.join(format!("tools-{key}.json"));
-        if let Some(value) = private_record(root, &certificate) {
-            if value["schema"] == SCHEMA && value["tools"] == self.state {
-                return Some(());
-            }
+        let certificate = self.certificate(root)?;
+        if self.certified(root) {
+            return Some(());
+        }
+        // Normal package assembly may preverify these exact installed tool
+        // identities. No receipt or seed with changed paths/stamps is trusted.
+        // Unknown, relocated and shared packages still hash the actual bytes.
+        if root != self.seed && self.certified(&self.seed) {
+            return write_record(root, &certificate, &json!({"schema":SCHEMA,"tools":self.state}));
         }
         for (path, expected, identity) in &self.files {
             let mut file = File::open(path).ok()?;
@@ -337,8 +360,15 @@ impl Tools {
     }
 }
 
+pub fn prime_tools(parent: &Path) -> Option<()> {
+    let before = toolchain(parent)?;
+    before.verify(&before.seed)?;
+    // This setup command does not certify a toolchain changed during hashing.
+    (toolchain(parent)? == before).then_some(())
+}
+
 fn private_record(root: &Path, path: &Path) -> Option<Value> {
-    private_directory(root)?;
+    private_directory_exists(root)?;
     let owner = root.metadata().ok()?.uid();
     let metadata = path.symlink_metadata().ok()?;
     if !metadata.is_file() || metadata.uid() != owner || metadata.mode() & 0o077 != 0 || metadata.nlink() != 1 {

@@ -10,6 +10,10 @@ mod selection_cache {
     include!("selection_cache.rs");
 }
 
+pub fn prime_selection_tools(parent: &Path) -> io::Result<()> {
+    selection_cache::prime_tools(parent).ok_or_else(|| error("selection tools are not a stable admitted source package"))
+}
+
 fn error(message: &str) -> io::Error {
     io::Error::other(message)
 }
