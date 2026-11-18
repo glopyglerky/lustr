@@ -113,7 +113,7 @@ def synthetic_campaign(output):
                          pristine_source=output/"synthetic-pristine-source",repository=output/"synthetic-candidate-source")
     campaign=B.Campaign(args)
     campaign.fixture.mkdir(); (campaign.fixture/"src").mkdir()
-    (campaign.fixture/"src/slice_main.rs").write_text("fn main() {}\n")
+    (campaign.fixture/"src/slice_main.rs").write_text("mod bench_driver;\nfn main() { bench_driver::run(); }\n")
     (campaign.fixture/"Cargo.toml").write_text("# synthetic fixture\n")
     (campaign.fixture/"Cargo.lock").write_text("# synthetic lock\n")
     (output/"rejected.rs").write_text(B.S.REJECTION)
@@ -121,26 +121,34 @@ def synthetic_campaign(output):
     def run(argv,env,cwd,lane,phase,expected=0):
         argv=list(map(str,argv)); data=error=b""
         if phase=="gate-reject": error=b"error[E0308]: synthetic expected mismatch\n"
+        elif phase.startswith("cache-edit-invalid-"): error=b"error[E0308]: synthetic edited mismatch\n"
         elif phase in ("gate-retained-check","gate-retained-build"):
             error=PRISTINE_RETAINED_BUILD if phase=="gate-retained-build" else PRISTINE_RETAINED_CHECK
-        elif len(argv)==1: data=b"synthetic runtime result\n"
+        elif phase.startswith("cache-edit-initial-") and lane=="entry":
+            error=PRISTINE_RETAINED_BUILD if phase.endswith("-build") else PRISTINE_RETAINED_CHECK
+        elif len(argv)==1:
+            data=(b"selection-cache-edited\n" if b"selection-cache-edited" in (campaign.fixture/"src/slice_main.rs").read_bytes() else b"") + b"synthetic runtime result\n"
         if len(argv)>1 and argv[1] in ("check","build") and phase!="gate-reject":
             binary=None
-            if lane=="cargo":
+            if lane=="cargo" and expected==0:
                 target=Path(env["CARGO_TARGET_DIR"])
                 binary=target/B.S.TARGET/"debug/slice" if argv[1]=="build" else None
                 data=(json.dumps({"reason":"compiler-artifact","target":{"name":"slice","kind":["bin"]},
                       "profile":{"opt_level":"0","debuginfo":0,"debug_assertions":True,"overflow_checks":True},
-                      "fresh":phase not in ("cold-check","cold-build","gate-build"),"executable":str(binary) if binary else None})+"\n"+
+                      "fresh":phase not in ("cold-check","cold-build","gate-build") and not phase.startswith("cache-edit-"),"executable":str(binary) if binary else None})+"\n"+
                       json.dumps({"reason":"build-finished","success":True})+"\n").encode()
-            elif "-o" in argv: binary=Path(argv[argv.index("-o")+1])
+            elif "-o" in argv and expected==0: binary=Path(argv[argv.index("-o")+1])
             if binary:
                 binary.parent.mkdir(parents=True,exist_ok=True); binary.write_bytes(b"synthetic nonexecutable bytes\n")
             if "LUSTR_TRACE_PATH" in env:
-                Path(env["LUSTR_TRACE_PATH"]).write_text(json.dumps({"engine":"lust","entry":"upstream-process" if "LUST_NO_DAEMON" in env else "daemon"})+"\n")
+                route=([{"engine":"lust-rejected","entry":"daemon"},{"engine":"full-rust-core","entry":"cargo"}] if expected==101 else
+                       [{"engine":"lust","entry":"upstream-process" if "LUST_NO_DAEMON" in env else "daemon"}])
+                with Path(env["LUSTR_TRACE_PATH"]).open("a") as stream:
+                    stream.write("".join(json.dumps(record)+"\n" for record in route))
             if "LUSTR_SELECTION_DIAGNOSTICS" in env:
                 with Path(env["LUSTR_SELECTION_DIAGNOSTICS"]).open("a") as stream:
-                    stream.write(json.dumps({"selection_cache":"hit" if phase=="gate-selection-hit" else "miss"})+"\n")
+                    stream.write(json.dumps({"selection_cache":"hit" if phase=="gate-selection-hit" or
+                        (phase.startswith("cache-edit-") and phase!="cache-edit-prime") else "miss"})+"\n")
         row={"kind":"command","id":len(recorder.records),"argv":argv,"environment":env,"cwd":str(cwd),"lane":lane,"phase":phase,
              "expected_exit":expected,"exit":expected,"signal":None,"timed_out":False,"output_limit":False,"seconds":.01}
         for name,value in (("stdout",data),("stderr",error)):
@@ -169,6 +177,7 @@ def synthetic_campaign(output):
     sockets=output/"sockets"; sockets.mkdir()
     with recorder.raw,patch.object(recorder,"run",side_effect=run),patch.object(B.S,"Daemon",Daemon):
         campaign.qualification(sockets,"initial")
+        campaign.cache_edit_qualification(sockets)
         campaign.report["orders"]=B.orders(12)
         for sample,order in enumerate(campaign.report["orders"]):
             for operation in ("check","build"): campaign.measure_group(sample,order,operation,sockets)
@@ -203,6 +212,29 @@ class ReplayControls(unittest.TestCase):
         with self.assertRaises(ValueError): B.verify(self.corruption(mutate))
     def test_missing_selection_reuse_proof_is_rejected(self):
         def mutate(rows): next(r for r in rows if r["kind"]=="selection-cache")["kind"]="unrelated"
+        with self.assertRaises(ValueError): B.verify(self.corruption(mutate))
+    def test_missing_actual_cached_edit_proof_is_rejected(self):
+        def mutate(rows): next(r for r in rows if r["kind"]=="cache-edit-proof" and r["stage"]=="edited")["kind"]="unrelated"
+        with self.assertRaises(ValueError): B.verify(self.corruption(mutate))
+    def test_invalid_edit_cannot_be_reported_as_success(self):
+        def mutate(rows):
+            row=next(r for r in rows if r["kind"]=="command" and r["phase"]=="cache-edit-invalid-build" and r["lane"]=="entry")
+            row["exit"]=row["expected_exit"]=0
+        with self.assertRaises(ValueError): B.verify(self.corruption(mutate))
+    def test_cached_edit_source_cannot_be_skipped(self):
+        def mutate(rows): next(r for r in rows if r["kind"]=="cache-edit-source" and r["stage"]=="edited")["stage"]="initial"
+        with self.assertRaises(ValueError): B.verify(self.corruption(mutate))
+    def test_edited_runtime_cannot_use_the_initial_result(self):
+        def mutate(rows):
+            initial=next(r for r in rows if r["kind"]=="cache-edit-step" and r["stage"]=="initial")
+            edited=next(r for r in rows if r["kind"]=="cache-edit-step" and r["stage"]=="edited")
+            edited["runs"]["entry"]=initial["runs"]["entry"]
+        with self.assertRaises(ValueError): B.verify(self.corruption(mutate))
+    def test_restored_runtime_cannot_reuse_the_initial_execution(self):
+        def mutate(rows):
+            initial=next(r for r in rows if r["kind"]=="cache-edit-step" and r["stage"]=="initial")
+            restored=next(r for r in rows if r["kind"]=="cache-edit-step" and r["stage"]=="restored")
+            restored["runs"]["entry"]=initial["runs"]["entry"]
         with self.assertRaises(ValueError): B.verify(self.corruption(mutate))
     def test_freshly_restarted_warm_command_is_rejected(self):
         def mutate(rows): next(r for r in rows if r["kind"]=="command" and r["phase"]=="no-op-check")["environment"]["LUST_NO_DAEMON"]="1"

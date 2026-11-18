@@ -229,6 +229,15 @@ def retained_proof(data, operation):
     return {"route":route, "counters":counters}
 
 
+def edit_variants(original):
+    anchor = b"fn main() { bench_driver::run(); }"
+    require(original.count(anchor) == 1, "missing unique public-slice edit anchor")
+    return {"initial":original,
+            "edited":original.replace(anchor, b'fn main() { println!("selection-cache-edited"); bench_driver::run(); }'),
+            "invalid":original.replace(anchor, b'fn main() { let _value: u32 = "not an integer"; bench_driver::run(); }'),
+            "restored":original}
+
+
 class Campaign(S.Campaign):
     def __init__(self, args):
         super().__init__(args)
@@ -310,6 +319,79 @@ class Campaign(S.Campaign):
             require(b"E0308" in out + err or b"L0110" in out + err, "wrong rejection diagnostic")
         self.recorder.event({"kind":"qualification", "stage":stage, "completed":True})
 
+    def cache_edit_qualification(self, sockets):
+        """Actual cached public commands must still see edits and rejection."""
+        main = self.fixture / "src/slice_main.rs"
+        original = main.read_bytes()
+        source = S.inventory(self.fixture)
+        states = {lane:self.output / "work/cache-edits" / lane for lane in ("cargo", "entry")}
+        envs = {lane:self.environment(states[lane], sockets / ("cache-edits-" + lane + ".sock")) for lane in states}
+        selection_path, entry_path = states["entry"] / "selection.jsonl", states["entry"] / "entry.jsonl"
+        envs["entry"].update(LUST_STATS="1", LUSTR_SELECTION_DIAGNOSTICS=str(selection_path), LUSTR_TRACE_PATH=str(entry_path))
+        def archive(command, suffix, data):
+            path = self.output / "commands" / f"{command['id']:05}.{suffix}"
+            path.write_bytes(data)
+            return {"file":str(path.relative_to(self.output)), "sha256":S.digest(path), "bytes":len(data)}
+        self.recorder.event({"kind":"cache-edit-start"})
+        try:
+            with S.Daemon(self.recorder, self.daemon_tool("entry"), envs["entry"], self.fixture, "entry", "cache-edits") as daemon:
+                for operation in ("check", "build"):
+                    for _ in range(3):
+                        self.compile("entry", operation, states["entry"], envs["entry"], "cache-edit-prime")
+                for stage, contents in edit_variants(original).items():
+                    main.write_bytes(contents)
+                    snapshot = self.output / "commands" / f"cache-edit-{stage}.rs"
+                    snapshot.write_bytes(contents)
+                    observed = S.inventory(self.fixture)
+                    require(observed == dict(source, **{"src/slice_main.rs":S.digest(main)}), "edit changed another source input")
+                    self.recorder.event({"kind":"cache-edit-source", "stage":stage,
+                                         "source":{"file":str(snapshot.relative_to(self.output)), "sha256":S.digest(snapshot), "bytes":len(contents)},
+                                         "fixture_files":observed})
+                    commands, runs = {}, {}
+                    for operation in ("check", "build"):
+                        for lane in ("cargo", "entry"):
+                            state, env = states[lane], envs[lane]
+                            before_selection = selection_path.read_bytes() if lane == "entry" else b""
+                            before_entry = entry_path.read_bytes() if lane == "entry" else b""
+                            binary = state / (f"target/{S.TARGET}/debug/slice" if lane == "cargo" else "program")
+                            if operation == "build" and binary.exists():
+                                binary.unlink()
+                            phase = f"cache-edit-{stage}-{operation}"
+                            expected = 101 if stage == "invalid" else 0
+                            command, out, err = self.recorder.run(self.command(lane, operation, state), env, self.fixture, lane, phase, expected)
+                            commands[lane + "-" + operation] = command["id"]
+                            if lane == "entry":
+                                selection, entry = selection_path.read_bytes(), entry_path.read_bytes()
+                                require(selection.startswith(before_selection) and entry.startswith(before_entry), "edit diagnostics were replaced")
+                                selection, entry = selection[len(before_selection):], entry[len(before_entry):]
+                                require([json.loads(line) for line in selection.splitlines()] == [{"selection_cache":"hit"}], "body edit did not retain target selection")
+                                expected_route = ([{"engine":"lust-rejected", "entry":"daemon"}, {"engine":"full-rust-core", "entry":"cargo"}]
+                                                  if stage == "invalid" else [{"engine":"lust", "entry":"daemon"}])
+                                require([json.loads(line) for line in entry.splitlines()] == expected_route, "edit escaped retained native compilation")
+                                self.recorder.event({"kind":"cache-edit-proof", "command":command["id"], "stage":stage, "operation":operation,
+                                                     "selection":archive(command, "edit-selection.trace", selection), "entry":archive(command, "edit-entry.trace", entry),
+                                                     "retained":retained_proof(err, operation) if stage == "initial" else None})
+                            if stage == "invalid":
+                                require(b"E0308" in out + err, "cached invalid body has the wrong rejection")
+                                require(operation != "build" or not binary.exists(), "rejected edit left an executable")
+                            elif lane == "cargo":
+                                S.cargo_artifact(out, operation, state / "target", False)
+                            if operation == "build" and stage != "invalid":
+                                require(binary.is_file() and not binary.is_symlink(), "edited build did not produce an ordinary executable")
+                                built = {"build_command":command["id"], "binary_sha256":S.digest(binary)}
+                                self.recorder.event({"kind":"build-identity", "binary":str(binary), **built})
+                                run, stdout, stderr = self.recorder.run([binary], env, self.fixture, lane, "cache-edit-execute")
+                                self.recorder.event({"kind":"runtime-identity", "command":run["id"], "binary":str(binary), **built})
+                                runs[lane] = run["id"]
+                                expected_output = (b"selection-cache-edited\n" if stage == "edited" else b"") + self.expected_output
+                                require(stdout == expected_output and stderr == b"", "edited runtime differs from the required Rust output")
+                            daemon.alive()
+                    self.recorder.event({"kind":"cache-edit-step", "stage":stage, "commands":commands, "runs":runs})
+        finally:
+            main.write_bytes(original)
+        require(S.inventory(self.fixture) == source, "edit gate did not restore the original source")
+        self.recorder.event({"kind":"cache-edit-completed"})
+
     def measure_group(self, sample, order, operation, sockets):
         self.recorder.event({"kind":"group-start", "sample":sample, "operation":operation, "order":order})
         with ExitStack() as stack:
@@ -387,6 +469,7 @@ class Campaign(S.Campaign):
             self.recorder.event({"kind":"identities", **{key:self.report[key] for key in
                                  ("tool_paths", "compiler_and_runner_sha256", "fixture_files", "candidate_identity", "baseline_composition", "build_receipts", "rustc_version")}})
             self.qualification(sockets, "initial")
+            self.cache_edit_qualification(sockets)
             self.report["orders"] = orders(self.args.pairs)
             for sample, order in enumerate(self.report["orders"]):
                 for operation in ("check", "build"):
@@ -424,6 +507,7 @@ def render(report):
         lines.append(f"| {row['phase']} | {row['baseline']} | {row['candidate']} | {a['geometric_ratio']:.4f} | [{a['bootstrap_95'][0]:.4f}, {a['bootstrap_95'][1]:.4f}] |")
     lines += ["", f"Warm target met: {report['warm_target']['meets_target']}.", "", report["warm_target"]["criterion"], "",
               "Retained checks require zero generated C. Retained builds require zero body rechecks, dirty function units and newly compiled objects; they may reassemble launcher/support C whose object is served from cache. Full counters and exact runtime-output checks are retained in the raw evidence.", "",
+              "Before timing, actual public-entry selection-cache hits are exercised through a valid body edit, a type-error edit, and restoration. Check/build exit statuses match Rust/Cargo; successful edited builds match its exact runtime output. These are correctness gates, not edit-speed measurements.", "",
               "Intervals are conditional exploratory estimates on this runner. Overlap with one does not prove equality. Full compiler correctness and release admission are separate gates.", ""]
     return "\n".join(lines)
 
@@ -452,7 +536,9 @@ def verify(output):
     selection_receipt = str(Path(report["tool_paths"]["entry"]).parent.parent / "lib/lustr-selection-tools.txt")
     require(report["build_receipts"]["lustr-selection-tools.txt"]["sha256"] == before["shared_package_sha256"][selection_receipt],
             "selection-toolchain receipt bytes differ from the executed package")
-    commands, retained, active, built, runtime_commands, selection = {}, [], {}, {}, set(), []
+    commands, retained, active, built, runtime_commands, runtime_builds, selection = {}, [], {}, {}, set(), {}, []
+    edit_active, edit_done, edit_sources, edit_proofs, edit_steps = False, False, [], [], []
+    variants = edit_variants((output / "fixture/src/slice_main.rs").read_bytes())
     group = None
     oracle = (output / "runtime-oracle.stdout").read_bytes()
     require(oracle and S.digest(output / "runtime-oracle.stdout") == report["runtime_oracle_sha256"], "runtime oracle changed")
@@ -475,6 +561,7 @@ def verify(output):
             require(commands[row["command"]]["argv"] == [row["binary"]], "runtime command differs")
             require(row["command"] not in runtime_commands, "duplicate runtime identity")
             runtime_commands.add(row["command"])
+            runtime_builds[row["command"]] = row["build_command"]
         if row["kind"] == "group-start":
             require(group is None, "measurement groups overlap")
             group = row
@@ -496,6 +583,62 @@ def verify(output):
             require(retained_proof(stream(command["stderr"]), row["operation"]) == {key:row[key] for key in ("route", "counters")}, "retained proof differs")
             require(row["lane"] in active and active[row["lane"]]["environment"].get("LUST_STATS") == "1", "retained daemon not instrumented")
             retained.append((row["lane"], row["operation"]))
+        if row["kind"] == "cache-edit-start":
+            require(not edit_active and not edit_done and group is None, "edit gate overlaps another campaign phase")
+            edit_active = True
+        if row["kind"] == "cache-edit-source":
+            require(edit_active and "entry" in active and active["entry"]["scope"] == "cache-edits", "edit has no retained owned daemon")
+            require(row["stage"] in variants and stream(row["source"]) == variants[row["stage"]], "edit source snapshot differs")
+            require(row["fixture_files"] == dict(report["fixture_files"], **{"src/slice_main.rs":row["source"]["sha256"]}), "edit changed another input")
+            edit_sources.append(row["stage"])
+        if row["kind"] == "cache-edit-proof":
+            command = commands[row["command"]]
+            require(edit_active and edit_sources and row["stage"] == edit_sources[-1]
+                    and command["lane"] == "entry" and command["phase"] == f"cache-edit-{row['stage']}-{row['operation']}", "edit proof is misbound")
+            require("entry" in active and command["environment"] == active["entry"]["environment"], "edit command lost its retained daemon environment")
+            require([json.loads(line) for line in stream(row["selection"]).splitlines()] == [{"selection_cache":"hit"}], "edit used fresh target selection")
+            route = ([{"engine":"lust-rejected", "entry":"daemon"}, {"engine":"full-rust-core", "entry":"cargo"}]
+                     if row["stage"] == "invalid" else [{"engine":"lust", "entry":"daemon"}])
+            require([json.loads(line) for line in stream(row["entry"]).splitlines()] == route, "edit bypassed its native daemon")
+            require(row["retained"] == (retained_proof(stream(command["stderr"]), row["operation"]) if row["stage"] == "initial" else None), "initial edit state was not retained")
+            edit_proofs.append((row["stage"], row["operation"], row["command"]))
+        if row["kind"] == "cache-edit-step":
+            require(edit_active and edit_sources and row["stage"] == edit_sources[-1], "edit step escaped its source state")
+            require(set(row["commands"]) == {lane + "-" + op for lane in ("cargo", "entry") for op in ("check", "build")}, "edit omitted a compiler operation")
+            for operation in ("check", "build"):
+                for lane in ("cargo", "entry"):
+                    command = commands[row["commands"][lane + "-" + operation]]
+                    env, fixture = command["environment"], Path(command["cwd"])
+                    state = Path(env["CARGO_TARGET_DIR"]).parent
+                    require(command["lane"] == lane and command["phase"] == f"cache-edit-{row['stage']}-{operation}"
+                            and command["exit"] == (101 if row["stage"] == "invalid" else 0), "edited compilation status differs")
+                    require(state.parts[-2:] == ("cache-edits", lane) and "LUST_NO_DAEMON" not in env and "LUST_NO_CACHE" not in env, "edit state is not retained")
+                    require(env["LUST_CACHE_DIR"] == str(state / "native-cache") and env["CARGO_HOME"] == str(state / "cargo-home"), "edit cache directories differ")
+                    if lane == "cargo":
+                        expected = [report["tool_paths"][lane], operation, "--offline", "--locked", "--manifest-path", str(fixture / "Cargo.toml"),
+                                    "--bin", "slice", "--target", S.TARGET, "--message-format=json-render-diagnostics"]
+                        if row["stage"] != "invalid": S.cargo_artifact(stream(command["stdout"]), operation, state / "target", False)
+                    else:
+                        expected = [report["tool_paths"][lane], operation, str(fixture / "src/slice_main.rs"), "--manifest-path", str(fixture / "Cargo.toml"),
+                                    "--bin", "slice", "--offline", "--locked", *S.FLAGS]
+                        if operation == "build": expected += ["-o", str(state / "program")]
+                        require((row["stage"], operation, command["id"]) in edit_proofs, "edited public command has no cache/daemon proof")
+                    require(command["argv"] == expected, "edited request changed")
+                    if row["stage"] == "invalid":
+                        require(b"E0308" in stream(command["stdout"]) + stream(command["stderr"]), "edited type error was not rejected")
+            require(set(row["runs"]) == (set() if row["stage"] == "invalid" else {"cargo", "entry"}), "edit runtime evidence count differs")
+            for lane, command_id in row["runs"].items():
+                command = commands[command_id]
+                expected = (b"selection-cache-edited\n" if row["stage"] == "edited" else b"") + oracle
+                require(command_id in runtime_commands and command["lane"] == lane and command["phase"] == "cache-edit-execute"
+                        and runtime_builds[command_id] == row["commands"][lane + "-build"]
+                        and command["exit"] == 0 and stream(command["stdout"]) == expected and stream(command["stderr"]) == b"", "edited runtime differs from Rust")
+            edit_steps.append(row["stage"])
+        if row["kind"] == "cache-edit-completed":
+            require(edit_active and not edit_done and "entry" not in active, "edit daemon did not shut down cleanly")
+            require(edit_sources == edit_steps == list(variants) and [(stage,op) for stage,op,_ in edit_proofs] ==
+                    [(stage,op) for stage in variants for op in ("check", "build")], "cache-hit edit transition sequence is incomplete")
+            edit_active, edit_done = False, True
         if row["kind"] == "selection-cache":
             command = commands[row["command"]]
             require(command["lane"] == "entry" and command["phase"] == "gate-selection-hit"
@@ -517,7 +660,8 @@ def verify(output):
             require(command["phase"] == "excluded-prime" and command["lane"] == row["lane"] and command["seconds"] == row["seconds"], "prime timing differs")
     require(not active, "daemon still active")
     require(group is None, "measurement group did not finish")
-    require(runtime_commands == {row["id"] for row in commands.values() if row["phase"].endswith("runtime")}, "runtime identity missing")
+    require(runtime_commands == {row["id"] for row in commands.values() if row["phase"].endswith("runtime") or row["phase"] == "cache-edit-execute"}, "runtime identity missing")
+    require(edit_done and not edit_active, "cache-hit edit transition qualification is missing")
     require(retained == [(lane,op) for _ in range(2) for lane in ("pristine", "baseline", "entry") for op in ("check", "build")], "missing retained check/build proof")
     require(selection == ["check","build","check","build"], "missing initial/final selection reuse proof")
     samples = [dict((k,v) for k,v in row.items() if k != "kind") for row in records if row["kind"] == "timing"]
