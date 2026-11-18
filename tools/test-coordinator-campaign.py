@@ -204,6 +204,30 @@ class CampaignTests(unittest.TestCase):
         report["spec"]["lanes"][1]["env"]["RUSTC"] = str(self.package / "bin/rustc")
         self.corrupt(path, report)
 
+    def test_failed_runner_reports_only_allowlisted_diagnostics(self):
+        path, report = self.report()
+        report["status"] = "failed"
+        report["error"] = "lustr-mixed gate:executed-tests: command failed; raw evidence retained"
+        report["records"][-1].update(lane="lustr-mixed", phase="gate:executed-tests", exit=101)
+        path.write_text(json.dumps(report))
+        self.assertEqual(campaign.runner_failure_receipt(path), {
+            "category": "command-exit", "lane": "lustr-mixed", "phase": "gate:executed-tests", "exit": 101,
+        })
+        report["error"] = "actual root compiler command/flags or metadata-only emission absent from Cargo verbose evidence"
+        report["records"][-1]["phase"] = "compiler-evidence-before"
+        path.write_text(json.dumps(report))
+        self.assertEqual(campaign.runner_failure_receipt(path)["category"], "compiler-evidence")
+        report["error"] = "unexpected error at /private/secret/project.rs"
+        report["records"][-1].update(lane="/private/secret", phase="/private/secret")
+        path.write_text(json.dumps(report))
+        receipt = campaign.runner_failure_receipt(path)
+        self.assertEqual(receipt["category"], "unclassified")
+        self.assertEqual(receipt["lane"], "unknown")
+        self.assertEqual(receipt["phase"], "unknown")
+        self.assertNotIn("secret", str(receipt))
+        self.assertNotIn(str(self.root), str(receipt))
+        self.assertEqual(campaign.runner_failure_receipt(self.root / "missing.json")["category"], "report-unavailable")
+
     def test_constructor_receipt_cannot_disappear(self):
         path, report = self.report()
         report["source_before"]["external_inputs"].pop(str(self.inputs[-1]).encode().hex())

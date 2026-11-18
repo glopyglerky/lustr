@@ -57,6 +57,10 @@ Every forced sample must contain the actual root compiler command and shared
 semantic flags. Source/input/tool guards, resolved Cargo output-directory
 isolation and observed Cargo fingerprints must also pass. Failure removes
 conclusions and retains the failed private evidence.
+If the private runner fails, its driver prints only an allowlisted diagnostic
+receipt (category, lane, phase and exit code) in CI. The original error text,
+commands, source paths and output remain in the encrypted private report, not
+the public log or performance conclusions.
 
 ## Owned daemon and cache scope
 

@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import sys
 import tarfile
 
 SCENARIOS = ("clean-dependency-build", "primed-root-build", "primed-root-check", "no-op", "compile-plus-test")
@@ -28,6 +29,9 @@ STREAM_KEYS = ("stdout", "stderr")
 ANALYSIS_FIELDS = {"method", "pairs", "raw_ratios", "log_ratios", "geometric_ratio", "bootstrap_95",
                    "baseline_median", "candidate_median", "baseline_p95", "candidate_p95", "exact_sign_flip_p",
                    "bootstrap_resamples", "seed"}
+RUNNER_PHASES = {"identity", "dependency-selection", "compiler-evidence-before", "compiler-evidence-after",
+                 "timed", "excluded-warmup", "gate:executed-tests", "gate:invalid-borrow",
+                 "final-gate:executed-tests", "final-gate:invalid-borrow"}
 
 
 def require(condition, message):
@@ -143,6 +147,34 @@ def make_spec(scenario, *, source, private, package, sdk, gate, external_inputs,
     }
 
 
+def runner_failure_receipt(path):
+    """Only fixed diagnostic labels may leave the encrypted runner originals."""
+    unavailable = {"category": "report-unavailable", "lane": "unknown", "phase": "unknown", "exit": None}
+    try:
+        report = json.loads(path.read_bytes())
+    except (OSError, ValueError):
+        return unavailable
+    if not isinstance(report, dict) or report.get("status") != "failed":
+        return {**unavailable, "category": "unclassified"}
+    error = report.get("error")
+    known = {
+        "actual root compiler command/flags or metadata-only emission absent from Cargo verbose evidence": "compiler-evidence",
+        "normalized actual dependency selection differs": "dependency-selection",
+        "normalized correctness results differ": "correctness-gate",
+        "no observed Cargo fingerprints inside owned lane directory": "cargo-fingerprints",
+        "source/external inputs mutated during run": "source-guard",
+    }
+    category = known.get(error, "unclassified") if isinstance(error, str) else "unclassified"
+    if isinstance(error, str) and error.endswith(": command failed; raw evidence retained"):
+        category = "command-exit"
+    records = report.get("records")
+    last = records[-1] if isinstance(records, list) and records and isinstance(records[-1], dict) else {}
+    lane, phase, exit_code = last.get("lane"), last.get("phase"), last.get("exit")
+    return {"category": category, "lane": lane if isinstance(lane, str) and lane in LANES else "unknown",
+            "phase": phase if isinstance(phase, str) and phase in RUNNER_PHASES else "unknown",
+            "exit": exit_code if type(exit_code) is int and 0 <= exit_code <= 255 else None}
+
+
 def verify_state(report, report_dir):
     state = report["native_state"]
     require(state["kind"] == POLICY and state["status"] == "passed" and state["error"] is None,
@@ -254,10 +286,8 @@ def project_report(report_path):
     state = verify_state(report, report_path.parent)
     public = []
     test_counts = []
-    phases = {"identity", "dependency-selection", "compiler-evidence-before", "compiler-evidence-after", "timed", "excluded-warmup",
-              "gate:executed-tests", "gate:invalid-borrow", "final-gate:executed-tests", "final-gate:invalid-borrow"}
     for serial, record in enumerate(report["records"]):
-        require(record["phase"] in phases and record["lane"] in LANES, "unknown command identity")
+        require(record["phase"] in RUNNER_PHASES and record["lane"] in LANES, "unknown command identity")
         expected_exit = 1 if record["phase"].endswith(":invalid-borrow") else 0
         require(record["exit"] == expected_exit and record["signal"] is None and not record["timed_out"]
                 and not record["output_limit"] and math.isfinite(record["wall_seconds"]) and record["wall_seconds"] > 0
@@ -476,7 +506,12 @@ def main():
         cases = []
         for name, spec in specs.items():
             with (private / f"{name}.runner.stdout").open("xb") as stdout, (private / f"{name}.runner.stderr").open("xb") as stderr:
-                subprocess.run([str(args.runner), str(spec), str(private / name)], check=True, stdout=stdout, stderr=stderr)
+                try:
+                    subprocess.run([str(args.runner), str(spec), str(private / name)], check=True, stdout=stdout, stderr=stderr)
+                except subprocess.CalledProcessError:
+                    receipt = runner_failure_receipt(private / name / "report.json")
+                    print(f"project runner diagnosis (no private output): {json.dumps(receipt, sort_keys=True)}", file=sys.stderr)
+                    raise
             case = project_report(private / name / "report.json")
             require(case["compiler_components_sha256"] == identity["compiler_components_sha256"], "compiler components changed between scenarios")
             cases.append(case)
