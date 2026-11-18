@@ -1,14 +1,18 @@
-# Completed warm-entry comparison: target still missed
+# Warm-entry campaigns: target still missed
 
-The completed campaign reduced the public entry's warm latency substantially,
-but did **not** match pristine Lust. The measured candidate also has a separately
-reproduced special-file correctness defect. Its normal-workload performance
-result remains useful; it is not source, platform, or release qualification.
+The third campaign measured the corrected source through the complete focused
+gates and all 384 primary timings. Public warm check is 2.195 ms versus pristine
+Lust's 1.481 ms; warm build is 4.595 ms versus 3.979 ms. The strict performance
+target still fails. The same-host residual diagnostics locate substantial
+remaining cost in the public entry/selection path. See
+[the third campaign's results and limits](third-results.md).
 
-This directory preserves the original two artifact ZIPs, their published source
+This directory preserves all three original artifact ZIPs, their published source
 identities, frozen copies of the actually executed runner closures, and a
-portable replay. The first failed campaign is preserved alongside the second
-complete result. No source was merged by this campaign.
+portable replay. The first failed campaign and the second complete campaign's
+special-file correctness limitation remain intact. The second source's normal
+timings do not qualify its later correction; the third run executes that
+correction. No source was merged by these campaigns.
 
 ## Exact executed revisions and artifacts
 
@@ -16,9 +20,11 @@ complete result. No source was merged by this campaign.
 | --- | --- | --- | --- | --- |
 | First | `18fe6c3408e6d581961bcf7f2721f72ca74cfbfa` | `6c3e5a44d54d83f1bacbd2977fe2fb32e11c0621` | `b568e8bf4d9970418b7c1f4ef2984ce391ffa5f5` | Failed qualification before any timing sample |
 | Second | `3091e80fce0bf8db43b7526cb68073e6c7910f35` | `82fd75aa6e8fbe2b1d53624f7d2ea1610d76cc70` | `d6212e4ad0b816bf025b3aa17297c445d50d91a2` | All 384 timing samples completed; strict target failed |
+| Third | `d57f485eeb2b638d1f95a0594294d11e8001fe8e` | `f638b6cd9819f52b53b142bf688d7ef07e252906` | `07235def43af3ffbdc218353d40f3f9e22b8dfd9` | Corrected selector and public edit gates passed; 384 primary and 192 diagnostic samples completed; strict target failed |
 
 - First: [run 44293812634](https://github.com/glopyglerky/lustr/actions/runs/44293812634), job `134765521290`, artifact `14424121317`.
 - Second: [run 44298375054](https://github.com/glopyglerky/lustr/actions/runs/44298375054), job `134781261965`, artifact `14425773276`.
+- Third: [run 44305235529](https://github.com/glopyglerky/lustr/actions/runs/44305235529), job `134804957788`, artifact `14429133342`.
 - Candidate discussion: [draft PR #25](https://github.com/glopyglerky/lustr/pull/25).
 
 Original ZIP SHA-256:
@@ -26,6 +32,7 @@ Original ZIP SHA-256:
 ```text
 65bcf79991f5dc265fc96c306f15ec82b1e1d504fe93f70142d1208cd116c37d  artifact-14424121317.zip
 f73d4bdf646d3abd9a426bcc0282fad244097f8f600eb78787c29332f6912e9a  artifact-14425773276.zip
+de6e9fa011c979b04f4c0b64a7fa97783aa9fc7b19a946b0d0092546d122a64d  artifact-14429133342.zip
 ```
 
 `manifest.json` binds each ZIP and frozen runner file to its executed revision.
@@ -34,7 +41,7 @@ original campaign. The second runner predates the later cached-edit composition
 gate and residual diagnostic tool. Replaying with a newer runner would impose
 evidence requirements that the original run did not execute.
 
-## Complete same-host results
+## Second campaign: complete same-host results
 
 All values below are end-to-end command medians in milliseconds, with 24 paired
 observations for each lane and operation. The public request has the original
@@ -113,7 +120,7 @@ is observed, not pinned; frequency and host load are not controlled. Absolute
 times must not be compared with the earlier PR #21 campaign as a source change
 effect.
 
-## Executed checks and replay
+## Second campaign: executed checks and replay
 
 The second run passed the complete 16-test entry contract, the production
 selector gate (132 invocations, 250 assertions), and the seed fallback gate
@@ -159,7 +166,7 @@ The real first-run diagnostic records and counter mutations are regression
 controls. The first ZIP remains unchanged; its incomplete report is still
 rejected as performance evidence.
 
-## Qualification limits and successor work
+## Second campaign: qualification limits
 
 After the measured source was published, independent review reproduced a Cargo
 path changed to a FIFO: cached selection timed out while uncached selection
@@ -170,7 +177,7 @@ regular-file type before opening. Its local expanded selector gate and later
 hosted qualification belong to their own revisions and must not be attributed
 to this run.
 
-This campaign also did not execute the later combined actual-public
+This second campaign also did not execute the later combined actual-public
 cache-hit/body-edit/type-error/restore gate or the same-host integrated-client
 and selector residual diagnostics. The existing gates separately exercised
 public retained output, daemon edits, and selector cache transitions; the
@@ -187,7 +194,9 @@ Python 3.11 or newer is sufficient; no compiler, network, or daemon is needed:
 python3 docs/compiler-set/evidence/warm-entry-2026-11-18/replay.py
 ```
 
-The command checks both original ZIP hashes and exact frozen runner closures,
-verifies the first run's preserved failure, independently replays all 384 second
-run timings, and checks the archived constructor bindings. Temporary extraction
-does not modify the evidence bundle.
+The command checks all original ZIP hashes and exact frozen runner closures,
+verifies the first run's preserved failure, independently replays all 384 timings
+in each complete primary campaign and the third run's 144 native plus 48 selector
+diagnostic timings, and checks the archived constructor bindings. It also binds
+the third selector/seed gate results and complete entry log to their retained
+source and streams. Temporary extraction does not modify the evidence bundle.
