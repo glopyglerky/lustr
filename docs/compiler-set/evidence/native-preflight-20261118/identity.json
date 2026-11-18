@@ -1,0 +1,103 @@
+{
+  "schema": "lustr-native-preflight-identity-v1",
+  "source_commit": "34d847da3d90c3c2b253246a8ffdfdeb901c56b0",
+  "source_tree": "e1c028f15e29a72fdbe338883613c23a6c8dccec",
+  "included_sources": {
+    "compiler/native/src/protocol.rs": "4da4c32fb16b62f3819a3d774ef63b76e201e2414c3b4540b4a6ccb27133fe1c",
+    "src/full.rs": "59788dccd6f987c9a7f35f43192847126fd5374946a0da8c7542c3f9f439b52b",
+    "src/owned_child.rs": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20",
+    "src/host_runtime.rs": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223",
+    "tools/profile-native-preflight.rs": "2d4442a7a2267b6e3e064acbb6fe00c3e3aafde325e2516f265425958cc3e1a6"
+  },
+  "sdk_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "native_protocol_build_identity": "dc82dab611c87e7e",
+  "component_assembly_source_commit": "18b8d1e55520ca739e8bccb081a08db8a99926fe",
+  "source_equivalence_scope": [
+    "src",
+    "compiler/native",
+    "Cargo.toml",
+    "Cargo.lock",
+    "build.rs",
+    "crates/lustr/src"
+  ],
+  "source_equivalence_verified": true,
+  "binary_sha256": {
+    "profiler": "4662f00967c9a8bd27272cdf51758826bce9f73ae27f89dfcd75376dcbdb0290",
+    "cargo": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+    "rustc-full": "4fdde6c5f0fdb5e34ba00fc9da514592d50f5958a7b764c470affd49af3048d0",
+    "rustc-reference": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de"
+  },
+  "profiler_dependency_lock_sha256": "4952b3afaed52c51872516032213a661d8b36fbe0c5885742aeff033eb08b02b",
+  "first_successful_build": "offline Cargo resolution with newly recorded lockfile",
+  "locked_recheck_exit": 0,
+  "profile": "optimized diagnostic helper; source workload remains original dev opt0/debug0 and no source compiler runs are measured",
+  "fixture_files": {
+    "Cargo.lock": "c5434c43e4444dfa56406c42904fa75cac4190c5870447a98c9b239edf795278",
+    "Cargo.toml": "89d7f2243354b127dcc2d2e7fe0c0f14ed2a6087db998ab6bde9559a3db6fda8",
+    "src/bench_driver.rs": "7aac8c3afe9690e86a0003d724df8dc8726a149ef81a1be7443795fb2b6f99c2",
+    "src/diag.rs": "80959fc732bc5926597c71f17b875e89b33dd5ca87b871bf13097330fab908f9",
+    "src/diagnostics/catalog.rs": "0096ef898e2f85256549e9a8071cf743be2dddbc15c6bb35730b69fea3957014",
+    "src/diagnostics/effect_catalog.rs": "cec5cbc0dccbd0c123794db97103ab52704ddf0c105071bce8c73db66dba930b",
+    "src/diagnostics/mod.rs": "7b0a05d61cb0cec175da3092bb072fb036a7d8e25047896d24fad3555f64d6cc",
+    "src/flags_macros.rs": "2ef2974a7504f352f9a5f0f6ec2edf25f6ca65148b0f0b5dddc2d811fefae7d8",
+    "src/frontend/bundled/embed.rs": "f21dd117190ae2acda0d330b57fbaeebe0aa4c5c1b3ba76a17e061698d871eda",
+    "src/frontend/bundled.rs": "1dcc293fc80dcdd644105c363e47da7be09dd5f9ff012addf17b2743b1aab94d",
+    "src/frontend/core_bfs.rs": "65382892ec12bea00dc43861d99d3f439cdb67b3de4b76ef1608f0ffd365e5a9",
+    "src/frontend/core_binarysearch.rs": "62aa703818c432d72befac1628ba0acda657a6ea5536bbc7c88c5d014e6ba104",
+    "src/frontend/core_context.rs": "e9720f854f81be45e0a66cf2a87a7825ff8ae6c49f6f6415a28dcfcab0b59d43",
+    "src/frontend/core_nodemodules.rs": "c74a162b0cf08fc57a50c135d3cc32848ee72207bbfd18667a0b5946c5df095f",
+    "src/frontend/core_workgroup.rs": "ef0d2591139212e57cae55a32b3c22fadca4c337c1238812f3f6b7fdfa8a7bc7",
+    "src/frontend/json.rs": "273e62eb26136d5cfd28daad6fcc7aca550b510dae9993dadc561126b8ebbf9a",
+    "src/frontend/json_ext.rs": "dea03ccdf28df7268648944ca76afcdb8568c5786ba97c6feafb5b78b8e61264",
+    "src/frontend/json_indexmap.rs": "72e7d29611cdb381898d02da2c738b655080b1d7539afe2eb13aa2e37eec0e01",
+    "src/frontend/nativepath.rs": "b6694890bef5ef49cc352ae4a84b80f760ef10a434b6c919550c823e2e463f70",
+    "src/frontend/osutil.rs": "9cf8c14333bd5be8a4148f44daa4862a1082be1bf3635e97f39ecd921631ed7e",
+    "src/frontend/semver.rs": "722411ecd267ac6e0df932a15b212b262f0ec247d2e3cb21f4d48a711aeee162",
+    "src/frontend/stringutil_ls.rs": "87064d52e9f3e578d9ae6cfbe9afca0781da1566fecb8f92dc386d78688ebd07",
+    "src/frontend/tspath/extension.rs": "9248b5ce7e82c15a3583df11ca94fdabde47a09355b52ceab98a3d6d4284fa2e",
+    "src/frontend/tspath/mod.rs": "a522edfc2386af6c20d7cfc929cf0b5efcea46b2e362c1a9e5ae48f2b8a9e6ea",
+    "src/frontend/tspath/path.rs": "133b18e6a224e436476c2af8904dfe8c682bc43947b9ed2777a182bcb3300401",
+    "src/frontend/util_prelude.rs": "07c37744dcc43f273a97847e058b7214203c790b0a22436de7f8efe997921bd8",
+    "src/frontend/vfs/cachedvfs.rs": "50f4da61415ec68c5edbf18c8241fd5f6413bfba8efa95d292d76c5df94718e0",
+    "src/frontend/vfs/mod.rs": "41cf299331b206aa5d8e72fc2ba27023499cc5e17b7dae34cf65a47a75066e19",
+    "src/frontend/vfs/mod_impl.rs": "ef948e66914b57e206694434e591a62597fa2a54a47b3711d7d89cf6aba544db",
+    "src/frontend/vfs/osvfs.rs": "2ad07e2e8fbaa29b1c1415012f009164e38a182b26bbb32bfe66a44dc62312a3",
+    "src/frontend/vfs/trackingvfs.rs": "e146b276bcee2c0a682cc47939a02968439f3d982043d5cce202d7589e5c126a",
+    "src/frontend/vfs/vfsmatch.rs": "3a18738b01d69cba27757063a91b5fa31e4fa9c847bfaaba8a3878f46a2cf75e",
+    "src/frontend/vfs/walkdir.rs": "78809128e29aa389767168d4a4b96af5e3848eee8519851fbfbe4c7472a6b8f0",
+    "src/frontend/vfs/wrapvfs.rs": "535cf5a1b2138ce624a8219c9a1af897b62d06c1a1c89a21fe2abb6214d1f151",
+    "src/gopanic.rs": "0e898605e5270619a805c05e3d69047226740ed541ab4d03bf2c9e6b4aa0d0ce",
+    "src/gostring.rs": "b6ef984a55cedfa835e773051f1a9b7192a5b66ad5c4bb15a9552e098194bdff",
+    "src/jsnum.rs": "e78bb6ca58596d93c166495534557c270cb244e3756c37fa28b18956f3aca153",
+    "src/jsonrpc/baseproto.rs": "f5262e6f1aecd7f5ae8726c16207285bb4b9b6a230ba6ca17987fff86c6910a3",
+    "src/jsonrpc/jsonrpc.rs": "b3d9f66570733c1b2e32b5b1cb0cf4ffeb8b600eb2911f39d7363c7fcb01fb2a",
+    "src/jsonrpc/mod.rs": "09cfc5f87f13159934f4ffa7b1aeb8b13ff86ddbb849e6d16841ede70c48cd9f",
+    "src/slice_main.rs": "4629b2176efbe0ee0237ff52cb57141e079de7a95289383ceab002f5de1dd1dd",
+    "src/support.rs": "3e413f47416f698ea5d510feba0e4e7639cf325e160ec791ebf27024c04914ef",
+    "src/util_prelude.rs": "d658de5180a3e1bca7eef868bea5b519eed21c1d16b02b6045019b36638de3b6"
+  },
+  "raw_record_sha256": "70e7dce7c9fbc953101a14a4defc6093a678fba5dd5aa9df1dbf5be9dfdda16c",
+  "cargo_trace_sha256": "c27a24ac8f465e73c8023f273ec4ce5275f73d3f4f917b9ae8912bf3df5e561c",
+  "build_attempts": [
+    {
+      "attempt": 1,
+      "exit": 1,
+      "reason": "direct rustc dependency path contained only metadata stub"
+    },
+    {
+      "attempt": 2,
+      "exit": 1,
+      "reason": "direct rustc dependency path supplied rmeta without linked rlib"
+    },
+    {
+      "attempt": 3,
+      "exit": 0,
+      "reason": "isolated Cargo dependency build"
+    },
+    {
+      "attempt": 4,
+      "exit": 0,
+      "reason": "locked offline Cargo recheck of unchanged source and dependency lock"
+    }
+  ]
+}
