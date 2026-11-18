@@ -59,15 +59,12 @@ pub fn full_rust_only(args: &[String], host: &str) -> bool {
         return true;
     }
     let metadata_only = emission.is_some_and(|outputs| {
-        !outputs.is_empty()
-            && outputs.split(',').all(|part| matches!(part.split('=').next(), Some("metadata" | "dep-info")))
+        !outputs.is_empty() && outputs.split(',').all(|part| matches!(part.split('=').next(), Some("metadata" | "dep-info")))
     });
     if debuginfo.is_some_and(|level| level != "0" && level != "none") && !metadata_only {
         return true;
     }
-    emission.is_some_and(|outputs| {
-        outputs.split(',').any(|part| !matches!(part.split('=').next(), Some("link" | "metadata" | "dep-info")))
-    })
+    emission.is_some_and(|outputs| outputs.split(',').any(|part| !matches!(part.split('=').next(), Some("link" | "metadata" | "dep-info"))))
 }
 
 #[cfg(test)]
