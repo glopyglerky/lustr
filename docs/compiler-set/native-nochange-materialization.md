@@ -1,8 +1,8 @@
 # Avoid unused setup materialization on a retained check
 
-Status: isolated source candidate. The first focused run passed the real
-edit/error/runtime transition test and exposed a setup error in the internal
-const-state test. The corrected fixture has not executed yet.
+Status: isolated source candidate. Both focused tests pass on x86_64 Linux in
+ordinary mode and in a fresh process with the resolve oracle enabled. The first
+test setup failure remains preserved in the [focused evidence](evidence/native-nochange-2026-11-18/README.md).
 No compiler speedup, parity, runtime qualification or release admission is
 claimed. This candidate is based on PR25 revision
 `3c378a11d60149a3ec99fa49ea1b336e9406fca8`; its public selector and its existing
@@ -61,10 +61,11 @@ Two production-driver tests live in `driver::patch::tests`:
   cold sessions. The appended node and stale slot are explicit internal state
   controls, not a claimed reproduced source-level compiler defect.
 
-Run these in the native `gate` profile with one compiler job and one test thread,
-then repeat in a new process with `LUST_CHECK_RESOLVE=1` so its process-wide
-OnceLock is initialized for the oracle path. The `gate` profile is for
-correctness; its timings must not be used as release performance evidence.
+These ran in the native `gate` profile with one compiler job and one test
+thread, then in a new process with `LUST_CHECK_RESOLVE=1` so its process-wide
+OnceLock was initialized for the oracle path. Both runs used the same test
+executable. The `gate` profile is for correctness; its timings are not release
+performance evidence.
 
 The first run at source `3724211b45a3f8cc2bcf8539c8d549c3c2cbae7d` built
 successfully and reported one pass and one failure. The internal-state test had
@@ -75,14 +76,20 @@ const item to enter the resolver and asserts that route before arranging state.
 The original source, test executable identity and failing logs remain preserved.
 This is a test setup correction; the product shortcut is unchanged.
 
-The corrected focused run is pending. Existing unit, differential,
+The corrected run at source `8b68fee55b01c9bff6faa9be30612910fe6bb0f7` passed
+both tests in each mode. The oracle recorded 20 successful comparisons: three
+full resolves, seven reused checks and ten patches. Its stderr was empty.
+The executable SHA-256 is
+`3b98fee1feccf3c44770cfe6859b3aa6d5e07a907e8a9b79672b523ec2a81e36`.
+The first run and both corrected runs preserve 387 filtered tests; this was
+focused execution only. Existing unit, differential,
 runtime/panic/drop, edit and public-entry gates remain relevant to admission of
 the changed native source. Failures and unsupported operations must remain
 visible. The candidate source guard checks the declared exact diff only.
 
 ## Performance obligation
 
-The fourth completed public campaign's two untimed retained-check probes each
+The [fourth completed public campaign](evidence/warm-entry-2026-11-18/fourth-results.md)'s two untimed retained-check probes each
 spent 0.09 ms in the entire `reuse last answer` span, while the whole public check
 median exceeded pristine Lust by about 0.307 ms. Those two probe values are not a
 statistical attribution or an expected saving. They show why this small candidate
