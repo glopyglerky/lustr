@@ -6,6 +6,7 @@ use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 struct Scratch(PathBuf);
@@ -13,9 +14,22 @@ struct Scratch(PathBuf);
 impl Scratch {
     fn new() -> Self {
         let nonce = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
-        let path = std::env::temp_dir().join(format!("cargo-lust-process-{}-{nonce}", std::process::id()));
-        fs::create_dir_all(&path).unwrap();
-        Self(path)
+        Self::at_clock_sample(nonce)
+    }
+
+    fn at_clock_sample(nonce: u128) -> Self {
+        static NEXT: AtomicUsize = AtomicUsize::new(0);
+        // Concurrent tests can receive the same wall-clock sample. Reserve the
+        // directory exclusively so one owner's Drop cannot remove another's work.
+        loop {
+            let sequence = NEXT.fetch_add(1, Ordering::Relaxed);
+            let path = std::env::temp_dir().join(format!("cargo-lust-process-{}-{nonce}-{sequence}", std::process::id()));
+            match fs::create_dir(&path) {
+                Ok(()) => return Self(path),
+                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+                Err(error) => panic!("cannot create process-test directory {}: {error}", path.display()),
+            }
+        }
     }
 }
 
@@ -23,6 +37,19 @@ impl Drop for Scratch {
     fn drop(&mut self) {
         let _ = fs::remove_dir_all(&self.0);
     }
+}
+
+#[test]
+fn scratch_owners_remain_independent_when_clock_samples_match() {
+    let sample = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+    let first = Scratch::at_clock_sample(sample);
+    fs::write(first.0.join("first-owner"), b"keep").unwrap();
+    let second = Scratch::at_clock_sample(sample);
+    assert_ne!(first.0, second.0, "equal clock samples must not share an owned directory");
+    fs::write(second.0.join("second-owner"), b"separate").unwrap();
+    drop(second);
+    assert_eq!(fs::read(first.0.join("first-owner")).unwrap(), b"keep");
+    assert!(!first.0.join("second-owner").exists());
 }
 
 fn hex(bytes: &[u8]) -> String {
@@ -319,7 +346,7 @@ fn cargo_alias_can_select_release_without_enabling_cranelift() {
         .args(["--engine", "cranelift", "b", "--offline", "--quiet"])
         .output()
         .unwrap();
-    assert!(output.status.success(), "Cargo alias was routed through a development backend: {}", String::from_utf8_lossy(&output.stderr));
+    assert!(output.status.success(), "release Cargo alias failed: {}", String::from_utf8_lossy(&output.stderr));
     let executable = scratch.0.join("target/release").join(format!("alias-proof{}", std::env::consts::EXE_SUFFIX));
     let ran = Command::new(executable).output().unwrap();
     assert!(ran.status.success());
