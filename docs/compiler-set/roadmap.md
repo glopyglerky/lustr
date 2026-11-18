@@ -1,62 +1,87 @@
-# lustr delivery roadmap
+# Lustr delivery roadmap
 
-1. Inspect the existing combined entry and packaged runtime. Reproduce the
-   specific earlier failures and preserve their evidence.
-2. Deliver matched Lust, full Rust implementation, Cargo, sysroot and runtime
-   components through lustr, with explicit identities and licenses.
-3. Qualify full Rust, dependencies, build scripts, proc macros, no_std,
-   rejection, panic/drop and actual Cargo artifact behavior.
-4. Verify that supported work reaches Lust, retains its incremental path,
-   and preserves its performance in the integration.
-5. Continue GitHub/default-branch delivery without losing PR7 or experiments.
+**Governing direction:** [one integrated Lustr compiler](architecture-plan.md),
+using Lust for supported work and imported upstream Rust implementation for the
+complement. Coordinator and whole-program retry work cannot replace this plan.
+Read the [contract](native-contract.md) and [design](design.md) before routing
+changes or release claims. The user has already authorized this architecture.
 
-Imported/copied Rust implementation is allowed. Semantic-image expansion is
-retained research and is not the assumed route to full-language delivery.
-See the [current contract](native-contract.md).
+## Current checkpoint
 
-## Current acceptance and priority, 18 November 2026
+The candidate preserves useful Lust performance, real Cargo compatibility,
+correctness tests and a working but narrow mixed-function bridge. The public
+standalone entry still uses native-failure retry; cold mixed work still runs
+whole-crate Rust analysis and represents only a limited scalar boundary.
+The complete requested architecture is **not implemented or release-qualified**.
 
-The current goal is close-to-Lust supported work plus near-stock ordinary full
-Rust, as defined in [the practical criteria](practical-performance.md). Substantial
-speed gains outside Lust's subset are not required. The latest normal-profile
-project medians range from 0.06% faster to 1.04% slower than matching Rust.
-Keep the separate mixed opt0/debug0 regressions visible. Complete native runtime
-and platform qualification before publishing an installable package, and
-investigate the remaining public-entry cost without risking working semantics.
-The [current snapshot](../../performance/2026-11-18-43a7e07/README.md) supersedes
-the older status below; it does not rewrite its original evidence.
+Existing speed results, independent correctness repairs and failed attempts
+remain evidence for their exact sources. They do not change the destination.
+The current performance snapshot is documented in the [README](../../README.md)
+and [source-bound evidence](../../performance/2026-11-18-43a7e07/README.md).
 
-## Cargo performance delivery
+## 1. Capability contract and compiler ownership
 
-The latest complete paired campaign at `6bf6e3e` measures a body-edit Cargo
-ratio of **1.079× [1.070, 1.088]** and faster rejection. Seven other Cargo modes
-remain slower, and normal-profile project builds still show overhead. See
-[the full results](../../PERFORMANCE.md) and
-[current qualification](completion-qualification.md).
+Inventory actual Lust support from the pinned compiler, including semantic,
+runtime, ABI, target and profile constraints. Distinguish Lust's own support
+from the smaller set represented by the current mixed bridge. Bind the
+inventory to accepted/rejected fixtures and actual compiler interfaces.
 
-1. Completed: qualify the package after replacing symbol-tool subprocesses
-   and the intermediate Cargo coordinator executable. The source-built package
-   passes mixed correctness and sixteen entry/runtime tests while preserving
-   libraries, build scripts, proc macros, metadata, rejection, link-failure
-   recovery and panic/drop behavior.
-2. Completed: retain the full paired native/Cargo campaign, separate profile,
-   normal-profile project evidence and updated README. Eight fixed campaigns
-   preserve 4,536 timings and 234 comparisons; three project campaigns add
-   360 timings and fifteen comparisons. Each result retains exact source,
-   original output, uncertainty and regressions.
-3. Next: reduce cold/signature/check overhead and broaden Cargo gains. The fresh
-   body profile records about 8 microseconds in symbol validation and 15 ms in
-   linking; the former process cost is no longer the dominant observed span.
-   Preserve full Rust metadata and complete linking when selecting the next
-   change. The separate public-slice recorder is corrected after its original
-   zero-sample failure and still requires fresh hosted execution.
-4. Extend actual Cargo coverage to unchanged larger projects and real source
-   edits. Keep normal debug profiles visible. The current mixed-object path
-   does not support default debug=2 generation, and retained literal-edit reuse
-   does not cover arbitrary Rust edits.
-5. Complete native Linux and macOS qualification and release review. Preserve
-   previous failed evidence and state the exact conditions of each new run.
+Define internal admitted/complementary/invalid/failure outcomes before emission.
+Specify ownership and transfer of checked state and dependency reads. The gate
+is a usable compiler contract, not a keyword scan, a descriptive capability
+report or another whole-program compile probe.
 
-The [historical native-only roadmap](native-roadmap-history.md) remains available
-for research provenance. Its old source status and reconstruction requirements
-are superseded; it is not the delivery plan.
+## 2. Shared compilation boundary
+
+Reuse the existing binding, ABI, symbol, object, metadata and retained-state
+work. Expose native preparation and emission without discarding/rechecking the
+same state. Bring in upstream Rust implementation for missing services and
+complementary work. Preserve a direct fast path for fully supported work.
+
+Prove how mixed definitions share identities, layouts, calling conventions,
+drops, unwinding and metadata. Do not restart independent feature-by-feature
+reconstruction of all Rust. A prepare/emit seam alone is an intermediate result;
+it must not be relabeled as the completed integrated compiler.
+
+## 3. Automatic native and complementary compilation
+
+Route work inside Lustr from the actual capability contract. Supported work
+uses Lust; complementary work uses the imported implementation in the same
+compilation. Replace the public error-driven whole-program retry as the normal
+entry architecture. Keep Cargo adapters limited to preserving Cargo behavior.
+
+Require real mixed programs and traces showing which definitions and phases
+use each implementation. Native emitter failure must be reported as failure,
+not silently converted to a successful second compilation. The current scalar
+bridge is a starting point, not a redefinition of the supported subset.
+
+## 4. Retained correctness and broad compatibility
+
+Exercise unchanged supported, complementary and mixed projects, including
+libraries, build scripts, proc macros, no_std, generic/trait interactions,
+invalid code, panic/drop, dependency changes and genuine metadata consumers.
+
+Check cold and warm equivalence across body, signature, type, trait, macro and
+configuration edits. Preserve existing native differential gates and exact
+platform scope. Qualify the exact source-built package, not a diagnostic mix of
+replaced components. Retain failures and all component/source identities.
+
+## 5. Performance and publication
+
+Preserve Lust's large gains on supported work and near-Lust warm latency, with
+small overhead allowed. Complementary Rust should stay close to matched stock
+Rust; large gains there are not required. Apply the [practical policy](practical-performance.md)
+to separately reported operations and keep regressions visible.
+
+Publish the requested replacement only after architecture, correctness,
+platform and performance evidence support that exact package. No successful
+coordinator build or speed result waives the integrated-compiler requirement.
+Do not chase a fractional millisecond by weakening validation or introducing
+another routing architecture.
+
+## Retained work
+
+The [prior roadmap](roadmap-history-before-2026-11-18.md),
+[older native research roadmap](native-roadmap-history.md), previous PRs and
+performance campaigns remain historical evidence. Their implementation details
+and obsolete completion requirements do not override this roadmap.

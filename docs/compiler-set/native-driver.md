@@ -1,5 +1,10 @@
 # Native compiler entry candidate
 
+This document describes transitional implementation and retained experiments.
+The [governing plan](architecture-plan.md) requires an integrated native and
+complementary compiler; the whole-program retry path described below is not
+the destination. Read the current contract before making routing changes.
+
 The owned original-AST panic-text extension also models list-array expressions
 from their ordered native element IDs and exact original spans/commas/brackets.
 It retains explicit wrappers and the pinned Rust array/list indentation boxes.
@@ -17,10 +22,10 @@ compiler's complete recheck; the formatter supplies only derived panic text.
 
 Status: source candidate, not a released or fully qualified replacement.
 
-The current architecture combines Lust's supported native path with an
-identified Rust implementation through lustr and Cargo. Importing that
-implementation is allowed. The full-Rust executable route below is relevant
-to delivery. The retained experimental
+The current candidate combines a whole-target Lust path with an identified
+Rust implementation and a bounded mixed bridge. Importing upstream Rust is
+allowed; the full-program retry route below is transitional compatibility,
+not completion of the requested compiler boundary. The retained experimental
 `lustr_native_object_v1` phase experiment shares original native semantic/IR
 APIs and emits real freestanding objects without fake rlib/rmeta. Its primitive
 scope is under qualification. Crate resolution, metadata/imports, complete Rust

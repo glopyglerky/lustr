@@ -1,8 +1,13 @@
 # lustr coordinator
 
+This crate is compatibility and Cargo-command infrastructure. It is **not**
+the target Lustr compiler architecture. The [governing plan](../../docs/compiler-set/architecture-plan.md)
+requires Lust and imported Rust complementary work inside the integrated
+compiler; coordinator success does not fulfill that requirement.
+
 One entry point for upstream Lust and complete Rust projects. The coordinator is written in Rust, has no third-party dependencies, and installs independently of Lust's tcc backend.
 
-The default path preserves the selected Cargo/rustc toolchain. It compiles full Rust because rustc still performs that compilation. This is the compatibility foundation for the compiler set, not an independent full Rust frontend or a speedup claim. Automatic mixed Lust/rustc library compilation is not implemented.
+The default standalone path preserves the selected Cargo/rustc toolchain. It compiles full Rust because rustc still performs that compilation. This coordinator does not itself partition compiler work. The separately packaged [mixed compiler](../../docs/compiler-set/mixed-compiler.md) already supports a bounded scalar boundary, including genuine Rust library output; that narrower implementation does not complete the required architecture. Coordinator compatibility alone is not an independent frontend or a speedup claim.
 
 ## Install
 

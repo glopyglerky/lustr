@@ -1,5 +1,11 @@
 # Lustr performance: complete work and retained evidence
 
+The [governing architecture](docs/compiler-set/architecture-plan.md) requires
+one integrated compiler, with Lust for supported work and imported Rust for its
+complement. These measurements describe their recorded implementations, including
+transitional compatibility paths. A timing result does not qualify a coordinator
+or whole-program retry as the completed compiler.
+
 ## Current snapshot, 18 November 2026
 
 The [current README](README.md#performance-and-release-status) and

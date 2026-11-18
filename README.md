@@ -1,8 +1,30 @@
 # lustr
 
-lustr combines [Lust](https://github.com/t3dotgg/lust-lang)'s fast native
-compilation of its supported subset with complete Rust compilation through a
-pinned Rust implementation. blueFe delivers the combined toolchain.
+lustr is being built as one Rust compiler: [Lust](https://github.com/t3dotgg/lust-lang)
+handles the work it supports, and imported upstream Rust implementation handles
+the complementary work inside Lustr. blueFe delivers the combined compiler.
+
+## Required compiler architecture
+
+**The [governing plan](docs/compiler-set/architecture-plan.md) is an integrated
+compiler, not a coordinator or a whole-program compile/fail/retry wrapper.**
+Supported work stays on Lust's frontend and retained fast path. Complementary
+work uses imported Rust code, and both must compose automatically in the same
+unchanged program through real semantic, ABI and metadata contracts.
+
+The current development candidate is not that complete replacement yet. Its
+standalone entry still has a native-first retry route. Ordinary Cargo builds
+already enter a real mixed/imported-Rust path directly, but its native function
+boundary is much narrower than Lust's supported language subset and cold mixed
+work still performs whole-crate Rust analysis. These are explicit implementation
+gaps. Passing compatibility tests or meeting a timing budget does not close them.
+
+The [compiler contract](docs/compiler-set/native-contract.md),
+[design](docs/compiler-set/design.md), [roadmap](docs/compiler-set/roadmap.md) and
+[contributor instructions](AGENTS.md) preserve this direction for subsequent work.
+Importing upstream Rust is allowed; independently rebuilding all missing Rust
+features is not required. The imported code must serve the integrated compiler,
+not become a different whole-program fallback architecture by default.
 
 The daemon starts directly and does not require systemd. The
 [native host runtime](docs/compiler-set/host-portability.md) documents the Linux
@@ -13,8 +35,8 @@ runtime; the independent Cargo coordinator remains the portable entry there.
 ## Performance and release status
 
 **The measured warm supported commands are close to Lust. Ordinary full Rust stays close
-to stock rustc on the tested normal-profile project. This remains a development
-candidate while native runtime and platform qualification are completed.**
+to stock rustc on the tested normal-profile project. The integrated architecture,
+native runtime and platform qualification remain incomplete.**
 
 The goal is to keep Lust's acceleration for supported work and preserve full
 Rust compatibility at roughly stock Rust speed elsewhere. Large speed gains
@@ -29,6 +51,8 @@ The latest completed snapshot is **PR #26, `43a7e07d`**, tested as merge checkou
 `8a7af2e1` with the same source tree. [All ten Compiler set jobs passed](https://github.com/glopyglerky/lustr/actions/runs/44337186349).
 The results below were independently replayed from the original artifacts.
 They are measurements of that exact source, not a claim for later changes.
+They describe the current transitional paths; they do not establish completion
+of the compiler architecture above.
 
 All times are **median wall-clock milliseconds, lower is faster**. Ratios are
 paired geometric means of Rust time divided by Lustr time, with conditional
@@ -184,15 +208,16 @@ comparison, invalid-code rejection and restored native controls. Every invocatio
 was cold; the local environment denied Unix sockets, so this run does not qualify
 daemon state transitions.
 
-A separate native main-function type defect and earlier warm Result/ExitCode
-failures remain under [PR #24](https://github.com/glopyglerky/lustr/pull/24). Its
-partial fix is not included in the measured PR #26 candidate. The current
-candidate passed [five cold Linux main-return cases](docs/compiler-set/main-return-smoke.md)
-through Lust, matching rustc for unit, Result success/error and ExitCode
-success/failure. That narrow result does not repair the generated-C type defect
-or resolve the earlier warm-state findings. Native macOS qualification is
-incomplete; passing coordinator tests on macOS and Windows does not qualify
-the primary native runtime there. The daemon has no Windows host adapter.
+The continuation also [ports the narrow native main C type repair](docs/compiler-set/native-main-type-repair.md)
+from [PR #24](https://github.com/glopyglerky/lustr/pull/24) onto the current native
+tree. Its separately built native binaries passed ten ordinary/release-C cases
+across 40 commands, matching Rust exit status and output. The original PR #26
+package independently passed [five cold main-return cases](docs/compiler-set/main-return-smoke.md).
+Neither result is a reconstructed combined-package qualification. Current
+function-sanitizer and retained-daemon qualification are still required; the
+older macOS warm failures remain unassigned. Native macOS qualification is
+incomplete, and coordinator tests on macOS and Windows do not qualify the
+primary native runtime there. The daemon has no Windows host adapter.
 These are correctness/platform release conditions, independent of timing tolerance.
 The measured candidate's [Linux native CI completed successfully](https://github.com/glopyglerky/lustr/actions/runs/44337186309/job/134916956076);
 the native macOS job was cancelled and supplies no new platform result.
@@ -201,6 +226,12 @@ The complete-package before/after comparison originally stopped in a baseline
 build-script layout test before timing. [The harness repair](docs/compiler-set/complete-native-warm-comparison.md#first-hosted-failure-and-harness-correction)
 applies the same pinned Cargo setting already used by public lustr to both
 packages' direct correctness tests. It preserves compiler sources and assertions.
+The first repaired run passed all 402 baseline native unit/client tests, then
+stopped at a separately identified differential-oracle mismatch: 5,428 cases
+passed and 99 failed under the newer package SDK instead of the corpus's pinned
+Rust 1.99 oracle. The [separate-oracle correction](docs/compiler-set/complete-native-warm-comparison.md)
+preserves every case and assertion; its actual corrected corpus run is still
+outstanding, and no before/after timings were collected.
 No causal speed gain is yet assigned to PR #26's retained-check materialization
 change. The [continuation PR](https://github.com/glopyglerky/lustr/pull/28)
 records new qualification as it completes.
@@ -212,20 +243,21 @@ lustr's own source-bound results.
 
 ## Compiler integration
 
-Using or importing upstream rustc code is allowed. The project does not require
-rebuilding every Rust feature independently. Speed preservation applies to the
-Lust-supported path; upstream speed ratios are not measurements of this
-integration. See the [current contract](docs/compiler-set/native-contract.md).
+The required integration is defined by the [governing plan](docs/compiler-set/architecture-plan.md).
+Import upstream Rust implementation for complementary work; preserve Lust's
+supported frontend and retained execution. Upstream speed ratios are not
+measurements of this integration.
 
-The existing candidate packages `lustr`, a Cargo-facing `rustc` entry, Lust,
+The existing transitional candidate packages `lustr`, a Cargo-facing `rustc` entry, Lust,
 Cargo and the full Rust compiler/runtime. Start with its
 [commands and qualification](docs/compiler-set/native-preview-2026.11.15-1.md).
 Full-language requests retain real Rust metadata and Cargo behavior. Requests
 that Lust supports can compile through its native path. Further work must
 qualify this combined journey and preserve the fast path.
 
-Whole-target selection is initial progress. The finished integration must also
-support mixed work while retaining Lust's frontend and body-edit acceleration.
+Whole-target routing and successful stock compilation do not fulfill the
+required architecture. The implementation must cover mixed work while retaining
+Lust's supported frontend and body-edit acceleration.
 
 The [mixed compiler experiment](docs/compiler-set/mixed-compiler.md) now builds
 and runs one unchanged Cargo executable containing Lust-generated scalar code,

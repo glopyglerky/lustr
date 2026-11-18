@@ -1,5 +1,11 @@
 # Mixed compiler development candidate
 
+The [governing plan](architecture-plan.md) requires automatic native and
+complementary work inside one Lustr compiler, with Lust's fast frontend and
+retained path preserved. This document records the narrower implementation
+that exists today. Its scalar bridge and whole-crate Rust analysis are not
+the completed boundary; whole-program native-failure retry is not the target.
+
 lustr now has an executable mixed boundary, in addition to its existing
 whole-target Lust path. A real Cargo project containing a procedural macro,
 async Rust and a `no_std` library using `alloc` builds and executes through
@@ -13,7 +19,7 @@ speed. The complete imported compiler remains available for every request
 outside the accelerated boundary. No independent full-language implementation
 is required first.
 
-The [recorded source-built run at 5a3f493](completion-qualification.md#current-recorded-candidate-5a3f493)
+The [recorded source-built run at 5a3f493](completion-qualification.md#preceding-recorded-candidate-5a3f493)
 passed its mixed correctness, full entry/runtime, original v2 profiling and
 first schema-2 timing gates. This does not change the bounded acceleration
 scope or qualify the separate full native gate and macOS execution. The
@@ -309,7 +315,7 @@ deny preservation. Both this check journey and the mixed execution regression
 passed with the same mixed driver on Linux x86-64.
 
 These bounded checks passed on Linux x86-64. The public fixed-fixture
-[qualification ZIPs](../../performance/README.md#completed-fixed-corpus-campaigns)
+[qualification ZIPs](../../performance/README.md#historical-completed-fixed-corpus-campaigns)
 retain original commands, outputs, source/profile identities and timing data in
 Git. The separate actual coordinator campaigns preserve private originals in
 authenticated encrypted archives and expose reviewed public projections. They
