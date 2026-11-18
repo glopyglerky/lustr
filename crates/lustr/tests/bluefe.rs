@@ -43,8 +43,10 @@ fn mixed_cargo_uses_the_direct_compiler_without_changing_the_public_rustc_entry(
     }
     let _cleanup = Cleanup(root.clone());
     fs::create_dir_all(root.join("bin")).unwrap();
-    let direct = root.join("bin").join(format!("rustc-cargo{}", std::env::consts::EXE_SUFFIX));
+    let direct = root.join("bin").join("lustr-cargo").join(format!("rustc{}", std::env::consts::EXE_SUFFIX));
+    assert_eq!(direct.file_stem().and_then(|name| name.to_str()), Some("rustc"));
     let public = root.join("bin").join(format!("rustc{}", std::env::consts::EXE_SUFFIX));
+    fs::create_dir_all(direct.parent().unwrap()).unwrap();
     fs::write(&direct, b"direct compiler fixture").unwrap();
     fs::write(&public, b"public compiler fixture").unwrap();
 

@@ -50,7 +50,7 @@ fn main() {
     for entry in fs::read_dir(baseline.join("bin")).unwrap() {
         let entry = entry.unwrap();
         let name = entry.file_name();
-        if name != "lustr" && name != "rustc" && name != "rustc-full" && name != "rustc-cargo" && name != "rustc-reference" {
+        if name != "lustr" && name != "rustc" && name != "rustc-full" && name != "rustc-cargo" && name != "lustr-cargo" && name != "rustc-reference" {
             link(&entry.path(), &destination.join("bin").join(name));
         }
     }
@@ -62,9 +62,10 @@ fn main() {
     // Cargo sends complete rustc requests. Enter the same mixed driver
     // directly, avoiding an extra lustr process/exec for every Cargo unit.
     // The public bin/rustc still retains its direct-file Lust fast path.
-    link(Path::new("../lib/lustr-mixed/bin/lustr-mixed"), &destination.join("bin/rustc-cargo"));
+    fs::create_dir(destination.join("bin/lustr-cargo")).unwrap();
+    link(Path::new("../rustc-full"), &destination.join("bin/lustr-cargo/rustc"));
     assert_eq!(
-        destination.join("bin/rustc-cargo").canonicalize().unwrap(),
+        destination.join("bin/lustr-cargo/rustc").canonicalize().unwrap(),
         destination.join("bin/rustc-full").canonicalize().unwrap()
     );
     link(&baseline.join("bin/rustc-full"), &destination.join("bin/rustc-reference"));
@@ -73,7 +74,7 @@ fn main() {
     writeln!(manifest,"Local development composition; retains the referenced baseline.\nRust implementation: upstream source 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494.\nLust implementation: original retained pipeline plus the declared integration diff.\nBaseline={}\nMixed driver={}\nNative core={}",baseline.display(),driver.display(),native.display()).unwrap();
     manifest.sync_all().unwrap();
     for path in
-        [component.join("bin"), component.join("lib"), component, destination.join("bin"), destination.join("lib"), destination.clone()]
+        [component.join("bin"), component.join("lib"), component, destination.join("bin/lustr-cargo"), destination.join("bin"), destination.join("lib"), destination.clone()]
     {
         fs::File::open(path).unwrap().sync_all().unwrap();
     }

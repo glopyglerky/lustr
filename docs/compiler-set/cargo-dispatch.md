@@ -2,7 +2,7 @@
 
 ## Direct compiler entry inside Cargo
 
-The assembled mixed toolchain now provides `bin/rustc-cargo` as a direct link
+The assembled mixed toolchain now provides `bin/lustr-cargo/rustc` as a direct link
 to the existing mixed Rust/Lust driver (`bin/rustc-full`). For Cargo invocations
 only, the coordinator sets `RUSTC` to that direct compiler. Previously every
 Cargo rustc command first entered the public `bin/rustc` link to `lustr`, which
@@ -12,12 +12,19 @@ metadata, dependency graph, diagnostics and compiler flags unchanged.
 
 `bin/rustc` remains the public Lustr entry. Direct single-file commands still
 have the original Lust-supported fast path. A packaged toolchain without
-`rustc-cargo` retains its previous `bin/rustc` route, so existing BlueFe
+`lustr-cargo/rustc` retains its previous `bin/rustc` route, so existing BlueFe
 sysroots and standalone coordinators do not require a new binary. The toolchain
 assembler verifies that the direct Cargo link and `rustc-full` resolve to the
 same compiler executable; the coordinator's public plan test covers selection
 and fallback. The existing source-built mixed Cargo, metadata, macro, no_std,
 link-recovery and paired performance campaign must qualify the new path.
+
+The executable's basename must remain `rustc`. The initial direct alias named
+`rustc-cargo` broke the official Clippy driver's compiler-wrapper argument
+handling: it interpreted the compiler path as a source file and rejected Cargo's
+target-information query. The `bin/lustr-cargo/rustc` link preserves the same
+direct executable while retaining the wrapper contract; the existing complete
+entry/runtime test exercises both direct Clippy and `lustr clippy`.
 
 This removes one process entry per Cargo compiler invocation. It does not
 remove Cargo's own orchestration cost, make unsupported bodies eligible for

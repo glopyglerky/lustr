@@ -213,7 +213,7 @@ fn main() {
     for entry in fs::read_dir(sdk.join("bin")).unwrap() {
         let entry = entry.unwrap();
         let name = entry.file_name();
-        if !["rustc", "rustc-full", "rustc-cargo", "rustc-reference", "lustr", "lust", "lust-core", "cargo-lustr"]
+        if !["rustc", "rustc-full", "rustc-cargo", "lustr-cargo", "rustc-reference", "lustr", "lust", "lust-core", "cargo-lustr"]
             .iter()
             .any(|reserved| name == *reserved)
         {
@@ -267,9 +267,10 @@ fn main() {
     // The source-built package is the one used by Cargo correctness and
     // paired-speed qualification. Give it the same direct Cargo entry as
     // the component assembler; retain the public rustc -> lustr path.
-    symlink("rustc-full", package.join("bin/rustc-cargo")).unwrap();
+    fs::create_dir(package.join("bin/lustr-cargo")).unwrap();
+    symlink("../rustc-full", package.join("bin/lustr-cargo/rustc")).unwrap();
     assert_eq!(
-        package.join("bin/rustc-cargo").canonicalize().unwrap(),
+        package.join("bin/lustr-cargo/rustc").canonicalize().unwrap(),
         package.join("bin/rustc-full").canonicalize().unwrap()
     );
     // rustc-full resolves current_exe to this directory, alongside its matching
@@ -292,7 +293,7 @@ fn main() {
         manifest.push_str(std::str::from_utf8(&result).unwrap());
     }
     record(&output.join("COMPONENTS.txt"), manifest.as_bytes());
-    for p in [package.join("bin"), package.join("lib"), package, logs, output.clone()] {
+    for p in [package.join("bin/lustr-cargo"), package.join("bin"), package.join("lib"), package, logs, output.clone()] {
         fs::File::open(p).unwrap().sync_all().unwrap();
     }
     println!("Source-built local toolchain: {}", output.join("toolchain/bin/lustr").display());
