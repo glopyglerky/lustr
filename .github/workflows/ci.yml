@@ -180,7 +180,7 @@ jobs:
           # Apple Clang's ASan rejects detect_leaks=1 on this platform.
           # Keep the leak gate and select the upstream runtime explicitly.
           # Runner images can retain a catalog or installed formula from an
-          # earlier patch release. Refresh both before enforcing the exact pin.
+          # earlier patch release. Refresh both before checking the exact identity.
           brew update
           if brew list --versions llvm@23 >/dev/null; then
             brew upgrade llvm@23
@@ -193,7 +193,13 @@ jobs:
           echo "SAN_CC=$sanitizer_tools/clang" >> "$GITHUB_ENV"
           echo "ASAN_SYMBOLIZER_PATH=$sanitizer_tools/llvm-symbolizer" >> "$GITHUB_ENV"
           "$sanitizer_tools/clang" --version
-          test "$("$sanitizer_tools/clang" -dumpversion)" = 23.1.5
+          expected_sanitizer_version=23.1.6
+          actual_sanitizer_version=$("$sanitizer_tools/clang" -dumpversion)
+          if test "$actual_sanitizer_version" != "$expected_sanitizer_version"; then
+            printf 'Expected sanitizer Clang %s; acquired %s\n' \
+              "$expected_sanitizer_version" "$actual_sanitizer_version" >&2
+            exit 1
+          fi
       - name: Verify actual Bash and GNU test commands
         run: |
           set -euo pipefail

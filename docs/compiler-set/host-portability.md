@@ -212,8 +212,9 @@ which does not establish that Apple's bundled runtime provides it.
 
 `SAN_CC` now selects one sanitizer compiler executable for both the differential
 and optional crate sanitizer paths; it defaults to `gcc` and does not change
-the primary TinyCC build. The macOS workflow selects upstream LLVM 23.1.5
-Clang and its symbolizer. `tools/test-native-sanitizers.py` first requires a clean
+the primary TinyCC build. The macOS workflow selects upstream LLVM 23.1.6
+Clang and its symbolizer as a candidate pending hosted qualification.
+`tools/test-native-sanitizers.py` first requires a clean
 program to run and actual planted address, signed-overflow and leak faults to
 produce their corresponding diagnostics. It fails if any capability is absent;
 it does not retry with checks disabled. All four cases passed on actual Apple
@@ -227,5 +228,49 @@ translation unit so it specifically demonstrates ASan while retaining both
 instrumentations. Its address and undefined-behavior diagnostics pass under
 local GCC 14, and all four corrected cases pass under native Darwin LLVM 22.1.8.
 The Linux executor's restricted tracing environment prevents LeakSanitizer from
-running there. The selected LLVM 23.1.5 still requires its own hosted capability
-test and full native gate. The cause of LLVM 20's observed timeout is unproven.
+running there. The cause of LLVM 20's observed timeout is unproven.
+
+The earlier LLVM 23.1.5 selection remained unqualified. At head
+`0b89794c60a90b2a7d4a1db5e8e78abb6ecdf281`, the
+[18 November macOS job](https://github.com/glopyglerky/lustr/actions/runs/44418360296/job/135204490513)
+installed Homebrew LLVM 23.1.6, then failed the exact 23.1.5 identity check with
+exit status 1. Sanitizer capability tests and the native build were skipped.
+The always-run main-return gate subsequently returned status 2 during setup
+without a built compiler; no main-return case ran. The workflow now requires
+exactly 23.1.6 and reports both expected and acquired versions on a mismatch.
+Homebrew formula acquisition still follows its current catalog, so a later
+version change fails this check until deliberately reviewed. LLVM 23.1.6 must
+pass the unchanged capability probes and full native gate before qualification;
+the setup correction supplies no new runtime result.
+
+## Process-test directory ownership
+
+The same admission head's
+[macOS Cargo job](https://github.com/glopyglerky/lustr/actions/runs/44418360328/job/135204489920)
+failed `cargo_alias_can_select_release_without_enabling_cranelift`. Its actual
+rustc command used release optimization and no Cranelift backend option. Cargo
+reported that it could not create the fingerprint output file after the other
+process test had finished. The job does not prove a profile-selection error.
+
+Both tests allocated an owned directory from only the process ID and a wall-clock
+sample, using `create_dir_all`. If two samples match, both owners accept the
+same directory, and either owner's cleanup can remove the other's work. A
+bounded regression supplied the same sample to two instances of that actual
+allocator. It failed on the prior allocation logic because the directories
+were identical. This establishes the ownership defect; the hosted log does not
+record both original samples, so it does not prove that this caused that one
+macOS failure.
+
+The test helper now adds a process-local atomic sequence and uses exclusive
+`create_dir`, retrying only an existing-name collision. Each successful owner
+therefore reserves its own directory. The regression checks separate paths and
+that dropping one owner preserves the other's file. The alias failure message
+now reports the failed command without attributing every error to routing.
+Production compiler and Cargo behavior are unchanged.
+
+All three process tests passed locally with two test threads: the new ownership
+regression, the existing argument/process contract, and the actual Cargo release
+alias build and program execution. The [verification record](evidence/macos-harness-20261118/verification.json)
+preserves the failing predecessor and successful candidate identities. This is
+Linux validation of the harness repair. A new macOS run is still required; no
+existing assertion, sanitizer capability or platform gate was removed.
