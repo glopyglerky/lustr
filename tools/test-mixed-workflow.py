@@ -162,9 +162,22 @@ class MixedWorkflowTests(unittest.TestCase):
 
     def test_independent_suites_run_after_execution_failure(self):
         outcomes = dict(self.success, mixed_execution="failure")
-        for name in ("retained_checks", "mixed_libraries", "entry_contract"):
+        for name in ("native_reuse", "retained_checks", "mixed_libraries", "entry_contract"):
             self.assertTrue(self.eligible(name, outcomes), name)
         self.assertFalse(self.eligible("measurements", outcomes))
+
+    def test_native_object_identity_failure_blocks_every_measurement(self):
+        self.assertEqual(set(dependencies(self.steps["native_reuse"])), {"source_toolchain"})
+        self.assertIn("python3 tools/mixed-native-reuse-qualification.py", self.steps["native_reuse"])
+        self.assertIn("set -o pipefail", self.steps["native_reuse"])
+        for outcome in ("failure", "skipped", "cancelled"):
+            for step in ("pristine_build", "mixed_profile", "measurements", "slice_measurements", "project_measurements"):
+                with self.subTest(step=step, outcome=outcome):
+                    self.assertFalse(self.eligible(step, dict(self.success, native_reuse=outcome)))
+        retention = self.section.split("      - name: Retain exact source, build profiles and qualification evidence\n", 1)[1]
+        self.assertIn("        if: always()\n", retention)
+        self.assertIn("${{ runner.temp }}/lustr-mixed-native-reuse.log", retention)
+        self.assertIn("${{ runner.temp }}/lustr-mixed-native-reuse\n", retention)
 
     def test_no_suite_runs_after_failed_toolchain(self):
         outcomes = dict.fromkeys(self.steps, "skipped")
@@ -187,7 +200,7 @@ class MixedWorkflowTests(unittest.TestCase):
                     self.assertTrue(self.eligible("entry_contract", outcomes))
 
     def test_measurements_require_every_correctness_gate(self):
-        required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution", "retained_checks", "mixed_libraries", "entry_contract", "pristine_build", "bench_build", "host_record"}
+        required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution", "native_reuse", "retained_checks", "mixed_libraries", "entry_contract", "pristine_build", "bench_build", "host_record"}
         self.assertEqual(set(dependencies(self.steps["measurements"])), required)
         self.assertTrue(self.eligible("measurements"))
         for gate in required:
@@ -204,7 +217,7 @@ class MixedWorkflowTests(unittest.TestCase):
         self.assertIn("lustr-paired-measurements", self.steps["measurements"])
 
     def test_public_slice_requires_correctness_without_masking_other_campaign_failures(self):
-        required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution",
+        required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution", "native_reuse",
                     "retained_checks", "mixed_libraries", "entry_contract", "pristine_build", "host_record"}
         self.assertEqual(set(dependencies(self.steps["slice_measurements"])), required)
         for gate in required:
@@ -225,7 +238,7 @@ class MixedWorkflowTests(unittest.TestCase):
         self.assertEqual(paths, expected)
 
     def test_project_measurements_require_correctness_and_own_runner(self):
-        required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution", "retained_checks", "mixed_libraries", "entry_contract", "project_bench_build", "host_record"}
+        required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution", "native_reuse", "retained_checks", "mixed_libraries", "entry_contract", "project_bench_build", "host_record"}
         self.assertEqual(set(dependencies(self.steps["project_measurements"])), required)
         for gate in required:
             for outcome in ("failure", "skipped", "cancelled"):

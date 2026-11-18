@@ -5,13 +5,116 @@ use rustc_data_structures::{
     stable_hash::{StableHash, StableHasher},
 };
 use rustc_middle::ty::TyCtxt;
+use rustc_span::{SourceFileHash, SourceFileHashAlgorithm};
 use serde_json::{Value, json};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
-    io::Write,
+    io::{Read, Write},
     path::{Path, PathBuf},
 };
+
+#[path = "../../lustr-native-core/src/mixed_symbols.rs"]
+mod native_symbols;
+
+fn digest(bytes: &[u8]) -> String {
+    // Reuse the pinned compiler's SHA-256 implementation. No process or new
+    // hashing implementation is needed on this per-function path.
+    SourceFileHash::new_in_memory(SourceFileHashAlgorithm::Sha256, bytes).to_string()
+}
+
+pub fn native_request(tcx: TyCtxt<'_>, header: &str, source: &str, symbol: &str, rust_abi: &str, c_abi: &str) -> Value {
+    json!({"schema":"lustr.checked-native-unit","version":1,
+        "rustc":env!("LUSTR_BUILD_RUSTC_COMMIT"),"native":env!("LUST_BUILD_HASH"),
+        "host":env!("LUSTR_BUILD_RUSTC_HOST"),"target":tcx.sess.opts.target_triple.to_string(),
+        "overflow_checks":tcx.sess.overflow_checks(),"debug_assertions":tcx.sess.opts.debug_assertions,
+        "panic":format!("{:?}",tcx.sess.panic_strategy()),
+        "optimization":format!("{:?}",tcx.sess.opts.optimize),"debug_info":format!("{:?}",tcx.sess.opts.cg.debuginfo),
+        "header":header,"source_sha256":digest(source.as_bytes()),"symbol":symbol,
+        "rust_abi":rust_abi,"c_abi":c_abi})
+}
+
+fn native_bytes(path: &Path, symbol: &str) -> Option<Vec<u8>> {
+    const LIMIT: u64 = 64 * 1024 * 1024;
+    let metadata = fs::symlink_metadata(path).ok()?;
+    if !metadata.is_file() || metadata.len() > LIMIT {
+        return None;
+    }
+    let mut bytes = Vec::with_capacity(metadata.len() as usize);
+    fs::File::open(path).ok()?.take(LIMIT + 1).read_to_end(&mut bytes).ok()?;
+    native_symbols::check_renamed_bytes(&bytes, symbol.as_bytes()).ok()?;
+    Some(bytes)
+}
+
+pub fn native_digest(path: &Path, symbol: &str) -> Option<String> {
+    native_bytes(path, symbol).map(|bytes| digest(&bytes))
+}
+
+fn native_path(directory: &Path, kernel: &Value) -> Option<PathBuf> {
+    let identity = text(kernel, "identity")?;
+    if identity.len() != 16 || !identity.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return None;
+    }
+    let path = match text(kernel, "object") {
+        Some(path) => PathBuf::from(path),
+        None => directory.join(identity).join("native-link.o"),
+    };
+    // Reject a substituted symlink before resolving the owned generation.
+    if !fs::symlink_metadata(&path).ok()?.is_file() {
+        return None;
+    }
+    let path = path.canonicalize().ok()?;
+    path.starts_with(directory).then_some(path)
+}
+
+/// Reuse only the native object after the CURRENT complete Rust analysis and
+/// scalar body/FnAbi checks. This never reuses Rust analysis, metadata or link
+/// objects after a semantic-context miss. The isolated native request must be
+/// identical, including all source bytes and its actual Rust export/ABI.
+pub fn copy_native(compiler: &super::Compiler, definition: &str, request: &Value, output: &Path) -> Option<String> {
+    if compiler.check_only || !compiler.reuse_allowed {
+        return None;
+    }
+    let state = compiler.cached.as_ref()?;
+    if state["check_only"] != false {
+        return None;
+    }
+    let directory = PathBuf::from(text(state, "directory")?).canonicalize().ok()?;
+    if !directory.starts_with(compiler.index.parent()?.canonicalize().ok()?) {
+        return None;
+    }
+    let mut matches = state["kernels"]
+        .as_array()?
+        .iter()
+        .filter(|kernel| text(kernel, "definition") == Some(definition) && kernel["native_request"] == *request);
+    let kernel = matches.next()?;
+    if matches.next().is_some() {
+        return None;
+    }
+    let source = format!("{}{}{}", text(kernel, "prefix")?, text(kernel, "body")?, text(kernel, "suffix")?);
+    if text(request, "source_sha256")? != digest(source.as_bytes()) {
+        return None;
+    }
+    let symbol = text(request, "symbol")?;
+    if text(kernel, "symbol")? != symbol {
+        return None;
+    }
+    let bytes = native_bytes(&native_path(&directory, kernel)?, symbol)?;
+    let sha256 = digest(&bytes);
+    if text(kernel, "object_sha256")? != sha256 {
+        return None;
+    }
+    // Use exactly the bytes just validated. A hard link would expose the last
+    // successful generation to later linker writes; a second read could differ.
+    let mut file = fs::OpenOptions::new().write(true).create_new(true).open(output).ok()?;
+    let retained = file.write_all(&bytes).and_then(|_| file.sync_all()).and_then(|_| fs::File::open(output.parent().unwrap())?.sync_all());
+    if retained.is_err() {
+        drop(file);
+        let _ = fs::remove_file(output);
+        return None;
+    }
+    Some(sha256)
+}
 
 pub fn context(tcx: TyCtxt<'_>, native: &BTreeSet<String>) -> Option<Value> {
     let _profile = super::mixed_profile::span("context-fingerprint");
@@ -55,7 +158,7 @@ pub fn context(tcx: TyCtxt<'_>, native: &BTreeSet<String>) -> Option<Value> {
 pub fn read(index: &Path) -> Option<Value> {
     let state: Value = serde_json::from_slice(&fs::read(index).ok()?).ok()?;
     (state["schema"] == "lustr.checked-mixed-link"
-        && state["version"] == 4
+        && state["version"] == 5
         && state["rustc"] == env!("LUSTR_BUILD_RUSTC_COMMIT")
         && state["native"] == env!("LUST_BUILD_HASH"))
     .then_some(state)
@@ -63,7 +166,7 @@ pub fn read(index: &Path) -> Option<Value> {
 
 pub fn publish(index: &Path, directory: &Path, context: Value, kernels: Vec<Value>, check_only: bool) -> std::io::Result<()> {
     let _profile = super::mixed_profile::span("publish-certificate");
-    let state = json!({"schema":"lustr.checked-mixed-link","version":4,"check_only":check_only,
+    let state = json!({"schema":"lustr.checked-mixed-link","version":5,"check_only":check_only,
         "rustc":env!("LUSTR_BUILD_RUSTC_COMMIT"),"native":env!("LUST_BUILD_HASH"),
         "directory":directory,"context":context,"kernels":kernels});
     fs::create_dir_all(index.parent().unwrap())?;
@@ -224,7 +327,8 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
         }
         let source = unit.join("kernel.rs");
         let generated = format!("{}{}{}", text(kernel, "prefix")?, candidate.body, text(kernel, "suffix")?);
-        fs::write(&source, generated).ok()?;
+        fs::write(&source, &generated).ok()?;
+        kernel["native_request"]["source_sha256"] = json!(digest(generated.as_bytes()));
         if compiler.check_only {
             let (code, _, diagnostic) =
                 super::native::check(&source, &name, &identity, tcx.sess.overflow_checks(), tcx.sess.opts.debug_assertions)?;
@@ -257,6 +361,7 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
             fs::File::open(&unit).ok()?.sync_all().ok()?;
         }
         kernel["object"] = json!(linked);
+        kernel["object_sha256"] = json!(native_digest(&linked, &symbol)?);
         kernel["body"] = json!(candidate.body);
     }
     if compiler.check_only {
@@ -269,11 +374,8 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
                 return None;
             }
             let original = owned.join(identity).join("native-link.o").canonicalize().ok()?;
-            let selected = match text(kernel, "object") {
-                Some(path) => PathBuf::from(path).canonicalize().ok()?,
-                None => original.clone(),
-            };
-            if !original.starts_with(&owned) || !selected.starts_with(&owned) {
+            let selected = native_path(&owned, kernel)?;
+            if !original.starts_with(&owned) || native_digest(&selected, text(kernel, "symbol")?)? != text(kernel, "object_sha256")? {
                 return None;
             }
             objects.insert(original, selected);

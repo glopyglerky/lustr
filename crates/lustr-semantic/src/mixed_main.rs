@@ -550,6 +550,10 @@ impl Callbacks for Compiler {
             let prefix = format!("fn {}({params})->{}", candidate.name, signature.output());
             let suffix = format!("\nfn main(){{let _={}({zeros});}}\n", candidate.name);
             let text = format!("{prefix}{}{suffix}", candidate.body);
+            let definition = format!("{:?}", tcx.def_path_hash(id));
+            let native_request =
+                mixed_cache::native_request(tcx, &candidate.header, &text, &symbol, &format!("{rust_abi:?}"), &format!("{c_abi:?}"));
+            let mut object_sha256 = None;
             if fs::write(&source, &text).is_err() {
                 continue;
             }
@@ -564,28 +568,44 @@ impl Callbacks for Compiler {
                     continue;
                 }
             } else {
-                let Some((code, native_symbol, diagnostic)) =
-                    native::compile(&source, &object, &name, &identity, tcx.sess.overflow_checks(), tcx.sess.opts.debug_assertions)
-                else {
-                    continue;
-                };
-                trace(&diagnostic);
-                if code != 0 {
-                    continue;
-                }
                 let linked = path.join("native-link.o");
-                let result = {
-                    let _profile = mixed_profile::span("native-symbol-rename");
-                    mixed_symbol_rename::rename(&object, &native_symbol, &symbol, &linked)
-                };
-                if result.is_err() {
-                    continue;
+                if let Some(digest) = mixed_cache::copy_native(self, &definition, &native_request, &linked) {
+                    object_sha256 = Some(digest);
+                    trace(&format!("native-object-reused={symbol} full-analysis=1"));
+                } else {
+                    let Some((code, native_symbol, diagnostic)) =
+                        native::compile(&source, &object, &name, &identity, tcx.sess.overflow_checks(), tcx.sess.opts.debug_assertions)
+                    else {
+                        continue;
+                    };
+                    trace(&diagnostic);
+                    if code != 0 {
+                        continue;
+                    }
+                    let result = {
+                        let _profile = mixed_profile::span("native-symbol-rename");
+                        mixed_symbol_rename::rename(&object, &native_symbol, &symbol, &linked)
+                    };
+                    if result.is_err() {
+                        continue;
+                    }
+                    let Some(digest) = mixed_cache::native_digest(&linked, &symbol) else { continue };
+                    object_sha256 = Some(digest);
+                    // These bytes are a retained native input just like an
+                    // edited object. Publish their certificate only after the
+                    // original Rust link and the complete request succeed.
+                    if fs::File::open(&linked).and_then(|file| file.sync_all()).is_err()
+                        || fs::File::open(&path).and_then(|directory| directory.sync_all()).is_err()
+                    {
+                        continue;
+                    }
                 }
                 entries.insert(symbol.clone(), linked);
             }
             self.records.push(serde_json::json!({"name":name,"symbol":symbol,"identity":identity,
-                    "definition":format!("{:?}",tcx.def_path_hash(id)),"header":candidate.header,
-                    "body":candidate.body,"prefix":prefix,"suffix":suffix}));
+                    "definition":definition,"header":candidate.header,
+                    "body":candidate.body,"prefix":prefix,"suffix":suffix,
+                    "native_request":native_request,"object_sha256":object_sha256}));
             self.selected.push(symbol.clone());
         }
         trace(&format!("{}={}", if self.check_only { "native-checked-definitions" } else { "native-definitions" }, self.records.len()));

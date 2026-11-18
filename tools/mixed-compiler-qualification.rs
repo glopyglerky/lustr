@@ -198,19 +198,43 @@ fn main() {
     fs::write(&path, &signature).unwrap();
     build("signature", true);
     execute("signature", b"1081\n");
-    assert!(!fs::read_to_string(&trace).unwrap().contains("reused-rust-objects=1"), "signature change reused stale work");
+    let signature_trace = fs::read_to_string(&trace).unwrap();
+    assert!(!signature_trace.contains("reused-rust-objects=1"), "signature change reused stale Rust work");
+    assert_eq!(
+        signature_trace.matches("native-object-reused=").count(),
+        4,
+        "unchanged native definitions were regenerated: {signature_trace}"
+    );
+    assert_eq!(
+        signature_trace.matches("lustr mixed native:").count(),
+        1,
+        "changed signature did not regenerate exactly its native definition: {signature_trace}"
+    );
     fs::write(&trace, "").unwrap();
     fs::write(work.join("mixed-macro/src/lib.rs"), macro_source).unwrap();
     fs::write(&path, &edited).unwrap();
     fs::write(&library_path, library.replace("[0u64]", "[1u64]")).unwrap();
     build("dependency", true);
     execute("dependency", b"2104\n");
-    assert!(!fs::read_to_string(&trace).unwrap().contains("reused-rust-objects=1"), "changed dependency reused stale work");
+    let dependency_trace = fs::read_to_string(&trace).unwrap();
+    assert!(!dependency_trace.contains("reused-rust-objects=1"), "changed dependency reused stale Rust work");
+    assert_eq!(
+        dependency_trace.matches("native-object-reused=").count(),
+        4,
+        "dependency change regenerated identical native definitions: {dependency_trace}"
+    );
     fs::write(&trace, "").unwrap();
     fs::write(work.join("mixed-macro/src/lib.rs"), macro_source.replace("kernel(choose(x))", "kernel(choose(x)) ^ 1")).unwrap();
     build("macro", true);
     execute("macro", b"2105\n");
-    assert!(!fs::read_to_string(&trace).unwrap().contains("reused-rust-objects=1"), "changed macro expansion reused stale work");
+    let macro_trace = fs::read_to_string(&trace).unwrap();
+    assert!(!macro_trace.contains("reused-rust-objects=1"), "changed macro expansion reused stale Rust work");
+    assert_eq!(
+        macro_trace.matches("native-object-reused=").count(),
+        5,
+        "macro change regenerated identical native definitions: {macro_trace}"
+    );
+    assert!(!macro_trace.contains("lustr mixed native:"), "unchanged native source was compiled again: {macro_trace}");
     // Late Rust warnings must survive a body-only edit. Until diagnostic
     // replay is connected, a warning-bearing context uses full analysis.
     let warned = format!("{edited}\nfn unused_warning(){{}}\n");
