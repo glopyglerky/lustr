@@ -15,6 +15,7 @@ import tempfile
 SOURCE = r"""
 #include <limits.h>
 #include <stdlib.h>
+void *probe_alloc(size_t bytes);
 static void *volatile leaked;
 int main(int argc, char **argv) {
     if (argc != 2) return 2;
@@ -29,7 +30,7 @@ int main(int argc, char **argv) {
         volatile int value = INT_MAX;
         return value + argc;
     }
-    volatile char *p = malloc(16);
+    volatile char *p = probe_alloc(16);
     if (!p) return 3;
     p[argv[1][0] == 'a' ? 16 : 0] = 1;
     free((void *)p);
@@ -43,12 +44,20 @@ def main():
     subprocess.run([compiler, "--version"], check=True, timeout=10)
     with tempfile.TemporaryDirectory(prefix="lustr-sanitizers-") as directory:
         source = Path(directory) / "probe.c"
+        allocation = Path(directory) / "allocation.c"
         binary = Path(directory) / "probe"
         source.write_text(SOURCE)
+        # A separate translation unit keeps the allocation's bound opaque to
+        # the caller. Otherwise GCC's UBSan object-size check correctly stops
+        # the planted address fault before ASan can demonstrate its own check.
+        allocation.write_text(
+            "#include <stdlib.h>\n"
+            "void *probe_alloc(size_t bytes) { return malloc(bytes); }\n"
+        )
         subprocess.run(
             [compiler, "-O1", "-g", "-Werror=incompatible-pointer-types",
              "-fno-sanitize-recover=undefined", "-fsanitize=address,undefined",
-             str(source), "-o", str(binary)],
+             str(source), str(allocation), "-o", str(binary)],
             check=True, timeout=30,
         )
         env = dict(os.environ, LC_ALL="C", ASAN_OPTIONS="detect_leaks=1:allocator_may_return_null=1")
@@ -61,9 +70,18 @@ def main():
             ("undefined", "runtime error: signed integer overflow"),
             ("leak", "LeakSanitizer: detected memory leaks"),
         ]:
-            result = subprocess.run(
-                [str(binary), mode], env=env, capture_output=True, text=True, timeout=15,
-            )
+            try:
+                result = subprocess.run(
+                    [str(binary), mode], env=env, capture_output=True, text=True, timeout=15,
+                )
+            except subprocess.TimeoutExpired as error:
+                diagnostic_output = error.stderr or b""
+                if isinstance(diagnostic_output, bytes):
+                    diagnostic_output = diagnostic_output.decode(errors="replace")
+                raise AssertionError(
+                    f"SAN_CC={compiler!r} timed out in the {mode} capability after 15 seconds\n"
+                    + diagnostic_output[-8192:]
+                ) from error
             if diagnostic is None:
                 passed = result.returncode == 0 and "Sanitizer" not in result.stderr
             else:

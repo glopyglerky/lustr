@@ -196,8 +196,9 @@ uses the native library suffix and actual Darwin resident-memory observation;
 the scenario gate respects Darwin's shorter Unix socket path. Two focused
 loader tests pass against actual Linux C-linker artifacts, including rejection
 of missing bases, wrong owners, misleading embedded names and missing tools.
-Their native Darwin execution and the remainder of the full compiler gate are
-still required, along with package and matched performance campaigns. Earlier
+Those tests also passed on hosted macOS 26 arm64 at
+`9fff6e2c0c4aac3ee086b71e8f6414978bb06a9f`. The remainder of the full compiler gate
+is still required, along with package and matched performance campaigns. Earlier
 Linux measurements keep their original source identities and are not attributed
 to these corrections.
 
@@ -211,13 +212,20 @@ which does not establish that Apple's bundled runtime provides it.
 
 `SAN_CC` now selects one sanitizer compiler executable for both the differential
 and optional crate sanitizer paths; it defaults to `gcc` and does not change
-the primary TinyCC build. The macOS workflow selects the image's upstream LLVM
-Clang and symbolizer. `tools/test-native-sanitizers.py` first requires a clean
+the primary TinyCC build. The macOS workflow selects upstream LLVM 23.1.5
+Clang and its symbolizer. `tools/test-native-sanitizers.py` first requires a clean
 program to run and actual planted address, signed-overflow and leak faults to
 produce their corresponding diagnostics. It fails if any capability is absent;
 it does not retry with checks disabled. All four cases passed on actual Apple
 silicon with the already installed upstream LLVM 22.1.8 runtime on Darwin 27.
-That result qualifies the small capability fixture, not the full compiler gate
-or the hosted image's separately selected LLVM 20.1.8. The Linux executor
-compiles the probe, but its restricted tracing environment prevents
-LeakSanitizer from running; native hosted execution remains required.
+That result qualifies the small capability fixture, not the full compiler gate.
+The separately selected LLVM 20.1.8 on hosted macOS 26 reached the 15-second
+deadline on the clean case, so that runtime remains unqualified. The same run's
+Linux GCC 13 correctly rejected the planted heap error through UBSan before
+ASan could report it. The address fixture now allocates through a separate C
+translation unit so it specifically demonstrates ASan while retaining both
+instrumentations. Its address and undefined-behavior diagnostics pass under
+local GCC 14, and all four corrected cases pass under native Darwin LLVM 22.1.8.
+The Linux executor's restricted tracing environment prevents LeakSanitizer from
+running there. The selected LLVM 23.1.5 still requires its own hosted capability
+test and full native gate. The cause of LLVM 20's observed timeout is unproven.
