@@ -1,0 +1,369 @@
+diff --git a/src/full.rs b/src/full.rs
+index 8efbf826..2ff4000d 100644
+--- a/src/full.rs
++++ b/src/full.rs
+@@ -169,6 +169,7 @@ fn output(command: &mut Command) -> io::Result<std::process::Output> {
+ }
+ 
+ pub fn select(request: &Request, parent: &Path, args: &[String]) -> io::Result<Selection> {
++    let _span = crate::selection_spans::Span::new(crate::selection_spans::Stage::FullSelect);
+     let manifest = request.session.krate.manifest_path.as_ref().ok_or_else(|| error("missing Cargo manifest"))?;
+     let before = selection_cache::Snapshot::capture(request, parent, args);
+     if let Some(selected) = before.as_ref().and_then(selection_cache::Snapshot::load) {
+diff --git a/src/selection_cache.rs b/src/selection_cache.rs
+index f56a7337..de8d8597 100644
+--- a/src/selection_cache.rs
++++ b/src/selection_cache.rs
+@@ -2,6 +2,7 @@
+ // Cargo remains the parser and package-spec resolver. This admission grammar
+ // only excludes manifests whose metadata can depend on unobserved input.
+ use super::{Request, Selection, Value};
++use crate::selection_spans::{self as profile, Span, Stage};
+ use serde_json::json;
+ use sha2::{Digest, Sha256};
+ use std::fs::{self, File, OpenOptions};
+@@ -166,6 +167,7 @@ fn admitted_manifest(manifest: &str) -> Option<Vec<PathBuf>> {
+ // Body contents are not inputs to Cargo target selection. Record path type,
+ // symlink binding and canonical destination without invalidating on body edits.
+ fn binding(path: &Path) -> Option<Value> {
++    let _span = Span::new(Stage::Binding);
+     let shown = path_text(path)?;
+     let metadata = match path.symlink_metadata() {
+         Ok(metadata) => metadata,
+@@ -190,6 +192,7 @@ fn binding(path: &Path) -> Option<Value> {
+ }
+ 
+ fn stamp(path: &Path) -> Option<Value> {
++    let _span = Span::new(Stage::Stamp);
+     let canonical = path.canonicalize().ok()?;
+     let m = canonical.metadata().ok()?;
+     file_stamp(path, &canonical, &m)
+@@ -238,16 +241,18 @@ fn effective_access(_path: &Path, _mode: i32) -> Option<()> {
+ }
+ 
+ fn native_executable(path: &Path) -> Option<Value> {
++    let _span = Span::new(Stage::Executable);
+     // Opening a FIFO can wait forever before there is a descriptor to inspect.
+     // Unsupported tool types must fall through to Cargo's normal exec error.
+-    if !path.metadata().ok()?.is_file() {
++    if !profile::time(Stage::ExecType, || path.metadata()).ok()?.is_file() {
+         return None;
+     }
+-    effective_access(path, 1)?; // X_OK, using current effective credentials.
+-    let canonical = path.canonicalize().ok()?;
++    profile::time(Stage::ExecAccess, || effective_access(path, 1))?; // X_OK, using current effective credentials.
++    let canonical = profile::time(Stage::ExecCanonical, || path.canonicalize()).ok()?;
+     if canonical.file_name()?.to_str()? == "rustup" {
+         return None;
+     }
++    let _read = Span::new(Stage::ExecRead);
+     let mut magic = [0; 4];
+     let mut file = File::open(&canonical).ok()?;
+     file.read_exact(&mut magic).ok()?;
+@@ -263,7 +268,9 @@ fn native_executable(path: &Path) -> Option<Value> {
+     {
+         return None;
+     }
+-    file_stamp(path, &canonical, &file.metadata().ok()?)
++    let metadata = file.metadata().ok()?;
++    drop(_read);
++    profile::time(Stage::ExecStamp, || file_stamp(path, &canonical, &metadata))
+ }
+ 
+ fn pin(key: &str) -> Option<&'static str> {
+@@ -279,13 +286,15 @@ struct Tools {
+ }
+ 
+ fn toolchain(parent: &Path) -> Option<Tools> {
++    let _span = Span::new(Stage::Toolchain);
+     // Other hosts retain fresh Cargo selection until their source-built SDK
+     // identity has an equally narrow admission rule.
+     if super::super::protocol::host_triple() != "x86_64-unknown-linux-gnu" {
+         return None;
+     }
+     let package = parent.parent()?;
+-    let receipt = text(&package.join("lib/lustr-selection-tools.txt"))?;
++    let receipt = profile::time(Stage::ReceiptRead, || text(&package.join("lib/lustr-selection-tools.txt")))?;
++    let _parse = Span::new(Stage::ReceiptParse);
+     let mut lines = receipt.lines();
+     if lines.next()? != "lustr-selection-toolchain-v1"
+         || lines.next()? != format!("source={}", pin("source")?)
+@@ -310,6 +319,7 @@ fn toolchain(parent: &Path) -> Option<Tools> {
+     {
+         return None;
+     }
++    drop(_parse);
+     let mut identities = vec![native_executable(&std::env::current_exe().ok()?)?];
+     let mut verified = Vec::new();
+     for name in ["cargo", "rustc-full", "rustdoc", "rustc-reference"] {
+@@ -323,6 +333,7 @@ fn toolchain(parent: &Path) -> Option<Tools> {
+         verified.push((path, hash, identity));
+     }
+     let lib = parent.parent()?.join("lib");
++    let _libraries = Span::new(Stage::LibraryDiscovery);
+     let mut libraries = Vec::new();
+     for entry in fs::read_dir(&lib).ok()? {
+         let path = entry.ok()?.path();
+@@ -337,9 +348,10 @@ fn toolchain(parent: &Path) -> Option<Tools> {
+         return None;
+     }
+     libraries.sort();
++    drop(_libraries);
+     for path in libraries {
+-        effective_access(&path, 4)?; // R_OK for the loader's shared-library input.
+-        let identity = stamp(&path)?;
++        profile::time(Stage::LibraryAccess, || effective_access(&path, 4))?; // R_OK for the loader's shared-library input.
++        let identity = profile::time(Stage::LibraryStamp, || stamp(&path))?;
+         let hash = expected.remove(&Path::new("lib").join(path.file_name()?))?;
+         identities.push(identity.clone());
+         verified.push((path, hash, identity));
+@@ -348,7 +360,7 @@ fn toolchain(parent: &Path) -> Option<Tools> {
+         return None;
+     }
+     Some(Tools {
+-        state: json!({"receipt":receipt, "identities":identities}),
++        state: profile::time(Stage::ToolStateJson, || json!({"receipt":receipt, "identities":identities})),
+         files: verified,
+         seed: package.join("lib/lustr-selection-verified"),
+     })
+@@ -406,18 +418,21 @@ pub fn prime_tools(parent: &Path) -> Option<()> {
+ }
+ 
+ fn private_record(root: &Path, path: &Path) -> Option<Value> {
++    let _policy = Span::new(Stage::RecordPolicy);
+     private_directory_exists(root)?;
+     let owner = root.metadata().ok()?.uid();
+     let metadata = path.symlink_metadata().ok()?;
+     if !metadata.is_file() || metadata.uid() != owner || metadata.mode() & 0o077 != 0 || metadata.nlink() != 1 {
+         return None;
+     }
+-    let record: Value = serde_json::from_slice(&read(path)?).ok()?;
++    drop(_policy);
++    let bytes = profile::time(Stage::RecordRead, || read(path))?;
++    let record: Value = profile::time(Stage::RecordParse, || serde_json::from_slice(&bytes)).ok()?;
+     let payload = &record["payload"];
+-    if record["sha256"].as_str()? != digest(&serde_json::to_vec(payload).ok()?) {
++    if record["sha256"].as_str()? != profile::time(Stage::RecordChecksum, || Some(digest(&serde_json::to_vec(payload).ok()?)))? {
+         return None;
+     }
+-    Some(payload.clone())
++    Some(profile::time(Stage::RecordClone, || payload.clone()))
+ }
+ 
+ fn write_record(root: &Path, path: &Path, payload: &Value) -> Option<()> {
+@@ -445,6 +460,7 @@ fn write_record(root: &Path, path: &Path, payload: &Value) -> Option<()> {
+ }
+ 
+ fn environment() -> Option<String> {
++    let _span = Span::new(Stage::Environment);
+     let mut vars = std::env::vars_os().collect::<Vec<_>>();
+     vars.sort();
+     let mut bytes = Vec::new();
+@@ -487,6 +503,7 @@ fn cargo_home(cwd: &Path) -> Option<PathBuf> {
+ }
+ 
+ fn config(cwd: &Path, home: &Path) -> Option<Value> {
++    let _span = Span::new(Stage::Config);
+     let mut directories = cwd.ancestors().map(|p| p.join(".cargo")).collect::<Vec<_>>();
+     directories.push(home.to_owned());
+     directories.sort();
+@@ -509,6 +526,7 @@ fn config(cwd: &Path, home: &Path) -> Option<Value> {
+ }
+ 
+ fn discovery(root: &Path, explicit: &[PathBuf]) -> Option<Value> {
++    let _span = Span::new(Stage::Discovery);
+     let mut paths = explicit.iter().map(|p| root.join(p)).collect::<Vec<_>>();
+     paths.extend(["src/main.rs", "src/lib.rs", "build.rs", "README", "README.md", "README.txt"].map(|p| root.join(p)));
+     for relative in ["src/bin", "examples", "tests", "benches"] {
+@@ -542,6 +560,7 @@ fn target_bindings(metadata: &Value) -> Option<Value> {
+ }
+ 
+ fn package_target_bindings(packages: &[Value]) -> Option<Value> {
++    let _span = Span::new(Stage::TargetBindings);
+     let mut paths = Vec::new();
+     for package in packages {
+         for target in package["targets"].as_array()? {
+@@ -564,12 +583,14 @@ pub struct Snapshot {
+ 
+ impl Snapshot {
+     pub fn capture(request: &Request, parent: &Path, args: &[String]) -> Option<Self> {
++    let _span = Span::new(Stage::Capture);
+         if !request.session.cargo_net.offline
+             || std::env::var_os("LUSTR_NO_SELECTION_CACHE").is_some()
+             || std::env::var_os("LUST_NO_CACHE").is_some_and(|v| v != "0")
+         {
+             return None;
+         }
++        let _inputs = Span::new(Stage::InputRead);
+         let cwd = std::env::current_dir().ok()?;
+         let shown = request.session.krate.manifest_path.as_ref()?;
+         let manifest = shown.canonicalize().ok()?;
+@@ -581,19 +602,24 @@ impl Snapshot {
+         let explicit = admitted_manifest(&manifest_text)?;
+         let lock = text(&project.join("Cargo.lock"))?;
+         let home = cargo_home(&cwd)?;
++        drop(_inputs);
+         let environment = environment()?;
+-        let context = json!([SELECTION_SCHEMA, args, path_text(parent)?, path_text(&cwd)?, environment]);
++        let context = profile::time(Stage::ContextJson, || Some(json!([SELECTION_SCHEMA, args, path_text(parent)?, path_text(&cwd)?, environment])))?;
+         let tools = toolchain(parent)?;
+-        let state = json!({"context":context, "manifest":manifest_text, "lock":lock,
+-            "manifest_binding":binding(shown)?, "source":binding(&request.file)?,
+-            "config":config(&cwd,&home)?, "tools":tools.state,
+-            "discovery":discovery(project,&explicit)?});
++        let manifest_binding = binding(shown)?;
++        let source_binding = binding(&request.file)?;
++        let configuration = config(&cwd, &home)?;
++        let discovery_state = discovery(project, &explicit)?;
++        let state = profile::time(Stage::SnapshotJson, || json!({"context":context, "manifest":manifest_text, "lock":lock,
++            "manifest_binding":manifest_binding, "source":source_binding,
++            "config":configuration, "tools":tools.state,
++            "discovery":discovery_state}));
+         let base = std::env::var_os("LUST_CACHE_DIR")
+             .filter(|v| !v.is_empty())
+             .map(PathBuf::from)
+             .unwrap_or_else(|| request.file.parent().unwrap_or(Path::new(".")).join(".lust-cache"));
+         let root = base.join("cargo-selection-v1");
+-        let entry = root.join(format!("{}.json", digest(&serde_json::to_vec(&context).ok()?)));
++        let entry = profile::time(Stage::EntryKey, || Some(root.join(format!("{}.json", digest(&serde_json::to_vec(&context).ok()?)))))?;
+         Some(Self { root, entry, manifest, state, tools })
+     }
+ 
+@@ -609,6 +635,7 @@ impl Snapshot {
+     }
+ 
+     fn admitted_package(&self, package: &Value) -> Option<()> {
++    let _span = Span::new(Stage::PackageAdmission);
+         if !package["dependencies"].as_array()?.is_empty()
+             || package["manifest_path"].as_str()? != self.manifest.to_str()?
+             || package["source"] != Value::Null
+@@ -620,12 +647,14 @@ impl Snapshot {
+     }
+ 
+     fn state_digest(&self) -> Option<String> {
++    let _span = Span::new(Stage::StateDigest);
+         // The existing context includes this selection schema. All previous
+         // live observations remain in state; only its disk representation shrinks.
+         Some(digest(&serde_json::to_vec(&self.state).ok()?))
+     }
+ 
+     pub fn load(&self) -> Option<Selection> {
++    let _span = Span::new(Stage::Load);
+         let mut payload = private_record(&self.root, &self.entry)?;
+         if payload["schema"] != SELECTION_SCHEMA || payload["state_sha256"].as_str()? != self.state_digest()? {
+             return None;
+@@ -634,7 +663,7 @@ impl Snapshot {
+         if provenance.len() != 64 || !provenance.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte)) {
+             return None;
+         }
+-        let selected = Selection::from_retained(payload.get_mut("selection")?.take())?;
++        let selected = profile::time(Stage::SelectionDecode, || Selection::from_retained(payload.get_mut("selection")?.take()))?;
+         self.admitted_package(&selected.package)?;
+         // Admission has exactly one package. Its complete target list remains
+         // in Selection, including unselected targets that can become aliases.
+@@ -666,6 +695,8 @@ impl Snapshot {
+ }
+ 
+ pub fn diagnostic(state: &str) {
++    let _span = Span::new(Stage::Diagnostic);
++    profile::event(state);
+     if let Some(path) = std::env::var_os("LUSTR_SELECTION_DIAGNOSTICS") {
+         if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(path) {
+             let _ = writeln!(file, "{{\"selection_cache\":\"{state}\"}}");
+diff --git a/tools/profile-native-preflight.rs b/tools/profile-native-preflight.rs
+index e03e23d4..c7b9ce3b 100644
+--- a/tools/profile-native-preflight.rs
++++ b/tools/profile-native-preflight.rs
+@@ -5,6 +5,9 @@
+ //! native-preflight measurement note for build and execution instructions.
+ #![allow(dead_code)]
+ 
++#[path = "selection-spans.rs"]
++mod selection_spans;
++
+ #[path = "../compiler/native/src/protocol.rs"]
+ mod protocol;
+ mod full {
+@@ -89,6 +92,8 @@ fn main() -> ExitCode {
+                 record["selection"] = full::selection_evidence(selection);
+             }
+         }
++        record["spans"] = selection_spans::take();
++        record["cache_state"] = serde_json::json!(selection_spans::cache_state());
+         println!("{record}");
+         return if result.is_ok() { ExitCode::SUCCESS } else { ExitCode::from(2) };
+     }
+diff --git a/tools/selection-spans.rs b/tools/selection-spans.rs
+new file mode 100644
+index 00000000..5e66525c
+--- /dev/null
++++ b/tools/selection-spans.rs
+@@ -0,0 +1,68 @@
++//! Deferred, opt-in diagnostic instrumentation. Not part of the public binary.
++use std::{cell::{RefCell, Cell}, time::Instant};
++
++#[derive(Clone, Copy)]
++#[repr(usize)]
++pub enum Stage {
++    FullSelect, Capture, InputRead, Environment, ContextJson, Toolchain,
++    ReceiptRead, ReceiptParse, Executable, ExecType, ExecAccess, ExecCanonical,
++    ExecRead, ExecStamp, LibraryDiscovery, LibraryAccess, LibraryStamp,
++    ToolStateJson, Binding, Config, Discovery, SnapshotJson, EntryKey,
++    Load, RecordPolicy, RecordRead, RecordParse, RecordChecksum, RecordClone,
++    StateDigest, SelectionDecode, PackageAdmission, TargetBindings, Diagnostic,
++    Stamp,
++}
++
++const NAMES: [&str; 35] = [
++    "full_select", "capture", "input_read", "environment", "context_json", "toolchain",
++    "receipt_read", "receipt_parse", "executable", "exec_type", "exec_access", "exec_canonical",
++    "exec_read", "exec_stamp", "library_discovery", "library_access", "library_stamp",
++    "tool_state_json", "binding", "config", "discovery", "snapshot_json", "entry_key",
++    "load", "record_policy", "record_read", "record_parse", "record_checksum", "record_clone",
++    "state_digest", "selection_decode", "package_admission", "target_bindings", "diagnostic",
++    "stamp",
++];
++
++thread_local! {
++    static COUNTERS: RefCell<([u64; 35], [u64; 35])> = const { RefCell::new(([0;35], [0;35])) };
++    static STATE: Cell<u8> = const { Cell::new(0) };
++}
++
++pub fn event(state: &str) {
++    STATE.set(match state { "hit" => 1, "miss" => 2, "ineligible" => 3, _ => 4 });
++}
++
++pub fn cache_state() -> &'static str {
++    match STATE.get() { 1 => "hit", 2 => "miss", 3 => "ineligible", 4 => "other", _ => "none" }
++}
++
++pub struct Span(Stage, Instant);
++impl Span {
++    pub fn new(stage: Stage) -> Self { Self(stage, Instant::now()) }
++}
++impl Drop for Span {
++    fn drop(&mut self) {
++        let elapsed = self.1.elapsed().as_nanos() as u64;
++        COUNTERS.with(|counter| {
++            let mut counter = counter.borrow_mut();
++            counter.0[self.0 as usize] += elapsed;
++            counter.1[self.0 as usize] += 1;
++        });
++    }
++}
++
++pub fn time<T>(stage: Stage, operation: impl FnOnce() -> T) -> T {
++    let _span = Span::new(stage);
++    operation()
++}
++
++// All formatting/allocation happens after full::select and its outer timer end.
++// Spans are inclusive and nested; they must not be summed as independent costs.
++pub fn take() -> serde_json::Value {
++    COUNTERS.with(|counter| {
++        let counters = counter.replace(([0;35], [0;35]));
++        serde_json::Value::Object(NAMES.iter().enumerate().map(|(i, &name)| {
++            (name.to_owned(), serde_json::json!({"ns":counters.0[i],"calls":counters.1[i]}))
++        }).collect())
++    })
++}

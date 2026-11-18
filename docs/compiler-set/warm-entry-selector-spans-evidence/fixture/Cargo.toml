@@ -1,0 +1,16 @@
+[package]
+name = "slice"
+version = "0.0.0"
+edition = "2024"
+[[bin]]
+name = "slice"
+path = "src/slice_main.rs"
+[profile.dev]
+opt-level = 0
+debug = 0
+panic = "unwind"
+overflow-checks = true
+debug-assertions = true
+incremental = true
+
+[workspace]

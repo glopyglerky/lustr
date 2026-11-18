@@ -1,0 +1,64 @@
+    Updating crates.io index
+    Blocking waiting for file lock on package cache
+     Locking 21 packages to highest Rust 1.102.0-nightly compatible versions
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+ Downloading crates ...
+  Downloaded block-buffer v0.12.1
+  Downloaded const-oid v0.10.3
+  Downloaded cpufeatures v0.3.1
+  Downloaded cfg-if v1.0.5
+  Downloaded itoa v1.0.19
+  Downloaded zmij v1.0.23
+  Downloaded crypto-common v0.2.2
+  Downloaded digest v0.11.3
+  Downloaded sha2 v0.11.1
+  Downloaded typenum v1.20.1
+  Downloaded hybrid-array v0.4.15
+  Downloaded serde_core v1.0.229
+  Downloaded memchr v2.8.3
+  Downloaded serde_json v1.0.154
+   Compiling typenum v1.20.1
+   Compiling serde_core v1.0.229
+   Compiling zmij v1.0.23
+   Compiling const-oid v0.10.3
+   Compiling serde_json v1.0.154
+   Compiling memchr v2.8.3
+   Compiling itoa v1.0.19
+   Compiling cpufeatures v0.3.1
+   Compiling cfg-if v1.0.5
+   Compiling hybrid-array v0.4.15
+   Compiling block-buffer v0.12.1
+   Compiling crypto-common v0.2.2
+   Compiling digest v0.11.3
+   Compiling sha2 v0.11.1
+   Compiling lustr-selector-spans v0.0.0 (<DIAGNOSTIC_WORKSPACE>/warm-selector-profile-build)
+error[E0583]: file not found for module `selection_spans`
+ --> <DIAGNOSTIC_WORKSPACE>/lustr-selector-profile/tools/profile-native-preflight.rs:8:1
+  |
+8 | mod selection_spans;
+  | ^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: to create the module `selection_spans`, create file "<DIAGNOSTIC_WORKSPACE>/lustr-selector-profile/tools/selection_spans.rs" or "<DIAGNOSTIC_WORKSPACE>/lustr-selector-profile/tools/selection_spans/mod.rs"
+  = note: if there is a `mod selection_spans` elsewhere in the crate already, import it with `use crate::...` instead
+
+error[E0425]: cannot find value `_read` in this scope
+   --> <DIAGNOSTIC_WORKSPACE>/lustr-selector-profile/tools/../src/selection_cache.rs:271:10
+    |
+271 |     drop(_read);
+    |          ^^^^^ not found in this scope
+    |
+note: similarly named function `read` defined here
+   --> <DIAGNOSTIC_WORKSPACE>/lustr-selector-profile/tools/../src/selection_cache.rs:45:1
+    |
+ 45 | fn read(path: &Path) -> Option<Vec<u8>> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: a function with a similar name exists
+    |
+271 -     drop(_read);
+271 +     drop(read);
+    |
+
+Some errors have detailed explanations: E0425, E0583.
+For more information about an error, try `rustc --explain E0425`.
+error: could not compile `lustr-selector-spans` (bin "profile-native-preflight") due to 2 previous errors

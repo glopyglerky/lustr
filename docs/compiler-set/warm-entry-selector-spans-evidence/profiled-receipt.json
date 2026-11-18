@@ -1,0 +1,27 @@
+{
+  "status": "completed",
+  "scope": "Voluntary selector component instrumentation, no native compilation or public-command performance result.",
+  "source": {
+    "revision": "1f26c898944e5e911becffc24be031e1d06dadf6",
+    "tree": "a766b464c62be6913482138e8b5128292931b060"
+  },
+  "source_sha256": {
+    "tools/profile-native-preflight.rs": "b5d1e146df83df609b45979dd2f4b5a2eef0bda70f74e19d78cc4f142a8030a1",
+    "src/full.rs": "22f6f508019deb74d2285b424d566fb043f51e48dc4590a6a2c94154c8d03ba4",
+    "src/selection_cache.rs": "cd029856297f3266feddd34ca019dae138ab7d38491c8b0ac2ad96c93b37b94d",
+    "src/owned_child.rs": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20",
+    "src/host_runtime.rs": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223",
+    "compiler/native/src/protocol.rs": "4da4c32fb16b62f3819a3d774ef63b76e201e2414c3b4540b4a6ccb27133fe1c",
+    "upstream/bluefe-core.pin": "73bd5e14a0d96979dccb1f89f145f6c1d9d947c8f4a192f0db64f6954f0218b6",
+    "tools/selection-spans.rs": "78eefef46772ae53bad62438442b5305f335e74057df007347732a0d55f83a55"
+  },
+  "binary_sha256": "114fa50ee39b67e42d43ecd1d4bbdc19c7915097fed5274f9f0f353ff8fbbca0",
+  "manifest_sha256": "2d09c5225badd42fe2c63345d0ddd48f4912e43cc09db24a128350b3481a0a60",
+  "lock_sha256": "29fc8acbc346042ed0ffe898696b68bca005aff7a73cf2c6b660e94d77ea20f0",
+  "native_build_hash": "be64fca1236b2d1f",
+  "compiler_version": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+  "build_streams": {
+    "stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "5bf3666bdeaaf9ac0f9c59b06cc4af2f3666c417192e28ecba6f492432259d06"
+  }
+}

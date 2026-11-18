@@ -1,0 +1,32 @@
+{
+  "commands": 111,
+  "helpers": {
+    "original": "1ae4fc668636506c26b12e33ebea0068b3b43f05e12ded58c18bae16d9758b44",
+    "profiled": "114fa50ee39b67e42d43ecd1d4bbdc19c7915097fed5274f9f0f353ff8fbbca0"
+  },
+  "observations": 96,
+  "original_plan_sha256": "b2be50fa39e870753b261641c676720bd4f363f6200aba43f8efed7d6f21c3b7",
+  "original_recipe_limits": "Initial instrumented build failed due to module filename and guard variable; logs retained. Initial full-wrapper build used an earlier native hash and was not executed or timed; corrected source build uses fourth be64fca1236b2d1f.",
+  "original_report_sha256": "b89176896a559a9c0d1625aff273e5a0402e054b6487e89b1732a60b3ce40b2b",
+  "post_observation_identity_checks": "source closure, both helper binaries, selected package file hashes and fixture bytes match the predeclared plan; no selector rerun",
+  "product": {
+    "revision": "3c378a11d60149a3ec99fa49ea1b336e9406fca8",
+    "tree": "0256606d5793bfb890130f05fae013d0c5c5f9e1"
+  },
+  "profile": {
+    "files": {
+      "compiler/native/src/protocol.rs": "4da4c32fb16b62f3819a3d774ef63b76e201e2414c3b4540b4a6ccb27133fe1c",
+      "src/full.rs": "22f6f508019deb74d2285b424d566fb043f51e48dc4590a6a2c94154c8d03ba4",
+      "src/host_runtime.rs": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223",
+      "src/owned_child.rs": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20",
+      "src/selection_cache.rs": "cd029856297f3266feddd34ca019dae138ab7d38491c8b0ac2ad96c93b37b94d",
+      "tools/profile-native-preflight.rs": "b5d1e146df83df609b45979dd2f4b5a2eef0bda70f74e19d78cc4f142a8030a1",
+      "tools/selection-spans.rs": "78eefef46772ae53bad62438442b5305f335e74057df007347732a0d55f83a55",
+      "upstream/bluefe-core.pin": "73bd5e14a0d96979dccb1f89f145f6c1d9d947c8f4a192f0db64f6954f0218b6"
+    },
+    "revision": "1f26c898944e5e911becffc24be031e1d06dadf6",
+    "tree": "a766b464c62be6913482138e8b5128292931b060"
+  },
+  "schema": "lustr-selector-span-evidence-v1",
+  "span_count": 35
+}
