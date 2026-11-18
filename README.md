@@ -19,6 +19,12 @@ boundary is much narrower than Lust's supported language subset and cold mixed
 work still performs whole-crate Rust analysis. These are explicit implementation
 gaps. Passing compatibility tests or meeting a timing budget does not close them.
 
+The continuation adds a [first native admission boundary](docs/compiler-set/native-admission.md):
+checked scalar units receive an explicit admission result before C generation,
+and actual native, object and linker failures remain failures on cold and
+retained requests. This advances the existing mixed bridge; wider Lust coverage
+and removal of the standalone retry remain required.
+
 The [compiler contract](docs/compiler-set/native-contract.md),
 [design](docs/compiler-set/design.md), [roadmap](docs/compiler-set/roadmap.md) and
 [contributor instructions](AGENTS.md) preserve this direction for subsequent work.
@@ -47,7 +53,7 @@ unmeasured coverage.
 
 ![Measured compiler latency, including a mixed Cargo regression](performance/overview-2026-11-18/latency.svg)
 
-The latest completed snapshot is **PR #26, `43a7e07d`**, tested as merge checkout
+The latest retained and replayed performance snapshot is **PR #26, `43a7e07d`**, tested as merge checkout
 `8a7af2e1` with the same source tree. [All ten Compiler set jobs passed](https://github.com/glopyglerky/lustr/actions/runs/44337186349).
 The results below were independently replayed from the original artifacts.
 They are measurements of that exact source, not a claim for later changes.
@@ -213,28 +219,41 @@ from [PR #24](https://github.com/glopyglerky/lustr/pull/24) onto the current nat
 tree. Its separately built native binaries passed ten ordinary/release-C cases
 across 40 commands, matching Rust exit status and output. The original PR #26
 package independently passed [five cold main-return cases](docs/compiler-set/main-return-smoke.md).
-Neither result is a reconstructed combined-package qualification. Current
-function-sanitizer and retained-daemon qualification are still required; the
-older macOS warm failures remain unassigned. Native macOS qualification is
-incomplete, and coordinator tests on macOS and Windows do not qualify the
-primary native runtime there. The daemon has no Windows host adapter.
-These are correctness/platform release conditions, independent of timing tolerance.
-The measured candidate's [Linux native CI completed successfully](https://github.com/glopyglerky/lustr/actions/runs/44337186309/job/134916956076);
-the native macOS job was cancelled and supplies no new platform result.
+Those local checks remain separate from the later
+[hosted qualification of PR #28](docs/compiler-set/hosted-qualification-2026-11-18.md),
+head `429fe605`, tested with the identical merge source tree. On Linux, the
+ordinary and sanitizer differential gates each passed **5,528 cases**, the
+real-daemon suite passed **364 scenarios**, and the strict main-return transition
+gate passed. The source-built mixed compiler and **17 full-entry contract tests**
+also passed. These results qualify that source, not later changes.
+
+The macOS jobs in that campaign were cancelled before any steps ran. They add
+no native platform evidence. Linux used GCC sanitizers, so the pinned macOS
+Clang function-type check remains outstanding. The primary daemon also has no
+Windows host adapter. These correctness/platform release conditions are
+independent of timing tolerance.
 
 The complete-package before/after comparison originally stopped in a baseline
 build-script layout test before timing. [The harness repair](docs/compiler-set/complete-native-warm-comparison.md#first-hosted-failure-and-harness-correction)
 applies the same pinned Cargo setting already used by public lustr to both
-packages' direct correctness tests. It preserves compiler sources and assertions.
-The first repaired run passed all 402 baseline native unit/client tests, then
-stopped at a separately identified differential-oracle mismatch: 5,428 cases
-passed and 99 failed under the newer package SDK instead of the corpus's pinned
-Rust 1.99 oracle. The [separate-oracle correction](docs/compiler-set/complete-native-warm-comparison.md)
-preserves every case and assertion; its actual corrected corpus run is still
-outstanding, and no before/after timings were collected.
-No causal speed gain is yet assigned to PR #26's retained-check materialization
-change. The [continuation PR](https://github.com/glopyglerky/lustr/pull/28)
-records new qualification as it completes.
+packages' direct correctness tests. The first repaired run then exposed a
+wrong-oracle comparison: 5,428 cases passed and 99 failed against the newer
+package SDK. The corrected, separately verified Rust 1.99 oracle reduced that
+to **5,526 passes and one failure**: the frozen native compiler reports Unicode
+18 from its build toolchain while Rust 1.99 reports Unicode 17. That remaining
+[Unicode semantic dependency](docs/compiler-set/unicode-semantics.md) is a
+correctness blocker. A subsequent compiled witness found that native constant
+evaluation returns `true, true` for two character predicates while the same
+program returns `false, false` at runtime; the matching Rust SDK returns
+`true, true` in both contexts. The original frozen comparison remains intact.
+
+The separate warm-entry campaign correctly refused to compare different native
+source trees. Neither campaign produced admitted timing samples. No causal speed
+gain is assigned to PR #26's retained-check materialization change. The
+[comparison disposition](docs/compiler-set/complete-native-warm-comparison.md)
+preserves both failures and their exact source identities; the
+[continuation PR](https://github.com/glopyglerky/lustr/pull/28) tracks the remaining
+work.
 
 Upstream Lust's default branch still matches the pinned `240e08d9` revision in
 the November 18 audit. Existing upstream speed work is already included.

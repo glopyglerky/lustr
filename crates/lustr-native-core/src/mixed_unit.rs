@@ -1,7 +1,7 @@
 //! Object generation at the mixed compiler's first, scalar C boundary.
 //! Checking, borrow checking, lowering, generation and retained body state are
 //! the ordinary Lust pipeline. Rust's compiler supplies the caller and metadata.
-use crate::{ast::{BinOp, UnOp}, cgen, check::{Builtin, collect::Program}, ir, protocol::{Request, Response}, ty::{IntTy, Ty, TyIntern, TyKind}};
+use crate::{ast::{BinOp, UnOp}, cgen, check::{Builtin, collect::Program}, def::{DiskDefId, LocalDefId}, ir, protocol::{MixedOutcome, Request, Response}, ty::{IntTy, Ty, TyIntern, TyKind}};
 use std::{fmt::Write as _, fs, path::Path, sync::Arc};
 
 #[path = "mixed_symbols.rs"]
@@ -10,7 +10,11 @@ mod symbols;
 fn operand(o: &ir::Operand) -> bool {
     match o {
         ir::Operand::Copy(p) | ir::Operand::Move(p) => p.proj.is_empty(),
-        ir::Operand::Const(c) => matches!(c, ir::Const::Int(..) | ir::Const::Bool(_) | ir::Const::Unit),
+        ir::Operand::Const(c) => match c {
+            ir::Const::Int(_, int) => !matches!(int, IntTy::I128 | IntTy::U128),
+            ir::Const::Bool(_) => true,
+            _ => false,
+        },
     }
 }
 
@@ -36,7 +40,11 @@ pub(super) fn total(b: &ir::Body<'_>) -> bool {
             _ => return false,
         }
     }
-    let accepted = b.locals.iter().all(|l| matches!(b.tys.kind(l.ty), TyKind::Int(_) | TyKind::Bool | TyKind::Unit))
+    // The minimal mixed C unit has integer typedefs, not Lust's two-word
+    // 128-bit types/helpers or its unit-value representation. Those are real
+    // complementary capabilities, even when their Rust operations are total.
+    let accepted = b.locals.iter().all(|l| matches!(b.tys.kind(l.ty), TyKind::Int(i) if !matches!(i, IntTy::I128 | IntTy::U128))
+            || matches!(b.tys.kind(l.ty), TyKind::Bool))
         && b.blocks.iter().enumerate().filter(|(n, _)| live[*n]).all(|(_, block)| {
             block.stmts.iter().all(|s| match &s.kind {
                 ir::StmtKind::Assign(p, r) if p.proj.is_empty() => match r {
@@ -77,41 +85,123 @@ fn scalar(p: &Program, t: Ty) -> Option<&'static str> {
     })
 }
 
-pub(super) fn emit(req: &Request, p: &Program, out: &[cgen::FnOut], _glue: &cgen::GlueSet,
-    slots: &[u32], names: &Arc<cgen::names::Names>, generated: usize) -> Response {
+/// The checked body's boundary proof follows the ordinary native read-set
+/// validation. Its source/definition keys also prevent a changed or renumbered
+/// slot from using the previous proof during a metadata-only check.
+pub(super) struct CheckedTotal {
+    definition: DiskDefId,
+    body_hash: u64,
+    head_hash: u64,
+    total: bool,
+}
+
+pub(super) enum Admission<'p> {
+    Native(PreparedMixed<'p>),
+    Complementary(&'static str),
+}
+
+/// This non-Clone value is created only after checking/lowering/borrowck and
+/// consumed by emission in that same invocation. The Program borrow keeps the
+/// exact semantic state alive; this is not a second check/build request.
+pub(super) struct PreparedMixed<'p> {
+    request: &'p Request,
+    program: &'p Program,
+    slot: usize,
+    symbol: String,
+    ret: &'static str,
+    params: Vec<&'static str>,
+}
+
+pub(super) fn request_complement(req: &Request) -> Option<&'static str> {
+    if !cfg!(all(target_os = "linux", target_arch = "x86_64"))
+        || crate::protocol::host_triple() != "x86_64-unknown-linux-gnu"
+        || !matches!(req.session.target_triple.as_str(), "" | "x86_64-unknown-linux-gnu")
+        || req.debug
+    {
+        Some("the scalar object boundary needs its qualified Linux target and debug format")
+    } else if req.cc || req.emit_c.is_some() || req.harness || req.run_args.is_some() {
+        Some("the scalar object boundary does not represent release-C, harness or execution requests")
+    } else {
+        None
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(super) fn prepare<'p, 'body, 'ir: 'body>(
+    req: &'p Request,
+    p: &'p Program,
+    slots: &[u32],
+    body_for: impl Fn(usize) -> Option<&'body ir::Body<'ir>>,
+    checked_now: impl Fn(usize) -> bool,
+    body_hashes: &[u64],
+    head_hashes: &[u64],
+    ok: &[bool],
+    retained: &mut Option<CheckedTotal>,
+) -> Result<Admission<'p>, String> {
+    if let Some(reason) = request_complement(req) {
+        return Ok(Admission::Complementary(reason));
+    }
+    let identity = req.session.krate.package_id.strip_prefix("lustr-mixed-").ok_or("missing mixed unit identity")?;
+    if identity.is_empty() || identity.len() > 128 || !identity.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return Err("invalid mixed unit identity".into());
+    }
+    let mut selected = p.fns.iter().enumerate().filter(|(_, f)| p.interner.get(f.name) == req.session.krate.target_name);
+    let (id, f) = selected.next().ok_or("native function was not collected")?;
+    if selected.next().is_some() { return Err("ambiguous native function identity".into()); }
+    let slot = *slots.get(id).ok_or("missing native function slot")? as usize;
+    if ok.get(slot) != Some(&true) { return Err("native function has no passing checked state".into()); }
+    let definition = p.disk_id(LocalDefId(id as u32));
+    let body_hash = *body_hashes.get(slot).ok_or("missing checked body identity")?;
+    let head_hash = *head_hashes.get(slot).ok_or("missing checked signature identity")?;
+    let total = if let Some(body) = body_for(id) {
+        if body.fn_id != LocalDefId(id as u32) { return Err("native lowered body identity mismatch".into()); }
+        let total = total(body);
+        *retained = Some(CheckedTotal { definition, body_hash, head_hash, total });
+        total
+    } else if !checked_now(id) {
+        retained.as_ref().filter(|proof| proof.definition == definition && proof.body_hash == body_hash && proof.head_hash == head_hash)
+            .ok_or("native function has no retained lowered boundary proof")?.total
+    } else {
+        return Err("native checked function lost its lowered body before admission".into());
+    };
+    if !total {
+        return Ok(Admission::Complementary("function needs an unrepresented runtime operation or scalar type"));
+    }
+    let Some(ret) = scalar(p, f.ret) else { return Ok(Admission::Complementary("return needs a wider ABI mapping")); };
+    let Some(params) = f.params.iter().map(|t| scalar(p, *t)).collect::<Option<Vec<_>>>() else {
+        return Ok(Admission::Complementary("argument needs a wider ABI mapping"));
+    };
+    if !cgen::native_direct_abi(p, &f.params, f.ret) {
+        return Ok(Admission::Complementary("native function does not have a direct C ABI"));
+    }
+    Ok(Admission::Native(PreparedMixed { request: req, program: p, slot, symbol: format!("lustr_mixed_{identity}"), ret, params }))
+}
+
+pub(super) fn complementary(reason: &str) -> Response {
+    Response { mixed: Some(MixedOutcome::Complementary), stderr: format!("lustr mixed complementary: {reason}\n"), ..Default::default() }
+}
+
+pub(super) fn emit(prepared: PreparedMixed<'_>, out: &[cgen::FnOut], names: &Arc<cgen::names::Names>, generated: usize) -> Response {
+    let req = prepared.request;
     // Read the requesting client's opt-in, not a possibly older daemon's
     // environment. This helper stays in the already-hashed owned source file.
     let mut profile = emitter_profile::Profile::new(req.client.env.as_deref());
-    let result = emit_inner(req, p, out, slots, names, &mut profile);
+    let result = emit_inner(prepared, out, names, &mut profile);
     let detail = profile.finish(req.session.krate.package_id.strip_prefix("lustr-mixed-").unwrap_or(""), result.is_ok());
     let mut response = match result {
-        Ok(symbol) => Response { code: 0, stdout: symbol, stderr: format!("lustr mixed native: {generated} function(s) generated in retained Lust session\n"), ..Default::default() },
-        Err(e) => Response { code: 1, stderr: format!("lustr mixed boundary unavailable: {e}\n"), ..Default::default() },
+        Ok(symbol) => Response { mixed: Some(MixedOutcome::Emitted), code: 0, stdout: symbol, stderr: format!("lustr mixed native: {generated} function(s) generated in retained Lust session\n"), ..Default::default() },
+        Err(e) => Response { mixed: Some(MixedOutcome::Failed), code: 3, stderr: format!("lustr mixed emission failed: {e}\n"), ..Default::default() },
     };
     if let Some(detail) = detail { response.stderr.push_str(&detail); }
     response
 }
 
-fn emit_inner(req: &Request, p: &Program, out: &[cgen::FnOut],
-    slots: &[u32], names: &Arc<cgen::names::Names>, profile: &mut emitter_profile::Profile) -> Result<String, String> {
-    if !cfg!(all(target_os = "linux", target_arch = "x86_64")) || req.debug {
-        return Err("the scalar object boundary needs its qualified Linux target and debug format".into());
-    }
-    let symbol = req.session.krate.package_id.strip_prefix("lustr-mixed-").ok_or("missing mixed unit identity")?;
-    if symbol.is_empty() || symbol.len() > 128 || !symbol.bytes().all(|b| b.is_ascii_hexdigit()) {
-        return Err("invalid mixed unit identity".into());
-    }
-    let symbol = format!("lustr_mixed_{symbol}");
-    let mut selected = p.fns.iter().enumerate().filter(|(_, f)| p.interner.get(f.name) == req.session.krate.target_name);
-    let (id, f) = selected.next().ok_or("native function was not collected")?;
-    if selected.next().is_some() { return Err("ambiguous native function identity".into()); }
-    let slot = *slots.get(id).ok_or("missing native function slot")? as usize;
-    if !out.get(slot).is_some_and(|o| o.mixed_total) { return Err("function needs an unrepresented runtime operation".into()); }
-    let ret = scalar(p, f.ret).ok_or("return needs a wider ABI mapping")?;
-    let params: Vec<_> = f.params.iter().map(|t| scalar(p, *t).ok_or("argument needs a wider ABI mapping")).collect::<Result<_, _>>()?;
+fn emit_inner(prepared: PreparedMixed<'_>, out: &[cgen::FnOut],
+    names: &Arc<cgen::names::Names>, profile: &mut emitter_profile::Profile) -> Result<String, String> {
+    let PreparedMixed { request: req, program: _program, slot, symbol, ret, params } = prepared;
+    if !out.get(slot).is_some_and(|o| o.mixed_total) { return Err("admitted function lost its scalar generation proof".into()); }
     let tag = names.fns.get(slot).and_then(|s| s.as_ref()).ok_or("missing stable native symbol")?;
-    if !cgen::native_direct_abi(p, &f.params, f.ret) { return Err("native function does not have a direct C ABI".into()); }
-    let mut c = cgen::mixed_scalar_unit(&out[slot]).ok_or("function needs nonscalar generation helpers")?;
+    let mut c = cgen::mixed_scalar_unit(&out[slot]).ok_or("admitted function generated unrepresented helpers")?;
     write!(c, "\n{ret} {symbol}(").unwrap();
     for (n, t) in params.iter().enumerate() { if n != 0 { c.push(','); } write!(c, "{t} a{n}").unwrap(); }
     if params.is_empty() { c.push_str("void"); }

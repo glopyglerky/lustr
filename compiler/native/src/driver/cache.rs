@@ -381,6 +381,11 @@ impl Cache {
     /// The caller gives the source bytes it read, so the file is read once per process.
     /// A stored `--timings` text never exists; a hit with timings gets one fresh line.
     pub fn lookup(&self, req: &Request, src: &[u8], start: Instant) -> Option<Response> {
+        // This legacy whole-executable format carries no mixed admission
+        // proof. Mixed units retain their checked daemon state instead.
+        if req.session.krate.target_kind == "lustr-mixed-native" {
+            return None;
+        }
         // A multi-file crate (or a manifest-selected one) is not keyed by
         // the root file's bytes alone: module files and Cargo inputs are
         // outside this key, so those requests skip the cache entirely
@@ -407,7 +412,7 @@ impl Cache {
     /// A successful response keeps no stderr: its only stderr text is `--timings` output,
     /// which must not replay. After the write, oldest entries are evicted past the cap.
     pub fn store(&self, req: &Request, src: &[u8], resp: &Response) {
-        if resp.code == 3 || src_reads_outside(src) {
+        if req.session.krate.target_kind == "lustr-mixed-native" || resp.code == 3 || src_reads_outside(src) {
             return;
         }
         if req.session.krate.manifest_path.is_some() || src_needs_resolve(src) {
@@ -422,6 +427,7 @@ impl Cache {
             stderr: if resp.code == 0 { String::new() } else { resp.stderr.clone() },
             code: resp.code,
             ran: false,
+            mixed: None,
         };
         self.write(&self.entry_path(&key, ""), &encode_response(&clean));
         self.evict(&format!("req-{key}"));
@@ -522,7 +528,7 @@ fn decode_response(b: &[u8]) -> Option<Response> {
     let n = u64::from_le_bytes(b.get(4..12)?.try_into().ok()?) as usize;
     let stdout = String::from_utf8(b.get(12..12 + n)?.to_vec()).ok()?;
     let stderr = String::from_utf8(b.get(12 + n..)?.to_vec()).ok()?;
-    Some(Response { stdout, stderr, code, ran: false })
+    Some(Response { stdout, stderr, code, ran: false, mixed: None })
 }
 
 #[cfg(test)]
@@ -665,7 +671,7 @@ mod tests {
 
     #[test]
     fn response_round_trips() {
-        let r = Response { stdout: "{\"code\":\"L0301\"}\n".into(), stderr: "err\n".into(), code: 1, ran: false };
+        let r = Response { stdout: "{\"code\":\"L0301\"}\n".into(), stderr: "err\n".into(), code: 1, ran: false, mixed: None };
         let back = decode_response(&encode_response(&r)).unwrap();
         assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
         assert!(decode_response(b"short").is_none());

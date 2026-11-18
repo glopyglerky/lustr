@@ -46,6 +46,18 @@ def detailed_records(success=True, reused=False):
             {"phase": "driver", "start_ns": 0, "end_ns": 30, "elapsed_ns": 30}, values[-1]]
 
 
+def typed_records(outcome="emitted", success=None, reused=False):
+    """Synthetic protocol records, not observations of compiler execution."""
+    values = detailed_records(outcome != "failed" if success is None else success, reused)
+    values[0]["version"] = 3
+    values[4]["native_outcome"] = outcome
+    if outcome == "complementary":
+        values[4].update(emitter_status="unavailable-complementary", emitter_records=[])
+    elif outcome == "failed":
+        values[4].update(response_code=3, emitter_status="unavailable-failed-response", emitter_records=[])
+    return values
+
+
 class ProfileEvidenceTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -55,7 +67,7 @@ class ProfileEvidenceTests(unittest.TestCase):
         self.work = self.root / "qualification"
         self.profiles.mkdir()
         self.work.mkdir()
-        for n, (label, success) in enumerate(REPORT.EXPECTED.items()):
+        for n, (label, success) in enumerate(REPORT.LEGACY_EXPECTED.items()):
             name = f"123-{n}.jsonl"
             write(self.profiles / name, records(success, label in {"body", "arithmetic-edit", "link-failure-recovery"}))
             (self.work / f"{label}.profiles").write_text(name + "\n")
@@ -65,7 +77,7 @@ class ProfileEvidenceTests(unittest.TestCase):
     def test_valid_nested_phase_records(self):
         report = REPORT.summarize(self.root)
         self.assertFalse(report["paired_speed_evidence"])
-        self.assertEqual(len(report["invocations"]), len(REPORT.EXPECTED))
+        self.assertEqual(len(report["invocations"]), len(REPORT.LEGACY_EXPECTED))
         self.assertIn("columns must not be added", REPORT.render(report))
         self.assertIsNone(report["modes"]["body"]["native_emitter"])
         self.assertIn("not recorded", REPORT.render(report))
@@ -92,7 +104,7 @@ class ProfileEvidenceTests(unittest.TestCase):
         self.assertEqual(len(REPORT.summarize(self.root)["modes"]["dependency"]["profiles"]), 3)
 
     def detailed(self):
-        for n, (label, success) in enumerate(REPORT.EXPECTED.items()):
+        for n, (label, success) in enumerate(REPORT.LEGACY_EXPECTED.items()):
             values = detailed_records(success, label in {"body", "arithmetic-edit", "link-failure-recovery"})
             write(self.profiles / f"123-{n}.jsonl", values)
             with (self.work / f"{label}.trace").open("a") as trace:
@@ -174,7 +186,7 @@ class ProfileEvidenceTests(unittest.TestCase):
 
     def test_in_process_symbol_check_has_a_distinct_version_and_phase(self):
         self.detailed()
-        for n, label in enumerate(REPORT.EXPECTED):
+        for n, label in enumerate(REPORT.LEGACY_EXPECTED):
             path = self.profiles / f"123-{n}.jsonl"
             values = [json.loads(line) for line in path.read_text().splitlines()]
             old = values[4]["emitter_records"][0]
@@ -337,6 +349,170 @@ class ProfileEvidenceTests(unittest.TestCase):
     def test_wrong_command_outcome_is_rejected(self):
         (self.work / "body.status").write_text("exit status: 101 elapsed_ns=12\n")
         with self.assertRaisesRegex(ValueError, "incorrect command outcome"):
+            REPORT.summarize(self.root)
+
+    def typed_campaign(self):
+        for directory in [self.work, self.profiles]:
+            for path in directory.iterdir():
+                path.unlink()
+        for n, (label, success) in enumerate(REPORT.EXPECTED.items()):
+            if label in {"native-output-recovery", "retained-recipe-recovery"}:
+                values = records(success, True)
+                values[0]["version"] = 3
+                values[2]["phase"] = "relink"
+            else:
+                outcome = "failed" if label == "native-output-failure" else "emitted"
+                values = typed_records(outcome, success, label in REPORT.RETAINED_SUCCESS)
+                if label == "retained-recipe-failure":
+                    values.insert(-3, {"phase": "relink", "start_ns": 26, "end_ns": 27, "elapsed_ns": 1})
+            name = f"123-{n}.jsonl"
+            write(self.profiles / name, values)
+            (self.work / f"{label}.profiles").write_text(name + "\n")
+            trace = "request-key=" + "c" * 16 + " retained=true\n"
+            for record in values:
+                for emitter in record.get("emitter_records", []):
+                    trace += REPORT.EMITTER_PREFIX + emitter + "\n"
+            (self.work / f"{label}.trace").write_text(trace)
+            (self.work / f"{label}.status").write_text(f"exit status: {0 if success else 101} elapsed_ns=30\n")
+
+    def profile_for(self, label):
+        name = (self.work / f"{label}.profiles").read_text().strip()
+        path = self.profiles / name
+        return path, [json.loads(line) for line in path.read_text().splitlines()]
+
+    def test_typed_emitted_response_keeps_complete_detail_requirement(self):
+        path = self.profiles / "typed.jsonl"
+        values = typed_records()
+        write(path, values)
+        response = REPORT.read_profile(path)["native_requests"][0]
+        self.assertEqual(response["native_outcome"], "emitted")
+        self.assertEqual(response["protocol_unattributed_ns"], 11)
+        values[4]["emitter_records"] = []
+        write(path, values)
+        with self.assertRaisesRegex(ValueError, "missing or duplicate native emitter"):
+            REPORT.read_profile(path)
+
+    def test_typed_complement_is_separate_from_failure_and_emission(self):
+        self.typed_campaign()
+        path, _ = self.profile_for("cold")
+        write(path, typed_records("complementary"))
+        (self.work / "cold.trace").write_text("request-key=" + "c" * 16 + " retained=true\n")
+        report = REPORT.summarize(self.root)
+        native = report["modes"]["cold"]["native_emitter"]
+        self.assertEqual((native["response_count"], native["measured_count"],
+                          native["unavailable_complementary_count"], native["unavailable_failed_count"]), (1, 0, 1, 0))
+        self.assertIsNone(native["elapsed_ns"])
+        self.assertIsNone(native["protocol_unattributed_ns"])
+        self.assertEqual(native["phase_nanoseconds"], {})
+        self.assertIn("| cold | 1 / 0 / 1 / 0 | not emitted |", REPORT.render(report))
+        self.assertEqual(len(report["modes"]), 19)
+
+    def test_typed_failure_cannot_become_a_successful_compiler(self):
+        values = typed_records("failed")
+        path = self.profiles / "typed.jsonl"
+        write(path, values)
+        response = REPORT.read_profile(path)["native_requests"][0]
+        self.assertEqual(response["native_outcome"], "failed")
+        self.assertEqual(response["response_code"], 3)
+        self.assertIsNone(response["emitter"])
+        values[-1]["success"] = True
+        write(path, values)
+        with self.assertRaisesRegex(ValueError, "failed native work became a successful compiler"):
+            REPORT.read_profile(path)
+
+    def test_typed_outcome_code_and_detail_must_agree(self):
+        for outcome, changes, error in [
+            ("emitted", {"response_code": 1}, "outcome and response code disagree"),
+            ("complementary", {"response_code": 1}, "outcome and response code disagree"),
+            ("failed", {"response_code": 0}, "outcome and response code disagree"),
+            ("emitted", {"emitter_status": "unavailable-complementary"}, "requires reported emitter detail"),
+            ("complementary", {"emitter_status": "reported"}, "must have no emitted record"),
+            ("complementary", {"emitter_records": detailed_records()[4]["emitter_records"]}, "must have no emitted record"),
+            ("failed", {"emitter_records": detailed_records()[4]["emitter_records"]}, "error diagnostics undecorated"),
+        ]:
+            with self.subTest(outcome=outcome, changes=changes):
+                values = typed_records(outcome)
+                values[4].update(changes)
+                path = self.profiles / "typed.jsonl"
+                write(path, values)
+                with self.assertRaisesRegex(ValueError, error):
+                    REPORT.read_profile(path)
+
+    def test_compile_outcome_must_be_present_known_and_not_checked(self):
+        path = self.profiles / "typed.jsonl"
+        for outcome in [None, "checked", "unknown", 0]:
+            with self.subTest(outcome=outcome):
+                values = typed_records()
+                values[4]["native_outcome"] = outcome
+                write(path, values)
+                with self.assertRaisesRegex(ValueError, "requires an explicit"):
+                    REPORT.read_profile(path)
+        values = typed_records()
+        del values[4]["native_outcome"]
+        write(path, values)
+        with self.assertRaisesRegex(ValueError, "unknown native response fields"):
+            REPORT.read_profile(path)
+
+    def test_legacy_response_cannot_claim_a_new_typed_outcome(self):
+        path = self.profiles / "typed.jsonl"
+        values = typed_records()
+        values[0]["version"] = 2
+        write(path, values)
+        with self.assertRaisesRegex(ValueError, "unknown native response fields"):
+            REPORT.read_profile(path)
+
+    def test_current_campaign_requires_both_failures_and_retained_recovery(self):
+        self.typed_campaign()
+        report = REPORT.summarize(self.root)
+        self.assertEqual(len(report["modes"]), 19)
+        self.assertIn("| native-output-failure | 1 / 0 / 0 / 1 | unavailable |", REPORT.render(report))
+        for label in ["native-output-recovery", "retained-recipe-recovery"]:
+            with self.subTest(label=label):
+                self.typed_campaign()
+                path, values = self.profile_for(label)
+                values[-1]["reused"] = False
+                write(path, values)
+                with self.assertRaisesRegex(ValueError, "lost retained execution"):
+                    REPORT.summarize(self.root)
+        self.typed_campaign()
+        (self.work / "native-output-failure.profiles").unlink()
+        with self.assertRaisesRegex(ValueError, "missing or unknown qualification profile labels"):
+            REPORT.summarize(self.root)
+
+    def test_new_failure_cases_need_their_actual_failed_phase(self):
+        self.typed_campaign()
+        path, values = self.profile_for("native-output-failure")
+        replacement = typed_records("emitted", success=False)
+        write(path, replacement)
+        with (self.work / "native-output-failure.trace").open("a") as trace:
+            trace.write(REPORT.EMITTER_PREFIX + replacement[4]["emitter_records"][0] + "\n")
+        with self.assertRaisesRegex(ValueError, "lacks an actual failed native response"):
+            REPORT.summarize(self.root)
+        self.typed_campaign()
+        path, values = self.profile_for("retained-recipe-failure")
+        values = [record for record in values if record.get("phase") != "relink"]
+        write(path, values)
+        with self.assertRaisesRegex(ValueError, "followed by relink"):
+            REPORT.summarize(self.root)
+
+    def test_current_schema_cannot_claim_the_shorter_legacy_scope(self):
+        self.typed_campaign()
+        for label in set(REPORT.EXPECTED) - set(REPORT.LEGACY_EXPECTED):
+            path, _ = self.profile_for(label)
+            path.unlink()
+            (self.work / f"{label}.profiles").unlink()
+        with self.assertRaisesRegex(ValueError, "labels do not match the profile schema"):
+            REPORT.summarize(self.root)
+
+    def test_legacy_schema_cannot_claim_new_failure_qualification(self):
+        self.typed_campaign()
+        for path in self.profiles.iterdir():
+            values = [json.loads(line) for line in path.read_text().splitlines()]
+            values[0]["version"] = 2
+            for value in values:
+                value.pop("native_outcome", None)
+            write(path, values)
+        with self.assertRaisesRegex(ValueError, "labels do not match the profile schema"):
             REPORT.summarize(self.root)
 
 

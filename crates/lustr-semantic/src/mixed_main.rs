@@ -27,7 +27,7 @@ use rustc_middle::{
     ty::{self, TyCtxt, TypingEnv},
 };
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     ffi::OsString,
     fs,
     hash::{Hash, Hasher},
@@ -49,6 +49,13 @@ mod mixed_symbol_rename;
 mod native {
     include!("../../../compiler/native/src/client.rs");
 
+    pub enum Outcome {
+        Disabled,
+        Complementary,
+        Checked,
+        Emitted(String),
+    }
+
     pub fn compile(
         file: &Path,
         output: &Path,
@@ -56,7 +63,7 @@ mod native {
         identity: &str,
         overflow: bool,
         assertions: bool,
-    ) -> Option<(i32, String, String)> {
+    ) -> Result<Outcome, String> {
         request(file, output, name, identity, overflow, assertions, false)
     }
     pub fn check(
@@ -65,7 +72,7 @@ mod native {
         identity: &str,
         overflow: bool,
         assertions: bool,
-    ) -> Option<(i32, String, String)> {
+    ) -> Result<Outcome, String> {
         request(file, file, name, identity, overflow, assertions, true)
     }
     fn request(
@@ -76,43 +83,58 @@ mod native {
         overflow: bool,
         assertions: bool,
         check: bool,
-    ) -> Option<(i32, String, String)> {
+    ) -> Result<Outcome, String> {
         let _profile = super::mixed_profile::span(if check { "native-check" } else { "native-compile" });
         let setup = super::mixed_profile::span("native-request-setup");
-        if env_on("LUST_NO_DAEMON") || protocol::source_override().is_some() {return None;}
-        let args = vec![if check {"check".into()} else {"build".into()}, file.to_str()?.into(), "-o".into(), output.to_str()?.into()];
-        let Some(Invocation::Compile { mut req, .. }) = protocol::parse_args(&args) else { return None };
+        if env_on("LUST_NO_DAEMON") || protocol::source_override().is_some() {
+            super::trace("native-boundary=disabled-by-configuration");
+            return Ok(Outcome::Disabled);
+        }
+        let input = file.to_str().ok_or("mixed native input path is not UTF-8")?;
+        let output = output.to_str().ok_or("mixed native output path is not UTF-8")?;
+        let args = vec![if check {"check".into()} else {"build".into()}, input.into(), "-o".into(), output.into()];
+        let Some(Invocation::Compile { mut req, .. }) = protocol::parse_args(&args) else {
+            return Err("mixed native request could not be constructed".into());
+        };
         req.session.krate.target_kind = "lustr-mixed-native".into();
         req.session.krate.target_name = name.into();
         req.session.krate.package_id = format!("lustr-mixed-{identity}");
         req.session.profile.overflow_checks = overflow;
         req.session.profile.debug_assertions = assertions;
-        let core = std::env::current_exe().ok()?.with_file_name("lust-core");
+        let core = std::env::current_exe().map_err(|e| format!("locate mixed native compiler: {e}"))?.with_file_name("lust-core");
         // A packaged toolchain also has the pristine Lust daemon. Keep its
         // original session and this compiler revision in distinct namespaces.
         let original_socket = protocol::socket_path();
         let socket =
             original_socket.with_file_name(format!("mixed-{}.sock", super::hash(&(original_socket.as_os_str(), env!("LUST_BUILD_HASH")))));
-        let address = protocol::host_runtime::DaemonSocket::resolve(&socket).ok()?;
+        let address = protocol::host_runtime::DaemonSocket::resolve(&socket).map_err(|e| format!("resolve mixed native socket: {e}"))?;
         let socket = address.path();
         drop(setup);
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
         loop {
             let roundtrip = super::mixed_profile::span("native-daemon-roundtrip");
-            let response = protocol::request(&socket, &req);
+            let response = protocol::request_mixed(&socket, &req)?;
             let bounds = roundtrip.close();
             if let Some(r) = response {
-                super::mixed_profile::native_response(&_profile, bounds, identity, r.code, &r.stderr);
-                return Some((r.code, r.stdout, r.stderr));
+                let admission = r.mixed.map(|outcome| match outcome {
+                    protocol::MixedOutcome::Checked => "checked",
+                    protocol::MixedOutcome::Emitted => "emitted",
+                    protocol::MixedOutcome::Complementary => "complementary",
+                    protocol::MixedOutcome::Failed => "failed",
+                });
+                super::mixed_profile::native_response(&_profile, bounds, identity, r.code, admission, &r.stderr);
+                super::trace(&r.stderr);
+                return outcome(r, check, identity);
             }
             if std::time::Instant::now() >= deadline {
-                return None;
+                return Err("mixed native daemon did not become available before the startup deadline".into());
             }
             if let Some(lock) = claim_start(&protocol::daemon_lock_path(&socket)) {
                 let fd = lock.as_raw_fd();
                 let dir = log_dir(file);
-                std::fs::create_dir_all(&dir).ok()?;
-                let log = std::fs::OpenOptions::new().create(true).append(true).open(dir.join("daemon.log")).ok()?;
+                std::fs::create_dir_all(&dir).map_err(|e| format!("create native log directory: {e}"))?;
+                let log = std::fs::OpenOptions::new().create(true).append(true).open(dir.join("daemon.log"))
+                    .map_err(|e| format!("open native daemon log: {e}"))?;
                 let mut command = std::process::Command::new(&core);
                 command
                     .arg("daemon")
@@ -122,7 +144,7 @@ mod native {
                     .env_remove("LUST_DAEMON_PREWARM")
                     .env_remove("LUST_DAEMON_PREWARM_AFTER")
                     .stdin(std::process::Stdio::null())
-                    .stdout(log.try_clone().ok()?)
+                    .stdout(log.try_clone().map_err(|e| format!("duplicate native daemon log: {e}"))?)
                     .stderr(log);
                 let directory_fd = address.inherited_fd();
                 if let Some(fd) = directory_fd {
@@ -139,11 +161,83 @@ mod native {
                         Ok(())
                     });
                 }
-                command.spawn().ok()?;
+                command.spawn().map_err(|e| format!("start mixed native compiler: {e}"))?;
             }
             std::thread::sleep(std::time::Duration::from_millis(1));
         }
     }
+
+    fn outcome(response: protocol::Response, check: bool, identity: &str) -> Result<Outcome, String> {
+        use protocol::MixedOutcome;
+        // Only an explicit pre-emission complementary result changes which
+        // implementation owns the definition. Exit codes and diagnostic text
+        // never establish capability, including a successful untyped reply.
+        match (response.mixed, response.code) {
+            (Some(MixedOutcome::Checked), 0) if check && response.stdout.is_empty() => Ok(Outcome::Checked),
+            (Some(MixedOutcome::Emitted), 0) if !check && response.stdout == format!("lustr_mixed_{identity}") =>
+                Ok(Outcome::Emitted(response.stdout)),
+            (Some(MixedOutcome::Complementary), 0) if response.stdout.is_empty() => {
+                super::trace("native-boundary=complementary-before-emission");
+                Ok(Outcome::Complementary)
+            },
+            (Some(MixedOutcome::Failed), code) if code != 0 =>
+                Err(format!("native compilation failed (status {code}): {}", response.stderr.trim_end())),
+            _ => Err(format!("invalid mixed native outcome {:?} (status {}): {}",
+                response.mixed, response.code, response.stderr.trim_end())),
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::{outcome, protocol::{MixedOutcome, Response}, Outcome};
+
+        #[test]
+        fn only_explicit_admission_or_complement_can_succeed() {
+            let reply = |mixed, code, stdout: &str| Response { mixed, code, stdout: stdout.into(), ..Default::default() };
+            assert!(matches!(outcome(reply(Some(MixedOutcome::Checked), 0, ""), true, "1234"), Ok(Outcome::Checked)));
+            assert!(matches!(outcome(reply(Some(MixedOutcome::Emitted), 0, "lustr_mixed_1234"), false, "1234"), Ok(Outcome::Emitted(_))));
+            assert!(matches!(outcome(reply(Some(MixedOutcome::Complementary), 0, ""), false, "1234"), Ok(Outcome::Complementary)));
+            for (mixed, code, symbol, check) in [
+                (None, 0, "", true),
+                (None, 1, "", false),
+                (Some(MixedOutcome::Failed), 1, "", false),
+                (Some(MixedOutcome::Failed), 0, "", false),
+                (Some(MixedOutcome::Checked), 0, "", false),
+                (Some(MixedOutcome::Emitted), 0, "lustr_mixed_1234", true),
+                (Some(MixedOutcome::Emitted), 0, "lustr_mixed_5678", false),
+                (Some(MixedOutcome::Emitted), 1, "lustr_mixed_1234", false),
+                (Some(MixedOutcome::Complementary), 1, "", false),
+                (Some(MixedOutcome::Complementary), 0, "unexpected object", false),
+            ] {
+                assert!(outcome(reply(mixed, code, symbol), check, "1234").is_err());
+            }
+        }
+    }
+}
+
+fn required<T, E: std::fmt::Display>(tcx: TyCtxt<'_>, result: Result<T, E>, operation: &str) -> T {
+    result.unwrap_or_else(|error| tcx.sess.dcx().fatal(format!("lustr {operation}: {error}")))
+}
+
+fn native_boundary(tcx: TyCtxt<'_>, result: Result<native::Outcome, String>) -> Option<String> {
+    match required(tcx, result, "mixed native boundary") {
+        native::Outcome::Disabled | native::Outcome::Complementary => None,
+        native::Outcome::Checked => Some(String::new()),
+        native::Outcome::Emitted(symbol) => Some(symbol),
+    }
+}
+
+fn native_generation(original: &std::path::Path) -> std::io::Result<PathBuf> {
+    fs::create_dir_all(original.parent().unwrap())?;
+    for n in 0u64.. {
+        let directory = original.with_file_name(format!("{}-{n}", original.file_name().unwrap().to_string_lossy()));
+        match fs::create_dir(&directory) {
+            Ok(()) => return Ok(directory),
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(e) => return Err(e),
+        }
+    }
+    Err(std::io::Error::other("mixed generation identities exhausted"))
 }
 
 fn hash(value: &impl Hash) -> String {
@@ -451,19 +545,9 @@ impl Callbacks for Compiler {
         {
             return Compilation::Continue;
         }
-        let original = self.directory.clone();
-        if fs::create_dir_all(original.parent().unwrap()).is_err() {
-            return Compilation::Continue;
-        }
-        for n in 0.. {
-            self.directory = original.with_file_name(format!("{}-{n}", original.file_name().unwrap().to_string_lossy()));
-            match fs::create_dir(&self.directory) {
-                Ok(()) => break,
-                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => continue,
-                Err(_) => return Compilation::Continue,
-            }
-        }
+        let mut prepared = false;
         let mut entries = BTreeMap::new();
+        let mut considered = BTreeSet::new();
         let instances: Vec<_> = if self.check_only {
             // A metadata request has no monomorphization/codegen units.
             // Use actual nongeneric root definitions from the checked HIR.
@@ -538,11 +622,16 @@ impl Callbacks for Compiler {
                 continue;
             }
             let symbol = tcx.symbol_name(instance).name.to_owned();
-            let identity = hash(&symbol);
-            let path = self.directory.join(&identity);
-            if fs::create_dir(&path).is_err() {
+            if !considered.insert(symbol.clone()) {
                 continue;
             }
+            let identity = hash(&symbol);
+            if !prepared {
+                self.directory = required(tcx, native_generation(&self.directory), "create mixed generation");
+                prepared = true;
+            }
+            let path = self.directory.join(&identity);
+            required(tcx, fs::create_dir(&path), "create native unit directory");
             let source = path.join("kernel.rs");
             let object = path.join("native.o");
             let params = candidate.params.iter().zip(signature.inputs()).map(|(p, t)| format!("{p}:{t}")).collect::<Vec<_>>().join(",");
@@ -550,37 +639,29 @@ impl Callbacks for Compiler {
             let prefix = format!("fn {}({params})->{}", candidate.name, signature.output());
             let suffix = format!("\nfn main(){{let _={}({zeros});}}\n", candidate.name);
             let text = format!("{prefix}{}{suffix}", candidate.body);
-            if fs::write(&source, &text).is_err() {
-                continue;
-            }
+            required(tcx, fs::write(&source, &text), "write checked native projection");
             if self.check_only {
-                let Some((code, _, diagnostic)) =
-                    native::check(&source, &name, &identity, tcx.sess.overflow_checks(), tcx.sess.opts.debug_assertions)
-                else {
-                    continue;
-                };
-                trace(&diagnostic);
-                if code != 0 {
+                if native_boundary(
+                    tcx,
+                    native::check(&source, &name, &identity, tcx.sess.overflow_checks(), tcx.sess.opts.debug_assertions),
+                )
+                .is_none()
+                {
                     continue;
                 }
             } else {
-                let Some((code, native_symbol, diagnostic)) =
-                    native::compile(&source, &object, &name, &identity, tcx.sess.overflow_checks(), tcx.sess.opts.debug_assertions)
-                else {
+                let Some(native_symbol) = native_boundary(
+                    tcx,
+                    native::compile(&source, &object, &name, &identity, tcx.sess.overflow_checks(), tcx.sess.opts.debug_assertions),
+                ) else {
                     continue;
                 };
-                trace(&diagnostic);
-                if code != 0 {
-                    continue;
-                }
                 let linked = path.join("native-link.o");
                 let result = {
                     let _profile = mixed_profile::span("native-symbol-rename");
                     mixed_symbol_rename::rename(&object, &native_symbol, &symbol, &linked)
                 };
-                if result.is_err() {
-                    continue;
-                }
+                required(tcx, result, "rename admitted native symbol");
                 entries.insert(symbol.clone(), linked);
             }
             self.records.push(serde_json::json!({"name":name,"symbol":symbol,"identity":identity,

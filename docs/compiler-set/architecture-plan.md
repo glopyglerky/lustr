@@ -74,11 +74,12 @@ The following are source findings, not descriptions of the completed target.
 | Ordinary Cargo project commands | The Cargo adapter reaches the imported Rust driver and bounded mixed backend directly. These commands do not generally first try a complete native build. | A coordinator forwarding work does not itself implement the required compiler boundary. |
 | Current mixed functions | [`mixed_main.rs`](../../crates/lustr-semantic/src/mixed_main.rs) performs Rust analysis and selects a limited set of nongeneric root scalar functions using real HIR bindings and Rust/C ABI queries. Linked native participation is constrained to Linux x86_64, opt0/debug0 and represented bin/rlib requests; metadata-only checks can retain normal debug profiles. | This is substantially narrower than Lust's supported language subset, and cold mixed work still performs whole-crate Rust analysis. |
 | Native object handoff | [`mixed_backend.rs`](../../crates/lustr-semantic/src/mixed_backend.rs) omits successfully supplied native definitions from LLVM and lets imported Rust emit the complement and real metadata. | This is useful existing composition, not complete automatic partitioning. |
-| Admission and generation | Native lowering checks total scalar IR before C generation; some ABI/helper and object checks happen later. Unavailable native units currently remain with LLVM. | Positive pre-emission admission and genuine emission failure need separate structured outcomes. Renaming a failed probe would not solve this. |
+| Admission and generation | The [first typed admission boundary](native-admission.md) checks represented scalar IR, request and ABI facts before C generation, retains the checked program into emission, and distinguishes complementary work from compiler failure. Cold and retained callers propagate actual failures. | This covers the existing scalar bridge only. Full Lust capability coverage, broader shared semantics and exact-source hosted qualification remain required. |
+| Consistent Rust semantics | The [Unicode audit](unicode-semantics.md) identifies a build-host-dependent split between native constant evaluation and checked-in runtime data. The imported Rust source and native upstream contract name different Rust versions. | Align native and complementary semantics with one declared Rust source and shared upstream data before admitting the affected operations. A changed version string cannot repair this. |
 
-The native phase observer exposes checked state to observers but does not yet
-provide a complete ownership/continuation interface. The native ABI exposes
-whole-request status and output. No general API currently partitions the entire
+The native phase observer exposes checked state to observers. The first scalar
+bridge now has an internal prepare/emit ownership boundary, while the general
+native ABI still exposes whole-request status and output. No general API currently partitions the entire
 Lust subset and the Rust complement before emission. Existing capability reports
 are descriptive inventories, not that missing executable contract.
 

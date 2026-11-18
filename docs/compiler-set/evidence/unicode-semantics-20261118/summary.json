@@ -1,0 +1,441 @@
+{
+  "schema": "lustr-unicode-predicate-source-audit-v1",
+  "scope": "Static data decoding, not execution of Rust or a generated program.",
+  "native_revision": "429fe6054e6119221e598b95c2661665ecdd7be2",
+  "native_file": "compiler/native/src/runtime/unicode_table.h",
+  "native_sha256": "86e693d5339c8d90bd7e72c4c84f94617a347bc8dc73755f523f0fb243ad1e52",
+  "upstream_revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "upstream_file": "library/core/src/unicode/unicode_data.rs",
+  "upstream_sha256": "a7cd0ad1cfe2840e2ca5d95b5798dcfe508917024d31a23d5f56b459d3b14bd7",
+  "decoder_sha256": "6045464966b731b6d74ec02bafbe7e83e69ae4b740a4b277ac4aa9568c3df169",
+  "comparisons": {
+    "lowercase": {
+      "native_unicode17_count": 2595,
+      "rust_unicode18_count": 2740,
+      "added_in_rust18": [
+        [
+          "U+0558",
+          "U+0558"
+        ],
+        [
+          "U+058B",
+          "U+058C"
+        ],
+        [
+          "U+209D",
+          "U+209F"
+        ],
+        [
+          "U+107BB",
+          "U+107BF"
+        ],
+        [
+          "U+1D6A6",
+          "U+1D6A6"
+        ],
+        [
+          "U+1DF1F",
+          "U+1DF24"
+        ],
+        [
+          "U+1DF2B",
+          "U+1DF3F"
+        ],
+        [
+          "U+1DF41",
+          "U+1DF47"
+        ],
+        [
+          "U+1DF49",
+          "U+1DF49"
+        ],
+        [
+          "U+1DF4B",
+          "U+1DF4C"
+        ],
+        [
+          "U+1DF4E",
+          "U+1DF50"
+        ],
+        [
+          "U+1DF52",
+          "U+1DF67"
+        ],
+        [
+          "U+1DF69",
+          "U+1DF69"
+        ],
+        [
+          "U+1DF6B",
+          "U+1DF6B"
+        ],
+        [
+          "U+1DF6D",
+          "U+1DF6D"
+        ],
+        [
+          "U+1DF6F",
+          "U+1DF71"
+        ],
+        [
+          "U+1DF73",
+          "U+1DF73"
+        ],
+        [
+          "U+1DF75",
+          "U+1DF75"
+        ],
+        [
+          "U+1DF77",
+          "U+1DF77"
+        ],
+        [
+          "U+1DF79",
+          "U+1DF79"
+        ],
+        [
+          "U+1DF7B",
+          "U+1DF7B"
+        ],
+        [
+          "U+1DF7D",
+          "U+1DF7D"
+        ],
+        [
+          "U+1DF7F",
+          "U+1DF7F"
+        ],
+        [
+          "U+1DF90",
+          "U+1DF96"
+        ],
+        [
+          "U+1DFCD",
+          "U+1DFFF"
+        ]
+      ],
+      "removed_in_rust18": []
+    },
+    "uppercase": {
+      "native_unicode17_count": 2006,
+      "rust_unicode18_count": 2026,
+      "added_in_rust18": [
+        [
+          "U+A7DD",
+          "U+A7DD"
+        ],
+        [
+          "U+A7E2",
+          "U+A7E2"
+        ],
+        [
+          "U+AB6C",
+          "U+AB6D"
+        ],
+        [
+          "U+1DF40",
+          "U+1DF40"
+        ],
+        [
+          "U+1DF48",
+          "U+1DF48"
+        ],
+        [
+          "U+1DF4A",
+          "U+1DF4A"
+        ],
+        [
+          "U+1DF4D",
+          "U+1DF4D"
+        ],
+        [
+          "U+1DF51",
+          "U+1DF51"
+        ],
+        [
+          "U+1DF68",
+          "U+1DF68"
+        ],
+        [
+          "U+1DF6A",
+          "U+1DF6A"
+        ],
+        [
+          "U+1DF6C",
+          "U+1DF6C"
+        ],
+        [
+          "U+1DF6E",
+          "U+1DF6E"
+        ],
+        [
+          "U+1DF72",
+          "U+1DF72"
+        ],
+        [
+          "U+1DF74",
+          "U+1DF74"
+        ],
+        [
+          "U+1DF76",
+          "U+1DF76"
+        ],
+        [
+          "U+1DF78",
+          "U+1DF78"
+        ],
+        [
+          "U+1DF7A",
+          "U+1DF7A"
+        ],
+        [
+          "U+1DF7C",
+          "U+1DF7C"
+        ],
+        [
+          "U+1DF7E",
+          "U+1DF7E"
+        ]
+      ],
+      "removed_in_rust18": []
+    },
+    "whitespace": {
+      "native_unicode17_count": 25,
+      "rust_unicode18_count": 25,
+      "added_in_rust18": [],
+      "removed_in_rust18": []
+    },
+    "control": {
+      "native_unicode17_count": 65,
+      "rust_unicode18_count": 65,
+      "added_in_rust18": [],
+      "removed_in_rust18": []
+    }
+  },
+  "source_derived_witnesses": [
+    {
+      "property": "lowercase",
+      "scalar": "U+0558",
+      "native_runtime_from_table": false,
+      "native_consteval_from_host_source": true,
+      "full_rust18_from_source": true,
+      "native_alphabetic_from_table": false,
+      "full_rust18_alphabetic_from_source": true
+    },
+    {
+      "property": "lowercase",
+      "scalar": "U+058B",
+      "native_runtime_from_table": false,
+      "native_consteval_from_host_source": true,
+      "full_rust18_from_source": true,
+      "native_alphabetic_from_table": false,
+      "full_rust18_alphabetic_from_source": true
+    },
+    {
+      "property": "lowercase",
+      "scalar": "U+058C",
+      "native_runtime_from_table": false,
+      "native_consteval_from_host_source": true,
+      "full_rust18_from_source": true,
+      "native_alphabetic_from_table": false,
+      "full_rust18_alphabetic_from_source": true
+    },
+    {
+      "property": "uppercase",
+      "scalar": "U+A7DD",
+      "native_runtime_from_table": false,
+      "native_consteval_from_host_source": true,
+      "full_rust18_from_source": true,
+      "native_alphabetic_from_table": false,
+      "full_rust18_alphabetic_from_source": true
+    },
+    {
+      "property": "uppercase",
+      "scalar": "U+A7E2",
+      "native_runtime_from_table": false,
+      "native_consteval_from_host_source": true,
+      "full_rust18_from_source": true,
+      "native_alphabetic_from_table": false,
+      "full_rust18_alphabetic_from_source": true
+    },
+    {
+      "property": "uppercase",
+      "scalar": "U+AB6C",
+      "native_runtime_from_table": false,
+      "native_consteval_from_host_source": true,
+      "full_rust18_from_source": true,
+      "native_alphabetic_from_table": false,
+      "full_rust18_alphabetic_from_source": true
+    }
+  ],
+  "controls": [
+    "Pinned upstream Git blob hashes verified on download",
+    "Decoded lower/uppercase totals agree with independent generated count comments",
+    "ASCII fast paths included explicitly"
+  ],
+  "limits": [
+    "No new compiler or generated-program execution",
+    "Case conversion, debug escaping, identifier and normalization tables not exhaustively compared here"
+  ],
+  "classification": "source inference, not a compiled or runtime witness",
+  "source_inputs": {
+    "upstream": [
+      {
+        "path": "library/core/src/unicode/unicode_data.rs",
+        "git_blob": "84414a72df88c4718d040cb93777d7a4b265e8d4",
+        "url": "https://github.com/rust-lang/rust/blob/5b7b37aefcb5b2fba3c2392bc9065b9e4602d494/library/core/src/unicode/unicode_data.rs",
+        "encoding": "utf-8",
+        "bytes": 113942,
+        "sha256": "a7cd0ad1cfe2840e2ca5d95b5798dcfe508917024d31a23d5f56b459d3b14bd7"
+      },
+      {
+        "path": "library/core/src/char/methods.rs",
+        "git_blob": "2a7b088070bd614d051c25b0b535c80ed6f2a170",
+        "url": "https://github.com/rust-lang/rust/blob/5b7b37aefcb5b2fba3c2392bc9065b9e4602d494/library/core/src/char/methods.rs",
+        "encoding": "utf-8",
+        "bytes": 97609,
+        "sha256": "64f399f062cd94ff28dfc05960d9918b72876277b37e189c264137f1d9991d7f"
+      },
+      {
+        "path": "library/core/src/unicode/mod.rs",
+        "git_blob": "b3065ccb2d5f7c4188c55b6dfa3991d13f2d5638",
+        "url": "https://github.com/rust-lang/rust/blob/5b7b37aefcb5b2fba3c2392bc9065b9e4602d494/library/core/src/unicode/mod.rs",
+        "encoding": "utf-8",
+        "bytes": 2018,
+        "sha256": "cbbc3a9c2895b165db60263ae9328112a708ea11e5b77862a0c4d39be777f0ca"
+      }
+    ],
+    "native": [
+      {
+        "path": "compiler/native/README.md",
+        "revision": "429fe6054e6119221e598b95c2661665ecdd7be2",
+        "git_blob": "35e26aa753eb278305da8ba91b68192696d3cee4",
+        "sha256": "d1f33b3d9b75cf763791608d72ea0345b8c85f371ad72212ac14856ae87ece9e",
+        "bytes": 24319,
+        "url": "https://github.com/glopyglerky/lustr/blob/429fe6054e6119221e598b95c2661665ecdd7be2/compiler/native/README.md"
+      },
+      {
+        "path": "compiler/native/.github/workflows/ci.yml",
+        "revision": "429fe6054e6119221e598b95c2661665ecdd7be2",
+        "git_blob": "f8d44c59555bdf5fe794233cb4a27e6347e8a153",
+        "sha256": "36dbe04c7bb8055eb5bd5a5c035752f61f6873d4ac87171f7c41f7b0aedb97b5",
+        "bytes": 2363,
+        "url": "https://github.com/glopyglerky/lustr/blob/429fe6054e6119221e598b95c2661665ecdd7be2/compiler/native/.github/workflows/ci.yml"
+      },
+      {
+        "path": "compiler/native/src/ty/consteval.rs",
+        "revision": "429fe6054e6119221e598b95c2661665ecdd7be2",
+        "git_blob": "22458d8e8e678b885bef0622eeb976c9e96041fa",
+        "sha256": "ced1bfa7cd73aab0e35e093868cc33007ab6c6626c7bd9f2769d439b6a37dad5",
+        "bytes": 323508,
+        "url": "https://github.com/glopyglerky/lustr/blob/429fe6054e6119221e598b95c2661665ecdd7be2/compiler/native/src/ty/consteval.rs"
+      },
+      {
+        "path": "compiler/native/src/check/mod.rs",
+        "revision": "429fe6054e6119221e598b95c2661665ecdd7be2",
+        "git_blob": "a9e4339f0bf489fb537413687cf98a63296601b4",
+        "sha256": "840046d349473148a5693567b67039b863094afafc27eae020eb9397ce13b578",
+        "bytes": 1249367,
+        "url": "https://github.com/glopyglerky/lustr/blob/429fe6054e6119221e598b95c2661665ecdd7be2/compiler/native/src/check/mod.rs"
+      },
+      {
+        "path": "compiler/native/src/runtime/core.c",
+        "revision": "429fe6054e6119221e598b95c2661665ecdd7be2",
+        "git_blob": "d949ff9e74facafed11197bc0d0509c96f8fa4e4",
+        "sha256": "f0de4382f2f126f3844a34410b7383b2294bdde0c056ea6f9da255e9c214d2ee",
+        "bytes": 112519,
+        "url": "https://github.com/glopyglerky/lustr/blob/429fe6054e6119221e598b95c2661665ecdd7be2/compiler/native/src/runtime/core.c"
+      },
+      {
+        "path": "compiler/native/src/runtime/unicode_table.h",
+        "revision": "429fe6054e6119221e598b95c2661665ecdd7be2",
+        "git_blob": "6b5053f1cc059ba82df93f7e97f36383b11a1484",
+        "sha256": "86e693d5339c8d90bd7e72c4c84f94617a347bc8dc73755f523f0fb243ad1e52",
+        "bytes": 42504,
+        "url": "https://github.com/glopyglerky/lustr/blob/429fe6054e6119221e598b95c2661665ecdd7be2/compiler/native/src/runtime/unicode_table.h"
+      },
+      {
+        "path": "compiler/native/src/runtime/case_tables.h",
+        "revision": "429fe6054e6119221e598b95c2661665ecdd7be2",
+        "git_blob": "c275bc8341bfd3889cf11e5a2ffb34014135180f",
+        "sha256": "58f86f3c164ad6dcb727adfc396d569a9cdd52181b4d6663dbe81199d414804a",
+        "bytes": 104027,
+        "url": "https://github.com/glopyglerky/lustr/blob/429fe6054e6119221e598b95c2661665ecdd7be2/compiler/native/src/runtime/case_tables.h"
+      },
+      {
+        "path": "compiler/native/src/runtime/escape_table.h",
+        "revision": "429fe6054e6119221e598b95c2661665ecdd7be2",
+        "git_blob": "aaad8ff689d171050695defeef5ead3a5a14ea12",
+        "sha256": "ec25b3ced04fb25c6f192a129fc6718c2c9ed0dafdefed838b0b2836b271adf6",
+        "bytes": 20861,
+        "url": "https://github.com/glopyglerky/lustr/blob/429fe6054e6119221e598b95c2661665ecdd7be2/compiler/native/src/runtime/escape_table.h"
+      },
+      {
+        "path": "compiler/native/src/xid_table.rs",
+        "revision": "429fe6054e6119221e598b95c2661665ecdd7be2",
+        "git_blob": "ba187fe166123a1b44107bc86df8c91c5fe0d4ef",
+        "sha256": "94fd2c6e0bdee764c9ac3947850914ee266a20b849856a54f74d16482fdec38b",
+        "bytes": 113888,
+        "url": "https://github.com/glopyglerky/lustr/blob/429fe6054e6119221e598b95c2661665ecdd7be2/compiler/native/src/xid_table.rs"
+      },
+      {
+        "path": "tools/build-mixed-toolchain.rs",
+        "revision": "429fe6054e6119221e598b95c2661665ecdd7be2",
+        "git_blob": "cdb93f2b376d1a043280889fd232cc9a7b2cf14d",
+        "sha256": "cddb08678e6e6a82b7bb897adcf2928d0d872dc4956dd28b3829cba8e2e30469",
+        "bytes": 16001,
+        "url": "https://github.com/glopyglerky/lustr/blob/429fe6054e6119221e598b95c2661665ecdd7be2/tools/build-mixed-toolchain.rs"
+      },
+      {
+        "path": "upstream/bluefe-core.pin",
+        "revision": "429fe6054e6119221e598b95c2661665ecdd7be2",
+        "git_blob": "ada26570137047454b8eba363cf7a7167077abe3",
+        "sha256": "73bd5e14a0d96979dccb1f89f145f6c1d9d947c8f4a192f0db64f6954f0218b6",
+        "bytes": 682,
+        "url": "https://github.com/glopyglerky/lustr/blob/429fe6054e6119221e598b95c2661665ecdd7be2/upstream/bluefe-core.pin"
+      }
+    ]
+  },
+  "native_unicode_files_unchanged_from_frozen_baseline": {
+    "revision": "3c378a11d60149a3ec99fa49ea1b336e9406fca8",
+    "paths": [
+      "compiler/native/src/ty/consteval.rs",
+      "compiler/native/src/check/mod.rs",
+      "compiler/native/src/runtime/core.c",
+      "compiler/native/src/runtime/unicode_table.h",
+      "compiler/native/src/runtime/case_tables.h",
+      "compiler/native/src/runtime/escape_table.h",
+      "compiler/native/src/xid_table.rs"
+    ]
+  },
+  "observed_version_failure": {
+    "run_id": 44363351381,
+    "case": "unicode_props",
+    "rustc_unicode_version": [
+      17,
+      0,
+      0
+    ],
+    "native_unicode_version": [
+      18,
+      0,
+      0
+    ],
+    "evidence": "../hosted-warm-failures-20261118/summary.json"
+  },
+  "repair_contract": [
+    "Choose one explicit Rust semantic version and upstream source identity for each admitted compiler behavior. The current imported full Rust SDK is 1.102 / Unicode 18.",
+    "Import the matching upstream Unicode data once; derive native const evaluation, generated runtime lookup and reported version from that same source, independently of the Rust compiler used to build lustr.",
+    "Treat property tables, case conversion, debug escaping and lexical XID/NFC behavior as versioned surfaces; do not fix only the reported version.",
+    "Qualify native constant/runtime agreement and complementary behavior against the same declared Rust reference, including cold and retained states.",
+    "Keep the frozen comparison baseline and all failed evidence unchanged. Any native source change needs its own integration guard and qualification."
+  ],
+  "current_boundary": "Scalar admission excludes Unicode standard-library operations. Standalone native Unicode behavior remains an explicit gap.",
+  "not_executed": [
+    "new compiler invocation",
+    "generated runtime witness",
+    "benchmark campaign",
+    "hosted rerun"
+  ],
+  "build_host_condition": "The native constant-evaluation values shown apply when native code is built with the pinned Rust 1.102 SDK at source 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494. Independent native CI built with Rust 1.99 does not acquire Unicode 18 from the source revision alone."
+}

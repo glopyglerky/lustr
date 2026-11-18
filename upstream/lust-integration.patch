@@ -2015,7 +2015,7 @@ index 136b1f4aa7efc99f8e5bd2b23446fad2578f1851..152a1682786f42b20d3a09f2b195a74a
          });
      }
 diff --git a/src/daemon.rs b/src/daemon.rs
-index db807083aa56d24a804b47f7ffd31e33c563ad52..0475e441312e02a8fe1d7518f658b7b7202862e7 100644
+index db807083aa56d24a804b47f7ffd31e33c563ad52..a9a656e82b4a4efe618feed4a7964fe09c3edad6 100644
 --- a/src/daemon.rs
 +++ b/src/daemon.rs
 @@ -57,12 +57,12 @@ use std::sync::mpsc::{Receiver, Sender};
@@ -2122,7 +2122,51 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..0475e441312e02a8fe1d7518f658b7b7
  }
  
  /// Deletes lust temp dirs and files from processes that are gone:
-@@ -985,6 +1011,19 @@ fn log_stats(served: u64, sessions: usize) {
+@@ -871,6 +897,17 @@ fn compile_fresh(entry: &mut Entry, req: &Request) -> (Response, bool) {
+ fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Response {
+     entry.served += 1;
+     let served = entry.served;
++    if req.session.krate.target_kind == "lustr-mixed-native" {
++        // Admission has its own explicit complementary outcome. A broken
++        // native attempt must not become success in a fresh session, and must
++        // not launch a second compilation as background verification.
++        if entry.recompute_next {
++            entry.recompute_next = false;
++            replace_session(entry, &req.session);
++        }
++        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| driver::compile(req, &mut entry.session)));
++        return mixed_answer(entry, req, result);
++    }
+     if entry.recompute_next {
+         entry.recompute_next = false;
+         eprintln!("guard-check: recomputing {} in a fresh session (marked by a background mismatch)", req.file.display());
+@@ -918,6 +955,25 @@ fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Re
+     }
+ }
+ 
++fn mixed_answer(entry: &mut Entry, req: &Request, result: std::thread::Result<Response>) -> Response {
++    match result {
++        Ok(response) => {
++            if response.code == 3 && response.mixed == Some(crate::protocol::MixedOutcome::Failed) {
++                replace_session(entry, &req.session);
++            }
++            response
++        }
++        Err(payload) => {
++            let detail = driver::oracle_failure(&*payload).unwrap_or_else(|| "mixed native compilation panicked".into());
++            // Discard state damaged by the panic, but do not run this request
++            // again. A later user request may start from this fresh session.
++            replace_session(entry, &req.session);
++            Response { code: 3, mixed: Some(crate::protocol::MixedOutcome::Failed),
++                stderr: format!("error: internal: {detail}; mixed request was not retried\n"), ..Default::default() }
++        }
++    }
++}
++
+ /// How many warm sessions the daemon keeps (`LUST_DAEMON_SESSIONS`,
+ /// default 32, at least 1). Each distinct file or crate selection is one
+ /// session, so a long run over many small programs (a probe sweep) made
+@@ -985,6 +1041,19 @@ fn log_stats(served: u64, sessions: usize) {
  
  /// Serves requests until idle. Each crate selection (`SessionKey`) has its own session.
  pub fn serve(sock: &Path) -> ! {
@@ -2142,7 +2186,47 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..0475e441312e02a8fe1d7518f658b7b7
      // Sessions load std once; a std or adapter source override must be
      // read fresh by every compile (see `protocol::source_override`).
      if let Some(var) = protocol::source_override() {
-@@ -1610,6 +1649,12 @@ mod tests {
+@@ -1190,8 +1259,38 @@ pub fn serve(sock: &Path) -> ! {
+ mod tests {
+     use super::*;
+ 
++    #[test]
++    fn mixed_admission_daemon_keeps_internal_failure_and_panic_without_retry() {
++        let base = std::env::temp_dir().join(format!("lust-mixed-guard-{}", std::process::id()));
++        let _ = std::fs::remove_dir_all(&base);
++        std::fs::create_dir_all(&base).unwrap();
++        let mut req = check_req(&base.join("absent.rs"));
++        req.session.krate.target_kind = "lustr-mixed-native".into();
++        req.session.krate.target_name = "kernel".into();
++        req.session.krate.package_id = "lustr-mixed-1234".into();
++        let mut sessions = HashMap::new();
++        let entry = entry_for(&mut sessions, &base.join("sessions"), &req.session, None, &mut 0);
++        let first = entry.session.obj_dir().to_owned();
++        let failure = Response { code: 3, stderr: "original emission failure".into(),
++            mixed: Some(crate::protocol::MixedOutcome::Failed), ..Default::default() };
++        let failed = mixed_answer(entry, &req, Ok(failure));
++        assert_eq!(failed.code, 3);
++        assert_eq!(failed.stderr, "original emission failure");
++        assert_eq!(failed.mixed, Some(crate::protocol::MixedOutcome::Failed));
++        assert_ne!(entry.session.obj_dir(), first);
++        let second = entry.session.obj_dir().to_owned();
++        let panicked = mixed_answer(entry, &req, Err(Box::new("injected panic")));
++        assert_eq!(panicked.code, 3);
++        assert_eq!(panicked.mixed, Some(crate::protocol::MixedOutcome::Failed));
++        assert!(panicked.stderr.contains("not retried"));
++        assert_ne!(entry.session.obj_dir(), second);
++        assert!(!req.file.exists(), "there was no source for a hidden second compile");
++        drop(sessions);
++        let _ = std::fs::remove_dir_all(base);
++    }
++
+     fn resp(code: i32, stderr: &str) -> Response {
+-        Response { stdout: String::new(), stderr: stderr.into(), code, ran: false }
++        Response { stdout: String::new(), stderr: stderr.into(), code, ran: false, mixed: None }
+     }
+ 
+     fn done(key: &SessionKey, seq: u64, served: u64, warm: Response, fresh: Response, dir: PathBuf) -> GuardDone {
+@@ -1610,6 +1709,12 @@ mod tests {
      fn client_gone_sees_a_closed_peer_only() {
          let (ours, theirs) = std::os::unix::net::UnixStream::pair().unwrap();
          assert!(!client_gone(ours.as_raw_fd()));
@@ -2156,7 +2240,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..0475e441312e02a8fe1d7518f658b7b7
          assert!(client_gone(ours.as_raw_fd()));
      }
 diff --git a/src/driver/cache.rs b/src/driver/cache.rs
-index da28835400f894866adb85f436e2cbdf109797d7..295f0673c543b50ffbb088b9f1bddec97c94ed54 100644
+index da28835400f894866adb85f436e2cbdf109797d7..6cf91ad37bd9d2192a7f1d876a0c7b478b2e5cc1 100644
 --- a/src/driver/cache.rs
 +++ b/src/driver/cache.rs
 @@ -131,7 +131,7 @@ fn tcc_hash() -> (u64, u64) {
@@ -2189,8 +2273,55 @@ index da28835400f894866adb85f436e2cbdf109797d7..295f0673c543b50ffbb088b9f1bddec9
      /// Opens the cache for `src_file`. None when turned off or the dir cannot be made.
      pub fn open(src_file: &Path) -> Option<Cache> {
          // A std or adapter source override: the compiler id does not cover that tree.
+@@ -375,6 +381,11 @@ impl Cache {
+     /// The caller gives the source bytes it read, so the file is read once per process.
+     /// A stored `--timings` text never exists; a hit with timings gets one fresh line.
+     pub fn lookup(&self, req: &Request, src: &[u8], start: Instant) -> Option<Response> {
++        // This legacy whole-executable format carries no mixed admission
++        // proof. Mixed units retain their checked daemon state instead.
++        if req.session.krate.target_kind == "lustr-mixed-native" {
++            return None;
++        }
+         // A multi-file crate (or a manifest-selected one) is not keyed by
+         // the root file's bytes alone: module files and Cargo inputs are
+         // outside this key, so those requests skip the cache entirely
+@@ -401,7 +412,7 @@ impl Cache {
+     /// A successful response keeps no stderr: its only stderr text is `--timings` output,
+     /// which must not replay. After the write, oldest entries are evicted past the cap.
+     pub fn store(&self, req: &Request, src: &[u8], resp: &Response) {
+-        if resp.code == 3 || src_reads_outside(src) {
++        if req.session.krate.target_kind == "lustr-mixed-native" || resp.code == 3 || src_reads_outside(src) {
+             return;
+         }
+         if req.session.krate.manifest_path.is_some() || src_needs_resolve(src) {
+@@ -416,6 +427,7 @@ impl Cache {
+             stderr: if resp.code == 0 { String::new() } else { resp.stderr.clone() },
+             code: resp.code,
+             ran: false,
++            mixed: None,
+         };
+         self.write(&self.entry_path(&key, ""), &encode_response(&clean));
+         self.evict(&format!("req-{key}"));
+@@ -516,7 +528,7 @@ fn decode_response(b: &[u8]) -> Option<Response> {
+     let n = u64::from_le_bytes(b.get(4..12)?.try_into().ok()?) as usize;
+     let stdout = String::from_utf8(b.get(12..12 + n)?.to_vec()).ok()?;
+     let stderr = String::from_utf8(b.get(12 + n..)?.to_vec()).ok()?;
+-    Some(Response { stdout, stderr, code, ran: false })
++    Some(Response { stdout, stderr, code, ran: false, mixed: None })
+ }
+ 
+ #[cfg(test)]
+@@ -659,7 +671,7 @@ mod tests {
+ 
+     #[test]
+     fn response_round_trips() {
+-        let r = Response { stdout: "{\"code\":\"L0301\"}\n".into(), stderr: "err\n".into(), code: 1, ran: false };
++        let r = Response { stdout: "{\"code\":\"L0301\"}\n".into(), stderr: "err\n".into(), code: 1, ran: false, mixed: None };
+         let back = decode_response(&encode_response(&r)).unwrap();
+         assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
+         assert!(decode_response(b"short").is_none());
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..e8faa3f3cca5e9a442670ffad2a6116258a4f83f 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..01e3d38daf2ce65c9ba124d009fe8428fa6b270c 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
 @@ -401,6 +401,24 @@ fn check_fingerprint(req: &Request) -> Option<u64> {
@@ -2386,6 +2517,15 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..e8faa3f3cca5e9a442670ffad2a61162
      if req.cmd == Cmd::Build {
          let key = super::release_c::codegen_key(release, req.debug, program.unwind_tables);
          if caches.codegen_key != key {
+@@ -4285,7 +4348,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+     // A one-shot check needs no IR after borrowck: dropping each body on
+     // its worker lets the allocator reuse the memory for the next body,
+     // instead of touching fresh pages for every function.
+-    let keep_bodies = req.cmd == Cmd::Build || caches.persistent;
++    let keep_bodies = req.cmd == Cmd::Build || caches.persistent || mixed;
+     // `lust check` skips std platform bodies (`Program::check_skips`).
+     // A skipped slot keeps its last marks; one that needed a check lost
+     // its C above, so the next build checks it.
 @@ -4296,17 +4359,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          super::item_oracle::check(front, caches, Ok(&program), &work, fn_count, hashes, lines, visits.path, crate_ids, build, tables);
          t.lap("item oracle");
@@ -2420,25 +2560,71 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..e8faa3f3cca5e9a442670ffad2a61162
      // A one-shot process (`leak_at_exit`) exits right after this call. Freeing the IR and
      // program arenas, mostly built on worker threads, costs about 10 ms on a 31k-line crate,
      // so leak them on every return below and let the OS reclaim the memory at exit. A
-@@ -4450,6 +4522,17 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4398,8 +4470,45 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+         }
+         return resp;
+     }
++    // The mixed bridge admits work from the same checked/lowered state that
++    // codegen consumes below. Ordinary checks, including the early NoChange
++    // return, do not allocate a mixed plan or compute release names.
++    let mixed_names = mixed.then(|| super::release_c::names(&program, &front.fn_slot, front.slot_of.len().max(caches.out.len()), &inst_adt_ids(&program)));
++    let prepared_mixed = if mixed {
++        let admission = cgen::names::with(mixed_names.as_ref(), || super::mixed::prepare(
++            req, &program, &front.fn_slot,
++            |id| work.iter().position(|&i| i == id).and_then(|k| results[k].0.as_ref())
++                .or_else(|| reemit.iter().find(|(i, _)| *i == id).map(|(_, body)| body)),
++            |id| work.contains(&id),
++            &front.slot_hash, &front.slot_head, &caches.ok, &mut caches.mixed_checked,
++        ));
++        match admission {
++            Ok(super::mixed::Admission::Native(prepared)) => Some(prepared),
++            Ok(super::mixed::Admission::Complementary(reason)) => {
++                let response = super::mixed::complementary(reason);
++                if req.cmd == Cmd::Check && let Some(fp) = check_fp {
++                    front.last_check = Some((fp, response.clone()));
++                }
++                if leak_at_exit {
++                    std::mem::forget(results);
++                    std::mem::forget(program);
++                } else {
++                    drop(results);
++                    program.verified = verified;
++                    super::patch::keep(front, program);
++                }
++                return response;
++            }
++            Err(error) => return Response { code: 3, mixed: Some(crate::protocol::MixedOutcome::Failed),
++                stderr: format!("lustr mixed preparation failed: {error}\n"), ..Default::default() },
++        }
++    } else { None };
+     let mut resp = Response::default();
+     if req.cmd == Cmd::Check {
++        if prepared_mixed.is_some() {
++            resp.mixed = Some(crate::protocol::MixedOutcome::Checked);
++        }
++        drop(prepared_mixed);
+         // The answer, before the timing and stats lines, for a no-op
+         // check of the same request to reuse.
+         if let Some(fp) = check_fp {
+@@ -4450,6 +4559,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // from cached IR above.
      let mut bodies: Vec<(usize, ir::Body)> = work.iter().copied().zip(results).filter_map(|(i, r)| r.0.map(|b| (i, b))).collect();
      bodies.extend(reemit);
-+    if mixed {
-+        let selected = program.fns.iter().enumerate().find(|(_, f)| program.interner.get(f.name) == req.session.krate.target_name);
-+        let total = selected.is_some_and(|(i, _)| bodies.iter().find(|(n, _)| *n == i)
-+            .map_or_else(|| caches.out.get(slot(i)).is_some_and(|o| o.mixed_total), |(_, b)| super::mixed::total(b)));
-+        if !total {
-+            return Response { code: 1, stderr: "lustr mixed boundary unavailable: function can access an unrepresented runtime\n".into(), ..Default::default() };
-+        }
-+        // This is a proved nounwind function, not a different panic strategy.
-+        // Keep checking/lowering under the requested strategy; omit the native
-+        // exception machinery only when generating this total scalar unit.
-+    }
++    // An admitted mixed function is proved nounwind, not a different panic
++    // strategy. Checking/lowering above retained the requested strategy.
      // Each fn's base line: cgen stores its line numbers relative to it
      // and the main unit adds each slot's base back, so a reused body's
      // C stays right when its source text moves. An instance's base is
-@@ -4498,7 +4581,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4471,7 +4582,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+     let line_base_of = |_: &Front, i: usize| -> u32 { line_bases.get(i).copied().unwrap_or(0) };
+     // Release C (driver/release_c.rs): content-addressed names, set as cgen's naming
+     // context around every step that prints C.
+-    let rnames = release.then(|| super::release_c::names(&program, &front.fn_slot, front.slot_of.len().max(caches.out.len()), &inst_adt_ids(&program)));
++    let rnames = mixed_names.or_else(|| release.then(|| super::release_c::names(&program, &front.fn_slot, front.slot_of.len().max(caches.out.len()), &inst_adt_ids(&program))));
+     let rn = rnames.as_ref();
+     // A release C build to the release driver streams its cc step (`cc::Stream`): each unit the
+     // assembly makes compiles from the time its text exists. Not with --emit-c nor LLVM units.
+@@ -4498,7 +4609,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let (outs, cg_noted): (Vec<_>, Vec<_>) = par_map(&bodies, |(i, b)| {
          check::derive_delta::scoped(program.record_reads, || {
              cgen::in_layout_phase(layout_tag, || {
@@ -2456,14 +2642,13 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..e8faa3f3cca5e9a442670ffad2a61162
              })
          })
      })
-@@ -4681,6 +4773,15 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4681,6 +4801,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      }
      let glue_changed = shared_changed || regenerated || statics_changed;
      t.lap("codegen (par)");
-+    if mixed {
++    if let Some(prepared) = prepared_mixed {
 +        let response = cgen::names::with(rn, || super::mixed::emit(
-+            req, &program, &caches.out, &caches.glue, &front.fn_slot,
-+            rn.expect("mixed units use stable native names"), bodies.len(),
++            prepared, &caches.out, rn.expect("mixed units use stable native names"), bodies.len(),
 +        ));
 +        program.verified = verified;
 +        super::patch::keep(front, program);
@@ -2472,7 +2657,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..e8faa3f3cca5e9a442670ffad2a61162
      // Nothing reads the IR after codegen. A one-shot build leaks it at exit
      // (`leak_at_exit`), but on a large program it is the largest block
      // alive at the peak (ts-rust's bins: about 2.4 GB of 9.4 GB, through
-@@ -4751,7 +4852,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4751,7 +4879,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // rebuilds and the base
      // relinks over the existing unit objects. Unrelated units keep
      // their objects, in the session and in the disk unit cache.
@@ -2482,7 +2667,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..e8faa3f3cca5e9a442670ffad2a61162
      let cap_grown = n_slots > caches.table_cap;
      if fresh_base || cap_grown {
          caches.table_cap = n_slots * 2 + 64;
-@@ -5807,6 +5909,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5807,6 +5936,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // this check keeps that a pin, not a hope.
      if let Some(run_args) = &req.run_args
          && !caches.persistent
@@ -2490,7 +2675,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..e8faa3f3cca5e9a442670ffad2a61162
          && fresh_base
          && groups.len() == 1
          && !req.debug
-@@ -5883,7 +5986,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5883,7 +6013,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      caches.objects = Some(req.debug);
      t.lap("tcc compile");
      let all_base: Vec<PathBuf> = [1, 2, 3, LOC_UNIT].into_iter().chain(link_fn_units.iter().copied()).map(base_obj).collect();
@@ -2499,7 +2684,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..e8faa3f3cca5e9a442670ffad2a61162
          let mut objs = vec![base_obj(0)];
          objs.extend(all_base);
          crate::tcc::link(&objs, &req.out, req.debug)
-@@ -5901,18 +6004,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5901,18 +6031,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
          let base = if rebuild_base {
              caches.base_gen += 1;
@@ -2540,7 +2725,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..e8faa3f3cca5e9a442670ffad2a61162
                      install_base(&tmp, &base_dir.join(&soname))?;
                      if !caches.base_files.contains(&soname) {
                          caches.base_files.push_back(soname);
-@@ -5922,24 +6038,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5922,24 +6065,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              if built.is_err() {
                  let _ = std::fs::remove_file(&tmp);
              }
@@ -2572,7 +2757,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..e8faa3f3cca5e9a442670ffad2a61162
              built
          } else {
              Ok(())
-@@ -5958,8 +6075,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5958,8 +6102,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // a small grace count while no known output file still references them. A binary the user
      // kept keeps its base; one that was overwritten or deleted does not. A running program
      // keeps its mapped copy after unlink.
@@ -2583,7 +2768,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..e8faa3f3cca5e9a442670ffad2a61162
          if let Some(base_dir) = caches.base_dir.clone() {
              record_base_user(&base_dir, &soname, &req.out);
          }
-@@ -6058,6 +6175,66 @@ mod tests {
+@@ -6058,6 +6202,66 @@ mod tests {
          panic!("{}: still busy", bin.display())
      }
  
@@ -2650,6 +2835,229 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..e8faa3f3cca5e9a442670ffad2a61162
      /// The base sweep never deletes a live owner's base (it may be a live
      /// session's current base, found by fuzz seed 7 multi when a guard
      /// session's first-build sweep deleted the warm session's base), but
+@@ -6421,6 +6625,222 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
+         }
+     }
+ 
++    #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
++    mod mixed_admission {
++        use super::*;
++        use crate::protocol::MixedOutcome;
++        use std::sync::atomic::{AtomicUsize, Ordering};
++
++        struct Fixture { root: PathBuf, req: Request, session: Session }
++        impl Fixture {
++            fn new(source: &str, persistent: bool) -> Self {
++                static NEXT: AtomicUsize = AtomicUsize::new(0);
++                let root = std::env::temp_dir().join(format!("lust-mixed-admission-{}-{}", std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)));
++                std::fs::create_dir(&root).unwrap();
++                let file = root.join("kernel.rs");
++                std::fs::write(&file, source).unwrap();
++                let mut key = crate::protocol::SessionKey::synthetic(&file, false);
++                key.krate.target_kind = "lustr-mixed-native".into();
++                key.krate.target_name = "kernel".into();
++                key.krate.package_id = "lustr-mixed-1234".into();
++                let req = Request { out: root.join("native.o"), ..req_for(key.clone()) };
++                let session = Session::new(root.join("state"), persistent, key);
++                Self { root, req, session }
++            }
++            fn run(&mut self) -> Response { crate::driver::compile(&self.req, &mut self.session) }
++        }
++        impl Drop for Fixture {
++            fn drop(&mut self) {
++                if !std::thread::panicking() { let _ = std::fs::remove_dir_all(&self.root); }
++            }
++        }
++        const SCALAR: &str = "fn kernel(x:u64)->u64{x ^ 17}\nfn main(){let _=kernel(0);}\n";
++
++        #[test]
++        fn check_retains_lowered_proof_without_generating_c() {
++            let mut f = Fixture::new(SCALAR, true);
++            for pass in 0..2 {
++                let response = f.run();
++                assert_eq!(response.code, 0, "{}", response.stderr);
++                assert_eq!(response.mixed, Some(MixedOutcome::Checked));
++                assert!(!f.req.out.exists());
++                assert!(!f.req.out.with_extension("c").exists());
++                assert!(f.session.caches.has_out.iter().all(|generated| !generated));
++                assert!(f.session.caches.mixed_checked.is_some());
++                if pass == 1 { assert!(f.session.front.last_visits.contains("checked=0"), "{}", f.session.front.last_visits); }
++            }
++            std::fs::write(&f.req.file, SCALAR.replace("x ^ 17", "x ^ true")).unwrap();
++            let failed = f.run();
++            assert_eq!(failed.code, 1);
++            assert_eq!(failed.mixed, Some(MixedOutcome::Failed));
++            std::fs::write(&f.req.file, SCALAR.replace("x ^ 17", "x ^ 19")).unwrap();
++            let recovered = f.run();
++            assert_eq!(recovered.code, 0, "{}", recovered.stderr);
++            assert_eq!(recovered.mixed, Some(MixedOutcome::Checked));
++        }
++
++        #[test]
++        fn runtime_and_wide_types_decline_before_c_generation() {
++            for body in ["x / 2", "(x as u128).wrapping_add(1) as u64", "{let unit=(); let _=unit; x}"] {
++                for cmd in [Cmd::Check, Cmd::Build] {
++                    let mut f = Fixture::new(&format!("fn kernel(x:u64)->u64{{{body}}}\nfn main(){{let _=kernel(0);}}\n"), false);
++                    f.req.cmd = cmd;
++                    let response = f.run();
++                    assert_eq!(response.code, 0, "{body}: {}", response.stderr);
++                    assert_eq!(response.mixed, Some(MixedOutcome::Complementary), "{body}: {}", response.stderr);
++                    assert!(!f.req.out.exists());
++                    assert!(!f.req.out.with_extension("c").exists());
++                    assert!(f.session.caches.has_out.iter().all(|generated| !generated));
++                }
++            }
++        }
++
++        #[test]
++        fn admitted_output_error_is_failure_and_preserves_existing_bytes() {
++            let mut f = Fixture::new(SCALAR, true);
++            f.req.cmd = Cmd::Build;
++            std::fs::write(&f.req.out, b"existing caller output").unwrap();
++            let response = f.run();
++            assert_eq!(response.code, 3, "{}", response.stderr);
++            assert_eq!(response.mixed, Some(MixedOutcome::Failed));
++            assert!(response.stderr.contains("mixed output already exists"));
++            assert_eq!(std::fs::read(&f.req.out).unwrap(), b"existing caller output");
++            assert!(f.session.caches.mixed_checked.is_some(), "the failure happened after admission");
++            assert!(f.session.caches.has_out.iter().any(|generated| *generated));
++            assert!(!f.req.out.with_extension("c").exists());
++        }
++
++        #[test]
++        fn emits_from_the_same_checked_state_and_keeps_reuse() {
++            #[derive(Default)]
++            struct Probe { prepared: AtomicUsize, checked: AtomicUsize, lowered: AtomicUsize }
++            impl crate::driver::PhaseObserver for Probe {
++                fn prepared(&self, _: crate::driver::Prepared<'_>) { self.prepared.fetch_add(1, Ordering::Relaxed); }
++                fn checked(&self, _: crate::driver::Prepared<'_>, _: LocalDefId, _: &crate::check::Checked<'_>, _: &[Diag]) {
++                    self.checked.fetch_add(1, Ordering::Relaxed);
++                }
++                fn lowered(&self, _: crate::driver::Prepared<'_>, _: LocalDefId, _: &crate::ir::Body<'_>, _: &[Diag]) {
++                    self.lowered.fetch_add(1, Ordering::Relaxed);
++                }
++            }
++            let mut f = Fixture::new(SCALAR, true);
++            f.req.cmd = Cmd::Build;
++            let bounded = |command: &mut std::process::Command| {
++                command.stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped());
++                let mut child = command.spawn().unwrap();
++                let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
++                loop {
++                    if child.try_wait().unwrap().is_some() { break child.wait_with_output().unwrap(); }
++                    if std::time::Instant::now() >= deadline {
++                        let _ = child.kill();
++                        let output = child.wait_with_output().unwrap();
++                        panic!("mixed object caller child timed out: {command:?}: {}", String::from_utf8_lossy(&output.stderr));
++                    }
++                    std::thread::sleep(std::time::Duration::from_millis(5));
++                }
++            };
++            for (index, operand) in [17, 17, 19].into_iter().enumerate() {
++                f.req.out = f.root.join(format!("native-{index}.o"));
++                std::fs::write(&f.req.file, SCALAR.replace("x ^ 17", &format!("x ^ {operand}"))).unwrap();
++                let probe = Probe::default();
++                let response = crate::driver::compile_observed(&f.req, &mut f.session, Some(&probe));
++                assert_eq!(response.code, 0, "{}", response.stderr);
++                assert_eq!(response.mixed, Some(MixedOutcome::Emitted));
++                assert_eq!(response.stdout, "lustr_mixed_1234");
++                assert_eq!(&std::fs::read(&f.req.out).unwrap()[..4], b"\x7fELF");
++                assert_eq!(probe.prepared.load(Ordering::Relaxed), 1);
++                assert_eq!(probe.checked.load(Ordering::Relaxed), probe.lowered.load(Ordering::Relaxed));
++                assert!(probe.checked.load(Ordering::Relaxed) <= 2, "no repeated checking after admission");
++                if index == 1 {
++                    assert_eq!(probe.checked.load(Ordering::Relaxed), 0);
++                    assert!(response.stderr.contains("0 function(s) generated"), "{}", response.stderr);
++                }
++                // Exercise the actual wrapper, slot and parameter handoff.
++                // ELF shape alone cannot establish the generated function's
++                // meaning, especially after a retained literal edit.
++                let caller = f.root.join(format!("caller-{index}.rs"));
++                let executable = f.root.join(format!("caller-{index}"));
++                std::fs::write(&caller, format!(
++                    "unsafe extern \"C\"{{fn lustr_mixed_1234(x:u64)->u64;}}\n\
++                     fn main(){{for x in [0u64,1,42,u64::MAX]{{let actual=unsafe{{lustr_mixed_1234(x)}};\
++                     assert_eq!(actual,x ^ {operand});println!(\"{{x}}:{{actual}}\");}}}}\n"
++                )).unwrap();
++                let rustc = std::env::var_os("RUSTC").unwrap_or_else(|| "rustc".into());
++                let built = bounded(std::process::Command::new(rustc)
++                    .env_remove("LD_LIBRARY_PATH")
++                    .args(["--edition=2024", "--crate-name", "mixed_native_caller"])
++                    .arg(&caller).arg("-o").arg(&executable)
++                    .arg(format!("-Clink-arg={}", f.req.out.display())));
++                assert!(built.status.success(), "Rust caller {index}: {}", String::from_utf8_lossy(&built.stderr));
++                let runtime = bounded(std::process::Command::new(&executable).env_remove("LD_LIBRARY_PATH"));
++                assert!(runtime.status.success(), "native object caller {index}: {}", String::from_utf8_lossy(&runtime.stderr));
++                let expected = [0u64, 1, 42, u64::MAX].into_iter().map(|x| format!("{x}:{}\n", x ^ operand)).collect::<String>();
++                assert_eq!(runtime.stdout, expected.as_bytes());
++                assert!(runtime.stderr.is_empty(), "native object caller {index}: {}", String::from_utf8_lossy(&runtime.stderr));
++            }
++        }
++
++        #[test]
++        fn target_and_request_contracts_are_explicit_complements() {
++            for variant in 0..5 {
++                let mut f = Fixture::new(SCALAR, false);
++                match variant {
++                    0 => {
++                        f.req.session.target_triple = "wasm32-wasip1".into();
++                        f.session = Session::new(f.root.join("foreign-state"), false, f.req.session.clone());
++                    }
++                    1 => f.req.debug = true,
++                    2 => f.req.cc = true,
++                    3 => f.req.emit_c = Some(f.root.join("requested.c")),
++                    4 => f.req.harness = true,
++                    _ => unreachable!(),
++                }
++                for cmd in [Cmd::Check, Cmd::Build] {
++                    f.req.cmd = cmd;
++                    let response = f.run();
++                    assert_eq!(response.code, 0, "{}", response.stderr);
++                    assert_eq!(response.mixed, Some(MixedOutcome::Complementary));
++                    assert!(!f.req.out.exists());
++                    assert!(!f.root.join("requested.c").exists());
++                }
++            }
++            let mut f = Fixture::new(SCALAR, false);
++            f.req.run_args = Some(Vec::new());
++            let response = f.run();
++            assert_eq!(response.mixed, Some(MixedOutcome::Complementary));
++            assert!(!response.ran);
++        }
++
++        #[test]
++        fn missing_definition_and_invalid_rust_are_failures() {
++            let mut f = Fixture::new(SCALAR, false);
++            f.req.session.krate.target_name = "missing".into();
++            f.session = Session::new(f.root.join("missing-state"), false, f.req.session.clone());
++            let response = f.run();
++            assert_eq!(response.code, 3, "{}", response.stderr);
++            assert_eq!(response.mixed, Some(MixedOutcome::Failed));
++            let mut invalid = Fixture::new(&SCALAR.replace("x ^ 17", "x ^ true"), false);
++            let response = invalid.run();
++            assert_eq!(response.code, 1);
++            assert_eq!(response.mixed, Some(MixedOutcome::Failed));
++        }
++
++        #[test]
++        fn wrong_session_is_not_a_request_complement() {
++            let mut f = Fixture::new(SCALAR, false);
++            f.req.session.target_triple = "wasm32-wasip1".into();
++            for background in [false, true] {
++                let response = if background {
++                    crate::driver::compile_background(&f.req, &mut f.session)
++                } else { f.run() };
++                assert_eq!(response.code, 3, "{}", response.stderr);
++                assert_eq!(response.mixed, Some(MixedOutcome::Failed));
++                assert!(response.stderr.contains("wrong session"), "{}", response.stderr);
++                assert!(!f.req.out.exists());
++            }
++        }
++    }
++
+     /// Routing guard: a request for another crate selection never compiles in
+     /// this session (code 3 before any file read), and a non-host target is a
+     /// clear code 2, not a host build under a foreign name.
 diff --git a/src/driver/gen_reuse.rs b/src/driver/gen_reuse.rs
 index a985aebad215015e7099d8f75e73a0f0735078cb..0212059f42297d779ee5f1d4d56eae9b576eadac 100644
 --- a/src/driver/gen_reuse.rs
@@ -2775,7 +3183,7 @@ index 8fbed03aaba6dac6347970d1fd7926ae705631a0..6f36947a858612928e941b3c81e6bd79
                  args: args.iter().map(|a| operand(&mut intern, &mut tys, &strings, a)).collect::<Option<Vec<_>>>()?,
                  dest: dest.clone(),
 diff --git a/src/driver/mod.rs b/src/driver/mod.rs
-index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..06475058b58662ad8fed81e51873a0a7e4bbd4dd 100644
+index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..7908d0b9ad052c636da696b9c8521f6a97d06406 100644
 --- a/src/driver/mod.rs
 +++ b/src/driver/mod.rs
 @@ -22,6 +22,8 @@ mod patch;
@@ -2787,7 +3195,7 @@ index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..06475058b58662ad8fed81e51873a0a7
  pub(crate) mod release_c;
  pub mod read_cover;
  
-@@ -34,7 +36,14 @@ pub(crate) use patch::drop_unkept;
+@@ -34,7 +36,18 @@ pub(crate) use patch::drop_unkept;
  /// patch oracle (`item_oracle.rs`) a daemon check request then compares
  /// its answer with a fresh session's.
  pub fn compile(req: &Request, session: &mut Session) -> Response {
@@ -2799,15 +3207,55 @@ index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..06475058b58662ad8fed81e51873a0a7
 +/// parse/collect failures and cached check answers produce no phase events.
 +/// Observations do not grant acceptance or establish cross-request reuse.
 +pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&dyn PhaseObserver>) -> Response {
-+    let resp = compile::compile_observed(req, session, observer);
++    if req.session.krate.target_kind == "lustr-mixed-native" && req.session == session.key
++        && let Some(reason) = mixed::request_complement(req) {
++        return mixed::complementary(reason);
++    }
++    let resp = mixed_response(req, compile::compile_observed(req, session, observer));
      if item_oracle::on() {
          item_oracle::compare_response(req, session, &resp);
      }
-@@ -51,4 +60,44 @@ pub fn compile_background(req: &Request, session: &mut Session) -> Response {
+@@ -45,10 +58,79 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+ /// background guard checks: their file can change while they run, so a
+ /// second read of it may see other bytes.
+ pub fn compile_background(req: &Request, session: &mut Session) -> Response {
+-    let resp = compile::compile(req, session);
++    if req.session.krate.target_kind == "lustr-mixed-native" && req.session == session.key
++        && let Some(reason) = mixed::request_complement(req) {
++        return mixed::complementary(reason);
++    }
++    let resp = mixed_response(req, compile::compile(req, session));
+     if item_oracle::on() {
+         item_oracle::forget(session);
      }
      resp
  }
 -pub use session::Session;
++
++/// All early frontend exits also cross the mixed boundary. Only its explicit
++/// admission/emission results can authorize continuation with another backend.
++fn mixed_response(req: &Request, mut response: Response) -> Response {
++    use crate::protocol::MixedOutcome;
++    if req.session.krate.target_kind != "lustr-mixed-native" {
++        return response;
++    }
++    let classified = match (response.mixed, response.code, req.cmd) {
++        (Some(MixedOutcome::Checked), 0, Cmd::Check)
++        | (Some(MixedOutcome::Emitted), 0, Cmd::Build)
++        | (Some(MixedOutcome::Complementary), 0, _) => true,
++        (Some(MixedOutcome::Failed), code, _) => code != 0,
++        _ => false,
++    };
++    if !classified {
++        response.mixed = Some(MixedOutcome::Failed);
++        if response.code == 0 {
++            response.code = 3;
++            response.stdout.clear();
++            response.stderr.push_str("error: mixed native request completed without a matching admission outcome\n");
++        }
++    }
++    response
++}
 +pub use session::{OutputKind, Session};
 +
 +/// Process-local identity of one observed driver invocation, not crate metadata
@@ -3042,10 +3490,20 @@ index a42971cf10bbbdd13511f51c07aef68556044221..aaae36a3eb972000d1b1122e39b6f3d8
      /// parameter to `dyn` checks the template again on the kept program
      /// as collect does (before mono, so no concrete vtable is asked for).
 diff --git a/src/driver/session.rs b/src/driver/session.rs
-index 8eabf97640455036f5f7c895cd034b98f4c5b9d3..5803e7fdd0e0f10d68e2587afa8ec68f407e0a2c 100644
+index 8eabf97640455036f5f7c895cd034b98f4c5b9d3..f27c4807202fcc5ee046eaa499f159a27ffa5e8e 100644
 --- a/src/driver/session.rs
 +++ b/src/driver/session.rs
-@@ -395,8 +395,11 @@ pub(crate) struct Caches {
+@@ -274,6 +274,9 @@ pub(crate) struct Caches {
+     pub(crate) ok: Vec<bool>,
+     pub(crate) out: Vec<FnOut>,
+     pub(crate) has_out: Vec<bool>,
++    /// The one selected mixed body's checked IR boundary, retained separately
++    /// from generated C so metadata-only checks can reuse it honestly.
++    pub(super) mixed_checked: Option<super::mixed::CheckedTotal>,
+     /// The read set of the slot's last passing check (docs/ARCH.md
+     /// section 8.2), stored with the result. On later edits the dirty
+     /// walk (`Program::reads_dirty`) replays these reads against the
+@@ -395,8 +398,11 @@ pub(crate) struct Caches {
      pub(crate) obj_dir: PathBuf,
      /// Units compiled into `obj_dir` with the current layout, and with which debug setting.
      pub(crate) objects: Option<bool>,
@@ -3058,7 +3516,7 @@ index 8eabf97640455036f5f7c895cd034b98f4c5b9d3..5803e7fdd0e0f10d68e2587afa8ec68f
      /// The process exits right after this session's request (`lust check` and `lust test`
      /// one-shots set it): compile leaks the program and IR instead of freeing them. A
      /// non-persistent session inside a daemon (the patch oracle's fresh compile) frees them.
-@@ -420,6 +423,14 @@ pub(crate) struct Caches {
+@@ -420,6 +426,14 @@ pub(crate) struct Caches {
      pub(crate) overlays: std::collections::BTreeSet<usize>,
  }
  
@@ -3073,7 +3531,15 @@ index 8eabf97640455036f5f7c895cd034b98f4c5b9d3..5803e7fdd0e0f10d68e2587afa8ec68f
  pub struct Session {
      /// The one crate selection this session serves. A request whose key does
      /// not match is a routing bug; compile rejects it instead of mixing state.
-@@ -562,6 +573,7 @@ impl Session {
+@@ -529,6 +543,7 @@ impl Session {
+                 ok: Vec::new(),
+                 out: Vec::new(),
+                 has_out: Vec::new(),
++                mixed_checked: None,
+                 slot_reads: Vec::new(),
+                 read_keys: Default::default(),
+                 unit_reads: Default::default(),
+@@ -562,6 +577,7 @@ impl Session {
                  obj_dir,
                  objects: None,
                  persistent,
@@ -3081,7 +3547,7 @@ index 8eabf97640455036f5f7c895cd034b98f4c5b9d3..5803e7fdd0e0f10d68e2587afa8ec68f
                  leak_at_exit: false,
                  image_one_shot: false,
                  overlays: Default::default(),
-@@ -577,6 +589,19 @@ impl Session {
+@@ -577,6 +593,19 @@ impl Session {
          &self.caches.obj_dir
      }
  
@@ -3499,10 +3965,19 @@ index 804532cf1694c50fff28771d72bde34d998afb59..8de28d3e5ea8a4f52abf00b86938b101
      }
  }
 diff --git a/src/protocol.rs b/src/protocol.rs
-index 504b467a9d240272c85f999b59f57a5d52b3cd4e..165493acc0f121b3e44335e326c53eef33a7642f 100644
+index 504b467a9d240272c85f999b59f57a5d52b3cd4e..09a8eccc5054a571e7f774d88695dc11e30dbd9a 100644
 --- a/src/protocol.rs
 +++ b/src/protocol.rs
-@@ -24,6 +24,10 @@ use std::io::{BufRead, BufReader, Read, Write};
+@@ -17,6 +17,8 @@
+ // (`ReadError::OtherBuild`), and a client drops an answer from another build or from a
+ // daemon that predates the field (`request`). A stale compiler never answers warm.
+ // Response: "<code> <stdout len> <stderr len> <build>\n" followed by the two byte strings.
++// Mixed-only replies add a fifth `mixed-v1:<outcome>` header field. Ordinary
++// replies retain their original four-field form.
+ // Both binaries include this module and each uses only part of it.
+ #![allow(dead_code)]
+ 
+@@ -24,6 +26,10 @@ use std::io::{BufRead, BufReader, Read, Write};
  use std::os::unix::net::UnixStream;
  use std::path::{Path, PathBuf};
  
@@ -3513,7 +3988,59 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..165493acc0f121b3e44335e326c53eef
  #[derive(Clone, Copy, PartialEq, Eq)]
  pub enum Cmd {
      Check,
-@@ -1026,6 +1030,8 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
+@@ -325,6 +331,38 @@ pub struct Response {
+     pub code: i32,
+     /// The program already ran in memory; `code` is its exit code. Do not run `out` again.
+     pub ran: bool,
++    /// Explicit result of the bounded mixed admission/emission contract.
++    /// An ordinary native request never supplies this field.
++    pub mixed: Option<MixedOutcome>,
++}
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub enum MixedOutcome {
++    Checked,
++    Emitted,
++    Complementary,
++    Failed,
++}
++
++impl MixedOutcome {
++    fn tag(self) -> &'static str {
++        match self {
++            Self::Checked => "mixed-v1:checked",
++            Self::Emitted => "mixed-v1:emitted",
++            Self::Complementary => "mixed-v1:complementary",
++            Self::Failed => "mixed-v1:failed",
++        }
++    }
++
++    fn parse(tag: &str) -> Option<Self> {
++        Some(match tag {
++            "mixed-v1:checked" => Self::Checked,
++            "mixed-v1:emitted" => Self::Emitted,
++            "mixed-v1:complementary" => Self::Complementary,
++            "mixed-v1:failed" => Self::Failed,
++            _ => return None,
++        })
++    }
+ }
+ 
+ pub enum Invocation {
+@@ -1011,7 +1049,11 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+ }
+ 
+ pub fn write_response(w: &mut impl Write, r: &Response) -> std::io::Result<()> {
+-    write!(w, "{} {} {} {}\n{}{}", r.code, r.stdout.len(), r.stderr.len(), build_id(), r.stdout, r.stderr)
++    if let Some(outcome) = r.mixed {
++        write!(w, "{} {} {} {} {}\n{}{}", r.code, r.stdout.len(), r.stderr.len(), build_id(), outcome.tag(), r.stdout, r.stderr)
++    } else {
++        write!(w, "{} {} {} {}\n{}{}", r.code, r.stdout.len(), r.stderr.len(), build_id(), r.stdout, r.stderr)
++    }
+ }
+ 
+ /// The whole answer to a request of another build: a head no client takes
+@@ -1026,6 +1068,8 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
  /// field exits by itself; an older one is stopped by removing its socket
  /// (its stop request), so the next command starts a daemon of this build.
  pub fn request(sock: &Path, req: &Request) -> Option<Response> {
@@ -3522,6 +4049,129 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..165493acc0f121b3e44335e326c53eef
      let mut conn = UnixStream::connect(sock).ok()?;
      conn.write_all(&encode(req)).ok()?;
      let mut reader = BufReader::new(conn);
+@@ -1038,9 +1082,10 @@ pub fn request(sock: &Path, req: &Request) -> Option<Response> {
+         let _ = std::fs::remove_file(sock);
+         return None;
+     }
+-    if nums.len() != 3 || words.len() != 4 || words[3] != build_id() {
++    if nums.len() != 3 || !matches!(words.len(), 4 | 5) || words[3] != build_id() {
+         return None;
+     }
++    let mixed = if words.len() == 5 { Some(MixedOutcome::parse(words[4])?) } else { None };
+     let mut out = vec![0; nums[1]];
+     let mut err = vec![0; nums[2]];
+     reader.read_exact(&mut out).ok()?;
+@@ -1050,9 +1095,56 @@ pub fn request(sock: &Path, req: &Request) -> Option<Response> {
+         stdout: String::from_utf8_lossy(&out).into_owned(),
+         stderr: String::from_utf8_lossy(&err).into_owned(),
+         ran: false,
++        mixed,
+     })
+ }
+ 
++/// The mixed caller may start a daemon only when no connection accepted its
++/// request, or a stale build explicitly rejected it before compilation. Once
++/// writing starts, a failed or malformed exchange is not a retryable miss.
++pub fn request_mixed(sock: &Path, req: &Request) -> Result<Option<Response>, String> {
++    let address = host_runtime::DaemonSocket::resolve(sock).map_err(|e| format!("mixed daemon address: {e}"))?;
++    let mut conn = match UnixStream::connect(address.path()) {
++        Ok(conn) => conn,
++        Err(e) if matches!(e.kind(), std::io::ErrorKind::NotFound | std::io::ErrorKind::ConnectionRefused) => return Ok(None),
++        Err(e) => return Err(format!("mixed daemon connection: {e}")),
++    };
++    conn.write_all(&encode(req)).map_err(|e| format!("mixed daemon request write: {e}"))?;
++    read_mixed_response(&mut BufReader::new(conn))
++}
++
++fn read_mixed_response(reader: &mut impl BufRead) -> Result<Option<Response>, String> {
++    let mut head = String::new();
++    reader.read_line(&mut head).map_err(|e| format!("mixed daemon response header: {e}"))?;
++    if !head.ends_with('\n') {
++        return Err("mixed daemon returned a truncated response header".into());
++    }
++    let words: Vec<&str> = head.split_whitespace().collect();
++    if words.len() == 4 && words[..3] == ["-", "-", "-"] && words[3] != build_id() {
++        return Ok(None);
++    }
++    if words.len() != 5 || words[3] != build_id() {
++        return Err("mixed daemon returned an unclassified response or a different compiler build".into());
++    }
++    let number = |at: usize| words[at].parse::<usize>().map_err(|_| "mixed daemon returned an invalid response size/status".to_owned());
++    let code = i32::try_from(number(0)?).map_err(|_| "mixed daemon returned an invalid response status".to_owned())?;
++    let (out_len, err_len) = (number(1)?, number(2)?);
++    let mixed = MixedOutcome::parse(words[4]).ok_or("mixed daemon returned an unknown admission outcome")?;
++    if (mixed == MixedOutcome::Failed) == (code == 0) {
++        return Err("mixed daemon admission outcome disagrees with its status".into());
++    }
++    fn text(reader: &mut impl BufRead, length: usize) -> Result<String, String> {
++        let mut bytes = Vec::new();
++        bytes.try_reserve_exact(length).map_err(|_| "mixed daemon response is too large".to_owned())?;
++        bytes.resize(length, 0);
++        reader.read_exact(&mut bytes).map_err(|e| format!("mixed daemon response body: {e}"))?;
++        String::from_utf8(bytes).map_err(|_| "mixed daemon response is not UTF-8".to_owned())
++    }
++    let stdout = text(reader, out_len)?;
++    let stderr = text(reader, err_len)?;
++    Ok(Some(Response { code, stdout, stderr, ran: false, mixed: Some(mixed) }))
++}
++
+ /// Prints a response. For `run`, runs the program after a successful build. Never returns.
+ pub fn finish(resp: Response, run: bool, out: &Path, args: &[String]) -> ! {
+     print!("{}", resp.stdout);
+@@ -1461,6 +1553,53 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
+ mod tests {
+     use super::*;
+ 
++    #[test]
++    fn mixed_admission_wire_keeps_ordinary_response_bytes() {
++        let response = Response { stdout: "out".into(), stderr: "err".into(), code: 1, ..Default::default() };
++        let mut bytes = Vec::new();
++        write_response(&mut bytes, &response).unwrap();
++        assert_eq!(bytes, format!("1 3 3 {}\nouterr", build_id()).as_bytes());
++        assert!(read_mixed_response(&mut std::io::Cursor::new(bytes)).is_err(), "ordinary success/error is not mixed admission");
++    }
++
++    #[test]
++    fn mixed_admission_wire_roundtrips_all_outcomes() {
++        for outcome in [MixedOutcome::Checked, MixedOutcome::Emitted, MixedOutcome::Complementary, MixedOutcome::Failed] {
++            let response = Response { code: if outcome == MixedOutcome::Failed { 3 } else { 0 },
++                stdout: "native symbol".into(), stderr: "diagnostic λ\n".into(), mixed: Some(outcome), ..Default::default() };
++            let mut bytes = Vec::new();
++            write_response(&mut bytes, &response).unwrap();
++            let back = read_mixed_response(&mut std::io::Cursor::new(bytes)).unwrap().expect("classified response");
++            assert_eq!(back.code, response.code);
++            assert_eq!(back.mixed, response.mixed);
++            assert_eq!(back.stdout, response.stdout);
++            assert_eq!(back.stderr, response.stderr);
++        }
++    }
++
++    #[test]
++    fn mixed_admission_wire_errors_are_not_retryable_misses() {
++        for text in [
++            String::new(),
++            format!("0 0 0 {} mixed-v1:checked", build_id()),
++            format!("0 0 0 {} mixed-v2:checked\n", build_id()),
++            format!("0 0 0 {} mixed-v1:unknown\n", build_id()),
++            format!("0 0 0 {} mixed-v1:failed\n", build_id()),
++            format!("3 0 0 {} mixed-v1:emitted\n", build_id()),
++            format!("0 1 0 {} mixed-v1:emitted\n", build_id()),
++            format!("0 0 1 {} mixed-v1:checked\n", build_id()),
++            "0 0 0 another-build mixed-v1:checked\n".into(),
++            format!("- - - {}\n", build_id()),
++        ] {
++            assert!(read_mixed_response(&mut std::io::Cursor::new(text.as_bytes())).is_err(), "{text:?}");
++        }
++        let mut bytes = format!("0 1 0 {} mixed-v1:emitted\n", build_id()).into_bytes();
++        bytes.push(0xff);
++        assert!(read_mixed_response(&mut std::io::Cursor::new(bytes)).is_err());
++        assert!(read_mixed_response(&mut std::io::Cursor::new(b"- - - another-build\n")).unwrap().is_none(),
++            "only an explicit pre-compilation stale-build refusal may restart startup");
++    }
++
+     fn args(list: &[&str]) -> Vec<String> {
+         list.iter().map(|s| s.to_string()).collect()
+     }
 diff --git a/src/resolve/cargo.rs b/src/resolve/cargo.rs
 index 203135afe54ba9bb04d1295435f9424670379c71..a6e774e289a99ebebac566f33b6aa7fd02910a59 100644
 --- a/src/resolve/cargo.rs

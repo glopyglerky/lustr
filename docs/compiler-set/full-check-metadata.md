@@ -12,6 +12,13 @@ package copy. The candidate is **not a fresh complete-package constructor
 result**, and these checks do not establish a speed improvement or qualify
 another platform.
 
+The later [hosted PR28 qualification](hosted-qualification-2026-11-18.md)
+constructed the complete package from source at head `429fe605`, tested with an
+identical merge tree. All 17 public-entry contract tests passed, including this
+metadata cleanup/error regression. That source-bound result supplements the
+local diagnostic-package evidence below; it does not establish a speed change
+or certify later compiler-boundary edits.
+
 ## Failure and repair
 
 The original single-file fallback invoked `rustc-full --emit=metadata -o

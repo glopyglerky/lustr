@@ -55,7 +55,7 @@ pub fn context(tcx: TyCtxt<'_>, native: &BTreeSet<String>) -> Option<Value> {
 pub fn read(index: &Path) -> Option<Value> {
     let state: Value = serde_json::from_slice(&fs::read(index).ok()?).ok()?;
     (state["schema"] == "lustr.checked-mixed-link"
-        && state["version"] == 4
+        && state["version"] == 5
         && state["rustc"] == env!("LUSTR_BUILD_RUSTC_COMMIT")
         && state["native"] == env!("LUST_BUILD_HASH"))
     .then_some(state)
@@ -63,7 +63,7 @@ pub fn read(index: &Path) -> Option<Value> {
 
 pub fn publish(index: &Path, directory: &Path, context: Value, kernels: Vec<Value>, check_only: bool) -> std::io::Result<()> {
     let _profile = super::mixed_profile::span("publish-certificate");
-    let state = json!({"schema":"lustr.checked-mixed-link","version":4,"check_only":check_only,
+    let state = json!({"schema":"lustr.checked-mixed-link","version":5,"check_only":check_only,
         "rustc":env!("LUSTR_BUILD_RUSTC_COMMIT"),"native":env!("LUST_BUILD_HASH"),
         "directory":directory,"context":context,"kernels":kernels});
     fs::create_dir_all(index.parent().unwrap())?;
@@ -207,68 +207,45 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
         super::trace("reuse-miss=diagnostics");
         return None;
     }
-    let mut updated = kernels.clone();
-    for kernel in &mut updated {
-        let name = text(kernel, "name")?.to_owned();
-        let candidate = compiler.candidates.get(&name)?;
-        if candidate.body == text(kernel, "body")? {
+    // Resolve the complete certificate before starting native work. A missing
+    // or stale cache artifact is a miss here; after admission, an I/O, emitter,
+    // symbol or linker failure must end this invocation.
+    struct Edit {
+        index: usize,
+        name: String,
+        identity: String,
+        unit: PathBuf,
+        source: String,
+        body: String,
+        symbol: String,
+        original: Option<PathBuf>,
+    }
+    let mut edits = Vec::new();
+    let mut objects = BTreeMap::new();
+    for (index, kernel) in kernels.iter().enumerate() {
+        let name = text(kernel, "name")?;
+        let candidate = compiler.candidates.get(name)?;
+        let edited = candidate.body != text(kernel, "body")?;
+        if compiler.check_only && !edited {
             continue;
         }
-        let identity = text(kernel, "identity")?.to_owned();
+        let identity = text(kernel, "identity")?;
         if identity.len() != 16 || !identity.bytes().all(|b| b.is_ascii_hexdigit()) {
             return None;
         }
-        let unit = owned.join(&identity);
-        if !unit.canonicalize().ok()?.starts_with(&owned) {
-            return None;
-        }
-        let source = unit.join("kernel.rs");
-        let generated = format!("{}{}{}", text(kernel, "prefix")?, candidate.body, text(kernel, "suffix")?);
-        fs::write(&source, generated).ok()?;
-        if compiler.check_only {
-            let (code, _, diagnostic) =
-                super::native::check(&source, &name, &identity, tcx.sess.overflow_checks(), tcx.sess.opts.debug_assertions)?;
-            super::trace(&diagnostic);
-            if code != 0 {
+        let unit = if edited {
+            let unit = owned.join(identity).canonicalize().ok()?;
+            if !unit.starts_with(&owned) {
                 return None;
             }
-            kernel["body"] = json!(candidate.body);
-            continue;
-        }
-        let output = fresh(&unit, "edit", "o")?;
-        let (code, native_symbol, diagnostic) =
-            super::native::compile(&source, &output, &name, &identity, tcx.sess.overflow_checks(), tcx.sess.opts.debug_assertions)?;
-        super::trace(&diagnostic);
-        if code != 0 {
-            return None;
-        }
-        let symbol = text(kernel, "symbol")?.to_owned();
-        let linked = fresh(&unit, "renamed", "o")?;
-        {
-            let _profile = super::mixed_profile::span("native-symbol-rename");
-            super::mixed_symbol_rename::rename(&output, &native_symbol, &symbol, &linked).ok()?;
-        }
-        // The current certificate still describes the previous successful
-        // body. Keep its object immutable if a later edit, link or dep-info
-        // step fails. Only the final-success publication selects this object.
-        {
-            let _profile = super::mixed_profile::span("edited-native-object-sync");
-            fs::File::open(&linked).ok()?.sync_all().ok()?;
-            fs::File::open(&unit).ok()?.sync_all().ok()?;
-        }
-        kernel["object"] = json!(linked);
-        kernel["body"] = json!(candidate.body);
-    }
-    if compiler.check_only {
-        super::trace(&format!("reused-check-context=1 full-analysis=0 native-check-edits={}", changed.len()));
-    } else {
-        let mut objects = BTreeMap::new();
-        for kernel in &updated {
-            let identity = text(kernel, "identity")?;
-            if identity.len() != 16 || !identity.bytes().all(|b| b.is_ascii_hexdigit()) {
-                return None;
-            }
-            let original = owned.join(identity).join("native-link.o").canonicalize().ok()?;
+            unit
+        } else {
+            owned.join(identity)
+        };
+        let original = if compiler.check_only {
+            None
+        } else {
+            let original = unit.join("native-link.o").canonicalize().ok()?;
             let selected = match text(kernel, "object") {
                 Some(path) => PathBuf::from(path).canonicalize().ok()?,
                 None => original.clone(),
@@ -276,9 +253,75 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
             if !original.starts_with(&owned) || !selected.starts_with(&owned) {
                 return None;
             }
-            objects.insert(original, selected);
+            objects.insert(original.clone(), selected);
+            Some(original)
+        };
+        if edited {
+            edits.push(Edit {
+                index,
+                name: name.to_owned(),
+                identity: identity.to_owned(),
+                unit,
+                source: format!("{}{}{}", text(kernel, "prefix")?, candidate.body, text(kernel, "suffix")?),
+                body: candidate.body.clone(),
+                symbol: text(kernel, "symbol")?.to_owned(),
+                original,
+            });
         }
-        super::mixed_objects::relink(tcx.sess, &owned, &objects).ok()?;
+    }
+    let mut updated = kernels.clone();
+    for edit in edits {
+        let source = edit.unit.join("kernel.rs");
+        super::required(tcx, fs::write(&source, edit.source), "write retained native projection");
+        if compiler.check_only {
+            super::native_boundary(
+                tcx,
+                super::native::check(&source, &edit.name, &edit.identity, tcx.sess.overflow_checks(), tcx.sess.opts.debug_assertions),
+            )?;
+            updated[edit.index]["body"] = json!(edit.body);
+            continue;
+        }
+        let output = super::required(tcx, fresh(&edit.unit, "edit", "o").ok_or("object identities exhausted"), "prepare native edit");
+        let native_symbol = super::native_boundary(
+            tcx,
+            super::native::compile(
+                &source,
+                &output,
+                &edit.name,
+                &edit.identity,
+                tcx.sess.overflow_checks(),
+                tcx.sess.opts.debug_assertions,
+            ),
+        )?;
+        let linked = super::required(
+            tcx,
+            fresh(&edit.unit, "renamed", "o").ok_or("object identities exhausted"),
+            "prepare native symbol publication",
+        );
+        {
+            let _profile = super::mixed_profile::span("native-symbol-rename");
+            super::required(
+                tcx,
+                super::mixed_symbol_rename::rename(&output, &native_symbol, &edit.symbol, &linked),
+                "rename admitted native edit",
+            );
+        }
+        // The current certificate still describes the previous successful
+        // body. Keep its object immutable if a later edit, link or dep-info
+        // step fails. Only the final-success publication selects this object.
+        {
+            let _profile = super::mixed_profile::span("edited-native-object-sync");
+            super::required(tcx, fs::File::open(&linked).and_then(|f| f.sync_all()), "sync admitted native edit");
+            super::required(tcx, fs::File::open(&edit.unit).and_then(|f| f.sync_all()), "sync native edit directory");
+        }
+        objects.insert(edit.original.expect("executable edit has a planned object"), linked.clone());
+        updated[edit.index]["object"] = json!(linked);
+        updated[edit.index]["body"] = json!(edit.body);
+    }
+    if compiler.check_only {
+        super::trace(&format!("reused-check-context=1 full-analysis=0 native-check-edits={}", changed.len()));
+    } else {
+        super::required(tcx, super::mixed_objects::relink(tcx.sess, &owned, &objects), "relink checked mixed compilation");
         super::trace("reused-rust-objects=1 full-analysis=0");
     }
     // Both check and link certificates commit only after the entire compiler

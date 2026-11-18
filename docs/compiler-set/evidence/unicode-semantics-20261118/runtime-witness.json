@@ -1,0 +1,285 @@
+{
+  "schema": "lustr.unicode-runtime-witness",
+  "version": 1,
+  "date": "2026-11-18",
+  "scope": "One direct cold native build/run and one matching SDK Rust build/run of the same valid Rust fixture; specific semantic disagreement, not a timing or release-qualification campaign.",
+  "native": {
+    "build_id": "b69824ccabcb4862",
+    "profile": "gate",
+    "binary_sha256": "505502d7c0fe91d388e46c22fab9e1b82453c34e2dc8b8c50bdf880ff6b1e9ad",
+    "source_parent": "a1cd906cb90d2430611f39d7f3c3450d02d42299",
+    "source_parent_tree": "7caaeb641eba6dda5b26b9d3d6761ca3a5a79581",
+    "published_revision_with_same_parent_tree": "429fe6054e6119221e598b95c2661665ecdd7be2",
+    "preserved_source_patch_sha256": "4e2a256d68afcf361a52678af62973c9d7c300841cf9ece076d833d91398706f",
+    "patch_paths": [
+      "compiler/native/src/daemon.rs",
+      "compiler/native/src/driver/cache.rs",
+      "compiler/native/src/driver/compile.rs",
+      "compiler/native/src/driver/mod.rs",
+      "compiler/native/src/driver/session.rs",
+      "compiler/native/src/protocol.rs",
+      "crates/lustr-native-core/src/mixed_unit.rs"
+    ],
+    "preserved_source_receipt_sha256": "322791628ecb0aa6821228eb2e162e57e326092c28a46b6939de7a44d060a983",
+    "build_sdk_matches_reference": true,
+    "unicode_source_files": [
+      {
+        "path": "compiler/native/src/ty/consteval.rs",
+        "sha256": "ced1bfa7cd73aab0e35e093868cc33007ab6c6626c7bd9f2769d439b6a37dad5",
+        "git_blob": "22458d8e8e678b885bef0622eeb976c9e96041fa",
+        "unchanged_from_published_revision": "429fe6054e6119221e598b95c2661665ecdd7be2",
+        "unchanged_by_preserved_gate_patch": true
+      },
+      {
+        "path": "compiler/native/src/check/mod.rs",
+        "sha256": "840046d349473148a5693567b67039b863094afafc27eae020eb9397ce13b578",
+        "git_blob": "a9e4339f0bf489fb537413687cf98a63296601b4",
+        "unchanged_from_published_revision": "429fe6054e6119221e598b95c2661665ecdd7be2",
+        "unchanged_by_preserved_gate_patch": true
+      },
+      {
+        "path": "compiler/native/src/runtime/unicode_table.h",
+        "sha256": "86e693d5339c8d90bd7e72c4c84f94617a347bc8dc73755f523f0fb243ad1e52",
+        "git_blob": "6b5053f1cc059ba82df93f7e97f36383b11a1484",
+        "unchanged_from_published_revision": "429fe6054e6119221e598b95c2661665ecdd7be2",
+        "unchanged_by_preserved_gate_patch": true
+      },
+      {
+        "path": "compiler/native/src/runtime/core.c",
+        "sha256": "f0de4382f2f126f3844a34410b7383b2294bdde0c056ea6f9da255e9c214d2ee",
+        "git_blob": "d949ff9e74facafed11197bc0d0509c96f8fa4e4",
+        "unchanged_from_published_revision": "429fe6054e6119221e598b95c2661665ecdd7be2",
+        "unchanged_by_preserved_gate_patch": true
+      },
+      {
+        "path": "compiler/native/src/cgen.rs",
+        "sha256": "1cbce6afffc8f3df96032b5588736cbd861033feba8111bec5047889472c12b1",
+        "git_blob": "ff7063a4ac9cc2c7d828c38dfe507a6c4337a1a2",
+        "unchanged_from_published_revision": "429fe6054e6119221e598b95c2661665ecdd7be2",
+        "unchanged_by_preserved_gate_patch": true
+      }
+    ],
+    "build_command_record_sha256": "a4fbfde98442ac171447cdc704396964b05ef684a31d159de1c68c22fa4ca7e0",
+    "build_sdk_binding": "Preserved native-build command explicitly selects the same SDK rustc path used by this witness; witness -vV and binary/core/std hashes are recorded."
+  },
+  "reference": {
+    "rustc_vV": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+    "source_commit": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+    "compiler_and_standard_library": [
+      {
+        "name": "rustc",
+        "bytes": 646208,
+        "sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de"
+      },
+      {
+        "name": "librustc_driver-f21b5e769b80ce6a.so",
+        "bytes": 164782176,
+        "sha256": "ace7e2aa6ae11ca4c9b1edaf70701fc9390de38dd86bcf16bb8f22d5e658bd72"
+      },
+      {
+        "name": "libcore-b13a99ac1c8a27b3.rlib",
+        "bytes": 3039568,
+        "sha256": "6f862495cb024770784bc42a4322ddaeb746c6cbf87f46fbf91de28438e88649"
+      },
+      {
+        "name": "libstd-62cf18f9587165ab.rlib",
+        "bytes": 12634666,
+        "sha256": "bff8e888540f8599aa89b1d88503c75ab5851ec2fde16b321098dba22df8b0d0"
+      }
+    ]
+  },
+  "fixture": {
+    "name": "unicode-split.rs",
+    "sha256": "3eb5cdafaeec9482eb2acec6895032eb8fcc802a2ece16a8b0521e574ca607b6",
+    "bytes": 724,
+    "source": "const LOWER_CONST: bool = '\\u{558}'.is_lowercase();\nconst UPPER_CONST: bool = '\\u{a7dd}'.is_uppercase();\nconst VERSION: (u8, u8, u8) = char::UNICODE_VERSION;\n\nfn main() {\n    // Runtime inputs arrive after compilation; the predicate results cannot\n    // be replaced with either constant above by evaluating the source alone.\n    let mut args = std::env::args().skip(1);\n    let lower = args.next().unwrap().chars().next().unwrap();\n    let upper = args.next().unwrap().chars().next().unwrap();\n    println!(\"version {:?}\", VERSION);\n    println!(\"inputs {} {}\", lower as u32, upper as u32);\n    println!(\"const {} {}\", LOWER_CONST, UPPER_CONST);\n    println!(\"runtime {} {}\", lower.is_lowercase(), upper.is_uppercase());\n}\n",
+    "edition": "2024",
+    "runtime_argument_scalars": [
+      "U+0558",
+      "U+A7DD"
+    ],
+    "runtime_argument_decimal": [
+      1368,
+      42973
+    ],
+    "constness": {
+      "valid": true,
+      "source": "https://github.com/rust-lang/rust/blob/5b7b37aefcb5b2fba3c2392bc9065b9e4602d494/library/core/src/char/methods.rs",
+      "source_sha256": "64f399f062cd94ff28dfc05960d9918b72876277b37e189c264137f1d9991d7f",
+      "is_lowercase_line": 904,
+      "is_uppercase_line": 980,
+      "signature": "pub const fn",
+      "const_stable_since": "1.84.0",
+      "independently_accepted_by_matching_rustc": true
+    }
+  },
+  "commands_sanitized": [
+    {
+      "name": "rustc-identity",
+      "argv": [
+        "$SDK/bin/rustc",
+        "-vV"
+      ]
+    },
+    {
+      "name": "rustc-build",
+      "argv": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "-C",
+        "opt-level=0",
+        "unicode-split.rs",
+        "-o",
+        "rustc-program"
+      ]
+    },
+    {
+      "name": "rustc-run",
+      "argv": [
+        "./rustc-program",
+        "\u0558",
+        "\ua7dd"
+      ]
+    },
+    {
+      "name": "native-build",
+      "argv": [
+        "$PRESERVED_NATIVE/lust-core",
+        "build",
+        "unicode-split.rs",
+        "-o",
+        "native-program"
+      ]
+    },
+    {
+      "name": "native-run",
+      "argv": [
+        "./native-program",
+        "\u0558",
+        "\ua7dd"
+      ]
+    }
+  ],
+  "fixed_conditions": {
+    "LUST_NO_CACHE": "1",
+    "LUST_NO_DAEMON": "1",
+    "cache_and_temp": "Fresh isolated paths for this single witness; native runtime base libraries, if created, were retained with private originals.",
+    "execution": "Direct lust-core build; no client, daemon, socket or second compiler retry.",
+    "reference_opt_level": 0,
+    "native_profile": "Ordinary direct native build with no --debug/--release override",
+    "whole_request_disk_cache_empty_after": true,
+    "socket_files_in_work_directory": [],
+    "compiler_or_source_rebuilds": 0,
+    "retry_count": 0,
+    "maximum_compile_commands": 2,
+    "actual_compile_commands": 2,
+    "actual_program_runs": 2,
+    "total_commands_including_sdk_identity": 5,
+    "timeout_seconds_per_command": 45
+  },
+  "records": [
+    {
+      "name": "rustc-identity",
+      "status": "completed",
+      "returncode": 0,
+      "stdout": {
+        "bytes": 214,
+        "sha256": "bbc9b960fe50c84bca20f3109950bcb87c48b6d1ce61d2fc2fc1519aaba2daaa",
+        "text": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n"
+      },
+      "stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "text": ""
+      }
+    },
+    {
+      "name": "rustc-build",
+      "status": "completed",
+      "returncode": 0,
+      "stdout": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "text": ""
+      },
+      "stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "text": ""
+      }
+    },
+    {
+      "name": "rustc-run",
+      "status": "completed",
+      "returncode": 0,
+      "stdout": {
+        "bytes": 71,
+        "sha256": "b40349be384f43ecc13883378045c39fe5a0ad44fe81ffe905f6f372829d572f",
+        "text": "version (18, 0, 0)\ninputs 1368 42973\nconst true true\nruntime true true\n"
+      },
+      "stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "text": ""
+      }
+    },
+    {
+      "name": "native-build",
+      "status": "completed",
+      "returncode": 0,
+      "stdout": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "text": ""
+      },
+      "stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "text": ""
+      }
+    },
+    {
+      "name": "native-run",
+      "status": "completed",
+      "returncode": 0,
+      "stdout": {
+        "bytes": 73,
+        "sha256": "384a992e34fed475940eb88e3b89dce733df46fc3edf4153d84caa39857bfa47",
+        "text": "version (18, 0, 0)\ninputs 1368 42973\nconst true true\nruntime false false\n"
+      },
+      "stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "text": ""
+      }
+    }
+  ],
+  "all_commands_exit_zero": true,
+  "all_children_finished": true,
+  "compiler_fixture_and_patch_identities_unchanged_before_after": true,
+  "observed_stdout": {
+    "rustc": "version (18, 0, 0)\ninputs 1368 42973\nconst true true\nruntime true true\n",
+    "native": "version (18, 0, 0)\ninputs 1368 42973\nconst true true\nruntime false false\n"
+  },
+  "programs": [
+    {
+      "name": "rustc-program",
+      "bytes": 4632640,
+      "sha256": "3118ee5e65a26a2b00f81cab2d2af889e83261dd37076a7c0ac4f560fea9d74c"
+    },
+    {
+      "name": "native-program",
+      "bytes": 418276,
+      "sha256": "4dd8a1707eb299435e49aed36861ee99c6fcb8d948980a95dfd5077a9f8a3d59"
+    }
+  ],
+  "conclusion": "The native gate binary reports Unicode 18 and evaluates both constant predicates as true, but its runtime predicates return false for the same argv-provided scalars. Matching Rust 1.102 returns true in both contexts. Both compilers accept and both programs exit successfully.",
+  "limits": [
+    "Two scalar predicate witnesses only; the exhaustive 145/20 membership additions remain a separate source-table comparison.",
+    "This local gate binary is not the frozen comparison baseline or a qualified complete release package.",
+    "No retained-state/daemon, mixed boundary, case conversion, escaping, identifier, or full-corpus qualification was run.",
+    "No native source, frozen baseline, oracle, assertion, or production configuration was changed.",
+    "No timing samples or speed claim are admitted."
+  ],
+  "raw_retention": "Exact plan, commands, stdout/stderr, source receipts, fixture, generated programs and runtime support files are retained privately."
+}

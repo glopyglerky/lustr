@@ -20,6 +20,7 @@ enum Event {
         roundtrip: Option<(u128, u128)>,
         unit_identity: String,
         response_code: i32,
+        native_outcome: Option<&'static str>,
         emitter_records: Vec<String>,
     },
 }
@@ -81,7 +82,14 @@ impl Drop for Span {
 /// durations have their own clock and are never converted into client spans.
 /// Missing or malformed records remain evidence for the external validator;
 /// profiling cannot change the compiler response or turn a failure into zero.
-pub fn native_response(parent: &Span, roundtrip: Option<(u128, u128)>, unit_identity: &str, response_code: i32, stderr: &str) {
+pub fn native_response(
+    parent: &Span,
+    roundtrip: Option<(u128, u128)>,
+    unit_identity: &str,
+    response_code: i32,
+    native_outcome: Option<&'static str>,
+    stderr: &str,
+) {
     let Some((recorder, "native-compile", parent_start_ns)) = parent.0 else { return };
     let emitter_records = stderr.lines().filter_map(|line| line.strip_prefix("lustr mixed native profile: ").map(str::to_owned)).collect();
     if let Ok(mut events) = recorder.events.lock() {
@@ -90,6 +98,7 @@ pub fn native_response(parent: &Span, roundtrip: Option<(u128, u128)>, unit_iden
             roundtrip,
             unit_identity: unit_identity.to_owned(),
             response_code,
+            native_outcome,
             emitter_records,
         });
     }
@@ -107,7 +116,7 @@ pub fn finish(success: bool, reused: bool, check_only: bool, request_key: &str) 
         writeln!(
             file,
             "{}",
-            serde_json::json!({"schema":"lustr.mixed-phase-profile","version":2,
+            serde_json::json!({"schema":"lustr.mixed-phase-profile","version":3,
                 "pid":std::process::id(),"started_unix_ns":recorder.stamp,
                 "request_key":request_key,
                 "rustc":env!("LUSTR_BUILD_RUSTC_COMMIT"),"native":env!("LUST_BUILD_HASH"),
@@ -118,10 +127,13 @@ pub fn finish(success: bool, reused: bool, check_only: bool, request_key: &str) 
                 Event::Span { phase, start_ns, end_ns } => {
                     serde_json::json!({"phase":phase,"start_ns":start_ns,"end_ns":end_ns,"elapsed_ns":end_ns-start_ns})
                 }
-                Event::NativeResponse { parent_start_ns, roundtrip, unit_identity, response_code, emitter_records } => {
+                Event::NativeResponse { parent_start_ns, roundtrip, unit_identity, response_code, native_outcome, emitter_records } => {
                     serde_json::json!({"kind":"native-response","parent_start_ns":parent_start_ns,
                         "roundtrip":roundtrip,"unit_identity":unit_identity,"response_code":response_code,
-                        "emitter_status":if *response_code == 0 { "reported" } else { "unavailable-failed-response" },
+                        "native_outcome":native_outcome,
+                        "emitter_status":if *response_code != 0 { "unavailable-failed-response" }
+                            else if *native_outcome == Some("complementary") { "unavailable-complementary" }
+                            else { "reported" },
                         "emitter_records":emitter_records})
                 }
             };

@@ -43,7 +43,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
 /// parse/collect failures and cached check answers produce no phase events.
 /// Observations do not grant acceptance or establish cross-request reuse.
 pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&dyn PhaseObserver>) -> Response {
-    let resp = compile::compile_observed(req, session, observer);
+    if req.session.krate.target_kind == "lustr-mixed-native" && req.session == session.key
+        && let Some(reason) = mixed::request_complement(req) {
+        return mixed::complementary(reason);
+    }
+    let resp = mixed_response(req, compile::compile_observed(req, session, observer));
     if item_oracle::on() {
         item_oracle::compare_response(req, session, &resp);
     }
@@ -54,11 +58,40 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
 /// background guard checks: their file can change while they run, so a
 /// second read of it may see other bytes.
 pub fn compile_background(req: &Request, session: &mut Session) -> Response {
-    let resp = compile::compile(req, session);
+    if req.session.krate.target_kind == "lustr-mixed-native" && req.session == session.key
+        && let Some(reason) = mixed::request_complement(req) {
+        return mixed::complementary(reason);
+    }
+    let resp = mixed_response(req, compile::compile(req, session));
     if item_oracle::on() {
         item_oracle::forget(session);
     }
     resp
+}
+
+/// All early frontend exits also cross the mixed boundary. Only its explicit
+/// admission/emission results can authorize continuation with another backend.
+fn mixed_response(req: &Request, mut response: Response) -> Response {
+    use crate::protocol::MixedOutcome;
+    if req.session.krate.target_kind != "lustr-mixed-native" {
+        return response;
+    }
+    let classified = match (response.mixed, response.code, req.cmd) {
+        (Some(MixedOutcome::Checked), 0, Cmd::Check)
+        | (Some(MixedOutcome::Emitted), 0, Cmd::Build)
+        | (Some(MixedOutcome::Complementary), 0, _) => true,
+        (Some(MixedOutcome::Failed), code, _) => code != 0,
+        _ => false,
+    };
+    if !classified {
+        response.mixed = Some(MixedOutcome::Failed);
+        if response.code == 0 {
+            response.code = 3;
+            response.stdout.clear();
+            response.stderr.push_str("error: mixed native request completed without a matching admission outcome\n");
+        }
+    }
+    response
 }
 pub use session::{OutputKind, Session};
 

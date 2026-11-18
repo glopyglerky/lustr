@@ -16,7 +16,7 @@ import subprocess
 import sys
 
 
-EXPECTED = {
+LEGACY_EXPECTED = {
     "cold": True,
     "body": True,
     "arithmetic-edit": True,
@@ -33,6 +33,14 @@ EXPECTED = {
     "warning-edit": True,
     "warning-denied": False,
 }
+EXPECTED = {}
+for _label, _success in LEGACY_EXPECTED.items():
+    EXPECTED[_label] = _success
+    if _label == "versioned-object-noop":
+        EXPECTED.update({"native-output-failure": False, "native-output-recovery": True,
+                         "retained-recipe-failure": False, "retained-recipe-recovery": True})
+RETAINED_SUCCESS = {"body", "arithmetic-edit", "link-failure-recovery",
+                    "native-output-recovery", "retained-recipe-recovery"}
 PHASES = {
     "driver", "request-setup", "rustc-driver", "parse-candidates",
     "after-expansion", "select-native-after-analysis", "retained-attempt",
@@ -73,7 +81,10 @@ def read_native_responses(records, spans, header):
     seen = set()
     results = []
     for record in records:
-        require(set(record) == {"kind", "parent_start_ns", "roundtrip", "unit_identity", "response_code", "emitter_status", "emitter_records"}, "unknown native response fields")
+        fields = {"kind", "parent_start_ns", "roundtrip", "unit_identity", "response_code", "emitter_status", "emitter_records"}
+        if header["version"] == 3:
+            fields.add("native_outcome")
+        require(set(record) == fields, "unknown native response fields")
         start = record["parent_start_ns"]
         require(type(start) is int and start >= 0 and start not in seen, "invalid or duplicate native response binding")
         seen.add(start)
@@ -96,6 +107,17 @@ def read_native_responses(records, spans, header):
                   "client_request_elapsed_ns": parent["elapsed_ns"],
                   "roundtrip_start_ns": bounds[0], "roundtrip_elapsed_ns": roundtrip["elapsed_ns"],
                   "emitter_status": record["emitter_status"]}
+        if header["version"] == 3:
+            outcome = record["native_outcome"]
+            require(type(outcome) is str and outcome in {"emitted", "complementary", "failed"},
+                    "native compile requires an explicit emitted, complementary or failed outcome")
+            require((outcome == "failed") == (code != 0), "native outcome and response code disagree")
+            result["native_outcome"] = outcome
+            if outcome == "complementary":
+                require(record["emitter_status"] == "unavailable-complementary" and not raw,
+                        "complementary native work must have no emitted record")
+                results.append({**result, "emitter": None, "emitter_record": None, "protocol_unattributed_ns": None})
+                continue
         if code != 0:
             require(record["emitter_status"] == "unavailable-failed-response" and not raw,
                     "failed native response must keep error diagnostics undecorated and mark emitter detail unavailable")
@@ -131,7 +153,7 @@ def read_profile(path):
     require(len(records) >= 5, f"incomplete profile: {path.name}")
     require(all(type(record) is dict for record in records), "profile records must be objects")
     header, final = records[0], records[-1]
-    require(header.get("schema") == "lustr.mixed-phase-profile" and type(header.get("version")) is int and header["version"] in (1, 2), "unknown profile schema")
+    require(header.get("schema") == "lustr.mixed-phase-profile" and type(header.get("version")) is int and header["version"] in (1, 2, 3), "unknown profile schema")
     require(header.get("instrumented") is True and header.get("nested_spans") is True, "missing profile scope")
     require(type(header.get("pid")) is int and header["pid"] > 0, "invalid compiler PID")
     require(re.fullmatch(r"[0-9a-f]{40}", header.get("rustc", "")) is not None, "missing Rust identity")
@@ -159,6 +181,8 @@ def read_profile(path):
         native = None
     else:
         native = read_native_responses(responses, spans, header)
+        if header["version"] == 3 and any(value["native_outcome"] == "failed" for value in native):
+            require(final["success"] is False, "failed native work became a successful compiler invocation")
         parents = [event for event in spans if event["phase"] in {"native-check", "native-compile"}]
         for child in (event for event in spans if event["phase"] in {"native-request-setup", "native-daemon-roundtrip"}):
             require(sum(parent["start_ns"] <= child["start_ns"] <= child["end_ns"] <= parent["end_ns"] for parent in parents) == 1,
@@ -174,11 +198,12 @@ def summarize(root):
     profiles = root / "profiles"
     work = root / "qualification"
     indexes = {path.stem: path for path in work.glob("*.profiles")}
-    require(set(indexes) == set(EXPECTED), "missing or unknown qualification profile labels")
+    expected = LEGACY_EXPECTED if set(indexes) == set(LEGACY_EXPECTED) else EXPECTED
+    require(set(indexes) == set(expected), "missing or unknown qualification profile labels")
     seen = set()
     invocations = {}
     modes = {}
-    for label, expected_success in EXPECTED.items():
+    for label, expected_success in expected.items():
         names = indexes[label].read_text().split()
         require(len(names) == len(set(names)), f"duplicate profile in {label}")
         totals = {}
@@ -199,7 +224,7 @@ def summarize(root):
         versions = {value["identity"]["version"] for value in mode}
         require(len(versions) <= 1, "mixed profile schema versions in one command")
         emitter = None
-        if versions == {2}:
+        if versions in ({2}, {3}):
             native = [request for value in mode for request in value["native_requests"]]
             measured = [request for request in native if request["emitter"] is not None]
             traced = [line[len(EMITTER_PREFIX):] for line in trace.splitlines() if line.startswith(EMITTER_PREFIX)]
@@ -211,20 +236,30 @@ def summarize(root):
                     emitter_totals[phase["phase"]] += phase["elapsed_ns"]
                     emitter_counts[phase["phase"]] += 1
             emitter = {"response_count": len(native), "measured_count": len(measured),
-                       "unavailable_failed_count": len(native) - len(measured),
+                       "unavailable_failed_count": sum(request["response_code"] != 0 for request in native),
                        "elapsed_ns": sum(request["emitter"]["elapsed_ns"] for request in measured) if measured else None,
                        "phase_nanoseconds": dict(emitter_totals), "phase_observations": dict(emitter_counts),
                        "protocol_unattributed_ns": sum(request["protocol_unattributed_ns"] for request in measured) if measured else None}
-        if label in {"cold", "body", "arithmetic-edit", "signature", "link-failure", "link-failure-recovery", "invalid"}:
+            if versions == {3}:
+                emitter["unavailable_complementary_count"] = sum(request["native_outcome"] == "complementary" for request in native)
+        if label in {"cold", "body", "arithmetic-edit", "signature", "link-failure", "link-failure-recovery", "invalid",
+                     "native-output-failure", "native-output-recovery", "retained-recipe-failure", "retained-recipe-recovery"}:
             require(mode, f"no compiler profile for {label}")
         if expected_success:
             require(all(value["result"]["success"] for value in mode), f"failed compiler hidden in successful {label}")
         else:
             require(any(not value["result"]["success"] for value in mode), f"missing failed compiler profile for {label}")
-        if label in {"body", "arithmetic-edit", "link-failure-recovery"}:
+        if label in RETAINED_SUCCESS:
             require(any(value["result"]["reused"] for value in mode), f"{label} lost retained execution")
-        if label in {"body", "arithmetic-edit"}:
+        if label in {"body", "arithmetic-edit", "native-output-failure", "retained-recipe-failure"}:
             require(totals.get("native-compile", 0) > 0, f"{label} did not profile its native edit")
+        if versions == {3} and label == "native-output-failure":
+            require(any(request["native_outcome"] == "failed" for request in native),
+                    "native output failure lacks an actual failed native response")
+        if versions == {3} and label == "retained-recipe-failure":
+            require(any(request["native_outcome"] == "emitted" for request in native)
+                    and totals.get("relink", 0) > 0,
+                    "retained recipe failure lacks admitted native emission followed by relink")
         status = (work / f"{label}.status").read_text().strip()
         parsed_status = re.fullmatch(r"exit status: ([0-9]+) elapsed_ns=([0-9]+)", status)
         require(parsed_status is not None and int(parsed_status[2]) > 0, f"invalid command status for {label}")
@@ -234,11 +269,13 @@ def summarize(root):
     require(seen == {path.name for path in profiles.glob("*.jsonl")}, "unassigned or missing compiler profile")
     identities = {(v["identity"]["rustc"], v["identity"]["native"]) for v in invocations.values()}
     require(len(identities) == 1, "profiling mixed compiler identities")
-    require(len({v["identity"]["version"] for v in invocations.values()}) == 1, "profiling mixed schema versions")
+    versions = {v["identity"]["version"] for v in invocations.values()}
+    require(len(versions) == 1, "profiling mixed schema versions")
+    require((versions == {3}) == (expected is EXPECTED), "qualification labels do not match the profile schema")
     emitter_versions = {request["emitter"]["version"] for value in invocations.values()
                         for request in value["native_requests"] or [] if request["emitter"] is not None}
     require(len(emitter_versions) <= 1, "profiling mixed native emitter versions")
-    return {"schema": "lustr.mixed-phase-attribution", "version": 2, "instrumented": True,
+    return {"schema": "lustr.mixed-phase-attribution", "version": 3 if versions == {3} else 2, "instrumented": True,
             "paired_speed_evidence": False, "modes": modes, "invocations": invocations}
 
 
@@ -251,6 +288,7 @@ def render(report):
     columns = ["driver", "context-fingerprint", "native-compile", "native-request-setup", "native-daemon-roundtrip", "native-symbol-rename",
                "temporary-link-copies", "original-linker", "edited-native-object-sync", "publish-certificate"]
     legacy = any(value["identity"]["version"] == 1 for value in report["invocations"].values())
+    typed = any(value["identity"]["version"] == 3 for value in report["invocations"].values())
     unrecorded = {"native-request-setup", "native-daemon-roundtrip"} if legacy else set()
     lines = ["# Mixed compiler phase attribution", "",
              "Instrumented execution of the existing mixed Cargo qualification. This is a separate diagnostic run, not paired speed evidence.", "",
@@ -265,25 +303,31 @@ def render(report):
     lines.extend(["## Native emitter durations", "",
                   "These durations come from the daemon response, separately from the driver clock. Each record is bound to its actual client request and successful protocol exchange, checked against that exchange's elapsed time, and matched to the original diagnostic trace. The daemon's sequential phase durations cover its emitter total; they do not partition the enclosing driver span.", "",
                   "Roundtrip outside emitter remains unattributed. It includes protocol transport and queueing, native frontend and generated-code work before the emitter, retained-state work after it, guard handling, and response production. It is not a frontend or codegen measurement. Client request setup is recorded separately; retries and daemon startup can also occupy the enclosing request.", "",
-                  "| Command | Responses / measured / unavailable failures | " + " | ".join(remote_columns) + " |",
+                  "| Command | Responses / measured / " + ("complementary / " if typed else "") + "unavailable failures | " + " | ".join(remote_columns) + " |",
                   "|---|---:" + "|---:" * len(remote_columns) + "|"])
     for label, mode in report["modes"].items():
         native = mode["native_emitter"]
         if native is None:
             cells, count = ["not recorded"] * len(remote_columns), "not recorded"
         elif native["response_count"] == 0:
-            cells, count = ["n/a"] * len(remote_columns), "0 / 0 / 0"
+            cells, count = ["n/a"] * len(remote_columns), "0 / 0 / 0 / 0" if typed else "0 / 0 / 0"
         else:
-            count = f"{native['response_count']} / {native['measured_count']} / {native['unavailable_failed_count']}"
+            count = f"{native['response_count']} / {native['measured_count']} / "
+            if typed:
+                count += f"{native['unavailable_complementary_count']} / "
+            count += str(native['unavailable_failed_count'])
             if native["measured_count"] == 0:
-                cells = ["unavailable"] * len(remote_columns)
+                cells = ["not emitted" if typed and native["unavailable_complementary_count"] == native["response_count"]
+                         else "unavailable"] * len(remote_columns)
             else:
                 cells = [f"{native['elapsed_ns'] / 1e6:.3f}"]
                 cells.extend(f"{native['phase_nanoseconds'][phase] / 1e6:.3f}" for phase in emitter_phases)
                 cells.append(f"{native['protocol_unattributed_ns'] / 1e6:.3f}")
         lines.append(f"| {label} | {count} | " + " | ".join(cells) + " |")
     symbol_detail = "nm includes its child process." if emitter_version == 1 else "symbol-check reads and validates the bounded ELF object in process, with no symbol-tool child. Emitter schema 2 names this operation separately from historical nm spans."
-    lines.extend(["", "Values are milliseconds summed only across the measured successful responses. Failed native responses retain their original error diagnostics, actual response code and complete client intervals, with emitter detail and outside-emitter residual explicitly unavailable. Their remote durations are null, never zero. Timing text must not alter the daemon's byte-for-byte comparison of failed warm/fresh responses. Missing success detail or unexpected failure decoration fails profiling qualification. Version 1 archives did not collect these records and remain labeled not recorded. The single-unit libtcc span includes its in-process compiler setup, compilation, object write and teardown; " + symbol_detail + " Rename and both synchronization operations remain unchanged.", ""])
+    lines.extend(["", "Values are milliseconds summed only across the measured emitted responses. Failed native responses retain their original error diagnostics, actual response code and complete client intervals, with emitter detail and outside-emitter residual explicitly unavailable. Their remote durations are null, never zero. Timing text must not alter the daemon's byte-for-byte comparison of failed warm/fresh responses. Missing emitted-success detail or unexpected failure decoration fails profiling qualification. Version 1 archives did not collect these records and remain labeled not recorded. The single-unit libtcc span includes its in-process compiler setup, compilation, object write and teardown; " + symbol_detail + " Rename and both synchronization operations remain unchanged.", ""])
+    if typed:
+        lines.extend(["Schema 3 binds each response to the compiler's explicit native outcome. Complementary work requires status zero and no emitter record because admission ended before emission. Its count is separate from failed responses, and its emitter duration and outside-emitter residual are null. Emitted work still requires one complete successful emitter record; failed work requires a nonzero status, no emitter record and an unsuccessful compiler invocation. Missing, null, checked or contradictory compile outcomes fail validation. Historical schema 1 and 2 records keep their original interpretation and 15-command qualification scope; schema 3 requires all 19 commands, including actual native-output and retained-recipe failures with retained recovery.", ""])
     return "\n".join(lines)
 
 
