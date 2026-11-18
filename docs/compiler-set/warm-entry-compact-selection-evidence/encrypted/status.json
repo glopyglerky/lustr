@@ -1,0 +1,17 @@
+{
+  "campaign_status": "incomplete",
+  "ciphertext_file": "private-evidence.tar.gz.cms",
+  "original_file_bytes": 16551666,
+  "original_file_count": 1061,
+  "reason": "authenticated-ciphertext-created",
+  "receipt_file": "receipt.json",
+  "retention_status": "retained",
+  "scenario_status": {
+    "clean-dependency-build": "not-observed",
+    "compile-plus-test": "not-observed",
+    "no-op": "not-observed",
+    "primed-root-build": "not-observed",
+    "primed-root-check": "not-observed"
+  },
+  "schema": "lustr-encrypted-evidence-status-v1"
+}

@@ -1,0 +1,165 @@
+{
+  "files": {
+    "README.md": {
+      "bytes": 5810,
+      "sha256": "35d66323eca0eb82e4c0ca4dd10fa4cfb84f15e79506507263581746dbd5bd89"
+    },
+    "after-helper-build.json": {
+      "bytes": 2106,
+      "sha256": "63e30d3da24c4cd74d6c8fc08fa8a7a34343362d977f697ed7c886bfd641bb3e"
+    },
+    "before-helper-build.json": {
+      "bytes": 2116,
+      "sha256": "15145a95f5524fe30fff793aec7da803a88d561f999eaed7611097f7b2018b83"
+    },
+    "compact-gate/results.json": {
+      "bytes": 464289,
+      "sha256": "2d2059b4cd5686500b22ffcfccfe8ab48521f0a026ac0c9a58b0b93d657e0139"
+    },
+    "compact-gate/streams.tar.gz": {
+      "bytes": 5731,
+      "sha256": "65c6f5f300bf61426570baec5aa0f619fbe2702467a48085bffc5d9b0ace1623"
+    },
+    "compact-selection.patch": {
+      "bytes": 12924,
+      "sha256": "ef44aefacb2f7a73b1821f47273e266421af7a9d0bbaf08a3d4d60a967e1394e"
+    },
+    "component/executed-runner.py": {
+      "bytes": 7560,
+      "sha256": "7bf55d8ac585b128486aa2554109556cdc44326ec2eff728195b8653161947a5"
+    },
+    "component/fixture.tar.gz": {
+      "bytes": 82573,
+      "sha256": "61014c1db0c904b33f856b52ad452e5c15ce689151dd5f184cc663d618b2fd27"
+    },
+    "component/predeclared-plan.json": {
+      "bytes": 5009,
+      "sha256": "cb11e72218c97dcf0e696858dc16831a7d493fc1573becd04700822744a5a7f2"
+    },
+    "component/report.json": {
+      "bytes": 388692,
+      "sha256": "9bd7d2a7e635a0002622d1dcdf166dd543fe2ea6ad65b436f8bbeb5725331f20"
+    },
+    "component/selection-tools.txt": {
+      "bytes": 746,
+      "sha256": "126f7d4743c6a2af850aafd75fffa82648881babdea8cb1247982282d24b9502"
+    },
+    "component/streams.tar.gz": {
+      "bytes": 4230,
+      "sha256": "bae8767d08a14aa745a280e108dd3d0edc8d8eafbeaff209b76cb87a4354c9f8"
+    },
+    "encrypted/private-evidence.tar.gz.cms": {
+      "bytes": 3807069,
+      "sha256": "3a4a3027cf671f7422b7952ec967eefbeae4db33a74507ae8880ea00eacfdf4a"
+    },
+    "encrypted/receipt.json": {
+      "bytes": 1263,
+      "sha256": "6a8f58d1c5fac32c4ab5977f6dc7a0e343bc51d3a610991c9c748ab8f1766544"
+    },
+    "encrypted/status.json": {
+      "bytes": 547,
+      "sha256": "1c5f945ae5978be5994dcd9f032e1fc64a31de943911aab4da40e583ac1f873b"
+    },
+    "identity.json": {
+      "bytes": 4961,
+      "sha256": "0f912f766ec0228b71e97a17ba0f4122361eb19ffc7a5b99b1713996517b79a0"
+    },
+    "independent-review.json": {
+      "bytes": 1426,
+      "sha256": "9c9ee81d85b9d6bbda0359b2f23b0eb15271a6731a3517ba04e30e31f0f4392d"
+    },
+    "selector-gate/results.json": {
+      "bytes": 477846,
+      "sha256": "aa3770f2012d8e99a70ee2aa921493627c35a53188fd481b25a8b1ebc91dc3ba"
+    },
+    "selector-gate/streams.tar.gz": {
+      "bytes": 7743,
+      "sha256": "340a690433a39291ab7e24eeb2a18dd7f60b3c64fdf76b732a75a404b1006efa"
+    },
+    "source/after/LICENSE": {
+      "bytes": 1068,
+      "sha256": "8095f9a9f97d074131f6a2ce09b952d12c18b36f09f4e5df0517c4e64e82c851"
+    },
+    "source/after/compiler/native/src/protocol.rs": {
+      "bytes": 83015,
+      "sha256": "4da4c32fb16b62f3819a3d774ef63b76e201e2414c3b4540b4a6ccb27133fe1c"
+    },
+    "source/after/src/full.rs": {
+      "bytes": 13680,
+      "sha256": "e7015c5462da232fd817091c2749e4e776287832f1279ebaab87314f0644412e"
+    },
+    "source/after/src/host_runtime.rs": {
+      "bytes": 8759,
+      "sha256": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223"
+    },
+    "source/after/src/owned_child.rs": {
+      "bytes": 10965,
+      "sha256": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20"
+    },
+    "source/after/src/selection_cache.rs": {
+      "bytes": 25664,
+      "sha256": "e26403ccb50365af0778332e7bf8e130ccbdaf6bfebf7f1e64e3cd0012f12b8d"
+    },
+    "source/after/tools/profile-native-preflight.rs": {
+      "bytes": 6190,
+      "sha256": "37cad7d0a4cf1c6318aaf60d7c24e9ab8a1f78bb00e2636cdc9d09da9d03681b"
+    },
+    "source/after/upstream/bluefe-core.pin": {
+      "bytes": 682,
+      "sha256": "73bd5e14a0d96979dccb1f89f145f6c1d9d947c8f4a192f0db64f6954f0218b6"
+    },
+    "source/before/LICENSE": {
+      "bytes": 1068,
+      "sha256": "8095f9a9f97d074131f6a2ce09b952d12c18b36f09f4e5df0517c4e64e82c851"
+    },
+    "source/before/compiler/native/src/protocol.rs": {
+      "bytes": 83015,
+      "sha256": "4da4c32fb16b62f3819a3d774ef63b76e201e2414c3b4540b4a6ccb27133fe1c"
+    },
+    "source/before/src/full.rs": {
+      "bytes": 12680,
+      "sha256": "04836e406a227fcf0f831bc0214c301eb2302973a1257fc82b8a0ef3dc32248d"
+    },
+    "source/before/src/host_runtime.rs": {
+      "bytes": 8759,
+      "sha256": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223"
+    },
+    "source/before/src/owned_child.rs": {
+      "bytes": 10965,
+      "sha256": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20"
+    },
+    "source/before/src/selection_cache.rs": {
+      "bytes": 24178,
+      "sha256": "0712718312cf16ab0fa494ab7c22374e15419a367d5bed42b527da5dab3ce92c"
+    },
+    "source/before/tools/profile-native-preflight.rs": {
+      "bytes": 4549,
+      "sha256": "70a406ab61f69da2710d0215bdcc8acb6c57f7aa20719530cebed9a6693628f7"
+    },
+    "source/before/upstream/bluefe-core.pin": {
+      "bytes": 682,
+      "sha256": "73bd5e14a0d96979dccb1f89f145f6c1d9d947c8f4a192f0db64f6954f0218b6"
+    },
+    "validated-source/docs/compiler-set/native-selection-cache.md": {
+      "bytes": 10454,
+      "sha256": "add3a3d94ec014650b86a7e5532bac3d35f515605cf637169db176537ffe4815"
+    },
+    "validated-source/docs/compiler-set/proofs/native-entry-contracts.md": {
+      "bytes": 6160,
+      "sha256": "99e0c1a5ee5fc89d9ae3bb246dbabab1a967da8e784d8332972e4951e6058bb2"
+    },
+    "validated-source/tools/test-native-compact-selection.py": {
+      "bytes": 13940,
+      "sha256": "c4d79a7cdd494c211d3d8772b46ca3bdb719665e4b2429cde4350a4c55c0a84a"
+    },
+    "validated-source/tools/test-native-selection-cache.py": {
+      "bytes": 16937,
+      "sha256": "7f216a17cff26750c6ddd52445b14d834a50489c033d43dd949d7b5b24c65aba"
+    },
+    "verify-evidence.py": {
+      "bytes": 5168,
+      "sha256": "9dd9ad085969c5e8128b63aec02044d29b61643ecf7adb548e0ac8dbf4eafd4e"
+    }
+  },
+  "schema": "lustr-public-review-manifest-v1"
+}
