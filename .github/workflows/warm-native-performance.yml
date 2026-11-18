@@ -10,6 +10,8 @@ on:
       - 'upstream/lust*'
       - 'tools/run-warm-native-comparison.py'
       - 'tools/test-warm-native-comparison.py'
+      - 'tools/run-warm-native-startup.py'
+      - 'tools/test-warm-native-startup.py'
       - 'tools/build-mixed-toolchain.rs'
       - 'tools/selection-toolchain-receipt.rs'
       - '.github/workflows/warm-native-performance.yml'
@@ -33,7 +35,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate independent-package evidence controls
-        run: python3 tools/test-warm-native-comparison.py
+        run: |
+          python3 tools/test-warm-native-comparison.py
+          python3 tools/test-warm-native-startup.py
       - uses: actions/checkout@v4
         with:
           repository: glopyglerky/lustr
@@ -135,6 +139,13 @@ jobs:
       - name: Independently replay completed raw evidence
         if: always() && steps.comparison.outputs.completed == 'true'
         run: python3 tools/run-warm-native-comparison.py verify "$RUNNER_TEMP/native-warm-comparison"
+      - name: Diagnose frozen native-client startup after completed measurement
+        if: always() && steps.comparison.outputs.completed == 'true'
+        run: |
+          python3 tools/run-warm-native-startup.py run \
+            --campaign "$RUNNER_TEMP/native-warm-comparison" \
+            --pristine-intermediates "$RUNNER_TEMP/native-pristine-intermediates" \
+            --output "$RUNNER_TEMP/native-startup-diagnostic"
       - name: Preserve every completed or failed command
         if: always()
         uses: actions/upload-artifact@v4
@@ -171,3 +182,9 @@ jobs:
             ${{ runner.temp }}/native-pristine-build.log
             ${{ runner.temp }}/native-tinycc/COMPONENTS.txt
             ${{ runner.temp }}/native-tinycc/logs
+            ${{ runner.temp }}/native-startup-diagnostic/report.json
+            ${{ runner.temp }}/native-startup-diagnostic/README.md
+            ${{ runner.temp }}/native-startup-diagnostic/raw.jsonl
+            ${{ runner.temp }}/native-startup-diagnostic/samples.csv
+            ${{ runner.temp }}/native-startup-diagnostic/commands
+            ${{ runner.temp }}/native-startup-diagnostic/provenance
