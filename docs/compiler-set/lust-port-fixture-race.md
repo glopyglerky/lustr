@@ -25,8 +25,9 @@ metadata and target-root discovery, then pauses immediately before
 `walk::load`. The sibling test waits for those roots, performs the original
 fixture helper's removal, records its path, and waits for the human test to
 finish before recreating its fixture. The scanner resumes while that path is
-absent. The existing walker omits a missing root; this makes a successful
-zero-findings human report reachable under the duplicate fixture label.
+absent. The existing walker retains an unreadable root as an empty file with a read
+error. The scan still succeeds, making a zero-findings human report reachable
+under the duplicate fixture label.
 
 There is one fixed baseline interleaving and one fixed candidate interleaving,
 followed by one full ordinary candidate tool-test run with the overlay removed.
@@ -43,12 +44,40 @@ source snapshots, actual arguments, controlled environments, scanner output,
 barrier events, exit status, and executable identities are retained. The
 diagnostic does not repeatedly run natural races until one fails.
 
-The exact one-line correction and diagnostic source have independent review.
-Execution of the fixed schedule is pending at this source revision. The earlier hosted failure and both earlier passing local runs remain
-unchanged in [the original evidence](evidence/lust-port-human-2026-11-18/README.md).
-Even a successful forced reproduction establishes a reachable failure mechanism,
-not the historical runner's unobserved scheduling. Broader native/platform and
-release qualification remain separate.
+The exact one-line correction and diagnostic source have two independent source
+reviews. The fixed schedule ran once at
+`ca032fe45fff0931dab84958296a5e761fae68b2` (native tree
+`a518ff5fe17f549cda90e50990caaf987659a9f3`):
+
+| Execution | Scanner result | Test result |
+| --- | --- | --- |
+| Preserved baseline, forced shared-directory deletion | Exit 0; one unreadable file, zero findings, one read error | Original `attrs.unsupported` assertion fails; unknown-package test passes |
+| Candidate, same forced ordering with distinct directories | Exit 0; seven files, three findings, one parse error | Both original test functions pass |
+| Candidate, ordinary source with diagnostic overlay removed | Normal tool execution | Eight unit and five integration tests pass |
+
+The diagnostic scanner executable is identical between the two forced runs:
+SHA-256 `15b523b56c7feb09c220cd2c516dc486fcc0fe515baea00e0e05bdf7bf817a3f`.
+The ordinary candidate scanner and both test executables have separate recorded
+identities. The execution source after that ordinary run equals all 145 files
+of the uninstrumented candidate tool source.
+
+The original runner's final replay failed after all three executions finished:
+it expected zero file records, but the walker retains the unreadable root as
+one file with a read error. The executed runner, its failed postcheck, and the
+original `incomplete` report are preserved unchanged. A corrected replay checks
+the actual one-file result against the same raw records, with an explicit
+exception pinned to that one runner hash and candidate revision. No scan, test,
+or build was repeated to repair this reporting mistake.
+
+The [new evidence bundle](evidence/lust-port-fixture-race-2026-11-18/README.md)
+preserves the full commands, outputs, source snapshots, barrier events and
+binary identity receipts. The original binaries remain local; portable replay
+does not claim to rehash executable payloads omitted from the compact archive.
+The earlier hosted failure and both earlier passing local runs remain unchanged
+in [the original evidence](evidence/lust-port-human-2026-11-18/README.md).
+The forced reproduction establishes a reachable failure mechanism, not the
+historical runner's unobserved scheduling. Broader native/platform and release
+qualification remain separate.
 
 Example invocation after the candidate source is committed:
 

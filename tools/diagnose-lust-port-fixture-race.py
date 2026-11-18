@@ -295,10 +295,18 @@ def execute(args):
         raise
 
 
-def verify(root):
+def verify(root, preserved_postcheck_failure=False, binary_receipts_only=False):
     load = lambda name: json.loads((root / name).read_text())
     report = load("report.json")
-    assert report["schema"] == "lust-port-fixture-race-v1" and report["status"] == "completed"
+    assert report["schema"] == "lust-port-fixture-race-v1"
+    if preserved_postcheck_failure:
+        # One executed runner expected zero file records. The real walker keeps
+        # one unreadable root. Preserve that original postcheck failure verbatim.
+        assert report["status"] == "incomplete" and report["error"] == "AssertionError: "
+        assert report["candidate"] == "ca032fe45fff0931dab84958296a5e761fae68b2"
+        assert sha((root / "runner.py").read_bytes()) == "c7e9dce988deb4d52911fe9ba34da4645fcd505d3d855c94c586dc9c8d7156c7"
+    else:
+        assert report["status"] == "completed"
     assert report["baseline"] == BASE and not report["historical_scheduling_proven"]
     original, changed = {}, {}
     for label, store in [("baseline", original), ("candidate", changed)]:
@@ -346,7 +354,8 @@ def verify(root):
     assert bins["baseline"]["scanner_sha256"] == bins["candidate"]["scanner_sha256"]
     for label, fixed in [("baseline", False), ("candidate", True)]:
         for key, name in [("scanner", "lust-port"), ("test", "scan_fixture")]:
-            assert sha((root / "binaries" / label / name).read_bytes()) == bins[label][key + "_sha256"]
+            if not binary_receipts_only:
+                assert sha((root / "binaries" / label / name).read_bytes()) == bins[label][key + "_sha256"]
         events = {p.stem: json.loads(p.read_text()) for p in (root / "events" / label).glob("*.json")}
         assert set(events) == {"roots-ready", "sibling-removed", "human-scan", "human-returned", "sibling-scan", "sibling-returned", "outcome"}
         ready, removed, human = (events[k] for k in ["roots-ready", "sibling-removed", "human-scan"])
@@ -363,7 +372,7 @@ def verify(root):
         assert "Gaps by root cause" in human["stdout"]
         assert human["stdout"].count("attrs.unsupported") == (2 if fixed else 0)
         assert ("files: 7 (18 lines, 6 functions), findings: 3 in 3 files, parse errors: 1" if fixed
-                else "files: 0 (0 lines, 0 functions), findings: 0 in 0 files, parse errors: 0") in human["stdout"]
+                else "files: 1 (0 lines, 0 functions), findings: 0 in 0 files, parse errors: 1") in human["stdout"]
         assert events["human-returned"]["passed"] == fixed
         assert events["outcome"]["human_passed"] == fixed and events["outcome"]["sibling_passed"]
         assert events["sibling-returned"]["passed"]
@@ -380,12 +389,15 @@ def verify(root):
         if row.get("reason") == "compiler-artifact" and row.get("executable"):
             name = row["target"]["name"] + ("-unit" if row["profile"]["test"] and row["target"]["name"] == "lust-port" else "")
             assert name not in ordinary_bins
-            ordinary_bins[name] = {"path": row["executable"], "sha256": sha((root / "binaries/ordinary" / name).read_bytes())}
+            digest = executed["binaries"][name]["sha256"] if binary_receipts_only else sha((root / "binaries/ordinary" / name).read_bytes())
+            ordinary_bins[name] = {"path": row["executable"], "sha256": digest}
     assert set(ordinary_bins) == {"lust-port", "lust-port-unit", "scan_fixture"}
     assert ordinary_bins == executed["binaries"]
     print(json.dumps({"verified": True, "baseline_forced_human_failure": True,
         "candidate_forced_tests_passed": 2, "candidate_ordinary_tests_passed": 13,
-        "diagnostic_scanner_identical": True, "historical_scheduling_proven": False}, indent=2))
+        "diagnostic_scanner_identical": True, "binary_payloads_rehashed": not binary_receipts_only,
+        "original_postcheck_failure_preserved": preserved_postcheck_failure,
+        "historical_scheduling_proven": False}, indent=2))
 
 
 if __name__ == "__main__":
@@ -397,5 +409,7 @@ if __name__ == "__main__":
     run.add_argument("--candidate", required=True)
     check = sub.add_parser("verify")
     check.add_argument("root", type=Path)
+    check.add_argument("--preserved-postcheck-failure", action="store_true")
+    check.add_argument("--binary-receipts-only", action="store_true")
     args = parser.parse_args()
-    execute(args) if args.mode == "run" else verify(args.root)
+    execute(args) if args.mode == "run" else verify(args.root, args.preserved_postcheck_failure, args.binary_receipts_only)
