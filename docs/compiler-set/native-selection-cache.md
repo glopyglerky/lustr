@@ -176,6 +176,23 @@ selection. The pre-open file-type correction passed the expanded 140-invocation,
 265-assertion gate. That archive also records a separately tested descriptor-path
 experiment; the production implementation still uses canonical path resolution.
 
+The [compact-record evidence](warm-entry-compact-selection-evidence/README.md)
+retains the exact before/after selector sources, complete-selection comparison,
+103-command / 486-assertion malformed-record and Rust-fallback gate, and one
+fixed 96-pair selector comparison. That component comparison measured medians
+of 435.237 and 383.465 microseconds, with paired speed ratio 1.133903 and a 95%
+interval of [1.051283, 1.216599]. These helper measurements do not establish a
+whole-command benefit. The later effective-access guard separately passed the
+expanded 154-invocation / 290-assertion selector gate, including an unreadable
+included library and restoration; changed process credentials were not tested.
+
+The [three hosted campaigns](evidence/warm-entry-2026-11-18/README.md) preserve
+their original artifacts and exact executed replay sources. The latest completed
+campaign predates the compact-record and effective-access changes. It passes the
+corrected public edit and retained-work gates but still misses pristine Lust in
+both warm modes. Its separate same-host diagnostics locate a material public
+selection/entry cost; they are not an additive decomposition of command medians.
+
 The warm comparison must use public Lustr commands, the exact earlier public
 launcher, pristine Lust and rustc through Cargo on the same runner. The two
 Lustr launchers must share identical native compiler/runtime and SDK files.
