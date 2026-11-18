@@ -126,6 +126,10 @@ fn human_output_groups_findings() {
         .args(["scan", "--manifest-path", root.join("Cargo.toml").to_str().unwrap(), "--target", "x86_64-unknown-linux-gnu"])
         .output()
         .unwrap();
+    eprintln!(
+        "lust-port human report, fixture {}\nstatus: {}\nstdout:\n{}\nstderr:\n{}",
+        root.display(), out.status, String::from_utf8_lossy(&out.stdout), String::from_utf8_lossy(&out.stderr)
+    );
     assert!(out.status.success());
     let text = String::from_utf8_lossy(&out.stdout);
     assert!(text.contains("Gaps by root cause"), "{text}");
