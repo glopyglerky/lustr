@@ -14,6 +14,51 @@ spec = importlib.util.spec_from_file_location("warm_entry", Path(__file__).with_
 B = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(B)
 
+# Exact diagnostic records from the first hosted pristine retained build:
+# run 44293812634, artifact 14424121317, commands/00031.stderr. That run
+# stopped before collecting any samples. No paths or timing lines are needed
+# for this counter-level regression; the original complete stream is retained.
+PRISTINE_RETAINED_BUILD = (
+    b"lust-stats: mode=bodies fns=1895 rechecked=0 reused=0 invalidated=0 c_bytes=101920 dirty_units=0 units_compiled=0 unit_cache_hits=1 table_rebuilt=0 instances=1895 reemitted=0 templates=0 discovered=0\n"
+    b"lust-visits: path=patch why=- files=0 nodes=0 spans=0 scanned=0 slot_fns=1560 collect=0 discovery=0 checked=0 kept=reuse prog_spans=0 reads=1 keyed=0 generic=on pool=-\n")
+PRISTINE_RETAINED_CHECK = (
+    b"lust-stats: mode=reuse fns=1560 rechecked=0 reused=0 invalidated=0 c_bytes=0 dirty_units=0 units_compiled=0 unit_cache_hits=0 table_rebuilt=0 instances=0 reemitted=0 templates=0 discovered=0\n"
+    b"lust-visits: path=reuse why=- files=0 nodes=0 spans=0 scanned=0 slot_fns=0 collect=0 discovery=0 checked=0 kept=- prog_spans=0 reads=0 keyed=0 generic=- pool=-\n")
+
+
+class RetainedBuildControls(unittest.TestCase):
+    def test_real_pristine_cached_launcher_is_accepted_as_build(self):
+        proof = B.retained_proof(PRISTINE_RETAINED_BUILD, "build")
+        self.assertEqual(proof["route"], ["bodies", "patch", "-"])
+        self.assertEqual(proof["counters"]["c_bytes"], 101920)
+        self.assertEqual(proof["counters"]["unit_cache_hits"], 1)
+
+    def test_real_pristine_build_still_fails_check_only_contract(self):
+        with self.assertRaises(ValueError): B.retained_proof(PRISTINE_RETAINED_BUILD, "check")
+
+    def test_retained_check_rejects_template_and_table_work(self):
+        for key in (b"templates", b"table_rebuilt"):
+            with self.subTest(counter=key), self.assertRaises(ValueError):
+                B.retained_proof(PRISTINE_RETAINED_CHECK.replace(b" " + key + b"=0", b" " + key + b"=1"), "check")
+
+    def test_body_or_new_object_work_remains_rejected(self):
+        for key in (b"rechecked", b"invalidated", b"dirty_units", b"units_compiled", b"table_rebuilt", b"reemitted", b"templates", b"discovered", b"checked"):
+            with self.subTest(counter=key), self.assertRaises(ValueError):
+                B.retained_proof(PRISTINE_RETAINED_BUILD.replace(b" " + key + b"=0", b" " + key + b"=1"), "build")
+
+    def test_generated_c_without_object_hit_is_rejected(self):
+        with self.assertRaises(ValueError):
+            B.retained_proof(PRISTINE_RETAINED_BUILD.replace(b"unit_cache_hits=1", b"unit_cache_hits=0"), "build")
+
+    def test_full_frontend_route_is_rejected(self):
+        with self.assertRaises(ValueError):
+            B.retained_proof(PRISTINE_RETAINED_BUILD.replace(b"mode=bodies", b"mode=full"), "build")
+
+    def test_malformed_build_counters_are_rejected(self):
+        for value in (b"-1", b"nan", b"18446744073709551616"):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                B.retained_proof(PRISTINE_RETAINED_BUILD.replace(b"c_bytes=101920", b"c_bytes=" + value), "build")
+
 
 def synthetic_samples(candidate=0.001):
     return [{"sample":i, "lane":lane, "phase":phase, "seconds":candidate if lane == "entry" else 0.01, "commands":[i]}
@@ -77,8 +122,7 @@ def synthetic_campaign(output):
         argv=list(map(str,argv)); data=error=b""
         if phase=="gate-reject": error=b"error[E0308]: synthetic expected mismatch\n"
         elif phase in ("gate-retained-check","gate-retained-build"):
-            error=(b"lust-stats: mode=reuse fns=4 rechecked=0 invalidated=0 c_bytes=0 dirty_units=0 units_compiled=0 reemitted=0 discovered=0\n"
-                   b"lust-visits: path=reuse why=- checked=0\n")
+            error=PRISTINE_RETAINED_BUILD if phase=="gate-retained-build" else PRISTINE_RETAINED_CHECK
         elif len(argv)==1: data=b"synthetic runtime result\n"
         if len(argv)>1 and argv[1] in ("check","build") and phase!="gate-reject":
             binary=None

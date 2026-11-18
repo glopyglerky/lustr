@@ -187,6 +187,48 @@ def priming_summary(records, pairs):
             for operation in ("check","build") for lane in LANES for ordinal in (1,2,3)]
 
 
+def retained_proof(data, operation):
+    """Keep answer-reuse checks strict and distinguish cached-object builds.
+
+    compile.rs always assembles main/launcher unit 0 for builds. Its C bytes
+    are counted before object-cache lookup, so a retained build can report
+    nonzero c_bytes while every generated unit is served from that cache.
+    """
+    require(operation in ("check", "build"), "unknown retained operation")
+    def fields(prefix):
+        rows = [line[len(prefix):] for line in data.decode().splitlines() if line.startswith(prefix)]
+        require(len(rows) == 1, "missing or repeated native diagnostic record")
+        result = {}
+        for item in rows[0].split():
+            key, separator, value = item.partition("=")
+            require(separator and key and value and key not in result, "malformed native diagnostic field")
+            result[key] = value
+        return result
+    stats, visits = fields("lust-stats: "), fields("lust-visits: ")
+    def number(row, key):
+        value = row.get(key, "")
+        require(value.isascii() and value.isdecimal() and int(value) < 2**64, "invalid native work counter")
+        return int(value)
+    counters = {key:number(stats, key) for key in ("fns", "rechecked", "invalidated", "c_bytes", "dirty_units",
+                "units_compiled", "unit_cache_hits", "table_rebuilt", "reemitted", "templates", "discovered")}
+    counters["checked"] = number(visits, "checked")
+    route = [stats.get("mode"), visits.get("path"), visits.get("why")]
+    if operation == "check":
+        require(route == list(S.retained_check(data)), "retained check route differs")
+        require(counters["templates"] == counters["table_rebuilt"] == 0,
+                "retained check repeated template or table work")
+    else:
+        require(counters["fns"] > 0, "empty retained fixture")
+        require(all(counters[key] == 0 for key in ("rechecked", "invalidated", "dirty_units", "units_compiled",
+                    "table_rebuilt", "reemitted", "templates", "discovered", "checked")),
+                "retained build repeated body work or compiled new objects")
+        require(route in (["bodies", "patch", "-"], ["bodies", "chunks", "bodies"]),
+                "build did not use a known retained route")
+        require(counters["c_bytes"] == 0 or counters["unit_cache_hits"] > 0,
+                "retained build C has no cached-object evidence")
+    return {"route":route, "counters":counters}
+
+
 class Campaign(S.Campaign):
     def __init__(self, args):
         super().__init__(args)
@@ -250,8 +292,8 @@ class Campaign(S.Campaign):
                                              "trace":{"file":str(archive.relative_to(self.output)), "sha256":S.digest(archive), "bytes":archive.stat().st_size}})
                     command, _, stderr = self.recorder.run(self.command(lane, operation, state) + ["--timings"],
                                                           env, self.fixture, lane, "gate-retained-" + operation)
-                    route = S.retained_check(stderr)
-                    self.recorder.event({"kind":"retained-route", "command":command["id"], "lane":lane, "operation":operation, "route":list(route)})
+                    proof = retained_proof(stderr, operation)
+                    self.recorder.event({"kind":"retained-route", "command":command["id"], "lane":lane, "operation":operation, **proof})
                     if operation == "build":
                         binary = state / "program"
                         self.built_artifacts[binary] = {"build_command":command["id"], "binary_sha256":S.digest(binary)}
@@ -381,6 +423,7 @@ def render(report):
         a = row["analysis"]
         lines.append(f"| {row['phase']} | {row['baseline']} | {row['candidate']} | {a['geometric_ratio']:.4f} | [{a['bootstrap_95'][0]:.4f}, {a['bootstrap_95'][1]:.4f}] |")
     lines += ["", f"Warm target met: {report['warm_target']['meets_target']}.", "", report["warm_target"]["criterion"], "",
+              "Retained checks require zero generated C. Retained builds require zero body rechecks, dirty function units and newly compiled objects; they may reassemble launcher/support C whose object is served from cache. Full counters and exact runtime-output checks are retained in the raw evidence.", "",
               "Intervals are conditional exploratory estimates on this runner. Overlap with one does not prove equality. Full compiler correctness and release admission are separate gates.", ""]
     return "\n".join(lines)
 
@@ -450,7 +493,7 @@ def verify(output):
         if row["kind"] == "retained-route":
             command = commands[row["command"]]
             require(command["phase"] == "gate-retained-" + row["operation"], "wrong retained proof")
-            require(list(S.retained_check(stream(command["stderr"]))) == row["route"], "retained proof differs")
+            require(retained_proof(stream(command["stderr"]), row["operation"]) == {key:row[key] for key in ("route", "counters")}, "retained proof differs")
             require(row["lane"] in active and active[row["lane"]]["environment"].get("LUST_STATS") == "1", "retained daemon not instrumented")
             retained.append((row["lane"], row["operation"]))
         if row["kind"] == "selection-cache":
