@@ -56,8 +56,10 @@ fn mixed_cargo_uses_the_direct_compiler_without_changing_the_public_rustc_entry(
     let dry = Command::new(env!("CARGO_BIN_EXE_lustr")).arg("--bluefe-root").arg(&root).args(["plan", "build"]).output().unwrap();
     assert!(dry.status.success());
     let text = String::from_utf8(dry.stdout).unwrap();
-    assert!(text.contains(&format!("\"RUSTC\":\"{}\"", direct.display())));
-    assert!(!text.contains(&format!("\"RUSTC\":\"{}\"", public.display())));
+    let direct_json = direct.display().to_string().replace('\\', "\\\\");
+    let public_json = public.display().to_string().replace('\\', "\\\\");
+    assert!(text.contains(&format!("\"RUSTC\":\"{direct_json}\"")));
+    assert!(!text.contains(&format!("\"RUSTC\":\"{public_json}\"")));
 
     fs::remove_file(&direct).unwrap();
     let plan = cargo_lust::plan(&request, cargo_lust::Programs::from_environment()).unwrap();
