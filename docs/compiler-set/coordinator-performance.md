@@ -17,6 +17,10 @@ rustc identity and host, the protected full-Rust source pin, optimized component
 receipts, and the primary entry's full-core identity. Compiler binaries and
 runtime/sysroot inputs are hash guarded. These are measurements of this one
 project and this compiler composition; they do not supply a plain Lust result.
+The candidate's actual Cargo compiler is `bin/lustr-cargo/rustc`, a verified
+link to the existing `bin/rustc-full` mixed compiler; its path, binary hash and
+version are recorded as the compiler identity. The public `bin/rustc` launcher
+remains available, but is not the compiler that Cargo executes in this lane.
 
 ## Exact work
 

@@ -94,6 +94,7 @@ def make_spec(scenario, *, source, private, package, sdk, gate, external_inputs,
     for name, root in zip(LANES, (sdk, package)):
         candidate = name == "lustr-mixed"
         entry = package / "bin/lustr" if candidate else sdk / "bin/cargo"
+        compiler = package / "bin/lustr-cargo/rustc" if candidate else sdk / "bin/rustc"
         prefix = [str(entry)]
         if candidate:
             prefix += ["--bluefe-root", str(package), "--engine", "auto"]
@@ -101,12 +102,12 @@ def make_spec(scenario, *, source, private, package, sdk, gate, external_inputs,
             "PATH": f"{sdk}/bin:/usr/bin:/bin", "HOME": str(private / "home"),
             "CARGO_HOME": str(private / "cargo-home"), "CARGO_BUILD_JOBS": str(jobs),
             "CARGO_NET_OFFLINE": "true", "CARGO_TERM_COLOR": "never",
-            "CARGO": str(root / "bin/cargo"), "RUSTC": str(root / "bin/rustc"),
+            "CARGO": str(root / "bin/cargo"), "RUSTC": str(compiler),
             "RUSTDOC": str(root / "bin/rustdoc"), "LANG": "C", "LC_ALL": "C", "TZ": "UTC",
         }
         tools = []
         for path, version in [(root / "bin/cargo", ["--version", "--verbose"]),
-                              (root / "bin/rustc", ["-vV"]), (root / "bin/rustdoc", ["--version"]),
+                              (compiler, ["-vV"]), (root / "bin/rustdoc", ["--version"]),
                               (gate, ["--version"])]:
             tools.append({"path": str(path), "sha256": digest(path), "version_args": version})
         if candidate:
@@ -352,6 +353,9 @@ def prepare(args, private):
     tree = command(["git", "-C", repo, "rev-parse", f"{revision}:crates/lustr"])
     reference = package / "bin/rustc-reference"
     require(reference.is_symlink(), "source-built package must identify its original Rust SDK")
+    direct = package / "bin/lustr-cargo/rustc"
+    require(direct.is_symlink() and direct.resolve(strict=True) == (package / "bin/rustc-full").resolve(strict=True),
+            "source-built Cargo compiler must be the existing mixed rustc-full binary")
     sdk = reference.resolve(strict=True).parent.parent
     for name in ("cargo", "rustdoc"):
         require((package / "bin" / name).resolve(strict=True) == (sdk / "bin" / name).resolve(strict=True), "unmatched SDK component")
@@ -376,6 +380,7 @@ def prepare(args, private):
     (private / "reject.rs").write_bytes(rejection)
     inputs = [package.parent / name for name in ("COMPONENTS.txt", "NATIVE-BUILD-RECEIPT.txt", "BUILD-PROFILE.txt")]
     inputs += [package / "bin" / name for name in ("lustr", "rustc-full", "lust", "lust-core", "cargo-lustr", "rustc-reference")]
+    inputs.append(direct)
     inputs += [repo / "upstream/bluefe-core.pin", private / "reject.rs"]
     # Include the host runtime/sysroot, sealed native library and TinyCC inputs.
     # Other installed cross targets are irrelevant to this fixed host campaign.

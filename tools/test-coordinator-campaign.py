@@ -28,9 +28,12 @@ class CampaignTests(unittest.TestCase):
             (root / "bin").mkdir(parents=True)
             for name in ("cargo", "rustc", "rustdoc", "lustr", "rustc-full", "lust", "lust-core", "cargo-lustr"):
                 (root / "bin" / name).write_text(f"fixture identity: {name}\n")
+        direct = self.package / "bin/lustr-cargo/rustc"
+        direct.parent.mkdir()
+        direct.symlink_to("../rustc-full")
         self.gate = self.root / "gate"
         self.gate.write_text("fixture gate identity\n")
-        self.inputs = [self.package / "bin" / name for name in ("lustr", "rustc-full", "lust", "lust-core", "cargo-lustr")]
+        self.inputs = [direct] + [self.package / "bin" / name for name in ("lustr", "rustc-full", "lust", "lust-core", "cargo-lustr")]
         for name in ("COMPONENTS.txt", "NATIVE-BUILD-RECEIPT.txt"):
             path = self.package.parent / name
             path.write_text("synthetic verifier receipt; not a built compiler\n")
@@ -140,6 +143,17 @@ class CampaignTests(unittest.TestCase):
             self.assertEqual(spec["lanes"][1]["gates"][0]["command"]["argv"][1], "tests-via")
             self.assertNotIn("--no-run", str(spec))
 
+    def test_cargo_compiler_evidence_tracks_actual_direct_rustc(self):
+        spec = self.spec("clean-dependency-build")
+        rust, mixed = spec["lanes"]
+        direct = self.package / "bin/lustr-cargo/rustc"
+        self.assertEqual(rust["env"]["RUSTC"], str(self.sdk / "bin/rustc"))
+        self.assertEqual(mixed["env"]["RUSTC"], str(direct))
+        self.assertIn({"path": str(direct), "sha256": campaign.digest(direct), "version_args": ["-vV"]},
+                      mixed["tools"])
+        self.assertIn(str(direct), spec["external_inputs"])
+        self.assertEqual(direct.resolve(strict=True), (self.package / "bin/rustc-full").resolve(strict=True))
+
     def test_sanitized_projection_omits_paths_commands_environment_and_raw_output(self):
         path, report = self.report()
         projected = campaign.project_report(path)
@@ -183,6 +197,11 @@ class CampaignTests(unittest.TestCase):
     def test_profile_drift_is_rejected(self):
         path, report = self.report()
         report["spec"]["lanes"][1]["command"]["argv"].append("--release")
+        self.corrupt(path, report)
+
+    def test_old_cargo_compiler_path_cannot_pass_evidence_contract(self):
+        path, report = self.report()
+        report["spec"]["lanes"][1]["env"]["RUSTC"] = str(self.package / "bin/rustc")
         self.corrupt(path, report)
 
     def test_constructor_receipt_cannot_disappear(self):
