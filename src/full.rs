@@ -6,6 +6,10 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::{Command, ExitStatus, Stdio};
 
+mod selection_cache {
+    include!("selection_cache.rs");
+}
+
 fn error(message: &str) -> io::Error {
     io::Error::other(message)
 }
@@ -133,6 +137,16 @@ fn output(command: &mut Command) -> io::Result<std::process::Output> {
 
 pub fn select(request: &Request, parent: &Path, args: &[String]) -> io::Result<Selection> {
     let manifest = request.session.krate.manifest_path.as_ref().ok_or_else(|| error("missing Cargo manifest"))?;
+    let before = selection_cache::Snapshot::capture(request, parent, args);
+    if let Some((metadata, package_id)) = before.as_ref().and_then(selection_cache::Snapshot::load) {
+        // Cached Cargo output passes the same identity and uniqueness filter as
+        // fresh Cargo output. The retained native graph is not a substitute.
+        if let Ok(selected) = select_metadata(request, args, &metadata, package_id.as_deref()) {
+            selection_cache::diagnostic("hit");
+            return Ok(selected);
+        }
+    }
+    selection_cache::diagnostic(if before.is_some() { "miss" } else { "ineligible" });
     let metadata = output(
         cargo(parent).args(["metadata", "--format-version=1", "--manifest-path"]).arg(manifest).args(request.session.cargo_net.args()),
     )?;
@@ -147,13 +161,25 @@ pub fn select(request: &Request, parent: &Path, args: &[String]) -> io::Result<S
     } else {
         None
     };
+    let selected = select_metadata(request, args, &metadata, package_id.as_deref())?;
+    if let Some(before) = before {
+        if let Some(after) = selection_cache::Snapshot::capture(request, parent, args) {
+            if before == after {
+                after.store(&metadata, package_id.as_deref());
+            }
+        }
+    }
+    Ok(selected)
+}
+
+fn select_metadata(request: &Request, args: &[String], metadata: &Value, package_id: Option<&str>) -> io::Result<Selection> {
     let name = selector(args, &["--bin"]);
     let source = request.file.canonicalize()?;
     let selected: Vec<_> = metadata["packages"]
         .as_array()
         .ok_or_else(|| error("Cargo metadata has no packages"))?
         .iter()
-        .filter(|p| package_id.as_ref().is_none_or(|id| p["id"] == *id))
+        .filter(|p| package_id.is_none_or(|id| p["id"] == id))
         .flat_map(|package| package["targets"].as_array().into_iter().flatten().map(move |target| (package, target)))
         .filter(|(_, target)| name.is_none_or(|name| target["name"] == name))
         .filter(|(_, target)| target["src_path"].as_str().and_then(|p| Path::new(p).canonicalize().ok()).as_ref() == Some(&source))

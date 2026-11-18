@@ -1,0 +1,163 @@
+name: Warm entry performance
+
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'tests/compiler_contract.rs'
+      - 'tools/run-warm-entry-comparison.py'
+      - 'tools/test-warm-entry-comparison.py'
+      - '.github/workflows/warm-entry-performance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  warm-entry:
+    name: Matched public-entry before and after
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
+    timeout-minutes: 55
+    env:
+      RUSTUP_TOOLCHAIN: nightly-2026-11-09
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate paired evidence controls
+        run: python3 tools/test-warm-entry-comparison.py
+      - uses: actions/checkout@v4
+        with:
+          repository: glopyglerky/lustr
+          ref: 28a2842635ee994db492b43f8c956eddce57a803
+          path: .warm-entry-baseline
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: t3dotgg/lust-lang
+          ref: 240e08d91d4aed0299639f6f11fd522912b248f9
+          path: .lust-pristine-reference
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: TinyCC/tinycc
+          ref: 43c7708b85681a2fd4451c8a541af4494a8919b2
+          path: .tinycc-pristine-reference
+          persist-credentials: false
+      - name: Isolate immutable references
+        run: |
+          cp -a "$GITHUB_WORKSPACE/.warm-entry-baseline" "$RUNNER_TEMP/lustr-warm-baseline-source"
+          cp -a "$GITHUB_WORKSPACE/.lust-pristine-reference" "$RUNNER_TEMP/lustr-warm-pristine-source"
+      - name: Install the pinned Rust SDK
+        run: rustup toolchain install nightly-2026-11-09 --profile minimal --component rustc-dev --component llvm-tools --component rustfmt --component clippy --target wasm32-unknown-unknown --target x86_64-apple-darwin --target aarch64-apple-darwin --target x86_64-pc-windows-gnu
+      - name: Build pinned TinyCC
+        run: |
+          rustc --edition=2024 tools/build-tinycc-pic.rs -o "$RUNNER_TEMP/build-warm-tinycc"
+          "$RUNNER_TEMP/build-warm-tinycc" "$GITHUB_WORKSPACE/.tinycc-pristine-reference" "$RUNNER_TEMP/lustr-warm-tinycc"
+      - name: Acquire locked source-build dependencies
+        run: |
+          cargo fetch --manifest-path compiler/native/Cargo.toml --locked
+          cargo fetch --manifest-path crates/lustr-native-core/Cargo.toml --locked
+          cargo fetch --manifest-path crates/lustr/Cargo.toml --locked
+          cargo fetch --manifest-path crates/lustr-semantic/Cargo.toml --locked
+          cargo fetch --manifest-path Cargo.toml --locked
+      - name: Build the complete candidate package from source
+        id: candidate_build
+        env:
+          GIT_ALTERNATE_OBJECT_DIRECTORIES: ${{ runner.temp }}/lustr-warm-pristine-source/.git/objects
+        run: |
+          rustc --edition=2024 tools/build-mixed-toolchain.rs -o "$RUNNER_TEMP/build-warm-toolchain"
+          "$RUNNER_TEMP/build-warm-toolchain" "$GITHUB_WORKSPACE" --current-sdk "$RUNNER_TEMP/lustr-warm-tinycc/install" "$RUNNER_TEMP/lustr-warm-built" --release
+      - name: Build the actual production target-selector regression gate
+        id: selector_gate_build
+        run: |
+          python3 tools/run-warm-entry-comparison.py build-selector-gate \
+            --repository "$GITHUB_WORKSPACE" \
+            --built "$RUNNER_TEMP/lustr-warm-built" \
+            --output "$RUNNER_TEMP/lustr-warm-selector-build"
+      - name: Require exact Cargo selection and cache invalidation behavior
+        id: selection_contract
+        run: |
+          python3 tools/test-native-selection-cache.py \
+            --profiler "$RUNNER_TEMP/lustr-warm-selector-build/target/release/profile-native-preflight" \
+            --package-bin "$RUNNER_TEMP/lustr-warm-built/toolchain/bin" \
+            --output "$RUNNER_TEMP/lustr-warm-selection-contract"
+      - name: Build the pinned baseline public entry with the identical native runtime
+        id: baseline_build
+        run: |
+          python3 tools/run-warm-entry-comparison.py build-baseline \
+            --repository "$GITHUB_WORKSPACE" \
+            --baseline-source "$RUNNER_TEMP/lustr-warm-baseline-source" \
+            --built "$RUNNER_TEMP/lustr-warm-built" \
+            --output "$RUNNER_TEMP/lustr-warm-baseline-build"
+      - name: Build pristine Lust with the same optimized profile
+        id: pristine_build
+        env:
+          LUST_TCC_HOME: ${{ runner.temp }}/lustr-warm-tinycc/install
+        run: |
+          set -o pipefail
+          export RUSTC="$(rustc --print sysroot)/bin/rustc"
+          cargo build --manifest-path "$RUNNER_TEMP/lustr-warm-pristine-source/Cargo.toml" --release --locked --offline --jobs 2 --bin lust --bin lust-core --target-dir "$RUNNER_TEMP/lustr-warm-pristine-target" --config "build.build-dir=\"$RUNNER_TEMP/lustr-warm-pristine-intermediates\"" 2>&1 | tee "$RUNNER_TEMP/lustr-warm-pristine-build.log"
+      - name: Execute the complete entry contract before measurement
+        id: entry_contract
+        env:
+          LUSTR_LUST_ROOT: ${{ runner.temp }}/lustr-warm-built/toolchain
+          LUSTR_NATIVE_BUILD_OUTPUT: ${{ runner.temp }}/lustr-warm-built/NATIVE-BUILD-RECEIPT.txt
+          LUSTR_TEST_PACKAGE: ${{ runner.temp }}/lustr-warm-built/toolchain
+          LUSTR_TEST_OUTPUT: ${{ runner.temp }}/lustr-warm-entry-contract
+        run: |
+          export LUSTR_CORE_ROOT="$(rustc --print sysroot)"
+          export RUSTC="$LUSTR_CORE_ROOT/bin/rustc"
+          set -o pipefail
+          cargo test --manifest-path Cargo.toml --release --features source-native-runtime --test compiler_contract --locked --offline --jobs 2 --target-dir "$RUNNER_TEMP/lustr-warm-built/work/entry-target" --config "build.build-dir=\"$RUNNER_TEMP/lustr-warm-built/work/entry-intermediates\"" -- --ignored --test-threads=1 2>&1 | tee "$RUNNER_TEMP/lustr-warm-entry-contract.log"
+      - name: Measure complete cold and retained public commands
+        id: comparison
+        run: |
+          python3 tools/run-warm-entry-comparison.py measure \
+            --repository "$GITHUB_WORKSPACE" \
+            --built "$RUNNER_TEMP/lustr-warm-built" \
+            --baseline-receipt "$RUNNER_TEMP/lustr-warm-baseline-build/receipt.json" \
+            --pristine-source "$RUNNER_TEMP/lustr-warm-pristine-source" \
+            --pristine-lust "$RUNNER_TEMP/lustr-warm-pristine-target/release/lust" \
+            --pristine-build-log "$RUNNER_TEMP/lustr-warm-pristine-build.log" \
+            --output "$RUNNER_TEMP/lustr-warm-comparison" --pairs 24
+      - name: Retain every measured and failed outcome
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: warm-entry-comparison-${{ github.run_attempt }}
+          if-no-files-found: warn
+          path: |
+            ${{ runner.temp }}/lustr-warm-comparison/report.json
+            ${{ runner.temp }}/lustr-warm-comparison/README.md
+            ${{ runner.temp }}/lustr-warm-comparison/raw.jsonl
+            ${{ runner.temp }}/lustr-warm-comparison/samples.csv
+            ${{ runner.temp }}/lustr-warm-comparison/commands
+            ${{ runner.temp }}/lustr-warm-comparison/fixture
+            ${{ runner.temp }}/lustr-warm-comparison/build-receipts
+            ${{ runner.temp }}/lustr-warm-comparison/runtime-oracle.stdout
+            ${{ runner.temp }}/lustr-warm-comparison/rejected.rs
+            ${{ runner.temp }}/lustr-warm-baseline-build/receipt.json
+            ${{ runner.temp }}/lustr-warm-baseline-build/build.stdout
+            ${{ runner.temp }}/lustr-warm-baseline-build/build.stderr
+            ${{ runner.temp }}/lustr-warm-built/COMPONENTS.txt
+            ${{ runner.temp }}/lustr-warm-built/BUILD-PROFILE.txt
+            ${{ runner.temp }}/lustr-warm-built/NATIVE-BUILD-RECEIPT.txt
+            ${{ runner.temp }}/lustr-warm-built/logs
+            ${{ runner.temp }}/lustr-warm-pristine-build.log
+            ${{ runner.temp }}/lustr-warm-entry-contract.log
+            ${{ runner.temp }}/lustr-warm-entry-contract/**/*.stdout
+            ${{ runner.temp }}/lustr-warm-entry-contract/**/*.stderr
+            ${{ runner.temp }}/lustr-warm-entry-contract/**/*.status
+            ${{ runner.temp }}/lustr-warm-entry-contract/**/*.jsonl
+            ${{ runner.temp }}/lustr-warm-selector-build/receipt.json
+            ${{ runner.temp }}/lustr-warm-selector-build/Cargo.toml
+            ${{ runner.temp }}/lustr-warm-selector-build/Cargo.lock
+            ${{ runner.temp }}/lustr-warm-selector-build/*.stdout
+            ${{ runner.temp }}/lustr-warm-selector-build/*.stderr
+            ${{ runner.temp }}/lustr-warm-selection-contract/results.json
+            ${{ runner.temp }}/lustr-warm-selection-contract/*.stdout
+            ${{ runner.temp }}/lustr-warm-selection-contract/*.stderr

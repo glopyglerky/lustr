@@ -19,6 +19,8 @@ mod native_expansion;
 #[allow(dead_code)]
 #[path = "../src/owned_child.rs"]
 mod owned_child;
+#[path = "selection-toolchain-receipt.rs"]
+mod selection_toolchain_receipt;
 
 #[derive(Clone, Copy)]
 enum BuildProfile {
@@ -293,6 +295,7 @@ fn main() {
         manifest.push_str(std::str::from_utf8(&result).unwrap());
     }
     record(&output.join("COMPONENTS.txt"), manifest.as_bytes());
+    selection_toolchain_receipt::write(&package, source, &host);
     for p in [package.join("bin/lustr-cargo"), package.join("bin"), package.join("lib"), package, logs, output.clone()] {
         fs::File::open(p).unwrap().sync_all().unwrap();
     }
