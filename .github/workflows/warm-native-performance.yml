@@ -12,6 +12,8 @@ on:
       - 'tools/test-warm-native-comparison.py'
       - 'tools/run-warm-native-startup.py'
       - 'tools/test-warm-native-startup.py'
+      - 'tools/assess-warm-performance.py'
+      - 'tools/test-assess-warm-performance.py'
       - 'tools/build-mixed-toolchain.rs'
       - 'tools/selection-toolchain-receipt.rs'
       - '.github/workflows/warm-native-performance.yml'
@@ -38,6 +40,7 @@ jobs:
         run: |
           python3 tools/test-warm-native-comparison.py
           python3 tools/test-warm-native-startup.py
+          python3 tools/test-assess-warm-performance.py
       - uses: actions/checkout@v4
         with:
           repository: glopyglerky/lustr
@@ -126,19 +129,33 @@ jobs:
             --pristine-build-log "$RUNNER_TEMP/native-pristine-build.log" \
             --output "$RUNNER_TEMP/native-warm-comparison" --pairs 24
           measurement_status=$?
-          python3 - "$RUNNER_TEMP/native-warm-comparison/report.json" "$GITHUB_OUTPUT" <<'PY'
+          set -e
+          printf '%s\n' "$measurement_status" > "$RUNNER_TEMP/native-warm-measurement.status"
+          python3 - "$RUNNER_TEMP/native-warm-comparison/report.json" "$GITHUB_OUTPUT" "$measurement_status" <<'PY'
           import json, pathlib, sys
+          measurement_status = int(sys.argv[3])
           try:
               completed = json.loads(pathlib.Path(sys.argv[1]).read_text()).get('status') == 'completed'
           except (OSError, ValueError, AttributeError):
               completed = False
           with open(sys.argv[2], 'a') as stream:
               stream.write('completed=' + str(completed).lower() + '\n')
+              stream.write('measurement_status=' + str(measurement_status) + '\n')
+          print('Original strict measurement exit:', measurement_status)
+          # A completed strict miss is retained as exit 2. The separate practical
+          # assessor must replay all evidence before making the new decision.
+          if measurement_status not in (0, 2):
+              raise SystemExit(measurement_status)
+          if not completed:
+              raise SystemExit(1)
           PY
-          exit "$measurement_status"
-      - name: Independently replay completed raw evidence
+      - name: Assess practical warm performance after full evidence replay
         if: always() && steps.comparison.outputs.completed == 'true'
-        run: python3 tools/run-warm-native-comparison.py verify "$RUNNER_TEMP/native-warm-comparison"
+        run: |
+          python3 tools/assess-warm-performance.py \
+            --campaign "$RUNNER_TEMP/native-warm-comparison" \
+            --measurement-status "$RUNNER_TEMP/native-warm-measurement.status" \
+            --output "$RUNNER_TEMP/native-warm-assessment"
       - name: Diagnose frozen native-client startup after completed measurement
         if: always() && steps.comparison.outputs.completed == 'true'
         run: |
@@ -153,6 +170,10 @@ jobs:
           name: complete-native-warm-${{ github.run_attempt }}
           if-no-files-found: warn
           path: |
+            ${{ runner.temp }}/native-warm-measurement.status
+            ${{ runner.temp }}/native-warm-assessment/assessment.json
+            ${{ runner.temp }}/native-warm-assessment/README.md
+            ${{ runner.temp }}/native-warm-assessment/SHA256SUMS
             ${{ runner.temp }}/native-warm-comparison/report.json
             ${{ runner.temp }}/native-warm-comparison/README.md
             ${{ runner.temp }}/native-warm-comparison/raw.jsonl

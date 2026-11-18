@@ -1,11 +1,25 @@
 # Performance evidence index
 
 [PERFORMANCE.md](../PERFORMANCE.md) explains the measured results, methodology,
-regressions and remaining coverage. The [README summary](../README.md#numbers-and-current-qualification)
+regressions and remaining coverage. The [README summary](../README.md#performance-and-release-status)
 keeps the headline table visible. Neither document claims general Rust speed
 parity or release readiness.
 
-## Completed fixed-corpus campaigns
+## Latest combined snapshot
+
+[PR #26, 43a7e07d](2026-11-18-43a7e07/README.md) retains 1,056 measured timings
+and 59 comparisons across fixed native/Cargo, public slice and the unchanged
+normal-profile project. The complete 29-row dashboard, all raw numerical values,
+paired intervals, p95 and original artifact identities are retained. Original command archives are kept separately.
+The [dated overview chart](overview-2026-11-18/latency.svg) uses those exact
+measurements; regenerate it with `python3 performance/render-overview.py`.
+
+Supported warm work is close to Lust and faster than matching Rust. Ordinary
+full-Rust project medians stay within about 1.1% of stock Rust. Seven mixed
+opt0/debug0 Cargo modes remain slower. Correctness/platform qualification remains
+separate from the [practical speed criteria](../docs/compiler-set/practical-performance.md).
+
+## Historical completed fixed-corpus campaigns
 
 | Measured candidate | Full table | Every timed value | Original qualification artifact |
 | --- | --- | --- | --- |

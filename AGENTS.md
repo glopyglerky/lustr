@@ -22,6 +22,16 @@ must remain separately identified; no hidden changes to Lust or blueFe's
 protected Rust pin. Read the current contract and entry contract before routing
 changes. Preserve published PR7, unique source and failed evidence.
 
+## Performance acceptance
+
+Use [the practical performance criteria](docs/compiler-set/practical-performance.md).
+Preserve large gains on Lust-supported work and near-stock behavior on ordinary
+full Rust. Do not require big gains outside the Lust subset or exact Lust parity.
+Keep historical strict results and every regression. Correctness and native
+platform qualification remain independent release conditions. Investigate the
+remaining public-entry cost with matched measurements before changing source;
+never remove input validation to meet a sub-millisecond target.
+
 ## Product contract
 
 Follow [the compiler contract](docs/compiler-set/native-contract.md). Full Rust
