@@ -1,0 +1,30 @@
+{
+  "api": {
+    "kernel_x86_64_table": "https://github.com/torvalds/linux/blob/master/arch/x86/entry/syscalls/syscall_64.tbl",
+    "manual": "https://man7.org/linux/man-pages/man2/access.2.html",
+    "operation": "Linux x86_64 faccessat2 with AT_EACCESS; X_OK for executables and R_OK for included libraries; unsupported or failed calls decline the optional cache."
+  },
+  "assertions": 290,
+  "helper_sha256": "a227a6af38b61324257f7b16e098aae385e7c9d9df61a05e4b1ff5f568861e55",
+  "invocations": 154,
+  "original_results_sha256": "4e7e13acdadfd557654b8bc1478e83ced18cb84662f38e97a8e3f8a1b1a3d0bb",
+  "product": {
+    "revision": "68395242e638abdde91ff73d14bde532583934a8",
+    "tree": "39f4d0b0ac3bd8f1f182be47471943c7cbbb82f8"
+  },
+  "product_source_unchanged_in_test_continuation": true,
+  "schema": "lustr-selection-access-evidence-v1",
+  "scope": "Effective-access admission correction with actual Cargo transition tests; no changed-credentials, complete exec policy, native runtime or performance qualification.",
+  "source_sha256": {
+    "LICENSE": "8095f9a9f97d074131f6a2ce09b952d12c18b36f09f4e5df0517c4e64e82c851",
+    "compiler/native/src/protocol.rs": "4da4c32fb16b62f3819a3d774ef63b76e201e2414c3b4540b4a6ccb27133fe1c",
+    "src/full.rs": "e7015c5462da232fd817091c2749e4e776287832f1279ebaab87314f0644412e",
+    "src/host_runtime.rs": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223",
+    "src/owned_child.rs": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20",
+    "src/selection_cache.rs": "dfead01bd5ef3c98f3da35250c15c37ea9ef19cdfc28de082fb8971d9591bbfd",
+    "tools/profile-native-preflight.rs": "37cad7d0a4cf1c6318aaf60d7c24e9ab8a1f78bb00e2636cdc9d09da9d03681b",
+    "upstream/bluefe-core.pin": "73bd5e14a0d96979dccb1f89f145f6c1d9d947c8f4a192f0db64f6954f0218b6"
+  },
+  "test_revision": "33196f20e299e8b48764b0b5614b0c616fbe6f96",
+  "test_sha256": "fb02a616063e657189e618abb38b2141fefb4f2fb9d7e22bdc154d0ecd3a32b0"
+}

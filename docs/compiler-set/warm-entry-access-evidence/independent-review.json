@@ -1,0 +1,22 @@
+{
+  "evidence": [
+    {
+      "path": "warm-executable-access-selector-build/receipt.json",
+      "sha256": "98d2b59c4533e92aab53ab3652d20563c0702ce63154ee2200ad36c73a4ec844"
+    },
+    {
+      "path": "warm-review/executable-access-68395242e/results.json",
+      "sha256": "4e7e13acdadfd557654b8bc1478e83ced18cb84662f38e97a8e3f8a1b1a3d0bb"
+    }
+  ],
+  "replayed": {
+    "exact_full_selection_pairs": 77,
+    "selector_assertions": 290,
+    "selector_invocations": 154
+  },
+  "reviewer": "/root/warm_entry_implementation",
+  "scope": "Independent source review and raw evidence replay; no independent gate execution, changed-credential test, or performance claim.",
+  "source_finding": "No blocker found under the documented stable-input contract. Effective access failure declines cache; canonical parent reuse preserves lexical symlink resolution and complete observed descriptor identity.",
+  "source_revision": "68395242e638abdde91ff73d14bde532583934a8",
+  "source_tree": "39f4d0b0ac3bd8f1f182be47471943c7cbbb82f8"
+}
