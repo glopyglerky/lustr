@@ -1,0 +1,190 @@
+{
+  "schema": "lustr-native-object-reuse-hosted-evidence-v1",
+  "repository": "https://github.com/glopyglerky/lustr",
+  "pull_request": 17,
+  "run": 44243040376,
+  "run_url": "https://github.com/glopyglerky/lustr/actions/runs/44243040376",
+  "run_attempt": 1,
+  "source_job": 134595232335,
+  "head": "e674fab486d4ee6b67a2372a5e9e135588dcb076",
+  "base": "34d847da3d90c3c2b253246a8ffdfdeb901c56b0",
+  "checkout": "96fa69536a68e7c2084e746d31e56a453611d949",
+  "tree": "426397dfbefec5d81dd4cfa195450eb947b4b5d1",
+  "source_job_conclusion": "success",
+  "platform_scope": "Linux x86-64 source-built runtime and campaigns passed. Later macOS-26 Cargo compatibility failed; the Compiler set run has nine successful jobs and one failed job. No complete platform admission.",
+  "recovered_source_commit": "6eb6cd03b9686a408cb06754fb29844ab9a51f1f",
+  "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "coordinator_git_tree": "74f91068723cf2aa4a1dee168713281db7705a1f",
+  "compiler_components_sha256": {
+    "cargo-lustr": "8674bc8324bf815e35b5dc19e0f4dbf3320137d0a71b85292281fcc44ba57745",
+    "lust": "a3bf7a31b1d1f4481e6f484246cc003a2f9ad0ec5df74f787f09ad829789ef47",
+    "lust-core": "d846a36c35c32d4e4b8b8e6d59e5a89fa3d2d8ae8b4a3a8c92165e889a8921a8",
+    "lustr": "332f6dd1509c85bfc878c1935c3102f352449b65e2845e25beffd64788e374c9",
+    "rustc-full": "36be93070c7ca35a34f2e6b475b90385e6372f5fa89fe5797e4d7cea71b941ce"
+  },
+  "constructor_receipts_sha256": {
+    "BUILD-PROFILE.txt": "edf9b8898c74458b11349cff0402ec3b3ded7721038627101e4ece564454a121",
+    "COMPONENTS.txt": "7945baead8004e4df943f603470e4aef37762f788afbd5d63d076d8e9111f27b",
+    "NATIVE-BUILD-RECEIPT.txt": "38c30f545618b6f7e719626212faccaaf2297652391e255c478bbaa8a540c50e"
+  },
+  "artifacts": [
+    {
+      "id": 14403035021,
+      "name": "coordinator-project-performance-1",
+      "size_in_bytes": 32175,
+      "digest": "sha256:ac273a79244b1f292fff6e72db85a794e82218fe413542e8169c94d73026e80e",
+      "created_at": "2026-11-18T05:57:52Z",
+      "expires_at": "2027-02-16T05:16:01Z",
+      "workflow_run": {
+        "id": 44243040376,
+        "head_sha": "e674fab486d4ee6b67a2372a5e9e135588dcb076"
+      },
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44243040376/artifacts/14403035021"
+    },
+    {
+      "id": 14402870700,
+      "name": "coordinator-project-originals-encrypted-1",
+      "size_in_bytes": 1246469,
+      "digest": "sha256:14b8ff538989816887d606a25c0a5ff300ab7cfafb66df439f9170078dcbfab1",
+      "created_at": "2026-11-18T05:57:51Z",
+      "expires_at": "2027-02-16T05:16:01Z",
+      "workflow_run": {
+        "id": 44243040376,
+        "head_sha": "e674fab486d4ee6b67a2372a5e9e135588dcb076"
+      },
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44243040376/artifacts/14402870700"
+    },
+    {
+      "id": 14402551701,
+      "name": "source-built-mixed-qualification-1",
+      "size_in_bytes": 2022970,
+      "digest": "sha256:3c0f810c93bee01de53f45c9c631fc8f624422c3cfdfa988051d71cc3626cbd5",
+      "created_at": "2026-11-18T05:57:56Z",
+      "expires_at": "2027-02-16T05:16:01Z",
+      "workflow_run": {
+        "id": 44243040376,
+        "head_sha": "e674fab486d4ee6b67a2372a5e9e135588dcb076"
+      },
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44243040376/artifacts/14402551701"
+    },
+    {
+      "id": 14402500694,
+      "name": "upstream-public-slice-1",
+      "size_in_bytes": 591095,
+      "digest": "sha256:cbbf5ad744f4bb1de0f106d4ce092a560a4f0d7c23d43a4be06bd337b7e9e7f9",
+      "created_at": "2026-11-18T05:49:37Z",
+      "expires_at": "2027-02-16T05:16:01Z",
+      "workflow_run": {
+        "id": 44243040376,
+        "head_sha": "e674fab486d4ee6b67a2372a5e9e135588dcb076"
+      },
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44243040376/artifacts/14402500694"
+    },
+    {
+      "id": 14400297905,
+      "name": "runner-source-44243040376-1",
+      "size_in_bytes": 458,
+      "digest": "sha256:61a6a2feddc16f98cb1fe57bbc69d4a9031ab93d27e46b30138ff0b29228b83d",
+      "created_at": "2026-11-18T05:16:07Z",
+      "expires_at": "2026-12-02T05:16:07Z",
+      "workflow_run": {
+        "id": 44243040376,
+        "head_sha": "e674fab486d4ee6b67a2372a5e9e135588dcb076"
+      },
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44243040376/artifacts/14400297905"
+    }
+  ],
+  "replay_verification": {
+    "fixed_workload": {
+      "records": 1135,
+      "command_outputs": 2160,
+      "timed_commands": 648,
+      "comparisons": 36
+    },
+    "public_slice": {
+      "timings": 288,
+      "comparisons": 18
+    },
+    "unchanged_project": {
+      "measured_timings": 120,
+      "excluded_warmup_timings": 20,
+      "comparisons": 5,
+      "statistical_receipt_reproduced": true,
+      "replayer_sha256": "8507386515f84245c4f3ae3005b05551c73384a7d0c0b07f2e9acf4964b3a537",
+      "replayer_source_revision": "34d847da3d90c3c2b253246a8ffdfdeb901c56b0",
+      "replayer_scope": "new local data-replay executable from unchanged statistics source; no compiler or benchmark command executed"
+    }
+  },
+  "inference_limits": [
+    "Ratios compare matched lanes within this run. Separate runs are not a controlled before/after experiment for the cache change.",
+    "Fixed workloads use dev opt0/debug0; the unchanged project keeps default dev/test debug=2 and does not assert native participation.",
+    "Standalone rustc native-lane no-ops invoke nonincremental rustc again; these are not Cargo Fresh comparisons.",
+    "The public slice is pruned/adapted and does not represent unchanged full ts-rust or all Rust workloads.",
+    "All regressions remain visible. Intervals are exploratory shared-host estimates, not equivalence tests or release admission."
+  ],
+  "protected_source_objects": {
+    "compiler/native": "12ae35ee30f81d11f55b184134f8a0c4a977a496",
+    "upstream/lust.pin": "cce2d3a2a584a15bc2ab960eb0121c9afc484949",
+    "upstream/bluefe-core.pin": "ada26570137047454b8eba363cf7a7167077abe3"
+  },
+  "original_artifact_retention": {
+    "scope": "five exact downloaded GitHub artifact ZIPs, retrieval identity projection, producer/verifier source and local data-replayer build receipt",
+    "helper": "tools/encrypt-coordinator-evidence.py",
+    "helper_sha256": "506137173e35673db61a13af54309630fdf3d38b8e2614659578fc4ad6bfbd85",
+    "receipt": "original-artifacts-encrypted/receipt.json",
+    "receipt_sha256": "298a8015ca0cda600a010706652ef9804a0f414ae1f8874df472a513774ed3a7",
+    "plaintext_archive_sha256": "33c48d8d9d499ba92a81e1602ed5f40f8c11c797c850242490c503c341ddd1a6",
+    "encrypted_manifest_sha256": "0aaa6043654bf49842d369c6a69d94de731c00eda9745e6c078813aaefe18b2d",
+    "ciphertext_sha256": "fb07530b58edc742728da3106bb380ec30743b8dd9e0bca3f24c271d96fee1e0",
+    "recipient_certificate_sha256": "69e1167422ba3edfc45139eda5bdcec97d5bebcdf3e764054f3457488aaa5c4f",
+    "original_file_count": 16,
+    "private_key_access": false,
+    "ciphertext_independently_decrypted": false,
+    "review_archive": "deterministic reconstruction matches original plaintext and manifest hashes",
+    "wrapper_status_scope": "not-observed is the artifact-retention wrapper status; the original unchanged-project campaign and its own retention status report passed",
+    "nested_original_zip_scope": "Original qualification ZIP object files, native-cache bytes and built fixture application bytes are retained exactly. No additional loose executor build/cache/home state was added; the helper generic exclusion does not describe nested original ZIP contents.",
+    "compiled_toolchain_package": "Not included in the downloaded qualification artifact. Compiler hashes/constructor receipts/build logs are retained; generated fixture executables/objects are distinct. Review verifies recorded bindings and does not independently rerun an archived compiler package."
+  },
+  "platform_observation_at_initial_capture": "Linux x86-64 source-built runtime. macOS-26 Cargo job was still queued when this review captured the result; no complete platform admission.",
+  "later_platform_failure": {
+    "schema": "lustr-later-platform-failure-v1",
+    "repository": "https://github.com/glopyglerky/lustr",
+    "run": 44243040376,
+    "run_attempt": 1,
+    "job": 134595232256,
+    "job_url": "https://github.com/glopyglerky/lustr/actions/runs/44243040376/job/134595232256",
+    "job_name": "Cargo compatibility (macos-26)",
+    "conclusion": "failure",
+    "head": "e674fab486d4ee6b67a2372a5e9e135588dcb076",
+    "checkout": "96fa69536a68e7c2084e746d31e56a453611d949",
+    "tree": "426397dfbefec5d81dd4cfa195450eb947b4b5d1",
+    "test": "cargo_alias_can_select_release_without_enabling_cranelift",
+    "source_path": "crates/lustr/tests/process.rs",
+    "source_line": 322,
+    "source_sha256": "779b637b167cae2b45890bed1985497609b56bc5b1d5ba08f3df5782f1c49ffc",
+    "failure_category": "rustc-dep-info-write-enoent",
+    "log_sha256": "0733ba10311aa4a0a5838fd4f4b2f3b7fac067e105bdd303f6c8ffcad1f61d7a",
+    "log_bytes": 25670,
+    "observed_shared_directory_collision": false,
+    "diagnosis_scope": "The log records a missing dep-info output path. The source permits shared scratch ownership when timestamps repeat; an actual same-root collision is not logged.",
+    "linux_source_job": 134595232335,
+    "linux_source_job_conclusion": "success",
+    "earlier_artifact_archive_unchanged": true
+  },
+  "later_platform_failure_retention": {
+    "scope": "Exact failed macOS job log, exact process-test source and source/job identity. Separate attachment; original five-ZIP archive unchanged.",
+    "helper": "tools/encrypt-coordinator-evidence.py",
+    "helper_sha256": "506137173e35673db61a13af54309630fdf3d38b8e2614659578fc4ad6bfbd85",
+    "receipt": "macos-failure-encrypted/receipt.json",
+    "receipt_sha256": "edbc8512d560d3e8bc7e7c8c8bddb5c77efce711dffe350dbef5d79cf8b4d781",
+    "plaintext_archive_sha256": "2c29ee6e118ef767b9d3c1c3ef1ee78414c16abe9437a5f52ec8f7926d1007d4",
+    "encrypted_manifest_sha256": "877e8732e0db92348f49ac4019a4287502aea9356930605f59a254097f19e201",
+    "ciphertext_sha256": "1e548530c843a6e39887db5de8d75b16e6070dbfb5be02d593e8248d3900522a",
+    "recipient_certificate_sha256": "69e1167422ba3edfc45139eda5bdcec97d5bebcdf3e764054f3457488aaa5c4f",
+    "original_file_count": 5,
+    "private_key_access": false,
+    "ciphertext_independently_decrypted": false,
+    "review_archive": "Deterministic reconstruction matches original plaintext and manifest hashes.",
+    "wrapper_status_scope": "not-observed refers to this failed-job retention wrapper, not to the successful original coordinator campaign."
+  }
+}

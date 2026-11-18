@@ -1,0 +1,3723 @@
+{
+  "schema": "lustr-public-slice-v1",
+  "status": "completed",
+  "pairs": 12,
+  "summaries": [
+    {
+      "phase": "cold-check",
+      "baseline": "pristine",
+      "candidate": "integrated",
+      "analysis": {
+        "method": "paired-log-v1/splitmix64/rejection-index/percentile",
+        "pairs": 12,
+        "raw_ratios": [
+          0.982549073817361,
+          0.9838752689955916,
+          1.0444551140098566,
+          0.9900492651185447,
+          1.0218043301596358,
+          0.911857352532692,
+          0.9788236844070641,
+          1.0404750162424543,
+          1.0003377650026997,
+          0.9732693498304124,
+          1.000181854277578,
+          1.013888795130454
+        ],
+        "log_ratios": [
+          -0.017604988580364855,
+          -0.016256149115325247,
+          0.04349532742891249,
+          -0.010000574345621072,
+          0.021570015681697585,
+          -0.0922717128380004,
+          -0.021403750314602954,
+          0.03967735526337646,
+          0.00033770797294252475,
+          -0.027094411024259912,
+          0.00018183774409319398,
+          0.013793229658258799
+        ],
+        "geometric_ratio": 0.9945502281418327,
+        "bootstrap_95": [
+          0.9745658156702675,
+          1.012684107927278
+        ],
+        "baseline_median": 0.13543849949999998,
+        "candidate_median": 0.13654105049999998,
+        "baseline_p95": 0.137497708,
+        "candidate_p95": 0.141300623,
+        "exact_sign_flip_p": 0.64794921875,
+        "bootstrap_resamples": 10000,
+        "seed": 357762155333
+      }
+    },
+    {
+      "phase": "cold-check",
+      "baseline": "pristine",
+      "candidate": "entry",
+      "analysis": {
+        "method": "paired-log-v1/splitmix64/rejection-index/percentile",
+        "pairs": 12,
+        "raw_ratios": [
+          0.8041972658757778,
+          0.801385515404861,
+          0.8174015100571285,
+          0.841588509437293,
+          0.8324319542200664,
+          0.79648509059249,
+          0.8612894712753307,
+          0.8308905544542813,
+          0.8562775434321399,
+          0.8195916586437135,
+          0.8421291751898705,
+          0.8170255967010146
+        ],
+        "log_ratios": [
+          -0.21791068433103744,
+          -0.22141315505765546,
+          -0.20162486046300288,
+          -0.17246409032705357,
+          -0.18340379714075494,
+          -0.2275468684607267,
+          -0.14932462748635023,
+          -0.1852571962247973,
+          -0.15516072241107715,
+          -0.19894904001945823,
+          -0.17182186179183367,
+          -0.2020848545015108
+        ],
+        "geometric_ratio": 0.8264795156192303,
+        "bootstrap_95": [
+          0.8155498090077754,
+          0.8379818711282475
+        ],
+        "baseline_median": 0.13543849949999998,
+        "candidate_median": 0.1631774745,
+        "baseline_p95": 0.137497708,
+        "candidate_p95": 0.16884968,
+        "exact_sign_flip_p": 0.00048828125,
+        "bootstrap_resamples": 10000,
+        "seed": 357762155333
+      }
+    },
+    {
+      "phase": "cold-check",
+      "baseline": "cargo",
+      "candidate": "entry",
+      "analysis": {
+        "method": "paired-log-v1/splitmix64/rejection-index/percentile",
+        "pairs": 12,
+        "raw_ratios": [
+          1.5618314289964894,
+          1.5877860833989934,
+          1.579392504822538,
+          1.6624758539131883,
+          1.5975785757005898,
+          1.643924433238346,
+          1.691886521788543,
+          1.5949647974975818,
+          1.7635803761558762,
+          1.6074328362980872,
+          1.7178538623921573,
+          1.5801962331272972
+        ],
+        "log_ratios": [
+          0.4458591256170752,
+          0.4623406455639494,
+          0.45704028248475836,
+          0.5083079694804065,
+          0.46848909272696426,
+          0.4970863303940689,
+          0.525844191434045,
+          0.4668516654588186,
+          0.5673460472883867,
+          0.47463839479368053,
+          0.5410757573085012,
+          0.4575490375087534
+        ],
+        "geometric_ratio": 1.6312866267305492,
+        "bootstrap_95": [
+          1.6003977818076265,
+          1.6681866424770535
+        ],
+        "baseline_median": 0.2630110825,
+        "candidate_median": 0.1631774745,
+        "baseline_p95": 0.280480686,
+        "candidate_p95": 0.16884968,
+        "exact_sign_flip_p": 0.00048828125,
+        "bootstrap_resamples": 10000,
+        "seed": 357762155333
+      }
+    },
+    {
+      "phase": "no-op-check",
+      "baseline": "pristine",
+      "candidate": "integrated",
+      "analysis": {
+        "method": "paired-log-v1/splitmix64/rejection-index/percentile",
+        "pairs": 12,
+        "raw_ratios": [
+          1.1504915516419665,
+          1.1634327348003979,
+          1.0843756165752219,
+          0.979636858580076,
+          0.862264474016606,
+          1.1045742287694549,
+          1.0689676082115058,
+          0.8857572288217216,
+          1.0238638335949646,
+          0.9936058006616872,
+          1.0613255430799073,
+          0.9640385771774823
+        ],
+        "log_ratios": [
+          0.1401892872607302,
+          0.15137488928313836,
+          0.08100435275255347,
+          -0.020573328458360685,
+          -0.14819324097194286,
+          0.09945994738665043,
+          0.06669333056558724,
+          -0.12131237402602935,
+          0.023583542770438726,
+          -0.006414729794916418,
+          0.0595186392241871,
+          -0.036623967353317965
+        ],
+        "geometric_ratio": 1.024350611837768,
+        "bootstrap_95": [
+          0.9714289960995565,
+          1.0765624446825228
+        ],
+        "baseline_median": 0.0012605469999999999,
+        "candidate_median": 0.0012476305,
+        "baseline_p95": 0.001351768,
+        "candidate_p95": 0.001313648,
+        "exact_sign_flip_p": 0.39208984375,
+        "bootstrap_resamples": 10000,
+        "seed": 357762155333
+      }
+    },
+    {
+      "phase": "no-op-check",
+      "baseline": "pristine",
+      "candidate": "entry",
+      "analysis": {
+        "method": "paired-log-v1/splitmix64/rejection-index/percentile",
+        "pairs": 12,
+        "raw_ratios": [
+          0.03957500865409495,
+          0.04192511544746098,
+          0.04461265516577222,
+          0.03813822578172965,
+          0.03753660080221432,
+          0.04750298736836216,
+          0.03902437486422269,
+          0.03619697668151657,
+          0.04469850213034107,
+          0.03997891778606145,
+          0.041095153273405106,
+          0.03993896793296525
+        ],
+        "log_ratios": [
+          -3.229557454539281,
+          -3.1718702176103237,
+          -3.1097377120935157,
+          -3.266538198462163,
+          -3.282438800612571,
+          -3.046962677953639,
+          -3.2435688315629436,
+          -3.318779680723335,
+          -3.107815287312409,
+          -3.219403019159157,
+          -3.1918650896549607,
+          -3.220402791764861
+        ],
+        "geometric_ratio": 0.040731848255332874,
+        "bootstrap_95": [
+          0.0390795592004205,
+          0.042586019105062496
+        ],
+        "baseline_median": 0.0012605469999999999,
+        "candidate_median": 0.0306809325,
+        "baseline_p95": 0.001351768,
+        "candidate_p95": 0.033742996,
+        "exact_sign_flip_p": 0.00048828125,
+        "bootstrap_resamples": 10000,
+        "seed": 357762155333
+      }
+    },
+    {
+      "phase": "no-op-check",
+      "baseline": "cargo",
+      "candidate": "entry",
+      "analysis": {
+        "method": "paired-log-v1/splitmix64/rejection-index/percentile",
+        "pairs": 12,
+        "raw_ratios": [
+          0.2927596070365934,
+          0.2849255282575829,
+          0.2990580970274327,
+          0.289650124725143,
+          0.30463974395031734,
+          0.29732580455125796,
+          0.2828411719782925,
+          0.2705540039219336,
+          0.2956372174517229,
+          0.28728840066919764,
+          0.26448880342609954,
+          0.2702569950435799
+        ],
+        "log_ratios": [
+          -1.2284034605215193,
+          -1.2555274372187775,
+          -1.207117420026539,
+          -1.2390815508331992,
+          -1.1886253678787106,
+          -1.2129267564067683,
+          -1.2628697686459542,
+          -1.3072835558089113,
+          -1.2186221930576435,
+          -1.247268687396343,
+          -1.3299563596720203,
+          -1.3083819391952782
+        ],
+        "geometric_ratio": 0.286360041159198,
+        "bootstrap_95": [
+          0.27913224258989955,
+          0.2929954182103807
+        ],
+        "baseline_median": 0.008622019,
+        "candidate_median": 0.0306809325,
+        "baseline_p95": 0.009773663,
+        "candidate_p95": 0.033742996,
+        "exact_sign_flip_p": 0.00048828125,
+        "bootstrap_resamples": 10000,
+        "seed": 357762155333
+      }
+    },
+    {
+      "phase": "cold-build",
+      "baseline": "pristine",
+      "candidate": "integrated",
+      "analysis": {
+        "method": "paired-log-v1/splitmix64/rejection-index/percentile",
+        "pairs": 12,
+        "raw_ratios": [
+          0.984196522886445,
+          1.0037273353159835,
+          1.017938685088578,
+          0.9984667608280932,
+          1.012395096912463,
+          0.9766228203359216,
+          1.0086065690639814,
+          1.0370605689917294,
+          0.9709398231819225,
+          1.017078652187037,
+          1.0026883408181753,
+          0.9883037233104561
+        ],
+        "log_ratios": [
+          -0.015929683490410795,
+          0.0037204060149191864,
+          0.01777968555660414,
+          -0.0015344157859269458,
+          0.012318906643188132,
+          -0.023654760500898098,
+          0.008569743691014597,
+          0.03639033544116499,
+          -0.029490786677275116,
+          0.016934451526416927,
+          0.002684733693339103,
+          -0.011765216218189156
+        ],
+        "geometric_ratio": 1.001336175212204,
+        "bootstrap_95": [
+          0.9909850473076887,
+          1.011878165186035
+        ],
+        "baseline_median": 0.267598643,
+        "candidate_median": 0.2664602785,
+        "baseline_p95": 0.274603742,
+        "candidate_p95": 0.277145079,
+        "exact_sign_flip_p": 0.8076171875,
+        "bootstrap_resamples": 10000,
+        "seed": 357762155333
+      }
+    },
+    {
+      "phase": "cold-build",
+      "baseline": "pristine",
+      "candidate": "entry",
+      "analysis": {
+        "method": "paired-log-v1/splitmix64/rejection-index/percentile",
+        "pairs": 12,
+        "raw_ratios": [
+          0.8935159312242651,
+          0.9041287233401061,
+          0.9068117932931328,
+          0.9144866591249194,
+          0.8970837094044642,
+          0.8793956055247408,
+          0.9455166425096143,
+          0.9397220172468672,
+          0.8971445162644005,
+          0.9281104354054523,
+          0.9059605436989914,
+          0.9027626751460489
+        ],
+        "log_ratios": [
+          -0.11259111440812841,
+          -0.10078353565155362,
+          -0.09782035503728848,
+          -0.08939239942064359,
+          -0.10860609975638136,
+          -0.12852041937693182,
+          -0.056023789230375876,
+          -0.06217117378686221,
+          -0.10853831923761614,
+          -0.07460454960664298,
+          -0.09875952388859988,
+          -0.10229557832934266
+        ],
+        "geometric_ratio": 0.9093648367102998,
+        "bootstrap_95": [
+          0.8993935432313631,
+          0.9203170012656449
+        ],
+        "baseline_median": 0.267598643,
+        "candidate_median": 0.293123537,
+        "baseline_p95": 0.274603742,
+        "candidate_p95": 0.302017216,
+        "exact_sign_flip_p": 0.00048828125,
+        "bootstrap_resamples": 10000,
+        "seed": 357762155333
+      }
+    },
+    {
+      "phase": "cold-build",
+      "baseline": "cargo",
+      "candidate": "entry",
+      "analysis": {
+        "method": "paired-log-v1/splitmix64/rejection-index/percentile",
+        "pairs": 12,
+        "raw_ratios": [
+          1.1890019011366557,
+          1.2196551721211966,
+          1.2223553506689206,
+          1.2262192107933325,
+          1.173812663410302,
+          1.243999993243187,
+          1.3137648747695554,
+          1.2222103885934745,
+          1.2268396322768675,
+          1.2483424523446045,
+          1.2202610463511536,
+          1.2521086813926021
+        ],
+        "log_ratios": [
+          0.17311421664483984,
+          0.19856817299101426,
+          0.20077961280501344,
+          0.20393562315679703,
+          0.1602571374723012,
+          0.21833198888546612,
+          0.27289696551946885,
+          0.2006610133553952,
+          0.20444145814605275,
+          0.2218166332233409,
+          0.1990648082753106,
+          0.2248290751345876
+        ],
+        "geometric_ratio": 1.2294391119054835,
+        "bootstrap_95": [
+          1.211801340863044,
+          1.249221805485935
+        ],
+        "baseline_median": 0.360103593,
+        "candidate_median": 0.293123537,
+        "baseline_p95": 0.371929838,
+        "candidate_p95": 0.302017216,
+        "exact_sign_flip_p": 0.00048828125,
+        "bootstrap_resamples": 10000,
+        "seed": 357762155333
+      }
+    },
+    {
+      "phase": "no-op-build",
+      "baseline": "pristine",
+      "candidate": "integrated",
+      "analysis": {
+        "method": "paired-log-v1/splitmix64/rejection-index/percentile",
+        "pairs": 12,
+        "raw_ratios": [
+          0.9690192061935461,
+          1.0885092758104016,
+          1.0282618756876052,
+          0.9901689879911696,
+          0.9179458325906465,
+          1.0174973995439396,
+          1.0498973315518842,
+          1.0040832445758188,
+          1.046365449588096,
+          0.985979668035457,
+          1.0893992932862198,
+          0.9545564400008517
+        ],
+        "log_ratios": [
+          -0.03147084665462252,
+          0.08480912330098977,
+          0.027869877478289062,
+          -0.009879655479649863,
+          -0.08561689599510469,
+          0.01734608260057513,
+          0.04869237991431152,
+          0.004074930756573281,
+          0.045322682815679194,
+          -0.014119545245804943,
+          0.08562643724886776,
+          -0.04650850712879517
+        ],
+        "geometric_ratio": 1.0105676189664903,
+        "bootstrap_95": [
+          0.9825465352001946,
+          1.038706439558998
+        ],
+        "baseline_median": 0.0032462895,
+        "candidate_median": 0.003215576,
+        "baseline_p95": 0.003402116,
+        "candidate_p95": 0.003444618,
+        "exact_sign_flip_p": 0.49072265625,
+        "bootstrap_resamples": 10000,
+        "seed": 357762155333
+      }
+    },
+    {
+      "phase": "no-op-build",
+      "baseline": "pristine",
+      "candidate": "entry",
+      "analysis": {
+        "method": "paired-log-v1/splitmix64/rejection-index/percentile",
+        "pairs": 12,
+        "raw_ratios": [
+          0.097200241347961,
+          0.10440171965702434,
+          0.10379770290388834,
+          0.09644024105836223,
+          0.09202860053284183,
+          0.10314989344874723,
+          0.09587652378609118,
+          0.1058851479150859,
+          0.109708861248917,
+          0.09676367017171507,
+          0.0968645393812356,
+          0.09611488913489007
+        ],
+        "log_ratios": [
+          -2.3309820845151124,
+          -2.2595091318586795,
+          -2.265311438515565,
+          -2.3388317261040386,
+          -2.385655874887852,
+          -2.271572072439261,
+          -2.3446941259546157,
+          -2.24540028252668,
+          -2.2099251378537033,
+          -2.3354836632887728,
+          -2.3344417777197424,
+          -2.342211041241121
+        ],
+        "geometric_ratio": 0.09972540070734716,
+        "bootstrap_95": [
+          0.09699306673080844,
+          0.10271936349486553
+        ],
+        "baseline_median": 0.0032462895,
+        "candidate_median": 0.032095955999999995,
+        "baseline_p95": 0.003402116,
+        "candidate_p95": 0.03434046,
+        "exact_sign_flip_p": 0.00048828125,
+        "bootstrap_resamples": 10000,
+        "seed": 357762155333
+      }
+    },
+    {
+      "phase": "no-op-build",
+      "baseline": "cargo",
+      "candidate": "entry",
+      "analysis": {
+        "method": "paired-log-v1/splitmix64/rejection-index/percentile",
+        "pairs": 12,
+        "raw_ratios": [
+          0.2649369577460523,
+          0.26075956151688173,
+          0.2845515638323053,
+          0.26428180015958935,
+          0.2796890085700611,
+          0.2760258093698716,
+          0.26302991425998823,
+          0.2667436280487324,
+          0.2794823724154761,
+          0.2772335166550927,
+          0.2673685752641205,
+          0.269701823965464
+        ],
+        "log_ratios": [
+          -1.3282633765954057,
+          -1.3441565164854201,
+          -1.256840798139618,
+          -1.3307393202817113,
+          -1.274076976757458,
+          -1.2872609054273014,
+          -1.3354875108391373,
+          -1.3214672764380375,
+          -1.2748160566568152,
+          -1.2828951075214312,
+          -1.3191271408009624,
+          -1.310438285917297
+        ],
+        "geometric_ratio": 0.2710467114482012,
+        "bootstrap_95": [
+          0.2669183176712881,
+          0.27533784407930034
+        ],
+        "baseline_median": 0.0087369995,
+        "candidate_median": 0.032095955999999995,
+        "baseline_p95": 0.009157702,
+        "candidate_p95": 0.03434046,
+        "exact_sign_flip_p": 0.00048828125,
+        "bootstrap_resamples": 10000,
+        "seed": 357762155333
+      }
+    },
+    {
+      "phase": "compile-plus-run",
+      "baseline": "pristine",
+      "candidate": "integrated",
+      "analysis": {
+        "method": "paired-log-v1/splitmix64/rejection-index/percentile",
+        "pairs": 12,
+        "raw_ratios": [
+          1.0255543218077972,
+          1.0658952364186587,
+          0.997057176516254,
+          1.036346403565115,
+          0.9923996359338221,
+          1.0266789476638705,
+          1.1392228895203258,
+          1.0243968029697401,
+          1.0488143697992907,
+          0.9675197227963658,
+          1.039286273087222,
+          0.9853105333549909
+        ],
+        "log_ratios": [
+          0.02523326817350302,
+          0.06381504363331647,
+          -0.002947162102724832,
+          0.03570145432490612,
+          -0.007629394018828783,
+          0.026329270256092663,
+          0.13034635410041062,
+          0.024103954457594057,
+          0.047660354555119966,
+          -0.03301946896673691,
+          0.038534201680525015,
+          -0.014798425205430732
+        ],
+        "geometric_ratio": 1.028166844787508,
+        "bootstrap_95": [
+          1.0064791044379486,
+          1.0533428269386993
+        ],
+        "baseline_median": 0.0040791245,
+        "candidate_median": 0.0039981315,
+        "baseline_p95": 0.004320398,
+        "candidate_p95": 0.0041922850000000005,
+        "exact_sign_flip_p": 0.03271484375,
+        "bootstrap_resamples": 10000,
+        "seed": 357762155333
+      }
+    },
+    {
+      "phase": "compile-plus-run",
+      "baseline": "pristine",
+      "candidate": "entry",
+      "analysis": {
+        "method": "paired-log-v1/splitmix64/rejection-index/percentile",
+        "pairs": 12,
+        "raw_ratios": [
+          0.12335546267508386,
+          0.12687109563710353,
+          0.12969735187716552,
+          0.11900560845940127,
+          0.12008710893674077,
+          0.13477153843792444,
+          0.1339897107862821,
+          0.13199823266094607,
+          0.13435792054972193,
+          0.12162313435608386,
+          0.12990467517003337,
+          0.12526116926379283
+        ],
+        "log_ratios": [
+          -2.092685151011818,
+          -2.0645837029632106,
+          -2.042551605160653,
+          -2.128584657070252,
+          -2.119537891737555,
+          -2.0041742419814828,
+          -2.0099922671563575,
+          -2.0249667454176254,
+          -2.0072479910642564,
+          -2.1068280779063904,
+          -2.040954365421792,
+          -2.0773543672342596
+        ],
+        "geometric_ratio": 0.12745969414975375,
+        "bootstrap_95": [
+          0.12439343513655704,
+          0.13052751644167535
+        ],
+        "baseline_median": 0.0040791245,
+        "candidate_median": 0.031848684,
+        "baseline_p95": 0.004320398,
+        "candidate_p95": 0.035033685,
+        "exact_sign_flip_p": 0.00048828125,
+        "bootstrap_resamples": 10000,
+        "seed": 357762155333
+      }
+    },
+    {
+      "phase": "compile-plus-run",
+      "baseline": "cargo",
+      "candidate": "entry",
+      "analysis": {
+        "method": "paired-log-v1/splitmix64/rejection-index/percentile",
+        "pairs": 12,
+        "raw_ratios": [
+          0.28564980835990816,
+          0.29202735434492416,
+          0.29747200196768997,
+          0.27241519126520664,
+          0.2907173639634693,
+          0.3040253557850566,
+          0.2898689043864315,
+          0.2972617115816811,
+          0.2926685598362116,
+          0.28784860784326144,
+          0.29583826076547,
+          0.2851941999695594
+        ],
+        "log_ratios": [
+          -1.2529886647031625,
+          -1.2309078018380446,
+          -1.2124351694581486,
+          -1.3004279380341388,
+          -1.2354037416446833,
+          -1.1906441738664153,
+          -1.238326512048649,
+          -1.213142344417233,
+          -1.2287145053474018,
+          -1.2453206042685347,
+          -1.2179423903307565,
+          -1.2545849273614147
+        ],
+        "geometric_ratio": 0.29081443437506804,
+        "bootstrap_95": [
+          0.2862681689924034,
+          0.29498637174237174
+        ],
+        "baseline_median": 0.009272756,
+        "candidate_median": 0.031848684,
+        "baseline_p95": 0.009956003000000001,
+        "candidate_p95": 0.035033685,
+        "exact_sign_flip_p": 0.00048828125,
+        "bootstrap_resamples": 10000,
+        "seed": 357762155333
+      }
+    },
+    {
+      "phase": "runtime",
+      "baseline": "pristine",
+      "candidate": "integrated",
+      "analysis": {
+        "method": "paired-log-v1/splitmix64/rejection-index/percentile",
+        "pairs": 12,
+        "raw_ratios": [
+          1.0095706938128004,
+          1.0147664831186411,
+          0.9747298928980258,
+          1.022275094608265,
+          1.0388031845919374,
+          1.0023646071700993,
+          1.0265061629386436,
+          0.9828517468485028,
+          0.9394656457180427,
+          1.0042283675091075,
+          0.985769771646688,
+          1.0031331398125538
+        ],
+        "log_ratios": [
+          0.009525184860526004,
+          0.014658520131568764,
+          -0.02559487929010107,
+          0.022030628367534,
+          0.03806926644667197,
+          0.002361815885892682,
+          0.026160961295792262,
+          -0.017296987250201568,
+          -0.062444027355952336,
+          0.004219453083355695,
+          -0.014332448959976318,
+          0.00312824175820392
+        ],
+        "geometric_ratio": 1.0000404782336645,
+        "bootstrap_95": [
+          0.9844625014772829,
+          1.0138163151824067
+        ],
+        "baseline_median": 0.0008788275,
+        "candidate_median": 0.0008791739999999999,
+        "baseline_p95": 0.000901067,
+        "candidate_p95": 0.000914962,
+        "exact_sign_flip_p": 0.99609375,
+        "bootstrap_resamples": 10000,
+        "seed": 357762155333
+      }
+    },
+    {
+      "phase": "runtime",
+      "baseline": "pristine",
+      "candidate": "entry",
+      "analysis": {
+        "method": "paired-log-v1/splitmix64/rejection-index/percentile",
+        "pairs": 12,
+        "raw_ratios": [
+          0.985701557883338,
+          1.0040106921223542,
+          1.0069332512574614,
+          0.9910135086817196,
+          0.9938648777564149,
+          1.040314157158926,
+          0.9106763199349037,
+          0.990868913205643,
+          0.9097005455879884,
+          1.0106882712795187,
+          1.0361563097570416,
+          0.834585491497912
+        ],
+        "log_ratios": [
+          -0.014401649827729734,
+          0.00400267073708882,
+          0.0069093267902005095,
+          -0.00902711338105977,
+          -0.006154019436762859,
+          0.03952274172933379,
+          -0.09356774679440427,
+          -0.009173030691528083,
+          -0.09463980440934261,
+          0.010631555479369226,
+          0.03551801060019155,
+          -0.18082009475494587
+        ],
+        "geometric_ratio": 0.9744001161451142,
+        "bootstrap_95": [
+          0.938477720219634,
+          1.0052996533335963
+        ],
+        "baseline_median": 0.0008788275,
+        "candidate_median": 0.0008870805,
+        "baseline_p95": 0.000901067,
+        "candidate_p95": 0.001064562,
+        "exact_sign_flip_p": 0.2041015625,
+        "bootstrap_resamples": 10000,
+        "seed": 357762155333
+      }
+    },
+    {
+      "phase": "runtime",
+      "baseline": "cargo",
+      "candidate": "entry",
+      "analysis": {
+        "method": "paired-log-v1/splitmix64/rejection-index/percentile",
+        "pairs": 12,
+        "raw_ratios": [
+          0.8202880991293557,
+          0.8124545802585454,
+          0.7901337705570547,
+          0.8219353476604132,
+          0.8188195866185224,
+          0.8171878987815593,
+          0.7443942539407661,
+          0.7628903465229261,
+          0.8305770234063439,
+          0.8323817941579604,
+          0.8911990708696521,
+          0.7029745566721336
+        ],
+        "log_ratios": [
+          -0.19809966002777113,
+          -0.20769526756102774,
+          -0.23555301803668893,
+          -0.1960935395004748,
+          -0.19989150435443204,
+          -0.20188622429618341,
+          -0.2951844732917026,
+          -0.270640971625828,
+          -0.1856346108139677,
+          -0.18346405620837736,
+          -0.11518745237064376,
+          -0.35243458032695774
+        ],
+        "geometric_ratio": 0.8024007455368581,
+        "bootstrap_95": [
+          0.775507438645701,
+          0.8283178288535737
+        ],
+        "baseline_median": 0.0007234125,
+        "candidate_median": 0.0008870805,
+        "baseline_p95": 0.000759667,
+        "candidate_p95": 0.001064562,
+        "exact_sign_flip_p": 0.00048828125,
+        "bootstrap_resamples": 10000,
+        "seed": 357762155333
+      }
+    }
+  ],
+  "scope": "Pinned public goport-util-small slice, upstream driver, no source edits between samples.",
+  "order_method": "seeded-python-cyclic-rotations-v1",
+  "seed": 357762155333,
+  "profiles": "Application dev opt0/debug0/unwind/overflow+debug assertions; Cargo incremental enabled; native TinyCC dev.",
+  "cold_scope": "New owned lane directories; native daemon/disk cache disabled; OS caches not flushed.",
+  "warm_scope": "Retained native daemons versus Cargo Fresh; unchanged source; no body/signature-edit claim.",
+  "timing_scope": "Command wall time with 100us wait polling; compile-plus-run sums its two child command spans, excluding bookkeeping between them.",
+  "limits": "One public pruned/adapted slice; not unchanged full ts-rust, full Rust, fastest Rust setup, resources or release admission.",
+  "candidate_revision_and_tree": [
+    "96fa69536a68e7c2084e746d31e56a453611d949",
+    "426397dfbefec5d81dd4cfa195450eb947b4b5d1"
+  ],
+  "rustc_version": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+  "fixture_preparation": {
+    "upstream_slice_files": {
+      "edits.json": "ebfe33546ba5d19be21e37865474b7348aa9bc593458ec7b77ef04f45153429c",
+      "prune.json": "8ce76eb1fc027c7a513e7b7ecdd4194405be9ec86a1e04beb3dcfcfaeec6e83a",
+      "spec.json": "2c91dc27ad76b87be8d3b5fac54ef253b5550733847a69976790e83691944091",
+      "src/diag.rs": "80959fc732bc5926597c71f17b875e89b33dd5ca87b871bf13097330fab908f9",
+      "src/diagnostics/catalog.rs": "0096ef898e2f85256549e9a8071cf743be2dddbc15c6bb35730b69fea3957014",
+      "src/diagnostics/effect_catalog.rs": "cec5cbc0dccbd0c123794db97103ab52704ddf0c105071bce8c73db66dba930b",
+      "src/diagnostics/mod.rs": "7b0a05d61cb0cec175da3092bb072fb036a7d8e25047896d24fad3555f64d6cc",
+      "src/flags_macros.rs": "2ef2974a7504f352f9a5f0f6ec2edf25f6ca65148b0f0b5dddc2d811fefae7d8",
+      "src/frontend/bundled/embed.rs": "f21dd117190ae2acda0d330b57fbaeebe0aa4c5c1b3ba76a17e061698d871eda",
+      "src/frontend/bundled.rs": "1dcc293fc80dcdd644105c363e47da7be09dd5f9ff012addf17b2743b1aab94d",
+      "src/frontend/core_bfs.rs": "65382892ec12bea00dc43861d99d3f439cdb67b3de4b76ef1608f0ffd365e5a9",
+      "src/frontend/core_binarysearch.rs": "62aa703818c432d72befac1628ba0acda657a6ea5536bbc7c88c5d014e6ba104",
+      "src/frontend/core_context.rs": "e9720f854f81be45e0a66cf2a87a7825ff8ae6c49f6f6415a28dcfcab0b59d43",
+      "src/frontend/core_nodemodules.rs": "c74a162b0cf08fc57a50c135d3cc32848ee72207bbfd18667a0b5946c5df095f",
+      "src/frontend/core_workgroup.rs": "ef0d2591139212e57cae55a32b3c22fadca4c337c1238812f3f6b7fdfa8a7bc7",
+      "src/frontend/json.rs": "273e62eb26136d5cfd28daad6fcc7aca550b510dae9993dadc561126b8ebbf9a",
+      "src/frontend/json_ext.rs": "dea03ccdf28df7268648944ca76afcdb8568c5786ba97c6feafb5b78b8e61264",
+      "src/frontend/json_indexmap.rs": "72e7d29611cdb381898d02da2c738b655080b1d7539afe2eb13aa2e37eec0e01",
+      "src/frontend/nativepath.rs": "b6694890bef5ef49cc352ae4a84b80f760ef10a434b6c919550c823e2e463f70",
+      "src/frontend/osutil.rs": "9cf8c14333bd5be8a4148f44daa4862a1082be1bf3635e97f39ecd921631ed7e",
+      "src/frontend/semver.rs": "722411ecd267ac6e0df932a15b212b262f0ec247d2e3cb21f4d48a711aeee162",
+      "src/frontend/stringutil_ls.rs": "87064d52e9f3e578d9ae6cfbe9afca0781da1566fecb8f92dc386d78688ebd07",
+      "src/frontend/tspath/extension.rs": "9248b5ce7e82c15a3583df11ca94fdabde47a09355b52ceab98a3d6d4284fa2e",
+      "src/frontend/tspath/mod.rs": "a522edfc2386af6c20d7cfc929cf0b5efcea46b2e362c1a9e5ae48f2b8a9e6ea",
+      "src/frontend/tspath/path.rs": "133b18e6a224e436476c2af8904dfe8c682bc43947b9ed2777a182bcb3300401",
+      "src/frontend/util_prelude.rs": "07c37744dcc43f273a97847e058b7214203c790b0a22436de7f8efe997921bd8",
+      "src/frontend/vfs/cachedvfs.rs": "50f4da61415ec68c5edbf18c8241fd5f6413bfba8efa95d292d76c5df94718e0",
+      "src/frontend/vfs/mod.rs": "41cf299331b206aa5d8e72fc2ba27023499cc5e17b7dae34cf65a47a75066e19",
+      "src/frontend/vfs/mod_impl.rs": "ef948e66914b57e206694434e591a62597fa2a54a47b3711d7d89cf6aba544db",
+      "src/frontend/vfs/osvfs.rs": "2ad07e2e8fbaa29b1c1415012f009164e38a182b26bbb32bfe66a44dc62312a3",
+      "src/frontend/vfs/trackingvfs.rs": "e146b276bcee2c0a682cc47939a02968439f3d982043d5cce202d7589e5c126a",
+      "src/frontend/vfs/vfsmatch.rs": "3a18738b01d69cba27757063a91b5fa31e4fa9c847bfaaba8a3878f46a2cf75e",
+      "src/frontend/vfs/walkdir.rs": "78809128e29aa389767168d4a4b96af5e3848eee8519851fbfbe4c7472a6b8f0",
+      "src/frontend/vfs/wrapvfs.rs": "535cf5a1b2138ce624a8219c9a1af897b62d06c1a1c89a21fe2abb6214d1f151",
+      "src/gopanic.rs": "0e898605e5270619a805c05e3d69047226740ed541ab4d03bf2c9e6b4aa0d0ce",
+      "src/gostring.rs": "b6ef984a55cedfa835e773051f1a9b7192a5b66ad5c4bb15a9552e098194bdff",
+      "src/jsnum.rs": "e78bb6ca58596d93c166495534557c270cb244e3756c37fa28b18956f3aca153",
+      "src/jsonrpc/baseproto.rs": "f5262e6f1aecd7f5ae8726c16207285bb4b9b6a230ba6ca17987fff86c6910a3",
+      "src/jsonrpc/jsonrpc.rs": "b3d9f66570733c1b2e32b5b1cb0cf4ffeb8b600eb2911f39d7363c7fcb01fb2a",
+      "src/jsonrpc/mod.rs": "09cfc5f87f13159934f4ffa7b1aeb8b13ff86ddbb849e6d16841ede70c48cd9f",
+      "src/slice_main.rs": "ab953fd65f5b60efe81f894ec241c6ba023ed6a4d11ce37572289b07e3ea72fb",
+      "src/support.rs": "3e413f47416f698ea5d510feba0e4e7639cf325e160ec791ebf27024c04914ef",
+      "src/util_prelude.rs": "d658de5180a3e1bca7eef868bea5b519eed21c1d16b02b6045019b36638de3b6"
+    },
+    "upstream_driver_sha256": "7aac8c3afe9690e86a0003d724df8dc8726a149ef81a1be7443795fb2b6f99c2",
+    "tsrust_revision": "b11b618aedde90c10c184869b208f1c3c0badea9",
+    "features": [],
+    "preparation": "Upstream slice bytes retained; bench driver replaces the one empty main; explicit standalone manifest added."
+  },
+  "fixture_files": {
+    "Cargo.lock": "c5434c43e4444dfa56406c42904fa75cac4190c5870447a98c9b239edf795278",
+    "Cargo.toml": "89d7f2243354b127dcc2d2e7fe0c0f14ed2a6087db998ab6bde9559a3db6fda8",
+    "src/bench_driver.rs": "7aac8c3afe9690e86a0003d724df8dc8726a149ef81a1be7443795fb2b6f99c2",
+    "src/diag.rs": "80959fc732bc5926597c71f17b875e89b33dd5ca87b871bf13097330fab908f9",
+    "src/diagnostics/catalog.rs": "0096ef898e2f85256549e9a8071cf743be2dddbc15c6bb35730b69fea3957014",
+    "src/diagnostics/effect_catalog.rs": "cec5cbc0dccbd0c123794db97103ab52704ddf0c105071bce8c73db66dba930b",
+    "src/diagnostics/mod.rs": "7b0a05d61cb0cec175da3092bb072fb036a7d8e25047896d24fad3555f64d6cc",
+    "src/flags_macros.rs": "2ef2974a7504f352f9a5f0f6ec2edf25f6ca65148b0f0b5dddc2d811fefae7d8",
+    "src/frontend/bundled/embed.rs": "f21dd117190ae2acda0d330b57fbaeebe0aa4c5c1b3ba76a17e061698d871eda",
+    "src/frontend/bundled.rs": "1dcc293fc80dcdd644105c363e47da7be09dd5f9ff012addf17b2743b1aab94d",
+    "src/frontend/core_bfs.rs": "65382892ec12bea00dc43861d99d3f439cdb67b3de4b76ef1608f0ffd365e5a9",
+    "src/frontend/core_binarysearch.rs": "62aa703818c432d72befac1628ba0acda657a6ea5536bbc7c88c5d014e6ba104",
+    "src/frontend/core_context.rs": "e9720f854f81be45e0a66cf2a87a7825ff8ae6c49f6f6415a28dcfcab0b59d43",
+    "src/frontend/core_nodemodules.rs": "c74a162b0cf08fc57a50c135d3cc32848ee72207bbfd18667a0b5946c5df095f",
+    "src/frontend/core_workgroup.rs": "ef0d2591139212e57cae55a32b3c22fadca4c337c1238812f3f6b7fdfa8a7bc7",
+    "src/frontend/json.rs": "273e62eb26136d5cfd28daad6fcc7aca550b510dae9993dadc561126b8ebbf9a",
+    "src/frontend/json_ext.rs": "dea03ccdf28df7268648944ca76afcdb8568c5786ba97c6feafb5b78b8e61264",
+    "src/frontend/json_indexmap.rs": "72e7d29611cdb381898d02da2c738b655080b1d7539afe2eb13aa2e37eec0e01",
+    "src/frontend/nativepath.rs": "b6694890bef5ef49cc352ae4a84b80f760ef10a434b6c919550c823e2e463f70",
+    "src/frontend/osutil.rs": "9cf8c14333bd5be8a4148f44daa4862a1082be1bf3635e97f39ecd921631ed7e",
+    "src/frontend/semver.rs": "722411ecd267ac6e0df932a15b212b262f0ec247d2e3cb21f4d48a711aeee162",
+    "src/frontend/stringutil_ls.rs": "87064d52e9f3e578d9ae6cfbe9afca0781da1566fecb8f92dc386d78688ebd07",
+    "src/frontend/tspath/extension.rs": "9248b5ce7e82c15a3583df11ca94fdabde47a09355b52ceab98a3d6d4284fa2e",
+    "src/frontend/tspath/mod.rs": "a522edfc2386af6c20d7cfc929cf0b5efcea46b2e362c1a9e5ae48f2b8a9e6ea",
+    "src/frontend/tspath/path.rs": "133b18e6a224e436476c2af8904dfe8c682bc43947b9ed2777a182bcb3300401",
+    "src/frontend/util_prelude.rs": "07c37744dcc43f273a97847e058b7214203c790b0a22436de7f8efe997921bd8",
+    "src/frontend/vfs/cachedvfs.rs": "50f4da61415ec68c5edbf18c8241fd5f6413bfba8efa95d292d76c5df94718e0",
+    "src/frontend/vfs/mod.rs": "41cf299331b206aa5d8e72fc2ba27023499cc5e17b7dae34cf65a47a75066e19",
+    "src/frontend/vfs/mod_impl.rs": "ef948e66914b57e206694434e591a62597fa2a54a47b3711d7d89cf6aba544db",
+    "src/frontend/vfs/osvfs.rs": "2ad07e2e8fbaa29b1c1415012f009164e38a182b26bbb32bfe66a44dc62312a3",
+    "src/frontend/vfs/trackingvfs.rs": "e146b276bcee2c0a682cc47939a02968439f3d982043d5cce202d7589e5c126a",
+    "src/frontend/vfs/vfsmatch.rs": "3a18738b01d69cba27757063a91b5fa31e4fa9c847bfaaba8a3878f46a2cf75e",
+    "src/frontend/vfs/walkdir.rs": "78809128e29aa389767168d4a4b96af5e3848eee8519851fbfbe4c7472a6b8f0",
+    "src/frontend/vfs/wrapvfs.rs": "535cf5a1b2138ce624a8219c9a1af897b62d06c1a1c89a21fe2abb6214d1f151",
+    "src/gopanic.rs": "0e898605e5270619a805c05e3d69047226740ed541ab4d03bf2c9e6b4aa0d0ce",
+    "src/gostring.rs": "b6ef984a55cedfa835e773051f1a9b7192a5b66ad5c4bb15a9552e098194bdff",
+    "src/jsnum.rs": "e78bb6ca58596d93c166495534557c270cb244e3756c37fa28b18956f3aca153",
+    "src/jsonrpc/baseproto.rs": "f5262e6f1aecd7f5ae8726c16207285bb4b9b6a230ba6ca17987fff86c6910a3",
+    "src/jsonrpc/jsonrpc.rs": "b3d9f66570733c1b2e32b5b1cb0cf4ffeb8b600eb2911f39d7363c7fcb01fb2a",
+    "src/jsonrpc/mod.rs": "09cfc5f87f13159934f4ffa7b1aeb8b13ff86ddbb849e6d16841ede70c48cd9f",
+    "src/slice_main.rs": "4629b2176efbe0ee0237ff52cb57141e079de7a95289383ceab002f5de1dd1dd",
+    "src/support.rs": "3e413f47416f698ea5d510feba0e4e7639cf325e160ec791ebf27024c04914ef",
+    "src/util_prelude.rs": "d658de5180a3e1bca7eef868bea5b519eed21c1d16b02b6045019b36638de3b6"
+  },
+  "runtime_oracle_sha256": "f73437339e317bfd9496b6607fcd84b29efd37941a4a38be9da3f6d9397004bd",
+  "orders": [
+    [
+      "cargo",
+      "pristine",
+      "entry",
+      "integrated"
+    ],
+    [
+      "pristine",
+      "entry",
+      "integrated",
+      "cargo"
+    ],
+    [
+      "integrated",
+      "cargo",
+      "pristine",
+      "entry"
+    ],
+    [
+      "entry",
+      "integrated",
+      "cargo",
+      "pristine"
+    ],
+    [
+      "cargo",
+      "integrated",
+      "entry",
+      "pristine"
+    ],
+    [
+      "pristine",
+      "cargo",
+      "integrated",
+      "entry"
+    ],
+    [
+      "entry",
+      "pristine",
+      "cargo",
+      "integrated"
+    ],
+    [
+      "integrated",
+      "entry",
+      "pristine",
+      "cargo"
+    ],
+    [
+      "pristine",
+      "cargo",
+      "integrated",
+      "entry"
+    ],
+    [
+      "cargo",
+      "integrated",
+      "entry",
+      "pristine"
+    ],
+    [
+      "entry",
+      "pristine",
+      "cargo",
+      "integrated"
+    ],
+    [
+      "integrated",
+      "entry",
+      "pristine",
+      "cargo"
+    ]
+  ],
+  "samples": [
+    {
+      "sample": 0,
+      "lane": "cargo",
+      "phase": "cold-check",
+      "seconds": 0.263714737,
+      "commands": [
+        50
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "pristine",
+      "phase": "cold-check",
+      "seconds": 0.135788451,
+      "commands": [
+        52
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "entry",
+      "phase": "cold-check",
+      "seconds": 0.16884968,
+      "commands": [
+        54
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "integrated",
+      "phase": "cold-check",
+      "seconds": 0.138200172,
+      "commands": [
+        56
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "seconds": 0.009303828,
+      "commands": [
+        69
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "seconds": 0.001257684,
+      "commands": [
+        71
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "entry",
+      "phase": "no-op-check",
+      "seconds": 0.031779753,
+      "commands": [
+        73
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "seconds": 0.001093171,
+      "commands": [
+        75
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "cargo",
+      "phase": "cold-build",
+      "seconds": 0.359099044,
+      "commands": [
+        82
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "pristine",
+      "phase": "cold-build",
+      "seconds": 0.269857194,
+      "commands": [
+        87
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "entry",
+      "phase": "cold-build",
+      "seconds": 0.302017216,
+      "commands": [
+        92
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "integrated",
+      "phase": "cold-build",
+      "seconds": 0.274190355,
+      "commands": [
+        97
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "seconds": 0.009098057,
+      "commands": [
+        121
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "seconds": 0.003337901,
+      "commands": [
+        126
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "entry",
+      "phase": "no-op-build",
+      "seconds": 0.03434046,
+      "commands": [
+        131
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "seconds": 0.003444618,
+      "commands": [
+        136
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "seconds": 0.009956003000000001,
+      "commands": [
+        141,
+        143
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "seconds": 0.004299416,
+      "commands": [
+        146,
+        148
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "seconds": 0.034853876,
+      "commands": [
+        151,
+        153
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "seconds": 0.0041922850000000005,
+      "commands": [
+        156,
+        158
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "cargo",
+      "phase": "runtime",
+      "seconds": 0.000739315,
+      "commands": [
+        161
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "pristine",
+      "phase": "runtime",
+      "seconds": 0.0008884,
+      "commands": [
+        164
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "entry",
+      "phase": "runtime",
+      "seconds": 0.000901287,
+      "commands": [
+        167
+      ]
+    },
+    {
+      "sample": 0,
+      "lane": "integrated",
+      "phase": "runtime",
+      "seconds": 0.000879978,
+      "commands": [
+        170
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "pristine",
+      "phase": "cold-check",
+      "seconds": 0.134717683,
+      "commands": [
+        180
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "entry",
+      "phase": "cold-check",
+      "seconds": 0.168105962,
+      "commands": [
+        182
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "integrated",
+      "phase": "cold-check",
+      "seconds": 0.136925571,
+      "commands": [
+        184
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "cargo",
+      "phase": "cold-check",
+      "seconds": 0.266916307,
+      "commands": [
+        186
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "seconds": 0.00126341,
+      "commands": [
+        199
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "entry",
+      "phase": "no-op-check",
+      "seconds": 0.03013492,
+      "commands": [
+        201
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "seconds": 0.001085933,
+      "commands": [
+        203
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "seconds": 0.008586208,
+      "commands": [
+        205
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "pristine",
+      "phase": "cold-build",
+      "seconds": 0.264249796,
+      "commands": [
+        212
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "entry",
+      "phase": "cold-build",
+      "seconds": 0.292270104,
+      "commands": [
+        217
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "integrated",
+      "phase": "cold-build",
+      "seconds": 0.263268506,
+      "commands": [
+        222
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "cargo",
+      "phase": "cold-build",
+      "seconds": 0.356468744,
+      "commands": [
+        227
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "seconds": 0.003342517,
+      "commands": [
+        251
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "entry",
+      "phase": "no-op-build",
+      "seconds": 0.032015919,
+      "commands": [
+        256
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "seconds": 0.003070729,
+      "commands": [
+        261
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "seconds": 0.008348457,
+      "commands": [
+        266
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "seconds": 0.004038563,
+      "commands": [
+        271,
+        273
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "seconds": 0.031832018000000004,
+      "commands": [
+        276,
+        278
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "seconds": 0.0037888929999999998,
+      "commands": [
+        281,
+        283
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "seconds": 0.00929582,
+      "commands": [
+        286,
+        288
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "pristine",
+      "phase": "runtime",
+      "seconds": 0.000875917,
+      "commands": [
+        291
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "entry",
+      "phase": "runtime",
+      "seconds": 0.000872418,
+      "commands": [
+        294
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "integrated",
+      "phase": "runtime",
+      "seconds": 0.000863171,
+      "commands": [
+        297
+      ]
+    },
+    {
+      "sample": 1,
+      "lane": "cargo",
+      "phase": "runtime",
+      "seconds": 0.0007088,
+      "commands": [
+        300
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "integrated",
+      "phase": "cold-check",
+      "seconds": 0.129948019,
+      "commands": [
+        310
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "cargo",
+      "phase": "cold-check",
+      "seconds": 0.262249145,
+      "commands": [
+        312
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "pristine",
+      "phase": "cold-check",
+      "seconds": 0.135724873,
+      "commands": [
+        314
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "entry",
+      "phase": "cold-check",
+      "seconds": 0.166044314,
+      "commands": [
+        316
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "seconds": 0.001191055,
+      "commands": [
+        329
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "seconds": 0.00865783,
+      "commands": [
+        331
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "seconds": 0.001291551,
+      "commands": [
+        333
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "entry",
+      "phase": "no-op-check",
+      "seconds": 0.028950328,
+      "commands": [
+        335
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "integrated",
+      "phase": "cold-build",
+      "seconds": 0.260800442,
+      "commands": [
+        342
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "cargo",
+      "phase": "cold-build",
+      "seconds": 0.357857613,
+      "commands": [
+        347
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "pristine",
+      "phase": "cold-build",
+      "seconds": 0.265478859,
+      "commands": [
+        352
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "entry",
+      "phase": "cold-build",
+      "seconds": 0.292760704,
+      "commands": [
+        357
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "seconds": 0.003191331,
+      "commands": [
+        381
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "seconds": 0.008995987,
+      "commands": [
+        386
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "seconds": 0.003281524,
+      "commands": [
+        391
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "entry",
+      "phase": "no-op-build",
+      "seconds": 0.031614611,
+      "commands": [
+        396
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "seconds": 0.004044755000000001,
+      "commands": [
+        401,
+        403
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "seconds": 0.009249692,
+      "commands": [
+        406,
+        408
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "seconds": 0.004032852,
+      "commands": [
+        411,
+        413
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "seconds": 0.031094327999999997,
+      "commands": [
+        416,
+        418
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "integrated",
+      "phase": "runtime",
+      "seconds": 0.000892794,
+      "commands": [
+        421
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "cargo",
+      "phase": "runtime",
+      "seconds": 0.000682866,
+      "commands": [
+        424
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "pristine",
+      "phase": "runtime",
+      "seconds": 0.000870233,
+      "commands": [
+        427
+      ]
+    },
+    {
+      "sample": 2,
+      "lane": "entry",
+      "phase": "runtime",
+      "seconds": 0.000864241,
+      "commands": [
+        430
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "entry",
+      "phase": "cold-check",
+      "seconds": 0.160777087,
+      "commands": [
+        440
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "integrated",
+      "phase": "cold-check",
+      "seconds": 0.136668097,
+      "commands": [
+        442
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "cargo",
+      "phase": "cold-check",
+      "seconds": 0.267288025,
+      "commands": [
+        444
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "pristine",
+      "phase": "cold-check",
+      "seconds": 0.135308149,
+      "commands": [
+        446
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "entry",
+      "phase": "no-op-check",
+      "seconds": 0.033742996,
+      "commands": [
+        459
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "seconds": 0.001313648,
+      "commands": [
+        461
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "seconds": 0.009773663,
+      "commands": [
+        463
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "seconds": 0.001286898,
+      "commands": [
+        465
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "entry",
+      "phase": "cold-build",
+      "seconds": 0.29348637,
+      "commands": [
+        472
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "integrated",
+      "phase": "cold-build",
+      "seconds": 0.268801507,
+      "commands": [
+        477
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "cargo",
+      "phase": "cold-build",
+      "seconds": 0.359878625,
+      "commands": [
+        482
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "pristine",
+      "phase": "cold-build",
+      "seconds": 0.26838937,
+      "commands": [
+        487
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "entry",
+      "phase": "no-op-build",
+      "seconds": 0.033972188,
+      "commands": [
+        511
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "seconds": 0.003308815,
+      "commands": [
+        516
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "seconds": 0.008978231,
+      "commands": [
+        521
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "seconds": 0.003276286,
+      "commands": [
+        526
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "seconds": 0.035033685,
+      "commands": [
+        531,
+        533
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "seconds": 0.004022984,
+      "commands": [
+        536,
+        538
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "seconds": 0.009543708,
+      "commands": [
+        541,
+        543
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "seconds": 0.0041692050000000005,
+      "commands": [
+        546,
+        548
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "entry",
+      "phase": "runtime",
+      "seconds": 0.000880989,
+      "commands": [
+        551
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "integrated",
+      "phase": "runtime",
+      "seconds": 0.000854048,
+      "commands": [
+        554
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "cargo",
+      "phase": "runtime",
+      "seconds": 0.000724116,
+      "commands": [
+        557
+      ]
+    },
+    {
+      "sample": 3,
+      "lane": "pristine",
+      "phase": "runtime",
+      "seconds": 0.000873072,
+      "commands": [
+        560
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "cargo",
+      "phase": "cold-check",
+      "seconds": 0.260179693,
+      "commands": [
+        570
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "integrated",
+      "phase": "cold-check",
+      "seconds": 0.13267594,
+      "commands": [
+        572
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "entry",
+      "phase": "cold-check",
+      "seconds": 0.162858777,
+      "commands": [
+        574
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "pristine",
+      "phase": "cold-check",
+      "seconds": 0.13556885,
+      "commands": [
+        576
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "seconds": 0.009113814,
+      "commands": [
+        589
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "seconds": 0.001302351,
+      "commands": [
+        591
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "entry",
+      "phase": "no-op-check",
+      "seconds": 0.029916694,
+      "commands": [
+        593
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "seconds": 0.001122971,
+      "commands": [
+        595
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "cargo",
+      "phase": "cold-build",
+      "seconds": 0.345941333,
+      "commands": [
+        602
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "integrated",
+      "phase": "cold-build",
+      "seconds": 0.261147938,
+      "commands": [
+        607
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "entry",
+      "phase": "cold-build",
+      "seconds": 0.294715966,
+      "commands": [
+        612
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "pristine",
+      "phase": "cold-build",
+      "seconds": 0.264384892,
+      "commands": [
+        617
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "seconds": 0.008796075,
+      "commands": [
+        641
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "seconds": 0.003152966,
+      "commands": [
+        646
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "entry",
+      "phase": "no-op-build",
+      "seconds": 0.031449484,
+      "commands": [
+        651
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "seconds": 0.002894252,
+      "commands": [
+        656
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "seconds": 0.009209621999999999,
+      "commands": [
+        661,
+        663
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "seconds": 0.0038333689999999997,
+      "commands": [
+        666,
+        668
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "seconds": 0.031678954,
+      "commands": [
+        671,
+        673
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "seconds": 0.003804234,
+      "commands": [
+        676,
+        678
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "cargo",
+      "phase": "runtime",
+      "seconds": 0.000722709,
+      "commands": [
+        681
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "integrated",
+      "phase": "runtime",
+      "seconds": 0.000844441,
+      "commands": [
+        684
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "entry",
+      "phase": "runtime",
+      "seconds": 0.000882623,
+      "commands": [
+        687
+      ]
+    },
+    {
+      "sample": 4,
+      "lane": "pristine",
+      "phase": "runtime",
+      "seconds": 0.000877208,
+      "commands": [
+        690
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "pristine",
+      "phase": "cold-check",
+      "seconds": 0.128846012,
+      "commands": [
+        700
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "cargo",
+      "phase": "cold-check",
+      "seconds": 0.265934805,
+      "commands": [
+        702
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "integrated",
+      "phase": "cold-check",
+      "seconds": 0.141300623,
+      "commands": [
+        704
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "entry",
+      "phase": "cold-check",
+      "seconds": 0.161768266,
+      "commands": [
+        706
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "seconds": 0.001351768,
+      "commands": [
+        719
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "seconds": 0.008460847,
+      "commands": [
+        721
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "seconds": 0.001223791,
+      "commands": [
+        723
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "entry",
+      "phase": "no-op-check",
+      "seconds": 0.028456484,
+      "commands": [
+        725
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "pristine",
+      "phase": "cold-build",
+      "seconds": 0.260819539,
+      "commands": [
+        732
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "cargo",
+      "phase": "cold-build",
+      "seconds": 0.368957387,
+      "commands": [
+        737
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "integrated",
+      "phase": "cold-build",
+      "seconds": 0.267062712,
+      "commands": [
+        742
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "entry",
+      "phase": "cold-build",
+      "seconds": 0.296589541,
+      "commands": [
+        747
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "seconds": 0.003216293,
+      "commands": [
+        771
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "seconds": 0.008606697,
+      "commands": [
+        776
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "seconds": 0.003160984,
+      "commands": [
+        781
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "entry",
+      "phase": "no-op-build",
+      "seconds": 0.031180769,
+      "commands": [
+        786
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "seconds": 0.004078516,
+      "commands": [
+        791,
+        793
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "seconds": 0.00920055,
+      "commands": [
+        796,
+        798
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "seconds": 0.003972533,
+      "commands": [
+        801,
+        803
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "seconds": 0.030262443,
+      "commands": [
+        806,
+        808
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "pristine",
+      "phase": "runtime",
+      "seconds": 0.000880447,
+      "commands": [
+        811
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "cargo",
+      "phase": "runtime",
+      "seconds": 0.000691609,
+      "commands": [
+        814
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "integrated",
+      "phase": "runtime",
+      "seconds": 0.00087837,
+      "commands": [
+        817
+      ]
+    },
+    {
+      "sample": 5,
+      "lane": "entry",
+      "phase": "runtime",
+      "seconds": 0.000846328,
+      "commands": [
+        820
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "entry",
+      "phase": "cold-check",
+      "seconds": 0.155029479,
+      "commands": [
+        830
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "pristine",
+      "phase": "cold-check",
+      "seconds": 0.133525258,
+      "commands": [
+        832
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "cargo",
+      "phase": "cold-check",
+      "seconds": 0.262292286,
+      "commands": [
+        834
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "integrated",
+      "phase": "cold-check",
+      "seconds": 0.136414004,
+      "commands": [
+        836
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "entry",
+      "phase": "no-op-check",
+      "seconds": 0.029814443,
+      "commands": [
+        849
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "seconds": 0.00116349,
+      "commands": [
+        851
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "seconds": 0.008432752,
+      "commands": [
+        853
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "seconds": 0.001088424,
+      "commands": [
+        855
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "entry",
+      "phase": "cold-build",
+      "seconds": 0.283102285,
+      "commands": [
+        862
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "pristine",
+      "phase": "cold-build",
+      "seconds": 0.267677922,
+      "commands": [
+        867
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "cargo",
+      "phase": "cold-build",
+      "seconds": 0.371929838,
+      "commands": [
+        872
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "integrated",
+      "phase": "cold-build",
+      "seconds": 0.265393792,
+      "commands": [
+        877
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "entry",
+      "phase": "no-op-build",
+      "seconds": 0.032914971,
+      "commands": [
+        901
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "seconds": 0.003155773,
+      "commands": [
+        906
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "seconds": 0.008657622,
+      "commands": [
+        911
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "seconds": 0.003005792,
+      "commands": [
+        916
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "seconds": 0.032244252,
+      "commands": [
+        921,
+        923
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "seconds": 0.004320398,
+      "commands": [
+        926,
+        928
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "seconds": 0.009346606,
+      "commands": [
+        931,
+        933
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "seconds": 0.0037924079999999997,
+      "commands": [
+        936,
+        938
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "entry",
+      "phase": "runtime",
+      "seconds": 0.00095857,
+      "commands": [
+        941
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "pristine",
+      "phase": "runtime",
+      "seconds": 0.000872947,
+      "commands": [
+        944
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "cargo",
+      "phase": "runtime",
+      "seconds": 0.000713554,
+      "commands": [
+        947
+      ]
+    },
+    {
+      "sample": 6,
+      "lane": "integrated",
+      "phase": "runtime",
+      "seconds": 0.000850406,
+      "commands": [
+        950
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "integrated",
+      "phase": "cold-check",
+      "seconds": 0.131254796,
+      "commands": [
+        960
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "entry",
+      "phase": "cold-check",
+      "seconds": 0.164362605,
+      "commands": [
+        962
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "pristine",
+      "phase": "cold-check",
+      "seconds": 0.136567336,
+      "commands": [
+        964
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "cargo",
+      "phase": "cold-check",
+      "seconds": 0.262152569,
+      "commands": [
+        966
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "seconds": 0.001276107,
+      "commands": [
+        979
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "entry",
+      "phase": "no-op-check",
+      "seconds": 0.031226945,
+      "commands": [
+        981
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "seconds": 0.001130321,
+      "commands": [
+        983
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "seconds": 0.008448575,
+      "commands": [
+        985
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "integrated",
+      "phase": "cold-build",
+      "seconds": 0.264790457,
+      "commands": [
+        992
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "entry",
+      "phase": "cold-build",
+      "seconds": 0.292218057,
+      "commands": [
+        997
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "pristine",
+      "phase": "cold-build",
+      "seconds": 0.274603742,
+      "commands": [
+        1002
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "cargo",
+      "phase": "cold-build",
+      "seconds": 0.357151945,
+      "commands": [
+        1007
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "seconds": 0.00334244,
+      "commands": [
+        1031
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "entry",
+      "phase": "no-op-build",
+      "seconds": 0.03169555,
+      "commands": [
+        1036
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "seconds": 0.003356088,
+      "commands": [
+        1041
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "seconds": 0.008454586,
+      "commands": [
+        1046
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "seconds": 0.003982571,
+      "commands": [
+        1051,
+        1053
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "seconds": 0.030907482,
+      "commands": [
+        1056,
+        1058
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "seconds": 0.004079733,
+      "commands": [
+        1061,
+        1063
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "seconds": 0.009187611,
+      "commands": [
+        1066,
+        1068
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "integrated",
+      "phase": "runtime",
+      "seconds": 0.000914962,
+      "commands": [
+        1071
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "entry",
+      "phase": "runtime",
+      "seconds": 0.000907559,
+      "commands": [
+        1074
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "pristine",
+      "phase": "runtime",
+      "seconds": 0.000899272,
+      "commands": [
+        1077
+      ]
+    },
+    {
+      "sample": 7,
+      "lane": "cargo",
+      "phase": "runtime",
+      "seconds": 0.000692368,
+      "commands": [
+        1080
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "pristine",
+      "phase": "cold-check",
+      "seconds": 0.135296522,
+      "commands": [
+        1090
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "cargo",
+      "phase": "cold-check",
+      "seconds": 0.278655318,
+      "commands": [
+        1092
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "integrated",
+      "phase": "cold-check",
+      "seconds": 0.135250839,
+      "commands": [
+        1094
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "entry",
+      "phase": "cold-check",
+      "seconds": 0.158005454,
+      "commands": [
+        1096
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "seconds": 0.001327291,
+      "commands": [
+        1109
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "seconds": 0.008778742,
+      "commands": [
+        1111
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "seconds": 0.001296355,
+      "commands": [
+        1113
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "entry",
+      "phase": "no-op-check",
+      "seconds": 0.029694306,
+      "commands": [
+        1115
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "pristine",
+      "phase": "cold-build",
+      "seconds": 0.269091194,
+      "commands": [
+        1122
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "cargo",
+      "phase": "cold-build",
+      "seconds": 0.36798056,
+      "commands": [
+        1127
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "integrated",
+      "phase": "cold-build",
+      "seconds": 0.277145079,
+      "commands": [
+        1132
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "entry",
+      "phase": "cold-build",
+      "seconds": 0.299941859,
+      "commands": [
+        1137
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "seconds": 0.003402116,
+      "commands": [
+        1161
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "seconds": 0.008666861,
+      "commands": [
+        1166
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "seconds": 0.003251365,
+      "commands": [
+        1171
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "entry",
+      "phase": "no-op-build",
+      "seconds": 0.031010403,
+      "commands": [
+        1176
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "seconds": 0.004169099,
+      "commands": [
+        1181,
+        1183
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "seconds": 0.009081446,
+      "commands": [
+        1186,
+        1188
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "seconds": 0.003975059,
+      "commands": [
+        1191,
+        1193
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "seconds": 0.031029797,
+      "commands": [
+        1196,
+        1198
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "pristine",
+      "phase": "runtime",
+      "seconds": 0.000823017,
+      "commands": [
+        1201
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "cargo",
+      "phase": "runtime",
+      "seconds": 0.000751433,
+      "commands": [
+        1204
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "integrated",
+      "phase": "runtime",
+      "seconds": 0.000876048,
+      "commands": [
+        1207
+      ]
+    },
+    {
+      "sample": 8,
+      "lane": "entry",
+      "phase": "runtime",
+      "seconds": 0.000904712,
+      "commands": [
+        1210
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "cargo",
+      "phase": "cold-check",
+      "seconds": 0.262141846,
+      "commands": [
+        1220
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "integrated",
+      "phase": "cold-check",
+      "seconds": 0.137330816,
+      "commands": [
+        1222
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "entry",
+      "phase": "cold-check",
+      "seconds": 0.163081057,
+      "commands": [
+        1224
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "pristine",
+      "phase": "cold-check",
+      "seconds": 0.133659874,
+      "commands": [
+        1226
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "seconds": 0.009010206,
+      "commands": [
+        1239
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "seconds": 0.001261925,
+      "commands": [
+        1241
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "entry",
+      "phase": "no-op-check",
+      "seconds": 0.03136293,
+      "commands": [
+        1243
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "seconds": 0.001253856,
+      "commands": [
+        1245
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "cargo",
+      "phase": "cold-build",
+      "seconds": 0.365241132,
+      "commands": [
+        1252
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "integrated",
+      "phase": "cold-build",
+      "seconds": 0.266987579,
+      "commands": [
+        1257
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "entry",
+      "phase": "cold-build",
+      "seconds": 0.292580879,
+      "commands": [
+        1262
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "pristine",
+      "phase": "cold-build",
+      "seconds": 0.271547367,
+      "commands": [
+        1267
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "seconds": 0.009157702,
+      "commands": [
+        1291
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "seconds": 0.003241792,
+      "commands": [
+        1296
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "entry",
+      "phase": "no-op-build",
+      "seconds": 0.033032449,
+      "commands": [
+        1301
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "seconds": 0.003196341,
+      "commands": [
+        1306
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "seconds": 0.009491039,
+      "commands": [
+        1311,
+        1313
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "seconds": 0.004144823,
+      "commands": [
+        1316,
+        1318
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "seconds": 0.032972328999999995,
+      "commands": [
+        1321,
+        1323
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "seconds": 0.0040101979999999995,
+      "commands": [
+        1326,
+        1328
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "cargo",
+      "phase": "runtime",
+      "seconds": 0.0007421,
+      "commands": [
+        1331
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "integrated",
+      "phase": "runtime",
+      "seconds": 0.000897273,
+      "commands": [
+        1334
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "entry",
+      "phase": "runtime",
+      "seconds": 0.000891538,
+      "commands": [
+        1337
+      ]
+    },
+    {
+      "sample": 9,
+      "lane": "pristine",
+      "phase": "runtime",
+      "seconds": 0.000901067,
+      "commands": [
+        1340
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "entry",
+      "phase": "cold-check",
+      "seconds": 0.163273892,
+      "commands": [
+        1350
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "pristine",
+      "phase": "cold-check",
+      "seconds": 0.137497708,
+      "commands": [
+        1352
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "cargo",
+      "phase": "cold-check",
+      "seconds": 0.280480686,
+      "commands": [
+        1354
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "integrated",
+      "phase": "cold-check",
+      "seconds": 0.137472708,
+      "commands": [
+        1356
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "entry",
+      "phase": "no-op-check",
+      "seconds": 0.031852199,
+      "commands": [
+        1369
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "seconds": 0.001308971,
+      "commands": [
+        1371
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "seconds": 0.00842455,
+      "commands": [
+        1373
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "seconds": 0.001233336,
+      "commands": [
+        1375
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "entry",
+      "phase": "cold-build",
+      "seconds": 0.295288096,
+      "commands": [
+        1382
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "pristine",
+      "phase": "cold-build",
+      "seconds": 0.267519364,
+      "commands": [
+        1387
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "cargo",
+      "phase": "cold-build",
+      "seconds": 0.360328561,
+      "commands": [
+        1392
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "integrated",
+      "phase": "cold-build",
+      "seconds": 0.266802109,
+      "commands": [
+        1397
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "entry",
+      "phase": "no-op-build",
+      "seconds": 0.033132899,
+      "commands": [
+        1421
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "seconds": 0.003209403,
+      "commands": [
+        1426
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "seconds": 0.008858696,
+      "commands": [
+        1431
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "seconds": 0.00294603,
+      "commands": [
+        1436
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "seconds": 0.032111046,
+      "commands": [
+        1441,
+        1443
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "seconds": 0.004171375,
+      "commands": [
+        1446,
+        1448
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "seconds": 0.009499676,
+      "commands": [
+        1451,
+        1453
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "seconds": 0.004013692,
+      "commands": [
+        1456,
+        1458
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "entry",
+      "phase": "runtime",
+      "seconds": 0.00085241,
+      "commands": [
+        1461
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "pristine",
+      "phase": "runtime",
+      "seconds": 0.00088323,
+      "commands": [
+        1464
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "cargo",
+      "phase": "runtime",
+      "seconds": 0.000759667,
+      "commands": [
+        1467
+      ]
+    },
+    {
+      "sample": 10,
+      "lane": "integrated",
+      "phase": "runtime",
+      "seconds": 0.00089598,
+      "commands": [
+        1470
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "integrated",
+      "phase": "cold-check",
+      "seconds": 0.133765743,
+      "commands": [
+        1480
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "entry",
+      "phase": "cold-check",
+      "seconds": 0.165996743,
+      "commands": [
+        1482
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "pristine",
+      "phase": "cold-check",
+      "seconds": 0.135623588,
+      "commands": [
+        1484
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "cargo",
+      "phase": "cold-check",
+      "seconds": 0.262307428,
+      "commands": [
+        1486
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "seconds": 0.00129714,
+      "commands": [
+        1499
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "entry",
+      "phase": "no-op-check",
+      "seconds": 0.031310098,
+      "commands": [
+        1501
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "seconds": 0.001250493,
+      "commands": [
+        1503
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "seconds": 0.008461773,
+      "commands": [
+        1505
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "integrated",
+      "phase": "cold-build",
+      "seconds": 0.266118448,
+      "commands": [
+        1512
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "entry",
+      "phase": "cold-build",
+      "seconds": 0.291334434,
+      "commands": [
+        1517
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "pristine",
+      "phase": "cold-build",
+      "seconds": 0.263005853,
+      "commands": [
+        1522
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "cargo",
+      "phase": "cold-build",
+      "seconds": 0.364782374,
+      "commands": [
+        1527
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "seconds": 0.003239821,
+      "commands": [
+        1551
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "entry",
+      "phase": "no-op-build",
+      "seconds": 0.032175993,
+      "commands": [
+        1556
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "seconds": 0.003092592,
+      "commands": [
+        1561
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "seconds": 0.008677924,
+      "commands": [
+        1566
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "seconds": 0.004050998,
+      "commands": [
+        1571,
+        1573
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "seconds": 0.03186535,
+      "commands": [
+        1576,
+        1578
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "seconds": 0.003991491,
+      "commands": [
+        1581,
+        1583
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "seconds": 0.009087813,
+      "commands": [
+        1586,
+        1588
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "integrated",
+      "phase": "runtime",
+      "seconds": 0.000885693,
+      "commands": [
+        1591
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "entry",
+      "phase": "runtime",
+      "seconds": 0.001064562,
+      "commands": [
+        1594
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "pristine",
+      "phase": "runtime",
+      "seconds": 0.000888468,
+      "commands": [
+        1597
+      ]
+    },
+    {
+      "sample": 11,
+      "lane": "cargo",
+      "phase": "runtime",
+      "seconds": 0.00074836,
+      "commands": [
+        1600
+      ]
+    }
+  ],
+  "raw_sha256": "5b93cd6fb2e9a0dbb543f54548f913619e4c56d63c2108cd3178aabfd5d44494",
+  "projection": "All 288 timing values and 18 comparisons retained. Exact source/tool paths and raw command outputs remain in the encrypted original ZIP.",
+  "lane_executable_sha256": {
+    "pristine": "4dcd3743c75f1524132882b5cd59d4cdc2cd355b8beb6faa839d860bc1bb571a",
+    "integrated": "a3bf7a31b1d1f4481e6f484246cc003a2f9ad0ec5df74f787f09ad829789ef47",
+    "entry": "332f6dd1509c85bfc878c1935c3102f352449b65e2845e25beffd64788e374c9",
+    "cargo": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530"
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "schema": "lustr-reviewed-hosted-evidence-snapshot-v1",
+  "run": 44243040376,
+  "head": "e674fab486d4ee6b67a2372a5e9e135588dcb076",
+  "checkout": "96fa69536a68e7c2084e746d31e56a453611d949",
+  "tree": "426397dfbefec5d81dd4cfa195450eb947b4b5d1",
+  "files": {
+    "README.md": {
+      "sha256": "a376b5190535ca2a746c13b78f288a990614a6fde888e171ffb253c65db9a82d",
+      "bytes": 16572
+    },
+    "cache-qualification.json": {
+      "sha256": "13357dbd01c52ea038645641a8a43abc73266d98283c93153abdc73a1aeaeccb",
+      "bytes": 8672
+    },
+    "fixed-workload/README.md": {
+      "sha256": "f63505d52b589b1d99c3b788fb221a2710f1ff015e2673b693b2eeca08270370",
+      "bytes": 4969
+    },
+    "fixed-workload/samples.json": {
+      "sha256": "192da978481280d7998a679a8824af6da1703650f6f59200b7b641e0d29d7451",
+      "bytes": 74761
+    },
+    "fixed-workload/timings.csv": {
+      "sha256": "46762d3e6cc0c24a8d5d36e2ada52684904ebc64d60abecc0d59854da5bf2e2d",
+      "bytes": 9268
+    },
+    "identity.json": {
+      "sha256": "d4d413b41aa5f9c5ef7096296c00bf7fc633acb0357039f4adb3358afcc4ffb4",
+      "bytes": 10626
+    },
+    "macos-failure-encrypted/private-evidence.tar.gz.cms": {
+      "sha256": "1e548530c843a6e39887db5de8d75b16e6070dbfb5be02d593e8248d3900522a",
+      "bytes": 12988
+    },
+    "macos-failure-encrypted/receipt.json": {
+      "sha256": "edbc8512d560d3e8bc7e7c8c8bddb5c77efce711dffe350dbef5d79cf8b4d781",
+      "bytes": 1253
+    },
+    "macos-failure-encrypted/status.json": {
+      "sha256": "e5cfaf81c5733ed21fb2cf255779c4a002cf6e32782644b80d65dacaa59a8e29",
+      "bytes": 543
+    },
+    "original-artifacts-encrypted/private-evidence.tar.gz.cms": {
+      "sha256": "fb07530b58edc742728da3106bb380ec30743b8dd9e0bca3f24c271d96fee1e0",
+      "bytes": 2789081
+    },
+    "original-artifacts-encrypted/receipt.json": {
+      "sha256": "298a8015ca0cda600a010706652ef9804a0f414ae1f8874df472a513774ed3a7",
+      "bytes": 1260
+    },
+    "original-artifacts-encrypted/status.json": {
+      "sha256": "51cb5b515e9a9db7f6a24dbb3bfb4b3a385af37423ac6a5233aba2f7b9ddbbed",
+      "bytes": 546
+    },
+    "project-encrypted/private-evidence.tar.gz.cms": {
+      "sha256": "6abb4089dfc715f310322d3b734eb07d5c79099234dff59fb96e8c2c5c8851e1",
+      "bytes": 1244747
+    },
+    "project-encrypted/receipt.json": {
+      "sha256": "4244e80a40b991df784e2b593e21f1cab5f6014659bd4d9271ef7ec3ea472f31",
+      "bytes": 1262
+    },
+    "project-encrypted/status.json": {
+      "sha256": "4e796287e4c56460fb936c04b2887bd2d2e6406ff26f0e277a5a3a076848209c",
+      "bytes": 511
+    },
+    "project-public/README.md": {
+      "sha256": "c75dbaf928aacef8471eaa8e193a689b4f566d9a824d1b5d6100de3e2ff17e91",
+      "bytes": 3365
+    },
+    "project-public/SHA256SUMS": {
+      "sha256": "279c7dc59ffe5860224e16bac3befa909ba3cf848523c74c70ceef264b0d9998",
+      "bytes": 389
+    },
+    "project-public/campaign.json": {
+      "sha256": "e1764398d6cf16502cb258de4cfc6e3758f3fbc65108ff15e8e9f653f1421bf6",
+      "bytes": 2438
+    },
+    "project-public/host.json": {
+      "sha256": "49c12ff83053c7e3d1338d913aa2d31f456cd16f87aeb951af6ea32c8e60bf00",
+      "bytes": 2270
+    },
+    "project-public/replay.json": {
+      "sha256": "c59f78bbd164d71b6b1c330e5cd5efdb1e1d0aea0c3493888860a8a659ceb758",
+      "bytes": 7421
+    },
+    "project-public/samples.json": {
+      "sha256": "90ea7887195d3da5f1d9169d517344d5312140b5080f4e2007f42b660266cb34",
+      "bytes": 288814
+    },
+    "public-slice/README.md": {
+      "sha256": "cb8accc9c80bc21b38d63d1c3c11a19cde56364faf6de5014bb7231e70a12574",
+      "bytes": 2860
+    },
+    "public-slice/samples.csv": {
+      "sha256": "699b886545fded13d362e0a437b63950e1c7bd64aceb1d99605ec936832f6145",
+      "bytes": 12380
+    },
+    "public-slice/samples.json": {
+      "sha256": "87ab4f49e5e598c7534be65243a581dfe6478ec369e8c47e2ae0ea5d94b88f26",
+      "bytes": 84053
+    }
+  },
+  "scope": "Exact original public project bytes and encrypted originals, path-free fixed/slice projections, source-bound correctness outcomes; all comparisons and limitations retained.",
+  "private_key_access": false,
+  "ciphertext_independently_decrypted": false
+}
