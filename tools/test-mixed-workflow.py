@@ -74,6 +74,17 @@ class MixedWorkflowTests(unittest.TestCase):
                        "test-mixed-symbol-measurement.py", "test-upstream-slice-benchmark.py"):
             self.assertIn(f"python3 tools/{script}", preflight)
 
+    def test_project_runner_checks_actual_routed_gate_before_measurement(self):
+        build = self.steps["project_bench_build"]
+        unit_tests = next(line for line in build.splitlines() if "cargo test" in line and "--bin lustr-bench " in line)
+        self.assertIn("--bin lustr-bench-gate", unit_tests)
+        self.assertIn("LUSTR_BENCH_TEST_ROUTED_SDK=\"$(rustc --print sysroot)\"", build)
+        self.assertIn("LUSTR_BENCH_TEST_COORDINATOR=\"$RUNNER_TEMP/lustr-source-built/toolchain/bin/cargo-lustr\"", build)
+        self.assertIn("LUSTR_BENCH_TEST_OUTPUT=", build)
+        routed = next(line for line in build.splitlines() if "cargo test" in line and "--test routed " in line)
+        self.assertIn("--exact direct_and_legacy_compiler_paths_match_actual_coordinator", routed)
+        self.assertIn("project_bench_build", dependencies(self.steps["project_measurements"]))
+
     def shell_probe(self, status, diagnostic, missing_command=False):
         block = self.steps["baseline_regression"].split("        run: |\n", 1)[1]
         lines = []

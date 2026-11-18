@@ -65,9 +65,18 @@ fn routed_tests(mut args: impl Iterator<Item = OsString>) -> Result<Command, Box
     }
     let cargo_args: Vec<_> = args.collect();
     validate_tests(&cargo_args)?;
+    let bin = Path::new(&root).join("bin");
+    let direct = bin.join("lustr-cargo").join(format!("rustc{}", std::env::consts::EXE_SUFFIX));
     for (variable, executable) in [("CARGO", "cargo"), ("RUSTC", "rustc"), ("RUSTDOC", "rustdoc")] {
         let selected = std::env::var_os(variable).ok_or("explicit tool selection is required")?;
-        if selected.as_os_str() != Path::new(&root).join("bin").join(executable).as_os_str() {
+        // Match the coordinator's actual Cargo entry, including legacy
+        // packages. Canonicalizing would hide a stale declared invocation path.
+        let expected = if variable == "RUSTC" && direct.is_file() {
+            direct.clone()
+        } else {
+            bin.join(format!("{executable}{}", std::env::consts::EXE_SUFFIX))
+        };
+        if selected.as_os_str() != expected.as_os_str() {
             return Err(format!("routed {variable} selection must match --bluefe-root").into());
         }
     }

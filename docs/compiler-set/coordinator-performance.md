@@ -22,6 +22,22 @@ link to the existing `bin/rustc-full` mixed compiler; its path, binary hash and
 version are recorded as the compiler identity. The public `bin/rustc` launcher
 remains available, but is not the compiler that Cargo executes in this lane.
 
+The routed test gate requires that same selected compiler path. An older gate
+still required `bin/rustc` after the campaign and coordinator had moved to the
+direct Cargo entry, rejecting the candidate before any test ran. The corrected
+gate follows the coordinator's direct-entry selection and uses `bin/rustc` only
+when the direct entry is absent. It preserves native executable suffixes and
+rejects alternate invocation paths even when they resolve to the same binary.
+
+The `direct_and_legacy_compiler_paths_match_actual_coordinator` regression uses
+the real coordinator and an explicitly selected matching SDK. It executes a
+nonempty Cargo test project through direct and legacy package layouts and
+checks the actual verbose compiler command. It also rejects stale tool paths,
+missing selections and `--no-run` before executing the coordinator. The old
+gate fails the direct case; the corrected gate passes. This regression and the
+gate's unit tests now run before the source-built project campaign. These
+checks qualify the routing correction, not mixed compilation or speed parity.
+
 ## Exact work
 
 The coordinator's source bytes, lockfile, default features, profiles and panic

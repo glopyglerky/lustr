@@ -350,7 +350,11 @@ jobs:
         if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' }}
         run: |
           cargo build --manifest-path crates/lustr-bench/Cargo.toml --release --locked --offline --bin lustr-bench --bin lustr-bench-gate --example replay --target-dir "$RUNNER_TEMP/lustr-bench-target"
-          cargo test --manifest-path crates/lustr-bench/Cargo.toml --locked --offline --bin lustr-bench --test native_state --target-dir "$RUNNER_TEMP/lustr-bench-target" -- --test-threads=1
+          cargo test --manifest-path crates/lustr-bench/Cargo.toml --locked --offline --bin lustr-bench --bin lustr-bench-gate --test native_state --target-dir "$RUNNER_TEMP/lustr-bench-target" -- --test-threads=1
+          LUSTR_BENCH_TEST_ROUTED_SDK="$(rustc --print sysroot)" \
+          LUSTR_BENCH_TEST_COORDINATOR="$RUNNER_TEMP/lustr-source-built/toolchain/bin/cargo-lustr" \
+          LUSTR_BENCH_TEST_OUTPUT="$RUNNER_TEMP/lustr-routed-test-gate" \
+          cargo test --manifest-path crates/lustr-bench/Cargo.toml --locked --offline --test routed --target-dir "$RUNNER_TEMP/lustr-bench-target" -- --exact direct_and_legacy_compiler_paths_match_actual_coordinator
           python3 tools/test-coordinator-campaign.py --replay "$RUNNER_TEMP/lustr-bench-target/release/examples/replay"
       - name: Measure the unchanged coordinator under its default development profile
         id: project_measurements
