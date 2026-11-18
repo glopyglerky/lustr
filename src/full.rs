@@ -44,6 +44,61 @@ fn publish(artifact: &Path, destination: &Path) -> io::Result<()> {
     std::fs::rename(&temporary.0, destination)
 }
 
+fn check(command: &mut Command) -> io::Result<ExitStatus> {
+    use std::os::unix::fs::DirBuilderExt;
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    struct Temporary {
+        path: PathBuf,
+        armed: bool,
+    }
+    impl Temporary {
+        fn remove(&mut self) -> io::Result<()> {
+            if !self.armed {
+                return Ok(());
+            }
+            match std::fs::remove_dir_all(&self.path) {
+                Ok(()) => {}
+                Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+                Err(error) => return Err(error),
+            }
+            self.armed = false;
+            Ok(())
+        }
+    }
+    impl Drop for Temporary {
+        fn drop(&mut self) {
+            let _ = self.remove();
+        }
+    }
+    let mut temporary = loop {
+        let path = std::env::temp_dir().join(format!("lustr-check-{}-{}", std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)));
+        match std::fs::DirBuilder::new().mode(0o700).create(&path) {
+            Ok(()) => break Temporary { path, armed: true },
+            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => continue,
+            Err(error) => return Err(error),
+        }
+    };
+    // rustc atomically publishes metadata, so /dev/null is not a valid output.
+    // Own a private directory for its output and intermediate files, and wait
+    // before removing them; exec would skip this guard's cleanup entirely.
+    command.arg("--emit=metadata").arg("-o").arg(temporary.path.join("check.rmeta"));
+    let result = (|| {
+        let mut child = crate::owned_child::OwnedChild::spawn(command)?;
+        child.wait()
+    })();
+    if let Err(cleanup) = temporary.remove() {
+        let message = format!("full Rust check metadata cleanup failed: {cleanup}");
+        if result.as_ref().is_ok_and(ExitStatus::success) {
+            return Err(error(&message));
+        }
+        // Keep a compiler failure or signal as the primary result while still
+        // reporting cleanup failure. Drop retries cleanup on every error path.
+        eprintln!("{message}");
+    }
+    result
+}
+
 fn cargo(parent: &Path) -> Command {
     let mut command = Command::new(parent.join("cargo"));
     command.env("RUSTC", parent.join("rustc-full")).env("RUSTDOC", parent.join("rustdoc"));
@@ -245,9 +300,8 @@ pub fn run(request: &Request, parent: &Path, selection: Option<&Selection>) -> i
     let Some(manifest) = request.session.krate.manifest_path.as_ref() else {
         let mut command = Command::new(parent.join("rustc-full"));
         command.arg(request.client.shown.as_ref().unwrap_or(&request.file)).arg("--edition=2024");
-        command.arg("-o").arg(if matches!(request.cmd, Cmd::Check) { Path::new("/dev/null") } else { &request.out });
-        if matches!(request.cmd, Cmd::Check) {
-            command.arg("--emit=metadata");
+        if !matches!(request.cmd, Cmd::Check) {
+            command.arg("-o").arg(&request.out);
         }
         if request.session.krate.target_kind == "lib" {
             command.arg("--crate-type=rlib");
@@ -262,6 +316,9 @@ pub fn run(request: &Request, parent: &Path, selection: Option<&Selection>) -> i
             command.arg("--error-format=json");
         }
         settings(request, &mut command);
+        if matches!(request.cmd, Cmd::Check) {
+            return check(&mut command);
+        }
         return Err(command.exec());
     };
     let Selection { package, target, .. } = selection.ok_or_else(|| error("Cargo target was not validated"))?;

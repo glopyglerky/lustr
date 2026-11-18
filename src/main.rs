@@ -68,7 +68,13 @@ mod lust {
             }
         }
         pub fn full_entry(&self) -> &'static str {
-            if self.0.session.krate.manifest_path.is_some() { "cargo" } else { "exec" }
+            if self.0.session.krate.manifest_path.is_some() {
+                "cargo"
+            } else if matches!(self.0.cmd, protocol::Cmd::Check) {
+                "owned-rustc-check"
+            } else {
+                "exec"
+            }
         }
     }
 

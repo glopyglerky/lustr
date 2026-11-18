@@ -1,0 +1,172 @@
+{
+  "cases": [
+    {
+      "id": "issue-5",
+      "native_result": "refused",
+      "original_runtime_exit": 0,
+      "original_runtime_stderr_bytes": 0,
+      "public_result": "full-Rust check/build/runtime parity",
+      "source_blob": null,
+      "source_commit": null,
+      "source_kind": "first Rust reproduction block",
+      "source_sha256": "2b697b58774426fc1cdcfe222b067cd39626c89a9b8cd270224012f688eea4ea",
+      "source_url": "https://github.com/t3dotgg/lust-lang/issues/5",
+      "status": "passed"
+    },
+    {
+      "id": "issue-6",
+      "native_result": "refused",
+      "original_runtime_exit": 0,
+      "original_runtime_stderr_bytes": 0,
+      "public_result": "full-Rust check/build/runtime parity",
+      "source_blob": null,
+      "source_commit": null,
+      "source_kind": "first Rust reproduction block",
+      "source_sha256": "f897003be9b9fec6084ebf11a9860ef08dc9e7a14f7e1018e5999cc2d233af6c",
+      "source_url": "https://github.com/t3dotgg/lust-lang/issues/6",
+      "status": "passed"
+    },
+    {
+      "id": "issue-6-associated",
+      "native_result": "refused",
+      "original_runtime_exit": 0,
+      "original_runtime_stderr_bytes": 0,
+      "public_result": "full-Rust check/build/runtime parity",
+      "source_blob": null,
+      "source_commit": null,
+      "source_kind": "Repro B documented substitution of Self::S for u32 in the impl signature",
+      "source_sha256": "178ac9b62e8a210d1d0d53b14395c9175a9367886793c680780c7a9fcf188aa1",
+      "source_url": "https://github.com/t3dotgg/lust-lang/issues/6",
+      "status": "passed"
+    },
+    {
+      "id": "issue-7",
+      "native_result": "refused",
+      "original_runtime_exit": 0,
+      "original_runtime_stderr_bytes": 0,
+      "public_result": "full-Rust check/build/runtime parity",
+      "source_blob": null,
+      "source_commit": null,
+      "source_kind": "first Rust reproduction block",
+      "source_sha256": "1c9f502d48c0f0b5bd60eb86c42d94fbdf7b6994d801f868f610e19f90bcbbef",
+      "source_url": "https://github.com/t3dotgg/lust-lang/issues/7",
+      "status": "passed"
+    },
+    {
+      "id": "issue-8",
+      "native_result": "refused",
+      "original_runtime_exit": 0,
+      "original_runtime_stderr_bytes": 0,
+      "public_result": "full-Rust check/build/runtime parity",
+      "source_blob": null,
+      "source_commit": null,
+      "source_kind": "first Rust reproduction block",
+      "source_sha256": "e1910077702667b3eb6ee975bae1aeb0701c2974eba9fa31695a42c0269c6262",
+      "source_url": "https://github.com/t3dotgg/lust-lang/issues/8",
+      "status": "passed"
+    },
+    {
+      "id": "issue-9",
+      "native_result": "refused",
+      "original_runtime_exit": 0,
+      "original_runtime_stderr_bytes": 0,
+      "public_result": "full-Rust check/build/runtime parity",
+      "source_blob": null,
+      "source_commit": null,
+      "source_kind": "first Rust reproduction block",
+      "source_sha256": "16a963e9c97735db4841db7819ac5ee3bfaafd30d1f0ef48f65de1b65a43e4d3",
+      "source_url": "https://github.com/t3dotgg/lust-lang/issues/9",
+      "status": "passed"
+    },
+    {
+      "id": "pr-12-clone",
+      "native_result": "refused",
+      "original_runtime_exit": 0,
+      "original_runtime_stderr_bytes": 0,
+      "public_result": "full-Rust check/build/runtime parity",
+      "source_blob": "2422a74c73b725078ee249d5b95bcac20bd13598",
+      "source_commit": "02030d86135e0444d504f3adf72765b169ebcd41",
+      "source_kind": "exact complete upstream test file",
+      "source_sha256": "ed8223c2834a388ec5962d331b1d8b416d26337b2ff8bf2180e68742ac812bf2",
+      "source_url": "https://github.com/t3dotgg/lust-lang/blob/02030d86135e0444d504f3adf72765b169ebcd41/tests/pass/clone_copy_impl_bounds.rs",
+      "status": "passed"
+    }
+  ],
+  "component_sha256": {
+    "bin/lust": "6c6a5fe97fb5cb1bb0fd5d773ece973a05ff4a807b2b6ad4eea7e39ebcac12bd",
+    "bin/lust-core": "f54fa87997237160a0071cb9035cdbf5f4b9325e58eeb490d99d432dd4d5abcc",
+    "bin/lustr": "37b70ea7f0e77de79b22d47f6ff502a8ee75dabac2fe09e5099747a5a1d067a8",
+    "bin/rustc-full": "279a6189bb6e6782a6659ee8c8c9c5ff096c976227d56318bfc2ca8277d24c8c",
+    "bin/rustc-reference": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "lib/liblustr_native_core.so": "8036febf5ce65cff52b0e79920ef541f4738bd189e94b409e7223516bbf5597f"
+  },
+  "composition": "Original source-built PR26 package with separately rebuilt metadata-check launcher; not a complete new package constructor result",
+  "coverage": {
+    "cases": 7,
+    "commands": 154,
+    "compiler_invocations": 112,
+    "compiler_successes": 84,
+    "daemon_events": 0,
+    "expected_status_1_rejections": 28,
+    "native_control_runtime_matches": 14,
+    "public_repro_runtime_matches": 21,
+    "reference_runtime_executions": 7,
+    "runtime_executions": 42,
+    "source_snapshots_verified": 154,
+    "stream_hashes_verified": 616
+  },
+  "date": "2026-11-18",
+  "environment_controls": {
+    "LUST_NO_CACHE": "1",
+    "LUST_NO_DAEMON": "1"
+  },
+  "evidence_sha256": {
+    "diagnostic-composition-receipt.json": "f727a311fc604f27cab66e1918a8b9dedf2c29124c3829b09357ba5df05e00d8",
+    "records.jsonl": "b9b09063eb49b317ef292e3ab499db6dc6a389899cb44aaad41deae715e42045",
+    "report.json": "50872b8daddca12a556b78d396cf27bacbd17133e138b6b2153b2840bd57185f",
+    "runner.py": "46031af253f5c321303211af401a5f7b26e5de2c8ba2defe8b91e5af909ea5ed"
+  },
+  "limits": [
+    "No native daemon state coverage; Unix socket creation was denied by the execution environment.",
+    "No timing or speedup claim.",
+    "Seven single-file valid-Rust fixtures do not prove arbitrary Rust, Cargo, target, or platform compatibility.",
+    "Base constructor receipts do not qualify the separately rebuilt launcher as a complete package constructor run."
+  ],
+  "mode": "cold-only",
+  "original_launcher_sha256": "7c4028ad4ed6a92e533b0227dd7772166ba9a041a6450a025a0f2891a90a9a2e",
+  "preserved_attempts": [
+    {
+      "commands": 1,
+      "id": "initial-oracle",
+      "reason": "Reference metadata output /dev/null rejected with EBUSY.",
+      "result": "harness-error"
+    },
+    {
+      "commands": 6,
+      "id": "original-public-check",
+      "reason": "Reference regular-file metadata succeeded; public full-Rust check still used /dev/null and failed with EBUSY.",
+      "result": "product-failure"
+    },
+    {
+      "commands": 8,
+      "id": "corrected-warm-attempt",
+      "reason": "Cold issue5 passed; native daemon exited2 with Unix socket bind EPERM.",
+      "result": "infrastructure-blocked"
+    },
+    {
+      "commands": 154,
+      "id": "corrected-cold-only",
+      "result": "passed"
+    }
+  ],
+  "routes": {
+    "full_rust_build_exec": 28,
+    "full_rust_check_owned_rustc_check": 28,
+    "native_library": 28
+  },
+  "schema": "lustr-upstream-correctness-summary-v1",
+  "source_revision": "43a7e07d32929309fc6e402d7bca6b5673e186a2",
+  "source_tree": "853e22bc16d1a9d96c00369f13a8fec267162dfc",
+  "status": "passed",
+  "upstream_revision": "240e08d91d4aed0299639f6f11fd522912b248f9"
+}
