@@ -29,11 +29,13 @@ spec.loader.exec_module(B)
 S, require = B.S, B.require
 SCHEMA = "lustr-warm-native-packages-v1"
 BUILD_SCHEMA = "lustr-complete-source-package-v1"
-GATE_SCHEMA = "lustr-complete-package-gates-v1"
+GATE_SCHEMA = "lustr-complete-package-gates-v2"
 BASELINE = "3c378a11d60149a3ec99fa49ea1b336e9406fca8"
 BASELINE_TREE = "0256606d5793bfb890130f05fae013d0c5c5f9e1"
 TCC = "43c7708b85681a2fd4451c8a541af4494a8919b2"
 CARGO_LAYOUT_OPT_OUT = "__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT"
+NATIVE_ORACLE_RELEASE = "1.99.0"
+NATIVE_ORACLE_COMMIT = "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4"
 LANES, PHASES, SEED = B.LANES, B.PHASES, B.SEED
 PUBLIC = ("baseline", "entry")
 CONSTRUCTOR_INPUTS = ("tools/build-mixed-toolchain.rs", "src/host_runtime.rs", "tools/host-sdk.rs",
@@ -251,6 +253,53 @@ def verify_pair(roots, live=False):
     return pair
 
 
+def native_differential_environment(environment, oracle_sdk):
+    # The frozen native corpus follows Rust 1.99, independently of the newer
+    # SDK required to build the complete package and its imported full core.
+    # case-pool.sh invokes literal `rustc`, so RUSTC alone does not select it.
+    return dict(environment, PATH=str(oracle_sdk / "bin") + ":" + environment["PATH"],
+                RUSTC=str(oracle_sdk / "bin/rustc"), DIFFTEST_JOBS="2", DIFFTEST_RUSTC_CACHE="off")
+
+
+def verify_native_oracle(oracle, live=False):
+    require(isinstance(oracle, dict) and set(oracle) == {"sdk", "rustc_version", "compiler_sha256", "files"},
+            "native differential oracle identity missing or incomplete")
+    require(all(isinstance(oracle[key], str) for key in ("sdk", "rustc_version", "compiler_sha256")),
+            "native differential oracle identity fields differ")
+    sdk = Path(oracle["sdk"])
+    require(sdk.is_absolute(), "native differential oracle SDK must be absolute")
+    lines = oracle["rustc_version"].splitlines()
+    for expected in (f"release: {NATIVE_ORACLE_RELEASE}", f"commit-hash: {NATIVE_ORACLE_COMMIT}", f"host: {S.TARGET}"):
+        require([line for line in lines if line.startswith(expected.split(":", 1)[0] + ":")] == [expected],
+                "native differential oracle release/source/host differs")
+    require(lines and lines[0].startswith(f"rustc {NATIVE_ORACLE_RELEASE} ("), "native differential oracle version differs")
+    files = oracle["files"]
+    require(isinstance(files, dict) and files, "native differential oracle files missing")
+    for name, item in files.items():
+        require(isinstance(name, str) and name and isinstance(item, dict)
+                and set(item) in ({"sha256"}, {"link", "resolved"}, {"link", "resolved", "sha256"}),
+                "native differential oracle file binding differs")
+        path = Path(name)
+        require(not path.is_absolute() and ".." not in path.parts and str(path) == name
+                and ("sha256" not in item or isinstance(item["sha256"], str) and re.fullmatch(r"[0-9a-f]{64}", item["sha256"]))
+                and ("link" not in item or isinstance(item["link"], str) and isinstance(item["resolved"], str)
+                     and Path(item["resolved"]).is_absolute()),
+                "native differential oracle file binding differs")
+    require(files.get("bin/rustc", {}).get("sha256") == oracle["compiler_sha256"]
+            and re.fullmatch(r"[0-9a-f]{64}", oracle["compiler_sha256"]), "native differential oracle compiler binding differs")
+    for pattern in ("lib/librustc_driver-*.so", "lib/libLLVM*.so*", f"lib/rustlib/{S.TARGET}/lib/libstd-*.rlib"):
+        require(any(Path(name).match(pattern) and "sha256" in item for name, item in files.items()),
+                "native differential oracle runtime inventory incomplete")
+    if live:
+        require(snapshot(sdk) == files, "native differential oracle changed")
+    return oracle
+
+
+def verify_native_oracle_pair(gates):
+    require(gates["baseline"]["native_oracle"] == gates["entry"]["native_oracle"],
+            "complete packages used different native differential oracle identities")
+
+
 def qualify_package(args):
     require(not args.output.exists(), "new package qualification scope required")
     package_build = verify_package(args.build_receipt, args.lane, live=True)
@@ -267,6 +316,16 @@ def qualify_package(args):
         # package, its constructor or any measured command.
         env = dict(package_build["commands"][0]["environment"], LUST_TCC_HOME=package_build["tcc"],
                    **{CARGO_LAYOUT_OPT_OUT: "1"})
+        oracle_sdk = args.native_oracle_sdk
+        require(oracle_sdk != sdk, "native differential oracle must be separate from the package SDK")
+        diff_env = native_differential_environment(env, oracle_sdk)
+        oracle_files = snapshot(oracle_sdk)
+        _, oracle_version, oracle_error = recorder.run([oracle_sdk / "bin/rustc", "-vV"],
+            diff_env, source, args.lane, "native-oracle-identity")
+        receipt["native_oracle"] = {"sdk": str(oracle_sdk), "rustc_version": oracle_version.decode(),
+                                    "compiler_sha256": S.digest(oracle_sdk / "bin/rustc"), "files": oracle_files}
+        require(not oracle_error, "native differential oracle identity emitted stderr")
+        verify_native_oracle(receipt["native_oracle"], live=True)
         work = args.output / "work"
         work.mkdir()
         native = source / "compiler/native"
@@ -301,7 +360,6 @@ def qualify_package(args):
                                    "script_sha256": S.digest(exported / "scripts/difftest.sh"),
                                    "case_pool_sha256": S.digest(exported / "scripts/case-pool.sh"),
                                    "fixture_files": {part: S.inventory(exported / "tests" / part) for part in ("pass", "fail", "reject")}}
-        diff_env = dict(env, DIFFTEST_JOBS="2", DIFFTEST_RUSTC_CACHE="off")
         _, diff_out, _ = recorder.run(["bash", exported / "scripts/difftest.sh"], diff_env, exported, args.lane, "ordinary-native-differential")
         count = sum(sum(name.endswith(".rs") and "/" not in name for name in files) for files in receipt["differential"]["fixture_files"].values())
         summaries_found = re.findall(rb"^difftest: ([0-9]+) passed, ([0-9]+) failed$", diff_out, re.M)
@@ -318,6 +376,7 @@ def qualify_package(args):
             entry_env, source, args.lane, "complete-public-entry-contract")
         require(re.search(rb"test result: ok\. [1-9][0-9]* passed; 0 failed;", entry_out), "public entry contract did not execute")
         require(verify_package(args.build_receipt, args.lane, live=True) == package_build, "qualification changed its release package")
+        verify_native_oracle(receipt["native_oracle"], live=True)
         receipt["status"] = "completed"
     except BaseException as error:
         receipt["error"] = f"{type(error).__name__}: {error}"
@@ -328,7 +387,7 @@ def qualify_package(args):
         receipt["raw_sha256"] = S.digest(args.output / "raw.jsonl")
         S.write_json(args.output / "receipt.json", receipt)
     try:
-        verify_gates(args.output, package_build, S.digest(args.build_receipt / "receipt.json"))
+        verify_gates(args.output, package_build, S.digest(args.build_receipt / "receipt.json"), live=True)
     except BaseException as error:
         receipt.update(status="failed", error=f"{type(error).__name__}: {error}")
         S.write_json(args.output / "receipt.json", receipt)
@@ -336,19 +395,27 @@ def qualify_package(args):
     print(f"Qualified source/package lane {args.lane}; broader native CI remains separate")
 
 
-def verify_gates(root, build, build_digest):
+def verify_gates(root, build, build_digest, live=False):
     receipt = json.loads((root / "receipt.json").read_text())
     lane = build["lane"]
     require(receipt.get("schema") == GATE_SCHEMA and receipt.get("status") == "completed" and receipt.get("lane") == lane
             and receipt["source"] == build["source"] and receipt["package"] == build["package"]
             and receipt["build_receipt_sha256"] == build_digest, "package correctness evidence is missing or belongs to another build")
     require(S.digest(root / "raw.jsonl") == receipt["raw_sha256"] and [json.loads(line) for line in (root / "raw.jsonl").read_text().splitlines()] == receipt["commands"], "package correctness raw log differs")
-    phases = ["native-unit-tests"] + (["no-change-resolve-oracle"] if lane == "entry" else []) + ["native-corpus-export", "ordinary-native-differential", "complete-public-entry-contract"]
+    phases = ["native-oracle-identity", "native-unit-tests"] + (["no-change-resolve-oracle"] if lane == "entry" else []) + ["native-corpus-export", "ordinary-native-differential", "complete-public-entry-contract"]
     verify_commands(root, receipt["commands"], phases, lane)
     commands = {row["phase"]: row for row in receipt["commands"]}
     source, sdk, package, work = map(Path, (build["source_path"], build["sdk"], build["package"], str(Path(receipt["output"]) / "work")))
     environment = dict(build["commands"][0]["environment"], LUST_TCC_HOME=build["tcc"],
                        **{CARGO_LAYOUT_OPT_OUT: "1"})
+    native_oracle = verify_native_oracle(receipt.get("native_oracle"), live)
+    oracle_sdk = Path(native_oracle["sdk"])
+    require(oracle_sdk != sdk, "native differential oracle must be separate from the package SDK")
+    diff_env = native_differential_environment(environment, oracle_sdk)
+    identity = commands["native-oracle-identity"]
+    require(identity["argv"] == [str(oracle_sdk / "bin/rustc"), "-vV"] and identity["environment"] == diff_env
+            and identity["cwd"] == str(source) and evidence(root, identity["stdout"]).decode() == native_oracle["rustc_version"]
+            and evidence(root, identity["stderr"]) == b"", "native differential oracle command differs")
     unit = commands["native-unit-tests"]
     expected_unit = [sdk / "bin/cargo", "test", "--manifest-path", source / "compiler/native/Cargo.toml", "--locked", "--offline", "--profile", "gate",
         "--jobs", "1", "--bins", "--target-dir", work / "native-tests", "--config", f'build.build-dir="{work / "native-intermediates"}"',
@@ -376,8 +443,8 @@ def verify_gates(root, build, build_digest):
         require(differential[label] == {"path": str(Path(build["package"]) / "bin" / name), "sha256": build["package_files"]["bin/" + name]["sha256"]}, "differential used another release compiler")
     diff = commands["ordinary-native-differential"]
     require(diff["argv"] == ["bash", str(work / "native-corpus/scripts/difftest.sh")]
-            and diff["cwd"] == str(work / "native-corpus") and diff["environment"] == dict(environment, DIFFTEST_JOBS="2", DIFFTEST_RUSTC_CACHE="off")
-            and diff["environment"]["PATH"].startswith(build["sdk"] + "/bin:"), "original complete differential request differs")
+            and diff["cwd"] == str(work / "native-corpus") and diff["environment"] == diff_env,
+            "original complete differential request differs")
     require(not any(key in diff["environment"] for key in ("DIFFTEST_SHARD", "PANIC", "RELEASE", "SANITIZE", "LUST_STRICT")), "differential mode was changed")
     require({key: differential[key] for key in ("script_sha256", "case_pool_sha256", "fixture_files")} == build["differential_inputs"], "differential inputs differ from the constructed source")
     count = sum(sum(name.endswith(".rs") and "/" not in name for name in files) for files in differential["fixture_files"].values())
@@ -418,7 +485,8 @@ class Campaign(B.Campaign):
         roots = {"baseline": self.args.baseline_receipt, "entry": self.args.candidate_receipt}
         builds = verify_pair(roots, live=True)
         gate_roots = {"baseline": self.args.baseline_gates, "entry": self.args.candidate_gates}
-        gates = {lane: verify_gates(gate_roots[lane], builds[lane], S.digest(roots[lane] / "receipt.json")) for lane in PUBLIC}
+        gates = {lane: verify_gates(gate_roots[lane], builds[lane], S.digest(roots[lane] / "receipt.json"), live=True) for lane in PUBLIC}
+        verify_native_oracle_pair(gates)
         for lane in PUBLIC:
             require(builds[lane]["package"] == str(self.packages[lane]), "executed package differs from constructor")
         self.report["candidate_identity"] = source_identity(self.args.repository)
@@ -708,6 +776,7 @@ def verify(output):
                 and report["daemon_paths"][lane] == str(Path(builds[lane]["package"]) / "bin/lust"), "public launcher or daemon belongs to another native package")
         for name in PACKAGE_FILES:
             require(report["compiler_and_runner_sha256"][str(Path(builds[lane]["package"]) / name)] == builds[lane]["package_files"][name]["sha256"], "executed package component differs")
+    verify_native_oracle_pair(report["package_gates"])
     require(report["package_roots"] == {lane: builds["baseline" if lane == "baseline" else "entry"]["package"] for lane in LANES}, "package environment bindings differ")
     require(report["daemon_paths"]["pristine"] == report["tool_paths"]["pristine"]
             and report["tool_paths"]["integrated"] == report["daemon_paths"]["entry"]
@@ -946,7 +1015,7 @@ def main():
     build.add_argument("--timeout", type=int, default=5400)
     qualify = commands.add_parser("qualify-package")
     qualify.add_argument("--lane", choices=PUBLIC, required=True)
-    for name in ("build-receipt", "output"):
+    for name in ("build-receipt", "native-oracle-sdk", "output"):
         qualify.add_argument("--" + name, type=Path, required=True)
     qualify.add_argument("--timeout", type=int, default=5400)
     run = commands.add_parser("measure")

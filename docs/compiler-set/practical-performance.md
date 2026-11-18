@@ -5,6 +5,12 @@ work and keeps ordinary full Rust close to the matching stock Rust compiler.
 Large speed gains outside Lust's subset are not required. Correctness has
 priority over removing a fraction of a millisecond.
 
+These budgets apply alongside [the governing integrated-compiler plan](architecture-plan.md).
+They do not authorize a coordinator, language selector or whole-program
+compile/fail/retry architecture. Current compatibility-path measurements remain
+useful evidence for those paths; meeting a budget is not completion of the
+required native/complementary compiler boundary.
+
 These are engineering budgets for deciding when to stop tuning. They are not
 claims of identical performance, universal Rust correctness or one speed ratio
 for every project. The budgets were chosen after inspecting the existing
@@ -39,9 +45,11 @@ does not excuse a correctness failure or silently relax those other results.
 ## Ordinary full Rust
 
 Use unchanged projects, dependencies, requested features and normal profiles.
-The matching imported Rust compiler owns unrepresented semantics, metadata and
-artifacts. Do not lower debug information, change panic behavior or substitute
-an easier program to make the comparison favorable.
+Imported Rust implementation must supply complementary semantics and genuine
+metadata/artifact services through the integrated boundary. Historical tables
+also measure transitional packaged-compiler paths and must retain that scope.
+Do not lower debug information, change panic behavior or substitute an easier
+program to make the comparison favorable.
 
 Use **5% relative overhead or 0.5 ms absolute overhead** as the initial
 near-stock review budget for each ordinary full-Rust operation. Report paired
@@ -83,15 +91,17 @@ PR #11 with additional target-kind checks.
 ## Publication
 
 Publish an installable package only after the exact delivered source and
-components pass the relevant runtime, rejection, Cargo, dependency, proc-macro,
+components satisfy the [architecture](architecture-plan.md#completion-and-publication)
+and pass the relevant runtime, rejection, Cargo, dependency, proc-macro,
 panic/drop, invalidation and platform qualification. Retain source identities,
 notices, relocation results and actual engine routing. The passing 16-entry
 contract suite is useful evidence, not a proof for every Rust program.
 
-The native main C function-type defect and earlier warm Result/ExitCode findings
-in PR #24 remain material correctness work. The current candidate does not
-include that partial repair. Its [five current cold Linux cases](main-return-smoke.md)
-pass, but do not qualify daemon transitions or repair the generated-C type.
+The [native main C type repair](native-main-type-repair.md) is now ported onto
+the current native tree with bounded cold tests. The older warm Result/ExitCode
+findings remain unassigned, and current sanitizer/daemon qualification remains
+open. The original candidate's [five cold Linux cases](main-return-smoke.md)
+pass but do not establish retained transitions.
 The [single-file check fix](full-check-metadata.md) also requires qualification
 in the exact source-built package. Native macOS qualification is incomplete and
 the primary native daemon has no Windows adapter. A package must name the

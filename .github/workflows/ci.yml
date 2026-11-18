@@ -129,6 +129,13 @@ jobs:
           bash scripts/ci.sh 2>&1 | tee "$RUNNER_TEMP/native-gate.log"
       - name: Verify base image lifetime through a real daemon
         run: python3 scripts/test-base-lifetime.py "$GITHUB_WORKSPACE/compiler/native/target/release/lust"
+      - name: Require exact runtime results after main return-type edits
+        if: always() && !cancelled()
+        run: |
+          python3 ../../tools/test-native-main-transitions.py \
+            --lust "$GITHUB_WORKSPACE/compiler/native/target/release/lust" \
+            --rustc "$(rustup which rustc)" \
+            --output "$RUNNER_TEMP/native-main-transitions"
       - name: Record produced compiler identities
         if: always()
         run: |
@@ -147,6 +154,9 @@ jobs:
             ${{ runner.temp }}/native-gate-host.json
             ${{ runner.temp }}/native-gate.log
             ${{ runner.temp }}/native-gate-builds.sha256
+            ${{ runner.temp }}/native-main-transitions/report.json
+            ${{ runner.temp }}/native-main-transitions/*.stdout
+            ${{ runner.temp }}/native-main-transitions/*.stderr
           if-no-files-found: warn
 
   macos-arm64:
@@ -267,6 +277,13 @@ jobs:
           bash scripts/ci.sh 2>&1 | tee "$RUNNER_TEMP/native-gate.log"
       - name: Verify base image lifetime through a real daemon
         run: python3 scripts/test-base-lifetime.py "$GITHUB_WORKSPACE/compiler/native/target/release/lust"
+      - name: Require exact runtime results after main return-type edits
+        if: always() && !cancelled()
+        run: |
+          python3 ../../tools/test-native-main-transitions.py \
+            --lust "$GITHUB_WORKSPACE/compiler/native/target/release/lust" \
+            --rustc "$(rustup which rustc)" \
+            --output "$RUNNER_TEMP/native-main-transitions"
       - name: Record produced compiler identities
         if: always()
         run: |
@@ -284,4 +301,7 @@ jobs:
             ${{ runner.temp }}/native-gate-identity.txt
             ${{ runner.temp }}/native-gate.log
             ${{ runner.temp }}/native-gate-builds.sha256
+            ${{ runner.temp }}/native-main-transitions/report.json
+            ${{ runner.temp }}/native-main-transitions/*.stdout
+            ${{ runner.temp }}/native-main-transitions/*.stderr
           if-no-files-found: warn

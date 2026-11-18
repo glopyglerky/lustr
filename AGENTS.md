@@ -1,21 +1,39 @@
 # Work on this fork
 
 
+## Governing architecture: read before implementation
+
+Follow [the explicit architecture plan](docs/compiler-set/architecture-plan.md),
+reaffirmed by the user on 18 November 2026. Lustr is one compiler replacing
+rustc: Lust handles its supported work, and imported upstream Rust implementation
+handles the complementary work inside the integrated compilation. Both must
+compose in the same unchanged program. Preserve Lust's frontend, retained state
+and fast body-edit path for work it supports.
+
+Do not substitute a coordinator, a language selector, a packaged stock-rustc
+backup, or whole-program Lust compile/fail/retry for this architecture. The
+current standalone retry route and narrow scalar mixed bridge are transitional;
+their tests and timings do not establish completion. Internal capability dispatch
+must use actual compiler representations and semantic/ABI contracts before
+emission. Do not use source-keyword guesses or require a complete extra Rust
+frontend on every Lust-supported request merely to choose its implementation.
+
+Importing upstream Rust source and internal services is explicitly allowed with
+licenses, notices and pinned provenance. Independent reconstruction of all Rust
+semantics is not required. Cargo adapters may preserve real graph, CLI and
+artifact behavior; adapter work is not delivery of the compiler boundary.
+Do not reinterpret a speed allowance or permission to import Rust as permission
+to revert to a fallback/coordinator design. Do not ask the user to restate this
+direction. Historical plans and measured compatibility paths do not override it.
+
 ## Current priority and ownership
 
-The current requirement is complete Rust compilation through lustr, preserving
-Lust's fast native compilation for its supported subset. lustr is the combined
-project/toolchain name. Importing and using upstream rustc implementation is
-explicitly allowed with licenses, notices and pinned provenance. Do not require
-independent reconstruction of all Rust semantics or equal speed for every
-full-Rust feature.
-
-Use the simplest working combination. Preserve Cargo's real graph and artifact
-contracts. Reuse and investigate the prior integration before repeating a
-failed approach. The native semantic-image work stays retained research; do not
-continue feature-by-feature expansion as the assumed delivery architecture.
-Whole-target selection is partial progress; preserve the automatic mixed-work
-destination and Lust's retained frontend/body-edit acceleration.
+Expose the actual Lust capability boundary, retain checked state through
+emission, and connect imported Rust support for the complement through a shared
+compilation boundary. Reuse the existing real ABI/symbol/object/metadata work.
+Investigate previous failures before repeating an approach. The native
+semantic-image experiments remain retained research, not a requirement to
+reimplement every missing Rust feature independently.
 
 Keep the pristine Lust reference and explicit integration guard. Imported Rust
 must remain separately identified; no hidden changes to Lust or blueFe's
@@ -34,14 +52,15 @@ never remove input validation to meet a sub-millisecond target.
 
 ## Product contract
 
-Follow [the compiler contract](docs/compiler-set/native-contract.md). Full Rust
-may use the imported upstream implementation. Preserve Lust's supported path
-and qualify actual combined behavior. Never fabricate Rust metadata, rewrite
-applications into the subset or conceal the engine that produced an artifact.
+Follow [the compiler contract](docs/compiler-set/native-contract.md). Qualify
+actual native, complementary and mixed work inside Lustr. A public command
+compiling a program through a stock compiler does not by itself meet that
+contract. Never fabricate Rust metadata, rewrite applications into the subset
+or conceal the implementation that produced an artifact.
 
 ## Correctness rules
 
-- Full Rust support currently comes from the installed Cargo/rustc toolchain. Name that dependency honestly. Do not claim that this fork independently implements all of Rust.
+- Current broad compatibility comes from the packaged Cargo/rustc implementation. Name that transitional dependency honestly. Do not claim it delivers the required integrated complement, or that this fork independently implements all of Rust.
 - Never infer semantic compatibility from source keywords, a successful parser run, or a compiler accepting the source. Macros, traits, lifetimes, layouts, generics, drops, panic strategy, and crate metadata interact.
 - Lust currently has no Rust rlib format. Do not place its output in Cargo's artifact graph as a Rust library or forge metadata or dep-info. Whole-target Lust compilation and a future verified semantic-IR bridge are separate routes.
 - Preserve the project's source, features, target, profiles, Cargo flags, dependency versions, panic strategy, and build-script behavior. Adapter substitutions and reduced features require explicit qualification against the requested Cargo build.
@@ -53,10 +72,10 @@ applications into the subset or conceal the engine that produced an artifact.
 
 ## Work layout and validation
 
-`crates/lustr` is the independently installable coordinator. Its own build must not require tcc, nightly Rust, or registry dependencies. Required native compiler sources remain in `compiler/native/src/` and
+`crates/lustr` is the independently installable compatibility coordinator, not the target compiler architecture. Its own build must not require tcc, nightly Rust, or registry dependencies. Required native compiler sources remain in `compiler/native/src/` and
 `compiler/native/library/`, as described in the primary README.
 
-Read `docs/compiler-set/design.md` and `docs/compiler-set/roadmap.md` before changing routing or claiming coverage. The upstream `DESIGN.md`, `docs/ARCH.md`, and `docs/PLAN.md` contain historical plans. Check executable code and tests before treating those plans as implemented behavior.
+Read `docs/compiler-set/architecture-plan.md`, `native-contract.md`, `design.md` and `roadmap.md` before changing routing or claiming coverage. The upstream `DESIGN.md`, `docs/ARCH.md`, `docs/PLAN.md` and archived design snapshots are historical. Check executable code and tests before treating any plan as implemented behavior. A release described as the requested full replacement must satisfy architecture as well as correctness and performance; coordinator success cannot waive that condition.
 
 Use real integration tests for the Cargo path, including build scripts, proc macros, full-language constructs, rejection of invalid Rust, and observable runtime behavior. Keep the upstream differential gates for changes to Lust itself. Report which engines and platforms actually ran.
 

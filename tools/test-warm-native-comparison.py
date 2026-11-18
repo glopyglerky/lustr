@@ -55,6 +55,12 @@ class SyntheticChildren:
         self.parent = parent
         self.sdk, self.tcc, self.pristine = [parent / name for name in ("synthetic-sdk", "synthetic-tcc", "synthetic-pristine")]
         for name in ("rustc", "cargo", "rustdoc"): put(self.sdk / "bin" / name, "synthetic SDK " + name + "\n")
+        self.native_oracle_sdk = parent / "synthetic-native-oracle"
+        for name in ("bin/rustc", "lib/librustc_driver-synthetic.so", "lib/libLLVM-synthetic.so",
+                     f"lib/rustlib/{N.S.TARGET}/lib/libstd-synthetic.rlib"):
+            put(self.native_oracle_sdk / name, "synthetic native oracle, never executable: " + name + "\n")
+        self.native_oracle_version = (f"rustc {N.NATIVE_ORACLE_RELEASE} (synthetic identity; not an executed compiler)\n"
+            f"commit-hash: {N.NATIVE_ORACLE_COMMIT}\nhost: {N.S.TARGET}\nrelease: {N.NATIVE_ORACLE_RELEASE}\n").encode()
         put(self.tcc / "bin/tcc", "synthetic TinyCC\n")
         put(self.tcc / "share/licenses/tinycc/SOURCE.txt", "Synthetic provenance for controls only\nrevision " + N.TCC + "\n")
         self.sources = {lane: fake_source(parent, "synthetic-source-" + lane) for lane in N.PUBLIC}
@@ -98,6 +104,7 @@ class SyntheticChildren:
         argv = list(map(str, argv))
         data = error = b""
         if phase in ("sdk-identity", "rust-identity"): data = self.version
+        elif phase == "native-oracle-identity": data = self.native_oracle_version
         elif phase == "constructor-build": put(Path(argv[-1]), "synthetic constructor, never executable\n")
         elif phase == "complete-package-build": self.package(Path(argv[1]), Path(argv[-2]))
         elif phase == "native-unit-tests":
@@ -186,7 +193,8 @@ def synthetic_campaign(parent):
             args[lane] = SimpleNamespace(source=children.sources[lane], lane=lane, output=parent / (lane + "-build"), built=parent / (lane + "-built"),
                 sdk=children.sdk, tcc=children.tcc, pristine_source=children.pristine, cargo_home=parent / "cargo-home", timeout=30)
             N.build_package(args[lane])
-            N.qualify_package(SimpleNamespace(build_receipt=args[lane].output, lane=lane, output=parent / (lane + "-gates"), timeout=30))
+            N.qualify_package(SimpleNamespace(build_receipt=args[lane].output, native_oracle_sdk=children.native_oracle_sdk,
+                lane=lane, output=parent / (lane + "-gates"), timeout=30))
         put(parent / "pristine-bin/lust", "synthetic pristine client\n")
         put(parent / "pristine-bin/lust-core", "synthetic pristine core\n")
         put(parent / "pristine-build.log", "Synthetic controls only; Finished `release` profile\n")
@@ -344,10 +352,107 @@ class PackageComparisonControls(unittest.TestCase):
     def test_native_differential_refuses_conflicting_cargo_layout(self):
         self.refuse_layout_change("ordinary-native-differential", "0")
 
+    def test_native_oracle_identity_is_required(self):
+        with self.assertRaisesRegex(ValueError, "oracle identity"):
+            self.verify_gate(self.gate_corruption(lambda receipt: receipt.pop("native_oracle")))
+
+    def test_native_oracle_release_source_and_host_are_pinned(self):
+        for field, expected in (("release", N.NATIVE_ORACLE_RELEASE), ("commit-hash", N.NATIVE_ORACLE_COMMIT), ("host", N.S.TARGET)):
+            for mode in ("replace", "duplicate"):
+                with self.subTest(field=field, mode=mode):
+                    def mutate(receipt):
+                        oracle = receipt["native_oracle"]
+                        oracle["rustc_version"] = (oracle["rustc_version"].replace(field + ": " + expected, field + ": wrong")
+                            if mode == "replace" else oracle["rustc_version"] + field + ": wrong\n")
+                    with self.assertRaisesRegex(ValueError, "release/source/host"):
+                        self.verify_gate(self.gate_corruption(mutate, suffix="-" + field + "-" + mode))
+
+    def test_native_oracle_identity_command_cannot_be_omitted(self):
+        def mutate(receipt):
+            receipt["commands"] = [row for row in receipt["commands"] if row["phase"] != "native-oracle-identity"]
+            for index, row in enumerate(receipt["commands"]): row["id"] = index
+        with self.assertRaises(ValueError): self.verify_gate(self.gate_corruption(mutate))
+
+    def test_native_oracle_identity_command_cannot_use_build_sdk(self):
+        def mutate(receipt):
+            next(row for row in receipt["commands"] if row["phase"] == "native-oracle-identity")["argv"][0] = str(self.parent / "synthetic-sdk/bin/rustc")
+        with self.assertRaisesRegex(ValueError, "oracle command"):
+            self.verify_gate(self.gate_corruption(mutate))
+
+    def test_native_differential_requires_oracle_path_and_rustc(self):
+        for lane in N.PUBLIC:
+            for key in ("PATH", "RUSTC"):
+                with self.subTest(lane=lane, key=key):
+                    def mutate(receipt):
+                        unit = next(row for row in receipt["commands"] if row["phase"] == "native-unit-tests")
+                        diff = next(row for row in receipt["commands"] if row["phase"] == "ordinary-native-differential")
+                        diff["environment"][key] = unit["environment"][key]
+                    with self.assertRaisesRegex(ValueError, "differential request"):
+                        self.verify_gate(self.gate_corruption(mutate, lane, "-" + lane + "-" + key), lane)
+
+    def test_native_oracle_compiler_digest_must_match_inventory(self):
+        def mutate(receipt): receipt["native_oracle"]["compiler_sha256"] = "f" * 64
+        with self.assertRaisesRegex(ValueError, "compiler binding"):
+            self.verify_gate(self.gate_corruption(mutate))
+
+    def test_native_oracle_runtime_inventory_cannot_be_omitted(self):
+        for fragment in ("librustc_driver", "libLLVM", "libstd"):
+            with self.subTest(fragment=fragment):
+                def mutate(receipt):
+                    files = receipt["native_oracle"]["files"]
+                    del files[next(name for name in files if fragment in name)]
+                with self.assertRaisesRegex(ValueError, "runtime inventory"):
+                    self.verify_gate(self.gate_corruption(mutate, suffix="-" + fragment))
+
+    def test_live_native_oracle_runtime_change_is_rejected(self):
+        receipt = json.loads((self.parent / "entry-gates/receipt.json").read_text())
+        oracle = receipt["native_oracle"]
+        path = Path(oracle["sdk"]) / "lib/libLLVM-synthetic.so"
+        original = path.read_bytes()
+        try:
+            path.write_bytes(original + b"changed\n")
+            with self.assertRaisesRegex(ValueError, "oracle changed"):
+                N.verify_native_oracle(oracle, live=True)
+        finally: path.write_bytes(original)
+
+    def test_two_packages_cannot_have_different_oracle_identities(self):
+        output = self.parent / self.id().split(".")[-1]
+        shutil.copytree(self.original, output)
+        report = json.loads((output / "report.json").read_text())
+        gate_path = output / report["build_receipts"]["entry-gates"]["file"]
+        gate = json.loads(gate_path.read_text())
+        gate["native_oracle"]["compiler_sha256"] = gate["native_oracle"]["files"]["bin/rustc"]["sha256"] = "f" * 64
+        N.S.write_json(gate_path, gate)
+        # Rebind every enclosing checksum; both receipts remain individually
+        # valid. Full portable replay must still reject different oracles.
+        self.assertEqual(self.verify_gate(gate_path.parent), gate)
+        report["build_receipts"]["entry-gates"] = N.binding(gate_path, output)
+        report["package_gates"]["entry"] = gate
+        rows = [json.loads(line) for line in (output / "raw.jsonl").read_text().splitlines()]
+        identity = next(row for row in rows if row["kind"] == "identities")
+        identity.update({key: report[key] for key in N.IDENTITY_KEYS})
+        (output / "raw.jsonl").write_text("".join(json.dumps(row) + "\n" for row in rows))
+        report["raw_sha256"] = N.S.digest(output / "raw.jsonl")
+        N.S.write_json(output / "report.json", report)
+        with self.assertRaisesRegex(ValueError, "different native differential oracle"):
+            N.verify(output)
+
+    def test_native_oracle_does_not_replace_unit_entry_or_measured_sdk(self):
+        report = N.verify(self.original)
+        for lane in N.PUBLIC:
+            build, gate = report["package_builds"][lane], report["package_gates"][lane]
+            for phase in ("native-unit-tests", "complete-public-entry-contract"):
+                row = next(row for row in gate["commands"] if row["phase"] == phase)
+                self.assertEqual(row["environment"]["PATH"], build["commands"][0]["environment"]["PATH"])
+                self.assertEqual(row["environment"]["RUSTC"], str(Path(build["sdk"]) / "bin/rustc"))
+            self.assertTrue(all(not Path(path).is_relative_to(Path(gate["native_oracle"]["sdk"]))
+                                for path in report["tool_paths"].values()))
+        self.assertIn("commit-hash: " + N.S.RUST, report["rustc_version"])
+
     def test_oracle_cannot_use_unbound_unit_binary(self):
         def mutate(receipt):
             receipt["unit_binaries"]["lust-core"]["path"] = "/synthetic-wrong/unit"
-            receipt["commands"][1]["argv"][0] = "/synthetic-wrong/unit"
+            next(row for row in receipt["commands"] if row["phase"] == "no-change-resolve-oracle")["argv"][0] = "/synthetic-wrong/unit"
         with self.assertRaisesRegex(ValueError, "Cargo"): self.verify_gate(self.gate_corruption(mutate))
 
     def test_native_export_cannot_switch_source(self):
@@ -394,6 +499,15 @@ class WorkflowControls(unittest.TestCase):
             self.assertIn("qualify-package --lane " + lane, gate)
             self.assertIn(f'--build-receipt "$RUNNER_TEMP/native-{name}-build"', gate)
             self.assertIn(f'--output "$RUNNER_TEMP/native-{name}-gates"', gate)
+
+    def test_native_oracle_is_installed_separately_and_used_only_for_gates(self):
+        self.assertIn("RUSTUP_TOOLCHAIN: nightly-2026-11-09", self.text)
+        self.assertIn("rustup toolchain install 1.99.0 --profile minimal", self.text)
+        for name in ("baseline", "candidate"):
+            self.assertIn('--native-oracle-sdk "$(rustup run 1.99.0 rustc --print sysroot)"', self.steps[name + "_gates"])
+            self.assertNotIn("native-oracle", self.steps[name + "_build"])
+            self.assertIn('--sdk "$(rustc --print sysroot)"', self.steps[name + "_build"])
+        self.assertNotIn("rustup default", self.text)
 
     def test_failed_setup_and_target_miss_artifacts_are_always_retained(self):
         upload = next(block for block in self.blocks if "actions/upload-artifact@" in block)

@@ -10548,6 +10548,8 @@ pub struct UnwindInit {
     pub tables: bool,
     pub ids: [u64; 4],
     pub hook_runner: Option<u32>,
+    /// Result/ExitCode mains require the typed Termination wrapper in their body unit.
+    pub termination_entry: bool,
 }
 
 /// The `main_unit` argument for `p` (`slot_of` maps a fn to its slot).
@@ -10565,7 +10567,11 @@ pub fn unwind_init(p: &Program, slot_of: impl Fn(LocalDefId) -> u32) -> Option<U
         .map(|i| slot_of(LocalDefId(i as u32)));
     let (a, b) = crate::check::any::type_id_words(p, &p.tys, REF_STR);
     let (c, d) = crate::check::any::type_id_words(p, &p.tys, STRING);
-    Some(UnwindInit { unwind: p.unwind, tables: p.unwind_tables, ids: [a, b, c, d], hook_runner: runner })
+    let termination_entry = p.main.is_some_and(|m| {
+        let ret = p.fn_info(m).ret;
+        p.tys.is_exit_code(ret) || p.tys.result_args(ret).is_some()
+    });
+    Some(UnwindInit { unwind: p.unwind, tables: p.unwind_tables, ids: [a, b, c, d], hook_runner: runner, termination_entry })
 }
 
 /// The location unit: the per-slot line and file tables and
@@ -10610,8 +10616,9 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
     let unwind = init.as_ref().is_some_and(|i| i.unwind);
     let tables = init.as_ref().is_some_and(|i| i.unwind && i.tables);
     let runner_slot = init.as_ref().and_then(|i| i.hook_runner);
+    let termination_entry = init.as_ref().is_some_and(|i| i.termination_entry);
     let (init, runner) = match init {
-        Some(UnwindInit { unwind, tables, ids: [a, b, c, d], hook_runner }) => (
+        Some(UnwindInit { unwind, tables, ids: [a, b, c, d], hook_runner, .. }) => (
             format!("\n  lust_unw_init({}, {a}ull, {b}ull, {c}ull, {d}ull);", if unwind && tables { 2 } else { unwind as u8 }),
             hook_runner.map_or(String::new(), |s| {
                 // Release C names the runner directly (only its address is taken here).
@@ -10622,15 +10629,24 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
     };
     let mut c = unit_header();
     c.push_str("void lust_loc_init(void);\nvoid lust_kstatics_init(void);\n");
-    // Release C calls main's body (and passes the hook runner) by name.
-    let main_call = if names::release() {
-        let _ = writeln!(c, "void {}(void);", names::body(main_slot));
+    // Release C passes the hook runner by name, with its actual Rust-to-C signature.
+    if names::release() {
         if let Some(s) = runner_slot.filter(|&s| s != main_slot) {
-            let _ = writeln!(c, "void {}(void);", names::body(s));
+            let _ = writeln!(c, "lust_Unit {}(uint8_t);", names::body(s));
         }
+    }
+    let main_call = if termination_entry {
+        // The body unit must register its typed wrapper. Never declare or call a
+        // Result/ExitCode body as a unit-returning function if that invariant fails.
+        "abort()".to_string()
+    } else if names::release() {
+        let _ = writeln!(c, "lust_Unit {}(void);", names::body(main_slot));
         format!("{}()", names::body(main_slot))
     } else {
-        format!("((void (*)(void))lust_fns[{main_slot}])()")
+        // A Rust `()` return is emitted as `lust_Unit`, including `main`.
+        // Discard its value after a correctly typed call; a void-returning
+        // function pointer is incompatible even when both ABIs return no data.
+        format!("((lust_Unit (*)(void))lust_fns[{main_slot}])()")
     };
     for u in overlays {
         let _ = writeln!(c, "void lust_overlay_u{u}(void);");
@@ -12148,7 +12164,7 @@ pub fn fn_unit_parts(
     // table; on Err print `Error: {err:?}` to stderr and exit 1, as
     // Rust does; an `ExitCode` is the exit status. Registered below
     // in `lust_main_entry_p`, which the main unit prefers over the
-    // plain void call. The Debug and Drop glue it calls is wanted
+    // plain unit-returning call. The Debug and Drop glue it calls is wanted
     // by main's own FnOut (see `gen_fn`).
     let entry_at = c.len();
     if let Some((m, idx)) = term_main {
