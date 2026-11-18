@@ -1,0 +1,59 @@
+{
+  "attestation_verification": "passed",
+  "clang_version": "23.1.5",
+  "compiler_sha256": "a22ab66d53cf70dfee8544eabdeb36f075bf942861cb8d59f98a3fadc7a65c26",
+  "pin": {
+    "archive": {
+      "asset_id": 705801926,
+      "bytes": 870686518,
+      "name": "LLVM-23.1.5-macOS-ARM64.tar.zst",
+      "sha256": "503de30ef90311e0b143623801b19af2250adac6d69faed65ad0051170202e3b",
+      "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.5/LLVM-23.1.5-macOS-ARM64.tar.zst"
+    },
+    "attestation": {
+      "asset_id": 705803995,
+      "bytes": 11135,
+      "name": "LLVM-23.1.5-macOS-ARM64.tar.zst.jsonl",
+      "sha256": "961b20e89b54952add75ab7a3a565de1db1e300b546cceb091ade31afe21d671",
+      "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.5/LLVM-23.1.5-macOS-ARM64.tar.zst.jsonl"
+    },
+    "certificate_identity": "https://github.com/llvm/llvm-project/.github/workflows/release-binaries.yml@refs/tags/llvmorg-23.1.5",
+    "release": "https://github.com/llvm/llvm-project/releases/tag/llvmorg-23.1.5",
+    "release_api": "https://api.github.com/repos/llvm/llvm-project/releases/432551565",
+    "repository": "llvm/llvm-project",
+    "root_directory": "LLVM-23.1.5-macOS-ARM64",
+    "schema": 1,
+    "signer_workflow": "llvm/llvm-project/.github/workflows/release-binaries.yml",
+    "source_commit": "392dfff97d29b59d77e5cac6d4b6ef2585fe7117",
+    "source_ref": "refs/tags/llvmorg-23.1.5",
+    "version": "23.1.5"
+  },
+  "platform": "macOS arm64",
+  "runtime_sha256": {
+    "lib/clang/23/lib/darwin/libclang_rt.asan_abi_osx.a": "32d26cc6b09710ca35ce954ac85dd0a6c88f910ed8b0ec349392d1426a67ca5c",
+    "lib/clang/23/lib/darwin/libclang_rt.asan_osx_dynamic.dylib": "636326e28e884e3d671c1a5bcce5998e1700cf6c0451bcf4643fab3fdae979dd",
+    "lib/clang/23/lib/darwin/libclang_rt.cc_kext.a": "613f2058351d0cbb13d32c47e5d7336a68e5d2813a551d559f30f72100a8a80a",
+    "lib/clang/23/lib/darwin/libclang_rt.fuzzer_interceptors_osx.a": "9b83c221281f3c1ef3a51bb6ba1db8e969b2f5fc3188a4911ab0ab4c18ece03f",
+    "lib/clang/23/lib/darwin/libclang_rt.fuzzer_no_main_osx.a": "4f81d0ffcb95f1c8caa9b673a4551772d356aa72174709cdd75b20dcff079aa1",
+    "lib/clang/23/lib/darwin/libclang_rt.fuzzer_osx.a": "4b162e3b5e9a202eba74ef73ca5c077051936e980dc119572adb06d320c3e376",
+    "lib/clang/23/lib/darwin/libclang_rt.lsan_osx_dynamic.dylib": "8178cba9e6a791521b737416c28995629172417d7ebbd0d6479b9afffe97601f",
+    "lib/clang/23/lib/darwin/libclang_rt.osx.a": "6a50e2746578f037b0977438f2fabfc60e01325a37cfadcc9406c4aae8927993",
+    "lib/clang/23/lib/darwin/libclang_rt.profile_osx.a": "1f3432bf1e327f30dc9ec8436760942e1f7603df8010fbc7f6bb9cb2ae69bcf6",
+    "lib/clang/23/lib/darwin/libclang_rt.rtsan_osx_dynamic.dylib": "b06dc48e7693154d7acfb441f489c246589775e3277eda9673264d949d2725b1",
+    "lib/clang/23/lib/darwin/libclang_rt.stats_client_osx.a": "14cf903f6483431fa150b0bb6b700061051440ec4c82411020a8681371bd6b64",
+    "lib/clang/23/lib/darwin/libclang_rt.stats_osx_dynamic.dylib": "c0fa4b539883ed03c683dc88e97e6235da70714df71640c76fa61753dfdfba9b",
+    "lib/clang/23/lib/darwin/libclang_rt.tsan_osx_dynamic.dylib": "124c1ed8280cf5474d5747c2d5df1ed872362a2a926c768477e4a5f63ddef787",
+    "lib/clang/23/lib/darwin/libclang_rt.tysan_osx_dynamic.dylib": "fb3149be7d381f1ee59462d9fb0d72de7b0c43eba9f0e45a4dd0ea0a5a0658b6",
+    "lib/clang/23/lib/darwin/libclang_rt.ubsan_minimal_osx.a": "7de55d41d877fd95d396bd5f0e82f7b651316af8ba4fc414d0f4d1d3cc9e5cea",
+    "lib/clang/23/lib/darwin/libclang_rt.ubsan_minimal_osx_dynamic.dylib": "61e76c0e00c5fbfdcc4a37b7b104cf4c388078ce0188597d6add5313d8310a97",
+    "lib/clang/23/lib/darwin/libclang_rt.ubsan_osx_dynamic.dylib": "d9e5dbf99657c44ec1351d510de04b4d943d85dc0db72f794d9d7065a06f40ca",
+    "lib/clang/23/lib/darwin/libclang_rt.xray-basic_osx.a": "c535a00c1984d88a38dc9bdbe7fa8edf178e97af695f218d9e4e590d5dc3dd3e",
+    "lib/clang/23/lib/darwin/libclang_rt.xray-dso_osx.a": "07969f1b1038021ac482f9f922b8bcf56e9b2feb096daca2173e9bc3a983a38b",
+    "lib/clang/23/lib/darwin/libclang_rt.xray-fdr_osx.a": "deed593f5c43d32a467166e5724ed30dcd21a0594638ce1d570613130e53fa80",
+    "lib/clang/23/lib/darwin/libclang_rt.xray-profiling_osx.a": "bb91e2bea785f10abb59bd91784bebbe2f4c59b181694d110d42823f90bc2a79",
+    "lib/clang/23/lib/darwin/libclang_rt.xray_osx.a": "11438671a99a25286ee4a074ac0e38497c42eaac8137db4b2e606b5212545472"
+  },
+  "sanitizer_capability_status": "not-run-by-installer",
+  "schema": 1,
+  "symbolizer_sha256": "a89b947e226e2bc15bbf8db6a98065478a216fa2a22f3dddd2ed1535f21f018f"
+}

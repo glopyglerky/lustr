@@ -159,31 +159,24 @@ jobs:
         run: |
           # The upstream gate uses Bash associative arrays and wait -n.
           # macOS /bin/bash 3.2 cannot run that test harness.
-          brew install bash coreutils findutils gnu-sed flock
+          brew install bash coreutils findutils gnu-sed flock zstd
           echo "$(brew --prefix bash)/bin" >> "$GITHUB_PATH"
           for tool in coreutils findutils gnu-sed; do
             echo "$(brew --prefix "$tool")/libexec/gnubin" >> "$GITHUB_PATH"
           done
       - name: Select a sanitizer runtime with native leak detection
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           # Apple Clang's ASan rejects detect_leaks=1 on this platform.
-          # Keep the leak gate and select the upstream runtime explicitly.
-          # Runner images can retain a catalog or installed formula from an
-          # earlier patch release. Refresh both before enforcing the exact pin.
-          brew update
-          if brew list --versions llvm@23 >/dev/null; then
-            brew upgrade llvm@23
-          else
-            brew install llvm@23
-          fi
-          sanitizer_tools=$(brew --prefix llvm@23)/bin
-          test -x "$sanitizer_tools/clang"
-          test -x "$sanitizer_tools/llvm-symbolizer"
-          echo "SAN_CC=$sanitizer_tools/clang" >> "$GITHUB_ENV"
-          echo "ASAN_SYMBOLIZER_PATH=$sanitizer_tools/llvm-symbolizer" >> "$GITHUB_ENV"
-          "$sanitizer_tools/clang" --version
-          test "$("$sanitizer_tools/clang" -dumpversion)" = 23.1.5
+          # Pin the complete upstream compiler/runtime archive and signed
+          # provenance. Floating Homebrew releases cannot satisfy an exact pin.
+          python3 ../../tools/test-macos-sanitizer-installer.py
+          python3 ../../tools/install-macos-sanitizer.py \
+            --directory "$RUNNER_TEMP/lustr-macos-sanitizer" \
+            --github-env "$GITHUB_ENV" \
+            2>&1 | tee "$RUNNER_TEMP/macos-sanitizer-setup.log"
       - name: Verify actual Bash and GNU test commands
         run: |
           set -euo pipefail
@@ -284,4 +277,8 @@ jobs:
             ${{ runner.temp }}/native-gate-identity.txt
             ${{ runner.temp }}/native-gate.log
             ${{ runner.temp }}/native-gate-builds.sha256
+            ${{ runner.temp }}/macos-sanitizer-setup.log
+            ${{ runner.temp }}/lustr-macos-sanitizer/receipt.json
+            ${{ runner.temp }}/lustr-macos-sanitizer/attestation-verification.stdout
+            ${{ runner.temp }}/lustr-macos-sanitizer/attestation-verification.stderr
           if-no-files-found: warn
