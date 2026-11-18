@@ -99,23 +99,6 @@ class ThreeWayReportTests(unittest.TestCase):
         (source / "SHA256SUMS").write_text("".join(hashlib.sha256((source / name).read_bytes()).hexdigest()
                                                + "  " + name + "\n" for name in sorted(files)))
 
-    def prepare_unsupported_gate(self):
-        evidence = self.root / "lust-coverage"
-        evidence.mkdir()
-        source = b"union Unsupported { value: u64 }\n"
-        diagnostic = b'{"code":"L9001","severity":"error","message":"unions are not supported yet"}\n'
-        (evidence / "source.rs").write_bytes(source)
-        (evidence / "diagnostic.jsonl").write_bytes(diagnostic)
-        receipt = {"schema": "lustr-lust-unsupported-v1", "source_revision": REVISION,
-                   "entries": [{"family": "fixed-cargo", "operation": "body-edit", "feature": "union item",
-                                "source_file": "source.rs", "source_sha256": hashlib.sha256(source).hexdigest(),
-                                "diagnostic_file": "diagnostic.jsonl", "diagnostic_sha256": hashlib.sha256(diagnostic).hexdigest(),
-                                "diagnostic_code": "L9001", "compiler_sha256": "c" * 64,
-                                "exit": 1, "signal": None, "timed_out": False}]}
-        path = evidence / "receipt.json"
-        path.write_text(json.dumps(receipt))
-        return path
-
     def test_skipped_campaigns_have_all_rows_as_nt_and_no_na(self):
         destination, _ = self.run_report()
         data = json.loads((destination / "report.json").read_text())
@@ -230,39 +213,43 @@ class ThreeWayReportTests(unittest.TestCase):
         destination, _ = self.run_report(statuses=("skipped", "skipped", "success"), expect=1)
         self.assertEqual(json.loads((destination / "report.json").read_text())["families"][3]["status"], "FAIL")
 
-    def test_na_requires_source_bound_diagnostic_from_matched_pristine_lust(self):
+    def test_unbound_unsupported_claim_is_rejected_not_marked_na(self):
         self.prepare_fixed()
-        receipt = self.prepare_unsupported_gate()
-        destination, _ = self.run_report("--lust-coverage", str(receipt),
-                                         statuses=("success", "skipped", "skipped"))
-        families = json.loads((destination / "report.json").read_text())["families"]
-        self.assertEqual(families[0]["rows"][0]["lust"]["status"], "N/A")
-        self.assertEqual(families[0]["rows"][1]["lust"]["status"], "NT")
-
-    def test_invalid_unsupported_proof_is_fail_and_never_na(self):
-        self.prepare_fixed()
-        receipt = self.prepare_unsupported_gate()
-        (receipt.parent / "diagnostic.jsonl").write_text("not a structured compiler diagnostic\n")
-        destination, _ = self.run_report("--lust-coverage", str(receipt),
-                                         statuses=("success", "skipped", "skipped"), expect=1)
-        data = json.loads((destination / "report.json").read_text())
-        self.assertEqual(data["coverage_status"], "FAIL")
-        self.assertEqual(data["families"][0]["rows"][0]["lust"]["status"], "NT")
-
-    def test_non_unsupported_diagnostic_cannot_be_marked_na(self):
-        self.prepare_fixed()
-        receipt = self.prepare_unsupported_gate()
-        diagnostic = b'{"code":"L0110","severity":"error","message":"type mismatch"}\n'
-        (receipt.parent / "diagnostic.jsonl").write_bytes(diagnostic)
-        data = json.loads(receipt.read_text())
-        data["entries"][0]["diagnostic_sha256"] = hashlib.sha256(diagnostic).hexdigest()
-        data["entries"][0]["diagnostic_code"] = "L0110"
-        receipt.write_text(json.dumps(data))
+        receipt = self.root / "unbound-claim.json"
+        receipt.write_text(json.dumps({"family": "fixed-cargo", "operation": "body-edit",
+                                       "feature": "union item", "exit": 1}))
         destination, _ = self.run_report("--lust-coverage", str(receipt),
                                          statuses=("success", "skipped", "skipped"), expect=1)
         report = json.loads((destination / "report.json").read_text())
         self.assertEqual(report["coverage_status"], "FAIL")
+        self.assertEqual(report["status"], "INCOMPLETE")
+        self.assertTrue(all(row["lust"]["status"] == "NT" for row in report["families"][0]["rows"]))
+
+    def test_nonexistent_unsupported_receipt_is_also_rejected(self):
+        destination, _ = self.run_report("--lust-coverage", str(self.root / "missing.json"), expect=1)
+        report = json.loads((destination / "report.json").read_text())
+        self.assertEqual(report["coverage_status"], "FAIL")
         self.assertEqual(report["families"][0]["rows"][0]["lust"]["status"], "NT")
+
+    def test_na_display_only_for_future_externally_proven_unsupported_lane(self):
+        reporter = load_module("three_way_report", "report-three-way-performance.py")
+        family = reporter.empty_family(reporter.FAMILIES[0], "skipped")
+        family["rows"][0]["lust"] = reporter.cell("N/A", "future source/argv-bound unsupported execution")
+        markdown = reporter.render({"source_revision": REVISION, "families": [family]})
+        self.assertIn("| body-edit | NT | N/A | NT |", markdown)
+
+    def test_boolean_project_exit_is_invalid_not_success(self):
+        self.prepare_project()
+        source = self.root / "project"
+        samples = source / "samples.json"
+        record = json.loads(samples.read_text())
+        record["cases"][0]["records"][0]["exit"] = False
+        samples.write_text(json.dumps(record, sort_keys=True))
+        files = ("README.md", "campaign.json", "host.json", "replay.json", "samples.json")
+        (source / "SHA256SUMS").write_text("".join(hashlib.sha256((source / name).read_bytes()).hexdigest()
+                                               + "  " + name + "\n" for name in files))
+        destination, _ = self.run_report(statuses=("skipped", "skipped", "success"), expect=1)
+        self.assertEqual(json.loads((destination / "report.json").read_text())["families"][3]["status"], "FAIL")
 
 
 if __name__ == "__main__":

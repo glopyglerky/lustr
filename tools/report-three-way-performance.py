@@ -12,7 +12,7 @@ import hashlib
 import importlib.util
 import json
 import math
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 import re
 import statistics
 import sys
@@ -189,71 +189,6 @@ def slice_family(root: Path, revision: str) -> dict:
     return population(FAMILIES[2], rows, source, verified["pairs"])
 
 
-def unsupported_file(root: Path, name: str) -> bytes:
-    if not isinstance(name, str) or not name or "\\" in name or "\x00" in name:
-        raise ValueError("invalid unsupported gate file path")
-    relative = PurePosixPath(name)
-    if relative.is_absolute() or ".." in relative.parts or ":" in name:
-        raise ValueError("unsupported gate path escapes evidence")
-    root = root.resolve(strict=True)
-    path = root / name
-    if path.is_symlink() or not path.is_file() or not path.resolve().is_relative_to(root):
-        raise ValueError("unsupported gate file missing or linked")
-    if path.stat().st_size > 1024 * 1024:
-        raise ValueError("unsupported gate file exceeds limit")
-    return path.read_bytes()
-
-
-def apply_unsupported_gates(families: list, source_revision: str, receipt_file: Path) -> None:
-    root = receipt_file.parent
-    receipt = json.loads(unsupported_file(root, receipt_file.name))
-    if not (receipt.get("schema") == "lustr-lust-unsupported-v1"
-            and receipt.get("source_revision") == source_revision
-            and isinstance(receipt.get("entries"), list) and receipt["entries"]):
-        raise ValueError("unsupported gate receipt identity missing")
-    pinned = {family["source"]["pristine_lust_sha256"] for family in families
-              if family["name"] in ("native-scalar", "public-slice") and family["status"] == "MEASURED"}
-    if not pinned:
-        raise ValueError("no measured pristine Lust binary identity binds unsupported gate")
-    claims, observed = [], set()
-    for entry in receipt["entries"]:
-        name, phase = entry.get("family"), entry.get("operation")
-        key = name, phase
-        targets = [family for family in families if family["name"] == name]
-        if len(targets) != 1 or key in observed:
-            raise ValueError("unsupported gate family missing or duplicated")
-        observed.add(key)
-        rows = [row for row in targets[0]["rows"] if row["operation"] == phase]
-        if len(rows) != 1 or rows[0]["lust"]["status"] != "NT":
-            raise ValueError("unsupported gate conflicts with measured Lust or absent row")
-        feature = entry.get("feature")
-        if (not isinstance(feature, str) or not re.fullmatch(r"[A-Za-z0-9_ -]{1,80}", feature)
-                or entry.get("compiler_sha256") not in pinned
-                or entry.get("exit") != 1 or entry.get("timed_out") is not False
-                or entry.get("signal") is not None):
-            raise ValueError("unsupported gate was not a pinned compiler rejection")
-        data = unsupported_file(root, entry.get("source_file"))
-        diagnostics = unsupported_file(root, entry.get("diagnostic_file"))
-        if not (SHA64.fullmatch(entry.get("source_sha256", "")) and digest(data) == entry["source_sha256"]
-                and SHA64.fullmatch(entry.get("diagnostic_sha256", ""))
-                and digest(diagnostics) == entry["diagnostic_sha256"]):
-            raise ValueError("unsupported gate source/output hash differs")
-        parsed = [json.loads(line) for line in diagnostics.splitlines()]
-        code = entry.get("diagnostic_code")
-        if not (isinstance(code, str) and re.fullmatch(r"L[0-9]{4}", code)
-                and any(isinstance(diag, dict) and diag.get("code") == code
-                        and diag.get("severity") == "error"
-                        and isinstance(diag.get("message"), str)
-                        and ("not supported" in diag["message"] or "unsupported" in diag["message"])
-                        for diag in parsed)):
-            raise ValueError("no structured Lust unsupported-feature diagnostic")
-        claims.append((rows[0], feature, code, entry["source_sha256"], entry["diagnostic_sha256"]))
-    for row, feature, code, source_sha, diagnostic_sha in claims:
-        row["lust"] = cell("N/A", f"Lust unsupported feature: {feature}")
-        row["lust"]["gate"] = {"diagnostic_code": code, "source_sha256": source_sha,
-                                "diagnostic_sha256": diagnostic_sha}
-
-
 def project_family(root: Path, revision: str) -> dict:
     names = ("README.md", "campaign.json", "host.json", "replay.json", "samples.json")
     if not (root / "SHA256SUMS").is_file():
@@ -300,7 +235,8 @@ def project_family(root: Path, revision: str) -> dict:
                 continue
             key = record.get("lane"), record.get("pair")
             if (key[0] not in case["lanes"] or type(key[1]) is not int or not 0 <= key[1] < pairs
-                    or key in observed or record.get("exit") != 0 or record.get("signal") is not None
+                    or key in observed or type(record.get("exit")) is not int or record["exit"] != 0
+                    or record.get("signal") is not None
                     or record.get("timed_out") is not False or record.get("output_limit") is not False):
                 raise ValueError("project timing execution contract differs")
             duration = record.get("wall_seconds")
@@ -344,7 +280,7 @@ def render(report: dict) -> str:
              f"Measured source revision: `{report['source_revision']}`.", "",
              "All numerical cells are median wall-clock milliseconds, lower is faster. "
              "Measured families retain p95 and paired-ratio statistics in the JSON and original artifacts.",
-             "NT means not measured or support not established. N/A requires explicit unsupported-feature gate evidence. "
+             "NT means not measured or support not established. N/A is reserved for benchmark-bound executed unsupported-feature evidence and is not currently issued. "
              "FAIL denotes a failed benchmark step or rejected evidence, not necessarily a compiler correctness failure.",
              "Standalone rustc no-op invokes a compiler; Cargo no-op can be Fresh. These are separate workloads.", ""]
     for family in report["families"]:
@@ -398,7 +334,8 @@ def main(argv=None) -> int:
     parser.add_argument("--fixed-outcome", choices=("success", "failure", "skipped", "cancelled"))
     parser.add_argument("--slice-outcome", choices=("success", "failure", "skipped", "cancelled"))
     parser.add_argument("--project-outcome", choices=("success", "failure", "skipped", "cancelled"))
-    parser.add_argument("--lust-coverage", type=Path, help="optional pinned structured unsupported-feature gate receipt")
+    parser.add_argument("--lust-coverage", type=Path,
+                        help="reserved: unsupported until a benchmark-owned executed source/argv gate exists")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
     try:
@@ -431,13 +368,10 @@ def main(argv=None) -> int:
                 families[3] = project_family(args.project_public, args.source_revision)
             except (ValueError, KeyError, TypeError, OSError, OverflowError) as exc:
                 families[3] = empty_family(FAMILIES[3], "success")
-        coverage_status = "NT"
-        if args.lust_coverage is not None:
-            try:
-                apply_unsupported_gates(families, args.source_revision, args.lust_coverage)
-                coverage_status = "VERIFIED"
-            except (ValueError, KeyError, TypeError, OSError, OverflowError, json.JSONDecodeError):
-                coverage_status = "FAIL"
+        # No current benchmark supplies a source/argv-bound pristine Lust unsupported
+        # execution receipt. Even a hash-consistent diagnostic from unrelated code
+        # cannot establish that this workload is unsupported. Never emit N/A here.
+        coverage_status = "FAIL" if args.lust_coverage is not None else "NT"
         report = {"schema": SCHEMA, "source_revision": args.source_revision,
                   "status": "MEASURED" if all(f["status"] == "MEASURED" for f in families) else "INCOMPLETE",
                   "coverage_status": coverage_status, "families": families}
