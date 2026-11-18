@@ -1,0 +1,47 @@
+{
+  "schema": "lustr-process-fixture-evidence-identity-v1",
+  "repository": "https://github.com/glopyglerky/lustr",
+  "pull_request": 19,
+  "run": 44252424546,
+  "run_url": "https://github.com/glopyglerky/lustr/actions/runs/44252424546",
+  "head": "b73c83de4775044cc0df79af1d6385645b598cd4",
+  "base": "34d847da3d90c3c2b253246a8ffdfdeb901c56b0",
+  "checkout": "d04acbb0cc5614b7e3367d36e9511474d3629bf5",
+  "tree": "de493c5fdfa93c783250400560fb04c90787c44f",
+  "observed_at_utc": "2026-11-18 06:42:57 UTC",
+  "run_status_at_observation": [
+    {
+      "id": 44252424764,
+      "name": "CI",
+      "status": "in_progress",
+      "conclusion": null
+    },
+    {
+      "id": 44252424546,
+      "name": "Compiler set",
+      "status": "in_progress",
+      "conclusion": null
+    }
+  ],
+  "source_file": "crates/lustr/tests/process.rs",
+  "source_file_sha256": "d8415c12e8d00f7636f7713a97b37ce420ee5722847d44c20d8ada065fe99171",
+  "unchanged_existing_process_tests": true,
+  "workflow_sha256": "e77dabdd66956481293d4decb512c6de781c99b28db860259168a2381454b602",
+  "public_projection": "Allowlisted identities, counts and exact original hashes. Raw paths and complete logs are retained in the encrypted snapshot.",
+  "source_head_changed_by_evidence_publication": false,
+  "private_key_access": false,
+  "manual_ci_dispatch_or_retry": false,
+  "retention": {
+    "helper": "tools/encrypt-coordinator-evidence.py",
+    "helper_sha256": "506137173e35673db61a13af54309630fdf3d38b8e2614659578fc4ad6bfbd85",
+    "original_file_count": 34,
+    "original_file_bytes": 303514,
+    "plaintext_archive_sha256": "85eb8395bc33045fc34c09f35b1f36332e646ac1eafe666269ed25ee3c9e619f",
+    "ciphertext_sha256": "2a8b26e1da2056a709889db0f3137027a1c5c6fe912dafa680450b9d51e18330",
+    "encrypted_manifest_sha256": "748802155efcb87e58ab6a5e8e41eadeacf56020a066313a19b13fa5562a0d33",
+    "recipient_certificate_sha256": "69e1167422ba3edfc45139eda5bdcec97d5bebcdf3e764054f3457488aaa5c4f",
+    "ciphertext_independently_decrypted": false,
+    "review": "Deterministic reconstruction matches original plaintext and manifest hashes; exact original file bytes verified.",
+    "wrapper_status_scope": "not-observed refers to the artifact-retention wrapper, not a failed or missing process-test qualification."
+  }
+}

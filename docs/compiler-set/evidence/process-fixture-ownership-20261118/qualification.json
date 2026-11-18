@@ -1,0 +1,134 @@
+{
+  "schema": "lustr-process-fixture-qualification-v1",
+  "status": "passed",
+  "scope": "Test fixture ownership and the existing process/Cargo behavior; no compiler performance or native sanitizer claim.",
+  "head": "b73c83de4775044cc0df79af1d6385645b598cd4",
+  "checkout": "d04acbb0cc5614b7e3367d36e9511474d3629bf5",
+  "tree": "de493c5fdfa93c783250400560fb04c90787c44f",
+  "source_file": "crates/lustr/tests/process.rs",
+  "source_file_sha256": "d8415c12e8d00f7636f7713a97b37ce420ee5722847d44c20d8ada065fe99171",
+  "local_red_green": [
+    {
+      "stage": "red",
+      "exit": 101,
+      "counts": {
+        "passed": 0,
+        "failed": 1,
+        "ignored": 0,
+        "filtered_out": 2
+      },
+      "test_threads": null,
+      "source_sha256": "705add888ffb81b916b746e8ab7859def8a3053db50adb3c2f76caa0fe5af248",
+      "stdout_sha256": "9a918e45698f291e9a10c38e3e1e1f016866649cae5c5f3c6294dceed7142f76",
+      "stderr_sha256": "1e6e93d5cd2e69d6dd48af9a5eb3cef4d22459922918d34ec2f10425cbb6bdbc",
+      "rustc_version": "rustc 1.99.0 (b940084d7 2026-09-28)\nbinary: rustc\ncommit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4\ncommit-date: 2026-09-28\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.0\nLLVM version: 23.1.1\n"
+    },
+    {
+      "stage": "green",
+      "exit": 0,
+      "counts": {
+        "passed": 3,
+        "failed": 0,
+        "ignored": 0,
+        "filtered_out": 0
+      },
+      "test_threads": 2,
+      "source_sha256": "690048d95d44ada289928211123e2ebd3886c846aa768af290eff4b31832dde4",
+      "stdout_sha256": "a498d8227214ec97098f24899a11dd406b4963639017d83cd9c5d1b69ea65b16",
+      "stderr_sha256": "832e397667f76e7ad2ec3bb0dfeab6ec11666eae756672804b3594fdd2fe5c32",
+      "rustc_version": "rustc 1.99.0 (b940084d7 2026-09-28)\nbinary: rustc\ncommit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4\ncommit-date: 2026-09-28\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.0\nLLVM version: 23.1.1\n"
+    },
+    {
+      "stage": "final-green",
+      "exit": 0,
+      "counts": {
+        "passed": 3,
+        "failed": 0,
+        "ignored": 0,
+        "filtered_out": 0
+      },
+      "test_threads": 2,
+      "source_sha256": "d8415c12e8d00f7636f7713a97b37ce420ee5722847d44c20d8ada065fe99171",
+      "stdout_sha256": "a498d8227214ec97098f24899a11dd406b4963639017d83cd9c5d1b69ea65b16",
+      "stderr_sha256": "9c05690c13f6bb2810a5065689acb989306c8111176e649645006c49dfa7454b",
+      "rustc_version": "rustc 1.99.0 (b940084d7 2026-09-28)\nbinary: rustc\ncommit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4\ncommit-date: 2026-09-28\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.0\nLLVM version: 23.1.1\n"
+    }
+  ],
+  "hosted_jobs": [
+    {
+      "job": 134626044688,
+      "name": "Cargo compatibility (macos-26)",
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44252424546/job/134626044688",
+      "conclusion": "success",
+      "checkout": "d04acbb0cc5614b7e3367d36e9511474d3629bf5",
+      "rust": "1.99.1",
+      "source_command": "cargo +1.99.1 test --manifest-path crates/lustr/Cargo.toml --locked --offline",
+      "process_tests": {
+        "cargo_alias_can_select_release_without_enabling_cranelift": "passed",
+        "process_contract_preserves_arguments_io_failure_and_toolchain_routing": "passed",
+        "repeated_timestamps_keep_scratch_ownership_separate": "passed"
+      },
+      "counts": {
+        "passed": 3,
+        "failed": 0,
+        "ignored": 0,
+        "filtered_out": 0
+      },
+      "log_bytes": 28260,
+      "log_sha256": "d52143417345f5e5ec68900b9ec4b23af7d94e38fd721661565e402c61520791"
+    },
+    {
+      "job": 134626044910,
+      "name": "Cargo compatibility (windows-latest)",
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44252424546/job/134626044910",
+      "conclusion": "success",
+      "checkout": "d04acbb0cc5614b7e3367d36e9511474d3629bf5",
+      "rust": "1.99.1",
+      "source_command": "cargo +1.99.1 test --manifest-path crates/lustr/Cargo.toml --locked --offline",
+      "process_tests": {
+        "cargo_alias_can_select_release_without_enabling_cranelift": "passed",
+        "process_contract_preserves_arguments_io_failure_and_toolchain_routing": "passed",
+        "repeated_timestamps_keep_scratch_ownership_separate": "passed"
+      },
+      "counts": {
+        "passed": 3,
+        "failed": 0,
+        "ignored": 0,
+        "filtered_out": 0
+      },
+      "log_bytes": 27966,
+      "log_sha256": "90bb456fdb8a042da4a54538511b18961e75e3c3589b5d278b3658c6f3e3ab69"
+    },
+    {
+      "job": 134626045254,
+      "name": "Cargo compatibility (ubuntu-24.04)",
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44252424546/job/134626045254",
+      "conclusion": "success",
+      "checkout": "d04acbb0cc5614b7e3367d36e9511474d3629bf5",
+      "rust": "1.99.1",
+      "source_command": "cargo +1.99.1 test --manifest-path crates/lustr/Cargo.toml --locked --offline",
+      "process_tests": {
+        "cargo_alias_can_select_release_without_enabling_cranelift": "passed",
+        "process_contract_preserves_arguments_io_failure_and_toolchain_routing": "passed",
+        "repeated_timestamps_keep_scratch_ownership_separate": "passed"
+      },
+      "counts": {
+        "passed": 3,
+        "failed": 0,
+        "ignored": 0,
+        "filtered_out": 0
+      },
+      "log_bytes": 23397,
+      "log_sha256": "77b8995289966a91a6d2eaf5b1e9eb0b28e2ec394ef469cc1891e88b5a01e6a0"
+    }
+  ],
+  "hosted_concurrency": "Unchanged default Rust test harness concurrency; no workflow changes or retries.",
+  "prior_process_failure": {
+    "run": 44243040376,
+    "job": 134595232256,
+    "url": "https://github.com/glopyglerky/lustr/actions/runs/44243040376/job/134595232256",
+    "status": "failed",
+    "diagnosis": "Confirmed allocator ownership defect; an actual shared-directory collision in that hosted failure is probable, not directly observed."
+  },
+  "other_gates": "Full-source/general CI results and the separate older native macOS sanitizer finding are not resolved by these process tests."
+}

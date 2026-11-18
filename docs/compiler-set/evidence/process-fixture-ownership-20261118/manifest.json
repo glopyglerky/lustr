@@ -1,0 +1,35 @@
+{
+  "schema": "lustr-reviewed-process-fixture-evidence-v1",
+  "head": "b73c83de4775044cc0df79af1d6385645b598cd4",
+  "checkout": "d04acbb0cc5614b7e3367d36e9511474d3629bf5",
+  "tree": "de493c5fdfa93c783250400560fb04c90787c44f",
+  "files": {
+    "README.md": {
+      "bytes": 4702,
+      "sha256": "bdd95612866e7d17cffbbd32511930f2ba489a99f2e8f37f36cad1218d792d67"
+    },
+    "identity.json": {
+      "bytes": 2282,
+      "sha256": "29699f2cd60e285fbbd66a6f73a2a3a940b9bfa6d5a93b01fc8e3b4679cc1d59"
+    },
+    "originals-encrypted/private-evidence.tar.gz.cms": {
+      "bytes": 59014,
+      "sha256": "2a8b26e1da2056a709889db0f3137027a1c5c6fe912dafa680450b9d51e18330"
+    },
+    "originals-encrypted/receipt.json": {
+      "bytes": 1255,
+      "sha256": "c3d2512b62f4bc43c38a25ff5d0f0cb0cfda149674828a7db1424e3ead690fc5"
+    },
+    "originals-encrypted/status.json": {
+      "bytes": 545,
+      "sha256": "41309b38c4f799201d489105136b466522862e63109a5218fb623fefa4989733"
+    },
+    "qualification.json": {
+      "bytes": 6019,
+      "sha256": "3e7ae2b2b9f34876854dc9391fbc864772299485d33133f02133066049ba89ff"
+    }
+  },
+  "scope": "Process fixture ownership and three-platform process behavior only; exact originals retained separately.",
+  "private_key_access": false,
+  "ciphertext_independently_decrypted": false
+}
