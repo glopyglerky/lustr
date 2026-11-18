@@ -1,5 +1,11 @@
 # Reproducible macOS sanitizer compiler acquisition
 
+The subsequent [hosted acquisition and SDK-selection report](../macos-sdk-selection-20261118/README.md)
+records the first PR #23 run: the exact package acquisition passed, then the
+sanitizer probe could not find the host's standard-library header. It also
+records the separate SDK setup correction and its bounded verification. The
+execution and helper hashes below describe this original acquisition stage.
+
 The [PR #21 macOS setup job](https://github.com/glopyglerky/lustr/actions/runs/44264239099/job/134664704136)
 installed Homebrew Clang 23.1.6 and then failed its required 23.1.5 assertion.
 Native compiler tests did not run. Updating a floating Homebrew formula cannot

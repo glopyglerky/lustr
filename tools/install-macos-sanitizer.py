@@ -110,6 +110,27 @@ def extract(archive, destination):
         raise RuntimeError('verified archive extraction failed')
 
 
+def select_sdk(directory):
+    # The upstream compiler needs a Darwin sysroot even when Apple's driver
+    # would find one implicitly. Honor an explicit SDKROOT and the developer
+    # selection inherited by xcrun; never change the host's active developer.
+    sdk_root = os.environ.get('SDKROOT')
+    selected_by = 'SDKROOT' if sdk_root else 'xcrun'
+    if not sdk_root:
+        sdk_root = run_recorded(['xcrun', '--sdk', 'macosx', '--show-sdk-path'],
+                                directory, 'macos-sdk-path', 15).decode().strip()
+    sdk = Path(sdk_root)
+    if (not sdk.is_absolute() or sdk == Path('/') or '\n' in sdk_root or '\r' in sdk_root
+            or not sdk.is_dir() or not (sdk / 'usr/include/stdlib.h').is_file()):
+        raise ValueError('SDKROOT must name an absolute existing macOS SDK with stdlib.h')
+    settings = {name: file_hash(sdk / name) for name in ('SDKSettings.json', 'SDKSettings.plist')
+                if (sdk / name).is_file()}
+    return {'path': sdk_root, 'selected_by': selected_by,
+            'developer_dir': os.environ.get('DEVELOPER_DIR'),
+            'settings_sha256': settings,
+            'stdlib_header_sha256': file_hash(sdk / 'usr/include/stdlib.h')}
+
+
 def install(directory, github_env=None):
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         raise ValueError('this pinned package requires macOS arm64')
@@ -140,12 +161,14 @@ def install(directory, github_env=None):
     if not (runtime_dir / 'libclang_rt.asan_osx_dynamic.dylib').is_file():
         raise ValueError('pinned package is missing the macOS address sanitizer runtime')
     runtimes = sorted(runtime_dir.glob('libclang_rt.*'))
+    sdk = select_sdk(directory)
     receipt = {'schema': 1, 'pin': pin, 'platform': 'macOS arm64', 'clang_version': version,
                'attestation_verification': 'passed', 'sanitizer_capability_status': 'not-run-by-installer',
                'compiler_sha256': file_hash(compiler), 'symbolizer_sha256': file_hash(symbolizer),
+               'sdk': sdk,
                'runtime_sha256': {path.relative_to(package).as_posix(): file_hash(path) for path in runtimes if path.is_file()}}
     (directory / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
-    environment = {'SAN_CC': str(compiler), 'ASAN_SYMBOLIZER_PATH': str(symbolizer)}
+    environment = {'SAN_CC': str(compiler), 'ASAN_SYMBOLIZER_PATH': str(symbolizer), 'SDKROOT': sdk['path']}
     (directory / 'environment.json').write_text(json.dumps(environment, indent=2, sort_keys=True) + '\n')
     if github_env is not None:
         with github_env.open('a') as output:

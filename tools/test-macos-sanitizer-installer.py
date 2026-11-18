@@ -4,6 +4,7 @@
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -78,6 +79,51 @@ class PackageInputTests(unittest.TestCase):
         self.assertEqual((self.root / 'timed-out.stderr').read_bytes(), b'partial stderr\n')
         self.assertEqual(json.loads((self.root / 'timed-out.status.json').read_bytes()),
                          {'exit': None, 'signal': None, 'timed_out': True, 'timeout_seconds': 1})
+
+
+class SdkSelectionTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        self.sdk = self.root / 'Selected SDK.sdk'
+        (self.sdk / 'usr/include').mkdir(parents=True)
+        (self.sdk / 'usr/include/stdlib.h').write_bytes(b'reviewed SDK header')
+        (self.sdk / 'SDKSettings.json').write_bytes(b'{"Version":"test"}')
+
+    def test_explicit_sdk_is_preserved_without_discovery(self):
+        alias = self.root / 'SDK alias'
+        alias.symlink_to(self.sdk, target_is_directory=True)
+        with mock.patch.dict(os.environ, {'SDKROOT': str(alias), 'DEVELOPER_DIR': '/selected/developer'}), \
+             mock.patch.object(INSTALLER, 'run_recorded') as discover:
+            sdk = INSTALLER.select_sdk(self.root)
+            self.assertEqual(sdk['path'], str(alias))
+            self.assertEqual(sdk['selected_by'], 'SDKROOT')
+            self.assertEqual(sdk['developer_dir'], '/selected/developer')
+            self.assertEqual(sdk['stdlib_header_sha256'], hashlib.sha256(b'reviewed SDK header').hexdigest())
+            discover.assert_not_called()
+
+    def test_xcrun_inherits_developer_selection_without_changing_environment(self):
+        def discovery(argv, directory, name, timeout):
+            self.assertEqual(argv, ['xcrun', '--sdk', 'macosx', '--show-sdk-path'])
+            self.assertEqual(os.environ['DEVELOPER_DIR'], '/selected/developer')
+            return (str(self.sdk) + '\n').encode()
+        with mock.patch.dict(os.environ, {'SDKROOT': '', 'DEVELOPER_DIR': '/selected/developer'}), \
+             mock.patch.object(INSTALLER, 'run_recorded', side_effect=discovery) as discover:
+            sdk = INSTALLER.select_sdk(self.root)
+            self.assertEqual(sdk['path'], str(self.sdk))
+            self.assertEqual(sdk['selected_by'], 'xcrun')
+            self.assertEqual(os.environ['SDKROOT'], '')
+            self.assertEqual(os.environ['DEVELOPER_DIR'], '/selected/developer')
+            discover.assert_called_once()
+
+    def test_invalid_explicit_sdk_fails_without_falling_back(self):
+        for value in ('relative.sdk', '/', str(self.root / 'missing'), str(self.root), str(self.sdk) + '\n'):
+            with self.subTest(value=value), mock.patch.dict(os.environ, {'SDKROOT': value}), \
+                 mock.patch.object(INSTALLER, 'run_recorded') as discover:
+                with self.assertRaisesRegex(ValueError, 'absolute existing macOS SDK'):
+                    INSTALLER.select_sdk(self.root)
+                discover.assert_not_called()
 
 
 if __name__ == '__main__':

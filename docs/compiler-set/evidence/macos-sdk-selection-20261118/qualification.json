@@ -1,0 +1,67 @@
+{
+  "component_verification": {
+    "archive_reacquired": false,
+    "capabilities_passed": 4,
+    "capability_names": [
+      "clean",
+      "address",
+      "undefined",
+      "leak"
+    ],
+    "capability_source_sha256": "c4c430752b89d279121cb1218969c805cf5455bb8e24a23c5c653263da727960",
+    "clang-driver-with-sdk_stderr_sha256": "64d0a56570d1f000d03929047ac243b7aa020a54e38b3421954f9a061991efbd",
+    "clang-driver-with-sdk_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "compiler_sha256": "a22ab66d53cf70dfee8544eabdeb36f075bf942861cb8d59f98a3fadc7a65c26",
+    "driver_has_selected_isysroot": true,
+    "installer_sha256": "3a298fa6b4a7d3229ac7f8487135082c66ffb284829ac66935f8519e0306c808",
+    "macos_sdk_canonical_name": "macosx27.0",
+    "macos_sdk_version": "27.0",
+    "native-sanitizer-capabilities_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "native-sanitizer-capabilities_stdout_sha256": "33b186a0335bf94833b25ca67c7381afc9cdf0d5d61039ae88d4df4a5fe58dea",
+    "scope": "changed select_sdk function and downstream unchanged sanitizer gate; complete installer not rerun",
+    "sdkroot_consumed_from_selector": true,
+    "selected_by": "xcrun",
+    "settings_sha256": {
+      "SDKSettings.json": "7b93ad7e534cc4b31c6a4e39d19b5e0288acf2168c2649479a796d1cb51939fb",
+      "SDKSettings.plist": "90a738dbf3fd88e7f6d35646e19d3a8a716923b9773ce1b67260466d9ceed370"
+    },
+    "stdlib_header_sha256": "7995a2df951dd1fdbd9fd4ec38900b79ef1797655ff239728fdbac56bb9bd7ff"
+  },
+  "local_controls": {
+    "new_sdk_cases": [
+      "explicit SDKROOT and spelling preserved without discovery",
+      "xcrun inherits DEVELOPER_DIR without changing process environment",
+      "relative, root, missing, headerless and newline SDK roots fail without fallback"
+    ],
+    "passed": 10
+  },
+  "prior_hosted_attempt": {
+    "acquisition": "passed",
+    "artifact_bytes": 12189,
+    "artifact_id": 14415244263,
+    "artifact_sha256": "8c99d56095a34db6b33e031dd634a3004ef9cd87dbfa5b28bcfb59d8a011424c",
+    "checkout_sha": "911dc503d931cf7e069f6f45d01ce15d6390e41a",
+    "executing_capabilities_run": 0,
+    "head_sha": "aa46db14eab3978a8618ffcb8862e6a4739e9560",
+    "installer_controls_passed": 7,
+    "installer_receipt_sha256": "7ccd0058f02b6adc949dec40801aeeb8e5b128d55fc53319ffd7c6b54f4a319f",
+    "job_id": 134712502807,
+    "job_log_sha256": "eb1c4f8c86064876c6b1fba6ec6d97b4f7144338c6d22dfb655edb9bedbb321e",
+    "probe_compilation": "failed: stdlib.h not found",
+    "run_id": 44278447999
+  },
+  "qualification_boundary": [
+    "new source hosted CI pending",
+    "full native differential qualification remains separate",
+    "earlier local complete SDK environment was not captured; current host inspection does not reconstruct it"
+  ],
+  "schema": "lustr-macos-sdk-selection-qualification-v1",
+  "source_base": "aa46db14eab3978a8618ffcb8862e6a4739e9560",
+  "source_sha256": {
+    ".github/workflows/ci.yml": "87e9d7e88751760adfbcb6e76c35062d5c07fd381d383cafddf4cd1a7c67132d",
+    "tools/install-macos-sanitizer.py": "3a298fa6b4a7d3229ac7f8487135082c66ffb284829ac66935f8519e0306c808",
+    "tools/macos-sanitizer-toolchain.json": "a73b7046c63f3d8621ab094f4d34984b3c4211cb0bb599170db727516d07248d",
+    "tools/test-macos-sanitizer-installer.py": "f2b49b9476964318f132cd0a60175f3935259872e8d3ff8921eabe245e8e66f9",
+    "tools/test-native-sanitizers.py": "c4c430752b89d279121cb1218969c805cf5455bb8e24a23c5c653263da727960"
+  }
+}
