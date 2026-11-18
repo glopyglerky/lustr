@@ -59,6 +59,14 @@ fn main() {
     copy(&driver, &component.join("bin/lustr-mixed"));
     copy(&native, &component.join("bin/lust-core"));
     link(Path::new("../lib/lustr-mixed/bin/lustr-mixed"), &destination.join("bin/rustc-full"));
+    // Cargo sends complete rustc requests. Enter the same mixed driver
+    // directly, avoiding an extra lustr process/exec for every Cargo unit.
+    // The public bin/rustc still retains its direct-file Lust fast path.
+    link(Path::new("../lib/lustr-mixed/bin/lustr-mixed"), &destination.join("bin/rustc-cargo"));
+    assert_eq!(
+        destination.join("bin/rustc-cargo").canonicalize().unwrap(),
+        destination.join("bin/rustc-full").canonicalize().unwrap()
+    );
     link(&baseline.join("bin/rustc-full"), &destination.join("bin/rustc-reference"));
     link(&baseline.join("bin/rustc-full"), &component.join("bin/rustc-reference"));
     let mut manifest = fs::OpenOptions::new().write(true).create_new(true).open(destination.join("MIXED-COMPONENTS.txt")).unwrap();

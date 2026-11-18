@@ -1,5 +1,29 @@
 # Direct Cargo entry
 
+## Direct compiler entry inside Cargo
+
+The assembled mixed toolchain now provides `bin/rustc-cargo` as a direct link
+to the existing mixed Rust/Lust driver (`bin/rustc-full`). For Cargo invocations
+only, the coordinator sets `RUSTC` to that direct compiler. Previously every
+Cargo rustc command first entered the public `bin/rustc` link to `lustr`, which
+then executed the same mixed driver. Eliminating this redundant executable
+entry leaves the actual compiler, checked native-object integration, Cargo
+metadata, dependency graph, diagnostics and compiler flags unchanged.
+
+`bin/rustc` remains the public Lustr entry. Direct single-file commands still
+have the original Lust-supported fast path. A packaged toolchain without
+`rustc-cargo` retains its previous `bin/rustc` route, so existing BlueFe
+sysroots and standalone coordinators do not require a new binary. The toolchain
+assembler verifies that the direct Cargo link and `rustc-full` resolve to the
+same compiler executable; the coordinator's public plan test covers selection
+and fallback. The existing source-built mixed Cargo, metadata, macro, no_std,
+link-recovery and paired performance campaign must qualify the new path.
+
+This removes one process entry per Cargo compiler invocation. It does not
+remove Cargo's own orchestration cost, make unsupported bodies eligible for
+native generation, or establish an end-to-end speed gain until the matched
+campaign completes. Preserve the original slower measurements.
+
 The packaged `lustr` entry calls the shared Cargo coordinator through
 `cargo_lust::run_cli_with_default_root`. Previously it replaced itself with `cargo-lustr`,
 which then selected and entered Cargo. The new path removes one executable

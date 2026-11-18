@@ -32,6 +32,44 @@ fn explicit_root_plan_is_exact_manual_tool_selection_without_probes() {
 }
 
 #[test]
+fn mixed_cargo_uses_the_direct_compiler_without_changing_the_public_rustc_entry() {
+    let nonce = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+    let root = std::env::temp_dir().join(format!("lustr-direct-cargo-{}-{nonce}", std::process::id()));
+    struct Cleanup(PathBuf);
+    impl Drop for Cleanup {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+    let _cleanup = Cleanup(root.clone());
+    fs::create_dir_all(root.join("bin")).unwrap();
+    let direct = root.join("bin").join(format!("rustc-cargo{}", std::env::consts::EXE_SUFFIX));
+    let public = root.join("bin").join(format!("rustc{}", std::env::consts::EXE_SUFFIX));
+    fs::write(&direct, b"direct compiler fixture").unwrap();
+    fs::write(&public, b"public compiler fixture").unwrap();
+
+    let arguments = [OsString::from("--bluefe-root"), root.as_os_str().into(), OsString::from("build")];
+    let cargo_lust::Action::Execute(request) = cargo_lust::parse(&arguments).unwrap() else { panic!() };
+    let plan = cargo_lust::plan(&request, cargo_lust::Programs::from_environment()).unwrap();
+    assert!(plan.environment.contains(&(OsString::from("RUSTC"), direct.clone().into_os_string())));
+    assert!(!plan.environment.contains(&(OsString::from("RUSTC"), public.clone().into_os_string())));
+    let dry = Command::new(env!("CARGO_BIN_EXE_lustr"))
+        .arg("--bluefe-root")
+        .arg(&root)
+        .args(["plan", "build"])
+        .output()
+        .unwrap();
+    assert!(dry.status.success());
+    let text = String::from_utf8(dry.stdout).unwrap();
+    assert!(text.contains(&format!("\"RUSTC\":\"{}\"", direct.display())));
+    assert!(!text.contains(&format!("\"RUSTC\":\"{}\"", public.display())));
+
+    fs::remove_file(&direct).unwrap();
+    let plan = cargo_lust::plan(&request, cargo_lust::Programs::from_environment()).unwrap();
+    assert!(plan.environment.contains(&(OsString::from("RUSTC"), public.into_os_string())));
+}
+
+#[test]
 fn ambiguous_root_selections_and_missing_tools_fail() {
     for args in [
         vec!["--bluefe-root"],
