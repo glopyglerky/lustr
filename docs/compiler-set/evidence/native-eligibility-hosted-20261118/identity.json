@@ -1,0 +1,171 @@
+{
+  "schema": "lustr-native-eligibility-hosted-evidence-v1",
+  "repository": "https://github.com/glopyglerky/lustr",
+  "pull_request": 18,
+  "run": 44245528716,
+  "run_url": "https://github.com/glopyglerky/lustr/actions/runs/44245528716",
+  "run_attempt": 1,
+  "source_job": 134603437673,
+  "head": "be27c3f32725dd80e623af89034b15eeebde7e9a",
+  "base": "34d847da3d90c3c2b253246a8ffdfdeb901c56b0",
+  "checkout": "df8f55aa0430ef81f27e7f403d102256b7fc298b",
+  "tree": "fdb6af7d1ea50c4b63fd8b6a217633979deedf22",
+  "source_job_conclusion": "success",
+  "compiler_set_job_results": {
+    "success": 10,
+    "failure": 0
+  },
+  "platform_scope": "Complete native/mixed runtime qualification is Linux x86-64. Windows and macOS Cargo compatibility also passed; this is not full native runtime qualification on every platform.",
+  "earlier_local_evidence": {
+    "commit": "cbb5d3994f801cec903cf383187ee8dbc1961700",
+    "path": "docs/compiler-set/evidence/native-eligibility-20261118/README.md",
+    "scope": "Historical local constructor/native-library SIGKILL and AF_UNIX EPERM failures remain unchanged. No local timing campaign was run."
+  },
+  "local_reviewed_source_commit": "992fe781180e0ecbdd7ba9053f02b1b788816996",
+  "local_reviewed_source_tree": "d9ed7b6694a5517801fe4b2be2061bbda6173262",
+  "source_mapping": "The three reviewed guard blobs were published unchanged atop the corrected gate at 34d847da. The complete hosted checkout has its own exact tree identity; it is not the older local full-tree build.",
+  "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "coordinator_git_tree": "74f91068723cf2aa4a1dee168713281db7705a1f",
+  "compiler_components_sha256": {
+    "cargo-lustr": "8674bc8324bf815e35b5dc19e0f4dbf3320137d0a71b85292281fcc44ba57745",
+    "lust": "a3bf7a31b1d1f4481e6f484246cc003a2f9ad0ec5df74f787f09ad829789ef47",
+    "lust-core": "fca533cb8da5c2141097f8348ccdb6c12ffea83dd46adcb413c6baa2ff3ff952",
+    "lustr": "332f6dd1509c85bfc878c1935c3102f352449b65e2845e25beffd64788e374c9",
+    "rustc-full": "9b06657f3c7e6115df74e19b613ccdf82f8b43bd73509615b795fe8d2f032ed3"
+  },
+  "constructor_receipts_sha256": {
+    "BUILD-PROFILE.txt": "edf9b8898c74458b11349cff0402ec3b3ded7721038627101e4ece564454a121",
+    "COMPONENTS.txt": "48af3785aaa0a72000fedbdc680ba370401a53cdf440c07e7e6d35558968a855",
+    "NATIVE-BUILD-RECEIPT.txt": "38c30f545618b6f7e719626212faccaaf2297652391e255c478bbaa8a540c50e"
+  },
+  "artifacts": [
+    {
+      "id": 14404145161,
+      "name": "coordinator-project-performance-1",
+      "size_in_bytes": 32504,
+      "digest": "sha256:3556752a84e1ae1e2274e4d8e448c53b56c0f75e2a18d89c9b0db9d546aaecdc",
+      "created_at": "2026-11-18T06:17:53Z",
+      "expires_at": "2027-02-16T05:37:24Z",
+      "workflow_run": {
+        "id": 44245528716,
+        "head_sha": "be27c3f32725dd80e623af89034b15eeebde7e9a"
+      },
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44245528716/artifacts/14404145161"
+    },
+    {
+      "id": 14403575513,
+      "name": "upstream-public-slice-1",
+      "size_in_bytes": 590842,
+      "digest": "sha256:a953f14aa1a02b9fb51569be7e23ec0ae250bfb9d624c977941e1dc65e756a48",
+      "created_at": "2026-11-18T06:09:50Z",
+      "expires_at": "2027-02-16T05:37:24Z",
+      "workflow_run": {
+        "id": 44245528716,
+        "head_sha": "be27c3f32725dd80e623af89034b15eeebde7e9a"
+      },
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44245528716/artifacts/14403575513"
+    },
+    {
+      "id": 14403068539,
+      "name": "coordinator-project-originals-encrypted-1",
+      "size_in_bytes": 1246862,
+      "digest": "sha256:1bf092a1ed29aafaf55b77a190535c08531474b999274bda9de3f25c090b1d4c",
+      "created_at": "2026-11-18T06:17:52Z",
+      "expires_at": "2027-02-16T05:37:24Z",
+      "workflow_run": {
+        "id": 44245528716,
+        "head_sha": "be27c3f32725dd80e623af89034b15eeebde7e9a"
+      },
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44245528716/artifacts/14403068539"
+    },
+    {
+      "id": 14402694819,
+      "name": "source-built-mixed-qualification-1",
+      "size_in_bytes": 1359208,
+      "digest": "sha256:0ca2aa7c22d4395003d5242141ce8bb65127ff849c2a5910d6a481cfd2d91828",
+      "created_at": "2026-11-18T06:17:59Z",
+      "expires_at": "2027-02-16T05:37:24Z",
+      "workflow_run": {
+        "id": 44245528716,
+        "head_sha": "be27c3f32725dd80e623af89034b15eeebde7e9a"
+      },
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44245528716/artifacts/14402694819"
+    },
+    {
+      "id": 14401287779,
+      "name": "runner-source-44245528716-1",
+      "size_in_bytes": 459,
+      "digest": "sha256:83acf285bd05b70d533a212a30e769754a35cb9ae74c943e57650c3c676e76cf",
+      "created_at": "2026-11-18T05:37:32Z",
+      "expires_at": "2026-12-02T05:37:31Z",
+      "workflow_run": {
+        "id": 44245528716,
+        "head_sha": "be27c3f32725dd80e623af89034b15eeebde7e9a"
+      },
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44245528716/artifacts/14401287779"
+    }
+  ],
+  "replay_verification": {
+    "fixed_workload": {
+      "records": 1135,
+      "command_outputs": 2160,
+      "timed_commands": 648,
+      "comparisons": 36
+    },
+    "public_slice": {
+      "timings": 288,
+      "comparisons": 18
+    },
+    "unchanged_project": {
+      "measured_timings": 120,
+      "excluded_warmup_timings": 20,
+      "recorded_commands": 255,
+      "comparisons": 5,
+      "statistical_receipt_reproduced": true,
+      "local_data_replayer_sha256": "8507386515f84245c4f3ae3005b05551c73384a7d0c0b07f2e9acf4964b3a537",
+      "replayer_source_revision": "34d847da3d90c3c2b253246a8ffdfdeb901c56b0",
+      "replayer_scope": "Data-only replayer built from the unchanged statistics source; no compiler or benchmark execution during review."
+    }
+  },
+  "protected_source_objects": {
+    "compiler/native": "12ae35ee30f81d11f55b184134f8a0c4a977a496",
+    "upstream/lust.pin": "cce2d3a2a584a15bc2ab960eb0121c9afc484949",
+    "upstream/bluefe-core.pin": "ada26570137047454b8eba363cf7a7167077abe3"
+  },
+  "reviewed_guard_blobs": {
+    "crates/lustr-semantic/src/mixed_main.rs": "ebd32e75395089d35acdd6dfddb80d6fb70227e6",
+    "crates/lustr-semantic/src/mixed_backend.rs": "34b5321008a1e717936106b770dbd35fe82c1cb7",
+    "crates/lustr-semantic/src/mixed_objects.rs": "404401ac61e577508f70bae1972c36b048a4d8c4"
+  },
+  "qualification_archive_nested_counts": {
+    "native_cache_bin_entries": 12,
+    "metadata_rmeta_entries": 10,
+    "toolchain_bin_entries": 0
+  },
+  "inference_limits": [
+    "Ratios compare matched lanes within this run. Separate hosted runs do not establish a controlled before/after benefit from the guards.",
+    "Seven fixed Cargo modes remain slower and two faster. No unchanged-project scenario establishes a speedup.",
+    "Fixed workloads use dev opt0/debug0; the unchanged project keeps dev/test debug=2 and does not exercise native-object eligibility.",
+    "Standalone rustc native-lane no-ops are nonincremental compiler launches, not Cargo Fresh.",
+    "The public slice is pruned/adapted, not unchanged full ts-rust or all Rust workloads.",
+    "Shared-host paired intervals are exploratory; no equivalence, universal acceleration or merge admission is claimed."
+  ],
+  "original_artifact_retention": {
+    "scope": "Five exact downloaded GitHub artifact ZIPs, retrieved identity records and evidence producer/verifier records.",
+    "helper": "tools/encrypt-coordinator-evidence.py",
+    "helper_sha256": "506137173e35673db61a13af54309630fdf3d38b8e2614659578fc4ad6bfbd85",
+    "receipt": "original-artifacts-encrypted/receipt.json",
+    "receipt_sha256": "5ab7fb6ba30cd332227b79b151abb8ac0d987f02dc0a292e805f9031cb5b1c58",
+    "plaintext_archive_sha256": "1f251b17053aa058336a74286a196a63e0d3ac5880c9e3c501232af59237fb68",
+    "encrypted_manifest_sha256": "c8ee977162f90053fd711cc45b69025472d36f3979ec2c1d5575ffa20a9157cb",
+    "ciphertext_sha256": "5d635660868bb5cad678553b0072e7ce38ec8d726299fa0a7eda3e00bad139b2",
+    "recipient_certificate_sha256": "69e1167422ba3edfc45139eda5bdcec97d5bebcdf3e764054f3457488aaa5c4f",
+    "original_file_count": 28,
+    "private_key_access": false,
+    "ciphertext_independently_decrypted": false,
+    "review_archive": "Deterministic reconstruction from the frozen snapshot matches original plaintext and manifest hashes.",
+    "wrapper_status_scope": "not-observed is the artifact-retention wrapper status, not a new coordinator campaign. The original project's own campaign and encrypted-retention status report passed.",
+    "nested_original_zip_scope": "The original qualification ZIP contains 12 native-cache bin entries and 10 rmeta files. All original ZIP entries remain unfiltered and exact. No additional loose executor build/cache/home state was added; the helper generic exclusion does not describe nested original ZIP contents.",
+    "compiled_toolchain_package": "Not included in the downloaded qualification artifact. Compiler hashes, constructor receipts and build logs are retained. Review checks their recorded bindings and does not independently rerun an archived compiler package."
+  }
+}

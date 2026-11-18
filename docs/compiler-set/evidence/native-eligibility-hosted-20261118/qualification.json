@@ -1,0 +1,1184 @@
+{
+  "schema": "lustr-native-eligibility-hosted-qualification-v1",
+  "checkout": "df8f55aa0430ef81f27e7f403d102256b7fc298b",
+  "tree": "fdb6af7d1ea50c4b63fd8b6a217633979deedf22",
+  "source_job": 134603437673,
+  "source_job_conclusion": "success",
+  "qualifiers": {
+    "mixed-project": {
+      "source": "tools/mixed-compiler-qualification.rs",
+      "source_sha256": "5a25bdb57c738c5d178dd0d15256d0ccd2bbf7ed03fd957b746ee28b525b1935",
+      "cases": [
+        {
+          "case": "arithmetic-edit",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": true,
+          "original_files": {
+            "status": {
+              "sha256": "0a60b8043eb971710c3463307d1caaab2420378e48a199aa5040e7196c457225",
+              "bytes": 35
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "798d9f67ccfcf6bb27151c8b2a7f0b7da353935651fefff70c1351208cc49ab1",
+              "bytes": 2228
+            },
+            "trace": {
+              "sha256": "27113a4b9d62963185ebb2f58fd3809c8a9ac1863b48ce6d5abf1b9d97abcdfb",
+              "bytes": 162
+            }
+          }
+        },
+        {
+          "case": "body",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": true,
+          "original_files": {
+            "status": {
+              "sha256": "67120344768607d9a1a087f80fa6f534581d54e1fc897cee92fb91df84ee4385",
+              "bytes": 35
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "511e6e558c3a0efd3c2724e5ca34794384f7671348269b5c8301191dedfa1ffa",
+              "bytes": 2228
+            },
+            "trace": {
+              "sha256": "27113a4b9d62963185ebb2f58fd3809c8a9ac1863b48ce6d5abf1b9d97abcdfb",
+              "bytes": 162
+            }
+          }
+        },
+        {
+          "case": "cold",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [
+            0,
+            5
+          ],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "2b599b7bf9976662cbdf2fcec689adc37a42d2cf9d8136b47bb4ac3ce591dde9",
+              "bytes": 36
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "8dfce159c756d6ed947c0b9f2206ed68567f467576d8c00971c0a53d8f206902",
+              "bytes": 4705
+            },
+            "trace": {
+              "sha256": "2914e34116cc73121be69de2f7bfdba46b98320494e9e345a79449cb70498d97",
+              "bytes": 1043
+            }
+          }
+        },
+        {
+          "case": "dependency",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [
+            0,
+            5
+          ],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "cae0754ac93dc3ef9b2fdb6e26794ac79bd6f9b87bf175ced249ac9741e5244f",
+              "bytes": 36
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "7986999652f8c2af56ed73c8a5fc61b82b69feb1134f2b842c30ea4d85dcd280",
+              "bytes": 5233
+            },
+            "trace": {
+              "sha256": "c8d5424a9a7c474f6c8c82a69e1447606a879ecef118e8cef2f60635c6a827e6",
+              "bytes": 875
+            }
+          }
+        },
+        {
+          "case": "invalid",
+          "compiler_or_command_exit": 101,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "ed7e8e14b96921f15969d350e0ceb1f69d5c7e24121045c7025b1a7093540c55",
+              "bytes": 37
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "dc8ae830763bbdafc6a62de1ec4f8431ea183b6452178308459c79ef50065d27",
+              "bytes": 5330
+            },
+            "trace": {
+              "sha256": "075a404022d3d225c06fd71d1cfb0de0147e1b4f36cb06451ad4b98caa4bd770",
+              "bytes": 82
+            }
+          }
+        },
+        {
+          "case": "link-failure-recovery",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": true,
+          "original_files": {
+            "status": {
+              "sha256": "7ab174cb189de5b21a89f4a664edd36a69a876ce85a9b342cab4d22140e645fa",
+              "bytes": 35
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "fdb4aa19b618316acf69fe114c8797e785b38c5f29da9a6de9c56f644bf65b25",
+              "bytes": 2212
+            },
+            "trace": {
+              "sha256": "f5bb5b0ceffc42c092d875b3e3ee93ce58d4fe73b197f3684c2d2346d4f861dc",
+              "bytes": 92
+            }
+          }
+        },
+        {
+          "case": "link-failure",
+          "compiler_or_command_exit": 101,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "c696dd909c6c126acb722b16a452ac92d9d91278ab70605887c61fc13691bdee",
+              "bytes": 37
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "9ecaf848abce093a92dfae9738691967455ac41dba88161ccde13b5cb83f70f0",
+              "bytes": 6201
+            },
+            "trace": {
+              "sha256": "5536a9d6f969fd344dd8c80c172889e43a8bcd02bbf2721bf43952c8c1eec8d7",
+              "bytes": 124
+            }
+          }
+        },
+        {
+          "case": "macro",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [
+            5
+          ],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "f20bdceec6c1cd6676ece28f93ccb50993adfb378f986624f7a71b750f21e60f",
+              "bytes": 36
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "abdbdbbe31cacf05e233b49fc51439b91b78ea5f8147e7c541024c4ca14e27b9",
+              "bytes": 3702
+            },
+            "trace": {
+              "sha256": "e5e237890e081fda7921b70346bbc83b39a30c1b01b955aa9f09f8fc9f1a4a8a",
+              "bytes": 799
+            }
+          }
+        },
+        {
+          "case": "recovery",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": true,
+          "original_files": {
+            "status": {
+              "sha256": "95084d27cf2043881c9868136138fdcd2b49b9c2e573420a7cb6c18e86e6802e",
+              "bytes": 35
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "83c6e17358d7abe2faaed2447fdf2f81b8b2a94cc6ebf9607372ddf11d0f786d",
+              "bytes": 2212
+            },
+            "trace": {
+              "sha256": "27113a4b9d62963185ebb2f58fd3809c8a9ac1863b48ce6d5abf1b9d97abcdfb",
+              "bytes": 162
+            }
+          }
+        },
+        {
+          "case": "signature",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [
+            5
+          ],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "c5d5309ef0cc03b9eec876be56f4bbd9a1df0568c43c1196323c1ae002b87a26",
+              "bytes": 36
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "6c64b17d86f238068f5896bd16050b9b05f9889323137c44569837034f4e2555",
+              "bytes": 3711
+            },
+            "trace": {
+              "sha256": "e5e237890e081fda7921b70346bbc83b39a30c1b01b955aa9f09f8fc9f1a4a8a",
+              "bytes": 799
+            }
+          }
+        },
+        {
+          "case": "versioned-object-noop",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": true,
+          "original_files": {
+            "status": {
+              "sha256": "fc57bfe4ec5ce7d4a4b304bead8454c52b391a8efc36126948898123982e1c5e",
+              "bytes": 35
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "2767ba2d639110cd19293bb52e1e8259a633300d6605472357beae4a411d7b8a",
+              "bytes": 2228
+            },
+            "trace": {
+              "sha256": "f5bb5b0ceffc42c092d875b3e3ee93ce58d4fe73b197f3684c2d2346d4f861dc",
+              "bytes": 92
+            }
+          }
+        },
+        {
+          "case": "versioned-object",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": true,
+          "original_files": {
+            "status": {
+              "sha256": "006ebdb7fea1939b9a929863c4b5e2e4c8004632ef1c6223f0f43c5883e98622",
+              "bytes": 35
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "04555f110a334660a60b42f18bc80c9d3c6c38928291bb33cb69ec5d72a27289",
+              "bytes": 2228
+            },
+            "trace": {
+              "sha256": "3a6e578bca1bf14350f9fec241f8fa2008f348f67632f4a8c2a4b053274d0a72",
+              "bytes": 162
+            }
+          }
+        },
+        {
+          "case": "warning-cold",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [
+            5
+          ],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "92355f87c203b06e61f8e7faf5f11d3a4dd77ab9ba4c04d79bbeff21c9e061d8",
+              "bytes": 35
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "1374afe43ca96baf7e5d6129e86c7e3150018266be332fe70d6d7ef07cbab738",
+              "bytes": 2498
+            },
+            "trace": {
+              "sha256": "9cb468b41a941b89b6e51a477c7b4fcf3be581e2548bcd53c619097acecdc76d",
+              "bytes": 780
+            }
+          }
+        },
+        {
+          "case": "warning-denied",
+          "compiler_or_command_exit": 101,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "e3876faf2f61cfcc12f02b89a2eef7096ff02bfffb3833ebd6eb88e95089b613",
+              "bytes": 37
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "02c8399eb053b7e82fefc73e4e53c745edddb64c7b1a6f1cb3b38dae3789c255",
+              "bytes": 4288
+            },
+            "trace": {
+              "sha256": "e4e45b865c9d417f166cc50b0b0f25ec71b7703d701aa3e704f2c3e64779ab69",
+              "bytes": 54
+            }
+          }
+        },
+        {
+          "case": "warning-edit",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [
+            5
+          ],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "5fbf78a046103898a0e1322e55d0804153cdcdf5397b11ba57b5896b1d5fce54",
+              "bytes": 35
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "7720cc4e6ab31d402acd2b7d9d3ca8abadb615a05540216470fd9e4353c6ab72",
+              "bytes": 2498
+            },
+            "trace": {
+              "sha256": "9cb468b41a941b89b6e51a477c7b4fcf3be581e2548bcd53c619097acecdc76d",
+              "bytes": 780
+            }
+          }
+        }
+      ]
+    },
+    "mixed-check-project": {
+      "source": "tools/mixed-check-qualification.rs",
+      "source_sha256": "42c2d0b801c464741807d70c5c7bd166e1a8f085bd54ea29afcdb6fded85365e",
+      "cases": [
+        {
+          "case": "body",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "4869246ead732e69e97b5dd91b37fec50fea759bd03b363241b49ad321a48ff7",
+              "bytes": 2381
+            },
+            "trace": {
+              "sha256": "354cb4f8f297d539e5b039ca44c9211f7ea20f7b6aa7345a2c9317e4586245f1",
+              "bytes": 480
+            }
+          }
+        },
+        {
+          "case": "cold",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "4c3290c78314435bc1fc0b72c265e456cbfc60482b5b053427fbadd008f103ed",
+              "bytes": 5961
+            },
+            "trace": {
+              "sha256": "628416ddf5d28e717d753b0d169e22d53f83b8535592c4e764581cbeb40505ad",
+              "bytes": 1192
+            }
+          }
+        },
+        {
+          "case": "invalid",
+          "compiler_or_command_exit": 101,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "68006a5416e4891051cea85a8e3c910d60f7ed3316ce12e7ec6402e6bff9ee30",
+              "bytes": 17
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "0d9e82f27cafbd03f88ae40ed5e39baabbf673195560ad0cf60aa834e2af8f3f",
+              "bytes": 5434
+            },
+            "trace": {
+              "sha256": "246365f80d32689715161d2bafe4f4b389fd77bc6954bc919988a49057a3a71e",
+              "bytes": 82
+            }
+          }
+        },
+        {
+          "case": "library-body",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "680ed8268864182167c1b72fbb6508054c5cb1b84309091ede53f84bd913d507",
+              "bytes": 3776
+            },
+            "trace": {
+              "sha256": "c0b96e833e660057abea40948e704074b86141cb6de4fcd86b4fa2512ec01780",
+              "bytes": 954
+            }
+          }
+        },
+        {
+          "case": "macro-invalid",
+          "compiler_or_command_exit": 101,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "68006a5416e4891051cea85a8e3c910d60f7ed3316ce12e7ec6402e6bff9ee30",
+              "bytes": 17
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "a4e0d64ced9ae90885d4dd1cec10e5bbb06813eec2b0cd602fed5f32a2245cd5",
+              "bytes": 6162
+            },
+            "trace": {
+              "sha256": "ead6ba54d63bbaa6b16835a611184d4892df617ac958a07948adeb541d69ff5f",
+              "bytes": 101
+            }
+          }
+        },
+        {
+          "case": "macro-recovery",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "0ee6eee71065e0a35648ff0b5ae30f65ca07bcdec328eb5b5758cf5899218506",
+              "bytes": 3902
+            },
+            "trace": {
+              "sha256": "c5558d64aa1ec957897d4fbe1818f3e8dccc6cbb1daa862e6ba67713c38ed81e",
+              "bytes": 133
+            }
+          }
+        },
+        {
+          "case": "recovery",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "7804aafa66980b2150636fc4aa89e695022bb8655f23bebffdd84a868dcbe0cb",
+              "bytes": 2395
+            },
+            "trace": {
+              "sha256": "354cb4f8f297d539e5b039ca44c9211f7ea20f7b6aa7345a2c9317e4586245f1",
+              "bytes": 480
+            }
+          }
+        },
+        {
+          "case": "signature-recovery",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "49709dfac8fda7307efac64027aa64c73cf21c63af4379443ec034286da586a2",
+              "bytes": 3866
+            },
+            "trace": {
+              "sha256": "8f199a88d93b9624789c6a5d79eda3ac6a7d215afc4874e0e05d8574425adbed",
+              "bytes": 948
+            }
+          }
+        },
+        {
+          "case": "signature",
+          "compiler_or_command_exit": 101,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "68006a5416e4891051cea85a8e3c910d60f7ed3316ce12e7ec6402e6bff9ee30",
+              "bytes": 17
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "4884035531b1f50e1e54558cf66f8da2af51f982f6de5593f443072d34e7deba",
+              "bytes": 7012
+            },
+            "trace": {
+              "sha256": "896998523621d7a66aedeb73ad0cecb864b295a145d5cb855e61cd25baaae262",
+              "bytes": 556
+            }
+          }
+        },
+        {
+          "case": "warning-cold",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "1280d43b722b574f7dbf130d64b2bfc8eaef56494daf52d1da6e83bee26afc3d",
+              "bytes": 2648
+            },
+            "trace": {
+              "sha256": "8a3b662f25ea78ef042fe3ab1dbe3550e9a91c17eef830142d89ed8395478d5d",
+              "bytes": 474
+            }
+          }
+        },
+        {
+          "case": "warning-denied",
+          "compiler_or_command_exit": 101,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "68006a5416e4891051cea85a8e3c910d60f7ed3316ce12e7ec6402e6bff9ee30",
+              "bytes": 17
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "aeed8697d591b957bd510cd3f4dee967553f2e96abc68170e876d6eabd08d9ca",
+              "bytes": 4446
+            },
+            "trace": {
+              "sha256": "5dd90c3a841e323f7e94ecebaa82dd6967adc0b2c698b8aac894dbc0f668f9be",
+              "bytes": 54
+            }
+          }
+        },
+        {
+          "case": "warning-edit",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "abdd03123422c04602d6a3536cd554fcb67970b444b0d8bc884a73b6bc88d3c0",
+              "bytes": 2648
+            },
+            "trace": {
+              "sha256": "8a3b662f25ea78ef042fe3ab1dbe3550e9a91c17eef830142d89ed8395478d5d",
+              "bytes": 474
+            }
+          }
+        }
+      ]
+    },
+    "mixed-library-project": {
+      "source": "tools/mixed-library-qualification.rs",
+      "source_sha256": "fb2771d009bc91856abf111e50da103224e2de7d6653b56fdf9a1fabef4f9ec8",
+      "cases": [
+        {
+          "case": "bitcode-lto-consumer",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            }
+          }
+        },
+        {
+          "case": "bitcode-lto-run",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "54183f4323f377b737433a1e98229ead0fdc686f93bab057ecb612daa94002b5",
+              "bytes": 3
+            },
+            "stderr": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            }
+          }
+        },
+        {
+          "case": "bitcode-request",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            }
+          }
+        },
+        {
+          "case": "body-edit",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [
+            2,
+            0
+          ],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "b86749a01e7c9bf8660182749df1c487744b916f15f3d55a6d8e1727b85f46b3",
+              "bytes": 4162
+            },
+            "trace": {
+              "sha256": "fa6ff4c68f5aa7cad25a651c602e8021baf7756e601a4369f9a9bc96dea9abbc",
+              "bytes": 421
+            }
+          }
+        },
+        {
+          "case": "cargo-cold-run",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "efc3c3e3698e6614b59f03874ef70fb2b06f2bfa69c09a3c2fdaa342679e3f49",
+              "bytes": 11
+            },
+            "stderr": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            }
+          }
+        },
+        {
+          "case": "cargo-edited-run",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "0348ad4704a7ebad8d2a706256da977c69fe9f747ef306f6da1482ce4f105a56",
+              "bytes": 11
+            },
+            "stderr": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            }
+          }
+        },
+        {
+          "case": "cargo-recovery-run",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "efc3c3e3698e6614b59f03874ef70fb2b06f2bfa69c09a3c2fdaa342679e3f49",
+              "bytes": 11
+            },
+            "stderr": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            }
+          }
+        },
+        {
+          "case": "cold-archive",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "9d6e3407ba07c810fd8861b5b28403ffbe3d48be19709f0d0b732e7bc59384c2",
+              "bytes": 136
+            },
+            "stderr": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            }
+          }
+        },
+        {
+          "case": "cold-independent-build",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            }
+          }
+        },
+        {
+          "case": "cold-independent-check",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            }
+          }
+        },
+        {
+          "case": "cold-independent-run",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "efc3c3e3698e6614b59f03874ef70fb2b06f2bfa69c09a3c2fdaa342679e3f49",
+              "bytes": 11
+            },
+            "stderr": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            }
+          }
+        },
+        {
+          "case": "cold",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [
+            0,
+            2,
+            0
+          ],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "28fd73100845ea781e5c1a1868b68a50014638b4e0208ea93e4280cad2eef410",
+              "bytes": 6425
+            },
+            "trace": {
+              "sha256": "56541fd5c5c23aa48e14e78a4307a82fdff1396d528efd21a83bef4bfe549a4d",
+              "bytes": 711
+            }
+          }
+        },
+        {
+          "case": "edited-archive",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "9d6e3407ba07c810fd8861b5b28403ffbe3d48be19709f0d0b732e7bc59384c2",
+              "bytes": 136
+            },
+            "stderr": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            }
+          }
+        },
+        {
+          "case": "edited-independent-build",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            }
+          }
+        },
+        {
+          "case": "edited-independent-check",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            }
+          }
+        },
+        {
+          "case": "edited-independent-run",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "0348ad4704a7ebad8d2a706256da977c69fe9f747ef306f6da1482ce4f105a56",
+              "bytes": 11
+            },
+            "stderr": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            }
+          }
+        },
+        {
+          "case": "invalid-library",
+          "compiler_or_command_exit": 101,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "68006a5416e4891051cea85a8e3c910d60f7ed3316ce12e7ec6402e6bff9ee30",
+              "bytes": 17
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "72cf84f1c9b6c567d8216f012e66a3f3826b461a1175f6e36e7af4d5a6bc0c5a",
+              "bytes": 5121
+            },
+            "trace": {
+              "sha256": "bd2981d9f543831c0b5008ca21859a5f769d7eb9f57edf12b0fc819b2e8b83a1",
+              "bytes": 55
+            }
+          }
+        },
+        {
+          "case": "recovery-archive",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "9d6e3407ba07c810fd8861b5b28403ffbe3d48be19709f0d0b732e7bc59384c2",
+              "bytes": 136
+            },
+            "stderr": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            }
+          }
+        },
+        {
+          "case": "recovery-independent-build",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            }
+          }
+        },
+        {
+          "case": "recovery-independent-check",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            }
+          }
+        },
+        {
+          "case": "recovery-independent-run",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "efc3c3e3698e6614b59f03874ef70fb2b06f2bfa69c09a3c2fdaa342679e3f49",
+              "bytes": 11
+            },
+            "stderr": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            }
+          }
+        },
+        {
+          "case": "recovery",
+          "compiler_or_command_exit": 0,
+          "selected_native_counts": [
+            2,
+            0
+          ],
+          "retained_rust_objects": false,
+          "original_files": {
+            "status": {
+              "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+              "bytes": 15
+            },
+            "stdout": {
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "bytes": 0
+            },
+            "stderr": {
+              "sha256": "a027c6bb52a7d3b08b8d1c5a966e49d460fec9ff8341e5f4312abe493e2a42b3",
+              "bytes": 4165
+            },
+            "trace": {
+              "sha256": "fa6ff4c68f5aa7cad25a651c602e8021baf7756e601a4369f9a9bc96dea9abbc",
+              "bytes": 421
+            }
+          }
+        }
+      ]
+    }
+  },
+  "entry_contract": {
+    "source": "tests/compiler_contract.rs",
+    "source_sha256": "12d24c1713a9a84730846456aa39fec040fbcbf17bb21cf2fbd7174bbbb79b32",
+    "passed": 16,
+    "failed": 0,
+    "ignored": 0,
+    "test_names": [
+      "cancellation_terminates_owned_cargo_and_build_script_descendants",
+      "cargo_entry_runs_without_a_separate_coordinator_executable",
+      "cargo_native_first_build_preserves_build_script_environment",
+      "cargo_selection_preserves_explicit_package_target_and_source",
+      "large_valid_native_argument_lists_use_the_original_process",
+      "native_and_full_compiler_contract",
+      "native_borrowed_path_conversions_match_rust",
+      "native_file_tests_preserve_single_execution",
+      "native_library_expansion_keeps_program_checks_and_runtime",
+      "native_library_identity_controls_retained_source_state",
+      "native_library_selection_survives_process_startup",
+      "native_os_string_reserve_preserves_unwind_and_buffer",
+      "native_output_failure_does_not_become_success",
+      "native_path_reserve_preserves_unwind_and_buffer",
+      "native_rejection_preserves_full_core_resource_context",
+      "official_sdk_clippy_and_rustfmt_execute_from_the_package"
+    ],
+    "original_log_sha256": "a165e58fbf0e45854c785a913a1a2a1e29585eec4b34cc79d98d588abbfb747d",
+    "original_log_bytes": 1479
+  },
+  "zero_native_observation": "The cold mixed-project trace retains native-definitions=0 and native-definitions=5 in separate invocations.",
+  "scope": "Recorded hosted Linux compiler execution with unchanged existing assertions. Review did not independently execute an archived compiler package. Expected rejection/link failure cases remain visible."
+}

@@ -1,0 +1,17 @@
+{
+  "campaign_status": "passed",
+  "ciphertext_file": "private-evidence.tar.gz.cms",
+  "original_file_bytes": 9779725,
+  "original_file_count": 600,
+  "reason": "authenticated-ciphertext-created",
+  "receipt_file": "receipt.json",
+  "retention_status": "retained",
+  "scenario_status": {
+    "clean-dependency-build": "passed",
+    "compile-plus-test": "passed",
+    "no-op": "passed",
+    "primed-root-build": "passed",
+    "primed-root-check": "passed"
+  },
+  "schema": "lustr-encrypted-evidence-status-v1"
+}
