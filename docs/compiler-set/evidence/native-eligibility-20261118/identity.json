@@ -1,0 +1,217 @@
+{
+  "schema": "lustr-native-eligibility-local-evidence-v1",
+  "scope": "source compilation and bounded Cargo component identity verification; local native qualification failed; no timing campaign",
+  "status": "not-qualified",
+  "change": {
+    "pull_request": 18,
+    "url": "https://github.com/glopyglerky/lustr/pull/18",
+    "published_commit": "be27c3f32725dd80e623af89034b15eeebde7e9a",
+    "published_tree": "fdb6af7d1ea50c4b63fd8b6a217633979deedf22",
+    "parent": "34d847da3d90c3c2b253246a8ffdfdeb901c56b0",
+    "reviewed_local_commit": "992fe781180e0ecbdd7ba9053f02b1b788816996",
+    "reviewed_local_tree": "d9ed7b6694a5517801fe4b2be2061bbda6173262",
+    "baseline_local_commit": "18b8d1e55520ca739e8bccb081a08db8a99926fe",
+    "baseline_tree": "bd3fd98eebdcb9391b9714972fc2e20660349830",
+    "baseline_remote_commit": "765e45c8befb6cf78f04db4a6e4935569567860e",
+    "remote_parent_tree": "e1c028f15e29a72fdbe338883613c23a6c8dccec",
+    "reviewed_files": [
+      {
+        "path": "crates/lustr-semantic/src/mixed_main.rs",
+        "baseline_blob": "f908f741c7dae4350e0358df6e204fbe648bc463",
+        "candidate_blob": "ebd32e75395089d35acdd6dfddb80d6fb70227e6"
+      },
+      {
+        "path": "crates/lustr-semantic/src/mixed_backend.rs",
+        "baseline_blob": "2ba0ca953c09a0cd982dbda7194aa21b8e28795f",
+        "candidate_blob": "34b5321008a1e717936106b770dbd35fe82c1cb7"
+      },
+      {
+        "path": "crates/lustr-semantic/src/mixed_objects.rs",
+        "baseline_blob": "02c451a390eaaa7db7d69e627c3bd1337de373dd",
+        "candidate_blob": "404401ac61e577508f70bae1972c36b048a4d8c4"
+      }
+    ],
+    "compiler_blobs_equal_reviewed_local_candidate": true,
+    "baseline_compiler_blobs_equal_remote_parent": true
+  },
+  "sdk": {
+    "source_commit": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+    "host": "x86_64-unknown-linux-gnu",
+    "rustc_release": "1.102.0-nightly",
+    "llvm": "23.1.5",
+    "exact_vv_equal_baseline_and_candidate": true,
+    "identity_manifest_sha256": "55338827dc3d75cd9ff81f4412f3692821d6508af946948b692c86c6c93cd11d"
+  },
+  "protected_sources": {
+    "compiler/native": "12ae35ee30f81d11f55b184134f8a0c4a977a496",
+    "upstream/lust.pin": "cce2d3a2a584a15bc2ab960eb0121c9afc484949",
+    "upstream/bluefe-core.pin": "ada26570137047454b8eba363cf7a7167077abe3"
+  },
+  "optimized_driver_builds": {
+    "baseline": {
+      "source_revision": "18b8d1e55520ca739e8bccb081a08db8a99926fe",
+      "source_tree": "bd3fd98eebdcb9391b9714972fc2e20660349830",
+      "exit": 0,
+      "artifact_sha256": "4fdde6c5f0fdb5e34ba00fc9da514592d50f5958a7b764c470affd49af3048d0",
+      "stderr_sha256": "23b9203421623803b75ef77cd0c3ac206f393f7ae731bb9d61f41db26d416d72",
+      "profile": "release",
+      "cargo_jobs": 1,
+      "locked": true,
+      "offline": true,
+      "features": [
+        "full-core"
+      ],
+      "binary": "lustr-mixed",
+      "source_clean_at_build_and_final_identity_check": true
+    },
+    "candidate": {
+      "source_revision": "992fe781180e0ecbdd7ba9053f02b1b788816996",
+      "source_tree": "d9ed7b6694a5517801fe4b2be2061bbda6173262",
+      "exit": 0,
+      "artifact_sha256": "2dcb154a130200055a13390df92fde0ae3da3d31d78bfb73e28e37c62e8a08c6",
+      "stderr_sha256": "f69d516945a8bb3dc0c4dd59402cbf5d423bfcc76b2c6df878d654ba0236afcb",
+      "profile": "release",
+      "cargo_jobs": 1,
+      "locked": true,
+      "offline": true,
+      "features": [
+        "full-core"
+      ],
+      "binary": "lustr-mixed",
+      "source_clean_at_build_and_final_identity_check": true
+    }
+  },
+  "bounded_composition": {
+    "method": "manual composition from successful stages of failed complete constructor",
+    "complete_constructor": "failed",
+    "native_shared_library": "unavailable",
+    "full_entry_runtime_qualification": "not qualified",
+    "same_baseline_native_entry_coordinator_and_sdk_retained": true,
+    "only_installed_driver_bytes_changed": true,
+    "native_build_hash": "dc82dab611c87e7e",
+    "direct_alias": "bin/lustr-cargo/rustc -> ../rustc-full",
+    "native_expanded_core_hardlink_preserved": true,
+    "baseline_components": {
+      "lustr": "d90e97ce02eceae6e3a26e9f6b4ff7a0e6e278036983afc0bef46a1c345a546d",
+      "lust": "93397fa4f3b3f1963da7f975c2c99281b80ae03fa49f798d347a85b574f96ac0",
+      "lust-core": "d89049bcd27f64b2ad9c1accb63012d0c9dc205a81bf3fee76e6f9e3efa10ca2",
+      "cargo-lustr": "3ec4f00fb019b38a6e119b220278c2281f135554f5a321b25d11669f45b61bf5"
+    },
+    "recipe_original_sha256": "a02af725f749832705f8ae144aafdb44ab95039ce61cccbfeaf565b4e5b0da77"
+  },
+  "local_qualification": {
+    "exit": 101,
+    "assertion": "native-participation",
+    "result": "failed",
+    "failure_category": "environment-denied",
+    "phase": "socket-creation",
+    "errno": 1,
+    "native_units_projected": 5,
+    "native_object_files": 0,
+    "selected_native_definitions": 0,
+    "fallback_cargo_result": "exit 0",
+    "fallback_app_stdout": "1083\n"
+  },
+  "pending_gates": [
+    "candidate mixed compilation and native runtime",
+    "metadata and retained-check qualification",
+    "mixed library interoperability",
+    "full standalone entry/runtime contract",
+    "unchanged fixed-workload nine-mode campaign",
+    "matched before/after performance admission"
+  ],
+  "campaign": {
+    "status": "not run",
+    "measurements": [],
+    "host_contention": "unknown; no local timing was admitted"
+  },
+  "failed_build_attempts": [
+    {
+      "attempt": "full-constructor-native-library",
+      "exit": 101,
+      "observed": "compiler terminated by SIGKILL",
+      "cause": "not established",
+      "stderr_sha256": "958133fc3375552c5b812786a79f6c4b1da86a6ed0ae63a942f30b3b0d34ac7c",
+      "stderr_role": "original-constructor-outer-stderr"
+    },
+    {
+      "attempt": "serial-native-library-retry",
+      "exit": 101,
+      "observed": "compiler terminated by SIGKILL",
+      "cause": "not established",
+      "stderr_sha256": "3c9646adf46b0372a52cfd425eecc43c3cbdf78ae30030bd87402480095864ea",
+      "stderr_role": "serial-native-library-retry-stderr"
+    },
+    {
+      "attempt": "parallel-pristine-native-build",
+      "exit": 101,
+      "observed": "compiler terminated by SIGKILL",
+      "cause": "not established",
+      "stderr_sha256": "5ef27163aa0216600fdfdb890a90802e90fbe701aa9107e0b6896cf3c83b4c49",
+      "stderr_role": "parallel-pristine-native-build-stderr"
+    }
+  ],
+  "original_evidence": {
+    "original-constructor-outer-stderr": {
+      "sha256": "958133fc3375552c5b812786a79f6c4b1da86a6ed0ae63a942f30b3b0d34ac7c",
+      "bytes": 93305
+    },
+    "original-constructor-native-library-stage-stderr": {
+      "sha256": "685681ad71f9f722db8c7c6341e220b8ba1c8938ab453e37da73e66132de06a7",
+      "bytes": 93136
+    },
+    "serial-native-library-retry-stderr": {
+      "sha256": "3c9646adf46b0372a52cfd425eecc43c3cbdf78ae30030bd87402480095864ea",
+      "bytes": 92983
+    },
+    "parallel-pristine-native-build-stderr": {
+      "sha256": "5ef27163aa0216600fdfdb890a90802e90fbe701aa9107e0b6896cf3c83b4c49",
+      "bytes": 25468
+    },
+    "baseline-mixed-qualifier-stderr": {
+      "sha256": "38d048c57924a3d20385c340c20546ef73568db576c2316a8571eb78e65271fe",
+      "bytes": 548
+    },
+    "baseline-cold-cargo-stderr": {
+      "sha256": "84582a96e003920c75e70a2637ddcd67f08178bc0cb981443e99e3c35b146087",
+      "bytes": 5795
+    },
+    "baseline-cold-cargo-status": {
+      "sha256": "7cd7dbbae3a832b2d77aa6ad727519e3d2e4d672d05cf8ca6eeecb11b763680c",
+      "bytes": 38
+    },
+    "baseline-native-selection-trace": {
+      "sha256": "dadc49de1b249e1a0058adee743263a3aa54feef14595724cf188942ca831b4c",
+      "bytes": 366
+    },
+    "baseline-native-daemon-stderr": {
+      "sha256": "4d46f6a9e72cbb990d481af699aed779dda9c3fb5dab0c66f1b7172748a9950f",
+      "bytes": 728728
+    },
+    "baseline-app-stdout": {
+      "sha256": "647ff6ec5da274eb17fd0900239575ee67245b926103525f96ac744048c8532d",
+      "bytes": 5
+    },
+    "independent-af-unix-socket-probe": {
+      "sha256": "03d9932ae1f7aa43d82ace83217ae9d7da33f6d0b377eeb0cc32a635ab1364ca",
+      "bytes": 872
+    }
+  },
+  "retention": {
+    "scope": "native eligibility local build and failed qualification records; no coordinator scenario reports",
+    "helper": "tools/encrypt-coordinator-evidence.py",
+    "helper_sha256": "506137173e35673db61a13af54309630fdf3d38b8e2614659578fc4ad6bfbd85",
+    "encrypted_receipt": "encrypted/receipt.json",
+    "encrypted_receipt_sha256": "f13877915cf0ea3622d05819efb5fa66d4e1c79e484ee67c98d3cc3a5b02b34e",
+    "ciphertext_sha256": "a83f9d1bd460a23b5b7f012ae0935e37ad1ef1162c4cc95d418e8ed955904764",
+    "plaintext_archive_sha256": "211610cce775657bf35c448d4b93a0e0dc337932f4c779746b95443f305df1fa",
+    "encrypted_manifest_sha256": "49ccab7f52f8cfe2a16bac6543c03a82ddc3b5ebe784eaa65ac4fca0f92dd8c7",
+    "original_file_count": 106,
+    "recipient_certificate_sha256": "69e1167422ba3edfc45139eda5bdcec97d5bebcdf3e764054f3457488aaa5c4f",
+    "original_bytes_unchanged": true,
+    "build_and_cache_binaries_excluded": true,
+    "coordinator_status_fields": "not-observed, because no coordinator campaign is in this snapshot",
+    "independent_decryption": "not performed; no recipient private key accessed",
+    "deterministic_review_archive_sha256": "211610cce775657bf35c448d4b93a0e0dc337932f4c779746b95443f305df1fa"
+  }
+}
