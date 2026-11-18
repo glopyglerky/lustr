@@ -33,6 +33,7 @@ GATE_SCHEMA = "lustr-complete-package-gates-v1"
 BASELINE = "3c378a11d60149a3ec99fa49ea1b336e9406fca8"
 BASELINE_TREE = "0256606d5793bfb890130f05fae013d0c5c5f9e1"
 TCC = "43c7708b85681a2fd4451c8a541af4494a8919b2"
+CARGO_LAYOUT_OPT_OUT = "__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT"
 LANES, PHASES, SEED = B.LANES, B.PHASES, B.SEED
 PUBLIC = ("baseline", "entry")
 CONSTRUCTOR_INPUTS = ("tools/build-mixed-toolchain.rs", "src/host_runtime.rs", "tools/host-sdk.rs",
@@ -260,7 +261,12 @@ def qualify_package(args):
                "scope": "Gate-profile source unit tests, original ordinary native differential corpus with the installed release binaries, and the complete public entry contract. Full sanitizer/fuzz/platform CI remains separate."}
     try:
         source, sdk, package = map(Path, (package_build["source_path"], package_build["sdk"], package_build["package"]))
-        env = dict(package_build["commands"][0]["environment"], LUST_TCC_HOME=package_build["tcc"])
+        # Direct native tests bypass the public entry, which supplies the
+        # pinned Cargo's compatibility layout for Lust's build-script parser.
+        # Apply the same setting to both gates, without changing either source
+        # package, its constructor or any measured command.
+        env = dict(package_build["commands"][0]["environment"], LUST_TCC_HOME=package_build["tcc"],
+                   **{CARGO_LAYOUT_OPT_OUT: "1"})
         work = args.output / "work"
         work.mkdir()
         native = source / "compiler/native"
@@ -341,7 +347,8 @@ def verify_gates(root, build, build_digest):
     verify_commands(root, receipt["commands"], phases, lane)
     commands = {row["phase"]: row for row in receipt["commands"]}
     source, sdk, package, work = map(Path, (build["source_path"], build["sdk"], build["package"], str(Path(receipt["output"]) / "work")))
-    environment = dict(build["commands"][0]["environment"], LUST_TCC_HOME=build["tcc"])
+    environment = dict(build["commands"][0]["environment"], LUST_TCC_HOME=build["tcc"],
+                       **{CARGO_LAYOUT_OPT_OUT: "1"})
     unit = commands["native-unit-tests"]
     expected_unit = [sdk / "bin/cargo", "test", "--manifest-path", source / "compiler/native/Cargo.toml", "--locked", "--offline", "--profile", "gate",
         "--jobs", "1", "--bins", "--target-dir", work / "native-tests", "--config", f'build.build-dir="{work / "native-intermediates"}"',

@@ -12,6 +12,40 @@ cannot qualify that change. Its runner and workflow remain unchanged. The new
 runner is `tools/run-warm-native-comparison.py`; the new workflow is
 `.github/workflows/warm-native-performance.yml`.
 
+## First hosted failure and harness correction
+
+[Run 44337186487](https://github.com/glopyglerky/lustr/actions/runs/44337186487)
+at candidate `43a7e07d32929309fc6e402d7bca6b5673e186a2` built both complete
+packages through their own constructors. The baseline's native unit gate then
+failed before any measurement. Its client suite passed 15 tests. Its core suite
+passed 386 and failed `driver::buildscript::tests::script_reruns_when_what_it_read_changes`:
+the first build-script observation returned empty cfg/environment lists instead
+of `bs_a` and `BS_DATA=v1`. Candidate gates and all timing steps were skipped.
+
+The direct native gate omitted
+`__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT=1`. The public lustr entry already
+supplies this pinned-Cargo compatibility setting for Lust's build-script
+handling. The corrected harness supplies and records the same setting for
+both packages' correctness commands. Portable replay requires its exact value.
+The packages' constructors, source pins, native compilers, measured commands,
+corpus, test assertions and strict timing decision are unchanged.
+
+The original failure remains in
+[artifact 14443389636](https://github.com/glopyglerky/lustr/actions/runs/44337186487/artifacts/14443389636),
+`complete-native-warm-1`, ZIP SHA256
+`ff8f1c40cb90dec85df8703a08855ebe5987745a13a54f72dac44fd4c6c01aa1`.
+Its baseline unit stdout has SHA256
+`b4216170dca888f5f70aed28fd74a9c65d7b67a8b180daac72097ee3c92171a2`;
+stderr has SHA256
+`22cea66855c97e83732ff632204cc7075de7abc4d9f0e707ac2012952ce3affe`.
+
+The corrected local harness passes 29 evidence controls and eight startup
+controls. Four new controls reject missing or conflicting layout settings in
+the unit and differential evidence for both package lanes, even after raw-log
+checksums are recomputed. These use synthetic children and establish harness
+behavior only. Corrected real native execution and complete-package timing
+still require a new hosted run.
+
 ## Independently built packages
 
 | Lane | Source and construction | Executed entry and daemon |

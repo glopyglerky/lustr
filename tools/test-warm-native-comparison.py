@@ -305,9 +305,9 @@ class PackageComparisonControls(unittest.TestCase):
         (root / receipt["seed"]["file"]).unlink()
         with self.assertRaises((ValueError, FileNotFoundError)): N.verify_package(root, "baseline")
 
-    def gate_corruption(self, mutate):
-        root = self.parent / self.id().split(".")[-1]
-        shutil.copytree(self.parent / "entry-gates", root)
+    def gate_corruption(self, mutate, lane="entry", suffix=""):
+        root = self.parent / (self.id().split(".")[-1] + suffix)
+        shutil.copytree(self.parent / (lane + "-gates"), root)
         receipt = json.loads((root / "receipt.json").read_text())
         mutate(receipt)
         (root / "raw.jsonl").write_text("".join(json.dumps(row) + "\n" for row in receipt["commands"]))
@@ -315,9 +315,34 @@ class PackageComparisonControls(unittest.TestCase):
         N.S.write_json(root / "receipt.json", receipt)
         return root
 
-    def verify_gate(self, root):
-        build = N.verify_package(self.parent / "entry-build", "entry")
-        return N.verify_gates(root, build, N.S.digest(self.parent / "entry-build/receipt.json"))
+    def verify_gate(self, root, lane="entry"):
+        build_root = self.parent / (lane + "-build")
+        build = N.verify_package(build_root, lane)
+        return N.verify_gates(root, build, N.S.digest(build_root / "receipt.json"))
+
+    def refuse_layout_change(self, phase, value):
+        for lane in N.PUBLIC:
+            with self.subTest(lane=lane):
+                def mutate(receipt):
+                    env = next(row for row in receipt["commands"] if row["phase"] == phase)["environment"]
+                    if value is None:
+                        del env[N.CARGO_LAYOUT_OPT_OUT]
+                    else:
+                        env[N.CARGO_LAYOUT_OPT_OUT] = value
+                root = self.gate_corruption(mutate, lane, "-" + lane)
+                with self.assertRaises(ValueError): self.verify_gate(root, lane)
+
+    def test_native_units_require_recorded_cargo_layout(self):
+        self.refuse_layout_change("native-unit-tests", None)
+
+    def test_native_units_refuse_conflicting_cargo_layout(self):
+        self.refuse_layout_change("native-unit-tests", "0")
+
+    def test_native_differential_requires_recorded_cargo_layout(self):
+        self.refuse_layout_change("ordinary-native-differential", None)
+
+    def test_native_differential_refuses_conflicting_cargo_layout(self):
+        self.refuse_layout_change("ordinary-native-differential", "0")
 
     def test_oracle_cannot_use_unbound_unit_binary(self):
         def mutate(receipt):
