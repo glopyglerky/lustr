@@ -26,8 +26,8 @@ and the separate broad-CI regression-constructor helper/test/workflow changes.
 
 Source equality does not imply identical rebuilt executables. Public/client/SDK
 launcher hashes match the fourth run, but the integrated and pristine
-`lust-core` binaries and the native shared library hashes differ. Both native
-receipts record build hash `be64fca1236b2d1f`; the actual binary differences are
+`lust-core` binaries and the native shared library hashes differ. Both campaigns’
+integrated native receipts record build hash `be64fca1236b2d1f`; the actual binary differences are
 preserved without assigning their cause. The same CPU model also does not make
 two jobs a controlled before/after experiment.
 
