@@ -1,0 +1,239 @@
+{
+  "cargo_version_returncode": 0,
+  "fixture_unchanged": true,
+  "plan_sha256": "586598977e1afc49ead829634bbd543ec7ce0399cd323a2a5d063011746570db",
+  "projection": {
+    "original_report_sha256": "e6068f9cdd36292b341da497e03a9c30f676c5e4f522145b72ac5697a522ef60",
+    "public_plan_sha256": "c9636293eb8f7095a8cdfe3acca41fbad79edec8dea81d0b40b63a7b7523dbec",
+    "public_runner_sha256": "025d34998aa7a7587d1ea425e780bc3a4a8216cf867ffd8885f967051a503532",
+    "rule": "Replace only the task workspace prefix with <DIAGNOSTIC_WORKSPACE>."
+  },
+  "records": [
+    {
+      "argv": [
+        "<DIAGNOSTIC_WORKSPACE>/warm-selector-package/bin/cargo",
+        "metadata",
+        "--format-version=1",
+        "--manifest-path",
+        "<DIAGNOSTIC_WORKSPACE>/warm-selector-deferred-spans/fixture/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<DIAGNOSTIC_WORKSPACE>/warm-selector-deferred-spans/fixture",
+      "environment": {
+        "CARGO_BUILD_BUILD_DIR": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/metadata-current-tools/intermediates",
+        "CARGO_CACHE_RUSTC_INFO": "0",
+        "CARGO_HOME": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/metadata-current-tools/cargo-home",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_TARGET_DIR": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/metadata-current-tools/target",
+        "CARGO_TERM_COLOR": "never",
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "<DIAGNOSTIC_WORKSPACE>/warm-selector-package/bin:/usr/local/bin:/usr/bin:/bin",
+        "RUSTC": "<DIAGNOSTIC_WORKSPACE>/warm-selector-package/bin/rustc-full",
+        "RUSTDOC": "<DIAGNOSTIC_WORKSPACE>/warm-selector-package/bin/rustdoc",
+        "TMPDIR": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/metadata-current-tools/tmp",
+        "TZ": "UTC",
+        "__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT": "1"
+      },
+      "label": "metadata-current-tools",
+      "returncode": 0,
+      "stderr": {
+        "bytes": 0,
+        "path": "streams/metadata-current-tools.stderr",
+        "public_bytes": 0,
+        "public_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 1628,
+        "path": "streams/metadata-current-tools.stdout",
+        "public_bytes": 1538,
+        "public_sha256": "ef762e8dadc8e6ce5da55f58c169d559e612eeccfd5bb1c6ca11b0ad59b8e2fa",
+        "sha256": "7819d182f5319f3da6deb68c21a219c06257158cbb97da29e279a2614ab847ea"
+      }
+    },
+    {
+      "argv": [
+        "<DIAGNOSTIC_WORKSPACE>/warm-selector-package/bin/cargo",
+        "metadata",
+        "--format-version=1",
+        "--manifest-path",
+        "<DIAGNOSTIC_WORKSPACE>/warm-selector-deferred-spans/fixture/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<DIAGNOSTIC_WORKSPACE>/warm-selector-deferred-spans/fixture",
+      "environment": {
+        "CARGO_BUILD_BUILD_DIR": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/metadata-missing-tools/intermediates",
+        "CARGO_CACHE_RUSTC_INFO": "0",
+        "CARGO_HOME": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/metadata-missing-tools/cargo-home",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_TARGET_DIR": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/metadata-missing-tools/target",
+        "CARGO_TERM_COLOR": "never",
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "<DIAGNOSTIC_WORKSPACE>/warm-selector-package/bin:/usr/local/bin:/usr/bin:/bin",
+        "RUSTC": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/deliberately-missing-rustc",
+        "RUSTDOC": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/deliberately-missing-rustdoc",
+        "TMPDIR": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/metadata-missing-tools/tmp",
+        "TZ": "UTC",
+        "__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT": "1"
+      },
+      "label": "metadata-missing-tools",
+      "returncode": 101,
+      "stderr": {
+        "bytes": 192,
+        "path": "streams/metadata-missing-tools.stderr",
+        "public_bytes": 183,
+        "public_sha256": "a697394c66c8cea4b725ab2f6c6804d4e862a584f8ce5ed71172dbb8880f8988",
+        "sha256": "809b3dc2b833c742434e45b028d7a47a4637226ef7946e911232179e44843099"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "streams/metadata-missing-tools.stdout",
+        "public_bytes": 0,
+        "public_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "argv": [
+        "<DIAGNOSTIC_WORKSPACE>/warm-selector-package/bin/cargo",
+        "pkgid",
+        "--manifest-path",
+        "<DIAGNOSTIC_WORKSPACE>/warm-selector-deferred-spans/fixture/Cargo.toml",
+        "--package",
+        "slice",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<DIAGNOSTIC_WORKSPACE>/warm-selector-deferred-spans/fixture",
+      "environment": {
+        "CARGO_BUILD_BUILD_DIR": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/pkgid-current-tools/intermediates",
+        "CARGO_CACHE_RUSTC_INFO": "0",
+        "CARGO_HOME": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/pkgid-current-tools/cargo-home",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_TARGET_DIR": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/pkgid-current-tools/target",
+        "CARGO_TERM_COLOR": "never",
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "<DIAGNOSTIC_WORKSPACE>/warm-selector-package/bin:/usr/local/bin:/usr/bin:/bin",
+        "RUSTC": "<DIAGNOSTIC_WORKSPACE>/warm-selector-package/bin/rustc-full",
+        "RUSTDOC": "<DIAGNOSTIC_WORKSPACE>/warm-selector-package/bin/rustdoc",
+        "TMPDIR": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/pkgid-current-tools/tmp",
+        "TZ": "UTC",
+        "__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT": "1"
+      },
+      "label": "pkgid-current-tools",
+      "returncode": 0,
+      "stderr": {
+        "bytes": 0,
+        "path": "streams/pkgid-current-tools.stderr",
+        "public_bytes": 0,
+        "public_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 93,
+        "path": "streams/pkgid-current-tools.stdout",
+        "public_bytes": 84,
+        "public_sha256": "8990e451131cfff2d671f7ff72e63c9379ce5cdd4da93c7c6b3dfe8523038bd1",
+        "sha256": "4924d151a415870964f24868440bc3a932f95576e1a23cbb4c42a0a05e112f08"
+      }
+    },
+    {
+      "argv": [
+        "<DIAGNOSTIC_WORKSPACE>/warm-selector-package/bin/cargo",
+        "pkgid",
+        "--manifest-path",
+        "<DIAGNOSTIC_WORKSPACE>/warm-selector-deferred-spans/fixture/Cargo.toml",
+        "--package",
+        "slice",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<DIAGNOSTIC_WORKSPACE>/warm-selector-deferred-spans/fixture",
+      "environment": {
+        "CARGO_BUILD_BUILD_DIR": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/pkgid-missing-tools/intermediates",
+        "CARGO_CACHE_RUSTC_INFO": "0",
+        "CARGO_HOME": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/pkgid-missing-tools/cargo-home",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_TARGET_DIR": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/pkgid-missing-tools/target",
+        "CARGO_TERM_COLOR": "never",
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "<DIAGNOSTIC_WORKSPACE>/warm-selector-package/bin:/usr/local/bin:/usr/bin:/bin",
+        "RUSTC": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/deliberately-missing-rustc",
+        "RUSTDOC": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/deliberately-missing-rustdoc",
+        "TMPDIR": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/pkgid-missing-tools/tmp",
+        "TZ": "UTC",
+        "__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT": "1"
+      },
+      "label": "pkgid-missing-tools",
+      "returncode": 0,
+      "stderr": {
+        "bytes": 0,
+        "path": "streams/pkgid-missing-tools.stderr",
+        "public_bytes": 0,
+        "public_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 93,
+        "path": "streams/pkgid-missing-tools.stdout",
+        "public_bytes": 84,
+        "public_sha256": "8990e451131cfff2d671f7ff72e63c9379ce5cdd4da93c7c6b3dfe8523038bd1",
+        "sha256": "4924d151a415870964f24868440bc3a932f95576e1a23cbb4c42a0a05e112f08"
+      }
+    },
+    {
+      "argv": [
+        "<DIAGNOSTIC_WORKSPACE>/warm-selector-package/bin/cargo",
+        "metadata",
+        "--format-version=1",
+        "--manifest-path",
+        "<DIAGNOSTIC_WORKSPACE>/warm-selector-deferred-spans/fixture/Cargo.toml",
+        "--offline",
+        "--locked",
+        "--filter-platform",
+        "x86_64-unknown-linux-gnu"
+      ],
+      "cwd": "<DIAGNOSTIC_WORKSPACE>/warm-selector-deferred-spans/fixture",
+      "environment": {
+        "CARGO_BUILD_BUILD_DIR": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/metadata-missing-tools-filter-platform-control/intermediates",
+        "CARGO_CACHE_RUSTC_INFO": "0",
+        "CARGO_HOME": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/metadata-missing-tools-filter-platform-control/cargo-home",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_TARGET_DIR": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/metadata-missing-tools-filter-platform-control/target",
+        "CARGO_TERM_COLOR": "never",
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "<DIAGNOSTIC_WORKSPACE>/warm-selector-package/bin:/usr/local/bin:/usr/bin:/bin",
+        "RUSTC": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/deliberately-missing-rustc",
+        "RUSTDOC": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/deliberately-missing-rustdoc",
+        "TMPDIR": "<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/metadata-missing-tools-filter-platform-control/tmp",
+        "TZ": "UTC",
+        "__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT": "1"
+      },
+      "label": "metadata-missing-tools-filter-platform-control",
+      "returncode": 101,
+      "stderr": {
+        "bytes": 192,
+        "path": "streams/metadata-missing-tools-filter-platform-control.stderr",
+        "public_bytes": 183,
+        "public_sha256": "a697394c66c8cea4b725ab2f6c6804d4e862a584f8ce5ed71172dbb8880f8988",
+        "sha256": "809b3dc2b833c742434e45b028d7a47a4637226ef7946e911232179e44843099"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "streams/metadata-missing-tools-filter-platform-control.stdout",
+        "public_bytes": 0,
+        "public_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "runner_sha256": "b89e1c77b06199a8de6ba0bbee98ed93e9fa6308d2b9e59100b3c35f3017b1ae",
+  "schema": "lustr-cargo-tool-closure-probe-v1"
+}

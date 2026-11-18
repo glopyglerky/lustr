@@ -1,0 +1,18 @@
+{
+  "cargo_license_source": "Pinned official SDK share/doc/cargo",
+  "cargo_revision": "c07ac2c4d12237effc4b94f4543769b421790045",
+  "cargo_source_paths": [
+    "src/ops/cargo_metadata.rs",
+    "src/ops/cargo_pkgid.rs"
+  ],
+  "cargo_source_provider": "GitHub repository file API at exact revision",
+  "lustr_revision": "3c378a11d60149a3ec99fa49ea1b336e9406fca8",
+  "sha256": {
+    "cargo/LICENSE-APACHE": "8ada45cd9f843acf64e4722ae262c622a2b3b3007c7310ef36ac1061a30f6adb",
+    "cargo/LICENSE-MIT": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+    "cargo/cargo_metadata.rs": "61c9420ea79cae0149faf8cecb4c6a01cb6c4b83e1b2f9fc3902200c4ac8b4a5",
+    "cargo/cargo_pkgid.rs": "d4922199de3d9db54188272bab21ddd59e42e630cd667b7d20eb2b05a0c93116",
+    "lustr/LICENSE": "8095f9a9f97d074131f6a2ce09b952d12c18b36f09f4e5df0517c4e64e82c851",
+    "lustr/full.rs": "e7015c5462da232fd817091c2749e4e776287832f1279ebaab87314f0644412e"
+  }
+}

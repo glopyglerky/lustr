@@ -1,0 +1,4 @@
+error: could not execute process `<DIAGNOSTIC_WORKSPACE>/warm-cargo-tool-closure/deliberately-missing-rustc -vV` (never executed)
+
+Caused by:
+  No such file or directory (os error 2)

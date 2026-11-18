@@ -1,0 +1,34 @@
+{
+  "cargo_revision": "c07ac2c4d12237effc4b94f4543769b421790045",
+  "cargo_sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+  "commands": 5,
+  "encryption": {
+    "certificate_der_sha256": "69e1167422ba3edfc45139eda5bdcec97d5bebcdf3e764054f3457488aaa5c4f",
+    "encrypted_archive_sha256": "758bab64ea9eb9e35852cfa9b8dc824badea38c3100f68ce66ac52f584ae2fe2",
+    "format": "CMS AES-256-GCM, RSA-OAEP SHA-256",
+    "original_archive_sha256": "a54b03c850f9d90b3b7a9978a830e4c0f49a85fe463217ecc1335dcf24dc0c62",
+    "public_key_der_sha256": "7da67bcb676201917fcadb49ae8802f678eddfa734d3493e82d3a2cd735a9f96"
+  },
+  "original_files": {
+    "cargo-version.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "cargo-version.stdout": "e68d82cabd7db65483f4ea6542e3df95c0dbd3cacb1ceb88314a538e703b2499",
+    "fixture/Cargo.lock": "c5434c43e4444dfa56406c42904fa75cac4190c5870447a98c9b239edf795278",
+    "fixture/Cargo.toml": "89d7f2243354b127dcc2d2e7fe0c0f14ed2a6087db998ab6bde9559a3db6fda8",
+    "plan.json": "586598977e1afc49ead829634bbd543ec7ce0399cd323a2a5d063011746570db",
+    "report.json": "e6068f9cdd36292b341da497e03a9c30f676c5e4f522145b72ac5697a522ef60",
+    "runner.executed.py": "b89e1c77b06199a8de6ba0bbee98ed93e9fa6308d2b9e59100b3c35f3017b1ae",
+    "streams/metadata-current-tools.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "streams/metadata-current-tools.stdout": "7819d182f5319f3da6deb68c21a219c06257158cbb97da29e279a2614ab847ea",
+    "streams/metadata-missing-tools-filter-platform-control.stderr": "809b3dc2b833c742434e45b028d7a47a4637226ef7946e911232179e44843099",
+    "streams/metadata-missing-tools-filter-platform-control.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "streams/metadata-missing-tools.stderr": "809b3dc2b833c742434e45b028d7a47a4637226ef7946e911232179e44843099",
+    "streams/metadata-missing-tools.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "streams/pkgid-current-tools.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "streams/pkgid-current-tools.stdout": "4924d151a415870964f24868440bc3a932f95576e1a23cbb4c42a0a05e112f08",
+    "streams/pkgid-missing-tools.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "streams/pkgid-missing-tools.stdout": "4924d151a415870964f24868440bc3a932f95576e1a23cbb4c42a0a05e112f08"
+  },
+  "product_revision": "3c378a11d60149a3ec99fa49ea1b336e9406fca8",
+  "product_tree": "0256606d5793bfb890130f05fae013d0c5c5f9e1",
+  "schema": "lustr-cargo-tool-closure-evidence-v1"
+}
