@@ -157,6 +157,7 @@ jobs:
       - name: Validate qualification workflow controls before compiler builds
         run: |
           python3 tools/test-mixed-workflow.py
+          python3 tools/test-frozen-baseline-constructor.py
           rustc +stable --edition=2024 --test crates/lustr-semantic/src/mixed_entry.rs -o "$RUNNER_TEMP/lustr-mixed-entry-tests"
           "$RUNNER_TEMP/lustr-mixed-entry-tests"
           python3 tools/test-encrypted-evidence.py
@@ -245,7 +246,12 @@ jobs:
         if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' }}
         env:
           GIT_ALTERNATE_OBJECT_DIRECTORIES: ${{ runner.temp }}/lustr-pristine-source/.git/objects
-        run: '"$RUNNER_TEMP/build-mixed-toolchain" "$RUNNER_TEMP/lustr-regression-source" --current-sdk "$RUNNER_TEMP/lustr-tinycc/install" "$RUNNER_TEMP/lustr-regression-baseline" --release'
+        run: |
+          python3 tools/build-regression-baseline.py \
+            --source "$RUNNER_TEMP/lustr-regression-source" \
+            --tcc "$RUNNER_TEMP/lustr-tinycc/install" \
+            --output "$RUNNER_TEMP/lustr-regression-baseline" \
+            --evidence "$RUNNER_TEMP/lustr-regression-constructor"
       - name: Require the specific failed-link stale-output regression on the baseline
         id: baseline_regression
         if: ${{ !cancelled() && steps.baseline_toolchain.outcome == 'success' && steps.mixed_qualifier.outcome == 'success' }}
@@ -437,7 +443,10 @@ jobs:
             ${{ runner.temp }}/lustr-source-built/NATIVE-BUILD-RECEIPT.txt
             ${{ runner.temp }}/lustr-source-built/logs
             ${{ runner.temp }}/native-target-layouts
-            ${{ runner.temp }}/lustr-regression-baseline/BUILD-PROFILE.txt
+            ${{ runner.temp }}/lustr-regression-constructor/receipt.json
+            ${{ runner.temp }}/lustr-regression-constructor/constructor-source.rs
+            ${{ runner.temp }}/lustr-regression-constructor/*.stdout
+            ${{ runner.temp }}/lustr-regression-constructor/*.stderr
             ${{ runner.temp }}/lustr-regression-baseline/COMPONENTS.txt
             ${{ runner.temp }}/lustr-regression-baseline/NATIVE-BUILD-RECEIPT.txt
             ${{ runner.temp }}/lustr-regression-baseline/logs

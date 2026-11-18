@@ -85,6 +85,18 @@ class MixedWorkflowTests(unittest.TestCase):
         self.assertIn("--exact direct_and_legacy_compiler_paths_match_actual_coordinator", routed)
         self.assertIn("project_bench_build", dependencies(self.steps["project_measurements"]))
 
+    def test_historical_baseline_uses_its_own_constructor_and_keeps_receipts(self):
+        build = self.steps["baseline_toolchain"]
+        self.assertIn("python3 tools/build-regression-baseline.py", build)
+        self.assertIn('--source "$RUNNER_TEMP/lustr-regression-source"', build)
+        self.assertNotIn('"$RUNNER_TEMP/build-mixed-toolchain"', build)
+        self.assertNotIn("--release", build)
+        self.assertIn("ref: 2add988c6397ac5175fcdf89a3aac17d359bf283", self.section)
+        self.assertIn("python3 tools/test-frozen-baseline-constructor.py", self.section)
+        for item in ("receipt.json", "constructor-source.rs", "*.stdout", "*.stderr"):
+            self.assertIn("${{ runner.temp }}/lustr-regression-constructor/" + item, self.section)
+        self.assertNotIn("lustr-regression-baseline/BUILD-PROFILE.txt", self.section)
+
     def shell_probe(self, status, diagnostic, missing_command=False):
         block = self.steps["baseline_regression"].split("        run: |\n", 1)[1]
         lines = []
