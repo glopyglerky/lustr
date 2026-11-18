@@ -505,6 +505,93 @@ fn native_library_expansion_keeps_program_checks_and_runtime() {
 
 #[test]
 #[ignore = "requires the complete frozen native/full runtime; set LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT"]
+fn single_file_full_check_preserves_metadata_cleanup_and_errors() {
+    let f = Fixture::new("single-file-full-check");
+    // https://github.com/t3dotgg/lust-lang/issues/5: valid local_inner_macros
+    // needs the full Rust path.
+    let valid = r#"mod defs {
+    #[macro_export(local_inner_macros)]
+    macro_rules! outer {
+        ($e:expr) => { inner!($e) };
+    }
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! inner {
+        ($e:expr) => { $e + 1 };
+    }
+}
+mod user {
+    pub fn f() -> i32 { crate::outer!(41) }
+}
+fn main() {
+    println!("{}", user::f());
+}
+"#;
+    let source = f.source("main.rs", valid);
+    let temporary = f.root.join("metadata-temporaries");
+    std::fs::create_dir(&temporary).unwrap();
+    let output = f.source("caller-output", "an existing caller artifact\n");
+    f.succeeds(
+        "reference-valid",
+        f.command("rustc-reference").args(["--edition=2024", "--emit=metadata"]).arg(&source).arg("-o").arg(f.root.join("reference.rmeta")),
+    );
+    f.succeeds(
+        "check-valid",
+        f.command("lustr")
+            .arg("check")
+            .arg(&source)
+            .arg("-o")
+            .arg(&output)
+            .env("TMPDIR", &temporary)
+            .env("LUSTR_MIXED_CACHE_DIR", f.root.join("mixed-cache"))
+            .env("LUST_NO_DAEMON", "1"),
+    );
+    assert_eq!(f.engine(), "full-rust-core");
+    assert_eq!(f.entry(), "owned-rustc-check");
+    assert_eq!(std::fs::read_dir(&temporary).unwrap().count(), 0, "successful check left metadata behind");
+    assert_eq!(std::fs::read(&output).unwrap(), b"an existing caller artifact\n");
+
+    f.source("main.rs", &valid.replace("println!(\"{}\", user::f());", "let _: () = user::f();"));
+    let reference = f.invoke(
+        "reference-invalid",
+        f.command("rustc-reference")
+            .args(["--edition=2024", "--emit=metadata", "--error-format=json"])
+            .arg(&source)
+            .arg("-o")
+            .arg(f.root.join("invalid.rmeta")),
+    );
+    let rejected = f.invoke(
+        "check-invalid",
+        f.command("lustr")
+            .arg("check")
+            .arg(&source)
+            .arg("--json")
+            .arg("-o")
+            .arg(&output)
+            .env("TMPDIR", &temporary)
+            .env("LUSTR_MIXED_CACHE_DIR", f.root.join("mixed-cache"))
+            .env("LUST_NO_DAEMON", "1"),
+    );
+    assert_eq!(reference.status.code(), Some(1));
+    assert_eq!(rejected.status.code(), reference.status.code(), "full Rust compiler failure changed status");
+    for result in [&reference, &rejected] {
+        assert!(
+            result
+                .stderr
+                .split(|byte| *byte == b'\n')
+                .filter_map(|line| serde_json::from_slice::<serde_json::Value>(line).ok())
+                .any(|value| value["level"] == "error" && value["code"]["code"] == "E0308")
+        );
+    }
+    assert_eq!(f.engine(), "full-rust-core");
+    assert_eq!(f.entry(), "owned-rustc-check");
+    assert_eq!(std::fs::read_dir(&temporary).unwrap().count(), 0, "failed check left metadata behind");
+    assert_eq!(std::fs::read(&output).unwrap(), b"an existing caller artifact\n");
+    assert!(!f.root.join("invalid.rmeta").exists());
+}
+
+#[test]
+#[ignore = "requires the complete frozen native/full runtime; set LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT"]
 fn native_and_full_compiler_contract() {
     let f = Fixture::new("complete-contract");
     let source = f.source("main.rs", "fn main(){println!(\"first\");}\n");

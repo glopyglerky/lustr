@@ -65,6 +65,13 @@ in this run. Their median overhead versus pristine Lust is **0.309 ms** and
 **6.6%** on the roughly 3 ms build. Both fit the practical 0.5 ms warm overhead
 budget by their medians. This does not establish exact statistical equivalence.
 
+The [remaining entry-cost investigation](docs/compiler-set/remaining-entry-cost.md)
+measured a **0.341 ms** median for the existing cache-enabled selector on a
+separate host. Its input and toolchain validation accounts for much of the
+earlier profile. This component measurement does not attribute the entire
+public-command gap to selection. No further safe reduction was demonstrated,
+so the required validation remains in place.
+
 Program runtime is slower than the Rust-built executable. Compile plus run
 still favors Lustr on this fixture. Compile latency and application execution
 remain separate results.
@@ -91,6 +98,15 @@ projects or targets. Its initial and final executing tests passed in both lanes,
 with **41 passed and nine existing explicit ignores**. The
 [original project report](performance/2026-11-18-43a7e07/project/README.md)
 retains every measured value, warmup and paired result.
+
+A separate [single-file fallback check](docs/compiler-set/full-check-metadata.md#changed-path-timing)
+does **not** meet that near-stock budget. With the metadata-output repair, its
+median was **22.001 ms versus 15.465 ms** for matched rustc across 24 pairs on a
+different Linux host. The paired median added latency was **6.755 ms**
+[4.523, 9.117]. That command first receives a native refusal, then runs the full
+compiler. The result includes both stages and does not isolate the new
+temporary-output/process-management cost. This remains an open overhead case;
+the Cargo project above is not a blanket result for every full Rust entry.
 
 ### Mixed Cargo work
 
@@ -153,12 +169,33 @@ rejection, link-failure recovery, panic/drop behavior and executed `no_std`
 WebAssembly. Full Rust comes from the identified pinned upstream implementation.
 These executed cases do not prove every possible Rust program.
 
-A separate native main-function type defect and Result/ExitCode runtime failures
-remain under [PR #24](https://github.com/glopyglerky/lustr/pull/24). Its partial
-fix is not included in the measured PR #26 candidate. Native macOS qualification
-is incomplete; passing coordinator tests on macOS and Windows does not qualify
+Continuation testing found and repaired a real single-file full Rust `check`
+failure: rustc cannot atomically publish its metadata to `/dev/null`. The
+[metadata-output repair](docs/compiler-set/full-check-metadata.md) uses a private
+temporary directory, preserves compiler errors and signals, and cleans up after
+the child exits. The new real regression fails on the original package and
+passes with the corrected launcher. This focused result is separate from the
+16-test completed snapshot above; the updated complete suite requires a new
+source-built qualification run.
+
+The corrected launcher also passed [seven upstream reproductions](docs/compiler-set/upstream-repro-correctness.md)
+across 154 compiler/runtime commands, including full-Rust fallback, exact output
+comparison, invalid-code rejection and restored native controls. Every invocation
+was cold; the local environment denied Unix sockets, so this run does not qualify
+daemon state transitions.
+
+A separate native main-function type defect and earlier warm Result/ExitCode
+failures remain under [PR #24](https://github.com/glopyglerky/lustr/pull/24). Its
+partial fix is not included in the measured PR #26 candidate. The current
+candidate passed [five cold Linux main-return cases](docs/compiler-set/main-return-smoke.md)
+through Lust, matching rustc for unit, Result success/error and ExitCode
+success/failure. That narrow result does not repair the generated-C type defect
+or resolve the earlier warm-state findings. Native macOS qualification is
+incomplete; passing coordinator tests on macOS and Windows does not qualify
 the primary native runtime there. The daemon has no Windows host adapter.
 These are correctness/platform release conditions, independent of timing tolerance.
+The measured candidate's [Linux native CI completed successfully](https://github.com/glopyglerky/lustr/actions/runs/44337186309/job/134916956076);
+the native macOS job was cancelled and supplies no new platform result.
 
 The complete-package before/after comparison originally stopped in a baseline
 build-script layout test before timing. [The harness repair](docs/compiler-set/complete-native-warm-comparison.md#first-hosted-failure-and-harness-correction)

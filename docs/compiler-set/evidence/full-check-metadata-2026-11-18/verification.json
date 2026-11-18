@@ -1,0 +1,190 @@
+{
+  "schema": "lustr-full-check-metadata-repair-v1",
+  "date": "2026-11-18",
+  "platform": "x86_64-unknown-linux-gnu",
+  "source_before_commit": "43a7e07d32929309fc6e402d7bca6b5673e186a2",
+  "source_before_sha256": {
+    "src/full.rs": "e7015c5462da232fd817091c2749e4e776287832f1279ebaab87314f0644412e",
+    "src/main.rs": "5503c02cc66cee00a1398f5cededd0c155fcbe52a8d122bed6d314e5dbe36c1c"
+  },
+  "source_after_sha256": {
+    "src/full.rs": "e8eb95bbdb2f413a6779ead7660906cea68adc49281357ffc22acdd7ac4ef86e",
+    "src/main.rs": "1047de9580c55b0f20f5869c21a6fe89c3ad00818c64678d7699b21bcebbabba",
+    "tests/compiler_contract.rs": "28211a790afd4daa4b97ed61c0cd55f6febb6f882c818803014b07fd2da7a9a7"
+  },
+  "upstream_reproduction_url": "https://github.com/t3dotgg/lust-lang/issues/5",
+  "upstream_reproduction_sha256": "2b697b58774426fc1cdcfe222b067cd39626c89a9b8cd270224012f688eea4ea",
+  "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "native_build": "f35b6e4b3f083e67",
+  "original_launcher_sha256": "7c4028ad4ed6a92e533b0227dd7772166ba9a041a6450a025a0f2891a90a9a2e",
+  "candidate_launcher_sha256": "37b70ea7f0e77de79b22d47f6ff502a8ee75dabac2fe09e5099747a5a1d067a8",
+  "qualification": "diagnostic launcher replacement in a copied source-built package; not a fresh full-package constructor run",
+  "actual_regression": {
+    "test": "single_file_full_check_preserves_metadata_cleanup_and_errors",
+    "original": "failed: EBUSY",
+    "candidate": "passed",
+    "valid_source": "unchanged upstream reproduction, successfully checked with real metadata by the pinned Rust oracle and by candidate full-Rust fallback",
+    "invalid_source": "same macro reproduction with an intentional type error; both oracle and candidate return1 with E0308 JSON diagnostic",
+    "cleanup": "metadata temporary directory empty after both real success and real compiler rejection; persistent mixed cache explicitly stored separately",
+    "caller_output": "existing -o artifact preserved",
+    "suite_test_count": 17,
+    "new_focused_regressions": 1,
+    "full_suite_rerun": false
+  },
+  "synthetic_child_controls": {
+    "scope": "synthetic child-process controls only; not Rust compilation evidence",
+    "original_full_compiler_sha256": "279a6189bb6e6782a6659ee8c8c9c5ff096c976227d56318bfc2ca8277d24c8c",
+    "synthetic_compiler_sha256": "5a2126c0baf31ce9c52630e70ea0113a4eb7c6e586ff79fecbbb52d2ef1c3f88",
+    "candidate_launcher_sha256": "37b70ea7f0e77de79b22d47f6ff502a8ee75dabac2fe09e5099747a5a1d067a8",
+    "cases": [
+      {
+        "mode": "exit-17",
+        "explicitly_synthetic_fault": true,
+        "exit_or_signal": 17,
+        "expected": 17,
+        "trace": {
+          "engine": "full-rust-core",
+          "entry": "owned-rustc-check"
+        },
+        "remaining_private_temporary_directories_before_test_cleanup": 0,
+        "cleanup_error_reported": false,
+        "stdout_sha256": "dbee3c448ce73db7ba2ec1c7a78e9405a6dc3c3017388e888ced178f1bd75acf",
+        "stderr_sha256": "bbe6cf0e56cb0fc3d330e165b7a3240a34e0b28494325d822e2cfac8c33c03ad",
+        "child_observation": {
+          "directory_mode": "0o700",
+          "output_name": "check.rmeta",
+          "emit_metadata": true
+        }
+      },
+      {
+        "mode": "signal-15",
+        "explicitly_synthetic_fault": true,
+        "exit_or_signal": -15,
+        "expected": -15,
+        "trace": {
+          "engine": "full-rust-core",
+          "entry": "owned-rustc-check"
+        },
+        "remaining_private_temporary_directories_before_test_cleanup": 0,
+        "cleanup_error_reported": false,
+        "stdout_sha256": "dbee3c448ce73db7ba2ec1c7a78e9405a6dc3c3017388e888ced178f1bd75acf",
+        "stderr_sha256": "bbe6cf0e56cb0fc3d330e165b7a3240a34e0b28494325d822e2cfac8c33c03ad",
+        "child_observation": {
+          "directory_mode": "0o700",
+          "output_name": "check.rmeta",
+          "emit_metadata": true
+        }
+      },
+      {
+        "mode": "signal-2",
+        "explicitly_synthetic_fault": true,
+        "exit_or_signal": -2,
+        "expected": -2,
+        "trace": {
+          "engine": "full-rust-core",
+          "entry": "owned-rustc-check"
+        },
+        "remaining_private_temporary_directories_before_test_cleanup": 0,
+        "cleanup_error_reported": false,
+        "stdout_sha256": "dbee3c448ce73db7ba2ec1c7a78e9405a6dc3c3017388e888ced178f1bd75acf",
+        "stderr_sha256": "bbe6cf0e56cb0fc3d330e165b7a3240a34e0b28494325d822e2cfac8c33c03ad",
+        "child_observation": {
+          "directory_mode": "0o700",
+          "output_name": "check.rmeta",
+          "emit_metadata": true
+        }
+      },
+      {
+        "mode": "cleanup-0",
+        "explicitly_synthetic_fault": true,
+        "exit_or_signal": 2,
+        "expected": 2,
+        "trace": {
+          "engine": "full-rust-core",
+          "entry": "owned-rustc-check"
+        },
+        "remaining_private_temporary_directories_before_test_cleanup": 1,
+        "cleanup_error_reported": true,
+        "stdout_sha256": "dbee3c448ce73db7ba2ec1c7a78e9405a6dc3c3017388e888ced178f1bd75acf",
+        "stderr_sha256": "91f373cf4453d5d1609a5b87c67167f7b972c9d5e0a31e5bb54afe1003ab0de8",
+        "child_observation": {
+          "directory_mode": "0o700",
+          "output_name": "check.rmeta",
+          "emit_metadata": true
+        }
+      },
+      {
+        "mode": "cleanup-17",
+        "explicitly_synthetic_fault": true,
+        "exit_or_signal": 17,
+        "expected": 17,
+        "trace": {
+          "engine": "full-rust-core",
+          "entry": "owned-rustc-check"
+        },
+        "remaining_private_temporary_directories_before_test_cleanup": 1,
+        "cleanup_error_reported": true,
+        "stdout_sha256": "dbee3c448ce73db7ba2ec1c7a78e9405a6dc3c3017388e888ced178f1bd75acf",
+        "stderr_sha256": "039eb1c1c1e65988696dd4dd9d2de96786d42120f236ebc4dd724536e82d3b53",
+        "child_observation": {
+          "directory_mode": "0o700",
+          "output_name": "check.rmeta",
+          "emit_metadata": true
+        }
+      },
+      {
+        "mode": "spawn-failure",
+        "explicitly_synthetic_fault": true,
+        "exit_or_signal": 2,
+        "expected": 2,
+        "trace": {
+          "engine": "full-rust-core",
+          "entry": "owned-rustc-check"
+        },
+        "remaining_private_temporary_directories_before_test_cleanup": 0,
+        "cleanup_error_reported": false,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "364fc75bd3330ef06db4122dcdfba2b907b24c19b158e7e912d07929d4bf74b0"
+      }
+    ],
+    "passed": 6
+  },
+  "limits": [
+    "Actual regression executed on Linux x86_64 only.",
+    "Forced termination of the lustr parent can bypass Drop and leave a private temporary directory.",
+    "Synthetic child controls exercise process and cleanup behavior; they do not establish Rust semantic coverage."
+  ],
+  "private_evidence_archive": {
+    "file": "metadata-check-private-evidence-2026-11-18.tar.gz",
+    "bytes": 62871,
+    "sha256": "7310155eaa01c64269689175f7c1195711266aa78b195bb228cff988c3af988e",
+    "files": 131,
+    "manifest_sha256": "7ecf5e4bb9a1adcfee102f949ada06f3f269fa14cc16db064f0f15736d5cf40b"
+  },
+  "private_evidence_file_sha256": {
+    "candidate-v2.json": "f727a311fc604f27cab66e1918a8b9dedf2c29124c3829b09357ba5df05e00d8",
+    "logs/original-final-red.command.json": "15214a0249bb7d38f471f94521bbac9adb77cd5e78bc428a9e38ac4a715f89fa",
+    "logs/original-final-red.stdout": "6d0b8e6abeeb7abb0e2feb114b605f68e31eb166359ff60aa1c58687e8949550",
+    "logs/original-final-red.stderr": "f66a850848edc94efdaae057d083ee691a1a5dd8568cecd52c201d2ebed8864f",
+    "logs/candidate-v2-build.command.json": "09236954867e15350ad3462ad54081cfe980424585e569e22119622970724813",
+    "logs/candidate-v2-build.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "logs/candidate-v2-build.stderr": "05fef068dcaadebed607a8e75741e0d2a2a97798b3f2a5d53d8e934e3004cd32",
+    "logs/candidate-v2-green.command.json": "8a32be6d4f4995a7e6af376e69769b199cdfa6d99912d4c4a3c12b32541610af",
+    "logs/candidate-v2-green.stdout": "8e733af72bb11c37ffbb100ec2f9b795f1b02d73ac587bf8f6045171f4ec40ef",
+    "logs/candidate-v2-green.stderr": "2fb320049e43580c4fc45aba31ef5cd6b31e4f1c8d9c684a3d743fdcd755e317",
+    "process-controls.py": "cf11666ffbe970a3c25ec2fdbc9f4aef10becc8a9a0865a0095a8c2d05156543",
+    "process-controls/report.json": "2982e88d4e5308fd888656566c589e5027e871ad2cd5f0c5a7921c59a7507b0f",
+    "source-v2/change.patch": "178cc4373830164cf57689f98a14671287a1815e4a6081ee4ee2d999bf34bbc0"
+  },
+  "retained_firsts": [
+    {
+      "kind": "original real failure",
+      "file": "logs/original-red.stderr"
+    },
+    {
+      "kind": "candidate test-isolation correction",
+      "file": "logs/candidate-green.stderr",
+      "explanation": "Initial test counted a retained mixed-cache request.lock under TMPDIR; corrected the fixture to place the existing persistent mixed cache outside the output-cleanup directory."
+    }
+  ]
+}

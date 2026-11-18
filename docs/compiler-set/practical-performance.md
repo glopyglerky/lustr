@@ -88,11 +88,14 @@ panic/drop, invalidation and platform qualification. Retain source identities,
 notices, relocation results and actual engine routing. The passing 16-entry
 contract suite is useful evidence, not a proof for every Rust program.
 
-The native main C function-type defect and unresolved Result/ExitCode behavior
+The native main C function-type defect and earlier warm Result/ExitCode findings
 in PR #24 remain material correctness work. The current candidate does not
-include that partial repair. Native macOS qualification is incomplete and the
-primary native daemon has no Windows adapter. A package must name the platform
-actually qualified; coordinator compatibility is a separate claim.
+include that partial repair. Its [five current cold Linux cases](main-return-smoke.md)
+pass, but do not qualify daemon transitions or repair the generated-C type.
+The [single-file check fix](full-check-metadata.md) also requires qualification
+in the exact source-built package. Native macOS qualification is incomplete and
+the primary native daemon has no Windows adapter. A package must name the
+platform actually qualified; coordinator compatibility is a separate claim.
 
 Meeting a practical speed budget does not override these conditions. Keep the
 existing candidate as the working basis, preserve failures and published

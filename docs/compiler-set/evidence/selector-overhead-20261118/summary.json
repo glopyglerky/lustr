@@ -1,0 +1,193 @@
+{
+  "command": [
+    "<HELPER>",
+    "selection",
+    "<PACKAGE_BIN>",
+    "check",
+    "<FIXTURE>/src/slice_main.rs",
+    "--manifest-path",
+    "<FIXTURE>/Cargo.toml",
+    "--bin",
+    "slice",
+    "--offline",
+    "--locked",
+    "--target",
+    "x86_64-unknown-linux-gnu",
+    "-C",
+    "panic=unwind",
+    "-C",
+    "overflow-checks=on",
+    "-C",
+    "debug-assertions=on"
+  ],
+  "date": "2026-11-18",
+  "environment": {
+    "common": {
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_TERM_COLOR": "never",
+      "LANG": "C",
+      "LC_ALL": "C",
+      "LUSTR_PROFILE_SELECTION_DETAIL": "1",
+      "TZ": "UTC",
+      "__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT": "1"
+    },
+    "fresh_adds": {
+      "LUSTR_NO_SELECTION_CACHE": "1"
+    },
+    "isolation": "Dedicated Cargo home, target/build directories, cache and temporary directory; unchanged real HOME; package bin first in PATH",
+    "selection_diagnostics": false
+  },
+  "fixture": {
+    "entry_sha256": "4629b2176efbe0ee0237ff52cb57141e079de7a95289383ceab002f5de1dd1dd",
+    "file_count": 43,
+    "file_hash_map_sha256": "477d1338e22eb5441df47967bae497188be57f8515818d9bd108a796f80a6533",
+    "lock_sha256": "c5434c43e4444dfa56406c42904fa75cac4190c5870447a98c9b239edf795278",
+    "manifest_sha256": "89d7f2243354b127dcc2d2e7fe0c0f14ed2a6087db998ab6bde9559a3db6fda8",
+    "repo_path": "docs/compiler-set/warm-entry-selector-spans-evidence/fixture"
+  },
+  "helper_build": {
+    "exit": 0,
+    "jobs": 1,
+    "locked": true,
+    "mode": "release",
+    "offline": true,
+    "toolchain": "nightly-2026-11-09-x86_64-unknown-linux-gnu"
+  },
+  "helper_sha256": "f120808b3c9f5a2ab072a2d649b5c9c153b835e256ebf47059a0aa85845054a1",
+  "helper_source_sha256": {
+    "compiler/native/src/protocol.rs": "4da4c32fb16b62f3819a3d774ef63b76e201e2414c3b4540b4a6ccb27133fe1c",
+    "src/full.rs": "e7015c5462da232fd817091c2749e4e776287832f1279ebaab87314f0644412e",
+    "src/host_runtime.rs": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223",
+    "src/owned_child.rs": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20",
+    "src/selection_cache.rs": "dfead01bd5ef3c98f3da35250c15c37ea9ef19cdfc28de082fb8971d9591bbfd",
+    "tools/profile-native-preflight.rs": "37cad7d0a4cf1c6318aaf60d7c24e9ab8a1f78bb00e2636cdc9d09da9d03681b",
+    "upstream/bluefe-core.pin": "73bd5e14a0d96979dccb1f89f145f6c1d9d947c8f4a192f0db64f6954f0218b6"
+  },
+  "host": {
+    "affinity": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+    "kernel": "6.18.57",
+    "limits": "Affinity observed, not pinned. Root coordinated a quiet work window; OS scheduling and frequency not controlled.",
+    "machine": "x86_64",
+    "os": "Linux",
+    "visible_cpu_count": 9
+  },
+  "limits": [
+    "No direct cache-hit counter was enabled in the timed run",
+    "No CPU affinity pin or frequency control; one coordinated quiet host window",
+    "No startup-only, integrated-native or pristine-native timing in this probe",
+    "Component durations cannot be subtracted from compiler timings on another host or package layout",
+    "No product optimization, release qualification or compiler correctness claim follows from this component probe"
+  ],
+  "local_validation": {
+    "all_53_complete_selections_equal": true,
+    "all_53_exits_zero": true,
+    "all_53_stderr_empty": true,
+    "all_fixture_files_unchanged_before_after": true,
+    "comparison": "Every output field except elapsed_ns; includes complete manifest, name, package and target Selection fields",
+    "helper_unchanged_before_after": true,
+    "native_receipt_matches_helper_build_input": true,
+    "output_fields": [
+      "manifest",
+      "phase",
+      "selection",
+      "success",
+      "target"
+    ],
+    "package_fields": [
+      "authors",
+      "categories",
+      "default_run",
+      "dependencies",
+      "description",
+      "documentation",
+      "edition",
+      "features",
+      "homepage",
+      "id",
+      "keywords",
+      "license",
+      "license_file",
+      "links",
+      "manifest_path",
+      "metadata",
+      "name",
+      "publish",
+      "readme",
+      "repository",
+      "rust_version",
+      "source",
+      "targets",
+      "version"
+    ],
+    "plan_package_inputs_unchanged_before_after": true,
+    "public_replay_limit": "The public verifier checks projected arithmetic, command order, identity hashes and source bindings; it does not independently replay private original output streams or rehash omitted binaries",
+    "selection_fields": [
+      "manifest",
+      "name",
+      "package",
+      "target"
+    ],
+    "selection_hash_encoding": "sha256 of original full output except elapsed_ns, JSON sort_keys=True,separators=(',',':'); original absolute paths retained only privately",
+    "selection_sha256": "68614f2e26a64e5a4e6f1e9d6be486a64835575d349acd5a95724837760b8da8",
+    "target_fields": [
+      "crate_types",
+      "doc",
+      "doctest",
+      "edition",
+      "kind",
+      "name",
+      "src_path",
+      "test"
+    ]
+  },
+  "native_build_hash": "f35b6e4b3f083e67",
+  "native_receipt_sha256": "c70412c9b47814037f15143a1665640eaf179e23b091f32fac1976a176396a79",
+  "originals": {
+    "plan_sha256": "aad2aeb30f2f27cedd9dc9d11cd4e94a296691e3e3bee251fb9e9aeb2a06e1db",
+    "report_sha256": "0709d272b0930be4e7f02e5795d0264a1e407aecc741009cd315da4f30ae92cf",
+    "runner_sha256": "0a6ccd89d2ab24877f38cc811b0031f6420ee244b8a69a7de3855d7c3881714f",
+    "storage": "Original plans, reports, streams, receipts and source copies retained privately; not included in this public projection",
+    "trace_plan_sha256": "16973b1903148fd9c0ee92eb51dddf26afd31c5739d62d3fe81b401fef491257",
+    "trace_report_sha256": "596b48361c8788b323abe2dc493446957abda2f6c8bc676f2372f428586cf759",
+    "trace_runner_sha256": "97694864146952f05d6290676bc19509df0df707f768145a3df4bb228fa79c2c"
+  },
+  "package_inputs_sha256": {
+    "bin/cargo": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+    "bin/rustc-full": "279a6189bb6e6782a6659ee8c8c9c5ff096c976227d56318bfc2ca8277d24c8c",
+    "bin/rustc-reference": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "bin/rustdoc": "631825ada1565bad37c9ccab5cc9a339dbfb4b132697cc8ebd7ad336be638644",
+    "lib/lustr-selection-tools.txt": "859cae472f521057faf7a332eeac5c03f8b3556ef3da9976b2be4db42f1af886"
+  },
+  "schedule": {
+    "dropped_measured_samples": 0,
+    "excluded_primes": 3,
+    "fresh_boundary_controls": 2,
+    "measured_commands": 48,
+    "measured_pairs": 24,
+    "pair_order": "even: cached,fresh; odd: fresh,cached",
+    "total_commands": 53
+  },
+  "schema": "lustr-selector-public-summary-v1",
+  "source": "43a7e07d32929309fc6e402d7bca6b5673e186a2",
+  "source_tree": "853e22bc16d1a9d96c00369f13a8fec267162dfc",
+  "trace": {
+    "exit": 1,
+    "reason": "PTRACE_TRACEME: Operation not permitted",
+    "status": "unavailable",
+    "syscall_counts": null,
+    "timing_rerun_explicitly_skipped_trace": true,
+    "trace_bytes": 0,
+    "trace_observations_in_timing": 0
+  }
+}
