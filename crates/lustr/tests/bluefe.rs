@@ -53,12 +53,7 @@ fn mixed_cargo_uses_the_direct_compiler_without_changing_the_public_rustc_entry(
     let plan = cargo_lust::plan(&request, cargo_lust::Programs::from_environment()).unwrap();
     assert!(plan.environment.contains(&(OsString::from("RUSTC"), direct.clone().into_os_string())));
     assert!(!plan.environment.contains(&(OsString::from("RUSTC"), public.clone().into_os_string())));
-    let dry = Command::new(env!("CARGO_BIN_EXE_lustr"))
-        .arg("--bluefe-root")
-        .arg(&root)
-        .args(["plan", "build"])
-        .output()
-        .unwrap();
+    let dry = Command::new(env!("CARGO_BIN_EXE_lustr")).arg("--bluefe-root").arg(&root).args(["plan", "build"]).output().unwrap();
     assert!(dry.status.success());
     let text = String::from_utf8(dry.stdout).unwrap();
     assert!(text.contains(&format!("\"RUSTC\":\"{}\"", direct.display())));
