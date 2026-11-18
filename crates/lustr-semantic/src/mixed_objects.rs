@@ -32,6 +32,10 @@ pub fn contains(symbol: &str) -> bool {
     STATE.get().is_some_and(|state| state.lock().unwrap().entries.contains_key(symbol))
 }
 
+pub fn has_entries() -> bool {
+    STATE.get().is_some_and(|state| !state.lock().unwrap().entries.is_empty())
+}
+
 pub(crate) fn append_objects(modules: &mut CompiledModules) {
     let Some(state) = STATE.get() else { return };
     for (n, object) in state.lock().unwrap().entries.values().enumerate() {

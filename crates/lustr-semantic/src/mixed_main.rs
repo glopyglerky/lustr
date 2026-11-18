@@ -491,16 +491,34 @@ impl Callbacks for Compiler {
         };
         for instance in instances {
             let id = instance.def_id();
-            if !id.is_local() || tcx.generics_of(id).count() != 0 {
+            if !id.is_local()
+                || tcx.def_kind(id) != rustc_hir::def::DefKind::Fn
+                || tcx.opt_local_parent(id.expect_local()) != Some(rustc_span::def_id::CRATE_DEF_ID)
+                || tcx.generics_of(id).count() != 0
+            {
                 continue;
             }
             let Some(name) = tcx.opt_item_name(id) else { continue };
             let name = name.to_string();
             let Some(candidate) = self.candidates.get(&name) else { continue };
+            let signature = tcx.fn_sig(id).instantiate_identity().skip_binder();
+            let primitive = |t: ty::Ty<'tcx>| {
+                matches!(
+                    t.kind(),
+                    ty::TyKind::Int(ty::IntTy::I64 | ty::IntTy::Isize) | ty::TyKind::Uint(ty::UintTy::U64 | ty::UintTy::Usize)
+                )
+            };
+            // The native bridge cannot accept other signatures. Reject them
+            // before walking their bodies or querying both calling conventions.
+            if !primitive(signature.output())
+                || !signature.inputs().iter().all(|t| primitive(*t))
+                || candidate.params.len() != signature.inputs().len()
+            {
+                continue;
+            }
             if !represented_body(tcx, id.expect_local(), candidate, BodyBindings::Current) {
                 continue;
             }
-            let signature = tcx.fn_sig(id).instantiate_identity().skip_binder();
             let mut c_signature = signature;
             c_signature.fn_sig_kind = c_signature.fn_sig_kind.set_abi(rustc_abi::ExternAbi::C { unwind: false });
             let environment = TypingEnv::fully_monomorphized();
@@ -522,18 +540,6 @@ impl Callbacks for Compiler {
                 || !mode_equal(&rust_abi.ret.mode, &c_abi.ret.mode)
                 || rust_abi.args.len() != c_abi.args.len()
                 || !rust_abi.args.iter().zip(&c_abi.args).all(|(a, b)| mode_equal(&a.mode, &b.mode))
-            {
-                continue;
-            }
-            let primitive = |t: ty::Ty<'tcx>| {
-                matches!(
-                    t.kind(),
-                    ty::TyKind::Int(ty::IntTy::I64 | ty::IntTy::Isize) | ty::TyKind::Uint(ty::UintTy::U64 | ty::UintTy::Usize)
-                )
-            };
-            if !primitive(signature.output())
-                || !signature.inputs().iter().all(|t| primitive(*t))
-                || candidate.params.len() != signature.inputs().len()
             {
                 continue;
             }

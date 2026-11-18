@@ -49,6 +49,9 @@ pub fn providers(_: &Session, providers: &mut Providers) {
 }
 fn unit<'tcx>(tcx: TyCtxt<'tcx>, name: Symbol) -> &'tcx CodegenUnit<'tcx> {
     let old = ORIGINAL.get().unwrap()(tcx, name);
+    if !crate::mixed_objects::has_entries() {
+        return old;
+    }
     if !old
         .items()
         .keys()
