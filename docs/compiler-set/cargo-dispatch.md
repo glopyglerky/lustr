@@ -24,6 +24,17 @@ remove Cargo's own orchestration cost, make unsupported bodies eligible for
 native generation, or establish an end-to-end speed gain until the matched
 campaign completes. Preserve the original slower measurements.
 
+The mixed compiler also sends requests that its existing contract cannot
+accelerate through the same pinned full `rustc_driver`, skipping mixed-cache
+and backend initialization without starting another process. This includes normal
+debug-information codegen, optimized builds, foreign targets, proc macros and
+unsupported output types. It evaluates compiler settings, not source keywords;
+possibly eligible mixed builds still run the original Rust semantic and native
+ABI validation. The separate instrumented phase profiler intentionally keeps
+full in-process driver receipts for every request, including these ordinary
+Rust requests. Its results diagnose the bridge only; uninstrumented paired
+measurements are required to establish the direct-route speed.
+
 The packaged `lustr` entry calls the shared Cargo coordinator through
 `cargo_lust::run_cli_with_default_root`. Previously it replaced itself with `cargo-lustr`,
 which then selected and entered Cargo. The new path removes one executable

@@ -39,6 +39,7 @@ rustc_driver::override_c_allocator_in_binary!();
 mod mixed_backend;
 mod mixed_cache;
 mod mixed_diagnostics;
+mod mixed_entry;
 mod mixed_objects;
 mod mixed_profile;
 mod mixed_symbol_rename;
@@ -611,6 +612,24 @@ fn main() -> ExitCode {
         return ExitCode::from(2);
     }
     let args: Vec<String> = os.into_iter().map(|a| a.into_string().unwrap()).collect();
+    let represented = represented_request(&args);
+    // Once request flags rule out native acceleration, run the already-pinned
+    // rustc driver directly. This avoids mixed cache and backend setup without
+    // another process startup or a change to the complete Rust implementation.
+    // No source-content heuristic is used.
+    // The separate phase-profile campaign needs an in-process receipt for
+    // each invocation; keep that diagnostic route complete and labeled.
+    if std::env::var_os("LUSTR_MIXED_PROFILE_DIR").is_none()
+        && (!represented || mixed_entry::full_rust_only(&args, env!("LUSTR_BUILD_RUSTC_HOST")))
+    {
+        struct CompleteRust;
+        impl Callbacks for CompleteRust {}
+        let dcx = rustc_session::EarlyDiagCtxt::new(rustc_session::config::ErrorOutputType::default());
+        rustc_driver::init_rustc_env_logger(&dcx);
+        rustc_driver::install_ctrlc_handler();
+        trace("full-rust-direct=1");
+        return rustc_driver::catch_with_exit_code(|| rustc_driver::compiler_entrypoint(&args, &mut CompleteRust));
+    }
     let request = mixed_profile::span("driver");
     let setup = mixed_profile::span("request-setup");
     unsafe extern "C" {
@@ -654,7 +673,7 @@ fn main() -> ExitCode {
         check_only: false,
         reuse_allowed: lock.is_some(),
         reused: false,
-        represented: lock.is_some() && represented_request(&args),
+        represented: lock.is_some() && represented,
         context: None,
         records: Vec::new(),
         _lock: lock,
