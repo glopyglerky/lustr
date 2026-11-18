@@ -1,0 +1,85 @@
+{
+  "schema": "lustr-prior-macos-native-gate-evidence-v1",
+  "repository": "https://github.com/glopyglerky/lustr",
+  "run": 44236489070,
+  "run_attempt": 1,
+  "run_url": "https://github.com/glopyglerky/lustr/actions/runs/44236489070",
+  "job": 134573766624,
+  "job_name": "macos-arm64",
+  "job_url": "https://github.com/glopyglerky/lustr/actions/runs/44236489070/job/134573766624",
+  "job_conclusion": "failure",
+  "pr_head_from_github_artifact_metadata": "2bbf4f540ac908926448dcda3735063025fcc277",
+  "actual_checkout_from_original_identity": "48b0fd76aa8a6eff01cba72694669533e10924e8",
+  "native_source_trees": {
+    "2bbf4f540ac908926448dcda3735063025fcc277": "12ae35ee30f81d11f55b184134f8a0c4a977a496",
+    "48b0fd76aa8a6eff01cba72694669533e10924e8": "12ae35ee30f81d11f55b184134f8a0c4a977a496",
+    "34d847da3d90c3c2b253246a8ffdfdeb901c56b0": "12ae35ee30f81d11f55b184134f8a0c4a977a496"
+  },
+  "host": {
+    "kernel": "Darwin",
+    "kernel_release": "25.6.0",
+    "architecture": "arm64",
+    "rust_version": "1.99.0",
+    "clang_version": "23.1.5"
+  },
+  "artifact": {
+    "id": 14404285074,
+    "name": "native-gate-macOS-ARM64-48b0fd76aa8a6eff01cba72694669533e10924e8-1",
+    "url": "https://github.com/glopyglerky/lustr/actions/runs/44236489070/artifacts/14404285074",
+    "bytes": 44365,
+    "sha256": "273093c38d4429f63d8268f53d44859080672babab55c993df6731e6151e9775",
+    "github_size_and_digest_matched": true,
+    "original_entries": {
+      "native-gate-builds.sha256": {
+        "sha256": "ab73d9921e393bf012786138fe43269c6e25adca1cfe600c11fda204c36d8bca",
+        "bytes": 177
+      },
+      "native-gate-identity.txt": {
+        "sha256": "2743235ac40972a8d0a3889b8515a3eaa61650cab1cb63a3f01f6fe4e6ce75ed",
+        "bytes": 1065
+      },
+      "native-gate.log": {
+        "sha256": "9713fd9bf02f10b261557320aaec8468e24e53a09b33c409cad07deb437bc78d",
+        "bytes": 673245
+      }
+    }
+  },
+  "observed_results": {
+    "log_lines": 6021,
+    "ordinary_differential": {
+      "passed": 5527,
+      "failed": 0
+    },
+    "sanitizer_differential": {
+      "passed": 3309,
+      "failed": 2218
+    },
+    "failure_lines": 2218,
+    "all_failure_lines_record_incorrect_function_type": true,
+    "recorded_pointer_type": "void (*)(void)"
+  },
+  "scope": [
+    "This is the native gate on an older PR #16 source revision, before the recovered cache, eligibility-guard and process-fixture changes.",
+    "It is distinct from the later PR #17 Cargo process-test dependency-info ENOENT failure.",
+    "The log establishes a sanitizer diagnostic category and failed gate, not its root cause or the responsible component.",
+    "The native source tree is identical at the older head, its actual merge checkout and the later corrected-gate PR #16 head.",
+    "No sanitizer gate, compiler code or benchmark was changed or rerun for this review.",
+    "The original artifact contains identity records and logs, not a complete compiler package for independent execution or binary rehash."
+  ],
+  "retention": {
+    "scope": "Exact original downloaded artifact ZIP plus source/job identity and private inventory; no original ZIP member was changed.",
+    "helper": "tools/encrypt-coordinator-evidence.py",
+    "helper_sha256": "506137173e35673db61a13af54309630fdf3d38b8e2614659578fc4ad6bfbd85",
+    "recipient_certificate_sha256": "69e1167422ba3edfc45139eda5bdcec97d5bebcdf3e764054f3457488aaa5c4f",
+    "receipt": "encrypted/receipt.json",
+    "receipt_sha256": "f19ee176da8cefde78c4e4b02285f33f5d233bbca614e4750841ea5e4c8aa3a9",
+    "plaintext_archive_sha256": "bb2be7c9eae0dcbf5e8f1e6cf0a2f7dc3e69609e739183b3a4455dc4806684a6",
+    "encrypted_manifest_sha256": "934c3ef73458d857a961ac2651e565b962cfce873ec0d092c0eae81dbb729381",
+    "ciphertext_sha256": "c3a280f9bdb9dcc73170f6d5955a63d76608d8e3eea5c4ff97645d0b11b1e4b7",
+    "original_file_count": 4,
+    "private_key_access": false,
+    "ciphertext_independently_decrypted": false,
+    "review_archive": "Deterministic reconstruction matches the sealed plaintext and manifest digests.",
+    "wrapper_status_scope": "not-observed refers to coordinator fields of this failed-native-job retention wrapper; it does not change the original native gate failure."
+  }
+}

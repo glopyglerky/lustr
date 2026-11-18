@@ -1,0 +1,30 @@
+{
+  "schema": "lustr-reviewed-platform-failure-snapshot-v1",
+  "run": 44236489070,
+  "head": "2bbf4f540ac908926448dcda3735063025fcc277",
+  "checkout": "48b0fd76aa8a6eff01cba72694669533e10924e8",
+  "files": {
+    "README.md": {
+      "sha256": "56cdf2b6ded8d54591c3597d83d2dedf2c081ccc5d98511dddd6ed812e0c2e24",
+      "bytes": 3053
+    },
+    "encrypted/private-evidence.tar.gz.cms": {
+      "sha256": "c3a280f9bdb9dcc73170f6d5955a63d76608d8e3eea5c4ff97645d0b11b1e4b7",
+      "bytes": 47652
+    },
+    "encrypted/receipt.json": {
+      "sha256": "f19ee176da8cefde78c4e4b02285f33f5d233bbca614e4750841ea5e4c8aa3a9",
+      "bytes": 1253
+    },
+    "encrypted/status.json": {
+      "sha256": "ad93e2ddb81d2fc0a9bc1861b15ac1a70477b523fe3da19e228ce0a53e85caa1",
+      "bytes": 543
+    },
+    "identity.json": {
+      "sha256": "62e0a03aec29c8635f524c4b1d5226ed94017df875b849116cecafcaf470829e",
+      "bytes": 4220
+    }
+  },
+  "private_key_access": false,
+  "ciphertext_independently_decrypted": false
+}
