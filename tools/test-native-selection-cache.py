@@ -267,8 +267,10 @@ def main():
         pair("cargo-replaced-identically", bin_path=projection_bin, event="miss")
         warm("replacement-tools-retained", bin_path=projection_bin)
         mode = (projection_bin / "cargo").stat().st_mode
+        (projection_bin / "cargo").chmod(mode & ~0o222)
+        warm("cargo-readonly-executable", bin_path=projection_bin)
         (projection_bin / "cargo").chmod(mode & ~0o111)
-        pair("cargo-execute-permission-removed", bin_path=projection_bin, expected=2, event="miss")
+        pair("cargo-execute-permission-removed", bin_path=projection_bin, expected=2, event="ineligible")
         (projection_bin / "cargo").chmod(mode)
         warm("cargo-execute-permission-restored", bin_path=projection_bin)
 

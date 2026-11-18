@@ -38,6 +38,10 @@ All of these conditions must hold:
 - Tool paths and the tool receipt must be regular files before opening.
   Replacing the tool receipt or Cargo with a FIFO cannot block the cache before
   the original Cargo selection runs.
+- Each native executable must currently pass a Linux effective-credential
+  execute-access check on its original path. Each included shared library must
+  pass the corresponding read-access check. An unsupported or failed check
+  declines the cache; readable executable files need not be writable.
 
 These restrictions deliberately exclude general dependency graphs and
 multi-package workspaces. Such requests still run the existing Cargo selection.
@@ -93,6 +97,16 @@ are not concurrently mutated during one request. Ordinary edits between
 requests are observed. File identities are filesystem stamps, not a claim of
 protection against a malicious owner able to replace both the compiler and its
 cache.
+
+File stamps alone do not encode the caller's effective group memberships or
+access capabilities. The additional Linux checks use faccessat2 with
+AT_EACCESS, avoiding older libc faccessat emulation that omits ACLs. The
+[Linux access manual](https://man7.org/linux/man-pages/man2/access.2.html)
+documents this API and its limits. Actual executable opens and descriptor
+identity checks remain. This is not a proof that every later exec succeeds:
+process policy, loader behavior and concurrent mutation have separate limits.
+The local gate exercises readable read-only executables and removal of execute
+permission; changing the process's effective credentials was not tested.
 
 ## Compact selection records
 

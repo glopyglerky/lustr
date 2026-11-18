@@ -215,12 +215,35 @@ fn file_stamp(path: &Path, canonical: &Path, m: &fs::Metadata) -> Option<Value> 
     ]))
 }
 
+#[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+fn effective_access(path: &Path, mode: i32) -> Option<()> {
+    use std::ffi::{CString, c_int, c_long};
+    unsafe extern "C" {
+        fn syscall(number: c_long, ...) -> c_long;
+    }
+    let path = CString::new(path.as_os_str().as_bytes()).ok()?;
+    // Linux x86_64 UAPI: faccessat2=439, AT_FDCWD=-100, AT_EACCESS=0x200.
+    // Use the kernel's effective-credential check directly: older libc
+    // faccessat emulation does not include ACLs. Unsupported/denied calls
+    // decline this optional cache instead of guessing permission from modes.
+    // https://man7.org/linux/man-pages/man2/access.2.html
+    // SAFETY: the C string stays live for the call, all arguments have the
+    // documented Linux x86_64 syscall ABI, and this does not change credentials.
+    (unsafe { syscall(439 as c_long, -100 as c_int, path.as_ptr(), mode as c_int, 0x200 as c_int) } == 0).then_some(())
+}
+
+#[cfg(not(all(target_os = "linux", target_arch = "x86_64")))]
+fn effective_access(_path: &Path, _mode: i32) -> Option<()> {
+    None
+}
+
 fn native_executable(path: &Path) -> Option<Value> {
     // Opening a FIFO can wait forever before there is a descriptor to inspect.
     // Unsupported tool types must fall through to Cargo's normal exec error.
     if !path.metadata().ok()?.is_file() {
         return None;
     }
+    effective_access(path, 1)?; // X_OK, using current effective credentials.
     let canonical = path.canonicalize().ok()?;
     if canonical.file_name()?.to_str()? == "rustup" {
         return None;
@@ -315,6 +338,7 @@ fn toolchain(parent: &Path) -> Option<Tools> {
     }
     libraries.sort();
     for path in libraries {
+        effective_access(&path, 4)?; // R_OK for the loader's shared-library input.
         let identity = stamp(&path)?;
         let hash = expected.remove(&Path::new("lib").join(path.file_name()?))?;
         identities.push(identity.clone());
