@@ -113,9 +113,12 @@ is a selection-only seam. It cannot establish end-to-end compiler performance.
 The [independent review evidence](warm-entry-selection-evidence/README.md)
 preserves the initial candidate's real stale-success failure, its exact source
 snapshot, and the corrected selector's completed 132-invocation, 250-assertion
-gate. The seed gate separately checks verified initialization, malformed or
-shared seeds, package relocation, changed receipts, and the same unknown-tool
-counterexample. Repeating a gate after an implementation change verifies that
+gate. The [followup review evidence](warm-entry-selection-followup-evidence/README.md)
+binds the seed gate's 38 invocations and 85 assertions to its exact source and
+the repeated 132-invocation selector gate to the identity-observation change.
+The seed gate checks verified initialization, malformed or shared seeds,
+package relocation, changed receipts, and the same unknown-tool counterexample.
+Repeating a gate after an implementation change verifies that
 revision; its invocation count is not added as new coverage.
 
 The warm comparison must use public Lustr commands, the exact earlier public

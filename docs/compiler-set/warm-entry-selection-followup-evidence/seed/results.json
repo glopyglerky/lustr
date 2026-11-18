@@ -1,0 +1,1369 @@
+{
+  "assertions": [
+    {
+      "description": "matched package has its actual tool receipt",
+      "passed": true
+    },
+    {
+      "description": "real Cargo establishes lockfile and package-cache lock",
+      "passed": true
+    },
+    {
+      "description": "prime-matched-package has expected initialization status",
+      "passed": true
+    },
+    {
+      "description": "initialization writes exactly one certificate",
+      "passed": true
+    },
+    {
+      "description": "seed directory is private and owned",
+      "passed": true
+    },
+    {
+      "description": "seed certificate is private and owned",
+      "passed": true
+    },
+    {
+      "description": "prime-idempotent has expected initialization status",
+      "passed": true
+    },
+    {
+      "description": "unchanged initialization preserves existing exact certificate",
+      "passed": true
+    },
+    {
+      "description": "seeded-first-request preserves exact exit status",
+      "passed": true
+    },
+    {
+      "description": "seeded-first-request preserves selection or rejection",
+      "passed": true
+    },
+    {
+      "description": "seeded-first-request preserves exact stderr",
+      "passed": true
+    },
+    {
+      "description": "seeded-first-request uses expected cache state",
+      "passed": true
+    },
+    {
+      "description": "per-project verification has the exact seeded certificate",
+      "passed": true
+    },
+    {
+      "description": "seeded-retained-request preserves exact exit status",
+      "passed": true
+    },
+    {
+      "description": "seeded-retained-request preserves selection or rejection",
+      "passed": true
+    },
+    {
+      "description": "seeded-retained-request preserves exact stderr",
+      "passed": true
+    },
+    {
+      "description": "seeded-retained-request uses expected cache state",
+      "passed": true
+    },
+    {
+      "description": "malformed-seed preserves exact exit status",
+      "passed": true
+    },
+    {
+      "description": "malformed-seed preserves selection or rejection",
+      "passed": true
+    },
+    {
+      "description": "malformed-seed preserves exact stderr",
+      "passed": true
+    },
+    {
+      "description": "malformed-seed uses expected cache state",
+      "passed": true
+    },
+    {
+      "description": "malformed-seed-retained preserves exact exit status",
+      "passed": true
+    },
+    {
+      "description": "malformed-seed-retained preserves selection or rejection",
+      "passed": true
+    },
+    {
+      "description": "malformed-seed-retained preserves exact stderr",
+      "passed": true
+    },
+    {
+      "description": "malformed-seed-retained uses expected cache state",
+      "passed": true
+    },
+    {
+      "description": "malformed-seed is not trusted or rewritten by normal selection",
+      "passed": true
+    },
+    {
+      "description": "checksum-seed preserves exact exit status",
+      "passed": true
+    },
+    {
+      "description": "checksum-seed preserves selection or rejection",
+      "passed": true
+    },
+    {
+      "description": "checksum-seed preserves exact stderr",
+      "passed": true
+    },
+    {
+      "description": "checksum-seed uses expected cache state",
+      "passed": true
+    },
+    {
+      "description": "checksum-seed-retained preserves exact exit status",
+      "passed": true
+    },
+    {
+      "description": "checksum-seed-retained preserves selection or rejection",
+      "passed": true
+    },
+    {
+      "description": "checksum-seed-retained preserves exact stderr",
+      "passed": true
+    },
+    {
+      "description": "checksum-seed-retained uses expected cache state",
+      "passed": true
+    },
+    {
+      "description": "checksum-seed is not trusted or rewritten by normal selection",
+      "passed": true
+    },
+    {
+      "description": "shared-seed-file preserves exact exit status",
+      "passed": true
+    },
+    {
+      "description": "shared-seed-file preserves selection or rejection",
+      "passed": true
+    },
+    {
+      "description": "shared-seed-file preserves exact stderr",
+      "passed": true
+    },
+    {
+      "description": "shared-seed-file uses expected cache state",
+      "passed": true
+    },
+    {
+      "description": "shared-seed-file-retained preserves exact exit status",
+      "passed": true
+    },
+    {
+      "description": "shared-seed-file-retained preserves selection or rejection",
+      "passed": true
+    },
+    {
+      "description": "shared-seed-file-retained preserves exact stderr",
+      "passed": true
+    },
+    {
+      "description": "shared-seed-file-retained uses expected cache state",
+      "passed": true
+    },
+    {
+      "description": "shared-seed-file is left unchanged by fallback",
+      "passed": true
+    },
+    {
+      "description": "shared-seed-directory preserves exact exit status",
+      "passed": true
+    },
+    {
+      "description": "shared-seed-directory preserves selection or rejection",
+      "passed": true
+    },
+    {
+      "description": "shared-seed-directory preserves exact stderr",
+      "passed": true
+    },
+    {
+      "description": "shared-seed-directory uses expected cache state",
+      "passed": true
+    },
+    {
+      "description": "shared-seed-directory-retained preserves exact exit status",
+      "passed": true
+    },
+    {
+      "description": "shared-seed-directory-retained preserves selection or rejection",
+      "passed": true
+    },
+    {
+      "description": "shared-seed-directory-retained preserves exact stderr",
+      "passed": true
+    },
+    {
+      "description": "shared-seed-directory-retained uses expected cache state",
+      "passed": true
+    },
+    {
+      "description": "shared-seed-directory is left unchanged by fallback",
+      "passed": true
+    },
+    {
+      "description": "relocated-seed preserves exact exit status",
+      "passed": true
+    },
+    {
+      "description": "relocated-seed preserves selection or rejection",
+      "passed": true
+    },
+    {
+      "description": "relocated-seed preserves exact stderr",
+      "passed": true
+    },
+    {
+      "description": "relocated-seed uses expected cache state",
+      "passed": true
+    },
+    {
+      "description": "relocation obtains a different live-identity certificate",
+      "passed": true
+    },
+    {
+      "description": "relocation leaves old seed as a rejected prior identity",
+      "passed": true
+    },
+    {
+      "description": "relocated-retained preserves exact exit status",
+      "passed": true
+    },
+    {
+      "description": "relocated-retained preserves selection or rejection",
+      "passed": true
+    },
+    {
+      "description": "relocated-retained preserves exact stderr",
+      "passed": true
+    },
+    {
+      "description": "relocated-retained uses expected cache state",
+      "passed": true
+    },
+    {
+      "description": "native delegate control has a C compiler",
+      "passed": true
+    },
+    {
+      "description": "external-state native delegate compiled",
+      "passed": true
+    },
+    {
+      "description": "unknown-native-delegate-refused has expected initialization status",
+      "passed": true
+    },
+    {
+      "description": "refused delegate writes no new seed certificate",
+      "passed": true
+    },
+    {
+      "description": "unknown-native-delegate-first preserves exact exit status",
+      "passed": true
+    },
+    {
+      "description": "unknown-native-delegate-first preserves selection or rejection",
+      "passed": true
+    },
+    {
+      "description": "unknown-native-delegate-first preserves exact stderr",
+      "passed": true
+    },
+    {
+      "description": "unknown-native-delegate-first uses expected cache state",
+      "passed": true
+    },
+    {
+      "description": "unknown-native-delegate-second preserves exact exit status",
+      "passed": true
+    },
+    {
+      "description": "unknown-native-delegate-second preserves selection or rejection",
+      "passed": true
+    },
+    {
+      "description": "unknown-native-delegate-second preserves exact stderr",
+      "passed": true
+    },
+    {
+      "description": "unknown-native-delegate-second uses expected cache state",
+      "passed": true
+    },
+    {
+      "description": "unknown-native-delegate-external-change preserves exact exit status",
+      "passed": true
+    },
+    {
+      "description": "unknown-native-delegate-external-change preserves selection or rejection",
+      "passed": true
+    },
+    {
+      "description": "unknown-native-delegate-external-change preserves exact stderr",
+      "passed": true
+    },
+    {
+      "description": "unknown-native-delegate-external-change uses expected cache state",
+      "passed": true
+    },
+    {
+      "description": "changed-receipt-refused has expected initialization status",
+      "passed": true
+    },
+    {
+      "description": "changed-receipt-fresh-selection preserves exact exit status",
+      "passed": true
+    },
+    {
+      "description": "changed-receipt-fresh-selection preserves selection or rejection",
+      "passed": true
+    },
+    {
+      "description": "changed-receipt-fresh-selection preserves exact stderr",
+      "passed": true
+    },
+    {
+      "description": "changed-receipt-fresh-selection uses expected cache state",
+      "passed": true
+    },
+    {
+      "description": "changed receipt writes no seed certificate",
+      "passed": true
+    }
+  ],
+  "error": null,
+  "profiler_sha256": "5a6356c6d50da4896906c9610d6175d2b5213b6f4efd2457297aa36c537a0b33",
+  "public_projection": {
+    "paths": "stable roles; original bytes retained in authenticated encryption",
+    "public_hashes": "public_stdout_sha256 and public_stderr_sha256 identify normalized displayed streams",
+    "raw_hashes": "stdout_sha256 and stderr_sha256 identify unmodified original streams",
+    "stream_archive": {
+      "entries": 76,
+      "file": "public-streams.tar.gz",
+      "sha256": "e89c90021eaf5b2d3f859ad8e479746729a5b1eff9e72029283f45369e46a1c0"
+    }
+  },
+  "records": [
+    {
+      "argv": [
+        "<SEED_REVIEW>/package/bin/cargo",
+        "metadata",
+        "--format-version=1",
+        "--offline"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [],
+      "exit": 0,
+      "label": "cargo-setup",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "5aed62aecbe583036cfa25933cf61bca268d43730ed9ad0dc5166e507782b572",
+      "sequence": 1,
+      "stderr_file": "001-cargo-setup.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "001-cargo-setup.stdout",
+      "stdout_sha256": "b4ca7c7e41acfa2f58a6fb48e68d9f83fab1f241b845b7a02cae10a3cf3d21c3"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "prime-selection-tools",
+        "<SEED_REVIEW>/package/bin"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [],
+      "exit": 0,
+      "label": "prime-matched-package",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sequence": 2,
+      "stderr_file": "002-prime-matched-package.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "002-prime-matched-package.stdout",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "prime-selection-tools",
+        "<SEED_REVIEW>/package/bin"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [],
+      "exit": 0,
+      "label": "prime-idempotent",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sequence": 3,
+      "stderr_file": "003-prime-idempotent.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "003-prime-idempotent.stdout",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "miss"
+        }
+      ],
+      "exit": 0,
+      "label": "seeded-first-request",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "7f9885eb64ea24e1383041772ad4fa636bb212ae9994a44328974f1cc7f9fcbc",
+      "sequence": 4,
+      "stderr_file": "004-seeded-first-request.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "004-seeded-first-request.stdout",
+      "stdout_sha256": "009fdd7a177217878691051598f3fd2898621acb7b6913d32edb0f3000bb2848"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "ineligible"
+        }
+      ],
+      "exit": 0,
+      "label": "seeded-first-request-uncached",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "7897629212f5be9a72eb2a31b269620efeeea48df5fad0b065db098f4084a0dd",
+      "sequence": 5,
+      "stderr_file": "005-seeded-first-request-uncached.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "005-seeded-first-request-uncached.stdout",
+      "stdout_sha256": "785c50f31e5bcb2e861667f98ff447a1fd0d52417843196d00fb8a5b9dab8d86"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "hit"
+        }
+      ],
+      "exit": 0,
+      "label": "seeded-retained-request",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "6f86a6462c40769caf565ce6c9a4ee72d4d97c48bf8a46038c472d831d2974a7",
+      "sequence": 6,
+      "stderr_file": "006-seeded-retained-request.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "006-seeded-retained-request.stdout",
+      "stdout_sha256": "66bdd99943939dbafd8590c119c2c15e510d4ccd59fb660f5290cdb58504487b"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "ineligible"
+        }
+      ],
+      "exit": 0,
+      "label": "seeded-retained-request-uncached",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "43e3ac690e9527b4054616fbcec2e2d4ca9bf061562185456228cedc37b05d4e",
+      "sequence": 7,
+      "stderr_file": "007-seeded-retained-request-uncached.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "007-seeded-retained-request-uncached.stdout",
+      "stdout_sha256": "73895be7a2da14b87559f69e7ec4e2348e6f90d8938e9670e960bc9cd47ed436"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "miss"
+        }
+      ],
+      "exit": 0,
+      "label": "malformed-seed",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "9a7493919d0d54527a60d1557ef8c0b0e147e9bd05d9ed3dde8ca977686ccfd9",
+      "sequence": 8,
+      "stderr_file": "008-malformed-seed.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "008-malformed-seed.stdout",
+      "stdout_sha256": "ab04a43d35af185ad5b7c71b9c5695e79bc7f657167ef9eb92ce4ae0bd6c84ce"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "ineligible"
+        }
+      ],
+      "exit": 0,
+      "label": "malformed-seed-uncached",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "d64138a6e1d6a8824601a04f8b9e80177de553cb472dd8d746b4299bd22cf1b1",
+      "sequence": 9,
+      "stderr_file": "009-malformed-seed-uncached.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "009-malformed-seed-uncached.stdout",
+      "stdout_sha256": "30124e380be4695ee0998df7096c9e8e17d5b22864282ea728e8b0fc46436a9f"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "hit"
+        }
+      ],
+      "exit": 0,
+      "label": "malformed-seed-retained",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "2d04ef5e7f3da98a9ba75d3c836d2367f05b63bbb0517d9247d2ae85942dcdf0",
+      "sequence": 10,
+      "stderr_file": "010-malformed-seed-retained.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "010-malformed-seed-retained.stdout",
+      "stdout_sha256": "0389fb9116d69bdc2dda4169d345bdd8d56050f78e763352802e22cbb0c3c6d6"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "ineligible"
+        }
+      ],
+      "exit": 0,
+      "label": "malformed-seed-retained-uncached",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "7735ac1dabfef6392ce58c73902acbbe32aeb52b3a3c6541cf90d2d631ffe3aa",
+      "sequence": 11,
+      "stderr_file": "011-malformed-seed-retained-uncached.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "011-malformed-seed-retained-uncached.stdout",
+      "stdout_sha256": "0c514b472e84c88c71035a3bcb45b143717ec1cd5333f3a7a005d70f9ee4cea3"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "miss"
+        }
+      ],
+      "exit": 0,
+      "label": "checksum-seed",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "b008b3a725d0e5aee19440f7aebf281c24a1e14e0ceb610adec695813c81442a",
+      "sequence": 12,
+      "stderr_file": "012-checksum-seed.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "012-checksum-seed.stdout",
+      "stdout_sha256": "e5628abc0a6af7598b2f4027a50cdb19b169b8f22ff1c712663444f295b8a9a6"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "ineligible"
+        }
+      ],
+      "exit": 0,
+      "label": "checksum-seed-uncached",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "5ab53044fd46d5e8063994a41dd5417d98461ad22d9c288c5e1463a5c1bfd2e4",
+      "sequence": 13,
+      "stderr_file": "013-checksum-seed-uncached.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "013-checksum-seed-uncached.stdout",
+      "stdout_sha256": "502073a034b536fa3a7cb0a519038604b0623c7d9ae4fef5197ed3d8c9fd4d31"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "hit"
+        }
+      ],
+      "exit": 0,
+      "label": "checksum-seed-retained",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "4a777ad8c1b569510c284a713613b9b8c197fff3f370e1985a1fa8529e9efd1a",
+      "sequence": 14,
+      "stderr_file": "014-checksum-seed-retained.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "014-checksum-seed-retained.stdout",
+      "stdout_sha256": "e324a244b37b30336bf001703fa08ae853ce7e871142cfb7ccdb45eecc93e51b"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "ineligible"
+        }
+      ],
+      "exit": 0,
+      "label": "checksum-seed-retained-uncached",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "fe30d21cb51f216e508528069eb2d33f718769fe0750b51cbf5fffe2fd5cdac5",
+      "sequence": 15,
+      "stderr_file": "015-checksum-seed-retained-uncached.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "015-checksum-seed-retained-uncached.stdout",
+      "stdout_sha256": "14faa953305fb3e1ed4601ea34119b9f6bf58ce14c11b17ac2e7a8a4123bf8d3"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "miss"
+        }
+      ],
+      "exit": 0,
+      "label": "shared-seed-file",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "8f88b9bf648f4d3049fb48c0c6d57fb1ccb868d3cf9ec35fe35fb873bc2ab551",
+      "sequence": 16,
+      "stderr_file": "016-shared-seed-file.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "016-shared-seed-file.stdout",
+      "stdout_sha256": "58e1905c53418da4c5798bfb4d87520a6bf6357c5f1815a38e59fbe27557eeef"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "ineligible"
+        }
+      ],
+      "exit": 0,
+      "label": "shared-seed-file-uncached",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "342c9123e7169fbec6e83b71fcedb79e4d9a69e8593c628c5147fb242e2f49d2",
+      "sequence": 17,
+      "stderr_file": "017-shared-seed-file-uncached.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "017-shared-seed-file-uncached.stdout",
+      "stdout_sha256": "c76e1d095fe3054ed444ce20bcd236b8abd515b175ae741d8eec2f67ff4b9387"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "hit"
+        }
+      ],
+      "exit": 0,
+      "label": "shared-seed-file-retained",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "47f13839739de071b90dd1eca1e1097a045c4d794600ee0279101d6ed0410718",
+      "sequence": 18,
+      "stderr_file": "018-shared-seed-file-retained.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "018-shared-seed-file-retained.stdout",
+      "stdout_sha256": "b2f9236d5aaddd60f6568084d34ca296f79290c526fa0b93271b938de0325fc1"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "ineligible"
+        }
+      ],
+      "exit": 0,
+      "label": "shared-seed-file-retained-uncached",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "4e059987a255048cac8595a73fc3bc5bf5767df3a598351430366c0e6be7fc3d",
+      "sequence": 19,
+      "stderr_file": "019-shared-seed-file-retained-uncached.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "019-shared-seed-file-retained-uncached.stdout",
+      "stdout_sha256": "8691e2d6922b07d8f472ae5e8b33b1f16f9fb59cb49a61db6e1bbe489bdff35b"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "miss"
+        }
+      ],
+      "exit": 0,
+      "label": "shared-seed-directory",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "466a5bf48a9ee0c6d1a62b468cd8eb453b9a8b569c2cf0d59e5bb492b6dc5e12",
+      "sequence": 20,
+      "stderr_file": "020-shared-seed-directory.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "020-shared-seed-directory.stdout",
+      "stdout_sha256": "c243cb30b94751ec4d54febcb1ee1d39acae66dca6453162b4ade44188f34a1a"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "ineligible"
+        }
+      ],
+      "exit": 0,
+      "label": "shared-seed-directory-uncached",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "82af65d8d861a5fb0105005e9e6f2baf71263f1ad821823cf80203f5fe538669",
+      "sequence": 21,
+      "stderr_file": "021-shared-seed-directory-uncached.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "021-shared-seed-directory-uncached.stdout",
+      "stdout_sha256": "1c8e53411127928974ae2a09bbaaf75033a16ed8f434adbf3f23d8f1930ba084"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "hit"
+        }
+      ],
+      "exit": 0,
+      "label": "shared-seed-directory-retained",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "27ce777a71d97a31028b204252230a1d7390f769ebebbcc5df0a9765524751f0",
+      "sequence": 22,
+      "stderr_file": "022-shared-seed-directory-retained.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "022-shared-seed-directory-retained.stdout",
+      "stdout_sha256": "b34b5b72d8c497b88b326789f1112c5527dbe5e3dba28f4c11ffcfbd9b0f9886"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "ineligible"
+        }
+      ],
+      "exit": 0,
+      "label": "shared-seed-directory-retained-uncached",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "3a25a643f636db3cf70ae403c0b689ec8809e984fbf033add4dd927772689127",
+      "sequence": 23,
+      "stderr_file": "023-shared-seed-directory-retained-uncached.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "023-shared-seed-directory-retained-uncached.stdout",
+      "stdout_sha256": "1edff643b4780aa2f37d94dc1cfe1ae8d3406d002a7aefb484edee6f9173daba"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/relocated-package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "miss"
+        }
+      ],
+      "exit": 0,
+      "label": "relocated-seed",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "73fab2e9ae065b18adc35961b54f162d5eaa31a2ce3675e885d1ef7edc146d8b",
+      "sequence": 24,
+      "stderr_file": "024-relocated-seed.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "024-relocated-seed.stdout",
+      "stdout_sha256": "ee2011980a00b49793d02f03249093c10e5d69f4cb37c6476ba23d57539c6852"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/relocated-package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "ineligible"
+        }
+      ],
+      "exit": 0,
+      "label": "relocated-seed-uncached",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "e478310fd037a0708f1343671ddf176bb32cc88fbb28136637ede10abb0de616",
+      "sequence": 25,
+      "stderr_file": "025-relocated-seed-uncached.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "025-relocated-seed-uncached.stdout",
+      "stdout_sha256": "217b38d4306acc7d8b253c74d3bd10f8aa8ead93f80c095f2c608888b44912c2"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/relocated-package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "hit"
+        }
+      ],
+      "exit": 0,
+      "label": "relocated-retained",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "9749f2b5769deae1822db918328c5fedf88a939a0091182016e512600ac04062",
+      "sequence": 26,
+      "stderr_file": "026-relocated-retained.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "026-relocated-retained.stdout",
+      "stdout_sha256": "981b0dd4de56f643cc79af8dffded77f90d7b5eee97c7d7da668ed4ba9c45860"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/relocated-package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "ineligible"
+        }
+      ],
+      "exit": 0,
+      "label": "relocated-retained-uncached",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "2426ff716b3e51965364fb927624ff98b5928cba29bc5bc1b45cff09696389ba",
+      "sequence": 27,
+      "stderr_file": "027-relocated-retained-uncached.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "027-relocated-retained-uncached.stdout",
+      "stdout_sha256": "449c56cd0f660ba05addcc0d7488eaeac8ad0d84585ab64dba29773f2775061d"
+    },
+    {
+      "argv": [
+        "/usr/bin/cc",
+        "<SEED_REVIEW>/external-cargo.c",
+        "-O2",
+        "-o",
+        "<SEED_REVIEW>/package/bin/cargo"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [],
+      "exit": 0,
+      "label": "build-native-delegate",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sequence": 28,
+      "stderr_file": "028-build-native-delegate.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "028-build-native-delegate.stdout",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "prime-selection-tools",
+        "<SEED_REVIEW>/package/bin"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [],
+      "exit": 2,
+      "label": "unknown-native-delegate-refused",
+      "public_stderr_sha256": "1b9b698de880b8c47462846c285ae76c7592b560631a4d53777a1763a28a9e2a",
+      "public_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sequence": 29,
+      "stderr_file": "029-unknown-native-delegate-refused.stderr",
+      "stderr_sha256": "1b9b698de880b8c47462846c285ae76c7592b560631a4d53777a1763a28a9e2a",
+      "stdout_file": "029-unknown-native-delegate-refused.stdout",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "miss"
+        }
+      ],
+      "exit": 0,
+      "label": "unknown-native-delegate-first",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "2623a6b27abca6b9a48198ec7d3ebd5bba68719dc515446f5c03616a13ac8a6f",
+      "sequence": 30,
+      "stderr_file": "030-unknown-native-delegate-first.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "030-unknown-native-delegate-first.stdout",
+      "stdout_sha256": "645bbc558ee32cdcc43eb56123fa7096447d1ebb78fc71bce88a662d49e6560e"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "ineligible"
+        }
+      ],
+      "exit": 0,
+      "label": "unknown-native-delegate-first-uncached",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "6c98e445016e8b43679ac00495978e06ac02e54cadd758324148ac43fd639117",
+      "sequence": 31,
+      "stderr_file": "031-unknown-native-delegate-first-uncached.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "031-unknown-native-delegate-first-uncached.stdout",
+      "stdout_sha256": "1b9e380da404cbb23a27dbcff8e3bb197ea1af8a740a4945ad63de8f11f010b3"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "miss"
+        }
+      ],
+      "exit": 0,
+      "label": "unknown-native-delegate-second",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "dbb565d7d4744e9d76e93f17b06aa7dbe63f34ed9bde450ff4c5ea67b86442d0",
+      "sequence": 32,
+      "stderr_file": "032-unknown-native-delegate-second.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "032-unknown-native-delegate-second.stdout",
+      "stdout_sha256": "6fd29e1162997834ba2659ae298c3b55e1b00101c21291ae5ef098b656ef161f"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "ineligible"
+        }
+      ],
+      "exit": 0,
+      "label": "unknown-native-delegate-second-uncached",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "137efee2341b730eecd664a51b74926fd6f874efc2eaaf082c9ae1a1193613ab",
+      "sequence": 33,
+      "stderr_file": "033-unknown-native-delegate-second-uncached.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "033-unknown-native-delegate-second-uncached.stdout",
+      "stdout_sha256": "5004d74b9544a620444f5ed15e5cc1ad3156ae0269cc986efdd354d0c9011407"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "miss"
+        }
+      ],
+      "exit": 2,
+      "label": "unknown-native-delegate-external-change",
+      "public_stderr_sha256": "503bd7e11600e5ad7b9f60dd2b3a89d95e2f8e5f5b2cdaf41b74f6b37245d19f",
+      "public_stdout_sha256": "a7c075853e51921488b4eb2d21ad3a85b1a987ca02e1f0073b09ff67a4dfed0e",
+      "sequence": 34,
+      "stderr_file": "034-unknown-native-delegate-external-change.stderr",
+      "stderr_sha256": "503bd7e11600e5ad7b9f60dd2b3a89d95e2f8e5f5b2cdaf41b74f6b37245d19f",
+      "stdout_file": "034-unknown-native-delegate-external-change.stdout",
+      "stdout_sha256": "a7c075853e51921488b4eb2d21ad3a85b1a987ca02e1f0073b09ff67a4dfed0e"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "ineligible"
+        }
+      ],
+      "exit": 2,
+      "label": "unknown-native-delegate-external-change-uncached",
+      "public_stderr_sha256": "503bd7e11600e5ad7b9f60dd2b3a89d95e2f8e5f5b2cdaf41b74f6b37245d19f",
+      "public_stdout_sha256": "c109fa6637253b94de580a6a2c478c043027abbfa8b07190c28cbb8f94a87ab2",
+      "sequence": 35,
+      "stderr_file": "035-unknown-native-delegate-external-change-uncached.stderr",
+      "stderr_sha256": "503bd7e11600e5ad7b9f60dd2b3a89d95e2f8e5f5b2cdaf41b74f6b37245d19f",
+      "stdout_file": "035-unknown-native-delegate-external-change-uncached.stdout",
+      "stdout_sha256": "c109fa6637253b94de580a6a2c478c043027abbfa8b07190c28cbb8f94a87ab2"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "prime-selection-tools",
+        "<SEED_REVIEW>/package/bin"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [],
+      "exit": 2,
+      "label": "changed-receipt-refused",
+      "public_stderr_sha256": "1b9b698de880b8c47462846c285ae76c7592b560631a4d53777a1763a28a9e2a",
+      "public_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sequence": 36,
+      "stderr_file": "036-changed-receipt-refused.stderr",
+      "stderr_sha256": "1b9b698de880b8c47462846c285ae76c7592b560631a4d53777a1763a28a9e2a",
+      "stdout_file": "036-changed-receipt-refused.stdout",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "ineligible"
+        }
+      ],
+      "exit": 0,
+      "label": "changed-receipt-fresh-selection",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "ea5b3c7903f646256bf64b2418e210ff4d2e14fbf8ecefaef79c3012481bb3c4",
+      "sequence": 37,
+      "stderr_file": "037-changed-receipt-fresh-selection.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "037-changed-receipt-fresh-selection.stdout",
+      "stdout_sha256": "ff61062b03c35263e516aeaa81fc1da039a045787ef9b079906657558171dd66"
+    },
+    {
+      "argv": [
+        "<SEED_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<SEED_REVIEW>/package/bin",
+        "check",
+        "<SEED_REVIEW>/project/src/main.rs",
+        "--manifest-path",
+        "<SEED_REVIEW>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<SEED_REVIEW>/project",
+      "diagnostics": [
+        {
+          "selection_cache": "ineligible"
+        }
+      ],
+      "exit": 0,
+      "label": "changed-receipt-fresh-selection-uncached",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "4115aeffff020397acd97a97f716296f7d8a626085da26b9b62176d1d08f62b2",
+      "sequence": 38,
+      "stderr_file": "038-changed-receipt-fresh-selection-uncached.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "038-changed-receipt-fresh-selection-uncached.stdout",
+      "stdout_sha256": "e54a7ff4c8620726947b6840f0dbe7ddeb6f9a371f4379ec18c7052a195a6328"
+    }
+  ],
+  "schema": "lustr-selection-seed-regression-v1",
+  "scope": "production selection-tool initialization and selector only; no compiler performance or runtime qualification",
+  "status": "completed",
+  "success": true
+}
