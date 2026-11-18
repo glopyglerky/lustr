@@ -224,6 +224,60 @@ index bc70f5dff30e5988ab943557202dbe6a91b1709a..1e9d2b9783532f07097fd87787fcc903
      }
  
      /// True for an unnamed address.
+diff --git a/scripts/difftest.sh b/scripts/difftest.sh
+index cf65ddb9a836f636251a190531a808f34846d4ce..3d45cff4e82f48a0e1d1e76c2369fbb63a6aff36 100755
+--- a/scripts/difftest.sh
++++ b/scripts/difftest.sh
+@@ -47,9 +47,10 @@
+ #     PANIC=unwind mode. A tests/release case that lust rejects fails. The filter `release-`
+ #     runs only the tests/release cases.
+ # Usage: scripts/difftest.sh [filter]
+-#   SANITIZE=1 also builds the generated C with gcc -fsanitize=address,undefined and runs it.
++#   SANITIZE=1 also builds the generated C with SAN_CC (default gcc), using
++#              -fsanitize=address,undefined, and runs it.
+ #              Its stdout and exit status must match the plain lust build's.
+-#              The gcc build uses -Werror=incompatible-pointer-types, so a
++#              The sanitized build uses -Werror=incompatible-pointer-types, so a
+ #              miscompile that passes a pointer of the wrong type (which
+ #              tcc accepts silently) fails loudly here. A unit whose sanitized
+ #              build passes SAN_CC_LIMIT seconds (default 20) is built at -O0.
+@@ -105,20 +106,21 @@ case "${PANIC:-}" in
+   *) echo "FAIL: PANIC must be unset, abort or unwind, not '$PANIC'"; exit 1 ;;
+ esac
+ san_flags=(-O1 -w -Werror=incompatible-pointer-types -fno-sanitize-recover=undefined -fsanitize=address,undefined)
+-# san_obj: this run's gcc objects of the generated C units, named by a hash of the unit's
++san_compiler=${SAN_CC:-gcc}
++# san_obj: this run's sanitized objects of the generated C units, named by a hash of the unit's
+ # bytes. The runtime unit is the same in most cases and is the slow one to build, so each
+ # distinct unit compiles once per run. Not kept across runs.
+ san_obj=$work/san-obj
+ mkdir -p "$san_obj"
+-# san_cc <unit.c> <obj> <errfile>: the sanitized gcc build of one unit. ASAN's use-after-scope
++# san_cc <unit.c> <obj> <errfile>: the sanitized build of one unit. ASAN's use-after-scope
+ # instrumentation at -O1 is superlinear in a long function: one 5166-line main (iter_flatten)
+ # took 185 s, and 0.5 s without that check. A unit that takes longer than SAN_CC_LIMIT seconds
+ # (default 20) is built again at -O0, which keeps every check (8 s for that unit).
+ san_cc() {
+-  timeout "${SAN_CC_LIMIT:-20}" gcc "${san_flags[@]}" -c -o "$2" "$1" 2>>"$3"
++  timeout "${SAN_CC_LIMIT:-20}" "$san_compiler" "${san_flags[@]}" -c -o "$2" "$1" 2>>"$3"
+   local st=$?
+   [ $st -eq 124 ] || return $st
+-  gcc "${san_flags[@]}" -O0 -c -o "$2" "$1" 2>>"$3"
++  "$san_compiler" "${san_flags[@]}" -O0 -c -o "$2" "$1" 2>>"$3"
+ }
+ 
+ sanitize_case() {
+@@ -137,8 +139,8 @@ sanitize_case() {
+     ) 9>"$o.lock"
+   done
+   # -lm: an -O0 unit (san_cc) calls libm functions that -O1 builds inline.
+-  if ! gcc "${san_flags[@]}" -o "$name.san" "${objs[@]}" -lm 2>>"$name.san.err"; then
+-    echo "gcc could not build the generated C: $(head -3 "$name.san.err")"
++  if ! "$san_compiler" "${san_flags[@]}" -o "$name.san" "${objs[@]}" -lm 2>>"$name.san.err"; then
++    echo "$san_compiler could not build the generated C: $(head -3 "$name.san.err")"
+     return 1
+   fi
+   # Under panic=unwind a panicking statement's C temporaries (a message
 diff --git a/scripts/fuzz/fuzz.py b/scripts/fuzz/fuzz.py
 index 769849dd6de55d25fd27ff08610a1d5cd934c5f5..94c005316d518ec479cd9712c1ed0986040cc759 100755
 --- a/scripts/fuzz/fuzz.py
@@ -727,6 +781,38 @@ index 1de124e4ad7311ac28c360d66b23390c885ddbcf..b3a72fb6973f53c2f477eb3b419b4c6c
  stop_daemon "$d"; sleep 0.3
  
  # The lock file is the single-daemon guarantee: whoever holds its flock owns the socket.
+diff --git a/scripts/test-crates.sh b/scripts/test-crates.sh
+index 49b80f0729868fc1446f2e304a1b9fcb5e92349f..120f6301e4fe95f03ce4d26e7ef938e6c7eaf3de 100755
+--- a/scripts/test-crates.sh
++++ b/scripts/test-crates.sh
+@@ -41,7 +41,7 @@
+ # (W-RESOLVE), so fixtures are real multi-file crates.
+ #
+ # Usage: scripts/test-crates.sh [filter]
+-#   SANITIZE=1 also builds the lust-generated C with gcc
++#   SANITIZE=1 also builds the lust-generated C with SAN_CC (default gcc)
+ #   -fsanitize=address,undefined and runs it, as difftest does.
+ #   CASE_TIMEOUT seconds per lust compile (default 60). A timed-out lust
+ #   compile retries once at RETRY_CASE_TIMEOUT (default 6x); a finished
+@@ -77,6 +77,7 @@ pass=0
+ fail=0
+ seen=0
+ case_timeout=${CASE_TIMEOUT:-60}
++san_compiler=${SAN_CC:-gcc}
+ # The one timeout rule for lust compiles (lust_cc). Serial here, so the
+ # retry is alone. Cargo builds and program runs keep their plain timeouts.
+ # shellcheck source=scripts/timeout-lib.sh
+@@ -290,8 +291,8 @@ for dir in "$fixtures"/*/; do
+       report bad "$name" "lust --emit-c build failed: $(head -3 "$case_dir/emit.err")"
+       continue
+     fi
+-    if ! gcc -O1 -w -fno-sanitize-recover=undefined -fsanitize=address,undefined -o "$case_dir/san.bin" "$case_dir"/emit.*.c 2>"$case_dir/san.err"; then
+-      report bad "$name" "gcc could not build the generated C: $(head -3 "$case_dir/san.err")"
++    if ! "$san_compiler" -O1 -w -fno-sanitize-recover=undefined -fsanitize=address,undefined -o "$case_dir/san.bin" "$case_dir"/emit.*.c 2>"$case_dir/san.err"; then
++      report bad "$name" "$san_compiler could not build the generated C: $(head -3 "$case_dir/san.err")"
+       continue
+     fi
+     timeout 30 "$case_dir/san.bin" "${prog_args[@]}" >"$case_dir/san.run.out" 2>"$case_dir/san.run.err"; ss=$?
 diff --git a/scripts/test-daemon-scenarios.py b/scripts/test-daemon-scenarios.py
 index b7f91805ee8699d8291e653034e2a0993274eb31..ad0fb6f7f6d53a0958d5f4baef87ef29480056f0 100755
 --- a/scripts/test-daemon-scenarios.py

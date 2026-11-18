@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  # Preserve running exact-source qualification when an additive fix arrives.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.sha }}
+  # Preserve earlier source evidence without serializing independent commits.
   cancel-in-progress: false
 
 defaults:
@@ -78,6 +78,8 @@ jobs:
         run: python3 ../../tools/test-native-unix-address.py
       - name: Verify actual native dependency metadata
         run: python3 ../../tools/test-native-dependencies.py
+      - name: Require working address, undefined-behavior and leak sanitizers
+        run: python3 ../../tools/test-native-sanitizers.py
       - name: Cache pinned tcc
         id: tcc
         uses: actions/cache@v4
@@ -162,6 +164,18 @@ jobs:
           for tool in coreutils findutils gnu-sed; do
             echo "$(brew --prefix "$tool")/libexec/gnubin" >> "$GITHUB_PATH"
           done
+      - name: Select a sanitizer runtime with native leak detection
+        run: |
+          set -euo pipefail
+          # Apple Clang's ASan rejects detect_leaks=1 on this platform.
+          # Keep the leak gate and select the upstream runtime explicitly.
+          brew list --versions llvm@20 >/dev/null || brew install llvm@20
+          sanitizer_tools=$(brew --prefix llvm@20)/bin
+          test -x "$sanitizer_tools/clang"
+          test -x "$sanitizer_tools/llvm-symbolizer"
+          echo "SAN_CC=$sanitizer_tools/clang" >> "$GITHUB_ENV"
+          echo "ASAN_SYMBOLIZER_PATH=$sanitizer_tools/llvm-symbolizer" >> "$GITHUB_ENV"
+          "$sanitizer_tools/clang" --version
       - name: Verify actual Bash and GNU test commands
         run: |
           set -euo pipefail
@@ -192,6 +206,8 @@ jobs:
         run: python3 ../../tools/test-native-unix-address.py
       - name: Verify actual native dependency metadata
         run: python3 ../../tools/test-native-dependencies.py
+      - name: Require working address, undefined-behavior and leak sanitizers
+        run: python3 ../../tools/test-native-sanitizers.py
       - name: Cache pinned tcc
         id: tcc
         uses: actions/cache@v4
@@ -236,6 +252,8 @@ jobs:
             sw_vers -productVersion
             rustc -vV
             cargo --version
+            "$SAN_CC" --version
+            sha256sum "$SAN_CC" "$ASAN_SYMBOLIZER_PATH"
             sha256sum Cargo.toml Cargo.lock build.rs scripts/ci.sh
           } > "$RUNNER_TEMP/native-gate-identity.txt"
           bash scripts/ci.sh 2>&1 | tee "$RUNNER_TEMP/native-gate.log"

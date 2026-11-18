@@ -1,6 +1,9 @@
 name: Runner routing canary
 
 on:
+  push:
+    paths:
+      - .github/workflows/runner-routing-canary.yml
   pull_request:
     paths:
       - .github/workflows/runner-routing-canary.yml
@@ -25,7 +28,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: runner-routing-canary-${{ github.event.pull_request.number || github.ref }}
+  group: runner-routing-canary-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}-${{ github.sha }}
   cancel-in-progress: false
 
 jobs:

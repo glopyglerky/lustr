@@ -200,3 +200,24 @@ Their native Darwin execution and the remainder of the full compiler gate are
 still required, along with package and matched performance campaigns. Earlier
 Linux measurements keep their original source identities and are not attributed
 to these corrections.
+
+The remaining-stage audit also reproduced a sanitizer-toolchain failure in a
+bounded Apple silicon diagnostic. Apple Clang 21.0.0 (`clang-2100.3.34.2`) on
+Darwin 27 compiled a clean ASan/UBSan C program, but its runtime aborted when
+`detect_leaks=1` was requested. The same program ran with leak detection off.
+That second result is diagnostic evidence only; the compiler gate keeps leak
+detection enabled. [Upstream LLVM documents macOS leak support](https://clang.llvm.org/docs/AddressSanitizer.html#memory-leak-detection),
+which does not establish that Apple's bundled runtime provides it.
+
+`SAN_CC` now selects one sanitizer compiler executable for both the differential
+and optional crate sanitizer paths; it defaults to `gcc` and does not change
+the primary TinyCC build. The macOS workflow selects the image's upstream LLVM
+Clang and symbolizer. `tools/test-native-sanitizers.py` first requires a clean
+program to run and actual planted address, signed-overflow and leak faults to
+produce their corresponding diagnostics. It fails if any capability is absent;
+it does not retry with checks disabled. All four cases passed on actual Apple
+silicon with the already installed upstream LLVM 22.1.8 runtime on Darwin 27.
+That result qualifies the small capability fixture, not the full compiler gate
+or the hosted image's separately selected LLVM 20.1.8. The Linux executor
+compiles the probe, but its restricted tracing environment prevents
+LeakSanitizer from running; native hosted execution remains required.

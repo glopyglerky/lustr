@@ -47,9 +47,10 @@
 #     PANIC=unwind mode. A tests/release case that lust rejects fails. The filter `release-`
 #     runs only the tests/release cases.
 # Usage: scripts/difftest.sh [filter]
-#   SANITIZE=1 also builds the generated C with gcc -fsanitize=address,undefined and runs it.
+#   SANITIZE=1 also builds the generated C with SAN_CC (default gcc), using
+#              -fsanitize=address,undefined, and runs it.
 #              Its stdout and exit status must match the plain lust build's.
-#              The gcc build uses -Werror=incompatible-pointer-types, so a
+#              The sanitized build uses -Werror=incompatible-pointer-types, so a
 #              miscompile that passes a pointer of the wrong type (which
 #              tcc accepts silently) fails loudly here. A unit whose sanitized
 #              build passes SAN_CC_LIMIT seconds (default 20) is built at -O0.
@@ -105,20 +106,21 @@ case "${PANIC:-}" in
   *) echo "FAIL: PANIC must be unset, abort or unwind, not '$PANIC'"; exit 1 ;;
 esac
 san_flags=(-O1 -w -Werror=incompatible-pointer-types -fno-sanitize-recover=undefined -fsanitize=address,undefined)
-# san_obj: this run's gcc objects of the generated C units, named by a hash of the unit's
+san_compiler=${SAN_CC:-gcc}
+# san_obj: this run's sanitized objects of the generated C units, named by a hash of the unit's
 # bytes. The runtime unit is the same in most cases and is the slow one to build, so each
 # distinct unit compiles once per run. Not kept across runs.
 san_obj=$work/san-obj
 mkdir -p "$san_obj"
-# san_cc <unit.c> <obj> <errfile>: the sanitized gcc build of one unit. ASAN's use-after-scope
+# san_cc <unit.c> <obj> <errfile>: the sanitized build of one unit. ASAN's use-after-scope
 # instrumentation at -O1 is superlinear in a long function: one 5166-line main (iter_flatten)
 # took 185 s, and 0.5 s without that check. A unit that takes longer than SAN_CC_LIMIT seconds
 # (default 20) is built again at -O0, which keeps every check (8 s for that unit).
 san_cc() {
-  timeout "${SAN_CC_LIMIT:-20}" gcc "${san_flags[@]}" -c -o "$2" "$1" 2>>"$3"
+  timeout "${SAN_CC_LIMIT:-20}" "$san_compiler" "${san_flags[@]}" -c -o "$2" "$1" 2>>"$3"
   local st=$?
   [ $st -eq 124 ] || return $st
-  gcc "${san_flags[@]}" -O0 -c -o "$2" "$1" 2>>"$3"
+  "$san_compiler" "${san_flags[@]}" -O0 -c -o "$2" "$1" 2>>"$3"
 }
 
 sanitize_case() {
@@ -137,8 +139,8 @@ sanitize_case() {
     ) 9>"$o.lock"
   done
   # -lm: an -O0 unit (san_cc) calls libm functions that -O1 builds inline.
-  if ! gcc "${san_flags[@]}" -o "$name.san" "${objs[@]}" -lm 2>>"$name.san.err"; then
-    echo "gcc could not build the generated C: $(head -3 "$name.san.err")"
+  if ! "$san_compiler" "${san_flags[@]}" -o "$name.san" "${objs[@]}" -lm 2>>"$name.san.err"; then
+    echo "$san_compiler could not build the generated C: $(head -3 "$name.san.err")"
     return 1
   fi
   # Under panic=unwind a panicking statement's C temporaries (a message

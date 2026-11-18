@@ -41,7 +41,7 @@
 # (W-RESOLVE), so fixtures are real multi-file crates.
 #
 # Usage: scripts/test-crates.sh [filter]
-#   SANITIZE=1 also builds the lust-generated C with gcc
+#   SANITIZE=1 also builds the lust-generated C with SAN_CC (default gcc)
 #   -fsanitize=address,undefined and runs it, as difftest does.
 #   CASE_TIMEOUT seconds per lust compile (default 60). A timed-out lust
 #   compile retries once at RETRY_CASE_TIMEOUT (default 6x); a finished
@@ -77,6 +77,7 @@ pass=0
 fail=0
 seen=0
 case_timeout=${CASE_TIMEOUT:-60}
+san_compiler=${SAN_CC:-gcc}
 # The one timeout rule for lust compiles (lust_cc). Serial here, so the
 # retry is alone. Cargo builds and program runs keep their plain timeouts.
 # shellcheck source=scripts/timeout-lib.sh
@@ -290,8 +291,8 @@ for dir in "$fixtures"/*/; do
       report bad "$name" "lust --emit-c build failed: $(head -3 "$case_dir/emit.err")"
       continue
     fi
-    if ! gcc -O1 -w -fno-sanitize-recover=undefined -fsanitize=address,undefined -o "$case_dir/san.bin" "$case_dir"/emit.*.c 2>"$case_dir/san.err"; then
-      report bad "$name" "gcc could not build the generated C: $(head -3 "$case_dir/san.err")"
+    if ! "$san_compiler" -O1 -w -fno-sanitize-recover=undefined -fsanitize=address,undefined -o "$case_dir/san.bin" "$case_dir"/emit.*.c 2>"$case_dir/san.err"; then
+      report bad "$name" "$san_compiler could not build the generated C: $(head -3 "$case_dir/san.err")"
       continue
     fi
     timeout 30 "$case_dir/san.bin" "${prog_args[@]}" >"$case_dir/san.run.out" 2>"$case_dir/san.run.err"; ss=$?
