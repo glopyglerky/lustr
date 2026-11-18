@@ -169,7 +169,14 @@ jobs:
           set -euo pipefail
           # Apple Clang's ASan rejects detect_leaks=1 on this platform.
           # Keep the leak gate and select the upstream runtime explicitly.
-          brew list --versions llvm@23 >/dev/null || brew install llvm@23
+          # Runner images can retain a catalog or installed formula from an
+          # earlier patch release. Refresh both before enforcing the exact pin.
+          brew update
+          if brew list --versions llvm@23 >/dev/null; then
+            brew upgrade llvm@23
+          else
+            brew install llvm@23
+          fi
           sanitizer_tools=$(brew --prefix llvm@23)/bin
           test -x "$sanitizer_tools/clang"
           test -x "$sanitizer_tools/llvm-symbolizer"
