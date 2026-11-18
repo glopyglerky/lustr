@@ -67,12 +67,25 @@ def attestation_command(archive, bundle, pin):
 
 
 def run_recorded(argv, directory, name, timeout):
-    if any((directory / (name + suffix)).exists() for suffix in ('.stdout', '.stderr')):
+    if any((directory / (name + suffix)).exists() for suffix in ('.stdout', '.stderr', '.status.json')):
         raise ValueError('command evidence already exists; use a new owned directory')
-    result = subprocess.run(argv, capture_output=True, timeout=timeout, check=False)
-    for suffix, content in (('.stdout', result.stdout), ('.stderr', result.stderr)):
-        with (directory / (name + suffix)).open('xb') as output:
-            output.write(content)
+
+    def retain(stdout, stderr, returncode, timed_out):
+        status = {'exit': returncode if returncode is not None and returncode >= 0 else None,
+                  'signal': -returncode if returncode is not None and returncode < 0 else None,
+                  'timed_out': timed_out, 'timeout_seconds': timeout}
+        records = (('.stdout', stdout or b''), ('.stderr', stderr or b''),
+                   ('.status.json', (json.dumps(status, sort_keys=True) + '\n').encode()))
+        for suffix, content in records:
+            with (directory / (name + suffix)).open('xb') as output:
+                output.write(content)
+
+    try:
+        result = subprocess.run(argv, capture_output=True, timeout=timeout, check=False)
+    except subprocess.TimeoutExpired as error:
+        retain(error.stdout, error.stderr, None, True)
+        raise
+    retain(result.stdout, result.stderr, result.returncode, False)
     if result.returncode != 0:
         raise RuntimeError(name + ' failed; original output retained')
     return result.stdout

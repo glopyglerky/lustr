@@ -279,6 +279,7 @@ jobs:
             ${{ runner.temp }}/native-gate-builds.sha256
             ${{ runner.temp }}/macos-sanitizer-setup.log
             ${{ runner.temp }}/lustr-macos-sanitizer/receipt.json
-            ${{ runner.temp }}/lustr-macos-sanitizer/attestation-verification.stdout
-            ${{ runner.temp }}/lustr-macos-sanitizer/attestation-verification.stderr
+            ${{ runner.temp }}/lustr-macos-sanitizer/*.stdout
+            ${{ runner.temp }}/lustr-macos-sanitizer/*.stderr
+            ${{ runner.temp }}/lustr-macos-sanitizer/*.status.json
           if-no-files-found: warn

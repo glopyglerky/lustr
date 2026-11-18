@@ -3,7 +3,10 @@
 
 import hashlib
 import importlib.util
+import json
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -44,7 +47,6 @@ class PackageInputTests(unittest.TestCase):
             INSTALLER.verify_file(linked, self.pin)
 
     def test_wrong_package_never_reaches_provenance_or_extraction(self):
-        import json
         pin = json.loads(INSTALLER.PIN.read_bytes())
         (self.root / pin['archive']['name']).write_bytes(b'wrong package')
         with mock.patch.object(INSTALLER.platform, 'system', return_value='Darwin'), \
@@ -65,6 +67,17 @@ class PackageInputTests(unittest.TestCase):
                 INSTALLER.run_recorded(['unused'], self.root, 'attestation-verification', 1)
             execute.assert_not_called()
         self.assertEqual(previous.read_bytes(), b'previous rejected provenance')
+
+    def test_timed_out_command_preserves_partial_output_and_timeout_status(self):
+        command = [sys.executable, '-c',
+                   "import os,time; os.write(1,b'partial stdout\\n'); "
+                   "os.write(2,b'partial stderr\\n'); time.sleep(30)"]
+        with self.assertRaises(subprocess.TimeoutExpired):
+            INSTALLER.run_recorded(command, self.root, 'timed-out', 1)
+        self.assertEqual((self.root / 'timed-out.stdout').read_bytes(), b'partial stdout\n')
+        self.assertEqual((self.root / 'timed-out.stderr').read_bytes(), b'partial stderr\n')
+        self.assertEqual(json.loads((self.root / 'timed-out.status.json').read_bytes()),
+                         {'exit': None, 'signal': None, 'timed_out': True, 'timeout_seconds': 1})
 
 
 if __name__ == '__main__':

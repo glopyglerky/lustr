@@ -64,12 +64,25 @@ digest while preserving the archive, bundle, repository and signer policies.
 It returned exit 1 specifically because the certified source digest differed.
 No extraction or compiler execution follows a rejected provenance check.
 
-Six local installer regression checks passed, including same-size corruption,
+Seven local installer regression checks passed, including same-size corruption,
 truncation and symlink rejection, stopping a bad archive before any provenance
-or extraction command, and preserving prior failure output before a retry.
+or extraction command, preserving prior failure output before a retry, and
+retaining both partial output streams when a real subprocess times out.
 The workflow YAML parsed and the existing sanitizer capability step remains.
 [qualification.json](qualification.json) records the results and original
 output hashes.
+
+The actual successful macOS execution used installer SHA-256
+`6d3be0240e356a8d0413977f85afa24564dc3b184549cf280fe549bfa26edfd6`.
+Review subsequently corrected command-timeout evidence retention. The published
+installer preserves partial stdout/stderr before propagating a timeout and
+records an explicit exit, signal and timeout status for each completed command
+attempt. Its acquisition, provenance, extraction and compiler-selection logic
+is unchanged. The new timeout regression fails against the executed predecessor
+with a missing retained stdout file and passes with the repair. The final
+installer and test identities are in [timeout-retention.json](timeout-retention.json).
+The final helper has not been reexecuted on macOS during this bounded review;
+its changed timeout path was checked through the actual subprocess regression.
 
 ## Preserved setup attempts
 

@@ -1,0 +1,11 @@
+{
+  "new_installer_sha256": "33d513b23ca11b4f20af19c7630e0a27e8333b8fcbfd48d4e97c891aa1f31128",
+  "new_suite": {
+    "failed": 0,
+    "passed": 7
+  },
+  "new_test_source_sha256": "83e67ab8ca0b144aa619342b3180999cab9660f73dac2fb718a79ee911be12b0",
+  "prior_installer_sha256": "6d3be0240e356a8d0413977f85afa24564dc3b184549cf280fe549bfa26edfd6",
+  "prior_regression_result": "failed as expected: missing retained stdout after timeout",
+  "prior_source_commit": "331f132f7a2a911e3a8b887b00cecb91b12ef6fb"
+}

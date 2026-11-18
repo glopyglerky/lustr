@@ -1,74 +1,79 @@
 {
-  "schema": 1,
-  "source_base": "28a2842635ee994db492b43f8c956eddce57a803",
-  "platform": "macOS arm64",
-  "full_native_suite_qualified": false,
-  "hosted_ci_at_candidate": "not-run",
-  "original_hosted_setup_failure": {
-    "run": 44264239099,
-    "job": 134664704136,
-    "installed_clang": "23.1.6",
-    "expected_clang": "23.1.5",
-    "native_tests_executed": false
-  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "correction": "use exact certificate identity with signer and source digest policies",
+      "reason": "gh CLI forbids combining cert-identity and signer-workflow policy flags",
+      "result": "rejected-before-extraction"
+    },
+    {
+      "attempt": 2,
+      "correction": "set bounded --memory=1024MB on archive decompressor",
+      "reason": "official archive needs a 1 GiB zstd decode window; host default is 128 MiB",
+      "result": "verified-provenance-extraction-failed"
+    },
+    {
+      "attempt": 3,
+      "recorded_runtime_count": 22,
+      "result": "passed-acquisition-and-capabilities",
+      "version": "23.1.5"
+    }
+  ],
   "capabilities": {
+    "asan_options": "detect_leaks=1:allocator_may_return_null=1",
     "exit": 0,
-    "source_sha256": "c4c430752b89d279121cb1218969c805cf5455bb8e24a23c5c653263da727960",
-    "stdout_sha256": "33b186a0335bf94833b25ca67c7381afc9cdf0d5d61039ae88d4df4a5fe58dea",
-    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "inherited_lsan_and_ubsan_options_removed": true,
     "passed": [
       "clean",
       "address",
       "undefined",
       "leak"
     ],
-    "asan_options": "detect_leaks=1:allocator_may_return_null=1",
-    "ubsan_recovery": false,
-    "inherited_lsan_and_ubsan_options_removed": true
+    "source_sha256": "c4c430752b89d279121cb1218969c805cf5455bb8e24a23c5c653263da727960",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_sha256": "33b186a0335bf94833b25ca67c7381afc9cdf0d5d61039ae88d4df4a5fe58dea",
+    "ubsan_recovery": false
   },
-  "negative_provenance": {
-    "exit": 1,
-    "expected": "reject wrong source digest",
-    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "stderr_sha256": "067e572459f8afc2873d44e5d1d94f18b87d0f5b1271ebc540b26f72ee288652",
-    "expected_source_digest": "0000000000000000000000000000000000000000",
-    "observed_source_digest": "392dfff97d29b59d77e5cac6d4b6ef2585fe7117",
-    "diagnostic": "expected SourceRepositoryDigest to be 0000000000000000000000000000000000000000, got 392dfff97d29b59d77e5cac6d4b6ef2585fe7117"
-  },
+  "change_after_macos_execution": "command timeout output retention and explicit attempt status; acquisition/provenance/extraction/compiler selection logic unchanged",
+  "compiler_code_modified": false,
+  "executed_installer_sha256": "6d3be0240e356a8d0413977f85afa24564dc3b184549cf280fe549bfa26edfd6",
+  "final_helper_reexecuted_on_macos": false,
+  "full_native_suite_qualified": false,
+  "global_toolchain_installation": false,
+  "hosted_ci_at_candidate": "not-run",
   "installer_tests": {
-    "passed": 6,
-    "failed": 0,
     "cases": [
       "exact bytes",
       "same-size checksum mismatch",
       "truncation",
       "symlink substitution",
       "bad archive blocked before provenance or extraction",
-      "prior failure evidence preserved before retry"
-    ]
+      "prior failure evidence preserved before retry",
+      "actual timed-out subprocess retains both partial streams and explicit timeout status"
+    ],
+    "failed": 0,
+    "passed": 7
   },
-  "attempts": [
-    {
-      "attempt": 1,
-      "result": "rejected-before-extraction",
-      "reason": "gh CLI forbids combining cert-identity and signer-workflow policy flags",
-      "correction": "use exact certificate identity with signer and source digest policies"
-    },
-    {
-      "attempt": 2,
-      "result": "verified-provenance-extraction-failed",
-      "reason": "official archive needs a 1 GiB zstd decode window; host default is 128 MiB",
-      "correction": "set bounded --memory=1024MB on archive decompressor"
-    },
-    {
-      "attempt": 3,
-      "result": "passed-acquisition-and-capabilities",
-      "version": "23.1.5",
-      "recorded_runtime_count": 22
-    }
-  ],
-  "compiler_code_modified": false,
+  "merge_admission": false,
+  "negative_provenance": {
+    "diagnostic": "expected SourceRepositoryDigest to be 0000000000000000000000000000000000000000, got 392dfff97d29b59d77e5cac6d4b6ef2585fe7117",
+    "exit": 1,
+    "expected": "reject wrong source digest",
+    "expected_source_digest": "0000000000000000000000000000000000000000",
+    "observed_source_digest": "392dfff97d29b59d77e5cac6d4b6ef2585fe7117",
+    "stderr_sha256": "067e572459f8afc2873d44e5d1d94f18b87d0f5b1271ebc540b26f72ee288652",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "original_hosted_setup_failure": {
+    "expected_clang": "23.1.5",
+    "installed_clang": "23.1.6",
+    "job": 134664704136,
+    "native_tests_executed": false,
+    "run": 44264239099
+  },
+  "platform": "macOS arm64",
+  "published_installer_sha256": "33d513b23ca11b4f20af19c7630e0a27e8333b8fcbfd48d4e97c891aa1f31128",
   "sanitizer_gate_sources_modified": false,
-  "global_toolchain_installation": false,
-  "merge_admission": false
+  "schema": 1,
+  "source_base": "28a2842635ee994db492b43f8c956eddce57a803"
 }
