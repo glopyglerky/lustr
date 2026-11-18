@@ -65,6 +65,8 @@ jobs:
           cp -a "$GITHUB_WORKSPACE/.native-pristine-reference" "$RUNNER_TEMP/native-pristine-source"
       - name: Install the pinned Rust SDK
         run: rustup toolchain install nightly-2026-11-09 --profile minimal --component rustc-dev --component llvm-tools --component rustfmt --component clippy --target wasm32-unknown-unknown --target x86_64-apple-darwin --target aarch64-apple-darwin --target x86_64-pc-windows-gnu
+      - name: Install the native differential oracle
+        run: rustup toolchain install 1.99.0 --profile minimal
       - name: Build the pinned TinyCC dependency
         run: |
           rustc --edition=2024 tools/build-tinycc-pic.rs -o "$RUNNER_TEMP/build-native-tinycc"
@@ -100,12 +102,14 @@ jobs:
         run: |
           python3 tools/run-warm-native-comparison.py qualify-package --lane baseline \
             --build-receipt "$RUNNER_TEMP/native-baseline-build" \
+            --native-oracle-sdk "$(rustup run 1.99.0 rustc --print sysroot)" \
             --output "$RUNNER_TEMP/native-baseline-gates"
       - name: Qualify the actual candidate source and package
         id: candidate_gates
         run: |
           python3 tools/run-warm-native-comparison.py qualify-package --lane entry \
             --build-receipt "$RUNNER_TEMP/native-candidate-build" \
+            --native-oracle-sdk "$(rustup run 1.99.0 rustc --print sysroot)" \
             --output "$RUNNER_TEMP/native-candidate-gates"
       - name: Build pristine Lust with the matched release profile
         id: pristine_build
