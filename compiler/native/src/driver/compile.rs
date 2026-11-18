@@ -401,6 +401,24 @@ fn check_fingerprint(req: &Request) -> Option<u64> {
     Some(std::hash::Hasher::finish(&h))
 }
 
+fn reused_check_response(req: &Request, front: &mut Front, t: &mut Timer, fn_count: usize, reusable: (u64, Response)) -> Response {
+    let (fp, mut resp) = reusable;
+    front.last_check = Some((fp, resp.clone()));
+    front.last_visits.clear();
+    Visits { path: "reuse", ..Default::default() }.render(&mut front.last_visits);
+    log_visits(&front.last_visits);
+    if stats_on() {
+        Stats { mode: "reuse", fns: fn_count, ..Default::default() }.render(&mut resp.stderr);
+        resp.stderr.push_str(&front.last_visits);
+    }
+    if req.timings {
+        t.lap("reuse last answer");
+        let _ = writeln!(resp.stderr, "lust check {}: ok (no change since the last check)", req.file.to_string_lossy());
+        t.render(&mut resp.stderr);
+    }
+    resp
+}
+
 /// Arena nodes of one Ast (expressions, patterns, types, blocks).
 pub(super) fn ast_nodes(ast: &Ast) -> usize {
     ast.exprs.len() + ast.pats.len() + ast.tys.len() + ast.blocks.len()
@@ -2195,8 +2213,19 @@ fn resolved_setup(
     // PatchBase below asks `macro_scope::dep_macros_shut`).
     let patch_expand = (env.clone(), crate_name.clone());
     let has_deps = !externs.is_empty();
-    let patched =
-        if ast_bloated(front) { Err("ast compaction") } else { super::patch::try_patch(front, caches, inputs, &root_text, request_start) };
+    let reuse_check = reusable.is_some() && !super::resolve_oracle::on();
+    let patched = if ast_bloated(front) {
+        Err("ast compaction")
+    } else {
+        super::patch::try_patch(front, caches, inputs, &root_text, request_start, reuse_check)
+    };
+    let patched = match patched {
+        Ok(super::patch::PatchOutcome::ReuseCheck { fn_count }) => {
+            return Err(reused_check_response(req, front, t, fn_count, reusable.unwrap()));
+        }
+        Ok(super::patch::PatchOutcome::Materialized(p)) => Ok(p),
+        Err(why) => Err(why),
+    };
     if super::resolve_oracle::on()
         && let Ok(p) = &patched
     {
@@ -2208,21 +2237,7 @@ fn resolved_setup(
         // Nothing changed since the last check of this same request:
         // its answer stands (`check_fingerprint`).
         Ok(p) if p.files == 0 && reusable.is_some() => {
-            let (fp, mut resp) = reusable.unwrap();
-            front.last_check = Some((fp, resp.clone()));
-            front.last_visits.clear();
-            Visits { path: "reuse", ..Default::default() }.render(&mut front.last_visits);
-            log_visits(&front.last_visits);
-            if stats_on() {
-                Stats { mode: "reuse", fns: p.fn_count, ..Default::default() }.render(&mut resp.stderr);
-                resp.stderr.push_str(&front.last_visits);
-            }
-            if req.timings {
-                t.lap("reuse last answer");
-                let _ = writeln!(resp.stderr, "lust check {}: ok (no change since the last check)", req.file.to_string_lossy());
-                t.render(&mut resp.stderr);
-            }
-            return Err(resp);
+            return Err(reused_check_response(req, front, t, p.fn_count, reusable.unwrap()));
         }
         // An item patch (sigedit P1.3): the new item scans take the
         // resolve path's slot update, in signatures mode with the edited

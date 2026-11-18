@@ -2118,10 +2118,35 @@ index da28835400f894866adb85f436e2cbdf109797d7..295f0673c543b50ffbb088b9f1bddec9
      pub fn open(src_file: &Path) -> Option<Cache> {
          // A std or adapter source override: the compiler id does not cover that tree.
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..9b486e6866eaa5c7a7e97ef4282096e96a642490 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..e8faa3f3cca5e9a442670ffad2a6116258a4f83f 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
-@@ -559,6 +559,43 @@ fn base_tmp_seq() -> u64 {
+@@ -401,6 +401,24 @@ fn check_fingerprint(req: &Request) -> Option<u64> {
+     Some(std::hash::Hasher::finish(&h))
+ }
+ 
++fn reused_check_response(req: &Request, front: &mut Front, t: &mut Timer, fn_count: usize, reusable: (u64, Response)) -> Response {
++    let (fp, mut resp) = reusable;
++    front.last_check = Some((fp, resp.clone()));
++    front.last_visits.clear();
++    Visits { path: "reuse", ..Default::default() }.render(&mut front.last_visits);
++    log_visits(&front.last_visits);
++    if stats_on() {
++        Stats { mode: "reuse", fns: fn_count, ..Default::default() }.render(&mut resp.stderr);
++        resp.stderr.push_str(&front.last_visits);
++    }
++    if req.timings {
++        t.lap("reuse last answer");
++        let _ = writeln!(resp.stderr, "lust check {}: ok (no change since the last check)", req.file.to_string_lossy());
++        t.render(&mut resp.stderr);
++    }
++    resp
++}
++
+ /// Arena nodes of one Ast (expressions, patterns, types, blocks).
+ pub(super) fn ast_nodes(ast: &Ast) -> usize {
+     ast.exprs.len() + ast.pats.len() + ast.tys.len() + ast.blocks.len()
+@@ -559,6 +577,43 @@ fn base_tmp_seq() -> u64 {
      SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
  }
  
@@ -2165,7 +2190,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..9b486e6866eaa5c7a7e97ef4282096e9
  /// True if `out` exists and still names `soname` (an overwritten output names its newer base instead).
  fn output_names_base(out: &Path, soname: &str) -> bool {
      std::fs::read(out).is_ok_and(|bytes| bytes.windows(soname.len()).any(|w| w == soname.as_bytes()))
-@@ -647,7 +684,7 @@ fn record_base_user(base_dir: &Path, soname: &str, out: &Path) {
+@@ -647,7 +702,7 @@ fn record_base_user(base_dir: &Path, soname: &str, out: &Path) {
      }
  }
  
@@ -2174,7 +2199,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..9b486e6866eaa5c7a7e97ef4282096e9
  /// that built it. Base files are also unique per session instance (the
  /// session's object dir is mixed into the hash), so one session never
  /// links against, and must never delete, another live session's file.
-@@ -657,6 +694,12 @@ fn base_owner_pid(soname: &str) -> Option<u32> {
+@@ -657,6 +712,12 @@ fn base_owner_pid(soname: &str) -> Option<u32> {
      if !pid.is_empty() && pid.bytes().all(|b| b.is_ascii_digit()) { pid.parse().ok() } else { None }
  }
  
@@ -2187,7 +2212,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..9b486e6866eaa5c7a7e97ef4282096e9
  /// Deletes base files in `base_dir` that the manifest proves dead: every
  /// recorded output for the base is gone or now names a different base.
  /// A base whose owning process is still alive is never deleted: it may
-@@ -667,20 +710,19 @@ fn base_owner_pid(soname: &str) -> Option<u32> {
+@@ -667,20 +728,19 @@ fn base_owner_pid(soname: &str) -> Option<u32> {
  /// entry are kept (an entry is appended right after its executable
  /// links, so an unrecorded file may be in use by a concurrent build).
  /// Also deletes half-written rebuild temp files
@@ -2213,7 +2238,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..9b486e6866eaa5c7a7e97ef4282096e9
              {
                  let _ = std::fs::remove_file(e.path());
              }
-@@ -707,7 +749,7 @@ pub fn sweep_bases(base_dir: &Path, exiting_pid: u32) {
+@@ -707,7 +767,7 @@ pub fn sweep_bases(base_dir: &Path, exiting_pid: u32) {
      }
      let owner_alive = |soname: &str| match base_owner_pid(soname) {
          Some(pid) if pid == exiting_pid => false,
@@ -2222,7 +2247,52 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..9b486e6866eaa5c7a7e97ef4282096e9
          None => false,
      };
      let mut kept = String::new();
-@@ -2552,6 +2594,11 @@ fn location_path(p: &str, library: &Path, display_root: Option<&Path>, client: &
+@@ -2153,8 +2213,19 @@ fn resolved_setup(
+     // PatchBase below asks `macro_scope::dep_macros_shut`).
+     let patch_expand = (env.clone(), crate_name.clone());
+     let has_deps = !externs.is_empty();
+-    let patched =
+-        if ast_bloated(front) { Err("ast compaction") } else { super::patch::try_patch(front, caches, inputs, &root_text, request_start) };
++    let reuse_check = reusable.is_some() && !super::resolve_oracle::on();
++    let patched = if ast_bloated(front) {
++        Err("ast compaction")
++    } else {
++        super::patch::try_patch(front, caches, inputs, &root_text, request_start, reuse_check)
++    };
++    let patched = match patched {
++        Ok(super::patch::PatchOutcome::ReuseCheck { fn_count }) => {
++            return Err(reused_check_response(req, front, t, fn_count, reusable.unwrap()));
++        }
++        Ok(super::patch::PatchOutcome::Materialized(p)) => Ok(p),
++        Err(why) => Err(why),
++    };
+     if super::resolve_oracle::on()
+         && let Ok(p) = &patched
+     {
+@@ -2166,21 +2237,7 @@ fn resolved_setup(
+         // Nothing changed since the last check of this same request:
+         // its answer stands (`check_fingerprint`).
+         Ok(p) if p.files == 0 && reusable.is_some() => {
+-            let (fp, mut resp) = reusable.unwrap();
+-            front.last_check = Some((fp, resp.clone()));
+-            front.last_visits.clear();
+-            Visits { path: "reuse", ..Default::default() }.render(&mut front.last_visits);
+-            log_visits(&front.last_visits);
+-            if stats_on() {
+-                Stats { mode: "reuse", fns: p.fn_count, ..Default::default() }.render(&mut resp.stderr);
+-                resp.stderr.push_str(&front.last_visits);
+-            }
+-            if req.timings {
+-                t.lap("reuse last answer");
+-                let _ = writeln!(resp.stderr, "lust check {}: ok (no change since the last check)", req.file.to_string_lossy());
+-                t.render(&mut resp.stderr);
+-            }
+-            return Err(resp);
++            return Err(reused_check_response(req, front, t, p.fn_count, reusable.unwrap()));
+         }
+         // An item patch (sigedit P1.3): the new item scans take the
+         // resolve path's slot update, in signatures mode with the edited
+@@ -2552,6 +2609,11 @@ fn location_path(p: &str, library: &Path, display_root: Option<&Path>, client: &
  }
  
  pub fn compile(req: &Request, session: &mut Session) -> Response {
@@ -2234,7 +2304,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..9b486e6866eaa5c7a7e97ef4282096e9
      let mut t = Timer::new();
      crate::driver::cache::begin_build(&req.file);
      if req.session != session.key {
-@@ -4081,7 +4128,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4081,7 +4143,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // switches, debug info, unwind tables) makes every slot's C again, as a one-shot build
      // does: its slot cache holds C of the other form (a front image saved by a tcc build,
      // then a release driver build). A check makes no C and keeps the key.
@@ -2244,7 +2314,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..9b486e6866eaa5c7a7e97ef4282096e9
      if req.cmd == Cmd::Build {
          let key = super::release_c::codegen_key(release, req.debug, program.unwind_tables);
          if caches.codegen_key != key {
-@@ -4296,17 +4344,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4296,17 +4359,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          super::item_oracle::check(front, caches, Ok(&program), &work, fn_count, hashes, lines, visits.path, crate_ids, build, tables);
          t.lap("item oracle");
      }
@@ -2270,7 +2340,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..9b486e6866eaa5c7a7e97ef4282096e9
              (Some(body), errs)
          });
          let body = body.filter(|_| keep_bodies).map(|mut b| {
-@@ -4370,6 +4426,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4370,6 +4441,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          diags.push(Diag::new("L0130", diag::Span::default(), "no `main` function", "Add `fn main() { ... }`."));
      }
      t.lap(if mode == "full" { "check+borrowck (par)" } else { "check changed fns (par)" });
@@ -2278,7 +2348,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..9b486e6866eaa5c7a7e97ef4282096e9
      // A one-shot process (`leak_at_exit`) exits right after this call. Freeing the IR and
      // program arenas, mostly built on worker threads, costs about 10 ms on a 31k-line crate,
      // so leak them on every return below and let the OS reclaim the memory at exit. A
-@@ -4450,6 +4507,17 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4450,6 +4522,17 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // from cached IR above.
      let mut bodies: Vec<(usize, ir::Body)> = work.iter().copied().zip(results).filter_map(|(i, r)| r.0.map(|b| (i, b))).collect();
      bodies.extend(reemit);
@@ -2296,7 +2366,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..9b486e6866eaa5c7a7e97ef4282096e9
      // Each fn's base line: cgen stores its line numbers relative to it
      // and the main unit adds each slot's base back, so a reused body's
      // C stays right when its source text moves. An instance's base is
-@@ -4498,7 +4566,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4498,7 +4581,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let (outs, cg_noted): (Vec<_>, Vec<_>) = par_map(&bodies, |(i, b)| {
          check::derive_delta::scoped(program.record_reads, || {
              cgen::in_layout_phase(layout_tag, || {
@@ -2314,7 +2384,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..9b486e6866eaa5c7a7e97ef4282096e9
              })
          })
      })
-@@ -4681,6 +4758,15 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4681,6 +4773,15 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      }
      let glue_changed = shared_changed || regenerated || statics_changed;
      t.lap("codegen (par)");
@@ -2330,7 +2400,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..9b486e6866eaa5c7a7e97ef4282096e9
      // Nothing reads the IR after codegen. A one-shot build leaks it at exit
      // (`leak_at_exit`), but on a large program it is the largest block
      // alive at the peak (ts-rust's bins: about 2.4 GB of 9.4 GB, through
-@@ -4751,7 +4837,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4751,7 +4852,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // rebuilds and the base
      // relinks over the existing unit objects. Unrelated units keep
      // their objects, in the session and in the disk unit cache.
@@ -2340,7 +2410,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..9b486e6866eaa5c7a7e97ef4282096e9
      let cap_grown = n_slots > caches.table_cap;
      if fresh_base || cap_grown {
          caches.table_cap = n_slots * 2 + 64;
-@@ -5807,6 +5894,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5807,6 +5909,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // this check keeps that a pin, not a hope.
      if let Some(run_args) = &req.run_args
          && !caches.persistent
@@ -2348,7 +2418,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..9b486e6866eaa5c7a7e97ef4282096e9
          && fresh_base
          && groups.len() == 1
          && !req.debug
-@@ -5883,7 +5971,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5883,7 +5986,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      caches.objects = Some(req.debug);
      t.lap("tcc compile");
      let all_base: Vec<PathBuf> = [1, 2, 3, LOC_UNIT].into_iter().chain(link_fn_units.iter().copied()).map(base_obj).collect();
@@ -2357,7 +2427,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..9b486e6866eaa5c7a7e97ef4282096e9
          let mut objs = vec![base_obj(0)];
          objs.extend(all_base);
          crate::tcc::link(&objs, &req.out, req.debug)
-@@ -5901,18 +5989,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5901,18 +6004,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
          let base = if rebuild_base {
              caches.base_gen += 1;
@@ -2398,7 +2468,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..9b486e6866eaa5c7a7e97ef4282096e9
                      install_base(&tmp, &base_dir.join(&soname))?;
                      if !caches.base_files.contains(&soname) {
                          caches.base_files.push_back(soname);
-@@ -5922,24 +6023,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5922,24 +6038,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              if built.is_err() {
                  let _ = std::fs::remove_file(&tmp);
              }
@@ -2430,7 +2500,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..9b486e6866eaa5c7a7e97ef4282096e9
              built
          } else {
              Ok(())
-@@ -5958,8 +6060,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5958,8 +6075,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // a small grace count while no known output file still references them. A binary the user
      // kept keeps its base; one that was overwritten or deleted does not. A running program
      // keeps its mapped copy after unlink.
@@ -2441,7 +2511,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..9b486e6866eaa5c7a7e97ef4282096e9
          if let Some(base_dir) = caches.base_dir.clone() {
              record_base_user(&base_dir, &soname, &req.out);
          }
-@@ -6058,6 +6160,66 @@ mod tests {
+@@ -6058,6 +6175,66 @@ mod tests {
          panic!("{}: still busy", bin.display())
      }
  
@@ -2707,6 +2777,195 @@ index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..06475058b58662ad8fed81e51873a0a7
 +    fn lowered(&self, _phase: Prepared<'_>, _function: crate::def::LocalDefId, _body: &crate::ir::Body<'_>, _diagnostics: &[crate::diag::Diag]) {}
 +    fn diagnostics(&self, _phase: Prepared<'_>, _diagnostics: &[crate::diag::Diag]) {}
 +}
+diff --git a/src/driver/patch.rs b/src/driver/patch.rs
+index a42971cf10bbbdd13511f51c07aef68556044221..7eade35a56537d69de2d93136447888786873cfd 100644
+--- a/src/driver/patch.rs
++++ b/src/driver/patch.rs
+@@ -447,6 +447,13 @@ pub(super) struct Patched {
+     pub reads: usize,
+ }
+ 
++/// An unchanged check can reuse its answer after the ordinary patch
++/// housekeeping, without materializing the shared tail's unused inputs.
++pub(super) enum PatchOutcome {
++    Materialized(Patched),
++    ReuseCheck { fn_count: usize },
++}
++
+ /// One edit proven to sit inside one fn body (`find_body_edit`), or
+ /// inside cfg-disabled code (`find_inactive_edit`, no `body`).
+ struct BodyEdit {
+@@ -705,7 +712,8 @@ pub(super) fn try_patch(
+     inputs: u64,
+     root: &str,
+     request_start: SystemTime,
+-) -> Result<Patched, &'static str> {
++    reuse_check: bool,
++) -> Result<PatchOutcome, &'static str> {
+     let (edits, reads) = find_edits(front, inputs, root, request_start)?;
+     let edits_in: Vec<KeptEdit> = edits
+         .iter()
+@@ -750,7 +758,7 @@ pub(super) fn try_patch(
+     // An item edit keeps the kept programs too: `reuse_kept` redoes its
+     // headers (`kept_delta::apply_headers`) or the tail collects.
+     let mut ctxts: Vec<FxMap<u32, CtxtId>> = Vec::new();
+-    let out = apply(front, caches, edits, reads, &mut ctxts);
++    let out = apply(front, caches, edits, reads, &mut ctxts, reuse_check);
+     if out.is_err() {
+         front.patch = None;
+     } else {
+@@ -1952,7 +1960,7 @@ const PURE_MACROS: &[&str] =
+ 
+ /// Applies the proven edits to the front state and runs the slot update.
+ /// `ctxts` gets each edit's fresh expansion contexts, in edit order.
+-fn apply(front: &mut Front, caches: &mut Caches, mut edits: Vec<BodyEdit>, reads: usize, ctxts: &mut Vec<FxMap<u32, CtxtId>>) -> Result<Patched, &'static str> {
++fn apply(front: &mut Front, caches: &mut Caches, mut edits: Vec<BodyEdit>, reads: usize, ctxts: &mut Vec<FxMap<u32, CtxtId>>, reuse_check: bool) -> Result<PatchOutcome, &'static str> {
+     let mut base = front.patch.take().ok_or("no base")?;
+     let (mut spans, files) = (0usize, edits.len());
+     let nodes_before = super::compile::ast_nodes(&front.ast);
+@@ -2333,6 +2341,16 @@ fn apply(front: &mut Front, caches: &mut Caches, mut edits: Vec<BodyEdit>, reads
+     // signatures mode (`Patched::item_scans`).
+     let item_level = !item_fns.is_empty() || derive_edit;
+     let changed = if item_level { Vec::new() } else { slot_update(front, caches, &base.body_hashes, &edited, &base.live_slots) };
++    // Keep the complete empty-edit path above. In particular, ConstReach
++    // must observe nodes appended by the preceding check before a later
++    // edit can blank them, and slot_update must refresh its cache state.
++    // The caller permits this only for the same successful check with
++    // the resolve oracle off; that oracle consumes the materialized data.
++    if reuse_check && files == 0 {
++        let fn_count = front.ast_fn_count;
++        front.patch = Some(base);
++        return Ok(PatchOutcome::ReuseCheck { fn_count });
++    }
+     let item_scans = item_level.then(|| front.chunks[0].scan.items.clone());
+     let edits_len = edits.iter().filter(|e| e.body.is_some() || e.item.is_some() || e.derive.is_some()).count();
+     let out = Patched {
+@@ -2360,7 +2378,7 @@ fn apply(front: &mut Front, caches: &mut Caches, mut edits: Vec<BodyEdit>, reads
+         reads,
+     };
+     front.patch = Some(base);
+-    Ok(out)
++    Ok(PatchOutcome::Materialized(out))
+ }
+ 
+ /// Rescans the edited fn's item after its new body landed: the item
+@@ -3396,6 +3414,116 @@ pub fn run() -> i64 {
+         warm.front.last_visits.clone()
+     }
+ 
++    /// A reused check still validates later edits, errors and module discovery.
++    /// Builds retain their ordinary path and publish the same runnable output.
++    #[test]
++    fn no_change_check_preserves_edit_error_restore_and_build() {
++        let dir = std::env::temp_dir().join(format!("lust-nochange-transitions-{}", std::process::id()));
++        let root = write_crate(&dir, 2);
++        let module = dir.join("m1.rs");
++        let mut warm = Session::new(dir.join("obj"), true, SessionKey::synthetic(&root, false));
++        assert_eq!(check(&mut warm, &root), (0, String::new()));
++        assert_eq!(check(&mut warm, &root), (0, String::new()));
++        assert_eq!(field(&warm.front.last_visits, "path"), "reuse");
++        let v = warm_equals_cold(&mut warm, &root, &module, "    a.get()\n", "    a.get() + 1\n");
++        assert_eq!(field(&v, "path"), "patch", "{v}");
++        assert_eq!(check(&mut warm, &root), (0, String::new()));
++        assert_eq!(field(&warm.front.last_visits, "path"), "reuse");
++        warm_equals_cold(&mut warm, &root, &module, "    a.get() + 1\n", "    a.get() + true\n");
++        let rejected = check(&mut warm, &root);
++        assert_ne!(rejected.0, 0);
++        assert_ne!(field(&warm.front.last_visits, "path"), "reuse");
++        let mut cold = Session::new(dir.join("invalid-cold"), false, SessionKey::synthetic(&root, false));
++        assert_eq!(rejected, check(&mut cold, &root));
++        warm_equals_cold(&mut warm, &root, &module, "    a.get() + true\n", "    a.get()\n");
++        assert_eq!(check(&mut warm, &root), (0, String::new()));
++        assert_eq!(field(&warm.front.last_visits, "path"), "reuse");
++
++        // A negative module lookup remains an input even after a reused check.
++        std::fs::create_dir(dir.join("m1")).unwrap();
++        std::fs::write(dir.join("m1/mod.rs"), MODULE).unwrap();
++        let rejected = check(&mut warm, &root);
++        assert_ne!(rejected.0, 0);
++        let mut cold = Session::new(dir.join("module-cold"), false, SessionKey::synthetic(&root, false));
++        assert_eq!(rejected, check(&mut cold, &root));
++        std::fs::remove_file(dir.join("m1/mod.rs")).unwrap();
++        assert_eq!(check(&mut warm, &root), (0, String::new()));
++        assert_eq!(check(&mut warm, &root), (0, String::new()));
++        assert_eq!(field(&warm.front.last_visits, "path"), "reuse");
++
++        assert_eq!(run(&mut warm, &root, Cmd::Build).0, 0);
++        assert_ne!(field(&warm.front.last_visits, "path"), "reuse");
++        let binary = root.with_extension("bin");
++        let actual = std::process::Command::new(&binary).output().unwrap();
++        assert!(actual.status.success(), "{:?}", actual.status);
++        assert_eq!(actual.stdout, b"180\n");
++        assert!(actual.stderr.is_empty());
++        let mut cold = Session::new(dir.join("build-cold"), false, SessionKey::synthetic(&root, false));
++        assert_eq!(run(&mut cold, &root, Cmd::Build).0, 0);
++        let expected = std::process::Command::new(&binary).output().unwrap();
++        assert!(expected.status.success(), "{:?}", expected.status);
++        assert_eq!((actual.status.code(), actual.stdout, actual.stderr), (expected.status.code(), expected.stdout, expected.stderr));
++        let _ = std::fs::remove_dir_all(&dir);
++    }
++
++    /// Directly exercise the owned state an empty patch must maintain. This
++    /// appends a const-evaluation root after the base's previous observation,
++    /// then blanks it after the no-change request. The test models that state
++    /// transition explicitly; it is not a claim of a reproduced source-level
++    /// compiler failure. Deferring reach.update until the next edit loses it.
++    #[test]
++    fn no_change_check_retains_new_const_observations_and_slot_updates() {
++        use crate::ast::{Expr, ExprId};
++        use std::sync::Arc;
++        let dir = std::env::temp_dir().join(format!("lust-nochange-state-{}", std::process::id()));
++        let _ = std::fs::remove_dir_all(&dir);
++        std::fs::create_dir_all(&dir).unwrap();
++        let root = dir.join("main.rs");
++        std::fs::write(&root, "const fn no_change_late_const_marker() -> usize {\n    2\n}\nfn main() { let _n = no_change_late_const_marker(); }\n").unwrap();
++        let mut warm = Session::new(dir.join("obj"), true, SessionKey::synthetic(&root, false));
++        assert_eq!(check(&mut warm, &root), (0, String::new()));
++        let index = warm.front.fn_loc.iter().position(|&(item, sub)| {
++            let def = super::fn_def_at(&warm.front.ast, item, sub);
++            crate::intern::source_name(warm.front.interner.get(def.name)) == "no_change_late_const_marker"
++        }).unwrap();
++        let (item, sub) = warm.front.fn_loc[index];
++        let name = super::fn_def_at(&warm.front.ast, item, sub).name;
++        assert!(!warm.front.patch.as_ref().unwrap().reach.as_ref().unwrap().reaches(&warm.front, index));
++        let call = warm.front.ast.exprs.iter().enumerate().find_map(|(i, expr)| match expr {
++            Expr::Call { callee, .. } if matches!(warm.front.ast.expr(*callee), Expr::Path(path) if path.last().is_some_and(|p| p.name == name)) => Some(ExprId(i as u32)),
++            _ => None,
++        }).unwrap();
++        let span = warm.front.ast.expr_span(call);
++        let ast = Arc::make_mut(&mut warm.front.ast);
++        let value = ExprId(ast.exprs.len() as u32);
++        ast.exprs.push(Expr::Int(0, None));
++        ast.expr_spans.push(span);
++        let appended = ast.exprs.len();
++        ast.exprs.push(Expr::ArrayRepeat { value, len: call });
++        ast.expr_spans.push(span);
++        let slot = warm.front.fn_slot[index] as usize;
++        let expected_hash = warm.front.patch.as_ref().unwrap().body_hashes[index];
++        warm.front.slot_hash[slot] = expected_hash ^ 1;
++        warm.caches.has_out[slot] = true;
++
++        assert_eq!(check(&mut warm, &root), (0, String::new()));
++        assert_eq!(field(&warm.front.last_visits, "path"), "reuse");
++        assert!(warm.front.patch.as_ref().unwrap().reach.as_ref().unwrap().reaches(&warm.front, index));
++        assert_eq!(warm.front.slot_hash[slot], expected_hash);
++        assert!(!warm.caches.ok[slot] && !warm.caches.has_out[slot] && warm.caches.slot_reads[slot].is_none());
++        Arc::make_mut(&mut warm.front.ast).exprs[appended] = Expr::Unit;
++        assert!(warm.front.patch.as_ref().unwrap().reach.as_ref().unwrap().reaches(&warm.front, index));
++        warm_equals_cold(&mut warm, &root, &root, "    2\n", "    3\n");
++        assert_eq!(check(&mut warm, &root), (0, String::new()));
++        assert_eq!(field(&warm.front.last_visits, "path"), "reuse");
++        warm_equals_cold(&mut warm, &root, &root, "    3\n", "    true\n");
++        assert_ne!(check(&mut warm, &root).0, 0);
++        warm_equals_cold(&mut warm, &root, &root, "    true\n", "    2\n");
++        assert_eq!(check(&mut warm, &root), (0, String::new()));
++        assert_eq!(field(&warm.front.last_visits, "path"), "reuse");
++        let _ = std::fs::remove_dir_all(&dir);
++    }
++
+     /// A body edit of a blanket impl method whose body coerces a type
+     /// parameter to `dyn` checks the template again on the kept program
+     /// as collect does (before mono, so no concrete vtable is asked for).
 diff --git a/src/driver/session.rs b/src/driver/session.rs
 index 8eabf97640455036f5f7c895cd034b98f4c5b9d3..5803e7fdd0e0f10d68e2587afa8ec68f407e0a2c 100644
 --- a/src/driver/session.rs
