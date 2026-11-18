@@ -50,7 +50,7 @@ fn main() {
     for entry in fs::read_dir(baseline.join("bin")).unwrap() {
         let entry = entry.unwrap();
         let name = entry.file_name();
-        if name != "lustr" && name != "rustc" && name != "rustc-full" && name != "rustc-reference" {
+        if name != "lustr" && name != "rustc" && name != "rustc-full" && name != "rustc-cargo" && name != "rustc-reference" {
             link(&entry.path(), &destination.join("bin").join(name));
         }
     }

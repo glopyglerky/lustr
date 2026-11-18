@@ -35,6 +35,10 @@ full in-process driver receipts for every request, including these ordinary
 Rust requests. Its results diagnose the bridge only; uninstrumented paired
 measurements are required to establish the direct-route speed.
 
+Both the complete source-toolchain builder (used for paired Cargo qualification)
+and the component assembler create and verify the direct Cargo compiler link.
+Neither changes the public `bin/rustc` entry.
+
 The packaged `lustr` entry calls the shared Cargo coordinator through
 `cargo_lust::run_cli_with_default_root`. Previously it replaced itself with `cargo-lustr`,
 which then selected and entered Cargo. The new path removes one executable

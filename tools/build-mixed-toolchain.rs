@@ -213,7 +213,9 @@ fn main() {
     for entry in fs::read_dir(sdk.join("bin")).unwrap() {
         let entry = entry.unwrap();
         let name = entry.file_name();
-        if !["rustc", "rustc-full", "rustc-reference", "lustr", "lust", "lust-core", "cargo-lustr"].iter().any(|reserved| name == *reserved)
+        if !["rustc", "rustc-full", "rustc-cargo", "rustc-reference", "lustr", "lust", "lust-core", "cargo-lustr"]
+            .iter()
+            .any(|reserved| name == *reserved)
         {
             symlink(entry.path(), package.join("bin").join(name)).unwrap();
         }
@@ -262,6 +264,14 @@ fn main() {
         symlink(sdk.join("bin/rustc"), package.join("bin/rustc-full")).unwrap();
         "whole-target native Lust plus matching upstream Rust; no mixed Mach-O bridge"
     };
+    // The source-built package is the one used by Cargo correctness and
+    // paired-speed qualification. Give it the same direct Cargo entry as
+    // the component assembler; retain the public rustc -> lustr path.
+    symlink("rustc-full", package.join("bin/rustc-cargo")).unwrap();
+    assert_eq!(
+        package.join("bin/rustc-cargo").canonicalize().unwrap(),
+        package.join("bin/rustc-full").canonicalize().unwrap()
+    );
     // rustc-full resolves current_exe to this directory, alongside its matching
     // native core and the original compiler used for non-UTF8 OS arguments.
     record(&output.join("NATIVE-BUILD-RECEIPT.txt"), native_output.as_bytes());
