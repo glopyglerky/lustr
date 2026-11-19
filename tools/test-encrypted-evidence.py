@@ -84,6 +84,12 @@ class EncryptionTests(unittest.TestCase):
     def seal(self):
         return evidence.seal(self.campaign, self.certificate, self.output, self.fingerprint, self.openssl)
 
+    def cli(self, outcome, output=None):
+        return subprocess.run([sys.executable, str(Path(module.origin)), "--campaign", str(self.campaign),
+                               "--certificate", str(self.certificate), "--output", str(output or self.output),
+                               "--expected-certificate-sha256", self.fingerprint,
+                               "--campaign-step-outcome", outcome], capture_output=True)
+
     def decrypt(self, ciphertext=None, key=None):
         """Never treat OpenSSL's output file as authenticated until exit is zero."""
         output = self.private / "recovered.tar.gz.pending"
@@ -223,6 +229,61 @@ class EncryptionTests(unittest.TestCase):
         self.assertEqual(result.stdout, b"")
         self.assertEqual(result.stderr, b"Evidence retention failed: private-evidence-absent.\n")
         self.assertNotIn(str(self.campaign).encode(), (self.output / evidence.STATUS).read_bytes())
+
+    def test_cli_explicitly_skipped_campaign_records_no_execution_or_retention(self):
+        self.private.rmdir()
+        self.campaign.rmdir()  # Qualification can stop before setup creates it.
+        result = self.cli("skipped")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stderr, b"")
+        self.assertEqual({path.name for path in self.output.iterdir()}, {evidence.STATUS})
+        record = json.loads((self.output / evidence.STATUS).read_bytes())
+        self.assertEqual(record["retention_status"], "not-required")
+        self.assertEqual(record["reason"], "campaign-step-skipped")
+        self.assertEqual(record["campaign_status"], "skipped")
+        self.assertEqual(record["campaign_step_outcome"], "skipped")
+        self.assertEqual(set(record["scenario_status"].values()), {"not-observed"})
+        self.assertFalse(self.private.exists())
+
+    def test_cli_attempted_campaign_requires_originals_even_after_failure_or_cancellation(self):
+        self.private.rmdir()
+        for outcome in ("success", "failure", "cancelled"):
+            with self.subTest(outcome=outcome):
+                output = self.campaign / ("encrypted-" + outcome)
+                result = self.cli(outcome, output)
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual(result.stderr, b"Evidence retention failed: private-evidence-absent.\n")
+                record = json.loads((output / evidence.STATUS).read_bytes())
+                self.assertEqual(record["retention_status"], "not-retained")
+                self.assertEqual(record["reason"], "private-evidence-absent")
+                self.assertEqual(record["campaign_step_outcome"], outcome)
+
+    def test_cli_skipped_claim_cannot_hide_existing_originals(self):
+        original = self.original("no-op.runner.stderr", b"must retain the original failure\x00\xff\n")
+        before = original.read_bytes()
+        result = self.cli("skipped")
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stderr, b"Evidence retention failed: skipped-campaign-has-evidence.\n")
+        self.assertEqual(original.read_bytes(), before)
+        record = json.loads((self.output / evidence.STATUS).read_bytes())
+        self.assertEqual(record["retention_status"], "not-retained")
+        self.assertNotEqual(record["campaign_status"], "skipped")
+
+    def test_cli_failed_campaign_retains_original_stderr_without_changing_failure(self):
+        expected = self.fixture()
+        result = self.cli("failure")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        record = json.loads((self.output / evidence.STATUS).read_bytes())
+        self.assertEqual(record["retention_status"], "retained")
+        self.assertEqual(record["campaign_step_outcome"], "failure")
+        self.assertEqual(record["campaign_status"], "failed")
+        self.assertEqual(record["scenario_status"]["no-op"], "failed")
+        code, archive = self.decrypt()
+        self.assertEqual(code, 0)
+        with tarfile.open(archive) as recovered:
+            actual = {member.name: recovered.extractfile(member).read()
+                      for member in recovered if member.name != evidence.MANIFEST}
+        self.assertEqual(actual, expected)
 
 
 if __name__ == "__main__":

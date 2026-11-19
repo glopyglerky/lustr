@@ -223,7 +223,7 @@ def observed_status(path, allowed):
     return value if value in allowed else "incomplete"
 
 
-def status(private):
+def status(private, step_outcome=None):
     observed = private.is_dir() and not private.is_symlink()
     scenarios = {}
     for name in SCENARIOS:
@@ -236,9 +236,12 @@ def status(private):
             value = observed_status(root / "report.json", ("passed", "failed"))
             attempted = root.exists() or any((private / f"{name}.runner.{stream}").exists() for stream in ("stdout", "stderr"))
             scenarios[name] = "incomplete" if value == "not-observed" and attempted else value
-    return {"schema": "lustr-encrypted-evidence-status-v1", "retention_status": "not-retained", "reason": "retention-not-complete",
-            "campaign_status": observed_status(private / "campaign-result.json", ("passed", "failed", "prepared-only")) if observed else "not-observed",
-            "scenario_status": scenarios}
+    result = {"schema": "lustr-encrypted-evidence-status-v1", "retention_status": "not-retained", "reason": "retention-not-complete",
+              "campaign_status": observed_status(private / "campaign-result.json", ("passed", "failed", "prepared-only")) if observed else "not-observed",
+              "scenario_status": scenarios}
+    if step_outcome is not None:
+        result["campaign_step_outcome"] = step_outcome
+    return result
 
 
 def put_json(path, value):
@@ -249,14 +252,23 @@ def put_json(path, value):
         os.fsync(stream.fileno())
 
 
-def seal(campaign, certificate, output, expected_fingerprint, executable):
+def seal(campaign, certificate, output, expected_fingerprint, executable, step_outcome=None):
     private = campaign / "private"
-    outcome = status(private)
+    outcome = status(private, step_outcome)
     published = []
     output.mkdir(mode=0o700)
     try:
-        require(private.exists(), "private-evidence-absent")
         require(not output.is_relative_to(private) and not private.is_relative_to(output), "invalid-output-scope")
+        if step_outcome == "skipped":
+            # Only the workflow's explicit skipped outcome permits this state.
+            # Any existing campaign data contradicts that claim; never discard
+            # it or silently treat a started campaign as unattempted.
+            require(all(path == output for path in campaign.iterdir()), "skipped-campaign-has-evidence")
+            outcome.update(retention_status="not-required", reason="campaign-step-skipped",
+                           campaign_status="skipped")
+            put_json(output / STATUS, outcome)
+            return outcome
+        require(private.exists(), "private-evidence-absent")
         entries = inventory(private)
         require(entries, "private-evidence-empty")
         public_recipient = recipient(executable, certificate, expected_fingerprint)
@@ -307,7 +319,7 @@ def seal(campaign, certificate, output, expected_fingerprint, executable):
         for path in published:
             path.unlink(missing_ok=True)
         category = str(error) if isinstance(error, RetentionError) else "retention-operation-failed"
-        outcome = status(private)
+        outcome = status(private, step_outcome)
         outcome["reason"] = category
         put_json(output / STATUS, outcome)
         raise RetentionError(category) from None
@@ -318,11 +330,14 @@ def main():
     for name in ("campaign", "certificate", "output", "verify-archive", "receipt"):
         parser.add_argument(f"--{name}", type=Path)
     parser.add_argument("--expected-certificate-sha256", help="trusted certificate DER SHA256; colons are accepted")
+    parser.add_argument("--campaign-step-outcome", choices=("success", "failure", "cancelled", "skipped"),
+                        help="actual workflow outcome; only skipped permits absent evidence")
     parser.add_argument("--openssl", type=Path, default=Path(shutil.which("openssl") or "/usr/bin/openssl"))
     args = parser.parse_args()
     try:
         if args.verify_archive is not None:
-            require(args.receipt is not None and args.campaign is None and args.certificate is None and args.output is None,
+            require(args.receipt is not None and args.campaign is None and args.certificate is None and args.output is None
+                    and args.campaign_step_outcome is None,
                     "invalid-verification-arguments")
             verify_archive(args.verify_archive, json.loads(args.receipt.read_bytes()))
             print("Private archive bytes and encrypted manifest verified; extraction has not run.")
@@ -337,8 +352,11 @@ def main():
             # only its retention status must not pretend private originals exist.
             campaign.mkdir(mode=0o700, exist_ok=True)
             output = args.output.parent.resolve(strict=True) / args.output.name
-            seal(campaign, args.certificate, output, expected, args.openssl)
-            print("Original private evidence retained as authenticated ciphertext.")
+            outcome = seal(campaign, args.certificate, output, expected, args.openssl, args.campaign_step_outcome)
+            if outcome["retention_status"] == "not-required":
+                print("Project campaign was skipped; no evidence was produced or retained.")
+            else:
+                print("Original private evidence retained as authenticated ciphertext.")
         return 0
     except Exception as error:
         category = str(error) if isinstance(error, RetentionError) else "retention-operation-failed"

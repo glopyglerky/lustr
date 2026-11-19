@@ -294,6 +294,7 @@ class MixedWorkflowTests(unittest.TestCase):
         block = self.section.split(marker, 1)[1].split("      - name:", 1)[0]
         self.assertIn("        if: always()\n", block)
         self.assertIn("--expected-certificate-sha256 69e1167422ba3edfc45139eda5bdcec97d5bebcdf3e764054f3457488aaa5c4f", block)
+        self.assertIn('--campaign-step-outcome "${{ steps.project_measurements.outcome }}"', block)
         self.assertIn('tools/benchmark-evidence-recipient.pem"', block)
         self.assertNotIn("continue-on-error", block)
         self.assertNotIn("|| true", block)

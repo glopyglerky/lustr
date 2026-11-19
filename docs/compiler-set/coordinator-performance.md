@@ -250,13 +250,32 @@ account names and timestamps; the receipt's original archive hash identifies
 these exact generated tar/gzip bytes, not an earlier report or public projection.
 
 Missing or incomplete result JSON does not prevent retention of the existing
-originals. If no private evidence exists, the helper returns nonzero and writes
-only `status.json` with `not-retained`; it never invents an archive receipt.
+originals. If no private evidence exists after a campaign ran, the helper returns
+nonzero and writes only `status.json` with `not-retained`; it never invents an
+archive receipt.
 Encryption failure also leaves only an allowlisted failure status. A ciphertext
 and receipt appear only after encryption and archive checks succeed. Existing
 outputs are never overwritten. Plaintext staging stays under `private/` and is
 removed on ordinary success or failure. The original private files remain there;
 only the ciphertext and allowlisted JSON files belong in the artifact upload.
+
+The workflow also passes the actual `project_measurements.outcome` through
+`--campaign-step-outcome`. When an earlier qualification prevents that step from
+running, the explicit `skipped` value permits a status-only result with
+`retention_status: not-required`, `campaign_status: skipped` and unobserved
+scenario results. Any existing campaign data contradicts that skipped claim and
+is rejected. A success, failure, cancellation or omitted outcome still requires
+the private originals; a missing directory alone never establishes a skip.
+
+This corrects the separate `private-evidence-absent` error in the
+[PR30 mixed job](https://github.com/glopyglerky/lustr/actions/runs/44465150000/job/135361017938),
+where compiler qualification had already blocked the campaign. The qualification
+steps keep their failure status and original output. Status-only retention grants
+no compiler or performance acceptance. Sixteen retention tests include real CMS
+round trips, skipped and attempted CLI states, rejection of contradictory
+evidence, and exact original stderr recovery after a failed campaign. The
+workflow controls still require every qualification prerequisite and keep
+failure masking disabled.
 
 ### Recovery
 

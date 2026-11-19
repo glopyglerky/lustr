@@ -476,6 +476,7 @@ jobs:
         run: |
           python3 tools/encrypt-coordinator-evidence.py \
             --campaign "$RUNNER_TEMP/lustr-coordinator-campaign" \
+            --campaign-step-outcome "${{ steps.project_measurements.outcome }}" \
             --certificate "$GITHUB_WORKSPACE/tools/benchmark-evidence-recipient.pem" \
             --expected-certificate-sha256 69e1167422ba3edfc45139eda5bdcec97d5bebcdf3e764054f3457488aaa5c4f \
             --output "$RUNNER_TEMP/lustr-coordinator-campaign/encrypted"
