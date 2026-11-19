@@ -14904,9 +14904,9 @@ mod tests {
             let shards = names::glue_shards(&program, &glue, &outs, 1);
             let drop_hooks = format!("void drop_{}_(", ctype(&CTy::Adt(hooks)));
             let shard = shards.iter().find(|s| s.lines().any(|l| l.starts_with(&drop_hooks) && l.ends_with('{'))).expect("a shard defines the struct's drop glue");
-            assert!(shard.contains("inline void drop_O_Rcdyn_(O_O_Rcdyn_ *p) {"), "the field's drop is inline there:\n{shard}");
+            assert!(shard.contains("inline void drop_O_Rcdyn_(void *raw) {"), "the field's drop is inline there:\n{shard}");
             assert!(shard.lines().all(|l| !l.starts_with("void drop_O_Rcdyn_(")), "no declaration of it without inline:\n{shard}");
-            assert_eq!(shards.iter().filter(|s| s.lines().any(|l| l.starts_with("void drop_O_Rcdyn_(O_O_Rcdyn_ *p) {"))).count(), 1, "one external definition");
+            assert_eq!(shards.iter().filter(|s| s.lines().any(|l| l.starts_with("void drop_O_Rcdyn_(void *raw) {"))).count(), 1, "one external definition");
             let keys = names::glue_shard_keys(&glue, &outs, 1);
             let made = names::glue_shard_texts(&program, &glue, &keys, &[], true);
             assert_eq!(made.iter().map(|(c, _)| c.as_str()).collect::<Vec<_>>(), shards, "a record does not change a shard");

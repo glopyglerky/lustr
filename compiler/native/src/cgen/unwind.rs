@@ -623,7 +623,7 @@ mod tests {
         let framed = |body: &str| frame_glue("T_", "T", body).expect("covered").contains("struct dgf_T_");
         // One drop and nothing after it: plain glue, which units can inline.
         let opt = "  if (disc_O_X_(p)) drop_X_(&(*p).u.v1.f0);\n";
-        assert_eq!(frame_glue("T_", "T", opt).as_deref(), Some(format!("void drop_T_(T *p) {{\n{opt}}}\n").as_str()));
+        assert_eq!(frame_glue("T_", "T", opt).as_deref(), Some(format!("void drop_T_(void *raw) {{\n  T *p = raw;\n{opt}}}\n").as_str()));
         assert!(!framed("  ((void (*)(T *))f_0123456789abcdef)(p);\n"));
         assert!(!framed("  switch (disc_E_(p)) {\n  case 0: drop_X_(&p->u.v0.f0); break;\n  case 1: break;\n  default: break;\n  }\n"));
         // A drop with more after it keeps the frame: the rest runs as cleanup.
