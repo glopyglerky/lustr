@@ -16,9 +16,14 @@ CARGO_SOURCE = "c07ac2c4d12237effc4b94f4543769b421790045"
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--profile", default="dev", help="Cargo profile used to build the test executable")
+    parser.add_argument("--jobs", type=int, help="Maximum concurrent Cargo build jobs")
     args = parser.parse_args()
+    if args.jobs is not None and args.jobs < 1:
+        parser.error("--jobs must be positive")
     args.output.mkdir(parents=True, exist_ok=False)
-    report = {"schema": 1, "test": TEST, "runs": [], "passed": False}
+    report = {"schema": 1, "test": TEST, "profile": args.profile, "jobs": args.jobs,
+              "runs": [], "passed": False}
 
     def run(name, command, env=None):
         result = subprocess.run(command, cwd=ROOT / "compiler/native", env=env, capture_output=True)
@@ -41,8 +46,11 @@ def main():
             raise RuntimeError("the private layout switch requires the exact declared Cargo source")
         # Reuse Cargo's actual test artifact. Discovering it through JSON avoids
         # selecting a stale test binary or assuming either target layout.
-        built = run("test-artifact", ["cargo", "test", "--locked", "--offline", "--bin", "lust-core",
-                                      "--no-run", "--message-format=json"])
+        command = ["cargo", "test", "--locked", "--offline", "--bin", "lust-core",
+                   "--profile", args.profile, "--no-run", "--message-format=json"]
+        if args.jobs is not None:
+            command.extend(["--jobs", str(args.jobs)])
+        built = run("test-artifact", command)
         executables = set()
         for line in built.splitlines():
             try:
