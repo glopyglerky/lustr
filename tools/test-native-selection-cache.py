@@ -247,15 +247,24 @@ def main():
         warm("admitted-manifest-restored")
 
         # A separate package projection permits tool replacement without touching
-        # the caller's actual toolchain. Libraries remain identical symlinks.
+        # the caller's actual toolchain. Copy the receipt so its original bytes
+        # remain evidence inside this output; libraries stay identical symlinks.
         projection = root / "package"
         projection_bin = projection / "bin"
         projection_bin.mkdir(parents=True)
         projection_lib = projection / "lib"
         projection_lib.mkdir()
+        source_receipt = package_bin.parent / "lib/lustr-selection-tools.txt"
+        receipt_bytes = source_receipt.read_bytes()
         for original in (package_bin.parent / "lib").iterdir():
-            if original.name != "lustr-selection-verified":
+            if original.name == "lustr-selection-tools.txt":
+                shutil.copy2(original, projection_lib / original.name)
+            elif original.name != "lustr-selection-verified":
                 (projection_lib / original.name).symlink_to(original, target_is_directory=original.is_dir())
+        projected_receipt = projection_lib / "lustr-selection-tools.txt"
+        require(not projected_receipt.is_symlink() and projected_receipt.is_file()
+                and projected_receipt.read_bytes() == receipt_bytes,
+                "projection owns a byte-identical regular tool receipt")
         for name in ["cargo", "lustr", "rustc"]:
             original = package_bin / name
             if not original.exists():
@@ -308,15 +317,16 @@ def main():
             saved_cargo.rename(projected_cargo)
         warm("cargo-fifo-removed", bin_path=projection_bin)
 
-        projected_receipt = projection_lib / "lustr-selection-tools.txt"
-        receipt_target = projected_receipt.readlink()
-        projected_receipt.unlink()
+        saved_receipt = projection_lib / "lustr-selection-tools.txt.saved"
+        projected_receipt.rename(saved_receipt)
         try:
             os.mkfifo(projected_receipt, 0o600)
             pair("tool-receipt-replaced-by-fifo", bin_path=projection_bin, event="ineligible", timeout=3)
         finally:
             projected_receipt.unlink(missing_ok=True)
-            projected_receipt.symlink_to(receipt_target)
+            saved_receipt.rename(projected_receipt)
+        require(not projected_receipt.is_symlink() and projected_receipt.read_bytes() == receipt_bytes,
+                "FIFO control restores the original regular receipt bytes")
 
         # A native executable header is not proof that this is the qualified
         # Cargo implementation. This delegate reads an external file that is
@@ -341,6 +351,7 @@ def main():
             pair("unknown-native-cargo-" + str(index), bin_path=projection_bin, event=("miss", "ineligible"))
         external.touch()
         pair("unknown-native-cargo-external-change", bin_path=projection_bin, expected=2, event=("miss", "ineligible"))
+        require(source_receipt.read_bytes() == receipt_bytes, "input package receipt remains unchanged")
         completed = True
         save()
         print(json.dumps({"success": True, "invocations": len(records), "assertions": len(assertions), "report": str(root / "results.json")}))

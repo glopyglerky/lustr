@@ -32,9 +32,9 @@ separately unresolved 13 histories and 105 versions are not promoted to passes.
 The donor's rebuilt-daemon protocol control remains in the unchanged original
 gate, and the added typed-main transition remains in its dedicated gate; neither
 is silently counted as one of these fixture histories.
-The complete current-source campaign must still run, including recovery after
-the removed-target request. No failing native history was removed to obtain a
-smaller successful campaign.
+The combined hosted results below cover that required inventory, including
+recovery after the removed-target request. No failing native history was removed
+to obtain a smaller successful campaign.
 
 ## Cargo supplies a plan; Lust compiles the source
 
@@ -251,7 +251,7 @@ opposite-state rejection while retaining full consumption, build/source/output
 identity and truncation checks. No production protocol or compiler source is
 changed by that repair. The five installed-package contracts **did not execute**
 after the root command failed; this run cannot establish their success. The
-corrected test and all five contracts remain required in the follow-up run.
+corrected test and all five contracts were required in the follow-up run below.
 
 The full original artifact uploaded successfully, but its 584,645,008 bytes
 exceed the download tool's 536,870,912-byte limit. Its server-declared digest and
@@ -267,7 +267,7 @@ complete-upload declaration. The supplemental capture inventories and hashes
 compiled files whose bytes stay in the full artifact, and reports capture or
 size-limit failures explicitly. The complete upload remains independent and
 always scheduled. These are evidence-packaging checks, not compiler results;
-the first hosted supplemental capture remains required.
+the first hosted supplemental capture and its failure are recorded below.
 
 Both macOS jobs for this source were cancelled before receiving a runner or
 executing any step. The [captured GitHub annotations](evidence/macos-capacity-fb2b2480/README.md)
@@ -278,6 +278,91 @@ The older `62da158b` Linux job has separately completed successfully; its
 [original log and receipts](evidence/native-linux-original-62da-20261119/README.md)
 remain old-source evidence, including the donor gate's 29 unsupported versions.
 The separate old macOS failure still makes that older matrix unsuccessful.
+
+## Follow-up package results and preserved capture failure
+
+The [follow-up hosted record](evidence/native-cargo-hosted-7c3d095f-20261119/README.md)
+binds published head `7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a` and merge
+checkout `66963315e9736ce9f151ce8ccac248d35a01d048` to the same tree,
+`2a6a51f099bdcdb74871fdc2e65a4df87aa0c867`. The native tree remains
+`bf933c382fd99e52dd2586ebc46f0d0aceaa71a8`. All compiler and qualification
+steps in that job passed; its later evidence-packaging step failed.
+
+| Executed gate | Source-bound result |
+| --- | --- |
+| Guarded native package construction and ownership | Passed. |
+| Ordinary root targets | 93 tests passed, zero failures; two child-process fixtures remain deliberately ignored. |
+| Installed-package contracts | All five executed separately and passed, including the real ambiguous-socket control. They were ignored only in the preceding ordinary test invocation. |
+| Exclusive public entry | 71 controls passed, none unavailable. |
+| Public capability results | All 18 cases passed: 17 exact program results and one matching named-test result. |
+| Retained qualifier controls | All 55 passed without skips, including all five actual pinned Rust/Cargo controls. |
+| Required retained histories | All 349 distinct histories and 1,744 versions passed. The 13 unresolved histories and 105 versions remain unqualified. |
+| Native selection and bounded shared-service research | Selection reuse/invalidation, symbol/ABI, provider/consumer and imported-emission controls passed within their declared scope. |
+
+The actual retained process report again records seven matching native/oracle
+program results and 38 finite information queries. Its original daemon identity
+is PID 6264 with start ticks `35433`; the same-process checks remain part of every
+observed native build request. Unchanged, body-edit and feature-recovery requests
+start zero Cargo and external hashing processes. First explicit package selection
+still costs five Cargo and four hashing processes, feature selection three Cargo
+processes, and an existing explicit package two Cargo processes. These remain
+process observations, with no compiler latency or near-stock speed claim.
+
+The original [supplemental ZIP](https://github.com/glopyglerky/lustr/actions/runs/44553094694/artifacts/14546870100)
+remains a hosted artifact. It was downloaded and independently checked before
+the local workspace became unavailable. Those checks verified its outer digest,
+inner archive digest, all 36,619 included members, 35,963 regular-file payloads
+and 26,126 original stdout/stderr hashes referenced by the 349 history reports.
+The inventory identifies 28 omitted compiled files; their bytes remain in the
+separate complete artifact and were not locally verified. The complete original
+upload succeeded independently.
+
+The capture correctly reports `capture_complete=false`: the two selector
+fixture packages made `lib/lustr-selection-tools.txt` a symlink. Their link
+targets were preserved, but their receipt contents were not read. The packager
+refused to certify those missing bytes. The original job therefore remains
+failed, despite its passing compiler steps.
+
+The [receipt-producer repair](evidence/qualification-receipt-repair-20261119/README.md)
+copies only the small receipt into each controlled package, preserving its exact
+initial bytes and the existing tool/library handling. Real FIFO refusal and
+rename/restore, relocation, invalid-certificate and receipt-mutation checks
+remain. The actual local cache fixture passed 297 assertions across 156
+invocations, and the seed fixture passed 87 across 38. The unchanged helper
+completely captured those bounded fixture outputs, including all three regular
+receipts. This is a local selector/record proof, not a new compiler campaign or
+a fresh hosted capture.
+
+Workspace loss prevented committing the downloaded ZIP and the local repair's
+raw archive. The complete original hosted job log was recovered, matched to its independently
+recorded SHA-256 and published unchanged.
+The compact hosted record and all 349 per-history log rows are published here.
+The reviewed producer sources were recovered from the pinned published source
+and matched to their recorded tested hashes before publication. These records
+explicitly distinguish available hosted originals, recovered exact text and
+unpublished local archives; none is represented as a completed archive commit.
+
+Both [fresh macOS jobs](evidence/macos-capacity-7c3d095f/README.md) again failed
+to acquire hosted runners. Their own annotation panels report acquisition and
+arm64 capacity failures, with no executed step or assigned runner. There is no
+Darwin signature or warm odd-path result from this attempt. The broader Linux
+gate remains a separate source-bound campaign; its unfinished steps are not
+inferred from these package results.
+
+The separate historical-performance job exposed a workflow-control assumption
+that the native job had exactly one artifact upload. Its
+[preserved failure and focused repair](evidence/historical-workflow-control-20261119/README.md)
+select the exact original evidence artifact within the exact job and retain
+every prior package, execution and raw-record assertion. All 19 local controls
+pass, including nine mutations for missing, ambiguous or misplaced evidence
+and lost failure retention. Historical replay and current compiler timing remain
+different claims.
+
+A final source audit also found and [removed the unused stock-rustc request
+policy](dead-entry-policy-cleanup.md). Its only historical caller was the
+already removed mixed launcher. The existing structural guard now rejects
+restoring that file. No additional live compiler retry was found, and the
+useful metadata, object, ABI and retained-state mechanisms remain preserved.
 
 ## Remaining compiler boundary
 

@@ -1,0 +1,64 @@
+{
+  "published_tree": "2a6a51f099bdcdb74871fdc2e65a4df87aa0c867",
+  "merge_tree": "2a6a51f099bdcdb74871fdc2e65a4df87aa0c867",
+  "receipts": [
+    {
+      "source_receipt": {
+        "schema": 1,
+        "repository": "glopyglerky/lustr",
+        "run_id": "44553094710",
+        "run_attempt": 1,
+        "event_name": "pull_request",
+        "sha": "66963315e9736ce9f151ce8ccac248d35a01d048",
+        "ref": "refs/pull/33/merge",
+        "workflow_sha": "66963315e9736ce9f151ce8ccac248d35a01d048",
+        "workflow_ref": "glopyglerky/lustr/.github/workflows/ci.yml@refs/pull/33/merge",
+        "pull_request": {
+          "number": 33,
+          "head_sha": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+          "base_sha": "d135be016fab5db2ba026f1229d4d77681d9b0a2",
+          "head_repository_id": "1450430441",
+          "base_repository_id": "1450430441"
+        }
+      },
+      "omitted_fields": [
+        "actor",
+        "triggering_actor"
+      ],
+      "original_receipt_sha256": "cc4a0848dfa01af688782bccf8014e7d7053ba22ed87aa900849ac3c2ba3ba67",
+      "artifact_id": 14543169208,
+      "original_zip_bytes": 453,
+      "original_zip_sha256": "3e23508a69c24c0620c9062d8b0c9b315dbed5a204cbd508a534bac76ea9b8e4",
+      "original_zip_locally_verified": true
+    },
+    {
+      "source_receipt": {
+        "schema": 1,
+        "repository": "glopyglerky/lustr",
+        "run_id": "44553094694",
+        "run_attempt": 1,
+        "event_name": "pull_request",
+        "sha": "66963315e9736ce9f151ce8ccac248d35a01d048",
+        "ref": "refs/pull/33/merge",
+        "workflow_sha": "66963315e9736ce9f151ce8ccac248d35a01d048",
+        "workflow_ref": "glopyglerky/lustr/.github/workflows/compiler-set.yml@refs/pull/33/merge",
+        "pull_request": {
+          "number": 33,
+          "head_sha": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+          "base_sha": "d135be016fab5db2ba026f1229d4d77681d9b0a2",
+          "head_repository_id": "1450430441",
+          "base_repository_id": "1450430441"
+        }
+      },
+      "omitted_fields": [
+        "actor",
+        "triggering_actor"
+      ],
+      "original_receipt_sha256": "d55059a6cbbdb08f2dd76406769c8db9e8f0ba8604ec23033fdedeb5caf4817e",
+      "artifact_id": 14543483935,
+      "original_zip_bytes": 461,
+      "original_zip_sha256": "952b7e39da905ac4b4a56339fe635f7314fe51cbf04b80d78eb0a9534688d488",
+      "original_zip_locally_verified": true
+    }
+  ]
+}

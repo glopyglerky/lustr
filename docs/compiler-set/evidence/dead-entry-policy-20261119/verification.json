@@ -1,0 +1,44 @@
+{
+  "schema": "lustr-unused-entry-policy-cleanup-v1",
+  "audited_head": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+  "removed_path": "crates/lustr-semantic/src/mixed_entry.rs",
+  "removed_git_blob": "1149799bbd7880715ed6aa4753c3d9c36fecdaad",
+  "removed_sha256": "94acc8580cb963295c032485f69f4d8a86d0757c11fff5c68119f6857c63511c",
+  "historical_caller": "47371e9143392d9de52eb32c82e8437ca4d37f77:crates/lustr-semantic/src/mixed_main.rs",
+  "current_reference_scope": "Tracked crates, src, tools and .github at the exact audited head; all three matches occur inside the removed file itself. Current semantic main declares only collect and contract; Cargo has no mixed binary target.",
+  "new_live_retry_found": false,
+  "checks": [
+    {
+      "name": "guard",
+      "argv": [
+        "python3",
+        "tools/check-exclusive-coverage.py"
+      ],
+      "exit_code": 0,
+      "stdout": "guard.stdout",
+      "stderr": "guard.stderr"
+    },
+    {
+      "name": "guard_controls",
+      "argv": [
+        "python3",
+        "tools/test-exclusive-coverage-guard.py"
+      ],
+      "exit_code": 0,
+      "stdout": "guard_controls.stdout",
+      "stderr": "guard_controls.stderr"
+    }
+  ],
+  "unchanged_production_subtrees": {
+    "compiler/native": "bf933c382fd99e52dd2586ebc46f0d0aceaa71a8",
+    "src": "a176be19118154f13b0445ba1e35696a1b01de5a",
+    "crates/lustr-native-core": "20b58214d69830d75cd4bd6e9acccde9c676e2ec"
+  },
+  "native_integration_and_pins_changed": false,
+  "coverage_claim": false,
+  "performance_claim": false,
+  "source_sha256": {
+    "tools/check-exclusive-coverage.py": "1de36684a543502212edb9a4895de7cd47c70ae0b181cdea8abe25e6256b561a",
+    "tools/test-exclusive-coverage-guard.py": "ccc3ec1315ed9e4aa6f33973c73e5b8e45c877dda774efe0370ec06487a58b25"
+  }
+}

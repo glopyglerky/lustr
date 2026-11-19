@@ -1,0 +1,257 @@
+{
+  "schema": "lustr-hosted-qualification-reconstructed-summary-v1",
+  "source": {
+    "published_head": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+    "published_tree": "2a6a51f099bdcdb74871fdc2e65a4df87aa0c867",
+    "checkout": "66963315e9736ce9f151ce8ccac248d35a01d048",
+    "native_tree": "bf933c382fd99e52dd2586ebc46f0d0aceaa71a8"
+  },
+  "run_id": 44553094694,
+  "job_id": 135661771824,
+  "job_url": "https://github.com/glopyglerky/lustr/actions/runs/44553094694/job/135661771824",
+  "job_conclusion": "failure",
+  "only_failed_step": {
+    "number": 27,
+    "name": "Package supplemental qualification records",
+    "errors": [
+      {
+        "path": "native-selection-cache/package/lib/lustr-selection-tools.txt",
+        "error": "ValueError: record is a symlink; referent was not read"
+      },
+      {
+        "path": "native-selection-seed/relocated-package/lib/lustr-selection-tools.txt",
+        "error": "ValueError: record is a symlink; referent was not read"
+      }
+    ]
+  },
+  "guarded_constructor": "passed on the exact published tree",
+  "root_all_targets": {
+    "passed": 93,
+    "failed": 0,
+    "targets": [
+      {
+        "target": "src/lib.rs",
+        "result": "ok",
+        "passed": 3,
+        "failed": 0,
+        "ignored": 0
+      },
+      {
+        "target": "src/main.rs",
+        "result": "ok",
+        "passed": 35,
+        "failed": 0,
+        "ignored": 1
+      },
+      {
+        "target": "tests/compiler_contract.rs",
+        "result": "ok",
+        "passed": 24,
+        "failed": 0,
+        "ignored": 5
+      },
+      {
+        "target": "examples/native_notices.rs",
+        "result": "ok",
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      {
+        "target": "examples/native_package.rs",
+        "result": "ok",
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      {
+        "target": "tools/profile-native-preflight.rs",
+        "result": "ok",
+        "passed": 31,
+        "failed": 0,
+        "ignored": 1
+      }
+    ],
+    "ignored_child_fixtures": 2,
+    "ordinary_ignored_package_contracts": 5
+  },
+  "installed_package_contracts": {
+    "passed": 5,
+    "failed": 0,
+    "ignored": 0,
+    "names": [
+      "large_valid_native_argument_lists_use_the_original_process",
+      "native_file_tests_preserve_single_execution",
+      "native_library_selection_survives_process_startup",
+      "native_output_failure_does_not_become_success",
+      "public_entries_keep_ambiguous_daemon_failures_terminal"
+    ]
+  },
+  "exclusive_public_entry_controls": {
+    "passed": 71,
+    "unavailable": 0
+  },
+  "capability_qualification": {
+    "passed": 18,
+    "exact_program_results": 17,
+    "complete_test_harness_results": 1
+  },
+  "retained_evaluator_controls": {
+    "executed": 55,
+    "passed": 55,
+    "skipped": 0,
+    "actual_pinned_oracle_controls": 5,
+    "summary": [
+      "Ran 55 tests in 7.123s",
+      "",
+      "OK"
+    ]
+  },
+  "retained_campaign": {
+    "passed_histories": 349,
+    "versions": 1744,
+    "exact_required_inventory_names": true,
+    "unresolved_histories": [
+      "cargo03_build_rs_discovery",
+      "cargo05_path_dep_manifest",
+      "cargo06_edition_lints",
+      "cargo09_workspace_members",
+      "fm02_genmacro_modfile",
+      "gs02_bound_names_body_edit",
+      "ms01_dep_builtin_body",
+      "ms02_dep_macro_alias_glob",
+      "sd01_const_chain_where",
+      "sd02_const_fn_values",
+      "sd21_const_named_header_edits",
+      "sd23_std_impl_lowerhex",
+      "sig02_const_fn_closure"
+    ],
+    "full_retained_coverage": false,
+    "scope": "Public check/build and separately executed artifacts in donor edit order. Original run-command, restart, unresolved histories and complete ownership require separate qualification."
+  },
+  "observed_package": {
+    "native_build": "a670fc9b9e695df6",
+    "host": "x86_64-unknown-linux-gnu",
+    "profile": "debug",
+    "sha256": {
+      "lustr": "013c580386e3dd4eafd536d3f057902e73f60344d7696f348169f37f17620800",
+      "lust": "378fbaff2806ec23185e25d454323c9494f44bd3110cffad3389f6cb2fefdb3e",
+      "lust-core": "8f817887e0cbb3da16200ce37be09fcaa1408728fa8f5e38414c4d9704b66b5c",
+      "liblustr_native_core.so": "37c38517e182849b0f557062f8cbef0a8de363053e366e0c9d9a3dfe439f8308"
+    },
+    "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+    "rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "cargo_sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+    "provenance": "Values copied from original COMPONENTS, native Cargo, capability and retained reports whose bytes were checked against the downloaded archive inventory before workspace loss. These fields summarize those records; they do not recreate their original bytes."
+  },
+  "retained_process_proof": {
+    "passed": true,
+    "daemon_pid": 6264,
+    "daemon_start_ticks": "35433",
+    "permitted_information_queries": 38,
+    "exact_program_comparisons": 7,
+    "refused_compilation_class_requests": 1,
+    "rows": [
+      {
+        "case": "explicit-package-fresh",
+        "cargo_processes": 5,
+        "tool_hash_processes": 4
+      },
+      {
+        "case": "initial",
+        "cargo_processes": 0,
+        "tool_hash_processes": 0
+      },
+      {
+        "case": "unchanged",
+        "cargo_processes": 0,
+        "tool_hash_processes": 0
+      },
+      {
+        "case": "body-edit",
+        "cargo_processes": 0,
+        "tool_hash_processes": 0
+      },
+      {
+        "case": "feature-selection",
+        "cargo_processes": 3,
+        "tool_hash_processes": 0
+      },
+      {
+        "case": "feature-recovery",
+        "cargo_processes": 0,
+        "tool_hash_processes": 0
+      },
+      {
+        "case": "explicit-package",
+        "cargo_processes": 2,
+        "tool_hash_processes": 0
+      }
+    ],
+    "scope": "Original core PID/start/executable checks applied before and after each request. The initial ordinary request followed the fresh explicit-package setup. Counts establish functional retained reuse, not matched latency."
+  },
+  "supplemental_artifact": {
+    "id": 14546870100,
+    "url": "https://github.com/glopyglerky/lustr/actions/runs/44553094694/artifacts/14546870100",
+    "zip_bytes": 13603715,
+    "zip_sha256": "4d7965327d6466f092c704992abca9baf950b8548d5e115225d5d2b5c4b4988a",
+    "zip_digest_verified_before_workspace_became_unavailable": true,
+    "archive_committed": false,
+    "inventory_member": {
+      "path": "inventory.json",
+      "bytes": 10581859,
+      "sha256": "c3e678df374333af9cf13f172d233e9ec06c219bd03cc0c19f36de5326695942"
+    },
+    "records_member": {
+      "path": "records.tar.gz",
+      "bytes": 13578272,
+      "sha256": "f0cc34aa65f0b24b6383a715b235d95f599209c358b4b50723866615ba1a0372"
+    },
+    "capture_complete": false,
+    "errors": [
+      {
+        "path": "native-selection-cache/package/lib/lustr-selection-tools.txt",
+        "error": "ValueError: record is a symlink; referent was not read"
+      },
+      {
+        "path": "native-selection-seed/relocated-package/lib/lustr-selection-tools.txt",
+        "error": "ValueError: record is a symlink; referent was not read"
+      }
+    ],
+    "receipt_link_target": "/home/runner/work/_temp/lustr-native-built/toolchain/lib/lustr-selection-tools.txt",
+    "receipt_referent_bytes_captured": false,
+    "independent_verification": {
+      "overall_passed": false,
+      "available_member_integrity_errors": 0,
+      "inventory_entries": 36647,
+      "verified_archive_members": 36619,
+      "verified_regular_files": 35963,
+      "verified_regular_bytes": 63031706,
+      "original_retained_report_stream_hashes_verified": 26126,
+      "retained_reports_checked": 349,
+      "omitted_compiled_regular_files": 28,
+      "omitted_compiled_regular_bytes": 446530968,
+      "scope": "Recorded independent read-only verification before workspace loss. Overall result remains false solely for the two incomplete-capture errors. The local verifier script/report were not recovered or published."
+    }
+  },
+  "full_artifact": {
+    "id": 14546231385,
+    "url": "https://github.com/glopyglerky/lustr/actions/runs/44553094694/artifacts/14546231385",
+    "bytes": 586107251,
+    "server_reported_sha256": "5170926f6a099a752fd9d55477c93f627fa698996db210bbdbed6ec2bc7b1699",
+    "digest_locally_verified": false,
+    "download_attempted": false,
+    "reason": "Advertised size exceeds the 536870912-byte download-tool limit. Original full upload completed successfully."
+  },
+  "original_decoded_job_log": {
+    "path": "job.log",
+    "utf8_bytes": 565216,
+    "sha256": "8574acbf5a9bcc8a9da5d68870c543adeeb1cad033f78ef1f0abf789066dc3da"
+  },
+  "storage_scope": "The complete original decoded log, parsed rows, source/API metadata and exact pinned inventory are published here. The original ZIPs remain GitHub artifacts. The unavailable local archive copies, per-command extraction, independent verifier report/script and uncommitted local bundle are not claimed as published or recovered.",
+  "macos_scope": "No Darwin execution or full-matrix pass follows from this Linux job. Separate macOS capacity evidence records both jobs cancelled without running steps.",
+  "source_scope": "Hosted results belong to published 7c3d095f / merge66963315, before the separate dead-policy and receipt-producer follow-ups.",
+  "performance_claim": false,
+  "full_rust_coverage": false,
+  "release_admission": false
+}

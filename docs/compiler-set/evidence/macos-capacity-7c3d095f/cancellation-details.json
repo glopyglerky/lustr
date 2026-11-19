@@ -1,0 +1,124 @@
+{
+  "jobs": [
+    {
+      "id": 135661771391,
+      "run_id": 44553094710,
+      "workflow_name": "CI",
+      "head_branch": "lustr/exclusive-coverage-public-20261119",
+      "run_url": "https://api.github.com/repos/glopyglerky/lustr/actions/runs/44553094710",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOVnPP6c8AAAAflhJafw",
+      "head_sha": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+      "url": "https://api.github.com/repos/glopyglerky/lustr/actions/jobs/135661771391",
+      "html_url": "https://github.com/glopyglerky/lustr/actions/runs/44553094710/job/135661771391",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "created_at": "2026-11-19T15:17:23Z",
+      "started_at": "2026-11-19T15:17:23Z",
+      "completed_at": "2026-11-19T15:32:24Z",
+      "name": "macos-arm64",
+      "steps": [],
+      "check_run_url": "https://api.github.com/repos/glopyglerky/lustr/check-runs/135661771391",
+      "labels": [
+        "macos-26"
+      ],
+      "runner_id": 0,
+      "runner_name": "",
+      "runner_group_id": 0,
+      "runner_group_name": ""
+    },
+    {
+      "id": 135661771685,
+      "run_id": 44553094694,
+      "workflow_name": "Compiler set",
+      "head_branch": "lustr/exclusive-coverage-public-20261119",
+      "run_url": "https://api.github.com/repos/glopyglerky/lustr/actions/runs/44553094694",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOVnPP6c8AAAAflhJbpQ",
+      "head_sha": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+      "url": "https://api.github.com/repos/glopyglerky/lustr/actions/jobs/135661771685",
+      "html_url": "https://github.com/glopyglerky/lustr/actions/runs/44553094694/job/135661771685",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "created_at": "2026-11-19T15:17:23Z",
+      "started_at": "2026-11-19T15:17:23Z",
+      "completed_at": "2026-11-19T15:32:24Z",
+      "name": "Retained Cargo planning helpers (macos-26)",
+      "steps": [],
+      "check_run_url": "https://api.github.com/repos/glopyglerky/lustr/check-runs/135661771685",
+      "labels": [
+        "macos-26"
+      ],
+      "runner_id": 0,
+      "runner_name": "",
+      "runner_group_id": 0,
+      "runner_group_name": ""
+    }
+  ],
+  "checks": [
+    {
+      "id": 135661771685,
+      "name": "Retained Cargo planning helpers (macos-26)",
+      "node_id": "CR_kwDOVnPP6c8AAAAflhJbpQ",
+      "head_sha": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+      "external_id": "72a94b8e-de82-5112-a292-544521deef72",
+      "url": "https://api.github.com/repos/glopyglerky/lustr/check-runs/135661771685",
+      "html_url": "https://github.com/glopyglerky/lustr/actions/runs/44553094694/job/135661771685",
+      "details_url": "https://github.com/glopyglerky/lustr/actions/runs/44553094694/job/135661771685",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "started_at": "2026-11-19T15:17:23Z",
+      "completed_at": "2026-11-19T15:32:24Z",
+      "output": {
+        "title": null,
+        "summary": null,
+        "text": null,
+        "annotations_count": 4,
+        "annotations_url": "https://api.github.com/repos/glopyglerky/lustr/check-runs/135661771685/annotations"
+      },
+      "check_suite": {
+        "id": 120600612667
+      }
+    },
+    {
+      "id": 135661771391,
+      "name": "macos-arm64",
+      "node_id": "CR_kwDOVnPP6c8AAAAflhJafw",
+      "head_sha": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+      "external_id": "01fa8b3e-837d-55e4-9f84-77172b7c4b8f",
+      "url": "https://api.github.com/repos/glopyglerky/lustr/check-runs/135661771391",
+      "html_url": "https://github.com/glopyglerky/lustr/actions/runs/44553094710/job/135661771391",
+      "details_url": "https://github.com/glopyglerky/lustr/actions/runs/44553094710/job/135661771391",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "started_at": "2026-11-19T15:17:23Z",
+      "completed_at": "2026-11-19T15:32:24Z",
+      "output": {
+        "title": null,
+        "summary": null,
+        "text": null,
+        "annotations_count": 4,
+        "annotations_url": "https://api.github.com/repos/glopyglerky/lustr/check-runs/135661771391/annotations"
+      },
+      "check_suite": {
+        "id": 120600612724
+      }
+    }
+  ],
+  "log_failures": [
+    {
+      "error": "GitHub API error 404: \ufeff<?xml version=\"1.0\" encoding=\"utf-8\"?><Error><Code>BlobNotFound</Code><Message>The specified blob does not exist.\nRequestId:39a7738d-301e-0023-013b-785d83000000\nTime:2026-11-19T15:34:30.6868937Z</Message></Error>",
+      "error_code": "NOT_FOUND",
+      "error_data": {
+        "error_str": "GitHub API error 404: \ufeff<?xml version=\"1.0\" encoding=\"utf-8\"?><Error><Code>BlobNotFound</Code><Message>The specified blob does not exist.\nRequestId:39a7738d-301e-0023-013b-785d83000000\nTime:2026-11-19T15:34:30.6868937Z</Message></Error>"
+      }
+    },
+    {
+      "error": "GitHub API error 404: \ufeff<?xml version=\"1.0\" encoding=\"utf-8\"?><Error><Code>BlobNotFound</Code><Message>The specified blob does not exist.\nRequestId:00c1e345-a01e-00bf-1e3b-7817a7000000\nTime:2026-11-19T15:34:30.6296545Z</Message></Error>",
+      "error_code": "NOT_FOUND",
+      "error_data": {
+        "error_str": "GitHub API error 404: \ufeff<?xml version=\"1.0\" encoding=\"utf-8\"?><Error><Code>BlobNotFound</Code><Message>The specified blob does not exist.\nRequestId:00c1e345-a01e-00bf-1e3b-7817a7000000\nTime:2026-11-19T15:34:30.6296545Z</Message></Error>"
+      }
+    }
+  ]
+}

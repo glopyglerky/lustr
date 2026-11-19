@@ -51,7 +51,11 @@ def main():
         for tool in ['cargo', 'lustr', 'rustc']:
             (package / 'bin' / tool).symlink_to(source / tool)
         for path in (source.parent / 'lib').iterdir():
-            if path.name != 'lustr-selection-verified':
+            if path.name == 'lustr-selection-tools.txt':
+                # Keep the exact receipt in the evidence root; the input
+                # package and actual library/tool symlinks stay unchanged.
+                shutil.copy2(path, package / 'lib' / path.name)
+            elif path.name != 'lustr-selection-verified':
                 (package / 'lib' / path.name).symlink_to(path, target_is_directory=path.is_dir())
         return package
 
@@ -75,7 +79,10 @@ def main():
     try:
         package = projection('package')
         receipt = package / 'lib/lustr-selection-tools.txt'
-        require(receipt.is_file(), 'matched package has its actual tool receipt')
+        source_receipt = source.parent / 'lib/lustr-selection-tools.txt'
+        original_receipt = source_receipt.read_bytes()
+        require(not receipt.is_symlink() and receipt.is_file() and receipt.read_bytes() == original_receipt,
+                'matched package owns its byte-identical regular tool receipt')
         project = root / 'project'
         (project / 'src').mkdir(parents=True)
         (project / 'Cargo.toml').write_text('[package]\nname="selection-seed-control"\nversion="0.1.0"\nedition="2024"\n[workspace]\n')
@@ -143,6 +150,10 @@ def main():
 
         moved = root / 'relocated-package'
         shutil.copytree(package, moved, symlinks=True)
+        moved_receipt = moved / 'lib/lustr-selection-tools.txt'
+        require(not moved_receipt.is_symlink() and moved_receipt.is_file()
+                and moved_receipt.read_bytes() == original_receipt,
+                'relocation preserves an owned byte-identical regular tool receipt')
         pair('relocated-seed', 'relocated', selected=moved, event='miss')
         relocated = list((root / 'caches/relocated/cargo-selection-v1').glob('tools-*.json'))
         require(len(relocated) == 1 and relocated[0].read_bytes() != original, 'relocation obtains a different live-identity certificate')
@@ -182,6 +193,8 @@ def main():
         prime('changed-receipt-refused', expected=2)
         pair('changed-receipt-fresh-selection', 'receipt', event='ineligible')
         require(list(seed.glob('tools-*.json')) == [certificate], 'changed receipt writes no seed certificate')
+        require(source_receipt.read_bytes() == original_receipt and moved_receipt.read_bytes() == original_receipt,
+                'receipt mutation leaves the input and relocated receipts unchanged')
         status = 'completed'
     except BaseException as failure:
         status, error = 'failed', f'{type(failure).__name__}: {failure}'

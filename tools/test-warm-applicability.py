@@ -258,11 +258,21 @@ class WorkflowControls(unittest.TestCase):
                 for forbidden in ("rustup toolchain install", "build-package --lane", "--current-sdk", " measure ", "continue-on-error"):
                     self.assertNotIn(forbidden, text)
 
-    def test_native_selector_suites_keep_actual_package_and_raw_evidence(self):
-        text = (HERE.parent / ".github/workflows/compiler-set.yml").read_text()
-        section = text.split("  native-entry-and-services:\n", 1)[1].split("\n  compatibility:\n", 1)[0]
+    def native_selector_workflow(self):
+        return (HERE.parent / ".github/workflows/compiler-set.yml").read_text()
+
+    def assert_native_selector_evidence(self, text):
+        sections = re.findall(
+            r"^  native-entry-and-services:[ \t]*\n(.*?)(?=^  [A-Za-z_][\w-]*:[ \t]*$|\Z)",
+            text, re.M | re.S)
+        self.assertEqual(len(sections), 1, "expected one native-entry-and-services job")
+        section, = sections
         blocks = steps(section)
-        upload, = [block for block in blocks if "actions/upload-artifact@" in block]
+        uploads = [block for block in blocks
+                   if re.search(r"^(?:      - |        )uses: actions/upload-artifact@[^\s]+[ \t]*$", block, re.M)
+                   and re.search(r"^          name: exclusive-entry-and-shared-services[ \t]*$", block, re.M)]
+        self.assertEqual(len(uploads), 1, "expected one exclusive-entry-and-shared-services artifact upload")
+        upload, = uploads
         self.assertIn("if: always()", upload)
         for script, output in (("test-native-selection-cache.py", "native-selection-cache"),
                                ("test-native-selection-seed.py", "native-selection-seed"),
@@ -276,6 +286,46 @@ class WorkflowControls(unittest.TestCase):
             self.assertIn("${{ runner.temp }}/" + output, upload)
         self.assertIn("--require-daemon", section)
         self.assertNotIn("continue-on-error", section)
+        return section, upload
+
+    def test_native_selector_suites_keep_actual_package_and_raw_evidence(self):
+        self.assert_native_selector_evidence(self.native_selector_workflow())
+
+    def test_native_selector_upload_identity_is_required_and_unique(self):
+        text = self.native_selector_workflow()
+        section, upload = self.assert_native_selector_evidence(text)
+        for name, changed, error in (
+                ("missing", text.replace(upload, "", 1), "exclusive-entry-and-shared-services"),
+                ("wrong artifact", text.replace(upload, upload.replace(
+                    "name: exclusive-entry-and-shared-services", "name: other-evidence"), 1),
+                 "exclusive-entry-and-shared-services"),
+                ("duplicate upload", text.replace(upload, upload + upload, 1), "exclusive-entry-and-shared-services"),
+                ("different job", text.replace(upload, "", 1) + "\n  other-evidence:\n    steps:\n" + upload,
+                 "exclusive-entry-and-shared-services"),
+                ("duplicate job", text + "\n  native-entry-and-services:\n" + section, "native-entry-and-services")):
+            with self.subTest(change=name), self.assertRaisesRegex(AssertionError, error):
+                self.assert_native_selector_evidence(changed)
+
+    def test_native_selector_evidence_cannot_move_to_an_unrelated_upload(self):
+        text = self.native_selector_workflow()
+        _, upload = self.assert_native_selector_evidence(text)
+        for output in ("native-selection-cache", "native-selection-seed", "native-compact-selection"):
+            path = "${{ runner.temp }}/" + output
+            changed = upload.replace("            " + path + "\n", "")
+            self.assertNotEqual(changed, upload)
+            other = ("      - name: Upload unrelated evidence\n        if: always()\n"
+                     "        uses: actions/upload-artifact@v4\n        with:\n"
+                     "          name: unrelated-evidence\n          path: " + path + "\n")
+            with self.subTest(output=output), self.assertRaisesRegex(AssertionError, output):
+                self.assert_native_selector_evidence(text.replace(upload, changed + other, 1))
+
+    def test_native_selector_upload_still_retains_failed_attempts(self):
+        text = self.native_selector_workflow()
+        _, upload = self.assert_native_selector_evidence(text)
+        changed = upload.replace("        if: always()\n", "")
+        self.assertNotEqual(changed, upload)
+        with self.assertRaisesRegex(AssertionError, "if: always"):
+            self.assert_native_selector_evidence(text.replace(upload, changed, 1))
 
 
 if __name__ == "__main__":

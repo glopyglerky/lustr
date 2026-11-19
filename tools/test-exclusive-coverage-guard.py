@@ -91,6 +91,28 @@ def product_package_controls():
         return len(cases)
 
 
+def retired_policy_control():
+    # Restore a real unused policy file, without importing or executing it.
+    # Its presence must fail the same retired-path check used by the full gate.
+    with tempfile.TemporaryDirectory(prefix="lustr-retired-policy-") as directory:
+        root = Path(directory)
+
+        def checked():
+            failures = []
+            GUARD.retired_path_checks(root, lambda condition, message: None if condition else failures.append(message))
+            return failures
+
+        assert not checked()
+        relative = "crates/lustr-semantic/src/mixed_entry.rs"
+        restored = root / relative
+        restored.parent.mkdir(parents=True)
+        restored.write_text("pub fn full_rust_only(_: &[String], _: &str) -> bool { true }\n")
+        assert checked() == ["retired whole-compiler route reappeared: " + relative]
+        restored.unlink()
+        assert not checked()
+    return 1
+
+
 def main():
     inventory_path = ROOT / "upstream/complement-imports.json"
     original_read = Path.read_text
@@ -116,8 +138,10 @@ def main():
             _, failures = GUARD.check(ROOT)
             assert failures, "forged import provenance was admitted"
     packages = product_package_controls()
+    retired = retired_policy_control()
     print(json.dumps({"original_passed": True, "tampered_inventories_rejected": len(mutations),
-                      "product_package_mutations_rejected": packages, "unrelated_manifest_changes_admitted": True}))
+                      "product_package_mutations_rejected": packages, "unrelated_manifest_changes_admitted": True,
+                      "restored_retired_policy_rejected": retired}))
 
 
 if __name__ == "__main__":

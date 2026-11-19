@@ -47,6 +47,13 @@ REGISTRY_SOURCE = "registry+https://github.com/rust-lang/crates.io-index"
 NO_DEFAULT_FEATURES = {"mimalloc", "libmimalloc-sys"}
 
 
+def retired_path_checks(root, require):
+    for path in ["src/full.rs", "tools/assemble-mixed-toolchain.rs", "tools/build-mixed-toolchain.rs",
+                 "tools/native-relink.rs", "crates/lustr-semantic/src/mixed_main.rs",
+                 "crates/lustr-semantic/src/mixed_entry.rs"]:
+        require(not (root / path).exists(), "retired whole-compiler route reappeared: " + path)
+
+
 def product_package_checks(root, require):
     for manifest, (package_name, direct, selected) in PRODUCT_PACKAGES.items():
         data = tomllib.loads((root / manifest).read_text())
@@ -172,8 +179,7 @@ def check(root):
     require('var_os("LUST_PROBE_FAKE_DIR").is_some()' in entry, "external native probe modes must be refused, including empty values")
     require("Invocation::ReleaseCc" in entry, "native release must use the actual parsed request")
     require("run_program" in entry, "native run must remain reachable")
-    for path in ["src/full.rs", "tools/assemble-mixed-toolchain.rs", "tools/build-mixed-toolchain.rs", "tools/native-relink.rs", "crates/lustr-semantic/src/mixed_main.rs"]:
-        require(not (root / path).exists(), "retired whole-compiler route reappeared: " + path)
+    retired_path_checks(root, require)
     cargo = tomllib.loads((root / "Cargo.toml").read_text())
     require("cargo_lust" not in cargo["dependencies"], "public compiler must not depend on the retired coordinator")
     semantic = tomllib.loads((root / "crates/lustr-semantic/Cargo.toml").read_text())

@@ -1,0 +1,241 @@
+{
+  "schema": "lustr-hosted-source-and-job-v1",
+  "published_head": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+  "published_tree": "2a6a51f099bdcdb74871fdc2e65a4df87aa0c867",
+  "checkout": {
+    "sha": "66963315e9736ce9f151ce8ccac248d35a01d048",
+    "tree": "2a6a51f099bdcdb74871fdc2e65a4df87aa0c867",
+    "parents": [
+      "d135be016fab5db2ba026f1229d4d77681d9b0a2",
+      "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a"
+    ]
+  },
+  "native_tree": "bf933c382fd99e52dd2586ebc46f0d0aceaa71a8",
+  "run_id": 44553094694,
+  "run_attempt": 1,
+  "event": "pull_request",
+  "source_provenance_artifact": {
+    "id": 14543483935,
+    "name": "runner-source-44553094694-1",
+    "zip_bytes": 461,
+    "zip_sha256": "952b7e39da905ac4b4a56339fe635f7314fe51cbf04b80d78eb0a9534688d488",
+    "digest_verified_before_workspace_became_unavailable": true,
+    "archive_committed": false
+  },
+  "required_inventory": {
+    "path": "upstream/retained-scenario-results.json",
+    "ref": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+    "git_blob": "e12afe78c9d9f8276bd849d70108076ca46864d2",
+    "sha256": "4f528b413b1e742eda662bea0bf29e84adc357214a8b2815548f7ae74f6100e8",
+    "copied_path": "published-retained-inventory.json"
+  },
+  "job": {
+    "id": 135661771824,
+    "name": "Exclusive native entry and shared-service research",
+    "status": "completed",
+    "conclusion": "failure",
+    "run_id": 44553094694,
+    "logs_url": null,
+    "steps": [
+      {
+        "name": "Set up job",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 1
+      },
+      {
+        "name": "Run actions/checkout@v4",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 2
+      },
+      {
+        "name": "Enforce structural ownership and declared partial imports",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 3
+      },
+      {
+        "name": "Require complete-replacement release refusal",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 4
+      },
+      {
+        "name": "Obtain the exact pristine reference objects",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 5
+      },
+      {
+        "name": "Install the declared build SDK and research oracle",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 6
+      },
+      {
+        "name": "Install the native planning process observer",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 7
+      },
+      {
+        "name": "Reject product and research feature unification before compiler work",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 8
+      },
+      {
+        "name": "Obtain the pinned TinyCC source",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 9
+      },
+      {
+        "name": "Build the native TinyCC dependency",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 10
+      },
+      {
+        "name": "Qualify TinyCC signing arguments and native publication",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 11
+      },
+      {
+        "name": "Prepare the declared locked dependencies",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 12
+      },
+      {
+        "name": "Build the partial debug native compiler without a packaged Rust compiler",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 13
+      },
+      {
+        "name": "Require product bridge ownership and one retained compilation attempt",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 14
+      },
+      {
+        "name": "Require native execution, exclusive routing and terminal failures",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 15
+      },
+      {
+        "name": "Run all public crate targets and real-package contracts",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 16
+      },
+      {
+        "name": "Require exact native Cargo planning and warm process reuse",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 17
+      },
+      {
+        "name": "Check declared upstream capabilities against the constructed native compiler",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 18
+      },
+      {
+        "name": "Compare supported capability outputs through the public compiler",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 19
+      },
+      {
+        "name": "Compare pinned retained histories through the public compiler",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 20
+      },
+      {
+        "name": "Build the actual native target-selector diagnostic",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 21
+      },
+      {
+        "name": "Require native Cargo selection reuse and invalidation",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 22
+      },
+      {
+        "name": "Preserve real symbol and ABI component controls",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 23
+      },
+      {
+        "name": "Qualify genuine provider definitions and native consumer semantics",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 24
+      },
+      {
+        "name": "Qualify owned imported emission and failure preservation",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 25
+      },
+      {
+        "name": "Exercise supplemental qualification record packaging",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 26
+      },
+      {
+        "name": "Package supplemental qualification records",
+        "status": "completed",
+        "conclusion": "failure",
+        "number": 27
+      },
+      {
+        "name": "Retain supplemental qualification records",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 28
+      },
+      {
+        "name": "Retain source-bound results and every failure",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 29
+      },
+      {
+        "name": "Post Obtain the pinned TinyCC source",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 56
+      },
+      {
+        "name": "Post Obtain the exact pristine reference objects",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 57
+      },
+      {
+        "name": "Post Run actions/checkout@v4",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 58
+      },
+      {
+        "name": "Complete job",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 59
+      }
+    ]
+  },
+  "provenance": "Published/merge identities and final job summaries are parsed original GitHub connector results retained in functions memory. No unavailable filesystem record is presented as recovered."
+}
