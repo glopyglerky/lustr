@@ -4,6 +4,10 @@ The [integer-signature continuation](shared-integer-abi.md) extends this origina
 u64-only slice with actual field types, mixed signatures and explicit LLVM ABI
 adapters. The original qualification results below retain their source scope.
 
+The [consumer-metadata dependency record](shared-consumer-metadata.md) identifies
+the next required joined completion service before the original Rust encoder
+can publish metadata for native-owned consumer bodies.
+
 The first connected semantic service imports actual Rust definitions before
 Lust checks an unchanged consumer. A native body constructs a nominal aggregate,
 moves it into a Rust function, receives the same nominal type, and continues

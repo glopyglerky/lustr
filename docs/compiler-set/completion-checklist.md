@@ -137,6 +137,13 @@ consumer Rust body checking or complete analysis. It still uses shared upstream
 global parsing/expansion/resolution, admits a narrow target/profile/type contract,
 and does not produce consumer Rust metadata or retain imported generations.
 
+The [source-bound metadata probe](shared-consumer-metadata.md) establishes that
+the original encoder requires a completed definition table through `analysis`.
+Implement the joined completion proof for applicable declaration, privacy and
+diagnostic obligations before consumer metadata, then supply the actual
+native-owned instance graph. Unconditional analysis success, fabricated empty
+collector results and a second complete frontend do not meet this criterion.
+
 Continue from those actual records toward the full supported coverage and the
 normal public entries. Preserve the finite slice and its failure controls as
 the boundary expands; do not replace it with generated source that starts an
