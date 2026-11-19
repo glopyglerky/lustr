@@ -1,0 +1,88 @@
+{
+  "schema": "lustr-retained-result-controls-v1",
+  "observed_date": "2026-11-19",
+  "base_commit": "5cd40fd313503d4a4fc935ee47ca7c05fce1471a",
+  "qualified_inputs_sha256": {
+    "tools/qualify-retained-results.py": "82d8a3272b5cb394aba73568195005ddf220bc873cfcc57ce7417835b0938abc",
+    "tools/test-retained-results.py": "404b45a29a1f10987ef8e94e10880d5d7c2b71a358c120bbbe55d0f947d38bad",
+    "upstream/retained-scenario-results.json": "7c40b19f369e7d3c219e35fde3ee087bca2e8cadc7313966054e8e1ff9127e8f",
+    ".github/workflows/compiler-set.yml": "6027b5a6aa712bef7a3513d38db162708cab01676d8f92bfdadae6b3e0a9fb89",
+    ".github/workflows/native-probe-tests.yml": "7d8b8f617f92609e7e3e0742433bf76e29993877e376379532561b08f6f50840"
+  },
+  "controls": {
+    "passed": 33,
+    "scope": "Synthetic result guards, actual synthetic compiler/artifact child processes and unchanged-donor fixture lifecycle with accept/reject/recovery controls. These are qualifier tests, not actual native compilation coverage.",
+    "known_upstream_resource_warning": "The unchanged donor guard_problems opens daemon.log without a context manager; Python ResourceWarning remains visible in controls.stderr."
+  },
+  "inventory": {
+    "upstream_revision": "240e08d91d4aed0299639f6f11fd522912b248f9",
+    "required_histories": 349,
+    "required_versions": 1744,
+    "unresolved_histories": 13,
+    "versions_in_unresolved_histories": 105,
+    "observed_unsupported_versions_in_donor_log": 27,
+    "observed_donor_summary": "363/363 ok, 27 unsupported version(s)",
+    "excluded_control": "binary01_rebuilt_daemon remains in unchanged donor gate",
+    "separate_integration_history": "mainret04_typed_entry_transition remains under its existing strict qualifier",
+    "historical_job_conclusion": "failure after the scenario phase, due to a Unicode sanitizer timeout"
+  },
+  "actual_pinned_oracle_controls": {
+    "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+    "fixture": "compiler/native/tests/daemon/cc01_const_chain_fn_reject_revert/v2.rs",
+    "rustc_metadata_exit": 1,
+    "cargo_check_exit": 101,
+    "both_structured_source_rejections_validated": true,
+    "scope": "Only diagnostic transport and classification through the pinned Rust SDK; no candidate or retained compiler execution."
+  },
+  "historical_package_attempt": {
+    "status": "failed",
+    "observed_exit": 1,
+    "attempted_histories": 1,
+    "completed_versions": 0,
+    "failure": "Unix socket bind returned EPERM before any compile request. Failure is preserved; never a passing skip.",
+    "runner_sha256": "dc63a71137953d9d4fa483fa3f5d2d5bbcfcdd573786b246d7ba6e095a7782d8",
+    "inventory_sha256": "f144f0901ebacefdd327c7e176c181f8753c08ef1f2df270b0c87087c79d7054",
+    "scope": "Earlier qualifier revision against the previously assembled debug package. Four package hashes matched result-proof-20261119/verification.json before reuse. This is neither a final-source package nor a final-qualifier warm pass. The earlier runner source is identified by its report hash, not asserted identical to the final runner."
+  },
+  "independent_review": {
+    "reviewed_runner_sha256": "82d8a3272b5cb394aba73568195005ddf220bc873cfcc57ce7417835b0938abc",
+    "reviewed_test_sha256": "404b45a29a1f10987ef8e94e10880d5d7c2b71a358c120bbbe55d0f947d38bad",
+    "findings_resolved": [
+      "Original retained daemon must remain alive before and after each warm request.",
+      "Only source-reviewed intentional panic versions may normalize one canonical main-thread panic header ID.",
+      "A failed full oracle build requires an independent semantic-only check with structured fixture-bound source diagnostics.",
+      "Direct rustc exit 101 is a compiler failure; Cargo exit 101 is classified separately.",
+      "Canonical error summaries may include a warning count without weakening substantive diagnostic requirements.",
+      "Daemon logs survive the donor temporary-directory cleanup."
+    ]
+  },
+  "workflow_validation": "Both changed YAML files parsed and git diff --check passed. Hosted final-source construction and all 349 known-history executions remain required.",
+  "full_retained_coverage": false,
+  "full_rust_coverage": false,
+  "performance_qualified": false,
+  "release_admission": false,
+  "files_sha256": {
+    "controls.stderr": "2f2b63d227d8488f4abea8c08567e42dcfba429d919b1705d35752b225c8fafb",
+    "controls.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "donor-scenario-excerpt.txt": "74401d1d270a909e426f9d2f3fd15bb0348aa6a8e3024b3bb7accdfd2b175d3f",
+    "historical-package-attempt.json": "a642f5a991404bf38ea1085770faeab336cb41c9da89d7e8d0fc266fb1b736d9",
+    "historical-package-daemon.stderr": "941b56de7a8b8e3c29cfe8d4031086f1cb8d979440a0499c9b0ff9a01938c755",
+    "historical-package-scenario.json": "60f8ece514283d88b6203e1b3c4d779eea6b52c80f4ab653dd25384e12ea3b18",
+    "oracle-cargo.stderr": "68825c09cc0fb678cbce5e39f358a24ac5c116871ee9f2b6e3521b4310a6e519",
+    "oracle-cargo.stdout": "8eea04d76d9980ec7923f3eac9684be7688d4a08f0c4e2be110ce464e4c61265",
+    "oracle-report.json": "9c8881c209e66e95392888461d95fca1e42faa5e94b571c7d18a6ac49456f2f7",
+    "oracle-rustc.stderr": "8ec1d203967b48b53adac88aefc2b1b8787deead286c35f2eeacb02275ee81c0",
+    "oracle-rustc.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "donor_excerpt_note": "Scenario-phase excerpt; timestamp-only blank separator lines omitted.",
+  "publication": {
+    "normalized": "Local SDK, package and qualification-directory prefixes are symbolic placeholders in publication copies. Command-result hashes inside original reports retain their original meaning; files_sha256 binds the delivered copies.",
+    "original_sha256": {
+      "historical-package-attempt.json": "c4e7fd727524e0522a0538b0a0a9e0e09b96d7a4bed9c284ac6446fbea588dff",
+      "historical-package-scenario.json": "cc11f0c4d40448569ad9b3a4bdbda5038b7c8278d1e417574122b0e26b1b4d54",
+      "oracle-cargo.stderr": "9c58a77a29d7468aa15849f6568f16169964d9a330440f369aa7f0bf6857870a",
+      "oracle-cargo.stdout": "717efe86825a1e881b44d243af2eef1d081878f1c3bb444495d6e5b001828b20",
+      "oracle-report.json": "c93c1d6795dc5809e9aac07fe818fc030ab9fdbbffff94a69911219ce5a281ee"
+    }
+  }
+}

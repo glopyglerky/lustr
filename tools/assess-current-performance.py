@@ -19,7 +19,7 @@ import sys
 
 PLAN_SCHEMA = "lustr-current-performance-plan-v1"
 RECEIPT_SCHEMA = "lustr-current-performance-execution-v1"
-REPORT_SCHEMA = "lustr-current-performance-assessment-v1"
+REPORT_SCHEMA = "lustr-current-performance-assessment-v2"
 BOUNDARY = "public-command-start-to-completion"
 ORDER = "rotated-cases-balanced-engine-permutations-v1"
 RESAMPLES = 10000
@@ -236,12 +236,12 @@ def ratio(reference, candidate, counts):
     boots = sorted(math.fsum(n * value for n, value in zip(draw, reference))
                    / math.fsum(n * value for n, value in zip(draw, candidate)) for draw in counts)
     require(positive(point) and all(positive(value) for value in boots), "invalid ratio after summing elapsed costs")
-    return {"reference_over_lustr": point,
+    return {"statistic": "ratio-of-paired-total-sums", "reference_over_lustr": point,
             "bootstrap_95": [boots[math.floor(.025 * (RESAMPLES - 1))], boots[math.ceil(.975 * (RESAMPLES - 1))]]}
 
 
 def paired_log_ratio(reference, candidate, counts):
-    """Preserve the existing per-case near-stock statistic, never aggregate it."""
+    """Retain the earlier statistic for diagnosis, never target admission."""
     logs = [math.log(left) - math.log(right) for left, right in zip(reference, candidate)]
     point = math.exp(math.fsum(logs) / len(logs))
     boots = sorted(math.exp(math.fsum(n * value for n, value in zip(draw, logs)) / len(logs)) for draw in counts)
@@ -283,17 +283,19 @@ def assess(plan_file, samples_file, evidence_root):
         ordinary_complement = case["class"] == "complementary" and request["operation"] in {"check", "build"} and case["expected_exit"] == 0
         if warm_supported or ordinary_complement:
             reference, allowance = ("lust", .10) if case["class"] == "supported" else ("rustc", .05)
-            comparison = paired_log_ratio(series[reference], series["lustr"], counts)
+            comparison = ratio(series[reference], series["lustr"], counts)
             low, high = comparison["bootstrap_95"]
             threshold = 1 / (1 + allowance)
             relative_status = "met" if low >= threshold else "missed" if high < threshold else "inconclusive"
             row["near_stock_target"] = {"reference": reference, "relative_allowance": allowance, **comparison,
                 "status": relative_status, "relative_budget_status": relative_status,
+                "geometric_ratio_diagnostic": paired_log_ratio(series[reference], series["lustr"], counts),
                 "controls_overall_performance_decision": False}
             if warm_supported:
-                rust = paired_log_ratio(series["rustc"], series["lustr"], counts)
+                rust = row["rustc_comparison"]
                 rust_win = rust["bootstrap_95"][0] > 1
-                row["near_stock_target"].update(rustc_speedup_established=rust_win, rustc_comparison=rust)
+                row["near_stock_target"].update(rustc_speedup_established=rust_win, rustc_comparison=rust,
+                    rustc_geometric_ratio_diagnostic=paired_log_ratio(series["rustc"], series["lustr"], counts))
                 if not rust_win and relative_status != "missed":
                     row["near_stock_target"]["status"] = "missed" if rust["bootstrap_95"][1] < 1 else "inconclusive"
         cases.append(row)
@@ -316,8 +318,9 @@ def assess(plan_file, samples_file, evidence_root):
             "Shared request contracts and argv bind the declared work. This assessor does not prove semantic equivalence, generated-program behavior, full Rust coverage, exclusive Lust ownership or selective-import minimality.",
             "The point estimate and every bootstrap replicate divide summed reference elapsed costs by summed candidate elapsed costs using fixed integer frequencies. No geometric mean of per-case speedups decides the result.",
             "Bootstrap resampling keeps complete pair blocks and all workload cases together. Intervals remain conditional on the measured host, fixed workload and an appropriate independent block sampling design.",
-            "Per-case near-stock claims retain the paired-log geometric ratio statistic. The 10% supported target applies only to warm-no-op check/build and also requires a demonstrated per-case rustc speedup. The 5% complementary target applies to successful check/build. Other modes have no invented numeric target.",
+            "Per-case near-stock claims and their rustc speedup condition use paired total-time ratios. Geometric ratios are diagnostic only because they can conceal increased elapsed cost within one case. The 10% supported target applies only to warm-no-op check/build; the 5% complementary target applies to successful check/build. Other modes have no invented numeric target.",
             "Per-case near-stock targets and empirical tails remain visible. A target miss cannot be relabeled near-stock, and is not by itself a failure of the overall speed criterion.",
+            "Empirical p95 can omit fewer than 5% of observations. Means and maxima are reported too; none of these observations is a tail confidence guarantee.",
             "Zero-frequency cases are diagnostic only. Their costs do not enter the workload total; their results remain reported.",
             "A performance pass is not release authorization. Full correctness, ownership, source-import and actual package qualification remain separate obligations."]}
 
@@ -328,12 +331,24 @@ def render(report):
     lines = ["# Current performance assessment", "", report["scope"], "",
              f"Overall measured speed target: **{overall['status']}**. Rustc / Lustr total-time ratio: {overall['reference_over_lustr']:.6f}, paired 95% interval [{low:.6f}, {high:.6f}].",
              "", "Release admission: **false**. This result assesses performance only.", "",
-             "| Case | Declared class | Frequency | Rustc / Lustr | Lustr p95, ms | Near-stock target |",
-             "| --- | --- | ---: | ---: | ---: | --- |"]
+             "| Case | Declared class | Frequency | Rustc / Lustr | Lustr mean, ms | Lustr p95, ms | Lustr maximum, ms | Near-stock target |",
+             "| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |"]
     for case in report["cases"]:
         near = case.get("near_stock_target", {}).get("status", "not a separate near-stock comparison")
         name = case["id"].replace("|", "\\|").replace("\n", " ")
-        lines.append(f"| {name} | {case['declared_class']} | {case['frequency']} | {case['rustc_comparison']['reference_over_lustr']:.6f} | {case['distributions']['lustr']['p95_seconds'] * 1000:.6f} | {near} |")
+        times = case["distributions"]["lustr"]
+        lines.append(f"| {name} | {case['declared_class']} | {case['frequency']} | {case['rustc_comparison']['reference_over_lustr']:.6f} | {times['mean_seconds'] * 1000:.6f} | {times['p95_seconds'] * 1000:.6f} | {times['maximum_seconds'] * 1000:.6f} | {near} |")
+    comparisons = [case for case in report["cases"] if "near_stock_target" in case]
+    if comparisons:
+        lines += ["", "## Near-stock total-time comparisons", "",
+                  "Geometric ratios remain in the JSON for diagnosis and cannot establish these targets.", "",
+                  "| Case | Reference | Reference / Lustr total time | Paired 95% interval | Near-stock target |",
+                  "| --- | --- | ---: | --- | --- |"]
+        for case in comparisons:
+            near = case["near_stock_target"]
+            low, high = near["bootstrap_95"]
+            name = case["id"].replace("|", "\\|").replace("\n", " ")
+            lines.append(f"| {name} | {near['reference']} | {near['reference_over_lustr']:.6f} | [{low:.6f}, {high:.6f}] | {near['status']} |")
     lines += ["", "## Limits", ""] + ["- " + value for value in report["limits"]]
     return "\n".join(lines) + "\n"
 

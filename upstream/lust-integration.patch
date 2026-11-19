@@ -10758,10 +10758,10 @@ index c4b23e007d746b984e392919dcf1bc9bc87a265e..47bb8992d04e52e8ba9774e3e865ddf1
              _ => return None,
          }
 diff --git a/src/protocol.rs b/src/protocol.rs
-index 504b467a9d240272c85f999b59f57a5d52b3cd4e..d138b384b9938405a92b0c1442e3f7dab0855961 100644
+index 504b467a9d240272c85f999b59f57a5d52b3cd4e..37040b0ae8f82698ea05ba33e8cce21c033ebbdd 100644
 --- a/src/protocol.rs
 +++ b/src/protocol.rs
-@@ -14,9 +14,11 @@
+@@ -14,9 +14,13 @@
  // (see `Request::run_args`). The default socket name holds the build hash, but an
  // explicit `LUST_DAEMON_SOCKET` can name a daemon of another build, so both directions
  // carry `build_id`: a daemon that reads another build's request answers and exits
@@ -10770,12 +10770,14 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..d138b384b9938405a92b0c1442e3f7da
 +// (`ReadError::OtherBuild`). Only that explicit refusal can restart a request.
 +// A malformed, lost, old-format or wrong-build result is a terminal failure.
  // Response: "<code> <stdout len> <stderr len> <build>\n" followed by the two byte strings.
++// The Unix clients preserve an exit code in 0..=255. Larger integers are a
++// malformed response, not a status to truncate into apparent success.
 +// Mixed-only replies add a fifth `mixed-v1:<outcome>` header field. Ordinary
 +// replies retain their original four-field form.
  // Both binaries include this module and each uses only part of it.
  #![allow(dead_code)]
  
-@@ -24,6 +26,10 @@ use std::io::{BufRead, BufReader, Read, Write};
+@@ -24,6 +28,10 @@ use std::io::{BufRead, BufReader, Read, Write};
  use std::os::unix::net::UnixStream;
  use std::path::{Path, PathBuf};
  
@@ -10786,7 +10788,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..d138b384b9938405a92b0c1442e3f7da
  #[derive(Clone, Copy, PartialEq, Eq)]
  pub enum Cmd {
      Check,
-@@ -325,6 +331,40 @@ pub struct Response {
+@@ -325,6 +333,40 @@ pub struct Response {
      pub code: i32,
      /// The program already ran in memory; `code` is its exit code. Do not run `out` again.
      pub ran: bool,
@@ -10827,7 +10829,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..d138b384b9938405a92b0c1442e3f7da
  }
  
  pub enum Invocation {
-@@ -1011,7 +1051,11 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -1011,7 +1053,11 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
  }
  
  pub fn write_response(w: &mut impl Write, r: &Response) -> std::io::Result<()> {
@@ -10840,7 +10842,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..d138b384b9938405a92b0c1442e3f7da
  }
  
  /// The whole answer to a request of another build: a head no client takes
-@@ -1020,37 +1064,78 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
+@@ -1020,37 +1066,78 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
      write!(w, "- - - {}\n", build_id())
  }
  
@@ -10896,15 +10898,15 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..d138b384b9938405a92b0c1442e3f7da
 -        // A daemon from before the build field: stop it.
 -        let _ = std::fs::remove_file(sock);
 -        return None;
+-    }
+-    if nums.len() != 3 || words.len() != 4 || words[3] != build_id() {
+-        return None;
 +    // A valid header contains only fixed labels, build identity, and three
 +    // machine-sized numbers. Bound it before allocating from an untrusted peer.
 +    reader.take(256).read_line(&mut head).map_err(|e| format!("daemon response header: {e}"))?;
 +    if !head.ends_with('\n') {
 +        return Err("daemon returned a truncated or oversized response header".into());
      }
--    if nums.len() != 3 || words.len() != 4 || words[3] != build_id() {
--        return None;
--    }
 -    let mut out = vec![0; nums[1]];
 -    let mut err = vec![0; nums[2]];
 -    reader.read_exact(&mut out).ok()?;
@@ -10923,7 +10925,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..d138b384b9938405a92b0c1442e3f7da
 +        return Err("daemon returned an unclassified response or a different compiler build".into());
 +    }
 +    let number = |at: usize| words[at].parse::<usize>().map_err(|_| "daemon returned an invalid response size/status".to_owned());
-+    let code = i32::try_from(number(0)?).map_err(|_| "daemon returned an invalid response status".to_owned())?;
++    let code = i32::from(u8::try_from(number(0)?).map_err(|_| "daemon returned an invalid response status".to_owned())?);
 +    let (out_len, err_len) = (number(1)?, number(2)?);
 +    let mixed = if expect_mixed { Some(MixedOutcome::parse(words[4]).ok_or("mixed daemon returned an unknown admission outcome")?) } else { None };
 +    if mixed.is_some_and(|outcome| !match outcome {
@@ -10948,7 +10950,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..d138b384b9938405a92b0c1442e3f7da
  }
  
  /// Prints a response. For `run`, runs the program after a successful build. Never returns.
-@@ -1331,9 +1416,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
+@@ -1331,9 +1418,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
      Some(PathBuf::from(text[at..end].replace("\\\\", "\\")))
  }
  
@@ -10998,7 +11000,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..d138b384b9938405a92b0c1442e3f7da
  pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug: bool, net: CargoNet) -> ! {
      let profile = profile.unwrap_or("release");
      let dev = profile == "dev";
-@@ -1408,12 +1533,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
+@@ -1408,12 +1535,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
      exit_with(status);
  }
  
@@ -11017,13 +11019,13 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..d138b384b9938405a92b0c1442e3f7da
  pub fn run_rustc_check(file: &Path) -> ! {
      let obj = std::env::temp_dir().join(format!("lust-rustc-check-{}.o", std::process::id()));
      eprintln!("lust: checking with rustc (oracle): rustc --edition 2024 --emit=obj {}", file.display());
-@@ -1461,6 +1592,135 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
+@@ -1461,6 +1594,150 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
  mod tests {
      use super::*;
  
 +    #[test]
 +    fn native_wire_preserves_status_and_utf8_without_reclassifying_failures() {
-+        for code in [0, 1, 2, 3, 255] {
++        for code in [0, 1, 2, 3, 101, 128, 134, 137, 143, 255] {
 +            let response = Response { code, stdout: "out λ\n".into(), stderr: "diagnostic é\n".into(), ..Default::default() };
 +            let mut bytes = Vec::new();
 +            write_response(&mut bytes, &response).unwrap();
@@ -11059,6 +11061,21 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..d138b384b9938405a92b0c1442e3f7da
 +        bytes.push(0xff);
 +        assert!(read_response(&mut std::io::Cursor::new(bytes), false).is_err());
 +        assert!(read_response(&mut std::io::Cursor::new(b"- - - another-build\n"), false).unwrap().is_none());
++    }
++
++    #[test]
++    fn wire_status_cannot_wrap_into_success_or_an_unrelated_failure() {
++        // These daemons and clients use Unix process exit codes. Rust's
++        // process::exit accepts i32, but the parent observes only its low byte.
++        // Reject the malformed result before either public entry can report
++        // success for 256/512 or change a failure from 257 into status 1.
++        for code in [256, 257, 512, i32::MAX] {
++            for outcome in ["", " mixed-v1:failed"] {
++                let reply = format!("{code} 0 0 {}{outcome}\n", build_id());
++                let result = read_response(&mut std::io::Cursor::new(reply), !outcome.is_empty());
++                assert!(result.is_err(), "unrepresentable process status {code} was accepted");
++            }
++        }
 +    }
 +
 +    #[test]

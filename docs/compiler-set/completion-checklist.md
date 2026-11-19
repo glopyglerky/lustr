@@ -141,6 +141,13 @@ Constructor success and helper tests cannot substitute for the public compiler
 or its generated programs. A passing exit alone does not validate printed
 results. Keep evaluator failure controls separate from compiler evidence.
 
+Fix acceptance expectations from pinned source and independent evidence before
+running the candidate. A donor harness that calls two failed native compiles
+"unsupported" does not prove preserved coverage. Qualify known supported edit
+histories independently; retain excluded histories as unqualified. Separate
+compilation, artifact production and program execution so the wrong failure
+stage cannot pass a negative runtime test.
+
 Done when the package satisfies architecture and applicable correctness with
 no fallback hiding a known gap. Cargo-only compatibility does not qualify an
 integrated native platform. No current artifact is qualified as the full product.
@@ -165,6 +172,10 @@ targets, not extra mandatory release prerequisites. Missing either target remain
 visible as optimization work; meeting both does not itself prove overall gain.
 Absolute added latency remains visible, but the historical 0.5 ms alternative
 cannot admit a new near-stock claim.
+
+Use paired total-time ratios within each near-stock case. Geometric ratios are
+diagnostic only, because a rare slow request can erase the elapsed-time saving.
+Retain means and maxima alongside p95 without inventing an extra release gate.
 
 Assess the overhead of each material integration boundary during development.
 This final package gate consolidates those results; it is not permission to
@@ -198,6 +209,11 @@ retained session, semantic environment, invalidation, failure and ownership
 contracts, with actual no-socket operation and matched timing evidence. A
 protocol-only `no_std` crate or fresh per-request compilation does not complete
 that migration. Continue the genuine metadata boundary first.
+
+Keep these implementation preferences separate from Rust program support.
+Programs using `std` or target-specific Unix sockets remain part of the full
+Rust contract. Inspect all dependencies before claiming the compiler is free
+of `std`; an attribute on a small interface cannot establish that result.
 
 ## Required PR explanation
 

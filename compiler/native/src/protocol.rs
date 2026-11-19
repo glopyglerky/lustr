@@ -17,6 +17,8 @@
 // (`ReadError::OtherBuild`). Only that explicit refusal can restart a request.
 // A malformed, lost, old-format or wrong-build result is a terminal failure.
 // Response: "<code> <stdout len> <stderr len> <build>\n" followed by the two byte strings.
+// The Unix clients preserve an exit code in 0..=255. Larger integers are a
+// malformed response, not a status to truncate into apparent success.
 // Mixed-only replies add a fifth `mixed-v1:<outcome>` header field. Ordinary
 // replies retain their original four-field form.
 // Both binaries include this module and each uses only part of it.
@@ -1114,7 +1116,7 @@ fn read_response(reader: &mut impl BufRead, expect_mixed: bool) -> Result<Option
         return Err("daemon returned an unclassified response or a different compiler build".into());
     }
     let number = |at: usize| words[at].parse::<usize>().map_err(|_| "daemon returned an invalid response size/status".to_owned());
-    let code = i32::try_from(number(0)?).map_err(|_| "daemon returned an invalid response status".to_owned())?;
+    let code = i32::from(u8::try_from(number(0)?).map_err(|_| "daemon returned an invalid response status".to_owned())?);
     let (out_len, err_len) = (number(1)?, number(2)?);
     let mixed = if expect_mixed { Some(MixedOutcome::parse(words[4]).ok_or("mixed daemon returned an unknown admission outcome")?) } else { None };
     if mixed.is_some_and(|outcome| !match outcome {
@@ -1594,7 +1596,7 @@ mod tests {
 
     #[test]
     fn native_wire_preserves_status_and_utf8_without_reclassifying_failures() {
-        for code in [0, 1, 2, 3, 255] {
+        for code in [0, 1, 2, 3, 101, 128, 134, 137, 143, 255] {
             let response = Response { code, stdout: "out λ\n".into(), stderr: "diagnostic é\n".into(), ..Default::default() };
             let mut bytes = Vec::new();
             write_response(&mut bytes, &response).unwrap();
@@ -1630,6 +1632,21 @@ mod tests {
         bytes.push(0xff);
         assert!(read_response(&mut std::io::Cursor::new(bytes), false).is_err());
         assert!(read_response(&mut std::io::Cursor::new(b"- - - another-build\n"), false).unwrap().is_none());
+    }
+
+    #[test]
+    fn wire_status_cannot_wrap_into_success_or_an_unrelated_failure() {
+        // These daemons and clients use Unix process exit codes. Rust's
+        // process::exit accepts i32, but the parent observes only its low byte.
+        // Reject the malformed result before either public entry can report
+        // success for 256/512 or change a failure from 257 into status 1.
+        for code in [256, 257, 512, i32::MAX] {
+            for outcome in ["", " mixed-v1:failed"] {
+                let reply = format!("{code} 0 0 {}{outcome}\n", build_id());
+                let result = read_response(&mut std::io::Cursor::new(reply), !outcome.is_empty());
+                assert!(result.is_err(), "unrepresentable process status {code} was accepted");
+            }
+        }
     }
 
     #[test]

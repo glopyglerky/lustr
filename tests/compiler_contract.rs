@@ -154,6 +154,9 @@ fn public_entries_keep_ambiguous_daemon_failures_terminal() {
         ("old-protocol", b"0 0 0\n".to_vec()),
         ("wrong-build", b"0 0 0 another-build\n".to_vec()),
         ("truncated-body", format!("0 7 0 {identity}\n").into_bytes()),
+        ("status-wraps-to-success", format!("256 0 0 {identity}\n").into_bytes()),
+        ("second-status-wraps-to-success", format!("512 0 0 {identity}\n").into_bytes()),
+        ("status-wraps-to-other-failure", format!("257 0 0 {identity}\n").into_bytes()),
         ("reported-failure", format!("3 0 7 {identity}\nfailure").into_bytes()),
     ];
     for tool in ["lust", "lustr"] {

@@ -118,6 +118,52 @@ class AssessmentControls(unittest.TestCase):
         self.assertEqual(report["overall"]["status"], "slower")
         self.assertAlmostEqual(report["overall"]["reference_over_lustr"], 101 / 500.1)
 
+    def test_rare_slow_request_cannot_establish_near_lust_from_geometric_ratio(self):
+        self.campaign([{"id": "warm", "class": "supported", "frequency": 1,
+                        "times": {"rustc": 100, "lustr": [.2] * 23 + [100], "lust": 1}}])
+        report = self.assess()
+        case = report["cases"][0]
+        target = case["near_stock_target"]
+        self.assertGreater(target["geometric_ratio_diagnostic"]["bootstrap_95"][0], 1 / 1.10)
+        self.assertEqual(target["statistic"], "ratio-of-paired-total-sums")
+        self.assertAlmostEqual(target["reference_over_lustr"], 24 / (23 * .2 + 100))
+        self.assertEqual(target["status"], "inconclusive")
+        self.assertTrue(report["overall"]["performance_target_met"], "near-stock uncertainty does not change the overall decision")
+        self.assertFalse(report["release_admission"])
+        times = case["distributions"]["lustr"]
+        self.assertGreater(times["mean_seconds"], 4 * case["distributions"]["lust"]["mean_seconds"])
+        self.assertEqual(times["p95_seconds"], .2, "empirical p95 misses this rare observation")
+        self.assertEqual(times["maximum_seconds"], 100)
+        rendered = A.render(report)
+        self.assertIn("Lustr mean, ms", rendered)
+        self.assertIn("Lustr maximum, ms", rendered)
+        self.assertIn("4358.333333 | 200.000000 | 100000.000000", rendered)
+        self.assertIn("lust | 0.229446", rendered)
+
+    def test_complement_near_stock_cannot_hide_increased_elapsed_cost_within_a_case(self):
+        self.campaign([{"id": "complement", "class": "complementary", "frequency": 1,
+                        "times": {"rustc": 1, "lustr": [.01] * 18 + [20] * 6}}])
+        report = self.assess()
+        target = report["cases"][0]["near_stock_target"]
+        self.assertGreater(target["geometric_ratio_diagnostic"]["bootstrap_95"][0], 1 / 1.05)
+        self.assertLess(target["bootstrap_95"][1], 1 / 1.05)
+        self.assertAlmostEqual(target["reference_over_lustr"], 24 / (18 * .01 + 6 * 20))
+        self.assertEqual(target["status"], "missed")
+        self.assertEqual(report["overall"]["status"], "slower")
+
+    def test_warm_rustc_speed_condition_uses_total_time_even_when_lust_target_is_met(self):
+        slow_tails = [.01] * 18 + [20] * 6
+        self.campaign([{"id": "warm", "class": "supported", "frequency": 1,
+                        "times": {"rustc": 1, "lustr": slow_tails, "lust": slow_tails}}])
+        report = self.assess()
+        target = report["cases"][0]["near_stock_target"]
+        self.assertEqual(target["relative_budget_status"], "met")
+        self.assertGreater(target["rustc_geometric_ratio_diagnostic"]["bootstrap_95"][0], 1)
+        self.assertLess(target["rustc_comparison"]["bootstrap_95"][1], 1)
+        self.assertFalse(target["rustc_speedup_established"])
+        self.assertEqual(target["status"], "missed")
+        self.assertEqual(report["overall"]["status"], "slower")
+
     def test_both_near_stock_targets_can_pass_while_total_is_slower(self):
         self.campaign([
             {"id": "supported", "class": "supported", "frequency": 1,
@@ -313,6 +359,7 @@ class AssessmentControls(unittest.TestCase):
                            "--evidence-root", str(self.evidence), "--output", str(output)])
         self.assertEqual(code, 0)
         report = json.loads((output / "assessment.json").read_bytes())
+        self.assertEqual(report["schema"], "lustr-current-performance-assessment-v2")
         self.assertFalse(report["release_admission"])
         self.assertEqual((output / "README.md").read_text(), A.render(report))
         self.assertEqual(before, (self.plan_file.read_bytes(), self.samples_file.read_bytes()))

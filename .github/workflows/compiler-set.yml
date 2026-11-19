@@ -32,6 +32,9 @@ on:
       - 'tools/test-native-build-policy.py'
       - 'tools/qualify-capability-results.py'
       - 'tools/test-capability-results.py'
+      - 'tools/qualify-retained-results.py'
+      - 'tools/test-retained-results.py'
+      - 'upstream/retained-scenario-results.json'
       - 'upstream/complement-imports.json'
       - 'tools/native-target-layout-qualification.rs'
       - 'tools/profile-native-preflight.rs'
@@ -77,6 +80,9 @@ on:
       - 'tools/test-native-build-policy.py'
       - 'tools/qualify-capability-results.py'
       - 'tools/test-capability-results.py'
+      - 'tools/qualify-retained-results.py'
+      - 'tools/test-retained-results.py'
+      - 'upstream/retained-scenario-results.json'
       - 'upstream/complement-imports.json'
       - 'tools/native-target-layout-qualification.rs'
       - 'tools/profile-native-preflight.rs'
@@ -304,6 +310,16 @@ jobs:
             --entry "$RUNNER_TEMP/lustr-native-built/toolchain/bin/lustr" \
             --rustc "$(rustup which rustc)" \
             --output "$RUNNER_TEMP/capability-results"
+      - name: Compare pinned retained histories through the public compiler
+        if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          python3 tools/test-retained-results.py -v
+          python3 tools/qualify-retained-results.py \
+            --entry "$RUNNER_TEMP/lustr-native-built/toolchain/bin/lustr" \
+            --rustc "$(rustup which rustc)" \
+            --cargo "$(rustup which cargo)" \
+            --jobs 2 --output "$RUNNER_TEMP/retained-results"
       - name: Build the actual native target-selector diagnostic
         id: selector_build
         if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
@@ -349,6 +365,7 @@ jobs:
             ${{ runner.temp }}/lustr-native-built/COMPONENTS.txt
             ${{ runner.temp }}/lustr-native-built/logs
             ${{ runner.temp }}/lustr-root-package-controls
+            ${{ runner.temp }}/retained-results
             ${{ runner.temp }}/capability-results/report.json
             ${{ runner.temp }}/capability-results/*.stdout
             ${{ runner.temp }}/capability-results/*.stderr

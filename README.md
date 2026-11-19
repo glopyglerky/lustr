@@ -59,6 +59,7 @@ history and historical evidence remain intact.
 | [Ownership follow-through](docs/compiler-set/exclusive-coverage-followthrough.md) | Remaining bridge, daemon and acceptance conflicts, native runtime repair and portability priority. |
 | [Sole-goal audit](docs/compiler-set/sole-goal-audit.md) | Recorded route cleanup, ownership and release clarification, actual public-entry results and remaining gaps. |
 | [Capability result qualification](docs/compiler-set/capability-result-qualification.md) | Compares real generated output and test outcomes through the public compiler; runs installed-package contracts in CI. |
+| [Retained-history result qualifier](tools/qualify-retained-results.py) | Uses pinned acceptance expectations, separate compile/runtime results and the same surviving daemon; unresolved histories remain visible. |
 | [Lust upstream review](docs/compiler-set/upstream-lust-review-2026-11-19.md) | Retention, precise invalidation, CI, performance history and reverts. |
 | [Rust upstream review](docs/compiler-set/upstream-rust-review-2026-11-19.md) | Existing selective reuse interfaces, dependency closure, CI and performance history. |
 | [Support and cost analysis](docs/compiler-set/exclusive-coverage-mathematics.md) | Known capability rules, CI coverage limits and the cost of extra dispatch or semantic work. |
@@ -96,6 +97,9 @@ uncertainty. These are engineering assumptions, not demonstrated current
 results or additional mandatory release thresholds. Overall speedup is a
 separate end-to-end comparison using workload frequencies fixed before sampling.
 Passing both subset targets does not prove that total compilation time improved.
+Each current near-stock claim also uses paired total elapsed costs. Geometric
+ratios and empirical p95 cannot hide expensive requests; means and maxima remain
+visible. See the [latest corrections](docs/compiler-set/sole-goal-audit.md#follow-through-after-5cd40fd3).
 The former 0.5 ms alternate rule remains historical; small absolute
 overhead cannot excuse a large relative slowdown. Cold builds, edits, rejection,
 memory and compile-plus-test remain separate. Large gains outside Lust's subset

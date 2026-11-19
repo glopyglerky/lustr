@@ -51,6 +51,11 @@ passing compatibility tests and historical release assets cannot change this goa
 - A compiler, transport, emitter, object, link or publication failure fails the
   request. It cannot become a capability decision or successful compiler retry.
   Never retry a program or test that has already executed.
+- Derive qualification expectations from pinned source and independent evidence
+  before running the candidate. Warm and cold rejection of valid Rust cannot
+  create a passing "unsupported" exception. Preserve upstream tests, but add
+  independent result checks where their verdicts do not establish this contract.
+  Record excluded histories as unqualified scope, with source-bound reasons.
 
 ## Establish source and evidence before continuing
 
@@ -125,6 +130,12 @@ facilities and native libraries. A broader migration requires actual integration
 and matched performance evidence. Continue dependency-ready compiler completion
 first; retain these preferences for later work that can meet those conditions.
 
+This preference concerns the compiler implementation and its required transport.
+Full Rust support still includes programs using `std` and target-specific APIs,
+including Unix sockets where the declared target provides them. A compiler's
+`no_std` attribute does not establish a dependency graph free of `std`, eliminate
+host services, or prove a speed gain. Qualify those claims separately.
+
 ## Performance and claims
 
 Keep Lust-covered work near matched stock Lust speed. Keep complementary work
@@ -144,6 +155,11 @@ numerical wording, mandatory release thresholds or proof that the candidate
 passes. Passing both does not itself prove an overall speedup. The old 0.5 ms alternative
 is historical only; small absolute overhead cannot excuse a large relative
 slowdown. Keep original historical assessments unchanged.
+
+Use paired total elapsed costs for each near-stock claim as well as the overall
+workload. A geometric mean can hide an expensive request even within one case.
+Keep means, maxima and distributions alongside empirical p95; a percentile that
+omits a rare slow request does not establish a tail bound.
 
 Assess incremental boundary overhead while integrating each component. Do not
 defer speed work until the final package or force every narrow source/guard

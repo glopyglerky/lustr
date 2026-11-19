@@ -1,0 +1,297 @@
+{
+  "schema": "lustr-daemon-status-commands-v1",
+  "source_commit": "a49e9ef2ecbf79b7962562181794f4009f0727c7",
+  "working_directory": "<REPOSITORY>",
+  "placeholders": {
+    "<REPOSITORY>": "Checkout whose compiled inputs match verification.json. The root public entry includes compiler/native/src/client.rs and its protocol; tests/compiler_contract.rs imports that same protocol directly.",
+    "<PINNED_SDK>": "Installed SDK root whose bin/rustc SHA-256 and verbose identity equal verification.json compiler fields.",
+    "<OUTPUT>": "Fresh writable qualification directory, outside the checkout.",
+    "<DEPENDENCY_ROOT>": "Read-only cache containing exactly the individually hashed reused .rmeta and .rlib artifacts in verification.json. No dependency source rebuild was claimed.",
+    "<EXISTING_PACKAGE>": "Existing package used only to read bin/lust-core metadata before the failed local socket bind. It was never invoked by that failed test.",
+    "<DEPS>": "Expand to the dependency arguments described below; this is not a literal argument."
+  },
+  "environment": "Each command inherited its execution environment. The explicitly supplied environment variables are listed per command. These are focused qualification commands, not the product constructor.",
+  "dependency_arguments": {
+    "search": "For each distinct parent directory of the recorded .rmeta files, sorted by path, append -L and dependency=<directory>.",
+    "direct_externs": "For serde_json and sha2, append both --extern name=<matching .rmeta> and --extern name=<matching .rlib>, using the exact filenames and SHA-256 values recorded in verification.json. The pinned compiler stored full metadata separately from its rlib stub.",
+    "failed_attempt_1": "Same public-entry compile command with only each .rlib passed to --extern; exit 1, preserved entry-compile.stderr.gz.",
+    "failed_attempt_2": "Same public-entry compile command with only each .rmeta passed to --extern; exit 1, preserved entry-compile-attempt2.stderr.gz."
+  },
+  "commands": [
+    {
+      "label": "thin-client-compile",
+      "environment": {
+        "LUST_BUILD_HASH": "0000000000000000",
+        "CARGO_PKG_VERSION": "0.1.0"
+      },
+      "argv": [
+        "<PINNED_SDK>/bin/rustc",
+        "--edition=2024",
+        "--cfg",
+        "feature=\"exclusive-native\"",
+        "compiler/native/src/client.rs",
+        "-o",
+        "<OUTPUT>/lust-client"
+      ],
+      "observed_exit": 0
+    },
+    {
+      "label": "thin-client-identity",
+      "argv": [
+        "<OUTPUT>/lust-client",
+        "--lustr-runtime-identity"
+      ],
+      "observed_exit": 0,
+      "stdout": "lustr-exclusive-native-v1\nbuild=0000000000000000\n"
+    },
+    {
+      "label": "root-library-compile",
+      "environment": {
+        "LUST_BUILD_HASH": "0000000000000000",
+        "CARGO_PKG_VERSION": "0.1.0",
+        "LUSTR_CORE_SOURCE": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "LUSTR_DECLARED_RUST_RELEASE": "1.102.0-nightly"
+      },
+      "argv": [
+        "<PINNED_SDK>/bin/rustc",
+        "--edition=2024",
+        "--remap-path-prefix=<REPOSITORY>=<repository>",
+        "--crate-type=rlib",
+        "--crate-name",
+        "lustr_compiler",
+        "src/lib.rs",
+        "-o",
+        "<OUTPUT>/liblustr_compiler.rlib"
+      ],
+      "observed_exit": 0
+    },
+    {
+      "label": "entry-compile-successful-third-attempt",
+      "environment": {
+        "LUST_BUILD_HASH": "0000000000000000",
+        "CARGO_PKG_VERSION": "0.1.0",
+        "LUSTR_CORE_SOURCE": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "LUSTR_DECLARED_RUST_RELEASE": "1.102.0-nightly"
+      },
+      "argv": [
+        "<PINNED_SDK>/bin/rustc",
+        "--edition=2024",
+        "--remap-path-prefix=<REPOSITORY>=<repository>",
+        "--cfg",
+        "feature=\"exclusive-native\"",
+        "src/main.rs",
+        "--extern",
+        "lustr_compiler=<OUTPUT>/liblustr_compiler.rlib",
+        "<DEPS>",
+        "-o",
+        "<OUTPUT>/lustr"
+      ],
+      "observed_exit": 0
+    },
+    {
+      "label": "entry-tests-compile",
+      "environment": {
+        "LUST_BUILD_HASH": "0000000000000000",
+        "CARGO_PKG_VERSION": "0.1.0",
+        "LUSTR_CORE_SOURCE": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "LUSTR_DECLARED_RUST_RELEASE": "1.102.0-nightly"
+      },
+      "argv": [
+        "<PINNED_SDK>/bin/rustc",
+        "--edition=2024",
+        "--remap-path-prefix=<REPOSITORY>=<repository>",
+        "--test",
+        "--cfg",
+        "feature=\"exclusive-native\"",
+        "src/main.rs",
+        "--extern",
+        "lustr_compiler=<OUTPUT>/liblustr_compiler.rlib",
+        "<DEPS>",
+        "-o",
+        "<OUTPUT>/entry-tests"
+      ],
+      "observed_exit": 0
+    },
+    {
+      "label": "entry-tests",
+      "environment": {
+        "LUST_BUILD_HASH": "0000000000000000",
+        "CARGO_PKG_VERSION": "0.1.0",
+        "LUSTR_CORE_SOURCE": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "LUSTR_DECLARED_RUST_RELEASE": "1.102.0-nightly"
+      },
+      "argv": [
+        "<OUTPUT>/entry-tests",
+        "--test-threads=1"
+      ],
+      "observed_exit": 0
+    },
+    {
+      "label": "contract-tests-compile",
+      "environment": {
+        "LUST_BUILD_HASH": "0000000000000000",
+        "CARGO_PKG_VERSION": "0.1.0",
+        "LUSTR_CORE_SOURCE": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "LUSTR_DECLARED_RUST_RELEASE": "1.102.0-nightly"
+      },
+      "argv": [
+        "<PINNED_SDK>/bin/rustc",
+        "--edition=2024",
+        "--remap-path-prefix=<REPOSITORY>=<repository>",
+        "--test",
+        "--cfg",
+        "feature=\"exclusive-native\"",
+        "tests/compiler_contract.rs",
+        "<DEPS>",
+        "-o",
+        "<OUTPUT>/contract-tests"
+      ],
+      "observed_exit": 0
+    },
+    {
+      "label": "contract-tests",
+      "environment": {
+        "LUST_BUILD_HASH": "0000000000000000",
+        "CARGO_PKG_VERSION": "0.1.0",
+        "LUSTR_CORE_SOURCE": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "LUSTR_DECLARED_RUST_RELEASE": "1.102.0-nightly"
+      },
+      "argv": [
+        "<OUTPUT>/contract-tests",
+        "--test-threads=1"
+      ],
+      "observed_exit": 0
+    },
+    {
+      "label": "protocol-compile",
+      "environment": {
+        "LUST_BUILD_HASH": "0000000000000000"
+      },
+      "argv": [
+        "<PINNED_SDK>/bin/rustc",
+        "--edition=2024",
+        "--test",
+        "<REPOSITORY>/compiler/native/src/protocol.rs",
+        "-o",
+        "<OUTPUT>/protocol-final"
+      ],
+      "observed_exit": 0
+    },
+    {
+      "label": "protocol-tests",
+      "environment": {
+        "LUST_BUILD_HASH": "0000000000000000"
+      },
+      "argv": [
+        "<OUTPUT>/protocol-final",
+        "--test-threads=1"
+      ],
+      "observed_exit": 0
+    },
+    {
+      "label": "restored-defect-compile",
+      "environment": {
+        "LUST_BUILD_HASH": "0000000000000000"
+      },
+      "argv": [
+        "<PINNED_SDK>/bin/rustc",
+        "--edition=2024",
+        "--test",
+        "<OUTPUT>/restored-decoder/compiler/native/src/protocol.rs",
+        "-o",
+        "<OUTPUT>/restored-decoder-tests"
+      ],
+      "observed_exit": 0
+    },
+    {
+      "label": "restored-defect-negative",
+      "environment": {
+        "LUST_BUILD_HASH": "0000000000000000"
+      },
+      "argv": [
+        "<OUTPUT>/restored-decoder-tests",
+        "--exact",
+        "tests::wire_status_cannot_wrap_into_success_or_an_unrelated_failure",
+        "--nocapture"
+      ],
+      "observed_exit": 101
+    },
+    {
+      "label": "actual-public-entry-synthetic-children",
+      "argv": [
+        "python3",
+        "tools/test-exclusive-entry.py",
+        "--entry",
+        "<OUTPUT>/lustr",
+        "--output",
+        "<OUTPUT>/exclusive-entry-controls.json"
+      ],
+      "observed_exit": 0
+    },
+    {
+      "label": "required-local-socket-contract",
+      "environment": {
+        "LUSTR_TEST_PACKAGE": "<EXISTING_PACKAGE>",
+        "LUSTR_TEST_OUTPUT": "<OUTPUT>/recorded-socket-contract"
+      },
+      "argv": [
+        "<OUTPUT>/contract-tests",
+        "--ignored",
+        "--exact",
+        "public_entries_keep_ambiguous_daemon_failures_terminal",
+        "--nocapture"
+      ],
+      "observed_exit": 101,
+      "meaning": "Required socket bind failed with EPERM before any compiler or helper request. This is not a passing installed-package test."
+    },
+    {
+      "label": "candidate-source-guard-compile",
+      "argv": [
+        "<PINNED_SDK>/bin/rustc",
+        "--edition=2024",
+        "tools/lust-upstream-check.rs",
+        "-o",
+        "<OUTPUT>/source-guard"
+      ],
+      "observed_exit": 0
+    },
+    {
+      "label": "candidate-source-guard-before-commit",
+      "argv": [
+        "<OUTPUT>/source-guard",
+        "--candidate",
+        "--index"
+      ],
+      "observed_exit": 0
+    },
+    {
+      "label": "candidate-source-guard-after-commit",
+      "argv": [
+        "<OUTPUT>/source-guard",
+        "--candidate"
+      ],
+      "observed_exit": 0
+    },
+    {
+      "label": "structural-exclusive-coverage",
+      "argv": [
+        "python3",
+        "tools/check-exclusive-coverage.py"
+      ],
+      "observed_exit": 0
+    }
+  ],
+  "restored_defect_setup": {
+    "protocol_source": "Copy the current compiler/native/src/protocol.rs to <OUTPUT>/restored-decoder/compiler/native/src/protocol.rs.",
+    "host_source": "Copy src/host_runtime.rs to <OUTPUT>/restored-decoder/src/host_runtime.rs, retaining the relative module path used by the actual protocol.",
+    "replace_exactly_once": {
+      "before": "let code = i32::from(u8::try_from(number(0)?).map_err(|_| \"daemon returned an invalid response status\".to_owned())?);",
+      "after": "let code = i32::try_from(number(0)?).map_err(|_| \"daemon returned an invalid response status\".to_owned())?;"
+    },
+    "expected_source_sha256": "469f8b4fd1fa0bf136e6a534b29ee0fc6ceec5da87cbf2a76d176e6607b237fa"
+  },
+  "limits": [
+    "Commands preserve the actual compiler flags and environment variable names. Placeholder locations are generalized for public replay. Artifact hashes are observations of the original execution, not a claim that relocated builds are byte-identical.",
+    "This command record was added without rerunning compiler qualification. Original failed controls, setup failures and socket EPERM remain unchanged."
+  ]
+}

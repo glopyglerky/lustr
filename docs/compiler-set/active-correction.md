@@ -25,6 +25,14 @@ retains the unavailable local socket control as a failure. The
 workload arithmetic and evidence consistency without granting release admission.
 No new compiler speed result or full complementary implementation is claimed.
 
+The follow-through after `5cd40fd3` fixes malformed daemon statuses that could
+wrap to process success, replaces per-case geometric near-stock admission with
+paired total elapsed costs, and adds independent pinned retained-history result
+checks. The [latest audit section](sole-goal-audit.md#follow-through-after-5cd40fd3)
+binds these changes and their limits. Default-branch governance is synchronized
+separately from the implementation PR. No complete compiler or portability
+migration is inferred from this correction.
+
 ## Published code and actual scope
 
 The first published correction is

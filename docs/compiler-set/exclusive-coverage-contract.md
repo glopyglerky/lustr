@@ -127,6 +127,15 @@ retained state. A failed generation cannot be hidden as a cache miss. Never
 retry a program or test that already ran. An independent stock oracle may run
 in qualification; it cannot rescue a failed production request.
 
+Qualification must use expectations established before candidate execution.
+Matching warm and cold rejection of valid Rust cannot create an "unsupported"
+exception or remove the operation from Lust's ownership. Preserve donor tests
+and add independent checks for the exact result they leave unasserted. Count
+excluded or unexamined histories separately from passing histories. Keep
+compiler acceptance, required artifacts and generated-program exit/stdout/stderr
+as distinct observations, so a compiler failure cannot stand in for an expected
+runtime failure.
+
 ## Minimal justified imports
 
 Choose missing-capability roots under an explicit target/feature configuration.
@@ -264,6 +273,12 @@ unqualified. Review cold work, other edits, tails and complete user operations
 separately. Assess boundary overhead during integration, then qualify the exact
 complete package. Do not postpone all speed assessment until coverage is done.
 
+The paired total-time rule applies within each near-stock comparison as well
+as across the complete workload. A geometric mean of repeated ratios can hide
+increased elapsed cost even for one fixed request. Report means, maxima and
+distributions alongside empirical p95. This changes the evidence required for
+that speed claim; it adds no numerical release requirement.
+
 ## Portability preference without a competing destination
 
 The user prefers `no_std` throughout the compiler and no required Unix-domain
@@ -287,6 +302,19 @@ execution exists but does not replace retained-session performance. No full
 migration must show real supported operation and matched performance before
 becoming the preferred production path. It must not delay the established
 consumer-metadata and selective-complement work merely to add an unused API.
+
+This preference concerns implementation dependencies and required compiler IPC.
+It does not narrow accepted Rust programs. The full replacement must still
+compile `std` and target-specific facilities, including Unix socket programs
+where the declared target supports them. Removing the compiler's socket
+transport is separate from removing those language/library semantics.
+
+The [Rust Reference](https://doc.rust-lang.org/reference/names/preludes.html#the-no_std-attribute)
+defines `no_std` as changing the implicit library/prelude; dependencies can still
+link `std`. A crate attribute alone cannot establish a whole-compiler claim.
+Review the effective dependency graph and actual host adapters. Preserve the
+same allocation, semantic-state lifetime, concurrency and error contracts when
+measuring any proposed replacement.
 
 ## Completion and first release evidence
 

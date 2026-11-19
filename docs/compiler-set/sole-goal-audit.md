@@ -12,6 +12,112 @@ Keep supported work near matched stock Lust speed and complementary work near
 matched stock rustc speed. Prefer no_std throughout and no required Unix sockets
 when those changes preserve speed and do not delay compiler completion.
 
+## Follow-through after 5cd40fd3
+
+The next review starts from published
+`5cd40fd313503d4a4fc935ee47ca7c05fce1471a`, tree
+`114415d4cb1850a80fbc1451fce7bdb8ce9878c3`. The product fallback removals remain
+intact in the inspected entry, loader, helper gates, daemon and constructor.
+This review found three different ways success could still be overstated.
+
+### A malformed daemon status could become success
+
+The shared protocol decoder accepted every nonnegative `i32` status. The Unix
+clients pass it to `process::exit`; a status such as 256 or 512 then becomes
+zero as observed by the parent. The
+[Rust API contract](https://doc.rust-lang.org/std/process/fn.exit.html#platform-specific-behavior)
+documents the low-byte behavior on these hosts.
+
+The decoder now accepts only the representable Unix range 0 through 255.
+An ordinary or mixed malformed response fails the request without another
+compiler attempt. Positive controls preserve ordinary errors and conventional
+signal-style statuses. The installed-package socket control supplies 256, 512
+and 257 through both real entries and requires terminal failure, preserved
+prior artifact bytes, no success output and no endpoint removal.
+
+The [source-bound evidence](evidence/daemon-status-20261119/verification.json)
+retains the restored-defect control that fails because 256 was accepted,
+focused protocol and public-entry execution, and the local socket `EPERM`
+failure. Local entry/helper builds use an explicit synthetic test identity and
+hashed reused dependencies. They are not a fresh native-core/library constructor.
+Hosted construction and the actual peer exchange remain separate requirements.
+
+Only `compiler/native/src/protocol.rs` changes inside the protected donor tree.
+The pristine pin remains unchanged; the full declared patch and candidate
+identity are updated. The correction tightens an existing integer conversion.
+It adds no compiler pass, probe, allocation or child process. This is source
+cost analysis, not a measured latency claim.
+
+### Per-case speed claims could still conceal higher elapsed cost
+
+The previous assessor used total time for the overall workload but geometric
+ratios for each near-stock claim. A synthetic 24-request witness takes 24 time
+units in Lust and 104.6 in Lustr while producing a favorable geometric ratio.
+The previous near-Lust result passed despite about 4.36 times the elapsed cost.
+
+Version 2 uses paired summed elapsed costs for each current near-stock claim
+and its per-case Rust speed condition. It retains geometric ratios only for
+diagnosis and displays mean and maximum latency beside p95. The witness now
+has an inconclusive near-Lust interval and cannot claim that target. A separately
+established overall win against rustc still passes. No new release blocker or
+numerical target is introduced. The
+[25-control record](evidence/current-performance-v2-20261119/verification.json)
+contains synthetic assessor evidence, with no compiler execution or benchmark.
+See the [assessment contract](current-performance-assessment.md).
+
+### Upstream retained scenarios could silently lose accepted cases
+
+The unchanged donor harness labels valid Rust rejected by both warm and cold
+Lust as "unsupported today" and still reports that scenario as successful.
+The [pinned Linux log](https://github.com/t3dotgg/lust-lang/actions/runs/39780031006/job/119828625752)
+reports 363 of 363 scenarios as okay while also reporting 27 unsupported versions
+across 13 histories. Its later sanitizer failure remains a failure; this is
+evidence about the scenario verdict, not a passing upstream job.
+
+The separate [retained-result qualifier](../../tools/qualify-retained-results.py)
+uses the original fixture order, overlays and lifecycle controls while making
+independent acceptance and result decisions. Its
+[pinned inventory](../../upstream/retained-scenario-results.json) fixes known
+accepted histories before candidate execution. It requires 349 histories and
+keeps the 13 mixed-support
+histories explicitly unresolved, without turning their observed rejection
+counts into allowances for future regressions.
+
+Public `lustr check` and `lustr build`, artifact production and program execution
+are observed separately. Warm and cold native rejection cannot excuse valid
+Rust. Actual output and exits must agree with the pinned independent Rust
+oracle; the same owned daemon must survive the warm sequence. Original donor
+scripts and fixtures remain unchanged. Qualification runs outside production
+requests and does not measure compilation speed or select production ownership.
+
+The [retained-result control record](evidence/retained-result-controls-20261119/verification.json)
+records evaluator controls, actual pinned-Rust diagnostic parsing and the
+earlier local package attempt. That package's daemon failed at socket creation
+with `EPERM` before any version was qualified. The original attempt binds its
+own runner and package identities; it does not qualify the final runner or the
+current compiler package. CI runs the new qualifier immediately after its
+guarded constructor and retains all reports, command streams and daemon logs.
+
+## Direction that must survive this correction
+
+The canonical ownership and release rules are unchanged. Preserve every
+Lust-owned operation, import only the genuine complement, perform shared work
+once, and release a complete correct replacement when its declared overall
+workload beats matched stock rustc. Keep improving toward stock Lust afterward.
+The default-branch instruction sync removes the older ownership wording,
+absolute-latency loophole and subset-target-before-release ordering. A document
+publication cannot qualify the still-incomplete compiler implementation.
+
+Prefer `no_std` throughout compiler implementation and no required Unix socket
+transport when retained speed and completion are preserved. This does not remove
+support for compiling programs that use `std` or target-supported Unix APIs.
+There is no qualified socket-free retained replacement or whole-compiler
+`no_std` conversion in this change. The established next compiler work remains
+genuine native declaration/privacy/lint/definition completion and the actual
+emitted-instance graph feeding the metadata encoder, then justified selective
+complementary services. These checks expose failures; they do not discharge
+that missing implementation.
+
 ## Follow-through after a03b1e2d
 
 The next review used published `a03b1e2d9787523c72efe628a72cb02afbfaa491`,

@@ -77,10 +77,13 @@ cannot override a failed or inconclusive relative comparison. These are
 conditional intervals for that repeated workload and host. Noise is a reason
 to improve the predeclared measurement design, not to report a pass.
 
-The paired ratio statistic is the geometric mean of within-pair
-reference/candidate ratios, with the existing paired bootstrap interval. It is
-not a ratio of marginal medians or a bound on every individual request. Retain
-sample distributions and latency tails independently.
+The current paired ratio statistic divides the sum of reference durations by
+the sum of candidate durations for that case, with paired block bootstrap
+uncertainty. A geometric mean can hide increased total elapsed cost within a
+single case and remains diagnostic only. Neither a ratio of marginal medians
+nor a favorable empirical p95 can replace this comparison. Retain the mean,
+maximum and complete sample distribution too; these observations do not bound
+every future request.
 
 `tools/assess-warm-performance.py` and its version-1 schema replay the historical
 practical rule. Their `meets_practical_target` field is not current near-stock
@@ -149,8 +152,9 @@ hashes, runner and C/linker identities, failure records and replay commands.
 Historical gains and losses remain in the [performance checkpoint](performance-review-2026-11-18.md).
 This document makes no new measured performance claim.
 
-The [current evaluator](current-performance-assessment.md) implements the
-total-time statistic and the existing separate per-case geometric ratios. Its
+The [current evaluator](current-performance-assessment.md) implements paired
+total-time statistics for the overall workload and separate per-case claims.
+Its version-2 reports retain geometric ratios as diagnostics. The unchanged
 version-1 capture contract covers direct compiler entries only, with the numeric
 supported target scoped to successful `warm-no-op` check/build cases. Other
 edits, Cargo/wrapper chains and omitted modes need their applicable evidence;

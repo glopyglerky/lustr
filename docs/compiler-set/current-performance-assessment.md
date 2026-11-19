@@ -18,6 +18,10 @@ Exit `0` means the measured overall speed criterion passed. Exit `2` means it
 was slower or inconclusive. Exit `1` means the input or evidence was rejected.
 Every result has `release_admission=false`. Neither an input Boolean nor a
 performance pass authorizes release or establishes a complete Rust compiler.
+The current report uses `lustr-current-performance-assessment-v2`. Input plan
+and execution schemas remain version 1. Version 2 changes the per-case
+near-stock decision to total elapsed cost; previously saved reports and
+historical assessors retain their original meaning.
 
 ## Statistic and decision
 
@@ -42,17 +46,35 @@ A fast tiny case cannot conceal more time spent on a large case. Fixed
 frequencies also prevent a rare improvement from concealing frequent losses.
 
 Each case retains its separate comparison, mean, median, empirical nearest-rank
-p95 and maximum. The near-stock comparisons preserve the existing per-case
-geometric mean of within-pair ratios and its paired bootstrap interval. That
-statistic is never the overall workload decision. Successful supported check/build cases
+p95 and maximum. Near-stock comparisons also divide the sum of reference
+durations by the sum of candidate durations, resampling the same paired blocks.
+The previous geometric mean of within-pair ratios remains explicitly diagnostic
+in the report. It cannot decide current overall or near-stock speed claims.
+Successful supported check/build cases
 with lifecycle `warm-no-op` use the existing 10% engineering target and also
-require a demonstrated per-case Rust/Lustr speedup. Successful complementary
+require a demonstrated per-case Rust/Lustr total-time speedup. Successful complementary
 check/build cases compare with stock Rust using 5%. Other modes retain their
 measurements without inventing a numeric target. These target results are
 separate from the overall decision. A near-stock miss
 remains visible even when the actual total is faster. Conversely, satisfying
 both targets does not establish that the total is faster. No absolute-latency
 allowance overrides a failed relative near-stock comparison.
+
+A favorable geometric mean can conceal slower total elapsed cost even within
+one case. In a synthetic 24-pair example, stock Lust takes 1 time unit every
+time; Lustr takes 0.2 units on 23 requests and 100 on the remaining request.
+The geometric Lust/Lustr ratio is about 3.86, but Lustr spends 104.6 units
+against Lust's 24, about 4.36 times as long. The current assessor reports the
+near-Lust result as inconclusive because its paired total-time interval crosses
+the existing threshold. It does not label it near-stock. A separately established
+overall speedup against rustc remains a performance pass.
+
+Empirical p95 in that example is only 0.2 because the slow request is rarer than
+5%. The rendered report therefore includes mean and maximum latency alongside
+p95, plus the reference and interval for every near-stock comparison. This
+exposes observed tails without inventing a new numeric release requirement or
+claiming that a finite sample bounds future tail behavior. The example is an
+assessor regression control, not a compiler measurement.
 
 Use frequency zero only for a declared diagnostic comparison that is outside
 the actual workload. Its results remain in the report. In particular, do not
@@ -88,7 +110,7 @@ library, helper, runtime and other executable dependency required by the measure
 request under named roles. The assessor hashes declared files. It cannot infer
 that an undeclared dependency was used.
 
-Version 1 supports a direct compiler command executed with the evidence root as
+The version-1 capture contract supports a direct compiler command with the evidence root as
 its working directory. Its `argv[0]` must be `./` followed by the declared entry
 artifact's relative path. The execution receipt also identifies that exact
 entry file and hash, with `working_directory` equal to `.`. A matching plan and
@@ -166,4 +188,7 @@ commands, partial-phase timings, stale qualification identities, changed helper
 binaries, missing output artifacts, failure statuses, interrupted requests and
 invalid durations. The adversarial cases include a favorable geometric mean
 with a slower total, both near-stock targets satisfied with a slower total, and
-an overall speedup that still misses the near-Lust target.
+an overall speedup that still misses the near-Lust target. They also cover rare
+slow requests hidden by a favorable geometric mean and empirical p95,
+complementary per-case elapsed-cost regressions, and a geometric Rust/Lustr
+speedup contradicted by that same case's total time.

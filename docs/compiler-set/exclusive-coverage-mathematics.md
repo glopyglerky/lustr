@@ -219,6 +219,23 @@ they cannot by themselves prove independent execution, truthful timings or that
 the workload was declared before the campaign. Those need the actual retained
 execution and review records.
 
+### Apply elapsed-cost accounting within each case too
+
+For repeated matched requests, a geometric mean of ratios can conceal a costly
+tail even when no different workloads are being combined. In a synthetic
+24-pair example, Lust takes one time unit on every request. Lustr takes 0.2
+units on 23 requests and 100 on one. The geometric Lust/Lustr ratio is about
+3.86, but elapsed costs are 24 and 104.6. Lustr takes about 4.36 times as long.
+The empirical nearest-rank p95 is still 0.2 because the slow observation is
+rarer than 5 percent. These are illustrative values, not compiler measurements.
+
+Use the ratio of summed durations with matched block uncertainty for each
+current near-stock claim. Keep the geometric statistic diagnostic. Display the
+mean, maximum and distribution alongside p95, without pretending a finite
+sample bounds future tails. If rustc is sufficiently slower, the separate
+overall Rust comparison can still pass. A failed near-Lust claim must stay
+visible but must not become a new first-release blocker.
+
 ## Why retained facts matter more than changing the transport name
 
 Upstream's [`driver/patch.rs`](https://github.com/t3dotgg/lust-lang/blob/240e08d91d4aed0299639f6f11fd522912b248f9/src/driver/patch.rs)

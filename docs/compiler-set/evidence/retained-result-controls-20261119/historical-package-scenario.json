@@ -1,0 +1,11 @@
+{
+  "scenario": "mainret01_exitcode_edits",
+  "passed": false,
+  "commands": [],
+  "versions": [],
+  "daemon_argv": [
+    "$HISTORICAL_PACKAGE/bin/lust",
+    "daemon"
+  ],
+  "failure": "donor lifecycle/control failure: mainret01_exitcode_edits: daemon start failed"
+}
