@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "reviewed_source": "5f8db03a0",
+  "scope": "independent replay of both unchanged frozen preparation side-effect witnesses; not a complete compiler qualification",
+  "qualifier_sha256": "27e188c4771361f4831a7635e06c83ad5bc08372b795263bfab3aa1d2c9076fd",
+  "cases": [
+    {
+      "action": "check",
+      "command": [
+        "$PROBE/target/debug/examples/native-upstream-qualification",
+        "$REPO/tests/shared-imports/integer-consumer.rs",
+        "$ORIGINAL_INTEGER_CAMPAIGN/campaign/libinteger-peer.rlib",
+        "$PROBE/check.independent-after",
+        "$PROBE/check-independent-after-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "check",
+        "LUSTR_QUALIFICATION_ADAPTER_FAILURE": "failed"
+      },
+      "status": 0,
+      "stdout": "",
+      "stderr": "shared-action=check\nimported-emission-transfer=once dependencies=preserved\nimported-generation=rust:5b7b37aefcb5b2fba3c2392bc9065b9e4602d494:Svh { hash: Fingerprint(4721646511978726587, 7900172692719835077) }\nshared request: native-checked=11 imported-inputs=3 integer-adapters=30 consumer-rust-typeck=0 consumer-rust-analysis=0\nimported-generation-reuse=refused previous-artifact=preserved\n",
+      "prior_sha256": "fbc83463279544c380c4c3bd96d4554ff09ebd8fa871585f614d7211b0a6bef7",
+      "after_sha256": "fbc83463279544c380c4c3bd96d4554ff09ebd8fa871585f614d7211b0a6bef7",
+      "native_objects": []
+    },
+    {
+      "action": "abandon",
+      "command": [
+        "$PROBE/target/debug/examples/native-upstream-qualification",
+        "$REPO/tests/shared-imports/integer-consumer.rs",
+        "$ORIGINAL_INTEGER_CAMPAIGN/campaign/libinteger-peer.rlib",
+        "$PROBE/abandon.independent-after",
+        "$PROBE/abandon-independent-after-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "abandon",
+        "LUSTR_QUALIFICATION_ADAPTER_FAILURE": "failed"
+      },
+      "status": 0,
+      "stdout": "",
+      "stderr": "shared-action=abandon\nimported-emission-transfer=once dependencies=preserved\nimported-generation=rust:5b7b37aefcb5b2fba3c2392bc9065b9e4602d494:Svh { hash: Fingerprint(4721646511978726587, 7900172692719835077) }\nshared request: native-checked=11 imported-inputs=3 integer-adapters=30 consumer-rust-typeck=0 consumer-rust-analysis=0\nshared-prepared-request=abandoned\nimported-generation-reuse=refused previous-artifact=preserved\n",
+      "prior_sha256": "fbc83463279544c380c4c3bd96d4554ff09ebd8fa871585f614d7211b0a6bef7",
+      "after_sha256": "fbc83463279544c380c4c3bd96d4554ff09ebd8fa871585f614d7211b0a6bef7",
+      "native_objects": []
+    }
+  ],
+  "original_record_sha256": "061fd428e738cb87ba6b5471f3f55ed2f8bf37d4faa7e406106f1b89615b934a"
+}

@@ -1,0 +1,455 @@
+{
+  "schema": 1,
+  "scope": "owned imported emission lifecycle; no public routing or performance claim",
+  "passed": true,
+  "qualifier_sha256": "a1a4e3d4299d09299777b2677e506fcba04260a88615bfe880c5e869f745cfa7",
+  "cases": [
+    {
+      "name": "peer",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=peer",
+        "--crate-type=rlib",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "-Cembed-bitcode=no",
+        "$QUALIFICATION/campaign/peer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/libpeer.rlib"
+      ],
+      "environment": {},
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "reference",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/consumer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/consumer.rust"
+      ],
+      "environment": {},
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "reference-run",
+      "command": [
+        "$QUALIFICATION/campaign/consumer.rust"
+      ],
+      "environment": {},
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "build",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/consumer.native",
+        "$QUALIFICATION/campaign/build-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "build"
+      },
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "build-run",
+      "command": [
+        "$QUALIFICATION/campaign/consumer.native"
+      ],
+      "environment": {},
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "check-normal",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/consumer.native",
+        "$QUALIFICATION/campaign/check-normal-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "check"
+      },
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "check-missing",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/consumer.native",
+        "$QUALIFICATION/campaign/check-missing-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "check",
+        "LUSTR_QUALIFICATION_ADAPTER_FAILURE": "missing"
+      },
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "check-failed",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/consumer.native",
+        "$QUALIFICATION/campaign/check-failed-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "check",
+        "LUSTR_QUALIFICATION_ADAPTER_FAILURE": "failed"
+      },
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "check-malformed",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/consumer.native",
+        "$QUALIFICATION/campaign/check-malformed-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "check",
+        "LUSTR_QUALIFICATION_ADAPTER_FAILURE": "malformed"
+      },
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "check-empty",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/consumer.native",
+        "$QUALIFICATION/campaign/check-empty-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "check",
+        "LUSTR_QUALIFICATION_ADAPTER_FAILURE": "empty"
+      },
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "check-no-output",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/check.must-not-exist",
+        "$QUALIFICATION/campaign/check-no-output-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "check",
+        "LUSTR_QUALIFICATION_ADAPTER_FAILURE": "failed"
+      },
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "abandon-normal",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/consumer.native",
+        "$QUALIFICATION/campaign/abandon-normal-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "abandon"
+      },
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "abandon-missing",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/consumer.native",
+        "$QUALIFICATION/campaign/abandon-missing-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "abandon",
+        "LUSTR_QUALIFICATION_ADAPTER_FAILURE": "missing"
+      },
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "abandon-failed",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/consumer.native",
+        "$QUALIFICATION/campaign/abandon-failed-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "abandon",
+        "LUSTR_QUALIFICATION_ADAPTER_FAILURE": "failed"
+      },
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "abandon-malformed",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/consumer.native",
+        "$QUALIFICATION/campaign/abandon-malformed-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "abandon",
+        "LUSTR_QUALIFICATION_ADAPTER_FAILURE": "malformed"
+      },
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "abandon-empty",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/consumer.native",
+        "$QUALIFICATION/campaign/abandon-empty-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "abandon",
+        "LUSTR_QUALIFICATION_ADAPTER_FAILURE": "empty"
+      },
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "abandon-no-output",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/abandon.must-not-exist",
+        "$QUALIFICATION/campaign/abandon-no-output-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "abandon",
+        "LUSTR_QUALIFICATION_ADAPTER_FAILURE": "failed"
+      },
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "invalid-build",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/invalid.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/consumer.native",
+        "$QUALIFICATION/campaign/invalid-build-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "build",
+        "LUSTR_QUALIFICATION_ADAPTER_FAILURE": "failed"
+      },
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "invalid-check",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/invalid.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/consumer.native",
+        "$QUALIFICATION/campaign/invalid-check-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "check",
+        "LUSTR_QUALIFICATION_ADAPTER_FAILURE": "failed"
+      },
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "invalid-abandon",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/invalid.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/consumer.native",
+        "$QUALIFICATION/campaign/invalid-abandon-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "abandon",
+        "LUSTR_QUALIFICATION_ADAPTER_FAILURE": "failed"
+      },
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "invalid-reference",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "-Cpanic=abort",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/invalid.rs",
+        "-o",
+        "$QUALIFICATION/campaign/invalid.rust"
+      ],
+      "environment": {},
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "build-missing",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/consumer.native",
+        "$QUALIFICATION/campaign/build-missing-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "build",
+        "LUSTR_QUALIFICATION_ADAPTER_FAILURE": "missing"
+      },
+      "status": 3,
+      "expected": 3
+    },
+    {
+      "name": "build-failed",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/consumer.native",
+        "$QUALIFICATION/campaign/build-failed-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "build",
+        "LUSTR_QUALIFICATION_ADAPTER_FAILURE": "failed"
+      },
+      "status": 3,
+      "expected": 3
+    },
+    {
+      "name": "build-malformed",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/consumer.native",
+        "$QUALIFICATION/campaign/build-malformed-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "build",
+        "LUSTR_QUALIFICATION_ADAPTER_FAILURE": "malformed"
+      },
+      "status": 3,
+      "expected": 3
+    },
+    {
+      "name": "build-empty",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/consumer.native",
+        "$QUALIFICATION/campaign/build-empty-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "build",
+        "LUSTR_QUALIFICATION_ADAPTER_FAILURE": "empty"
+      },
+      "status": 3,
+      "expected": 3
+    },
+    {
+      "name": "already-transferred",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/consumer.native",
+        "$QUALIFICATION/campaign/already-transferred-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "build",
+        "LUSTR_QUALIFICATION_TAKE_EMISSION": "1"
+      },
+      "status": 3,
+      "expected": 3
+    },
+    {
+      "name": "object-publication-failed",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/consumer.native",
+        "$QUALIFICATION/campaign/object-publication-failed-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "build",
+        "LUSTR_QUALIFICATION_OBJECT_FAILURE": "1"
+      },
+      "status": 3,
+      "expected": 3
+    },
+    {
+      "name": "recovered",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/consumer.native",
+        "$QUALIFICATION/campaign/recovered-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "build",
+        "LUSTR_QUALIFICATION_REMOVE_SNAPSHOT": "1"
+      },
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "recovered-run",
+      "command": [
+        "$QUALIFICATION/campaign/consumer.native"
+      ],
+      "environment": {},
+      "status": 0,
+      "expected": 0
+    }
+  ],
+  "original_record_sha256": "698327408badcbf92d9438b644a341cb6a2d59b6828eba2b507ff3d639904f83"
+}

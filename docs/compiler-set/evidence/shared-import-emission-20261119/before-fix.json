@@ -1,0 +1,51 @@
+{
+  "scope": "original preparation side-effect witnesses; harness adds action choice without altering provider/driver",
+  "repository_head": "7ab82260ad3863e1736378267b1080c4ee169959",
+  "binary_sha256": "266912d60bb3018b5ec679275bcb3e31f16ef5982df0c9235b179ac341959192",
+  "inputs_sha256": {
+    "tools/native-upstream-qualification.rs": "a07211601da95f86e0d323d20ea86d581835485a8e04717f513aead09190f77e",
+    "compiler/native/src/driver/compile.rs": "318558288252ffe8b6167f84d2d55091049a940af4b4b79e94846a35012e87a4",
+    "compiler/native/src/driver/imports.rs": "e4b6e43f676bf4ba11d1275deaa0d6c399175bc6a3c97a63a8810e0e4a1e80ab",
+    "crates/lustr-native-core/src/upstream_definitions.rs": "058d8618bd85728caae1e40d88e27d0eb09f38b2557a3d108557b227d4a0e5a1",
+    "crates/lustr-native-core/src/upstream_abi.rs": "ad5f7146de9abb28da9af59c06a97ed05f8e8b597513913169fcde7584032e44",
+    "tests/shared-imports/integer-consumer.rs": "eb047067e6e6724fbe85046e2adf65567c3ad926979856d8f9d9ab3e6b253766"
+  },
+  "dependency_sha256": "94a266bd6b37e95b0a5e058567d31c083013f3e2d07c5e36fae74b19d89c543b",
+  "cases": [
+    {
+      "action": "check",
+      "command": [
+        "$PROBE/qualifier-before-fix",
+        "$REPO/tests/shared-imports/integer-consumer.rs",
+        "$ORIGINAL_INTEGER_CAMPAIGN/campaign/libinteger-peer.rlib",
+        "$PROBE/check.previous",
+        "$PROBE/check-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "check",
+        "LUSTR_QUALIFICATION_ADAPTER_FAILURE": "failed"
+      },
+      "status": 3,
+      "previous_artifact_preserved": true,
+      "diagnostic": "shared-action=check\nerror: imported checked-state contract failed: imported LLVM adapter emission failed: llc: Unknown command line argument '--invalid-lustr-qualification-option'.  Try: '$SDK/lib/rustlib/x86_64-unknown-linux-gnu/bin/llc --help'\nllc: Did you mean '--asan-initialization-order'?\n\n"
+    },
+    {
+      "action": "abandon",
+      "command": [
+        "$PROBE/qualifier-before-fix",
+        "$REPO/tests/shared-imports/integer-consumer.rs",
+        "$ORIGINAL_INTEGER_CAMPAIGN/campaign/libinteger-peer.rlib",
+        "$PROBE/abandon.previous",
+        "$PROBE/abandon-state"
+      ],
+      "environment": {
+        "LUSTR_QUALIFICATION_ACTION": "abandon",
+        "LUSTR_QUALIFICATION_ADAPTER_FAILURE": "failed"
+      },
+      "status": 3,
+      "previous_artifact_preserved": true,
+      "diagnostic": "shared-action=abandon\nerror: imported checked-state contract failed: imported LLVM adapter emission failed: llc: Unknown command line argument '--invalid-lustr-qualification-option'.  Try: '$SDK/lib/rustlib/x86_64-unknown-linux-gnu/bin/llc --help'\nllc: Did you mean '--asan-initialization-order'?\n\n"
+    }
+  ],
+  "original_record_sha256": "dc6bb34e936ba6d9f9aca571cab0d19430d4c4530c63d7fdabf448ce15b5a68b"
+}
