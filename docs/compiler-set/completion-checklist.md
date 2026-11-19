@@ -5,15 +5,20 @@ Reviewed 19 November 2026. This is the single work register for the
 is full rustc replacement with exclusive Lust ownership of covered work and
 only necessary upstream complementary implementation. Full Rust stays in blueFe.
 
-Observed default: `7cea76c9d3adc587b54ccff168fe07efafd40309`.
+Pre-correction default: `7cea76c9d3adc587b54ccff168fe07efafd40309`.
 Audited continuation: [PR #32](https://github.com/glopyglerky/lustr/pull/32),
 `cb0721d49be95ec3f34a113c2354bc9d2a38bbf3`.
-This docs-only correction does not remove candidate/default product code.
+Governing documentation landed through [PR #31](https://github.com/glopyglerky/lustr/pull/31)
+at `2fbafe391fdf3d0a59b8cc24e9b0f55be3570cbd`. The current
+[cleanup record](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/exclusive-coverage-cleanup.md) describes the implementation
+correction separately from the unfinished full compiler.
 
 ## 0. Correct active direction and reconcile existing work
 
-Status: the documentation correction is prepared. Product cleanup and source
-consolidation are separate work and must be linked to exact reviewed commits.
+Status: the documentation correction is merged. The implementation correction
+removes conflicting entry, helper and package routes, adds the partial import
+inventory and preserves useful components. Its focused validation and remaining
+limits are recorded in the [cleanup record](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/exclusive-coverage-cleanup.md).
 
 - Keep AGENTS, README, architecture, contract, design, roadmap and performance
   policy consistent. Supersede permission for a full compiler import graph,
@@ -36,6 +41,13 @@ fixtures. Expose prepared checked state and dependency reads before emission.
 Keep native preparation, genuine complement requirements, unintegrated supported
 work, invalid input and implementation failure distinct.
 
+Derive and qualify support rules in development/CI, then apply them inside the
+one normal frontend or retained-state update. A scanner, separate parser/checker,
+probe compilation or diagnostic retry cannot select the production owner.
+Unprobed/unknown donor evidence is not proof of a complementary obligation.
+Capability test coverage must state its exceptions; a general CI pass is not
+proof that the capability tests ran.
+
 Done when pure and mixed programs retain Lust ownership for the complete covered
 set being claimed. The current scalar bridge cannot define that set. Failure
 in a represented native emission must fail the request without reassignment.
@@ -47,6 +59,12 @@ source revision, paths/symbols/hashes, licenses, feature/target dependencies,
 verified adapters, necessity witnesses, actual callers and semantic ownership.
 Include existing partial Unicode/normalization imports and their dependencies.
 Disclose full SDK/compiler-private research components separately.
+
+Check effective product dependency and feature closure, including defaults,
+optional, renamed, target and build dependencies and transitive lock changes.
+No product feature combination may activate a retrying experimental ABI or a
+full competing SDK. Remove obsolete general launchers and retain only useful
+bounded research qualifiers outside production admission.
 
 Done when admitted imports implement their claimed complementary obligations
 inside the owned compilation and the closure contains no unjustified duplicate
@@ -112,34 +130,90 @@ panic/unwind, runtime and the integrated path on every advertised target/profile
 Inspect matching tools/sysroot, source/binary manifests, relocation, offline
 rebuilds, invalidation, required assets and notices for the exact package.
 
+Map the declared matrix to the applicable pinned upstream test mechanisms:
+Lust's native/differential/retained-state suite and Rust's UI acceptance and
+rejection cases, explicit execution-result checks, run-make artifact and
+cross-crate checks, and incremental revision histories. Preserve original
+fixtures and expected behavior. Record which source, compiler artifact, route,
+target/profile, cases and assertions actually ran. A required case that is
+skipped, cancelled, filtered or absent remains an open qualification gap.
+Constructor success and helper tests cannot substitute for the public compiler
+or its generated programs. A passing exit alone does not validate printed
+results. Keep evaluator failure controls separate from compiler evidence.
+
+Fix acceptance expectations from pinned source and independent evidence before
+running the candidate. A donor harness that calls two failed native compiles
+"unsupported" does not prove preserved coverage. Qualify known supported edit
+histories independently; retain excluded histories as unqualified. Separate
+compilation, artifact production and program execution so the wrong failure
+stage cannot pass a negative runtime test.
+
 Done when the package satisfies architecture and applicable correctness with
 no fallback hiding a known gap. Cargo-only compatibility does not qualify an
 integrated native platform. No current artifact is qualified as the full product.
 
-## 7. Assess near-Lust and near-rustc behavior, then release
+## 7. Establish overall speedup, report subset targets, then release
 
-Use the [performance policy](practical-performance.md). Preserve its existing
-budgets and complete-package assessment design. Match source versions, requested
+Use the [performance policy](practical-performance.md). Keep all historical
+budgets and decisions immutable. For new assessments, match source versions, requested
 work, flags, targets, thread counts, cache/lifecycle state, workload inputs and
 actual artifacts. The existing complete-package assessor requires 24 matched
 pairs plus applicable qualification. Historical 12-pair characterization is
 not that prospective assessment.
 
-Supported warm check/build permits 10% or 0.5 ms added latency, whichever is
-larger, under the existing paired uncertainty rule and useful measured gain over
-rustc. Ordinary complementary operations use 5% or 0.5 ms as a per-case review
-budget; large speedups are unnecessary. These are engineering assumptions.
+The first complete replacement must beat matched stock rustc overall on the
+predeclared workload and frequencies, with paired uncertainty for total elapsed
+time. A geometric mean of case speedups does not prove reduced total time. For
+parallel Cargo builds, measure the complete graph's wall time directly.
+
+For separate near-stock claims, supported warm check/build uses the 10% relative
+bound and ordinary complementary operations the 5% bound. These are engineering
+targets, not extra mandatory release prerequisites. Missing either target remains
+visible as optimization work; meeting both does not itself prove overall gain.
+Absolute added latency remains visible, but the historical 0.5 ms alternative
+cannot admit a new near-stock claim.
+
+Use paired total-time ratios within each near-stock case. Geometric ratios are
+diagnostic only, because a rare slow request can erase the elapsed-time saving.
+Retain means and maxima alongside p95 without inventing an extra release gate.
+
+Assess the overhead of each material integration boundary during development.
+This final package gate consolidates those results; it is not permission to
+postpone all speed checks until implementation is complete. Include the whole
+public request and compare equivalent work, with additional artifacts reported
+separately when stock Lust cannot produce them.
 
 Keep cold/no-op, body/signature/type/trait/macro/dependency edits, rejection,
 priming, link, tails, memory, generated-program execution and compile-plus-test
-results separate. Do not offset one class's regression with another's gain or
-weaken correctness to meet a timing number. Keep known-inapplicable historical
-campaigns unchanged rather than bypassing their guards.
+results separate. Do not describe an overall gain as proof that every class
+improved, or weaken correctness to meet a timing number. Keep known-inapplicable
+historical campaigns unchanged rather than bypassing their guards.
 
-Done when one exact integrated package passes the applicable assessment and its
-README reports actual source/tool identities, complete commands, confidence
+Done when one exact integrated package satisfies full coverage, exclusive
+ownership, selective imports and applicable correctness, demonstrates overall
+acceleration, and its README reports actual source/tool identities, complete commands, confidence
 limits, failures, losses and raw evidence. Only then describe and publish it as
-the qualified replacement for its stated scope.
+the qualified replacement for its stated scope. Continue reducing the gap to
+stock Lust after that release; do not turn perfect parity into a completion hold.
+
+## Preferred portability follow-up
+
+Prefer `no_std` with `alloc` for compiler logic and retained compilation without
+required Unix sockets. Preserve the existing Lust engine and speed. The user
+permits deferring this migration when it would slow completion or compilation;
+it is not an additional gate ahead of the work above.
+
+Current scope remains `std` with native host dependencies. The automatic warm
+CLI path still uses a Unix socket. A future adapter must preserve the same
+retained session, semantic environment, invalidation, failure and ownership
+contracts, with actual no-socket operation and matched timing evidence. A
+protocol-only `no_std` crate or fresh per-request compilation does not complete
+that migration. Continue the genuine metadata boundary first.
+
+Keep these implementation preferences separate from Rust program support.
+Programs using `std` or target-specific Unix sockets remain part of the full
+Rust contract. Inspect all dependencies before claiming the compiler is free
+of `std`; an attribute on a small interface cannot establish that result.
 
 ## Required PR explanation
 

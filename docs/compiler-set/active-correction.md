@@ -7,6 +7,32 @@ controlling direction, merged through [PR #31](https://github.com/glopyglerky/lu
 Refresh the current PR head and checks before continuing. Earlier PRs are
 preserved sources and evidence, not competing product directions.
 
+The [sole-goal audit and result follow-through](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/sole-goal-audit.md) is the latest
+record. The correction after d1328bc2 removed latent diagnostic-driven worker/ABI paths and old
+launchers, isolates product and bounded qualification builds, checks effective
+dependency features, connects upstream capability probes to CI, and requires
+relative evidence for future near-stock claims. Its source-bound
+[verification](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/evidence/sole-goal-audit-20261119/verification.json) is separate
+from the earlier construction records below. The full compiler remains unfinished.
+
+The follow-through after published `a03b1e2d` defines supported ownership through
+pinned capability rules, separates first release with overall acceleration from
+near-stock optimization targets, adds actual public-entry capability output
+comparisons, and makes hosted CI run root/package controls. Its
+[functional verification](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/evidence/result-proof-20261119/verification.json)
+retains the unavailable local socket control as a failure. The
+[current performance evaluator](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/current-performance-assessment.md) checks fixed
+workload arithmetic and evidence consistency without granting release admission.
+No new compiler speed result or full complementary implementation is claimed.
+
+The follow-through after `5cd40fd3` fixes malformed daemon statuses that could
+wrap to process success, replaces per-case geometric near-stock admission with
+paired total elapsed costs, and adds independent pinned retained-history result
+checks. The [latest audit section](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/sole-goal-audit.md#follow-through-after-5cd40fd3)
+binds these changes and their limits. Default-branch governance is synchronized
+separately from the implementation PR. No complete compiler or portability
+migration is inferred from this correction.
+
 ## Published code and actual scope
 
 The first published correction is
@@ -28,11 +54,32 @@ See the immutable [implementation cleanup](https://github.com/glopyglerky/lustr/
 and [complete verification record](https://github.com/glopyglerky/lustr/blob/59e944b83bdac2a676a49852da4edabc64d392d0/docs/compiler-set/evidence/exclusive-coverage-20261119/native-entry-verification.json).
 The PR records later source changes separately.
 
-## Verification limits
+## Follow-through on the same PR
 
-The corrected entry has 56 passing focused controls and one unavailable local
+The [ownership follow-through](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/exclusive-coverage-followthrough.md) records
+additional conflicts found after the first correction: successful complement
+labels for Lust-owned bridge gaps, retries inside the ordinary retained daemon,
+and active coordinator tests and instructions that still expected the removed
+compiler routes. It also records the range-panic repair and preservation of
+failed native CI cases. These remain part of PR #33, not a second lane.
+
+The current `no_std` and socket-independence preference is conditional on
+preserving speed and prioritizing compiler completion. A broad portability
+migration is deferred. The existing implementation is not described as
+`no_std` or as a socket-independent retained compiler.
+
+The follow-through has its own fresh debug partial construction and exact-source
+verification record: 56 entry controls passed with one locally unavailable
+real-daemon control, all 13 product bridge controls and both product retained
+daemon controls passed, and the original range-location fixture matched the
+declared Rust oracle. The original local disk-exhaustion attempts remain
+recorded. These new results do not replace the earlier source scopes below.
+
+## Earlier construction and verification
+
+The first correction recorded 56 passing focused controls and one unavailable local
 retained-daemon control because Unix sockets return `EPERM`. Hosted CI requires
-that real daemon path. Selection/cache suites have 773 passing assertions across
+that real daemon path. Its selection/cache suites recorded 773 passing assertions across
 277 recorded subprocess invocations, including setup and cached/fresh checks.
 These are bounded correctness and ownership results, not speed measurements.
 

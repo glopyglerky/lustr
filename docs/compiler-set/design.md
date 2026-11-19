@@ -35,7 +35,8 @@ second frontend over covered work.
 | Default [7cea76c9](https://github.com/glopyglerky/lustr/tree/7cea76c9d3adc587b54ccff168fe07efafd40309) | Native-first public entry, library retry and full-Rust compatibility. No later scalar mixed implementation. | Default has not delivered the required boundary. |
 | [PR #29](https://github.com/glopyglerky/lustr/pull/29), [a9fd4c63](https://github.com/glopyglerky/lustr/tree/a9fd4c6336b1e39c4f584f7da50a437c5c248a0d) | Typed scalar preparation, retained checked state, native object handoff and real Rust metadata. Cold mixed selection follows Rust analysis. | Valuable components and scoped evidence, with narrow coverage and duplicated analysis. |
 | [PR #32](https://github.com/glopyglerky/lustr/pull/32), [cb0721d4](https://github.com/glopyglerky/lustr/tree/cb0721d49be95ec3f34a113c2354bc9d2a38bbf3) | Later native/correctness and shared semantic work, plus the retained scalar/metadata implementation. Public compiler retries and whole-consumer Rust analysis remain. | Current audited source for corrective work. Reuse repairs; retire prohibited routes and replace broad driver dependence with admitted complementary interfaces. |
-| This documentation change | Reconciles active requirements and source/history evidence. | Does not remove product code, merge candidate implementations or qualify a package. |
+| Merged [PR #31](https://github.com/glopyglerky/lustr/pull/31), [2fbafe39](https://github.com/glopyglerky/lustr/tree/2fbafe391fdf3d0a59b8cc24e9b0f55be3570cbd) | Reconciles active requirements and source/history evidence. | Changes no product source and does not qualify a package. |
+| Current [implementation cleanup](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/exclusive-coverage-cleanup.md) | Removes conflicting public retries, alternate whole-program launchers and whole-compiler packaging; inventories partial imports and guards native package boundaries. | Exposes remaining integration gaps. Full complementary semantics, artifacts and performance qualification remain unfinished. |
 
 Primary candidate paths:
 
@@ -127,7 +128,8 @@ reported 5,525 sanitized passes and the `unicode_props_hash` timeout; its
 [macOS native job](https://github.com/glopyglerky/lustr/actions/runs/44459525498/job/135342624876)
 failed linking `_personality`. These match the observed donor failure classes
 recorded in the Lust review. They do not qualify or invalidate later source
-repairs automatically. This documentation correction changes no compiled inputs
-and makes no fresh compiler or performance qualification claim. Preserve the
-failed native gates as evidence rather than presenting the docs check as green
-compiler qualification.
+repairs automatically. The merged documentation correction changed no compiled
+inputs and made no fresh compiler or performance qualification claim. The later
+[implementation cleanup](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/exclusive-coverage-cleanup.md) has its own source and
+verification record. Preserve the failed native gates as evidence rather than
+presenting documentation checks as compiler qualification.
