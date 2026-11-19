@@ -193,6 +193,19 @@ class MixedWorkflowTests(unittest.TestCase):
                     for step in ("measurements", "slice_measurements", "project_measurements", "mixed_profile", "pristine_build"):
                         self.assertFalse(self.eligible(step, outcomes))
 
+    def test_shared_definition_failure_blocks_timing_but_preserves_independent_suites(self):
+        gate = self.steps["shared_definitions"]
+        self.assertIn("python3 tools/qualify-shared-upstream.py", gate)
+        self.assertNotIn("continue-on-error", gate)
+        for outcome in ("failure", "skipped", "cancelled"):
+            outcomes = dict(self.success, shared_definitions=outcome)
+            for independent in ("mixed_execution", "retained_checks", "mixed_libraries", "mixed_scalars", "entry_contract"):
+                self.assertTrue(self.eligible(independent, outcomes), independent)
+            for timing in ("measurements", "slice_measurements", "project_measurements", "mixed_profile", "pristine_build"):
+                self.assertFalse(self.eligible(timing, outcomes), timing)
+        for retained in ("verification.json", "*.stdout", "*.stderr", "campaign/summary.json"):
+            self.assertIn("${{ runner.temp }}/lustr-shared-upstream/" + retained, self.section)
+
     def test_no_suite_runs_after_failed_toolchain(self):
         outcomes = dict.fromkeys(self.steps, "skipped")
         outcomes["source_toolchain"] = "failure"
@@ -214,7 +227,7 @@ class MixedWorkflowTests(unittest.TestCase):
                     self.assertTrue(self.eligible("entry_contract", outcomes))
 
     def test_measurements_require_every_correctness_gate(self):
-        required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution", "retained_checks", "mixed_libraries", "mixed_scalars", "entry_contract", "pristine_build", "bench_build", "host_record", "selector_gate_build", "selection_contract", "selection_seed_contract", "compact_selection_contract"}
+        required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution", "retained_checks", "mixed_libraries", "mixed_scalars", "entry_contract", "shared_definitions", "pristine_build", "bench_build", "host_record", "selector_gate_build", "selection_contract", "selection_seed_contract", "compact_selection_contract"}
         self.assertEqual(set(dependencies(self.steps["measurements"])), required)
         self.assertTrue(self.eligible("measurements"))
         for gate in required:
@@ -232,7 +245,7 @@ class MixedWorkflowTests(unittest.TestCase):
 
     def test_public_slice_requires_correctness_without_masking_other_campaign_failures(self):
         required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution",
-                    "retained_checks", "mixed_libraries", "mixed_scalars", "entry_contract", "pristine_build", "host_record", "selector_gate_build", "selection_contract", "selection_seed_contract", "compact_selection_contract"}
+                    "retained_checks", "mixed_libraries", "mixed_scalars", "entry_contract", "shared_definitions", "pristine_build", "host_record", "selector_gate_build", "selection_contract", "selection_seed_contract", "compact_selection_contract"}
         self.assertEqual(set(dependencies(self.steps["slice_measurements"])), required)
         for gate in required:
             for outcome in ("failure", "skipped", "cancelled"):
@@ -252,7 +265,7 @@ class MixedWorkflowTests(unittest.TestCase):
         self.assertEqual(paths, expected)
 
     def test_project_measurements_require_correctness_and_own_runner(self):
-        required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution", "retained_checks", "mixed_libraries", "mixed_scalars", "entry_contract", "project_bench_build", "host_record", "selector_gate_build", "selection_contract", "selection_seed_contract", "compact_selection_contract"}
+        required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution", "retained_checks", "mixed_libraries", "mixed_scalars", "entry_contract", "shared_definitions", "project_bench_build", "host_record", "selector_gate_build", "selection_contract", "selection_seed_contract", "compact_selection_contract"}
         self.assertEqual(set(dependencies(self.steps["project_measurements"])), required)
         for gate in required:
             for outcome in ("failure", "skipped", "cancelled"):
