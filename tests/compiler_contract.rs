@@ -78,6 +78,71 @@ impl Fixture {
     }
 }
 
+fn native_package_wire_identity(package: &Path) -> String {
+    use std::os::unix::fs::MetadataExt;
+    // The test executable is not installed beside the compiler. Its own
+    // protocol::build_id() therefore cannot identify the packaged daemon.
+    let core = std::fs::metadata(package.join("bin/lust-core")).expect("packaged native compiler identity");
+    format!("{}.{:x}.{:x}.{:x}.{:x}.{:x}", env!("LUST_BUILD_HASH"),
+            core.dev(), core.ino(), core.size(), core.mtime(), core.mtime_nsec())
+}
+
+fn read_public_transport_request(
+    reader: &mut impl std::io::BufRead,
+    identity: &str,
+    source: &Path,
+    output: &Path,
+) -> Result<(), String> {
+    use std::io::{BufRead, Read};
+    use std::os::unix::ffi::OsStrExt;
+    let mut header = String::new();
+    reader.take(256).read_line(&mut header).map_err(|error| error.to_string())?;
+    let words: Vec<_> = header.split_whitespace().collect();
+    if !header.ends_with('\n') || words.len() != 16 || words[0] != "build" || words[15] != identity {
+        return Err("public request does not name the expected compiler build".into());
+    }
+    let features: usize = words[11].parse().map_err(|_| "invalid feature count")?;
+    let environment: usize = if words[12] == "-" { 0 } else { words[12].parse().map_err(|_| "invalid environment count")? };
+    if features > 4096 || environment > 65536 { return Err("request field count exceeds bound".into()); }
+    // Consume the actual complete frame: nine fixed fields, feature names,
+    // the displayed source path, then environment key/value pairs. Validate
+    // identity and paths without rewriting the incoming header or overriding
+    // the product's build identity.
+    for index in 0..10 + features + 2 * environment {
+        let mut size = String::new();
+        reader.take(32).read_line(&mut size).map_err(|error| error.to_string())?;
+        if !size.ends_with('\n') { return Err("truncated request field size".into()); }
+        let length: usize = size.trim().parse().map_err(|_| "invalid request field size")?;
+        if length > 1 << 20 { return Err("fixture request field exceeds bound".into()); }
+        let mut bytes = vec![0; length];
+        reader.read_exact(&mut bytes).map_err(|error| error.to_string())?;
+        if index == 0 && bytes != source.as_os_str().as_bytes()
+            || index == 1 && bytes != output.as_os_str().as_bytes() {
+            return Err("public request names a different source or output".into());
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn transport_peer_consumes_and_validates_the_actual_encoded_request() {
+    use std::io::Cursor;
+    let args: Vec<String> = ["build", "/native-transport/source.rs", "-o", "/native-transport/output"]
+        .into_iter().map(str::to_owned).collect();
+    let Some(transport_protocol::Invocation::Compile { mut req, .. }) = transport_protocol::parse_args(&args) else { panic!("build request"); };
+    req.session.features = vec!["one".into(), "two".into()];
+    req.client.env = Some(vec![("KEY".into(), "value λ".into()), ("EMPTY".into(), String::new())]);
+    let encoded = transport_protocol::encode(&req);
+    let identity = transport_protocol::build_id();
+    let mut reader = Cursor::new(&encoded);
+    read_public_transport_request(&mut reader, identity, &req.file, &req.out).unwrap();
+    assert_eq!(reader.position() as usize, encoded.len(), "peer must consume every environment and source field");
+    assert!(read_public_transport_request(&mut Cursor::new(&encoded), "another-build", &req.file, &req.out).is_err());
+    assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, Path::new("/wrong-source.rs"), &req.out).is_err());
+    assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, &req.file, Path::new("/wrong-output")).is_err());
+    assert!(read_public_transport_request(&mut Cursor::new(&encoded[..encoded.len() - 1]), identity, &req.file, &req.out).is_err());
+}
+
 #[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT on a Unix socket host"]
 fn public_entries_keep_ambiguous_daemon_failures_terminal() {
@@ -89,12 +154,13 @@ fn public_entries_keep_ambiguous_daemon_failures_terminal() {
     let artifact = f.root.join("previous-program");
     let prior = b"previous successful artifact must remain unchanged";
     let socket = f.root.join("daemon.sock");
+    let identity = native_package_wire_identity(&f.package);
     let replies = [
         ("lost-reply", Vec::new()),
         ("old-protocol", b"0 0 0\n".to_vec()),
         ("wrong-build", b"0 0 0 another-build\n".to_vec()),
-        ("truncated-body", format!("0 7 0 {}\n", transport_protocol::build_id()).into_bytes()),
-        ("reported-failure", format!("3 0 7 {}\nfailure", transport_protocol::build_id()).into_bytes()),
+        ("truncated-body", format!("0 7 0 {identity}\n").into_bytes()),
+        ("reported-failure", format!("3 0 7 {identity}\nfailure").into_bytes()),
     ];
     for tool in ["lust", "lustr"] {
         for (label, reply) in &replies {
@@ -102,6 +168,9 @@ fn public_entries_keep_ambiguous_daemon_failures_terminal() {
             let listener = UnixListener::bind(&socket).expect("required real daemon socket");
             listener.set_nonblocking(true).unwrap();
             let reply = reply.clone();
+            let identity = identity.clone();
+            let expected_source = source.clone();
+            let expected_output = artifact.clone();
             let server = std::thread::spawn(move || {
                 let deadline = Instant::now() + Duration::from_secs(10);
                 let mut stream = loop {
@@ -114,7 +183,8 @@ fn public_entries_keep_ambiguous_daemon_failures_terminal() {
                     }
                 };
                 stream.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
-                transport_protocol::read_request(&mut BufReader::new(&stream)).expect("daemon received the complete compiler request");
+                read_public_transport_request(&mut BufReader::new(&stream), &identity, &expected_source, &expected_output)
+                    .expect("peer received the complete request for this installed compiler, source and output");
                 stream.write_all(&reply).unwrap();
             });
             let result = f.invoke(
@@ -124,6 +194,9 @@ fn public_entries_keep_ambiguous_daemon_failures_terminal() {
             );
             server.join().unwrap();
             assert_eq!(result.status.code(), Some(3), "{tool}-{label}: {}", String::from_utf8_lossy(&result.stderr));
+            if *label == "reported-failure" {
+                assert_eq!(result.stderr, b"failure", "{tool} must preserve a valid same-build compiler failure");
+            }
             assert_eq!(std::fs::read(&artifact).unwrap(), prior, "{tool}-{label} replayed a failed compiler request");
             assert!(result.stdout.is_empty(), "{tool}-{label} produced success output");
             assert!(socket.exists(), "{tool}-{label} removed an ambiguously responding daemon");
