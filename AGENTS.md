@@ -44,13 +44,21 @@ passing compatibility tests and historical release assets cannot change this goa
 
 ## Establish source and evidence before continuing
 
-The observed default implementation is `next` at
-`7cea76c9d3adc587b54ccff168fe07efafd40309`. The current reviewed continuation is
+The pre-correction default implementation was `next` at
+`7cea76c9d3adc587b54ccff168fe07efafd40309`. The audited predecessor is
 [PR #32](https://github.com/glopyglerky/lustr/pull/32) at
 `cb0721d49be95ec3f34a113c2354bc9d2a38bbf3`. The latter retains prohibited public
 retry paths and a mixed path with whole-consumer Rust analysis. It is evidence
-and a source of reusable fixes, not the completed architecture. This docs-only
-change does not remove or land product code. Refresh live heads before work.
+and a source of reusable fixes, not the completed architecture.
+
+The sole active implementation correction is
+[PR #33](https://github.com/glopyglerky/lustr/pull/33), targeting `next`. Follow
+the [active correction record](docs/compiler-set/active-correction.md) for its
+exact source, validation, historical PR disposition and remaining work. The
+governing contract landed through [PR #31](https://github.com/glopyglerky/lustr/pull/31).
+This documentation update records the implementation lane; it does not merge
+product code or qualify a package. Refresh live heads before work and do not
+resume a superseded PR as a competing architecture.
 
 Use the [retained-work disposition](docs/compiler-set/retained-work-disposition.md)
 to preserve useful source and failed evidence while removing conflicting active

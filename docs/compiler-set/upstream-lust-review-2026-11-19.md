@@ -90,4 +90,3 @@ One additional conflict requires explicit handling. The pristine Lust public CLI
 4. Run accepted and rejected edit histories through fresh, retained, restarted and mixed requests. Include cross-boundary layout, generics, macros, lifetimes, drops, panic, metadata, const evaluation and negative lookup changes.
 5. Measure each operation independently against the proper reference. The repository's current practical budgets are 10% or 0.5 ms overhead for supported warm work, and 5% or 0.5 ms for ordinary full-Rust work. They are review budgets, not evidence of success. Cold, signature, rejection, tails, memory, application runtime and compile-plus-test results remain visible.
 6. Persist raw observations, exact candidate/oracle artifacts and actual checked-out source. Smoke tests, skipped jobs, timeouts and successful coordinator output never establish the full integrated compiler contract.
-
