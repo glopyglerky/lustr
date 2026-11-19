@@ -27,6 +27,8 @@ def main():
         record = {"name": name, "command": command, "status": result.returncode,
                   "stdout_sha256": hashlib.sha256(result.stdout).hexdigest(),
                   "stderr_sha256": hashlib.sha256(result.stderr).hexdigest()}
+        if env is not None:
+            record["layout_setting"] = env.get(SETTING)
         report["runs"].append(record)
         if result.returncode:
             raise RuntimeError(name + " failed; original output is retained")
@@ -65,7 +67,6 @@ def main():
             output = run(name, [executable, TEST, "--exact", "--nocapture", "--test-threads=1"], env)
             if b"1 passed; 0 failed" not in output:
                 raise RuntimeError(name + " did not execute the required transition test")
-            report["runs"][-1]["layout_setting"] = value
         report["passed"] = True
     except Exception as error:
         report["error"] = str(error)

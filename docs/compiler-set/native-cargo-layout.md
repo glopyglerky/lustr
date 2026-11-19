@@ -1,6 +1,6 @@
 # Native Cargo build-script layout
 
-# Reader correction
+## Reader correction
 
 The candidate reader supports both layouts of declared Cargo source
 `c07ac2c4d12237effc4b94f4543769b421790045`. It reads the legacy `output` file or
