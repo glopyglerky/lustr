@@ -38,6 +38,7 @@ required-features = ["native-inference"]
 [dependencies]
 mimalloc = { version = "=0.1.52", default-features = false }
 libmimalloc-sys = { version = "=0.1.49", default-features = false }
+unicode-normalization = "=0.1.25"
 
 [profile.release]
 opt-level = 3

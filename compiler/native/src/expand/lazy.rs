@@ -33,7 +33,7 @@ use crate::lexer::{Lexed, Tok, Token};
 /// back unchanged.
 pub fn hoist_static_closures(lexed: Lexed, interner: &Interner) -> Lexed {
     let toks = &lexed.tokens;
-    let lazy_name = |t: &Token| matches!(t.tok, Tok::Ident(s) if matches!(interner.get(s), "LazyLock" | "LazyCell"));
+    let lazy_name = |t: &Token| matches!(t.tok, Tok::Ident(s, _) if matches!(interner.get(s), "LazyLock" | "LazyCell"));
     if !toks.iter().any(|t| t.tok == Tok::Static) || !toks.iter().any(|t| t.tok == Tok::OrOr || lazy_name(t)) {
         return lexed;
     }
@@ -44,12 +44,12 @@ pub fn hoist_static_closures(lexed: Lexed, interner: &Interner) -> Lexed {
             && let Some(h) = hoistable(toks, i, interner)
         {
             out.extend_from_slice(&toks[i..h.open + 1]);
-            out.push(Token { tok: Tok::Ident(h.name), span: h.span });
+            out.push(Token { tok: Tok::Ident(h.name, false), span: h.span });
             out.extend_from_slice(&toks[h.close..h.semi + 1]);
             out.extend(cfg_attrs(toks, i, interner));
             let sp = h.span;
             out.push(Token { tok: Tok::Fn, span: sp });
-            out.push(Token { tok: Tok::Ident(h.name), span: sp });
+            out.push(Token { tok: Tok::Ident(h.name, false), span: sp });
             out.push(Token { tok: Tok::LParen, span: sp });
             out.push(Token { tok: Tok::RParen, span: sp });
             out.push(Token { tok: Tok::Arrow, span: sp });
@@ -85,7 +85,7 @@ struct Hoist {
 /// The hoist for the `static` keyword at `at`, when the item has the
 /// shape `static NAME: TY = PATH(<move> || BODY<,>);` (a trailing comma is allowed).
 fn hoistable(toks: &[Token], at: usize, interner: &Interner) -> Option<Hoist> {
-    let Tok::Ident(name) = toks.get(at + 1)?.tok else { return None }; // `static mut` stays
+    let Tok::Ident(name, _) = toks.get(at + 1)?.tok else { return None }; // `static mut` stays
     if toks.get(at + 2)?.tok != Tok::Colon {
         return None;
     }
@@ -96,7 +96,7 @@ fn hoistable(toks: &[Token], at: usize, interner: &Interner) -> Option<Hoist> {
     let semi = scan_to(toks, eq + 1, false, |t| t == Tok::Semi)?;
     // PATH: identifiers and `::` (a turbofish is not supported here).
     let mut open = eq + 1;
-    while matches!(toks.get(open)?.tok, Tok::Ident(_) | Tok::PathSep) {
+    while matches!(toks.get(open)?.tok, Tok::Ident(_, _) | Tok::PathSep) {
         open += 1;
     }
     if open == eq + 1 || toks[open].tok != Tok::LParen {
@@ -162,9 +162,9 @@ fn hoistable_path(
     interner: &Interner,
 ) -> Option<Hoist> {
     let ctor = open >= ty.end + 4
-        && matches!(toks[open - 1].tok, Tok::Ident(s) if interner.get(s) == "new")
+        && matches!(toks[open - 1].tok, Tok::Ident(s, _) if interner.get(s) == "new")
         && toks[open - 2].tok == Tok::PathSep
-        && matches!(toks[open - 3].tok, Tok::Ident(s) if matches!(interner.get(s), "LazyLock" | "LazyCell"));
+        && matches!(toks[open - 3].tok, Tok::Ident(s, _) if matches!(interner.get(s), "LazyLock" | "LazyCell"));
     if !ctor {
         return None;
     }
@@ -189,11 +189,11 @@ fn hoistable_path(
             depth >= 0
                 && matches!(
                     t.tok,
-                    Tok::Ident(_) | Tok::Crate | Tok::Super | Tok::SelfLower | Tok::PathSep | Tok::Lt | Tok::Gt | Tok::Shr | Tok::As | Tok::Comma
+                    Tok::Ident(_, _) | Tok::Crate | Tok::Super | Tok::SelfLower | Tok::PathSep | Tok::Lt | Tok::Gt | Tok::Shr | Tok::As | Tok::Comma
                 )
         })
         && depth == 0
-        && matches!(init.last()?.tok, Tok::Ident(_) | Tok::Gt | Tok::Shr);
+        && matches!(init.last()?.tok, Tok::Ident(_, _) | Tok::Gt | Tok::Shr);
     if !path_like {
         return None;
     }
@@ -202,7 +202,7 @@ fn hoistable_path(
     let f = interner.intern("__lust_lazy$f");
     let mut body = vec![
         Token { tok: Tok::Let, span },
-        Token { tok: Tok::Ident(f), span },
+        Token { tok: Tok::Ident(f, false), span },
         Token { tok: Tok::Colon, span },
         Token { tok: Tok::Fn, span },
         Token { tok: Tok::LParen, span },
@@ -214,7 +214,7 @@ fn hoistable_path(
     body.extend_from_slice(init);
     body.extend([
         Token { tok: Tok::Semi, span },
-        Token { tok: Tok::Ident(f), span },
+        Token { tok: Tok::Ident(f, false), span },
         Token { tok: Tok::LParen, span },
         Token { tok: Tok::RParen, span },
     ]);
@@ -276,7 +276,7 @@ fn matching_close(toks: &[Token], open: usize) -> Option<usize> {
 /// `T` of the last `LazyLock<T, ..>` or `LazyCell<T, ..>` in a static's
 /// type tokens.
 fn lazy_value_ty(ty: &[Token], interner: &Interner) -> Option<Vec<Token>> {
-    let at = ty.iter().rposition(|t| matches!(t.tok, Tok::Ident(s) if matches!(interner.get(s), "LazyLock" | "LazyCell")))?;
+    let at = ty.iter().rposition(|t| matches!(t.tok, Tok::Ident(s, _) if matches!(interner.get(s), "LazyLock" | "LazyCell")))?;
     if ty.get(at + 1)?.tok != Tok::Lt {
         return None;
     }
@@ -296,10 +296,10 @@ fn lazy_value_ty(ty: &[Token], interner: &Interner) -> Option<Vec<Token>> {
 /// (`&str` to `&'static str`, `'_` to `'static`), as the static's type
 /// means them.
 fn static_lifetimes(ty: Vec<Token>, span: Span, interner: &Interner) -> Vec<Token> {
-    let st = Tok::Lifetime(interner.intern("static"));
+    let st = Tok::Lifetime(interner.intern("static"), false);
     let mut out = Vec::with_capacity(ty.len() + 2);
     for (i, t) in ty.iter().enumerate() {
-        let next_is_lifetime = matches!(ty.get(i + 1).map(|x| x.tok), Some(Tok::Lifetime(_)));
+        let next_is_lifetime = matches!(ty.get(i + 1).map(|x| x.tok), Some(Tok::Lifetime(_, _)));
         match t.tok {
             Tok::Amp => {
                 out.push(t.clone());
@@ -316,7 +316,7 @@ fn static_lifetimes(ty: Vec<Token>, span: Span, interner: &Interner) -> Vec<Toke
                     out.push(Token { tok: st, span });
                 }
             }
-            Tok::Lifetime(s) if interner.get(s) == "_" => out.push(Token { tok: st, span: t.span }),
+            Tok::Lifetime(s, _) if interner.get(s) == "_" => out.push(Token { tok: st, span: t.span }),
             _ => out.push(t.clone()),
         }
     }
@@ -382,7 +382,7 @@ fn cfg_attrs(toks: &[Token], at: usize, interner: &Interner) -> Vec<Token> {
     }
     let mut out = Vec::new();
     for g in groups.into_iter().rev() {
-        let is_cfg = matches!(toks.get(g.start + 2).map(|t| t.tok), Some(Tok::Ident(n)) if interner.get(n) == "cfg")
+        let is_cfg = matches!(toks.get(g.start + 2).map(|t| t.tok), Some(Tok::Ident(n, _)) if interner.get(n) == "cfg")
             && toks.get(g.start + 3).is_some_and(|t| t.tok == Tok::LParen);
         if is_cfg {
             out.extend_from_slice(&toks[g]);

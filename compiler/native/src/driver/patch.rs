@@ -992,7 +992,7 @@ fn find_body_edit(front: &Front, text: &str, edit: Edit) -> Result<NewBody, &'st
         None => def.attrs.get(ast.items[item].attrs.len()..).unwrap_or(&[]),
         Some(_) => &[],
     };
-    let nested_fn = |t: &[lexer::Token]| t.windows(2).any(|w| w[0].tok == Tok::Fn && matches!(w[1].tok, Tok::Ident(_)));
+    let nested_fn = |t: &[lexer::Token]| t.windows(2).any(|w| w[0].tok == Tok::Fn && matches!(w[1].tok, Tok::Ident(_, _)));
     if sub.is_some() && !def.attrs.is_empty() && (nested_fn(&old_body.tokens) || nested_fn(&new_body.tokens)) {
         return Err("body items");
     }
@@ -1112,13 +1112,13 @@ fn find_derive_edit(front: &Front, text: &str, edit: Edit) -> Result<NewDerive, 
             out.push(t.get(tok.span.lo as usize..tok.span.hi as usize)?.to_owned());
             let opens = i >= 2
                 && toks[i - 2].tok == Tok::LBracket
-                && toks[i - 1].tok == Tok::Ident(derive)
+                && matches!(toks[i - 1].tok, Tok::Ident(s, _) if s == derive)
                 && tok.tok == Tok::LParen
                 && toks.get(i.wrapping_sub(3)).is_some_and(|t| t.tok == Tok::Pound);
             i += 1;
             if opens {
                 while i < toks.len() && toks[i].tok != Tok::RParen {
-                    if !matches!(toks[i].tok, Tok::Ident(_) | Tok::Comma | Tok::PathSep) {
+                    if !matches!(toks[i].tok, Tok::Ident(_, _) | Tok::Comma | Tok::PathSep) {
                         return None;
                     }
                     i += 1;
@@ -1281,7 +1281,7 @@ fn find_item_edit(front: &Front, text: &str, edit: Edit) -> Result<NewItem, Opti
     let edge = crate::diag::Span { file, lo, hi: lo, ctxt: CtxtId::ROOT };
     let placeholder = front.interner.intern("__LustItemPatch");
     if sub.is_some() {
-        for tok in [Tok::Impl, Tok::Ident(placeholder), Tok::LBrace] {
+        for tok in [Tok::Impl, Tok::Ident(placeholder, false), Tok::LBrace] {
             toks.push(lexer::Token { tok, span: edge });
         }
     }
@@ -1634,7 +1634,7 @@ fn find_inactive_edit(front: &Front, text: &str, edit: Edit) -> Result<(), Optio
                 | Tok::Static
                 | Tok::Const
                 | Tok::Type
-        ) || matches!(t.tok, Tok::Ident(s) if s == macro_rules || s == cfg || s == union)
+        ) || matches!(t.tok, Tok::Ident(s, _) if s == macro_rules || s == cfg || s == union)
     };
     // A construct those passes read starts with one of those tokens: one
     // that starts just before the window (`#` + `[cfg_attr(..)]`, `cfg` +
@@ -1650,7 +1650,7 @@ fn find_inactive_edit(front: &Front, text: &str, edit: Edit) -> Result<(), Optio
     let before = |i: usize, k: usize| i.checked_sub(k).map(|j| ot[j].tok);
     if chain.iter().any(|&i| {
         matches!(before(i, 1), Some(Tok::Pound))
-            || matches!((before(i, 2), before(i, 1)), (Some(Tok::Bang), Some(Tok::Ident(_))) | (Some(Tok::Pound), Some(Tok::Bang)))
+            || matches!((before(i, 2), before(i, 1)), (Some(Tok::Bang), Some(Tok::Ident(_, _))) | (Some(Tok::Pound), Some(Tok::Bang)))
     }) {
         return Err(Some("inactive macro"));
     }
@@ -1701,7 +1701,7 @@ fn outside_fn_reason(ast: &Ast, file: FileId, a: usize, b: usize) -> &'static st
 fn plain_body(lexed: &lexer::Lexed, interner: &crate::intern::Interner) -> bool {
     lexed.tokens.iter().all(|t| match t.tok {
         Tok::Dyn => false,
-        Tok::Ident(s) => !crate::check::generics::flag_scan_name(interner.get(s)),
+        Tok::Ident(s, _) => !crate::check::generics::flag_scan_name(interner.get(s)),
         _ => true,
     })
 }
@@ -1927,15 +1927,15 @@ fn body_tokens_ok(lexed: &lexer::Lexed, lo: usize, hi: usize, interner: &crate::
             // Attributes go through the expander (cfg stripping).
             Tok::Pound | Tok::DocStr(_) => pure = true,
             Tok::Dollar => return Err("body attr"),
-            Tok::Ident(s) if s == macro_rules || s == union => return Err("body item"),
+            Tok::Ident(s, _) if s == macro_rules || s == union => return Err("body item"),
             // A macro call: `name!`, never path-qualified. A user macro
             // is the last reason (`find_item_edit` can take its stored
             // expansion when no other rule refuses the body).
             Tok::Bang if i > 0 => match toks[i - 1].tok {
-                Tok::Ident(_) if i > 1 && toks[i - 2].tok == Tok::PathSep => user = true,
-                Tok::Ident(s) if crate::expand::builtin::is_passthrough(interner.get(s)) => calls = true,
-                Tok::Ident(s) if PURE_MACROS.contains(&interner.get(s)) => pure = true,
-                Tok::Ident(_) | Tok::SelfUpper | Tok::SelfLower | Tok::Crate | Tok::Super => user = true,
+                Tok::Ident(_, _) if i > 1 && toks[i - 2].tok == Tok::PathSep => user = true,
+                Tok::Ident(s, _) if crate::expand::builtin::is_passthrough(interner.get(s)) => calls = true,
+                Tok::Ident(s, _) if PURE_MACROS.contains(&interner.get(s)) => pure = true,
+                Tok::Ident(_, _) | Tok::SelfUpper | Tok::SelfLower | Tok::Crate | Tok::Super => user = true,
                 _ => {}
             },
             _ => {}

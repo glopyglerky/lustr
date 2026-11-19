@@ -114,7 +114,7 @@ impl<'a> Complement<'a> {
     }
     fn eat(&mut self, tok: Tok) -> bool { if self.tok() == tok { self.bump(); true } else { false } }
     fn need(&mut self, tok: Tok) -> Result<Token> { if self.tok() == tok { Ok(self.bump()) } else { Err(self.error()) } }
-    fn name(&mut self) -> Result<(Sym, Span)> { if let Tok::Ident(n) = self.tok() { Ok((n, self.bump().span)) } else { Err(self.error()) } }
+    fn name(&mut self) -> Result<(Sym, Span)> { if let Tok::Ident(n, _) = self.tok() { Ok((n, self.bump().span)) } else { Err(self.error()) } }
     fn expr_node(&mut self, e: Expr, span: Span) -> Result<ExprId> {
         if self.ast.exprs.len() >= LIMIT { return Err(self.error()); }
         let id = ExprId(self.ast.exprs.len() as u32); self.ast.exprs.push(e); self.ast.expr_spans.push(span); Ok(id)
@@ -308,7 +308,7 @@ impl<'a> Complement<'a> {
             Tok::Int(v,s,_) => { self.bump(); self.expr_node(Expr::Int(v,s), start)? }
             Tok::Str(s,_) => { self.bump(); self.expr_node(Expr::Str(s + self.str_base), start)? }
             Tok::Char(c,_) => { self.bump(); self.expr_node(Expr::Char(c), start)? }
-            Tok::Ident(_) => {
+            Tok::Ident(_, _) => {
                 let path = self.path(false)?;
                 if self.eat(Tok::Bang) {
                     if path.len() != 1 || self.i.get(path[0].name) != "assert" { return Err(self.error()); }

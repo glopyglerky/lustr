@@ -8,13 +8,26 @@ used to build the native implementation.
 | --- | --- |
 | Character predicates, case conversion and Debug escaping | The pinned Rust standard library, Unicode 18.0.0 |
 | Identifier membership | The pinned compiler's `unicode-ident` 1.0.24, Unicode 17.0.0 |
-| Identifier normalization data | The pinned compiler's `unicode-normalization` 0.1.25, Unicode 17.0.0 |
+| Identifier normalization implementation and data | The pinned compiler's `unicode-normalization` 0.1.25, Unicode 17.0.0 |
 
 These versions deliberately differ, exactly as they do in the declared Rust
 source. U+0558 and U+A7DD have the new standard-library properties while the
-compiler still rejects them as identifiers. The native lexer retains its
-existing policy requiring NFC input; these data checks do not claim that policy
-matches Rust's automatic normalization of all identifiers.
+compiler still rejects them as identifiers. Valid identifier and lifetime
+spellings normalize to NFC before interning, using the same upstream crate's
+quick check and normalization iterator as the declared Rust parser. Ordinary
+and raw spellings retain their original source spans. The explicit raw marker
+remains part of token identity, including packed streams and macro cache keys;
+it is never inferred from the difference between source and normalized lengths.
+Strings and other literal contents are unchanged.
+
+The two native Cargo lockfiles retain the declared compiler's complete
+normalization dependency closure: `unicode-normalization` 0.1.25, `tinyvec`
+1.10.0 and `tinyvec_macros` 0.1.1. Both lockfiles contribute to the compiler's
+build identity. Their registry checksums and upstream commits are recorded in
+`unicode-semantics.json`, and their original notices are in
+`licenses/identifier-normalization/`. The qualifier compares those lock entries
+with the exact pinned Rust source lockfile. This imports the upstream source
+implementation; the former local normalization algorithm has been removed.
 
 ## Generation
 
@@ -62,6 +75,16 @@ is established by direct byte comparison.
 The native test `unicode_semantics_survive_retained_body_and_constant_edits`
 also checks cold, unchanged, body-edited, constant-edited and reverted builds in
 one real retained compiler session. This test requires no daemon socket.
+
+The qualification also compares compiled NFC identifiers, constants, raw names,
+lifetimes, macros, included tokens, module paths and unchanged literal bytes.
+Canonically duplicate definitions must reject without an output artifact in
+both compilers. `nfc_identifiers_survive_retained_edits_and_rejected_duplicates`
+checks source spelling changes and rawness changes in one retained session,
+including a rawness edit that leaves source byte lengths unchanged and rejection
+that preserves the last successful executable. These are bounded lexical and
+integration controls; the scalar mixed bridge still has its separately
+qualified source-spelling admission restriction.
 
 These checks cover the named Unicode operations. They do not prove the whole
 compiler correct, qualify every host, or admit an installable release. Frozen

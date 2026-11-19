@@ -16,6 +16,8 @@ path = "src/main.rs"
 mimalloc = { version = "0.1.52", default-features = false }
 # Direct, for its C source: build.rs amalgamates it for musl release builds (src/cc.rs).
 libmimalloc-sys = { version = "0.1.49", default-features = false }
+# The declared Rust compiler's identifier normalization implementation.
+unicode-normalization = "=0.1.25"
 
 [profile.release]
 opt-level = 3

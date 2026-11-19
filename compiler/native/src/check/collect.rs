@@ -2135,7 +2135,7 @@ pub(crate) fn disc_want_ty(interner: &Interner, attrs: &[ast::Attr]) -> IntTy {
         let ast::AttrInput::List(_, trees) = &attr.input else { continue };
         for t in trees {
             let TokenTree::Token(t) = t else { continue };
-            let Tok::Ident(name) = t.tok else { continue };
+            let Tok::Ident(name, _) = t.tok else { continue };
             let it = match interner.get(name) {
                 "u8" => IntTy::U8,
                 "u16" => IntTy::U16,
@@ -3212,7 +3212,7 @@ fn parse_repr(interner: &Interner, attrs: &[ast::Attr]) -> Result<crate::ty::lay
             match &trees[i] {
                 TokenTree::Token(t) if t.tok == Tok::Comma => i += 1,
                 TokenTree::Token(t) => {
-                    let Tok::Ident(name) = t.tok else {
+                    let Tok::Ident(name, _) = t.tok else {
                         return Err(bad(".."));
                     };
                     let text = interner.get(name);

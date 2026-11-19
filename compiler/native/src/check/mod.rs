@@ -3025,7 +3025,7 @@ pub fn allow_attr(attr: &ast::Attr, interner: &Interner, name: &str) -> bool {
     let ast::AttrInput::List(_, trees) = &attr.input else { return false };
     fn has(trees: &[crate::lexer::TokenTree], interner: &Interner, name: &str) -> bool {
         trees.iter().any(|t| match t {
-            crate::lexer::TokenTree::Token(tok) => matches!(tok.tok, crate::lexer::Tok::Ident(s) if interner.get(s) == name),
+            crate::lexer::TokenTree::Token(tok) => matches!(tok.tok, crate::lexer::Tok::Ident(s, _) if interner.get(s) == name),
             crate::lexer::TokenTree::Delim(_, inner, _) => has(inner, interner, name),
         })
     }

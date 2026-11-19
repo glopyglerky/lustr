@@ -226,13 +226,34 @@ impl Printer<'_> {
         Some(l.tokens.into_iter().filter(|t| t.tok != Tok::Eof).collect())
     }
     fn atom(&mut self, span: Span) -> Option<()> {
-        self.out.word(self.raw(span)?.to_owned());
+        self.atom_with_mode(span, false)
+    }
+    fn atom_with_mode(&mut self, span: Span, token_tree: bool) -> Option<()> {
+        let raw = self.raw(span)?;
+        let tokens = self.tokens(span)?;
+        let text = match tokens.as_slice() {
+            [token] if token.span == span && matches!(token.tok, Tok::Ident(..) | Tok::Lifetime(..)) => {
+                let text = crate::expand::tok_text(&token.tok, &[], self.symbols);
+                if token_tree { text } else { lexer::ast_name_text(token.tok, &text).into_owned() }
+            }
+            _ => raw.to_owned(),
+        };
+        self.out.word(text);
         Some(())
+    }
+    fn identifier_text(&self, span: Span, name: crate::intern::Sym) -> Option<String> {
+        let tokens = self.tokens(span)?;
+        let [token] = tokens.as_slice() else { return None };
+        if token.span != span || crate::expand::seg_sym(token.tok, self.symbols)? != name {
+            return None;
+        }
+        let text = crate::expand::tok_text(&token.tok, &[], self.symbols);
+        Some(lexer::ast_name_text(token.tok, &text).into_owned())
     }
     fn path(&mut self, span: Span) -> Option<()> {
         let tokens = self.tokens(span)?;
         for t in tokens {
-            if !matches!(t.tok, Tok::Ident(_) | Tok::SelfLower | Tok::SelfUpper | Tok::Crate | Tok::Super | Tok::PathSep) {
+            if !matches!(t.tok, Tok::Ident(_, _) | Tok::SelfLower | Tok::SelfUpper | Tok::Crate | Tok::Super | Tok::PathSep) {
                 return None;
             }
             self.atom(t.span)?;
@@ -256,10 +277,7 @@ impl Printer<'_> {
             return None;
         }
         for (token, segment) in names.iter().zip(path) {
-            let raw = self.raw(token.span)?;
-            if raw.strip_prefix("r#").unwrap_or(raw) != self.symbols.get(segment.name) {
-                return None;
-            }
+            self.identifier_text(token.span, segment.name)?;
         }
         self.path(Span { hi: tokens[open].span.lo, ..span })?;
         self.out.word(" {");
@@ -283,10 +301,7 @@ impl Printer<'_> {
             if tokens.get(cursor)?.span != name_span {
                 return None;
             }
-            let raw = self.raw(name_span)?.to_owned();
-            if raw.strip_prefix("r#").unwrap_or(&raw) != self.symbols.get(name) {
-                return None;
-            }
+            let raw = self.identifier_text(name_span, name)?;
             if i == 0 { self.out.space(); }
             let value_span = *self.ast.expr_spans.get(value.0 as usize)?;
             if value_span == name_span {
@@ -508,7 +523,7 @@ impl Printer<'_> {
         let pattern = *self.ast.pat_spans.get(pat.0 as usize)?;
         if span.ctxt != CtxtId::ROOT || pattern.ctxt != CtxtId::ROOT || pattern.file != span.file { return None; }
         let tokens = self.tokens(span)?;
-        if !matches!(tokens.as_slice(), [t] if t.tok == Tok::Ident(path[0].name) && t.span == span)
+        if !matches!(tokens.as_slice(), [t] if matches!(t.tok, Tok::Ident(s, _) if s == path[0].name) && t.span == span)
             || self.raw(span)? != "bool"
         { return None; }
         let gap = self.tokens(Span { lo: pattern.hi, hi: span.lo, ..span })?;
@@ -691,11 +706,8 @@ impl Printer<'_> {
                     self.out.word(" ");
                 }
                 self.out.word(".");
-                let raw = self.raw(*name_span)?;
-                if raw.strip_prefix("r#").unwrap_or(raw) != self.symbols.get(*name) {
-                    return None;
-                }
-                self.out.word(raw.to_owned());
+                let name = self.identifier_text(*name_span, *name)?;
+                self.out.word(name);
                 self.out.word("(");
                 self.list(args)?;
                 self.out.word(")");
@@ -704,11 +716,8 @@ impl Printer<'_> {
                 self.expr(*base)?;
                 self.out.word(".");
                 let tokens = self.tokens(span)?;
-                let raw = self.raw(tokens.last()?.span)?;
-                if raw.strip_prefix("r#").unwrap_or(raw) != self.symbols.get(*name) {
-                    return None;
-                }
-                self.out.word(raw.to_owned());
+                let name = self.identifier_text(tokens.last()?.span, *name)?;
+                self.out.word(name);
             }
             Expr::Index { base, index } => {
                 self.expr(*base)?;
@@ -800,7 +809,7 @@ impl Printer<'_> {
             return None;
         }
         for t in &ts[..bang] {
-            if !matches!(t.tok, Tok::Ident(_) | Tok::PathSep | Tok::Crate | Tok::Super | Tok::SelfLower) {
+            if !matches!(t.tok, Tok::Ident(_, _) | Tok::PathSep | Tok::Crate | Tok::Super | Tok::SelfLower) {
                 return None;
             }
             self.atom(t.span)?;
@@ -846,7 +855,7 @@ impl Printer<'_> {
                 Tok::LParen | Tok::LBracket | Tok::LBrace => i = self.group(ts, i, false)?.0,
                 Tok::RParen | Tok::RBracket | Tok::RBrace | Tok::Eof | Tok::DocStr(_) | Tok::Dollar => return None,
                 _ => {
-                    self.atom(ts[i].span)?;
+                    self.atom_with_mode(ts[i].span, true)?;
                     i += 1;
                 }
             }
@@ -874,7 +883,7 @@ impl Printer<'_> {
             })
     }
     fn space_between(&self, ts: &[Token], a: usize, b: usize, c: usize) -> bool {
-        let ident = |t: &Token| self.raw(t.span).and_then(|s| s.chars().next()).is_some_and(|c| c.is_alphabetic() || c == '_');
+        let ident = |t: &Token| self.raw(t.span).and_then(|s| s.chars().next()).is_some_and(|c| crate::unicode::is_alphabetic(c) || c == '_');
         if !self.alone(ts[b].span) {
             return a == b && ident(&ts[a]) && ident(&ts[c]);
         }
@@ -882,11 +891,11 @@ impl Printer<'_> {
             !ident(t)
                 && !matches!(
                     t.tok,
-                    Tok::Int(..) | Tok::Float(_) | Tok::Str(..) | Tok::ByteStr(_) | Tok::ByteChar(_) | Tok::Char(..) | Tok::Lifetime(_)
+                    Tok::Int(..) | Tok::Float(_) | Tok::Str(..) | Tok::ByteStr(_) | Tok::ByteChar(_) | Tok::Char(..) | Tok::Lifetime(_, _)
                 )
         };
         let first = (a == b).then_some(ts[a].tok);
-        let plain = matches!(first, Some(Tok::Ident(_)));
+        let plain = matches!(first, Some(Tok::Ident(_, _)));
         match (first, ts[c].tok) {
             (Some(Tok::Dot), _) if !punct(&ts[c]) => false,
             (_, Tok::Comma | Tok::Semi | Tok::Dot) if a != b || !punct(&ts[a]) => false,
@@ -912,7 +921,7 @@ fn original_text(source: &str, span: Span, symbols: &Interner, known: &crate::in
         return None;
     }
     let bang = ts.iter().position(|t| t.tok == Tok::Bang)?;
-    if !matches!(ts.get(bang.checked_sub(1)?)?.tok, Tok::Ident(s) if symbols.get(s) == "assert") {
+    if !matches!(ts.get(bang.checked_sub(1)?)?.tok, Tok::Ident(s, _) if symbols.get(s) == "assert") {
         return None;
     }
     // Parse the original macro into a scratch arena, using only synthetic
@@ -932,6 +941,38 @@ fn original_text(source: &str, span: Span, symbols: &Interner, known: &crate::in
     let mut p = Printer { ast: &raw, source, symbols, out: Layout::default(), depth: 0 };
     p.expr(cond)?;
     Some(format!("assertion failed: {}", p.out.render()?))
+}
+
+#[cfg(test)]
+mod nfc_tests {
+    use super::*;
+
+    #[test]
+    fn nfc_ast_names_and_macro_tokens_keep_distinct_printing_rules() {
+        // Expected conditions are the payloads emitted by the declared Rust
+        // compiler for tests/pass/identifier_nfc_assertions.rs.
+        for (condition, expected) in [
+            ("r#cafe\u{301} == 2", "café == 2"),
+            ("r#type == 2", "r#type == 2"),
+            ("value.r#cafe\u{301} == 2", "value.café == 2"),
+            ("value.r#re\u{301}sume\u{301}()", "value.résumé()"),
+            ("(S { r#cafe\u{301}: 1 }).r#cafe\u{301} == 2", "(S { café: 1 }).café == 2"),
+            ("vec![r#cafe\u{301}] == vec![2]", "vec![r#café] == vec![2]"),
+            ("vec![\"e\u{301}\"] == vec![\"é\"]", "vec![\"e\u{301}\"] == vec![\"é\"]"),
+        ] {
+            let source = format!("{{ assert!({condition}) }}");
+            let symbols = Interner::default();
+            let known = crate::intern::Known::new(&symbols);
+            let lexed = lexer::lex(&source, FileId(0), 0, &symbols).unwrap();
+            let mut ast = ast::Ast::default();
+            let (block, _, _) = crate::parser::parse_body(&lexed.tokens, &lexed.strings, &mut ast, &symbols, &known).unwrap();
+            let tail = ast.blocks[block.0 as usize].tail.unwrap();
+            let Expr::Macro { kind: MacroKind::Assert, args, .. } = &ast.exprs[tail.0 as usize] else { panic!("assert macro missing") };
+            let mut printer = Printer { ast: &ast, source: &source, symbols: &symbols, out: Layout::default(), depth: 0 };
+            assert!(printer.expr(args[0]).is_some(), "{condition}");
+            assert_eq!(printer.out.render().as_deref(), Some(expected), "{condition}");
+        }
+    }
 }
 
 pub(super) fn proposal(input: &ast::Ast, map: &crate::diag::SourceMap, root_text: &str, interner: &Interner, known: &crate::intern::Known) -> Option<ast::Ast> {

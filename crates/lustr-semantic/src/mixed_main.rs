@@ -274,9 +274,10 @@ fn canonical_identifier(map: &rustc_span::source_map::SourceMap, ident: rustc_sp
         let s = s.strip_prefix("r#").unwrap_or(s);
         s.strip_prefix('\'').unwrap_or(s)
     }
-    // Rust's parsed identifier is canonical. Lust's lexer currently requires
-    // source identifiers already in NFC. This is a checked spelling capability,
-    // not an ASCII filter: Unicode comments and canonical names remain eligible.
+    // Preserve this scalar projection's qualified source-spelling contract.
+    // The native lexer now normalizes identifiers, but this bridge's identity
+    // handoff for decomposed spellings still needs its own qualification.
+    // Unicode comments and canonical names remain eligible.
     unquoted(&spelling) == unquoted(ident.name.as_str())
 }
 

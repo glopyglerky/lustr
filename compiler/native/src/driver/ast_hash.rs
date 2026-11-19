@@ -540,7 +540,8 @@ impl Walker<'_> {
                     0u8.hash(h);
                     std::mem::discriminant(&tok.tok).hash(h);
                     match &tok.tok {
-                        Tok::Ident(s) | Tok::Reserved(s) | Tok::Lifetime(s) => self.sym(h, *s),
+                        Tok::Ident(s, raw) | Tok::Lifetime(s, raw) => { self.sym(h, *s); raw.hash(h); }
+                        Tok::Reserved(s) => self.sym(h, *s),
                         Tok::Int(v, suf, _) => {
                             v.hash(h);
                             suf.map(|s| s as u8).hash(h);

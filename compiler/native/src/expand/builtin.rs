@@ -377,36 +377,16 @@ fn read_include(st: &mut Expander, rel: &str, span: Span) -> Result<(std::path::
     }
 }
 
-/// The text of one token for `stringify!`. Written tokens print as
-/// written. Literals carry their written text (`lexer::lit_text`), in
-/// any file. Raw identifiers and lifetimes keep `r#`: the source slice at
-/// the token's span holds that text, and the guards keep a slice from a
-/// different file (an included file's tokens after the swap back) from
-/// leaking in, by checking it against the token's name.
+/// Token text for `stringify!`: canonical identifier names, their explicit
+/// raw marker, and the original literal text. Spans only supply `$crate`'s
+/// expansion spelling; normalization never changes source byte positions.
 pub(super) fn stringify_tok_text(st: &Expander, t: &Token) -> String {
-    let plain = tok_text(&t.tok, &st.strings, st.ctx.interner);
-    let span = t.span;
-    let slice = st.cur_src.get(span.lo as usize..span.hi as usize);
-    match t.tok {
-        // `$crate` from a macro body transcribes to one `crate` token
-        // whose span starts at the `$`; the text at its span names it.
-        Tok::Crate if span.ctxt != crate::diag::CtxtId::ROOT => {
-            if st.cur_src.get(span.lo as usize..span.lo as usize + 6) == Some("$crate") {
-                return "$crate".to_string();
-            }
-            plain
-        }
-        Tok::Ident(_) | Tok::Reserved(_) => match slice {
-            Some(s) if s == plain || s.strip_prefix("r#") == Some(plain.as_str()) => s.to_string(),
-            _ => plain,
-        },
-        // A raw lifetime keeps its `r#` (`'r#fn`).
-        Tok::Lifetime(_) => match slice {
-            Some(s) if s.strip_prefix("'r#") == plain.strip_prefix('\'') => s.to_string(),
-            _ => plain,
-        },
-        _ => plain,
+    if t.tok == Tok::Crate && t.span.ctxt != crate::diag::CtxtId::ROOT
+        && st.cur_src.get(t.span.lo as usize..t.span.lo as usize + 6) == Some("$crate")
+    {
+        return "$crate".to_string();
     }
+    tok_text(&t.tok, &st.strings, st.ctx.interner)
 }
 
 /// The value of `name` in this process's env (ARCH 6.4): what `env!` reads when the request
@@ -503,7 +483,7 @@ pub fn stringify_trees(st: &Expander, trees: &[Tt]) -> String {
                     prev.kind,
                     Kind::Close(_)
                         | Kind::Tok(
-                            Tok::Ident(_)
+                            Tok::Ident(_, _)
                                 | Tok::Reserved(_)
                                 | Tok::SelfUpper
                                 | Tok::SelfLower
@@ -981,10 +961,10 @@ fn thread_local_macro(st: &mut Expander, call: &Call, depth: u32) -> Result<Vec<
         }
         i += 1;
         let name_tok = match trees.get(i).map(|t| unwrap_frag(std::slice::from_ref(t))) {
-            Some([Tt::Tok(t)]) if matches!(t.tok, Tok::Ident(_)) => *t,
+            Some([Tt::Tok(t)]) if matches!(t.tok, Tok::Ident(_, _)) => *t,
             _ => return Err(shape("holds static declarations")),
         };
-        let Tok::Ident(name) = name_tok.tok else { unreachable!() };
+        let Tok::Ident(name, _) = name_tok.tok else { unreachable!() };
         i += 1;
         if tok_at(trees, i).map(|t| t.tok) != Some(Tok::Colon) {
             return Err(shape("statics need a type"));
@@ -1033,7 +1013,7 @@ fn thread_local_macro(st: &mut Expander, call: &Call, depth: u32) -> Result<Vec<
         }
         let marker = if const_block.is_some() { crate::parser::TLS_CONST_ATTR } else { crate::parser::TLS_ATTR };
         let init_name = format!("{}#init", st.ctx.interner.get(name));
-        let init_fn = Tt::Tok(Token { tok: Tok::Ident(st.ctx.interner.intern(&init_name)), span: name_tok.span });
+        let init_fn = Tt::Tok(Token { tok: Tok::Ident(st.ctx.interner.intern(&init_name), false), span: name_tok.span });
         // The lazy init in parens: the body re-parses from tokens, and an
         // expression that starts with a block (`if c { 1 } else { 2 } + 1`)
         // would end at the block in statement position.

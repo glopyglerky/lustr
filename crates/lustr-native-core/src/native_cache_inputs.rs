@@ -13,7 +13,7 @@ pub(super) fn reads_outside(source:&[u8])->bool {
     let interner=Interner::default();
     let Ok(lexed)=lexer::lex(source,FileId(0),0,&interner) else{return true};
     lexed.tokens.iter().any(|token|match token.tok {
-        Tok::Ident(name)=>matches!(interner.get(name),"env"|"option_env"|"include"|"include_str"|"include_bytes"),
+        Tok::Ident(name, _)=>matches!(interner.get(name),"env"|"option_env"|"include"|"include_str"|"include_bytes"),
         _=>false,
     })
 }

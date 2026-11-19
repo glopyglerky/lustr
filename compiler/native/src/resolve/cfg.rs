@@ -304,7 +304,7 @@ impl CfgEnv {
         let name_of = |trees: &[TokenTree], at: usize| -> Option<(String, Span)> {
             match trees.get(at) {
                 Some(TokenTree::Token(t)) => match t.tok {
-                    Tok::Ident(s) => Some((interner.get(s).to_string(), t.span)),
+                    Tok::Ident(s, _) => Some((interner.get(s).to_string(), t.span)),
                     Tok::True => Some(("true".into(), t.span)),
                     Tok::False => Some(("false".into(), t.span)),
                     _ => None,
@@ -355,7 +355,7 @@ impl CfgEnv {
             let value = match trees.get(*pos + 1) {
                 Some(TokenTree::Token(t)) => match t.tok {
                     Tok::Str(i, _) => strings.get(i as usize).cloned().unwrap_or_default(),
-                    Tok::Ident(s) => interner.get(s).to_string(),
+                    Tok::Ident(s, _) => interner.get(s).to_string(),
                     _ => String::new(),
                 },
                 _ => String::new(),
@@ -458,7 +458,7 @@ fn attr_from_trees(trees: &[TokenTree], span: Span, style: crate::ast::AttrStyle
     let mut i = 0;
     while let Some(TokenTree::Token(t)) = trees.get(i) {
         match t.tok {
-            Tok::Ident(s) => {
+            Tok::Ident(s, _) => {
                 path.push(crate::ast::PathSeg::plain(s));
                 i += 1;
                 if matches!(trees.get(i), Some(TokenTree::Token(t2)) if t2.tok == Tok::PathSep) {
@@ -517,7 +517,7 @@ pub fn outline_cfg_attr_enabled(
                 end += 1;
             }
             let piece = &trees[start..end];
-            let is_cfg = matches!(piece.first(), Some(TokenTree::Token(t)) if matches!(t.tok, Tok::Ident(s) if interner.get(s) == "cfg"));
+            let is_cfg = matches!(piece.first(), Some(TokenTree::Token(t)) if matches!(t.tok, Tok::Ident(s, _) if interner.get(s) == "cfg"));
             if is_cfg
                 && let Some(TokenTree::Delim(_, inner, _)) = piece.get(1)
                 && !env.eval(inner, strings, interner, span)?

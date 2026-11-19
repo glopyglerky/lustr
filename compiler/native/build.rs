@@ -115,6 +115,13 @@ fn main() {
     if let Ok(bytes) = std::fs::read(root.join("Cargo.toml")) {
         bytes.hash(&mut h);
     }
+    // Identifier semantics are implemented by the exact upstream dependency
+    // closure. Both build entry points must invalidate old artifacts if their
+    // resolved source identities change, even when this file is unchanged.
+    for lock in [root.join("Cargo.lock"), root.join("../../crates/lustr-native-core/Cargo.lock")] {
+        std::fs::read(&lock).expect("native compiler dependency lockfile is required").hash(&mut h);
+        println!("cargo:rerun-if-changed={}", lock.display());
+    }
     // The explicit owned cache-policy join is a compiler input for both the
     // standalone build and the native-core wrapper that runs this helper.
     let input_policy = root.join("../../crates/lustr-native-core/src/native_cache_inputs.rs");

@@ -133,7 +133,7 @@ pub fn check_body(p: &Program, fid: LocalDefId, ck: &Checked) -> Option<Diag> {
 pub(crate) fn leveled(p: &Program, attrs: &[Attr], names: &[&str]) -> bool {
     fn has(trees: &[crate::lexer::TokenTree], p: &Program, names: &[&str]) -> bool {
         trees.iter().any(|t| match t {
-            crate::lexer::TokenTree::Token(tok) => matches!(tok.tok, crate::lexer::Tok::Ident(s) if names.contains(&p.interner.get(s))),
+            crate::lexer::TokenTree::Token(tok) => matches!(tok.tok, crate::lexer::Tok::Ident(s, _) if names.contains(&p.interner.get(s))),
             crate::lexer::TokenTree::Delim(_, inner, _) => has(inner, p, names),
         })
     }

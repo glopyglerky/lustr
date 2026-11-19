@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import tomllib
 
 RUST_SOURCE = "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494"
 SCALARS = 1_112_064
@@ -46,7 +47,7 @@ def main():
     records = []
     identities = {"native_core_sha256": sha256(native), "rustc_sha256": sha256(rustc)}
 
-    def run(name, argv, seconds=90):
+    def run(name, argv, seconds=90, expected_code=0):
         stdout, stderr = output / f"{name}.stdout", output / f"{name}.stderr"
         with stdout.open("wb") as out, stderr.open("wb") as err:
             result = subprocess.run([str(x) for x in argv], cwd=root, env=env, stdout=out, stderr=err, timeout=seconds)
@@ -55,7 +56,7 @@ def main():
                   "stderr_bytes": stderr.stat().st_size, "stderr_sha256": sha256(stderr)}
         records.append(record)
         (output / "commands.json").write_text(json.dumps(records, indent=2) + "\n")
-        if result.returncode != 0:
+        if result.returncode != expected_code:
             raise RuntimeError(f"{name} failed with {result.returncode}; see {stderr}")
         return stdout
 
@@ -72,6 +73,14 @@ def main():
     upstream_lock = sysroot / "lib/rustlib/rustc-src/rust/Cargo.lock"
     if sha256(upstream_lock) != provenance["upstream_cargo_lock_sha256"]:
         raise RuntimeError("pinned compiler dependency lockfile differs from recorded provenance")
+    upstream_packages = {p["name"]: p for p in tomllib.loads(upstream_lock.read_text())["package"]}
+    normalization = provenance["native_identifier_normalization"]
+    for lock in normalization["lockfiles"]:
+        native_packages = {p["name"]: p for p in tomllib.loads((root / lock).read_text())["package"]}
+        for name in normalization["dependencies"]:
+            actual, expected = native_packages.get(name), upstream_packages[name]
+            if actual is None or any(actual.get(key) != expected.get(key) for key in ("version", "source", "checksum")):
+                raise RuntimeError(f"identifier normalization dependency differs from declared Rust: {lock}: {name}")
     env["RUSTC"] = str(rustc)
     run("data-generation-check", ["bash", root / "compiler/native/scripts/gen-unicode.sh", "--check"])
     verifier = output / "verify-compiler-data"
@@ -80,13 +89,20 @@ def main():
     fixtures = [
         ("const-runtime", root / "compiler/native/tests/pass/unicode_const_runtime_semantics.rs"),
         ("runtime-exact", root / "compiler/native/tools/unicode_runtime_exact.rs"),
+        ("identifier-nfc", root / "compiler/native/tests/pass/identifier_nfc.rs"),
+        ("identifier-macros", root / "compiler/native/tests/pass/identifier_nfc_macros.rs"),
+        ("identifier-includes", root / "compiler/native/tests/pass/identifier_nfc_includes.rs"),
+        ("identifier-modules", root / "compiler/native/tests/pass/identifier_nfc_modules.rs"),
+        ("identifier-equivalence", root / "compiler/native/tests/pass/lex_ident_normalized.rs"),
+        ("identifier-assertions", root / "compiler/native/tests/pass/identifier_nfc_assertions.rs"),
     ]
     comparisons = []
     for name, fixture in fixtures:
         outputs = []
         for implementation, compiler in [("native", native), ("rust", rustc)]:
             program = output / f"{name}-{implementation}"
-            argv = [compiler, "build", fixture, "-o", program] if implementation == "native" else [compiler, "--edition=2024", "-O", fixture, "-o", program]
+            panic = ["-C", "panic=unwind"] if name == "identifier-assertions" else []
+            argv = [compiler, "build", *panic, fixture, "-o", program] if implementation == "native" else [compiler, "--edition=2024", "-O", *panic, fixture, "-o", program]
             run(f"{name}-{implementation}-build", argv)
             outputs.append(run(f"{name}-{implementation}-run", [program], seconds=120))
         if not equal_files(*outputs):
@@ -96,10 +112,22 @@ def main():
                 raise RuntimeError(f"{name}: unexpected runtime stderr from {implementation}")
         comparisons.append({"fixture": str(fixture.relative_to(root)), "fixture_sha256": sha256(fixture),
                             "bytes": outputs[0].stat().st_size, "sha256": sha256(outputs[0]), "byte_for_byte_equal": True})
+    rejected = root / "compiler/native/tests/fail/identifier_nfc_duplicate.rs"
+    rejections = []
+    for implementation, compiler, diagnostic in [("native", native, "L0106"), ("rust", rustc, "E0428")]:
+        program = output / f"identifier-duplicate-{implementation}"
+        argv = [compiler, "build", rejected, "-o", program] if implementation == "native" else [compiler, "--edition=2024", rejected, "-o", program]
+        name = f"identifier-duplicate-{implementation}-build"
+        run(name, argv, expected_code=1)
+        if program.exists() or diagnostic not in (output / f"{name}.stderr").read_text():
+            raise RuntimeError(f"{name}: duplicate normalized identifiers were not rejected before output")
+        rejections.append({"implementation": implementation, "diagnostic": diagnostic, "artifact_written": False})
     if identities != {"native_core_sha256": sha256(native), "rustc_sha256": sha256(rustc)}:
         raise RuntimeError("compiler changed during qualification")
     result = {"schema": 1, "rust_source": RUST_SOURCE, "rustc_vV": identity, "identities": identities,
               "scalar_values": SCALARS, "comparisons": comparisons, "commands": len(records),
+              "duplicate_normalized_identifiers": rejections,
+              "normalization_dependency_lockfiles": normalization["lockfiles"],
               "limits": ["Direct cold compilation; retained behavior is covered by the separate native test.",
                          "Unicode data and exercised operations only; not a proof of all Rust semantics.",
                          "No timing or release-admission claim."]}

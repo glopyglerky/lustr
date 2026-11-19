@@ -76,7 +76,7 @@ fn compile(r: Request, artifact: Option<(&crate::native_crate::Generation,&crate
     let t = &lexed.tokens;
     let pattern = [lexer::Tok::Pound, lexer::Tok::Bang, lexer::Tok::LBracket];
     if t.len() < 6 || t[..3].iter().map(|t|t.tok).ne(pattern)
-        || !matches!(t[3].tok,lexer::Tok::Ident(s) if i.get(s)=="no_std") || t[4].tok != lexer::Tok::RBracket
+        || !matches!(t[3].tok,lexer::Tok::Ident(s, _) if i.get(s)=="no_std") || t[4].tok != lexer::Tok::RBracket
     { return Err("native freestanding object requires a complete original #![no_std] crate attribute".into()); }
     let attr = ast::Attr { style: ast::AttrStyle::Inner, path: vec![ast::PathSeg::plain(i.intern("no_std"))], input: ast::AttrInput::None, span: t[0].span.to(t[4].span) };
     // The artifact route uses the shared native resolver below. The bare
@@ -90,7 +90,7 @@ fn compile(r: Request, artifact: Option<(&crate::native_crate::Generation,&crate
     let (a,tables) = if artifact.is_some() {
         // Macro effects and additional files need explicit input/expansion
         // generations. Refuse them before treating this closed image as deps0.
-        if t.windows(2).any(|w|matches!(w[0].tok,lexer::Tok::Ident(_))&&w[1].tok==lexer::Tok::Bang){return Err("native producer needs macro semantic/input records".into());}
+        if t.windows(2).any(|w|matches!(w[0].tok,lexer::Tok::Ident(_, _))&&w[1].tok==lexer::Tok::Bang){return Err("native producer needs macro semantic/input records".into());}
         if t.iter().any(|t|t.tok==lexer::Tok::Extern){return Err("native producer needs extern dependency/ABI semantic records".into());}
         let input=crate::resolve::worklist::CrateInput{root_path:r.source.clone(),root_text:source.clone(),env:crate::resolve::cfg::CfgEnv::new("x86_64-unknown-linux-gnu",&[],false,crate::protocol::ProfileFlags{panic_abort:true,overflow_checks:r.overflow,debug_assertions:r.debug}),crate_ids:ids,crate_name:r.name.clone(),cargo_env:Vec::new(),deps:Vec::new(),client:Default::default(),std_splice_lo:None,display_root:None};
         let parse=|l:&lexer::Lexed,i:&intern::Interner,k:&intern::Known| {

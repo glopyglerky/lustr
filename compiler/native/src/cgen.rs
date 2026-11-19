@@ -2657,7 +2657,7 @@ fn inline_attr(p: &Program, f: LocalDefId) -> InlineAttr {
     for a in p.fn_info(f).def(&p.ast).attrs.iter().filter(|a| a.path.len() == 1 && p.name(a.path[0].name) == "inline") {
         out = match &a.input {
             AttrInput::List(_, t) => match t.as_slice() {
-                [TokenTree::Token(x)] if matches!(x.tok, Tok::Ident(s) if p.name(s) == "always") => InlineAttr::Always,
+                [TokenTree::Token(x)] if matches!(x.tok, Tok::Ident(s, _) if p.name(s) == "always") => InlineAttr::Always,
                 _ => InlineAttr::Never,
             },
             _ => InlineAttr::Hint,
