@@ -212,7 +212,7 @@ fn dev_config_excludes_a_default_feature() {
 
 #[test]
 fn unknown_package_is_an_error() {
-    let root = fixture("human");
+    let root = fixture("unknown-package");
     let out = Command::new(env!("CARGO_BIN_EXE_lust-port"))
         .args(["scan", "--manifest-path", root.join("Cargo.toml").to_str().unwrap(), "-p", "nope"])
         .output()
