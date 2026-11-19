@@ -103,12 +103,12 @@ jobs:
           actual_source=$(rustc -vV | sed -n 's/^commit-hash: //p')
           test -n "$expected_source"
           test "$actual_source" = "$expected_source"
-      - name: Select the declared Cargo build-directory compatibility mode
+      - name: Record the declared Cargo build-directory layout
         run: |
           set -euo pipefail
           # rust-lang/rust at the declared pin imports this Cargo source.
-          # Native build-script output discovery currently requires its
-          # documented compatibility layout. Preserve an explicit setting.
+          # Native build-script output discovery supports both declared layouts.
+          # Preserve the caller's explicit setting; do not force the old layout.
           expected_cargo_source=c07ac2c4d12237effc4b94f4543769b421790045
           actual_cargo_source=$(cargo -Vv | sed -n 's/^commit-hash: //p')
           if test "$actual_cargo_source" != "$expected_cargo_source"; then
@@ -116,15 +116,14 @@ jobs:
             exit 1
           fi
           cargo_layout_source=inherited
+          cargo_layout_value=${__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT-unset}
           if test "${__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT+present}" != present; then
-            export __CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT=1
-            printf '__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT=1\n' >> "$GITHUB_ENV"
-            cargo_layout_source=defaulted
+            cargo_layout_source=cargo-default
           fi
           {
             cargo -Vv
             printf 'selection=%s\n__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT=%s\n' \
-              "$cargo_layout_source" "$__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT"
+              "$cargo_layout_source" "$cargo_layout_value"
           } > "$RUNNER_TEMP/native-cargo-layout.txt"
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -141,6 +140,10 @@ jobs:
           rustc --edition=2024 --test ../../tools/host-sdk.rs -o "$RUNNER_TEMP/host-sdk"
           "$RUNNER_TEMP/host-sdk" --test-threads=1
           cargo test --locked
+      - name: Require native build-script transitions under both Cargo layouts
+        env:
+          LUST_TCC_HOME: ${{ github.workspace }}/compiler/native/third_party/tcc
+        run: python3 ../../tools/qualify-native-cargo-layout.py --output "$RUNNER_TEMP/native-cargo-layout-qualification"
       - name: Run CI gate
         env:
           LUST_TCC_HOME: ${{ github.workspace }}/compiler/native/third_party/tcc
@@ -238,6 +241,7 @@ jobs:
           path: |
             ${{ runner.temp }}/native-gate-identity.txt
             ${{ runner.temp }}/native-cargo-layout.txt
+            ${{ runner.temp }}/native-cargo-layout-qualification
             ${{ runner.temp }}/native-gate-host.json
             ${{ runner.temp }}/native-gate.log
             ${{ runner.temp }}/native-unwind-identity.txt
@@ -344,12 +348,12 @@ jobs:
           actual_source=$(rustc -vV | sed -n 's/^commit-hash: //p')
           test -n "$expected_source"
           test "$actual_source" = "$expected_source"
-      - name: Select the declared Cargo build-directory compatibility mode
+      - name: Record the declared Cargo build-directory layout
         run: |
           set -euo pipefail
           # rust-lang/rust at the declared pin imports this Cargo source.
-          # Native build-script output discovery currently requires its
-          # documented compatibility layout. Preserve an explicit setting.
+          # Native build-script output discovery supports both declared layouts.
+          # Preserve the caller's explicit setting; do not force the old layout.
           expected_cargo_source=c07ac2c4d12237effc4b94f4543769b421790045
           actual_cargo_source=$(cargo -Vv | sed -n 's/^commit-hash: //p')
           if test "$actual_cargo_source" != "$expected_cargo_source"; then
@@ -357,15 +361,14 @@ jobs:
             exit 1
           fi
           cargo_layout_source=inherited
+          cargo_layout_value=${__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT-unset}
           if test "${__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT+present}" != present; then
-            export __CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT=1
-            printf '__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT=1\n' >> "$GITHUB_ENV"
-            cargo_layout_source=defaulted
+            cargo_layout_source=cargo-default
           fi
           {
             cargo -Vv
             printf 'selection=%s\n__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT=%s\n' \
-              "$cargo_layout_source" "$__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT"
+              "$cargo_layout_source" "$cargo_layout_value"
           } > "$RUNNER_TEMP/native-cargo-layout.txt"
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -383,6 +386,10 @@ jobs:
           rustc --edition=2024 --test ../../tools/host-sdk.rs -o "$RUNNER_TEMP/host-sdk"
           "$RUNNER_TEMP/host-sdk" --test-threads=1
           cargo test --locked
+      - name: Require native build-script transitions under both Cargo layouts
+        env:
+          LUST_TCC_HOME: ${{ github.workspace }}/compiler/native/third_party/tcc
+        run: python3 ../../tools/qualify-native-cargo-layout.py --output "$RUNNER_TEMP/native-cargo-layout-qualification"
       - name: Run CI gate
         env:
           LUST_TCC_HOME: ${{ github.workspace }}/compiler/native/third_party/tcc
@@ -481,6 +488,7 @@ jobs:
           path: |
             ${{ runner.temp }}/native-gate-identity.txt
             ${{ runner.temp }}/native-cargo-layout.txt
+            ${{ runner.temp }}/native-cargo-layout-qualification
             ${{ runner.temp }}/native-gate.log
             ${{ runner.temp }}/native-unwind-identity.txt
             ${{ runner.temp }}/native-unwind.log
