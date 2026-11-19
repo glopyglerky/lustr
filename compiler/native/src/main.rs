@@ -43,6 +43,7 @@ mod testrun;
 #[allow(dead_code)] // See `mod mono`.
 mod traits;
 mod ty;
+mod unicode;
 
 use protocol::Invocation;
 

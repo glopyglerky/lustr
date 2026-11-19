@@ -225,8 +225,8 @@ pub fn lit_text<'s>(tok: &Tok, strings: &'s [String]) -> Option<std::borrow::Cow
         }
         Tok::Int(v, suffix, None) => Cow::Owned(format!("{v}{}", suffix.map_or("", IntSuffix::name))),
         // rustc's form for a string it makes (`escape_string_symbol`).
-        Tok::Str(i, None) => Cow::Owned(format!("\"{}\"", at(i).escape_debug())),
-        Tok::Char(c, None) => Cow::Owned(format!("{c:?}")),
+        Tok::Str(i, None) => Cow::Owned(format!("\"{}\"", crate::unicode::escape_debug(at(i)))),
+        Tok::Char(c, None) => Cow::Owned(crate::unicode::debug_char(c)),
         // A doc comment's literal is the raw string rustc uses for it in
         // token streams, with enough `#`s to close safely.
         Tok::DocStr(i) => {

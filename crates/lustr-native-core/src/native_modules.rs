@@ -45,10 +45,11 @@ mod pinned {
     pub(crate) mod testrun;
     #[allow(dead_code)] pub(crate) mod traits;
     pub(crate) mod ty;
+    pub(crate) mod unicode;
 }
 use pinned::{ast, borrowck, capabilities, cc, cgen, colwidth, daemon, def, diag,
     driver, expand, explain, image, intern, ir, lexer, lower, mono, pool, protocol,
-    resolve, scan, stdload, stdloc, stdmods, tcc, testrun, traits, ty};
+    resolve, scan, stdload, stdloc, stdmods, tcc, testrun, traits, ty, unicode};
 #[path = "expanded_parser.rs"] mod parser;
 #[path = "expanded_check.rs"] mod check;
 

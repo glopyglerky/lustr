@@ -689,7 +689,7 @@ fn tn_const(tys: &impl TyIntern, c: crate::ty::ConstId, open: bool) -> Option<St
     match tys.const_kind(c) {
         ConstKind::Int(v) => Some(format!("{v}")),
         ConstKind::Bool(b) => Some(format!("{b}")),
-        ConstKind::Char(ch) => Some(format!("'{ch}'", ch = ch.escape_debug())),
+        ConstKind::Char(ch) => Some(format!("'{ch}'", ch = crate::unicode::escape_debug(&ch.to_string()))),
         _ if open => Some("_".into()),
         _ => None,
     }

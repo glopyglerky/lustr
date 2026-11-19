@@ -12296,7 +12296,7 @@ impl<'p> Ctx<'p> {
             }
             if self.name(segs[1].name) == "UNICODE_VERSION" {
                 use crate::ty::consteval::ConstValue;
-                let (maj, min, pat) = char::UNICODE_VERSION;
+                let (maj, min, pat) = crate::unicode::UNICODE_VERSION;
                 let u8t = int(IntTy::U8);
                 let ts = self.tys.intern_tys(&[u8t, u8t, u8t]);
                 let ty = self.tys.intern(TyKind::Tuple(ts));
