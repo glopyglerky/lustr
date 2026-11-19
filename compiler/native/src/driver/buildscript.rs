@@ -1,4 +1,8 @@
-// Build-script refresh checks (docs/ARCH.md section 1.1). Lust does not
+// Product host scripts use `native`: Cargo supplies an exact unit plan, the
+// ordinary native pipeline compiles the original script, and one owned run
+// publishes checked outputs. Legacy Cargo/rustc replay is non-product only.
+//
+// Upstream build-script refresh checks (docs/ARCH.md section 1.1). Lust does not
 // compile `build.rs`; Cargo compiles and runs it (the probe's `cargo
 // check`), and the driver reads the recorded output. A record is valid
 // only while everything its run read still holds (`Record::holds`): the
@@ -22,6 +26,11 @@
 use crate::intern::FxHasher;
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
+
+#[cfg(feature = "exclusive-native")]
+mod native;
+#[cfg(feature = "exclusive-native")]
+pub use native::outputs as outputs_native;
 
 /// The env a build script check runs under: the requesting client's
 /// whole env (`protocol::Client::env`), or None for this process's own
@@ -683,6 +692,11 @@ pub struct Outputs {
     pub rustc_cfg: Vec<String>,
     pub rustc_check_cfg: Vec<String>,
     pub rustc_env: Vec<(String, String)>,
+    /// A native script's OUT_DIR cannot change while the consumer still reads
+    /// its generated inputs. The checked continuation owns this lease through
+    /// checking and emission; clones share the same lock, without reacquiring it.
+    #[cfg(feature = "exclusive-native")]
+    lease: Option<std::sync::Arc<std::fs::File>>,
 }
 
 /// The current outputs of the build script of `manifest_dir`: the

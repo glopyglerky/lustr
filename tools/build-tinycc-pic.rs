@@ -1,5 +1,6 @@
 //! Build the pinned TinyCC archive for shared-library use without editing the
-//! source checkout or substituting another backend. All compilation is upstream.
+//! source checkout or substituting another backend. The copied source receives
+//! the separately declared, exact-source Mach-O signing integration.
 use std::{
     fs,
     io::Write,
@@ -46,6 +47,18 @@ fn main() {
         &logs,
     );
     run("source-extract", Command::new("tar").args(["-xf"]).arg(&archive).arg("--directory").arg(&source), &logs);
+    // Snapshot the exact reviewed applicator and declaration into this build;
+    // invoking the constructor from another directory cannot select other code.
+    let integration = output.join("integration");
+    fs::create_dir(&integration).unwrap();
+    fs::create_dir(integration.join("tools")).unwrap();
+    fs::create_dir(integration.join("upstream")).unwrap();
+    let repair = integration.join("tools/apply-tinycc-signing.py");
+    put(&repair, include_bytes!("apply-tinycc-signing.py"));
+    put(&integration.join("upstream/tinycc-macho-signing.json"), include_bytes!("../upstream/tinycc-macho-signing.json"));
+    put(&integration.join("upstream/tinycc-macho-signing.patch"), include_bytes!("../upstream/tinycc-macho-signing.patch"));
+    let receipt = logs.join("macho-signing-source.json");
+    run("macho-signing-integration", Command::new("python3").arg(repair).arg(&source).arg("--receipt").arg(&receipt), &logs);
     // Keep upstream's normal -O2 optimization, adding the relocation property
     // required when libtcc.a is embedded in the native compiler shared library.
     run(
@@ -61,9 +74,10 @@ fn main() {
     let license = install.join("share/licenses/tinycc");
     fs::create_dir_all(&license).unwrap();
     fs::copy(source.join("COPYING"), license.join("COPYING")).unwrap();
+    fs::copy(receipt, license.join("lustr-macho-signing.json")).unwrap();
     put(
         &license.join("SOURCE.txt"),
-        format!("https://github.com/TinyCC/tinycc\nrevision {REVISION}\nOriginal implementation; build flags -Wall -O2 -fPIC.\n")
+        format!("https://github.com/TinyCC/tinycc\nrevision {REVISION}\nDeclared Lustr Mach-O signing integration: lustr-macho-signing.json; build flags -Wall -O2 -fPIC.\n")
             .as_bytes(),
     );
     // Link the complete real archive before any expensive compiler build. This
@@ -78,7 +92,7 @@ fn main() {
         &logs,
     );
     let hashes = run("component-hashes", Command::new("sha256sum").arg(install.join("bin/tcc")).arg(install.join("lib/libtcc.a")), &logs);
-    let mut info=format!("TinyCC upstream {REVISION}; original source archived with Git; -Wall -O2 -fPIC; jobs2.\nShared link check passed; its library is compile-only/never executed. Hosted C dependency, not an owned Rust implementation or whole-stack memory-safety claim.\n").into_bytes();
+    let mut info=format!("TinyCC upstream {REVISION}; original source archived with Git; declared Mach-O signing integration in logs/macho-signing-source.json; -Wall -O2 -fPIC; jobs2.\nShared link check passed; its library is compile-only/never executed. Hosted C dependency, not an owned Rust implementation or whole-stack memory-safety claim.\n").into_bytes();
     info.extend_from_slice(&hashes);
     put(&output.join("COMPONENTS.txt"), &info);
     for p in [logs, install.clone(), output] {

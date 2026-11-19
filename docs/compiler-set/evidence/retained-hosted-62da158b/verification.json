@@ -1,0 +1,48 @@
+{
+  "schema": "lustr-first-retained-hosted-failure-v1",
+  "source": {
+    "pr": 33,
+    "head": "62da158b33740279947c85f3fc425df6d1623c9f",
+    "checkout": "a3c878f6123b4f5dc5e2eff598b52c83ab5b4ec3",
+    "tree": "390e25946a5ebcb8ccef417467a7b29d8034987d",
+    "upstream_revision": "240e08d91d4aed0299639f6f11fd522912b248f9",
+    "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+    "runner_sha256": "82d8a3272b5cb394aba73568195005ddf220bc873cfcc57ce7417835b0938abc",
+    "inventory_sha256": "7c40b19f369e7d3c219e35fde3ee087bca2e8cadc7313966054e8e1ff9127e8f"
+  },
+  "hosted": {
+    "run_id": 44525981237,
+    "job_id": 135566552526,
+    "attempt": 1,
+    "artifact_id": 14532072072,
+    "artifact_sha256": "b6375bee5f55c615936d5e06605948dca24b3f523c7036860966c4f27bc8a250",
+    "job_url": "https://github.com/glopyglerky/lustr/actions/runs/44525981237/job/135566552526",
+    "artifact_url": "https://github.com/glopyglerky/lustr/actions/runs/44525981237/artifacts/14532072072"
+  },
+  "observed": {
+    "required_histories": 349,
+    "passed_histories": 328,
+    "failed_histories": 21,
+    "completed_versions": 1643,
+    "unselected_required": [],
+    "unresolved_histories": 13,
+    "full_retained_coverage": false,
+    "full_rust_coverage": false,
+    "release_admission": false
+  },
+  "publication": {
+    "campaign_original_sha256": "80acfb0162a93385f908a7e73f29faf06aa59e2707a8be09c6285a1a49984860",
+    "normalization": "Known hosted package, SDK, source, result and scenario temporary paths are replaced with named placeholders. Original stream hashes inside reports continue to refer to original bytes. archive-files.json binds original and published bytes separately. Extract failed-histories.tar.gz to inspect each report and its streams together. No outcomes, diagnostics or fixture contents are otherwise changed.",
+    "omitted_artifacts": "Four unused metadata-probe outputs are hash-recorded but not copied; the original complete hosted archive remains identified above.",
+    "full_campaign_archive": "all-histories.tar.gz preserves every available history report and output stream, including the 328 passing histories and partial failed histories. all-histories-files.json.gz binds original and published bytes. The focused failure archive remains available separately.",
+    "full_campaign_files": 31907
+  },
+  "files_sha256": {
+    "archive-files.json": "f8c43772b33227096c6ad45ad53f904df55e4940853d5fb77a4f5afab0416af9",
+    "campaign.json": "c4baac145aa3d813806032a317503c2d4f8ed8dd915dbf8a56bfcfb39b14d782",
+    "failed-histories.tar.gz": "2a8c73ac0c94acc20d4e31701c67a199256eb22020fd09d59b39d17d64936802",
+    "all-histories.tar.gz": "cd9f4570758053d2fcdf64273a38501685e3d95a55b4e4cbc860fd7b0ef7cf9b",
+    "all-histories-files.json.gz": "70237c6a191e29feecc865f75161d8232e1f9b6550d4239b3a5dd96e8866aece",
+    "README.md": "4048ecc9f5fb6d2260f08b4cc39c0c37ba53284fae1e5329de07fe7f08d08a44"
+  }
+}

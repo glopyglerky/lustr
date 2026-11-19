@@ -7,8 +7,10 @@ controlling direction, merged through [PR #31](https://github.com/glopyglerky/lu
 Refresh the current PR head and checks before continuing. Earlier PRs are
 preserved sources and evidence, not competing product directions.
 
-The [sole-goal audit and result follow-through](sole-goal-audit.md) is the latest
-record. The correction after d1328bc2 removed latent diagnostic-driven worker/ABI paths and old
+The [native Cargo continuation](native-cargo-continuation.md) is the latest
+implementation and failure record. The earlier
+[sole-goal audit and result follow-through](sole-goal-audit.md) records how the
+correction after d1328bc2 removed latent diagnostic-driven worker/ABI paths and old
 launchers, isolates product and bounded qualification builds, checks effective
 dependency features, connects upstream capability probes to CI, and requires
 relative evidence for future near-stock claims. Its source-bound
@@ -32,6 +34,16 @@ checks. The [latest audit section](sole-goal-audit.md#follow-through-after-5cd40
 binds these changes and their limits. Default-branch governance is synchronized
 separately from the implementation PR. No complete compiler or portability
 migration is inferred from this correction.
+
+The independent hosted campaign on `62da158b` then exposed fifteen required
+native Cargo integration gaps and six qualifier/selection distinctions. The
+continuation uses pinned Cargo unit planning, native host-script compilation,
+actual dependency observations and leased generated inputs. It preserves the
+original 328-pass/21-failure campaign and the separate macOS warm signing failure.
+The complete required inventory remains unchanged. Default governance was
+synchronized through documentation-only [PR #35](https://github.com/glopyglerky/lustr/pull/35);
+compiler code remains in PR #33. See the continuation for exact current evidence
+and remaining limitations rather than attributing older passes to new source.
 
 ## Published code and actual scope
 
@@ -92,7 +104,7 @@ relabel these distinct operations as one fully qualified optimized package.
 **Full Rust replacement, complete integration of Lust's supported set,
 minimal complementary closure and near-stock speed remain unfinished.** The
 complete-replacement release guard deliberately refuses admission. Standard
-Cargo is currently a metadata utility; arbitrary direct Cargo compilation is
+Cargo is currently a metadata and unit-planning utility; arbitrary direct Cargo compilation is
 not the qualified Lustr frontend.
 
 ## One lane, preserved history

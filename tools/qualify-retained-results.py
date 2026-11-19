@@ -74,6 +74,15 @@ def load_inventory(source, manifest):
     for name, versions in inventory["panic_thread_id_versions"].items():
         require(name in expected and versions and len(versions) == len(set(versions)), "invalid panic-header inventory")
         require(all((directory / name / version).is_dir() for version in versions), "panic-header inventory names an unknown version")
+    for name, versions in inventory["selection_rejections"].items():
+        require(name in {row["name"] for row in rows if row["status"] == "required"}, "selection rejection is outside required histories")
+        ordered = sorted(p.name for p in (directory / name).iterdir() if p.name.startswith("v") and p.is_dir())
+        for version, rule in versions.items():
+            require(version in ordered and rule["kind"] == "removed-bin-target" and rule["manifest"] == "Cargo.toml", "invalid selection rejection rule")
+            require(re.fullmatch(r"[A-Za-z0-9_]+", rule["bin"]) and rule["source"] == f"src/bin/{rule['bin']}.rs", "invalid removed target path")
+            require("rm " + rule["source"] in (directory / name / version / ".scen").read_text().splitlines(), "removed target is not declared by the pinned overlay")
+            require(ordered[ordered.index(version) + 1:][:1] == [rule["recovery_version"]] and (directory / name / rule["recovery_version"] / rule["source"]).is_file(), "removed target lacks immediate source restoration")
+            require(rule["cargo_stderr"].startswith(f"error: no bin target named `{rule['bin']}` in default-run packages\n"), "selection oracle does not identify the removed target")
     return inventory
 
 
@@ -81,38 +90,64 @@ def completed(result, allowed_signals=()):
     require(type(result.get("exit")) is int and (0 <= result["exit"] <= 255 or -result["exit"] in allowed_signals) and not result.get("timed_out"), "interrupted, signalled or missing process result")
 
 
+def fixture_origin(span, cwd):
+    """Follow a primary span's macro call sites, never definition sites or notes."""
+    root = Path(cwd).resolve()
+    while span is not None:
+        path = Path(span["file_name"])
+        path = (root / path).resolve() if not path.is_absolute() else path.resolve()
+        if path.is_relative_to(root) and path.is_file():
+            return True
+        expansion = span.get("expansion")
+        span = expansion.get("span") if expansion is not None else None
+    return False
+
+
 def source_rejection(result, cwd, cargo=False):
-    """Require structured source diagnostics from a semantic-only oracle check.
+    """Require structured source diagnostics from a separate no-link oracle.
 
     A nonzero build can be a linker, SDK, manifest or tool failure. None proves
     invalid Rust. The separately invoked check must report an error whose
-    primary span is in the unchanged fixture's source tree.
+    primary span or macro call-site ancestry is in the unchanged fixture tree.
+    Direct rustc uses code generation without linking so demanded constants and
+    overflow are checked too; metadata-only emission omits those errors.
     """
     completed(result)
     if result["exit"] != (101 if cargo else 1):
+        return False
+    operational = re.compile(rb"internal compiler error|the compiler unexpectedly panicked|thread [^\n]* panicked at|process didn't exit successfully|could not execute process|signal:\s*-?\d+|failed to run custom build command", re.I)
+    if cargo and operational.search(result["stderr"]):
         return False
     try:
         records = [json.loads(line) for line in result["stdout" if cargo else "stderr"].splitlines() if line.strip()]
         if cargo:
             records = [row["message"] for row in records if row.get("reason") == "compiler-message"]
+        if any(row.get("level") == "ice" or operational.search(row.get("message", "").encode()) for row in records):
+            return False
         errors = [row for row in records if row.get("level") == "error"]
         source_errors = []
         for error in errors:
             if re.fullmatch(r"aborting due to \d+ previous errors?(?:; \d+ warnings? emitted)?", error.get("message", "")):
                 continue
+            # Missing std, --extern inputs and corrupt crate metadata can
+            # carry primary source spans too. They prove an unavailable SDK
+            # or dependency artifact, not invalid Rust source.
+            if (error.get("code") or {}).get("code") in ("E0460", "E0463", "E0464", "E0514", "E0786") or error.get("message", "").startswith("extern location for "):
+                return False
             spans = [span for span in error.get("spans", []) if span.get("is_primary") is True]
-            anchored = False
-            for span in spans:
-                path = Path(span["file_name"])
-                path = (Path(cwd) / path).resolve() if not path.is_absolute() else path.resolve()
-                if path.is_relative_to(Path(cwd).resolve()) and path.is_file():
-                    anchored = True
-            if not anchored:
+            if not any(fixture_origin(span, cwd) for span in spans):
                 return False
             source_errors.append(error)
         return bool(source_errors)
-    except (ValueError, KeyError, TypeError):
+    except (ValueError, KeyError, TypeError, AttributeError, OSError):
         return False
+
+
+def removed_target_rejection(result, rule, cargo=False):
+    """One reviewed invalid request, distinct from a Rust source rejection."""
+    completed(result)
+    expected = rule["cargo_stderr"].encode() if cargo else b"error: invalid Cargo target selection: No such file or directory (os error 2)\n"
+    return result["exit"] == (101 if cargo else 2) and result["stdout"] == b"" and result["stderr"] == expected
 
 
 def compare_runtime(actual, expected, allowed_signals=(), panic_thread_id=False):
@@ -132,7 +167,7 @@ def compare_runtime(actual, expected, allowed_signals=(), panic_thread_id=False)
     require(actual_stderr == expected_stderr, "program stderr differs from Rust")
 
 
-def compare_version(observed, expected_ops, allowed_signals=(), panic_thread_id=False):
+def compare_version(observed, expected_ops, allowed_signals=(), panic_thread_id=False, selection_rejection=False):
     checks, builds = observed["checks"], observed["builds"]
     require(set(checks) == ({"cold", "warm"} if "check" in expected_ops else {"cold"}), "missing or unexpected check result")
     require(set(builds) == ({"cold", "warm"} if "run" in expected_ops else {"cold"}), "missing or unexpected build result")
@@ -141,10 +176,21 @@ def compare_version(observed, expected_ops, allowed_signals=(), panic_thread_id=
     require(oracle.get("tool") in ("rustc", "cargo"), "Rust build oracle tool identity is missing")
     for result in list(checks.values()) + [entry["compile"] for entry in builds.values()]:
         completed(result)
+    if selection_rejection:
+        require(oracle["tool"] == "cargo" and oracle["exit"] == 101 and oracle.get("selection_rejection") is True, "removed target was not rejected by the Cargo build oracle")
+        selection = observed.get("oracle_selection_check")
+        require(selection is not None, "removed target has no separate Cargo selection check")
+        completed(selection)
+        require(selection["exit"] == 101 and selection.get("selection_rejection") is True, "removed target was not rejected by the Cargo check oracle")
+        for result in list(checks.values()) + [entry["compile"] for entry in builds.values()]:
+            require(result["exit"] == 2 and result.get("selection_rejection") is True, "removed target was not rejected before public compilation")
+        require(all("runtime" not in entry and not entry["artifact_exists"] for entry in builds.values()), "removed target produced or executed an artifact")
+        require("oracle_runtime" not in observed, "removed-target oracle executed an artifact")
+        return "selection-rejected"
     if oracle["exit"] != 0:
         require(oracle["exit"] == (1 if oracle["tool"] == "rustc" else 101), "Rust build oracle failed with an unexpected status")
         semantic = observed.get("oracle_semantic_check")
-        require(semantic is not None, "failed Rust build has no separate semantic-only oracle check")
+        require(semantic is not None, "failed Rust build has no separate no-link oracle check")
         completed(semantic)
         require(semantic.get("source_rejection") is True, "Rust oracle failed without a structured semantic source rejection")
         for result in list(checks.values()) + [entry["compile"] for entry in builds.values()]:
@@ -190,6 +236,22 @@ class Observer:
     def save(self):
         (self.output / "report.json").write_text(json.dumps(self.report, indent=2) + "\n")
 
+    def selection_rule(self):
+        return self.config.get("selection_rejections", {}).get(self.name, {}).get(self.versions[len(self.report["versions"])])
+
+    def require_removed_target(self, argv, cwd, rule, cargo=False):
+        args = argv[2:]
+        if cargo:
+            require(args == ["-q", "--offline", "--bin", rule["bin"]], "removed-target Cargo request changed")
+        else:
+            require(argv[1] in ("check", "build"), "unexpected removed-target public operation")
+            if argv[1] == "build":
+                require(len(args) >= 2 and args[-2] == "-o", "removed-target build lost its requested output")
+                args = args[:-2]
+            require(args == [rule["source"], "--manifest-path", rule["manifest"], "--bin", rule["bin"]], "removed-target public request changed")
+        source = Path(cwd) / rule["source"]
+        require(not source.exists() and not source.is_symlink() and (Path(cwd) / rule["manifest"]).is_file(), "reviewed removed target is present or its manifest is missing")
+
     def execute(self, argv, cwd, env, timeout=60, public=False, runtime=False):
         argv = list(map(str, argv))
         label = f"{len(self.report['commands']):04d}"
@@ -220,6 +282,18 @@ class Observer:
         if retained:
             require(self.daemons[0].poll() is None, "original retained daemon exited during the request")
         if public:
+            selection = self.selection_rule()
+            if selection is not None:
+                self.require_removed_target(argv, cwd, selection)
+                require(not trace.exists() and removed_target_rejection(result, selection), "reviewed removed target did not produce its exact precompilation rejection")
+                row.update(classification="reviewed-selection-rejection", selection_rejection=True)
+                result.update(classification=row["classification"], selection_rejection=True)
+                self.save()
+                return result
+            if not trace.is_file():
+                row["classification"] = "public-refusal-before-owner" if row["exit"] else "missing-owner-trace"
+                self.save()
+                raise ValueError(f"{row['classification']}: exit {row['exit']}; stderr={result['stderr'][:512]!r} (complete output: {errpath.name})")
             events = [json.loads(line) for line in trace.read_text().splitlines()]
             require(len(events) == 1, "public compiler trace missing or duplicated")
             expected_engine = "lust" if row["exit"] == 0 else "lust-failed"
@@ -238,8 +312,11 @@ class Observer:
         require(ops and len(ops) == len(set(ops)) and set(ops) <= {"check", "run"}, "unknown version operations")
         signal_names = self.config.get("runtime_signals", {}).get(self.name, {}).get(version, [])
         panic_thread_id = version in self.config.get("panic_thread_id_versions", {}).get(self.name, [])
-        verdict = compare_version(self.pending, ops, tuple(getattr(signal, name) for name in signal_names), panic_thread_id)
+        selection = self.selection_rule()
+        verdict = compare_version(self.pending, ops, tuple(getattr(signal, name) for name in signal_names), panic_thread_id, selection is not None)
         self.report["versions"].append({"version": version, "verdict": verdict, "operations": ops, "panic_thread_id_normalized": panic_thread_id, "allowed_program_signals": signal_names})
+        if selection is not None:
+            self.report["versions"][-1]["selection_expectation"] = selection
         self.pending = {"checks": {}, "builds": {}}
         self.oracle_executable = None
         self.save()
@@ -278,15 +355,23 @@ class Observer:
             if result["exit"] != 0:
                 require(result["exit"] == 1, "direct Rust compiler failed outside source rejection")
                 semantic_argv = [self.config["rustc"], *argv[1:]]
-                semantic_argv[semantic_argv.index("-o") + 1] = str(self.output / "oracle-check.rmeta")
-                semantic = self.execute([*semantic_argv, "--emit=metadata", "--error-format=json"], cwd, env, timeout)
+                semantic_argv[semantic_argv.index("-o") + 1] = str(self.output / "oracle-check.ll")
+                semantic = self.execute([*semantic_argv, "--emit=llvm-ir", "--error-format=json"], cwd, env, timeout)
                 semantic["source_rejection"] = source_rejection(semantic, cwd)
                 self.pending["oracle_semantic_check"] = semantic
                 self.finish_version()
         elif argv[0] == "cargo" and argv[1] == "build":
             result = self.execute([self.config["cargo"], *argv[1:], "--message-format=json"], cwd, env, timeout)
             self.pending["oracle_build"] = dict(result, tool="cargo")
-            if result["exit"] == 0:
+            selection = self.selection_rule()
+            if selection is not None:
+                self.require_removed_target(argv, cwd, selection, cargo=True)
+                self.pending["oracle_build"]["selection_rejection"] = removed_target_rejection(result, selection, cargo=True)
+                selected = self.execute([self.config["cargo"], "check", *argv[2:], "--message-format=json"], cwd, env, timeout)
+                selected["selection_rejection"] = removed_target_rejection(selected, selection, cargo=True)
+                self.pending["oracle_selection_check"] = selected
+                self.finish_version()
+            elif result["exit"] == 0:
                 artifacts = [json.loads(line) for line in result["stdout"].splitlines() if line.strip()]
                 executable = [row["executable"] for row in artifacts if row.get("reason") == "compiler-artifact" and row.get("executable") and "bin" in row.get("target", {}).get("kind", [])]
                 require(len(executable) == 1, "Cargo oracle did not identify one selected executable")
@@ -397,7 +482,7 @@ def main(argv=None):
             if key.startswith(("LUST_", "LUSTR_")) or key in ("LD_LIBRARY_PATH", "RUSTC_WRAPPER", "RUSTC_WORKSPACE_WRAPPER"):
                 os.environ.pop(key)
         os.environ.update(RUSTC=str(rustc), PATH=str(cargo.parent) + os.pathsep + os.environ.get("PATH", ""), RUST_BACKTRACE="0", LC_ALL="C")
-        config = {"source": str(args.source), "output": str(args.output), "entry": str(entry), "rustc": str(rustc), "cargo": str(cargo), "runtime_signals": inventory["runtime_signals"], "panic_thread_id_versions": inventory["panic_thread_id_versions"]}
+        config = {"source": str(args.source), "output": str(args.output), "entry": str(entry), "rustc": str(rustc), "cargo": str(cargo), "runtime_signals": inventory["runtime_signals"], "panic_thread_id_versions": inventory["panic_thread_id_versions"], "selection_rejections": inventory["selection_rejections"]}
         report["status"] = "running"
         save()
         with ProcessPoolExecutor(max_workers=args.jobs) as pool:

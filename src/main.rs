@@ -38,14 +38,21 @@ mod lust {
                     .any(|(name, _)| name.to_str().is_some_and(|s| s.starts_with("LUST_FRONT_") || s == "LUST_SOURCES_READY"))
         }
         pub fn validate_selection(&mut self, parent: &Path, args: &[String]) -> std::io::Result<()> {
-            if self.0.session.krate.manifest_path.is_some() {
+            if self.0.session.krate.manifest_path.is_some()
+                && (selection::needs_package_binding(args) || !self.0.file.is_file())
+            {
                 let selection = selection::select(&self.0, parent, args)?;
                 // The unchanged native resolver selects within the supplied
                 // manifest. Bind it to the validated member and target too.
                 self.0.session.krate.manifest_path = Some(selection.manifest.clone());
                 self.0.session.krate.target_name = selection.name.clone();
+                self.0.session.krate.target_explicit = true;
                 self.1 = Some(selection);
             }
+            // An ordinary existing-source manifest request already carries
+            // its exact manifest, source and target. The native retained
+            // resolver binds those facts against its one Cargo graph before
+            // body work; repeating public metadata would discard that reuse.
             Ok(())
         }
         pub fn bind_native_arguments(&self, args: &mut Vec<String>) {
@@ -239,7 +246,7 @@ fn main() -> ExitCode {
             return incomplete_integration("the requested Rust artifact, target or Cargo layout");
         }
         if let Err(error) = call.validate_selection(&parent, &native) {
-            eprintln!("invalid Cargo target selection: {error}");
+            eprintln!("error: invalid Cargo target selection: {error}");
             return ExitCode::from(2);
         }
         call.bind_native_arguments(&mut native);

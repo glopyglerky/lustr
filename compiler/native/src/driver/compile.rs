@@ -59,6 +59,7 @@ fn expand_tokens(
 ) -> Result<(lexer::Lexed, Vec<expand::Dep>), Diag> {
     let mut ctx = expand::ExpandCtx::for_file(&front.interner, &front.known, file, src, test);
     ctx.client = &front.client;
+    ctx.crate_name = Some(session.krate.target_name.clone());
     // The root file sees the session target's cfg facts, as every other
     // file of a crate session does through the worklist: a foreign
     // `--target` must change `cfg!` and `#[cfg]` here too, not leave
@@ -98,33 +99,61 @@ fn post_mono(p: &collect::Program, f: LocalDefId) -> bool {
 /// `rustc-cfg` values ride along for the resolver's per-crate cfg env.
 /// Only path packages compile from source here; adapter and shim
 /// units keep no Cargo env (their root is a lust-owned crate).
+#[cfg(feature = "exclusive-native")]
+type BuildOutputKey = crate::resolve::cargo::BuildScriptUnit;
+#[cfg(not(feature = "exclusive-native"))]
+type BuildOutputKey = PathBuf;
+
+fn apply_build_env(env: &mut Vec<(String, String)>, output: &[(String, String)]) {
+    for (name, value) in output {
+        env.retain(|(old, _)| old != name);
+        env.push((name.clone(), value.clone()));
+    }
+}
+
 fn fill_dep_build_outputs(
     deps: &mut [crate::resolve::cargo::DepUnit],
     cache: &Path,
-    env: super::buildscript::ClientEnv,
-    memo: &mut FxMap<PathBuf, Option<super::buildscript::Outputs>>,
+    request: &Request,
+    memo: &mut FxMap<BuildOutputKey, Option<super::buildscript::Outputs>>,
+    retained: &mut Vec<super::buildscript::Outputs>,
 ) -> Result<(), String> {
     for dep in deps {
         if dep.source.is_none() {
+            #[cfg(feature = "exclusive-native")]
+            let out = match &dep.build_script {
+                None => None,
+                Some(plan) => match memo.get(plan) {
+                    Some(out) => out.clone(),
+                    None => {
+                        let out = super::buildscript::outputs_native(plan, cache, request)
+                            .map_err(|e| format!("build script of `{}` failed: {e}", dep.package_name))?;
+                        memo.insert(plan.clone(), out.clone());
+                        out
+                    }
+                },
+            };
+            #[cfg(not(feature = "exclusive-native"))]
             let out = match memo.get(&dep.manifest_dir) {
                 Some(o) => o.clone(),
                 None => {
-                    let o = super::buildscript::outputs(&dep.manifest_dir, cache, env)
+                    let o = super::buildscript::outputs(&dep.manifest_dir, cache, request.client.env.as_deref())
                         .map_err(|e| format!("build script of `{}` failed: {e}", dep.package_name))?;
                     memo.insert(dep.manifest_dir.clone(), o.clone());
                     o
                 }
             };
             if let Some(out) = out {
+                retained.push(out.clone());
                 if let Some(dir) = &out.out_dir {
-                    dep.cargo_env.push(("OUT_DIR".into(), dir.to_string_lossy().into_owned()));
+                    apply_build_env(&mut dep.cargo_env, &[("OUT_DIR".into(), dir.to_string_lossy().into_owned())]);
                 }
-                dep.cargo_env.extend(out.rustc_env);
+                apply_build_env(&mut dep.cargo_env, &out.rustc_env);
                 dep.build_cfgs = out.rustc_cfg;
                 dep.build_check_cfgs = out.rustc_check_cfg;
             }
         }
-        fill_dep_build_outputs(&mut dep.deps, cache, env, memo)?;
+        fill_dep_build_outputs(&mut dep.deps, cache, request, memo, retained)?;
     }
     Ok(())
 }
@@ -2116,6 +2145,7 @@ fn resolved_setup(
     visits: &mut Visits,
     reusable: Option<(u64, Response)>,
     imports: Option<&dyn super::imports::Definitions>,
+    build_outputs: &mut Vec<super::buildscript::Outputs>,
 ) -> Result<(SourceMap, Vec<usize>, Vec<usize>, bool, usize, &'static str, Vec<u32>, Vec<u64>, Option<std::sync::Arc<crate::resolve::imports::ResolvedTables>>), Response> {
     use crate::resolve::cargo::{self, GraphRequest};
     use crate::resolve::cfg::CfgEnv;
@@ -2142,8 +2172,17 @@ fn resolved_setup(
         front.display_root = Some(graph.workspace_root.clone());
         let pre_env = CfgEnv::new(&key.target_triple, &key.features, key.krate.test, key.profile);
         let unit =
-            cargo::select_unit(&graph, &greq, &key.krate.target_kind, &key.krate.target_name, &pre_env, &front.interner, key.krate.test)
+            cargo::select_unit(&graph, &greq, &key.krate.target_kind, &key.krate.target_name, &pre_env, &front.interner, key.krate.test, &req.file, key.krate.target_explicit, req.cmd, key.profile)
                 .map_err(code2)?;
+        #[cfg(feature = "exclusive-native")]
+        if req.cmd == Cmd::Build && !unit.target.kind.iter().any(|kind| kind == "bin") {
+            return Err(code2("Lustr integration is incomplete for the requested Rust library artifact; no stock compiler was invoked".into()));
+        }
+        let selected_source = std::fs::canonicalize(&unit.target.src_path).map_err(|e| code2(format!("cannot bind selected Cargo source: {e}")))?;
+        let requested_source = std::fs::canonicalize(&req.file).map_err(|e| code2(format!("cannot bind requested Cargo source: {e}")))?;
+        if requested_source != selected_source {
+            return Err(code2("package, target name, kind and source do not identify exactly one Cargo target".into()));
+        }
         let root_text = std::fs::read_to_string(&unit.target.src_path)
             .map_err(|e| code2(format!("cannot read {}: {e}", unit.target.src_path.display())))?;
         // Edition and lint gates for the selected unit (section 1.1),
@@ -2158,19 +2197,26 @@ fn resolved_setup(
         let mut env = CfgEnv::new(&key.target_triple, &unit.features, key.krate.test, key.profile);
         // Cargo env for the selected unit plus its build script
         // outputs (section 1.1): `OUT_DIR` and `rustc-env` pairs for
-        // `env!`, `rustc-cfg` values for `#[cfg]`. The script re-runs
-        // through Cargo when its recorded inputs changed.
+        // `env!`, `rustc-cfg` values for `#[cfg]`. Product scripts use their
+        // owned native host units when recorded inputs change.
         let cache = super::cache::cache_dir(&req.file);
         let manifest_dir = unit.package.manifest_path.parent().map_or_else(PathBuf::new, Path::to_path_buf);
         let mut cargo_env = unit.cargo_env.clone();
-        let client_env = req.client.env.as_deref();
-        let selected_out = super::buildscript::outputs(&manifest_dir, &cache, client_env)
+        #[cfg(not(feature = "exclusive-native"))]
+        let selected_out = super::buildscript::outputs(&manifest_dir, &cache, req.client.env.as_deref())
             .map_err(|e| code2(format!("build script of `{}` failed: {e}", unit.package.name)))?;
+        #[cfg(feature = "exclusive-native")]
+        let selected_out = match &unit.build_script {
+            Some(plan) => super::buildscript::outputs_native(plan, &cache, req)
+                .map_err(|e| code2(format!("build script of `{}` failed: {e}", unit.package.name)))?,
+            None => None,
+        };
         if let Some(out) = &selected_out {
+            build_outputs.push(out.clone());
             if let Some(dir) = &out.out_dir {
-                cargo_env.push(("OUT_DIR".into(), dir.to_string_lossy().into_owned()));
+                apply_build_env(&mut cargo_env, &[("OUT_DIR".into(), dir.to_string_lossy().into_owned())]);
             }
-            cargo_env.extend(out.rustc_env.iter().cloned());
+            apply_build_env(&mut cargo_env, &out.rustc_env);
             for c in &out.rustc_cfg {
                 env.add_rustc_cfg(c);
             }
@@ -2179,9 +2225,12 @@ fn resolved_setup(
             }
         }
         let mut deps = unit.deps.clone();
-        let mut memo: FxMap<PathBuf, Option<super::buildscript::Outputs>> = FxMap::default();
+        let mut memo: FxMap<BuildOutputKey, Option<super::buildscript::Outputs>> = FxMap::default();
+        #[cfg(not(feature = "exclusive-native"))]
         memo.insert(manifest_dir, selected_out);
-        fill_dep_build_outputs(&mut deps, &cache, client_env, &mut memo).map_err(code2)?;
+        #[cfg(feature = "exclusive-native")]
+        if let Some(plan) = &unit.build_script { memo.insert(plan.clone(), selected_out); }
+        fill_dep_build_outputs(&mut deps, &cache, req, &mut memo, build_outputs).map_err(code2)?;
         t.lap("build script outputs");
         // Cargo runs rustc from the workspace root, so `file!` shows member paths relative to it.
         front.client.shown_root = Some((graph.workspace_root.clone(), PathBuf::new()));
@@ -2192,7 +2241,7 @@ fn resolved_setup(
         (unit.target.src_path.clone(), root_text, ids, env, deps, unit.package.name.replace('-', "_"), cargo_env)
     } else {
         front.display_root = None;
-        let stem = key.krate.root.file_stem().and_then(|s| s.to_str()).unwrap_or("main").to_string();
+        let stem = key.krate.target_name.clone();
         let env = CfgEnv::new(&key.target_triple, &key.features, key.krate.test, key.profile);
         (key.krate.root.clone(), user_src.to_string(), crate_ids_default, env, Vec::new(), stem, Vec::new())
     };
@@ -2716,6 +2765,7 @@ struct CheckedRequest {
     timer: Timer,
     imported_dependencies: Vec<super::imports::Dependency>,
     imported_emission: Option<Box<dyn super::imports::Emission + 'static>>,
+    build_outputs: Vec<super::buildscript::Outputs>,
 }
 
 impl PreparedRequest<'_> {
@@ -2998,9 +3048,11 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
         t.lap("std load+splice");
     }
 
+    // Own generated-input leases until all checking and emission have finished.
+    let mut build_outputs = Vec::new();
     // Both front ends produce the same locals for the shared tail.
     let (map, mut changed, mut mention_only, mut const_fn_changed, fn_count, mode, fn_lines_all, body_hashes_all, resolved_tables) = if use_resolver {
-        match resolved_setup(req, front, caches, std_cache, &src, root_lexed, route_std_mods, crate_ids, &mut std_ranges, &mut std_routes, &mut std_methods, &mut t, &mut visits, reusable, imports) {
+        match resolved_setup(req, front, caches, std_cache, &src, root_lexed, route_std_mods, crate_ids, &mut std_ranges, &mut std_routes, &mut std_methods, &mut t, &mut visits, reusable, imports, &mut build_outputs) {
             Ok(x) => x,
             Err(resp) => return Preparation::finished(resp),
         }
@@ -4719,7 +4771,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
         program, results, reemit, map, source: src, path, work, fn_count, fn_lines_all, body_hashes_all,
         inst_ids, mode, check_fp, verified, reads_reused, reads_invalidated, reemitted, mixed, release,
         foreign, visits, timer: t,
-        imported_dependencies, imported_emission,
+        imported_dependencies, imported_emission, build_outputs,
     };
     Preparation::Ready(PreparedRequest { request: req, session, state: Some(state) })
 }
@@ -4729,6 +4781,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
         mut program, results, reemit, map, source: src, path, work, fn_count, fn_lines_all, body_hashes_all,
         inst_ids, mode, check_fp, verified, reads_reused, reads_invalidated, reemitted, mixed, release,
         foreign, visits, timer: mut t, imported_dependencies: _imported_dependencies, imported_emission,
+        build_outputs: _build_outputs,
     } = state;
     let results: Vec<_> = results.into_iter().map(|(body, diagnostics)| (body.map(|b| b.attach(&program)), diagnostics)).collect();
     let reemit: Vec<_> = reemit.into_iter().map(|(id, body)| (id, body.attach(&program))).collect();

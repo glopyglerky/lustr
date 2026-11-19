@@ -9429,6 +9429,8 @@ mod tests {
             build_check_cfgs: Vec::new(),
             features: Vec::new(),
             deps: Vec::new(),
+            #[cfg(feature = "exclusive-native")]
+            build_script: None,
         }
     }
 

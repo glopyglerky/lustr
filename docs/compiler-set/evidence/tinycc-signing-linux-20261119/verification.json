@@ -1,0 +1,30 @@
+{
+  "schema": "lustr-tinycc-signing-evidence-v1",
+  "date": "2026-11-19",
+  "base_commit": "26ce722faaee3903f05a15612b379d98104f932f",
+  "final_controls": 16,
+  "final_passed": true,
+  "platform": "Linux",
+  "darwin_execution": false,
+  "full_compiler_qualification": false,
+  "performance_claim": false,
+  "final_source_sha256": {
+    ".github/workflows/ci.yml": "e7153ed63717f940650dc1febfc29302425fb373ab964d68ca2eb0d160c41f95",
+    "compiler/native/scripts/build-tcc.sh": "46ae40af0fcfaf23a784cf9e40c4c0de8becda2c78b73b8cb28313017cbd9aca",
+    "tools/build-tinycc-pic.rs": "a74a9f987e79496825ac45f69298216ed863c6ec716c80b86dbabab5584d51c3",
+    "tools/apply-tinycc-signing.py": "a1782d5d48911b49168aa2562daa97f9eb021f0aeef6e4b5e2655dbdfadf15c7",
+    "tools/test-tinycc-signing.py": "5505c8870d15c04202f40659f80b35c844f12ace06934817639ca1d2d9a00548",
+    "upstream/tinycc-macho-signing.json": "267ab4a86786ac2baecc2e0102f319f6888456f427557f6b76624a6c4a623cde",
+    "upstream/tinycc-macho-signing.patch": "87d816a4ee3a54cb0c6aec5c5a2e89f0e884251869f09ec68a2a84cdc03398c9"
+  },
+  "constructor_binary_sha256": "3e7a2a4c0de2969b92a55dfa514307882b323cd757c32293b04812cdb6cf02bd",
+  "constructor_status": "All commands passed; fresh pinned Git archive beneath unrelated Git worktree; exact declared patch; normal -O2 plus -fPIC; real full-archive shared link passed.",
+  "final_patched_source_sha256": "ecc43dc9b263b0bc371203e7f5fa62afd3b4cb8802a46819356ba4bae153f44c",
+  "pristine_revision": "43c7708b85681a2fd4451c8a541af4494a8919b2",
+  "pristine_blob": "cee09fd7ca20adab626462fcba675f935f594219",
+  "pristine_status": "clean; unchanged after both constructor builds",
+  "initial_controls": 15,
+  "initial_limitation": "Initial helper-only controls did not model TinyCC's state-bound diagnostic macro. A later full translation-unit check exposed missing s1 (exit 1), retained in the archive. The final helper receives the existing TCCState, and the final gate compiles the actual patched tccmacho.c against the actual pinned declarations before helper execution. Initial controls are not evidence for the final source or a successful Darwin build.",
+  "archive_sha256": "0a4860e9ed7df226b8ef17ac7875e3775e044a3cf23ad8f0b7ed355f708f234b",
+  "archived_files": 166
+}

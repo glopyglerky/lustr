@@ -6,7 +6,7 @@
 //   panic_abort overflow_checks debug_assertions feature_count env_count offline locked build
 // followed by length-prefixed fields, each as "<byte len>\n<bytes>": file, out,
 // emit_c, then the crate selector (package id, manifest path, target kind,
-// target name, crate root, target triple), then one field per feature,
+// target name, explicit-target flag, crate root, target triple), then one field per feature,
 // then the client's view (see `Client`): the shown root path (len 0 for None),
 // and when the header's env count is not "-", that many name and value fields.
 // Length prefixes carry any byte a path can hold, including tabs and newlines; emit_c
@@ -52,6 +52,9 @@ pub struct CrateKey {
     pub manifest_path: Option<PathBuf>,
     pub target_kind: String,
     pub target_name: String,
+    /// Whether the caller named --bin or --lib. Otherwise Cargo target
+    /// identity is resolved uniquely from the requested canonical source.
+    pub target_explicit: bool,
     pub root: PathBuf,
     pub test: bool,
 }
@@ -128,6 +131,7 @@ impl SessionKey {
                 manifest_path: None,
                 target_kind: "bin".into(),
                 target_name: stem.into(),
+                target_explicit: false,
                 root: file.to_path_buf(),
                 test,
             },
@@ -146,11 +150,12 @@ impl SessionKey {
         let b = |x: bool| if x { "1" } else { "0" };
         let manifest = self.krate.manifest_path.as_ref().map_or_else(|| "-".to_string(), |p| p.to_string_lossy().into_owned());
         format!(
-            "pkg={} manifest={} {}:{} root={} test={} features=[{}] default_features={} all_features={} target={} panic_abort={} overflow_checks={} debug_assertions={} offline={} locked={}",
+            "pkg={} manifest={} {}:{} explicit_target={} root={} test={} features=[{}] default_features={} all_features={} target={} panic_abort={} overflow_checks={} debug_assertions={} offline={} locked={}",
             self.krate.package_id,
             manifest,
             self.krate.target_kind,
             self.krate.target_name,
+            b(self.krate.target_explicit),
             self.krate.root.display(),
             b(self.krate.test),
             self.features.join(","),
@@ -594,6 +599,7 @@ fn apply_dev_config(key: &mut SessionKey, file: &Path) {
 /// still the crate root: `lust check file.rs` keeps its meaning.
 fn session_key_for(file: &Path, flags: CrateFlags, net: CargoNet) -> SessionKey {
     let mut key = SessionKey::synthetic(file, false);
+    key.krate.target_explicit = flags.bin.is_some() || flags.lib;
     let mut features = flags.features;
     sort_features(&mut features);
     key.features = features;
@@ -951,6 +957,7 @@ pub fn encode(r: &Request) -> Vec<u8> {
     path_field(&mut out, s.krate.manifest_path.as_deref());
     put_field(&mut out, s.krate.target_kind.as_bytes());
     put_field(&mut out, s.krate.target_name.as_bytes());
+    put_field(&mut out, if s.krate.target_explicit { b"1" } else { b"0" });
     path_field(&mut out, Some(&s.krate.root));
     put_field(&mut out, s.target_triple.as_bytes());
     for f in &s.features {
@@ -993,6 +1000,11 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
     let manifest = get_field(r)?;
     let target_kind = text(get_field(r)?)?;
     let target_name = text(get_field(r)?)?;
+    let target_explicit = match get_field(r)?.as_slice() {
+        b"0" => false,
+        b"1" => true,
+        _ => return None,
+    };
     let root = path(get_field(r)?);
     let target_triple = text(get_field(r)?)?;
     // A feature count this large is a bad request, not a loop to run.
@@ -1029,6 +1041,7 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
                 manifest_path: if manifest.is_empty() { None } else { Some(path(manifest)) },
                 target_kind,
                 target_name,
+                target_explicit,
                 root,
                 test: f[5] == "1",
             },
@@ -1761,6 +1774,23 @@ mod tests {
         assert!(k.krate.manifest_path.is_none() && k.features.is_empty() && k.default_features && !k.all_features);
         assert_ne!(k, SessionKey::synthetic(Path::new("/tmp/x/main.rs"), true), "test target differs");
         assert_ne!(k, SessionKey::synthetic(Path::new("/tmp/x/other.rs"), false), "file differs");
+    }
+
+    #[test]
+    fn cargo_target_selector_fact_survives_the_wire_and_keys() {
+        let inferred = compile_req(&["check", "/tmp/selector/main.rs", "--manifest-path", "/tmp/selector/Cargo.toml"]);
+        let explicit = compile_req(&["check", "/tmp/selector/main.rs", "--manifest-path", "/tmp/selector/Cargo.toml", "--bin", "main"]);
+        assert!(!inferred.session.krate.target_explicit);
+        assert!(explicit.session.krate.target_explicit);
+        assert_ne!(inferred.session, explicit.session);
+        assert_ne!(inferred.session.describe(), explicit.session.describe());
+        for request in [inferred, explicit] {
+            let encoded = encode(&request);
+            let decoded = read_request(&mut std::io::Cursor::new(encoded)).unwrap();
+            assert_eq!(decoded.session, request.session);
+        }
+        let lib = compile_req(&["check", "/tmp/selector/lib.rs", "--lib"]);
+        assert!(lib.session.krate.target_explicit);
     }
 
     /// Two feature selections of one file are two session keys (the S6

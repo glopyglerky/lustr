@@ -1704,6 +1704,37 @@ index 0000000000000000000000000000000000000000..e69282e381bc07152cc7598f21f3162e
 +OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 +IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 +DEALINGS IN THE SOFTWARE.
+diff --git a/scripts/build-tcc.sh b/scripts/build-tcc.sh
+index eb75e17ae70d292986d148ac05abe04d7763cc44..8000683c5f550603297814516eef88925f6c4117 100755
+--- a/scripts/build-tcc.sh
++++ b/scripts/build-tcc.sh
+@@ -1,7 +1,7 @@
+ #!/usr/bin/env bash
+ # Builds the pinned tinycc (mob) into third_party/tcc. The lust build links its libtcc.a.
+ set -euo pipefail
+-TCC_COMMIT=43c7708
++TCC_COMMIT=43c7708b85681a2fd4451c8a541af4494a8919b2
+ root=$(cd "$(dirname "$0")/.." && pwd)
+ src=$root/third_party/tinycc
+ out=$root/third_party/tcc
+@@ -10,8 +10,17 @@ if [ ! -d "$src/.git" ]; then
+ fi
+ git -C "$src" fetch -q --depth 1 origin "$TCC_COMMIT" 2>/dev/null || true
+ git -C "$src" checkout -q "$TCC_COMMIT"
++git -C "$src" diff --exit-code -- . ':!tccmacho.c'
++# The pinned Mach-O signer interpolates paths into a shell command. Apply only
++# the separately declared, exact-source signing repair; do not change the pin.
++python3 "$root/../../tools/apply-tinycc-signing.py" "$src" --receipt "$src/.lustr-macho-signing.json"
+ cd "$src"
+ ./configure --prefix="$out" >/dev/null
+ make -j"$(getconf _NPROCESSORS_ONLN)" >/dev/null
+ make install >/dev/null
++mkdir -p "$out/share/licenses/tinycc"
++cp COPYING "$out/share/licenses/tinycc/COPYING"
++cp "$src/.lustr-macho-signing.json" "$out/share/licenses/tinycc/lustr-macho-signing.json"
++printf '%s\n' 'https://github.com/TinyCC/tinycc' "revision $TCC_COMMIT" \
++  'Declared Lustr Mach-O signing integration: lustr-macho-signing.json' > "$out/share/licenses/tinycc/SOURCE.txt"
+ echo "tcc $TCC_COMMIT installed in $out"
 diff --git a/scripts/difftest.sh b/scripts/difftest.sh
 index cf65ddb9a836f636251a190531a808f34846d4ce..3abd6746892424b43e861675cfeed7e47dd1b222 100755
 --- a/scripts/difftest.sh
@@ -4683,7 +4714,7 @@ index 136b1f4aa7efc99f8e5bd2b23446fad2578f1851..5a9cfb3f385dc3bbd827935e7afddde2
              // No daemon answered: start one for the next command, answer this one cold.
              maybe_autostart(&sock, &req.file, &core);
 diff --git a/src/daemon.rs b/src/daemon.rs
-index db807083aa56d24a804b47f7ffd31e33c563ad52..3c46323416db0741673fd48567a5dfecc719f21e 100644
+index db807083aa56d24a804b47f7ffd31e33c563ad52..a9b996f0c56562e8bab3c957b021aed137e32b49 100644
 --- a/src/daemon.rs
 +++ b/src/daemon.rs
 @@ -23,6 +23,10 @@
@@ -4801,7 +4832,25 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..3c46323416db0741673fd48567a5dfec
  }
  
  /// Deletes lust temp dirs and files from processes that are gone:
-@@ -864,13 +894,31 @@ fn compile_fresh(entry: &mut Entry, req: &Request) -> (Response, bool) {
+@@ -363,9 +393,17 @@ fn shutdown(sock: &Path, base: &Path, sessions: &HashMap<SessionKey, Entry>, why
+ /// replaced before the request is served. `env` is the request's client
+ /// env: build script records are checked and re-run in it.
+ fn refresh_key(key: &SessionKey, env: Option<&[(String, String)]>) -> u64 {
++    // Product scripts have one execution owner: the selected native unit's
++    // preparation. Running one here would duplicate failures across Entry::new,
++    // this per-request refresh, and output preparation. That preparation checks
++    // all script inputs before retained semantic reuse and leases its outputs
++    // through native emission. Cargo requests bypass whole-executable caching.
++    #[cfg(feature = "exclusive-native")]
++    let build_script = { let _ = env; 0u64 };
+     // Build script first: a stale record re-runs Cargo, which can
+     // create or update Cargo.lock, and the graph key must describe
+     // the graph as it stands after that run, not before it.
++    #[cfg(not(feature = "exclusive-native"))]
+     let build_script = match protocol::manifest_dir(key) {
+         Some(dir) => match crate::driver::buildscript::refresh(&dir, &crate::driver::cache::cache_dir(&key.krate.root), env) {
+             r @ crate::driver::buildscript::Refresh::Failed { .. } => {
+@@ -864,13 +902,31 @@ fn compile_fresh(entry: &mut Entry, req: &Request) -> (Response, bool) {
      }
  }
  
@@ -4837,7 +4886,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..3c46323416db0741673fd48567a5dfec
      if entry.recompute_next {
          entry.recompute_next = false;
          eprintln!("guard-check: recomputing {} in a fresh session (marked by a background mismatch)", req.file.display());
-@@ -879,7 +927,7 @@ fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Re
+@@ -879,7 +935,7 @@ fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Re
          return compile_fresh(entry, req).0;
      }
      let start = std::time::SystemTime::now();
@@ -4846,7 +4895,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..3c46323416db0741673fd48567a5dfec
          Ok(r) if r.code == 0 || r.code == 2 => r,
          Ok(r) if r.code == 3 && r.stderr.contains("function count mismatch") => {
              // The warm session's scan and Ast disagree on the fn list
-@@ -918,6 +966,28 @@ fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Re
+@@ -918,6 +974,28 @@ fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Re
      }
  }
  
@@ -4875,7 +4924,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..3c46323416db0741673fd48567a5dfec
  /// How many warm sessions the daemon keeps (`LUST_DAEMON_SESSIONS`,
  /// default 32, at least 1). Each distinct file or crate selection is one
  /// session, so a long run over many small programs (a probe sweep) made
-@@ -985,6 +1055,19 @@ fn log_stats(served: u64, sessions: usize) {
+@@ -985,6 +1063,19 @@ fn log_stats(served: u64, sessions: usize) {
  
  /// Serves requests until idle. Each crate selection (`SessionKey`) has its own session.
  pub fn serve(sock: &Path) -> ! {
@@ -4895,7 +4944,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..3c46323416db0741673fd48567a5dfec
      // Sessions load std once; a std or adapter source override must be
      // read fresh by every compile (see `protocol::source_override`).
      if let Some(var) = protocol::source_override() {
-@@ -1190,8 +1273,142 @@ pub fn serve(sock: &Path) -> ! {
+@@ -1190,8 +1281,142 @@ pub fn serve(sock: &Path) -> ! {
  mod tests {
      use super::*;
  
@@ -5039,7 +5088,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..3c46323416db0741673fd48567a5dfec
      }
  
      fn done(key: &SessionKey, seq: u64, served: u64, warm: Response, fresh: Response, dir: PathBuf) -> GuardDone {
-@@ -1610,6 +1827,12 @@ mod tests {
+@@ -1610,6 +1835,12 @@ mod tests {
      fn client_gone_sees_a_closed_peer_only() {
          let (ours, theirs) = std::os::unix::net::UnixStream::pair().unwrap();
          assert!(!client_gone(ours.as_raw_fd()));
@@ -5067,10 +5116,32 @@ index 8ca2afbab14918fd47873db9af4de91a790ae0a1..3984b5ed9a90d9bb6611789edcc8814a
                              v.hash(h);
                              suf.map(|s| s as u8).hash(h);
 diff --git a/src/driver/buildscript.rs b/src/driver/buildscript.rs
-index cf100a227987f3903e88c8cc9a5684db93dce243..fcbec2105af8d7ef89015c76b6b1cdedf44a02c8 100644
+index cf100a227987f3903e88c8cc9a5684db93dce243..8fb71d588ee9a5905ff5cb6eb540ecf1c5b614c3 100644
 --- a/src/driver/buildscript.rs
 +++ b/src/driver/buildscript.rs
-@@ -43,7 +43,7 @@ fn cargo_vars(env: ClientEnv) -> Vec<(String, String)> {
+@@ -1,4 +1,8 @@
+-// Build-script refresh checks (docs/ARCH.md section 1.1). Lust does not
++// Product host scripts use `native`: Cargo supplies an exact unit plan, the
++// ordinary native pipeline compiles the original script, and one owned run
++// publishes checked outputs. Legacy Cargo/rustc replay is non-product only.
++//
++// Upstream build-script refresh checks (docs/ARCH.md section 1.1). Lust does not
+ // compile `build.rs`; Cargo compiles and runs it (the probe's `cargo
+ // check`), and the driver reads the recorded output. A record is valid
+ // only while everything its run read still holds (`Record::holds`): the
+@@ -23,6 +27,11 @@ use crate::intern::FxHasher;
+ use std::hash::{Hash, Hasher};
+ use std::path::{Path, PathBuf};
+ 
++#[cfg(feature = "exclusive-native")]
++mod native;
++#[cfg(feature = "exclusive-native")]
++pub use native::outputs as outputs_native;
++
+ /// The env a build script check runs under: the requesting client's
+ /// whole env (`protocol::Client::env`), or None for this process's own
+ /// env (one-shot compiles, where this process is the client, and tests).
+@@ -43,7 +52,7 @@ fn cargo_vars(env: ClientEnv) -> Vec<(String, String)> {
      let keep = |k: &str| {
          (k.starts_with("CARGO_") && !k.starts_with("CARGO_TERM_") && k != "CARGO_MAKEFLAGS")
              || k.starts_with("RUSTC")
@@ -5079,7 +5150,7 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..fcbec2105af8d7ef89015c76b6b1cded
      };
      let mut vars: Vec<(String, String)> = match env {
          Some(env) => env.iter().filter(|(k, _)| keep(k)).cloned().collect(),
-@@ -69,7 +69,7 @@ pub struct BuildOutput {
+@@ -69,7 +78,7 @@ pub struct BuildOutput {
  /// Parses build script stdout into `BuildOutput`.
  pub fn parse_output(text: &str) -> BuildOutput {
      let mut out = BuildOutput::default();
@@ -5088,7 +5159,7 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..fcbec2105af8d7ef89015c76b6b1cded
          let Some(rest) = line.strip_prefix("cargo:") else { continue };
          let rest = rest.strip_prefix(':').unwrap_or(rest);
          let Some((key, value)) = rest.split_once('=') else { continue };
-@@ -90,7 +90,8 @@ pub fn parse_output(text: &str) -> BuildOutput {
+@@ -90,7 +99,8 @@ pub fn parse_output(text: &str) -> BuildOutput {
  
  /// One recorded build-script run: what its outputs depend on, re-checked
  /// per session, and the outputs consumers read. Stored as text lines in
@@ -5098,7 +5169,7 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..fcbec2105af8d7ef89015c76b6b1cded
  /// and `LBS2` the script's other sources, the manifests, a rerun-if-changed
  /// dir's files, Cargo's default package files, the setup and the OUT_DIR
  /// re-check); W-DRIVER
-@@ -357,7 +358,7 @@ impl Record {
+@@ -357,7 +367,7 @@ impl Record {
      /// fails to read back is a miss, never a wrong answer.
      fn encode(&self) -> Vec<u8> {
          let p = |p: &Path| esc(&p.to_string_lossy());
@@ -5107,7 +5178,7 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..fcbec2105af8d7ef89015c76b6b1cded
          s.push_str(&format!("script {}\n", p(&self.script)));
          for (path, h) in &self.sources {
              s.push_str(&format!("src {h} {}\n", p(path)));
-@@ -406,7 +407,7 @@ impl Record {
+@@ -406,7 +416,7 @@ impl Record {
      /// Reads bytes written by `encode`. None on any malformed line.
      fn decode(text: &str) -> Option<Record> {
          let mut lines = text.lines();
@@ -5116,7 +5187,7 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..fcbec2105af8d7ef89015c76b6b1cded
              return None;
          }
          let (mut script, mut setup, mut output_hash) = (None, None, None);
-@@ -543,6 +544,14 @@ impl Refresh {
+@@ -543,6 +553,14 @@ impl Refresh {
  /// check stays cheap. One record per manifest dir serves every client: a
  /// client whose `rerun-if-env-changed` values or Cargo vars differ from
  /// the record's re-runs the script, as Cargo would from its shell.
@@ -5131,7 +5202,7 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..fcbec2105af8d7ef89015c76b6b1cded
  pub fn refresh(manifest_dir: &Path, cache_dir: &Path, env: ClientEnv) -> Refresh {
      let Some(script) = build_script_for(manifest_dir) else { return Refresh::None };
      if let Some(rec) = fresh_record(manifest_dir, cache_dir, &script, env) {
-@@ -563,6 +572,7 @@ pub fn refresh(manifest_dir: &Path, cache_dir: &Path, env: ClientEnv) -> Refresh
+@@ -563,6 +581,7 @@ pub fn refresh(manifest_dir: &Path, cache_dir: &Path, env: ClientEnv) -> Refresh
  /// say), the script's compile is replayed: the same binary means the same
  /// run, so the record takes the new sources (and any var the compile now
  /// reads) and stands.
@@ -5139,7 +5210,7 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..fcbec2105af8d7ef89015c76b6b1cded
  fn fresh_record(manifest_dir: &Path, cache_dir: &Path, script: &Path, env: ClientEnv) -> Option<Record> {
      let path = record_path(cache_dir, manifest_dir);
      let mut rec = std::fs::read_to_string(&path).ok().and_then(|t| Record::decode(&t))?;
-@@ -611,6 +621,7 @@ fn source_hashes(mut sources: Vec<PathBuf>, script: &Path) -> Vec<(PathBuf, u64)
+@@ -611,6 +630,7 @@ fn source_hashes(mut sources: Vec<PathBuf>, script: &Path) -> Vec<(PathBuf, u64)
  /// vars Cargo set, and with rustc as Cargo gave it to the script when the
  /// compile named a bare `rustc`: the binary's hash, and the sources and
  /// vars the compile read (its dep-info). None when it fails.
@@ -5147,7 +5218,19 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..fcbec2105af8d7ef89015c76b6b1cded
  fn replay(c: &Compile, rustc: Option<&Path>, script: &Path, cache_dir: &Path, env: ClientEnv) -> Option<(u64, Vec<PathBuf>, Vec<String>)> {
      let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.subsec_nanos());
      let scratch = cache_dir.join(format!("buildscript-replay-{}-{nanos:x}", std::process::id()));
-@@ -680,6 +691,13 @@ pub struct Outputs {
+@@ -672,6 +692,11 @@ pub struct Outputs {
+     pub rustc_cfg: Vec<String>,
+     pub rustc_check_cfg: Vec<String>,
+     pub rustc_env: Vec<(String, String)>,
++    /// A native script's OUT_DIR cannot change while the consumer still reads
++    /// its generated inputs. The checked continuation owns this lease through
++    /// checking and emission; clones share the same lock, without reacquiring it.
++    #[cfg(feature = "exclusive-native")]
++    lease: Option<std::sync::Arc<std::fs::File>>,
+ }
+ 
+ /// The current outputs of the build script of `manifest_dir`: the
+@@ -680,6 +705,13 @@ pub struct Outputs {
  /// has no build script. An Err means a script exists but its run
  /// failed; the caller must not compile the crate without its outputs.
  /// `env` is the requesting client's env, as for `refresh`.
@@ -5161,7 +5244,7 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..fcbec2105af8d7ef89015c76b6b1cded
  pub fn outputs(manifest_dir: &Path, cache_dir: &Path, env: ClientEnv) -> Result<Option<Outputs>, String> {
      let Some(script) = build_script_for(manifest_dir) else { return Ok(None) };
      let rec = match fresh_record(manifest_dir, cache_dir, &script, env) {
-@@ -817,16 +835,55 @@ fn cargo_error(stderr: &str) -> String {
+@@ -817,16 +849,55 @@ fn cargo_error(stderr: &str) -> String {
      lines.join(" ")
  }
  
@@ -5219,7 +5302,7 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..fcbec2105af8d7ef89015c76b6b1cded
  fn run_through_cargo(manifest_dir: &Path, script: &Path, cache_dir: &Path, env: ClientEnv) -> Result<Record, String> {
      // Cargo decides script freshness by mtime; an input edited within
      // the same filesystem timestamp tick as the last run can look
-@@ -891,8 +948,7 @@ fn run_through_cargo(manifest_dir: &Path, script: &Path, cache_dir: &Path, env:
+@@ -891,8 +962,7 @@ fn run_through_cargo(manifest_dir: &Path, script: &Path, cache_dir: &Path, env:
      let Some(out_dir_path) = out_dir.filter(|d| !d.as_os_str().is_empty()) else {
          return Err("cargo check ran no build script for this manifest".to_string());
      };
@@ -5229,7 +5312,7 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..fcbec2105af8d7ef89015c76b6b1cded
      let parsed = parse_output(&text);
      // This package's script compile and run, as Cargo printed them.
      let printed = printed_commands(&stderr);
-@@ -903,7 +959,7 @@ fn run_through_cargo(manifest_dir: &Path, script: &Path, cache_dir: &Path, env:
+@@ -903,7 +973,7 @@ fn run_through_cargo(manifest_dir: &Path, script: &Path, cache_dir: &Path, env:
          printed.iter().find(|(vars, argv)| ours(vars) && argv.windows(2).any(|w| w[0] == "--crate-name" && w[1] == "build_script_build"));
      let run = printed.iter().find(|(vars, argv)| {
          ours(vars)
@@ -5238,7 +5321,7 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..fcbec2105af8d7ef89015c76b6b1cded
      });
      let rustc = run.and_then(|(vars, _)| vars.iter().find(|(k, _)| k == "RUSTC")).map(|(_, v)| PathBuf::from(v));
      let dep = compile.and_then(|(_, argv)| compile_dep_info(argv, script));
-@@ -960,6 +1016,43 @@ fn run_through_cargo(manifest_dir: &Path, script: &Path, cache_dir: &Path, env:
+@@ -960,6 +1030,43 @@ fn run_through_cargo(manifest_dir: &Path, script: &Path, cache_dir: &Path, env:
  mod tests {
      use super::*;
  
@@ -5282,7 +5365,7 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..fcbec2105af8d7ef89015c76b6b1cded
      /// Both directive spellings parse, and unrecorded keys are ignored.
      #[test]
      fn output_directives_parse() {
-@@ -1014,7 +1107,9 @@ mod tests {
+@@ -1014,7 +1121,9 @@ mod tests {
              output,
              compile: None,
          };
@@ -5293,7 +5376,7 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..fcbec2105af8d7ef89015c76b6b1cded
          assert_eq!(
              (back.sources.clone(), back.inputs.clone(), back.setup, back.output_hash),
              (rec.sources.clone(), rec.inputs.clone(), rec.setup, rec.output_hash)
-@@ -1022,6 +1117,7 @@ mod tests {
+@@ -1022,6 +1131,7 @@ mod tests {
          assert_eq!((back.out_dir.clone(), back.output.clone()), (rec.out_dir.clone(), rec.output.clone()));
          let cache = dir.join("cache");
          assert_eq!(back.holds(&cache, Some(&base)), Holds::All, "unchanged inputs hold");
@@ -5301,7 +5384,7 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..fcbec2105af8d7ef89015c76b6b1cded
          // Env values come from the client's env, not this process's.
          assert_eq!(back.holds(&cache, Some(&with("LUST_BS_TEST_ENV", "1"))), Holds::No, "a client with the var set is stale");
          assert_eq!(back.holds(&cache, Some(&with("LUST_BS_TEST_ENV", ""))), Holds::No, "set to empty is not unset");
-@@ -1049,6 +1145,7 @@ mod tests {
+@@ -1049,6 +1159,7 @@ mod tests {
      /// re-runs exactly when something it read changed, and only then. The
      /// script appends a line to a log at each run.
      #[test]
@@ -5309,6 +5392,1403 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..fcbec2105af8d7ef89015c76b6b1cded
      fn script_reruns_when_what_it_read_changes() {
          let root = std::env::temp_dir().join(format!("lust-buildscript-cargo-{}", std::process::id()));
          let _ = std::fs::remove_dir_all(&root);
+diff --git a/src/driver/buildscript/native.rs b/src/driver/buildscript/native.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..338e9f3e0c0ce5fca9dd2465d2fff6594eda8549
+--- /dev/null
++++ b/src/driver/buildscript/native.rs
+@@ -0,0 +1,1391 @@
++//! Cargo-planned host scripts compiled by the ordinary native pipeline.
++//!
++//! The planner supplies the original host unit, not a probe result. Only this
++//! module owns its compile/run attempt. Daemon routing never executes scripts.
++//! Old Cargo/rustc replay records are deliberately not accepted here.
++use super::*;
++use crate::driver::{Cmd, Preparation, Request, Session, SessionKey};
++use crate::resolve::cargo::BuildScriptUnit;
++use std::collections::{BTreeMap, BTreeSet};
++use std::fs::OpenOptions;
++use std::io::Write;
++use std::process::{Command, Stdio};
++use std::sync::Arc;
++
++const MAGIC: &str = "LBS-native-1\n";
++
++fn plan_key(plan: &BuildScriptUnit) -> u64 {
++    let mut h = FxHasher::default();
++    MAGIC.hash(&mut h);
++    plan.hash(&mut h);
++    // Reuse the native code generator's settings identity. Arbitrary LUST_*
++    // variables may be script runtime inputs (the upstream histories use
++    // LUST_SCEN_*); their changes must not recompile an unchanged host unit.
++    // This request uses TinyCC, cc=false, debug=false and no emitted-C mode.
++    static COMPILER: std::sync::OnceLock<u64> = std::sync::OnceLock::new();
++    COMPILER
++        .get_or_init(|| {
++            let mut h = FxHasher::default();
++            crate::driver::cache::compiler_id().hash(&mut h);
++            crate::driver::release_c::codegen_key(crate::driver::release_c::on(false, false), false, false).hash(&mut h);
++            for name in ["LUST_PGO_COPIES", "LUST_PGO_COPY_MIN"] {
++                (name, std::env::var_os(name)).hash(&mut h);
++            }
++            h.finish()
++        })
++        .hash(&mut h);
++    if crate::driver::release_c::on(false, false) {
++        if let Some(path) = std::env::var_os("LUST_PGO_COPIES").filter(|p| p != "*") {
++            file_hash(Path::new(&path)).hash(&mut h);
++        }
++    }
++    h.finish()
++}
++
++fn env_value(value: Option<&str>) -> String {
++    value.map_or_else(|| "N".to_string(), |v| format!("S{v}"))
++}
++
++fn compile_env(plan: &BuildScriptUnit, client: ClientEnv) -> Result<Vec<(String, String)>, String> {
++    let mut env: BTreeMap<_, _> = client.map_or_else(|| std::env::vars().collect(), |e| e.iter().cloned().collect());
++    env.extend(plan.cargo_env.iter().cloned());
++    let executable = std::env::current_exe().map_err(|e| format!("cannot locate native toolchain: {e}"))?;
++    env.insert("RUSTC".into(), executable.with_file_name("rustc").to_string_lossy().into_owned());
++    env.insert("CARGO".into(), executable.with_file_name("cargo").to_string_lossy().into_owned());
++    Ok(env.into_iter().collect())
++}
++
++fn job_count(client: ClientEnv) -> Result<usize, String> {
++    match client_var(client, "CARGO_BUILD_JOBS").filter(|value| !value.is_empty()) {
++        Some(value) => value
++            .parse::<usize>()
++            .ok()
++            .filter(|count| *count > 0)
++            .ok_or_else(|| "native build-script integration currently represents only positive numeric Cargo job counts".into()),
++        None => Ok(std::thread::available_parallelism().map_or(1, usize::from)),
++    }
++}
++
++fn runtime_env(plan: &BuildScriptUnit, client: ClientEnv, out_dir: &Path) -> Result<Vec<(String, String)>, String> {
++    let jobs = job_count(client)?;
++    if client_var(client, "CARGO_MAKEFLAGS").is_some_and(|v| !v.is_empty()) {
++        return Err("native build-script integration does not yet transfer a client jobserver".into());
++    }
++    let mut env: BTreeMap<_, _> = client.map_or_else(|| std::env::vars().collect(), |e| e.iter().cloned().collect());
++    // Cargo adds crate/bin names only to the compiler command. At script run
++    // time a caller's versions (and inactive cfg/feature entries) stay inherited.
++    env.extend(plan.cargo_env.iter().filter(|(name, _)| !matches!(name.as_str(), "CARGO_CRATE_NAME" | "CARGO_BIN_NAME")).cloned());
++    let target = if plan.target_triple.is_empty() { crate::protocol::host_triple() } else { &plan.target_triple };
++    let cfg = crate::resolve::cfg::CfgEnv::new(target, &[], false, plan.target_profile);
++    for flag in cfg.flags {
++        env.insert(format!("CARGO_CFG_{}", flag.to_uppercase()), String::new());
++    }
++    let mut pairs: BTreeMap<String, Vec<String>> = BTreeMap::new();
++    for (key, value) in cfg.pairs {
++        pairs.entry(key).or_default().push(value);
++    }
++    for (key, mut values) in pairs {
++        values.sort();
++        values.dedup();
++        env.insert(format!("CARGO_CFG_{}", key.to_uppercase()), values.join(","));
++    }
++    for feature in &plan.target_features {
++        env.insert(format!("CARGO_FEATURE_{}", feature.replace('-', "_").to_uppercase()), "1".into());
++    }
++    let mut features = plan.target_features.clone();
++    features.sort();
++    features.dedup();
++    env.insert("CARGO_CFG_FEATURE".into(), features.join(","));
++    let executable = std::env::current_exe().map_err(|e| format!("cannot locate native toolchain: {e}"))?;
++    let compiler = executable.with_file_name("rustc");
++    let cargo = executable.with_file_name("cargo");
++    if !compiler.is_file() || !cargo.is_file() {
++        return Err("native build-script integration needs the installed Lustr compiler and Cargo entries".into());
++    }
++    env.extend([
++        ("HOST".into(), crate::protocol::host_triple().into()),
++        ("TARGET".into(), target.into()),
++        ("OUT_DIR".into(), out_dir.to_string_lossy().into_owned()),
++        ("OPT_LEVEL".into(), plan.target_opt_level.clone()),
++        ("PROFILE".into(), "debug".into()),
++        ("DEBUG".into(), plan.target_debug.to_string()),
++        ("NUM_JOBS".into(), jobs.to_string()),
++        ("RUSTC".into(), compiler.to_string_lossy().into_owned()),
++        ("CARGO".into(), cargo.to_string_lossy().into_owned()),
++        ("CARGO_ENCODED_RUSTFLAGS".into(), String::new()),
++    ]);
++    Ok(env.into_iter().collect())
++}
++
++struct CompileProof {
++    command: Compile,
++    sources: Vec<(PathBuf, u64)>,
++    absent: Vec<PathBuf>,
++}
++
++struct NativeRecord {
++    record: Record,
++    runtime_reusable: bool,
++    absent: Vec<PathBuf>,
++    source_times: Vec<(PathBuf, [u8; 13])>,
++}
++
++fn read_record(path: &Path) -> Option<NativeRecord> {
++    let text = std::fs::read_to_string(path).ok()?;
++    let body = text.strip_prefix(MAGIC)?;
++    let (header, body) = body.split_once("\nrecord\n")?;
++    let mut header = header.lines();
++    let reusable = header.next()?;
++    let runtime_reusable = match reusable {
++        "runtime-reusable=1" => true,
++        "runtime-reusable=0" => false,
++        _ => return None,
++    };
++    let mut absent = Vec::new();
++    let mut rerun_paths = Vec::new();
++    let mut rerun_env = Vec::new();
++    let mut source_times = Vec::new();
++    for line in header {
++        let (kind, value) = line.split_once(' ')?;
++        let value = unesc(value);
++        match kind {
++            "absent" => absent.push(PathBuf::from(value)),
++            "rerun-path" => rerun_paths.push(value),
++            "rerun-env" => rerun_env.push(value),
++            "source-time" => {
++                let (stamp, path) = value.split_once(' ')?;
++                if stamp.len() != 26 || !stamp.is_ascii() {
++                    return None;
++                }
++                let mut bytes = [0; 13];
++                for (index, byte) in bytes.iter_mut().enumerate() {
++                    *byte = u8::from_str_radix(&stamp[index * 2..index * 2 + 2], 16).ok()?;
++                }
++                source_times.push((PathBuf::from(path), bytes));
++            }
++            _ => return None,
++        }
++    }
++    let mut record = Record::decode(&format!("LBS5\n{body}"))?;
++    record.output.rerun_if_changed = rerun_paths;
++    record.output.rerun_if_env_changed = rerun_env;
++    (record.rustc.is_none() && record.compile.is_some()).then_some(NativeRecord { record, runtime_reusable, absent, source_times })
++}
++
++fn write_record(
++    path: &Path,
++    record: &Record,
++    runtime_reusable: bool,
++    absent: &[PathBuf],
++    source_times: &[(PathBuf, [u8; 13])],
++) -> Result<(), String> {
++    let encoded = record.encode();
++    let mut bytes = MAGIC.as_bytes().to_vec();
++    bytes.extend_from_slice(if runtime_reusable { b"runtime-reusable=1\n" } else { b"runtime-reusable=0\n" });
++    for path in absent {
++        bytes.extend_from_slice(format!("absent {}\n", esc(&path.to_string_lossy())).as_bytes());
++    }
++    for path in &record.output.rerun_if_changed {
++        bytes.extend_from_slice(format!("rerun-path {}\n", esc(path)).as_bytes());
++    }
++    for name in &record.output.rerun_if_env_changed {
++        bytes.extend_from_slice(format!("rerun-env {}\n", esc(name)).as_bytes());
++    }
++    for (path, time) in source_times {
++        let stamp: String = time.iter().map(|byte| format!("{byte:02x}")).collect();
++        bytes.extend_from_slice(format!("source-time {stamp} {}\n", esc(&path.to_string_lossy())).as_bytes());
++    }
++    bytes.extend_from_slice(b"record\n");
++    bytes.extend_from_slice(encoded.strip_prefix(b"LBS5\n").expect("record format"));
++    let temporary = temporary_path(path, "record");
++    let mut created = false;
++    let result = (|| -> std::io::Result<()> {
++        let mut file = OpenOptions::new().write(true).create_new(true).open(&temporary)?;
++        created = true;
++        file.write_all(&bytes)?;
++        file.sync_all()?;
++        std::fs::rename(&temporary, path)
++    })();
++    if result.is_err() && created {
++        let _ = std::fs::remove_file(&temporary);
++    }
++    result.map_err(|e| format!("cannot publish native build-script record: {e}"))
++}
++
++fn temporary_path(path: &Path, kind: &str) -> PathBuf {
++    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
++    let sequence = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
++    path.with_extension(format!("{kind}-{}-{sequence}.pending", std::process::id()))
++}
++
++/// Unlike the legacy recorder, an unreadable or missing output is not an empty
++/// successful generation. Symlink outputs require a separate represented input
++/// contract; following one here could escape the leased output directory.
++fn checked_output_hash(output: &BuildOutput, directory: &Path) -> Result<u64, String> {
++    let mut paths = vec![directory.to_path_buf()];
++    let mut files = Vec::new();
++    let mut directories = Vec::new();
++    while let Some(path) = paths.pop() {
++        let metadata =
++            std::fs::symlink_metadata(&path).map_err(|e| format!("cannot inspect build-script output {}: {e}", path.display()))?;
++        if metadata.file_type().is_symlink() {
++            return Err("native build-script integration does not yet represent symlink outputs".into());
++        }
++        if metadata.is_dir() {
++            directories.push(path.clone());
++            for entry in std::fs::read_dir(&path).map_err(|e| format!("cannot read build-script output directory: {e}"))? {
++                paths.push(entry.map_err(|e| format!("cannot read build-script output entry: {e}"))?.path());
++            }
++        } else if metadata.is_file() {
++            let bytes = std::fs::read(&path).map_err(|e| format!("cannot read build-script output {}: {e}", path.display()))?;
++            files.push((path, bytes));
++        } else {
++            return Err("native build-script integration requires ordinary output files".into());
++        }
++    }
++    files.sort_by(|left, right| left.0.cmp(&right.0));
++    directories.sort();
++    let mut cfg = output.rustc_cfg.clone();
++    cfg.sort();
++    let mut check_cfg = output.rustc_check_cfg.clone();
++    check_cfg.sort();
++    let mut env = output.rustc_env.clone();
++    env.sort();
++    let mut parts = vec![b"native-outputs-v2".to_vec(), format!("{cfg:?}{check_cfg:?}{env:?}").into_bytes()];
++    for path in directories {
++        parts.push(b"directory".to_vec());
++        parts.push(path.strip_prefix(directory).expect("output descendant").as_os_str().as_encoded_bytes().to_vec());
++    }
++    for (path, bytes) in files {
++        parts.push(b"file".to_vec());
++        parts.push(path.strip_prefix(directory).expect("output descendant").as_os_str().as_encoded_bytes().to_vec());
++        parts.push(bytes);
++    }
++    Ok(hash_parts(&parts.iter().map(Vec::as_slice).collect::<Vec<_>>()))
++}
++
++fn source_holds(record: &Record) -> bool {
++    !record.sources.is_empty() && record.sources.iter().all(|(path, hash)| path.is_file() && file_hash(path) == *hash)
++}
++
++fn absent_holds(paths: &[PathBuf]) -> bool {
++    paths.iter().all(|path| !path.is_file())
++}
++
++fn compile_holds(record: &Record, plan: &BuildScriptUnit, key: u64, binary: &Path, env: &[(String, String)]) -> bool {
++    record.script == plan.script
++        && record.setup == key
++        && source_holds(record)
++        && record.compile.as_ref().is_some_and(|c| {
++            c.cwd == plan.manifest_dir
++                && c.argv == ["native-v1".to_string(), binary.to_string_lossy().into_owned()]
++                && binary.is_file()
++                && file_hash(binary) == c.bin
++                && c.vars.iter().all(|(name, value)| *value == env_value(env.iter().find(|(k, _)| k == name).map(|(_, v)| v.as_str())))
++        })
++}
++
++fn observe_source_times(sources: &[(PathBuf, u64)]) -> Option<Vec<(PathBuf, [u8; 13])>> {
++    sources.iter().map(|(path, _)| Some((path.clone(), modified_stamp(&std::fs::metadata(path).ok()?)?))).collect()
++}
++
++fn source_times_hold(stamps: &[(PathBuf, [u8; 13])], sources: &[(PathBuf, u64)]) -> bool {
++    stamps.len() == sources.len()
++        && stamps.iter().zip(sources).all(|((path, expected), (source, _))| {
++            path == source && std::fs::metadata(path).ok().and_then(|metadata| modified_stamp(&metadata)) == Some(*expected)
++        })
++}
++
++fn run_holds(native: &NativeRecord, cache: &Path, client: ClientEnv, directory: &Path) -> bool {
++    let record = &native.record;
++    record.env_inputs.iter().all(|(name, value)| client_var(client, name) == *value)
++        // Host source dependencies are implicit rerun inputs even when the
++        // script prints only an environment directive. Their unchanged bytes
++        // still reuse compiled code; changed timestamps rerun that code.
++        && source_times_hold(&native.source_times, &record.sources)
++        && record.inputs.iter().all(|input| current_input_hash(input, cache).is_ok_and(|hash| input.hash == hash))
++        && record.out_dir.as_deref() == Some(directory)
++        && checked_output_hash(&record.output, directory).is_ok_and(|hash| hash == record.output_hash)
++}
++
++fn compile_script(plan: &BuildScriptUnit, directory: &Path, binary: &Path, env: Vec<(String, String)>) -> Result<CompileProof, String> {
++    for tool in ["RUSTC", "CARGO"] {
++        if !env.iter().any(|(name, value)| name == tool && Path::new(value).is_file()) {
++            return Err("native build-script compilation needs the installed Lustr tool entries".into());
++        }
++    }
++    let original = std::fs::read_to_string(&plan.script).map_err(|e| format!("cannot read build script: {e}"))?;
++    let mut key = SessionKey::synthetic(&plan.script, false);
++    key.krate.package_id = format!("native-host:{}", plan.package_id);
++    key.krate.target_name = plan.crate_name.clone();
++    key.krate.target_explicit = true;
++    key.features = plan.features.clone();
++    key.target_triple = crate::protocol::host_triple().into();
++    key.profile = plan.host_profile;
++    let temporary = temporary_path(binary, "host");
++    let request = Request {
++        cmd: Cmd::Build,
++        session: key.clone(),
++        file: plan.script.clone(),
++        out: temporary.clone(),
++        json: false,
++        timings: false,
++        debug: false,
++        emit_c: None,
++        max_errors: 0,
++        run_args: None,
++        harness: false,
++        cc: false,
++        client: crate::protocol::Client {
++            env: Some(env.clone()),
++            shown: Some(plan.script.strip_prefix(&plan.workspace_root).unwrap_or(&plan.script).to_path_buf()),
++        },
++    };
++    let mut session = Session::new(directory.join("native-state"), false, key);
++    let mut absent = Vec::new();
++    let response = match crate::driver::prepare(&request, &mut session) {
++        Preparation::Ready(prepared) => {
++            if !prepared.source().starts_with(&original) {
++                return Err("build-script source changed while native preparation read it".into());
++            }
++            // Use the ordinary resolver's checked negative lookups. Creating
++            // the other candidate for `mod name;` must invalidate this host
++            // executable even when every previously read source is unchanged.
++            if let Some(tables) = &prepared.program().resolved {
++                absent = tables.module_alts.clone();
++            }
++            prepared.emit()
++        }
++        Preparation::Complete(response)
++        | Preparation::Rejected(response)
++        | Preparation::Failed(response)
++        | Preparation::IntegrationIncomplete(response) => response,
++    };
++    if response.code != 0 || response.ran || !temporary.is_file() {
++        let _ = std::fs::remove_file(&temporary);
++        return Err(format!("native build-script compilation failed: {}", response.stderr));
++    }
++    let observed = (|| -> Result<(Vec<(PathBuf, u64)>, Vec<(String, String)>), String> {
++        if std::fs::read_to_string(&plan.script).ok().as_deref() != Some(original.as_str()) {
++            return Err("build-script source changed during native compilation".into());
++        }
++        let mut sources = BTreeMap::from([(plan.script.clone(), hash_parts(&[original.as_bytes()]))]);
++        let map = &session.front.map;
++        for id in 0..map.file_count() {
++            let id = crate::diag::FileId(id as u32);
++            let path = PathBuf::from(map.path(id));
++            if path == plan.script {
++                continue;
++            }
++            let text =
++                std::fs::read_to_string(&path).map_err(|e| format!("cannot bind native build-script source {}: {e}", path.display()))?;
++            if crate::diag::text_hash(&text) != map.text_hash(id) {
++                return Err("build-script source changed during native compilation".into());
++            }
++            sources.insert(path, hash_parts(&[text.as_bytes()]));
++        }
++        let mut reads = BTreeMap::new();
++        for chunk in &session.front.chunks {
++            if crate::expand::deps_stale(&chunk.expand_deps, &session.front.client) {
++                return Err("build-script expansion input changed during native compilation".into());
++            }
++            for dep in &chunk.expand_deps {
++                match dep {
++                    crate::expand::Dep::File { path, hash } => {
++                        let bytes = std::fs::read(path).map_err(|e| format!("cannot bind build-script expansion input: {e}"))?;
++                        let mut observed = FxHasher::default();
++                        bytes.hash(&mut observed);
++                        if observed.finish() != *hash {
++                            return Err("build-script expansion input changed during native compilation".into());
++                        }
++                        sources.insert(path.clone(), hash_parts(&[&bytes]));
++                    }
++                    crate::expand::Dep::Env { name, value } => {
++                        reads.insert(name.clone(), env_value(value.as_deref()));
++                    }
++                    _ => {}
++                }
++            }
++        }
++        Ok((sources.into_iter().collect(), reads.into_iter().collect()))
++    })();
++    let (sources, vars) = match observed {
++        Ok(reads) => reads,
++        Err(error) => {
++            let _ = std::fs::remove_file(&temporary);
++            return Err(error);
++        }
++    };
++    if !absent_holds(&absent) {
++        let _ = std::fs::remove_file(&temporary);
++        return Err("build-script module lookup changed during native compilation".into());
++    }
++    std::fs::rename(&temporary, binary).map_err(|e| format!("cannot publish native build-script executable: {e}"))?;
++    Ok(CompileProof {
++        command: Compile {
++            cwd: plan.manifest_dir.clone(),
++            vars,
++            argv: vec!["native-v1".into(), binary.to_string_lossy().into_owned()],
++            bin: file_hash(binary),
++        },
++        sources,
++        absent,
++    })
++}
++
++/// Pinned Rust `rustc_interface::interface::parse_cfg` requires one name,
++/// optionally one string literal, and EOF. Reuse the native lexer for that
++/// grammar, but admit only the custom forms the downstream cfg service can
++/// preserve. Its existing string consumer does not decode escaped/raw values
++/// or alter the separately owned Cargo feature/test/builtin configuration.
++fn cfg_directive(kind: &str, value: &str) -> Result<String, String> {
++    use crate::lexer::Tok;
++    let unsupported = || format!("native build-script integration does not yet represent `{kind}={value}`");
++    let interner = crate::intern::Interner::default();
++    let lexed = crate::lexer::lex(value, crate::diag::FileId(0), 0, &interner).map_err(|_| unsupported())?;
++    let tokens: Vec<_> = lexed.tokens.iter().map(|token| token.tok).collect();
++    let custom = |symbol| {
++        let name = interner.get(symbol);
++        if crate::resolve::cfg::KNOWN_CFG_NAMES.contains(&name)
++            || crate::resolve::cfg::UNSTABLE_CFG_NAMES.contains(&name)
++            || matches!(name, "proc_macro" | "doc" | "doctest")
++        {
++            return Err(format!(
++                "native build-script integration does not yet represent overriding builtin or separately owned cfg `{name}`"
++            ));
++        }
++        Ok(name.to_string())
++    };
++    match (kind, tokens.as_slice()) {
++        ("rustc-cfg", [Tok::Ident(symbol, false), Tok::Eof]) => {
++            let name = custom(*symbol)?;
++            if value.trim() != name {
++                return Err(unsupported());
++            }
++            Ok(name)
++        }
++        ("rustc-cfg", [Tok::Ident(symbol, false), Tok::Eq, Tok::Str(index, _), Tok::Eof]) => {
++            let name = custom(*symbol)?;
++            let literal = &lexed.strings[*index as usize];
++            if literal.contains(['"', '\\', '\n', '\r', '\0']) {
++                return Err(unsupported());
++            }
++            let quoted = format!("\"{literal}\"");
++            let (written_name, written_value) = value.split_once('=').ok_or_else(unsupported)?;
++            if written_name.trim() != name || written_value.trim() != quoted {
++                return Err(unsupported());
++            }
++            Ok(format!("{name}={quoted}"))
++        }
++        ("rustc-check-cfg", [Tok::Ident(cfg, false), Tok::LParen, Tok::Ident(symbol, false), Tok::RParen, Tok::Eof])
++            if interner.get(*cfg) == "cfg" =>
++        {
++            let name = custom(*symbol)?;
++            let canonical = format!("cfg({name})");
++            if value.chars().filter(|c| !c.is_whitespace()).collect::<String>() != canonical {
++                return Err(unsupported());
++            }
++            Ok(canonical)
++        }
++        _ => Err(unsupported()),
++    }
++}
++
++fn directives(bytes: &[u8]) -> Result<BuildOutput, String> {
++    let mut text = String::new();
++    for raw in bytes.split(|b| *b == b'\n') {
++        let line = match std::str::from_utf8(raw) {
++            Ok(line) => line.trim(),
++            Err(_) => {
++                let raw = raw.trim_ascii_start();
++                if raw.starts_with(b"cargo:") {
++                    return Err("non-UTF8 native build-script directive".into());
++                }
++                continue;
++            }
++        };
++        let Some(rest) = line.strip_prefix("cargo:") else { continue };
++        let rest = rest.strip_prefix(':').unwrap_or(rest);
++        let Some((key, value)) = rest.split_once('=') else {
++            return Err("malformed build-script directive".into());
++        };
++        if !matches!(key, "rerun-if-changed" | "rerun-if-env-changed" | "rustc-cfg" | "rustc-check-cfg" | "rustc-env") {
++            return Err(format!("native build-script integration does not yet represent `{key}`"));
++        }
++        if value.contains('\0') || (key == "rustc-env" && value.split_once('=').is_none_or(|(name, _)| name.is_empty())) {
++            return Err("malformed build-script directive value".into());
++        }
++        if matches!(key, "rustc-cfg" | "rustc-check-cfg") {
++            text.push_str(&format!("cargo::{key}={}", cfg_directive(key, value)?));
++        } else {
++            text.push_str(line);
++        }
++        text.push('\n');
++    }
++    let mut output = parse_output(&text);
++    // Command environments use the final assignment to each name. Do not let
++    // reordering duplicate directives keep an old effective output hash.
++    output.rustc_env = output.rustc_env.into_iter().collect::<BTreeMap<_, _>>().into_iter().collect();
++    Ok(output)
++}
++
++fn input_path(path: &Path) -> Result<PathBuf, String> {
++    use std::path::Component;
++    if !path.is_absolute() {
++        return Err("native build-script input is not absolute".into());
++    }
++    ordinary_input_path(path)?;
++    let mut clean = PathBuf::new();
++    for component in path.components() {
++        match component {
++            Component::ParentDir => {
++                clean.pop();
++            }
++            Component::CurDir => {}
++            other => clean.push(other.as_os_str()),
++        }
++    }
++    Ok(clean)
++}
++
++/// Keep the bytes observed before an execution. Filesystem timestamps are not
++/// a before/after proof: an in-run write can share a clock tick with the start,
++/// and the unchanged upstream edit fixtures deliberately use future mtimes.
++/// The package tree lets newly declared local inputs use that same snapshot.
++/// Excluded subtrees or first-time external inputs remain explicit gaps.
++#[derive(Default)]
++struct InputTree {
++    root: PathBuf,
++    files: BTreeMap<PathBuf, u64>,
++    directories: BTreeMap<PathBuf, [u8; 13]>,
++    unavailable: BTreeSet<PathBuf>,
++    excluded: BTreeSet<PathBuf>,
++}
++
++// Cargo's declared inputs expose modification time, including future values.
++// Bind equality of the already-read observation, never a wall-clock cutoff.
++fn modified_stamp(metadata: &std::fs::Metadata) -> Option<[u8; 13]> {
++    let observed = metadata.modified().ok()?.duration_since(std::time::UNIX_EPOCH);
++    let before_epoch = observed.is_err();
++    let duration = observed.unwrap_or_else(|error| error.duration());
++    let mut bytes = [0; 13];
++    bytes[0] = u8::from(before_epoch);
++    bytes[1..9].copy_from_slice(&duration.as_secs().to_le_bytes());
++    bytes[9..13].copy_from_slice(&duration.subsec_nanos().to_le_bytes());
++    Some(bytes)
++}
++
++impl InputTree {
++    fn capture(root: &Path, package_cache: Option<&Path>) -> Self {
++        let mut tree = Self { root: root.to_path_buf(), ..Default::default() };
++        let mut paths = vec![root.to_path_buf()];
++        while let Some(path) = paths.pop() {
++            let metadata = match std::fs::symlink_metadata(&path) {
++                Ok(metadata) => metadata,
++                Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
++                Err(_) => {
++                    tree.unavailable.insert(path);
++                    continue;
++                }
++            };
++            if let Some(cache) = package_cache.filter(|_| path != root) {
++                let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
++                if matches!(name, ".git" | ".hg" | ".svn")
++                    || name.starts_with(".lust")
++                    || path == cache
++                    || metadata.is_dir() && (path.join("CACHEDIR.TAG").exists() || path.join("Cargo.toml").exists())
++                {
++                    tree.excluded.insert(path);
++                    continue;
++                }
++            }
++            if metadata.file_type().is_symlink() {
++                tree.unavailable.insert(path);
++            } else if metadata.is_file() {
++                let Some(modified) = modified_stamp(&metadata) else {
++                    tree.unavailable.insert(path);
++                    continue;
++                };
++                match std::fs::read(&path) {
++                    Ok(bytes) => {
++                        tree.files.insert(path, hash_parts(&[b"native-input-file", &modified, &bytes]));
++                    }
++                    Err(_) => {
++                        tree.unavailable.insert(path);
++                    }
++                }
++            } else if metadata.is_dir() {
++                let Some(modified) = modified_stamp(&metadata) else {
++                    tree.unavailable.insert(path);
++                    continue;
++                };
++                tree.directories.insert(path.clone(), modified);
++                match std::fs::read_dir(&path) {
++                    Ok(entries) => {
++                        for entry in entries {
++                            match entry {
++                                Ok(entry) => paths.push(entry.path()),
++                                Err(_) => {
++                                    tree.unavailable.insert(path.clone());
++                                }
++                            }
++                        }
++                    }
++                    Err(_) => {
++                        tree.unavailable.insert(path);
++                    }
++                }
++            } else {
++                tree.unavailable.insert(path);
++            }
++        }
++        tree
++    }
++
++    fn hash(&self, path: &Path, package: bool) -> Result<u64, String> {
++        if !path.starts_with(&self.root) {
++            return Err(format!("native build-script integration has no pre-execution snapshot for external input {}", path.display()));
++        }
++        let intersects = |other: &PathBuf| path.starts_with(other) || other.starts_with(path);
++        if self.unavailable.iter().any(intersects) || (!package && self.excluded.iter().any(intersects)) {
++            return Err(format!("native build-script input is outside the captured ordinary file tree: {}", path.display()));
++        }
++        if let Some(hash) = self.files.get(path) {
++            return Ok(*hash);
++        }
++        if !self.directories.contains_key(path) {
++            return Ok(hash_parts(&[b"native-input-missing"]));
++        }
++        let mut parts = vec![b"native-directory-input-v3".to_vec()];
++        for (directory, modified) in self.directories.iter().filter(|(directory, _)| directory.starts_with(path)) {
++            parts.push(b"directory".to_vec());
++            parts.push(directory.strip_prefix(path).expect("snapshot descendant").as_os_str().as_encoded_bytes().to_vec());
++            parts.push(modified.to_vec());
++        }
++        for (file, hash) in self.files.iter().filter(|(file, _)| file.starts_with(path)) {
++            parts.push(b"file".to_vec());
++            parts.push(file.strip_prefix(path).expect("snapshot descendant").as_os_str().as_encoded_bytes().to_vec());
++            parts.push(hash.to_le_bytes().to_vec());
++        }
++        Ok(hash_parts(&parts.iter().map(Vec::as_slice).collect::<Vec<_>>()))
++    }
++}
++
++fn ordinary_input_path(path: &Path) -> Result<(), String> {
++    // A changed ancestor must not turn an ordinary recorded path into an
++    // unobserved symlink traversal, even if its destination has equal bytes.
++    // Check the written traversal before removing '..': link/../file need
++    // not mean the same file as its lexical normalization.
++    for ancestor in path.ancestors() {
++        if std::fs::symlink_metadata(ancestor).is_ok_and(|m| m.file_type().is_symlink()) {
++            return Err("native build-script integration does not yet represent symlink runtime inputs".into());
++        }
++    }
++    Ok(())
++}
++
++fn current_input_hash(input: &Input, cache: &Path) -> Result<u64, String> {
++    ordinary_input_path(&input.path)?;
++    InputTree::capture(&input.path, input.package.then_some(cache)).hash(&input.path, input.package)
++}
++
++struct RuntimeInputs {
++    package: Option<InputTree>,
++    known: BTreeMap<PathBuf, u64>,
++    setup: Vec<PathBuf>,
++}
++
++impl RuntimeInputs {
++    fn capture(plan: &BuildScriptUnit, cache: &Path, client: ClientEnv, previous: Option<&Record>) -> Result<Self, String> {
++        // A prior explicit contract permits narrow observations. New paths
++        // discovered by this run can be returned without a reuse certificate;
++        // do not rescan the package for every environment-only edit.
++        let package = previous
++            .is_none_or(|record| record.output.rerun_if_changed.is_empty() && record.output.rerun_if_env_changed.is_empty())
++            .then(|| InputTree::capture(&plan.manifest_dir, Some(cache)));
++        let setup = setup_files(&plan.manifest_dir, client).into_iter().map(|p| input_path(&p)).collect::<Result<Vec<_>, _>>()?;
++        let mut paths = setup.clone();
++        if let Some(record) = previous {
++            // A successful but uncacheable run still tells the next request
++            // which external paths to observe before its one execution.
++            paths.extend(record.output.rerun_if_changed.iter().map(|p| {
++                let path = Path::new(p);
++                if path.is_absolute() { path.to_path_buf() } else { plan.manifest_dir.join(path) }
++            }));
++        }
++        let mut known = BTreeMap::new();
++        for path in paths {
++            let Ok(path) = input_path(&path) else {
++                continue;
++            };
++            let input = Input { package: false, path: path.clone(), hash: 0 };
++            // Unobserved runtime files prevent reuse, not execution. Setup
++            // files are checked separately and must retain their identity.
++            if let Ok(hash) = current_input_hash(&input, cache) {
++                known.insert(path, hash);
++            }
++        }
++        Ok(Self { package, known, setup })
++    }
++
++    fn bind(&self, path: PathBuf, package: bool, cache: &Path) -> Result<Input, String> {
++        let path = input_path(&path)?;
++        let from_tree = || {
++            self.package
++                .as_ref()
++                .ok_or_else(|| "native build-script input was not observed before execution".to_string())?
++                .hash(&path, package)
++        };
++        let hash = if !package { self.known.get(&path).copied().map(Ok).unwrap_or_else(from_tree)? } else { from_tree()? };
++        let input = Input { package, path, hash };
++        if current_input_hash(&input, cache)? != hash {
++            return Err(format!("build-script input changed during execution: {}", input.path.display()));
++        }
++        Ok(input)
++    }
++}
++
++fn run_script(plan: &BuildScriptUnit, binary: &Path, directory: &Path, client: ClientEnv) -> Result<BuildOutput, String> {
++    std::fs::create_dir_all(directory).map_err(|e| format!("cannot create native build-script OUT_DIR: {e}"))?;
++    let env = runtime_env(plan, client, directory)?;
++    execute(binary, &plan.manifest_dir, env)
++}
++
++fn execute(binary: &Path, cwd: &Path, env: Vec<(String, String)>) -> Result<BuildOutput, String> {
++    let result = Command::new(binary)
++        .current_dir(cwd)
++        .env_clear()
++        .envs(env)
++        .stdin(Stdio::null())
++        .stdout(Stdio::piped())
++        .stderr(Stdio::piped())
++        .output()
++        .map_err(|e| format!("cannot execute native build script: {e}"))?;
++    if !result.status.success() {
++        return Err(format!("native build script failed ({}): {}", result.status, String::from_utf8_lossy(&result.stderr)));
++    }
++    directives(&result.stdout)
++}
++
++/// The caller retains the returned lease in its checked native continuation.
++/// Compilation, execution and record publication each have one terminal outcome;
++/// a failure never falls back, retries, or exposes an old successful generation.
++pub fn outputs(plan: &BuildScriptUnit, cache: &Path, request: &Request) -> Result<Option<Outputs>, String> {
++    outputs_with(plan, cache, request, compile_script, run_script)
++}
++
++fn outputs_with<C, R>(plan: &BuildScriptUnit, cache: &Path, request: &Request, compile: C, run: R) -> Result<Option<Outputs>, String>
++where
++    C: FnOnce(&BuildScriptUnit, &Path, &Path, Vec<(String, String)>) -> Result<CompileProof, String>,
++    R: FnOnce(&BuildScriptUnit, &Path, &Path, ClientEnv) -> Result<BuildOutput, String>,
++{
++    if plan.edition != "2024" || plan.crate_name != "build_script_build" {
++        return Err("native build-script integration requires the planned edition-2024 host unit".into());
++    }
++    if crate::protocol::source_override().is_some() {
++        return Err("native build-script retained records require the pinned compiler library sources".into());
++    }
++    let key = plan_key(plan);
++    let directory = cache.join(format!("native-buildscript-{key:016x}"));
++    std::fs::create_dir_all(&directory).map_err(|e| format!("cannot create native build-script state: {e}"))?;
++    let lock = OpenOptions::new()
++        .read(true)
++        .write(true)
++        .create(true)
++        .truncate(false)
++        .open(directory.join("lock"))
++        .map_err(|e| format!("cannot open native build-script lease: {e}"))?;
++    lock.lock().map_err(|e| format!("cannot acquire native build-script lease: {e}"))?;
++    let lease = Arc::new(lock);
++    let path = cache.join(format!("buildscript-native-{key:016x}.txt"));
++    let binary = directory.join("build-script");
++    let out_dir = directory.join("out");
++    let client = request.client.env.as_deref();
++    let env = compile_env(plan, client)?;
++    let previous = read_record(&path).filter(|r| compile_holds(&r.record, plan, key, &binary, &env) && absent_holds(&r.absent));
++    let record = if let Some(native) = previous.as_ref().filter(|r| r.runtime_reusable && run_holds(r, cache, client, &out_dir)) {
++        let record = &native.record;
++        return Ok(Some(Outputs {
++            out_dir: record.out_dir.clone(),
++            rustc_cfg: record.output.rustc_cfg.clone(),
++            rustc_check_cfg: record.output.rustc_check_cfg.clone(),
++            rustc_env: record.output.rustc_env.clone(),
++            lease: Some(lease),
++        }));
++    } else {
++        let runtime_inputs = RuntimeInputs::capture(plan, cache, client, previous.as_ref().map(|r| &r.record))?;
++        let proof = if let Some(native) = previous {
++            let record = native.record;
++            CompileProof {
++                command: record.compile.expect("validated native compile record"),
++                sources: record.sources,
++                absent: native.absent,
++            }
++        } else {
++            compile(plan, &directory, &binary, env)?
++        };
++        let source_times = observe_source_times(&proof.sources).unwrap_or_default();
++        let output = run(plan, &binary, &out_dir, client)?;
++        let mut runtime_reusable = true;
++        let mut inputs = Vec::new();
++        for p in &output.rerun_if_changed {
++            let path = if Path::new(p).is_absolute() { PathBuf::from(p) } else { plan.manifest_dir.join(p) };
++            match runtime_inputs.bind(path, false, cache) {
++                Ok(input) => inputs.push(input),
++                Err(_) => runtime_reusable = false,
++            }
++        }
++        if output.rerun_if_changed.is_empty() && output.rerun_if_env_changed.is_empty() {
++            match runtime_inputs.bind(plan.manifest_dir.clone(), true, cache) {
++                Ok(input) => inputs.push(input),
++                Err(_) => runtime_reusable = false,
++            }
++        }
++        for path in &runtime_inputs.setup {
++            inputs.push(runtime_inputs.bind(path.clone(), false, cache)?);
++        }
++        let mut env_inputs: Vec<_> = output.rerun_if_env_changed.iter().map(|name| (name.clone(), client_var(client, name))).collect();
++        env_inputs.sort();
++        env_inputs.dedup();
++        let record = Record {
++            script: plan.script.clone(),
++            sources: proof.sources,
++            inputs,
++            env_inputs,
++            rustc: None,
++            setup: key,
++            output_hash: checked_output_hash(&output, &out_dir)?,
++            out_dir: Some(out_dir),
++            output,
++            compile: Some(proof.command),
++        };
++        if !source_holds(&record) || !absent_holds(&proof.absent) {
++            return Err("native build-script source changed before output publication".into());
++        }
++        runtime_reusable &= source_times_hold(&source_times, &record.sources);
++        write_record(&path, &record, runtime_reusable, &proof.absent, &source_times)?;
++        record
++    };
++    Ok(Some(Outputs {
++        out_dir: record.out_dir,
++        rustc_cfg: record.output.rustc_cfg,
++        rustc_check_cfg: record.output.rustc_check_cfg,
++        rustc_env: record.output.rustc_env,
++        lease: Some(lease),
++    }))
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use std::cell::Cell;
++
++    struct Fixture {
++        root: PathBuf,
++        plan: BuildScriptUnit,
++        request: Request,
++        compiled: Cell<usize>,
++        ran: Cell<usize>,
++    }
++    impl Fixture {
++        fn new() -> Self {
++            static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
++            let id = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
++            let root = std::env::temp_dir().join(format!("lustr-host-record-{}-{id}", std::process::id()));
++            std::fs::create_dir(&root).unwrap();
++            let script = root.join("build.rs");
++            std::fs::write(&script, "fn main() {}\n").unwrap();
++            std::fs::write(root.join("Cargo.toml"), "[package]\nname='host-control'\nversion='0.1.0'\nedition='2024'\n").unwrap();
++            let plan = BuildScriptUnit {
++                script: script.clone(),
++                manifest_dir: root.clone(),
++                workspace_root: root.clone(),
++                package_id: "host-control@0.1.0".into(),
++                crate_name: "build_script_build".into(),
++                edition: "2024".into(),
++                features: Vec::new(),
++                host_profile: crate::protocol::ProfileFlags::DEV_UNWIND,
++                target_triple: String::new(),
++                target_profile: crate::protocol::ProfileFlags::DEV_UNWIND,
++                target_features: Vec::new(),
++                target_opt_level: "0".into(),
++                target_debug: true,
++                cargo_env: Vec::new(),
++                planning_key: 1,
++            };
++            let request = Request {
++                cmd: Cmd::Build,
++                session: SessionKey::synthetic(&script, false),
++                file: script,
++                out: root.join("consumer"),
++                json: false,
++                timings: false,
++                debug: false,
++                emit_c: None,
++                max_errors: 0,
++                run_args: None,
++                harness: false,
++                cc: false,
++                client: crate::protocol::Client { env: Some(Vec::new()), shown: None },
++            };
++            Self { root, plan, request, compiled: Cell::new(0), ran: Cell::new(0) }
++        }
++        fn cache(&self) -> PathBuf {
++            self.root.join(".lust-cache")
++        }
++        fn record(&self) -> PathBuf {
++            self.cache().join(format!("buildscript-native-{:016x}.txt", plan_key(&self.plan)))
++        }
++        // Synthetic boundary controls exercise the same record/attempt owner.
++        // The public retained campaign separately compiles the real build.rs.
++        fn compile(&self, plan: &BuildScriptUnit, _: &Path, binary: &Path, _: Vec<(String, String)>) -> Result<CompileProof, String> {
++            self.compiled.set(self.compiled.get() + 1);
++            std::fs::write(binary, "native compiler control artifact").unwrap();
++            Ok(CompileProof {
++                command: Compile {
++                    cwd: plan.manifest_dir.clone(),
++                    argv: vec!["native-v1".into(), binary.to_string_lossy().into_owned()],
++                    vars: Vec::new(),
++                    bin: file_hash(binary),
++                },
++                sources: vec![(plan.script.clone(), file_hash(&plan.script))],
++                absent: Vec::new(),
++            })
++        }
++        fn run(&self, _: &BuildScriptUnit, _: &Path, directory: &Path, env: ClientEnv) -> Result<BuildOutput, String> {
++            self.ran.set(self.ran.get() + 1);
++            std::fs::create_dir_all(directory).unwrap();
++            Ok(BuildOutput {
++                rerun_if_env_changed: vec!["INPUT".into()],
++                rustc_env: vec![("OBSERVED".into(), client_var(env, "INPUT").unwrap_or_else(|| "unset".into()))],
++                ..Default::default()
++            })
++        }
++        fn outputs(&self) -> Result<Outputs, String> {
++            outputs_with(&self.plan, &self.cache(), &self.request, |p, d, b, e| self.compile(p, d, b, e), |p, b, d, e| self.run(p, b, d, e))
++                .map(|out| out.unwrap())
++        }
++    }
++    impl Drop for Fixture {
++        fn drop(&mut self) {
++            let _ = std::fs::remove_dir_all(&self.root);
++        }
++    }
++
++    #[test]
++    fn unchanged_records_do_no_compile_or_run_and_client_values_remain_distinct() {
++        let mut fixture = Fixture::new();
++        assert_eq!(fixture.outputs().unwrap().rustc_env, [("OBSERVED".into(), "unset".into())]);
++        drop(fixture.outputs().unwrap());
++        assert_eq!((fixture.compiled.get(), fixture.ran.get()), (1, 1));
++        fixture.request.client.env =
++            Some(vec![("LUSTR_TRACE_PATH".into(), "another-request.trace".into()), ("UNREAD".into(), "changed".into())]);
++        drop(fixture.outputs().unwrap());
++        assert_eq!((fixture.compiled.get(), fixture.ran.get()), (1, 1));
++        fixture.request.client.env = Some(vec![("INPUT".into(), String::new())]);
++        assert_eq!(fixture.outputs().unwrap().rustc_env, [("OBSERVED".into(), String::new())]);
++        fixture.request.client.env = Some(vec![("INPUT".into(), "a".into())]);
++        assert_eq!(fixture.outputs().unwrap().rustc_env, [("OBSERVED".into(), "a".into())]);
++        assert_eq!((fixture.compiled.get(), fixture.ran.get()), (1, 3));
++    }
++
++    #[test]
++    fn actual_compile_environment_reads_invalidate_without_unread_environment_noise() {
++        let mut fixture = Fixture::new();
++        let run = |fixture: &Fixture| {
++            outputs_with(
++                &fixture.plan,
++                &fixture.cache(),
++                &fixture.request,
++                |p, d, b, env| {
++                    let read = env_value(env.iter().find(|(name, _)| name == "COMPILE_READ").map(|(_, value)| value.as_str()));
++                    let mut proof = fixture.compile(p, d, b, env)?;
++                    proof.command.vars.push(("COMPILE_READ".into(), read));
++                    Ok(proof)
++                },
++                |p, b, d, env| fixture.run(p, b, d, env),
++            )
++        };
++        drop(run(&fixture).unwrap());
++        fixture.request.client.env = Some(vec![("LUSTR_TRACE_PATH".into(), "next.trace".into()), ("UNREAD".into(), "changed".into())]);
++        drop(run(&fixture).unwrap());
++        assert_eq!((fixture.compiled.get(), fixture.ran.get()), (1, 1));
++        fixture.request.client.env = Some(vec![("COMPILE_READ".into(), String::new())]);
++        drop(run(&fixture).unwrap());
++        assert_eq!((fixture.compiled.get(), fixture.ran.get()), (2, 2));
++    }
++
++    #[test]
++    fn implicit_host_source_timestamps_rerun_without_recompiling_unchanged_bytes() {
++        let fixture = Fixture::new();
++        drop(fixture.outputs().unwrap());
++        let future = std::time::SystemTime::now() + std::time::Duration::from_secs(3600);
++        std::fs::File::options()
++            .write(true)
++            .open(&fixture.plan.script)
++            .unwrap()
++            .set_times(std::fs::FileTimes::new().set_modified(future))
++            .unwrap();
++        drop(fixture.outputs().unwrap());
++        assert_eq!((fixture.compiled.get(), fixture.ran.get()), (1, 2));
++        drop(fixture.outputs().unwrap());
++        assert_eq!((fixture.compiled.get(), fixture.ran.get()), (1, 2));
++    }
++
++    #[test]
++    fn a_new_alternative_module_rechecks_the_host_without_running_a_stale_binary() {
++        let fixture = Fixture::new();
++        let alternative = fixture.root.join("other/mod.rs");
++        let first = outputs_with(
++            &fixture.plan,
++            &fixture.cache(),
++            &fixture.request,
++            |p, d, b, e| {
++                let mut proof = fixture.compile(p, d, b, e)?;
++                proof.absent.push(alternative.clone());
++                Ok(proof)
++            },
++            |p, b, d, e| fixture.run(p, b, d, e),
++        );
++        drop(first.unwrap());
++        let saved = std::fs::read(fixture.record()).unwrap();
++        std::fs::create_dir_all(alternative.parent().unwrap()).unwrap();
++        std::fs::write(&alternative, "pub fn f() {}\n").unwrap();
++        let second = outputs_with(
++            &fixture.plan,
++            &fixture.cache(),
++            &fixture.request,
++            |_, _, _, _| {
++                fixture.compiled.set(fixture.compiled.get() + 1);
++                Err("ambiguous module from the native resolver".into())
++            },
++            |_, _, _, _| panic!("ran the stale host after its module absence changed"),
++        );
++        assert!(matches!(second, Err(error) if error.contains("ambiguous module")));
++        assert_eq!((fixture.compiled.get(), fixture.ran.get()), (2, 1));
++        assert_eq!(std::fs::read(fixture.record()).unwrap(), saved);
++    }
++
++    #[test]
++    fn positive_job_counts_are_represented_and_untransferred_jobservers_remain_explicit() {
++        let fixture = Fixture::new();
++        assert!(job_count(Some(&[])).unwrap() > 0);
++        assert_eq!(job_count(Some(&[("CARGO_BUILD_JOBS".into(), "2".into())])).unwrap(), 2);
++        for (name, value, reason) in [
++            ("CARGO_MAKEFLAGS", "--jobserver-auth=3,4", "jobserver"),
++            ("CARGO_BUILD_JOBS", "-1", "job counts"),
++            ("CARGO_BUILD_JOBS", "0", "job counts"),
++            ("CARGO_BUILD_JOBS", "invalid", "job counts"),
++        ] {
++            let env = vec![(name.to_string(), value.to_string())];
++            assert!(matches!(runtime_env(&fixture.plan, Some(&env), &fixture.root), Err(error) if error.contains(reason)));
++        }
++    }
++
++    #[test]
++    fn failed_run_has_one_attempt_and_keeps_prior_record_for_proven_recovery() {
++        let mut fixture = Fixture::new();
++        drop(fixture.outputs().unwrap());
++        let before = std::fs::read(fixture.record()).unwrap();
++        fixture.request.client.env = Some(vec![("INPUT".into(), "changed".into())]);
++        let result = outputs_with(
++            &fixture.plan,
++            &fixture.cache(),
++            &fixture.request,
++            |_, _, _, _| panic!("runtime input change recompiled the script"),
++            |_, _, _, _| {
++                fixture.ran.set(fixture.ran.get() + 1);
++                Err("original script failure".into())
++            },
++        );
++        assert!(matches!(result, Err(error) if error == "original script failure"));
++        assert_eq!(fixture.ran.get(), 2);
++        assert_eq!(std::fs::read(fixture.record()).unwrap(), before);
++        fixture.request.client.env = Some(Vec::new());
++        drop(fixture.outputs().unwrap());
++        assert_eq!((fixture.compiled.get(), fixture.ran.get()), (1, 2));
++    }
++
++    #[test]
++    fn changed_source_cannot_be_rebound_to_old_compilation_after_a_run() {
++        let fixture = Fixture::new();
++        let result = outputs_with(
++            &fixture.plan,
++            &fixture.cache(),
++            &fixture.request,
++            |p, d, b, e| fixture.compile(p, d, b, e),
++            |p, b, d, e| {
++                let output = fixture.run(p, b, d, e)?;
++                std::fs::write(&p.script, "fn main() { changed(); }\n").unwrap();
++                Ok(output)
++            },
++        );
++        assert!(matches!(result, Err(error) if error.contains("source changed")));
++        assert!(!fixture.record().exists());
++        assert_eq!((fixture.compiled.get(), fixture.ran.get()), (1, 1));
++    }
++
++    #[test]
++    fn changed_runtime_input_keeps_the_result_but_never_certifies_post_run_bytes() {
++        let fixture = Fixture::new();
++        let input = fixture.root.join("input");
++        std::fs::write(&input, "before").unwrap();
++        let run = || {
++            outputs_with(
++                &fixture.plan,
++                &fixture.cache(),
++                &fixture.request,
++                |p, d, b, e| fixture.compile(p, d, b, e),
++                |_, _, directory, _| {
++                    fixture.ran.set(fixture.ran.get() + 1);
++                    std::fs::create_dir_all(directory).unwrap();
++                    let observed = std::fs::read_to_string(&input).unwrap();
++                    if observed != "after" {
++                        std::fs::write(&input, "after").unwrap();
++                    }
++                    Ok(BuildOutput {
++                        rerun_if_changed: vec!["input".into()],
++                        rustc_env: vec![("VALUE".into(), observed)],
++                        ..Default::default()
++                    })
++                },
++            )
++        };
++        assert_eq!(run().unwrap().unwrap().rustc_env, [("VALUE".into(), "before".into())]);
++        assert!(!read_record(&fixture.record()).unwrap().runtime_reusable);
++        assert_eq!(run().unwrap().unwrap().rustc_env, [("VALUE".into(), "after".into())]);
++        assert!(read_record(&fixture.record()).unwrap().runtime_reusable);
++        drop(run().unwrap());
++        assert_eq!((fixture.compiled.get(), fixture.ran.get()), (1, 2));
++    }
++
++    #[test]
++    fn newly_declared_external_input_is_uncacheable_until_observed_before_a_later_request() {
++        let fixture = Fixture::new();
++        let external = fixture.root.with_extension("external");
++        std::fs::write(&external, "outside").unwrap();
++        let run = || {
++            outputs_with(
++                &fixture.plan,
++                &fixture.cache(),
++                &fixture.request,
++                |p, d, b, e| fixture.compile(p, d, b, e),
++                |_, _, directory, _| {
++                    fixture.ran.set(fixture.ran.get() + 1);
++                    std::fs::create_dir_all(directory).unwrap();
++                    Ok(BuildOutput {
++                        rerun_if_changed: vec![external.to_string_lossy().into_owned()],
++                        rustc_env: vec![("VALUE".into(), std::fs::read_to_string(&external).unwrap())],
++                        ..Default::default()
++                    })
++                },
++            )
++        };
++        assert_eq!(run().unwrap().unwrap().rustc_env, [("VALUE".into(), "outside".into())]);
++        assert!(!read_record(&fixture.record()).unwrap().runtime_reusable);
++        drop(run().unwrap());
++        assert!(read_record(&fixture.record()).unwrap().runtime_reusable);
++        drop(run().unwrap());
++        assert_eq!((fixture.compiled.get(), fixture.ran.get()), (1, 2));
++        std::fs::remove_file(external).unwrap();
++    }
++
++    #[test]
++    fn runtime_snapshots_distinguish_missing_inputs_and_ignore_future_mtimes() {
++        let fixture = Fixture::new();
++        let data = fixture.root.join("data");
++        std::fs::create_dir(&data).unwrap();
++        let input = data.join("input");
++        std::fs::write(&input, "same").unwrap();
++        let future = std::time::SystemTime::now() + std::time::Duration::from_secs(3600);
++        std::fs::File::options().write(true).open(&input).unwrap().set_times(std::fs::FileTimes::new().set_modified(future)).unwrap();
++        let before = RuntimeInputs::capture(&fixture.plan, &fixture.cache(), Some(&[]), None).unwrap();
++        assert!(before.bind(input.clone(), false, &fixture.cache()).is_ok());
++        assert!(before.bind(data.clone(), false, &fixture.cache()).is_ok());
++        let missing = data.join("missing");
++        assert!(before.bind(missing.clone(), false, &fixture.cache()).is_ok());
++        // The old untagged sentinel collided with a real file containing
++        // these bytes; missing and present must be distinct observations.
++        std::fs::write(&missing, "<missing>").unwrap();
++        assert!(before.bind(missing, false, &fixture.cache()).is_err());
++        assert!(before.bind(data, false, &fixture.cache()).is_err());
++        assert!(before.bind(input.clone(), false, &fixture.cache()).is_ok());
++        std::fs::File::options()
++            .write(true)
++            .open(&input)
++            .unwrap()
++            .set_times(std::fs::FileTimes::new().set_modified(future + std::time::Duration::from_secs(60)))
++            .unwrap();
++        assert!(before.bind(input, false, &fixture.cache()).is_err(), "mtime-only changes are observable build-script inputs");
++        drop(fixture.outputs().unwrap());
++        let saved = read_record(&fixture.record()).unwrap();
++        let narrow = RuntimeInputs::capture(&fixture.plan, &fixture.cache(), Some(&[]), Some(&saved.record)).unwrap();
++        assert!(narrow.package.is_none(), "an explicit prior rerun contract must not scan the package on every edit");
++    }
++
++    #[test]
++    fn directory_fingerprints_include_empty_entries_and_nonlossy_file_names() {
++        use std::os::unix::ffi::OsStringExt;
++        let fixture = Fixture::new();
++        let directory = fixture.root.join("directory");
++        std::fs::create_dir(&directory).unwrap();
++        let hashes = || {
++            // Hold freshness constant so a timestamp change cannot hide a
++            // missing directory-name or raw-filename identity in this control.
++            std::fs::File::open(&directory)
++                .unwrap()
++                .set_times(std::fs::FileTimes::new().set_modified(std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000)))
++                .unwrap();
++            (
++                InputTree::capture(&directory, None).hash(&directory, false).unwrap(),
++                checked_output_hash(&BuildOutput::default(), &directory).unwrap(),
++            )
++        };
++        let empty = hashes();
++        std::fs::create_dir(directory.join("first")).unwrap();
++        let first = hashes();
++        assert_ne!(empty.0, first.0);
++        assert_ne!(empty.1, first.1);
++        std::fs::rename(directory.join("first"), directory.join("second")).unwrap();
++        let second = hashes();
++        assert_ne!(first.0, second.0);
++        assert_ne!(first.1, second.1);
++        std::fs::remove_dir(directory.join("second")).unwrap();
++        assert_eq!(empty, hashes());
++        let path_a = directory.join(std::ffi::OsString::from_vec(vec![b'f', 0xfe]));
++        let path_b = directory.join(std::ffi::OsString::from_vec(vec![b'f', 0xff]));
++        assert_eq!(path_a.to_string_lossy(), path_b.to_string_lossy());
++        std::fs::write(&path_a, "same bytes").unwrap();
++        let a = hashes();
++        std::fs::rename(path_a, path_b).unwrap();
++        let b = hashes();
++        assert_ne!(a.0, b.0);
++        assert_ne!(a.1, b.1);
++    }
++
++    #[test]
++    fn a_symlink_parent_traversal_cannot_certify_an_unrelated_lexical_path() {
++        let fixture = Fixture::new();
++        let external = fixture.root.with_extension("outside");
++        std::fs::create_dir_all(external.join("sub")).unwrap();
++        std::fs::write(external.join("data"), "outside-before").unwrap();
++        std::fs::write(fixture.root.join("data"), "unrelated-local").unwrap();
++        std::os::unix::fs::symlink(external.join("sub"), fixture.root.join("link")).unwrap();
++        let run = || {
++            outputs_with(
++                &fixture.plan,
++                &fixture.cache(),
++                &fixture.request,
++                |p, d, b, e| fixture.compile(p, d, b, e),
++                |_, _, directory, _| {
++                    fixture.ran.set(fixture.ran.get() + 1);
++                    std::fs::create_dir_all(directory).unwrap();
++                    Ok(BuildOutput {
++                        rerun_if_changed: vec!["link/../data".into()],
++                        rustc_env: vec![("VALUE".into(), std::fs::read_to_string(fixture.root.join("link/../data")).unwrap())],
++                        ..Default::default()
++                    })
++                },
++            )
++        };
++        assert_eq!(run().unwrap().unwrap().rustc_env, [("VALUE".into(), "outside-before".into())]);
++        assert!(!read_record(&fixture.record()).unwrap().runtime_reusable);
++        std::fs::write(external.join("data"), "outside-after").unwrap();
++        assert_eq!(run().unwrap().unwrap().rustc_env, [("VALUE".into(), "outside-after".into())]);
++        assert!(!read_record(&fixture.record()).unwrap().runtime_reusable);
++        assert_eq!((fixture.compiled.get(), fixture.ran.get()), (1, 2));
++        std::fs::remove_dir_all(external).unwrap();
++    }
++
++    #[test]
++    fn publication_failure_never_creates_a_success_record_or_retries() {
++        let fixture = Fixture::new();
++        std::fs::create_dir_all(fixture.record()).unwrap();
++        let result = fixture.outputs();
++        assert!(matches!(result, Err(error) if error.contains("cannot publish")));
++        assert!(fixture.record().is_dir());
++        assert_eq!((fixture.compiled.get(), fixture.ran.get()), (1, 1));
++    }
++
++    #[test]
++    fn generated_output_lease_survives_clones_until_the_last_consumer_drops() {
++        let fixture = Fixture::new();
++        let output = fixture.outputs().unwrap();
++        let clone = output.clone();
++        let lock = OpenOptions::new().read(true).write(true).open(output.out_dir.as_ref().unwrap().parent().unwrap().join("lock")).unwrap();
++        assert!(lock.try_lock().is_err());
++        drop(output);
++        assert!(lock.try_lock().is_err());
++        drop(clone);
++        lock.try_lock().unwrap();
++    }
++
++    #[test]
++    fn malformed_or_unrepresented_directives_and_missing_outputs_fail_closed() {
++        for stdout in [
++            b"cargo::rustc-env=X=\xff".as_slice(),
++            b"cargo::rustc-link-lib=missing",
++            b"cargo::error=failed",
++            b"cargo::rustc-env=NAME",
++            b"cargo::rustc-cfg=a\0b",
++        ] {
++            assert!(directives(stdout).is_err(), "{stdout:?}");
++        }
++        assert_eq!(directives(b"cargo::rustc-env=X=old\ncargo::rustc-env=X=new\n").unwrap().rustc_env, [("X".into(), "new".into())]);
++        let fixture = Fixture::new();
++        assert!(checked_output_hash(&BuildOutput::default(), &fixture.root.join("missing")).is_err());
++        let old = Record {
++            script: fixture.plan.script.clone(),
++            sources: Vec::new(),
++            inputs: Vec::new(),
++            env_inputs: Vec::new(),
++            rustc: None,
++            setup: 0,
++            output_hash: 0,
++            out_dir: None,
++            output: BuildOutput::default(),
++            compile: None,
++        };
++        let path = fixture.root.join("legacy");
++        std::fs::write(&path, old.encode()).unwrap();
++        assert!(read_record(&path).is_none());
++    }
++
++    #[test]
++    fn cfg_directives_preserve_only_represented_literals_and_custom_names() {
++        assert_eq!(directives(b"cargo::rustc-cfg=bs_a\ncargo::rustc-check-cfg=cfg(bs_a)\n").unwrap().rustc_cfg, ["bs_a"]);
++        let output = directives(b"cargo::rustc-cfg=mode = \"a=b\"\n").unwrap();
++        let mut cfg = crate::resolve::cfg::CfgEnv::default();
++        cfg.add_rustc_cfg(&output.rustc_cfg[0]);
++        assert_eq!(cfg.pairs, [("mode".into(), "a=b".into())]);
++        for line in [
++            "cargo::rustc-cfg=abc xyz",
++            "cargo::rustc-cfg=mode=bare",
++            "cargo::rustc-cfg=mode=1",
++            "cargo::rustc-cfg=mode=\"a\\nb\"",
++            "cargo::rustc-cfg=mode=r#\"raw\"#",
++            "cargo::rustc-cfg=target_os=\"other\"",
++            "cargo::rustc-cfg=feature=\"unplanned\"",
++            "cargo::rustc-cfg=test",
++            "cargo::rustc-cfg=all(foo)",
++            "cargo::rustc-check-cfg=cfg(one,two)",
++            "cargo::rustc-check-cfg=cfg(mode, values(\"a\"))",
++            "cargo::rustc-check-cfg=cfg(any())",
++        ] {
++            assert!(directives(line.as_bytes()).is_err(), "{line}");
++        }
++    }
++
++    #[test]
++    fn a_real_failed_script_executes_once_and_uses_only_the_supplied_environment() {
++        use std::os::unix::fs::PermissionsExt;
++        let fixture = Fixture::new();
++        let script = fixture.root.join("script");
++        std::fs::write(&script, "#!/bin/sh\nprintf 'x' >> count\nprintf '%s' \"${INPUT-unset}\" > observed\nexit 7\n").unwrap();
++        std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o700)).unwrap();
++        let result = execute(&script, &fixture.root, vec![("INPUT".into(), "request-value".into())]);
++        assert!(matches!(result, Err(error) if error.contains("native build script failed")));
++        assert_eq!(std::fs::read(fixture.root.join("count")).unwrap(), b"x");
++        assert_eq!(std::fs::read(fixture.root.join("observed")).unwrap(), b"request-value");
++    }
++}
 diff --git a/src/driver/cache.rs b/src/driver/cache.rs
 index da28835400f894866adb85f436e2cbdf109797d7..6cf91ad37bd9d2192a7f1d876a0c7b478b2e5cc1 100644
 --- a/src/driver/cache.rs
@@ -5391,10 +6871,86 @@ index da28835400f894866adb85f436e2cbdf109797d7..6cf91ad37bd9d2192a7f1d876a0c7b47
          assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
          assert!(decode_response(b"short").is_none());
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda2265b0a0 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b136b408b 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
-@@ -401,6 +401,24 @@ fn check_fingerprint(req: &Request) -> Option<u64> {
+@@ -59,6 +59,7 @@ fn expand_tokens(
+ ) -> Result<(lexer::Lexed, Vec<expand::Dep>), Diag> {
+     let mut ctx = expand::ExpandCtx::for_file(&front.interner, &front.known, file, src, test);
+     ctx.client = &front.client;
++    ctx.crate_name = Some(session.krate.target_name.clone());
+     // The root file sees the session target's cfg facts, as every other
+     // file of a crate session does through the worklist: a foreign
+     // `--target` must change `cfg!` and `#[cfg]` here too, not leave
+@@ -98,33 +99,61 @@ fn post_mono(p: &collect::Program, f: LocalDefId) -> bool {
+ /// `rustc-cfg` values ride along for the resolver's per-crate cfg env.
+ /// Only path packages compile from source here; adapter and shim
+ /// units keep no Cargo env (their root is a lust-owned crate).
++#[cfg(feature = "exclusive-native")]
++type BuildOutputKey = crate::resolve::cargo::BuildScriptUnit;
++#[cfg(not(feature = "exclusive-native"))]
++type BuildOutputKey = PathBuf;
++
++fn apply_build_env(env: &mut Vec<(String, String)>, output: &[(String, String)]) {
++    for (name, value) in output {
++        env.retain(|(old, _)| old != name);
++        env.push((name.clone(), value.clone()));
++    }
++}
++
+ fn fill_dep_build_outputs(
+     deps: &mut [crate::resolve::cargo::DepUnit],
+     cache: &Path,
+-    env: super::buildscript::ClientEnv,
+-    memo: &mut FxMap<PathBuf, Option<super::buildscript::Outputs>>,
++    request: &Request,
++    memo: &mut FxMap<BuildOutputKey, Option<super::buildscript::Outputs>>,
++    retained: &mut Vec<super::buildscript::Outputs>,
+ ) -> Result<(), String> {
+     for dep in deps {
+         if dep.source.is_none() {
++            #[cfg(feature = "exclusive-native")]
++            let out = match &dep.build_script {
++                None => None,
++                Some(plan) => match memo.get(plan) {
++                    Some(out) => out.clone(),
++                    None => {
++                        let out = super::buildscript::outputs_native(plan, cache, request)
++                            .map_err(|e| format!("build script of `{}` failed: {e}", dep.package_name))?;
++                        memo.insert(plan.clone(), out.clone());
++                        out
++                    }
++                },
++            };
++            #[cfg(not(feature = "exclusive-native"))]
+             let out = match memo.get(&dep.manifest_dir) {
+                 Some(o) => o.clone(),
+                 None => {
+-                    let o = super::buildscript::outputs(&dep.manifest_dir, cache, env)
++                    let o = super::buildscript::outputs(&dep.manifest_dir, cache, request.client.env.as_deref())
+                         .map_err(|e| format!("build script of `{}` failed: {e}", dep.package_name))?;
+                     memo.insert(dep.manifest_dir.clone(), o.clone());
+                     o
+                 }
+             };
+             if let Some(out) = out {
++                retained.push(out.clone());
+                 if let Some(dir) = &out.out_dir {
+-                    dep.cargo_env.push(("OUT_DIR".into(), dir.to_string_lossy().into_owned()));
++                    apply_build_env(&mut dep.cargo_env, &[("OUT_DIR".into(), dir.to_string_lossy().into_owned())]);
+                 }
+-                dep.cargo_env.extend(out.rustc_env);
++                apply_build_env(&mut dep.cargo_env, &out.rustc_env);
+                 dep.build_cfgs = out.rustc_cfg;
+                 dep.build_check_cfgs = out.rustc_check_cfg;
+             }
+         }
+-        fill_dep_build_outputs(&mut dep.deps, cache, env, memo)?;
++        fill_dep_build_outputs(&mut dep.deps, cache, request, memo, retained)?;
+     }
+     Ok(())
+ }
+@@ -401,6 +430,24 @@ fn check_fingerprint(req: &Request) -> Option<u64> {
      Some(std::hash::Hasher::finish(&h))
  }
  
@@ -5419,7 +6975,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
  /// Arena nodes of one Ast (expressions, patterns, types, blocks).
  pub(super) fn ast_nodes(ast: &Ast) -> usize {
      ast.exprs.len() + ast.pats.len() + ast.tys.len() + ast.blocks.len()
-@@ -559,6 +577,43 @@ fn base_tmp_seq() -> u64 {
+@@ -559,6 +606,43 @@ fn base_tmp_seq() -> u64 {
      SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
  }
  
@@ -5463,7 +7019,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
  /// True if `out` exists and still names `soname` (an overwritten output names its newer base instead).
  fn output_names_base(out: &Path, soname: &str) -> bool {
      std::fs::read(out).is_ok_and(|bytes| bytes.windows(soname.len()).any(|w| w == soname.as_bytes()))
-@@ -647,7 +702,7 @@ fn record_base_user(base_dir: &Path, soname: &str, out: &Path) {
+@@ -647,7 +731,7 @@ fn record_base_user(base_dir: &Path, soname: &str, out: &Path) {
      }
  }
  
@@ -5472,7 +7028,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
  /// that built it. Base files are also unique per session instance (the
  /// session's object dir is mixed into the hash), so one session never
  /// links against, and must never delete, another live session's file.
-@@ -657,6 +712,12 @@ fn base_owner_pid(soname: &str) -> Option<u32> {
+@@ -657,6 +741,12 @@ fn base_owner_pid(soname: &str) -> Option<u32> {
      if !pid.is_empty() && pid.bytes().all(|b| b.is_ascii_digit()) { pid.parse().ok() } else { None }
  }
  
@@ -5485,7 +7041,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
  /// Deletes base files in `base_dir` that the manifest proves dead: every
  /// recorded output for the base is gone or now names a different base.
  /// A base whose owning process is still alive is never deleted: it may
-@@ -667,20 +728,19 @@ fn base_owner_pid(soname: &str) -> Option<u32> {
+@@ -667,20 +757,19 @@ fn base_owner_pid(soname: &str) -> Option<u32> {
  /// entry are kept (an entry is appended right after its executable
  /// links, so an unrecorded file may be in use by a concurrent build).
  /// Also deletes half-written rebuild temp files
@@ -5511,7 +7067,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
              {
                  let _ = std::fs::remove_file(e.path());
              }
-@@ -707,7 +767,7 @@ pub fn sweep_bases(base_dir: &Path, exiting_pid: u32) {
+@@ -707,7 +796,7 @@ pub fn sweep_bases(base_dir: &Path, exiting_pid: u32) {
      }
      let owner_alive = |soname: &str| match base_owner_pid(soname) {
          Some(pid) if pid == exiting_pid => false,
@@ -5520,15 +7076,92 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
          None => false,
      };
      let mut kept = String::new();
-@@ -2055,6 +2115,7 @@ fn resolved_setup(
+@@ -2055,6 +2144,8 @@ fn resolved_setup(
      t: &mut Timer,
      visits: &mut Visits,
      reusable: Option<(u64, Response)>,
 +    imports: Option<&dyn super::imports::Definitions>,
++    build_outputs: &mut Vec<super::buildscript::Outputs>,
  ) -> Result<(SourceMap, Vec<usize>, Vec<usize>, bool, usize, &'static str, Vec<u32>, Vec<u64>, Option<std::sync::Arc<crate::resolve::imports::ResolvedTables>>), Response> {
      use crate::resolve::cargo::{self, GraphRequest};
      use crate::resolve::cfg::CfgEnv;
-@@ -2153,8 +2214,19 @@ fn resolved_setup(
+@@ -2081,8 +2172,17 @@ fn resolved_setup(
+         front.display_root = Some(graph.workspace_root.clone());
+         let pre_env = CfgEnv::new(&key.target_triple, &key.features, key.krate.test, key.profile);
+         let unit =
+-            cargo::select_unit(&graph, &greq, &key.krate.target_kind, &key.krate.target_name, &pre_env, &front.interner, key.krate.test)
++            cargo::select_unit(&graph, &greq, &key.krate.target_kind, &key.krate.target_name, &pre_env, &front.interner, key.krate.test, &req.file, key.krate.target_explicit, req.cmd, key.profile)
+                 .map_err(code2)?;
++        #[cfg(feature = "exclusive-native")]
++        if req.cmd == Cmd::Build && !unit.target.kind.iter().any(|kind| kind == "bin") {
++            return Err(code2("Lustr integration is incomplete for the requested Rust library artifact; no stock compiler was invoked".into()));
++        }
++        let selected_source = std::fs::canonicalize(&unit.target.src_path).map_err(|e| code2(format!("cannot bind selected Cargo source: {e}")))?;
++        let requested_source = std::fs::canonicalize(&req.file).map_err(|e| code2(format!("cannot bind requested Cargo source: {e}")))?;
++        if requested_source != selected_source {
++            return Err(code2("package, target name, kind and source do not identify exactly one Cargo target".into()));
++        }
+         let root_text = std::fs::read_to_string(&unit.target.src_path)
+             .map_err(|e| code2(format!("cannot read {}: {e}", unit.target.src_path.display())))?;
+         // Edition and lint gates for the selected unit (section 1.1),
+@@ -2097,19 +2197,26 @@ fn resolved_setup(
+         let mut env = CfgEnv::new(&key.target_triple, &unit.features, key.krate.test, key.profile);
+         // Cargo env for the selected unit plus its build script
+         // outputs (section 1.1): `OUT_DIR` and `rustc-env` pairs for
+-        // `env!`, `rustc-cfg` values for `#[cfg]`. The script re-runs
+-        // through Cargo when its recorded inputs changed.
++        // `env!`, `rustc-cfg` values for `#[cfg]`. Product scripts use their
++        // owned native host units when recorded inputs change.
+         let cache = super::cache::cache_dir(&req.file);
+         let manifest_dir = unit.package.manifest_path.parent().map_or_else(PathBuf::new, Path::to_path_buf);
+         let mut cargo_env = unit.cargo_env.clone();
+-        let client_env = req.client.env.as_deref();
+-        let selected_out = super::buildscript::outputs(&manifest_dir, &cache, client_env)
++        #[cfg(not(feature = "exclusive-native"))]
++        let selected_out = super::buildscript::outputs(&manifest_dir, &cache, req.client.env.as_deref())
+             .map_err(|e| code2(format!("build script of `{}` failed: {e}", unit.package.name)))?;
++        #[cfg(feature = "exclusive-native")]
++        let selected_out = match &unit.build_script {
++            Some(plan) => super::buildscript::outputs_native(plan, &cache, req)
++                .map_err(|e| code2(format!("build script of `{}` failed: {e}", unit.package.name)))?,
++            None => None,
++        };
+         if let Some(out) = &selected_out {
++            build_outputs.push(out.clone());
+             if let Some(dir) = &out.out_dir {
+-                cargo_env.push(("OUT_DIR".into(), dir.to_string_lossy().into_owned()));
++                apply_build_env(&mut cargo_env, &[("OUT_DIR".into(), dir.to_string_lossy().into_owned())]);
+             }
+-            cargo_env.extend(out.rustc_env.iter().cloned());
++            apply_build_env(&mut cargo_env, &out.rustc_env);
+             for c in &out.rustc_cfg {
+                 env.add_rustc_cfg(c);
+             }
+@@ -2118,9 +2225,12 @@ fn resolved_setup(
+             }
+         }
+         let mut deps = unit.deps.clone();
+-        let mut memo: FxMap<PathBuf, Option<super::buildscript::Outputs>> = FxMap::default();
++        let mut memo: FxMap<BuildOutputKey, Option<super::buildscript::Outputs>> = FxMap::default();
++        #[cfg(not(feature = "exclusive-native"))]
+         memo.insert(manifest_dir, selected_out);
+-        fill_dep_build_outputs(&mut deps, &cache, client_env, &mut memo).map_err(code2)?;
++        #[cfg(feature = "exclusive-native")]
++        if let Some(plan) = &unit.build_script { memo.insert(plan.clone(), selected_out); }
++        fill_dep_build_outputs(&mut deps, &cache, req, &mut memo, build_outputs).map_err(code2)?;
+         t.lap("build script outputs");
+         // Cargo runs rustc from the workspace root, so `file!` shows member paths relative to it.
+         front.client.shown_root = Some((graph.workspace_root.clone(), PathBuf::new()));
+@@ -2131,7 +2241,7 @@ fn resolved_setup(
+         (unit.target.src_path.clone(), root_text, ids, env, deps, unit.package.name.replace('-', "_"), cargo_env)
+     } else {
+         front.display_root = None;
+-        let stem = key.krate.root.file_stem().and_then(|s| s.to_str()).unwrap_or("main").to_string();
++        let stem = key.krate.target_name.clone();
+         let env = CfgEnv::new(&key.target_triple, &key.features, key.krate.test, key.profile);
+         (key.krate.root.clone(), user_src.to_string(), crate_ids_default, env, Vec::new(), stem, Vec::new())
+     };
+@@ -2153,8 +2263,19 @@ fn resolved_setup(
      // PatchBase below asks `macro_scope::dep_macros_shut`).
      let patch_expand = (env.clone(), crate_name.clone());
      let has_deps = !externs.is_empty();
@@ -5550,7 +7183,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
      if super::resolve_oracle::on()
          && let Ok(p) = &patched
      {
-@@ -2166,21 +2238,7 @@ fn resolved_setup(
+@@ -2166,21 +2287,7 @@ fn resolved_setup(
          // Nothing changed since the last check of this same request:
          // its answer stands (`check_fingerprint`).
          Ok(p) if p.files == 0 && reusable.is_some() => {
@@ -5573,7 +7206,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
          }
          // An item patch (sigedit P1.3): the new item scans take the
          // resolve path's slot update, in signatures mode with the edited
-@@ -2321,7 +2379,12 @@ fn resolved_setup(
+@@ -2321,7 +2428,12 @@ fn resolved_setup(
          // The cache's final chunks are parts of the session's merged Ast: the resolve takes
          // its hits out of it, and lets go of it before any patch writes it.
          front.resolve_cache.set_merged(front.ast.clone(), front.ast_gen);
@@ -5587,7 +7220,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
          front.resolve_cache.clear_merged();
          if super::item_oracle::on() || super::resolve_oracle::on() {
              oracle_input = Some(super::item_oracle::ColdInput { input: input.clone(), platform: plan.platform });
-@@ -2552,10 +2615,221 @@ fn location_path(p: &str, library: &Path, display_root: Option<&Path>, client: &
+@@ -2552,10 +2664,222 @@ fn location_path(p: &str, library: &Path, display_root: Option<&Path>, client: &
  }
  
  pub fn compile(req: &Request, session: &mut Session) -> Response {
@@ -5692,6 +7325,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
 +    timer: Timer,
 +    imported_dependencies: Vec<super::imports::Dependency>,
 +    imported_emission: Option<Box<dyn super::imports::Emission + 'static>>,
++    build_outputs: Vec<super::buildscript::Outputs>,
 +}
 +
 +impl PreparedRequest<'_> {
@@ -5810,7 +7444,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
              stderr: format!(
                  "error: internal: request routed to the wrong session\n  request: {}\n  session: {}\n",
                  req.session.describe(),
-@@ -2563,16 +2837,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2563,16 +2887,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              ),
              code: 3,
              ..Default::default()
@@ -5830,7 +7464,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
      }
      // Lust links for the host target only (tcc). A named non-host triple
      // is a clear error for a link, not a host binary under a foreign
-@@ -2591,19 +2865,19 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2591,19 +2915,19 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // product; no link runs).
      let cc_build = req.cc && (triple.is_empty() || crate::resolve::cfg::CfgEnv::is_release_target(triple));
      if foreign && !foreign_check && !cc_build && req.emit_c.is_none() {
@@ -5853,7 +7487,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
      };
      // The crate identity for stable defs comes from the session's key (its
      // package and target identity, `Session::crate_ids`). For a single-file
-@@ -2670,7 +2944,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2670,7 +2994,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      } else {
          crate::resolve::worklist::route_root_std(&src, &front.interner, true)
      };
@@ -5862,7 +7496,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
      let route_std_mods = req.session.krate.manifest_path.is_none().then_some(std_mods);
      if front.resolved_crate && !wants_resolver {
          front.ast = Arc::default();
-@@ -2719,16 +2993,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2719,16 +3043,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      if needs.any() {
          match splice_std(&mut src, std_cache, needs) {
              Ok(sp) => (std_ranges, std_routes, std_methods) = (sp.ranges, sp.routes, sp.methods),
@@ -5872,17 +7506,19 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
          t.lap("std load+splice");
      }
  
++    // Own generated-input leases until all checking and emission have finished.
++    let mut build_outputs = Vec::new();
      // Both front ends produce the same locals for the shared tail.
      let (map, mut changed, mut mention_only, mut const_fn_changed, fn_count, mode, fn_lines_all, body_hashes_all, resolved_tables) = if use_resolver {
 -        match resolved_setup(req, front, caches, std_cache, &src, root_lexed, route_std_mods, crate_ids, &mut std_ranges, &mut std_routes, &mut std_methods, &mut t, &mut visits, reusable) {
-+        match resolved_setup(req, front, caches, std_cache, &src, root_lexed, route_std_mods, crate_ids, &mut std_ranges, &mut std_routes, &mut std_methods, &mut t, &mut visits, reusable, imports) {
++        match resolved_setup(req, front, caches, std_cache, &src, root_lexed, route_std_mods, crate_ids, &mut std_ranges, &mut std_routes, &mut std_methods, &mut t, &mut visits, reusable, imports, &mut build_outputs) {
              Ok(x) => x,
 -            Err(resp) => return resp,
 +            Err(resp) => return Preparation::finished(resp),
          }
      } else {
      // Lex and scan in chunks of whole items, in parallel. Only the region an edit touched is
-@@ -2873,7 +3147,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2873,7 +3199,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // A macro error in a chunk is the answer, not a lexing fallback.
      if let Some(Err(d)) = fresh.iter().find(|l| matches!(l, Err(d) if d.code.starts_with("L08"))) {
          let mut d = d.clone();
@@ -5891,7 +7527,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
      }
      let split_inner_attr = ranges.len() > 1
          && (reused.iter().flatten().any(|c| c.inner_attr) || fresh.iter().flatten().any(|&(_, _, _, inner_attr)| inner_attr));
-@@ -2889,7 +3163,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2889,7 +3215,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          // file has an inner attribute (`has_inner_attr`): lex the whole file. Its error is the
          // answer; if it lexes, compile as one chunk. Never panic.
          match lexer::lex(&src, ROOT_FILE, 0, &front.interner).and_then(|l| expand_tokens(front, l, &req.file, &src, test_mode, req.session.profile, &req.session)) {
@@ -5900,7 +7536,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
              Ok((whole, deps)) => {
                  let mut sc = scan::scan(&whole);
                  fold_fn_text(&mut sc, &whole, &src);
-@@ -3072,7 +3346,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3072,7 +3398,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                      front.chunks[fn_at[i].0].items = None;
                  }
                  front.chunks_blanked = true;
@@ -5909,7 +7545,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
              }
              for (&i, (body_ast, body, exprs, pats)) in changed.iter().zip(parsed) {
                  let before = (front.ast.exprs.len() as u32, front.ast.pats.len() as u32, front.ast.blocks.len() as u32);
-@@ -3145,7 +3419,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3145,7 +3471,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          if let Some(Err(d)) = parsed.iter().find(|p| p.is_err()) {
              let d = d.clone();
              front.chunks_blanked = old_len > 0;
@@ -5918,7 +7554,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
          }
          let mut new_asts: FxMap<usize, Ast> = todo.iter().copied().zip(parsed.into_iter().map(|p| p.unwrap())).collect();
          // Splice every per-chunk list in chunk order: a re-parsed chunk
-@@ -3221,7 +3495,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3221,7 +3547,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              Ok(c) => c,
              Err(e) => {
                  front.env_hash = None;
@@ -5927,7 +7563,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
              }
          }
      } else {
-@@ -3255,14 +3529,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3255,14 +3581,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                      Ok((w, _deps)) => w,
                      Err(mut d) => {
                          front.env_hash = None;
@@ -5944,7 +7580,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
                  }
              }
          };
-@@ -3273,7 +3547,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3273,7 +3599,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              Ok(c) => c,
              Err(e) => {
                  front.env_hash = None;
@@ -5953,7 +7589,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
              }
          }
      };
-@@ -3567,6 +3841,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3567,6 +3893,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // Template check errors from the kept program are collect's errors
      // (`gen_reuse.template_errors` counts them).
      let collect = |front: &mut Front, caches: &mut Caches| {
@@ -5968,7 +7604,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
          collect::collect_reuse(
              front.ast.clone(),
              front.interner.clone(),
-@@ -3666,7 +3948,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3666,7 +4000,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              front.last_visits.clear();
              visits.render(&mut front.last_visits);
              log_visits(&front.last_visits);
@@ -5977,7 +7613,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
          }
      };
      // Every body of a generic program rechecks when the trait system
-@@ -3757,11 +4039,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3757,11 +4091,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
                  None => {
                      front.env_hash = None;
@@ -5991,7 +7627,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
                  }
              }
          }
-@@ -3772,7 +4054,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3772,7 +4106,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      if program.fns.len() < fn_count {
          // The scanner and the parser disagree (only possible with unusual syntax). Start over.
          front.env_hash = None;
@@ -6000,7 +7636,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
      }
      // Mono instance slots (docs/ARCH.md section 4.2; W-TRAITS-CORE
      // through W-DRIVER): collect appends materialized instances
-@@ -3790,7 +4072,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3790,7 +4124,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              let disk = program.disk_id(LocalDefId(i as u32));
              if let Err(c) = def::insert_path(&mut front.slot_paths, disk, &format!("instance#{}", disk.hash.0)) {
                  front.env_hash = None;
@@ -6009,7 +7645,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
              }
              let slot = match front.slot_of.get(&disk) {
                  Some(&slot) => slot,
-@@ -4081,7 +4363,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4081,7 +4415,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // switches, debug info, unwind tables) makes every slot's C again, as a one-shot build
      // does: its slot cache holds C of the other form (a front image saved by a tcc build,
      // then a release driver build). A check makes no C and keeps the key.
@@ -6019,7 +7655,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
      if req.cmd == Cmd::Build {
          let key = super::release_c::codegen_key(release, req.debug, program.unwind_tables);
          if caches.codegen_key != key {
-@@ -4285,7 +4568,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4285,7 +4620,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // A one-shot check needs no IR after borrowck: dropping each body on
      // its worker lets the allocator reuse the memory for the next body,
      // instead of touching fresh pages for every function.
@@ -6028,7 +7664,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
      // `lust check` skips std platform bodies (`Program::check_skips`).
      // A skipped slot keeps its last marks; one that needed a check lost
      // its C above, so the next build checks it.
-@@ -4296,17 +4579,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4296,17 +4631,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          super::item_oracle::check(front, caches, Ok(&program), &work, fn_count, hashes, lines, visits.path, crate_ids, build, tables);
          t.lap("item oracle");
      }
@@ -6054,7 +7690,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
              (Some(body), errs)
          });
          let body = body.filter(|_| keep_bodies).map(|mut b| {
-@@ -4370,6 +4661,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4370,6 +4713,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          diags.push(Diag::new("L0130", diag::Span::default(), "no `main` function", "Add `fn main() { ... }`."));
      }
      t.lap(if mode == "full" { "check+borrowck (par)" } else { "check changed fns (par)" });
@@ -6062,7 +7698,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
      // A one-shot process (`leak_at_exit`) exits right after this call. Freeing the IR and
      // program arenas, mostly built on worker threads, costs about 10 ms on a 31k-line crate,
      // so leak them on every return below and let the OS reclaim the memory at exit. A
-@@ -4396,10 +4688,93 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4396,10 +4740,94 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
              }
          }
@@ -6099,7 +7735,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
 +        program, results, reemit, map, source: src, path, work, fn_count, fn_lines_all, body_hashes_all,
 +        inst_ids, mode, check_fp, verified, reads_reused, reads_invalidated, reemitted, mixed, release,
 +        foreign, visits, timer: t,
-+        imported_dependencies, imported_emission,
++        imported_dependencies, imported_emission, build_outputs,
 +    };
 +    Preparation::Ready(PreparedRequest { request: req, session, state: Some(state) })
 +}
@@ -6109,6 +7745,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
 +        mut program, results, reemit, map, source: src, path, work, fn_count, fn_lines_all, body_hashes_all,
 +        inst_ids, mode, check_fp, verified, reads_reused, reads_invalidated, reemitted, mixed, release,
 +        foreign, visits, timer: mut t, imported_dependencies: _imported_dependencies, imported_emission,
++        build_outputs: _build_outputs,
 +    } = state;
 +    let results: Vec<_> = results.into_iter().map(|(body, diagnostics)| (body.map(|b| b.attach(&program)), diagnostics)).collect();
 +    let reemit: Vec<_> = reemit.into_iter().map(|(id, body)| (id, body.attach(&program))).collect();
@@ -6158,7 +7795,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
          // The answer, before the timing and stats lines, for a no-op
          // check of the same request to reuse.
          if let Some(fp) = check_fp {
-@@ -4446,10 +4821,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4446,10 +4874,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          return resp;
      }
  
@@ -6183,7 +7820,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
      // Each fn's base line: cgen stores its line numbers relative to it
      // and the main unit adds each slot's base back, so a reused body's
      // C stays right when its source text moves. An instance's base is
-@@ -4471,7 +4860,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4471,7 +4913,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let line_base_of = |_: &Front, i: usize| -> u32 { line_bases.get(i).copied().unwrap_or(0) };
      // Release C (driver/release_c.rs): content-addressed names, set as cgen's naming
      // context around every step that prints C.
@@ -6192,7 +7829,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
      let rn = rnames.as_ref();
      // A release C build to the release driver streams its cc step (`cc::Stream`): each unit the
      // assembly makes compiles from the time its text exists. Not with --emit-c nor LLVM units.
-@@ -4498,7 +4887,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4498,7 +4940,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let (outs, cg_noted): (Vec<_>, Vec<_>) = par_map(&bodies, |(i, b)| {
          check::derive_delta::scoped(program.record_reads, || {
              cgen::in_layout_phase(layout_tag, || {
@@ -6210,7 +7847,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
              })
          })
      })
-@@ -4681,6 +5079,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4681,6 +5132,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      }
      let glue_changed = shared_changed || regenerated || statics_changed;
      t.lap("codegen (par)");
@@ -6225,7 +7862,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
      // Nothing reads the IR after codegen. A one-shot build leaks it at exit
      // (`leak_at_exit`), but on a large program it is the largest block
      // alive at the peak (ts-rust's bins: about 2.4 GB of 9.4 GB, through
-@@ -4751,7 +5157,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4751,7 +5210,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // rebuilds and the base
      // relinks over the existing unit objects. Unrelated units keep
      // their objects, in the session and in the disk unit cache.
@@ -6235,7 +7872,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
      let cap_grown = n_slots > caches.table_cap;
      if fresh_base || cap_grown {
          caches.table_cap = n_slots * 2 + 64;
-@@ -5807,6 +6214,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5807,6 +6267,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // this check keeps that a pin, not a hope.
      if let Some(run_args) = &req.run_args
          && !caches.persistent
@@ -6243,7 +7880,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
          && fresh_base
          && groups.len() == 1
          && !req.debug
-@@ -5883,9 +6291,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5883,9 +6344,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      caches.objects = Some(req.debug);
      t.lap("tcc compile");
      let all_base: Vec<PathBuf> = [1, 2, 3, LOC_UNIT].into_iter().chain(link_fn_units.iter().copied()).map(base_obj).collect();
@@ -6263,7 +7900,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
          crate::tcc::link(&objs, &req.out, req.debug)
      } else {
          // The base library lives in a persistent dir under a content name
-@@ -5901,18 +6318,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5901,18 +6371,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
          let base = if rebuild_base {
              caches.base_gen += 1;
@@ -6304,7 +7941,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
                      install_base(&tmp, &base_dir.join(&soname))?;
                      if !caches.base_files.contains(&soname) {
                          caches.base_files.push_back(soname);
-@@ -5922,24 +6352,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5922,24 +6405,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              if built.is_err() {
                  let _ = std::fs::remove_file(&tmp);
              }
@@ -6336,7 +7973,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
              built
          } else {
              Ok(())
-@@ -5958,8 +6389,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5958,8 +6442,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // a small grace count while no known output file still references them. A binary the user
      // kept keeps its base; one that was overwritten or deleted does not. A running program
      // keeps its mapped copy after unlink.
@@ -6347,7 +7984,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
          if let Some(base_dir) = caches.base_dir.clone() {
              record_base_user(&base_dir, &soname, &req.out);
          }
-@@ -6058,6 +6489,66 @@ mod tests {
+@@ -6058,6 +6542,66 @@ mod tests {
          panic!("{}: still busy", bin.display())
      }
  
@@ -6414,7 +8051,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda
      /// The base sweep never deletes a live owner's base (it may be a live
      /// session's current base, found by fuzz seed 7 multi when a guard
      /// session's first-build sweep deleted the warm session's base), but
-@@ -6421,6 +6912,542 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
+@@ -6421,6 +6965,542 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
          }
      }
  
@@ -10758,9 +12395,18 @@ index c4b23e007d746b984e392919dcf1bc9bc87a265e..47bb8992d04e52e8ba9774e3e865ddf1
              _ => return None,
          }
 diff --git a/src/protocol.rs b/src/protocol.rs
-index 504b467a9d240272c85f999b59f57a5d52b3cd4e..37040b0ae8f82698ea05ba33e8cce21c033ebbdd 100644
+index 504b467a9d240272c85f999b59f57a5d52b3cd4e..e52061886e4e4b160447ac1de60a0c0155adb74a 100644
 --- a/src/protocol.rs
 +++ b/src/protocol.rs
+@@ -6,7 +6,7 @@
+ //   panic_abort overflow_checks debug_assertions feature_count env_count offline locked build
+ // followed by length-prefixed fields, each as "<byte len>\n<bytes>": file, out,
+ // emit_c, then the crate selector (package id, manifest path, target kind,
+-// target name, crate root, target triple), then one field per feature,
++// target name, explicit-target flag, crate root, target triple), then one field per feature,
+ // then the client's view (see `Client`): the shown root path (len 0 for None),
+ // and when the header's env count is not "-", that many name and value fields.
+ // Length prefixes carry any byte a path can hold, including tabs and newlines; emit_c
 @@ -14,9 +14,13 @@
  // (see `Request::run_args`). The default socket name holds the build hash, but an
  // explicit `LUST_DAEMON_SOCKET` can name a daemon of another build, so both directions
@@ -10788,7 +12434,39 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..37040b0ae8f82698ea05ba33e8cce21c
  #[derive(Clone, Copy, PartialEq, Eq)]
  pub enum Cmd {
      Check,
-@@ -325,6 +333,40 @@ pub struct Response {
+@@ -44,6 +52,9 @@ pub struct CrateKey {
+     pub manifest_path: Option<PathBuf>,
+     pub target_kind: String,
+     pub target_name: String,
++    /// Whether the caller named --bin or --lib. Otherwise Cargo target
++    /// identity is resolved uniquely from the requested canonical source.
++    pub target_explicit: bool,
+     pub root: PathBuf,
+     pub test: bool,
+ }
+@@ -120,6 +131,7 @@ impl SessionKey {
+                 manifest_path: None,
+                 target_kind: "bin".into(),
+                 target_name: stem.into(),
++                target_explicit: false,
+                 root: file.to_path_buf(),
+                 test,
+             },
+@@ -138,11 +150,12 @@ impl SessionKey {
+         let b = |x: bool| if x { "1" } else { "0" };
+         let manifest = self.krate.manifest_path.as_ref().map_or_else(|| "-".to_string(), |p| p.to_string_lossy().into_owned());
+         format!(
+-            "pkg={} manifest={} {}:{} root={} test={} features=[{}] default_features={} all_features={} target={} panic_abort={} overflow_checks={} debug_assertions={} offline={} locked={}",
++            "pkg={} manifest={} {}:{} explicit_target={} root={} test={} features=[{}] default_features={} all_features={} target={} panic_abort={} overflow_checks={} debug_assertions={} offline={} locked={}",
+             self.krate.package_id,
+             manifest,
+             self.krate.target_kind,
+             self.krate.target_name,
++            b(self.krate.target_explicit),
+             self.krate.root.display(),
+             b(self.krate.test),
+             self.features.join(","),
+@@ -325,6 +338,40 @@ pub struct Response {
      pub code: i32,
      /// The program already ran in memory; `code` is its exit code. Do not run `out` again.
      pub ran: bool,
@@ -10829,7 +12507,43 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..37040b0ae8f82698ea05ba33e8cce21c
  }
  
  pub enum Invocation {
-@@ -1011,7 +1053,11 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -552,6 +599,7 @@ fn apply_dev_config(key: &mut SessionKey, file: &Path) {
+ /// still the crate root: `lust check file.rs` keeps its meaning.
+ fn session_key_for(file: &Path, flags: CrateFlags, net: CargoNet) -> SessionKey {
+     let mut key = SessionKey::synthetic(file, false);
++    key.krate.target_explicit = flags.bin.is_some() || flags.lib;
+     let mut features = flags.features;
+     sort_features(&mut features);
+     key.features = features;
+@@ -909,6 +957,7 @@ pub fn encode(r: &Request) -> Vec<u8> {
+     path_field(&mut out, s.krate.manifest_path.as_deref());
+     put_field(&mut out, s.krate.target_kind.as_bytes());
+     put_field(&mut out, s.krate.target_name.as_bytes());
++    put_field(&mut out, if s.krate.target_explicit { b"1" } else { b"0" });
+     path_field(&mut out, Some(&s.krate.root));
+     put_field(&mut out, s.target_triple.as_bytes());
+     for f in &s.features {
+@@ -951,6 +1000,11 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+     let manifest = get_field(r)?;
+     let target_kind = text(get_field(r)?)?;
+     let target_name = text(get_field(r)?)?;
++    let target_explicit = match get_field(r)?.as_slice() {
++        b"0" => false,
++        b"1" => true,
++        _ => return None,
++    };
+     let root = path(get_field(r)?);
+     let target_triple = text(get_field(r)?)?;
+     // A feature count this large is a bad request, not a loop to run.
+@@ -987,6 +1041,7 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+                 manifest_path: if manifest.is_empty() { None } else { Some(path(manifest)) },
+                 target_kind,
+                 target_name,
++                target_explicit,
+                 root,
+                 test: f[5] == "1",
+             },
+@@ -1011,7 +1066,11 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
  }
  
  pub fn write_response(w: &mut impl Write, r: &Response) -> std::io::Result<()> {
@@ -10842,7 +12556,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..37040b0ae8f82698ea05ba33e8cce21c
  }
  
  /// The whole answer to a request of another build: a head no client takes
-@@ -1020,37 +1066,78 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
+@@ -1020,37 +1079,78 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
      write!(w, "- - - {}\n", build_id())
  }
  
@@ -10950,7 +12664,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..37040b0ae8f82698ea05ba33e8cce21c
  }
  
  /// Prints a response. For `run`, runs the program after a successful build. Never returns.
-@@ -1331,9 +1418,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
+@@ -1331,9 +1431,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
      Some(PathBuf::from(text[at..end].replace("\\\\", "\\")))
  }
  
@@ -11000,7 +12714,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..37040b0ae8f82698ea05ba33e8cce21c
  pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug: bool, net: CargoNet) -> ! {
      let profile = profile.unwrap_or("release");
      let dev = profile == "dev";
-@@ -1408,12 +1535,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
+@@ -1408,12 +1548,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
      exit_with(status);
  }
  
@@ -11019,7 +12733,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..37040b0ae8f82698ea05ba33e8cce21c
  pub fn run_rustc_check(file: &Path) -> ! {
      let obj = std::env::temp_dir().join(format!("lust-rustc-check-{}.o", std::process::id()));
      eprintln!("lust: checking with rustc (oracle): rustc --edition 2024 --emit=obj {}", file.display());
-@@ -1461,6 +1594,150 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
+@@ -1461,6 +1607,150 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
  mod tests {
      use super::*;
  
@@ -11170,11 +12884,107 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..37040b0ae8f82698ea05ba33e8cce21c
      fn args(list: &[&str]) -> Vec<String> {
          list.iter().map(|s| s.to_string()).collect()
      }
+@@ -1486,6 +1776,23 @@ mod tests {
+         assert_ne!(k, SessionKey::synthetic(Path::new("/tmp/x/other.rs"), false), "file differs");
+     }
+ 
++    #[test]
++    fn cargo_target_selector_fact_survives_the_wire_and_keys() {
++        let inferred = compile_req(&["check", "/tmp/selector/main.rs", "--manifest-path", "/tmp/selector/Cargo.toml"]);
++        let explicit = compile_req(&["check", "/tmp/selector/main.rs", "--manifest-path", "/tmp/selector/Cargo.toml", "--bin", "main"]);
++        assert!(!inferred.session.krate.target_explicit);
++        assert!(explicit.session.krate.target_explicit);
++        assert_ne!(inferred.session, explicit.session);
++        assert_ne!(inferred.session.describe(), explicit.session.describe());
++        for request in [inferred, explicit] {
++            let encoded = encode(&request);
++            let decoded = read_request(&mut std::io::Cursor::new(encoded)).unwrap();
++            assert_eq!(decoded.session, request.session);
++        }
++        let lib = compile_req(&["check", "/tmp/selector/lib.rs", "--lib"]);
++        assert!(lib.session.krate.target_explicit);
++    }
++
+     /// Two feature selections of one file are two session keys (the S6
+     /// routing rule), and flag order or repetition does not make a third.
+     #[test]
 diff --git a/src/resolve/cargo.rs b/src/resolve/cargo.rs
-index 203135afe54ba9bb04d1295435f9424670379c71..8a1862d94c371f415ff99e9b6f8754dabd0bf442 100644
+index 203135afe54ba9bb04d1295435f9424670379c71..ef842594db5d9f69da6392657b69b43b685ef58d 100644
 --- a/src/resolve/cargo.rs
 +++ b/src/resolve/cargo.rs
-@@ -369,6 +369,7 @@ pub fn apply_cargo_env(cmd: &mut Command, env: Option<&[(String, String)]>) {
+@@ -5,9 +5,9 @@
+ // reads packages, targets, dependencies (kind, rename, target cfg), and the
+ // resolve nodes. Per-unit features come from the resolve nodes when the
+ // graph shape makes them exact (one workspace member, no dependencies),
+-// and otherwise from one cached `cargo check --message-format=json` run
+-// for the same request, whose compiler-artifact messages carry the exact
+-// feature set of each selected unit.
++// and otherwise, in the product, from one cached planning-only Cargo unit
++// graph. Its exact features and dependency edges feed the retained native
++// compiler. Research builds alone retain the legacy Cargo-check probe.
+ //
+ // The graph key is the full resolver input: every ancestor `Cargo.toml`
+ // plus `Cargo.lock`, the requested package and target, the requested
+@@ -27,6 +27,10 @@ use std::path::{Path, PathBuf};
+ use std::process::Command;
+ use std::sync::{Mutex, OnceLock};
+ 
++#[cfg(feature = "exclusive-native")]
++#[path = "cargo_plan.rs"]
++mod product_plan;
++
+ // ---------- Minimal JSON reader ----------
+ //
+ // `cargo metadata` output only. Objects keep insertion order in a Vec; the
+@@ -265,6 +269,30 @@ pub struct UnitInfo {
+     pub cargo_env: Vec<(String, String)>,
+     /// Direct dependency lib units, each with its own dependencies.
+     pub deps: Vec<DepUnit>,
++    #[cfg(feature = "exclusive-native")]
++    pub build_script: Option<BuildScriptUnit>,
++}
++
++/// A Cargo-planned host script and the target context consuming its outputs.
++/// This carries facts from the normal unit graph, never a compilation probe.
++#[cfg(feature = "exclusive-native")]
++#[derive(Clone, Debug, PartialEq, Eq, Hash)]
++pub struct BuildScriptUnit {
++    pub script: PathBuf,
++    pub manifest_dir: PathBuf,
++    pub workspace_root: PathBuf,
++    pub package_id: String,
++    pub crate_name: String,
++    pub edition: String,
++    pub features: Vec<String>,
++    pub host_profile: crate::protocol::ProfileFlags,
++    pub target_triple: String,
++    pub target_profile: crate::protocol::ProfileFlags,
++    pub target_features: Vec<String>,
++    pub target_opt_level: String,
++    pub target_debug: bool,
++    pub cargo_env: Vec<(String, String)>,
++    pub planning_key: u64,
+ }
+ 
+ /// One dependency lib unit of a selected crate, recursively: everything
+@@ -301,13 +329,15 @@ pub struct DepUnit {
+     /// The exact feature set of this unit, as for the selected unit.
+     pub features: Vec<String>,
+     pub deps: Vec<DepUnit>,
++    #[cfg(feature = "exclusive-native")]
++    pub build_script: Option<BuildScriptUnit>,
+ }
+ 
+ /// The full graph for one request.
+ #[derive(Clone, Debug)]
+ pub struct CrateGraph {
+     /// The graph key mixed with the watch stamp: it names this exact
+-    /// graph (the features probe caches by it).
++    /// graph (resolved unit planning caches by it).
+     pub key: u64,
+     /// The path package dirs whose manifests and target discovery
+     /// inputs the graph read (`watch_stamp`), and their stamp before
+@@ -369,6 +399,7 @@ pub fn apply_cargo_env(cmd: &mut Command, env: Option<&[(String, String)]>) {
  /// names a bare program makes std fork instead of posix_spawn, and a fork
  /// copies the page table of every resident page of this process: several
  /// GB after a front image restore (src/image.rs), hundreds of ms a spawn.
@@ -11182,7 +12992,7 @@ index 203135afe54ba9bb04d1295435f9424670379c71..8a1862d94c371f415ff99e9b6f8754da
  pub fn cargo_command(env: Option<&[(String, String)]>) -> Command {
      use std::os::unix::fs::PermissionsExt;
      let path = match env {
-@@ -381,6 +382,22 @@ pub fn cargo_command(env: Option<&[(String, String)]>) -> Command {
+@@ -381,6 +412,22 @@ pub fn cargo_command(env: Option<&[(String, String)]>) -> Command {
      cmd
  }
  
@@ -11205,7 +13015,54 @@ index 203135afe54ba9bb04d1295435f9424670379c71..8a1862d94c371f415ff99e9b6f8754da
  impl GraphRequest {
      /// One env var as Cargo sees it for this request.
      fn var(&self, name: &str) -> Option<String> {
-@@ -800,6 +817,7 @@ pub fn build_dir(manifest: &Path, env: Option<&[(String, String)]>) -> Option<Pa
+@@ -393,8 +440,17 @@ impl GraphRequest {
+ 
+ fn hash_bytes(h: &mut FxHasher, path: &Path) {
+     path.to_string_lossy().hash(h);
+-    if let Ok(bytes) = std::fs::read(path) {
+-        bytes.hash(h);
++    match std::fs::read(path) {
++        Ok(bytes) => {
++            0u8.hash(h);
++            bytes.hash(h);
++        }
++        Err(error) => {
++            // Absence, a directory and an unreadable file are distinct
++            // Cargo inputs. A cached admission cannot equate all failures.
++            1u8.hash(h);
++            error.kind().hash(h);
++        }
+     }
+ }
+ 
+@@ -522,7 +578,7 @@ pub fn put_graph_cache(mut cache: GraphCache) {
+ /// strings: the driver turns them into code-2 responses, since a graph
+ /// Cargo itself rejects has no crate to attach a span diagnostic to.
+ pub fn load_graph(req: &GraphRequest) -> Result<std::sync::Arc<CrateGraph>, String> {
+-    let key = graph_key(req);
++    let mut key = graph_key(req);
+     let cached = graph_cache().lock().unwrap().get(&key).cloned();
+     if let Some(g) = &cached
+         && watch_stamp(&g.watch) == g.stamp
+@@ -538,7 +594,8 @@ pub fn load_graph(req: &GraphRequest) -> Result<std::sync::Arc<CrateGraph>, Stri
+         let stamp = watch_stamp(&watch);
+         let mut graph = run_metadata(req, key)?;
+         let dirs = watch_dirs(req, &graph.packages);
+-        if dirs.iter().all(|d| watch.contains(d)) {
++        let after = graph_key(req);
++        if dirs.iter().all(|d| watch.contains(d)) && key == after && stamp == watch_stamp(&watch) {
+             let mut h = FxHasher::default();
+             (key, stamp).hash(&mut h);
+             (graph.key, graph.watch, graph.stamp) = (h.finish(), watch, stamp);
+@@ -549,6 +606,7 @@ pub fn load_graph(req: &GraphRequest) -> Result<std::sync::Arc<CrateGraph>, Stri
+         watch.extend(dirs);
+         watch.sort();
+         watch.dedup();
++        key = after;
+     }
+     Err("the Cargo package set kept changing while `cargo metadata` ran".into())
+ }
+@@ -800,6 +858,7 @@ pub fn build_dir(manifest: &Path, env: Option<&[(String, String)]>) -> Option<Pa
  /// not depend on the sources. Returns None when the run fails; the caller then falls back
  /// to resolve-node features and the session still works for single-package
  /// graphs.
@@ -11213,7 +13070,80 @@ index 203135afe54ba9bb04d1295435f9424670379c71..8a1862d94c371f415ff99e9b6f8754da
  fn unit_features_via_check(req: &GraphRequest, graph: &CrateGraph) -> Option<std::collections::HashMap<(String, String), Vec<String>>> {
      let key = graph.key;
      static CACHE: OnceLock<Mutex<std::collections::HashMap<u64, std::collections::HashMap<(String, String), Vec<String>>>>> =
-@@ -932,16 +950,36 @@ pub fn select_unit(
+@@ -911,11 +970,54 @@ pub fn dep_target_matches(env: &CfgEnv, target: Option<&str>, interner: &crate::
+     }
+ }
+ 
++/// Resolves a normal product target selection using the already loaded Cargo
++/// graph. An inferred name is not an explicit --bin selector. Bind the exact
++/// requested source, and reject ambiguity before reading or compiling a body.
++#[cfg(feature = "exclusive-native")]
++fn select_source_target<'a>(
++    graph: &'a CrateGraph,
++    req: &GraphRequest,
++    kind: &str,
++    name: &str,
++    source: &Path,
++    explicit: bool,
++) -> Result<(&'a PackageInfo, &'a TargetInfo), String> {
++    let source = source.canonicalize().map_err(|e| format!("cannot bind requested Cargo source: {e}"))?;
++    let named_package = graph.packages.iter().find(|p| p.manifest_path == req.manifest_path);
++    let mut matches = Vec::new();
++    for package in &graph.packages {
++        let selected_package = if let Some(spec) = &req.package {
++            spec == &package.id_repr || spec == &package.name
++        } else if let Some(named) = named_package {
++            package.id_repr == named.id_repr
++        } else {
++            graph.workspace_members.contains(&package.id_repr)
++        };
++        if !selected_package {
++            continue;
++        }
++        for target in &package.targets {
++            let selected_kind = if kind == "lib" {
++                target.kind.iter().any(|k| matches!(k.as_str(), "lib" | "rlib" | "dylib" | "cdylib" | "staticlib" | "proc-macro"))
++            } else {
++                target.kind.iter().any(|k| k == kind) && target.name == name
++            };
++            if (!explicit || selected_kind) && target.src_path.canonicalize().is_ok_and(|path| path == source) {
++                matches.push((package, target));
++            }
++        }
++    }
++    if matches.len() != 1 {
++        return Err("package, target name, kind and source do not identify exactly one Cargo target".into());
++    }
++    Ok(matches[0])
++}
++
+ /// Picks one unit from the graph: the package (by name, or the one whose
+ /// manifest the request names) and the target (kind plus name). The
+-/// unit's features prefer the `cargo check` dry run; for a graph with a
+-/// single workspace member and no dependencies the resolve-node features
+-/// are exact and no check runs.
++/// product's nonsimple units use the pinned Cargo unit graph without compiling
++/// a probe. A single workspace member without dependencies has exact features
++/// in metadata already. Only nonproduct research builds retain the old probe.
+ pub fn select_unit(
+     graph: &CrateGraph,
+     req: &GraphRequest,
+@@ -924,7 +1026,14 @@ pub fn select_unit(
+     env: &CfgEnv,
+     interner: &crate::intern::Interner,
+     test_crate: bool,
++    source: &Path,
++    target_explicit: bool,
++    command: crate::protocol::Cmd,
++    profile: crate::protocol::ProfileFlags,
+ ) -> Result<UnitInfo, String> {
++    #[cfg(feature = "exclusive-native")]
++    let (pkg, target) = select_source_target(graph, req, target_kind, target_name, source, target_explicit)?;
++    #[cfg(not(feature = "exclusive-native"))]
+     let pkg = graph
+         .packages
+         .iter()
+@@ -932,16 +1041,36 @@ pub fn select_unit(
          .or_else(|| graph.packages.iter().find(|p| p.manifest_path == req.manifest_path))
          .or_else(|| graph.packages.iter().find(|p| graph.workspace_members.contains(&p.id_repr)))
          .ok_or_else(|| format!("no package in the Cargo graph matches {}", req.manifest_path.display()))?;
@@ -11230,6 +13160,7 @@ index 203135afe54ba9bb04d1295435f9424670379c71..8a1862d94c371f415ff99e9b6f8754da
 +    // and could instead select a same-named bin beside a renamed library.
 +    // Refuse a missing library rather than falling back to a same-named bin.
 +    // Other target kinds keep their original selection behavior.
++    #[cfg(not(feature = "exclusive-native"))]
 +    let target = if target_kind == "lib" {
 +        pkg.targets.iter().find(|t| {
 +            t.kind.iter().any(|k| matches!(k.as_str(), "lib" | "rlib" | "dylib" | "cdylib" | "staticlib" | "proc-macro"))
@@ -11244,13 +13175,12 @@ index 203135afe54ba9bb04d1295435f9424670379c71..8a1862d94c371f415ff99e9b6f8754da
 +    }
 +    .ok_or_else(|| format!("package `{}` has no {target_kind} target named `{target_name}`", pkg.name))?;
      let simple_graph = graph.workspace_members.len() <= 1 && pkg.dependencies.is_empty();
-+    // The upstream probe compiles host units through rustc and can fall back
-+    // to a full Cargo check. Neither is a product compilation service. Reject
-+    // before consulting probe caches; their presence cannot authorize delegation
-+    // or change the actual Lust-supported subset.
++    // The product gets exact unit features and edges from Cargo planning.
++    // It must never consult the research compiler-probe cache or compile a
++    // trial program to decide who owns any source work.
 +    #[cfg(feature = "exclusive-native")]
-+    if !simple_graph || pkg.targets.iter().any(|target| target.kind.iter().any(|kind| kind == "custom-build")) {
-+        return Err("Lustr Cargo feature/build-script probe integration is incomplete; product helpers do not delegate compilation to rustc or Cargo".into());
++    if !simple_graph || pkg.targets.iter().any(|target| target.kind.iter().any(|kind| kind == "custom-build" || kind == "proc-macro")) {
++        return product_plan::select(graph, req, pkg, target, test_crate, command, profile);
 +    }
 +    #[cfg(feature = "exclusive-native")]
 +    let check_map: Option<std::collections::HashMap<(String, String), Vec<String>>> = None;
@@ -11258,11 +13188,965 @@ index 203135afe54ba9bb04d1295435f9424670379c71..8a1862d94c371f415ff99e9b6f8754da
      let check_map = if simple_graph { None } else { unit_features_via_check(req, graph) };
      let features = check_map
          .as_ref()
+@@ -981,6 +1110,8 @@ pub fn select_unit(
+                     build_check_cfgs: Vec::new(),
+                     features: lib_features,
+                     deps: deps.clone(),
++                    #[cfg(feature = "exclusive-native")]
++                    build_script: None,
+                 },
+             );
+         }
+@@ -992,6 +1123,8 @@ pub fn select_unit(
+         features,
+         cargo_env: package_cargo_env(pkg, target),
+         deps,
++        #[cfg(feature = "exclusive-native")]
++        build_script: None,
+     })
+ }
+ 
+@@ -1045,6 +1178,8 @@ fn build_deps(
+             build_check_cfgs: Vec::new(),
+             features,
+             deps: sub,
++            #[cfg(feature = "exclusive-native")]
++            build_script: None,
+         });
+     }
+     out
+@@ -1207,7 +1342,7 @@ mod tests {
+         let graph = load_graph(&req).expect("cargo metadata on the hello fixture");
+         let interner = crate::intern::Interner::default();
+         let env = CfgEnv::new("", &[], false, crate::protocol::ProfileFlags::DEV);
+-        let unit = select_unit(&graph, &req, "bin", "hello", &env, &interner, false).expect("hello unit");
++        let unit = select_unit(&graph, &req, "bin", "hello", &env, &interner, false, &dir.join("src/main.rs"), false, crate::protocol::Cmd::Build, crate::protocol::ProfileFlags::DEV_UNWIND).expect("hello unit");
+         assert_eq!(unit.package.name, "hello");
+         assert_eq!(unit.target.edition, "2024");
+         assert!(unit.target.src_path.ends_with("src/main.rs"));
+diff --git a/src/resolve/cargo_plan.rs b/src/resolve/cargo_plan.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..f29364d359d1eecbdff21c17c15bf723d0acd7f6
+--- /dev/null
++++ b/src/resolve/cargo_plan.rs
+@@ -0,0 +1,814 @@
++//! Product Cargo unit planning. The pinned Cargo prints its resolved unit graph
++//! before compilation; only Lustr's read-only compiler queries may run here.
++//! Source units then enter the existing retained native dependency compiler.
++use super::*;
++use crate::protocol::{Cmd, ProfileFlags};
++use std::collections::{BTreeMap, HashMap, HashSet};
++use std::os::unix::fs::MetadataExt;
++use std::sync::Arc;
++
++#[derive(Clone, Debug, PartialEq, Eq, Hash)]
++struct FileIdentity {
++    path: PathBuf,
++    canonical: PathBuf,
++    device: u64,
++    inode: u64,
++    length: u64,
++    modified: (i64, i64),
++    changed: (i64, i64),
++    mode: u32,
++}
++
++impl FileIdentity {
++    fn read(path: &Path) -> Result<Self, String> {
++        let canonical = path.canonicalize().map_err(|e| format!("cannot identify Cargo planning tool {}: {e}", path.display()))?;
++        let m = std::fs::metadata(path).map_err(|e| format!("cannot inspect Cargo planning tool: {e}"))?;
++        if !m.is_file() || m.mode() & 0o111 == 0 {
++            return Err("Cargo planning tools must be executable regular files".into());
++        }
++        Ok(Self {
++            path: path.to_owned(),
++            canonical,
++            device: m.dev(),
++            inode: m.ino(),
++            length: m.len(),
++            modified: (m.mtime(), m.mtime_nsec()),
++            changed: (m.ctime(), m.ctime_nsec()),
++            mode: m.mode(),
++        })
++    }
++}
++
++#[derive(Clone, Debug, PartialEq, Eq, Hash)]
++struct Tools {
++    receipt: String,
++    files: Vec<(FileIdentity, String)>,
++}
++
++fn pin(key: &str) -> Result<&'static str, String> {
++    let prefix = format!("{key} = \"");
++    include_str!("../../../../upstream/bluefe-core.pin")
++        .lines()
++        .find_map(|line| line.strip_prefix(&prefix)?.strip_suffix('"'))
++        .ok_or_else(|| format!("the source package has no {key} pin"))
++}
++
++impl Tools {
++    fn inspect(cargo: &Path) -> Result<Self, String> {
++        if crate::protocol::host_triple() != "x86_64-unknown-linux-gnu" {
++            return Err("Cargo unit planning requires the declared Linux nightly Cargo identity".into());
++        }
++        let bin = cargo.parent().ok_or("Cargo planning tool has no package directory")?;
++        let root = bin.parent().ok_or("Cargo planning tool has no package root")?;
++        let receipt = std::fs::read_to_string(root.join("lib/lustr-selection-tools.txt"))
++            .map_err(|e| format!("cannot read Cargo planning tool receipt: {e}"))?;
++        let mut lines = receipt.lines();
++        if lines.next() != Some("lustr-native-selection-toolchain-v2")
++            || lines.next() != Some(format!("source={}", pin("source")?).as_str())
++            || lines.next() != Some("host=x86_64-unknown-linux-gnu")
++        {
++            return Err("Cargo planning tool receipt does not match the declared package".into());
++        }
++        let mut expected = BTreeMap::new();
++        for line in lines {
++            let (hash, name) = line.split_once("  ").ok_or("malformed Cargo planning tool receipt")?;
++            if hash.len() != 64
++                || !hash.bytes().all(|c| c.is_ascii_hexdigit())
++                || !["bin/cargo", "bin/lustr", "bin/rustc"].contains(&name)
++                || expected.insert(name, hash).is_some()
++            {
++                return Err("malformed Cargo planning tool receipt".into());
++            }
++        }
++        if expected.len() != 3
++            || expected.get("bin/cargo") != Some(&pin("cargo_sha256")?)
++            || expected.get("bin/lustr") != expected.get("bin/rustc")
++            || bin.join("lustr").canonicalize().ok() != bin.join("rustc").canonicalize().ok()
++        {
++            return Err("Cargo unit planning requires the pinned Cargo and this package's native query entry".into());
++        }
++        let files = expected
++            .into_iter()
++            .map(|(name, hash)| Ok((FileIdentity::read(&root.join(name))?, hash.to_owned())))
++            .collect::<Result<Vec<_>, String>>()?;
++        Ok(Self { receipt, files })
++    }
++
++    fn verified(cargo: &Path) -> Result<Self, String> {
++        static VERIFIED: OnceLock<Mutex<Option<Tools>>> = OnceLock::new();
++        let tools = Self::inspect(cargo)?;
++        let mut previous = VERIFIED.get_or_init(|| Mutex::new(None)).lock().unwrap();
++        if previous.as_ref() == Some(&tools) {
++            return Ok(tools);
++        }
++        let mut seen = HashSet::new();
++        for (file, expected) in &tools.files {
++            if !seen.insert(file.canonical.clone()) {
++                continue;
++            }
++            let output = crate::protocol::host_runtime::sha256_command()
++                .arg(&file.path)
++                .output()
++                .map_err(|e| format!("cannot verify Cargo planning tool bytes: {e}"))?;
++            let actual = std::str::from_utf8(&output.stdout).ok().and_then(|text| text.split_whitespace().next());
++            if !output.status.success() || actual != Some(expected.as_str()) {
++                return Err("Cargo planning tool bytes differ from the declared package".into());
++            }
++        }
++        if Self::inspect(cargo)? != tools {
++            return Err("Cargo planning tools changed during verification".into());
++        }
++        *previous = Some(tools.clone());
++        Ok(tools)
++    }
++}
++
++#[derive(Clone, Debug, PartialEq, Eq, Hash)]
++struct Key {
++    graph: u64,
++    package: String,
++    target: String,
++    kind: Vec<String>,
++    check: bool,
++    test: bool,
++    profile: ProfileFlags,
++    tools: Tools,
++}
++
++fn graph_unchanged(graph: &CrateGraph, req: &GraphRequest) -> bool {
++    let mut h = FxHasher::default();
++    (graph_key(req), watch_stamp(&graph.watch)).hash(&mut h);
++    h.finish() == graph.key
++}
++
++fn configuration_supported(req: &GraphRequest) -> Result<(), String> {
++    // Cargo's unit graph does not expose [env], runner or injected compiler
++    // arguments. Until those facts have a native representation, a new graph
++    // cannot silently discard configuration. The existing single-unit path
++    // keeps its previous admission and cost; this bounds the added service.
++    let mut dirs = req.manifest_path.parent().into_iter().flat_map(Path::ancestors).map(|p| p.join(".cargo")).collect::<Vec<_>>();
++    if let Some(home) = req.var("CARGO_HOME").map(PathBuf::from).or_else(|| req.var("HOME").map(|p| Path::new(&p).join(".cargo"))) {
++        dirs.push(home);
++    }
++    for dir in dirs {
++        for name in ["config", "config.toml"] {
++            match std::fs::symlink_metadata(dir.join(name)) {
++                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
++                _ => return Err("native Cargo unit planning does not yet represent Cargo configuration-file execution settings".into()),
++            }
++        }
++    }
++    let current;
++    let env = if let Some(env) = &req.env {
++        env.as_slice()
++    } else {
++        current = cargo_env_of(&std::env::vars().collect::<Vec<_>>());
++        current.as_slice()
++    };
++    for (name, value) in env {
++        if !value.is_empty() && injected_compiler_setting(name) {
++            return Err(format!("native Cargo unit planning does not yet represent {name}"));
++        }
++    }
++    Ok(())
++}
++
++fn injected_compiler_setting(name: &str) -> bool {
++    matches!(name, "RUSTFLAGS" | "CARGO_ENCODED_RUSTFLAGS" | "CARGO_BUILD_RUSTFLAGS")
++        || (name.starts_with("CARGO_TARGET_") && name != "CARGO_TARGET_DIR")
++        || name.starts_with("CARGO_PROFILE_")
++        || name.starts_with("CARGO_UNSTABLE_")
++        || matches!(name, "CARGO_BUILD_TARGET" | "CARGO_BUILD_RUSTC" | "CARGO_BUILD_RUSTC_WRAPPER" | "CARGO_BUILD_RUSTC_WORKSPACE_WRAPPER")
++}
++
++pub(super) fn select(
++    graph: &CrateGraph,
++    req: &GraphRequest,
++    package: &PackageInfo,
++    target: &TargetInfo,
++    test: bool,
++    command: Cmd,
++    profile: ProfileFlags,
++) -> Result<UnitInfo, String> {
++    let mut cmd = cargo_command(req.env.as_deref());
++    let cargo = PathBuf::from(cmd.get_program());
++    let tools = Tools::verified(&cargo)?;
++    let key = Key {
++        graph: graph.key,
++        package: package.id_repr.clone(),
++        target: target.name.clone(),
++        kind: target.kind.clone(),
++        check: command == Cmd::Check,
++        test,
++        profile,
++        tools,
++    };
++    static CACHE: OnceLock<Mutex<HashMap<Key, Arc<UnitInfo>>>> = OnceLock::new();
++    let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
++    if let Some(unit) = cache.lock().unwrap().get(&key).cloned() {
++        // load_graph just validated this exact graph key and watch stamp.
++        // A retained hit must not repeat that manifest/configuration scan.
++        return Ok((*unit).clone());
++    }
++    configuration_supported(req)?;
++    if !graph_unchanged(graph, req) {
++        return Err("Cargo graph changed before unit planning".into());
++    }
++    if let Some(dir) = req.manifest_path.parent() {
++        cmd.current_dir(dir);
++    }
++    let mode = if test {
++        "test"
++    } else if command == Cmd::Check {
++        "check"
++    } else {
++        "build"
++    };
++    cmd.args([mode, "--unit-graph", "-Z", "unstable-options", "--manifest-path"])
++        .arg(&req.manifest_path)
++        .args(["--package", &package.id_repr]);
++    if target.kind.iter().any(|kind| kind == "bin") {
++        cmd.args(["--bin", &target.name]);
++    } else if target.kind.iter().any(|kind| kind == "lib" || kind == "rlib") {
++        cmd.arg("--lib");
++    } else {
++        return Err("native Cargo unit planning does not yet represent this root target kind".into());
++    }
++    if !req.features.is_empty() {
++        cmd.args(["--features", &req.features.join(",")]);
++    }
++    if !req.default_features {
++        cmd.arg("--no-default-features");
++    }
++    if req.all_features {
++        cmd.arg("--all-features");
++    }
++    if !req.target_triple.is_empty() {
++        cmd.args(["--target", &req.target_triple]);
++    }
++    cmd.args(req.cargo_net.args());
++    let output = cmd.output().map_err(|e| format!("cannot obtain the Cargo unit graph: {e}"))?;
++    if !output.status.success() {
++        return Err(format!("Cargo unit planning failed: {}", String::from_utf8_lossy(&output.stderr).trim_end()));
++    }
++    if !graph_unchanged(graph, req) || Tools::inspect(&cargo)? != key.tools {
++        return Err("Cargo planning inputs changed during the request".into());
++    }
++    let text = std::str::from_utf8(&output.stdout).map_err(|_| "Cargo unit graph is not UTF-8")?;
++    let mut position = 0;
++    let json = json_value(text.as_bytes(), &mut position)?;
++    json_ws(text.as_bytes(), &mut position);
++    if position != text.len() {
++        return Err("Cargo unit graph has trailing output".into());
++    }
++    let mut h = FxHasher::default();
++    // A host script's semantic plan can remain valid across a check and a
++    // build of the same target. The plan cache still binds the actual mode;
++    // the script record separately hashes all of BuildScriptUnit's facts.
++    (key.graph, &key.tools).hash(&mut h);
++    let unit = decode(&json, graph, req, package, target, mode, profile, h.finish())?;
++    cache.lock().unwrap().insert(key, Arc::new(unit.clone()));
++    Ok(unit)
++}
++
++fn field<'a>(value: &'a Json, name: &str) -> Result<&'a Json, String> {
++    let Json::Obj(fields) = value else { return Err("Cargo unit graph expected an object".into()) };
++    let mut found = fields.iter().filter(|(key, _)| key == name);
++    let result = &found.next().ok_or_else(|| format!("Cargo unit graph is missing {name}"))?.1;
++    if found.next().is_some() {
++        return Err(format!("Cargo unit graph repeats {name}"));
++    }
++    Ok(result)
++}
++
++fn string(value: &Json) -> Result<&str, String> {
++    value.as_str().ok_or_else(|| "Cargo unit graph expected a string".into())
++}
++fn array(value: &Json) -> Result<&[Json], String> {
++    if let Json::Arr(values) = value { Ok(values) } else { Err("Cargo unit graph expected an array".into()) }
++}
++fn boolean(value: &Json) -> Result<bool, String> {
++    if let Json::Bool(value) = value { Ok(*value) } else { Err("Cargo unit graph expected a boolean".into()) }
++}
++fn index(value: &Json) -> Result<usize, String> {
++    if let Json::Num(n) = value
++        && n.is_finite()
++        && *n >= 0.0
++        && n.fract() == 0.0
++        && *n < usize::MAX as f64
++    {
++        return Ok(*n as usize);
++    }
++    Err("Cargo unit graph has an invalid index".into())
++}
++fn strings(value: &Json) -> Result<Vec<String>, String> {
++    let mut values = Vec::new();
++    for entry in array(value)? {
++        let entry = string(entry)?;
++        if entry.is_empty() || values.iter().any(|s| s == entry) {
++            return Err("Cargo unit graph has empty or duplicated names".into());
++        }
++        values.push(entry.to_owned());
++    }
++    Ok(values)
++}
++
++#[derive(Clone)]
++struct Unit<'a> {
++    package: &'a PackageInfo,
++    target: &'a TargetInfo,
++    mode: String,
++    host: bool,
++    features: Vec<String>,
++    profile: ProfileFlags,
++    opt_level: String,
++    debug: bool,
++    dependencies: Vec<(usize, String)>,
++}
++
++fn decode(
++    json: &Json,
++    graph: &CrateGraph,
++    req: &GraphRequest,
++    package: &PackageInfo,
++    target: &TargetInfo,
++    mode: &str,
++    profile: ProfileFlags,
++    planning_key: u64,
++) -> Result<UnitInfo, String> {
++    if index(field(json, "version")?)? != 1 {
++        return Err("unsupported Cargo unit graph version".into());
++    }
++    let roots = array(field(json, "roots")?)?;
++    if roots.len() != 1 {
++        return Err("Cargo unit graph must select exactly one root".into());
++    }
++    let root = index(&roots[0])?;
++    let mut units = Vec::new();
++    for row in array(field(json, "units")?)? {
++        let id = string(field(row, "pkg_id")?)?;
++        let package =
++            graph.packages.iter().find(|pkg| pkg.id_repr == id).ok_or("Cargo unit names a package absent from the metadata graph")?;
++        if package.source.is_some() {
++            return Err("native Cargo source integration for registry or git dependencies is incomplete".into());
++        }
++        let declared = field(row, "target")?;
++        let name = string(field(declared, "name")?)?;
++        let kind = strings(field(declared, "kind")?)?;
++        let source = Path::new(string(field(declared, "src_path")?)?);
++        let edition = string(field(declared, "edition")?)?;
++        let crate_types = strings(field(declared, "crate_types")?)?;
++        let target = package
++            .targets
++            .iter()
++            .find(|t| t.name == name && t.kind == kind && t.src_path == source && t.edition == edition && t.crate_types == crate_types)
++            .ok_or("Cargo unit target differs from the metadata graph")?;
++        if edition != "2024" || kind.iter().any(|kind| kind == "proc-macro") {
++            return Err("native Cargo integration requires edition-2024 source units without proc macros".into());
++        }
++        if row.get("is_std").is_some_and(|value| !matches!(value, Json::Bool(false))) {
++            return Err("native Cargo build-std integration is incomplete".into());
++        }
++        let host = match field(row, "platform")? {
++            Json::Null => true,
++            Json::Str(platform) if platform == &req.target_triple && platform == crate::protocol::host_triple() => false,
++            _ => return Err("native Cargo unit platform differs from the supported host".into()),
++        };
++        let mode = string(field(row, "mode")?)?.to_owned();
++        let features = strings(field(row, "features")?)?;
++        if features.iter().any(|f| !package.features.contains(f)) {
++            return Err("Cargo unit activates a feature absent from its package".into());
++        }
++        let p = field(row, "profile")?;
++        if string(field(p, "name")?)? != "dev" {
++            return Err("native Cargo unit profile integration is incomplete".into());
++        }
++        let panic_abort = match string(field(p, "panic")?)? {
++            "abort" => true,
++            "unwind" => false,
++            _ => return Err("unknown Cargo panic profile".into()),
++        };
++        let profile = ProfileFlags {
++            panic_abort,
++            overflow_checks: boolean(field(p, "overflow_checks")?)?,
++            debug_assertions: boolean(field(p, "debug_assertions")?)?,
++        };
++        let opt_level = string(field(p, "opt_level")?)?.to_owned();
++        if !["0", "1", "2", "3", "s", "z"].contains(&opt_level.as_str()) {
++            return Err("unknown Cargo optimization level".into());
++        }
++        let debug = index(field(p, "debuginfo")?)? != 0;
++        let mut dependencies = Vec::new();
++        for dep in array(field(row, "dependencies")?)? {
++            let to = index(field(dep, "index")?)?;
++            let name = string(field(dep, "extern_crate_name")?)?.to_owned();
++            if name.is_empty()
++                || dependencies.iter().any(|(i, n)| *i == to || *n == name)
++                || dep.get("noprelude").is_some_and(|v| !matches!(v, Json::Bool(false)))
++            {
++                return Err("Cargo unit dependency is duplicated or requires unsupported binding".into());
++            }
++            dependencies.push((to, name));
++        }
++        units.push(Unit { package, target, mode, host, features, profile, opt_level, debug, dependencies });
++    }
++    let selected = units.get(root).ok_or("Cargo unit root index is out of range")?;
++    if selected.package.id_repr != package.id_repr
++        || selected.target.name != target.name
++        || selected.target.kind != target.kind
++        || selected.target.src_path != target.src_path
++        || selected.mode != mode
++    {
++        return Err("Cargo unit graph selected a different root request".into());
++    }
++    // The retained native worklist shares profile semantics across target
++    // crates. Do not silently flatten package-specific profile overrides.
++    if selected.profile != profile {
++        return Err("native Cargo root profile differs from the compiler request".into());
++    }
++    let mut visited = HashSet::new();
++    let mut active = HashSet::new();
++    let mut bindings = HashMap::new();
++    let (deps, build_script) =
++        dependencies(root, &units, graph, req, selected.profile, profile, planning_key, &mut active, &mut visited, &mut bindings)?;
++    if visited.len() != units.len() {
++        return Err("Cargo unit graph contains unbound units".into());
++    }
++    Ok(UnitInfo {
++        package: package.clone(),
++        target: target.clone(),
++        package_id: package_id_string(graph, package),
++        features: selected.features.clone(),
++        cargo_env: package_cargo_env(package, target),
++        deps,
++        build_script,
++    })
++}
++
++#[allow(clippy::too_many_arguments)]
++fn dependencies(
++    index: usize,
++    units: &[Unit<'_>],
++    graph: &CrateGraph,
++    req: &GraphRequest,
++    planned_profile: ProfileFlags,
++    actual_profile: ProfileFlags,
++    planning_key: u64,
++    active: &mut HashSet<usize>,
++    visited: &mut HashSet<usize>,
++    bindings: &mut HashMap<(String, String), usize>,
++) -> Result<(Vec<DepUnit>, Option<BuildScriptUnit>), String> {
++    if !active.insert(index) {
++        return Err("Cargo unit graph contains a dependency cycle".into());
++    }
++    visited.insert(index);
++    let unit = units.get(index).ok_or("Cargo dependency index is out of range")?;
++    if unit.profile != planned_profile {
++        return Err("native Cargo per-unit profile integration is incomplete".into());
++    }
++    let mut deps = Vec::new();
++    let mut script = None;
++    for (to, name) in &unit.dependencies {
++        let dep = units.get(*to).ok_or("Cargo dependency index is out of range")?;
++        if dep.mode == "run-custom-build" {
++            if script.is_some()
++                || dep.package.id_repr != unit.package.id_repr
++                || dep.target.kind != ["custom-build"]
++                || dep.features != unit.features
++                || dep.dependencies.len() != 1
++            {
++                return Err("Cargo build-script run unit does not match its consumer".into());
++            }
++            let host_index = dep.dependencies[0].0;
++            let host = units.get(host_index).ok_or("Cargo build-script compile index is out of range")?;
++            if host.mode != "build"
++                || !host.host
++                || host.package.id_repr != dep.package.id_repr
++                || host.target.src_path != dep.target.src_path
++                || host.target.kind != ["custom-build"]
++                || host.features != dep.features
++                || !host.dependencies.is_empty()
++            {
++                return Err("native Cargo host build-dependency integration is incomplete".into());
++            }
++            visited.insert(*to);
++            visited.insert(host_index);
++            script = Some(BuildScriptUnit {
++                script: host.target.src_path.clone(),
++                manifest_dir: host.package.manifest_path.parent().ok_or("Cargo script has no manifest directory")?.to_owned(),
++                workspace_root: graph.workspace_root.clone(),
++                package_id: package_id_string(graph, host.package),
++                crate_name: host.target.name.replace('-', "_"),
++                edition: host.target.edition.clone(),
++                features: host.features.clone(),
++                host_profile: host.profile,
++                target_triple: if req.target_triple.is_empty() { crate::protocol::host_triple().into() } else { req.target_triple.clone() },
++                target_profile: actual_profile,
++                target_features: unit.features.clone(),
++                target_opt_level: dep.opt_level.clone(),
++                target_debug: dep.debug,
++                cargo_env: package_cargo_env(host.package, host.target),
++                planning_key,
++            });
++        } else {
++            let expected_mode = if unit.mode == "test" { "build" } else { unit.mode.as_str() };
++            if dep.mode != expected_mode || !dep.target.kind.iter().any(|kind| kind == "lib" || kind == "rlib") {
++                return Err("native Cargo dependency requires an unimplemented unit kind".into());
++            }
++            let binding = (dep.package.id_repr.clone(), dep.target.name.clone());
++            if bindings.insert(binding, *to).is_some_and(|previous| previous != *to) {
++                return Err("native Cargo dependency has distinct unit contexts that cannot share one source crate".into());
++            }
++            let (nested, build_script) =
++                dependencies(*to, units, graph, req, planned_profile, actual_profile, planning_key, active, visited, bindings)?;
++            deps.push(DepUnit {
++                extern_name: name.clone(),
++                package_id: package_id_string(graph, dep.package),
++                package_name: dep.package.name.clone(),
++                version: dep.package.version.clone(),
++                source: dep.package.source.clone(),
++                lib_src: dep.target.src_path.clone(),
++                lib_name: dep.target.name.clone(),
++                edition: dep.target.edition.clone(),
++                manifest_dir: dep.package.manifest_path.parent().ok_or("Cargo dependency has no manifest directory")?.to_owned(),
++                cargo_env: package_cargo_env(dep.package, dep.target),
++                build_cfgs: Vec::new(),
++                build_check_cfgs: Vec::new(),
++                features: dep.features.clone(),
++                deps: nested,
++                build_script,
++            });
++        }
++    }
++    active.remove(&index);
++    Ok((deps, script))
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    fn package(id: &str, name: &str, kind: &str) -> PackageInfo {
++        PackageInfo {
++            id_repr: id.into(),
++            name: name.into(),
++            version: "0.1.0".into(),
++            edition: "2024".into(),
++            manifest_path: PathBuf::from(format!("/plan/{id}/Cargo.toml")),
++            authors: Vec::new(),
++            description: None,
++            homepage: None,
++            license: None,
++            license_file: None,
++            repository: None,
++            readme: None,
++            rust_version: None,
++            source: None,
++            targets: vec![TargetInfo {
++                kind: vec![kind.into()],
++                crate_types: vec![kind.into()],
++                name: name.into(),
++                src_path: PathBuf::from(format!("/plan/{id}/main.rs")),
++                edition: "2024".into(),
++                test_flag: true,
++            }],
++            dependencies: Vec::new(),
++            features: vec!["fast".into(), "unrelated".into()],
++            resolved_features: vec!["unrelated".into()],
++        }
++    }
++
++    fn unit(id: &str, name: &str, kind: &str, features: &str, deps: &str) -> String {
++        format!(
++            r#"{{"pkg_id":"{id}","target":{{"name":"{name}","kind":["{kind}"],"crate_types":["{kind}"],"src_path":"/plan/{id}/main.rs","edition":"2024"}},"platform":null,"mode":"build","features":[{features}],"profile":{{"name":"dev","opt_level":"0","debuginfo":2,"panic":"unwind","overflow_checks":true,"debug_assertions":true}},"dependencies":[{deps}]}}"#
++        )
++    }
++
++    fn fixture() -> (CrateGraph, GraphRequest, Json) {
++        let graph = CrateGraph {
++            key: 3,
++            watch: Vec::new(),
++            stamp: 4,
++            workspace_root: PathBuf::from("/plan"),
++            packages: vec![package("root", "app", "bin"), package("dep", "util", "lib"), package("unused", "other", "lib")],
++            workspace_members: vec!["root".into(), "dep".into(), "unused".into()],
++        };
++        let req = GraphRequest { manifest_path: graph.packages[0].manifest_path.clone(), default_features: true, ..Default::default() };
++        let root = unit("root", "app", "bin", "", r#"{"index":1,"extern_crate_name":"renamed","noprelude":false}"#);
++        let dep = unit("dep", "util", "lib", r#""fast""#, "");
++        let json = parse_json(&format!(r#"{{"version":1,"roots":[0],"units":[{root},{dep}]}}"#)).unwrap();
++        (graph, req, json)
++    }
++
++    fn change(object: &mut Json, name: &str, value: Json) {
++        let Json::Obj(fields) = object else { panic!("object required") };
++        *fields.iter_mut().find(|(key, _)| key == name).unwrap() = (name.to_owned(), value);
++    }
++
++    fn units(json: &mut Json) -> &mut Vec<Json> {
++        let Json::Obj(fields) = json else { panic!("object required") };
++        let Json::Arr(units) = &mut fields.iter_mut().find(|(key, _)| key == "units").unwrap().1 else { panic!("array required") };
++        units
++    }
++
++    fn decoded(graph: &CrateGraph, req: &GraphRequest, json: &Json) -> Result<UnitInfo, String> {
++        decode(json, graph, req, &graph.packages[0], &graph.packages[0].targets[0], "build", ProfileFlags::DEV_UNWIND, 42)
++    }
++
++    #[test]
++    fn product_cargo_plan_uses_exact_features_edges_and_renames() {
++        let (graph, req, json) = fixture();
++        let unit = decoded(&graph, &req, &json).unwrap();
++        assert!(unit.features.is_empty());
++        assert_eq!(unit.deps.len(), 1);
++        assert_eq!(unit.deps[0].extern_name, "renamed");
++        assert_eq!(unit.deps[0].features, ["fast"]);
++        assert_eq!(unit.deps[0].lib_name, "util");
++        assert!(unit.deps[0].deps.is_empty());
++        assert!(unit.build_script.is_none());
++        assert!(
++            !unit.deps[0].features.contains(&"unrelated".into()),
++            "workspace metadata features must not replace selected unit features"
++        );
++    }
++
++    #[test]
++    fn product_cargo_plan_refuses_other_roots_missing_units_and_cycles() {
++        let (graph, req, original) = fixture();
++        for roots in [vec![], vec![Json::Num(0.0), Json::Num(1.0)], vec![Json::Num(1.0)], vec![Json::Num(99.0)]] {
++            let mut json = original.clone();
++            change(&mut json, "roots", Json::Arr(roots));
++            assert!(decoded(&graph, &req, &json).is_err());
++        }
++        let mut json = original.clone();
++        change(&mut units(&mut json)[0], "dependencies", parse_json(r#"[{"index":99,"extern_crate_name":"missing"}]"#).unwrap());
++        assert!(decoded(&graph, &req, &json).is_err());
++        let mut json = original.clone();
++        change(&mut units(&mut json)[1], "dependencies", parse_json(r#"[{"index":1,"extern_crate_name":"cycle"}]"#).unwrap());
++        assert!(decoded(&graph, &req, &json).unwrap_err().contains("cycle"));
++        let mut json = original;
++        change(&mut units(&mut json)[0], "dependencies", Json::Arr(Vec::new()));
++        assert!(decoded(&graph, &req, &json).unwrap_err().contains("unbound"));
++    }
++
++    #[test]
++    fn product_cargo_plan_refuses_changed_context_or_unsupported_features() {
++        let (graph, req, original) = fixture();
++        for (field_name, value) in [
++            ("mode", Json::Str("check".into())),
++            ("platform", Json::Str("aarch64-apple-darwin".into())),
++            ("features", Json::Arr(vec![Json::Str("missing".into())])),
++        ] {
++            let mut json = original.clone();
++            change(&mut units(&mut json)[0], field_name, value);
++            assert!(decoded(&graph, &req, &json).is_err());
++        }
++        let mut json = original;
++        let profile = field(&units(&mut json)[1], "profile").unwrap().clone();
++        let mut profile = profile;
++        change(&mut profile, "overflow_checks", Json::Bool(false));
++        change(&mut units(&mut json)[1], "profile", profile);
++        assert!(decoded(&graph, &req, &json).unwrap_err().contains("per-unit profile"));
++    }
++
++    #[test]
++    fn product_cargo_plan_preserves_duplicate_root_and_binding_failures() {
++        let (graph, req, original) = fixture();
++        let mut json = original.clone();
++        let Json::Obj(fields) = &mut json else { unreachable!() };
++        fields.push(("roots".into(), Json::Arr(vec![Json::Num(0.0)])));
++        assert!(decoded(&graph, &req, &json).unwrap_err().contains("repeats"));
++        let mut json = original;
++        change(
++            &mut units(&mut json)[0],
++            "dependencies",
++            parse_json(r#"[{"index":1,"extern_crate_name":"renamed"},{"index":1,"extern_crate_name":"second"}]"#).unwrap(),
++        );
++        assert!(decoded(&graph, &req, &json).unwrap_err().contains("duplicated"));
++    }
++
++    #[test]
++    fn product_cargo_plan_binds_host_script_context_without_running_it() {
++        let (mut graph, req, mut json) = fixture();
++        let mut script = graph.packages[0].targets[0].clone();
++        script.name = "build-script-build".into();
++        script.kind = vec!["custom-build".into()];
++        script.crate_types = vec!["bin".into()];
++        script.src_path = PathBuf::from("/plan/root/build.rs");
++        graph.packages[0].targets.push(script);
++        let mut host = parse_json(&unit("root", "build-script-build", "custom-build", "", "")).unwrap();
++        let mut target = field(&host, "target").unwrap().clone();
++        change(&mut target, "src_path", Json::Str("/plan/root/build.rs".into()));
++        change(&mut target, "crate_types", parse_json(r#"["bin"]"#).unwrap());
++        change(&mut host, "target", target);
++        let mut profile = field(&host, "profile").unwrap().clone();
++        change(&mut profile, "debuginfo", Json::Num(0.0));
++        change(&mut host, "profile", profile);
++        let mut run = host.clone();
++        change(&mut run, "mode", Json::Str("run-custom-build".into()));
++        change(&mut run, "dependencies", parse_json(r#"[{"index":2,"extern_crate_name":"build_script_build"}]"#).unwrap());
++        let rows = units(&mut json);
++        change(&mut rows[0], "dependencies", parse_json(r#"[{"index":1,"extern_crate_name":"build_script_build"}]"#).unwrap());
++        rows[1] = run;
++        rows.push(host);
++        let selected = decoded(&graph, &req, &json).unwrap();
++        assert!(selected.deps.is_empty());
++        let script = selected.build_script.unwrap();
++        assert_eq!(script.script, PathBuf::from("/plan/root/build.rs"));
++        assert_eq!(script.manifest_dir, PathBuf::from("/plan/root"));
++        assert_eq!(script.workspace_root, graph.workspace_root);
++        assert_eq!(script.crate_name, "build_script_build");
++        assert_eq!(script.host_profile, ProfileFlags::DEV_UNWIND);
++        assert_eq!(script.target_profile, ProfileFlags::DEV_UNWIND);
++        assert_eq!(script.target_triple, crate::protocol::host_triple());
++        assert_eq!(script.planning_key, 42);
++        assert!(!script.script.exists(), "unit decoding must not run or read a script body");
++
++        let mut changed = json.clone();
++        change(&mut units(&mut changed)[2], "dependencies", parse_json(r#"[{"index":0,"extern_crate_name":"host_dep"}]"#).unwrap());
++        assert!(decoded(&graph, &req, &changed).unwrap_err().contains("host build-dependency"));
++        let mut changed = json.clone();
++        change(&mut units(&mut changed)[2], "features", parse_json(r#"["fast"]"#).unwrap());
++        assert!(decoded(&graph, &req, &changed).is_err());
++        let mut changed = json;
++        change(&mut units(&mut changed)[1], "features", parse_json(r#"["fast"]"#).unwrap());
++        assert!(decoded(&graph, &req, &changed).is_err());
++    }
++
++    #[test]
++    fn product_cargo_plan_refuses_unrepresented_compiler_settings() {
++        for name in [
++            "RUSTFLAGS",
++            "CARGO_ENCODED_RUSTFLAGS",
++            "CARGO_BUILD_RUSTFLAGS",
++            "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS",
++            "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER",
++            "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUNNER",
++            "CARGO_PROFILE_DEV_PANIC",
++            "CARGO_UNSTABLE_BUILD_STD",
++            "CARGO_BUILD_TARGET",
++            "CARGO_BUILD_RUSTC",
++            "CARGO_BUILD_RUSTC_WRAPPER",
++            "CARGO_BUILD_RUSTC_WORKSPACE_WRAPPER",
++        ] {
++            assert!(injected_compiler_setting(name), "unrepresented compiler setting {name}");
++        }
++        for name in ["CARGO_HOME", "CARGO_TARGET_DIR", "CARGO_BUILD_BUILD_DIR", "CARGO_NET_OFFLINE", "CARGO_TERM_COLOR"] {
++            assert!(!injected_compiler_setting(name), "noncompiler setting {name}");
++        }
++    }
++
++    #[test]
++    fn product_cargo_plan_binds_unique_source_and_explicit_target() {
++        let root = std::env::temp_dir().join(format!("lustr-source-binding-{}", std::process::id()));
++        let _ = std::fs::remove_dir_all(&root);
++        std::fs::create_dir(&root).unwrap();
++        let source = root.join("main.rs");
++        let other = root.join("other.rs");
++        std::fs::write(&source, "fn main() {}\n").unwrap();
++        std::fs::write(&other, "compile_error!(\"must not read\");\n").unwrap();
++        let (mut graph, mut req, _) = fixture();
++        req.manifest_path = root.join("Cargo.toml");
++        let package = &mut graph.packages[0];
++        package.manifest_path = req.manifest_path.clone();
++        package.targets[0].src_path = source.clone();
++        let mut second = package.targets[0].clone();
++        second.name = "second".into();
++        second.src_path = other.clone();
++        package.targets.push(second);
++        assert_eq!(select_source_target(&graph, &req, "bin", "inferred", &source, false).unwrap().1.name, "app");
++        assert!(select_source_target(&graph, &req, "bin", "second", &source, true).is_err());
++        assert!(select_source_target(&graph, &req, "bin", "missing", &source, true).is_err());
++        assert!(select_source_target(&graph, &req, "lib", "app", &source, true).is_err());
++        std::fs::remove_file(&other).unwrap();
++        std::os::unix::fs::symlink(&source, &other).unwrap();
++        assert!(select_source_target(&graph, &req, "bin", "app", &source, false).is_err(), "unqualified aliases are ambiguous");
++        assert_eq!(select_source_target(&graph, &req, "bin", "second", &source, true).unwrap().1.name, "second");
++        std::fs::remove_file(&source).unwrap();
++        assert!(select_source_target(&graph, &req, "bin", "app", &source, true).is_err());
++        std::fs::remove_dir_all(root).unwrap();
++    }
++
++    #[test]
++    fn product_cargo_plan_graph_key_distinguishes_missing_and_invalid_config() {
++        let root = std::env::temp_dir().join(format!("lustr-config-kind-{}", std::process::id()));
++        let _ = std::fs::remove_dir_all(&root);
++        std::fs::create_dir_all(root.join(".cargo")).unwrap();
++        let req = GraphRequest { manifest_path: root.join("Cargo.toml"), env: Some(Vec::new()), ..Default::default() };
++        let absent = graph_key(&req);
++        let config = root.join(".cargo/config.toml");
++        std::fs::create_dir(&config).unwrap();
++        assert_ne!(graph_key(&req), absent);
++        assert!(configuration_supported(&req).is_err());
++        std::fs::remove_dir(&config).unwrap();
++        std::fs::write(&config, "").unwrap();
++        assert_ne!(graph_key(&req), absent);
++        assert!(configuration_supported(&req).is_err());
++        std::fs::remove_file(&config).unwrap();
++        assert_eq!(graph_key(&req), absent);
++        let mut flagged = req;
++        flagged.env = Some(vec![("CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS".into(), "--cfg custom".into())]);
++        assert!(configuration_supported(&flagged).unwrap_err().contains("RUSTFLAGS"));
++        std::fs::remove_dir_all(root).unwrap();
++    }
++}
 diff --git a/src/resolve/cfg.rs b/src/resolve/cfg.rs
-index 55a9c568452cde1f283fc02894b4d304b14891cb..11132624ec311935b4529e1186d3dd6e8bad0fa5 100644
+index 55a9c568452cde1f283fc02894b4d304b14891cb..93c4de7c8f979e11b76bf9737f8b3fdb9ab95e51 100644
 --- a/src/resolve/cfg.rs
 +++ b/src/resolve/cfg.rs
-@@ -304,7 +304,7 @@ impl CfgEnv {
+@@ -31,6 +31,9 @@ pub const KNOWN_CFG_NAMES: &[&str] = &[
+     "target_pointer_width",
+     "target_has_atomic",
+     "target_has_atomic_primitive_alignment",
++    "target_has_atomic_load_store",
++    "target_has_threads",
++    "target_object_format",
+     "target_feature",
+     "target_thread_local",
+     "unix",
+@@ -38,6 +41,9 @@ pub const KNOWN_CFG_NAMES: &[&str] = &[
+     "panic",
+     "overflow_checks",
+     "debug_assertions",
++    "ub_checks",
++    "fmt_debug",
++    "relocation_model",
+     "test",
+     "docsrs",
+     "fuzzing",
+@@ -46,12 +52,14 @@ pub const KNOWN_CFG_NAMES: &[&str] = &[
+     "target_abi_version",
+ ];
+ 
+-/// Cfg names rustc 1.99 gates behind a nightly feature (E0658). A
++/// Cfg names the pinned Rust SDK gates behind a nightly feature (E0658). A
+ /// predicate that names one is L0523 wherever it appears, as in rustc,
+ /// even under `any`/`all`/`not` that would not need its value.
+ pub const UNSTABLE_CFG_NAMES: &[&str] = &[
+     "overflow_checks",
+     "target_has_atomic_load_store",
++    "target_has_threads",
++    "target_object_format",
+     "target_thread_local",
+     "ub_checks",
+     "contract_checks",
+@@ -179,9 +187,8 @@ impl CfgEnv {
+             ("aarch64", "linux", _) => &["neon"],
+             ("x86_64", "macos", _) => &["cmpxchg16b", "fxsr", "sse", "sse2", "sse3", "sse4.1", "ssse3"],
+             ("aarch64", "macos", _) => &[
+-                "aes", "crc", "dit", "dotprod", "dpb", "dpb2", "fcma", "fhm", "flagm", "fp16", "frintts", "jsconv", "lor",
+-                "lse", "neon", "paca", "pacg", "pan", "pmuv3", "ras", "rcpc", "rcpc2", "rdm", "sb", "sha2", "sha3", "ssbs",
+-                "vh",
++                "aes", "crc", "dit", "dotprod", "dpb", "dpb2", "fcma", "fhm", "flagm", "fp16", "frintts", "jsconv", "lor", "lse", "neon",
++                "paca", "pacg", "pan", "pmuv3", "ras", "rcpc", "rcpc2", "rdm", "sb", "sha2", "sha3", "ssbs", "vh",
+             ],
+             ("x86_64", "windows", _) => &["cmpxchg16b", "fxsr", "sse", "sse2", "sse3"],
+             ("aarch64", "windows", _) => &["neon"],
+@@ -191,6 +198,30 @@ impl CfgEnv {
+         for f in features {
+             env.pair("target_feature", f);
+         }
++        // This host row is bound to the declared Rust SDK 5b7b37ae, not
++        // the compiler used to build Lustr. Other target rows retain their
++        // historical scope until separately checked. The x87 bit is required
++        // by the x86_64 hard-float ABI; load/store widths are the existing
++        // native atomic widths. Native output is ELF and host threads exist.
++        if triple == "x86_64-unknown-linux-gnu" {
++            env.pair("target_feature", "x87");
++            env.pair("target_object_format", "elf");
++            env.flags.insert("target_has_threads".into());
++            for width in ["8", "16", "32", "64", "ptr"] {
++                env.pair("target_has_atomic_load_store", width);
++            }
++            // These describe the declared configuration. Pinned Rust's cfg
++            // uses the target-default relocation model even under a codegen
++            // override; this is no claim that native ELF output is PIE/PIC.
++            // Debug formatting uses the existing full-derive mode. UB checks
++            // default to debug_assertions; their instrumentation remains
++            // unfinished and this flag is not a completion certificate.
++            env.pair("relocation_model", "pic");
++            env.pair("fmt_debug", "full");
++            if profile.debug_assertions {
++                env.flags.insert("ub_checks".into());
++            }
++        }
+         if !arch.starts_with("wasm") {
+             env.flags.insert("target_thread_local".into());
+         }
+@@ -207,12 +238,12 @@ impl CfgEnv {
+         env
+     }
+ 
+-    /// True for the release triples whose full cfg table above is copied
+-    /// from rustc (the six ts-rust release targets, both Linux libc
+-    /// flavors, and x86_64 windows-gnu). A foreign `--target` names one
+-    /// of these or it stays a clear error: for another triple the table
+-    /// is classification only and a check could accept where rustc
+-    /// rejects.
++    /// True for the existing release triples with represented target/profile
++    /// rows (the six ts-rust targets, both Linux libc flavors, and x86_64
++    /// windows-gnu). This admission list is not complete Rust cfg or backend
++    /// equivalence: for example native reliable f16/f128 capabilities remain
++    /// unproved and absent. Another triple has classification facts only and
++    /// remains an explicit foreign-target gap.
+     pub fn is_release_target(triple: &str) -> bool {
+         matches!(
+             triple,
+@@ -304,7 +335,7 @@ impl CfgEnv {
          let name_of = |trees: &[TokenTree], at: usize| -> Option<(String, Span)> {
              match trees.get(at) {
                  Some(TokenTree::Token(t)) => match t.tok {
@@ -11271,7 +14155,7 @@ index 55a9c568452cde1f283fc02894b4d304b14891cb..11132624ec311935b4529e1186d3dd6e
                      Tok::True => Some(("true".into(), t.span)),
                      Tok::False => Some(("false".into(), t.span)),
                      _ => None,
-@@ -355,7 +355,7 @@ impl CfgEnv {
+@@ -355,7 +386,7 @@ impl CfgEnv {
              let value = match trees.get(*pos + 1) {
                  Some(TokenTree::Token(t)) => match t.tok {
                      Tok::Str(i, _) => strings.get(i as usize).cloned().unwrap_or_default(),
@@ -11280,7 +14164,7 @@ index 55a9c568452cde1f283fc02894b4d304b14891cb..11132624ec311935b4529e1186d3dd6e
                      _ => String::new(),
                  },
                  _ => String::new(),
-@@ -458,7 +458,7 @@ fn attr_from_trees(trees: &[TokenTree], span: Span, style: crate::ast::AttrStyle
+@@ -458,7 +489,7 @@ fn attr_from_trees(trees: &[TokenTree], span: Span, style: crate::ast::AttrStyle
      let mut i = 0;
      while let Some(TokenTree::Token(t)) = trees.get(i) {
          match t.tok {
@@ -11289,15 +14173,43 @@ index 55a9c568452cde1f283fc02894b4d304b14891cb..11132624ec311935b4529e1186d3dd6e
                  path.push(crate::ast::PathSeg::plain(s));
                  i += 1;
                  if matches!(trees.get(i), Some(TokenTree::Token(t2)) if t2.tok == Tok::PathSep) {
-@@ -517,7 +517,7 @@ pub fn outline_cfg_attr_enabled(
+@@ -517,7 +548,8 @@ pub fn outline_cfg_attr_enabled(
                  end += 1;
              }
              let piece = &trees[start..end];
 -            let is_cfg = matches!(piece.first(), Some(TokenTree::Token(t)) if matches!(t.tok, Tok::Ident(s) if interner.get(s) == "cfg"));
-+            let is_cfg = matches!(piece.first(), Some(TokenTree::Token(t)) if matches!(t.tok, Tok::Ident(s, _) if interner.get(s) == "cfg"));
++            let is_cfg =
++                matches!(piece.first(), Some(TokenTree::Token(t)) if matches!(t.tok, Tok::Ident(s, _) if interner.get(s) == "cfg"));
              if is_cfg
                  && let Some(TokenTree::Delim(_, inner, _)) = piece.get(1)
                  && !env.eval(inner, strings, interner, span)?
+@@ -607,6 +639,26 @@ mod tests {
+         // Gated even where `any` would not need its value.
+         assert_eq!(eval_pred(&env, "any(unix, target_thread_local)").unwrap_err().code, "L0523");
+         assert!(eval_pred(&env, "target_has_atomic_primitive_alignment = \"8\"").unwrap());
++        for pred in
++            ["target_has_threads", "target_object_format = \"elf\"", "ub_checks", "fmt_debug = \"full\"", "relocation_model = \"pic\""]
++        {
++            assert_eq!(eval_pred(&env, pred).unwrap_err().code, "L0523");
++        }
++    }
++
++    #[test]
++    fn pinned_linux_host_facts_preserve_requested_profile_and_unstable_gates() {
++        let env = CfgEnv::new("x86_64-unknown-linux-gnu", &[], false, ProfileFlags::DEV_UNWIND);
++        assert!(eval_pred(&env, "target_feature = \"x87\"").unwrap());
++        assert!(env.flags.contains("ub_checks"));
++        assert!(env.flags.contains("target_has_threads"));
++        assert!(env.pairs.contains(&("target_object_format".into(), "elf".into())));
++        assert!(env.pairs.contains(&("relocation_model".into(), "pic".into())));
++        assert!(env.pairs.contains(&("fmt_debug".into(), "full".into())));
++        assert_eq!(env.pairs.iter().filter(|(name, _)| name == "target_has_atomic_load_store").count(), 5);
++        let off = CfgEnv::new("x86_64-unknown-linux-gnu", &[], false, ProfileFlags { debug_assertions: false, ..ProfileFlags::DEV_UNWIND });
++        assert!(!off.flags.contains("ub_checks"));
++        assert!(!off.flags.contains("debug_assertions"));
+     }
+ 
+     #[test]
 diff --git a/src/resolve/imports.rs b/src/resolve/imports.rs
 index 05fa1af6472a45f59b544080121faf48c73f55eb..c8df2d5631259c9d935d02efbf47606a56095635 100644
 --- a/src/resolve/imports.rs
@@ -11324,7 +14236,7 @@ index fc01334135114510c734e64d61334ecbfc3ce108..247c3b8dcf032bdc1f57382d0112f4a6
  pub mod stdpaths;
  pub mod worklist;
 diff --git a/src/resolve/worklist.rs b/src/resolve/worklist.rs
-index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..fc51b3d781033e229fffd1a11299cbd44b791201 100644
+index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9b3665d8094b87274a418c97e38f0d0091dc448 100644
 --- a/src/resolve/worklist.rs
 +++ b/src/resolve/worklist.rs
 @@ -353,7 +353,7 @@ fn starts_item(toks: &[lexer::Token], i: usize, union: Sym) -> bool {
@@ -11653,6 +14565,15 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..fc51b3d781033e229fffd1a11299cbd4
          let (lo, hi) = macro_tok_range(&lexed.tokens, at);
          let (toks, strings) = own_def_strings(&lexed.tokens[lo..hi], &lexed.strings);
          assert!(strings.len() < lexed.strings.len(), "{strings:?} vs {:?}", lexed.strings);
+@@ -9382,6 +9429,8 @@ mod tests {
+             build_check_cfgs: Vec::new(),
+             features: Vec::new(),
+             deps: Vec::new(),
++            #[cfg(feature = "exclusive-native")]
++            build_script: None,
+         }
+     }
+ 
 diff --git a/src/runtime/case_tables.h b/src/runtime/case_tables.h
 index c275bc8341bfd3889cf11e5a2ffb34014135180f..73329e41818a421ab1b5842325189a567bbf4411 100644
 --- a/src/runtime/case_tables.h

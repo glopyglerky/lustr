@@ -60,6 +60,7 @@ history and historical evidence remain intact.
 | [Sole-goal audit](docs/compiler-set/sole-goal-audit.md) | Recorded route cleanup, ownership and release clarification, actual public-entry results and remaining gaps. |
 | [Capability result qualification](docs/compiler-set/capability-result-qualification.md) | Compares real generated output and test outcomes through the public compiler; runs installed-package contracts in CI. |
 | [Retained-history result qualifier](tools/qualify-retained-results.py) | Uses pinned acceptance expectations, separate compile/runtime results and the same surviving daemon; unresolved histories remain visible. |
+| [Native Cargo continuation](docs/compiler-set/native-cargo-continuation.md) | Required dependency/host-script integration, exact unit planning, retained input proofs, original failures and Darwin signing repair. |
 | [Lust upstream review](docs/compiler-set/upstream-lust-review-2026-11-19.md) | Retention, precise invalidation, CI, performance history and reverts. |
 | [Rust upstream review](docs/compiler-set/upstream-rust-review-2026-11-19.md) | Existing selective reuse interfaces, dependency closure, CI and performance history. |
 | [Support and cost analysis](docs/compiler-set/exclusive-coverage-mathematics.md) | Known capability rules, CI coverage limits and the cost of extra dispatch or semantic work. |

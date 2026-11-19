@@ -1,0 +1,16 @@
+{
+  "schema": "lustr-original-hosted-failure-v1",
+  "published_commit": "62da158b33740279947c85f3fc425df6d1623c9f",
+  "reviewed_tree": "390e25946a5ebcb8ccef417467a7b29d8034987d",
+  "checkout_commit": "a3c878f6123b4f5dc5e2eff598b52c83ab5b4ec3",
+  "run_id": 44525981171,
+  "job_id": 135566551943,
+  "artifact_id": 14535540796,
+  "artifact_sha256": "98256d959d6d89599c10c73a737d879aab1e422e78520c735a5916e8472dd1c5",
+  "original_case_archive_sha256": "6d50623d95c8bc863590d6eb97ff1c3860e09409d730fcfeaf0a10377c394654",
+  "preserved_archive_sha256": "b5c76fa714a723f86c8dc0001831a4322ba79c982fcd3801b4a69406b235bacd",
+  "preserved_files": 74,
+  "original_files": 130,
+  "normalization": "none; selected source and stream bytes are unchanged",
+  "capture_limits": "Original collector was a best-effort live-daemon snapshot; not a coordinated final daemon snapshot. See failure.json."
+}

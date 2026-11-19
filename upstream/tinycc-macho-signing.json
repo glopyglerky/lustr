@@ -1,0 +1,17 @@
+{
+  "schema": "lustr-tinycc-integration-v1",
+  "repository": "https://github.com/TinyCC/tinycc",
+  "revision": "43c7708b85681a2fd4451c8a541af4494a8919b2",
+  "file": "tccmacho.c",
+  "blob": "cee09fd7ca20adab626462fcba675f935f594219",
+  "original_sha256": "23e8fe9458444b7a3372a2089d97441d2222d5bb342e0036ef520f35cf5d82c7",
+  "patched_sha256": "ecc43dc9b263b0bc371203e7f5fa62afd3b4cb8802a46819356ba4bae153f44c",
+  "patch": "upstream/tinycc-macho-signing.patch",
+  "patch_sha256": "87d816a4ee3a54cb0c6aec5c5a2e89f0e884251869f09ec68a2a84cdc03398c9",
+  "license": "LGPL-2.0-or-later; original file header and COPYING retained",
+  "necessity": "Pinned Mach-O signing formats an unquoted output path into a 1024-byte shell command and terminates the libtcc caller on signing failure. This breaks retained builds in ordinary paths with spaces and permits truncation or shell interpretation.",
+  "owner": "Existing TinyCC Mach-O output signing; no Rust ownership, frontend or backend replacement",
+  "change": "One argv-based posix_spawnp request; waitpid observes that same child through EINTR; all signing errors return ordinary libtcc failure. No command shell, fixed path buffer, output copy, compiler fallback or signing retry.",
+  "runtime_scope": "CONFIG_CODESIGN on Darwin; a controlled Linux build of the exact helper tests argv and status handling without claiming Mach-O support",
+  "performance_scope": "One signer process replaces one shell plus signer; no benchmark or overall speed claim."
+}

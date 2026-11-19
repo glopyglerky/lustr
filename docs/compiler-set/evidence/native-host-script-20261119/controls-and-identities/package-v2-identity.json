@@ -1,0 +1,24 @@
+{
+  "scope": "Source-built partial package v2, no dynamic library or guarded constructor",
+  "build": "a5d84827d9e89e28",
+  "source_inputs": {
+    "compiler/native/src/resolve/cargo.rs": "60aa54180883fe69523cbfe96d038ed69794046cf44b73ef2acf3c8d4a7d5af6",
+    "compiler/native/src/resolve/cargo_plan.rs": "b69c2fa4bbffe4b3a8d00f5a82d3d0b698542f03fc039f6ca6828addc76f041d",
+    "compiler/native/src/resolve/worklist.rs": "1517c0916b4b6056e88a0c1db4b0584b11e4788d1a1106202bb9f44da8115a8f",
+    "compiler/native/src/protocol.rs": "87facaddc94fb88f56db20c115bef881ea95f28607b6d02c4d7f1a20004b962a",
+    "compiler/native/src/resolve/cfg.rs": "365c30bf756fdc3971ac0cc16451e569a278af75d8b69d8950464b40b7aff701",
+    "compiler/native/src/driver/buildscript.rs": "25d718ce233542d2ad73616404aedc32f4134d5e2671e205ee785b30594e267e",
+    "compiler/native/src/driver/buildscript/native.rs": "61dbb404fe785c6248139aa470b088a23e9f2fdfc0d02e4833c4be94eecc0b8f",
+    "compiler/native/src/driver/compile.rs": "07b5f75a8aa7b712d166c2dee832fdddf01493796d946df4e55ef197739a43cb",
+    "compiler/native/src/daemon.rs": "beb8dc2d2105f19e5a3fb425f6c6d03b111a35d38ba4f0cd1282cbb10c9dc1dd",
+    "src/main.rs": "c3feee5e1366290284f48d54d74e3fb7e015d9ef006aa59155bf752528ab5c50",
+    "src/cargo_selection.rs": "166b52ca915572069fecc8d1bba20b14843a23d09018950dc64c633f8add972b"
+  },
+  "native_receipt": "/tmp/lustr-cargo-plan-build/build/debug/build/lust/696925185fdeec22/run/stdout",
+  "binary_sha256": {
+    "lustr": "8143227d44c38babb3ff3325e2a1fc71fb513252b251ad098d34145c00f66e11",
+    "lust": "951c79f2e5f092d366e0827e4e0fe393394d4b83b87279a847a8c8b4ac042eca",
+    "lust-core": "4dfef36f8f80e878fc4922879caab46b3cceabe478ae104120067a85d0bbd57b",
+    "cargo": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530"
+  }
+}

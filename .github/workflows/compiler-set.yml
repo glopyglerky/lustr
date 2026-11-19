@@ -24,6 +24,9 @@ on:
       - 'tools/*upstream-slice*'
       - 'tools/*three-way*'
       - 'tools/build-tinycc-pic.rs'
+      - 'tools/apply-tinycc-signing.py'
+      - 'tools/test-tinycc-signing.py'
+      - 'upstream/tinycc-macho-signing.*'
       - 'tools/build-native-toolchain.rs'
       - 'tools/selection-toolchain-receipt.rs'
       - 'tools/check-exclusive-coverage.py'
@@ -42,6 +45,7 @@ on:
       - 'tools/test-native-selection-cache.py'
       - 'tools/test-native-selection-seed.py'
       - 'tools/test-native-compact-selection.py'
+      - 'tools/test-native-cargo-plan.py'
       - 'tools/check-warm-applicability.py'
       - 'tools/test-warm-applicability.py'
       - 'tools/qualify-shared-upstream.py'
@@ -72,6 +76,9 @@ on:
       - 'tools/*upstream-slice*'
       - 'tools/*three-way*'
       - 'tools/build-tinycc-pic.rs'
+      - 'tools/apply-tinycc-signing.py'
+      - 'tools/test-tinycc-signing.py'
+      - 'upstream/tinycc-macho-signing.*'
       - 'tools/build-native-toolchain.rs'
       - 'tools/selection-toolchain-receipt.rs'
       - 'tools/check-exclusive-coverage.py'
@@ -90,6 +97,7 @@ on:
       - 'tools/test-native-selection-cache.py'
       - 'tools/test-native-selection-seed.py'
       - 'tools/test-native-compact-selection.py'
+      - 'tools/test-native-cargo-plan.py'
       - 'tools/check-warm-applicability.py'
       - 'tools/test-warm-applicability.py'
       - 'tools/qualify-shared-upstream.py'
@@ -223,6 +231,12 @@ jobs:
           persist-credentials: false
       - name: Install the declared build SDK and research oracle
         run: rustup toolchain install nightly-2026-11-09 --profile minimal --component rustc-dev --component llvm-tools
+      - name: Install the native planning process observer
+        run: |
+          if ! command -v strace >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y strace
+          fi
       - name: Reject product and research feature unification before compiler work
         run: python3 tools/test-native-build-policy.py --rustc "$(rustup which rustc)" --output "$RUNNER_TEMP/native-build-policy.json"
       - name: Obtain the pinned TinyCC source
@@ -236,6 +250,12 @@ jobs:
         run: |
           rustc --edition=2024 tools/build-tinycc-pic.rs -o "$RUNNER_TEMP/build-tinycc-pic"
           "$RUNNER_TEMP/build-tinycc-pic" "$GITHUB_WORKSPACE/.tinycc-pristine-reference" "$RUNNER_TEMP/lustr-tinycc"
+      - name: Qualify TinyCC signing arguments and native publication
+        run: |
+          python3 tools/test-tinycc-signing.py \
+            --source "$RUNNER_TEMP/lustr-tinycc/source" \
+            --tcc "$RUNNER_TEMP/lustr-tinycc/install" \
+            --output "$RUNNER_TEMP/tinycc-signing-qualification"
       - name: Prepare the declared locked dependencies
         run: |
           cargo fetch --manifest-path compiler/native/Cargo.toml --locked
@@ -257,8 +277,9 @@ jobs:
           set -o pipefail
           export RUSTC="$(rustup which rustc)"
           native_work="$RUNNER_TEMP/lustr-native-built/work"
-          for test_filter in mixed_admission product_daemon; do
-            env -u LD_LIBRARY_PATH "$(rustup which cargo)" test --manifest-path compiler/native/Cargo.toml --locked --offline --jobs 2 --features exclusive-native --bin lust-core --target-dir "$native_work/native-target" --config "build.build-dir=\"$native_work/native-intermediates\"" "$test_filter" -- --test-threads=1 2>&1 | tee "$RUNNER_TEMP/lustr-native-built/logs/$test_filter-tests.log"
+          for test_filter in mixed_admission product_daemon product_cargo_plan cargo_target_selector_fact driver::buildscript::native::tests resolve::cfg::tests; do
+            log_name="${test_filter//:/_}"
+            env -u LD_LIBRARY_PATH "$(rustup which cargo)" test --manifest-path compiler/native/Cargo.toml --locked --offline --jobs 2 --features exclusive-native --bin lust-core --target-dir "$native_work/native-target" --config "build.build-dir=\"$native_work/native-intermediates\"" "$test_filter" -- --test-threads=1 2>&1 | tee "$RUNNER_TEMP/lustr-native-built/logs/$log_name-tests.log"
           done
       - name: Require native execution, exclusive routing and terminal failures
         if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
@@ -286,6 +307,14 @@ jobs:
           # ordinary unit runs. Execute them explicitly on this socket host.
           # Do not include the unit-test process used as a signal fixture.
           cargo test --manifest-path Cargo.toml --features source-native-runtime --test compiler_contract --locked --offline --jobs 2 --target-dir "$native_work/entry-target" --config "build.build-dir=\"$native_work/entry-intermediates\"" -- --ignored --test-threads=1 2>&1 | tee "$RUNNER_TEMP/lustr-native-built/logs/root-package-contract-tests.log"
+      - name: Require exact native Cargo planning and warm process reuse
+        if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
+        run: |
+          python3 tools/test-native-cargo-plan.py \
+            --source "$GITHUB_WORKSPACE" \
+            --package "$RUNNER_TEMP/lustr-native-built/toolchain" \
+            --sdk "$(rustc --print sysroot)" \
+            --output "$RUNNER_TEMP/native-cargo-plan"
       - name: Check declared upstream capabilities against the constructed native compiler
         if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
         run: |
@@ -314,7 +343,10 @@ jobs:
         if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
         run: |
           set -euo pipefail
-          python3 tools/test-retained-results.py -v
+          python3 tools/test-retained-results.py -v \
+            --oracle-rustc "$(rustup which rustc)" \
+            --oracle-cargo "$(rustup which cargo)" \
+            --oracle-output "$RUNNER_TEMP/retained-oracle-controls"
           python3 tools/qualify-retained-results.py \
             --entry "$RUNNER_TEMP/lustr-native-built/toolchain/bin/lustr" \
             --rustc "$(rustup which rustc)" \
@@ -362,10 +394,15 @@ jobs:
             ${{ runner.temp }}/native-selection-cache
             ${{ runner.temp }}/native-selection-seed
             ${{ runner.temp }}/native-compact-selection
+            ${{ runner.temp }}/native-cargo-plan
+            ${{ runner.temp }}/tinycc-signing-qualification
+            ${{ runner.temp }}/lustr-tinycc/logs
+            ${{ runner.temp }}/lustr-tinycc/COMPONENTS.txt
             ${{ runner.temp }}/lustr-native-built/COMPONENTS.txt
             ${{ runner.temp }}/lustr-native-built/logs
             ${{ runner.temp }}/lustr-root-package-controls
             ${{ runner.temp }}/retained-results
+            ${{ runner.temp }}/retained-oracle-controls
             ${{ runner.temp }}/capability-results/report.json
             ${{ runner.temp }}/capability-results/*.stdout
             ${{ runner.temp }}/capability-results/*.stderr

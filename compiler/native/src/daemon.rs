@@ -393,9 +393,17 @@ fn shutdown(sock: &Path, base: &Path, sessions: &HashMap<SessionKey, Entry>, why
 /// replaced before the request is served. `env` is the request's client
 /// env: build script records are checked and re-run in it.
 fn refresh_key(key: &SessionKey, env: Option<&[(String, String)]>) -> u64 {
+    // Product scripts have one execution owner: the selected native unit's
+    // preparation. Running one here would duplicate failures across Entry::new,
+    // this per-request refresh, and output preparation. That preparation checks
+    // all script inputs before retained semantic reuse and leases its outputs
+    // through native emission. Cargo requests bypass whole-executable caching.
+    #[cfg(feature = "exclusive-native")]
+    let build_script = { let _ = env; 0u64 };
     // Build script first: a stale record re-runs Cargo, which can
     // create or update Cargo.lock, and the graph key must describe
     // the graph as it stands after that run, not before it.
+    #[cfg(not(feature = "exclusive-native"))]
     let build_script = match protocol::manifest_dir(key) {
         Some(dir) => match crate::driver::buildscript::refresh(&dir, &crate::driver::cache::cache_dir(&key.krate.root), env) {
             r @ crate::driver::buildscript::Refresh::Failed { .. } => {

@@ -1,0 +1,10 @@
+
+running 5 tests
+test resolve::cfg::tests::pinned_linux_host_facts_preserve_requested_profile_and_unstable_gates ... ok
+test resolve::cfg::tests::release_triples_match_rustc_cfg ... ok
+test resolve::cfg::tests::target_table_and_predicates ... ok
+test resolve::cfg::tests::unknown_cfg_name_is_l0520 ... ok
+test resolve::cfg::tests::unstable_cfg_name_is_l0523 ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 437 filtered out; finished in 0.00s
+

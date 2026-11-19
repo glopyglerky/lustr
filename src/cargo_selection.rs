@@ -95,6 +95,10 @@ fn selector<'a>(args: &'a [String], names: &[&str]) -> Option<&'a str> {
     selected
 }
 
+pub fn needs_package_binding(args: &[String]) -> bool {
+    selector(args, &["--package", "-p"]).is_some()
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -133,38 +137,32 @@ pub fn select(request: &Request, parent: &Path, args: &[String]) -> io::Result<S
     let manifest = request.session.krate.manifest_path.as_ref().ok_or_else(|| error("missing Cargo manifest"))?;
     let before = selection_cache::Snapshot::capture(request, parent, args);
     if let Some(selected) = before.as_ref().and_then(selection_cache::Snapshot::load) {
-        // Only the successful Cargo admission and unique selection below can
+        // Only the successful unique Cargo selection below can
         // create this record. Exact input and every target binding still agree.
         selection_cache::diagnostic("hit");
         return Ok(selected);
     }
     selection_cache::diagnostic(if before.is_some() { "miss" } else { "ineligible" });
+    let package_spec = selector(args, &["--package", "-p"]);
+    let mut metadata_command = cargo(parent);
+    metadata_command.arg("metadata");
+    // pkgid requires a lockfile. Normal metadata resolution creates it for
+    // an unlocked first request without compiling a source unit; --no-deps
+    // does not. Keep Cargo's own package-spec grammar and network/lock flags.
+    if package_spec.is_none() {
+        metadata_command.arg("--no-deps");
+    }
     let metadata = output(
-        cargo(parent)
-            .args(["metadata", "--no-deps", "--format-version=1", "--manifest-path"])
-            .arg(manifest)
-            .args(request.session.cargo_net.args()),
+        metadata_command.args(["--format-version=1", "--manifest-path"]).arg(manifest).args(request.session.cargo_net.args()),
     )?;
     let metadata: Value = serde_json::from_slice(&metadata.stdout)?;
-    // The retained native Cargo probe compiles host/build-script/proc-macro
-    // units with a complete compiler. Until those obligations have a selective
-    // complementary owner, only its proven no-probe graph may enter Lustr.
-    let members = metadata["workspace_members"].as_array().ok_or_else(|| error("Cargo metadata has no workspace members"))?;
-    if members.len() != 1 {
-        return Err(error("native Cargo integration is incomplete for a multi-member Cargo graph"));
-    }
-    let packages = metadata["packages"].as_array().ok_or_else(|| error("Cargo metadata has no packages"))?;
-    if packages.iter().any(|package| {
-        package["dependencies"].as_array().is_none_or(|dependencies| !dependencies.is_empty())
-            || package["targets"].as_array().is_none_or(|targets| {
-                targets.iter().any(|target| {
-                    target["kind"].as_array().is_none_or(|kinds| kinds.iter().any(|kind| kind == "custom-build" || kind == "proc-macro"))
-                })
-            })
-    }) {
-        return Err(error("native Cargo integration is incomplete for dependencies, build scripts or proc macros"));
-    }
-    let package_id = if let Some(spec) = selector(args, &["--package", "-p"]) {
+    // This entry binds Cargo's package and target selection. The native
+    // resolver obtains exact dependency units from Cargo's planning-only
+    // unit graph, then compiles supported source units in its retained session.
+    // Dependency and host-unit admission belongs to that selected native graph.
+    metadata["workspace_members"].as_array().ok_or_else(|| error("Cargo metadata has no workspace members"))?;
+    metadata["packages"].as_array().ok_or_else(|| error("Cargo metadata has no packages"))?;
+    let package_id = if let Some(spec) = package_spec {
         // Cargo owns package-spec syntax, including versions, URLs and
         // workspace-inherited identities. Do not split a synthetic Lust id.
         let result = output(

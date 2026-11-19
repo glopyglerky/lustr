@@ -5,9 +5,9 @@
 // reads packages, targets, dependencies (kind, rename, target cfg), and the
 // resolve nodes. Per-unit features come from the resolve nodes when the
 // graph shape makes them exact (one workspace member, no dependencies),
-// and otherwise from one cached `cargo check --message-format=json` run
-// for the same request, whose compiler-artifact messages carry the exact
-// feature set of each selected unit.
+// and otherwise, in the product, from one cached planning-only Cargo unit
+// graph. Its exact features and dependency edges feed the retained native
+// compiler. Research builds alone retain the legacy Cargo-check probe.
 //
 // The graph key is the full resolver input: every ancestor `Cargo.toml`
 // plus `Cargo.lock`, the requested package and target, the requested
@@ -26,6 +26,10 @@ use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::{Mutex, OnceLock};
+
+#[cfg(feature = "exclusive-native")]
+#[path = "cargo_plan.rs"]
+mod product_plan;
 
 // ---------- Minimal JSON reader ----------
 //
@@ -265,6 +269,30 @@ pub struct UnitInfo {
     pub cargo_env: Vec<(String, String)>,
     /// Direct dependency lib units, each with its own dependencies.
     pub deps: Vec<DepUnit>,
+    #[cfg(feature = "exclusive-native")]
+    pub build_script: Option<BuildScriptUnit>,
+}
+
+/// A Cargo-planned host script and the target context consuming its outputs.
+/// This carries facts from the normal unit graph, never a compilation probe.
+#[cfg(feature = "exclusive-native")]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct BuildScriptUnit {
+    pub script: PathBuf,
+    pub manifest_dir: PathBuf,
+    pub workspace_root: PathBuf,
+    pub package_id: String,
+    pub crate_name: String,
+    pub edition: String,
+    pub features: Vec<String>,
+    pub host_profile: crate::protocol::ProfileFlags,
+    pub target_triple: String,
+    pub target_profile: crate::protocol::ProfileFlags,
+    pub target_features: Vec<String>,
+    pub target_opt_level: String,
+    pub target_debug: bool,
+    pub cargo_env: Vec<(String, String)>,
+    pub planning_key: u64,
 }
 
 /// One dependency lib unit of a selected crate, recursively: everything
@@ -301,13 +329,15 @@ pub struct DepUnit {
     /// The exact feature set of this unit, as for the selected unit.
     pub features: Vec<String>,
     pub deps: Vec<DepUnit>,
+    #[cfg(feature = "exclusive-native")]
+    pub build_script: Option<BuildScriptUnit>,
 }
 
 /// The full graph for one request.
 #[derive(Clone, Debug)]
 pub struct CrateGraph {
     /// The graph key mixed with the watch stamp: it names this exact
-    /// graph (the features probe caches by it).
+    /// graph (resolved unit planning caches by it).
     pub key: u64,
     /// The path package dirs whose manifests and target discovery
     /// inputs the graph read (`watch_stamp`), and their stamp before
@@ -410,8 +440,17 @@ impl GraphRequest {
 
 fn hash_bytes(h: &mut FxHasher, path: &Path) {
     path.to_string_lossy().hash(h);
-    if let Ok(bytes) = std::fs::read(path) {
-        bytes.hash(h);
+    match std::fs::read(path) {
+        Ok(bytes) => {
+            0u8.hash(h);
+            bytes.hash(h);
+        }
+        Err(error) => {
+            // Absence, a directory and an unreadable file are distinct
+            // Cargo inputs. A cached admission cannot equate all failures.
+            1u8.hash(h);
+            error.kind().hash(h);
+        }
     }
 }
 
@@ -539,7 +578,7 @@ pub fn put_graph_cache(mut cache: GraphCache) {
 /// strings: the driver turns them into code-2 responses, since a graph
 /// Cargo itself rejects has no crate to attach a span diagnostic to.
 pub fn load_graph(req: &GraphRequest) -> Result<std::sync::Arc<CrateGraph>, String> {
-    let key = graph_key(req);
+    let mut key = graph_key(req);
     let cached = graph_cache().lock().unwrap().get(&key).cloned();
     if let Some(g) = &cached
         && watch_stamp(&g.watch) == g.stamp
@@ -555,7 +594,8 @@ pub fn load_graph(req: &GraphRequest) -> Result<std::sync::Arc<CrateGraph>, Stri
         let stamp = watch_stamp(&watch);
         let mut graph = run_metadata(req, key)?;
         let dirs = watch_dirs(req, &graph.packages);
-        if dirs.iter().all(|d| watch.contains(d)) {
+        let after = graph_key(req);
+        if dirs.iter().all(|d| watch.contains(d)) && key == after && stamp == watch_stamp(&watch) {
             let mut h = FxHasher::default();
             (key, stamp).hash(&mut h);
             (graph.key, graph.watch, graph.stamp) = (h.finish(), watch, stamp);
@@ -566,6 +606,7 @@ pub fn load_graph(req: &GraphRequest) -> Result<std::sync::Arc<CrateGraph>, Stri
         watch.extend(dirs);
         watch.sort();
         watch.dedup();
+        key = after;
     }
     Err("the Cargo package set kept changing while `cargo metadata` ran".into())
 }
@@ -929,11 +970,54 @@ pub fn dep_target_matches(env: &CfgEnv, target: Option<&str>, interner: &crate::
     }
 }
 
+/// Resolves a normal product target selection using the already loaded Cargo
+/// graph. An inferred name is not an explicit --bin selector. Bind the exact
+/// requested source, and reject ambiguity before reading or compiling a body.
+#[cfg(feature = "exclusive-native")]
+fn select_source_target<'a>(
+    graph: &'a CrateGraph,
+    req: &GraphRequest,
+    kind: &str,
+    name: &str,
+    source: &Path,
+    explicit: bool,
+) -> Result<(&'a PackageInfo, &'a TargetInfo), String> {
+    let source = source.canonicalize().map_err(|e| format!("cannot bind requested Cargo source: {e}"))?;
+    let named_package = graph.packages.iter().find(|p| p.manifest_path == req.manifest_path);
+    let mut matches = Vec::new();
+    for package in &graph.packages {
+        let selected_package = if let Some(spec) = &req.package {
+            spec == &package.id_repr || spec == &package.name
+        } else if let Some(named) = named_package {
+            package.id_repr == named.id_repr
+        } else {
+            graph.workspace_members.contains(&package.id_repr)
+        };
+        if !selected_package {
+            continue;
+        }
+        for target in &package.targets {
+            let selected_kind = if kind == "lib" {
+                target.kind.iter().any(|k| matches!(k.as_str(), "lib" | "rlib" | "dylib" | "cdylib" | "staticlib" | "proc-macro"))
+            } else {
+                target.kind.iter().any(|k| k == kind) && target.name == name
+            };
+            if (!explicit || selected_kind) && target.src_path.canonicalize().is_ok_and(|path| path == source) {
+                matches.push((package, target));
+            }
+        }
+    }
+    if matches.len() != 1 {
+        return Err("package, target name, kind and source do not identify exactly one Cargo target".into());
+    }
+    Ok(matches[0])
+}
+
 /// Picks one unit from the graph: the package (by name, or the one whose
 /// manifest the request names) and the target (kind plus name). The
-/// unit's features prefer the `cargo check` dry run; for a graph with a
-/// single workspace member and no dependencies the resolve-node features
-/// are exact and no check runs.
+/// product's nonsimple units use the pinned Cargo unit graph without compiling
+/// a probe. A single workspace member without dependencies has exact features
+/// in metadata already. Only nonproduct research builds retain the old probe.
 pub fn select_unit(
     graph: &CrateGraph,
     req: &GraphRequest,
@@ -942,7 +1026,14 @@ pub fn select_unit(
     env: &CfgEnv,
     interner: &crate::intern::Interner,
     test_crate: bool,
+    source: &Path,
+    target_explicit: bool,
+    command: crate::protocol::Cmd,
+    profile: crate::protocol::ProfileFlags,
 ) -> Result<UnitInfo, String> {
+    #[cfg(feature = "exclusive-native")]
+    let (pkg, target) = select_source_target(graph, req, target_kind, target_name, source, target_explicit)?;
+    #[cfg(not(feature = "exclusive-native"))]
     let pkg = graph
         .packages
         .iter()
@@ -957,6 +1048,7 @@ pub fn select_unit(
     // and could instead select a same-named bin beside a renamed library.
     // Refuse a missing library rather than falling back to a same-named bin.
     // Other target kinds keep their original selection behavior.
+    #[cfg(not(feature = "exclusive-native"))]
     let target = if target_kind == "lib" {
         pkg.targets.iter().find(|t| {
             t.kind.iter().any(|k| matches!(k.as_str(), "lib" | "rlib" | "dylib" | "cdylib" | "staticlib" | "proc-macro"))
@@ -969,13 +1061,12 @@ pub fn select_unit(
     }
     .ok_or_else(|| format!("package `{}` has no {target_kind} target named `{target_name}`", pkg.name))?;
     let simple_graph = graph.workspace_members.len() <= 1 && pkg.dependencies.is_empty();
-    // The upstream probe compiles host units through rustc and can fall back
-    // to a full Cargo check. Neither is a product compilation service. Reject
-    // before consulting probe caches; their presence cannot authorize delegation
-    // or change the actual Lust-supported subset.
+    // The product gets exact unit features and edges from Cargo planning.
+    // It must never consult the research compiler-probe cache or compile a
+    // trial program to decide who owns any source work.
     #[cfg(feature = "exclusive-native")]
-    if !simple_graph || pkg.targets.iter().any(|target| target.kind.iter().any(|kind| kind == "custom-build")) {
-        return Err("Lustr Cargo feature/build-script probe integration is incomplete; product helpers do not delegate compilation to rustc or Cargo".into());
+    if !simple_graph || pkg.targets.iter().any(|target| target.kind.iter().any(|kind| kind == "custom-build" || kind == "proc-macro")) {
+        return product_plan::select(graph, req, pkg, target, test_crate, command, profile);
     }
     #[cfg(feature = "exclusive-native")]
     let check_map: Option<std::collections::HashMap<(String, String), Vec<String>>> = None;
@@ -1019,6 +1110,8 @@ pub fn select_unit(
                     build_check_cfgs: Vec::new(),
                     features: lib_features,
                     deps: deps.clone(),
+                    #[cfg(feature = "exclusive-native")]
+                    build_script: None,
                 },
             );
         }
@@ -1030,6 +1123,8 @@ pub fn select_unit(
         features,
         cargo_env: package_cargo_env(pkg, target),
         deps,
+        #[cfg(feature = "exclusive-native")]
+        build_script: None,
     })
 }
 
@@ -1083,6 +1178,8 @@ fn build_deps(
             build_check_cfgs: Vec::new(),
             features,
             deps: sub,
+            #[cfg(feature = "exclusive-native")]
+            build_script: None,
         });
     }
     out
@@ -1245,7 +1342,7 @@ mod tests {
         let graph = load_graph(&req).expect("cargo metadata on the hello fixture");
         let interner = crate::intern::Interner::default();
         let env = CfgEnv::new("", &[], false, crate::protocol::ProfileFlags::DEV);
-        let unit = select_unit(&graph, &req, "bin", "hello", &env, &interner, false).expect("hello unit");
+        let unit = select_unit(&graph, &req, "bin", "hello", &env, &interner, false, &dir.join("src/main.rs"), false, crate::protocol::Cmd::Build, crate::protocol::ProfileFlags::DEV_UNWIND).expect("hello unit");
         assert_eq!(unit.package.name, "hello");
         assert_eq!(unit.target.edition, "2024");
         assert!(unit.target.src_path.ends_with("src/main.rs"));

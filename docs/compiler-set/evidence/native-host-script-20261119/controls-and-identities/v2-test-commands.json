@@ -1,0 +1,42 @@
+[
+  {
+    "label": "v2-host-controls",
+    "argv": [
+      "/tmp/lustr-cargo-plan-build/build/debug/build/lust/c0160c5cc33687c1/out/lust_core-c0160c5cc33687c1",
+      "driver::buildscript::native::tests",
+      "--nocapture",
+      "--test-threads=1"
+    ],
+    "exit": 0
+  },
+  {
+    "label": "v2-cfg-controls",
+    "argv": [
+      "/tmp/lustr-cargo-plan-build/build/debug/build/lust/c0160c5cc33687c1/out/lust_core-c0160c5cc33687c1",
+      "resolve::cfg::tests",
+      "--nocapture",
+      "--test-threads=1"
+    ],
+    "exit": 0
+  },
+  {
+    "label": "v2-plan-controls",
+    "argv": [
+      "/tmp/lustr-cargo-plan-build/build/debug/build/lust/c0160c5cc33687c1/out/lust_core-c0160c5cc33687c1",
+      "product_cargo_plan",
+      "--nocapture",
+      "--test-threads=1"
+    ],
+    "exit": 0
+  },
+  {
+    "label": "v2-selector-wire",
+    "argv": [
+      "/tmp/lustr-cargo-plan-build/build/debug/build/lust/c0160c5cc33687c1/out/lust_core-c0160c5cc33687c1",
+      "cargo_target_selector_fact",
+      "--nocapture",
+      "--test-threads=1"
+    ],
+    "exit": 0
+  }
+]

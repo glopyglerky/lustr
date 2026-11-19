@@ -1,0 +1,19 @@
+[
+  {
+    "tool": "rustc",
+    "argv": [
+      "--edition=2024",
+      "-C",
+      "overflow-checks=on",
+      "main.rs",
+      "--error-format=json",
+      "--emit=llvm-ir",
+      "-o",
+      "check.ll"
+    ],
+    "exit": 1,
+    "stdout": "00.stdout",
+    "stderr": "00.stderr",
+    "source_rejection": true
+  }
+]

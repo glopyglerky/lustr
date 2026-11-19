@@ -93,7 +93,7 @@ jobs:
           path: |
             compiler/native/third_party/tcc
             compiler/native/third_party/tinycc
-          key: tcc-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('compiler/native/scripts/build-tcc.sh') }}
+          key: tcc-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('compiler/native/scripts/build-tcc.sh', 'tools/apply-tinycc-signing.py', 'upstream/tinycc-macho-signing.patch', 'upstream/tinycc-macho-signing.json') }}
       - name: Build pinned tcc
         if: steps.tcc.outputs.cache-hit != 'true'
         run: scripts/build-tcc.sh
@@ -107,6 +107,11 @@ jobs:
           actual_source=$(rustc -vV | sed -n 's/^commit-hash: //p')
           test -n "$expected_source"
           test "$actual_source" = "$expected_source"
+      - name: Qualify TinyCC signing arguments and native publication
+        run: |
+          python3 ../../tools/test-tinycc-signing.py \
+            --source third_party/tinycc --tcc third_party/tcc \
+            --output "$RUNNER_TEMP/tinycc-signing-qualification"
       - name: Record the declared Cargo build-directory layout
         run: |
           set -euo pipefail
@@ -248,6 +253,7 @@ jobs:
           path: |
             ${{ runner.temp }}/native-gate-identity.txt
             ${{ runner.temp }}/native-cargo-layout.txt
+            ${{ runner.temp }}/tinycc-signing-qualification
             ${{ runner.temp }}/native-cargo-layout-qualification
             ${{ runner.temp }}/native-gate-host.json
             ${{ runner.temp }}/native-gate.log
@@ -347,7 +353,7 @@ jobs:
           path: |
             compiler/native/third_party/tcc
             compiler/native/third_party/tinycc
-          key: tcc-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('compiler/native/scripts/build-tcc.sh') }}
+          key: tcc-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('compiler/native/scripts/build-tcc.sh', 'tools/apply-tinycc-signing.py', 'upstream/tinycc-macho-signing.patch', 'upstream/tinycc-macho-signing.json') }}
       - name: Build pinned tcc
         if: steps.tcc.outputs.cache-hit != 'true'
         run: scripts/build-tcc.sh
@@ -361,6 +367,11 @@ jobs:
           actual_source=$(rustc -vV | sed -n 's/^commit-hash: //p')
           test -n "$expected_source"
           test "$actual_source" = "$expected_source"
+      - name: Qualify TinyCC signing arguments and native publication
+        run: |
+          python3 ../../tools/test-tinycc-signing.py \
+            --source third_party/tinycc --tcc third_party/tcc \
+            --output "$RUNNER_TEMP/tinycc-signing-qualification"
       - name: Record the declared Cargo build-directory layout
         run: |
           set -euo pipefail
@@ -504,6 +515,7 @@ jobs:
           path: |
             ${{ runner.temp }}/native-gate-identity.txt
             ${{ runner.temp }}/native-cargo-layout.txt
+            ${{ runner.temp }}/tinycc-signing-qualification
             ${{ runner.temp }}/native-cargo-layout-qualification
             ${{ runner.temp }}/native-gate.log
             ${{ runner.temp }}/native-crate-failures

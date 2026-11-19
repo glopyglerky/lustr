@@ -160,16 +160,29 @@ def main():
         outcomes.append({"case": "query-refuses-nonempty-source", "status": 2})
         manifest = root / "Cargo.toml"
         manifest.write_text('[package]\nname="host-probe"\nversion="0.1.0"\nedition="2024"\n')
-        for label, dependencies, kinds, members in [
-            ("dependency-host-probe", [{"name": "dependency"}], ["bin"], ["p"]),
-            ("build-script-host-probe", [], ["custom-build"], ["p"]),
-            ("proc-macro-host-probe", [], ["proc-macro"], ["p"]),
-            ("workspace-host-probe", [], ["bin"], ["p", "q"]),
+        # Ordinary requests carry their parsed source/selector directly to
+        # the retained native resolver. The fake Cargo must not run here.
+        executable(binary / "cargo", trap)
+        run("manifest-selection-owned-by-native", ["check", source, "--manifest-path", manifest], 0, ["native"])
+        # Explicit Cargo package specs still use the public package binder.
+        # These controls check that boundary only; real native source/target
+        # and host-script admission is exercised below and by unit-graph CI.
+        for label, metadata, diagnostic in [
+            ("explicit-package-missing-workspace", {"packages": []}, "Cargo metadata has no workspace members"),
+            ("explicit-package-missing-packages", {"workspace_members": ["p"]}, "Cargo metadata has no packages"),
         ]:
-            metadata = {"workspace_members": members, "packages": [{"id": "p", "dependencies": dependencies, "targets": [{"kind": kinds}]}]}
             payload = json.dumps(metadata)
             executable(binary / "cargo", '#!/bin/sh\necho metadata >> "$TEST_LOG"\ncat <<\'JSON\'\n' + payload + '\nJSON\n')
-            run(label, ["check", source, "--manifest-path", manifest], 2, ["metadata"], "native Cargo integration is incomplete")
+            result = run(label, ["check", source, "--manifest-path", manifest, "--package", "p"], 2, ["metadata"], diagnostic)
+            assert result.stderr.startswith(b"error: invalid Cargo target selection:"), result.stderr
+        for kind in ["custom-build", "proc-macro"]:
+            metadata = {"workspace_members": ["p", "q"], "packages": [
+                {"id": "p", "manifest_path": str(manifest), "targets": [{"name": "selected", "kind": ["bin"], "src_path": str(source)}]},
+                {"id": "q", "targets": [{"name": "unselected", "kind": [kind], "src_path": str(root / "unselected.rs")}]},
+            ]}
+            payload = json.dumps(metadata)
+            executable(binary / "cargo", '#!/bin/sh\necho "$1" >> "$TEST_LOG"\nif [ "$1" = pkgid ]; then echo p; exit 0; fi\ncat <<\'JSON\'\n' + payload + '\nJSON\n')
+            run("explicit-package-selects-with-" + kind, ["check", source, "--manifest-path", manifest, "--package", "p"], 0, ["metadata", "pkgid", "native"])
         manifest.unlink()
 
         if args.native_runtime:
@@ -252,6 +265,52 @@ def main():
             program = subprocess.run([str(artifact)], capture_output=True)
             assert (program.returncode, program.stdout) == (0, b"42\n"), program
             outcomes.append({"case": "real-native-cargo-feature-graph", "status": 0, "features": sorted(nodes[0]["features"])})
+            # Canonical source identity is resolved by the same native graph
+            # used for compilation, before a different body or build script
+            # can run. All failed builds preserve the previous executable.
+            original_manifest = cargo_manifest.read_text()
+            before = hashlib.sha256(artifact.read_bytes()).hexdigest()
+            extra = cargo_project / "src/other.rs"
+            extra.write_text('compile_error!("wrong selected body must not be checked");\n')
+            cargo_manifest.write_text(original_manifest + '\n[[bin]]\nname="other"\npath="src/other.rs"\n')
+            side_effect = cargo_project / "selection-must-not-run"
+            script = cargo_project / "build.rs"
+            script.write_text('fn main() { std::fs::write("selection-must-not-run", "executed").unwrap(); }\n')
+            for label, selected_source, flags in [
+                ("wrong-source-target", cargo_source, ["--bin", "other"]),
+                ("unknown-bin", cargo_source, ["--bin", "absent"]),
+                ("foreign-source", source, []),
+            ]:
+                result = subprocess.run([str(binary / "lustr"), "build", str(selected_source), "--manifest-path", str(cargo_manifest), "--offline", *flags, "-o", str(artifact)], env=env, cwd=cargo_project, capture_output=True)
+                assert result.returncode == 2 and b"do not identify exactly one Cargo target" in result.stderr, (label, result.stderr)
+                assert not side_effect.exists() and not log.read_text(), label
+                assert hashlib.sha256(artifact.read_bytes()).hexdigest() == before, label
+                outcomes.append({"case": "real-native-selection-" + label, "status": 2, "script_executed": False})
+            script.unlink()
+            extra.unlink()
+            extra.symlink_to("main.rs")
+            result = subprocess.run([str(binary / "lustr"), "build", str(cargo_source), "--manifest-path", str(cargo_manifest), "--offline", "-o", str(artifact)], env=env, cwd=cargo_project, capture_output=True)
+            assert result.returncode == 2 and b"do not identify exactly one Cargo target" in result.stderr, result.stderr
+            assert hashlib.sha256(artifact.read_bytes()).hexdigest() == before and not log.read_text()
+            outcomes.append({"case": "real-native-selection-ambiguous-source", "status": 2})
+            result = subprocess.run([str(binary / "lustr"), "build", str(cargo_source), "--manifest-path", str(cargo_manifest), "--offline", "--bin", "other", "-o", str(artifact)], env=env, cwd=cargo_project, capture_output=True)
+            assert result.returncode == 0 and not log.read_text(), result.stderr
+            program = subprocess.run([str(artifact)], capture_output=True)
+            assert (program.returncode, program.stdout) == (0, b"42\n"), program
+            outcomes.append({"case": "real-native-selection-explicit-alias", "status": 0})
+            extra.unlink()
+            cargo_manifest.write_text(original_manifest)
+            library_source = cargo_project / "src/shared.rs"
+            library_source.write_text('pub fn value() -> i32 { 7 }\nfn main() {}\n')
+            cargo_manifest.write_text(original_manifest + '\n[lib]\npath="src/shared.rs"\n')
+            for operation, expected in [("check", 0), ("build", 2)]:
+                result = subprocess.run([str(binary / "lustr"), operation, str(library_source), "--manifest-path", str(cargo_manifest), "--offline", "-o", str(artifact)], env=env, cwd=cargo_project, capture_output=True)
+                assert result.returncode == expected and not log.read_text(), (operation, result.stderr)
+                if operation == "build":
+                    assert b"library artifact" in result.stderr, result.stderr
+                outcomes.append({"case": "real-native-inferred-library-" + operation, "status": expected})
+            cargo_manifest.write_text(original_manifest)
+            library_source.unlink()
             cargo_source.write_text(semantic.read_text())
             for layout in [None, "0"]:
                 context = dict(env)

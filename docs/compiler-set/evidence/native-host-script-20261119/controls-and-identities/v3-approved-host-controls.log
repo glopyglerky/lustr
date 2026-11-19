@@ -1,0 +1,22 @@
+
+running 17 tests
+test driver::buildscript::native::tests::a_new_alternative_module_rechecks_the_host_without_running_a_stale_binary ... ok
+test driver::buildscript::native::tests::a_real_failed_script_executes_once_and_uses_only_the_supplied_environment ... ok
+test driver::buildscript::native::tests::a_symlink_parent_traversal_cannot_certify_an_unrelated_lexical_path ... ok
+test driver::buildscript::native::tests::actual_compile_environment_reads_invalidate_without_unread_environment_noise ... ok
+test driver::buildscript::native::tests::cfg_directives_preserve_only_represented_literals_and_custom_names ... ok
+test driver::buildscript::native::tests::changed_runtime_input_keeps_the_result_but_never_certifies_post_run_bytes ... ok
+test driver::buildscript::native::tests::changed_source_cannot_be_rebound_to_old_compilation_after_a_run ... ok
+test driver::buildscript::native::tests::directory_fingerprints_include_empty_entries_and_nonlossy_file_names ... ok
+test driver::buildscript::native::tests::failed_run_has_one_attempt_and_keeps_prior_record_for_proven_recovery ... ok
+test driver::buildscript::native::tests::generated_output_lease_survives_clones_until_the_last_consumer_drops ... ok
+test driver::buildscript::native::tests::implicit_host_source_timestamps_rerun_without_recompiling_unchanged_bytes ... ok
+test driver::buildscript::native::tests::malformed_or_unrepresented_directives_and_missing_outputs_fail_closed ... ok
+test driver::buildscript::native::tests::newly_declared_external_input_is_uncacheable_until_observed_before_a_later_request ... ok
+test driver::buildscript::native::tests::positive_job_counts_are_represented_and_untransferred_jobservers_remain_explicit ... ok
+test driver::buildscript::native::tests::publication_failure_never_creates_a_success_record_or_retries ... ok
+test driver::buildscript::native::tests::runtime_snapshots_distinguish_missing_inputs_and_ignore_future_mtimes ... ok
+test driver::buildscript::native::tests::unchanged_records_do_no_compile_or_run_and_client_values_remain_distinct ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 427 filtered out; finished in 0.02s
+

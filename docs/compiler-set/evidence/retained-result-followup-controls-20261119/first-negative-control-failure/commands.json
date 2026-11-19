@@ -1,0 +1,57 @@
+[
+  {
+    "tool": "rustc",
+    "argv": [
+      "--edition=2024",
+      "-C",
+      "overflow-checks=on",
+      "main.rs",
+      "--error-format=json",
+      "-C",
+      "linker=./absent-linker",
+      "-o",
+      "program"
+    ],
+    "exit": 1,
+    "stdout": "00.stdout",
+    "stderr": "00.stderr",
+    "source_rejection": false
+  },
+  {
+    "tool": "rustc",
+    "argv": [
+      "--edition=2024",
+      "-C",
+      "overflow-checks=on",
+      "main.rs",
+      "--error-format=json",
+      "-C",
+      "linker=./absent-linker",
+      "--emit=llvm-ir",
+      "-o",
+      "check.ll"
+    ],
+    "exit": 0,
+    "stdout": "01.stdout",
+    "stderr": "01.stderr",
+    "source_rejection": false
+  },
+  {
+    "tool": "rustc",
+    "argv": [
+      "--edition=2024",
+      "-C",
+      "overflow-checks=on",
+      "main.rs",
+      "--error-format=json",
+      "--sysroot=./absent-sdk",
+      "--emit=llvm-ir",
+      "-o",
+      "bad-sdk.ll"
+    ],
+    "exit": 1,
+    "stdout": "02.stdout",
+    "stderr": "02.stderr",
+    "source_rejection": true
+  }
+]

@@ -1,0 +1,557 @@
+{
+  "schema": "lustr-tinycc-signing-controls-v1",
+  "passed": true,
+  "platform": "Linux",
+  "full_compiler_qualification": false,
+  "darwin_execution": false,
+  "runner_sha256": "5505c8870d15c04202f40659f80b35c844f12ace06934817639ca1d2d9a00548",
+  "commands": [
+    {
+      "label": "recover-pinned-original",
+      "argv": [
+        "git",
+        "apply",
+        "-R",
+        "$REPOSITORY/upstream/tinycc-macho-signing.patch"
+      ],
+      "cwd": "$FINAL_CONTROLS/original-source",
+      "exit": 0,
+      "stdout": "00-recover-pinned-original.stdout",
+      "stderr": "00-recover-pinned-original.stderr",
+      "environment_overrides": {
+        "GIT_CEILING_DIRECTORIES": "$FINAL_CONTROLS"
+      }
+    },
+    {
+      "label": "apply-standalone",
+      "argv": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+        "$REPOSITORY/tools/apply-tinycc-signing.py",
+        "$FINAL_CONTROLS/apply-standalone",
+        "--receipt",
+        "$FINAL_CONTROLS/apply-standalone/application.json"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 0,
+      "stdout": "01-apply-standalone.stdout",
+      "stderr": "01-apply-standalone.stderr",
+      "environment_overrides": {
+        "GIT_DIR": "$FINAL_CONTROLS/apply-standalone/unrelated.git",
+        "GIT_WORK_TREE": "$FINAL_CONTROLS/original-source",
+        "GIT_INDEX_FILE": "$FINAL_CONTROLS/apply-standalone/wrong-index"
+      }
+    },
+    {
+      "label": "init-checkout-root",
+      "argv": [
+        "git",
+        "init",
+        "-q",
+        "$FINAL_CONTROLS/apply-checkout-root"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 0,
+      "stdout": "02-init-checkout-root.stdout",
+      "stderr": "02-init-checkout-root.stderr",
+      "environment_overrides": {}
+    },
+    {
+      "label": "apply-checkout-root",
+      "argv": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+        "$REPOSITORY/tools/apply-tinycc-signing.py",
+        "$FINAL_CONTROLS/apply-checkout-root",
+        "--receipt",
+        "$FINAL_CONTROLS/apply-checkout-root/application.json"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 0,
+      "stdout": "03-apply-checkout-root.stdout",
+      "stderr": "03-apply-checkout-root.stderr",
+      "environment_overrides": {
+        "GIT_DIR": "$FINAL_CONTROLS/apply-checkout-root/unrelated.git",
+        "GIT_WORK_TREE": "$FINAL_CONTROLS/original-source",
+        "GIT_INDEX_FILE": "$FINAL_CONTROLS/apply-checkout-root/wrong-index"
+      }
+    },
+    {
+      "label": "init-nested-worktree",
+      "argv": [
+        "git",
+        "init",
+        "-q",
+        "$FINAL_CONTROLS/apply-nested-worktree"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 0,
+      "stdout": "04-init-nested-worktree.stdout",
+      "stderr": "04-init-nested-worktree.stderr",
+      "environment_overrides": {}
+    },
+    {
+      "label": "apply-nested-worktree",
+      "argv": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+        "$REPOSITORY/tools/apply-tinycc-signing.py",
+        "$FINAL_CONTROLS/apply-nested-worktree/nested/source",
+        "--receipt",
+        "$FINAL_CONTROLS/apply-nested-worktree/application.json"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 0,
+      "stdout": "05-apply-nested-worktree.stdout",
+      "stderr": "05-apply-nested-worktree.stderr",
+      "environment_overrides": {
+        "GIT_DIR": "$FINAL_CONTROLS/apply-nested-worktree/unrelated.git",
+        "GIT_WORK_TREE": "$FINAL_CONTROLS/original-source",
+        "GIT_INDEX_FILE": "$FINAL_CONTROLS/apply-nested-worktree/wrong-index"
+      }
+    },
+    {
+      "label": "repeat-application",
+      "argv": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+        "$REPOSITORY/tools/apply-tinycc-signing.py",
+        "$FINAL_CONTROLS/apply-nested-worktree/nested/source",
+        "--receipt",
+        "$FINAL_CONTROLS/apply-nested-worktree/application.json"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 0,
+      "stdout": "06-repeat-application.stdout",
+      "stderr": "06-repeat-application.stderr",
+      "environment_overrides": {}
+    },
+    {
+      "label": "refuse-altered-input",
+      "argv": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+        "$REPOSITORY/tools/apply-tinycc-signing.py",
+        "$FINAL_CONTROLS/apply-nested-worktree/nested/source",
+        "--receipt",
+        "$FINAL_CONTROLS/apply-nested-worktree/refused-application.json"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 1,
+      "stdout": "07-refuse-altered-input.stdout",
+      "stderr": "07-refuse-altered-input.stderr",
+      "environment_overrides": {}
+    },
+    {
+      "label": "compile-actual-macho-source",
+      "argv": [
+        "/usr/bin/cc",
+        "-c",
+        "-Wall",
+        "-Werror=implicit-function-declaration",
+        "-DCONFIG_CODESIGN",
+        "-DTCC_TARGET_MACHO",
+        "-DTCC_TARGET_X86_64",
+        "-DONE_SOURCE=0",
+        "$FINAL_TINYCC_BUILD/source/tccmacho.c",
+        "-o",
+        "$FINAL_CONTROLS/macho-context.o"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 0,
+      "stdout": "08-compile-actual-macho-source.stdout",
+      "stderr": "08-compile-actual-macho-source.stderr",
+      "environment_overrides": {}
+    },
+    {
+      "label": "compile-helper-0",
+      "argv": [
+        "/usr/bin/cc",
+        "-std=c99",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-DWAIT_MODE=0",
+        "$FINAL_CONTROLS/helper.c",
+        "-o",
+        "$FINAL_CONTROLS/helper-0"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 0,
+      "stdout": "09-compile-helper-0.stdout",
+      "stderr": "09-compile-helper-0.stderr",
+      "environment_overrides": {}
+    },
+    {
+      "label": "compile-helper-1",
+      "argv": [
+        "/usr/bin/cc",
+        "-std=c99",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-DWAIT_MODE=1",
+        "$FINAL_CONTROLS/helper.c",
+        "-o",
+        "$FINAL_CONTROLS/helper-1"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 0,
+      "stdout": "10-compile-helper-1.stdout",
+      "stderr": "10-compile-helper-1.stderr",
+      "environment_overrides": {}
+    },
+    {
+      "label": "compile-helper-2",
+      "argv": [
+        "/usr/bin/cc",
+        "-std=c99",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-DWAIT_MODE=2",
+        "$FINAL_CONTROLS/helper.c",
+        "-o",
+        "$FINAL_CONTROLS/helper-2"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 0,
+      "stdout": "11-compile-helper-2.stdout",
+      "stderr": "11-compile-helper-2.stderr",
+      "environment_overrides": {}
+    },
+    {
+      "label": "metacharacters",
+      "argv": [
+        "$FINAL_CONTROLS/helper-0",
+        "out sp ace#\u00e9 'quoted' \"$x\";touch SHELL_SIDE_EFFECT"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 0,
+      "stdout": "12-metacharacters.stdout",
+      "stderr": "12-metacharacters.stderr",
+      "environment_overrides": {
+        "PATH": "$FINAL_CONTROLS/fake-bin",
+        "SIGN_TEST_LOG": "$FINAL_CONTROLS/metacharacters.signer.jsonl",
+        "SIGN_TEST_MODE": "success"
+      }
+    },
+    {
+      "label": "long-argument",
+      "argv": [
+        "$FINAL_CONTROLS/helper-0",
+        "nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/nested/output"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 0,
+      "stdout": "13-long-argument.stdout",
+      "stderr": "13-long-argument.stderr",
+      "environment_overrides": {
+        "PATH": "$FINAL_CONTROLS/fake-bin",
+        "SIGN_TEST_LOG": "$FINAL_CONTROLS/long-argument.signer.jsonl",
+        "SIGN_TEST_MODE": "success"
+      }
+    },
+    {
+      "label": "leading-option",
+      "argv": [
+        "$FINAL_CONTROLS/helper-0",
+        "-filename"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 0,
+      "stdout": "14-leading-option.stdout",
+      "stderr": "14-leading-option.stderr",
+      "environment_overrides": {
+        "PATH": "$FINAL_CONTROLS/fake-bin",
+        "SIGN_TEST_LOG": "$FINAL_CONTROLS/leading-option.signer.jsonl",
+        "SIGN_TEST_MODE": "success"
+      }
+    },
+    {
+      "label": "non-utf8-argument",
+      "argv": [
+        "$FINAL_CONTROLS/helper-0",
+        "path-\udcff"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 0,
+      "stdout": "15-non-utf8-argument.stdout",
+      "stderr": "15-non-utf8-argument.stderr",
+      "environment_overrides": {
+        "PATH": "$FINAL_CONTROLS/fake-bin",
+        "SIGN_TEST_LOG": "$FINAL_CONTROLS/non-utf8-argument.signer.jsonl",
+        "SIGN_TEST_MODE": "success"
+      }
+    },
+    {
+      "label": "nonzero-status",
+      "argv": [
+        "$FINAL_CONTROLS/helper-0",
+        "output"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 21,
+      "stdout": "16-nonzero-status.stdout",
+      "stderr": "16-nonzero-status.stderr",
+      "environment_overrides": {
+        "PATH": "$FINAL_CONTROLS/fake-bin",
+        "SIGN_TEST_LOG": "$FINAL_CONTROLS/nonzero-status.signer.jsonl",
+        "SIGN_TEST_MODE": "exit"
+      }
+    },
+    {
+      "label": "signal-status",
+      "argv": [
+        "$FINAL_CONTROLS/helper-0",
+        "output"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 21,
+      "stdout": "17-signal-status.stdout",
+      "stderr": "17-signal-status.stderr",
+      "environment_overrides": {
+        "PATH": "$FINAL_CONTROLS/fake-bin",
+        "SIGN_TEST_LOG": "$FINAL_CONTROLS/signal-status.signer.jsonl",
+        "SIGN_TEST_MODE": "signal"
+      }
+    },
+    {
+      "label": "spawn-error",
+      "argv": [
+        "$FINAL_CONTROLS/helper-0",
+        "output"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 21,
+      "stdout": "18-spawn-error.stdout",
+      "stderr": "18-spawn-error.stderr",
+      "environment_overrides": {
+        "PATH": "$FINAL_CONTROLS/no-tools",
+        "SIGN_TEST_LOG": "$FINAL_CONTROLS/spawn-error.signer.jsonl",
+        "SIGN_TEST_MODE": "success"
+      }
+    },
+    {
+      "label": "interrupted-wait",
+      "argv": [
+        "$FINAL_CONTROLS/helper-1",
+        "output"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 0,
+      "stdout": "19-interrupted-wait.stdout",
+      "stderr": "19-interrupted-wait.stderr",
+      "environment_overrides": {
+        "PATH": "$FINAL_CONTROLS/fake-bin",
+        "SIGN_TEST_LOG": "$FINAL_CONTROLS/interrupted-wait.signer.jsonl",
+        "SIGN_TEST_MODE": "success"
+      }
+    },
+    {
+      "label": "wait-error",
+      "argv": [
+        "$FINAL_CONTROLS/helper-2",
+        "output"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 21,
+      "stdout": "20-wait-error.stdout",
+      "stderr": "20-wait-error.stderr",
+      "environment_overrides": {
+        "PATH": "$FINAL_CONTROLS/fake-bin",
+        "SIGN_TEST_LOG": "$FINAL_CONTROLS/wait-error.signer.jsonl",
+        "SIGN_TEST_MODE": "success"
+      }
+    },
+    {
+      "label": "build-rust-version",
+      "argv": [
+        "$PINNED_SDK/bin/rustc",
+        "-vV"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 0,
+      "stdout": "21-build-rust-version.stdout",
+      "stderr": "21-build-rust-version.stderr",
+      "environment_overrides": {}
+    },
+    {
+      "label": "compile-native-publication",
+      "argv": [
+        "$PINNED_SDK/bin/rustc",
+        "--edition=2024",
+        "-Awarnings",
+        "-Copt-level=1",
+        "$FINAL_CONTROLS/native-publication.rs",
+        "-L",
+        "native=$FINAL_TINYCC_BUILD/install/lib",
+        "-l",
+        "m",
+        "-o",
+        "$FINAL_CONTROLS/native-publication"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 0,
+      "stdout": "22-compile-native-publication.stdout",
+      "stderr": "22-compile-native-publication.stderr",
+      "environment_overrides": {
+        "LUST_TCC_LIB_PATH": "$FINAL_TINYCC_BUILD/install/lib/tcc",
+        "LUST_TCC_BIN": "$FINAL_TINYCC_BUILD/install/bin/tcc"
+      }
+    },
+    {
+      "label": "native-executable-link",
+      "argv": [
+        "$FINAL_CONTROLS/native-publication",
+        "$FINAL_CONTROLS/sp ace#\u00e9 'quoted' $literal;name/main.c",
+        "$FINAL_CONTROLS/sp ace#\u00e9 'quoted' $literal;name/main.o",
+        "$FINAL_CONTROLS/sp ace#\u00e9 'quoted' $literal;name/program",
+        "executable"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 0,
+      "stdout": "23-native-executable-link.stdout",
+      "stderr": "23-native-executable-link.stderr",
+      "environment_overrides": {}
+    },
+    {
+      "label": "native-executable-result",
+      "argv": [
+        "$FINAL_CONTROLS/sp ace#\u00e9 'quoted' $literal;name/program"
+      ],
+      "cwd": "$FINAL_CONTROLS",
+      "exit": 0,
+      "stdout": "24-native-executable-result.stdout",
+      "stderr": "24-native-executable-result.stderr",
+      "environment_overrides": {}
+    }
+  ],
+  "controls": [
+    {
+      "case": "apply-standalone",
+      "passed": true
+    },
+    {
+      "case": "apply-checkout-root",
+      "passed": true
+    },
+    {
+      "case": "apply-nested-worktree",
+      "passed": true
+    },
+    {
+      "case": "repeat-application",
+      "passed": true
+    },
+    {
+      "case": "refuse-altered-input",
+      "passed": true
+    },
+    {
+      "case": "actual-macho-source-context",
+      "passed": true,
+      "tcc_header_sha256": "f374c0db142cf52c2f4db47b56bfeac18645a4cbbd0f4fe1e1fda3b924325f1b",
+      "configuration_sha256": "52ad7879261f23199f9f7370cb8d6b3f481622997a2ab143d425fc3acf3d9f79",
+      "scope": "host compilation of the actual Mach-O translation unit; no target execution"
+    },
+    {
+      "case": "metacharacters",
+      "passed": true,
+      "signer_attempts": 1,
+      "path_bytes": 51
+    },
+    {
+      "case": "long-argument",
+      "passed": true,
+      "signer_attempts": 1,
+      "path_bytes": 1091
+    },
+    {
+      "case": "leading-option",
+      "passed": true,
+      "signer_attempts": 1,
+      "path_bytes": 9
+    },
+    {
+      "case": "non-utf8-argument",
+      "passed": true,
+      "signer_attempts": 1,
+      "path_bytes": 6
+    },
+    {
+      "case": "nonzero-status",
+      "passed": true,
+      "signer_attempts": 1,
+      "path_bytes": 6
+    },
+    {
+      "case": "signal-status",
+      "passed": true,
+      "signer_attempts": 1,
+      "path_bytes": 6
+    },
+    {
+      "case": "spawn-error",
+      "passed": true,
+      "signer_attempts": 0,
+      "path_bytes": 6
+    },
+    {
+      "case": "interrupted-wait",
+      "passed": true,
+      "signer_attempts": 1,
+      "path_bytes": 6
+    },
+    {
+      "case": "wait-error",
+      "passed": true,
+      "signer_attempts": 1,
+      "path_bytes": 6
+    },
+    {
+      "case": "actual-native-publication",
+      "passed": true,
+      "artifact_sha256": "1c6b9521e3220d02044fc03b275fef11f3403d3dfa150f8b36df4c2839662416",
+      "format": "host-native"
+    }
+  ],
+  "declaration": {
+    "schema": "lustr-tinycc-integration-v1",
+    "repository": "https://github.com/TinyCC/tinycc",
+    "revision": "43c7708b85681a2fd4451c8a541af4494a8919b2",
+    "file": "tccmacho.c",
+    "blob": "cee09fd7ca20adab626462fcba675f935f594219",
+    "original_sha256": "23e8fe9458444b7a3372a2089d97441d2222d5bb342e0036ef520f35cf5d82c7",
+    "patched_sha256": "ecc43dc9b263b0bc371203e7f5fa62afd3b4cb8802a46819356ba4bae153f44c",
+    "patch": "upstream/tinycc-macho-signing.patch",
+    "patch_sha256": "87d816a4ee3a54cb0c6aec5c5a2e89f0e884251869f09ec68a2a84cdc03398c9",
+    "license": "LGPL-2.0-or-later; original file header and COPYING retained",
+    "necessity": "Pinned Mach-O signing formats an unquoted output path into a 1024-byte shell command and terminates the libtcc caller on signing failure. This breaks retained builds in ordinary paths with spaces and permits truncation or shell interpretation.",
+    "owner": "Existing TinyCC Mach-O output signing; no Rust ownership, frontend or backend replacement",
+    "change": "One argv-based posix_spawnp request; waitpid observes that same child through EINTR; all signing errors return ordinary libtcc failure. No command shell, fixed path buffer, output copy, compiler fallback or signing retry.",
+    "runtime_scope": "CONFIG_CODESIGN on Darwin; a controlled Linux build of the exact helper tests argv and status handling without claiming Mach-O support",
+    "performance_scope": "One signer process replaces one shell plus signer; no benchmark or overall speed claim."
+  },
+  "installed_receipt": {
+    "schema": "lustr-tinycc-integration-v1",
+    "repository": "https://github.com/TinyCC/tinycc",
+    "revision": "43c7708b85681a2fd4451c8a541af4494a8919b2",
+    "file": "tccmacho.c",
+    "blob": "cee09fd7ca20adab626462fcba675f935f594219",
+    "original_sha256": "23e8fe9458444b7a3372a2089d97441d2222d5bb342e0036ef520f35cf5d82c7",
+    "patched_sha256": "ecc43dc9b263b0bc371203e7f5fa62afd3b4cb8802a46819356ba4bae153f44c",
+    "patch": "upstream/tinycc-macho-signing.patch",
+    "patch_sha256": "87d816a4ee3a54cb0c6aec5c5a2e89f0e884251869f09ec68a2a84cdc03398c9",
+    "license": "LGPL-2.0-or-later; original file header and COPYING retained",
+    "necessity": "Pinned Mach-O signing formats an unquoted output path into a 1024-byte shell command and terminates the libtcc caller on signing failure. This breaks retained builds in ordinary paths with spaces and permits truncation or shell interpretation.",
+    "owner": "Existing TinyCC Mach-O output signing; no Rust ownership, frontend or backend replacement",
+    "change": "One argv-based posix_spawnp request; waitpid observes that same child through EINTR; all signing errors return ordinary libtcc failure. No command shell, fixed path buffer, output copy, compiler fallback or signing retry.",
+    "runtime_scope": "CONFIG_CODESIGN on Darwin; a controlled Linux build of the exact helper tests argv and status handling without claiming Mach-O support",
+    "performance_scope": "One signer process replaces one shell plus signer; no benchmark or overall speed claim.",
+    "action": "applied",
+    "observed_before_sha256": "23e8fe9458444b7a3372a2089d97441d2222d5bb342e0036ef520f35cf5d82c7",
+    "observed_after_sha256": "ecc43dc9b263b0bc371203e7f5fa62afd3b4cb8802a46819356ba4bae153f44c",
+    "declaration_sha256": "267ab4a86786ac2baecc2e0102f319f6888456f427557f6b76624a6c4a623cde",
+    "application_tool_sha256": "a1782d5d48911b49168aa2562daa97f9eb021f0aeef6e4b5e2655dbdfadf15c7"
+  },
+  "tcc_sha256": "ce3051b244cff17d5a5afc1c68d50707803f22f423e4d3ce861817d63d427629",
+  "archive_sha256": "33da647f4ab7d63b4c453fbf4b862f6d7614bc1d0ae1678a19a9cf4954041d12",
+  "helper_source_sha256": "ac07db8ec39168d172e6a5478920953c263cbcc730ac81e71941d8b06c15670a",
+  "native_module_sha256": "6dfeafcebc222b938bf05720207d163539b9f834f10645d8b210f6ec615a2161"
+}

@@ -2228,5 +2228,19 @@
       "v6"
     ]
   },
-  "panic_thread_id_rationale": "These pinned Cargo overlays intentionally trigger debug_assert or u8 overflow with checks enabled. Compare the full stderr except the numeric runtime identifier in exactly one canonical main-thread panic header. Every other version compares stderr bytes without normalization."
+  "panic_thread_id_rationale": "These pinned Cargo overlays intentionally trigger debug_assert or u8 overflow with checks enabled. Compare the full stderr except the numeric runtime identifier in exactly one canonical main-thread panic header. Every other version compares stderr bytes without normalization.",
+  "selection_rejections": {
+    "cargo01_bin_discovery": {
+      "v7": {
+        "kind": "removed-bin-target",
+        "manifest": "Cargo.toml",
+        "source": "src/bin/e.rs",
+        "bin": "e",
+        "recovery_version": "v8",
+        "cargo_stderr": "error: no bin target named `e` in default-run packages\n\nhelp: a target with a similar name exists: `c`\n",
+        "reason": "The pinned v7 overlay deletes the selected e source while retaining v6's --bin e request; v8 restores that source. Pinned independent Cargo build and check both reject the absent target. Require all four public requests to reject before compilation, then compile and compare v8 normally. This is invalid target selection, not unsupported Rust or a coverage exclusion.",
+        "source_evidence": "https://github.com/t3dotgg/lust-lang/tree/240e08d91d4aed0299639f6f11fd522912b248f9/tests/daemon/cargo01_bin_discovery"
+      }
+    }
+  }
 }

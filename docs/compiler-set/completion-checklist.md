@@ -94,6 +94,11 @@ emitted exactly once. Unsupported interfaces remain visible as integration gaps.
 
 ## 4. Retain correct work across changes
 
+The [native Cargo continuation](native-cargo-continuation.md) records the current
+unit-plan and host-script integration, narrow reuse checks, negative module
+lookups and generated-input leases. Its bounded controls and preserved failures
+do not close the wider completion conditions below.
+
 Connect precise native and complementary semantic dependencies. Cover body,
 signature, type, trait, macro, included-file, dependency, environment/build-script,
 target/profile and policy changes. Track negative lookups and real const/runtime

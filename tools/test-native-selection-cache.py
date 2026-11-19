@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Exercise cached public target selection against the unchanged Cargo path.
+"""Exercise the public package-selector component against the unchanged Cargo path.
 
 This is a selector regression gate, not a native compiler or performance gate.
 The supplied profiler includes the production parser, selector, and child owner.
+Ordinary manifest requests now bind in the retained native resolver; this
+component remains the public binder for explicit Cargo package specifications.
 Run it with a matched package containing real Cargo and Rust executables.
 """
 import argparse
@@ -177,8 +179,8 @@ def main():
         warm("manifest-restored")
 
         (project / "build.rs").write_text("fn main() {}\n")
-        pair("new-build-script", expected=2, event="miss")
-        pair("build-script-remains-ineligible-for-store", expected=2, event="miss")
+        pair("new-build-script-selection", event="miss")
+        pair("build-script-selection-remains-ineligible-for-store", event="miss")
         (project / "build.rs").unlink()
         warm("build-script-removed")
 

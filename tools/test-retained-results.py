@@ -4,6 +4,7 @@
 Synthetic verdicts exercise admission, not compiler correctness. Process tests
 exercise the observer's actual public-command, artifact and single-run boundary.
 """
+import argparse
 import copy
 import importlib.util
 import json
@@ -22,6 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("retained_results", ROOT / "tools/qualify-retained-results.py")
 runner = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(runner)
+ORACLE = None
 
 
 def result(code=0, stdout=b"right\n", stderr=b""):
@@ -156,6 +158,25 @@ class VerdictControls(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "semantic source rejection"):
             self.evaluate()
 
+    def test_reviewed_removed_target_has_a_distinct_verdict(self):
+        rejected = dict(result(2, stdout=b""), selection_rejection=True)
+        self.observed = {"checks": {mode: rejected.copy() for mode in ("warm", "cold")},
+                         "builds": {mode: {"compile": rejected.copy(), "artifact_exists": False} for mode in ("warm", "cold")},
+                         "oracle_build": dict(result(101), tool="cargo", selection_rejection=True),
+                         "oracle_selection_check": dict(result(101), selection_rejection=True)}
+        self.assertEqual(runner.compare_version(self.observed, ["check", "run"], selection_rejection=True), "selection-rejected")
+        with self.assertRaisesRegex(ValueError, "no separate no-link"):
+            self.evaluate()
+        self.observed["builds"]["warm"]["runtime"] = result()
+        with self.assertRaisesRegex(ValueError, "produced or executed"):
+            runner.compare_version(self.observed, ["check", "run"], selection_rejection=True)
+
+    def test_removed_target_requires_both_pinned_cargo_rejections(self):
+        self.observed["oracle_build"] = dict(result(101), tool="cargo", selection_rejection=True)
+        self.observed["oracle_selection_check"] = dict(result(0), selection_rejection=False)
+        with self.assertRaisesRegex(ValueError, "Cargo check oracle"):
+            runner.compare_version(self.observed, ["check", "run"], selection_rejection=True)
+
     def test_only_run_specific_thread_id_is_normalized(self):
         runner.compare_runtime(result(101, stderr=b"thread 'main' (10) panicked at main.rs:3:4:\nvalue\n"), result(101, stderr=b"thread 'main' (20) panicked at main.rs:3:4:\nvalue\n"), panic_thread_id=True)
         with self.assertRaisesRegex(ValueError, "stderr"):
@@ -191,6 +212,17 @@ class InventoryControls(unittest.TestCase):
 
 
 class OracleDiagnosticControls(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.cwd = Path(self.temp.name)
+        (self.cwd / "main.rs").write_text("fn main() { missing(); }")
+        self.span = {"is_primary": True, "file_name": "main.rs"}
+        self.diagnostic = {"level": "error", "message": "source error", "spans": [self.span]}
+
+    def rejection(self, *diagnostics):
+        return runner.source_rejection(result(1, stderr=b"\n".join(json.dumps(row).encode() for row in diagnostics)), self.cwd)
+
     def test_rust_and_cargo_require_source_bound_structured_errors(self):
         with tempfile.TemporaryDirectory() as name:
             cwd = Path(name)
@@ -210,6 +242,64 @@ class OracleDiagnosticControls(unittest.TestCase):
             self.assertFalse(runner.source_rejection(result(1, stderr=json.dumps(diagnostic).encode()), cwd))
             self.assertFalse(runner.source_rejection(result(101, stderr=b"error: malformed Cargo.toml"), cwd, cargo=True))
 
+    def test_primary_macro_call_sites_can_anchor_nested_expansions(self):
+        self.span.update(file_name="/rustc/core/macros.rs", expansion={"span": {"file_name": "/external/macro.rs", "expansion": {"span": {"file_name": "main.rs"}}}})
+        self.assertTrue(self.rejection(self.diagnostic))
+
+    def test_external_missing_and_definition_only_call_sites_fail(self):
+        for call_site in ({"file_name": "/external/macro.rs"}, {"file_name": "missing.rs"}, {"file_name": "/external/macro.rs", "def_site_span": {"file_name": "main.rs"}}):
+            with self.subTest(call_site=call_site):
+                self.span.update(file_name="/rustc/core/macros.rs", expansion={"span": call_site, "def_site_span": {"file_name": "main.rs"}})
+                self.assertFalse(self.rejection(self.diagnostic))
+
+    def test_notes_and_secondary_source_spans_cannot_anchor_errors(self):
+        self.span["file_name"] = "/external/error.rs"
+        self.diagnostic["children"] = [{"level": "note", "spans": [{"is_primary": True, "file_name": "main.rs"}]}]
+        self.diagnostic["spans"].append({"is_primary": False, "file_name": "main.rs"})
+        self.assertFalse(self.rejection(self.diagnostic))
+
+    def test_good_source_error_cannot_hide_unanchored_fatal_error(self):
+        fatal = {"level": "error", "message": "could not find the required SDK", "spans": []}
+        self.assertFalse(self.rejection(self.diagnostic, fatal))
+
+    def test_missing_sdk_diagnostic_is_not_a_source_error_despite_its_span(self):
+        self.diagnostic.update(code={"code": "E0463"}, message="can't find crate for `std`")
+        self.assertFalse(self.rejection(self.diagnostic))
+
+    def test_dependency_artifact_errors_cannot_use_the_imports_source_span(self):
+        self.diagnostic.update(code=None, message="extern location for dep does not exist: missing.rlib")
+        self.assertFalse(self.rejection(self.diagnostic))
+        self.diagnostic.update(code={"code": "E0786"}, message="found invalid metadata files for crate `dep`")
+        self.assertFalse(self.rejection(self.diagnostic))
+
+    def test_mismatched_and_ambiguous_dependency_artifacts_are_operational_errors(self):
+        for code, message in (("E0460", "found possibly newer version of crate `dep`"), ("E0464", "multiple candidates for rlib dependency `dep` found"), ("E0514", "found crate `dep` compiled by an incompatible version of rustc")):
+            with self.subTest(code=code):
+                self.diagnostic.update(code={"code": code}, message=message)
+                self.assertFalse(self.rejection(self.diagnostic))
+
+    def test_cargo_source_errors_cannot_hide_compiler_or_build_crashes(self):
+        stdout = json.dumps({"reason": "compiler-message", "message": self.diagnostic}).encode()
+        for stderr in (b"thread 'rustc' (123) panicked at rustc.rs:1:1", b"error: internal compiler error: broken", b"error: the compiler unexpectedly panicked", b"Caused by:\n  process didn't exit successfully: rustc (signal: 11, SIGSEGV)", b"error: could not execute process rustc (never executed)", b"signal: 6, SIGABRT", b"error: failed to run custom build command for dep"):
+            with self.subTest(stderr=stderr):
+                self.assertFalse(runner.source_rejection(result(101, stdout=stdout, stderr=stderr), self.cwd, cargo=True))
+        failure = {"level": "failure-note", "message": "the compiler unexpectedly panicked"}
+        stdout += b"\n" + json.dumps({"reason": "compiler-message", "message": failure}).encode()
+        self.assertFalse(runner.source_rejection(result(101, stdout=stdout, stderr=b"error: could not compile"), self.cwd, cargo=True))
+
+    def test_malformed_diagnostics_and_internal_status_fail(self):
+        for encoded in (b"{malformed", b"[]", b'{"level":"error","spans":[null]}'):
+            with self.subTest(encoded=encoded):
+                self.assertFalse(runner.source_rejection(result(1, stderr=encoded), self.cwd))
+        self.assertFalse(runner.source_rejection(result(101, stderr=json.dumps(self.diagnostic).encode()), self.cwd))
+
+    def test_missing_target_is_not_a_generic_cargo_failure_allowance(self):
+        rule = json.loads((ROOT / "upstream/retained-scenario-results.json").read_text())["selection_rejections"]["cargo01_bin_discovery"]["v7"]
+        self.assertTrue(runner.removed_target_rejection(result(101, stdout=b"", stderr=rule["cargo_stderr"].encode()), rule, cargo=True))
+        for stderr in (b"error: malformed Cargo.toml\n", b"error: linking with cc failed\n", rule["cargo_stderr"].replace("`e`", "`other`").encode()):
+            with self.subTest(stderr=stderr):
+                self.assertFalse(runner.removed_target_rejection(result(101, stdout=b"", stderr=stderr), rule, cargo=True))
+
 
 class ProcessControls(unittest.TestCase):
     def setUp(self):
@@ -218,7 +308,7 @@ class ProcessControls(unittest.TestCase):
         self.entry = self.directory / "lustr"
         self.counter = self.directory / "executions"
         program = "#!" + sys.executable + "\nfrom pathlib import Path\np=Path(" + repr(str(self.counter)) + ")\np.open('a').write('x')\nprint('right')\n"
-        self.entry.write_text("#!" + sys.executable + "\nimport json,os,sys\nfrom pathlib import Path\nargs=sys.argv[1:]\ncode=int(os.environ.get('CONTROL_COMPILE_EXIT','0'))\nif code==0 and args[0]=='build' and not os.environ.get('CONTROL_OMIT_ARTIFACT'):\n p=Path(args[args.index('-o')+1]);p.write_text(" + repr(program) + ");p.chmod(0o755)\nPath(os.environ['LUSTR_TRACE_PATH']).write_text(json.dumps({'engine':'lust' if code==0 else 'lust-failed','entry':'native-library' if os.environ.get('LUST_NO_DAEMON') else 'daemon'})+'\\n')\nif code: print('error[L0101]: control reject',file=sys.stderr)\nsys.exit(code)\n")
+        self.entry.write_text("#!" + sys.executable + "\nimport json,os,sys\nfrom pathlib import Path\nargs=sys.argv[1:]\ncode=int(os.environ.get('CONTROL_COMPILE_EXIT','0'))\nif code==0 and args[0]=='build' and not os.environ.get('CONTROL_OMIT_ARTIFACT'):\n p=Path(args[args.index('-o')+1]);p.write_text(" + repr(program) + ");p.chmod(0o755)\nif not os.environ.get('CONTROL_OMIT_TRACE'): Path(os.environ['LUSTR_TRACE_PATH']).write_text(json.dumps({'engine':'lust' if code==0 else 'lust-failed','entry':'native-library' if os.environ.get('LUST_NO_DAEMON') else 'daemon'})+'\\n')\nif code: print(os.environ.get('CONTROL_ERROR','error[L0101]: control reject'),file=sys.stderr)\nsys.exit(code)\n")
         self.entry.chmod(0o755)
         self.observer = runner.Observer({"source": str(ROOT), "output": str(self.directory), "entry": str(self.entry), "rustc": sys.executable, "cargo": sys.executable}, "mainret01_exitcode_edits")
         self.env = dict(os.environ, LUST_NO_DAEMON="1")
@@ -265,6 +355,29 @@ class ProcessControls(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "exited during"):
             self.request()
         self.assertFalse(self.counter.exists())
+
+    def test_unreviewed_precompilation_refusal_reports_actual_diagnostic(self):
+        self.env.update(CONTROL_COMPILE_EXIT="2", CONTROL_OMIT_TRACE="1", CONTROL_ERROR="error: blocked Cargo graph")
+        with self.assertRaisesRegex(ValueError, "public-refusal-before-owner: exit 2.*blocked Cargo graph"):
+            self.request()
+        self.assertFalse(self.counter.exists())
+        self.assertEqual(self.observer.report["commands"][-1]["classification"], "public-refusal-before-owner")
+
+    def test_success_without_owner_trace_fails(self):
+        self.env["CONTROL_OMIT_TRACE"] = "1"
+        with self.assertRaisesRegex(ValueError, "missing-owner-trace: exit 0"):
+            self.request()
+        self.assertFalse(self.counter.exists())
+
+    def test_removed_target_expectation_cannot_cover_a_present_source(self):
+        rule = json.loads((ROOT / "upstream/retained-scenario-results.json").read_text())["selection_rejections"]["cargo01_bin_discovery"]["v7"]
+        path = self.directory / rule["source"]
+        path.parent.mkdir(parents=True)
+        path.write_text("fn main() {}")
+        (self.directory / "Cargo.toml").write_text("[package]\nname='probe'\nversion='0.0.0'\n")
+        argv = [str(self.entry), "check", rule["source"], "--manifest-path", "Cargo.toml", "--bin", "e"]
+        with self.assertRaisesRegex(ValueError, "target is present"):
+            self.observer.require_removed_target(argv, self.directory, rule)
 
 
 class FixtureLifecycleControls(unittest.TestCase):
@@ -329,6 +442,162 @@ sys.exit(code)
         self.assertIn("stdout differs", report["failure"])
         self.assertEqual(len(report["versions"]), 2)
 
+    def cargo_campaign(self, stale):
+        with tempfile.TemporaryDirectory() as name:
+            root = Path(name)
+            source, output, package = root / "source", root / "output", root / "package"
+            scripts = source / "compiler/native/scripts"
+            scenario = "cargo01_bin_discovery"
+            scripts.mkdir(parents=True)
+            output.mkdir()
+            package.mkdir()
+            for filename in ("test-daemon-scenarios.py", "oracle_log.py"):
+                shutil.copy2(ROOT / "compiler/native/scripts" / filename, scripts / filename)
+            shutil.copytree(ROOT / "compiler/native/tests/daemon" / scenario, source / "compiler/native/tests/daemon" / scenario)
+            program = r'''
+import json,os,re,signal,sys
+from pathlib import Path
+args=sys.argv[1:]
+if args==['daemon']:
+    Path(os.environ['LUST_DAEMON_SOCKET']).touch()
+    signal.pause()
+native=Path(sys.argv[0]).name=='lustr'
+selected=args[args.index('--bin')+1]
+source=Path(args[1]) if native else Path('src/bin/'+selected+'.rs')
+if not native and not source.exists() and Path('src/bin/'+selected+'/main.rs').exists():
+    source=Path('src/bin/'+selected+'/main.rs')
+if not source.exists():
+    print('error: invalid Cargo target selection: No such file or directory (os error 2)' if native else 'error: no bin target named `e` in default-run packages\n\nhelp: a target with a similar name exists: `c`',file=sys.stderr)
+    sys.exit(2 if native else 101)
+if native:
+    Path(os.environ['LUSTR_TRACE_PATH']).write_text(json.dumps({'engine':'lust','entry':'native-library' if os.environ.get('LUST_NO_DAEMON') else 'daemon'})+'\n')
+if args[0]=='build':
+    word=re.search(r'println!\("([^\"]+)"\)',source.read_text()).group(1)
+    if native and STALE and word=='e2': word='e'
+    target=Path(args[args.index('-o')+1]) if native else Path.cwd()/'oracle.bin'
+    target.write_text('#!'+sys.executable+'\nprint('+repr(word)+')\n')
+    target.chmod(0o755)
+    if not native: print(json.dumps({'reason':'compiler-artifact','target':{'kind':['bin']},'executable':str(target)}))
+'''.replace("STALE", repr(stale))
+            for filename in ("lustr", "lust", "cargo"):
+                path = package / filename
+                path.write_text("#!" + sys.executable + "\n" + program)
+                path.chmod(0o755)
+            inventory = json.loads((ROOT / "upstream/retained-scenario-results.json").read_text())
+            config = {"source": str(source), "output": str(output), "entry": str(package / "lustr"), "rustc": sys.executable, "cargo": str(package / "cargo"), "selection_rejections": inventory["selection_rejections"]}
+            return runner.scenario_worker((config, scenario))
+
+    def test_removed_target_and_recovery_use_unchanged_donor_overlay(self):
+        report = self.cargo_campaign(False)
+        self.assertTrue(report["passed"], report.get("failure"))
+        self.assertEqual([row["verdict"] for row in report["versions"]], ["executed"] * 6 + ["selection-rejected", "executed"])
+        rejected = [row for row in report["commands"] if row.get("selection_rejection")]
+        self.assertEqual(len(rejected), 4)
+        self.assertTrue(all(row["exit"] == 2 and "trace" not in row for row in rejected))
+
+    def test_removed_target_cannot_hide_stale_recovery(self):
+        report = self.cargo_campaign(True)
+        self.assertFalse(report["passed"])
+        self.assertIn("stdout differs", report["failure"])
+        self.assertEqual(len(report["versions"]), 7)
+
+
+class PinnedOracleControls(unittest.TestCase):
+    """Actual pinned Rust processes; optional locally, required by constructor CI."""
+    def setUp(self):
+        if ORACLE is None:
+            self.skipTest("supply --oracle-rustc, --oracle-cargo and --oracle-output for pinned process controls")
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.cwd = Path(self.temp.name)
+        self.output = ORACLE["output"] / self._testMethodName
+        self.output.mkdir()
+        self.commands = []
+
+    def execute(self, tool, *args):
+        completed = subprocess.run([str(ORACLE[tool]), *map(str, args)], cwd=self.cwd, env=dict(os.environ, RUSTC=str(ORACLE["rustc"]), CARGO_TARGET_DIR=str(self.cwd / "target")), capture_output=True, timeout=60)
+        value = result(completed.returncode, completed.stdout, completed.stderr)
+        label = f"{len(self.commands):02d}"
+        for stream in ("stdout", "stderr"):
+            (self.output / (label + "." + stream)).write_bytes(value[stream])
+        self.commands.append({"tool": tool, "argv": list(map(str, args)), "exit": value["exit"], "stdout": label + ".stdout", "stderr": label + ".stderr", "source_rejection": runner.source_rejection(value, self.cwd, cargo=tool == "cargo")})
+        (self.output / "commands.json").write_text(json.dumps(self.commands, indent=2) + "\n")
+        return value
+
+    def rustc(self, *args):
+        return self.execute("rustc", "--edition=2024", "-C", "overflow-checks=on", "main.rs", "--error-format=json", *args)
+
+    def test_codegen_source_errors_are_not_lost_by_metadata_only_checks(self):
+        for name, version in (("cyc09_allow_nested_chunk", "v4"), ("sc02_assoc_const_request_edits", "v2"), ("sc03_assoc_const_plain_header_template", "v2"), ("sc04_assoc_const_template_body", "v2")):
+            with self.subTest(scenario=name):
+                shutil.copy2(ROOT / "compiler/native/tests/daemon" / name / (version + ".rs"), self.cwd / "main.rs")
+                self.assertEqual(self.rustc("--emit=metadata", "-o", "metadata.rmeta")["exit"], 0)
+                checked = self.rustc("--emit=llvm-ir", "-o", "check.ll")
+                self.assertTrue(runner.source_rejection(checked, self.cwd))
+                self.assertFalse((self.cwd / "check.ll").exists())
+
+    def test_real_std_macro_errors_resolve_through_primary_call_sites(self):
+        shutil.copy2(ROOT / "compiler/native/tests/daemon/sd23_std_impl_partialeq/v2.rs", self.cwd / "main.rs")
+        checked = self.rustc("--emit=llvm-ir", "-o", "check.ll")
+        diagnostics = [json.loads(line) for line in checked["stderr"].splitlines()]
+        self.assertTrue(any(span.get("is_primary") and span.get("expansion") for error in diagnostics for span in error.get("spans", [])))
+        self.assertTrue(runner.source_rejection(checked, self.cwd))
+
+    def test_linker_and_sdk_failures_remain_failures(self):
+        (self.cwd / "main.rs").write_text("fn main() {}\n")
+        failed = self.rustc("-C", "linker=./absent-linker", "-o", "program")
+        self.assertEqual(failed["exit"], 1)
+        self.assertFalse(runner.source_rejection(failed, self.cwd))
+        checked = self.rustc("-C", "linker=./absent-linker", "--emit=llvm-ir", "-o", "check.ll")
+        self.assertEqual(checked["exit"], 0)
+        self.assertFalse(runner.source_rejection(checked, self.cwd))
+        failed = self.rustc("--sysroot=./absent-sdk", "--emit=llvm-ir", "-o", "bad-sdk.ll")
+        self.assertEqual(failed["exit"], 1)
+        self.assertFalse(runner.source_rejection(failed, self.cwd))
+
+    def test_real_cargo_rejects_removed_target_then_restores_it(self):
+        scripts = ROOT / "compiler/native/scripts"
+        sys.path.insert(0, str(scripts))
+        spec = importlib.util.spec_from_file_location("oracle_donor_scenarios", scripts / "test-daemon-scenarios.py")
+        donor = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(donor)
+        fixture = ROOT / "compiler/native/tests/daemon/cargo01_bin_discovery"
+        for index in range(1, 8):
+            donor.apply_overlay(str(fixture / f"v{index}"), str(self.cwd), 2_000_000_000 + index * 2)
+        rule = json.loads((ROOT / "upstream/retained-scenario-results.json").read_text())["selection_rejections"]["cargo01_bin_discovery"]["v7"]
+        self.assertFalse((self.cwd / rule["source"]).exists())
+        for mode in ("build", "check"):
+            checked = self.execute("cargo", mode, "-q", "--offline", "--bin", "e", "--message-format=json")
+            self.assertTrue(runner.removed_target_rejection(checked, rule, cargo=True))
+        donor.apply_overlay(str(fixture / "v8"), str(self.cwd), 2_000_000_016)
+        checked = self.execute("cargo", "build", "-q", "--offline", "--bin", "e", "--message-format=json")
+        self.assertEqual(checked["exit"], 0)
+        program = subprocess.run([str(self.cwd / "target/debug/e")], cwd=self.cwd, capture_output=True, timeout=10)
+        self.assertEqual((program.returncode, program.stdout, program.stderr), (0, b"e2\n", b""))
+
+    def test_missing_and_invalid_dependency_artifacts_are_not_source_errors(self):
+        (self.cwd / "main.rs").write_text("extern crate dep; fn main() {}\n")
+        (self.cwd / "libdep.rlib").write_bytes(b"not a Rust library")
+        for filename in ("missing.rlib", "libdep.rlib"):
+            with self.subTest(filename=filename):
+                failed = self.rustc("--extern", "dep=" + filename, "--emit=llvm-ir", "-o", "missing-dep.ll")
+                self.assertEqual(failed["exit"], 1)
+                self.assertFalse(runner.source_rejection(failed, self.cwd))
+
 
 if __name__ == "__main__":
-    unittest.main()
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--oracle-rustc", type=Path)
+    parser.add_argument("--oracle-cargo", type=Path)
+    parser.add_argument("--oracle-output", type=Path)
+    args, remaining = parser.parse_known_args()
+    if any((args.oracle_rustc, args.oracle_cargo, args.oracle_output)):
+        runner.require(all((args.oracle_rustc, args.oracle_cargo, args.oracle_output)), "all three pinned oracle control arguments are required")
+        ORACLE = {"rustc": args.oracle_rustc.absolute(), "cargo": args.oracle_cargo.absolute(), "output": args.oracle_output.absolute()}
+        ORACLE["output"].mkdir(parents=True, exist_ok=False)
+        version = subprocess.run([str(ORACLE["rustc"]), "-vV"], capture_output=True, timeout=30, check=True)
+        pin = next(line.split('"')[1] for line in (ROOT / "upstream/bluefe-core.pin").read_text().splitlines() if line.startswith("source = "))
+        runner.require(f"commit-hash: {pin}\n".encode() in version.stdout, "process controls require the pinned Rust oracle")
+        (ORACLE["output"] / "rustc-version.stdout").write_bytes(version.stdout)
+        (ORACLE["output"] / "identities.json").write_text(json.dumps({"rust_source": pin, "rustc_sha256": runner.digest(ORACLE["rustc"]), "cargo_sha256": runner.digest(ORACLE["cargo"]), "runner_sha256": runner.digest(ROOT / "tools/qualify-retained-results.py"), "test_sha256": runner.digest(Path(__file__)), "inventory_sha256": runner.digest(ROOT / "upstream/retained-scenario-results.json")}, indent=2) + "\n")
+    unittest.main(argv=[sys.argv[0], *remaining])
