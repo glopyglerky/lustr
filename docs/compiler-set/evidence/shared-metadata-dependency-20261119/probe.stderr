@@ -1,0 +1,18 @@
+PROBE: entered genuine metadata encoder after expansion
+
+thread 'rustc' (7) panicked at probe.rs:16:49:
+PROBE: complete analysis was demanded by metadata
+stack backtrace:
+   0: __rustc::rust_begin_unwind
+   1: core::panicking::panic_fmt
+   2: <probe::Probe as rustc_driver_impl::Callbacks>::config::{closure#0}::{closure#1}
+   3: <<probe::Probe as rustc_driver_impl::Callbacks>::config::{closure#0}::{closure#1} as core::ops::function::FnOnce<(rustc_middle::ty::context::TyCtxt, ())>>::call_once
+   4: rustc_query_impl::execution::try_execute_query::<rustc_middle::query::caches::SingleCache<rustc_middle::query::erase::ErasedData<[u8; 0]>>, false>
+   5: <rustc_middle::ty::context::TyCtxt>::definitions.cold
+   6: <rustc_metadata::rmeta::encoder::EncodeContext>::encode_crate_root
+   7: rustc_metadata::rmeta::encoder::encode_metadata::{closure#3}
+   8: rustc_metadata::rmeta::encoder::encode_metadata
+   9: rustc_metadata::fs::encode_and_write_metadata
+  10: <probe::Probe as rustc_driver_impl::Callbacks>::after_expansion
+  11: rustc_interface::interface::run_compiler::<(), rustc_driver_impl::compiler_entrypoint::{closure#0}>::{closure#2}
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.

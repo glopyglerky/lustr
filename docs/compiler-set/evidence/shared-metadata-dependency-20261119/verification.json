@@ -1,0 +1,78 @@
+{
+  "scope": "dependency probe only; not a compiler acceptance or metadata qualification",
+  "status": 101,
+  "command": [
+    "$PROBE/probe",
+    "$PROBE/consumer.rs",
+    "--crate-type=rlib",
+    "--crate-name=consumer",
+    "--edition=2024",
+    "--sysroot",
+    "$SDK",
+    "-Cpanic=abort",
+    "-Copt-level=0",
+    "--emit=metadata",
+    "-o",
+    "$PROBE/probe.rmeta"
+  ],
+  "output_exists": false,
+  "sha256": {
+    "probe.rs": "384140aee32e5ca3d653f36db9e90b933a8e417703ecc41a0c52d927275cbf35",
+    "consumer.rs": "3557be7e0492f2fee666cd7cbde4d88c5d9a55b05192a4e78931178805652d50",
+    "probe": "a9e85bfe7aeea325f083d8f84ec788baa6d839249518bcc105d26400ba00e936",
+    "probe.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "probe.stderr": "dbf43dcf83a867aa453f25efc3bdd010c868fe13563c4979dd8774352a7540e2"
+  },
+  "schema": 1,
+  "repository_source": "bd1d2d0067decc1771eed98884e64ff1fd12b3d4",
+  "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "rustc_identity": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+  "rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+  "build": {
+    "cwd": "$PROBE",
+    "command": [
+      "$SDK/bin/rustc",
+      "--edition=2024",
+      "probe.rs",
+      "-Cdebuginfo=0",
+      "-C",
+      "link-arg=-Wl,-rpath,$SDK/lib",
+      "-o",
+      "probe"
+    ],
+    "status": 0
+  },
+  "upstream_sources": {
+    "compiler/rustc_metadata/src/rmeta/mod.rs": {
+      "sha256": "d6d5d627a4876ddd5d371c2260f0d68303f1e483a5209fcace3893765bfd5948",
+      "entry": "LocalDefsRemapping::new",
+      "line": 451
+    },
+    "compiler/rustc_middle/src/ty/context.rs": {
+      "sha256": "cea6dd6e43c84fb14476a18923aa3b4acb2138c8bff6b849f4b55e2b20544ae3",
+      "entry": "TyCtxt::definitions",
+      "line": 1459
+    },
+    "compiler/rustc_metadata/src/rmeta/encoder.rs": {
+      "sha256": "7f740fbaf9e81f4d518a95eeab485059c4f1a88c636df3104af03ec2817f5b73",
+      "entry": "encode_def_path_table / encode_crate_root / exported symbols",
+      "line": 543
+    },
+    "compiler/rustc_interface/src/passes.rs": {
+      "sha256": "8ee543fb7a03b80cbd95a58c57a134215d97218afa6551ecc0bd70f02fe75fbc",
+      "entry": "run_required_analyses / analysis",
+      "line": 1112
+    },
+    "compiler/rustc_codegen_ssa/src/back/symbol_export.rs": {
+      "sha256": "75e01be382f01e791e71d7ede5bc8f3430902b4efebf269f50aead67bd7d0f1f",
+      "entry": "exported_generic_symbols_provider_local",
+      "line": 309
+    },
+    "compiler/rustc_middle/src/mono.rs": {
+      "sha256": "80cb9972b41760643911aaea3eac2a635903f71767e760a12a59d4eaf6b6a031",
+      "entry": "MonoItemPartitions",
+      "line": 340
+    }
+  },
+  "original_verification_sha256": "c95061f86594463d65720e7957cef993614843b50651f1787679ba03ca69773d"
+}
