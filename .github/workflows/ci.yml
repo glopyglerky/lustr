@@ -74,6 +74,8 @@ jobs:
       DIFFTEST_JOBS: '2'
     steps:
       - uses: actions/checkout@v4
+      - name: Exercise failed native crate artifact retention
+        run: python3 ../../tools/test-native-crate-failure-retention.py
       - name: Exercise service dependency guard with planted package and runtime inputs
         run: python3 ../../tools/test-host-dependencies.py
       - name: Reject service-manager dependencies
@@ -142,6 +144,8 @@ jobs:
           rustc --edition=2024 --test ../../tools/host-sdk.rs -o "$RUNNER_TEMP/host-sdk"
           "$RUNNER_TEMP/host-sdk" --test-threads=1
           cargo test --locked
+      - name: Require a single range panic and untouched failed bounds
+        run: python3 ../../tools/test-native-range-panic.py --output "$RUNNER_TEMP/native-range-panic.json"
       - name: Require native build-script transitions under both Cargo layouts
         env:
           LUST_TCC_HOME: ${{ github.workspace }}/compiler/native/third_party/tcc
@@ -149,6 +153,7 @@ jobs:
       - name: Run CI gate
         env:
           LUST_TCC_HOME: ${{ github.workspace }}/compiler/native/third_party/tcc
+          LUST_CRATE_FAILURE_DIR: ${{ runner.temp }}/native-crate-failures
         run: |
           set -euo pipefail
           {
@@ -246,11 +251,13 @@ jobs:
             ${{ runner.temp }}/native-cargo-layout-qualification
             ${{ runner.temp }}/native-gate-host.json
             ${{ runner.temp }}/native-gate.log
+            ${{ runner.temp }}/native-crate-failures
             ${{ runner.temp }}/native-unwind-identity.txt
             ${{ runner.temp }}/native-unwind.log
             ${{ runner.temp }}/native-unwind-eh-identity.txt
             ${{ runner.temp }}/native-unwind-eh.log
             ${{ runner.temp }}/native-gate-builds.sha256
+            ${{ runner.temp }}/native-range-panic.json
             ${{ runner.temp }}/native-main-transitions/report.json
             ${{ runner.temp }}/native-main-transitions/*.stdout
             ${{ runner.temp }}/native-main-transitions/*.stderr
@@ -325,6 +332,8 @@ jobs:
           )
           flock -n "$lock" true
           rm -f "$lock"
+      - name: Exercise failed native crate artifact retention
+        run: python3 ../../tools/test-native-crate-failure-retention.py
       - name: Check actual Unix-address helper bounds with ASan and UBSan
         run: python3 ../../tools/test-native-unix-address.py
       - name: Verify actual native dependency metadata
@@ -390,6 +399,8 @@ jobs:
           rustc --edition=2024 --test ../../tools/host-sdk.rs -o "$RUNNER_TEMP/host-sdk"
           "$RUNNER_TEMP/host-sdk" --test-threads=1
           cargo test --locked
+      - name: Require a single range panic and untouched failed bounds
+        run: python3 ../../tools/test-native-range-panic.py --output "$RUNNER_TEMP/native-range-panic.json"
       - name: Require native build-script transitions under both Cargo layouts
         env:
           LUST_TCC_HOME: ${{ github.workspace }}/compiler/native/third_party/tcc
@@ -397,6 +408,7 @@ jobs:
       - name: Run CI gate
         env:
           LUST_TCC_HOME: ${{ github.workspace }}/compiler/native/third_party/tcc
+          LUST_CRATE_FAILURE_DIR: ${{ runner.temp }}/native-crate-failures
         run: |
           set -euo pipefail
           {
@@ -494,11 +506,13 @@ jobs:
             ${{ runner.temp }}/native-cargo-layout.txt
             ${{ runner.temp }}/native-cargo-layout-qualification
             ${{ runner.temp }}/native-gate.log
+            ${{ runner.temp }}/native-crate-failures
             ${{ runner.temp }}/native-unwind-identity.txt
             ${{ runner.temp }}/native-unwind.log
             ${{ runner.temp }}/native-unwind-eh-identity.txt
             ${{ runner.temp }}/native-unwind-eh.log
             ${{ runner.temp }}/native-gate-builds.sha256
+            ${{ runner.temp }}/native-range-panic.json
             ${{ runner.temp }}/native-main-transitions/report.json
             ${{ runner.temp }}/native-main-transitions/*.stdout
             ${{ runner.temp }}/native-main-transitions/*.stderr

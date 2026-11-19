@@ -28,11 +28,32 @@ See the immutable [implementation cleanup](https://github.com/glopyglerky/lustr/
 and [complete verification record](https://github.com/glopyglerky/lustr/blob/59e944b83bdac2a676a49852da4edabc64d392d0/docs/compiler-set/evidence/exclusive-coverage-20261119/native-entry-verification.json).
 The PR records later source changes separately.
 
-## Verification limits
+## Follow-through on the same PR
 
-The corrected entry has 56 passing focused controls and one unavailable local
+The [ownership follow-through](exclusive-coverage-followthrough.md) records
+additional conflicts found after the first correction: successful complement
+labels for Lust-owned bridge gaps, retries inside the ordinary retained daemon,
+and active coordinator tests and instructions that still expected the removed
+compiler routes. It also records the range-panic repair and preservation of
+failed native CI cases. These remain part of PR #33, not a second lane.
+
+The current `no_std` and socket-independence preference is conditional on
+preserving speed and prioritizing compiler completion. A broad portability
+migration is deferred. The existing implementation is not described as
+`no_std` or as a socket-independent retained compiler.
+
+The follow-through has its own fresh debug partial construction and exact-source
+verification record: 56 entry controls passed with one locally unavailable
+real-daemon control, all 13 product bridge controls and both product retained
+daemon controls passed, and the original range-location fixture matched the
+declared Rust oracle. The original local disk-exhaustion attempts remain
+recorded. These new results do not replace the earlier source scopes below.
+
+## Earlier construction and verification
+
+The first correction recorded 56 passing focused controls and one unavailable local
 retained-daemon control because Unix sockets return `EPERM`. Hosted CI requires
-that real daemon path. Selection/cache suites have 773 passing assertions across
+that real daemon path. Its selection/cache suites recorded 773 passing assertions across
 277 recorded subprocess invocations, including setup and cached/fresh checks.
 These are bounded correctness and ownership results, not speed measurements.
 

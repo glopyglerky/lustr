@@ -1,9 +1,17 @@
-# BlueFe integration and performance model
+# Historical BlueFe coordinator study
 
-This document describes the transitional rustc-based coordinator. Its proofs
-and measurements do not establish the [required native Lustr compiler](native-contract.md).
-The [pinned upstream Lust source](upstream-lust.md) is preserved separately;
-the current published preview does not contain it.
+> Historical implementation and measurements. The executable coordinator and
+> compiler-selection commands described below have been retired. The
+> [original source and instructions](https://github.com/glopyglerky/lustr/blob/ec99578d51c93674af3a1bcf9c182f4ad4b17d89/docs/compiler-set/bluefe-performance.md)
+> remain available for reproducing their evidence. These commands do not run
+> through the current planning-only crate and cannot qualify current Lustr.
+> The [exclusive coverage contract](exclusive-coverage-contract.md) controls
+> production work. Full Rust source stays in blueFe as reference and selective
+> extraction provenance; it is not a backup compiler for Lust-covered work.
+
+The remaining text describes that earlier coordinator and its measured scope.
+Its invocation-equivalence reasoning and measurements retain their original
+assumptions. They do not establish the required integrated compiler.
 
 Lustr coordinates the produced BlueFe compiler with an explicit toolchain root:
 

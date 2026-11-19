@@ -1,19 +1,16 @@
 #!/usr/bin/env python3
-"""Run the real mixed qualifier separately and attribute instrumented wall time.
+"""Parse and render historical mixed compiler phase evidence.
 
-This is diagnostic profiling, not a paired performance campaign. Nested spans
-and concurrently compiled crates cannot be added into command elapsed time.
+The live mixed qualifier was retired. These unchanged parsing and rendering
+functions retain the original schema meanings for evidence replay; they do not
+qualify the current compiler. Nested spans and concurrently compiled crates
+cannot be added into command elapsed time.
 """
-import argparse
 from collections import Counter
 import hashlib
 import json
-import os
 from pathlib import Path
 import re
-import signal
-import subprocess
-import sys
 
 
 LEGACY_EXPECTED = {
@@ -331,48 +328,9 @@ def render(report):
     return "\n".join(lines)
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--qualifier", required=True, type=Path)
-    parser.add_argument("--cargo", required=True, type=Path)
-    parser.add_argument("--lustr", required=True, type=Path)
-    parser.add_argument("--output", required=True, type=Path)
-    args = parser.parse_args()
-    qualifier, cargo, lustr = (path.resolve(strict=True) for path in (args.qualifier, args.cargo, args.lustr))
-    root = args.output.absolute()
-    require(not root.exists(), "profiling output must be a new directory")
-    root.mkdir(parents=True)
-    profiles = root / "profiles"
-    profiles.mkdir()
-    command = [str(qualifier), str(root / "qualification"), str(cargo), str(lustr)]
-    provenance = {"completed": False, "instrumented": True, "argv": command,
-                  "binaries": {str(path): digest(path) for path in (qualifier, cargo, lustr, lustr.with_name("rustc-full"), lustr.with_name("lust-core"))}}
-    (root / "run.json").write_text(json.dumps(provenance, indent=2) + "\n")
-    env = dict(os.environ)
-    env["LUSTR_MIXED_PROFILE_DIR"] = str(profiles)
-    with (root / "qualifier.stdout").open("wb") as stdout, (root / "qualifier.stderr").open("wb") as stderr:
-        process = subprocess.Popen(command, env=env, stdout=stdout, stderr=stderr, start_new_session=True)
-        try:
-            code = process.wait(timeout=900)
-        except subprocess.TimeoutExpired:
-            os.killpg(process.pid, signal.SIGKILL)
-            process.wait()
-            raise ValueError("profiling qualifier timed out; partial evidence retained")
-    provenance["exit_code"] = code
-    (root / "run.json").write_text(json.dumps(provenance, indent=2) + "\n")
-    require(code == 0, "original mixed qualifier failed; partial evidence retained")
-    report = summarize(root)
-    (root / "summary.json").write_text(json.dumps(report, indent=2) + "\n")
-    (root / "README.md").write_text(render(report))
-    provenance["completed"] = True
-    provenance["summary_sha256"] = digest(root / "summary.json")
-    (root / "run.json").write_text(json.dumps(provenance, indent=2) + "\n")
-    print(f"Validated {len(report['invocations'])} instrumented compiler invocations across {len(report['modes'])} qualification commands.")
-
-
 if __name__ == "__main__":
-    try:
-        main()
-    except (OSError, ValueError, json.JSONDecodeError) as error:
-        print(f"mixed profiling failed: {error}", file=sys.stderr)
-        sys.exit(1)
+    raise SystemExit(
+        "The live mixed compiler profiling runner has been retired. "
+        "Historical evidence remains replayable through its recorded scripts; "
+        "see docs/compiler-set/mixed-phase-attribution.md."
+    )

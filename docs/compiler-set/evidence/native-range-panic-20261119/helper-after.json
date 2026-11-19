@@ -1,0 +1,12 @@
+{
+  "cases": 2205,
+  "invalid": 1505,
+  "failures": 0,
+  "schema": "lustr-range-panic-v1",
+  "runtime_source_sha256": "0aba127f0800e6c2f1fd44454d0b656319709c3a8087793b7d7efac1e956f845",
+  "helper_sha256": "f622969a3c47b409f635087c12456ce3693caea3083b2521a297168ee51b6db7",
+  "harness_sha256": "7dafc2cbb527a751d07ed368c164f8a2a23a6f6a2c2b182bc0afe7d7a0556284",
+  "exit_code": 0,
+  "stderr": "",
+  "limits": "Host execution of the actual range helper with a returning panic; generated-program and platform qualification are separate."
+}

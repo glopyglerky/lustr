@@ -35,6 +35,30 @@ formerly supported programs from the actual Lust-supported subset or authorize
 another compiler to own them. Completing their native/service boundary remains
 Lustr work.
 
+## Retained daemon ownership
+
+The product daemon gives every request one compilation attempt in its retained
+native session. It returns frontend and execution failures unchanged. An internal
+failure or panic invalidates that session for the next request; it does not run
+the failed request again in a fresh session. The product also never starts a
+background compiler to verify an error response. Ordinary responses keep their
+ordinary wire format, and bounded mixed-component failures retain their typed
+outcomes. The separately built donor reference retains its original oracle
+guards.
+
+The `product_daemon` controls exercise this exact dispatch with an attempt
+counter and an absent source that would expose a hidden reread. They also compile
+and run actual native programs through retained no-op work, an invalid edit, a
+valid edit, an injected panic and a subsequent new request. They require that
+failures preserve the prior executable, no background compilation is queued,
+and unchanged retained work reports no checked bodies.
+
+The compiler-set native job runs these product-feature controls and the
+`mixed_admission` controls using the SDK, TinyCC installation and native target
+directory from its partial-package construction. The separate public entry gate
+still requires a real daemon. These gates test ownership and retained behavior;
+they are not a near-stock performance qualification.
+
 ## Read-only Cargo queries
 
 Product metadata commands locate `cargo` and `lustr` beside the running helper.

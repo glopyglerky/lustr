@@ -123,7 +123,7 @@ mod qualification {
                     }
                 }
                 Ok(driver::Preparation::Complete(response) | driver::Preparation::Rejected(response)
-                    | driver::Preparation::Failed(response) | driver::Preparation::Complementary(response)) => {
+                    | driver::Preparation::Failed(response) | driver::Preparation::IntegrationIncomplete(response)) => {
                     eprint!("{}", response.stderr);
                     self.status = response.code as u8;
                 }

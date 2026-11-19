@@ -205,6 +205,30 @@ assumptions, not exact numbers supplied in the user's goal or evidence of a pass
 Apply them per operation with paired uncertainty. Other workloads remain
 explicitly reviewed; do not invent passing results or hide regressions in means.
 
+## Portability preference without a competing destination
+
+The user prefers `no_std` throughout the compiler and no required Unix-domain
+socket transport, provided compilation speed is retained. The user also
+explicitly prioritizes completing the compiler and permits deferring this
+migration when it would slow completion or compilation. These are preferred
+properties of the same compiler, not a replacement architecture or a new
+release prerequisite.
+
+Prefer `core` and `alloc` for portable compiler logic and explicit host adapters
+for storage, files, processes and retained-session transport. A caller-owned
+pipe or an in-process session is a possible host interface, not proof of a
+completed portable compiler. Keep the same native checked state, dependency
+invalidation and emission ownership across an interface change. Starting a
+fresh compiler on every edit does not preserve the retained path.
+
+The current engine still requires `std` and native host libraries, and the
+automatic retained CLI route uses Unix-domain sockets. Socket-disabled cold
+execution exists but does not replace retained-session performance. No full
+`no_std` or socket-independent retained implementation is claimed. Any future
+migration must show real supported operation and matched performance before
+becoming the preferred production path. It must not delay the established
+consumer-metadata and selective-complement work merely to add an unused API.
+
 ## Completion evidence
 
 The full rustc-replacement claim requires all of these:

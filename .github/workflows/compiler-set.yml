@@ -234,6 +234,18 @@ jobs:
         run: |
           rustc --edition=2024 tools/build-native-toolchain.rs -o "$RUNNER_TEMP/build-native-toolchain"
           "$RUNNER_TEMP/build-native-toolchain" "$GITHUB_WORKSPACE" --current-sdk "$RUNNER_TEMP/lustr-tinycc/install" "$RUNNER_TEMP/lustr-native-built" --debug
+      - name: Require product bridge ownership and one retained compilation attempt
+        if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
+        env:
+          LUST_TCC_HOME: ${{ runner.temp }}/lustr-tinycc/install
+          RUST_MIN_STACK: '268435456'
+        run: |
+          set -o pipefail
+          export RUSTC="$(rustup which rustc)"
+          native_work="$RUNNER_TEMP/lustr-native-built/work"
+          for test_filter in mixed_admission product_daemon; do
+            env -u LD_LIBRARY_PATH "$(rustup which cargo)" test --manifest-path compiler/native/Cargo.toml --locked --offline --jobs 2 --features exclusive-native --bin lust-core --target-dir "$native_work/native-target" --config "build.build-dir=\"$native_work/native-intermediates\"" "$test_filter" -- --test-threads=1 2>&1 | tee "$RUNNER_TEMP/lustr-native-built/logs/$test_filter-tests.log"
+          done
       - name: Require native execution, exclusive routing and terminal failures
         if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
         run: |
@@ -308,8 +320,8 @@ jobs:
         run: cargo +1.99.1 fmt --manifest-path crates/lustr/Cargo.toml -- --check
       - name: Check paired statistical methods
         run: python3 -m unittest discover -s crates/lustr/bench -p "test_*.py" -v
-      - name: Test retained planning helpers and retired execution entry
-        run: cargo +1.99.1 test --manifest-path crates/lustr/Cargo.toml --lib --locked --offline
+      - name: Test every retained planning, retired entry and reference contract
+        run: cargo +1.99.1 test --manifest-path crates/lustr/Cargo.toml --locked --offline
 
   minimum-rust:
     name: Planning helpers minimum Rust
@@ -319,4 +331,4 @@ jobs:
       - name: Install minimum supported Rust
         run: rustup toolchain install 1.85.0 --profile minimal
       - name: Build and test on minimum Rust
-        run: cargo +1.85.0 test --manifest-path crates/lustr/Cargo.toml --lib --locked --offline
+        run: cargo +1.85.0 test --manifest-path crates/lustr/Cargo.toml --locked --offline

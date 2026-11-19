@@ -99,6 +99,22 @@ failures, signals, configuration precedence, nested Cargo behavior and owned
 cleanup. Actual sanitizer, differential, panic/drop and retained-edit evidence
 must remain visible. Re-run only changed behavior and concrete remaining risks.
 
+## Portability preference and priority
+
+Prefer a compiler core that can use `core` and `alloc` without `std`, with host
+services and transport behind explicit adapters. Prefer retained compilation
+that does not require Unix-domain sockets. These preferences support the sole
+compiler goal; they do not replace it or block completion when migration would
+slow delivery or compilation. This priority was clarified on 19 November 2026.
+
+Preserve Lust's retained state and measured speed throughout any migration.
+Do not replace warm compilation with fresh processes merely to remove sockets,
+move the same Unix dependency into an unnamed helper, or describe a `no_std`
+interface as a `no_std` compiler. The current engine still uses `std`, Unix host
+facilities and native libraries. A broader migration requires actual integration
+and matched performance evidence. Continue dependency-ready compiler completion
+first; retain these preferences for later work that can meet those conditions.
+
 ## Performance and claims
 
 Keep Lust-covered work near matched stock Lust speed. Keep complementary work

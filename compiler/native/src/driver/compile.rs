@@ -2622,26 +2622,27 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
     match prepare_observed(req, session, observer) {
         Preparation::Ready(prepared) => prepared.emit_unobserved(),
         Preparation::Complete(response) | Preparation::Rejected(response)
-        | Preparation::Failed(response) | Preparation::Complementary(response) => response,
+        | Preparation::Failed(response) | Preparation::IntegrationIncomplete(response) => response,
     }
 }
 
 /// Preparation either owns the exact passing native state or has already
 /// finished before that boundary. A native rejection does not establish that
-/// Rust is invalid or complementary; only the existing mixed capability proof
-/// can produce Complementary. Neither rejection nor failure permits a retry.
+/// Rust is invalid or complementary. IntegrationIncomplete identifies a bridge
+/// that cannot compose this request, without reassigning Lust-owned work.
+/// No rejection, integration gap or failure permits a compiler retry.
 pub enum Preparation<'a> {
     Ready(PreparedRequest<'a>),
     Complete(Response),
     Rejected(Response),
     Failed(Response),
-    Complementary(Response),
+    IntegrationIncomplete(Response),
 }
 
 impl Preparation<'_> {
     pub(super) fn finished(response: Response) -> Self {
         match (response.code, response.mixed) {
-            (0, Some(crate::protocol::MixedOutcome::Complementary)) => Self::Complementary(response),
+            (4, Some(crate::protocol::MixedOutcome::IntegrationIncomplete)) => Self::IntegrationIncomplete(response),
             (0, _) => Self::Complete(response),
             (1, _) => Self::Rejected(response),
             _ => Self::Failed(response),
@@ -4749,8 +4750,8 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
         ));
         match admission {
             Ok(super::mixed::Admission::Native(prepared)) => Some(prepared),
-            Ok(super::mixed::Admission::Complementary(reason)) => {
-                let response = super::mixed::complementary(reason);
+            Ok(super::mixed::Admission::IntegrationIncomplete(reason)) => {
+                let response = super::mixed::integration_incomplete(reason);
                 if req.cmd == Cmd::Check && let Some(fp) = check_fp {
                     front.last_check = Some((fp, response.clone()));
                 }
@@ -6938,7 +6939,7 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
         fn ready(preparation: Preparation<'_>) -> PreparedRequest<'_> {
             match preparation {
                 Preparation::Ready(prepared) => prepared,
-                Preparation::Complete(r) | Preparation::Rejected(r) | Preparation::Failed(r) | Preparation::Complementary(r) =>
+                Preparation::Complete(r) | Preparation::Rejected(r) | Preparation::Failed(r) | Preparation::IntegrationIncomplete(r) =>
                     panic!("expected an owned checked request, got {}: {}", r.code, r.stderr),
             }
         }
@@ -7200,17 +7201,32 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
         }
 
         #[test]
-        fn runtime_and_wide_types_decline_before_c_generation() {
-            for body in ["x / 2", "(x as u128).wrapping_add(1) as u64", "{let unit=(); let _=unit; x}"] {
+        fn lust_supported_runtime_and_wide_types_remain_integration_gaps() {
+            for (body, expected) in [("x / 2", 2), ("(x as u128).wrapping_add(1) as u64", 5), ("{let unit=(); let _=unit; x}", 4)] {
+                let source = format!("fn kernel(x:u64)->u64{{{body}}}\nfn main(){{assert_eq!(kernel(4),{expected});}}\n");
+                // Establish support through the actual ordinary Lust pipeline,
+                // independently of what the scalar object bridge represents.
+                let mut ordinary = Fixture::new(&source, false);
+                ordinary.req.session = crate::protocol::SessionKey::synthetic(&ordinary.req.file, false);
+                ordinary.req.cmd = Cmd::Build;
+                ordinary.req.out = ordinary.root.join("ordinary-native");
+                ordinary.session = Session::new(ordinary.root.join("ordinary-state"), false, ordinary.req.session.clone());
+                let accepted = ordinary.run();
+                assert_eq!(accepted.code, 0, "ordinary native {body}: {}", accepted.stderr);
+                assert_eq!(accepted.mixed, None);
+                let executed = bounded(&mut std::process::Command::new(&ordinary.req.out));
+                assert!(executed.status.success(), "ordinary native {body}: {}", String::from_utf8_lossy(&executed.stderr));
                 for cmd in [Cmd::Check, Cmd::Build] {
-                    let mut f = Fixture::new(&format!("fn kernel(x:u64)->u64{{{body}}}\nfn main(){{let _=kernel(0);}}\n"), false);
+                    let mut f = Fixture::new(&source, false);
                     f.req.cmd = cmd;
-                    let response = f.run();
-                    assert_eq!(response.code, 0, "{body}: {}", response.stderr);
-                    assert_eq!(response.mixed, Some(MixedOutcome::Complementary), "{body}: {}", response.stderr);
-                    assert!(!f.req.out.exists());
-                    assert!(!f.req.out.with_extension("c").exists());
-                    assert!(f.session.caches.has_out.iter().all(|generated| !generated));
+                    for _ in 0..2 {
+                        let response = f.run();
+                        assert_eq!(response.code, 4, "{body}: {}", response.stderr);
+                        assert_eq!(response.mixed, Some(MixedOutcome::IntegrationIncomplete), "{body}: {}", response.stderr);
+                        assert!(!f.req.out.exists());
+                        assert!(!f.req.out.with_extension("c").exists());
+                        assert!(f.session.caches.has_out.iter().all(|generated| !generated));
+                    }
                 }
             }
         }
@@ -7369,7 +7385,7 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
         }
 
         #[test]
-        fn target_and_request_contracts_are_explicit_complements() {
+        fn target_and_request_bridge_gaps_do_not_establish_a_complement() {
             for variant in 0..5 {
                 let mut f = Fixture::new(SCALAR, false);
                 match variant {
@@ -7386,16 +7402,19 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
                 for cmd in [Cmd::Check, Cmd::Build] {
                     f.req.cmd = cmd;
                     let response = f.run();
-                    assert_eq!(response.code, 0, "{}", response.stderr);
-                    assert_eq!(response.mixed, Some(MixedOutcome::Complementary));
+                    assert_eq!(response.code, 4, "{}", response.stderr);
+                    assert_eq!(response.mixed, Some(MixedOutcome::IntegrationIncomplete));
                     assert!(!f.req.out.exists());
                     assert!(!f.root.join("requested.c").exists());
+                    assert!(matches!(crate::driver::prepare(&f.req, &mut f.session),
+                        Preparation::IntegrationIncomplete(response) if response.code == 4));
                 }
             }
             let mut f = Fixture::new(SCALAR, false);
             f.req.run_args = Some(Vec::new());
             let response = f.run();
-            assert_eq!(response.mixed, Some(MixedOutcome::Complementary));
+            assert_eq!(response.code, 4);
+            assert_eq!(response.mixed, Some(MixedOutcome::IntegrationIncomplete));
             assert!(!response.ran);
         }
 
@@ -7414,7 +7433,7 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
         }
 
         #[test]
-        fn wrong_session_is_not_a_request_complement() {
+        fn wrong_session_is_a_failure_not_a_bridge_gap() {
             let mut f = Fixture::new(SCALAR, false);
             f.req.session.target_triple = "wasm32-wasip1".into();
             for background in [false, true] {

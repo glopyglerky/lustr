@@ -146,6 +146,20 @@ README reports actual source/tool identities, complete commands, confidence
 limits, failures, losses and raw evidence. Only then describe and publish it as
 the qualified replacement for its stated scope.
 
+## Preferred portability follow-up
+
+Prefer `no_std` with `alloc` for compiler logic and retained compilation without
+required Unix sockets. Preserve the existing Lust engine and speed. The user
+permits deferring this migration when it would slow completion or compilation;
+it is not an additional gate ahead of the work above.
+
+Current scope remains `std` with native host dependencies. The automatic warm
+CLI path still uses a Unix socket. A future adapter must preserve the same
+retained session, semantic environment, invalidation, failure and ownership
+contracts, with actual no-socket operation and matched timing evidence. A
+protocol-only `no_std` crate or fresh per-request compilation does not complete
+that migration. Continue the genuine metadata boundary first.
+
 ## Required PR explanation
 
 Every compiler change must identify the item it advances; the supported work

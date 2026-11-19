@@ -48,13 +48,13 @@ pub use compile::{Preparation, PreparedRequest};
 /// not classify the source as a complementary Rust capability.
 pub fn prepare<'a>(req: &'a Request, session: &'a mut Session) -> Preparation<'a> {
     if req.session.krate.target_kind == "lustr-mixed-native" && req.session == session.key
-        && let Some(reason) = mixed::request_complement(req) {
-        return Preparation::finished(mixed::complementary(reason));
+        && let Some(reason) = mixed::request_integration_gap(req) {
+        return Preparation::finished(mixed::integration_incomplete(reason));
     }
     match compile::prepare_observed(req, session, None) {
         Preparation::Ready(prepared) => Preparation::Ready(prepared),
         Preparation::Complete(response) | Preparation::Rejected(response)
-        | Preparation::Failed(response) | Preparation::Complementary(response) => Preparation::finished(mixed_response(req, response)),
+        | Preparation::Failed(response) | Preparation::IntegrationIncomplete(response) => Preparation::finished(mixed_response(req, response)),
     }
 }
 
@@ -70,8 +70,8 @@ pub fn prepare_imported<'a>(req: &'a Request, session: &'a mut Session, definiti
 /// Observations do not grant acceptance or establish cross-request reuse.
 pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&dyn PhaseObserver>) -> Response {
     if req.session.krate.target_kind == "lustr-mixed-native" && req.session == session.key
-        && let Some(reason) = mixed::request_complement(req) {
-        return mixed::complementary(reason);
+        && let Some(reason) = mixed::request_integration_gap(req) {
+        return mixed::integration_incomplete(reason);
     }
     let resp = mixed_response(req, compile::compile_observed(req, session, observer));
     if item_oracle::on() {
@@ -85,8 +85,8 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
 /// second read of it may see other bytes.
 pub fn compile_background(req: &Request, session: &mut Session) -> Response {
     if req.session.krate.target_kind == "lustr-mixed-native" && req.session == session.key
-        && let Some(reason) = mixed::request_complement(req) {
-        return mixed::complementary(reason);
+        && let Some(reason) = mixed::request_integration_gap(req) {
+        return mixed::integration_incomplete(reason);
     }
     let resp = mixed_response(req, compile::compile(req, session));
     if item_oracle::on() {
@@ -95,8 +95,8 @@ pub fn compile_background(req: &Request, session: &mut Session) -> Response {
     resp
 }
 
-/// All early frontend exits also cross the mixed boundary. Only its explicit
-/// admission/emission results can authorize continuation with another backend.
+/// All early frontend exits also cross the mixed boundary. A bridge gap is a
+/// terminal integration result; no response authorizes another compiler.
 fn mixed_response(req: &Request, mut response: Response) -> Response {
     use crate::protocol::MixedOutcome;
     if req.session.krate.target_kind != "lustr-mixed-native" {
@@ -104,8 +104,8 @@ fn mixed_response(req: &Request, mut response: Response) -> Response {
     }
     let classified = match (response.mixed, response.code, req.cmd) {
         (Some(MixedOutcome::Checked), 0, Cmd::Check)
-        | (Some(MixedOutcome::Emitted), 0, Cmd::Build)
-        | (Some(MixedOutcome::Complementary), 0, _) => true,
+        | (Some(MixedOutcome::Emitted), 0, Cmd::Build) => true,
+        (Some(MixedOutcome::IntegrationIncomplete), 4, _) => true,
         (Some(MixedOutcome::Failed), code, _) => code != 0,
         _ => false,
     };

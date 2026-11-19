@@ -42,15 +42,17 @@ remain in their existing implementations.
 `Preparation::Rejected` preserves a native frontend rejection. It does not claim
 that the source is invalid Rust: existing native diagnostics still include both
 invalid input and unavailable frontend support. `Preparation::Failed` preserves
-I/O, routing and implementation failures. Neither authorizes a second compiler
-attempt. The separate `Complementary` variant is produced only from the existing
-explicit mixed capability outcome, never by matching diagnostic text or treating
-status 1 as unsupported language.
+I/O, routing and implementation failures. `Preparation::IntegrationIncomplete`
+preserves an explicit bridge limitation with status 4. A missing scalar ABI,
+runtime representation or request mode does not establish absence from Lust's
+actual supported set. None of these outcomes authorizes a second compiler.
 
-This ownership boundary does **not** remove the transitional standalone retry in
-`src/main.rs`. It supplies the missing continuation for successful native work;
-it does not yet turn partially checked native work into deferred imported Rust
-semantic requests. No full architecture or package completion follows from it.
+The [exclusive-coverage correction](exclusive-coverage-cleanup.md) removes the
+transitional public retry. This owning continuation does not yet turn partially
+checked native work into deferred imported Rust semantic requests. No current
+bridge path establishes a genuine complementary capability. Such a result must
+eventually be justified from actual Lust support, separately from an integration
+gap. No full architecture or package completion follows from this boundary.
 
 ## First connected imported service
 

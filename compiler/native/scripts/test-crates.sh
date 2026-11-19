@@ -47,6 +47,9 @@
 #   compile retries once at RETRY_CASE_TIMEOUT (default 6x); a finished
 #   retry is reported as "slow", a second timeout is a HANG failure
 #   (scripts/timeout-lib.sh).
+#   LUST_CRATE_FAILURE_DIR saves failed case files and daemon logs under new
+#   private capture directories before temporary cleanup. Retention failure
+#   never changes the fixture result. No value keeps the original cleanup.
 # A missing tests/crates dir or an empty one fails the run; it never skips.
 set -uo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
@@ -89,7 +92,24 @@ slow_note() { [ "$lust_cc_slow" = 1 ] && echo "slow: $1 $2 timed out at ${case_t
 mask_tid() { sed -E -e "s/^thread '([^']*)' \([0-9]+\) /thread '\1' (TID) /" -e '/^timeout: the monitored command dumped core$/d' -e '/: line [0-9]+: +[0-9]+ .* timeout /d' "$1"; }
 
 report() {
-  if [ "$1" = ok ]; then pass=$((pass + 1)); echo "ok   $2"; else fail=$((fail + 1)); echo "FAIL $2: $3"; fi
+  if [ "$1" = ok ]; then
+    pass=$((pass + 1))
+    echo "ok   $2"
+  else
+    fail=$((fail + 1))
+    echo "FAIL $2: $3"
+    if [ -n "${LUST_CRATE_FAILURE_DIR:-}" ]; then
+      local retained_args=(--case "$case_dir" --output "$LUST_CRATE_FAILURE_DIR" --name "$2" --reason "$3")
+      # By default the daemon log is inside the copied project. Respect an
+      # explicitly inherited cache directory and retain only its daemon log.
+      if [ -n "${LUST_CACHE_DIR:-}" ]; then
+        retained_args+=(--daemon-log "$LUST_CACHE_DIR/daemon.log")
+      fi
+      if ! python3 "$root/../../tools/retain-native-crate-failure.py" "${retained_args[@]}"; then
+        echo "warning: could not retain failed crate $2; its original failure is unchanged" >&2
+      fi
+    fi
+  fi
 }
 
 host_triple=$(rustc -vV | sed -n 's/^host: //p')
@@ -238,7 +258,9 @@ for dir in "$fixtures"/*/; do
   fi
 
   timeout 30 "$cargo_bin" "${prog_args[@]}" >"$case_dir/cargo.run.out" 2>"$case_dir/cargo.run.err"; cs=$?
+  printf '%s\n' "$cs" >"$case_dir/cargo.run.status"
   timeout 30 "$case_dir/lust.bin" "${prog_args[@]}" >"$case_dir/lust.run.out" 2>"$case_dir/lust.run.err"; ls_=$?
+  printf '%s\n' "$ls_" >"$case_dir/lust.run.status"
   if [ $cs -ne $ls_ ]; then
     report bad "$name" "exit status cargo=$cs lust=$ls_"
     continue
@@ -262,11 +284,17 @@ for dir in "$fixtures"/*/; do
     for dpass in cold warm; do
       env -u LUST_NO_DAEMON LUST_DAEMON_SOCKET="$proj/.lust-daemon.sock" LUST_DAEMON_IDLE=20 \
         timeout "$case_timeout" "$lust" "${lust_args[@]}" >"$case_dir/daemon.$dpass.out" 2>"$case_dir/daemon.$dpass.err"; st=$?
+      printf '%s\n' "$st" >"$case_dir/daemon.$dpass.status"
       if [ "$st" -ne 0 ]; then
         dbad="daemon $dpass build failed (exit $st): $(head -3 "$case_dir/daemon.$dpass.err")"
         break
       fi
-      timeout 30 "$case_dir/lust.bin" "${prog_args[@]}" >"$case_dir/daemon.$dpass.run.out" 2>/dev/null
+      timeout 30 "$case_dir/lust.bin" "${prog_args[@]}" >"$case_dir/daemon.$dpass.run.out" 2>"$case_dir/daemon.$dpass.run.err"; ds=$?
+      printf '%s\n' "$ds" >"$case_dir/daemon.$dpass.run.status"
+      if [ "$ds" -ne "$cs" ]; then
+        dbad="daemon $dpass build: exit status cargo=$cs lust=$ds"
+        break
+      fi
       if ! cmp -s "$case_dir/cargo.run.out" "$case_dir/daemon.$dpass.run.out"; then
         dbad="daemon $dpass build: stdout differs: $(diff "$case_dir/cargo.run.out" "$case_dir/daemon.$dpass.run.out" | head -4)"
         break

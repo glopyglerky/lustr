@@ -2398,10 +2398,10 @@ index 1de124e4ad7311ac28c360d66b23390c885ddbcf..b3a72fb6973f53c2f477eb3b419b4c6c
  
  # The lock file is the single-daemon guarantee: whoever holds its flock owns the socket.
 diff --git a/scripts/test-crates.sh b/scripts/test-crates.sh
-index 49b80f0729868fc1446f2e304a1b9fcb5e92349f..120f6301e4fe95f03ce4d26e7ef938e6c7eaf3de 100755
+index 49b80f0729868fc1446f2e304a1b9fcb5e92349f..ac9772b6ba2c2b7b0ea7ce28feffa835ec477127 100755
 --- a/scripts/test-crates.sh
 +++ b/scripts/test-crates.sh
-@@ -41,7 +41,7 @@
+@@ -41,12 +41,15 @@
  # (W-RESOLVE), so fixtures are real multi-file crates.
  #
  # Usage: scripts/test-crates.sh [filter]
@@ -2410,7 +2410,15 @@ index 49b80f0729868fc1446f2e304a1b9fcb5e92349f..120f6301e4fe95f03ce4d26e7ef938e6
  #   -fsanitize=address,undefined and runs it, as difftest does.
  #   CASE_TIMEOUT seconds per lust compile (default 60). A timed-out lust
  #   compile retries once at RETRY_CASE_TIMEOUT (default 6x); a finished
-@@ -77,6 +77,7 @@ pass=0
+ #   retry is reported as "slow", a second timeout is a HANG failure
+ #   (scripts/timeout-lib.sh).
++#   LUST_CRATE_FAILURE_DIR saves failed case files and daemon logs under new
++#   private capture directories before temporary cleanup. Retention failure
++#   never changes the fixture result. No value keeps the original cleanup.
+ # A missing tests/crates dir or an empty one fails the run; it never skips.
+ set -uo pipefail
+ root=$(cd "$(dirname "$0")/.." && pwd)
+@@ -77,6 +80,7 @@ pass=0
  fail=0
  seen=0
  case_timeout=${CASE_TIMEOUT:-60}
@@ -2418,7 +2426,62 @@ index 49b80f0729868fc1446f2e304a1b9fcb5e92349f..120f6301e4fe95f03ce4d26e7ef938e6
  # The one timeout rule for lust compiles (lust_cc). Serial here, so the
  # retry is alone. Cargo builds and program runs keep their plain timeouts.
  # shellcheck source=scripts/timeout-lib.sh
-@@ -290,8 +291,8 @@ for dir in "$fixtures"/*/; do
+@@ -88,7 +92,24 @@ slow_note() { [ "$lust_cc_slow" = 1 ] && echo "slow: $1 $2 timed out at ${case_t
+ mask_tid() { sed -E -e "s/^thread '([^']*)' \([0-9]+\) /thread '\1' (TID) /" -e '/^timeout: the monitored command dumped core$/d' -e '/: line [0-9]+: +[0-9]+ .* timeout /d' "$1"; }
+ 
+ report() {
+-  if [ "$1" = ok ]; then pass=$((pass + 1)); echo "ok   $2"; else fail=$((fail + 1)); echo "FAIL $2: $3"; fi
++  if [ "$1" = ok ]; then
++    pass=$((pass + 1))
++    echo "ok   $2"
++  else
++    fail=$((fail + 1))
++    echo "FAIL $2: $3"
++    if [ -n "${LUST_CRATE_FAILURE_DIR:-}" ]; then
++      local retained_args=(--case "$case_dir" --output "$LUST_CRATE_FAILURE_DIR" --name "$2" --reason "$3")
++      # By default the daemon log is inside the copied project. Respect an
++      # explicitly inherited cache directory and retain only its daemon log.
++      if [ -n "${LUST_CACHE_DIR:-}" ]; then
++        retained_args+=(--daemon-log "$LUST_CACHE_DIR/daemon.log")
++      fi
++      if ! python3 "$root/../../tools/retain-native-crate-failure.py" "${retained_args[@]}"; then
++        echo "warning: could not retain failed crate $2; its original failure is unchanged" >&2
++      fi
++    fi
++  fi
+ }
+ 
+ host_triple=$(rustc -vV | sed -n 's/^host: //p')
+@@ -237,7 +258,9 @@ for dir in "$fixtures"/*/; do
+   fi
+ 
+   timeout 30 "$cargo_bin" "${prog_args[@]}" >"$case_dir/cargo.run.out" 2>"$case_dir/cargo.run.err"; cs=$?
++  printf '%s\n' "$cs" >"$case_dir/cargo.run.status"
+   timeout 30 "$case_dir/lust.bin" "${prog_args[@]}" >"$case_dir/lust.run.out" 2>"$case_dir/lust.run.err"; ls_=$?
++  printf '%s\n' "$ls_" >"$case_dir/lust.run.status"
+   if [ $cs -ne $ls_ ]; then
+     report bad "$name" "exit status cargo=$cs lust=$ls_"
+     continue
+@@ -261,11 +284,17 @@ for dir in "$fixtures"/*/; do
+     for dpass in cold warm; do
+       env -u LUST_NO_DAEMON LUST_DAEMON_SOCKET="$proj/.lust-daemon.sock" LUST_DAEMON_IDLE=20 \
+         timeout "$case_timeout" "$lust" "${lust_args[@]}" >"$case_dir/daemon.$dpass.out" 2>"$case_dir/daemon.$dpass.err"; st=$?
++      printf '%s\n' "$st" >"$case_dir/daemon.$dpass.status"
+       if [ "$st" -ne 0 ]; then
+         dbad="daemon $dpass build failed (exit $st): $(head -3 "$case_dir/daemon.$dpass.err")"
+         break
+       fi
+-      timeout 30 "$case_dir/lust.bin" "${prog_args[@]}" >"$case_dir/daemon.$dpass.run.out" 2>/dev/null
++      timeout 30 "$case_dir/lust.bin" "${prog_args[@]}" >"$case_dir/daemon.$dpass.run.out" 2>"$case_dir/daemon.$dpass.run.err"; ds=$?
++      printf '%s\n' "$ds" >"$case_dir/daemon.$dpass.run.status"
++      if [ "$ds" -ne "$cs" ]; then
++        dbad="daemon $dpass build: exit status cargo=$cs lust=$ds"
++        break
++      fi
+       if ! cmp -s "$case_dir/cargo.run.out" "$case_dir/daemon.$dpass.run.out"; then
+         dbad="daemon $dpass build: stdout differs: $(diff "$case_dir/cargo.run.out" "$case_dir/daemon.$dpass.run.out" | head -4)"
+         break
+@@ -290,8 +319,8 @@ for dir in "$fixtures"/*/; do
        report bad "$name" "lust --emit-c build failed: $(head -3 "$case_dir/emit.err")"
        continue
      fi
@@ -4620,10 +4683,21 @@ index 136b1f4aa7efc99f8e5bd2b23446fad2578f1851..5a9cfb3f385dc3bbd827935e7afddde2
              // No daemon answered: start one for the next command, answer this one cold.
              maybe_autostart(&sock, &req.file, &core);
 diff --git a/src/daemon.rs b/src/daemon.rs
-index db807083aa56d24a804b47f7ffd31e33c563ad52..a9a656e82b4a4efe618feed4a7964fe09c3edad6 100644
+index db807083aa56d24a804b47f7ffd31e33c563ad52..3c46323416db0741673fd48567a5dfecc719f21e 100644
 --- a/src/daemon.rs
 +++ b/src/daemon.rs
-@@ -57,12 +57,12 @@ use std::sync::mpsc::{Receiver, Sender};
+@@ -23,6 +23,10 @@
+ // left, so one compile that never ends cannot wedge every later request. Every 100
+ // requests the log gets a stats line (RSS, sessions, expansion tables).
+ // Two safety nets watch the warm answers:
++// The following retry/oracle behavior belongs to the separate donor oracle
++// build. An exclusive-native product request has one compiler attempt. A
++// failure is returned unchanged; damaged state is replaced only for a later
++// request, without an immediate or background retry.
+ //   - A panic in one request is caught. That crate's session is dropped, the request is
+ //     answered by a fresh session at once, and the daemon keeps serving. A patch oracle
+ //     failure (LUST_CHECK_ITEMPATCH, driver/item_oracle.rs) is never retried: the client
+@@ -57,12 +61,12 @@ use std::sync::mpsc::{Receiver, Sender};
  
  unsafe extern "C" {
      fn flock(fd: i32, operation: i32) -> i32;
@@ -4638,7 +4712,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..a9a656e82b4a4efe618feed4a7964fe0
      fn getuid() -> u32;
      #[cfg(target_os = "linux")]
      fn setpriority(which: i32, who: u32, prio: i32) -> i32;
-@@ -131,9 +131,32 @@ fn hang_limit() -> Option<std::time::Duration> {
+@@ -131,9 +135,32 @@ fn hang_limit() -> Option<std::time::Duration> {
  /// killed, timed out, or got Ctrl-C). A client that still waits for its
  /// answer has sent its whole request and reads, so no event is pending.
  fn client_gone(fd: i32) -> bool {
@@ -4673,7 +4747,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..a9a656e82b4a4efe618feed4a7964fe0
  }
  
  /// Starts the hang watchdog. The daemon compiles one request at a time,
-@@ -184,6 +207,12 @@ fn wait_readable(listener: &UnixListener, wake: i32, socket_watch: i32, timeout:
+@@ -184,6 +211,12 @@ fn wait_readable(listener: &UnixListener, wake: i32, socket_watch: i32, timeout:
          PollFd { fd: wake, events: POLLIN, revents: 0 },
          PollFd { fd: socket_watch, events: POLLIN, revents: 0 },
      ];
@@ -4686,7 +4760,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..a9a656e82b4a4efe618feed4a7964fe0
      let ms = timeout.map_or(-1, |d| d.as_millis().min(i32::MAX as u128) as i32);
      // SAFETY: valid pollfds over live fds (an unavailable socket watch is
      // -1, which poll ignores), for the duration of the call.
-@@ -249,7 +278,7 @@ fn socket_removal_event(buf: &[u8], name: &[u8]) -> bool {
+@@ -249,7 +282,7 @@ fn socket_removal_event(buf: &[u8], name: &[u8]) -> bool {
  #[cfg(target_os = "linux")]
  fn socket_removed(watch: i32, sock: &Path) -> bool {
      if watch < 0 {
@@ -4695,7 +4769,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..a9a656e82b4a4efe618feed4a7964fe0
      }
      let Some(name) = sock.file_name() else { return false };
      let mut buf = [0u8; 4096];
-@@ -264,12 +293,11 @@ fn socket_removed(watch: i32, sock: &Path) -> bool {
+@@ -264,12 +297,11 @@ fn socket_removed(watch: i32, sock: &Path) -> bool {
      socket_removal_event(&buf[..n as usize], name.as_bytes()) || sock.symlink_metadata().is_err()
  }
  
@@ -4712,7 +4786,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..a9a656e82b4a4efe618feed4a7964fe0
  }
  
  /// The pid in a lust temp name (`lust-daemon-<pid>`, `lust-<pid>`,
-@@ -291,12 +319,10 @@ fn stale_temp_pid(name: &str) -> Option<u32> {
+@@ -291,12 +323,10 @@ fn stale_temp_pid(name: &str) -> Option<u32> {
      None
  }
  
@@ -4727,43 +4801,73 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..a9a656e82b4a4efe618feed4a7964fe0
  }
  
  /// Deletes lust temp dirs and files from processes that are gone:
-@@ -871,6 +897,17 @@ fn compile_fresh(entry: &mut Entry, req: &Request) -> (Response, bool) {
+@@ -864,13 +894,31 @@ fn compile_fresh(entry: &mut Entry, req: &Request) -> (Response, bool) {
+     }
+ }
+ 
+-/// Compiles with the entry's warm session, with the panic net and the
+-/// fresh-session guard. An error answer goes to the client at once and is
+-/// rechecked in the background (`jobs`); a panic, or a request marked
+-/// recomputed by an earlier mismatch, is answered from a fresh session here.
++/// Product and mixed requests get one attempt in the retained session. The
++/// separately built donor oracle keeps its original fresh-session guard.
  fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Response {
++    compile_guarded_with(entry, req, jobs, driver::compile)
++}
++
++fn compile_guarded_with(
++    entry: &mut Entry,
++    req: &Request,
++    jobs: &mut GuardJobs,
++    compile: impl FnOnce(&Request, &mut Session) -> Response,
++) -> Response {
      entry.served += 1;
      let served = entry.served;
-+    if req.session.krate.target_kind == "lustr-mixed-native" {
-+        // Admission has its own explicit complementary outcome. A broken
-+        // native attempt must not become success in a fresh session, and must
-+        // not launch a second compilation as background verification.
++    if cfg!(feature = "exclusive-native") || req.session.krate.target_kind == "lustr-mixed-native" {
++        // The product and the bounded mixed component never hide an error in
++        // an immediate or background second attempt. A previously invalidated
++        // session is replaced before this request's sole attempt.
 +        if entry.recompute_next {
 +            entry.recompute_next = false;
 +            replace_session(entry, &req.session);
 +        }
-+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| driver::compile(req, &mut entry.session)));
-+        return mixed_answer(entry, req, result);
++        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| compile(req, &mut entry.session)));
++        return terminal_answer(entry, req, result);
 +    }
      if entry.recompute_next {
          entry.recompute_next = false;
          eprintln!("guard-check: recomputing {} in a fresh session (marked by a background mismatch)", req.file.display());
-@@ -918,6 +955,25 @@ fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Re
+@@ -879,7 +927,7 @@ fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Re
+         return compile_fresh(entry, req).0;
+     }
+     let start = std::time::SystemTime::now();
+-    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| driver::compile(req, &mut entry.session))) {
++    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| compile(req, &mut entry.session))) {
+         Ok(r) if r.code == 0 || r.code == 2 => r,
+         Ok(r) if r.code == 3 && r.stderr.contains("function count mismatch") => {
+             // The warm session's scan and Ast disagree on the fn list
+@@ -918,6 +966,28 @@ fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Re
      }
  }
  
-+fn mixed_answer(entry: &mut Entry, req: &Request, result: std::thread::Result<Response>) -> Response {
++fn terminal_answer(entry: &mut Entry, req: &Request, result: std::thread::Result<Response>) -> Response {
 +    match result {
 +        Ok(response) => {
-+            if response.code == 3 && response.mixed == Some(crate::protocol::MixedOutcome::Failed) {
++            // In-process program execution can also exit with status 3. Its
++            // result does not imply that the compiler session is damaged.
++            if response.code == 3 && !response.ran {
 +                replace_session(entry, &req.session);
 +            }
 +            response
 +        }
 +        Err(payload) => {
-+            let detail = driver::oracle_failure(&*payload).unwrap_or_else(|| "mixed native compilation panicked".into());
++            let mixed = req.session.krate.target_kind == "lustr-mixed-native";
++            let detail = driver::oracle_failure(&*payload).unwrap_or_else(|| "native compilation panicked".into());
 +            // Discard state damaged by the panic, but do not run this request
 +            // again. A later user request may start from this fresh session.
 +            replace_session(entry, &req.session);
-+            Response { code: 3, mixed: Some(crate::protocol::MixedOutcome::Failed),
-+                stderr: format!("error: internal: {detail}; mixed request was not retried\n"), ..Default::default() }
++            Response { code: 3, mixed: mixed.then_some(crate::protocol::MixedOutcome::Failed),
++                stderr: format!("error: internal: {detail}; request was not retried\n"), ..Default::default() }
 +        }
 +    }
 +}
@@ -4771,7 +4875,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..a9a656e82b4a4efe618feed4a7964fe0
  /// How many warm sessions the daemon keeps (`LUST_DAEMON_SESSIONS`,
  /// default 32, at least 1). Each distinct file or crate selection is one
  /// session, so a long run over many small programs (a probe sweep) made
-@@ -985,6 +1041,19 @@ fn log_stats(served: u64, sessions: usize) {
+@@ -985,6 +1055,19 @@ fn log_stats(served: u64, sessions: usize) {
  
  /// Serves requests until idle. Each crate selection (`SessionKey`) has its own session.
  pub fn serve(sock: &Path) -> ! {
@@ -4791,10 +4895,114 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..a9a656e82b4a4efe618feed4a7964fe0
      // Sessions load std once; a std or adapter source override must be
      // read fresh by every compile (see `protocol::source_override`).
      if let Some(var) = protocol::source_override() {
-@@ -1190,8 +1259,38 @@ pub fn serve(sock: &Path) -> ! {
+@@ -1190,8 +1273,142 @@ pub fn serve(sock: &Path) -> ! {
  mod tests {
      use super::*;
  
++    #[cfg(feature = "exclusive-native")]
++    #[test]
++    fn product_daemon_has_one_attempt_for_errors_panics_and_executed_results() {
++        let base = std::env::temp_dir().join(format!("lust-product-once-{}", std::process::id()));
++        let _ = std::fs::remove_dir_all(&base);
++        std::fs::create_dir_all(&base).unwrap();
++        let req = check_req(&base.join("absent.rs"));
++        std::fs::write(&req.out, b"last successful artifact").unwrap();
++        for (code, diagnostic, ran) in [
++            (1, "original rejected input", false),
++            (2, "original input error", false),
++            (3, "error: internal: function count mismatch; run again", false),
++            (3, "original executed status three", true),
++            (7, "original executed result", true),
++        ] {
++            let mut entry = Entry::new(base.join(format!("case-{code}-{ran}")), req.session.clone(), None);
++            let attempts = std::cell::Cell::new(0);
++            let mut jobs = GuardJobs::new();
++            let response = compile_guarded_with(&mut entry, &req, &mut jobs, |_, _| {
++                attempts.set(attempts.get() + 1);
++                Response { code, stdout: "original output".into(), stderr: diagnostic.into(), ran, mixed: None }
++            });
++            assert_eq!(attempts.get(), 1);
++            assert_eq!(response.code, code, "a hidden fresh compile would read the absent source and return code 2");
++            assert_eq!(response.stdout, "original output");
++            assert_eq!(response.stderr, diagnostic);
++            assert_eq!(response.ran, ran);
++            assert_eq!(response.mixed, None, "ordinary replies retain their wire format");
++            assert_eq!(entry.served, 1);
++            assert_eq!(entry.resets, u64::from(code == 3 && !ran));
++            assert_eq!((jobs.pending, jobs.running.len(), jobs.queued.len()), (0, 0, 0), "no background compiler attempt");
++            assert_eq!(std::fs::read(&req.out).unwrap(), b"last successful artifact");
++        }
++        let mut entry = Entry::new(base.join("panic"), req.session.clone(), None);
++        let attempts = std::cell::Cell::new(0);
++        let mut jobs = GuardJobs::new();
++        let response = compile_guarded_with(&mut entry, &req, &mut jobs, |_, _| {
++            attempts.set(attempts.get() + 1);
++            panic!("injected compiler panic");
++        });
++        assert_eq!(attempts.get(), 1);
++        assert_eq!(response.code, 3);
++        assert_eq!(response.mixed, None);
++        assert!(response.stderr.contains("not retried"));
++        assert_eq!(entry.resets, 1, "discard damaged state for a later request only");
++        assert_eq!((jobs.pending, jobs.running.len(), jobs.queued.len()), (0, 0, 0));
++        assert_eq!(std::fs::read(&req.out).unwrap(), b"last successful artifact");
++        assert!(!req.file.exists());
++        drop(entry);
++        let _ = std::fs::remove_dir_all(base);
++    }
++
++    #[cfg(feature = "exclusive-native")]
++    #[test]
++    fn product_daemon_preserves_real_retained_edits_and_next_request_recovery() {
++        let base = std::env::temp_dir().join(format!("lust-product-retained-{}", std::process::id()));
++        let _ = std::fs::remove_dir_all(&base);
++        std::fs::create_dir_all(&base).unwrap();
++        let source = "fn value()->i64{41}\nfn main(){println!(\"{}\",value());}\n";
++        let file = base.join("main.rs");
++        std::fs::write(&file, source).unwrap();
++        let mut req = check_req(&file);
++        req.cmd = protocol::Cmd::Build;
++        let mut entry = Entry::new(base.join("session"), req.session.clone(), None);
++        let mut jobs = GuardJobs::new();
++        let run = |expected: &[u8]| {
++            let output = std::process::Command::new(&req.out).output().unwrap();
++            assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
++            assert_eq!(output.stdout, expected);
++        };
++        for pass in 0..2 {
++            let response = compile_guarded(&mut entry, &req, &mut jobs);
++            assert_eq!(response.code, 0, "{}", response.stderr);
++            assert_eq!(response.mixed, None);
++            run(b"41\n");
++            if pass == 1 {
++                assert!(entry.session.front.last_visits.contains("checked=0"), "{}", entry.session.front.last_visits);
++            }
++        }
++        let prior = std::fs::read(&req.out).unwrap();
++        std::fs::write(&file, source.replace("{41}", "{true}")).unwrap();
++        let invalid = compile_guarded(&mut entry, &req, &mut jobs);
++        assert_eq!(invalid.code, 1);
++        assert_eq!(invalid.mixed, None);
++        assert_eq!((jobs.pending, jobs.running.len(), jobs.queued.len()), (0, 0, 0));
++        assert_eq!(entry.resets, 0);
++        assert_eq!(std::fs::read(&req.out).unwrap(), prior);
++        std::fs::write(&file, source.replace("{41}", "{42}")).unwrap();
++        assert_eq!(compile_guarded(&mut entry, &req, &mut jobs).code, 0);
++        run(b"42\n");
++        let prior = std::fs::read(&req.out).unwrap();
++        let panicked = compile_guarded_with(&mut entry, &req, &mut jobs, |_, _| panic!("injected after real retained work"));
++        assert_eq!(panicked.code, 3);
++        assert_eq!(entry.resets, 1);
++        assert_eq!(std::fs::read(&req.out).unwrap(), prior);
++        std::fs::write(&file, source.replace("{41}", "{43}")).unwrap();
++        assert_eq!(compile_guarded(&mut entry, &req, &mut jobs).code, 0);
++        run(b"43\n");
++        assert_eq!((jobs.pending, jobs.running.len(), jobs.queued.len()), (0, 0, 0));
++        assert_eq!(entry.resets, 1);
++        drop(entry);
++        let _ = std::fs::remove_dir_all(base);
++    }
++
 +    #[test]
 +    fn mixed_admission_daemon_keeps_internal_failure_and_panic_without_retry() {
 +        let base = std::env::temp_dir().join(format!("lust-mixed-guard-{}", std::process::id()));
@@ -4809,13 +5017,13 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..a9a656e82b4a4efe618feed4a7964fe0
 +        let first = entry.session.obj_dir().to_owned();
 +        let failure = Response { code: 3, stderr: "original emission failure".into(),
 +            mixed: Some(crate::protocol::MixedOutcome::Failed), ..Default::default() };
-+        let failed = mixed_answer(entry, &req, Ok(failure));
++        let failed = terminal_answer(entry, &req, Ok(failure));
 +        assert_eq!(failed.code, 3);
 +        assert_eq!(failed.stderr, "original emission failure");
 +        assert_eq!(failed.mixed, Some(crate::protocol::MixedOutcome::Failed));
 +        assert_ne!(entry.session.obj_dir(), first);
 +        let second = entry.session.obj_dir().to_owned();
-+        let panicked = mixed_answer(entry, &req, Err(Box::new("injected panic")));
++        let panicked = terminal_answer(entry, &req, Err(Box::new("injected panic")));
 +        assert_eq!(panicked.code, 3);
 +        assert_eq!(panicked.mixed, Some(crate::protocol::MixedOutcome::Failed));
 +        assert!(panicked.stderr.contains("not retried"));
@@ -4831,7 +5039,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..a9a656e82b4a4efe618feed4a7964fe0
      }
  
      fn done(key: &SessionKey, seq: u64, served: u64, warm: Response, fresh: Response, dir: PathBuf) -> GuardDone {
-@@ -1610,6 +1709,12 @@ mod tests {
+@@ -1610,6 +1827,12 @@ mod tests {
      fn client_gone_sees_a_closed_peer_only() {
          let (ours, theirs) = std::os::unix::net::UnixStream::pair().unwrap();
          assert!(!client_gone(ours.as_raw_fd()));
@@ -5183,7 +5391,7 @@ index da28835400f894866adb85f436e2cbdf109797d7..6cf91ad37bd9d2192a7f1d876a0c7b47
          assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
          assert!(decode_response(b"short").is_none());
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e08e5af17 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..c7a14b47013df209c9e1e4ff479b8dda2265b0a0 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
 @@ -401,6 +401,24 @@ fn check_fingerprint(req: &Request) -> Option<u64> {
@@ -5379,7 +5587,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
          front.resolve_cache.clear_merged();
          if super::item_oracle::on() || super::resolve_oracle::on() {
              oracle_input = Some(super::item_oracle::ColdInput { input: input.clone(), platform: plan.platform });
-@@ -2552,10 +2615,220 @@ fn location_path(p: &str, library: &Path, display_root: Option<&Path>, client: &
+@@ -2552,10 +2615,221 @@ fn location_path(p: &str, library: &Path, display_root: Option<&Path>, client: &
  }
  
  pub fn compile(req: &Request, session: &mut Session) -> Response {
@@ -5390,26 +5598,27 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
 +    match prepare_observed(req, session, observer) {
 +        Preparation::Ready(prepared) => prepared.emit_unobserved(),
 +        Preparation::Complete(response) | Preparation::Rejected(response)
-+        | Preparation::Failed(response) | Preparation::Complementary(response) => response,
++        | Preparation::Failed(response) | Preparation::IntegrationIncomplete(response) => response,
 +    }
 +}
 +
 +/// Preparation either owns the exact passing native state or has already
 +/// finished before that boundary. A native rejection does not establish that
-+/// Rust is invalid or complementary; only the existing mixed capability proof
-+/// can produce Complementary. Neither rejection nor failure permits a retry.
++/// Rust is invalid or complementary. IntegrationIncomplete identifies a bridge
++/// that cannot compose this request, without reassigning Lust-owned work.
++/// No rejection, integration gap or failure permits a compiler retry.
 +pub enum Preparation<'a> {
 +    Ready(PreparedRequest<'a>),
 +    Complete(Response),
 +    Rejected(Response),
 +    Failed(Response),
-+    Complementary(Response),
++    IntegrationIncomplete(Response),
 +}
 +
 +impl Preparation<'_> {
 +    pub(super) fn finished(response: Response) -> Self {
 +        match (response.code, response.mixed) {
-+            (0, Some(crate::protocol::MixedOutcome::Complementary)) => Self::Complementary(response),
++            (4, Some(crate::protocol::MixedOutcome::IntegrationIncomplete)) => Self::IntegrationIncomplete(response),
 +            (0, _) => Self::Complete(response),
 +            (1, _) => Self::Rejected(response),
 +            _ => Self::Failed(response),
@@ -5601,7 +5810,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
              stderr: format!(
                  "error: internal: request routed to the wrong session\n  request: {}\n  session: {}\n",
                  req.session.describe(),
-@@ -2563,16 +2836,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2563,16 +2837,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              ),
              code: 3,
              ..Default::default()
@@ -5621,7 +5830,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
      }
      // Lust links for the host target only (tcc). A named non-host triple
      // is a clear error for a link, not a host binary under a foreign
-@@ -2591,19 +2864,19 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2591,19 +2865,19 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // product; no link runs).
      let cc_build = req.cc && (triple.is_empty() || crate::resolve::cfg::CfgEnv::is_release_target(triple));
      if foreign && !foreign_check && !cc_build && req.emit_c.is_none() {
@@ -5644,7 +5853,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
      };
      // The crate identity for stable defs comes from the session's key (its
      // package and target identity, `Session::crate_ids`). For a single-file
-@@ -2670,7 +2943,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2670,7 +2944,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      } else {
          crate::resolve::worklist::route_root_std(&src, &front.interner, true)
      };
@@ -5653,7 +5862,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
      let route_std_mods = req.session.krate.manifest_path.is_none().then_some(std_mods);
      if front.resolved_crate && !wants_resolver {
          front.ast = Arc::default();
-@@ -2719,16 +2992,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2719,16 +2993,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      if needs.any() {
          match splice_std(&mut src, std_cache, needs) {
              Ok(sp) => (std_ranges, std_routes, std_methods) = (sp.ranges, sp.routes, sp.methods),
@@ -5673,7 +5882,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
          }
      } else {
      // Lex and scan in chunks of whole items, in parallel. Only the region an edit touched is
-@@ -2873,7 +3146,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2873,7 +3147,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // A macro error in a chunk is the answer, not a lexing fallback.
      if let Some(Err(d)) = fresh.iter().find(|l| matches!(l, Err(d) if d.code.starts_with("L08"))) {
          let mut d = d.clone();
@@ -5682,7 +5891,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
      }
      let split_inner_attr = ranges.len() > 1
          && (reused.iter().flatten().any(|c| c.inner_attr) || fresh.iter().flatten().any(|&(_, _, _, inner_attr)| inner_attr));
-@@ -2889,7 +3162,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2889,7 +3163,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          // file has an inner attribute (`has_inner_attr`): lex the whole file. Its error is the
          // answer; if it lexes, compile as one chunk. Never panic.
          match lexer::lex(&src, ROOT_FILE, 0, &front.interner).and_then(|l| expand_tokens(front, l, &req.file, &src, test_mode, req.session.profile, &req.session)) {
@@ -5691,7 +5900,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
              Ok((whole, deps)) => {
                  let mut sc = scan::scan(&whole);
                  fold_fn_text(&mut sc, &whole, &src);
-@@ -3072,7 +3345,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3072,7 +3346,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                      front.chunks[fn_at[i].0].items = None;
                  }
                  front.chunks_blanked = true;
@@ -5700,7 +5909,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
              }
              for (&i, (body_ast, body, exprs, pats)) in changed.iter().zip(parsed) {
                  let before = (front.ast.exprs.len() as u32, front.ast.pats.len() as u32, front.ast.blocks.len() as u32);
-@@ -3145,7 +3418,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3145,7 +3419,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          if let Some(Err(d)) = parsed.iter().find(|p| p.is_err()) {
              let d = d.clone();
              front.chunks_blanked = old_len > 0;
@@ -5709,7 +5918,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
          }
          let mut new_asts: FxMap<usize, Ast> = todo.iter().copied().zip(parsed.into_iter().map(|p| p.unwrap())).collect();
          // Splice every per-chunk list in chunk order: a re-parsed chunk
-@@ -3221,7 +3494,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3221,7 +3495,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              Ok(c) => c,
              Err(e) => {
                  front.env_hash = None;
@@ -5718,7 +5927,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
              }
          }
      } else {
-@@ -3255,14 +3528,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3255,14 +3529,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                      Ok((w, _deps)) => w,
                      Err(mut d) => {
                          front.env_hash = None;
@@ -5735,7 +5944,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
                  }
              }
          };
-@@ -3273,7 +3546,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3273,7 +3547,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              Ok(c) => c,
              Err(e) => {
                  front.env_hash = None;
@@ -5744,7 +5953,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
              }
          }
      };
-@@ -3567,6 +3840,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3567,6 +3841,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // Template check errors from the kept program are collect's errors
      // (`gen_reuse.template_errors` counts them).
      let collect = |front: &mut Front, caches: &mut Caches| {
@@ -5759,7 +5968,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
          collect::collect_reuse(
              front.ast.clone(),
              front.interner.clone(),
-@@ -3666,7 +3947,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3666,7 +3948,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              front.last_visits.clear();
              visits.render(&mut front.last_visits);
              log_visits(&front.last_visits);
@@ -5768,7 +5977,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
          }
      };
      // Every body of a generic program rechecks when the trait system
-@@ -3757,11 +4038,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3757,11 +4039,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
                  None => {
                      front.env_hash = None;
@@ -5782,7 +5991,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
                  }
              }
          }
-@@ -3772,7 +4053,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3772,7 +4054,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      if program.fns.len() < fn_count {
          // The scanner and the parser disagree (only possible with unusual syntax). Start over.
          front.env_hash = None;
@@ -5791,7 +6000,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
      }
      // Mono instance slots (docs/ARCH.md section 4.2; W-TRAITS-CORE
      // through W-DRIVER): collect appends materialized instances
-@@ -3790,7 +4071,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3790,7 +4072,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              let disk = program.disk_id(LocalDefId(i as u32));
              if let Err(c) = def::insert_path(&mut front.slot_paths, disk, &format!("instance#{}", disk.hash.0)) {
                  front.env_hash = None;
@@ -5800,7 +6009,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
              }
              let slot = match front.slot_of.get(&disk) {
                  Some(&slot) => slot,
-@@ -4081,7 +4362,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4081,7 +4363,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // switches, debug info, unwind tables) makes every slot's C again, as a one-shot build
      // does: its slot cache holds C of the other form (a front image saved by a tcc build,
      // then a release driver build). A check makes no C and keeps the key.
@@ -5810,7 +6019,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
      if req.cmd == Cmd::Build {
          let key = super::release_c::codegen_key(release, req.debug, program.unwind_tables);
          if caches.codegen_key != key {
-@@ -4285,7 +4567,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4285,7 +4568,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // A one-shot check needs no IR after borrowck: dropping each body on
      // its worker lets the allocator reuse the memory for the next body,
      // instead of touching fresh pages for every function.
@@ -5819,7 +6028,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
      // `lust check` skips std platform bodies (`Program::check_skips`).
      // A skipped slot keeps its last marks; one that needed a check lost
      // its C above, so the next build checks it.
-@@ -4296,17 +4578,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4296,17 +4579,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          super::item_oracle::check(front, caches, Ok(&program), &work, fn_count, hashes, lines, visits.path, crate_ids, build, tables);
          t.lap("item oracle");
      }
@@ -5845,7 +6054,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
              (Some(body), errs)
          });
          let body = body.filter(|_| keep_bodies).map(|mut b| {
-@@ -4370,6 +4660,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4370,6 +4661,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          diags.push(Diag::new("L0130", diag::Span::default(), "no `main` function", "Add `fn main() { ... }`."));
      }
      t.lap(if mode == "full" { "check+borrowck (par)" } else { "check changed fns (par)" });
@@ -5853,7 +6062,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
      // A one-shot process (`leak_at_exit`) exits right after this call. Freeing the IR and
      // program arenas, mostly built on worker threads, costs about 10 ms on a 31k-line crate,
      // so leak them on every return below and let the OS reclaim the memory at exit. A
-@@ -4396,10 +4687,93 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4396,10 +4688,93 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
              }
          }
@@ -5921,8 +6130,8 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
 +        ));
 +        match admission {
 +            Ok(super::mixed::Admission::Native(prepared)) => Some(prepared),
-+            Ok(super::mixed::Admission::Complementary(reason)) => {
-+                let response = super::mixed::complementary(reason);
++            Ok(super::mixed::Admission::IntegrationIncomplete(reason)) => {
++                let response = super::mixed::integration_incomplete(reason);
 +                if req.cmd == Cmd::Check && let Some(fp) = check_fp {
 +                    front.last_check = Some((fp, response.clone()));
 +                }
@@ -5949,7 +6158,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
          // The answer, before the timing and stats lines, for a no-op
          // check of the same request to reuse.
          if let Some(fp) = check_fp {
-@@ -4446,10 +4820,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4446,10 +4821,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          return resp;
      }
  
@@ -5974,7 +6183,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
      // Each fn's base line: cgen stores its line numbers relative to it
      // and the main unit adds each slot's base back, so a reused body's
      // C stays right when its source text moves. An instance's base is
-@@ -4471,7 +4859,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4471,7 +4860,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let line_base_of = |_: &Front, i: usize| -> u32 { line_bases.get(i).copied().unwrap_or(0) };
      // Release C (driver/release_c.rs): content-addressed names, set as cgen's naming
      // context around every step that prints C.
@@ -5983,7 +6192,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
      let rn = rnames.as_ref();
      // A release C build to the release driver streams its cc step (`cc::Stream`): each unit the
      // assembly makes compiles from the time its text exists. Not with --emit-c nor LLVM units.
-@@ -4498,7 +4886,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4498,7 +4887,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let (outs, cg_noted): (Vec<_>, Vec<_>) = par_map(&bodies, |(i, b)| {
          check::derive_delta::scoped(program.record_reads, || {
              cgen::in_layout_phase(layout_tag, || {
@@ -6001,7 +6210,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
              })
          })
      })
-@@ -4681,6 +5078,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4681,6 +5079,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      }
      let glue_changed = shared_changed || regenerated || statics_changed;
      t.lap("codegen (par)");
@@ -6016,7 +6225,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
      // Nothing reads the IR after codegen. A one-shot build leaks it at exit
      // (`leak_at_exit`), but on a large program it is the largest block
      // alive at the peak (ts-rust's bins: about 2.4 GB of 9.4 GB, through
-@@ -4751,7 +5156,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4751,7 +5157,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // rebuilds and the base
      // relinks over the existing unit objects. Unrelated units keep
      // their objects, in the session and in the disk unit cache.
@@ -6026,7 +6235,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
      let cap_grown = n_slots > caches.table_cap;
      if fresh_base || cap_grown {
          caches.table_cap = n_slots * 2 + 64;
-@@ -5807,6 +6213,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5807,6 +6214,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // this check keeps that a pin, not a hope.
      if let Some(run_args) = &req.run_args
          && !caches.persistent
@@ -6034,7 +6243,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
          && fresh_base
          && groups.len() == 1
          && !req.debug
-@@ -5883,9 +6290,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5883,9 +6291,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      caches.objects = Some(req.debug);
      t.lap("tcc compile");
      let all_base: Vec<PathBuf> = [1, 2, 3, LOC_UNIT].into_iter().chain(link_fn_units.iter().copied()).map(base_obj).collect();
@@ -6054,7 +6263,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
          crate::tcc::link(&objs, &req.out, req.debug)
      } else {
          // The base library lives in a persistent dir under a content name
-@@ -5901,18 +6317,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5901,18 +6318,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
          let base = if rebuild_base {
              caches.base_gen += 1;
@@ -6095,7 +6304,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
                      install_base(&tmp, &base_dir.join(&soname))?;
                      if !caches.base_files.contains(&soname) {
                          caches.base_files.push_back(soname);
-@@ -5922,24 +6351,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5922,24 +6352,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              if built.is_err() {
                  let _ = std::fs::remove_file(&tmp);
              }
@@ -6127,7 +6336,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
              built
          } else {
              Ok(())
-@@ -5958,8 +6388,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5958,8 +6389,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // a small grace count while no known output file still references them. A binary the user
      // kept keeps its base; one that was overwritten or deleted does not. A running program
      // keeps its mapped copy after unlink.
@@ -6138,7 +6347,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
          if let Some(base_dir) = caches.base_dir.clone() {
              record_base_user(&base_dir, &soname, &req.out);
          }
-@@ -6058,6 +6488,66 @@ mod tests {
+@@ -6058,6 +6489,66 @@ mod tests {
          panic!("{}: still busy", bin.display())
      }
  
@@ -6205,7 +6414,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
      /// The base sweep never deletes a live owner's base (it may be a live
      /// session's current base, found by fuzz seed 7 multi when a guard
      /// session's first-build sweep deleted the warm session's base), but
-@@ -6421,6 +6911,524 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
+@@ -6421,6 +6912,542 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
          }
      }
  
@@ -6236,7 +6445,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
 +        fn ready(preparation: Preparation<'_>) -> PreparedRequest<'_> {
 +            match preparation {
 +                Preparation::Ready(prepared) => prepared,
-+                Preparation::Complete(r) | Preparation::Rejected(r) | Preparation::Failed(r) | Preparation::Complementary(r) =>
++                Preparation::Complete(r) | Preparation::Rejected(r) | Preparation::Failed(r) | Preparation::IntegrationIncomplete(r) =>
 +                    panic!("expected an owned checked request, got {}: {}", r.code, r.stderr),
 +            }
 +        }
@@ -6498,17 +6707,32 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
 +        }
 +
 +        #[test]
-+        fn runtime_and_wide_types_decline_before_c_generation() {
-+            for body in ["x / 2", "(x as u128).wrapping_add(1) as u64", "{let unit=(); let _=unit; x}"] {
++        fn lust_supported_runtime_and_wide_types_remain_integration_gaps() {
++            for (body, expected) in [("x / 2", 2), ("(x as u128).wrapping_add(1) as u64", 5), ("{let unit=(); let _=unit; x}", 4)] {
++                let source = format!("fn kernel(x:u64)->u64{{{body}}}\nfn main(){{assert_eq!(kernel(4),{expected});}}\n");
++                // Establish support through the actual ordinary Lust pipeline,
++                // independently of what the scalar object bridge represents.
++                let mut ordinary = Fixture::new(&source, false);
++                ordinary.req.session = crate::protocol::SessionKey::synthetic(&ordinary.req.file, false);
++                ordinary.req.cmd = Cmd::Build;
++                ordinary.req.out = ordinary.root.join("ordinary-native");
++                ordinary.session = Session::new(ordinary.root.join("ordinary-state"), false, ordinary.req.session.clone());
++                let accepted = ordinary.run();
++                assert_eq!(accepted.code, 0, "ordinary native {body}: {}", accepted.stderr);
++                assert_eq!(accepted.mixed, None);
++                let executed = bounded(&mut std::process::Command::new(&ordinary.req.out));
++                assert!(executed.status.success(), "ordinary native {body}: {}", String::from_utf8_lossy(&executed.stderr));
 +                for cmd in [Cmd::Check, Cmd::Build] {
-+                    let mut f = Fixture::new(&format!("fn kernel(x:u64)->u64{{{body}}}\nfn main(){{let _=kernel(0);}}\n"), false);
++                    let mut f = Fixture::new(&source, false);
 +                    f.req.cmd = cmd;
-+                    let response = f.run();
-+                    assert_eq!(response.code, 0, "{body}: {}", response.stderr);
-+                    assert_eq!(response.mixed, Some(MixedOutcome::Complementary), "{body}: {}", response.stderr);
-+                    assert!(!f.req.out.exists());
-+                    assert!(!f.req.out.with_extension("c").exists());
-+                    assert!(f.session.caches.has_out.iter().all(|generated| !generated));
++                    for _ in 0..2 {
++                        let response = f.run();
++                        assert_eq!(response.code, 4, "{body}: {}", response.stderr);
++                        assert_eq!(response.mixed, Some(MixedOutcome::IntegrationIncomplete), "{body}: {}", response.stderr);
++                        assert!(!f.req.out.exists());
++                        assert!(!f.req.out.with_extension("c").exists());
++                        assert!(f.session.caches.has_out.iter().all(|generated| !generated));
++                    }
 +                }
 +            }
 +        }
@@ -6667,7 +6891,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
 +        }
 +
 +        #[test]
-+        fn target_and_request_contracts_are_explicit_complements() {
++        fn target_and_request_bridge_gaps_do_not_establish_a_complement() {
 +            for variant in 0..5 {
 +                let mut f = Fixture::new(SCALAR, false);
 +                match variant {
@@ -6684,16 +6908,19 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
 +                for cmd in [Cmd::Check, Cmd::Build] {
 +                    f.req.cmd = cmd;
 +                    let response = f.run();
-+                    assert_eq!(response.code, 0, "{}", response.stderr);
-+                    assert_eq!(response.mixed, Some(MixedOutcome::Complementary));
++                    assert_eq!(response.code, 4, "{}", response.stderr);
++                    assert_eq!(response.mixed, Some(MixedOutcome::IntegrationIncomplete));
 +                    assert!(!f.req.out.exists());
 +                    assert!(!f.root.join("requested.c").exists());
++                    assert!(matches!(crate::driver::prepare(&f.req, &mut f.session),
++                        Preparation::IntegrationIncomplete(response) if response.code == 4));
 +                }
 +            }
 +            let mut f = Fixture::new(SCALAR, false);
 +            f.req.run_args = Some(Vec::new());
 +            let response = f.run();
-+            assert_eq!(response.mixed, Some(MixedOutcome::Complementary));
++            assert_eq!(response.code, 4);
++            assert_eq!(response.mixed, Some(MixedOutcome::IntegrationIncomplete));
 +            assert!(!response.ran);
 +        }
 +
@@ -6712,7 +6939,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e
 +        }
 +
 +        #[test]
-+        fn wrong_session_is_not_a_request_complement() {
++        fn wrong_session_is_a_failure_not_a_bridge_gap() {
 +            let mut f = Fixture::new(SCALAR, false);
 +            f.req.session.target_triple = "wasm32-wasip1".into();
 +            for background in [false, true] {
@@ -7001,7 +7228,7 @@ index bab64be43909404e5ceb7b7fc52b70869ed0bf4b..d29476f42ba539f0a9f67484dd5c0641
                          _ => return None,
                      }
 diff --git a/src/driver/mod.rs b/src/driver/mod.rs
-index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..3e4a99ec737b33b9ea2332f02c1bff50a30053f5 100644
+index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..ee2a882e7dcf126c94d1706cfdf8e88cf2d22289 100644
 --- a/src/driver/mod.rs
 +++ b/src/driver/mod.rs
 @@ -7,6 +7,7 @@ mod ir_cache;
@@ -7037,13 +7264,13 @@ index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..3e4a99ec737b33b9ea2332f02c1bff50
 +/// not classify the source as a complementary Rust capability.
 +pub fn prepare<'a>(req: &'a Request, session: &'a mut Session) -> Preparation<'a> {
 +    if req.session.krate.target_kind == "lustr-mixed-native" && req.session == session.key
-+        && let Some(reason) = mixed::request_complement(req) {
-+        return Preparation::finished(mixed::complementary(reason));
++        && let Some(reason) = mixed::request_integration_gap(req) {
++        return Preparation::finished(mixed::integration_incomplete(reason));
 +    }
 +    match compile::prepare_observed(req, session, None) {
 +        Preparation::Ready(prepared) => Preparation::Ready(prepared),
 +        Preparation::Complete(response) | Preparation::Rejected(response)
-+        | Preparation::Failed(response) | Preparation::Complementary(response) => Preparation::finished(mixed_response(req, response)),
++        | Preparation::Failed(response) | Preparation::IntegrationIncomplete(response) => Preparation::finished(mixed_response(req, response)),
 +    }
 +}
 +
@@ -7059,8 +7286,8 @@ index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..3e4a99ec737b33b9ea2332f02c1bff50
 +/// Observations do not grant acceptance or establish cross-request reuse.
 +pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&dyn PhaseObserver>) -> Response {
 +    if req.session.krate.target_kind == "lustr-mixed-native" && req.session == session.key
-+        && let Some(reason) = mixed::request_complement(req) {
-+        return mixed::complementary(reason);
++        && let Some(reason) = mixed::request_integration_gap(req) {
++        return mixed::integration_incomplete(reason);
 +    }
 +    let resp = mixed_response(req, compile::compile_observed(req, session, observer));
      if item_oracle::on() {
@@ -7072,8 +7299,8 @@ index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..3e4a99ec737b33b9ea2332f02c1bff50
  pub fn compile_background(req: &Request, session: &mut Session) -> Response {
 -    let resp = compile::compile(req, session);
 +    if req.session.krate.target_kind == "lustr-mixed-native" && req.session == session.key
-+        && let Some(reason) = mixed::request_complement(req) {
-+        return mixed::complementary(reason);
++        && let Some(reason) = mixed::request_integration_gap(req) {
++        return mixed::integration_incomplete(reason);
 +    }
 +    let resp = mixed_response(req, compile::compile(req, session));
      if item_oracle::on() {
@@ -7083,8 +7310,8 @@ index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..3e4a99ec737b33b9ea2332f02c1bff50
  }
 -pub use session::Session;
 +
-+/// All early frontend exits also cross the mixed boundary. Only its explicit
-+/// admission/emission results can authorize continuation with another backend.
++/// All early frontend exits also cross the mixed boundary. A bridge gap is a
++/// terminal integration result; no response authorizes another compiler.
 +fn mixed_response(req: &Request, mut response: Response) -> Response {
 +    use crate::protocol::MixedOutcome;
 +    if req.session.krate.target_kind != "lustr-mixed-native" {
@@ -7092,8 +7319,8 @@ index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..3e4a99ec737b33b9ea2332f02c1bff50
 +    }
 +    let classified = match (response.mixed, response.code, req.cmd) {
 +        (Some(MixedOutcome::Checked), 0, Cmd::Check)
-+        | (Some(MixedOutcome::Emitted), 0, Cmd::Build)
-+        | (Some(MixedOutcome::Complementary), 0, _) => true,
++        | (Some(MixedOutcome::Emitted), 0, Cmd::Build) => true,
++        (Some(MixedOutcome::IntegrationIncomplete), 4, _) => true,
 +        (Some(MixedOutcome::Failed), code, _) => code != 0,
 +        _ => false,
 +    };
@@ -10531,7 +10758,7 @@ index c4b23e007d746b984e392919dcf1bc9bc87a265e..47bb8992d04e52e8ba9774e3e865ddf1
              _ => return None,
          }
 diff --git a/src/protocol.rs b/src/protocol.rs
-index 504b467a9d240272c85f999b59f57a5d52b3cd4e..626f3634743c31474ac446a7ea1895748a23748f 100644
+index 504b467a9d240272c85f999b59f57a5d52b3cd4e..d138b384b9938405a92b0c1442e3f7dab0855961 100644
 --- a/src/protocol.rs
 +++ b/src/protocol.rs
 @@ -14,9 +14,11 @@
@@ -10559,7 +10786,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..626f3634743c31474ac446a7ea189574
  #[derive(Clone, Copy, PartialEq, Eq)]
  pub enum Cmd {
      Check,
-@@ -325,6 +331,38 @@ pub struct Response {
+@@ -325,6 +331,40 @@ pub struct Response {
      pub code: i32,
      /// The program already ran in memory; `code` is its exit code. Do not run `out` again.
      pub ran: bool,
@@ -10572,7 +10799,9 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..626f3634743c31474ac446a7ea189574
 +pub enum MixedOutcome {
 +    Checked,
 +    Emitted,
-+    Complementary,
++    /// The bridge cannot represent this request. This is terminal and does
++    /// not classify any obligation as absent from Lust's supported set.
++    IntegrationIncomplete,
 +    Failed,
 +}
 +
@@ -10581,7 +10810,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..626f3634743c31474ac446a7ea189574
 +        match self {
 +            Self::Checked => "mixed-v1:checked",
 +            Self::Emitted => "mixed-v1:emitted",
-+            Self::Complementary => "mixed-v1:complementary",
++            Self::IntegrationIncomplete => "mixed-v1:integration-incomplete",
 +            Self::Failed => "mixed-v1:failed",
 +        }
 +    }
@@ -10590,7 +10819,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..626f3634743c31474ac446a7ea189574
 +        Some(match tag {
 +            "mixed-v1:checked" => Self::Checked,
 +            "mixed-v1:emitted" => Self::Emitted,
-+            "mixed-v1:complementary" => Self::Complementary,
++            "mixed-v1:integration-incomplete" => Self::IntegrationIncomplete,
 +            "mixed-v1:failed" => Self::Failed,
 +            _ => return None,
 +        })
@@ -10598,7 +10827,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..626f3634743c31474ac446a7ea189574
  }
  
  pub enum Invocation {
-@@ -1011,7 +1049,11 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -1011,7 +1051,11 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
  }
  
  pub fn write_response(w: &mut impl Write, r: &Response) -> std::io::Result<()> {
@@ -10611,7 +10840,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..626f3634743c31474ac446a7ea189574
  }
  
  /// The whole answer to a request of another build: a head no client takes
-@@ -1020,37 +1062,74 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
+@@ -1020,37 +1064,78 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
      write!(w, "- - - {}\n", build_id())
  }
  
@@ -10661,26 +10890,21 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..626f3634743c31474ac446a7ea189574
 +fn read_response(reader: &mut impl BufRead, expect_mixed: bool) -> Result<Option<Response>, String> {
      let mut head = String::new();
 -    reader.read_line(&mut head).ok()?;
-+    // A valid header contains only fixed labels, build identity, and three
-+    // machine-sized numbers. Bound it before allocating from an untrusted peer.
-+    reader.take(256).read_line(&mut head).map_err(|e| format!("daemon response header: {e}"))?;
-+    if !head.ends_with('\n') {
-+        return Err("daemon returned a truncated or oversized response header".into());
-+    }
-     let words: Vec<&str> = head.split_whitespace().collect();
+-    let words: Vec<&str> = head.split_whitespace().collect();
 -    let nums: Vec<usize> = words.iter().take(3).filter_map(|x| x.parse().ok()).collect();
 -    if nums.len() == 3 && words.len() == 3 {
 -        // A daemon from before the build field: stop it.
 -        let _ = std::fs::remove_file(sock);
 -        return None;
-+    if words.len() == 4 && words[..3] == ["-", "-", "-"] && words[3] != build_id() {
-+        return Ok(None);
++    // A valid header contains only fixed labels, build identity, and three
++    // machine-sized numbers. Bound it before allocating from an untrusted peer.
++    reader.take(256).read_line(&mut head).map_err(|e| format!("daemon response header: {e}"))?;
++    if !head.ends_with('\n') {
++        return Err("daemon returned a truncated or oversized response header".into());
      }
 -    if nums.len() != 3 || words.len() != 4 || words[3] != build_id() {
 -        return None;
-+    if words.len() != if expect_mixed { 5 } else { 4 } || words[3] != build_id() {
-+        return Err("daemon returned an unclassified response or a different compiler build".into());
-     }
+-    }
 -    let mut out = vec![0; nums[1]];
 -    let mut err = vec![0; nums[2]];
 -    reader.read_exact(&mut out).ok()?;
@@ -10691,11 +10915,22 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..626f3634743c31474ac446a7ea189574
 -        stderr: String::from_utf8_lossy(&err).into_owned(),
 -        ran: false,
 -    })
++    let words: Vec<&str> = head.split_whitespace().collect();
++    if words.len() == 4 && words[..3] == ["-", "-", "-"] && words[3] != build_id() {
++        return Ok(None);
++    }
++    if words.len() != if expect_mixed { 5 } else { 4 } || words[3] != build_id() {
++        return Err("daemon returned an unclassified response or a different compiler build".into());
++    }
 +    let number = |at: usize| words[at].parse::<usize>().map_err(|_| "daemon returned an invalid response size/status".to_owned());
 +    let code = i32::try_from(number(0)?).map_err(|_| "daemon returned an invalid response status".to_owned())?;
 +    let (out_len, err_len) = (number(1)?, number(2)?);
 +    let mixed = if expect_mixed { Some(MixedOutcome::parse(words[4]).ok_or("mixed daemon returned an unknown admission outcome")?) } else { None };
-+    if mixed.is_some_and(|outcome| (outcome == MixedOutcome::Failed) == (code == 0)) {
++    if mixed.is_some_and(|outcome| !match outcome {
++        MixedOutcome::Checked | MixedOutcome::Emitted => code == 0,
++        MixedOutcome::IntegrationIncomplete => code == 4,
++        MixedOutcome::Failed => code != 0,
++    }) {
 +        return Err("mixed daemon admission outcome disagrees with its status".into());
 +    }
 +    fn text(reader: &mut impl BufRead, length: usize) -> Result<String, String> {
@@ -10713,7 +10948,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..626f3634743c31474ac446a7ea189574
  }
  
  /// Prints a response. For `run`, runs the program after a successful build. Never returns.
-@@ -1331,9 +1410,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
+@@ -1331,9 +1416,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
      Some(PathBuf::from(text[at..end].replace("\\\\", "\\")))
  }
  
@@ -10763,7 +10998,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..626f3634743c31474ac446a7ea189574
  pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug: bool, net: CargoNet) -> ! {
      let profile = profile.unwrap_or("release");
      let dev = profile == "dev";
-@@ -1408,12 +1527,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
+@@ -1408,12 +1533,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
      exit_with(status);
  }
  
@@ -10782,7 +11017,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..626f3634743c31474ac446a7ea189574
  pub fn run_rustc_check(file: &Path) -> ! {
      let obj = std::env::temp_dir().join(format!("lust-rustc-check-{}.o", std::process::id()));
      eprintln!("lust: checking with rustc (oracle): rustc --edition 2024 --emit=obj {}", file.display());
-@@ -1461,6 +1586,131 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
+@@ -1461,6 +1592,135 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
  mod tests {
      use super::*;
  
@@ -10875,8 +11110,8 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..626f3634743c31474ac446a7ea189574
 +
 +    #[test]
 +    fn mixed_admission_wire_roundtrips_all_outcomes() {
-+        for outcome in [MixedOutcome::Checked, MixedOutcome::Emitted, MixedOutcome::Complementary, MixedOutcome::Failed] {
-+            let response = Response { code: if outcome == MixedOutcome::Failed { 3 } else { 0 },
++        for outcome in [MixedOutcome::Checked, MixedOutcome::Emitted, MixedOutcome::IntegrationIncomplete, MixedOutcome::Failed] {
++            let response = Response { code: match outcome { MixedOutcome::Failed => 3, MixedOutcome::IntegrationIncomplete => 4, _ => 0 },
 +                stdout: "native symbol".into(), stderr: "diagnostic λ\n".into(), mixed: Some(outcome), ..Default::default() };
 +            let mut bytes = Vec::new();
 +            write_response(&mut bytes, &response).unwrap();
@@ -10896,6 +11131,10 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..626f3634743c31474ac446a7ea189574
 +            format!("0 0 0 {} mixed-v2:checked\n", build_id()),
 +            format!("0 0 0 {} mixed-v1:unknown\n", build_id()),
 +            format!("0 0 0 {} mixed-v1:failed\n", build_id()),
++            format!("0 0 0 {} mixed-v1:integration-incomplete\n", build_id()),
++            format!("1 0 0 {} mixed-v1:integration-incomplete\n", build_id()),
++            format!("3 0 0 {} mixed-v1:integration-incomplete\n", build_id()),
++            format!("0 0 0 {} mixed-v1:complementary\n", build_id()),
 +            format!("3 0 0 {} mixed-v1:emitted\n", build_id()),
 +            format!("0 1 0 {} mixed-v1:emitted\n", build_id()),
 +            format!("0 0 1 {} mixed-v1:checked\n", build_id()),
@@ -11618,7 +11857,7 @@ index c275bc8341bfd3889cf11e5a2ffb34014135180f..73329e41818a421ab1b5842325189a56
    {0x1F130, 0x1F149},
    {0x1F150, 0x1F169},
 diff --git a/src/runtime/core.c b/src/runtime/core.c
-index d949ff9e74facafed11197bc0d0509c96f8fa4e4..891a9f9a6ed8d358b443fb22714f8de60059eb33 100644
+index d949ff9e74facafed11197bc0d0509c96f8fa4e4..4dbb7d5adf3d1eecca353e85507e28dbd47d343d 100644
 --- a/src/runtime/core.c
 +++ b/src/runtime/core.c
 @@ -44,7 +44,7 @@ void lust_oom(void) LUST_BODY({
@@ -11630,7 +11869,7 @@ index d949ff9e74facafed11197bc0d0509c96f8fa4e4..891a9f9a6ed8d358b443fb22714f8de6
  
  /* std's rust_oom with the default alloc error hook (std/src/alloc.rs):
     `handle_alloc_error` for a layout of `n` bytes. The hook prints the
-@@ -504,11 +504,9 @@ static lust_loc lust_std_loc(uint32_t file, uint32_t line, uint32_t col) {
+@@ -504,11 +504,11 @@ static lust_loc lust_std_loc(uint32_t file, uint32_t line, uint32_t col) {
     `Vec::drain` and `String::drain`: the end bound against the length
     first, then the start bound, then their order, with core's exact
     panic texts. An excluded start at the end index fails with the end
@@ -11642,28 +11881,32 @@ index d949ff9e74facafed11197bc0d0509c96f8fa4e4..891a9f9a6ed8d358b443fb22714f8de6
 +   message, as in core. The pinned range helpers track their caller, so the
 +   operation supplies either its own std site or its caller's location. */
 +static void lust_range_bounds_check(uint64_t len, uint64_t s_tag, uint64_t s_val, uint64_t e_tag, uint64_t e_val, uint64_t *out_s, uint64_t *out_e, lust_loc loc) LUST_BODY({
++    /* Flag-mode unwinding returns from lust_panic with an exception pending.
++       Stop at the first failed bound, before another panic or output write. */
      uint64_t end;
      if (e_tag == 0) {
          if (e_val >= len) {
-@@ -517,7 +515,7 @@ static void lust_range_bounds_check(uint64_t len, uint64_t s_tag, uint64_t s_val
+@@ -517,7 +517,8 @@ static void lust_range_bounds_check(uint64_t len, uint64_t s_tag, uint64_t s_val
              lust_fmt_u64(&s, e_val);
              lust_string_push_cstr(&s, " out of range for slice of length ");
              lust_fmt_u64(&s, len);
 -            lust_panic(&s, lust_std_loc(12, 1005, 52));
 +            lust_panic(&s, loc);
++            return;
          }
          end = e_val + 1;
      } else if (e_tag == 1) {
-@@ -527,7 +525,7 @@ static void lust_range_bounds_check(uint64_t len, uint64_t s_tag, uint64_t s_val
+@@ -527,7 +528,8 @@ static void lust_range_bounds_check(uint64_t len, uint64_t s_tag, uint64_t s_val
              lust_fmt_u64(&s, e_val);
              lust_string_push_cstr(&s, " out of range for slice of length ");
              lust_fmt_u64(&s, len);
 -            lust_panic(&s, lust_std_loc(12, 1009, 51));
 +            lust_panic(&s, loc);
++            return;
          }
          end = e_val;
      } else {
-@@ -537,16 +535,13 @@ static void lust_range_bounds_check(uint64_t len, uint64_t s_tag, uint64_t s_val
+@@ -537,16 +539,14 @@ static void lust_range_bounds_check(uint64_t len, uint64_t s_tag, uint64_t s_val
      if (s_tag == 2) {
          start = 0;
      } else {
@@ -11678,28 +11921,31 @@ index d949ff9e74facafed11197bc0d0509c96f8fa4e4..891a9f9a6ed8d358b443fb22714f8de6
              lust_fmt_u64(&s, len);
 -            lust_panic(&s, start_loc);
 +            lust_panic(&s, loc);
++            return;
          }
          if (s_tag == 1 && s_val == end) {
              lust_String s = lust_string_new();
-@@ -554,7 +549,7 @@ static void lust_range_bounds_check(uint64_t len, uint64_t s_tag, uint64_t s_val
+@@ -554,7 +554,8 @@ static void lust_range_bounds_check(uint64_t len, uint64_t s_tag, uint64_t s_val
              lust_fmt_u64(&s, s_val);
              lust_string_push_cstr(&s, " out of range for slice of length ");
              lust_fmt_u64(&s, len);
 -            lust_panic(&s, start_loc);
 +            lust_panic(&s, loc);
++            return;
          }
          if (s_val > end) {
              lust_String s = lust_string_new();
-@@ -562,7 +557,7 @@ static void lust_range_bounds_check(uint64_t len, uint64_t s_tag, uint64_t s_val
+@@ -562,7 +563,8 @@ static void lust_range_bounds_check(uint64_t len, uint64_t s_tag, uint64_t s_val
              lust_fmt_u64(&s, s_val);
              lust_string_push_cstr(&s, " but ends at ");
              lust_fmt_u64(&s, end);
 -            lust_panic(&s, start_loc);
 +            lust_panic(&s, loc);
++            return;
          }
          start = s_tag == 1 ? s_val + 1 : s_val;
      }
-@@ -575,9 +570,8 @@ static void lust_range_bounds_check(uint64_t len, uint64_t s_tag, uint64_t s_val
+@@ -575,9 +577,8 @@ static void lust_range_bounds_check(uint64_t len, uint64_t s_tag, uint64_t s_val
     flag-mode unwinding (lust_unwind_mode 1), where a panic returns with the thread's
     panic pending; codegen calls lust_vec_drain_t in every other build. */
  lust_VecDrain lust_vec_drain(lust_Vec *v, uint64_t s_tag, uint64_t s_val, uint64_t e_tag, uint64_t e_val, lust_loc loc) LUST_BODY({
@@ -11710,7 +11956,7 @@ index d949ff9e74facafed11197bc0d0509c96f8fa4e4..891a9f9a6ed8d358b443fb22714f8de6
      if (lust_unwind_mode && lust_unw_mine()) {
          /* The range panicked: the Vec stays as it is (an empty Drain at its end). */
          lust_VecDrain e = {v, v->len, v->len, v->len, v->len, 0};
-@@ -591,9 +585,8 @@ lust_VecDrain lust_vec_drain(lust_Vec *v, uint64_t s_tag, uint64_t s_val, uint64
+@@ -591,9 +592,8 @@ lust_VecDrain lust_vec_drain(lust_Vec *v, uint64_t s_tag, uint64_t s_val, uint64
  /* `Vec::drain` where a panic never returns (panic=abort, or unwind tables: it throws):
     no check of the thread's pending panic, which is a thread-local lookup per drain. */
  lust_VecDrain lust_vec_drain_t(lust_Vec *v, uint64_t s_tag, uint64_t s_val, uint64_t e_tag, uint64_t e_val, lust_loc loc) LUST_BODY({
@@ -11721,7 +11967,7 @@ index d949ff9e74facafed11197bc0d0509c96f8fa4e4..891a9f9a6ed8d358b443fb22714f8de6
      lust_VecDrain d = {v, start, start, end, end, v->len - end};
      v->len = start;
      return d;
-@@ -606,7 +599,7 @@ lust_VecDrain lust_vec_drain_t(lust_Vec *v, uint64_t s_tag, uint64_t s_val, uint
+@@ -606,7 +606,7 @@ lust_VecDrain lust_vec_drain_t(lust_Vec *v, uint64_t s_tag, uint64_t s_val, uint
     every other build (lust_string_drain_t), where it never returns. */
  static lust_VecDrain lust_string_drain_in(lust_String *v, uint64_t s_tag, uint64_t s_val, uint64_t e_tag, uint64_t e_val, lust_loc loc, int flag) LUST_BODY({
      uint64_t start, end;
@@ -11730,7 +11976,7 @@ index d949ff9e74facafed11197bc0d0509c96f8fa4e4..891a9f9a6ed8d358b443fb22714f8de6
      lust_VecDrain e = {v, v->len, v->len, v->len, v->len, 0}; /* after a panic: an empty Drain at the end */
      if (flag && lust_unwind_mode && lust_unw_mine()) return e;
      if (!(start == v->len || (v->ptr[start] & 0xC0) != 0x80)) {
-@@ -634,10 +627,10 @@ lust_VecDrain lust_string_drain_t(lust_String *v, uint64_t s_tag, uint64_t s_val
+@@ -634,10 +634,10 @@ lust_VecDrain lust_string_drain_t(lust_String *v, uint64_t s_tag, uint64_t s_val
  })
  
  /* `slice::range(r, ..len)` for the callers outside this file
@@ -11745,7 +11991,7 @@ index d949ff9e74facafed11197bc0d0509c96f8fa4e4..891a9f9a6ed8d358b443fb22714f8de6
  })
  
  /* `[u8]::eq_ignore_ascii_case`: equal lengths and every byte pair equal
-@@ -787,7 +780,7 @@ int lust_range_bounds_get(uint64_t len, uint64_t s_tag, uint64_t s_val, uint64_t
+@@ -787,7 +787,7 @@ int lust_range_bounds_get(uint64_t len, uint64_t s_tag, uint64_t s_val, uint64_t
  
  void lust_slice_copy_within(void *ptr, uint64_t len, uint64_t elem, uint64_t s_tag, uint64_t s_val, uint64_t e_tag, uint64_t e_val, uint64_t dest, lust_loc loc) LUST_BODY({
      uint64_t start, end;
@@ -11754,7 +12000,7 @@ index d949ff9e74facafed11197bc0d0509c96f8fa4e4..891a9f9a6ed8d358b443fb22714f8de6
      if (lust_unwind_mode && lust_unw_mine()) return;
      if (dest > len - (end - start)) {
          lust_panic_cstr("dest is out of bounds", loc);
-@@ -1778,7 +1771,7 @@ lust_String lust_str_repeat(lust_str s, uint64_t n, lust_loc loc) LUST_BODY({
+@@ -1778,7 +1778,7 @@ lust_String lust_str_repeat(lust_str s, uint64_t n, lust_loc loc) LUST_BODY({
      /* `checked_mul(n).expect(..)` in alloc's slice.rs, then RawVec's
         isize::MAX byte limit. */
      (void)loc;
@@ -11763,7 +12009,7 @@ index d949ff9e74facafed11197bc0d0509c96f8fa4e4..891a9f9a6ed8d358b443fb22714f8de6
      uint64_t total = s.len * n;
      if (total > (uint64_t)9223372036854775807ull) { lust_vec_capacity_overflow(); return lust_string_new(); }
      lust_String r = lust_string_with_capacity(total);
-@@ -2349,8 +2342,8 @@ int lust_parse_char(lust_str s, uint32_t *out, int *kind) LUST_BODY({
+@@ -2349,8 +2349,8 @@ int lust_parse_char(lust_str s, uint32_t *out, int *kind) LUST_BODY({
     pushes one char at a time, with U+FFFD for each unpaired
     surrogate, so capacities grow as std's do. */
  lust_String lust_string_from_utf16_lossy(const uint16_t *v, uint64_t n) LUST_BODY({
@@ -11774,7 +12020,7 @@ index d949ff9e74facafed11197bc0d0509c96f8fa4e4..891a9f9a6ed8d358b443fb22714f8de6
      uint64_t i = 0;
      while (i < n) {
          uint16_t u = v[i++];
-@@ -2587,7 +2580,9 @@ int lust_utf8_check(const uint8_t *v, uint64_t len, uint64_t *valid_up_to, uint8
+@@ -2587,7 +2587,9 @@ int lust_utf8_check(const uint8_t *v, uint64_t len, uint64_t *valid_up_to, uint8
     them, each invalid byte as \xNN). */
  lust_String lust_env_arg(uint64_t i, int back) LUST_BODY({
      lust_str a;
@@ -11785,7 +12031,7 @@ index d949ff9e74facafed11197bc0d0509c96f8fa4e4..891a9f9a6ed8d358b443fb22714f8de6
      a.len = strlen(lust_argv[i]);
      uint64_t up;
      uint8_t el;
-@@ -2612,7 +2607,7 @@ lust_String lust_env_arg(uint64_t i, int back) LUST_BODY({
+@@ -2612,7 +2614,7 @@ lust_String lust_env_arg(uint64_t i, int back) LUST_BODY({
          at += up + el;
      }
      lust_string_push_cstr(&s, "\"");

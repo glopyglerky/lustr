@@ -340,7 +340,9 @@ pub struct Response {
 pub enum MixedOutcome {
     Checked,
     Emitted,
-    Complementary,
+    /// The bridge cannot represent this request. This is terminal and does
+    /// not classify any obligation as absent from Lust's supported set.
+    IntegrationIncomplete,
     Failed,
 }
 
@@ -349,7 +351,7 @@ impl MixedOutcome {
         match self {
             Self::Checked => "mixed-v1:checked",
             Self::Emitted => "mixed-v1:emitted",
-            Self::Complementary => "mixed-v1:complementary",
+            Self::IntegrationIncomplete => "mixed-v1:integration-incomplete",
             Self::Failed => "mixed-v1:failed",
         }
     }
@@ -358,7 +360,7 @@ impl MixedOutcome {
         Some(match tag {
             "mixed-v1:checked" => Self::Checked,
             "mixed-v1:emitted" => Self::Emitted,
-            "mixed-v1:complementary" => Self::Complementary,
+            "mixed-v1:integration-incomplete" => Self::IntegrationIncomplete,
             "mixed-v1:failed" => Self::Failed,
             _ => return None,
         })
@@ -1115,7 +1117,11 @@ fn read_response(reader: &mut impl BufRead, expect_mixed: bool) -> Result<Option
     let code = i32::try_from(number(0)?).map_err(|_| "daemon returned an invalid response status".to_owned())?;
     let (out_len, err_len) = (number(1)?, number(2)?);
     let mixed = if expect_mixed { Some(MixedOutcome::parse(words[4]).ok_or("mixed daemon returned an unknown admission outcome")?) } else { None };
-    if mixed.is_some_and(|outcome| (outcome == MixedOutcome::Failed) == (code == 0)) {
+    if mixed.is_some_and(|outcome| !match outcome {
+        MixedOutcome::Checked | MixedOutcome::Emitted => code == 0,
+        MixedOutcome::IntegrationIncomplete => code == 4,
+        MixedOutcome::Failed => code != 0,
+    }) {
         return Err("mixed daemon admission outcome disagrees with its status".into());
     }
     fn text(reader: &mut impl BufRead, length: usize) -> Result<String, String> {
@@ -1675,8 +1681,8 @@ mod tests {
 
     #[test]
     fn mixed_admission_wire_roundtrips_all_outcomes() {
-        for outcome in [MixedOutcome::Checked, MixedOutcome::Emitted, MixedOutcome::Complementary, MixedOutcome::Failed] {
-            let response = Response { code: if outcome == MixedOutcome::Failed { 3 } else { 0 },
+        for outcome in [MixedOutcome::Checked, MixedOutcome::Emitted, MixedOutcome::IntegrationIncomplete, MixedOutcome::Failed] {
+            let response = Response { code: match outcome { MixedOutcome::Failed => 3, MixedOutcome::IntegrationIncomplete => 4, _ => 0 },
                 stdout: "native symbol".into(), stderr: "diagnostic λ\n".into(), mixed: Some(outcome), ..Default::default() };
             let mut bytes = Vec::new();
             write_response(&mut bytes, &response).unwrap();
@@ -1696,6 +1702,10 @@ mod tests {
             format!("0 0 0 {} mixed-v2:checked\n", build_id()),
             format!("0 0 0 {} mixed-v1:unknown\n", build_id()),
             format!("0 0 0 {} mixed-v1:failed\n", build_id()),
+            format!("0 0 0 {} mixed-v1:integration-incomplete\n", build_id()),
+            format!("1 0 0 {} mixed-v1:integration-incomplete\n", build_id()),
+            format!("3 0 0 {} mixed-v1:integration-incomplete\n", build_id()),
+            format!("0 0 0 {} mixed-v1:complementary\n", build_id()),
             format!("3 0 0 {} mixed-v1:emitted\n", build_id()),
             format!("0 1 0 {} mixed-v1:emitted\n", build_id()),
             format!("0 0 1 {} mixed-v1:checked\n", build_id()),

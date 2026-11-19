@@ -1,5 +1,11 @@
 # Exclusive coverage cleanup
 
+The [ownership follow-through](exclusive-coverage-followthrough.md) records the
+later bridge, retained-daemon and acceptance corrections, with their own source
+and verification scope. The original results below remain attached to the
+first correction.
+
+
 This correction follows the [canonical contract](exclusive-coverage-contract.md)
 merged through [PR #31](https://github.com/glopyglerky/lustr/pull/31). It removes
 conflicting compiler routes. It does not deliver the unfinished full Rust

@@ -23,6 +23,10 @@
 // left, so one compile that never ends cannot wedge every later request. Every 100
 // requests the log gets a stats line (RSS, sessions, expansion tables).
 // Two safety nets watch the warm answers:
+// The following retry/oracle behavior belongs to the separate donor oracle
+// build. An exclusive-native product request has one compiler attempt. A
+// failure is returned unchanged; damaged state is replaced only for a later
+// request, without an immediate or background retry.
 //   - A panic in one request is caught. That crate's session is dropped, the request is
 //     answered by a fresh session at once, and the daemon keeps serving. A patch oracle
 //     failure (LUST_CHECK_ITEMPATCH, driver/item_oracle.rs) is never retried: the client
@@ -890,23 +894,30 @@ fn compile_fresh(entry: &mut Entry, req: &Request) -> (Response, bool) {
     }
 }
 
-/// Compiles with the entry's warm session, with the panic net and the
-/// fresh-session guard. An error answer goes to the client at once and is
-/// rechecked in the background (`jobs`); a panic, or a request marked
-/// recomputed by an earlier mismatch, is answered from a fresh session here.
+/// Product and mixed requests get one attempt in the retained session. The
+/// separately built donor oracle keeps its original fresh-session guard.
 fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Response {
+    compile_guarded_with(entry, req, jobs, driver::compile)
+}
+
+fn compile_guarded_with(
+    entry: &mut Entry,
+    req: &Request,
+    jobs: &mut GuardJobs,
+    compile: impl FnOnce(&Request, &mut Session) -> Response,
+) -> Response {
     entry.served += 1;
     let served = entry.served;
-    if req.session.krate.target_kind == "lustr-mixed-native" {
-        // Admission has its own explicit complementary outcome. A broken
-        // native attempt must not become success in a fresh session, and must
-        // not launch a second compilation as background verification.
+    if cfg!(feature = "exclusive-native") || req.session.krate.target_kind == "lustr-mixed-native" {
+        // The product and the bounded mixed component never hide an error in
+        // an immediate or background second attempt. A previously invalidated
+        // session is replaced before this request's sole attempt.
         if entry.recompute_next {
             entry.recompute_next = false;
             replace_session(entry, &req.session);
         }
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| driver::compile(req, &mut entry.session)));
-        return mixed_answer(entry, req, result);
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| compile(req, &mut entry.session)));
+        return terminal_answer(entry, req, result);
     }
     if entry.recompute_next {
         entry.recompute_next = false;
@@ -916,7 +927,7 @@ fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Re
         return compile_fresh(entry, req).0;
     }
     let start = std::time::SystemTime::now();
-    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| driver::compile(req, &mut entry.session))) {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| compile(req, &mut entry.session))) {
         Ok(r) if r.code == 0 || r.code == 2 => r,
         Ok(r) if r.code == 3 && r.stderr.contains("function count mismatch") => {
             // The warm session's scan and Ast disagree on the fn list
@@ -955,21 +966,24 @@ fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Re
     }
 }
 
-fn mixed_answer(entry: &mut Entry, req: &Request, result: std::thread::Result<Response>) -> Response {
+fn terminal_answer(entry: &mut Entry, req: &Request, result: std::thread::Result<Response>) -> Response {
     match result {
         Ok(response) => {
-            if response.code == 3 && response.mixed == Some(crate::protocol::MixedOutcome::Failed) {
+            // In-process program execution can also exit with status 3. Its
+            // result does not imply that the compiler session is damaged.
+            if response.code == 3 && !response.ran {
                 replace_session(entry, &req.session);
             }
             response
         }
         Err(payload) => {
-            let detail = driver::oracle_failure(&*payload).unwrap_or_else(|| "mixed native compilation panicked".into());
+            let mixed = req.session.krate.target_kind == "lustr-mixed-native";
+            let detail = driver::oracle_failure(&*payload).unwrap_or_else(|| "native compilation panicked".into());
             // Discard state damaged by the panic, but do not run this request
             // again. A later user request may start from this fresh session.
             replace_session(entry, &req.session);
-            Response { code: 3, mixed: Some(crate::protocol::MixedOutcome::Failed),
-                stderr: format!("error: internal: {detail}; mixed request was not retried\n"), ..Default::default() }
+            Response { code: 3, mixed: mixed.then_some(crate::protocol::MixedOutcome::Failed),
+                stderr: format!("error: internal: {detail}; request was not retried\n"), ..Default::default() }
         }
     }
 }
@@ -1259,6 +1273,110 @@ pub fn serve(sock: &Path) -> ! {
 mod tests {
     use super::*;
 
+    #[cfg(feature = "exclusive-native")]
+    #[test]
+    fn product_daemon_has_one_attempt_for_errors_panics_and_executed_results() {
+        let base = std::env::temp_dir().join(format!("lust-product-once-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(&base).unwrap();
+        let req = check_req(&base.join("absent.rs"));
+        std::fs::write(&req.out, b"last successful artifact").unwrap();
+        for (code, diagnostic, ran) in [
+            (1, "original rejected input", false),
+            (2, "original input error", false),
+            (3, "error: internal: function count mismatch; run again", false),
+            (3, "original executed status three", true),
+            (7, "original executed result", true),
+        ] {
+            let mut entry = Entry::new(base.join(format!("case-{code}-{ran}")), req.session.clone(), None);
+            let attempts = std::cell::Cell::new(0);
+            let mut jobs = GuardJobs::new();
+            let response = compile_guarded_with(&mut entry, &req, &mut jobs, |_, _| {
+                attempts.set(attempts.get() + 1);
+                Response { code, stdout: "original output".into(), stderr: diagnostic.into(), ran, mixed: None }
+            });
+            assert_eq!(attempts.get(), 1);
+            assert_eq!(response.code, code, "a hidden fresh compile would read the absent source and return code 2");
+            assert_eq!(response.stdout, "original output");
+            assert_eq!(response.stderr, diagnostic);
+            assert_eq!(response.ran, ran);
+            assert_eq!(response.mixed, None, "ordinary replies retain their wire format");
+            assert_eq!(entry.served, 1);
+            assert_eq!(entry.resets, u64::from(code == 3 && !ran));
+            assert_eq!((jobs.pending, jobs.running.len(), jobs.queued.len()), (0, 0, 0), "no background compiler attempt");
+            assert_eq!(std::fs::read(&req.out).unwrap(), b"last successful artifact");
+        }
+        let mut entry = Entry::new(base.join("panic"), req.session.clone(), None);
+        let attempts = std::cell::Cell::new(0);
+        let mut jobs = GuardJobs::new();
+        let response = compile_guarded_with(&mut entry, &req, &mut jobs, |_, _| {
+            attempts.set(attempts.get() + 1);
+            panic!("injected compiler panic");
+        });
+        assert_eq!(attempts.get(), 1);
+        assert_eq!(response.code, 3);
+        assert_eq!(response.mixed, None);
+        assert!(response.stderr.contains("not retried"));
+        assert_eq!(entry.resets, 1, "discard damaged state for a later request only");
+        assert_eq!((jobs.pending, jobs.running.len(), jobs.queued.len()), (0, 0, 0));
+        assert_eq!(std::fs::read(&req.out).unwrap(), b"last successful artifact");
+        assert!(!req.file.exists());
+        drop(entry);
+        let _ = std::fs::remove_dir_all(base);
+    }
+
+    #[cfg(feature = "exclusive-native")]
+    #[test]
+    fn product_daemon_preserves_real_retained_edits_and_next_request_recovery() {
+        let base = std::env::temp_dir().join(format!("lust-product-retained-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(&base).unwrap();
+        let source = "fn value()->i64{41}\nfn main(){println!(\"{}\",value());}\n";
+        let file = base.join("main.rs");
+        std::fs::write(&file, source).unwrap();
+        let mut req = check_req(&file);
+        req.cmd = protocol::Cmd::Build;
+        let mut entry = Entry::new(base.join("session"), req.session.clone(), None);
+        let mut jobs = GuardJobs::new();
+        let run = |expected: &[u8]| {
+            let output = std::process::Command::new(&req.out).output().unwrap();
+            assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+            assert_eq!(output.stdout, expected);
+        };
+        for pass in 0..2 {
+            let response = compile_guarded(&mut entry, &req, &mut jobs);
+            assert_eq!(response.code, 0, "{}", response.stderr);
+            assert_eq!(response.mixed, None);
+            run(b"41\n");
+            if pass == 1 {
+                assert!(entry.session.front.last_visits.contains("checked=0"), "{}", entry.session.front.last_visits);
+            }
+        }
+        let prior = std::fs::read(&req.out).unwrap();
+        std::fs::write(&file, source.replace("{41}", "{true}")).unwrap();
+        let invalid = compile_guarded(&mut entry, &req, &mut jobs);
+        assert_eq!(invalid.code, 1);
+        assert_eq!(invalid.mixed, None);
+        assert_eq!((jobs.pending, jobs.running.len(), jobs.queued.len()), (0, 0, 0));
+        assert_eq!(entry.resets, 0);
+        assert_eq!(std::fs::read(&req.out).unwrap(), prior);
+        std::fs::write(&file, source.replace("{41}", "{42}")).unwrap();
+        assert_eq!(compile_guarded(&mut entry, &req, &mut jobs).code, 0);
+        run(b"42\n");
+        let prior = std::fs::read(&req.out).unwrap();
+        let panicked = compile_guarded_with(&mut entry, &req, &mut jobs, |_, _| panic!("injected after real retained work"));
+        assert_eq!(panicked.code, 3);
+        assert_eq!(entry.resets, 1);
+        assert_eq!(std::fs::read(&req.out).unwrap(), prior);
+        std::fs::write(&file, source.replace("{41}", "{43}")).unwrap();
+        assert_eq!(compile_guarded(&mut entry, &req, &mut jobs).code, 0);
+        run(b"43\n");
+        assert_eq!((jobs.pending, jobs.running.len(), jobs.queued.len()), (0, 0, 0));
+        assert_eq!(entry.resets, 1);
+        drop(entry);
+        let _ = std::fs::remove_dir_all(base);
+    }
+
     #[test]
     fn mixed_admission_daemon_keeps_internal_failure_and_panic_without_retry() {
         let base = std::env::temp_dir().join(format!("lust-mixed-guard-{}", std::process::id()));
@@ -1273,13 +1391,13 @@ mod tests {
         let first = entry.session.obj_dir().to_owned();
         let failure = Response { code: 3, stderr: "original emission failure".into(),
             mixed: Some(crate::protocol::MixedOutcome::Failed), ..Default::default() };
-        let failed = mixed_answer(entry, &req, Ok(failure));
+        let failed = terminal_answer(entry, &req, Ok(failure));
         assert_eq!(failed.code, 3);
         assert_eq!(failed.stderr, "original emission failure");
         assert_eq!(failed.mixed, Some(crate::protocol::MixedOutcome::Failed));
         assert_ne!(entry.session.obj_dir(), first);
         let second = entry.session.obj_dir().to_owned();
-        let panicked = mixed_answer(entry, &req, Err(Box::new("injected panic")));
+        let panicked = terminal_answer(entry, &req, Err(Box::new("injected panic")));
         assert_eq!(panicked.code, 3);
         assert_eq!(panicked.mixed, Some(crate::protocol::MixedOutcome::Failed));
         assert!(panicked.stderr.contains("not retried"));

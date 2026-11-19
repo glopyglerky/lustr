@@ -507,6 +507,8 @@ static lust_loc lust_std_loc(uint32_t file, uint32_t line, uint32_t col) {
    message, as in core. The pinned range helpers track their caller, so the
    operation supplies either its own std site or its caller's location. */
 static void lust_range_bounds_check(uint64_t len, uint64_t s_tag, uint64_t s_val, uint64_t e_tag, uint64_t e_val, uint64_t *out_s, uint64_t *out_e, lust_loc loc) LUST_BODY({
+    /* Flag-mode unwinding returns from lust_panic with an exception pending.
+       Stop at the first failed bound, before another panic or output write. */
     uint64_t end;
     if (e_tag == 0) {
         if (e_val >= len) {
@@ -516,6 +518,7 @@ static void lust_range_bounds_check(uint64_t len, uint64_t s_tag, uint64_t s_val
             lust_string_push_cstr(&s, " out of range for slice of length ");
             lust_fmt_u64(&s, len);
             lust_panic(&s, loc);
+            return;
         }
         end = e_val + 1;
     } else if (e_tag == 1) {
@@ -526,6 +529,7 @@ static void lust_range_bounds_check(uint64_t len, uint64_t s_tag, uint64_t s_val
             lust_string_push_cstr(&s, " out of range for slice of length ");
             lust_fmt_u64(&s, len);
             lust_panic(&s, loc);
+            return;
         }
         end = e_val;
     } else {
@@ -542,6 +546,7 @@ static void lust_range_bounds_check(uint64_t len, uint64_t s_tag, uint64_t s_val
             lust_string_push_cstr(&s, " out of range for slice of length ");
             lust_fmt_u64(&s, len);
             lust_panic(&s, loc);
+            return;
         }
         if (s_tag == 1 && s_val == end) {
             lust_String s = lust_string_new();
@@ -550,6 +555,7 @@ static void lust_range_bounds_check(uint64_t len, uint64_t s_tag, uint64_t s_val
             lust_string_push_cstr(&s, " out of range for slice of length ");
             lust_fmt_u64(&s, len);
             lust_panic(&s, loc);
+            return;
         }
         if (s_val > end) {
             lust_String s = lust_string_new();
@@ -558,6 +564,7 @@ static void lust_range_bounds_check(uint64_t len, uint64_t s_tag, uint64_t s_val
             lust_string_push_cstr(&s, " but ends at ");
             lust_fmt_u64(&s, end);
             lust_panic(&s, loc);
+            return;
         }
         start = s_tag == 1 ? s_val + 1 : s_val;
     }

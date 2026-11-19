@@ -1,10 +1,37 @@
-# Mixed compiler phase attribution
+# Historical mixed compiler phase attribution
 
-`tools/profile-mixed-compiler.py` runs the existing mixed Cargo qualification
-with `LUSTR_MIXED_PROFILE_DIR` set in a fresh work directory. This diagnostic
-run is separate from every paired timing campaign. Its source, compiler
-identities, original JSONL records, command outputs and diagnostic traces stay
-with the generated report. Instrumented durations do not establish a speedup.
+The mixed compiler and its live profiling runner have been retired. The runner
+required the removed whole-compiler package, including `rustc-full`; it cannot
+qualify the integrated compiler under the
+[exclusive coverage contract](exclusive-coverage-contract.md).
+`tools/profile-mixed-compiler.py` now retains only the historical parser and
+renderer used by evidence tests. Invoking it as a command fails without starting
+a qualifier or creating a report. Its original source remains available in
+[immutable history](https://github.com/glopyglerky/lustr/blob/ec99578d51c93674af3a1bcf9c182f4ad4b17d89/tools/profile-mixed-compiler.py).
+
+The measurements and schema descriptions below describe their recorded sources.
+Their compiler identities, original JSONL records, command outputs and diagnostic
+traces remain with each report. Instrumented durations do not establish a speedup
+or current compiler acceptance. In particular, the former schema-3 successful
+`Complementary` result is historical: the current
+[native admission boundary](native-admission.md) reports an unrepresented scalar
+bridge as incomplete integration, not a successful complementary compilation.
+
+## Replay the preserved evidence
+
+The existing reporting workflow runs these unchanged evidence controls:
+
+```sh
+python3 tools/test-mixed-profile.py
+python3 performance/profiles/2026-11-17-40d2ac3/replay.py
+python3 performance/profiles/2026-11-17-40d2ac3/test-replay.py
+```
+
+The frozen replay uses its recorded reporter and preserves the original failed
+run separately from its labeled reconstruction. These commands validate stored
+evidence and malformed-record rejection. They do not execute a compiler or grant
+performance admission. The [tooling disposition](retired-coordinator-acceptance.md#retired-mixed-qualification-tooling)
+records the removed launcher and obsolete workflow test.
 
 ## Executed status on 17 November 2026
 
@@ -56,7 +83,7 @@ validates 26 compiler profiles, 15 qualification commands and 35 successful nati
 responses. It is diagnostic evidence, not a new compiler qualification or a
 passed original profiling campaign.
 
-The shared writer now frames the complete record and holds an append-file lock
+At the later recorded source, the shared writer frames the complete record and holds an append-file lock
 through `write_all`, including short-write retries. Three actual helper tests
 pass; the concurrent-process regression fails the original helper. All 23 strict
 profile tests pass without relaxing the validator. The fresh `5a3f493`
@@ -64,7 +91,7 @@ source-built execution above qualified the corrected writer. It does not change
 the failed status, values or reconstruction limits of the original `40d2ac3`
 profile.
 
-## Client request measurements
+## Historical client request measurements
 
 The driver records `native-compile` and `native-check` around each native
 request. Their `native-request-setup` child covers argument construction,
@@ -142,12 +169,13 @@ original instrumentation change; the later admission work below has a different
 source and contract.
 
 
-## Current schema 3: explicit native outcomes
+## Historical schema 3: explicit native outcomes
 
-The [native admission boundary](native-admission.md) now decides scalar request,
-IR and ABI eligibility before C generation, retaining the checked program into
-emission. Profile schema 3 records that actual typed outcome alongside the
-response code. It does not treat a zero status as evidence of emitted code.
+The former native admission boundary decided scalar request, IR and ABI
+eligibility before C generation, retaining the checked program into emission.
+Profile schema 3 recorded that typed outcome alongside the response code. It
+did not treat a zero status as evidence of emitted code. Its original meanings
+are retained below so archived records are not rewritten to newer semantics.
 
 | Native outcome | Required profile evidence |
 | --- | --- |
@@ -161,23 +189,23 @@ emitter duration and unattributed residual remain null; a complementary-only
 row says `not emitted`. Genuine emitted responses retain the existing strict
 identity, timing and trace bindings.
 
-The current emitter's `c-prepare` span constructs C and the wrapper from an
+At that source, the emitter's `c-prepare` span constructs C and the wrapper from an
 already admitted unit, with invariant checks on the generated helper closure.
 It no longer measures capability admission or ABI selection. The existing
 owned ELF reader is timed as `symbol-check`; the historical table's `nm` span
 continues to mean the original process call at that source. Native preparation,
 frontend work and C generation still happen outside the emitter interval.
 
-The current qualifier has **19 commands**. Four new operations exercise actual
+The recorded qualifier has **19 commands**. Four additional operations exercise actual
 retained C-output and link-recipe filesystem failures, then restoration and
 retained recovery. The validator requires those operations and their actual
 outcomes for schema 3. Historical schemas 1 and 2 retain their original
-15-command scope and remain readable with the original meanings. A current
-profile cannot claim the shorter historical qualification.
+15-command scope and remain readable with the original meanings. A schema-3
+profile cannot claim the shorter qualification scope.
 
-All 36 local profile controls passed; those use synthetic records to test the
-validator. The updated real qualifier compiled locally and awaits hosted daemon
-execution. These results are not compiler-speed measurements or an end-to-end
-pass. Ordinary profiling-disabled runs still read no profiling clocks and write
-no profiling files. The admission, certificate-schema and mixed transport
-changes require their own exact-source qualification.
+The original local record reported 36 passing synthetic profile controls and
+local compilation of the updated qualifier while hosted execution was pending.
+That record was not a compiler-speed measurement or an end-to-end pass. At that
+source, profiling-disabled runs read no profiling clocks and wrote no profiling
+files. The qualifier has since been removed; this historical record cannot
+supply acceptance for current admission, certificate or transport behavior.

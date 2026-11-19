@@ -47,6 +47,7 @@ history and historical evidence remain intact.
 | [Design checkpoint](docs/compiler-set/design.md) | Real source state, reusable interfaces and remaining defects. |
 | [Completion checklist](docs/compiler-set/completion-checklist.md) | One work list with observable completion conditions. |
 | [Implementation cleanup](docs/compiler-set/exclusive-coverage-cleanup.md) | Removed routes, preserved components, focused validation and remaining gaps. |
+| [Ownership follow-through](docs/compiler-set/exclusive-coverage-followthrough.md) | Remaining bridge, daemon and acceptance conflicts, native runtime repair and portability priority. |
 | [Lust upstream review](docs/compiler-set/upstream-lust-review-2026-11-19.md) | Retention, precise invalidation, CI, performance history and reverts. |
 | [Rust upstream review](docs/compiler-set/upstream-rust-review-2026-11-19.md) | Existing selective reuse interfaces, dependency closure, CI and performance history. |
 | [Performance policy](docs/compiler-set/practical-performance.md) | Separate near-Lust and near-rustc assessment and its limits. |

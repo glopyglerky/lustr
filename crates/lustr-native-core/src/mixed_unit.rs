@@ -1,6 +1,7 @@
 //! Object generation at the mixed compiler's first, scalar C boundary.
 //! Checking, borrow checking, lowering, generation and retained body state are
-//! the ordinary Lust pipeline. Rust's compiler supplies the caller and metadata.
+//! the ordinary Lust pipeline. A gap in this bridge does not establish that
+//! Lust lacks the capability or authorize another compiler to own the work.
 use crate::{ast::{BinOp, UnOp}, cgen, check::{Builtin, collect::Program}, def::{DiskDefId, LocalDefId}, ir, protocol::{MixedOutcome, Request, Response}, ty::{IntTy, Ty, TyIntern, TyKind}};
 use std::{fmt::Write as _, fs, path::Path, sync::Arc};
 
@@ -41,8 +42,8 @@ pub(super) fn total(b: &ir::Body<'_>) -> bool {
         }
     }
     // The minimal mixed C unit has integer typedefs, not Lust's two-word
-    // 128-bit types/helpers or its unit-value representation. Those are real
-    // complementary capabilities, even when their Rust operations are total.
+    // 128-bit types/helpers or its unit-value representation. These are bridge
+    // integration gaps. The ordinary Lust implementation still owns the work.
     let accepted = b.locals.iter().all(|l| matches!(b.tys.kind(l.ty), TyKind::Int(i) if !matches!(i, IntTy::I128 | IntTy::U128))
             || matches!(b.tys.kind(l.ty), TyKind::Bool))
         && b.blocks.iter().enumerate().filter(|(n, _)| live[*n]).all(|(_, block)| {
@@ -97,7 +98,9 @@ pub(super) struct CheckedTotal {
 
 pub(super) enum Admission<'p> {
     Native(PreparedMixed<'p>),
-    Complementary(&'static str),
+    /// This boundary cannot compose the request. This is not evidence about
+    /// the actual Lust-supported set, nor a successful complementary compile.
+    IntegrationIncomplete(&'static str),
 }
 
 /// This non-Clone value is created only after checking/lowering/borrowck and
@@ -112,7 +115,7 @@ pub(super) struct PreparedMixed<'p> {
     params: Vec<&'static str>,
 }
 
-pub(super) fn request_complement(req: &Request) -> Option<&'static str> {
+pub(super) fn request_integration_gap(req: &Request) -> Option<&'static str> {
     if !cfg!(all(target_os = "linux", target_arch = "x86_64"))
         || crate::protocol::host_triple() != "x86_64-unknown-linux-gnu"
         || !matches!(req.session.target_triple.as_str(), "" | "x86_64-unknown-linux-gnu")
@@ -138,8 +141,8 @@ pub(super) fn prepare<'p, 'body, 'ir: 'body>(
     ok: &[bool],
     retained: &mut Option<CheckedTotal>,
 ) -> Result<Admission<'p>, String> {
-    if let Some(reason) = request_complement(req) {
-        return Ok(Admission::Complementary(reason));
+    if let Some(reason) = request_integration_gap(req) {
+        return Ok(Admission::IntegrationIncomplete(reason));
     }
     let identity = req.session.krate.package_id.strip_prefix("lustr-mixed-").ok_or("missing mixed unit identity")?;
     if identity.is_empty() || identity.len() > 128 || !identity.bytes().all(|b| b.is_ascii_hexdigit()) {
@@ -165,20 +168,21 @@ pub(super) fn prepare<'p, 'body, 'ir: 'body>(
         return Err("native checked function lost its lowered body before admission".into());
     };
     if !total {
-        return Ok(Admission::Complementary("function needs an unrepresented runtime operation or scalar type"));
+        return Ok(Admission::IntegrationIncomplete("function needs an unrepresented runtime operation or scalar type"));
     }
-    let Some(ret) = scalar(p, f.ret) else { return Ok(Admission::Complementary("return needs a wider ABI mapping")); };
+    let Some(ret) = scalar(p, f.ret) else { return Ok(Admission::IntegrationIncomplete("return needs a wider ABI mapping")); };
     let Some(params) = f.params.iter().map(|t| scalar(p, *t)).collect::<Option<Vec<_>>>() else {
-        return Ok(Admission::Complementary("argument needs a wider ABI mapping"));
+        return Ok(Admission::IntegrationIncomplete("argument needs a wider ABI mapping"));
     };
     if !cgen::native_direct_abi(p, &f.params, f.ret) {
-        return Ok(Admission::Complementary("native function does not have a direct C ABI"));
+        return Ok(Admission::IntegrationIncomplete("native function does not have a direct C ABI"));
     }
     Ok(Admission::Native(PreparedMixed { request: req, program: p, slot, symbol: format!("lustr_mixed_{identity}"), ret, params }))
 }
 
-pub(super) fn complementary(reason: &str) -> Response {
-    Response { mixed: Some(MixedOutcome::Complementary), stderr: format!("lustr mixed complementary: {reason}\n"), ..Default::default() }
+pub(super) fn integration_incomplete(reason: &str) -> Response {
+    Response { code: 4, mixed: Some(MixedOutcome::IntegrationIncomplete),
+        stderr: format!("lustr mixed integration incomplete: {reason}; no complementary compiler was selected\n"), ..Default::default() }
 }
 
 pub(super) fn emit(prepared: PreparedMixed<'_>, out: &[cgen::FnOut], names: &Arc<cgen::names::Names>, generated: usize) -> Response {
