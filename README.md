@@ -1,230 +1,133 @@
 # Lustr
 
-Lustr is being developed to extend the native [Lust compiler](https://github.com/t3dotgg/lust-lang)
-to full Rust while retaining its fast frontend, incremental daemon and
-development code generation. blueFe is the toolchain integration project.
+**One compiler: Lust for everything it supports, with imported upstream Rust
+providing the complement inside the same compilation.**
 
-Existing Lust-supported code must use unchanged upstream Lust. Lustr must supply
-the missing Rust language, library and crate support in its own code. Full, unchanged Rust
-projects with measured fast compilation are the requirement. Forwarding them to
-rustc does not satisfy it. See the [native compiler contract](docs/compiler-set/native-contract.md).
+Lustr aims to replace rustc while preserving Lust's fast frontend and incremental
+compilation. An unchanged program can use both implementations. The compiler
+uses resolved semantic facts before emission and shares the checked state,
+dependencies and runtime contracts needed to compose their output.
 
-Full native Rust coverage is incomplete. Lustr now supplies bounded native
-source-library additions; frontend and crate/metadata expansion remain open.
-`compiler/native` is the unchanged upstream Lust source, pinned by
-[`upstream/lust.pin`](upstream/lust.pin). Lustr-owned expansion belongs outside
-that baseline. No Lust divergence is admitted. Any exception must demonstrate
-both necessity and faster results under the [upstream preservation policy](docs/compiler-set/upstream-lust.md).
-The root Cargo project now builds the native-first compiler entry candidate in
-`src/`. Its [execution and artifact contracts](docs/compiler-set/native-driver.md)
-identify the unchanged native engine, the C ABI cold entry and the inherited full
-Rust core. Preview packaging does not establish a complete native compiler.
-The separate compatibility coordinator remains in `crates/lustr`.
-The [entry contract proofs](docs/compiler-set/proofs/native-entry-contracts.md)
-cover target identity, bounded cancellation and copied-artifact publication;
-their assumptions and performance limits are explicit.
+The required product does not try the whole program with Lust and then retry it
+with rustc. It does not require independently reimplementing the rest of Rust or
+running an extra complete Rust frontend on every Lust-supported request.
 
-Build the native compiler with an existing Rust bootstrap toolchain and the
-pinned TinyCC assets. Keep generated output outside the source checkout:
+## Start here
 
-```sh
-LUST_TCC_HOME=/absolute/tcc CARGO_TARGET_DIR=/absolute/lustr-native-build \
-  cargo build --manifest-path compiler/native/Cargo.toml --release --locked
-/absolute/lustr-native-build/release/lust check unchanged.rs
-/absolute/lustr-native-build/release/lust build unchanged.rs -o application
-```
-
-## Compiler entry candidate
-
-The [native preview 2026.11.15-1 record](docs/compiler-set/native-preview-2026.11.15-1.md)
-describes the packaged runtime, corresponding source, exact host dependencies,
-executed checks and remaining coverage/performance requirements.
-
-The assembled candidate provides `bin/lustr`, the rustc-compatible `bin/rustc`,
-unchanged `bin/lust`/`bin/lust-core`, and the unchanged upstream full Rust core as
-`bin/rustc-full`. Native examples use:
-
-```sh
-/absolute/candidate/bin/lustr build program.rs -o application
-/absolute/candidate/bin/lustr check program.rs
-/absolute/candidate/bin/lustr build src/main.rs --manifest-path Cargo.toml -o application
-```
-
-Full Cargo artifact requests can use the matched tools explicitly:
-
-```sh
-CARGO=/absolute/candidate/bin/cargo RUSTC=/absolute/candidate/bin/rustc \
-  RUSTDOC=/absolute/candidate/bin/rustdoc /absolute/candidate/bin/cargo test --locked
-```
-
-These commands describe the candidate interface. Versioned previews record
-their exact source, runtime, notices, host requirements and qualification.
-Full Rust still uses the inherited Rust implementation. Native Rust library
-metadata, general mixed-engine crate interoperability and full native expansion
-remain unfinished. Working routing is not proof that those tasks are complete.
-
-The Linux x86_64 GNU candidate adds executable/shared-library naming constants,
-borrowed OS-string/path conversions to `PathBuf`, and `reserve`/`reserve_exact`
-for `OsString` and `PathBuf`. These compile the original program through unchanged Lust with
-an explicitly composed source library. Retained sessions verify the installed
-source inventory and hashes and use a separate component identity. Explicit
-source overrides stay cold. See the [entry contract](docs/compiler-set/native-driver.md)
-for qualification and limits. The current host binary requires GLIBC 2.39,
-libgcc and zlib, and the recorded `/usr/lib/ld-linux-x86-64.so.2` and
-`/lib64/ld-linux-x86-64.so.2` loader paths. The payload was exercised on AerynOS
-2026.08; its ELF report records each object's actual interpreter and dependencies.
-Other native hosts are unqualified. Cold compilation and edits still regress
-against stock Rust on the measured expansion fixtures.
-
-## Historical compatibility toolchain
-
-For versioned binary bundles, see [BlueFe releases](https://github.com/glopyglerky/blueFe/releases)
-and [Lustr releases](https://github.com/glopyglerky/lustr/releases). Use a release's
-recorded platform, component manifest and checksums. Keep the extracted toolchain
-at a versioned absolute path; ordinary project builds do not rebuild the compiler.
-
-[Preview 2026.11.09-2](https://github.com/glopyglerky/lustr/releases/tag/preview-2026.11.09-2)
-is available for Linux x86_64 GNU with GLIBC 2.39 and GLIBCXX_3.4.32. Download all
-six assets and verify `SHA256SUMS`. It includes the matched rustc-based BlueFe
-compiler, host/Wasm libraries, Clippy/rustfmt and experimental unwind-enabled Cranelift.
-Other hosts and Wasm execution are unqualified. The release records coordinator
-source `07470b2`; the later default-branch benchmark/docs commit leaves that
-coordinator source unchanged. See the
-[exact release record](https://github.com/glopyglerky/blueFe/blob/main/docs/bluefe/releases/preview-2026.11.09-2.md).
-It does not include native Lust. Its measurements do not measure native Lust
-acceleration or establish full native Lustr coverage.
-
-```sh
-lustr --bluefe-root /absolute/toolchain build --workspace
-lustr --bluefe-root /absolute/toolchain test --workspace
-lustr --bluefe-root /absolute/toolchain build --target wasm32-unknown-unknown
-lustr --bluefe-root /absolute/toolchain doctor
-```
-
-The older assembled BlueFe directory supplies Cargo, rustc, rustdoc and the produced
-sysroot. In that historical coordinator, `lustr build` without a root
-preserves the project's existing Cargo toolchain. Arguments, profiles, features,
-compiler wrappers and failure status remain effective. Builds install nothing
-and failed programs are never retried through another compiler.
-
-An explicit Cranelift engine provides development code generation when a matching,
-unwind-enabled backend has passed qualification. WebAssembly builds use
-LLVM. A separately pinned backend cannot be loaded into a different BlueFe compiler.
-The default forwarding path removes no compiler work by itself.
-
-An experimental, explicit frontend job option applies to one selected Cargo
-`rustc` target without replacing project flags or compiler wrappers:
-
-```sh
-lustr --bluefe-root /absolute/toolchain --frontend-jobs 4 \
-  rustc --profile check -p your-package --lib
-```
-
-Select an actual package/target and a bounded CPU budget. More threads can regress
-small targets or increase memory. The [argument-preservation proof and executable
-checks](docs/compiler-set/proofs/frontend-scheduling.md) state the guarantees and
-limits; measured speed claims require fixed-workload evidence.
-
-Building the coordinator itself is optional contributor work:
-
-```sh
-cargo build --manifest-path crates/lustr/Cargo.toml --release --locked
-cargo install --path crates/lustr --locked
-```
-
-## Source map
-
-| Path | Responsibility |
+| Document | Purpose |
 | --- | --- |
-| `src/`, `Cargo.toml`, `build.rs` | Primary compiler entry candidate, request contracts, native loading and full-core invocation. |
-| `crates/lustr-native-core` | Owned C ABI entry around unchanged native Lust modules; compiled separately with PIC TinyCC. |
-| `library/lustr`, `library/lust` | Owned source-library additions and an explicit link to the unchanged baseline. No protected source is patched or copied into a divergent compiler. |
-| `compiler/native` | Exact pinned upstream Lust source, including its native compiler, libraries, TinyCC integration and differential fixtures. No Lustr-owned edits are admitted here. |
-| `crates/lustr` | Transitional Cargo/rustc coordinator, BlueFe tool selection and compatibility qualification. |
-| `upstream/lust.pin`, `upstream/bluefe-core.pin` and `tools/lust-upstream-check.rs` | Upstream source identity, exact compiler-component bindings and the Lust source-preservation guard. |
-| `crates/lustr-semantic` | Optional version-pinned rustc inspection. It exports inspection data, not executable MIR. |
-| `crates/lustr-bench` | Standalone paired benchmark runner and correctness gates. It is outside the coordinator workspace. |
-| `examples/native_*` | Rust delivery, checksum-pinned notice collection and native measurement helpers; generated output belongs in an explicit build filesystem. |
-| `docs/compiler-set` | Current design, decisions, divergence records, measured evidence and future work. |
+| [Architecture plan](docs/compiler-set/architecture-plan.md) | Fixed implementation contract, semantic ownership and the complementary subset. |
+| [Completion checklist](docs/compiler-set/completion-checklist.md) | Exact remaining work, in dependency order, with completion criteria. |
+| [Design checkpoint](docs/compiler-set/design.md) | What default and the reviewed candidate actually implement. |
+| [Qualification checkpoint](docs/compiler-set/qualification-review-2026-11-18.md) | Source-bound correctness and CI results, including failures and newer work. |
+| [Performance checkpoint](docs/compiler-set/performance-review-2026-11-18.md) | Measured gains, regressions, uncertainty, artifact links and practical tolerances. |
+| [Contributor instructions](AGENTS.md) | Rules that keep subsequent work on this architecture. |
 
-The coordinator does not depend on TinyCC or registry packages. `cargo-lustr` and
-`cargo-lust` remain command aliases. The native component has a separate Cargo
-workspace so its C dependencies do not become prerequisites for installing the compatibility coordinator.
+## Implementation status
 
-## Working contract and research
+**The general integrated compiler is unfinished.** The audited candidate has a
+working scalar mixed bridge, genuine Rust artifacts and useful retained native
+compilation. It still performs whole-crate Rust analysis on cold mixed requests,
+then separately checks a native projection. Standalone entry still contains
+whole-program retry. These are remaining implementation tasks, not the final
+architecture.
 
-Native execution, workspace tests, doctests, invalid-borrow rejection and wasm
-linking have dedicated BlueFe gates. Backend qualification also checks both
-Rust ABI directions, ownership transfer and panic cleanup. Exact compiler heads,
-source fingerprints, backend hashes and unsupported targets belong with results.
+This documentation branch starts from default `next` at
+[`7cea76c9`](https://github.com/glopyglerky/lustr/tree/7cea76c9d3adc587b54ccff168fe07efafd40309),
+which predates that mixed bridge. The architecture audit covers
+[PR #29](https://github.com/glopyglerky/lustr/pull/29), head
+`a9fd4c6336b1e39c4f584f7da50a437c5c248a0d`.
+[PR #30](https://github.com/glopyglerky/lustr/pull/30) is a later callback-correctness
+continuation. The qualification checkpoint identifies each tested source and
+its remaining failures. Documentation publication does not merge either
+implementation into default.
 
-See the [integration and performance model](docs/compiler-set/bluefe-performance.md),
-[verification record](docs/compiler-set/verification.md),
-[design](docs/compiler-set/design.md), and [roadmap](docs/compiler-set/roadmap.md).
-Performance claims are workload-specific. No-op, edit, rejection and executed-test
-costs count alongside cold compilation. Slower candidates remain in the evidence.
+| Area | Audited PR #29 result | Remaining requirement |
+| --- | --- | --- |
+| Lust compilation | Native frontend and retained daemon preserved. | Use the full actual supported subset in mixed programs; the scalar bridge is smaller. |
+| Mixed artifacts | Real native objects compose with genuine Rust metadata and libraries. | Share general semantic state, ABI/runtime ownership and dependencies across the boundary. |
+| Linux native correctness | 5,528 ordinary and 5,528 sanitizer differential cases, 364 daemon scenarios, 1,200 fuzz edits passed. | Qualify the final changed candidate and reconcile the declared SDK's semantics. |
+| Linux assembled mixed package | Real Cargo mixed execution, retained metadata, 17 public-entry tests and real I/O/link failure recovery passed. | Broaden coverage beyond the qualified scalar interface. |
+| macOS native correctness | Ordinary and daemon gates passed; 47 differential cases failed on incompatible callback calls. | Qualify PR #30's proposed repair and complete the full native gate. |
+| Unicode | A declared-SDK constant/runtime disagreement is documented. | Generate consistent version-bound semantics and reconcile all relevant differential failures. |
+| Full replacement release | Not qualified. | Complete the architecture, correctness, exact package and performance conditions below. |
 
-The [measurement protocol](docs/compiler-set/benchmark-method.md) records exact
-tools, dependency selection, compiler commands, correctness gates and every
-paired sample. Its [mathematical analysis](docs/compiler-set/proofs/benchmark-analysis.md)
-proves estimator invariants and conditional statistical properties. The
-[metadata comparison proof](docs/compiler-set/proofs/metadata-compatibility.md)
-states the one supported absent/null schema equivalence and its limits. These proofs
-do not establish compiler equivalence or an unmeasured speedup. The runner's tiny
-fixture qualifies the measurement machinery; public-repository campaigns remain
-separate evidence.
+See the [qualification checkpoint](docs/compiler-set/qualification-review-2026-11-18.md)
+for primary jobs, artifact identities and the later PR #30 failures. Passing
+Cargo compatibility on a platform does not establish mixed native compilation
+on that platform.
 
-The runner also supports [optional Linux CPU and peak-RSS observations](docs/compiler-set/proofs/benchmark-resources.md).
-Fresh collectors preserve payload outcomes and avoid cumulative-peak leakage.
-RSS means the largest waited process, so it cannot establish aggregate build
-memory. The historical shared-v2 dataset remains wall-time-only. The matched pilot below
-records CPU and scoped RSS; the collector itself removes no compiler work.
+## Measured speed
 
-The [matched CGU16/ThinLTO pilot](docs/compiler-set/measurements/2026-11-09-cgu16-thinlto-v3/README.md)
-completed 108 timed root checks plus nine excluded warmups. The optimized stage2
-package used 17.9% less wall time than the matched no-PGO stage2 control across
-the three fixed cases, with conditional candidate/control interval [0.7995, 0.8401].
-It still used more time than stock Rust 1.99.1 on every workload. That secondary
-comparison has unequal compiler/Cargo versions. The report includes every command
-record, CPU and scoped RSS, regressions, independent review, a Rust replay and
-[mathematical arguments](docs/compiler-set/proofs/cgu16-thinlto.md). These are
-metadata-only checks, not full-build or application-speed results.
+The target is **close to Lust on supported work and near stock rustc on ordinary
+complementary Rust**. Useful mixed-work gains matter; exact Lust parity and
+large gains outside Lust's subset are not requirements. Correctness comes first.
 
-The [2026-11-09 public-repository dataset](docs/compiler-set/measurements/2026-11-09-shared-v2/README.md)
-contains 72 timed root checks and nine excluded warmups. Explicit four-thread
-BlueFe beat stock on t3code-ls, with a paired ratio of 1.268, but regressed by
-point estimate on gitr and bluefin. One-thread BlueFe regressed on all three.
-Same-compiler N1/N4 ratios were 2.345, 1.342 and 1.802. Unequal toolchain versions,
-shared-host effects and fixed middle position for N1 limit interpretation;
-runtime gates did not apply the timed frontend options. These are metadata-only
-root checks, not default whole-build results. Full samples, conditional intervals,
-regressions, scoped proofs and a Rust statistics replay command accompany the data.
+These are existing PR #29 measurements, not timings of this documentation branch
+or PR #30. Each comparison has 12 pairs. Ratios are paired geometric reference
+time divided by Lustr time; they are not ratios of the marginal medians.
 
-For future campaigns, the runner now balances lane execution positions in cyclic
-blocks. Its [position theorem and checks](docs/compiler-set/proofs/order-balance.md)
-prove the count bound, without claiming to remove cache effects or establish a
-speedup. Published historical measurements keep their original order and limits.
+| Workload | Lustr median | Reference median | Paired speed ratio, 95% interval |
+| --- | ---: | ---: | ---: |
+| Native scalar body edit vs rustc | 7.550 ms | 69.714 ms | **8.228×** [7.043, 9.489] |
+| Public warm check vs rustc | 2.963 ms | 13.127 ms | **4.616×** [3.695, 5.597] |
+| Public warm build vs rustc | 7.705 ms | 13.143 ms | **1.990×** [1.427, 3.186] |
+| Public warm build vs pristine Lust | 7.705 ms | 6.457 ms | 0.814× [0.625, 1.047] |
 
-Backend campaigns can use the [routed test gate](docs/compiler-set/proofs/routed-test-gates.md)
-with an explicit Lustr toolchain and engine. It checks the core tool selectors;
-the native fixture observes LLVM and matching Cranelift compiler commands and
-tests panic cleanup. Project-specific gates and matching backend artifacts are
-still required before reporting performance.
+The warm-build difference in marginal medians is +1.249 ms, or +19.34%, versus
+Lust. Near-Lust acceptance remains unresolved; the interval spans parity. The
+ordinary full-Rust project's largest marginal-median overhead is +4.31%, with
+wide paired uncertainty. Mixed cold build, check, check after a body edit and
+signature edit all favor rustc in this campaign. Those losses remain visible in
+the [complete performance checkpoint](docs/compiler-set/performance-review-2026-11-18.md).
 
-## Fork ownership
+The existing engineering budgets permit 10% or 0.5 ms added supported warm
+latency, whichever is larger, and use 5% or 0.5 ms as the ordinary-Rust review
+budget. They do not require every operation to beat rustc. The broad 12-pair
+campaign is useful characterization; it is not the complete-package practical
+assessor's qualified 24-pair acceptance result.
 
-Lustr owns this layout, its entry points and its documentation. Required inherited
-compiler code is maintained as part of the native component. Upstream research
-results describe their original revisions and workloads; they are not claims
-about Lustr's current toolchain.
+The [hosted dashboard](https://github.com/glopyglerky/lustr/actions/runs/44420439480/artifacts/14484151306)
+retains all 29 rows. The performance checkpoint links original input artifacts,
+source/tree hashes, profiles, uncertainty and replay details. No speedup from
+upstream Lust or an earlier compiler-tuning experiment is transferred to the
+complete product.
 
-[Changes from upstream and retained dependencies](docs/compiler-set/divergences.md)
-records why inherited components remain and how updates are qualified. The source
-base is [Lust](https://github.com/t3dotgg/lust-lang) at
-`240e08d91d4aed0299639f6f11fd522912b248f9`. Its original README and history remain
-available there and in this repository's Git history. Licensing is preserved.
+## What completes the product
 
-This is pre-alpha software. The coordinator forbids unsafe Rust in its own code.
-The current native compiler, TinyCC, rustc, LLVM and platform dependencies still
-require review and eventual migration before a whole-toolchain memory-safety
-claim is justified.
+The [completion checklist](docs/compiler-set/completion-checklist.md) requires:
+
+1. One recorded integration baseline that preserves existing unique repairs.
+2. The actual Lust capability and checked-state boundary, beyond isolated scalars.
+3. Shared semantic ownership with imported Rust services, avoiding duplicated
+   complete frontend work on the supported path.
+4. Correct cross-boundary ABI, runtime, metadata and retained edit behavior.
+5. Integrated standalone and Cargo entry without whole-program error-driven retry.
+6. Version-matched correctness and exact package qualification on each advertised
+   platform.
+7. A finite practical performance assessment, clear source-bound README results,
+   then publication of that qualified package.
+
+A proposed optimization is useful when it removes an observed cost while
+preserving these contracts. A few tenths of a millisecond alone do not justify
+destabilizing compilation.
+
+## Source and history
+
+The pristine [Lust source](https://github.com/t3dotgg/lust-lang/tree/240e08d91d4aed0299639f6f11fd522912b248f9)
+is pinned by [`upstream/lust.pin`](upstream/lust.pin). The imported Rust identity
+is recorded in [`upstream/bluefe-core.pin`](upstream/bluefe-core.pin).
+Explicit candidate integration patches retain their own identities and
+qualification. [Upstream preservation](docs/compiler-set/upstream-lust.md)
+requires provenance and meaningful evidence; necessary correctness repairs do
+not have to make the compiler faster.
+
+The root `src/` entry, native compiler, `lustr-native-core` and
+`lustr-semantic` have different capabilities at different revisions. The
+[design checkpoint](docs/compiler-set/design.md) gives the source-bound map.
+The separate `crates/lustr` coordinator and earlier BlueFe releases remain
+historical compatibility work. They do not complete this product.
+
+The [previous default README](https://github.com/glopyglerky/lustr/blob/7cea76c9d3adc587b54ccff168fe07efafd40309/README.md)
+preserves earlier preview commands, dependencies and measurements in their
+original context. Original licenses, source history and evidence remain intact.

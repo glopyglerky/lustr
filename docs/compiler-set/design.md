@@ -1,123 +1,185 @@
-# Native Lustr compiler design
+# Lustr compiler design
 
-Status: native compiler requirement, following the user's clarification.
+The [governing plan](architecture-plan.md) and [compiler contract](native-contract.md)
+define the required architecture. This document specifies responsibilities and
+interfaces that implementation must satisfy. It is not a claim that these
+interfaces are already complete. Status and evidence belong in the
+[completion checklist](completion-checklist.md) and
+[qualification review](qualification-review-2026-11-18.md).
 
-## Goal
+## Compilation ownership
 
-Keep upstream Lust unchanged and supply full Rust support through Lustr-owned native implementation while retaining and expanding Lust's fast compilation model. Every construct Lust already supports must use Lust. Lustr supplies the missing language, library and crate support through qualified interfaces. blueFe delivers the combined compiler. This includes Cargo workspaces, dependencies, build scripts, proc macros, tests and release builds. Application rewrites into the subset do not satisfy the goal.
+Lustr owns the unchanged program, its semantic context, unit assignments,
+retained dependencies, diagnostics, and artifact publication. Lust keeps its
+frontend and retained worker for supported work. Imported upstream Rust services
+supply missing shared facts and complementary implementation.
 
-The [native compiler contract](native-contract.md) and [upstream preservation policy](upstream-lust.md) are authoritative. No Lust divergence is admitted without demonstrated necessity and faster results. The existing Cargo coordinator obtains compatibility through rustc and does not replace its frontend. Cranelift and rustc build tuning are compatibility research. They do not implement full native Lustr coverage, and their speed measurements cannot be transferred to the native compiler.
+```mermaid
+flowchart TD
+    A["Unchanged Rust request"] --> B["Owned compilation context"]
+    B --> C["Retained Lust preparation"]
+    B --> D["Imported Rust services"]
+    C --> B
+    D --> B
+    B --> E["Native and complementary emission"]
+    E --> F["Rust metadata and final artifacts"]
+```
 
-## Decision
+The context holds compiler state and dependency relationships. It is not a
+separate source-language selector. The two implementations may inspect shared
+facts, but each semantic result and emitted instance needs an authoritative
+owner. A general invalidation or unsupported capability may require new work
+inside the same invocation; an executed compiler failure cannot authorize a
+second whole-program attempt.
 
-The required execution paths are:
+## Semantic responsibilities
 
-| Path | Semantic frontend | Code generation | Intended use |
+| Responsibility | Required ownership | Existing work to reuse |
+| --- | --- | --- |
+| Source, definitions, expansion, hygiene, and bindings | One identity model and source mapping across the compilation; imported services may supply missing resolution/expansion behavior | Native `Program` and resolver state; pinned Rust AST/HIR/definition queries |
+| Body checking, types, obligations, and constants | Lust owns its supported checking; requested upstream services supply missing facts without unconditional duplicate checking | Native checked/lowered state and read sets; upstream type, trait, const, and borrow queries |
+| Layouts, calling conventions, and generic instances | Explicit agreement for each represented boundary and target; a matching size or source signature is insufficient | Candidate Rust `FnAbi` comparisons, native ABI queries, instance and symbol identities |
+| Runtime requirements | Explicit allocation, ownership, drop, panic/unwind, thread-local, and standard-library contracts for interacting values | Native runtime and upstream implementations with source-bound qualification |
+| Code generation | One owner for each admitted definition or instance; backend outputs compose through validated symbols and objects | Candidate native object validation and LLVM codegen-unit filtering |
+| Metadata, archives, dep-info, and linking | Genuine Rust machinery consumes valid semantic facts and actual object inventory | Candidate upstream metadata encoding, distinct native rlib members, and original linker |
+| Retained work | Inputs and identities determine validity; edits invalidate consumers across both implementations | Native dependency reads and candidate HIR/dependency certificates |
+
+Importing a service includes the dependencies necessary to use it correctly.
+The full upstream source graph is allowed. Dependency count, binary names, or
+process count do not establish whether the architecture satisfies the contract.
+The execution trace must show that a complete extra frontend is not imposed on
+every supported request.
+
+Upstream services can need crate-wide context for resolution, coherence, macros,
+or metadata. The implementation must explain how that context is shared or
+retained. Calling the unmodified whole Rust analysis pipeline before every
+native decision does not answer that ownership problem. Rebuilding all missing
+Rust semantics independently is also not required.
+
+## Required internal interfaces
+
+These are interface obligations for the next implementation. Names below denote
+roles; they are not declarations of an existing API or a separate planner.
+
+| Interface | Consumes | Produces | Required invariant |
 | --- | --- | --- | --- |
-| Existing Lust support | Native Lust frontend | Native C output and TinyCC | Retain accepted behavior and the fast edit path |
-| Lustr expansions | Lustr-owned native support outside the upstream baseline | Qualified native generation with the required Rust behavior | Add missing Rust features without rewriting applications or hiding Lust patches |
-| Explicit compatibility tools | rustc | Project-selected backend | Bootstrap, differential oracle and transitional compatibility; excluded from native coverage |
+| Prepare a unit | Owned compilation context, stable unit/instance identity, requested target/profile, current dependencies | Admitted native state, a complementary-work requirement, invalid-Rust diagnostics, or implementation failure | Capability is established before emission from actual semantics; preserve the work already performed |
+| Request a shared upstream fact | Retained context, a resolved query and its inputs | An authoritative semantic result and its dependencies, or a diagnostic/failure | Do not restart an independent whole-program compilation to obtain the result |
+| Emit native work | The admitted native state and its represented runtime/ABI obligations | A validated native object and symbol inventory, or failure | Consume the same prepared state; do not parse/check the unit again or fall back after emission fails |
+| Complete complementary work | The shared context and explicit unresolved work | Checked complementary results and objects, or diagnostics/failure | Keep already admitted Lust work on Lust and use the same identities and semantics |
+| Publish the result | Validated objects, genuine metadata, dependency information, and complete successful compilation state | User artifacts and a committed retained-state record | A failed object, link, sync, or publication cannot become a cache miss that hides the error |
 
-Lustr's source-library interface supplies bounded additions through unchanged Lust. Its full frontend and crate interface remain unimplemented. Expansion must preserve resolution, trait selection, borrow checking, const evaluation, layout, monomorphization and incremental invalidation as coverage grows. Mixed programs containing existing Lust features and Lustr expansions must compile and execute natively. The current native coverage remains incomplete; routing a program to rustc does not close a native implementation gap.
+The preparation result has four meanings:
 
-Do not create separate unsafe, async, generic, or proc-macro compilers. Those features overlap in the same functions and types. For example, a generic async function may hold a borrow across a suspension point, call an unsafe operation, and use a trait implementation emitted by a proc macro. Dividing that source by keywords would require the compilers to reconstruct the same global semantic decisions. It offers no demonstrated speed benefit.
+- `NativePrepared` retains the actual checked/lowered state, definition and
+  instance identities, source mapping, dependency reads, and represented ABI
+  and runtime obligations. A later emitter consumes this preparation once.
+- `RustComplement` identifies missing capability or a required shared service.
+  It continues the same request. It does not assert that source awaiting the
+  imported checks is valid Rust.
+- `InvalidRust` carries authoritative diagnostics. A missing native feature
+  must not be mislabeled as invalid Rust merely because the native checker
+  cannot process it.
+- `Failure` carries a compiler, invariant, transport, emitter, object, or linker
+  error. It cannot be converted into complementary work after the fact.
 
-Further splitting can make sense *after* semantic analysis. Function or codegen-unit workers can receive immutable, checked input and compile in parallel. A persistent frontend can retain query results across edits. Both designs need profiling and a precise interface before implementation.
+Within one process, retained values can borrow their actual semantic owner.
+Across a worker boundary, use owned serialized facts or generation-bound handles
+with explicit lifetimes. Process-local pointers and local IDs cannot become
+persistent semantic identities. Bind request and response identities and reject
+unknown or inconsistent outcomes. Once a request may have executed, ambiguous
+transport failure cannot trigger a hidden replay.
 
-## Upstream principles retained
+Post-emission object and relocation validation remains mandatory. Its failure is
+an artifact failure, not evidence that native capability was absent. Separate
+admission from validation without weakening either.
 
-The inspected upstream and fork start at [`240e08d91d4aed0299639f6f11fd522912b248f9`](https://github.com/t3dotgg/lust-lang/commit/240e08d91d4aed0299639f6f11fd522912b248f9).
+## Preserve the native worker and fast path
 
-1. An accepted Lust program is valid Rust and must match the corresponding rustc program. Unsupported input is rejected explicitly.
-2. The fast development path avoids expensive optimizing code generation. Release builds preserve the project's normal optimization recipe.
-3. Retained compiler state and precise dependency reads reduce work after an edit. A body edit should not require checking unrelated bodies when the compiler can establish that they are unchanged.
-4. Uncertain incremental answers take a more complete path. Differential tests compare warm and cold results and use rustc as an oracle.
-5. Build time and generated-program runtime are both measured. A faster compiler can lose overall when its test binaries run more slowly.
+The native worker already owns useful parser, resolver, checker, lowering,
+code-generation, and dependency state. Extend its preparation/continuation
+boundary rather than replacing it with complete Rust analysis followed by
+native code generation. Keep unchanged and body-edit shortcuts when their
+recorded inputs remain valid.
 
-These principles come from the [upstream README](https://github.com/t3dotgg/lust-lang/blob/240e08d91d4aed0299639f6f11fd522912b248f9/README.md), the executable [driver](https://github.com/t3dotgg/lust-lang/tree/240e08d91d4aed0299639f6f11fd522912b248f9/src/driver), and its [plan](https://github.com/t3dotgg/lust-lang/blob/240e08d91d4aed0299639f6f11fd522912b248f9/docs/PLAN.md). The plan contains historical estimates; they are not measurements of this fork.
+A fully supported cold request must demonstrate native preparation without a
+complete second frontend. A mixed request must share required facts and import
+complementary work while preserving native participation. Actual phase evidence
+must distinguish these cases; a successful binary or an engine label is not
+sufficient.
 
-## Why arbitrary Rust libraries cannot be mixed today
+Shared services and retained results do not waive validation. Signature, type,
+trait, macro, dependency, target, profile, and build-script changes can affect
+previously accepted native bodies. Missing input observations require
+recomputation within the owned compilation. Differential qualification must
+compare cold and retained results without replacing the user's failed request
+with a successful retry.
 
-The current Lust driver explicitly rejects building a library target because it has no rlib format. It can check a library and compile source dependencies within a selected binary's closure. That is different from producing a library that Cargo can supply to a rustc-dependent crate. See [`src/driver/compile.rs`](../../compiler/native/src/driver/compile.rs).
+## Current implementation and the missing continuation
 
-Rust libraries carry more than object code. Their metadata contains compiler identity, crate identities, exported types and traits, macros, and sometimes MIR. Cargo can use emitted metadata to start dependent compilation before object generation finishes. The metadata format and Rust ABI cannot be replaced by a C object file and an empty metadata file. See the [Rust compiler metadata guide](https://rustc-dev-guide.rust-lang.org/backend/libs-and-metadata.html).
+The default at
+[`7cea76c9`](https://github.com/glopyglerky/lustr/commit/7cea76c9d3adc587b54ccff168fe07efafd40309)
+has a native-first entry and optional Rust semantic inspection. It does not have
+the later scalar mixed driver. Do not treat the candidate files below as present
+in the default merely because this plan links them.
 
-Type layout and function-call ABI are also separate obligations. Matching a struct's size does not establish ABI compatibility. Generic instances, trait objects, enum niches, closure environments, drop glue, unwinding, thread-local storage, and allocator ownership need agreement. The [Rust layout reference](https://doc.rust-lang.org/reference/type-layout.html) explicitly limits its guarantees.
+The architecture-audited PR29 snapshot is
+[`a9fd4c6336b1e39c4f584f7da50a437c5c248a0d`](https://github.com/glopyglerky/lustr/commit/a9fd4c6336b1e39c4f584f7da50a437c5c248a0d).
+It supplies concrete components:
 
-The existing compatibility coordinator has two real interfaces:
+| Candidate source | Implemented behavior | Remaining limit |
+| --- | --- | --- |
+| [`driver/mod.rs`](https://github.com/glopyglerky/lustr/blob/a9fd4c6336b1e39c4f584f7da50a437c5c248a0d/compiler/native/src/driver/mod.rs) | Borrowed observation of actual native phases and typed mixed-response validation | Observation is not general semantic ownership transfer |
+| [`mixed_unit.rs`](https://github.com/glopyglerky/lustr/blob/a9fd4c6336b1e39c4f584f7da50a437c5c248a0d/crates/lustr-native-core/src/mixed_unit.rs) | Private non-cloneable `PreparedMixed` admits represented scalar IR before C generation and is consumed by emission | No general runtime, aggregate, call, or full Lust-subset boundary |
+| [`mixed_main.rs`](https://github.com/glopyglerky/lustr/blob/a9fd4c6336b1e39c4f584f7da50a437c5c248a0d/crates/lustr-semantic/src/mixed_main.rs) | Real HIR bindings, primitive method identities, Rust/C ABI checks, and strict native outcomes | Cold selection follows whole-crate Rust analysis, then Lust parses/checks an isolated source projection |
+| [`mixed_backend.rs`](https://github.com/glopyglerky/lustr/blob/a9fd4c6336b1e39c4f584f7da50a437c5c248a0d/crates/lustr-semantic/src/mixed_backend.rs) and [`mixed_objects.rs`](https://github.com/glopyglerky/lustr/blob/a9fd4c6336b1e39c4f584f7da50a437c5c248a0d/crates/lustr-semantic/src/mixed_objects.rs) | Native definitions are omitted from LLVM only after successful native emission; genuine Rust metadata and objects compose | Rust still owns whole-crate semantic decisions; broader layouts/runtime contracts are absent |
+| [`mixed_cache.rs`](https://github.com/glopyglerky/lustr/blob/a9fd4c6336b1e39c4f584f7da50a437c5c248a0d/crates/lustr-semantic/src/mixed_cache.rs) | Fresh expansion, actual HIR/dependency identities, schema-5 certificates, and fatal post-admission errors | General edits exceed the unchanged or narrowly certified literal-edit boundary |
+| [`src/main.rs`](https://github.com/glopyglerky/lustr/blob/a9fd4c6336b1e39c4f584f7da50a437c5c248a0d/src/main.rs) | Public native entry and preserved compatibility tools | Standalone status-1 and diagnostic-driven retry remains |
 
-- A Cargo invocation remains a Cargo invocation. Cargo owns resolution, features, target units, build scripts, proc macros, metadata, artifact freshness, linking, tests, and documentation.
-- An explicit Lust invocation remains a complete Lust target invocation. Lust owns its frontend, adapters, runtime, cache, and daemon. The coordinator does not tell Cargo that this output is a Rust library.
+The candidate's bridge has stronger correctness boundaries than the default,
+but it does not carry arbitrary original Rust item meanings into Lust. Its
+source projection is safe only under its bounded checks. Extending it requires
+shared definitions and semantics, not copying larger body strings or adding
+more keyword exclusions.
 
-Those interfaces remain usable during development. They are not the target architecture or proof of full native compilation. The coordinator does not parse application source or recreate Cargo's dependency graph merely to choose a compiler.
+PR30 at
+[`b94d3713616804fead3f30b18a530e2e81a9510b`](https://github.com/glopyglerky/lustr/commit/b94d3713616804fead3f30b18a530e2e81a9510b)
+continues correctness work without adding the missing general boundary. Its
+proposed callback repair and exhaustive arithmetic checks require their own
+exact-source validation.
+Read the qualification review for current results and failures.
 
-## Existing Cranelift compatibility experiment
+## Boundary acceptance
 
-Use the [official Cargo profile backend mechanism](https://doc.rust-lang.org/cargo/reference/unstable.html#codegen-backend). Keep the selected Rust toolchain. Do not install a nightly, use `RUSTC_BOOTSTRAP`, change the user's default toolchain, or rewrite project manifests during a build.
+Implement in the order given by the [plan](architecture-plan.md#implementation-order-and-acceptance).
+Each step must include an unchanged executable example and invalid-input or
+failure controls relevant to the boundary. Required evidence includes:
 
-Supply the dev/test backend through command-scoped `--config` arguments. Setting `CARGO_PROFILE_*_CODEGEN_BACKEND` in the environment also passes those unstable settings to applications, tests, and their child processes. A nested ordinary Cargo invocation can then fail because it did not request the unstable backend feature. The configured compiler choice belongs to this Cargo command; inherited user settings remain the user's settings. Plans describe that requested command, while runtime qualification and benchmark checks inspect actual per-crate compiler commands.
+- Fully supported work preserves Lust preparation and retention without a
+  complete extra Rust frontend.
+- Mixed work executes native and imported implementations through one shared
+  context, with source/instance identities and actual phase participation.
+- Cross-boundary data, calls, drops, unwinding, and allocation preserve the
+  declared Rust semantics and requested configuration.
+- Real rlib/rmeta, dep-info, archives, and dependent Cargo crates work through
+  upstream metadata machinery with no fabricated placeholders.
+- Edits invalidate affected facts across both implementations, and failed work
+  leaves prior successful retained state intact.
+- The public path uses this boundary automatically, without ordinary
+  compile/fail/retry or a separate source-language selector.
 
-Cranelift is opt-in. Its [current upstream README](https://github.com/rust-lang/rustc_codegen_cranelift/blob/main/Readme.md) lists incomplete `std::arch` SIMD support and experimental panic unwinding, with narrower platform coverage than rustc. Its standalone distribution also defaults to aborting panics. A near-drop-in compiler is not a universal semantic guarantee.
+Retain the existing native differential gates and source-preservation discipline.
+Unicode semantic identity and sanitizer failures are correctness obligations
+before affected capabilities are admitted. They cannot be repaired through a
+version string, suppressed diagnostic, changed panic setting, or easier test
+profile.
 
-The first real backend gate found a concrete incompatibility. The rustup preview on nightly-2026-11-07 failed the panic-recovery fixture. Upstream's [`unwinding` feature](https://github.com/rust-lang/rustc_codegen_cranelift/blob/8edf4d040acb77048e04b52a379e93dccae888e6/Cargo.toml) is disabled by default. Without it, the [`catch_unwind` intrinsic](https://github.com/rust-lang/rustc_codegen_cranelift/blob/8edf4d040acb77048e04b52a379e93dccae888e6/src/intrinsics/mod.rs) calls the closure directly, and generated cleanup behavior is incomplete. Keeping Cargo's panic flag alone cannot fix that.
+Performance qualification follows correctness and actual architecture coverage.
+Keep complete-command latency, native worker time, complementary work, linking,
+and generated-program runtime distinguishable. Practical tolerances permit
+small overhead; they do not authorize changing the design or hiding regressions.
 
-The complementary backend is therefore built explicitly from pinned source with unwind support, using its matching nightly-2026-11-05 compiler. `LUST_CRANELIFT_BACKEND` identifies the resulting absolute library path. The coordinator refuses the stock named default for this path. The setup helper installs the pinned build toolchain only when invoked explicitly; normal compilation installs nothing. Full runtime qualification remains mandatory, and this backend is still not a universal replacement for LLVM.
-
-The coordinator must not change panic strategy, suppress overflow checks, remove features, reduce debug information, or change optimization levels to improve benchmark results. Release and custom profiles retain Cargo's settings. A failed compilation, program, or test returns its failure; the coordinator does not repeat the command under another engine.
-
-`cargo check` usually avoids ordinary native code generation, so changing the backend does not address most of its work. Upstream Lust's own plan records a ts-rust case where Cranelift took 53.8 seconds against 43.0 seconds for rustc's normal backend. That is a useful counterexample to a universal speed claim, not a prediction about other workloads.
-
-## Native coverage and execution qualification
-
-A native coverage claim must identify the exact requested target and dependency closure. It must include:
-
-- Compiler, runtime, adapter, and toolchain identities.
-- Target triple, edition, features, profile, panic strategy, overflow checks, and debug settings.
-- Manifest and lockfile identities, source dependencies, registry dependencies, proc macros, build scripts, and their observed inputs and outputs.
-- Any substitution of a dependency by an adapter and the evidence for its required behavior.
-- Acceptance and rejection parity, runtime output and exit status, file effects, test results, and panic/drop behavior.
-- Cold, warm, edit, and compile-plus-test timings with the same requested configuration.
-
-A successful Lust compile is insufficient. A fallback on rejection would miss incorrect acceptance, and could silently use reduced features or adapters with different behavior. Qualification must not execute an application's `run` command as a hidden probe. Trusted build-script and proc-macro execution stays explicit through the build process.
-
-Qualification is configuration-specific. A changed feature, adapter, build script, compiler, target, dependency, or semantic assumption invalidates it. A certificate covering yesterday's complete source snapshot does not prove tomorrow's arbitrary edit correct. Warm invalidation rules must be separately tested.
-
-## Existing rustc semantic inspection experiment
-
-An earlier experiment considered a rustc-backed semantic interface for checked, monomorphized bodies, layouts, calling conventions, symbols, drop/unwind operations, intrinsics and linkage. The existing inspection prototype is retained as research and does not implement the native compiler requirement.
-
-That prototype leaves metadata publication and Cargo's contract with rustc. A C ABI experiment cannot establish general Rust ABI compatibility. No executable mapping from its reports to native Lust generation exists. Full native crate and metadata support remain required implementation work.
-
-The first executable step is [`lustr-semantic`](../../crates/lustr-semantic), an
-opt-in driver bound to the pinned compiler installation. It obtains actual
-monomorphized items, symbol identities, function-call ABI, type layouts, drop
-requirements and cleanup edges from rustc queries. The normal backend continues
-to produce every artifact. Only owned inspection data leaves the analysis
-callback, and reports are published atomically after the entire compiler,
-including linking, succeeds. Analysis-only invocations do not force
-monomorphization.
-
-The probe refuses mismatched compiler installations and custom compiler
-executables that would be bypassed by in-process compilation. Its integration
-suite checks ordinary versus inspected artifacts in both directions, compiler
-and linker failures, Cargo build scripts and proc macros, configuration
-preservation, and no-op behavior. This qualifies inspection on the pinned Linux
-host. The report deliberately lacks complete MIR execution semantics and cache
-inputs; it cannot authorize native code generation or reuse. Inspection adds
-overhead and is kept outside the coordinator's normal route.
-
-Extending Lust's persistent frontend to full Rust must account for macro expansion, coherence, negative lookups, trait candidate changes, generated source, const evaluation and cross-crate metadata. Retained work needs explicit ownership and invalidation rules, plus cold-session equivalence tests.
-
-## Performance decisions
-
-Native expansions must remove enough work to preserve Lust's fast development model after checking, invalidation, code generation, linking and executed tests. Keep compiler dispatch, duplicate analysis and optional compatibility work outside native speed claims. Do not infer a gain from the number of compilation paths.
-
-For a baseline compilation time `T`, if fraction `p` is accelerated by factor `s`, the ideal time before coordination overhead is `T * ((1 - p) + p / s)`. Even infinitely fast code generation cannot remove frontend time. Real benchmarks must include coordination overhead and the runtime of executed tests.
-
-Record cold compilation, fresh-process cache reuse, no-op builds, body edits, signature edits, type/trait changes, macro edits, invalid edits, linking, and compile-plus-test time separately. Measure medians and tails, interleave baseline and candidate, retain raw data, and disclose target hardware and compiler identities. Do not describe an eight-line example as proof for a large workspace.
-
-## Completion criteria
-
-This project is complete only when unchanged full Rust projects compile through the extended native Lust/Lustr implementation, existing Lust-supported behavior retains its native path, artifacts interoperate where promised, and representative equivalent-workload measurements establish the required fast compilation. A rustc fallback, coordinator, a few fixtures or a separately optimized rustc build does not meet that definition.
-
-The implementation sequence and its gates are in [the roadmap](roadmap.md).
+The previous design remains available at its
+[immutable pre-plan source](https://github.com/glopyglerky/lustr/blob/7cea76c9d3adc587b54ccff168fe07efafd40309/docs/compiler-set/design.md).
+Its requirement for independent native expansion of every gap and faster results
+for every necessary modification is superseded by this contract.

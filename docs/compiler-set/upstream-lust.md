@@ -1,64 +1,91 @@
-# Preserve upstream Lust
+# Preserve upstream Lust and import the Rust complement
 
-Lust must remain unchanged from upstream. Lustr supplies the missing Rust
-support in separately owned code. Any proposed Lust divergence must demonstrate
-both why it is necessary and that it produces faster results. The
-[native compiler contract](native-contract.md) remains the full-project goal.
+The [architecture plan](architecture-plan.md) governs: Lust supplies its supported
+implementation and retained frontend; version-pinned upstream Rust supplies the
+complement inside Lustr. This policy preserves provenance and working semantics
+while permitting the explicit integration and correctness work needed to join
+them. It does not require independently implementing the rest of Rust.
 
-## Exact source baseline
+## Pristine reference and integrated candidate
 
-[`upstream/lust.pin`](../../upstream/lust.pin) pins
-`t3dotgg/lust-lang` revision `240e08d91d4aed0299639f6f11fd522912b248f9`,
-tree `0ab1b09815802894e6078de0af59273cbdf46cb0`, at `compiler/native`.
-The upstream default branch was verified to point to that revision.
+[`upstream/lust.pin`](../../upstream/lust.pin) identifies pristine Lust
+`240e08d91d4aed0299639f6f11fd522912b248f9`, tree
+`0ab1b09815802894e6078de0af59273cbdf46cb0`. Retain this exact reference for
+provenance and applicable comparisons. A reference pin is not a claim that the
+upstream head has been rechecked today.
 
-The protected tree includes the original compiler, libraries, build files,
-tests, documentation, research probes and metadata. Moving it under a prefix
-does not alter its tracked contents. Required root-level submodule routing is
-Lustr integration metadata; gitlink targets remain pinned references. External
-submodule contents and generated dependencies need their own qualification.
+The default snapshot `7cea76c9d3adc587b54ccff168fe07efafd40309` keeps
+`compiler/native` identical to that reference. Its existing guard enforces that
+identity. Later candidate branches have explicit integrated-tree records and
+reviewable patches. For example, the architecture-audited
+[PR #29 source](https://github.com/glopyglerky/lustr/tree/a9fd4c6336b1e39c4f584f7da50a437c5c248a0d/upstream)
+records native tree `072691a23b7a5f664d3c07500315de3ce051a22f`.
 
-Earlier fork overrides and an unpublished coverage-expansion candidate are
-preserved in history or restricted research records. They are not admitted to
-the active Lust baseline. Passing correctness tests or demonstrating additional
-coverage alone does not meet the faster-results requirement.
+Keep pristine and integrated identities separate. Importing a reviewed patch
+requires the matching source-guard implementation, complete diff, integration
+tree and qualification record. This documentation change does not alter the
+default guard or grant an undocumented source exception. Never bypass a failing
+guard, hide a fork under a different name, or generate unrecorded build patches.
 
-## Source guard
+## What admits a necessary change
 
-The dependency-free Rust guard compares the complete committed or staged Lust
-tree with the pinned upstream tree, then rejects tracked worktree edits and
-untracked additions in that scope. Changes to independently owned project files
-do not fail the guard. CI runs the committed-tree check and its drift tests.
+An upstream integration or correctness change needs:
 
-Build the helper outside the source tree and run it from the repository root:
+1. The exact baseline, minimal proposed diff and affected interface.
+2. A concrete need: a reproduced defect or missing integration capability, and
+   why an external owned interface alone cannot provide it.
+3. Matching acceptance, rejection and observable runtime evidence, including
+   ownership, panic/drop, ABI and retained edit behavior where affected.
+4. Source/patch identities, dependency provenance and preserved licenses.
+5. Performance characterization where the affected path warrants it, under the
+   practical tolerances in the [performance checkpoint](performance-review-2026-11-18.md).
+   Keep regressions visible and preserve Lust's supported fast path.
 
-```sh
-rustc --edition=2024 tools/lust-upstream-check.rs -o /absolute/cache/lust-upstream-check
-/absolute/cache/lust-upstream-check
-```
+**A necessary correctness repair is not required to produce a speedup.** The
+former rule requiring every Lust change to beat pristine Lust is superseded by
+the user's explicit correctness-first, near-parity requirement. Source review
+and applicable qualification still apply. A fast invalid result is never a gain.
 
-`--index` checks a staged restoration before its commit. The check uses Git tree
-identity and scoped Git status. It does not certify ignored build artifacts,
-external dependencies, compiler correctness, or universal source/secret absence.
+Lustr-owned integration should remain outside the native tree where an honest,
+qualified interface permits it. Do not force unrelated source relocation merely
+to make a patch appear external. Preserve the original compiler, libraries,
+metadata, tests and relevant history. Record gitlinks, generated dependencies
+and external assets separately; a tracked-tree check does not qualify them.
 
-## Admission evidence for a proposed divergence
+## Imported Rust implementation
 
-No exception is currently enabled. Before changing that decision, retain:
+[`upstream/bluefe-core.pin`](../../upstream/bluefe-core.pin) binds the declared
+Rust source and SDK. Reuse the required upstream resolution, trait/type, layout,
+metadata, code-generation and runtime services inside the integrated compiler.
+Their dependency closure may include substantial upstream source. Do not assume
+the missing features form a separable directory or a compiler that can simply
+be cut out of rustc.
 
-1. The exact upstream revision, minimal proposed patch and affected interface.
-2. A reproducible need, including the failing unmodified-upstream case and why
-   the proposed change belongs in Lust rather than Lustr-owned implementation.
-3. Acceptance, rejection, runtime, ownership, panic/drop and warm/cold edit
-   evidence for the changed native behavior.
-4. Preregistered equivalent-workload comparisons of pristine upstream and the
-   candidate, including exact builds, semantic settings, cache state, raw
-   observations, regressions and replayable analysis. A failed compilation is
-   not a faster successful build. Comparing only against rustc cannot establish
-   a speed improvement over Lust.
-5. A justified faster-results conclusion with explicit mathematical or
-   statistical assumptions and a stated scope. Full Rust coverage and the
-   preservation of Lust's existing fast path remain separate requirements.
+The observable contract is which work executes and owns semantic facts. Importing
+source is compatible with the goal; unconditionally performing a second full
+supported compilation or retrying the whole program through stock rustc is not.
+Shared services must have explicit ownership and dependency tracking. Preserve
+the exact Rust version's semantics and genuine crate metadata.
 
-An accepted future exception must have an explicit, reviewable record and guard
-support. A label, source relocation, correctness-only result or promised future
-benchmark cannot admit it.
+Any work in the separate blueFe repository must inspect its current policy and
+pins. This Lustr documentation change does not modify another repository or
+claim that a source-built complementary compiler has already replaced its SDK.
+
+## Evidence and release
+
+Source identity, architectural completion, correctness, performance and package
+qualification are separate conditions. A passing source guard proves only its
+documented identity checks. A scalar bridge result does not qualify all of Lust
+or the full Rust replacement.
+
+Keep failed and inapplicable historical comparisons unchanged. A candidate fix
+cannot repair a frozen old baseline retroactively. Select an applicable final
+comparison after correctness rather than weakening a baseline guard. Preserve
+raw timing data and disclose original workloads, profiles, cache states, source
+identities and uncertainty.
+
+The previous policy remains available at
+[default snapshot 7cea76c9](https://github.com/glopyglerky/lustr/blob/7cea76c9d3adc587b54ccff168fe07efafd40309/docs/compiler-set/upstream-lust.md).
+Its faster-results-only and independent-expansion requirements are historical,
+not instructions for new work. The [completion checklist](completion-checklist.md)
+records the remaining implementation and release conditions.

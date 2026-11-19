@@ -1,5 +1,12 @@
 # Fork ownership and divergences
 
+> This document records the implementation at default snapshot
+> [`7cea76c9`](https://github.com/glopyglerky/lustr/tree/7cea76c9d3adc587b54ccff168fe07efafd40309),
+> followed by older historical studies. For the required integrated compiler,
+> use the [architecture plan](architecture-plan.md), [upstream policy](upstream-lust.md)
+> and [completion checklist](completion-checklist.md). The audited PR #29
+> candidate and later continuations are described in the [design checkpoint](design.md).
+
 Lustr and BlueFe are projects with their own entry points, source maps and design
 decisions. Required upstream implementation remains where it is needed for a
 working compiler and for reliable updates. Inherited branding and historical
@@ -29,9 +36,10 @@ Current owned changes include compiler request routing, Cargo target identity,
 bounded foreground cleanup, source-library APIs and separately identified
 retained library sessions. Compatibility backend selection and its qualification
 remain separate. Earlier Lust kernel patches and experiments are historical;
-they are not admitted to the exact active upstream tree. Correctness alone does
-not admit a protected kernel divergence: necessity and faster equivalent-workload
-evidence are both required by the preservation policy.
+they are not present in this default snapshot's exact upstream tree. Necessary
+integration and correctness patches require explicit source identities, review
+and applicable qualification under the current preservation policy. A necessary
+correctness repair does not have to make the compiler faster.
 
 ## BlueFe
 
@@ -54,8 +62,11 @@ reason to remain. Remove or replace it when equivalent functionality and focused
 qualification exist. Keep source movement separate from semantic changes in
 review and report any changed build or installation contracts.
 
-Full native Rust support, persistent full-Rust analysis, native rlib publishing,
-and migration toward memory-safe Rust remain future goals. TinyCC and LLVM are
+The integrated full-Rust boundary, retained shared semantics and genuine crate
+artifacts remain product work; reuse the imported upstream implementation for
+the complement. Independently rebuilding all Rust support and a new native rlib
+format are not requirements. Migration toward memory-safe Rust remains later
+work. TinyCC and LLVM are
 current external code-generation dependencies. Safe Rust at a command boundary
 does not prove their implementation safe. Track migrations and validate behavior
 as they land; do not use the future goal to block a working toolchain.
