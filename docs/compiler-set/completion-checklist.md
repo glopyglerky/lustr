@@ -130,11 +130,22 @@ panic/unwind, runtime and the integrated path on every advertised target/profile
 Inspect matching tools/sysroot, source/binary manifests, relocation, offline
 rebuilds, invalidation, required assets and notices for the exact package.
 
+Map the declared matrix to the applicable pinned upstream test mechanisms:
+Lust's native/differential/retained-state suite and Rust's UI acceptance and
+rejection cases, explicit execution-result checks, run-make artifact and
+cross-crate checks, and incremental revision histories. Preserve original
+fixtures and expected behavior. Record which source, compiler artifact, route,
+target/profile, cases and assertions actually ran. A required case that is
+skipped, cancelled, filtered or absent remains an open qualification gap.
+Constructor success and helper tests cannot substitute for the public compiler
+or its generated programs. A passing exit alone does not validate printed
+results. Keep evaluator failure controls separate from compiler evidence.
+
 Done when the package satisfies architecture and applicable correctness with
 no fallback hiding a known gap. Cargo-only compatibility does not qualify an
 integrated native platform. No current artifact is qualified as the full product.
 
-## 7. Assess near-Lust and near-rustc behavior, then release
+## 7. Establish overall speedup, report subset targets, then release
 
 Use the [performance policy](practical-performance.md). Keep all historical
 budgets and decisions immutable. For new assessments, match source versions, requested
@@ -143,11 +154,17 @@ actual artifacts. The existing complete-package assessor requires 24 matched
 pairs plus applicable qualification. Historical 12-pair characterization is
 not that prospective assessment.
 
-Supported warm check/build requires the 10% relative bound under the paired
-uncertainty rule and a useful measured gain over rustc. Ordinary complementary
-operations require the 5% relative bound; large speedups are unnecessary.
-These are engineering assumptions. Absolute added latency remains visible, but
-the historical 0.5 ms alternative cannot admit a new near-stock claim.
+The first complete replacement must beat matched stock rustc overall on the
+predeclared workload and frequencies, with paired uncertainty for total elapsed
+time. A geometric mean of case speedups does not prove reduced total time. For
+parallel Cargo builds, measure the complete graph's wall time directly.
+
+For separate near-stock claims, supported warm check/build uses the 10% relative
+bound and ordinary complementary operations the 5% bound. These are engineering
+targets, not extra mandatory release prerequisites. Missing either target remains
+visible as optimization work; meeting both does not itself prove overall gain.
+Absolute added latency remains visible, but the historical 0.5 ms alternative
+cannot admit a new near-stock claim.
 
 Assess the overhead of each material integration boundary during development.
 This final package gate consolidates those results; it is not permission to
@@ -157,14 +174,16 @@ separately when stock Lust cannot produce them.
 
 Keep cold/no-op, body/signature/type/trait/macro/dependency edits, rejection,
 priming, link, tails, memory, generated-program execution and compile-plus-test
-results separate. Do not offset one class's regression with another's gain or
-weaken correctness to meet a timing number. Keep known-inapplicable historical
-campaigns unchanged rather than bypassing their guards.
+results separate. Do not describe an overall gain as proof that every class
+improved, or weaken correctness to meet a timing number. Keep known-inapplicable
+historical campaigns unchanged rather than bypassing their guards.
 
-Done when one exact integrated package passes the applicable assessment and its
-README reports actual source/tool identities, complete commands, confidence
+Done when one exact integrated package satisfies full coverage, exclusive
+ownership, selective imports and applicable correctness, demonstrates overall
+acceleration, and its README reports actual source/tool identities, complete commands, confidence
 limits, failures, losses and raw evidence. Only then describe and publish it as
-the qualified replacement for its stated scope.
+the qualified replacement for its stated scope. Continue reducing the gap to
+stock Lust after that release; do not turn perfect parity into a completion hold.
 
 ## Preferred portability follow-up
 

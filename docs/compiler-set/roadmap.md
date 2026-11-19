@@ -15,7 +15,7 @@ single current work register.
 | 4 | Preserve precise retained-state invalidation across supported and complementary work. |
 | 5 | Make the integrated boundary the normal standalone and Cargo route without whole-program retry or a hidden stock compiler. |
 | 6 | Qualify the actual source-built package, Rust semantics and every advertised platform/profile. |
-| 7 | Demonstrate near-Lust supported performance and near-rustc complementary performance separately, retain regressions, then publish the qualified package. |
+| 7 | Demonstrate overall end-to-end acceleration over matched rustc, report both subset comparisons and all regressions, then publish the correct full replacement. Continue toward stock-Lust matching after that release. |
 
 A source manifest, route guard or scalar demonstration closes only its own
 bounded task. It cannot establish the complete compiler. Useful correctness

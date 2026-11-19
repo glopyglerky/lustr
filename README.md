@@ -12,6 +12,10 @@ and their required dependencies, with pinned provenance and licenses.
 
 Supported work must stay close to stock Lust speed. Complementary work must stay
 close to matching stock rustc speed. The two comparisons are assessed separately.
+The first qualified release requires full correct Rust compilation under the
+exclusive ownership contract and a measured overall speedup over stock rustc.
+Matching stock Lust remains the optimization goal; it must not hold back an
+otherwise qualified faster replacement. Every slower case remains visible.
 The [exclusive coverage contract](docs/compiler-set/exclusive-coverage-contract.md)
 is the canonical direction.
 
@@ -53,11 +57,13 @@ history and historical evidence remain intact.
 | [Completion checklist](docs/compiler-set/completion-checklist.md) | One work list with observable completion conditions. |
 | [Implementation cleanup](docs/compiler-set/exclusive-coverage-cleanup.md) | Removed routes, preserved components, focused validation and remaining gaps. |
 | [Ownership follow-through](docs/compiler-set/exclusive-coverage-followthrough.md) | Remaining bridge, daemon and acceptance conflicts, native runtime repair and portability priority. |
-| [Sole-goal audit](docs/compiler-set/sole-goal-audit.md) | Removes latent retry interfaces and build-feature escapes; records actual verification and tightened future speed claims. |
+| [Sole-goal audit](docs/compiler-set/sole-goal-audit.md) | Recorded route cleanup, ownership and release clarification, actual public-entry results and remaining gaps. |
+| [Capability result qualification](docs/compiler-set/capability-result-qualification.md) | Compares real generated output and test outcomes through the public compiler; runs installed-package contracts in CI. |
 | [Lust upstream review](docs/compiler-set/upstream-lust-review-2026-11-19.md) | Retention, precise invalidation, CI, performance history and reverts. |
 | [Rust upstream review](docs/compiler-set/upstream-rust-review-2026-11-19.md) | Existing selective reuse interfaces, dependency closure, CI and performance history. |
 | [Support and cost analysis](docs/compiler-set/exclusive-coverage-mathematics.md) | Known capability rules, CI coverage limits and the cost of extra dispatch or semantic work. |
-| [Performance policy](docs/compiler-set/practical-performance.md) | Separate near-Lust and near-rustc assessment and its limits. |
+| [Performance policy](docs/compiler-set/practical-performance.md) | Overall speed threshold for the full replacement and separate near-stock optimization targets. |
+| [Current performance evaluator](docs/compiler-set/current-performance-assessment.md) | Fixed-workload total-time statistics, declared evidence integrity and explicit limits; no current speed or release claim. |
 | [Contributor instructions](AGENTS.md) | Rules for continuing without changing direction. |
 
 ## What the research changes
@@ -87,7 +93,10 @@ need their own evidence; old failures must not be silently reclassified.
 Current near-stock claims require the relative review bounds: 10% overhead for
 supported warm work and 5% for ordinary complementary work, per case with paired
 uncertainty. These are engineering assumptions, not demonstrated current
-results. The former 0.5 ms alternate rule remains historical; small absolute
+results or additional mandatory release thresholds. Overall speedup is a
+separate end-to-end comparison using workload frequencies fixed before sampling.
+Passing both subset targets does not prove that total compilation time improved.
+The former 0.5 ms alternate rule remains historical; small absolute
 overhead cannot excuse a large relative slowdown. Cold builds, edits, rejection,
 memory and compile-plus-test remain separate. Large gains outside Lust's subset
 are unnecessary.

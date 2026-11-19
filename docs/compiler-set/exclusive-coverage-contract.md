@@ -18,6 +18,15 @@ stock Lust speed and the complementary path close to matching stock rustc
 speed. No large speed gain outside Lust's subset is required. Full coverage,
 exclusive ownership, correctness and performance are separate obligations.
 
+The release threshold is a correct full replacement that beats matched stock
+rustc overall on a workload declared before measurement. Publish that qualified
+result with its exact scope and all slower cases; do not wait for perfect
+stock-Lust matching. Near-stock Lust and complementary speed remain separately
+measured optimization goals. Provisional percentage targets are not additional
+user-imposed release blockers, and an overall gain cannot justify claiming an
+unmet subset target. Full coverage and the ownership/import contract remain
+mandatory regardless of the timing result.
+
 This goal does not authorize a stock-rustc backup, full-driver wrapper, language
 selector, whole-program native-fail/rustc-retry route, or independent rebuilding
 of every missing Rust feature. Moving duplicate pipelines into one executable
@@ -33,8 +42,12 @@ proc-macro results, requested operation and required artifacts. Coverage cannot
 be determined from a source keyword or file extension.
 
 Let `U(q)` be the semantic, runtime-support, artifact and emission obligations
-required for that unchanged request. Let `S(q)` be the obligations that the
-pinned Lust implementation correctly covers in that context. Define:
+required for that unchanged request. Let `K` be the reviewed capability rules
+derived from pinned upstream source and offline qualification. Let `S(q)` be
+the obligations those rules assign to Lust in the request's actual semantic
+context. This is an ownership definition, not the set that happened to pass a
+trial compilation. Correctness is a separate qualification obligation. A known
+implementation defect does not remove the affected work from `S(q)`. Define:
 
 ```text
 C(q) = U(q) \ S(q)
@@ -237,7 +250,10 @@ and can erase the gain even when selected objects come from Lust.
 The [performance policy](practical-performance.md) requires relative evidence
 for future near-stock claims: 10% supported warm overhead and 5% ordinary
 complementary overhead, assessed per operation with paired uncertainty. These
-are engineering assumptions, not exact numbers supplied by the user. The older
+are engineering assumptions for those claims, not exact numbers supplied by
+the user or additional release prerequisites. Their satisfaction does not
+establish an overall speedup; complementary overhead can exceed the time saved
+by Lust. Assess total public-request time on the fixed workload as well. The older
 0.5 ms alternative remains part of its historical assessments only. For example,
 adding 0.4 ms to a 0.2 ms baseline triples latency despite satisfying that old
 absolute allowance. It cannot establish preserved near-stock speed.
@@ -272,7 +288,7 @@ migration must show real supported operation and matched performance before
 becoming the preferred production path. It must not delay the established
 consumer-metadata and selective-complement work merely to add an unused API.
 
-## Completion evidence
+## Completion and first release evidence
 
 The full rustc-replacement claim requires all of these:
 
@@ -285,8 +301,11 @@ The full rustc-replacement claim requires all of these:
 - Correct const/runtime/version behavior, drops, unwinding and target/platform
   behavior for every advertised profile.
 - Complete ownership and incremental invalidation evidence across the boundary.
-- Exact package/source identity and matched near-Lust/near-rustc results, with
-  failures, tails, slower cases and limits retained.
+- Exact package/source identity and matched end-to-end overall speedup over
+  rustc, with uncertainty, failures, tails, slower cases and limits retained.
+- Separate stock-Lust and stock-rustc comparisons for their respective work,
+  recording achieved speed and remaining optimization gaps. The provisional
+  near-stock budgets qualify those named claims, not first release admission.
 
 A finite suite cannot prove all possible Rust programs correct. State the
 qualified language version, targets, profiles and test scope. Neither current

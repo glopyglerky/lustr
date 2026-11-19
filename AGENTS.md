@@ -2,7 +2,7 @@
 
 ## Sole product goal
 
-Lustr is a full rustc replacement built around Lust. Lustr's Lust implementation
+Lustr's sole goal is a full rustc replacement built around Lust. Its Lust implementation
 must compile every operation that the pinned Lust implementation covers in the
 requested context. Import only the upstream implementation and dependencies
 needed for the remaining Rust work, and integrate them into that same unchanged
@@ -128,12 +128,20 @@ first; retain these preferences for later work that can meet those conditions.
 ## Performance and claims
 
 Keep Lust-covered work near matched stock Lust speed. Keep complementary work
-near matched stock rustc speed. These are separate requirements; a gain on one
-cannot conceal a loss on the other. The [performance policy](docs/compiler-set/practical-performance.md)
+near matched stock rustc speed. Measure both separately and preserve slower cases.
+The user's release threshold is a correct full replacement that beats matched
+stock rustc overall on the declared workload. Do not delay that qualified release
+solely because the longer-term stock-Lust matching target remains unfinished.
+Do not call an overall gain proof that either subset already meets its target.
+Fix workload frequencies before measurement and compare total completed request
+time; a geometric mean of unrelated case speedups cannot establish overall gain.
+
+The [performance policy](docs/compiler-set/practical-performance.md)
 requires the relative comparison for a new near-stock claim: 10% for supported
 warm operations and 5% for ordinary complementary operations, per case with
 paired uncertainty. These remain engineering assumptions, not the user's exact
-numerical wording or proof that the candidate passes. The old 0.5 ms alternative
+numerical wording, mandatory release thresholds or proof that the candidate
+passes. Passing both does not itself prove an overall speedup. The old 0.5 ms alternative
 is historical only; small absolute overhead cannot excuse a large relative
 slowdown. Keep original historical assessments unchanged.
 
@@ -147,4 +155,5 @@ Preserve cold, no-op, body/signature/type/trait/macro/dependency edits, rejectio
 linking, tails, memory, generated-program runtime and compile-plus-test results.
 A complete replacement claim requires actual exclusive ownership, the justified
 selective complement, correct mixed artifacts, exact package qualification and
-matched performance. No current package is qualified as that full replacement.
+matched overall speedup. Claim near-stock subset speed only when separately
+measured. No current package is qualified as that full replacement.

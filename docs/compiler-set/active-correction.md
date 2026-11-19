@@ -7,13 +7,23 @@ controlling direction, merged through [PR #31](https://github.com/glopyglerky/lu
 Refresh the current PR head and checks before continuing. Earlier PRs are
 preserved sources and evidence, not competing product directions.
 
-The [sole-goal audit after d1328bc2](sole-goal-audit.md) is the latest
-follow-through. It removes latent diagnostic-driven worker/ABI paths and old
+The [sole-goal audit and result follow-through](sole-goal-audit.md) is the latest
+record. The correction after d1328bc2 removed latent diagnostic-driven worker/ABI paths and old
 launchers, isolates product and bounded qualification builds, checks effective
 dependency features, connects upstream capability probes to CI, and requires
 relative evidence for future near-stock claims. Its source-bound
 [verification](evidence/sole-goal-audit-20261119/verification.json) is separate
 from the earlier construction records below. The full compiler remains unfinished.
+
+The follow-through after published `a03b1e2d` defines supported ownership through
+pinned capability rules, separates first release with overall acceleration from
+near-stock optimization targets, adds actual public-entry capability output
+comparisons, and makes hosted CI run root/package controls. Its
+[functional verification](evidence/result-proof-20261119/verification.json)
+retains the unavailable local socket control as a failure. The
+[current performance evaluator](current-performance-assessment.md) checks fixed
+workload arithmetic and evidence consistency without granting release admission.
+No new compiler speed result or full complementary implementation is claimed.
 
 ## Published code and actual scope
 

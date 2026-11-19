@@ -17,6 +17,12 @@ identical tree. Refreshed upstream Lust `next` remains
 still `5b7b37aefcb5b2fba3c2392bc9065b9e4602d494`. Newer research is not permission
 to change that semantic baseline.
 
+The follow-up against published `a03b1e2d9787523c72efe628a72cb02afbfaa491`
+refreshed the same upstream heads. It adds the combined-overhead and total-time
+accounting below, separates first release from near-stock optimization claims,
+and clarifies that ownership follows reviewed capability rules rather than
+observed compiler success. These additions make no new speed measurement.
+
 ## What is already known without trying a customer's compilation
 
 Upstream provides three different kinds of coverage evidence:
@@ -110,7 +116,8 @@ H_C + D_C - W_C <= epsilon_C * T_rustc,C
 Copying unchanged algorithms preserves an implementation starting point. It
 does not establish this inequality after adding conversions, changing data
 layout, repeatedly initializing a service or broadening invalidation. A fast
-Lust result cannot compensate for a failing complementary result.
+Lust result cannot turn a failing complementary comparison into a near-stock
+claim. Overall release performance is assessed separately below.
 
 The historical policy admitted 10% overhead **or** 0.5 ms added latency, whichever
 allowance was larger. For baseline time `L`, that permits
@@ -158,6 +165,60 @@ workers, weighted work `W` and critical-path length `L`, an ideal schedule has
 adding bridge barriers to the critical path. CPU-time sums and ratios of source
 lines do not substitute for elapsed-time measurements.
 
+### The two subset budgets do not guarantee overall acceleration
+
+For the same disjoint serial baseline, let `epsilon_S` be added cost relative
+to stock Lust on its work, `epsilon_C` the net relative added cost on all
+remaining baseline work, and `h` residual net added cost normalized by `T_R`.
+Include unchanged shared prerequisites once in that disjoint baseline. `h`
+contains only additional shared, transport or publication cost beyond the
+baseline, excluding costs already represented by either epsilon. A strictly
+complement-only epsilon requires a separate unchanged shared fraction instead.
+Do not add inclusive spans twice. Then:
+
+```text
+T_Lustr / T_R = (1-p) * (1+epsilon_C) + (p/s) * (1+epsilon_S) + h
+
+overall speedup requires:
+h + (1-p)*epsilon_C + (p/s)*epsilon_S < p*(1-1/s)
+```
+
+The right side is the time Lust saves relative to rustc. The left side is the
+integration cost that consumes that saving. As an illustrative arithmetic case,
+`p=0.01`, `s=100`, `epsilon_S=0.10`, `epsilon_C=0.05` and `h=0` yield a candidate
+ratio of `1.03961`. Both provisional subset budgets hold, but total time is about
+3.96% worse. This is not a Lustr benchmark. It demonstrates why neither separate
+budget can replace the complete-command comparison.
+
+The latest release direction accepts a correct full replacement once it is
+faster overall. Matching stock Lust remains the optimization goal. Therefore
+keep the overall result, the near-stock claims and correctness/ownership as
+separate decisions. A missed engineering subset target does not impose a new
+release hold, and a passing aggregate does not make that target achieved.
+
+### Define overall work before measuring it
+
+For a serial mix with frequencies `w_i` fixed before sampling:
+
+```text
+R_total = sum(w_i * T_rustc,i) / sum(w_i * T_Lustr,i)
+```
+
+Estimate uncertainty on matched total-time blocks while preserving paired
+measurements. This is not the geometric mean of unrelated case speedups. For
+example, changing one 1 ms operation to 0.5 ms and one 1,000 ms operation to
+1,100 ms gives a geometric mean speedup of about 1.35, yet total time grows
+from 1,001 ms to 1,100.5 ms. The example is mathematical, not measured evidence.
+
+Choose representative workloads and frequencies before seeing results. Include
+public-request costs and real equivalent artifacts. Preserve every class,
+failed operation, slower result, latency tail and scope limit. A concurrent
+Cargo workload uses its measured complete dependency-graph wall time instead
+of a sum of overlapping phases. Hash-bound receipts can detect changed inputs;
+they cannot by themselves prove independent execution, truthful timings or that
+the workload was declared before the campaign. Those need the actual retained
+execution and review records.
+
 ## Why retained facts matter more than changing the transport name
 
 Upstream's [`driver/patch.rs`](https://github.com/t3dotgg/lust-lang/blob/240e08d91d4aed0299639f6f11fd522912b248f9/src/driver/patch.rs)
@@ -170,7 +231,7 @@ records precise semantic reads, including negative answers and stable identities
 The relevant history demonstrates both sides of this requirement:
 
 - [Drop-check dependency repair `93e57035`](https://github.com/t3dotgg/lust-lang/commit/93e57035ed84f607e9b6402a6bf9a8370acffc0b) fixed stale acceptance. A broad layout dependency forced excessive rechecking; a dedicated drop-constraint fingerprint narrowed invalidation while retaining the needed dependency.
-- [Shared answer table `1fca7814`](https://github.com/t3dotgg/lust-lang/commit/1fca781447632713a151733243259b3bbffc5972) reused answers between two dependency walks in one request. The same principle applies across complementary services.
+- [Shared answer table `1fca7814`](https://github.com/t3dotgg/lust-lang/commit/1fca781447632713a151733243259b3bbffc5972) reused answers between two dependency walks in one request while the program remains unchanged. Apply the same generation boundary across complementary services. Completing or changing definitions must invalidate any answers whose inputs changed.
 - [Revert `89974f0d`](https://github.com/t3dotgg/lust-lang/commit/89974f0d41d045a1c0af73909ea2788cad39ebac) removed a plausible optimization after paired replay found no gain. [Revert `5a6f97c1`](https://github.com/t3dotgg/lust-lang/commit/5a6f97c1f5272239404ebd1c4cc1534ecc8a8e0d) repaired order-dependent instance naming found in longer retained histories.
 
 For an edit, work should follow the affected semantic dependency closure. Missed

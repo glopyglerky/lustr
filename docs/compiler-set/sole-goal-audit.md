@@ -1,4 +1,4 @@
-# Sole-goal enforcement after d1328bc2
+# Sole-goal corrections and actual result evidence
 
 Reviewed 19 November 2026. This continues the single correction in
 [PR #33](https://github.com/glopyglerky/lustr/pull/33). The audit input was
@@ -11,6 +11,54 @@ covers, plus only the necessary upstream implementation for the complement.
 Keep supported work near matched stock Lust speed and complementary work near
 matched stock rustc speed. Prefer no_std throughout and no required Unix sockets
 when those changes preserve speed and do not delay compiler completion.
+
+## Follow-through after a03b1e2d
+
+The next review used published `a03b1e2d9787523c72efe628a72cb02afbfaa491`,
+tree `a27edade00c0098ded2564d1a60f4e333208c0cb`. The earlier removal and
+verification record below remains historical evidence for that correction.
+The follow-through changes current contracts, qualification tools and CI.
+It does not change the compiler's request path, protected Lust source or pins,
+and it does not implement the still-missing general complement.
+
+The audit found these remaining acceptance problems:
+
+| Finding | Correction |
+| --- | --- |
+| The mathematical supported set depended on what the implementation "correctly covers," although defects were also required to remain Lust-owned | Define ownership by reviewed pinned capability rules applied to normal semantic facts. Correctness, defects and bridge gaps are separate obligations. A failed compilation cannot redefine the owner. |
+| The checklist treated provisional near-stock budgets as release requirements despite the clarified first-release goal | Require a correct full replacement with measured overall acceleration. Keep stock-Lust matching as ongoing optimization and 10%/5% as separately named engineering claims. Report slower cases without holding a qualified faster full replacement for perfect parity. |
+| Two passing subset budgets or a favorable geometric mean could conceal greater total elapsed time | Add combined-overhead accounting and a fixed-frequency total-time comparison with paired uncertainty. Assess near-stock ratios separately. |
+| Supported capability probes could print wrong values and still exit zero | Preserve the upstream suite and add exact generated-program result comparison through public `lustr`, using the pinned Rust oracle only in qualification. Compare named test outcomes for the test fixture. |
+| Root tests had local evidence but were not executed by the hosted constructor; installed-package controls remained ignored | Run all root targets and explicitly invoke all five package contracts in constructor CI. An unavailable socket is a failed/unqualified control, never a passing skip. |
+| The only executable timing assessor replayed the retired historical rule | Add the [current performance evaluator](current-performance-assessment.md) with fixed workload costs, exact declared input/entry identities and failure controls. It assesses performance evidence only and always reports `release_admission=false`. |
+
+The [capability-result record](evidence/result-proof-20261119/verification.json)
+binds unchanged compiled inputs and the four reused debug-package binary hashes.
+All 18 supported fixtures passed through the public entry: 17 generated programs
+matched Rust stdout, stderr and exit status exactly, and the test fixture
+matched four passing tests and one intentional ignore. The 87 root tests passed.
+Four installed-package controls passed; the fifth failed before exchange because
+`UnixListener::bind` returned `EPERM`. Its original exit 101 and output are
+retained. The final evaluator's 15 failure controls passed. This is cold,
+finite functional evidence, not a new complete build or speed qualification.
+
+The [current assessor record](evidence/current-performance-assessment-20261119/verification.json)
+records its own synthetic arithmetic and evidence-rejection tests. Those tests
+execute no compiler and supply no benchmark result. A truthful full replacement
+claim still needs the actual implementation, independent ownership/correctness
+evidence and a complete matched campaign. Hash consistency cannot prove that
+timings are truthful or that a workload was chosen before measurement.
+
+The research refreshed the same Lust and Rust heads and retained the original
+history findings. The [updated mathematics](exclusive-coverage-mathematics.md)
+adds the missing connection between subset costs and overall time, and keeps
+shared work counted once. This follows the same upstream lessons: preserve
+checked state, narrow invalidation and request-generation-bound facts.
+
+The next compiler work remains genuine native consumer metadata and its actual
+emitted-instance graph, then the justified complementary implementation. A
+new evaluator cannot discharge that missing work. `std` and Unix sockets remain
+present under the completion-first portability priority.
 
 ## Why the architecture regressed
 

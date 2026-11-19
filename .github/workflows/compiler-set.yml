@@ -30,6 +30,8 @@ on:
       - 'tools/test-exclusive-entry.py'
       - 'tools/test-exclusive-coverage-guard.py'
       - 'tools/test-native-build-policy.py'
+      - 'tools/qualify-capability-results.py'
+      - 'tools/test-capability-results.py'
       - 'upstream/complement-imports.json'
       - 'tools/native-target-layout-qualification.rs'
       - 'tools/profile-native-preflight.rs'
@@ -73,6 +75,8 @@ on:
       - 'tools/test-exclusive-entry.py'
       - 'tools/test-exclusive-coverage-guard.py'
       - 'tools/test-native-build-policy.py'
+      - 'tools/qualify-capability-results.py'
+      - 'tools/test-capability-results.py'
       - 'upstream/complement-imports.json'
       - 'tools/native-target-layout-qualification.rs'
       - 'tools/profile-native-preflight.rs'
@@ -257,6 +261,25 @@ jobs:
           test -f "$RUNNER_TEMP/lustr-native-built/toolchain/PARTIAL-NATIVE-COMPILER"
           test ! -e "$RUNNER_TEMP/lustr-native-built/toolchain/bin/rustc-full"
           test ! -e "$RUNNER_TEMP/lustr-native-built/toolchain/bin/rustc-reference"
+      - name: Run all public crate targets and real-package contracts
+        if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
+        env:
+          LUSTR_LUST_ROOT: ${{ runner.temp }}/lustr-native-built/toolchain
+          LUSTR_NATIVE_BUILD_OUTPUT: ${{ runner.temp }}/lustr-native-built/NATIVE-BUILD-RECEIPT.txt
+          LUSTR_TEST_PACKAGE: ${{ runner.temp }}/lustr-native-built/toolchain
+          LUSTR_TEST_OUTPUT: ${{ runner.temp }}/lustr-root-package-controls
+          RUST_MIN_STACK: '268435456'
+        run: |
+          set -euo pipefail
+          export RUSTC="$(rustup which rustc)"
+          export LUSTR_CORE_ROOT="$(rustc --print sysroot)"
+          export LUSTR_TEST_ORACLE="$RUSTC"
+          native_work="$RUNNER_TEMP/lustr-native-built/work"
+          cargo test --manifest-path Cargo.toml --features source-native-runtime --all-targets --locked --offline --jobs 2 --target-dir "$native_work/entry-target" --config "build.build-dir=\"$native_work/entry-intermediates\"" -- --test-threads=1 2>&1 | tee "$RUNNER_TEMP/lustr-native-built/logs/root-all-target-tests.log"
+          # The five installed-package controls are intentionally ignored by
+          # ordinary unit runs. Execute them explicitly on this socket host.
+          # Do not include the unit-test process used as a signal fixture.
+          cargo test --manifest-path Cargo.toml --features source-native-runtime --test compiler_contract --locked --offline --jobs 2 --target-dir "$native_work/entry-target" --config "build.build-dir=\"$native_work/entry-intermediates\"" -- --ignored --test-threads=1 2>&1 | tee "$RUNNER_TEMP/lustr-native-built/logs/root-package-contract-tests.log"
       - name: Check declared upstream capabilities against the constructed native compiler
         if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
         run: |
@@ -272,6 +295,15 @@ jobs:
           This functional debug-package gate does not prove all Rust coverage,
           contextual support beyond its probes, or matched compilation speed.
           MARKDOWN
+      - name: Compare supported capability outputs through the public compiler
+        if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          python3 tools/test-capability-results.py -v
+          python3 tools/qualify-capability-results.py \
+            --entry "$RUNNER_TEMP/lustr-native-built/toolchain/bin/lustr" \
+            --rustc "$(rustup which rustc)" \
+            --output "$RUNNER_TEMP/capability-results"
       - name: Build the actual native target-selector diagnostic
         id: selector_build
         if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
@@ -316,6 +348,10 @@ jobs:
             ${{ runner.temp }}/native-compact-selection
             ${{ runner.temp }}/lustr-native-built/COMPONENTS.txt
             ${{ runner.temp }}/lustr-native-built/logs
+            ${{ runner.temp }}/lustr-root-package-controls
+            ${{ runner.temp }}/capability-results/report.json
+            ${{ runner.temp }}/capability-results/*.stdout
+            ${{ runner.temp }}/capability-results/*.stderr
             ${{ runner.temp }}/lustr-shared-upstream/verification.json
             ${{ runner.temp }}/lustr-shared-upstream/*.stdout
             ${{ runner.temp }}/lustr-shared-upstream/*.stderr

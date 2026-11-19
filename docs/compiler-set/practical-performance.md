@@ -1,17 +1,17 @@
 # Practical performance assessment
 
-The [exclusive coverage contract](exclusive-coverage-contract.md) requires
-supported work near stock Lust speed and complementary work near matched stock
-rustc speed. Assess them separately. The complete compiler must also satisfy
-ownership, source selection, correctness and actual artifact integration.
-A coordinator or full-driver wrapper cannot pass architecture by meeting a
-timing budget.
+The [exclusive coverage contract](exclusive-coverage-contract.md) requires a
+correct full Rust replacement with exclusive Lust ownership and justified
+selective imports. Its first release must beat matched stock rustc overall.
+Keep stock-Lust matching and near-stock complementary speed as separate ongoing
+optimization goals. A coordinator or full-driver wrapper cannot pass architecture
+by meeting a timing budget.
 
-Revised 19 November 2026 to enforce the repeated near-stock requirement. The
-relative budgets below remain engineering choices, not the user's exact
-numerical wording, universal guarantees or evidence of a pass. Fix assessment
-and workload definitions before a new campaign; do not relax them after seeing
-the results.
+Revised 19 November 2026 to distinguish that release threshold from near-stock
+claims. The relative budgets below remain engineering choices for those claims,
+not the user's exact numerical wording, extra mandatory release thresholds,
+universal guarantees or evidence of a pass. Fix assessment and workload
+definitions before a new campaign; do not relax them after seeing the results.
 
 The [candidate policy at cb0721d4](https://github.com/glopyglerky/lustr/blob/cb0721d49be95ec3f34a113c2354bc9d2a38bbf3/docs/compiler-set/practical-performance.md)
 and [18 November checkpoint](performance-review-2026-11-18.md) allowed either a
@@ -20,11 +20,54 @@ and their original decisions. Their absolute alternative no longer establishes
 a new near-stock claim. A 0.2 ms baseline plus 0.4 ms is three times slower,
 despite satisfying the old absolute allowance.
 
-## Supported warm work
+## First release: full correctness and overall acceleration
 
-For each matched warm check and build, require the 10% relative overhead bound.
+Qualify the exact integrated compiler, ownership, source imports and real
+artifacts before treating performance as a release result. The current compiler
+is incomplete, so no current measurements can establish the full replacement.
+When those obligations are satisfied, release the faster overall compiler with
+its actual scope and remaining optimization gaps. Do not wait for perfect
+stock-Lust parity or insist that both provisional subset targets already pass.
+
+Declare the supported, complementary and mixed workload, source/profile/cache
+states, operation frequencies, artifact requirements, sample count and analysis
+before collecting results. Include complete public requests with initialization,
+dispatch, conversions, transport, semantic work, generation and publication.
+The workload must represent the advertised use, rather than a selected tiny
+native emission benchmark. Retain exclusions and all slower cases.
+
+For serial operations with fixed frequencies `w_i`, compare actual elapsed time:
+
+```text
+overall_speedup = sum(w_i * T_rustc,i) / sum(w_i * T_Lustr,i)
+```
+
+Use matched paired blocks and a paired 95% interval for this total-time ratio.
+Its lower bound must exceed one to establish an overall speedup. An interval
+crossing one is inconclusive. This is a claim about the declared workload and
+conditions, not a promise that every possible compilation is faster. For a
+parallel Cargo build, compare the measured whole-build wall time directly;
+adding overlapping task durations does not measure that result.
+
+The geometric mean of per-case speedups is a different statistic and cannot
+replace total elapsed time. For example, 1 ms becoming 0.5 ms and 1,000 ms
+becoming 1,100 ms gives a favorable geometric mean while total time increases
+from 1,001 ms to 1,100.5 ms. This is an arithmetic example, not a measurement.
+
+Report each class's paired ratios, absolute latency, distributions and tails
+alongside the total. A gain elsewhere does not erase a slower operation or
+qualify an unmet near-stock claim. Conversely, a missed provisional subset
+target does not alone prohibit a full, correct replacement whose declared
+overall result is faster. Continue reducing those gaps after release.
+
+## Near-stock claim for supported warm work
+
+For each matched warm check and build, the near-stock claim requires the 10%
+relative overhead bound.
 Match source, configuration, complete commands, artifacts and applicable
 correctness. No averaging a slow operation away with a faster one.
+The budget applies to the complete operation. Each adapter, service or transport
+does not receive a new allowance that can accumulate into an overall slowdown.
 
 Replay exact-source evidence before assessment. Require the lower paired 95%
 Lust/Lustr ratio bound to be at least `1 / 1.10`. Both warm operations also need
@@ -60,7 +103,8 @@ Use 5% relative overhead as the per-operation near-stock review budget. Require
 the lower paired 95% stock-Rust/Lustr ratio bound to be at least `1 / 1.05`.
 Report absolute added latency separately without an alternate passing rule.
 Investigate an out-of-budget or inconclusive result. Gains on Lust-supported
-work do not cancel it. No large complementary speedup is required. Do not reduce
+work do not turn it into a near-stock pass. No large complementary speedup is
+required. Do not reduce
 debug information, alter panic behavior or substitute an easier program/profile
 to improve the ratio.
 
@@ -104,6 +148,17 @@ Preserve raw samples, workload/profile/cache definitions, source and binary
 hashes, runner and C/linker identities, failure records and replay commands.
 Historical gains and losses remain in the [performance checkpoint](performance-review-2026-11-18.md).
 This document makes no new measured performance claim.
+
+The [current evaluator](current-performance-assessment.md) implements the
+total-time statistic and the existing separate per-case geometric ratios. Its
+version-1 capture contract covers direct compiler entries only, with the numeric
+supported target scoped to successful `warm-no-op` check/build cases. Other
+edits, Cargo/wrapper chains and omitted modes need their applicable evidence;
+the tool does not silently qualify them. It validates declared file/command
+identities and rejects contradictory records. Independent execution and semantic
+review are still required. Its synthetic tests establish assessor behavior only.
+Every report keeps `release_admission=false`; the tool does not decide the full
+compiler's architectural or correctness qualification.
 
 Publish an installable replacement only after the exact components satisfy the
 exclusive contract and relevant runtime, rejection, dependency, macro, panic/drop,

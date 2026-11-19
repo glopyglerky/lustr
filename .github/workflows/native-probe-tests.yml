@@ -6,6 +6,8 @@ on:
       - 'crates/lustr-bench/**'
       - 'tools/*coordinator*'
       - 'tools/*evidence*'
+      - 'tools/assess-current-performance.py'
+      - 'tools/test-assess-current-performance.py'
       - 'performance/projects/**'
       - 'crates/lustr-semantic/src/mixed_link_input.rs'
       - 'crates/lustr-semantic/src/mixed_objects.rs'
@@ -70,6 +72,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install the pinned focused-test compiler
         run: rustup toolchain install 1.99.1 --profile minimal
+      - name: Reject invalid current performance and release assessments
+        run: python3 tools/test-assess-current-performance.py -v
       - name: Reject missing, conflicting and nonzero-work retention evidence
         run: cargo +1.99.1 test --manifest-path crates/lustr-bench/Cargo.toml --locked --bin lustr-mixed-bench
       - name: Verify owned daemon exit and cold-state lifecycle

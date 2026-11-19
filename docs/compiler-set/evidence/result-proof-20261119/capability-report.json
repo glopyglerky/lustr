@@ -1,0 +1,1280 @@
+{
+  "schema": "lustr-capability-results-v1",
+  "status": "passed",
+  "passed": true,
+  "commands": [
+    {
+      "label": "rust-version",
+      "argv": [
+        "@SDK@/bin/rustc",
+        "-vV"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "bbc9b960fe50c84bca20f3109950bcb87c48b6d1ce61d2fc2fc1519aaba2daaa",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "attributes-path-rust-build",
+      "argv": [
+        "@SDK@/bin/rustc",
+        "--edition=2024",
+        "--crate-name",
+        "capability_probe",
+        "-A",
+        "warnings",
+        "-C",
+        "overflow-checks=on",
+        "@CAPABILITY_EVIDENCE@/work/sources/attributes-path.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/attributes-path-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "attributes-path-native-build",
+      "argv": [
+        "@PACKAGE@/bin/lustr",
+        "build",
+        "@CAPABILITY_EVIDENCE@/work/sources/attributes-path.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/attributes-path-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "attributes-path-rust-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/attributes-path-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "10159baf262b43a92d95db59dae1f72c645127301661e0a3ce4e38b295a97c58",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "attributes-path-native-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/attributes-path-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "10159baf262b43a92d95db59dae1f72c645127301661e0a3ce4e38b295a97c58",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "attributes-test-rust-build",
+      "argv": [
+        "@SDK@/bin/rustc",
+        "--edition=2024",
+        "--crate-name",
+        "capability_probe",
+        "-A",
+        "warnings",
+        "-C",
+        "overflow-checks=on",
+        "--test",
+        "@CAPABILITY_EVIDENCE@/work/sources/attributes-test.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/attributes-test-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "attributes-test-rust-test",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/attributes-test-rust",
+        "--test-threads=1",
+        "--format=pretty"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "72359eeffe57f6418e502b7d504647066654f7b2ecc279003692de4b9571d61f",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "attributes-test-native-test",
+      "argv": [
+        "@PACKAGE@/bin/lustr",
+        "test",
+        "@CAPABILITY_EVIDENCE@/work/sources/attributes-test.rs",
+        "--json"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "6916759df32f5d7f87115a4771d4d5d15a9d57bff9c1fc81bf40ff4023015059",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "attributes-rust-build",
+      "argv": [
+        "@SDK@/bin/rustc",
+        "--edition=2024",
+        "--crate-name",
+        "capability_probe",
+        "-A",
+        "warnings",
+        "-C",
+        "overflow-checks=on",
+        "@CAPABILITY_EVIDENCE@/work/sources/attributes.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/attributes-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "attributes-native-build",
+      "argv": [
+        "@PACKAGE@/bin/lustr",
+        "build",
+        "@CAPABILITY_EVIDENCE@/work/sources/attributes.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/attributes-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "attributes-rust-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/attributes-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "758ff7c89486fed1e8b1b36656afe0073c25212c0c50cb57183ef3d1596d6c16",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "attributes-native-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/attributes-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "758ff7c89486fed1e8b1b36656afe0073c25212c0c50cb57183ef3d1596d6c16",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "control-flow-rust-build",
+      "argv": [
+        "@SDK@/bin/rustc",
+        "--edition=2024",
+        "--crate-name",
+        "capability_probe",
+        "-A",
+        "warnings",
+        "-C",
+        "overflow-checks=on",
+        "@CAPABILITY_EVIDENCE@/work/sources/control-flow.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/control-flow-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "control-flow-native-build",
+      "argv": [
+        "@PACKAGE@/bin/lustr",
+        "build",
+        "@CAPABILITY_EVIDENCE@/work/sources/control-flow.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/control-flow-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "control-flow-rust-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/control-flow-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "6261019f839b05286ccb97dc109c8c498309ebe2bcf1662f0a49b10f240728d5",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "control-flow-native-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/control-flow-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "6261019f839b05286ccb97dc109c8c498309ebe2bcf1662f0a49b10f240728d5",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "derives-rust-build",
+      "argv": [
+        "@SDK@/bin/rustc",
+        "--edition=2024",
+        "--crate-name",
+        "capability_probe",
+        "-A",
+        "warnings",
+        "-C",
+        "overflow-checks=on",
+        "@CAPABILITY_EVIDENCE@/work/sources/derives.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/derives-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "derives-native-build",
+      "argv": [
+        "@PACKAGE@/bin/lustr",
+        "build",
+        "@CAPABILITY_EVIDENCE@/work/sources/derives.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/derives-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "derives-rust-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/derives-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "07d1d1c1894e6bd162c65e860698bc71c760f8fc0b005065ec6aac7f5b14857d",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "derives-native-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/derives-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "07d1d1c1894e6bd162c65e860698bc71c760f8fc0b005065ec6aac7f5b14857d",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "expressions-rust-build",
+      "argv": [
+        "@SDK@/bin/rustc",
+        "--edition=2024",
+        "--crate-name",
+        "capability_probe",
+        "-A",
+        "warnings",
+        "-C",
+        "overflow-checks=on",
+        "@CAPABILITY_EVIDENCE@/work/sources/expressions.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/expressions-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "expressions-native-build",
+      "argv": [
+        "@PACKAGE@/bin/lustr",
+        "build",
+        "@CAPABILITY_EVIDENCE@/work/sources/expressions.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/expressions-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "expressions-rust-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/expressions-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "317784029ba0ce32a50b23a9d43caca60cd53bfe8cade59f36cd00cd82ecb369",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "expressions-native-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/expressions-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "317784029ba0ce32a50b23a9d43caca60cd53bfe8cade59f36cd00cd82ecb369",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "items-rust-build",
+      "argv": [
+        "@SDK@/bin/rustc",
+        "--edition=2024",
+        "--crate-name",
+        "capability_probe",
+        "-A",
+        "warnings",
+        "-C",
+        "overflow-checks=on",
+        "@CAPABILITY_EVIDENCE@/work/sources/items.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/items-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "items-native-build",
+      "argv": [
+        "@PACKAGE@/bin/lustr",
+        "build",
+        "@CAPABILITY_EVIDENCE@/work/sources/items.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/items-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "items-rust-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/items-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "1fac797bdc811feffd0eaaf82c9342ef4a0c1f990935e9f9c4a5dd6490c86d17",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "items-native-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/items-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "1fac797bdc811feffd0eaaf82c9342ef4a0c1f990935e9f9c4a5dd6490c86d17",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "patterns-rust-build",
+      "argv": [
+        "@SDK@/bin/rustc",
+        "--edition=2024",
+        "--crate-name",
+        "capability_probe",
+        "-A",
+        "warnings",
+        "-C",
+        "overflow-checks=on",
+        "@CAPABILITY_EVIDENCE@/work/sources/patterns.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/patterns-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "patterns-native-build",
+      "argv": [
+        "@PACKAGE@/bin/lustr",
+        "build",
+        "@CAPABILITY_EVIDENCE@/work/sources/patterns.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/patterns-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "patterns-rust-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/patterns-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e9fa12779b14d200600239de5913a2d0a43c722e4a2cc5464f5aba4aa71558ab",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "patterns-native-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/patterns-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e9fa12779b14d200600239de5913a2d0a43c722e4a2cc5464f5aba4aa71558ab",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-basic-rust-build",
+      "argv": [
+        "@SDK@/bin/rustc",
+        "--edition=2024",
+        "--crate-name",
+        "capability_probe",
+        "-A",
+        "warnings",
+        "-C",
+        "overflow-checks=on",
+        "@CAPABILITY_EVIDENCE@/work/sources/types-basic.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/types-basic-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-basic-native-build",
+      "argv": [
+        "@PACKAGE@/bin/lustr",
+        "build",
+        "@CAPABILITY_EVIDENCE@/work/sources/types-basic.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/types-basic-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-basic-rust-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/types-basic-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "65fec53026ea30e9dbca061688f8b7f7ae118278c5a4af83a0763ffbd0ebbf16",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-basic-native-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/types-basic-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "65fec53026ea30e9dbca061688f8b7f7ae118278c5a4af83a0763ffbd0ebbf16",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-collections-rust-build",
+      "argv": [
+        "@SDK@/bin/rustc",
+        "--edition=2024",
+        "--crate-name",
+        "capability_probe",
+        "-A",
+        "warnings",
+        "-C",
+        "overflow-checks=on",
+        "@CAPABILITY_EVIDENCE@/work/sources/types-collections.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/types-collections-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-collections-native-build",
+      "argv": [
+        "@PACKAGE@/bin/lustr",
+        "build",
+        "@CAPABILITY_EVIDENCE@/work/sources/types-collections.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/types-collections-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-collections-rust-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/types-collections-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "b01bae438919459d0b17c5e7c797ab58fa4f165116136cf131a021207310e3c7",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-collections-native-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/types-collections-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "b01bae438919459d0b17c5e7c797ab58fa4f165116136cf131a021207310e3c7",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-dyn-rust-build",
+      "argv": [
+        "@SDK@/bin/rustc",
+        "--edition=2024",
+        "--crate-name",
+        "capability_probe",
+        "-A",
+        "warnings",
+        "-C",
+        "overflow-checks=on",
+        "@CAPABILITY_EVIDENCE@/work/sources/types-dyn.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/types-dyn-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-dyn-native-build",
+      "argv": [
+        "@PACKAGE@/bin/lustr",
+        "build",
+        "@CAPABILITY_EVIDENCE@/work/sources/types-dyn.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/types-dyn-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-dyn-rust-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/types-dyn-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "bf472ba4805c23b3b659e1ad93086c5d6e2a244cf4a908ac5ed29f7886ecc538",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-dyn-native-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/types-dyn-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "bf472ba4805c23b3b659e1ad93086c5d6e2a244cf4a908ac5ed29f7886ecc538",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-fns-rust-build",
+      "argv": [
+        "@SDK@/bin/rustc",
+        "--edition=2024",
+        "--crate-name",
+        "capability_probe",
+        "-A",
+        "warnings",
+        "-C",
+        "overflow-checks=on",
+        "@CAPABILITY_EVIDENCE@/work/sources/types-fns.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/types-fns-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-fns-native-build",
+      "argv": [
+        "@PACKAGE@/bin/lustr",
+        "build",
+        "@CAPABILITY_EVIDENCE@/work/sources/types-fns.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/types-fns-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-fns-rust-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/types-fns-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "9c9b782304ac165f7433ade1c890c5668393173019ba2642e1b69c6a988ec9f3",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-fns-native-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/types-fns-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "9c9b782304ac165f7433ade1c890c5668393173019ba2642e1b69c6a988ec9f3",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-io-copy-rust-build",
+      "argv": [
+        "@SDK@/bin/rustc",
+        "--edition=2024",
+        "--crate-name",
+        "capability_probe",
+        "-A",
+        "warnings",
+        "-C",
+        "overflow-checks=on",
+        "@CAPABILITY_EVIDENCE@/work/sources/types-io-copy.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/types-io-copy-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-io-copy-native-build",
+      "argv": [
+        "@PACKAGE@/bin/lustr",
+        "build",
+        "@CAPABILITY_EVIDENCE@/work/sources/types-io-copy.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/types-io-copy-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-io-copy-rust-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/types-io-copy-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "1dc008d228c479a1728c002e3b40df8ccf8dc403fe358057c73c896b9885480e",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-io-copy-native-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/types-io-copy-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "1dc008d228c479a1728c002e3b40df8ccf8dc403fe358057c73c896b9885480e",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-lazy-rust-build",
+      "argv": [
+        "@SDK@/bin/rustc",
+        "--edition=2024",
+        "--crate-name",
+        "capability_probe",
+        "-A",
+        "warnings",
+        "-C",
+        "overflow-checks=on",
+        "@CAPABILITY_EVIDENCE@/work/sources/types-lazy.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/types-lazy-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-lazy-native-build",
+      "argv": [
+        "@PACKAGE@/bin/lustr",
+        "build",
+        "@CAPABILITY_EVIDENCE@/work/sources/types-lazy.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/types-lazy-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-lazy-rust-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/types-lazy-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "886568cb533ae3658c05eb500462c632868c0ed2840fa31c95a567f40feb1e61",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-lazy-native-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/types-lazy-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "886568cb533ae3658c05eb500462c632868c0ed2840fa31c95a567f40feb1e61",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-pointers-rust-build",
+      "argv": [
+        "@SDK@/bin/rustc",
+        "--edition=2024",
+        "--crate-name",
+        "capability_probe",
+        "-A",
+        "warnings",
+        "-C",
+        "overflow-checks=on",
+        "@CAPABILITY_EVIDENCE@/work/sources/types-pointers.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/types-pointers-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-pointers-native-build",
+      "argv": [
+        "@PACKAGE@/bin/lustr",
+        "build",
+        "@CAPABILITY_EVIDENCE@/work/sources/types-pointers.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/types-pointers-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-pointers-rust-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/types-pointers-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "604225d27436bae34adbe6200fa59b52a547f16f29fb75e0bd5098e3c25f459a",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-pointers-native-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/types-pointers-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "604225d27436bae34adbe6200fa59b52a547f16f29fb75e0bd5098e3c25f459a",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-rawptr-rust-build",
+      "argv": [
+        "@SDK@/bin/rustc",
+        "--edition=2024",
+        "--crate-name",
+        "capability_probe",
+        "-A",
+        "warnings",
+        "-C",
+        "overflow-checks=on",
+        "@CAPABILITY_EVIDENCE@/work/sources/types-rawptr.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/types-rawptr-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-rawptr-native-build",
+      "argv": [
+        "@PACKAGE@/bin/lustr",
+        "build",
+        "@CAPABILITY_EVIDENCE@/work/sources/types-rawptr.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/types-rawptr-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-rawptr-rust-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/types-rawptr-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e2e6eaa7404d6e8e55befd3f3e3fc150c06660676e4520ceacdcf3cd21ae0586",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-rawptr-native-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/types-rawptr-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e2e6eaa7404d6e8e55befd3f3e3fc150c06660676e4520ceacdcf3cd21ae0586",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-std-misc-rust-build",
+      "argv": [
+        "@SDK@/bin/rustc",
+        "--edition=2024",
+        "--crate-name",
+        "capability_probe",
+        "-A",
+        "warnings",
+        "-C",
+        "overflow-checks=on",
+        "@CAPABILITY_EVIDENCE@/work/sources/types-std-misc.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/types-std-misc-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-std-misc-native-build",
+      "argv": [
+        "@PACKAGE@/bin/lustr",
+        "build",
+        "@CAPABILITY_EVIDENCE@/work/sources/types-std-misc.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/types-std-misc-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-std-misc-rust-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/types-std-misc-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "a1702581e7a81d81429fd0b19a0c629bfe8bc5f61b97c8c50b470c6658eb3bdb",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-std-misc-native-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/types-std-misc-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "a1702581e7a81d81429fd0b19a0c629bfe8bc5f61b97c8c50b470c6658eb3bdb",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-threads-rust-build",
+      "argv": [
+        "@SDK@/bin/rustc",
+        "--edition=2024",
+        "--crate-name",
+        "capability_probe",
+        "-A",
+        "warnings",
+        "-C",
+        "overflow-checks=on",
+        "@CAPABILITY_EVIDENCE@/work/sources/types-threads.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/types-threads-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-threads-native-build",
+      "argv": [
+        "@PACKAGE@/bin/lustr",
+        "build",
+        "@CAPABILITY_EVIDENCE@/work/sources/types-threads.rs",
+        "-o",
+        "@CAPABILITY_EVIDENCE@/work/types-threads-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-threads-rust-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/types-threads-rust"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "f3645f4ef4f09bf52fb671daed823c45b137cabf9b8d64cca847450c52fff3f0",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "types-threads-native-run",
+      "argv": [
+        "@CAPABILITY_EVIDENCE@/work/types-threads-native"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "stdout_sha256": "f3645f4ef4f09bf52fb671daed823c45b137cabf9b8d64cca847450c52fff3f0",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "cases": [
+    {
+      "fixture": "attributes-path.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "93e903a98c5c6c20d76a632b97f21af36aaea9b080aa8793558bbb0cb142611d",
+        "rust": "7822ec84c9a39d1a72c97094c0c706bbe2757f5be5da251408051c8e89b17c13"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "attributes-test.rs",
+      "command": "test",
+      "passed": true,
+      "artifact_sha256": {
+        "rust": "3e7a950f8930c9fbd4e49a5c821c8bdb6ded9291736024d43176df17378759f6"
+      },
+      "comparison": "exact test names/statuses, complete nonempty summaries and zero harness exits",
+      "outcomes": {
+        "adds": "pass",
+        "slow": "ignored",
+        "panics": "pass",
+        "tests::in_module": "pass",
+        "tests::nested::deep": "pass"
+      }
+    },
+    {
+      "fixture": "attributes.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "87fe2a1c58a97000b4fe2d40dc06261c44d92dbadd00693475d2ffc310aab079",
+        "rust": "0f005eca77594a206c0a5dfe4df7391e9149e537f1cfbb3eb6b3a73aac6aed20"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "control-flow.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "0739a906ba033279ebf61ae2d05ece278a39a76a1b29db203306cb904acb4cea",
+        "rust": "f3db962e3ad74c2514d6c6a32ae26ee9b09d6dcb97481d895bb1ceb47e4d516d"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "derives.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "5f830500da13a348390b0be3f3defa2e861d6201ba407cffce63dea79d6b0370",
+        "rust": "43334865a488eb32d5d47af9ddd1341a8795a1fc88eab342da88c0a2842f776c"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "expressions.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "9f4a73ec60f5ed791e66199beee281d3d56d72efe6c9cbe15c9c4f2061087261",
+        "rust": "cb2c08903d766287577ff580d2c0a090de113f86cf1defb2ede52e3f608992f6"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "items.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "45edf695cde664169ea9f32669d69deee5f6ea500805224fc73637caa9893c03",
+        "rust": "a58253b0e1d7d1e603a164ba918f9a01edec547c88689a1b6f25976a01924825"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "patterns.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "123453a1338a98af6dc38d6307b18782411f986159c407fb4e9d865215e214cb",
+        "rust": "7c9378250087fb5f61b0ab1a0ad99da9874bf193749904f4699d06b2e6eb949d"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "types-basic.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "08696847fddf480ba6afece5b06982c40b226a19971b59f16693435b15e99c11",
+        "rust": "14498f9106d57afd9a7f6468140ac73b63ae47df2c236b63ad09dfef9b395a95"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "types-collections.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "937ab6c009329e24a7d02e5745c1b8495aa2da1ebec8ea4b37cce1d9542e6155",
+        "rust": "e503055e7e521d17e85aa7fc986a2ea71dae41973ed04db752065bcb71e8f655"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "types-dyn.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "d2b8fbf6b2fbfbbca77c88e47dc94c136bda11228bd1b7f1fb2e2108c8f20d44",
+        "rust": "c9d2ebb1ea6c9dc3c67541de7d175b4c820451b28d50906222d043e9dfe61ebd"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "types-fns.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "5d457d840661052a4927ca888af997951f33cd7260aeb9e6105257ae04ce1732",
+        "rust": "3ff6ab1e2c3fcae2b424777b8c40afaeda19e8737f68428f7cddd354b4123678"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "types-io-copy.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "a105156f55d13f79ffdafbf8bcc67e01b4d059ac7b1dcf0833103e5fbf5d9d25",
+        "rust": "3608f0ca57b83eea6edab818464e5f654d686e6e8093eb7e0fd7e6842e265eec"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "types-lazy.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "7ac9fbfb04d8fd64c18b1e942e4b3f0c1c1bdc42c0053c3f9e3836813ab010a5",
+        "rust": "525bc9beae012702603685e1d900ca0b87fe5a2970525ed45de4e4cf19b8d2b5"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "types-pointers.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "132829d7391596276d76f442983ac84af27c020b376afdd6d31f286719b0f5ec",
+        "rust": "96979f444f842625c9be41e3d18adf2f861060e6266a251bf1eb7bd76a57d2df"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "types-rawptr.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "b5cb1803000479c321f72f91bf9b2c5cb0e6fe16efc2a3cecfb87e439d14d337",
+        "rust": "3f494c7a07ec6af137683c76f0d50f5e86ea0fab8e54d9e6df909d118177b348"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "types-std-misc.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "75824058a7c9128ebd4df7eb886beff3a7185867bacd65152871643589e3c183",
+        "rust": "7499887aad216f3fe90dccc3da34ffa8558d3d8b23aa9bfea6150dc3866e1460"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "types-threads.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "4657400a83755a54f1e343841373eae1bccaa7aaff17715913d569083b8ee653",
+        "rust": "ec9537b2901548f37ec192f00fd6c1b73bff9a289a8561f1a8013c1a87c2bcb6"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    }
+  ],
+  "full_rust_coverage": false,
+  "scope": "Unchanged supported upstream probes through the public entry, cold compiled artifacts and test outcomes; no retained or performance qualification.",
+  "expected_cases": [
+    "attributes-path.rs",
+    "attributes-test.rs",
+    "attributes.rs",
+    "control-flow.rs",
+    "derives.rs",
+    "expressions.rs",
+    "items.rs",
+    "patterns.rs",
+    "types-basic.rs",
+    "types-collections.rs",
+    "types-dyn.rs",
+    "types-fns.rs",
+    "types-io-copy.rs",
+    "types-lazy.rs",
+    "types-pointers.rs",
+    "types-rawptr.rs",
+    "types-std-misc.rs",
+    "types-threads.rs"
+  ],
+  "fixture_sha256": {
+    "attributes-path.rs": "aa258f20faaa84ab232f510b8764cc3da017bb3fa34616fb2a317e560f7f3bfd",
+    "attributes-test.rs": "bf8d1973af9de11278f515d97559aecc1b3912c786729c49c647e1e8eefa0a0b",
+    "attributes.rs": "24af6deaf3f75e5f16ce065392098ca391a7781a1bdc9da96c8db52f590e833a",
+    "control-flow.rs": "996b0e46165129bfa4cd8c99f473306d8c6f689c9a86fb5d9402a2c5ac06af2e",
+    "derives.rs": "c53079b7b26ed9c7a4af91b8146aa0c847a8df94d02650a15cbf28cc7f6a280f",
+    "expressions.rs": "11f975497b02797b9d1fb6cc622393e008af55c0076b286886bb67b2d0e8e691",
+    "items.rs": "43e61cc14d9307bcf0c591412e98708ac16ffe7cf3592a30bef258f1fc3db7f3",
+    "mods/helper.rs": "b6874114c61f274da57e0ea32ba2a249d93f33503c9588e1ca4dd8ac763808dd",
+    "patterns.rs": "45f8e2feb24c4aab7e10a530c7d1a2888ba15d1f177dcda3013f1982dc49863b",
+    "rejected-async.rs": "3d19df69bb6581bbfa7944ba5f45573730a6765a3bb940ef20897e2d1cee339d",
+    "rejected-attr-known.rs": "4e9b0d0237b0a77afeea2b4588ba08eba5d3e5bdba929bb7a8195a9c3e6e9a93",
+    "rejected-attr-no-implicit-prelude.rs": "954d96b5065d8fa6642f43017c0424ac5c66fa17c71438217b40b67f1f7de148",
+    "rejected-attr-unknown.rs": "74888d793ea6efa23f742beb429e38f5a2c9f10d8d5239f5fed434e7e2d7a665",
+    "rejected-attr-unsafe.rs": "6026e97c09e2eedd14deca6bf282098963a74b5689f5d3fd695daa2f96e56417",
+    "rejected-block-builtin-name.rs": "4ffa3c4326f2e28f9783f6c8c8eb507de0bb7c949d6b825b5ccc2baf73f54646",
+    "rejected-block-generic-alias.rs": "eb76fb79aa9ec8dab18273a5127cd2bac17cd0ef4d7b0bfafb9401ad47962f5c",
+    "rejected-block-impl-private.rs": "f91e6f2632c055f3eff34a0a93b05eb0a9e578a635fd9e299e7a3c276ddccadf",
+    "rejected-block-trait.rs": "b49a4bfea47d808af5c89c78faa02715bd774deaa24c881fe8846c2149fd664a",
+    "rejected-c-string.rs": "b84358a6f30aece1cd011fc4aec57cf14e02f6b420f738e0bd03da0f1b872297",
+    "rejected-cell-unsized.rs": "e92415c7808a1a83b20a97cf011e8de76d1381af6136940fbffdd42250c02f55",
+    "rejected-cmp-max-infer.rs": "8b082b913c5b9091c60ee804f1eee2f774f62d4154b665155208890e4136f9d5",
+    "rejected-cmp-max-tuple.rs": "daa79bc8e10ebaaed7cdaf8a226207f9539de2fa2c59568ff613d295ac912509",
+    "rejected-const-pattern.rs": "f0a83a3f34bbdc7840a12b9819b8fd7d839d5685d41b5a510e23fb3c01560ed3",
+    "rejected-default-names-lifetime.rs": "38a03326a8b6e0bc960ee7b28fcaaa6787f20b65b78c5a084b78c29d3860e465",
+    "rejected-deny-unchecked-lint.rs": "2c7b185300b8b6e0bc404b315082515f2334bca5b103f264406c947925ad9da6",
+    "rejected-derive-other.rs": "0fbe6d55f36a9164dec753c09e3001061b263bfa8fdb506837373ecb47a36289",
+    "rejected-dyn-assoc-type.rs": "06277bfd5f5fb4c603b400304f221136fe66f1cb49bc45c4d6ea35c6cb3775ee",
+    "rejected-dyn-in-const.rs": "c7b135630adf037e73b87285109944dac24af6765be232c88b6bfc1bf99c1aa5",
+    "rejected-dyn-std-supertrait.rs": "78089d815a726a2239f2527476b1dea5a247080a7fe9bcfc3d6a8d61128c043a",
+    "rejected-dyn-std-trait.rs": "bc4821c4733be986c1262a577bd07736dd6c0d834efc3c02ba549be9410341cf",
+    "rejected-entry-ref.rs": "f199ac6666a26a18b046b6a71611210835070042bebf193f755e79a04b9a99ba",
+    "rejected-extend-ref.rs": "c56037cb9eafce1f9410698088eba05355b767ea645fed9084e5a36ae2994cd2",
+    "rejected-extern-block.rs": "7189efc1a4b7074c2fff34105daf601661cbee5a5b24cd128a9d027395d861c2",
+    "rejected-extern-fn-type.rs": "1e80597bbe0e71434bb514d746af5c8d41e0d86a0f449077dd7b85db06371dd6",
+    "rejected-extern-fn.rs": "fe57f16bccdaa0e67c0dc8102459e4c04251581694b8d9d37c22ddc8151ccc53",
+    "rejected-fmt-item-position.rs": "f93e3a9cdc8192d6a71b4673b0348a92baa91f41c697815c7114b30b39b2e703",
+    "rejected-gat.rs": "d960e1537b8979bc3baa944956a91342d3b75d3bc93b18cf9a7f71ea20f82d24",
+    "rejected-guard-entry.rs": "2c4f5ef69af7d65b78d1d427c9e60b8bd1123126a8b951600cf8b97393e36eb5",
+    "rejected-guard-slice-middle.rs": "e0e2ac0a98de8065045b3bf6c3efadc0d80a2262116bed5e6fb4cf8ccaed73f9",
+    "rejected-impl-trait-in-trait.rs": "087f2612ffa75d6fe6d22e6c1dc5d299bcb4da05bd07b5198721f8ecddfbc415",
+    "rejected-impl-trait-let.rs": "608e6dadf1fdc19dfe630056c567c2a2c2f40e10aba6f54fa1fb6d858fb447d7",
+    "rejected-impl-trait-nested.rs": "71ff97912c28b1b2b853c53a8fadc7efb0b1c9baa028f4ef4beaf7c9d5e0a285",
+    "rejected-infer-type-signature.rs": "7fc589b4d44f2b8dec0948e82e024249282f82e5a7b11d3758b5fa48d099d37a",
+    "rejected-let-no-init.rs": "5dea6158616a6a50f60539ae426926833c7ff8bd099f2c2a85ab1fa4ff541eba",
+    "rejected-lt-bound-fn-value.rs": "a7ee201810dcc4a8763dbcaf7e1a9b2cef086ce4e383276aae4380bcb6522241",
+    "rejected-lt-dyn-arg.rs": "c2ba6c24404894cb1d10f290fbe1792d88f14de55fc8233ed5ceb5866a39c68a",
+    "rejected-lt-field.rs": "5815fb853f7afca3d8f7d0678f6fe3388efb42e8ce99c4384aaff0ae91b4f4fa",
+    "rejected-lt-turbofish.rs": "b8a8cc6fff2c0e9ff837e8416bc570040100141a909afbe08e788149a6e4965e",
+    "rejected-lt-type-bound.rs": "e14462a5d6c6323286819ab15a4a1ca0acd2e36dabefe2629fc88eeb39bce0a1",
+    "rejected-mem-take-generic.rs": "0d351741ca526697c2f7f91863a964b3963bd6ba9c9cbfae420a879b560b8089",
+    "rejected-mutex-unsized.rs": "77eb13962e01aca47e1699dc8fa04f0c70eadccb2bbfd07e8bdcc9f05847bd06",
+    "rejected-negative-impl.rs": "dc11bb96c5e948ed3e0ab35b1d6ab23a1f97222dc46a2173f4970f5f31bedcb3",
+    "rejected-raw-ref.rs": "80b5ae2311bb489093fe522bea14cc9892dce0b25b4c88a88058e2d2ae111148",
+    "rejected-refcell-dyn.rs": "42e10cc4269a228cc3c03ba8256b70c527a946253d297892da4afdf121c99271",
+    "rejected-refutable-closure-param.rs": "d729473ab9c8d6ce642fbafaca7ecefd7794a4383b8721c28363dc93ba1d4bcd",
+    "rejected-std-fn-value.rs": "b81ca9422ac1569ddcab32e16820cae53a95d297f21b2195ad5743d54da76ff9",
+    "rejected-std-missing.rs": "7f4265691e5f0ed84ca19227769fbefb4fd88f4d4b6f43ef63abfccd11185778",
+    "rejected-test-in-impl.rs": "2a9f6c37018045c80800fe3000892af2dfa6232422804351793942dea24e467a",
+    "rejected-test-mod-file.rs": "a5ea8258c56401c9d852dff7b91d4fd4dcf011e45f153df912892579255f82bf",
+    "rejected-tuple-field-pattern.rs": "981fbeac5447cadbbeb002b7d7143e5f4c99843a55667a6054f7eb8cdd64a08a",
+    "rejected-union-in-body.rs": "3d06cf660694863f98fdd92c4dce70b0f7ddf287e280e88b1282e47a40b46825",
+    "rejected-union.rs": "0178096cd9ffc4ff1689e7bd05f92cbf7ea528fc41c4d2abd03e4ab5d8b02050",
+    "rejected-unsafe.rs": "4682bb3c05244926f71ac3cdcb7381c4243c421314a114f1f21d962639ae7135",
+    "rejected-variadic.rs": "c5235473c3ce6329cc2b0722cfba32b1db073f0f5be313f00aac613540f92327",
+    "types-basic.rs": "f4ff9dd0c18fc1fcbfb9dedca5d34f5db527440d16fbc37746611da75f13c963",
+    "types-collections.rs": "a9e25b3d23f954f3023375f921df381fbc1618290cd104b3a28695a7a7d67367",
+    "types-dyn.rs": "d3d2b0b50ba798197548860ddbfd872c23d8468e24836f49aae6485a4de1f7dd",
+    "types-fns.rs": "bfb0ed042cbfb2d496b4733869e5365546944d6e9984eaca1af1a1867a95591b",
+    "types-io-copy.rs": "1e81d3422fc61087a21f341158b232ad860fc3cbb6c4aff69aca388ec1160dfb",
+    "types-lazy.rs": "b189db98bcd57c5dc0bff896c1f9614cfb4bec4c1d6ec2053b294c590739fa19",
+    "types-pointers.rs": "353a8b215dd2b79c22b3a5ec860c6b68cd10d2fc9fb3b8095f909afe75bab555",
+    "types-rawptr.rs": "986ef46165cc1155e9ba983ae4ce17b3170749156b5712f628019d963ae551ca",
+    "types-std-misc.rs": "11feccdbe874626099f6e156def4bf94c237fa230143786e20504ac503bbf5c5",
+    "types-threads.rs": "6aee5b07e8c39364e1d02ac27ff0252b9b49649979f99113fb02a405a7cb12cd"
+  },
+  "binary_sha256": {
+    "@PACKAGE@/bin/lustr": "53d6f49f9168eb8e936ea21bfa335e908b46b737f5426158e5c0644c53f33b25",
+    "@PACKAGE@/bin/lust": "ff73b283b29bad925a72474e4f124d5df4c72fd1756db6e9fba21f07ab909053",
+    "@PACKAGE@/bin/lust-core": "1a21b58880bc88cbcf5e410da519ab6d9fdb8770a909aec2984c78cad8d222ae",
+    "@SDK@/bin/rustc": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "@PACKAGE@/lib/liblustr_native_core.so": "aa0ed5d2a844faeb231748d77d084fb527251607823e2f490abe7049d9323037"
+  },
+  "runner_sha256": "06c79c5fea365d4d8addf3d0c4fd5b747780c9ccbe8681b825fcff4f8d554e97",
+  "upstream_probe_sha256": "6c1b038396abc5a2b2084067a6e176fa2d2418a3ba8a1c45cc6e14c3a0755a2a",
+  "source_head": "a03b1e2d9787523c72efe628a72cb02afbfaa491",
+  "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "inputs_unchanged": true
+}

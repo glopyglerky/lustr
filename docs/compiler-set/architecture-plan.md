@@ -56,7 +56,7 @@ not rename them as research-only execution paths.
 | 4 | Retain correctness across changes | Cold and retained behavior agree across body, signature, type, trait, macro, dependency and configuration changes. Unaffected native work remains retained. |
 | 5 | Use the boundary through public commands | Standalone and Cargo requests preserve the original build contract. No user-selected language engine, stock backup or error-driven compiler retry remains. |
 | 6 | Qualify exact source and package | Every advertised platform and profile passes applicable actual-native, complementary, mixed, invalid-input, runtime, package and failure controls. |
-| 7 | Assess speed against the correct references | Supported work stays near matched Lust and complementary work near matched rustc, separately, with actual paths observed and losses retained. |
+| 7 | Assess speed against the correct references | Demonstrate overall end-to-end acceleration over matched rustc for the declared workload. Report supported and complementary comparisons separately, preserving stock-Lust matching as the ongoing goal and all losses as evidence. |
 
 The [completion checklist](completion-checklist.md) is the single work register.
 These steps are dependencies, not permission to call a partial interface the
@@ -105,6 +105,12 @@ correctness, actual artifact integration, target/runtime behavior and the
 [performance policy](practical-performance.md). A green coordinator test,
 source manifest or benchmark of scalar emission cannot establish those facts.
 No current package has been qualified as the full product.
+
+The first qualified release must beat matched stock rustc overall. Do not hold
+that release for perfect stock-Lust parity or the provisional 10%/5% subset
+targets. Those remain separate optimization goals and named claims that require
+their own evidence. Workload selection and frequencies must be fixed before
+measurement; selective fast cases cannot establish the overall result.
 
 The prior [18 November plan](https://github.com/glopyglerky/lustr/blob/f42649f4f02d170dc899ac70fcc048db2b91da73/docs/compiler-set/architecture-plan.md)
 and [older default plan](https://github.com/glopyglerky/lustr/blob/7cea76c9d3adc587b54ccff168fe07efafd40309/docs/compiler-set/native-contract.md)
