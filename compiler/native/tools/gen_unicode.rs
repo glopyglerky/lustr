@@ -1,6 +1,7 @@
-// Generates src/runtime/unicode_table.h from the rustc that compiles this
-// program. Run through scripts/gen-unicode.sh; do not run by hand into the
-// tree (the script passes the rustc version so the table records its source).
+// Historical upstream generator, retained for provenance. It emits only a C
+// predicate table and is not the integrated compiler's data-generation entry.
+// Use scripts/gen-unicode.sh, which builds gen_unicode_semantics.rs with the
+// pinned SDK and regenerates every compiler/runtime consumer together.
 //
 // Data collected, over every Unicode scalar value: range tables for the
 // Unicode char predicates lust supports: is_alphabetic, is_numeric,
