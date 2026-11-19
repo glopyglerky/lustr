@@ -87,6 +87,12 @@ before native checking; failed LLVM emission preserves the previous artifact.
 These results retain their own tested source identity and do not complete the
 general public semantic boundary.
 
+The subsequent [imported-emission repair](docs/compiler-set/shared-import-emission.md)
+moves adapter generation into an owned, single-use build continuation. Checking
+and abandoning preparation now perform no object emission. All 29 focused
+controls pass, including the original failures, terminal build errors, artifact
+preservation and recovery.
+
 Native [identifier normalization](docs/compiler-set/identifier-normalization.md)
 now uses the exact upstream implementation and locked dependencies from the
 declared Rust compiler. Canonically equivalent identifiers and lifetimes resolve
