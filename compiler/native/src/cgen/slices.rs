@@ -159,7 +159,7 @@ impl FnGen<'_, '_> {
             let ok = format!("({m} == {sa}.len || ({m} < {sa}.len && ({sa}.ptr[{m}] & 0xC0) != 0x80))");
             let _ = writeln!(self.out, "    {dc} {t} = {ok} ? {some} : {none};");
         } else {
-            let at = std_loc(STR_MOD_RS, 862, 21);
+            let at = std_loc(STR_MOD_RS, 863, 21);
             let _ = writeln!(self.out, "    (void)lust_str_range({sa}.ptr, 0, {m}, 0, {sa}.len, {at});\n    {dc} {t} = {pair};");
         }
         t
@@ -190,7 +190,7 @@ impl FnGen<'_, '_> {
             B::SliceRotateLeft | B::SliceRotateRight => {
                 let (e, ptr, len) = slice_like(&tys[0], &vals[0]);
                 let n = &vals[1];
-                let (cond, line) = if b == B::SliceRotateLeft { ("mid <= self.len()", 3904) } else { ("k <= self.len()", 3950) };
+                let (cond, line) = if b == B::SliceRotateLeft { ("mid <= self.len()", 3900) } else { ("k <= self.len()", 3946) };
                 let at = std_loc(SLICE_MOD_RS, line, 9);
                 let mid = if b == B::SliceRotateLeft { n.clone() } else { format!("{len} - {n}") };
                 let _ = writeln!(
@@ -218,7 +218,7 @@ impl FnGen<'_, '_> {
                 format!("((uint64_t)(-{r} - 1))")
             }
             B::VecExtendFromWithin => {
-                // `slice::range` (core's index.rs panics), `reserve`,
+                // `slice::range` (the operation's std site), `reserve`,
                 // then each element of the range cloned and pushed in
                 // order (the length grows per element, as alloc's
                 // `SetLenOnDrop` keeps it).
@@ -226,9 +226,10 @@ impl FnGen<'_, '_> {
                 let et = ctype(&e);
                 let vv = &vals[0];
                 let (s, en, i) = (self.tmp(), self.tmp(), self.tmp());
+                let at = std_loc(3, 3704, 21);
                 let _ = writeln!(
                     self.out,
-                    "    uint64_t {s}, {en};\n    lust_range_check({vv}->len, {}, {}, {}, {}, &{s}, &{en});\n    lust_vec_reserve({vv}, {en} - {s}, sizeof({et}), _Alignof({et}));",
+                    "    uint64_t {s}, {en};\n    lust_range_check({vv}->len, {}, {}, {}, {}, &{s}, &{en}, {at});\n    lust_vec_reserve({vv}, {en} - {s}, sizeof({et}), _Alignof({et}));",
                     vals[1], vals[2], vals[3], vals[4]
                 );
                 if is_copy_c(self.p, &e) {

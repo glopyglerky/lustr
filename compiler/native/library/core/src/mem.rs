@@ -16,8 +16,9 @@ impl<T> core::fmt::Debug for core::mem::MaybeUninit<T> {
     }
 }
 
-// Lust std source, adapted from rust-lang/rust 1.99
-// `core/src/mem/manually_drop.rs` and `maybe_dangling.rs`. The
+// Lust std source, adapted from the declared rust-lang/rust commit
+// 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494,
+// `library/core/src/mem/manually_drop.rs`. The
 // compiler knows `ManuallyDrop` by its path
 // (`Program::is_manually_drop_adt`): it has no drop glue, so the
 // value inside is never dropped, and layout queries see it as
@@ -25,45 +26,36 @@ impl<T> core::fmt::Debug for core::mem::MaybeUninit<T> {
 // (`drop`, `take`) are not here: lust has no `unsafe`. No
 // `T: ?Sized` yet.
 
-/// A wrapper that stops the compiler from dropping its value. Core writes
-/// `PartialEq`, `Eq`, `PartialOrd`, `Ord`, and `Hash` by hand over the one
-/// field (and `StructuralPartialEq`); derives over the one field are the
-/// same impls, and lust's sort, map keys, and const patterns take them.
+/// A wrapper that stops the compiler from dropping its value. The declared
+/// upstream source derives these traits directly over `T`, including Debug.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
 pub struct ManuallyDrop<T> {
-    value: MaybeDangling<T>,
+    value: T,
 }
-
-/// Core's (unstable) field type of `ManuallyDrop`. Private here, so
-/// user code cannot name it; it shows in `ManuallyDrop`'s Debug text
-/// as in core (`ManuallyDrop { value: MaybeDangling(5) }`).
-#[derive(Debug, Copy, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[repr(transparent)]
-struct MaybeDangling<T>(T);
 
 impl<T> ManuallyDrop<T> {
     /// Wraps `value`, so it is not dropped.
     pub const fn new(value: T) -> ManuallyDrop<T> {
-        ManuallyDrop { value: MaybeDangling(value) }
+        ManuallyDrop { value }
     }
 
     /// Takes the value out, so it is dropped again as usual.
     pub const fn into_inner(slot: ManuallyDrop<T>) -> T {
-        slot.value.0
+        slot.value
     }
 }
 
 impl<T> core::ops::Deref for ManuallyDrop<T> {
     type Target = T;
     fn deref(&self) -> &T {
-        &self.value.0
+        &self.value
     }
 }
 
 impl<T> core::ops::DerefMut for ManuallyDrop<T> {
     fn deref_mut(&mut self) -> &mut T {
-        &mut self.value.0
+        &mut self.value
     }
 }
 

@@ -520,8 +520,8 @@ impl FnGen<'_, '_> {
         self.note_held(s);
         // (file, `Layout::array` unwrap line, `rc_inner_layout_for_value_layout` line)
         let (file, unwrap_line, extend_line) = match k {
-            Owner::Arc => (super::STD_SYNC_RS, 2277, 416),
-            _ => (super::STD_RC_RS, 2326, 299),
+            Owner::Arc => (super::STD_SYNC_RS, 2381, 417),
+            _ => (super::STD_RC_RS, 2478, 300),
         };
         let (bad_layout, overflow) = (super::std_loc(file, unwrap_line, 41), super::std_loc(file, extend_line, 29));
         let _ = writeln!(

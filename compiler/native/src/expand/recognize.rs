@@ -111,7 +111,7 @@ impl<'a> Cur<'a> {
         self.depth < 160
     }
     /// The text of the current token when it is one written word.
-    /// Reserved words count (`box` heads a pattern).
+    /// Reserved words count when inspecting grammar tokens.
     fn word(&self) -> Option<String> {
         match self.tok() {
             Some(Tok::Reserved(s)) => Some(self.interner.get(s).to_string()),
@@ -794,23 +794,7 @@ fn parse_pat_one(c: &mut Cur) -> bool {
             c.bump();
             parse_pat_binding(c)
         }
-        _ if c.word().as_deref() == Some("box") && box_arg_follows(c) => {
-            c.bump();
-            parse_pat_one(c)
-        }
         _ => parse_pat_path_pat(c),
-    }
-}
-
-/// True when `box` here is the box pattern head, not a binding.
-fn box_arg_follows(c: &Cur) -> bool {
-    match c.ts.get(c.i + 1) {
-        Some(Tt::Delim(_, _, _)) | Some(Tt::Frag(_, _, _)) => true,
-        Some(Tt::Tok(t)) => {
-            matches!(t.tok, Tok::Ident(_) | Tok::SelfUpper | Tok::Underscore | Tok::Amp | Tok::Ref | Tok::Mut | Tok::Minus | Tok::PathSep)
-                || is_literal(t.tok)
-        }
-        None => false,
     }
 }
 

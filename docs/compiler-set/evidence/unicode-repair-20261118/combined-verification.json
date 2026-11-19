@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "rustc_vV": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+  "identities": {
+    "native_core_sha256": "066f71a26794945a3a704e692268483be96776b2a064a3ca02b8cda3462d1793",
+    "rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de"
+  },
+  "scalar_values": 1112064,
+  "comparisons": [
+    {
+      "fixture": "compiler/native/tests/pass/unicode_const_runtime_semantics.rs",
+      "fixture_sha256": "845bac5c75ac68951acb0e8c569ad0309ed71480e309b14ae3554d7196c4f010",
+      "bytes": 31,
+      "sha256": "eb6cf2759dbd1616cc0ebb73297300d23b3c103f740dbc1ba9df4850b077ba36",
+      "byte_for_byte_equal": true
+    },
+    {
+      "fixture": "compiler/native/tools/unicode_runtime_exact.rs",
+      "fixture_sha256": "e73dce88e4ed7797f9136a0aa21e1f69ce7d8880bd6546aa3654a7bc90c0c0ba",
+      "bytes": 114666345,
+      "sha256": "d8d2c58bf07f1acd5faadb78b78c9b732e79d5e6d4a019b7ce620e6cbb0ed69b",
+      "byte_for_byte_equal": true
+    }
+  ],
+  "commands": 13,
+  "limits": [
+    "Direct cold compilation; retained behavior is covered by the separate native test.",
+    "Unicode data and exercised operations only; not a proof of all Rust semantics.",
+    "No timing or release-admission claim."
+  ],
+  "source_revision": "af0a281f2d1fae04e8ebfd5aa2c4872b20245c04",
+  "native_tree": "a3f37f8a4d2364757a3bebf476e530e6ddf4735a",
+  "library_source_revision": "af0a281f2d1fae04e8ebfd5aa2c4872b20245c04"
+}

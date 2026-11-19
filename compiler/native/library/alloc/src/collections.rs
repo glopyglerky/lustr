@@ -1503,7 +1503,7 @@ pub mod vec_deque {
         }
 
         pub fn rotate_left(&mut self, n: usize) {
-            assert!(n <= self.len()); //@ alloc/src/collections/vec_deque/mod.rs:3137:9
+            assert!(n <= self.len()); //@ alloc/src/collections/vec_deque/mod.rs:3200:9
             let len = self.buf.len();
             if len <= 1 || n == 0 || n == len {
                 return;
@@ -1529,7 +1529,7 @@ pub mod vec_deque {
         }
 
         pub fn rotate_right(&mut self, n: usize) {
-            assert!(n <= self.len()); //@ alloc/src/collections/vec_deque/mod.rs:3180:9
+            assert!(n <= self.len()); //@ alloc/src/collections/vec_deque/mod.rs:3245:9
             let len = self.buf.len();
             if len <= 1 || n == 0 || n == len {
                 return;
@@ -1609,7 +1609,7 @@ pub mod vec_deque {
         pub fn insert(&mut self, index: usize, value: T) {
             let len = self.buf.len();
             if index > len {
-                panic!("index out of bounds"); //@ alloc/src/collections/vec_deque/mod.rs:2564:9
+                panic!("index out of bounds"); //@ alloc/src/collections/vec_deque/mod.rs:2614:9
             }
             let pre = self.pre_grow();
             self.buf.insert(index, value);
@@ -1636,8 +1636,8 @@ pub mod vec_deque {
         }
 
         pub fn swap(&mut self, i: usize, j: usize) {
-            assert!(i < self.len()); //@ alloc/src/collections/vec_deque/mod.rs:1030:9
-            assert!(j < self.len()); //@ alloc/src/collections/vec_deque/mod.rs:1031:9
+            assert!(i < self.len()); //@ alloc/src/collections/vec_deque/mod.rs:1062:9
+            assert!(j < self.len()); //@ alloc/src/collections/vec_deque/mod.rs:1063:9
             self.buf.swap(i, j);
         }
 
@@ -1646,7 +1646,7 @@ pub mod vec_deque {
         }
 
         pub fn reserve(&mut self, additional: usize) {
-            self.buf.len().checked_add(additional).expect("capacity overflow"); //@ alloc/src/collections/vec_deque/mod.rs:1108:56
+            self.buf.len().checked_add(additional).expect("capacity overflow"); //@ alloc/src/collections/vec_deque/mod.rs:1142:56
             let pre = self.pre_grow();
             let len = self.buf.len();
             self.buf.reserve(additional);
@@ -1654,7 +1654,7 @@ pub mod vec_deque {
         }
 
         pub fn reserve_exact(&mut self, additional: usize) {
-            self.buf.len().checked_add(additional).expect("capacity overflow"); //@ alloc/src/collections/vec_deque/mod.rs:1078:56
+            self.buf.len().checked_add(additional).expect("capacity overflow"); //@ alloc/src/collections/vec_deque/mod.rs:1111:56
             let pre = self.pre_grow();
             let len = self.buf.len();
             self.buf.reserve_exact(additional);
@@ -1747,7 +1747,7 @@ pub mod vec_deque {
 
         pub fn split_off(&mut self, at: usize) -> VecDeque<T> {
             let len = self.buf.len();
-            assert!(at <= len, "`at` out of bounds"); //@ alloc/src/collections/vec_deque/mod.rs:2672:9
+            assert!(at <= len, "`at` out of bounds"); //@ alloc/src/collections/vec_deque/mod.rs:2726:9
             VecDeque { buf: self.buf.split_off(at), head: 0 }
         }
 
@@ -1787,7 +1787,7 @@ pub mod vec_deque {
                     self.head = h;
                 }
             }
-            self.buf.drain(range)
+            self.buf.drain(range) //@ alloc/src/collections/vec_deque/mod.rs:2000:36
         }
 
         pub fn swap_remove_front(&mut self, index: usize) -> Option<T> {

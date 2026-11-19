@@ -1,87 +1,50 @@
-# Lustr delivery roadmap
+# Integrated compiler roadmap
 
-**Governing direction:** [one integrated Lustr compiler](architecture-plan.md),
-using Lust for supported work and imported upstream Rust implementation for the
-complement. Coordinator and whole-program retry work cannot replace this plan.
-Read the [contract](native-contract.md) and [design](design.md) before routing
-changes or release claims. The user has already authorized this architecture.
+The [architecture plan](architecture-plan.md) is the fixed product contract.
+The [completion checklist](completion-checklist.md) is the single ordered work
+list, with observable completion criteria. Do not create another roadmap that
+replaces imported upstream complementary support with independent native Rust
+reimplementation, a coordinator, or whole-program retry.
 
-## Current checkpoint
+## Order of work
 
-The candidate preserves useful Lust performance, real Cargo compatibility,
-correctness tests and a working but narrow mixed-function bridge. The public
-standalone entry still uses native-failure retry; cold mixed work still runs
-whole-crate Rust analysis and represents only a limited scalar boundary.
-The complete requested architecture is **not implemented or release-qualified**.
+| Order | Deliverable | Completion evidence |
+| --- | --- | --- |
+| 0 | Authoritative contract and one recorded integration head | Corrected default instructions; unique existing fixes retained and duplicate work identified. |
+| 1 | Full Lust capability and checked-state interface | Decisions use resolved facts before emission and cover Lust's actual support, with complementary needs and real failures distinguished. |
+| 2 | Shared semantic continuation with imported Rust services | Supported requests retain Lust's frontend; mixed requests carry one authoritative semantic context across both implementations. No mandatory duplicate complete frontend. |
+| 3 | General ABI/runtime/artifact composition | Supported and complementary definitions in unchanged programs exchange values, ownership and calls correctly and produce genuine Rust artifacts. |
+| 4 | Retention across that boundary | Cold and warm answers agree across body, signature, type, trait, macro, dependency and configuration edits; failures do not publish stale output. |
+| 5 | Normal standalone and Cargo entry | The integrated compiler replaces status/diagnostic-driven whole-program retries. Existing CLI/build behavior is preserved. |
+| 6 | Exact-source correctness and package qualification | Declared Rust version and advertised platforms pass meaningful native, mixed, dependency, runtime and package gates. |
+| 7 | Finite practical performance assessment and publication | Near-Lust supported work, near-stock ordinary complement, useful measured gains, clear losses and reproducible README evidence. Publish the qualified integrated package. |
 
-Existing speed results, independent correctness repairs and failed attempts
-remain evidence for their exact sources. They do not change the destination.
-The current performance snapshot is documented in the [README](../../README.md)
-and [source-bound evidence](../../performance/2026-11-18-43a7e07/README.md).
+Necessary correctness repairs and consolidation can proceed alongside the
+semantic interface work. They do not require a new performance win. The
+approximately 0.3 ms overhead is a bounded investigation, not a reason to keep
+rewriting working compiler behavior.
 
-## 1. Capability contract and compiler ownership
+## Reviewed state
 
-Inventory actual Lust support from the pinned compiler, including semantic,
-runtime, ABI, target and profile constraints. Distinguish Lust's own support
-from the smaller set represented by the current mixed bridge. Bind the
-inventory to accepted/rejected fixtures and actual compiler interfaces.
+Default `next` at `7cea76c9d3adc587b54ccff168fe07efafd40309` predates the scalar
+mixed implementation. The [design checkpoint](design.md) distinguishes it from
+the architecture-audited PR #29 candidate. PR #30 is a later correctness
+continuation; its qualification does not follow automatically from PR #29.
 
-Define internal admitted/complementary/invalid/failure outcomes before emission.
-Specify ownership and transfer of checked state and dependency reads. The gate
-is a usable compiler contract, not a keyword scan, a descriptive capability
-report or another whole-program compile probe.
+Existing Lust compilation/retention, scalar checked-state admission, real
+Rust metadata/object integration, Linux native gates and tested mixed failure
+recovery are work to retain. They do not yet provide the general semantic
+boundary required above. Read the [qualification checkpoint](qualification-review-2026-11-18.md)
+and [performance checkpoint](performance-review-2026-11-18.md) before marking
+anything done or rerunning a supposedly missing gate.
 
-## 2. Shared compilation boundary
+The [19 November continuation](design.md#candidate-continuation--19-november-2026)
+records the newer implementation baseline and scoped progress. Its owning
+prepare/emit interface advances step 1; it does not complete step 2 or replace
+the checklist with a separate plan.
 
-Reuse the existing binding, ABI, symbol, object, metadata and retained-state
-work. Expose native preparation and emission without discarding/rechecking the
-same state. Bring in upstream Rust implementation for missing services and
-complementary work. Preserve a direct fast path for fully supported work.
-
-Prove how mixed definitions share identities, layouts, calling conventions,
-drops, unwinding and metadata. Do not restart independent feature-by-feature
-reconstruction of all Rust. A prepare/emit seam alone is an intermediate result;
-it must not be relabeled as the completed integrated compiler.
-
-## 3. Automatic native and complementary compilation
-
-Route work inside Lustr from the actual capability contract. Supported work
-uses Lust; complementary work uses the imported implementation in the same
-compilation. Replace the public error-driven whole-program retry as the normal
-entry architecture. Keep Cargo adapters limited to preserving Cargo behavior.
-
-Require real mixed programs and traces showing which definitions and phases
-use each implementation. Native emitter failure must be reported as failure,
-not silently converted to a successful second compilation. The current scalar
-bridge is a starting point, not a redefinition of the supported subset.
-
-## 4. Retained correctness and broad compatibility
-
-Exercise unchanged supported, complementary and mixed projects, including
-libraries, build scripts, proc macros, no_std, generic/trait interactions,
-invalid code, panic/drop, dependency changes and genuine metadata consumers.
-
-Check cold and warm equivalence across body, signature, type, trait, macro and
-configuration edits. Preserve existing native differential gates and exact
-platform scope. Qualify the exact source-built package, not a diagnostic mix of
-replaced components. Retain failures and all component/source identities.
-
-## 5. Performance and publication
-
-Preserve Lust's large gains on supported work and near-Lust warm latency, with
-small overhead allowed. Complementary Rust should stay close to matched stock
-Rust; large gains there are not required. Apply the [practical policy](practical-performance.md)
-to separately reported operations and keep regressions visible.
-
-Publish the requested replacement only after architecture, correctness,
-platform and performance evidence support that exact package. No successful
-coordinator build or speed result waives the integrated-compiler requirement.
-Do not chase a fractional millisecond by weakening validation or introducing
-another routing architecture.
-
-## Retained work
-
-The [prior roadmap](roadmap-history-before-2026-11-18.md),
-[older native research roadmap](native-roadmap-history.md), previous PRs and
-performance campaigns remain historical evidence. Their implementation details
-and obsolete completion requirements do not override this roadmap.
+Historical coordinator, compiler-tuning and benchmark experiments remain
+evidence for their original sources and workloads. They cannot close the
+integrated-compiler tasks. The [previous roadmap](https://github.com/glopyglerky/lustr/blob/7cea76c9d3adc587b54ccff168fe07efafd40309/docs/compiler-set/roadmap.md)
+is retained in history; its independent native expansion and compulsory
+faster-results requirements are superseded.

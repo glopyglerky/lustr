@@ -1,10 +1,53 @@
 # Unicode semantics across the native and Rust paths
 
-Status: an unresolved semantic boundary, not a performance regression. The
-standalone native compiler built by the current complete-package constructor
-combines Unicode 17 runtime tables with Unicode 18 constant evaluation. The
-current scalar admission work excludes Unicode standard-library operations;
-that boundary does not repair the standalone native route.
+Status: the native Unicode repair below passes source-bound local qualification.
+Its constant evaluator, runtime data and reported version now follow the same
+declared Rust standard-library semantics. Full compiler integration and complete
+platform/package qualification remain separate requirements. The current scalar
+mixed boundary still excludes Unicode standard-library operations.
+
+## Repair and finite-domain verification
+
+The [shared Unicode implementation](../../compiler/native/UNICODE.md) derives
+native Rust and C tables together from Rust source
+`5b7b37aefcb5b2fba3c2392bc9065b9e4602d494`. The generator rejects other SDKs and
+checks every emitted table byte in verification mode. Both native version
+constants, constant predicates and synthesized literal escaping use checked-in
+target data, independently of the compiler build host. The same generation
+updates runtime predicates, case conversion, contextual final-sigma data and
+Debug escaping. The Unicode data license and source/dependency digests are
+retained with the implementation.
+
+The compiler dependencies at this Rust pin deliberately retain Unicode 17:
+`unicode-ident` 1.0.24 and `unicode-normalization` 0.1.25. Identifier/NFC table
+entries therefore remain unchanged. Bumping them to Unicode 18 would differ from
+the declared Rust compiler. The independent verifier checks their data against
+the actual pinned dependencies.
+
+The [verification record](evidence/unicode-repair-20261118/verification.json)
+binds these results to native build `0182ba4476830b1a` and its exact source and
+binary identities:
+
+| Verification | Observed result |
+| --- | --- |
+| Permanent U+0558/U+A7DD regression on the previous native compiler | Builds, then fails with exit 101 because constant and runtime predicates disagree |
+| Repaired native and matching Rust | Both produce `(18, 0, 0) true true true true`; no runtime stderr |
+| Compiler data across all 1,112,064 valid Unicode scalars | Seven predicates, Debug escaping, XID membership, combining classes and canonical decomposition match; 961 composition pairs and decomposition-pair exclusions match |
+| Actual compiled runtime across all 1,112,064 scalars | 114,666,345 output bytes match exactly for predicates, character case maps, char/string Debug and four final-sigma contexts |
+| Retained native compiler session | Cold, unchanged, body-edited, constant-edited and reverted builds produce the expected constant/runtime answers |
+| Existing focused differential fixtures | Seven pass, including the predicate/hash corpus, case iterators, string case conversion, Debug escaping and Unicode identifiers |
+| Different build SDK | Shared compiler Unicode module built by Rust 1.99 still reports target Unicode 18 and returns the two repaired predicate answers |
+| Wrong regeneration SDK | Rust 1.99 is rejected before changing any table |
+
+The exhaustive runtime comparison reads both output streams byte for byte. Its
+SHA256 `d8d2c58bf07f1acd5faadb78b78c9b732e79d5e6d4a019b7ce620e6cbb0ed69b`
+identifies the preserved streams; hash equality is not substituted for direct
+comparison. These are finite-domain checks for the named operations, not a
+proof of all Rust programs. Local execution was on x86_64 Linux. This repair
+does not supply missing native/complementary integration or establish that all
+other native standard-library and diagnostic behavior matches Rust 1.102.
+
+## Historical defect and preserved witness
 
 This audit describes published source
 `429fe6054e6119221e598b95c2661665ecdd7be2` and the pinned imported Rust source
@@ -205,7 +248,7 @@ changing the declared Unicode version.
    repair must update the explicit integration identity and receive its own
    qualification. The old failed comparison remains failed.
 
-Until that work is qualified, the standalone native Unicode gap remains an
-explicit blocker. The current scalar admission boundary prevents it from
-becoming an assumed capability of that narrower path; it does not establish
-general native/full-Rust semantic equivalence.
+The repair at the top of this document supplies the local Unicode evidence
+required by this historical audit. Its scope does not establish general
+native/full-Rust semantic equivalence or waive the remaining integrated compiler,
+platform and package qualification requirements.

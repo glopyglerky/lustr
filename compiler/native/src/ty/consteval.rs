@@ -2978,7 +2978,7 @@ impl Evaluator {
             "MIN" => Some((ConstValue::Char(char::MIN), CHAR)),
             "REPLACEMENT_CHARACTER" => Some((ConstValue::Char(char::REPLACEMENT_CHARACTER), CHAR)),
             "UNICODE_VERSION" => {
-                let (maj, min, pat) = char::UNICODE_VERSION;
+                let (maj, min, pat) = crate::unicode::UNICODE_VERSION;
                 let u8t = super::int(IntTy::U8);
                 let ts = cx.tys().intern_tys(&[u8t, u8t, u8t]);
                 let ty = cx.tys().intern(TyKind::Tuple(ts));
@@ -5173,8 +5173,8 @@ impl Evaluator {
     }
 
     /// `char` and `u8` ASCII predicates and case maps, plus the
-    /// other const `char` methods. The host `char` and `u8`
-    /// implementations carry rustc's own results.
+    /// other const `char` methods. Versioned Unicode behavior comes from
+    /// the same pinned data as the generated runtime, never the build host.
     fn char_method<'a, C: ConstCx<'a>>(
         &mut self,
         cx: &mut C,
@@ -5199,12 +5199,12 @@ impl Evaluator {
             "is_ascii_graphic" if args.is_empty() => bool_v(c.is_ascii_graphic()),
             "is_ascii_control" if args.is_empty() => bool_v(c.is_ascii_control()),
             // The const Unicode predicates. is_alphabetic, is_numeric, and
-            // is_alphanumeric are not const fns in rustc 1.99, so they stay
+            // is_alphanumeric are not const fns in the pinned Rust, so they stay
             // outside the evaluator and reject, as rustc does.
-            "is_lowercase" if args.is_empty() => bool_v(c.is_lowercase()),
-            "is_uppercase" if args.is_empty() => bool_v(c.is_uppercase()),
-            "is_whitespace" if args.is_empty() => bool_v(c.is_whitespace()),
-            "is_control" if args.is_empty() => bool_v(c.is_control()),
+            "is_lowercase" if args.is_empty() => bool_v(crate::unicode::is_lowercase(c)),
+            "is_uppercase" if args.is_empty() => bool_v(crate::unicode::is_uppercase(c)),
+            "is_whitespace" if args.is_empty() => bool_v(crate::unicode::is_whitespace(c)),
+            "is_control" if args.is_empty() => bool_v(crate::unicode::is_control(c)),
             "to_ascii_lowercase" if args.is_empty() => Ok((ConstValue::Char(c.to_ascii_lowercase()), CHAR)),
             "to_ascii_uppercase" if args.is_empty() => Ok((ConstValue::Char(c.to_ascii_uppercase()), CHAR)),
             "len_utf8" if args.is_empty() => Ok((ConstValue::Int(c.len_utf8() as i128), USIZE)),

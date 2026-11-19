@@ -167,14 +167,14 @@ class MixedWorkflowTests(unittest.TestCase):
 
     def test_independent_suites_run_after_baseline_failure(self):
         outcomes = dict(self.success, baseline_regression="failure", baseline_toolchain="failure")
-        for name in ("mixed_execution", "check_qualifier", "retained_checks", "library_qualifier", "mixed_libraries", "entry_contract"):
+        for name in ("mixed_execution", "check_qualifier", "retained_checks", "library_qualifier", "mixed_libraries", "mixed_scalars", "entry_contract"):
             with self.subTest(step=name):
                 self.assertTrue(self.eligible(name, outcomes))
         self.assertFalse(self.eligible("measurements", outcomes))
 
     def test_independent_suites_run_after_execution_failure(self):
         outcomes = dict(self.success, mixed_execution="failure")
-        for name in ("retained_checks", "mixed_libraries", "entry_contract"):
+        for name in ("retained_checks", "mixed_libraries", "mixed_scalars", "entry_contract"):
             self.assertTrue(self.eligible(name, outcomes), name)
         self.assertFalse(self.eligible("measurements", outcomes))
 
@@ -191,7 +191,7 @@ class MixedWorkflowTests(unittest.TestCase):
                 self.assertFalse(self.eligible(name, cancelled=True), name)
 
     def test_missing_qualifier_blocks_only_its_own_suite(self):
-        for qualifier, suite in (("mixed_qualifier", "mixed_execution"), ("check_qualifier", "retained_checks"), ("library_qualifier", "mixed_libraries")):
+        for qualifier, suite in (("mixed_qualifier", "mixed_execution"), ("check_qualifier", "retained_checks"), ("library_qualifier", "mixed_libraries"), ("scalar_qualifier", "mixed_scalars")):
             for outcome in ("failure", "skipped", "cancelled"):
                 with self.subTest(qualifier=qualifier, outcome=outcome):
                     outcomes = dict(self.success, **{qualifier: outcome})
@@ -199,7 +199,7 @@ class MixedWorkflowTests(unittest.TestCase):
                     self.assertTrue(self.eligible("entry_contract", outcomes))
 
     def test_measurements_require_every_correctness_gate(self):
-        required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution", "retained_checks", "mixed_libraries", "entry_contract", "pristine_build", "bench_build", "host_record"}
+        required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution", "retained_checks", "mixed_libraries", "mixed_scalars", "entry_contract", "pristine_build", "bench_build", "host_record"}
         self.assertEqual(set(dependencies(self.steps["measurements"])), required)
         self.assertTrue(self.eligible("measurements"))
         for gate in required:
@@ -217,7 +217,7 @@ class MixedWorkflowTests(unittest.TestCase):
 
     def test_public_slice_requires_correctness_without_masking_other_campaign_failures(self):
         required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution",
-                    "retained_checks", "mixed_libraries", "entry_contract", "pristine_build", "host_record"}
+                    "retained_checks", "mixed_libraries", "mixed_scalars", "entry_contract", "pristine_build", "host_record"}
         self.assertEqual(set(dependencies(self.steps["slice_measurements"])), required)
         for gate in required:
             for outcome in ("failure", "skipped", "cancelled"):
@@ -237,7 +237,7 @@ class MixedWorkflowTests(unittest.TestCase):
         self.assertEqual(paths, expected)
 
     def test_project_measurements_require_correctness_and_own_runner(self):
-        required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution", "retained_checks", "mixed_libraries", "entry_contract", "project_bench_build", "host_record"}
+        required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution", "retained_checks", "mixed_libraries", "mixed_scalars", "entry_contract", "project_bench_build", "host_record"}
         self.assertEqual(set(dependencies(self.steps["project_measurements"])), required)
         for gate in required:
             for outcome in ("failure", "skipped", "cancelled"):

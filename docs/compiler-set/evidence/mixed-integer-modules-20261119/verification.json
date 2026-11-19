@@ -1,0 +1,188 @@
+{
+  "schema": "lustr.mixed-integer-module-verification",
+  "version": 1,
+  "parent_published_commit": "a9fd4c6336b1e39c4f584f7da50a437c5c248a0d",
+  "parent_tree": "a1a28f2d9c9271a5f0d04349d5dd3657c59f04fe",
+  "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "target": "x86_64-unknown-linux-gnu",
+  "source_files": [
+    {
+      "path": "crates/lustr-semantic/src/mixed_main.rs",
+      "sha256": "4aa1b595d64d01e8b195da5d7b63706a15821b7acd3e3664f33c13aee1f7a454"
+    },
+    {
+      "path": "crates/lustr-semantic/src/mixed_cache.rs",
+      "sha256": "51c8fa3be2e78f8170b6add7803bb8ca932a68be25b16504eecf5402f908d01b"
+    },
+    {
+      "path": "compiler/native/src/driver/compile.rs",
+      "sha256": "de40b425cb56772270266e24f4e7d6dfa91fad9ba2a053a842545aeefdfcdee7"
+    },
+    {
+      "path": "tools/mixed-scalar-qualification.rs",
+      "sha256": "6987b2974f7cedb451a38fd1866bdae2e07f5251a8c7ca1b7bd09b8ff4aeb283"
+    },
+    {
+      "path": ".github/workflows/compiler-set.yml",
+      "sha256": "b1969be32c09784ad59eaad0e58674508c2400a44efbbe769a6a200cc43a0ab3"
+    },
+    {
+      "path": "tools/test-mixed-workflow.py",
+      "sha256": "6e35cd85d9a73a980c8032fe456388dbf39bfd1d8e3c55967eff00e08b9a82f3"
+    }
+  ],
+  "compiler_identities": {
+    "preserved_mixed_driver_sha256": "9e284ce0e9279b6668e11f8631e49c57ad97f43d00f75b0d2ec086041b901d97",
+    "candidate_mixed_driver_sha256": "7a0844d08c4551f48d0c20619c373a26265bbaccf25ccf8d1b80e1c24e7596e0",
+    "reference_rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "candidate_native_build": "384f9cd55e7dd28a",
+    "mixed_driver_expected_native_build": "baea78ae8589c84b",
+    "identity_limit": "The mixed-driver local witness selects zero native definitions. Native object generation is qualified separately through direct Sessions with the stated test build identity; no mixed daemon was substituted."
+  },
+  "red_controls": [
+    {
+      "name": "integer coverage",
+      "actual_admitted": [
+        "kernel_i64",
+        "kernel_isize",
+        "kernel_u64",
+        "kernel_usize"
+      ],
+      "assertion_failed": true
+    },
+    {
+      "name": "module identity coverage",
+      "actual_admitted": [
+        "kernel"
+      ],
+      "expected": [
+        "kernel",
+        "first::kernel",
+        "second::nested::kernel"
+      ],
+      "assertion_failed": true
+    },
+    {
+      "name": "negative signature control",
+      "result": "escaping bound vars panic while constructing C Binder::dummy",
+      "assertion_failed": true
+    }
+  ],
+  "abi_observation": {
+    "i8_i16_argument": [
+      "Rust None",
+      "C Sext"
+    ],
+    "u8_u16_argument": [
+      "Rust None",
+      "C Zext"
+    ],
+    "narrow_integer_returns": [
+      "Rust None",
+      "C None"
+    ],
+    "decision": "Keep the complete actual FnAbi equality check. Permit newly matching signatures; do not admit narrow parameters without adapters."
+  },
+  "borrowed_regression": {
+    "source": "fn borrowed(x: &u32) -> u32 { *x }\nfn main() { println!(\"{}\", borrowed(&42)); }\n",
+    "source_sha256": "7bf3081fa433c50344bb1ae8f3ba13dd03d287319b853c1e5f1540cf4fd8af00",
+    "arguments": [
+      "SOURCE",
+      "--edition=2024",
+      "--crate-name=borrowed",
+      "--crate-type=bin",
+      "--emit=link",
+      "--sysroot",
+      "SDK",
+      "-Copt-level=0",
+      "-Cdebuginfo=0",
+      "-o",
+      "OUTPUT"
+    ],
+    "original_exit": 101,
+    "original_output_artifact": false,
+    "candidate_exit": 0,
+    "candidate_runtime_exit": 0,
+    "candidate_stdout": "42\n",
+    "reference_stdout": "42\n",
+    "candidate_trace": [
+      "frontend=1",
+      "native-definitions=0"
+    ],
+    "invalid_source": "fn borrowed(x: &u32) -> u32 { true }\nfn main() { println!(\"{}\", borrowed(&42)); }\n",
+    "invalid_candidate_exit": 1,
+    "invalid_reference_exit": 1,
+    "invalid_diagnostic": "E0308",
+    "invalid_output_artifacts": false
+  },
+  "local_tests": {
+    "semantic_driver": {
+      "passed": 34,
+      "failed": 0,
+      "scope": "Real pinned Rust parser/HIR/typeck/FnAbi tests, including canonical identifier spellings and raw-keyword preservation, plus existing protocol and boundary tests."
+    },
+    "native_mixed_admission": {
+      "passed": 13,
+      "failed": 0,
+      "new_object_executions": 18,
+      "inputs_per_object": 65541,
+      "new_oracle_assertions": 1179738,
+      "scope": "Two new direct retained Session tests use real native objects linked to Rust callers: i32/u32 wrapping and rotate, plus i8/u8/i16/u16 returns. Each is exercised cold, unchanged, and edited."
+    },
+    "workflow_guards": {
+      "passed": 21,
+      "failed": 0
+    },
+    "hosted_qualifier_compilation": {
+      "passed": true
+    },
+    "reference_fixture_controls": {
+      "passed": 4,
+      "stdout_each": "65541\n",
+      "scope": "Harness and expected-value validation only; these are not native participation results."
+    },
+    "format_check": {
+      "passed": true
+    }
+  },
+  "hosted_gate": {
+    "tool": "tools/mixed-scalar-qualification.rs",
+    "status": "pending",
+    "native_definitions": [
+      "byte",
+      "first::kernel",
+      "half",
+      "kernel",
+      "second::nested::kernel",
+      "signed",
+      "unsigned"
+    ],
+    "compiler_requests": 8,
+    "mixed_executions": 5,
+    "reference_executions": 5,
+    "planned_mixed_assertions": 3277050,
+    "scope": "Real Cargo executable, duplicate inline module identities, narrow return values, borrowed, non-NFC identifier and narrow-parameter complements, retained native edits/checks, invalid input and recovery. Performance campaigns now depend on it."
+  },
+  "limits": [
+    "No full compiler architecture or package completion is claimed.",
+    "Cold mixed Rust analysis and standalone whole-program retry remain.",
+    "Local Unix sockets are denied, so the full Cargo/daemon gate is pending hosted execution.",
+    "32-bit input space is not exhausted. Narrow output conversion patterns are exhausted by the 16-bit input sweep.",
+    "Only existing Linux x86_64 request/profile limits are qualified here.",
+    "No latency claim is made."
+  ],
+  "identifier_regression": {
+    "decomposed_parameter_and_local": "classified complementary before native request",
+    "canonical_unicode_and_comments": "remain eligible",
+    "raw_keyword_name": "source quoting preserved",
+    "actual_decomposed_driver_exit": 0,
+    "actual_decomposed_stdout": "59\n",
+    "actual_decomposed_native_definitions": 0,
+    "actual_raw_projection": {
+      "compile_exit": 0,
+      "runtime_exit": 0,
+      "diagnostics": "",
+      "scope": "Preserved native CLI parses and executes raw function/parameter names; this is not a complete mixed-daemon qualification."
+    }
+  }
+}

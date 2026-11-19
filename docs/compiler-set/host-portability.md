@@ -5,6 +5,67 @@ lock, starts a detached process and sends requests over local IPC. It has no
 systemd dependency. The foreground entry, daemon and installed Cargo/Rust SDK
 still need host services: processes, files, sockets, threads and dynamic loading.
 
+The 18 November dependency audit checked 12,417 active source, build, workflow
+and lock files, including all 100 distinct package names recorded by their
+lockfiles. It found no service-manager invocation, socket-activation API,
+service unit or systemd package. The actual Linux native client, native core,
+matching Rust compiler and Cargo loader dependency graphs contain no systemd
+library either. There was no such dependency to remove.
+
+`python3 tools/check-host-dependencies.py` now enforces this boundary in native
+CI. It checks the tracked and unignored active source tree and lockfiles,
+rejects service-manager commands/APIs and unit files, and fails if required
+compiler files are absent. Separate controls introduced a process invocation,
+a dependency declaration and a service unit; all three were rejected and the
+temporary controls were removed. Historical evidence and documentation stay
+intact. This is a source/dependency guard, not a claim that text scanning proves
+the behavior of every dynamically constructed command or every host library.
+
+Rust's `std` library is distinct from systemd. Removing a service-manager
+requirement does not remove the host APIs that this compiler currently uses.
+
+## Erased destructor callback types
+
+The completed [PR29 macOS run](https://github.com/glopyglerky/lustr/actions/runs/44420439581/job/135211656703)
+passed all 5,528 ordinary differential cases. Its sanitizer pass completed with
+5,481 passes and 47 failures. Every reported failure called a concrete drop
+function through `void (*)(void *)` even though its definition took a concrete
+type pointer. The strict main-return transition gate passed separately. These
+results establish a generated-C defect after the sanitizer setup repair.
+
+The repair gives all generated drop glue the exact C signature
+`void drop_T(void *raw)`. Each body restores its concrete pointer before reading
+the value. Direct drop calls, object vtables, channel cleanup and unwind
+callbacks use the same function type. This changes neither the allocation's
+layout nor the Rust drop ordering and adds no extra generated callback call.
+The runtime-owned String panic vtable and the thread exception catcher use
+small adapters with the exact erased signature. Casting a function pointer
+alone would not change the function's C type and would leave the undefined
+behavior intact.
+
+The new `tools/test-native-erased-callbacks.py` gate compiles real native C
+output with `_Static_assert` checks on its callback declarations. The previous
+source fails this gate on the String panic-vtable target. A separate check of
+the actual generated `dyn_box_drop` vtable also rejects both old typed targets.
+This catches the function-type mismatch on GCC, whose undefined-behavior
+sanitizer does not provide the Clang function check used by the macOS gate.
+
+On Linux, all 47 previously failing fixtures passed with the candidate. Across
+444 emitted C units, the C compiler accepted 2,647 callback declaration checks,
+including repeated declarations. Both the native executables and their
+separately compiled GCC versions matched Rust 1.99's output and exit status.
+Ten representative fixtures also passed using the generated exception-handling
+tables and their linked C++ runtime, covering panic payloads, threads, channel
+cleanup and object destruction. This second mode tests the linked C/C++ output,
+as the existing upstream EH lane does.
+
+The [verification record](evidence/erased-callbacks-20261118/verification.json)
+binds these results to exact native source and compiler identities. These are
+type checks and runtime comparisons, not a new local sanitizer or performance
+claim. The existing full platform sanitizer and differential gates remain
+required, including their stderr comparisons. Unicode alignment and the wider
+compiler integration remain separate qualification requirements.
+
 The owned adapter in [`src/host_runtime.rs`](../../src/host_runtime.rs) contains
 the host ABI and socket addressing rules. The compiler's retained sessions,
 frontend, body-edit reuse, allocator policy and native compiler algorithms stay

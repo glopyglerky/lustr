@@ -746,7 +746,7 @@ fn parse_fmt_spec(fmt: &str) -> Result<(FmtSpec, Option<FmtCount>, Option<FmtCou
     // A count from an argument: `name$` or `N$`, with its end.
     let count_arg = |cs: &[char], j: usize| -> Option<(FmtCount, usize)> {
         let mut k = j;
-        while k < cs.len() && (cs[k].is_alphanumeric() || cs[k] == '_') {
+        while k < cs.len() && (crate::unicode::is_alphanumeric(cs[k]) || cs[k] == '_') {
             k += 1;
         }
         if k == j || cs.get(k) != Some(&'$') {

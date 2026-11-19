@@ -2099,12 +2099,12 @@ struct Ctx<'p> {
     /// The expression of the expression statement being checked (`e;`):
     /// `Vec::splice` is taken only there, where its `Splice` drops at once.
     stmt_expr: Option<ExprId>,
-    /// Item or key types an iterator method needs to be Ord (`min`,
-    /// `max`, `min_by_key`, `max_by_key`), re-tested at finish.
+    /// Element or key types compared with Ord::cmp (binary searches),
+    /// re-tested at finish.
     deferred_ord: Vec<(Ty, Span)>,
-    /// Element or key types of `sort`/`sort_unstable`/`sort_by_key`:
-    /// Ord, and a `PartialOrd::lt` lust can call (std's sort compares
-    /// with `lt`, not `Ord::cmp`), re-tested at finish.
+    /// Element or key types of sorting and iterator min/max:
+    /// Ord, and a PartialOrd::lt lust can call. The pinned std source
+    /// uses lt for these operations. Re-tested at finish.
     deferred_sort_ord: Vec<(Ty, Span)>,
     /// Fn item / fn pointer casts whose target holds a `_`:
     /// rustc checks the signatures after inference, so the
@@ -12296,7 +12296,7 @@ impl<'p> Ctx<'p> {
             }
             if self.name(segs[1].name) == "UNICODE_VERSION" {
                 use crate::ty::consteval::ConstValue;
-                let (maj, min, pat) = char::UNICODE_VERSION;
+                let (maj, min, pat) = crate::unicode::UNICODE_VERSION;
                 let u8t = int(IntTy::U8);
                 let ts = self.tys.intern_tys(&[u8t, u8t, u8t]);
                 let ty = self.tys.intern(TyKind::Tuple(ts));
@@ -24999,8 +24999,8 @@ impl<'p> Ctx<'p> {
                 self.err(
                     "L0640",
                     span,
-                    format!("sorting `{tn}` compares with its written `PartialOrd::lt`, which lust cannot call yet"),
-                    "Sort with `sort_by` and an explicit comparator, or derive `PartialOrd`.",
+                    format!("ordering `{tn}` compares with its written `PartialOrd::lt`, which lust cannot call yet"),
+                    "Use a supported explicit comparator, or derive `PartialOrd`.",
                 );
             }
         }

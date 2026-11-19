@@ -195,8 +195,8 @@ pub enum Glue {
     /// Like `Cmp`, but `PartialOrd::partial_cmp` order where it can
     /// differ from `Ord::cmp`: a written `partial_cmp` is called even
     /// when an `Ord` impl exists, and composite types compare their
-    /// parts with `PCmp`. Only the sort adapters ask for it (std's
-    /// sort compares with `lt`).
+    /// parts with `PCmp`. Sorting and iterator min/max use it because
+    /// the pinned standard library compares with PartialOrd::lt.
     PCmp,
     /// `T default_T(void)`: the value derived and core `Default` build.
     Default,
@@ -526,23 +526,23 @@ fn std_loc(file: u64, line: u64, col: u64) -> String {
 }
 
 /// The std location of an integer method that panics inside core
-/// (`abs`, `pow`, signed wrapping/overflowing/saturating division):
+/// (`abs`, `pow`, next-multiple and next-power overflow):
 /// the `int_impl!` or `uint_impl!` line for its type in
 /// core/src/num/mod.rs.
 fn num_loc(i: IntTy, pow: bool) -> String {
     let line = match i {
-        IntTy::I8 => 379,
-        IntTy::I16 => 404,
-        IntTy::I32 => 429,
-        IntTy::I64 => 454,
-        IntTy::I128 => 479,
-        IntTy::Isize => 559,
-        IntTy::U8 => 586,
-        IntTy::U16 => 1234,
-        IntTy::U32 => 1290,
-        IntTy::U64 => 1322,
-        IntTy::U128 => 1354,
-        IntTy::Usize => 1452,
+        IntTy::I8 => 387,
+        IntTy::I16 => 412,
+        IntTy::I32 => 437,
+        IntTy::I64 => 462,
+        IntTy::I128 => 487,
+        IntTy::Isize => 567,
+        IntTy::U8 => 594,
+        IntTy::U16 => 1243,
+        IntTy::U32 => 1299,
+        IntTy::U64 => 1331,
+        IntTy::U128 => 1363,
+        IntTy::Usize => 1461,
     };
     std_loc(if pow { 0x40 } else { 0 }, line, 5)
 }
@@ -2765,22 +2765,22 @@ impl<'b, 'p> FnGen<'b, 'p> {
 }
 
 /// The line of `ty`'s `int_impl!` or `uint_impl!` invocation in
-/// core/src/num/mod.rs (rustc 1.99, 64-bit targets): where a panic in
+/// core/src/num/mod.rs (the pinned Rust source, 64-bit targets): where a panic in
 /// one of its methods called through a fn pointer is reported.
 fn int_impl_line(ty: IntTy) -> u32 {
     match ty {
-        IntTy::I8 => 379,
-        IntTy::I16 => 404,
-        IntTy::I32 => 429,
-        IntTy::I64 => 454,
-        IntTy::I128 => 479,
-        IntTy::Isize => 559,
-        IntTy::U8 => 586,
-        IntTy::U16 => 1234,
-        IntTy::U32 => 1290,
-        IntTy::U64 => 1322,
-        IntTy::U128 => 1354,
-        IntTy::Usize => 1452,
+        IntTy::I8 => 387,
+        IntTy::I16 => 412,
+        IntTy::I32 => 437,
+        IntTy::I64 => 462,
+        IntTy::I128 => 487,
+        IntTy::Isize => 567,
+        IntTy::U8 => 594,
+        IntTy::U16 => 1243,
+        IntTy::U32 => 1299,
+        IntTy::U64 => 1331,
+        IntTy::U128 => 1363,
+        IntTy::Usize => 1461,
     }
 }
 
@@ -3475,6 +3475,26 @@ impl FnGen<'_, '_> {
     /// out of a type with a `Drop` impl (E0509, borrowck), so no place
     /// split here has one.
     fn elab_drop(&mut self, l: Local, prefix: &[Step]) -> String {
+        let body = self.elab_drop_inner(l, prefix);
+        let partial = self.move_paths[l as usize].iter().any(|p| p.len() > prefix.len() && p.starts_with(prefix));
+        if self.p.unwind
+            && partial
+            && self.path_place(l, prefix).is_some_and(|(_, t)| unwind::drop_may_unwind(self.p, &t, &mut HashSet::new()))
+        {
+            // A partially moved value bypasses its whole-value drop glue.
+            // Give the complete remaining value one continuation boundary:
+            // a panic in a child still drops later children, including those
+            // outside a nested field, before the original panic propagates.
+            unwind::partial_drop_body(&body, self.unwind_tables)
+        } else {
+            body
+        }
+    }
+
+    /// The recursive projection walk shares the outer `elab_drop` boundary.
+    /// Catching and rethrowing at each nested projection would skip its later
+    /// siblings when a destructor panics.
+    fn elab_drop_inner(&mut self, l: Local, prefix: &[Step]) -> String {
         let paths = &self.move_paths[l as usize];
         let own = paths.iter().position(|p| p == prefix);
         let deeper = paths.iter().any(|p| p.len() > prefix.len() && p.starts_with(prefix));
@@ -3532,10 +3552,13 @@ impl FnGen<'_, '_> {
         };
         match t {
             CTy::Array(el, n) if variant.is_none() => {
-                // rustc's open drop of an array (`open_drop_for_array`):
+                // The pinned rustc's open drop of an array (`open_drop_for_array`):
                 // a run of elements with no move path drops as one
                 // subslice (in index order), an element with one drops
-                // on its own, and the runs and elements go in reverse.
+                // on its own, and those parts also run in index order.
+                // Rust builds its control-flow ladder backwards but enters
+                // at the last block it created; that does not reverse the
+                // observable order of its forward `drop_ranges` list.
                 let kept: Vec<u64> = next_steps.iter().filter_map(|s| if let Step::Elem(c) = s { Some(*c) } else { None }).collect();
                 let mut parts: Vec<Result<(u64, u64), u64>> = Vec::new();
                 let (mut dropping, mut start) = (true, 0);
@@ -3555,7 +3578,7 @@ impl FnGen<'_, '_> {
                 if dropping {
                     parts.push(Ok((start, *n)));
                 }
-                for part in parts.into_iter().rev() {
+                for part in parts {
                     match part {
                         Ok((a, b)) if b > a => {
                             let i = self.tmp();
@@ -3563,7 +3586,7 @@ impl FnGen<'_, '_> {
                             let _ = write!(out, " for (uint64_t {i} = {a}; {i} < {b}; {i}++) drop_{}(&{e}.v[{i}]);", mangle(el));
                         }
                         Ok(_) => {}
-                        Err(c) => out += &self.elab_drop(l, &sub(Step::Elem(c))),
+                        Err(c) => out += &self.elab_drop_inner(l, &sub(Step::Elem(c))),
                     }
                 }
             }
@@ -3578,7 +3601,7 @@ impl FnGen<'_, '_> {
             CTy::Boxed(inner) => {
                 // Drop the still-owned part behind the pointer,
                 // then free the allocation itself (its `sizeof` needs the type defined).
-                out += &self.elab_drop(l, &sub(Step::Deref));
+                out += &self.elab_drop_inner(l, &sub(Step::Deref));
                 self.note_held(inner);
                 let et = ctype(inner);
                 let _ = write!(out, " lust_dealloc((void*){e}, sizeof({et}), _Alignof({et}));");
@@ -3588,7 +3611,7 @@ impl FnGen<'_, '_> {
                 let _ = write!(out, " switch ({d}) {{");
                 for s in next_steps {
                     if let Step::Downcast(v) = s {
-                        let body = self.elab_drop(l, &sub(s));
+                        let body = self.elab_drop_inner(l, &sub(s));
                         let _ = write!(out, " case {v}: {{{body} }} break;");
                     }
                 }
@@ -3605,7 +3628,7 @@ impl FnGen<'_, '_> {
                     _ => 0,
                 };
                 for f in 0..n {
-                    out += &self.elab_drop(l, &sub(Step::Field(f as u32)));
+                    out += &self.elab_drop_inner(l, &sub(Step::Field(f as u32)));
                 }
             }
         }
@@ -6629,7 +6652,7 @@ impl FnGen<'_, '_> {
             B::FromStrRadix(it) => {
                 // core panics on a radix outside 2..=36 before parsing,
                 // at its `from_str_radix` line for the type's sign.
-                let sloc = std_loc(0, if it.signed() { 1866 } else { 1867 }, 1);
+                let sloc = std_loc(0, if it.signed() { 1888 } else { 1889 }, 1);
                 let _ = writeln!(self.out, "    lust_radix_check({}, {sloc});", vals[1]);
                 self.parse_int_c(it, &str_of(&vals[0], &tys[0]), &vals[1])
             }
@@ -7323,9 +7346,9 @@ impl FnGen<'_, '_> {
                 let (d, n, t) = (self.tmp(), self.tmp(), self.tmp());
                 let dt = ctype(&tys[1]);
                 let (helper, sloc) = if b == B::CharEncodeUtf8 {
-                    ("lust_char_encode_utf8", std_loc(1, 2518, 9))
+                    ("lust_char_encode_utf8", std_loc(1, 2581, 9))
                 } else {
-                    ("lust_char_encode_utf16", std_loc(1, 2612, 13))
+                    ("lust_char_encode_utf16", std_loc(1, 2675, 13))
                 };
                 let _ = writeln!(
                     self.out,
@@ -7351,7 +7374,7 @@ impl FnGen<'_, '_> {
                 format!("(((*{0} >= '0' && *{0} <= '9') || ((*{0} | 32) >= 'a' && (*{0} | 32) <= 'f')))", vals[0])
             }
             B::CharIsAsciiControl => format!("(*{0} < 32u || *{0} == 127u)", vals[0]),
-            B::CharIsDigitRadix => format!("(lust_digit({}, {}, {}) != 0xFFFFFFFFu)", vals[0], vals[1], std_loc(1, 407, 9)),
+            B::CharIsDigitRadix => format!("(lust_digit({}, {}, {}) != 0xFFFFFFFFu)", vals[0], vals[1], std_loc(1, 410, 9)),
             // `abs` and `pow` inherit the caller's overflow checks
             // (`#[rustc_inherit_overflow_checks]`): off, they wrap.
             B::Abs if !self.p.overflow_checks => {
@@ -7436,7 +7459,12 @@ impl FnGen<'_, '_> {
             B::VecDrain | B::StringDrain => {
                 let f = if matches!(b, B::VecDrain) { "lust_vec_drain" } else { "lust_string_drain" };
                 let t = if self.unwind && !self.unwind_tables { "" } else { "_t" };
-                format!("{f}{t}({}, {}, {}, {}, {}, {loc})", vals[0], vals[1], vals[2], vals[3], vals[4])
+                // Vec::drain is not track_caller. A shipped adapter may name its
+                // own upstream operation with a source marker (VecDeque::drain).
+                let marked = self.body.blocks.get(self.at.0 as usize)
+                    .and_then(|bb| crate::stdloc::site(self.p, self.map, bb.term_span)).is_some();
+                let at = if b == B::VecDrain && !marked { std_loc(3, 3095, 36) } else { loc.to_string() };
+                format!("{f}{t}({}, {}, {}, {}, {}, {at})", vals[0], vals[1], vals[2], vals[3], vals[4])
             }
             B::VecDrainLen => format!("({0}->back - {0}->front)", vals[0]),
             B::VecDrainNext | B::VecDrainNextBack => {
@@ -7629,8 +7657,8 @@ impl FnGen<'_, '_> {
                     rt = ctype(&rc),
                     et = ctype(e),
                     // `swap` is not track_caller: its two `borrow_mut`s panic in cell.rs.
-                    la = std_loc(9, 1083, 30),
-                    lb = std_loc(9, 1083, 56)
+                    la = std_loc(9, 1085, 30),
+                    lb = std_loc(9, 1085, 56)
                 );
                 "((lust_Unit){})".into()
             }
@@ -7661,7 +7689,7 @@ impl FnGen<'_, '_> {
                         ctype(cell),
                         vals[0],
                         // `take` is not track_caller: its `replace` panics in cell.rs.
-                        std_loc(9, 1434, 14)
+                        std_loc(9, 1436, 14)
                     );
                 } else {
                     let _ = writeln!(self.out, "    {et}* {c} = {}; {et} {old} = *{c}; *{c} = {def};", vals[0]);
@@ -8193,7 +8221,7 @@ impl FnGen<'_, '_> {
                 let _ = writeln!(
                     self.out,
                     "    if ({i} >= {vv}->len) lust_panic_nn(\"swap_remove index (is \", {i}, \") should be < len (is \", {vv}->len, \")\", {});\n    {et} {t} = (({et}*){vv}->ptr)[{i}];\n    (({et}*){vv}->ptr)[{i}] = (({et}*){vv}->ptr)[{vv}->len - 1];\n    {vv}->len--;",
-                    std_loc(3, 2258, 13)
+                    std_loc(3, 2180, 13)
                 );
                 t
             }
@@ -8691,7 +8719,7 @@ impl FnGen<'_, '_> {
                     "    {{ uint32_t d = lust_digit({}, {}, {}); if (d != 0xFFFFFFFFu) {{ {field} = d;{some} }} }}",
                     vals[0],
                     vals[1],
-                    std_loc(1, 407, 9)
+                    std_loc(1, 410, 9)
                 );
                 t
             }
@@ -8834,8 +8862,8 @@ impl FnGen<'_, '_> {
                 let op = if b == B::WrappingDiv { 3 } else { 4 };
                 let (o, rc) = checked_call(self, &ua, &ub, op);
                 let msg = div0(b);
-                // The signed forms divide inside core; the unsigned ones at the caller.
-                let at = if sgn { num_loc(it, false) } else { loc.to_string() };
+                // The pinned signed and unsigned methods both track their caller.
+                let at = loc;
                 let _ = writeln!(self.out, "    if ({rc} < 0) lust_panic_cstr(\"{msg}\", {at});");
                 format!("(({ct}){o})")
             }
@@ -9162,8 +9190,8 @@ impl FnGen<'_, '_> {
             let (o, rc) = (self.tmp(), self.tmp());
             let _ = writeln!(self.out, "    uint64_t {o}; int {rc} = lust_checked_op({ua}, {ub}, {bits}, {}, {op}, &{o});", sgn as i32);
             let div0msg = if op == 4 { "attempt to calculate the remainder with a divisor of zero" } else { "attempt to divide by zero" };
-            // The signed forms divide inside core; the unsigned ones at the caller.
-            let at = if sgn { num_loc(it, false) } else { loc.to_string() };
+            // The pinned signed and unsigned methods both track their caller.
+            let at = loc;
             let _ = writeln!(self.out, "    if ({rc} < 0) lust_panic_cstr(\"{div0msg}\", {at});");
             if matches!(b, B::SaturatingAdd | B::SaturatingSub | B::SaturatingMul | B::SaturatingDiv) {
                 // Clamp to the endpoint the true result passes.
@@ -14904,9 +14932,9 @@ mod tests {
             let shards = names::glue_shards(&program, &glue, &outs, 1);
             let drop_hooks = format!("void drop_{}_(", ctype(&CTy::Adt(hooks)));
             let shard = shards.iter().find(|s| s.lines().any(|l| l.starts_with(&drop_hooks) && l.ends_with('{'))).expect("a shard defines the struct's drop glue");
-            assert!(shard.contains("inline void drop_O_Rcdyn_(O_O_Rcdyn_ *p) {"), "the field's drop is inline there:\n{shard}");
+            assert!(shard.contains("inline void drop_O_Rcdyn_(void *raw) {"), "the field's drop is inline there:\n{shard}");
             assert!(shard.lines().all(|l| !l.starts_with("void drop_O_Rcdyn_(")), "no declaration of it without inline:\n{shard}");
-            assert_eq!(shards.iter().filter(|s| s.lines().any(|l| l.starts_with("void drop_O_Rcdyn_(O_O_Rcdyn_ *p) {"))).count(), 1, "one external definition");
+            assert_eq!(shards.iter().filter(|s| s.lines().any(|l| l.starts_with("void drop_O_Rcdyn_(void *raw) {"))).count(), 1, "one external definition");
             let keys = names::glue_shard_keys(&glue, &outs, 1);
             let made = names::glue_shard_texts(&program, &glue, &keys, &[], true);
             assert_eq!(made.iter().map(|(c, _)| c.as_str()).collect::<Vec<_>>(), shards, "a record does not change a shard");

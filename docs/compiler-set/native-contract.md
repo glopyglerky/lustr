@@ -1,92 +1,150 @@
-# lustr compiler contract
+# Lustr compiler contract
 
-Required architecture: one Lustr compiler, using Lust for supported work and
-imported upstream Rust implementation for its complement. The
-[governing plan](architecture-plan.md), reaffirmed 18 November 2026, controls
-implementation and release claims. The current candidate does not yet satisfy
-the complete integrated boundary.
+The [governing architecture plan](architecture-plan.md) records the user's fixed
+requirement. It supersedes the former requirement to implement every Rust gap
+independently as a native extension. Follow the [design](design.md),
+[completion checklist](completion-checklist.md), and dated
+[qualification review](qualification-review-2026-11-18.md) when implementing or
+claiming delivery.
 
-## Required result
+## Required behavior
 
-lustr is the full replacement compiler being built; blueFe packages it.
-Importing upstream Rust source and internal compiler services is explicitly
-permitted, with pinned identities, licenses, notices and provenance. There is
-no requirement to reconstruct missing Rust semantics independently.
+Lustr compiles the user's unchanged Rust program as one owned compilation.
+Lust handles the work it supports. Imported upstream Rust implementation handles
+the complement. Both must compose in the same output with genuine Rust linkage,
+metadata, and runtime behavior. blueFe may deliver the resulting toolchain;
+packaging does not replace the compiler work.
 
-Preserve Lust's native frontend, incremental behavior and speed for supported
-work. The complementary implementation supplies what Lust lacks, including
-the necessary shared semantic and artifact services. Native and complementary
-work must compose inside the compilation of the same unchanged Rust program.
-There is no requirement for large speed gains outside Lust's subset.
+Preserve Lust's frontend, retained worker, precise dependency reads, and fast
+body-edit behavior. Do not make every supported request run a complete Rust
+frontend before native admission. The architecture may use internal workers or
+daemons while retaining one compilation contract.
 
-Reuse prior code and qualification, and investigate earlier failures before
-repeating an approach. A coordinator, language selector or whole-program
-compile/fail/retry wrapper does not satisfy this contract, even when the stock
-compiler is bundled in the package. Correctness fixes to those transitional
-routes do not make them the target architecture.
+Actual Lust support and current bridge coverage are different sets. A bridge
+that only represents scalar functions must not redefine Lust's supported subset.
+Work that Lust supports but the bridge cannot carry remains an integration gap.
+Do not route all of a mixed program to stock rustc and count that as completed
+native participation.
 
-## Compiler and Cargo boundaries
+## Upstream implementation and source ownership
 
-The required boundary automatically assigns supported and complementary work
-from actual compiler capabilities before emission. An eligible native function
-and complementary Rust must execute in one unchanged output through real symbols, instance
-identities, layouts, FnAbi and drop/unwind contracts. Keep Lust's retained
-frontend and body-edit path useful without running full Rust analysis first.
-Repeated rustc_driver calls create fresh contexts; a daemon alone does not
-provide this reuse. Neither whole-target routing nor the existing narrow
-scalar-only bridge is completion. Do not require a second complete Rust frontend
-on every supported request merely to determine that Lust can compile it.
+Importing upstream Rust source, internal compiler services, metadata machinery,
+and their necessary dependency graph is allowed. There is no requirement to
+reconstruct every missing Rust semantic rule independently. Importing the full
+upstream dependency graph is different from executing a complete second
+compiler pipeline for every supported request.
 
-Use one lustr-facing toolchain and Cargo's real graph, configuration, jobserver
-and parallel units. Preserve source, package/target selection, features, target,
-profiles, panic strategy, build scripts, proc macros and diagnostics.
+Keep the pristine Lust reference and declared Rust source pin identifiable.
+Record necessary integration or correctness changes through explicit source
+identities, reviewable patches, notices, and the [upstream policy](upstream-lust.md).
+Do not conceal divergence in a renamed copy, generated overlay, or unrecorded
+build-time patch. This documentation does not modify a pin or admit an unreviewed
+source change.
 
-Lust has no rustc-compatible rlib/rmeta format. Do not fabricate metadata,
-dep-info or ABI compatibility. A unit requiring Rust metadata or unsupported
-semantics can use the full Rust implementation. Whole-target Lust compilation
-and mixing native objects with Rust crates are distinct contracts.
+A necessary correctness repair requires a reproducible failure and validation
+of the changed behavior. It does not need to make compilation faster to be
+legitimate. Measure material performance effects and preserve regressions.
+Small overhead within the agreed practical tolerance is acceptable; correctness
+must not be weakened to recover a fractional millisecond.
 
-Derive the capability boundary from actual request contracts, resolved compiler
-representations, semantic requirements and ABI facts, not source keyword guesses.
-Unsupported work is an explicit planning result before generation. A failed
-native whole-program compilation must not be the normal discovery mechanism for
-the complement. Preserve implementation failures, invalid Rust, crashes and
-signals. Never retry an already executed application or test through another
-compiler.
+## Capability and failure contract
 
-Imported compiler services must retain their real initialization requirements.
-A prior late-loaded compiler-library experiment failed TLS initialization;
-importing upstream implementation does not justify repeating that mechanism.
+Use actual compiler representations and resolved semantic facts for internal
+work assignment before emission. Keywords, successful parsing, or a native
+compiler's nonzero exit are not sufficient evidence of capability.
 
-## Source and delivery
+The internal boundary must distinguish:
 
-Preserve the pristine Lust reference and its [explicit integration policy](upstream-lust.md).
-Imports of Rust belong in separately identified source/toolchain components.
-The permission to import does not authorize unexplained changes to Lust,
-hidden overlays, changes to blueFe's protected pin, or license/history loss.
+- Admitted native work, with retained checked state and explicit semantic,
+  runtime, ABI, target, and dependency obligations.
+- Work requiring imported Rust capability or shared semantic services. This is
+  a continuation of the same compilation, not a certificate that unchecked
+  source is valid.
+- Invalid Rust, reported through the authoritative checking implementation.
+- An implementation, transport, emitter, object, publication, or linker failure.
 
-The semantic-image and native language experiments remain retained research.
-Their missing traits, generic bodies or core records are not prerequisites for
-full Rust delivery through the imported implementation. Do not resume
-feature-by-feature reconstruction as the assumed architecture.
+A failed admitted native emission must fail the request. It cannot silently
+become successful LLVM generation or a new whole-program compiler attempt.
+Preserve errors, signals, diagnostics, and stdout. Do not use diagnostic text to
+select a compiler. Never retry a program or test that has already executed.
+Independent correctness oracles may compare results during qualification; they
+must not hide the requested compilation's failure.
 
-## Qualification
+## Shared program and build contract
 
-Check unchanged full Rust projects, real Cargo dependencies, build scripts,
-proc macros, tests, invalid Rust and panic/drop behavior. Exercise no_std with
-the real core/alloc identities and appropriate target/runtime/link evidence.
-A host-linked native example does not establish freestanding support.
+Preserve definition and generic-instance identities, macro hygiene, bindings,
+types, trait obligations, layouts, calling conventions, constants, symbols,
+drops, allocation ownership, unwinding, and dependency state across the boundary.
+Use imported upstream services where those facts are missing from Lust.
 
-Measure the integrated Lust path against the same pinned Lust on equivalent
-supported work. Keep cold, no-op, edits, rejection and compile-plus-test results
-separate. Preserve regressions and exact identities. Upstream's speed results
-motivate this path but do not establish a ratio for an unmeasured integration.
-Full-Rust behavior and Lust-path performance are separate acceptance checks.
+Bind language and library semantics to the declared Rust source, independently
+of the compiler used to build Lustr. Unicode data illustrates the requirement.
+Core character operations and the compiler's lexical dependencies have separate
+pins; do not infer that all tables must share a version or fix a disagreement
+by changing a reported version. The qualification review records known gaps.
 
-Report actual implementations, platforms, imports, duplicate work and limits.
-Acceptance needs evidence of the architecture itself: supported work remains
-with Lust, complementary work uses the imported implementation, and mixed
-compilation does not discover its partition by failed native generation. Tests
-passing through a packaged stock compiler cannot replace that evidence.
-Do not claim independent Rust semantics or whole-toolchain memory safety. Keep
-source, failed firsts, published PR7, rollback, evidence and ownership intact.
+Lust's standalone C object is not a Rust rlib or rmeta. Reuse the real Rust
+metadata encoder, archive writer, dependency information, and linker with valid
+shared facts. Do not fabricate metadata or require independent reconstruction
+of Rust's private format. A downstream Rust crate must consume the actual
+artifacts through its normal compiler contract.
+
+Preserve the user's source, Cargo graph, feature selection, dependency versions,
+target, profile, debug information, overflow checks, panic strategy, build scripts,
+procedural macros, compiler arguments, and configuration precedence. A command
+adapter may preserve Cargo behavior. A coordinator or language selector cannot
+substitute for the integrated compiler.
+
+## Current implementations are not completion
+
+The [plan's snapshot table](architecture-plan.md#default-code-and-audited-candidates-are-different-snapshots)
+distinguishes the default branch from later candidates. The default at
+`7cea76c9d3adc587b54ccff168fe07efafd40309` contains the native-first compatibility
+entry and optional semantic inspection. It does not contain the later scalar
+mixed bridge.
+
+The architecture-audited PR29 candidate implements real scalar object
+composition and typed pre-emission native admission. Cold mixed requests still
+run whole-crate Rust analysis; the standalone retry and general semantic/runtime
+ownership gaps remain. PR30 proposes further correctness repairs, with exact
+validation tracked separately. Neither a proposed patch nor a passing bounded
+gate establishes full architecture completion.
+
+Retain useful compatibility tools and published experiments with their actual
+scope. Their forwarding behavior, Cranelift results, rustc build tuning, and
+successful full-Rust commands are not substitutes for the required native and
+complementary work assignment.
+
+The [19 November candidate continuation](design.md#candidate-continuation--19-november-2026)
+adds an owning native preparation interface and further correctness repairs.
+Those components retain their scoped evidence; the required shared semantic
+continuation, general mixed coverage and public integration remain incomplete.
+
+## Qualification and stopping criteria
+
+Architecture, correctness, platform support, and performance are separate release
+conditions. The [checklist](completion-checklist.md) must identify evidence for
+all applicable conditions on the exact delivered source and components.
+
+Require unchanged supported, complementary, and mixed programs; valid and invalid
+Rust; real Cargo dependencies and metadata consumers; build scripts and
+procedural macros; runtime output and exit status; panic/drop behavior; and cold
+versus retained equivalence after relevant edits. A success status alone cannot
+establish correct code or the implementation that produced it.
+
+Keep large gains on Lust-supported work and accept modest integration overhead
+relative to Lust. Keep ordinary full Rust near the matching stock compiler;
+large gains there are not required. Measure each relevant operation separately,
+with matched settings and complete commands. Preserve raw samples, source
+identities, prior strict results, failures, and regressions. Do not average a
+slow operation away or substitute an easier profile.
+
+A finite suite does not prove every Rust program correct. Completion requires
+the implemented compiler boundary and representative full-project evidence for
+the stated scope. Migration toward memory-safe implementation remains separate
+future work and must preserve semantics.
+
+The superseded contract remains accessible at its
+[immutable pre-plan source](https://github.com/glopyglerky/lustr/blob/7cea76c9d3adc587b54ccff168fe07efafd40309/docs/compiler-set/native-contract.md).
+Its independent-reimplementation and per-change faster-results requirements are
+not current instructions.

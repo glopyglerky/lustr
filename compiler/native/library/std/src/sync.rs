@@ -35,7 +35,7 @@ impl<T, F: FnOnce() -> T> LazyLock<T, F> {
     pub fn force(this: &LazyLock<T, F>) -> &T {
         this.once.get_or_init(|| match core::intrinsics::once_take(&this.init) {
             Some(f) => f(),
-            None => panic!("LazyLock instance has previously been poisoned"), //@ std/src/sync/lazy_lock.rs:415:5
+            None => panic!("LazyLock instance has previously been poisoned"), //@ std/src/sync/lazy_lock.rs:475:5
         })
     }
 

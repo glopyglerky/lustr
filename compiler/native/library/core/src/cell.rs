@@ -151,7 +151,7 @@ impl<T, F: FnOnce() -> T> LazyCell<T, F> {
                     let value = f();
                     core::intrinsics::once_init(&this.cell.inner, value);
                 }
-                None => panic!("LazyCell instance has previously been poisoned"), //@ core/src/cell/lazy.rs:383:5
+                None => panic!("LazyCell instance has previously been poisoned"), //@ core/src/cell/lazy.rs:386:5
             }
         }
         match &this.cell.inner {
@@ -167,7 +167,7 @@ impl<T, F: FnOnce() -> T> LazyCell<T, F> {
                     let value = f();
                     core::intrinsics::once_init(&this.cell.inner, value);
                 }
-                None => panic!("LazyCell instance has previously been poisoned"), //@ core/src/cell/lazy.rs:383:5
+                None => panic!("LazyCell instance has previously been poisoned"), //@ core/src/cell/lazy.rs:386:5
             }
         }
         match &mut this.cell.inner {

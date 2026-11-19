@@ -221,17 +221,25 @@ pub struct UnixStream {
 impl UnixStream {
     /// Connects to the socket at a path.
     pub fn connect<P: AsRef<Path>>(path: P) -> io::Result<UnixStream> {
+        // Pinned std creates the socket before calling user AsRef or checking
+        // pathname bytes. Own it immediately so errors and panics close it.
+        let fd = core::intrinsics::sys_net_unix_socket();
+        if fd < 0 { return Err(os_err(-fd)); }
+        let stream = UnixStream { fd };
         let bytes = path.as_ref().as_os_str().as_encoded_bytes();
         check_pathname(bytes)?;
-        let fd = core::intrinsics::sys_net_unix_connect(bytes, 0);
-        if fd < 0 { Err(os_err(-fd)) } else { Ok(UnixStream { fd }) }
+        net_status(core::intrinsics::sys_net_unix_connect_fd(stream.fd, bytes, 0))?;
+        Ok(stream)
     }
 
     /// Connects to a socket address.
     pub fn connect_addr(addr: &SocketAddr) -> io::Result<UnixStream> {
+        let fd = core::intrinsics::sys_net_unix_socket();
+        if fd < 0 { return Err(os_err(-fd)); }
+        let stream = UnixStream { fd };
         let (bytes, abstract_flag) = addr.parts();
-        let fd = core::intrinsics::sys_net_unix_connect(bytes, abstract_flag);
-        if fd < 0 { Err(os_err(-fd)) } else { Ok(UnixStream { fd }) }
+        net_status(core::intrinsics::sys_net_unix_connect_fd(stream.fd, bytes, abstract_flag))?;
+        Ok(stream)
     }
 
     /// Creates a connected pair of streams.
@@ -379,17 +387,28 @@ pub struct UnixListener {
 impl UnixListener {
     /// Binds and listens at a path.
     pub fn bind<P: AsRef<Path>>(path: P) -> io::Result<UnixListener> {
+        let fd = core::intrinsics::sys_net_unix_socket();
+        if fd < 0 { return Err(os_err(-fd)); }
+        let listener = UnixListener { fd };
         let bytes = path.as_ref().as_os_str().as_encoded_bytes();
         check_pathname(bytes)?;
-        let fd = core::intrinsics::sys_net_unix_bind(bytes, 0);
-        if fd < 0 { Err(os_err(-fd)) } else { Ok(UnixListener { fd }) }
+        // Linux and Darwin clamp -1 to the system's listener queue limit.
+        net_status(core::intrinsics::sys_net_unix_bind_fd(listener.fd, bytes, 0, -1))?;
+        Ok(listener)
     }
 
     /// Binds and listens at a socket address.
     pub fn bind_addr(addr: &SocketAddr) -> io::Result<UnixListener> {
+        let fd = core::intrinsics::sys_net_unix_socket();
+        if fd < 0 { return Err(os_err(-fd)); }
+        let listener = UnixListener { fd };
         let (bytes, abstract_flag) = addr.parts();
-        let fd = core::intrinsics::sys_net_unix_bind(bytes, abstract_flag);
-        if fd < 0 { Err(os_err(-fd)) } else { Ok(UnixListener { fd }) }
+        #[cfg(target_os = "linux")]
+        let backlog = -1;
+        #[cfg(not(target_os = "linux"))]
+        let backlog = 128;
+        net_status(core::intrinsics::sys_net_unix_bind_fd(listener.fd, bytes, abstract_flag, backlog))?;
+        Ok(listener)
     }
 
     /// Accepts a new incoming connection.

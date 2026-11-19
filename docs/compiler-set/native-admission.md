@@ -38,9 +38,12 @@ The total-operation proof excludes unrepresented calls, panic operations,
 aggregate/runtime dependencies and scalar representations absent from the small
 C unit. This includes 128-bit integer helpers and unit-valued locals. These are
 limitations of this bridge, not claims that Lust itself cannot compile them.
-The Rust-facing boundary remains narrower still: its existing HIR and FnAbi
-checks admit represented nongeneric root functions with 64-bit integer or
-pointer-sized integer signatures.
+The Rust-facing boundary remains narrower still. Its HIR and actual FnAbi
+checks admit represented nongeneric functions with matching integer signatures.
+The [integer and module increment](mixed-integer-modules.md) expands this to
+32-bit arguments, matching narrow returns and plain functions in loaded inline
+modules. Narrow arguments still require adapters, and wider Lust support remains
+outside this bridge.
 
 Generated helper closure, actual ELF symbol/relocation checks and object I/O
 remain necessary after admission. A failure there is an implementation or
@@ -85,9 +88,11 @@ Unchanged checks may reuse a previously classified result. An edited or
 renumbered body must establish the current proof; a generic successful check
 response cannot substitute for admission.
 
-The mixed certificate schema is now **5**. Earlier certificates, which could
-record a check without the new admission proof, are not accepted. Native and
-imported Rust build identities remain part of the cache identity.
+The mixed certificate schema is now **6**. Version 5 introduced the required
+admission proof; version 6 also invalidates earlier coverage certificates before
+the integer/module expansion and definition-based candidate lookup. Earlier
+certificates are not accepted. Native and imported Rust build identities remain
+part of the cache identity.
 
 [`mixed_cache.rs`](../../crates/lustr-semantic/src/mixed_cache.rs) validates the
 complete retained certificate and required native object paths before starting an edit.

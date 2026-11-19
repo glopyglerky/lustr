@@ -1,15 +1,11 @@
-# Current product direction
-
-lustr combines Lust's fast supported subset with complete Rust compilation
-through an identified upstream Rust implementation. Importing that
-implementation is allowed. The lack of a complete independent native frontend
-or image schema does not block this architecture. Preserve and qualify the
-actual Cargo/metadata and engine boundaries.
-
-The native experiments below retain their evidence and limitations. They are
-not prerequisites for the current combined toolchain.
-
 # Fork ownership and divergences
+
+> This document records the implementation at default snapshot
+> [`7cea76c9`](https://github.com/glopyglerky/lustr/tree/7cea76c9d3adc587b54ccff168fe07efafd40309),
+> followed by older historical studies. For the required integrated compiler,
+> use the [architecture plan](architecture-plan.md), [upstream policy](upstream-lust.md)
+> and [completion checklist](completion-checklist.md). The audited PR #29
+> candidate and later continuations are described in the [design checkpoint](design.md).
 
 Lustr and BlueFe are projects with their own entry points, source maps and design
 decisions. Required upstream implementation remains where it is needed for a
@@ -18,8 +14,46 @@ research are identified rather than pasted into the primary project README.
 
 ## Lustr
 
-Active work is full native Rust and native unit/artifact composition, with two
-complementary native compilers under Cargo's graph. The explicit experimental
+The root Cargo workspace builds the compiler entry in `src/`. It uses
+`serde_json`, a bounded native C ABI loader and the separately pinned full Rust
+executable. The compatibility coordinator in `crates/lustr` remains independent,
+with no registry or C build dependencies and Rust source that forbids unsafe
+code. `crates/lustr-native-core` wraps unchanged native modules outside the
+protected tree. Owned library additions live in `library/lustr`; explicit links
+share original source instead of changing the protected baseline.
+
+`crates/lustr-semantic` remains independent because its rustc-private interface
+requires a different pinned development toolchain. It is not part of the normal
+BlueFe application build. The stock GitHub workflows remain at `.github` because
+GitHub discovers workflows there; native steps select their component directory.
+
+The native package is named `lustr-native`. Its existing `lust`/`lust-core`
+commands and protocol names remain compatibility interfaces. The optional pinned
+ts-rust source is a native qualification fixture, not another product entry point.
+Upstream licenses and source history remain intact.
+
+Current owned changes include compiler request routing, Cargo target identity,
+bounded foreground cleanup, source-library APIs and separately identified
+retained library sessions. Compatibility backend selection and its qualification
+remain separate. Earlier Lust kernel patches and experiments are historical;
+they are not present in this default snapshot's exact upstream tree. Necessary
+integration and correctness patches require explicit source identities, review
+and applicable qualification under the current preservation policy. A necessary
+correctness repair does not have to make the compiler faster.
+
+## Retained native research detail
+
+<details>
+<summary>Earlier bounded native experiments and their original limits</summary>
+
+These records preserve the component work described before this reconciliation.
+Their dates and qualification scope remain those of the linked reports. They do
+not prescribe independent reimplementation of the Rust complement or a new
+metadata format. The governing implementation order is the single
+[completion checklist](completion-checklist.md).
+
+These earlier experiments investigated full native Rust and native unit/artifact
+composition, with two native compilers under Cargo's graph. The explicit experimental
 object ABI uses original native phase APIs once, then a freestanding Clang C
 backend and actual ELF symbol-closure validation. It adds no host runtime unit
 or rustc acceptance. Its bounded primitive unit is not full core/alloc, native
@@ -108,14 +142,6 @@ consumer constant tables retain namespace visibility and re-exports. Generic con
 bodies, reference/allocation/function values and general type/generic const contexts
 remain unqualified, alongside real core/alloc/no_std runtime and native Cargo.
 
-The root Cargo workspace builds the compiler entry in `src/`. It uses
-`serde_json`, a bounded native C ABI loader and the separately pinned full Rust
-executable. The compatibility coordinator in `crates/lustr` remains independent,
-with no registry or C build dependencies and Rust source that forbids unsafe
-code. `crates/lustr-native-core` wraps unchanged native modules outside the
-protected tree. Owned library additions live in `library/lustr`; explicit links
-share original source instead of changing the protected baseline.
-
 The opt-in native ABI now composes the exact upstream modules through owned
 declarations, binding its parser and collection interfaces to owned facades.
 Affected free functions are parsed from original tokens into actual unsafe-block
@@ -129,8 +155,8 @@ Original local function items, including complete `const fn` headers, in affecte
 pinned item parser and arena append API. Native statement-item collection owns
 their scope, forward visibility, shadowing, duplicates and separate bodies.
 The default ABI retains the original `main.rs` include. No protected source,
-generated overlay or parser copy is used. The declared Lust integration diff is
-currently empty; future focused shared interfaces require the source policy's
+generated overlay or parser copy is used. At that experiment's original baseline, the declared Lust integration diff was
+empty; later focused shared interfaces require the source policy's
 exact reference/patch/result binding, independent review and appropriate evidence.
 The [interface record](proofs/native-unsafe-blocks.md) preserves the bounded
 grammar, native-expander bridge, first failures and broader semantic frontier.
@@ -164,27 +190,8 @@ extends this bounded formatting to original tuple fields and literals, including
 exact element/index tokens, structural parentheses and singleton commas. Other
 unmodeled grammar, full native language and crate support remain open.
 
-`crates/lustr-semantic` remains independent because its rustc-private interface
-requires a different pinned development toolchain. It is not part of the normal
-BlueFe application build. The stock GitHub workflows remain at `.github` because
-GitHub discovers workflows there; native steps select their component directory.
 
-The native package is named `lustr-native`. Its existing `lust`/`lust-core`
-commands and protocol names remain compatibility interfaces. The optional pinned
-ts-rust source is a native qualification fixture, not another product entry point.
-Upstream licenses and source history remain intact.
-
-Current owned changes include compiler request routing, Cargo target identity,
-bounded foreground cleanup, source-library APIs and separately identified
-retained library sessions. Compatibility backend selection and its qualification
-remain separate. Earlier Lust kernel patches and experiments are historical;
-they are not admitted to the active integration. Preserve the pristine pinned
-reference plus a small explicit reviewed diff when necessary for shared phase or
-retained-state interfaces. Correctness, independent review and appropriate
-performance evidence govern admission; unrelated faster-results requirements no
-longer block a necessary interface. Substantive missing support remains owned by
-Lustr. The source guard binds the exact reference, patch and integrated tree and
-rejects unexplained drift. This does not change blueFe's protected Rust policy.
+</details>
 
 ## BlueFe
 
@@ -207,8 +214,11 @@ reason to remain. Remove or replace it when equivalent functionality and focused
 qualification exist. Keep source movement separate from semantic changes in
 review and report any changed build or installation contracts.
 
-Full native Rust support, persistent full-Rust analysis, native rlib publishing,
-and migration toward memory-safe Rust remain future goals. TinyCC and LLVM are
+The integrated full-Rust boundary, retained shared semantics and genuine crate
+artifacts remain product work; reuse the imported upstream implementation for
+the complement. Independently rebuilding all Rust support and a new native rlib
+format are not requirements. Migration toward memory-safe Rust remains later
+work. TinyCC and LLVM are
 current external code-generation dependencies. Safe Rust at a command boundary
 does not prove their implementation safe. Track migrations and validate behavior
 as they land; do not use the future goal to block a working toolchain.

@@ -1870,14 +1870,14 @@ impl TyIntern for GlobalTys {
 /// means the same value in every body and bodies need no locks. Clone copies the
 /// local additions (codegen's iterator expansion grows a copy, lower/iter.rs).
 #[derive(Clone)]
-pub struct Tys<'g> {
-    pub global: &'g GlobalTys,
+pub struct TypeStore<G, E> {
+    pub global: G,
     /// The param env of the template body this store belongs to
     /// (empty for a concrete body). Structural trait queries
     /// (`is_copy`, `has_clone`, and kin) answer a `Param` or
     /// projection type from it: such a type is rigid and has
     /// exactly the traits its bounds give it (ARCH 4.1).
-    pub env: &'g [Predicate],
+    pub env: E,
     kinds: Arena<TyKind, Ty>,
     flags: Vec<TyFlags>,
     args_a: Arena<Box<[GenericArg]>, ArgsId>,
@@ -1889,6 +1889,33 @@ pub struct Tys<'g> {
     bindings_a: Arena<Box<[(DefId, GenericArg)]>, BindingsId>,
     /// Body-local `mk_vec`/`mk_option` cache; global hits are read from `global`.
     adt1: FxMap<(DefId, Ty), Ty>,
+}
+
+/// A body overlay while it is checked or emitted against its owning Program.
+pub type Tys<'g> = TypeStore<&'g GlobalTys, &'g [Predicate]>;
+
+/// The same local arenas while the checked request owns them between phases.
+/// This type deliberately has no TyIntern implementation: its type ids only
+/// have meaning after reattachment to the exact owning Program.
+pub(crate) type OwnedTys = TypeStore<(), ()>;
+
+impl<G, E> TypeStore<G, E> {
+    fn with_context<H, F>(self, global: H, env: F) -> TypeStore<H, F> {
+        let Self { kinds, flags, args_a, tys_a, consts, sigs, bounds, bindings_a, adt1, .. } = self;
+        TypeStore { global, env, kinds, flags, args_a, tys_a, consts, sigs, bounds, bindings_a, adt1 }
+    }
+}
+
+impl Tys<'_> {
+    pub(crate) fn detach(self) -> OwnedTys {
+        self.with_context((), ())
+    }
+}
+
+impl OwnedTys {
+    pub(crate) fn attach<'g>(self, global: &'g GlobalTys, env: &'g [Predicate]) -> Tys<'g> {
+        self.with_context(global, env)
+    }
 }
 
 impl<'g> Tys<'g> {

@@ -74,6 +74,8 @@ jobs:
       DIFFTEST_JOBS: '2'
     steps:
       - uses: actions/checkout@v4
+      - name: Reject service-manager dependencies
+        run: python3 ../../tools/check-host-dependencies.py --output "$RUNNER_TEMP/host-dependencies.json"
       - name: Check actual Unix-address helper bounds with ASan and UBSan
         run: python3 ../../tools/test-native-unix-address.py
       - name: Verify actual native dependency metadata
@@ -91,11 +93,39 @@ jobs:
       - name: Build pinned tcc
         if: steps.tcc.outputs.cache-hit != 'true'
         run: scripts/build-tcc.sh
-      - name: Install rustc 1.99
+      - name: Install the declared Rust SDK and Unicode oracle
         run: |
+          set -euo pipefail
           rustup set profile minimal
-          rustup toolchain install 1.99.0
-          rustup default 1.99.0
+          rustup toolchain install nightly-2026-11-09 --component rustc-dev
+          rustup default nightly-2026-11-09
+          expected_source=$(sed -n 's/^source = "\(.*\)"$/\1/p' ../../upstream/bluefe-core.pin)
+          actual_source=$(rustc -vV | sed -n 's/^commit-hash: //p')
+          test -n "$expected_source"
+          test "$actual_source" = "$expected_source"
+      - name: Select the declared Cargo build-directory compatibility mode
+        run: |
+          set -euo pipefail
+          # rust-lang/rust at the declared pin imports this Cargo source.
+          # Native build-script output discovery currently requires its
+          # documented compatibility layout. Preserve an explicit setting.
+          expected_cargo_source=c07ac2c4d12237effc4b94f4543769b421790045
+          actual_cargo_source=$(cargo -Vv | sed -n 's/^commit-hash: //p')
+          if test "$actual_cargo_source" != "$expected_cargo_source"; then
+            printf 'Expected Cargo source %s; acquired %s\n' "$expected_cargo_source" "$actual_cargo_source" >&2
+            exit 1
+          fi
+          cargo_layout_source=inherited
+          if test "${__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT+present}" != present; then
+            export __CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT=1
+            printf '__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT=1\n' >> "$GITHUB_ENV"
+            cargo_layout_source=defaulted
+          fi
+          {
+            cargo -Vv
+            printf 'selection=%s\n__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT=%s\n' \
+              "$cargo_layout_source" "$__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT"
+          } > "$RUNNER_TEMP/native-cargo-layout.txt"
       - name: Cache cargo registry
         uses: actions/cache@v4
         with:
@@ -127,6 +157,62 @@ jobs:
           } > "$RUNNER_TEMP/native-gate-identity.txt"
           python3 ../../tools/capture-benchmark-host.py "$RUNNER_TEMP/native-gate-host.json"
           bash scripts/ci.sh 2>&1 | tee "$RUNNER_TEMP/native-gate.log"
+      - name: Require native panic-unwind differential cases
+        if: always() && !cancelled()
+        env:
+          PANIC: unwind
+          LUST_STRICT: '1'
+          DIFFTEST_JOBS: '2'
+        run: |
+          set -euo pipefail
+          {
+            git rev-parse HEAD
+            rustc -vV
+            printf 'panic=unwind\nstrict=1\nfilter=unwind-\ndifftest_jobs=%s\n' "$DIFFTEST_JOBS"
+            sha256sum target/release/lust target/release/lust-core scripts/difftest.sh scripts/case-pool.sh
+          } > "$RUNNER_TEMP/native-unwind-identity.txt"
+          bash scripts/difftest.sh unwind- 2>&1 | tee "$RUNNER_TEMP/native-unwind.log"
+      - name: Require emitted-C panic-unwind differential cases
+        if: always() && !cancelled()
+        env:
+          PANIC: unwind
+          EH: '1'
+          EH_CC: gcc
+          EH_CXX: g++
+          LUST_STRICT: '1'
+          DIFFTEST_JOBS: '2'
+        run: |
+          set -euo pipefail
+          {
+            git rev-parse HEAD
+            rustc -vV
+            "$EH_CC" --version
+            "$EH_CXX" --version
+            printf 'panic=unwind\neh=1\nstrict=1\nfilter=unwind-\ndifftest_jobs=%s\n' "$DIFFTEST_JOBS"
+            sha256sum target/release/lust target/release/lust-core scripts/difftest.sh scripts/case-pool.sh
+          } > "$RUNNER_TEMP/native-unwind-eh-identity.txt"
+          bash scripts/difftest.sh unwind- 2>&1 | tee "$RUNNER_TEMP/native-unwind-eh.log"
+      - name: Compare every Unicode scalar with the declared Rust semantics
+        if: always() && !cancelled()
+        run: |
+          python3 ../../tools/qualify-native-unicode.py \
+            --native-core "$GITHUB_WORKSPACE/compiler/native/target/release/lust-core" \
+            --rustc "$(rustup which rustc)" \
+            --output "$RUNNER_TEMP/native-unicode"
+      - name: Check exact erased callback C types and runtime
+        if: always() && !cancelled()
+        run: |
+          python3 ../../tools/test-native-erased-callbacks.py \
+            --lust "$GITHUB_WORKSPACE/compiler/native/target/release/lust" \
+            --rustc "$(rustup which rustc)" \
+            --output "$RUNNER_TEMP/native-erased-callbacks"
+      - name: Check erased callbacks with unwind tables
+        if: always() && !cancelled()
+        run: |
+          python3 ../../tools/test-native-erased-callbacks.py \
+            --lust "$GITHUB_WORKSPACE/compiler/native/target/release/lust" \
+            --rustc "$(rustup which rustc)" --unwind-tables \
+            --output "$RUNNER_TEMP/native-erased-callbacks-eh"
       - name: Verify base image lifetime through a real daemon
         run: python3 scripts/test-base-lifetime.py "$GITHUB_WORKSPACE/compiler/native/target/release/lust"
       - name: Require exact runtime results after main return-type edits
@@ -151,12 +237,28 @@ jobs:
           name: native-gate-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}-${{ github.run_attempt }}
           path: |
             ${{ runner.temp }}/native-gate-identity.txt
+            ${{ runner.temp }}/native-cargo-layout.txt
             ${{ runner.temp }}/native-gate-host.json
             ${{ runner.temp }}/native-gate.log
+            ${{ runner.temp }}/native-unwind-identity.txt
+            ${{ runner.temp }}/native-unwind.log
+            ${{ runner.temp }}/native-unwind-eh-identity.txt
+            ${{ runner.temp }}/native-unwind-eh.log
             ${{ runner.temp }}/native-gate-builds.sha256
             ${{ runner.temp }}/native-main-transitions/report.json
             ${{ runner.temp }}/native-main-transitions/*.stdout
             ${{ runner.temp }}/native-main-transitions/*.stderr
+            ${{ runner.temp }}/host-dependencies.json
+            ${{ runner.temp }}/native-unicode/result.json
+            ${{ runner.temp }}/native-unicode/commands.json
+            ${{ runner.temp }}/native-unicode/*.stdout
+            ${{ runner.temp }}/native-unicode/*.stderr
+            ${{ runner.temp }}/native-erased-callbacks/report.json
+            ${{ runner.temp }}/native-erased-callbacks/*.stdout
+            ${{ runner.temp }}/native-erased-callbacks/*.stderr
+            ${{ runner.temp }}/native-erased-callbacks-eh/report.json
+            ${{ runner.temp }}/native-erased-callbacks-eh/*.stdout
+            ${{ runner.temp }}/native-erased-callbacks-eh/*.stderr
           if-no-files-found: warn
 
   macos-arm64:
@@ -165,41 +267,30 @@ jobs:
     runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['macos-26'] || 'macos-26' }}
     steps:
       - uses: actions/checkout@v4
+      - name: Reject service-manager dependencies
+        run: python3 ../../tools/check-host-dependencies.py --output "$RUNNER_TEMP/host-dependencies.json"
       - name: Install upstream gate's GNU Bash and command tools
         run: |
           # The upstream gate uses Bash associative arrays and wait -n.
           # macOS /bin/bash 3.2 cannot run that test harness.
-          brew install bash coreutils findutils gnu-sed flock
+          brew install bash coreutils findutils gnu-sed flock zstd
           echo "$(brew --prefix bash)/bin" >> "$GITHUB_PATH"
           for tool in coreutils findutils gnu-sed; do
             echo "$(brew --prefix "$tool")/libexec/gnubin" >> "$GITHUB_PATH"
           done
       - name: Select a sanitizer runtime with native leak detection
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           # Apple Clang's ASan rejects detect_leaks=1 on this platform.
-          # Keep the leak gate and select the upstream runtime explicitly.
-          # Runner images can retain a catalog or installed formula from an
-          # earlier patch release. Refresh both before checking the exact identity.
-          brew update
-          if brew list --versions llvm@23 >/dev/null; then
-            brew upgrade llvm@23
-          else
-            brew install llvm@23
-          fi
-          sanitizer_tools=$(brew --prefix llvm@23)/bin
-          test -x "$sanitizer_tools/clang"
-          test -x "$sanitizer_tools/llvm-symbolizer"
-          echo "SAN_CC=$sanitizer_tools/clang" >> "$GITHUB_ENV"
-          echo "ASAN_SYMBOLIZER_PATH=$sanitizer_tools/llvm-symbolizer" >> "$GITHUB_ENV"
-          "$sanitizer_tools/clang" --version
-          expected_sanitizer_version=23.1.6
-          actual_sanitizer_version=$("$sanitizer_tools/clang" -dumpversion)
-          if test "$actual_sanitizer_version" != "$expected_sanitizer_version"; then
-            printf 'Expected sanitizer Clang %s; acquired %s\n' \
-              "$expected_sanitizer_version" "$actual_sanitizer_version" >&2
-            exit 1
-          fi
+          # Pin the complete upstream compiler/runtime archive and signed
+          # provenance. Floating Homebrew releases cannot satisfy an exact pin.
+          python3 ../../tools/test-macos-sanitizer-installer.py
+          python3 ../../tools/install-macos-sanitizer.py \
+            --directory "$RUNNER_TEMP/lustr-macos-sanitizer" \
+            --github-env "$GITHUB_ENV" \
+            2>&1 | tee "$RUNNER_TEMP/macos-sanitizer-setup.log"
       - name: Verify actual Bash and GNU test commands
         run: |
           set -euo pipefail
@@ -243,11 +334,39 @@ jobs:
       - name: Build pinned tcc
         if: steps.tcc.outputs.cache-hit != 'true'
         run: scripts/build-tcc.sh
-      - name: Install rustc 1.99
+      - name: Install the declared Rust SDK and Unicode oracle
         run: |
+          set -euo pipefail
           rustup set profile minimal
-          rustup toolchain install 1.99.0
-          rustup default 1.99.0
+          rustup toolchain install nightly-2026-11-09 --component rustc-dev
+          rustup default nightly-2026-11-09
+          expected_source=$(sed -n 's/^source = "\(.*\)"$/\1/p' ../../upstream/bluefe-core.pin)
+          actual_source=$(rustc -vV | sed -n 's/^commit-hash: //p')
+          test -n "$expected_source"
+          test "$actual_source" = "$expected_source"
+      - name: Select the declared Cargo build-directory compatibility mode
+        run: |
+          set -euo pipefail
+          # rust-lang/rust at the declared pin imports this Cargo source.
+          # Native build-script output discovery currently requires its
+          # documented compatibility layout. Preserve an explicit setting.
+          expected_cargo_source=c07ac2c4d12237effc4b94f4543769b421790045
+          actual_cargo_source=$(cargo -Vv | sed -n 's/^commit-hash: //p')
+          if test "$actual_cargo_source" != "$expected_cargo_source"; then
+            printf 'Expected Cargo source %s; acquired %s\n' "$expected_cargo_source" "$actual_cargo_source" >&2
+            exit 1
+          fi
+          cargo_layout_source=inherited
+          if test "${__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT+present}" != present; then
+            export __CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT=1
+            printf '__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT=1\n' >> "$GITHUB_ENV"
+            cargo_layout_source=defaulted
+          fi
+          {
+            cargo -Vv
+            printf 'selection=%s\n__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT=%s\n' \
+              "$cargo_layout_source" "$__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT"
+          } > "$RUNNER_TEMP/native-cargo-layout.txt"
       - name: Cache cargo registry
         uses: actions/cache@v4
         with:
@@ -281,6 +400,62 @@ jobs:
             sha256sum Cargo.toml Cargo.lock build.rs scripts/ci.sh
           } > "$RUNNER_TEMP/native-gate-identity.txt"
           bash scripts/ci.sh 2>&1 | tee "$RUNNER_TEMP/native-gate.log"
+      - name: Require native panic-unwind differential cases
+        if: always() && !cancelled()
+        env:
+          PANIC: unwind
+          LUST_STRICT: '1'
+          DIFFTEST_JOBS: '2'
+        run: |
+          set -euo pipefail
+          {
+            git rev-parse HEAD
+            rustc -vV
+            printf 'panic=unwind\nstrict=1\nfilter=unwind-\ndifftest_jobs=%s\n' "$DIFFTEST_JOBS"
+            sha256sum target/release/lust target/release/lust-core scripts/difftest.sh scripts/case-pool.sh
+          } > "$RUNNER_TEMP/native-unwind-identity.txt"
+          bash scripts/difftest.sh unwind- 2>&1 | tee "$RUNNER_TEMP/native-unwind.log"
+      - name: Require emitted-C panic-unwind differential cases
+        if: always() && !cancelled()
+        env:
+          PANIC: unwind
+          EH: '1'
+          LUST_STRICT: '1'
+          DIFFTEST_JOBS: '2'
+        run: |
+          set -euo pipefail
+          export EH_CC="$SAN_CC"
+          export EH_CXX="${SAN_CC%/*}/clang++"
+          {
+            git rev-parse HEAD
+            rustc -vV
+            "$EH_CC" --version
+            "$EH_CXX" --version
+            printf 'panic=unwind\neh=1\nstrict=1\nfilter=unwind-\ndifftest_jobs=%s\n' "$DIFFTEST_JOBS"
+            sha256sum target/release/lust target/release/lust-core scripts/difftest.sh scripts/case-pool.sh
+          } > "$RUNNER_TEMP/native-unwind-eh-identity.txt"
+          bash scripts/difftest.sh unwind- 2>&1 | tee "$RUNNER_TEMP/native-unwind-eh.log"
+      - name: Compare every Unicode scalar with the declared Rust semantics
+        if: always() && !cancelled()
+        run: |
+          python3 ../../tools/qualify-native-unicode.py \
+            --native-core "$GITHUB_WORKSPACE/compiler/native/target/release/lust-core" \
+            --rustc "$(rustup which rustc)" \
+            --output "$RUNNER_TEMP/native-unicode"
+      - name: Check exact erased callback C types and runtime
+        if: always() && !cancelled()
+        run: |
+          python3 ../../tools/test-native-erased-callbacks.py \
+            --lust "$GITHUB_WORKSPACE/compiler/native/target/release/lust" \
+            --rustc "$(rustup which rustc)" \
+            --output "$RUNNER_TEMP/native-erased-callbacks"
+      - name: Check erased callbacks with unwind tables
+        if: always() && !cancelled()
+        run: |
+          python3 ../../tools/test-native-erased-callbacks.py \
+            --lust "$GITHUB_WORKSPACE/compiler/native/target/release/lust" \
+            --rustc "$(rustup which rustc)" --unwind-tables \
+            --output "$RUNNER_TEMP/native-erased-callbacks-eh"
       - name: Verify base image lifetime through a real daemon
         run: python3 scripts/test-base-lifetime.py "$GITHUB_WORKSPACE/compiler/native/target/release/lust"
       - name: Require exact runtime results after main return-type edits
@@ -305,9 +480,31 @@ jobs:
           name: native-gate-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}-${{ github.run_attempt }}
           path: |
             ${{ runner.temp }}/native-gate-identity.txt
+            ${{ runner.temp }}/native-cargo-layout.txt
             ${{ runner.temp }}/native-gate.log
+            ${{ runner.temp }}/native-unwind-identity.txt
+            ${{ runner.temp }}/native-unwind.log
+            ${{ runner.temp }}/native-unwind-eh-identity.txt
+            ${{ runner.temp }}/native-unwind-eh.log
             ${{ runner.temp }}/native-gate-builds.sha256
             ${{ runner.temp }}/native-main-transitions/report.json
             ${{ runner.temp }}/native-main-transitions/*.stdout
             ${{ runner.temp }}/native-main-transitions/*.stderr
+            ${{ runner.temp }}/host-dependencies.json
+            ${{ runner.temp }}/native-unicode/result.json
+            ${{ runner.temp }}/native-unicode/commands.json
+            ${{ runner.temp }}/native-unicode/*.stdout
+            ${{ runner.temp }}/native-unicode/*.stderr
+            ${{ runner.temp }}/native-erased-callbacks/report.json
+            ${{ runner.temp }}/native-erased-callbacks/*.stdout
+            ${{ runner.temp }}/native-erased-callbacks/*.stderr
+            ${{ runner.temp }}/native-erased-callbacks-eh/report.json
+            ${{ runner.temp }}/native-erased-callbacks-eh/*.stdout
+            ${{ runner.temp }}/native-erased-callbacks-eh/*.stderr
+            ${{ runner.temp }}/macos-sanitizer-setup.log
+            ${{ runner.temp }}/lustr-macos-sanitizer/receipt.json
+            ${{ runner.temp }}/lustr-macos-sanitizer/environment.json
+            ${{ runner.temp }}/lustr-macos-sanitizer/*.stdout
+            ${{ runner.temp }}/lustr-macos-sanitizer/*.stderr
+            ${{ runner.temp }}/lustr-macos-sanitizer/*.status.json
           if-no-files-found: warn
