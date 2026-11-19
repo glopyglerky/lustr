@@ -58,14 +58,21 @@ macros, generic functions, associated methods and nested function declarations.
 External source modules not yet loaded at the parsing callback remain outside
 this inventory.
 
-Rust normalizes identifier spellings, while Lust currently requires identifiers
-already in NFC. A candidate must therefore have source identifier spellings
-that match Rust's canonical parsed identifiers. This is checked per identifier,
+At this record's qualification revision, Rust normalized identifier spellings
+while the native lexer required identifiers already in NFC. The scalar bridge's
+candidate admission requires source identifier spellings that match Rust's
+canonical parsed identifiers. This is checked per identifier,
 with raw/lifetime token prefixes accounted for. Decomposed parameter and local
 names stay with imported Rust before a native request. Canonical Unicode names
 and Unicode comments remain eligible. Required raw-keyword quoting is preserved
 in the internal function projection. This check does not normalize or alter the
 user's source.
+
+The [native identifier normalization repair](identifier-normalization.md) now
+uses the declared Rust normalization implementation. The scalar projection's
+spelling restriction remains until its own source/identity handoff is qualified
+for decomposed spellings. It is a temporary unrepresented bridge case, not a
+current native lexer requirement.
 
 Candidate lookup uses the actual body span and hygiene context. Checked HIR
 ownership must identify a plain function owned by the crate or a module. Cold

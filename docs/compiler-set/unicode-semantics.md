@@ -24,6 +24,14 @@ entries therefore remain unchanged. Bumping them to Unicode 18 would differ from
 the declared Rust compiler. The independent verifier checks their data against
 the actual pinned dependencies.
 
+The subsequent [identifier normalization repair](identifier-normalization.md)
+imports the pinned normalization implementation itself. Valid decomposed names
+now normalize before native interning, with original source spans, raw token
+identity and literal bytes preserved. Its source-bound cold and retained checks
+include macro output and assertion panic payloads. The current scalar bridge's
+separate source-spelling admission restriction remains explicitly qualified in
+that record.
+
 The [verification record](evidence/unicode-repair-20261118/verification.json)
 binds these results to native build `0182ba4476830b1a` and its exact source and
 binary identities:
