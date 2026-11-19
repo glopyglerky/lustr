@@ -21,15 +21,17 @@ completes this architecture. A missing implementation must remain visible.
 
 ## Current source state
 
-The observed default is
+The pre-correction default is
 [7cea76c9](https://github.com/glopyglerky/lustr/tree/7cea76c9d3adc587b54ccff168fe07efafd40309).
 The audited continuation is [PR #32](https://github.com/glopyglerky/lustr/pull/32)
 at [cb0721d4](https://github.com/glopyglerky/lustr/tree/cb0721d49be95ec3f34a113c2354bc9d2a38bbf3).
 It contains reusable native/correctness/metadata work but also prohibited retry
-and whole-consumer analysis paths. This documentation change establishes their
-required disposition. It does not remove product code or qualify a replacement.
-The [design checkpoint](design.md) and [disposition](retained-work-disposition.md)
-record that distinction.
+and whole-consumer analysis paths. [PR #31](https://github.com/glopyglerky/lustr/pull/31)
+landed the governing documentation without changing product source. The current
+[implementation cleanup](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/exclusive-coverage-cleanup.md) removes the conflicting
+routes and records bounded verification. It does not implement the unfinished
+complement or qualify a replacement. The [design checkpoint](design.md) and
+[disposition](retained-work-disposition.md) preserve the source distinctions.
 
 ## The concrete conflicting direction
 
@@ -54,12 +56,21 @@ not rename them as research-only execution paths.
 | 4 | Retain correctness across changes | Cold and retained behavior agree across body, signature, type, trait, macro, dependency and configuration changes. Unaffected native work remains retained. |
 | 5 | Use the boundary through public commands | Standalone and Cargo requests preserve the original build contract. No user-selected language engine, stock backup or error-driven compiler retry remains. |
 | 6 | Qualify exact source and package | Every advertised platform and profile passes applicable actual-native, complementary, mixed, invalid-input, runtime, package and failure controls. |
-| 7 | Assess speed against the correct references | Supported work stays near matched Lust and complementary work near matched rustc, separately, with actual paths observed and losses retained. |
+| 7 | Assess speed against the correct references | Demonstrate overall end-to-end acceleration over matched rustc for the declared workload. Report supported and complementary comparisons separately, preserving stock-Lust matching as the ongoing goal and all losses as evidence. |
 
 The [completion checklist](completion-checklist.md) is the single work register.
 These steps are dependencies, not permission to call a partial interface the
 completed compiler. Useful correctness repairs can proceed alongside structural
 work, but cannot substitute for it.
+
+Support rules are established from pinned upstream source and qualification,
+then applied during the ordinary frontend/retained-state update. Do not add a
+trial compilation, scanner pass or second checker as an admission stage. Unknown
+donor evidence is not complementary ownership. Evaluate each material boundary's
+added cost during integration; step 7 qualifies the final package rather than
+deferring all performance work to the end. The
+[support and cost analysis](exclusive-coverage-mathematics.md) records the CI
+coverage and cost deductions behind these requirements.
 
 ## Immediate missing artifact capability
 
@@ -94,6 +105,12 @@ correctness, actual artifact integration, target/runtime behavior and the
 [performance policy](practical-performance.md). A green coordinator test,
 source manifest or benchmark of scalar emission cannot establish those facts.
 No current package has been qualified as the full product.
+
+The first qualified release must beat matched stock rustc overall. Do not hold
+that release for perfect stock-Lust parity or the provisional 10%/5% subset
+targets. Those remain separate optimization goals and named claims that require
+their own evidence. Workload selection and frequencies must be fixed before
+measurement; selective fast cases cannot establish the overall result.
 
 The prior [18 November plan](https://github.com/glopyglerky/lustr/blob/f42649f4f02d170dc899ac70fcc048db2b91da73/docs/compiler-set/architecture-plan.md)
 and [older default plan](https://github.com/glopyglerky/lustr/blob/7cea76c9d3adc587b54ccff168fe07efafd40309/docs/compiler-set/native-contract.md)
