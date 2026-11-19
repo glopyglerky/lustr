@@ -47,10 +47,10 @@ def main():
     records = []
     identities = {"native_core_sha256": sha256(native), "rustc_sha256": sha256(rustc)}
 
-    def run(name, argv, seconds=90, expected_code=0):
+    def run(name, argv, seconds=90, expected_code=0, child_env=None):
         stdout, stderr = output / f"{name}.stdout", output / f"{name}.stderr"
         with stdout.open("wb") as out, stderr.open("wb") as err:
-            result = subprocess.run([str(x) for x in argv], cwd=root, env=env, stdout=out, stderr=err, timeout=seconds)
+            result = subprocess.run([str(x) for x in argv], cwd=root, env=env if child_env is None else child_env, stdout=out, stderr=err, timeout=seconds)
         record = {"name": name, "argv": [str(x) for x in argv], "returncode": result.returncode,
                   "stdout_bytes": stdout.stat().st_size, "stdout_sha256": sha256(stdout),
                   "stderr_bytes": stderr.stat().st_size, "stderr_sha256": sha256(stderr)}
@@ -84,8 +84,19 @@ def main():
     env["RUSTC"] = str(rustc)
     run("data-generation-check", ["bash", root / "compiler/native/scripts/gen-unicode.sh", "--check"])
     verifier = output / "verify-compiler-data"
-    run("data-verifier-build", [rustc, "--edition=2024", "-O", "-C", "rpath", root / "compiler/native/tools/verify_unicode_semantics.rs", "-o", verifier])
-    run("data-verifier-run", [verifier])
+    # rustc-dev's compiler dependencies link LLVM from the SDK's top-level
+    # lib directory. A normal rustup install does not duplicate it beneath
+    # lib/rustlib/<host>/lib, which `-C rpath` alone selects for rustc_driver.
+    sdk_lib = sysroot / "lib"
+    run("data-verifier-build", [rustc, "--edition=2024", "-O", "-C", "rpath", "-L", f"native={sdk_lib}",
+                                root / "compiler/native/tools/verify_unicode_semantics.rs", "-o", verifier])
+    verifier_env = env.copy()
+    for variable in ("LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH"):
+        previous = verifier_env.get(variable)
+        verifier_env[variable] = str(sdk_lib) + (os.pathsep + previous if previous else "")
+    # Scope the loader path to this compiler-data verifier. User fixture
+    # executables keep the same environment used by the differential test.
+    run("data-verifier-run", [verifier], child_env=verifier_env)
     fixtures = [
         ("const-runtime", root / "compiler/native/tests/pass/unicode_const_runtime_semantics.rs"),
         ("runtime-exact", root / "compiler/native/tools/unicode_runtime_exact.rs"),
