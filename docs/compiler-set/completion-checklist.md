@@ -34,7 +34,21 @@ repair because the historical review described its predecessor.
 
 ## 0. Make the contract authoritative and consolidate existing work
 
-**Status: documentation correction prepared; implementation consolidation open.**
+**Status: corrected contract and existing repairs consolidated on the candidate;
+default publication remains open.**
+
+The candidate incorporates PR #31's corrected contract without merging default
+`next`. PR #19's process-directory repair was already equivalent in the base.
+PR #27's scanner-fixture name is now integrated. PR #23's reproducible installer,
+SDK selection and exact LLVM 23.1.5 pin are restored; the
+[restoration record](macos-toolchain.md) explains the deliberate version choice
+and preserves every sanitizer gate. PR #30's callback repair and corrected unit
+expectations are integrated, with fresh
+[ordinary and unwind results](native-combined-qualification.md).
+The native source declaration records tree
+`7dbb7ac001f81c17adbbbd030573220dadfc079a` and its exact diff from pristine Lust.
+These dispositions supersede the outstanding status of the corresponding
+historical audit items below; they do not qualify the entire compiler or default.
 
 - Land the reviewed documentation correction on `next` so its AGENTS, README,
   contract, design and roadmap stop prescribing independent Rust reimplementation

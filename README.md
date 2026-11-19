@@ -59,8 +59,9 @@ on that platform.
 
 ## Current candidate continuation
 
-This reconciliation carries the corrected PR #31 contract onto implementation
-candidate `af0a281f2d1fae04e8ebfd5aa2c4872b20245c04`. The
+This reconciliation carries the corrected PR #31 contract onto the combined
+implementation candidate. Its latest qualified native tree is
+`7dbb7ac001f81c17adbbbd030573220dadfc079a`. The
 [source-bound design continuation](docs/compiler-set/design.md#candidate-continuation--19-november-2026)
 records the actual owning native prepare/emit boundary, scalar ABI and inline
 module identity checks, and further correctness repairs. The general imported
@@ -70,8 +71,18 @@ The [correctness continuation](docs/compiler-set/correctness-continuation-2026-1
 repairs the native const/runtime Unicode disagreement with shared data from the
 declared Rust SDK, verifies every Unicode scalar, and gives erased destructor
 callbacks their actual required C signatures. The [partial-drop repair](docs/compiler-set/native-drop-semantics.md)
-preserves remaining cleanup after partial moves and panics. These source-bound
-component results do not transfer earlier full-suite passes to the new candidate.
+preserves remaining cleanup after partial moves and panics. The
+[combined native qualification](docs/compiler-set/native-combined-qualification.md)
+records 5,540 ordinary cases passing at `af0a281f2`, then all 65 unwind cases
+passing through both native propagation and GCC exception tables after the
+separately identified hash-table diagnostic correction. The original failures
+remain recorded. These are Linux native results; fresh hosted sanitizer,
+daemon, mixed-package and macOS qualification is still required.
+
+The candidate also carries PR #27's distinct scanner-fixture name and restores
+[PR #23's pinned macOS LLVM acquisition and SDK selection](docs/compiler-set/macos-toolchain.md).
+All sanitizer probes remain required. The earlier process-directory ownership
+repair is already present; it has not been implemented again.
 
 The daemon starts directly and does not require systemd. Active source, build
 rules, workflows, lockfiles and compiler loader graphs were audited; a CI guard
