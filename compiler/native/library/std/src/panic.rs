@@ -56,9 +56,9 @@ impl<'a> PanicHookInfo<'a> {
         Some(core::intrinsics::panic_hook_location())
     }
 
-    pub fn can_unwind(&self) -> bool {
-        self.can_unwind
-    }
+    // The runtime carries this flag into hooks, but Rust's public
+    // `can_unwind` accessor requires the unstable `panic_can_unwind`
+    // feature. Do not expose it while feature attributes are unsupported.
 }
 
 impl core::fmt::Display for PanicHookInfo<'_> {
