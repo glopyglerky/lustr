@@ -71,3 +71,19 @@ The full combined runs stay attached to their earlier native tree. The pointer
 correction has its own rebuilt-source controls. Subsequent protocol changes or
 shared-service changes require their own evidence. No finite collection of
 tests proves every Rust program or every arithmetic domain correct.
+
+## Subsequent protocol continuation
+
+The terminal-exchange change in `64686b9c74606b3b25039e0415b12538480d0fc5`
+produces native tree `80a66542b8dc348b036e2974ab2e6e0c42a433fe` when combined
+with the source above. An independent verification compiled both complete native
+binaries with `cargo check` under the declared SDK and ran all 21 tests in the
+shared protocol module. Both checks passed. The
+[transport record](evidence/native-final-20261119/transport-verification.json)
+preserves their exact source and output identities.
+
+The tests cover partial writes, missing or malformed replies, incorrect build
+identities, invalid lengths and UTF-8, and explicit pre-execution build refusal.
+They exercise the exchange logic with an in-memory peer. They do not establish
+a real Unix socket exchange, rebuild a release package, or transfer the earlier
+full differential runs onto the changed protocol source.
