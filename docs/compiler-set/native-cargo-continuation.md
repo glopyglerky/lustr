@@ -203,12 +203,10 @@ the exact independent `host:2:42` result. The finite-query control passes seven
 exact native/Rust program comparisons and rejects a compilation-class request
 disguised with a print option. The public selector control again passes all 294
 assertions across 156 invocations. These are local cold controls; the same-daemon
-process-count control still requires hosted execution.
+process-count control has its separate hosted result below.
 
-The combined source package and the complete retained campaign require their
-own final observations. Local socket and ptrace
-restrictions remain explicit; neither a synthetic response nor a cold process
-stands in for hosted retained execution.
+Local socket and ptrace restrictions remain explicit; neither a synthetic
+response nor a cold process stands in for hosted retained execution.
 
 The [combined source record](evidence/native-cargo-plan-20261119/integration/verification.json)
 binds native tree `bf933c382fd99e52dd2586ebc46f0d0aceaa71a8` to the canonical
@@ -218,6 +216,70 @@ changed native inputs and all 15 public-entry inputs match their respective
 frozen package receipts. Independent workflow review confirms the complete
 retained inventory, real daemon/process controls and actual Darwin signing gate
 remain required. That review is not an execution result.
+
+## Combined hosted execution and the test-decoder correction
+
+The [source-bound hosted record](evidence/native-cargo-hosted-fb2b2480-20261119/README.md)
+binds published head `fb2b24802180321d3bbc534dee7083fb2a385d6b` to GitHub merge
+checkout `5c733f1468b576432f57d48b69590a6982032fc9`. Both have tree
+`afcc2cc8a565a8058c91f428e81e465d82896f0f`. The guarded constructor passed on
+that tree, as did 71 exclusive public-entry controls, all 18 exact capability
+results and all **55 retained qualifier controls without skips**, including the
+five actual pinned Rust/Cargo controls.
+
+All **349 required histories and 1,744 versions passed**. The names exactly match
+the pinned required inventory. Its 13 unresolved histories and 105 versions
+remain separate; the qualifier still reports `full_retained_coverage=false`.
+This is not full Rust coverage or a complete upstream-Lust qualification.
+
+The real retained process control passed seven exact program comparisons and
+its refused compiler-query control. Unchanged, body-edit and feature-recovery
+requests each started zero Cargo and external tool-hash processes while the
+original daemon identity remained required. A feature selection started three
+Cargo processes; a fresh explicit package started five Cargo and four hashing
+processes; an existing explicit package started two Cargo processes and no
+hashing process. The first ordinary request in this sequence followed the fresh
+explicit-package request, so its zero count does not describe a cold startup.
+These observed process counts are not a latency comparison.
+
+The job nevertheless failed its root-test step. The independent transport
+fixture still consumed the old number of fields after the explicit-target fact
+was added. Its complete-frame assertion found 260 of 262 bytes consumed. The
+[original reproduction and repair](evidence/transport-fixture-20261119/README.md)
+preserve that exact failure. The corrected fixture checks both target states and
+opposite-state rejection while retaining full consumption, build/source/output
+identity and truncation checks. No production protocol or compiler source is
+changed by that repair. The five installed-package contracts **did not execute**
+after the root command failed; this run cannot establish their success. The
+corrected test and all five contracts remain required in the follow-up run.
+
+The full original artifact uploaded successfully, but its 584,645,008 bytes
+exceed the download tool's 536,870,912-byte limit. Its server-declared digest and
+the exact refusal are recorded; no local verification of that ZIP is claimed.
+The complete decoded job log and all reported history results are preserved
+here. Per-command original streams and the literal daemon identity tuple remain
+in the remote artifact. The follow-up adds a supplemental records artifact
+alongside the existing full upload so those records can be retained separately.
+Its [packaging controls](evidence/qualification-record-packaging-20261119/README.md)
+pass 13 actual archive/inventory checks, including binary-valued streams and
+symlink boundaries. All 26 original artifact roots are read from the unchanged
+complete-upload declaration. The supplemental capture inventories and hashes
+compiled files whose bytes stay in the full artifact, and reports capture or
+size-limit failures explicitly. The complete upload remains independent and
+always scheduled. These are evidence-packaging checks, not compiler results;
+the first hosted supplemental capture remains required.
+
+Both macOS jobs for this source were cancelled before receiving a runner or
+executing any step. The [captured GitHub annotations](evidence/macos-capacity-fb2b2480/README.md)
+report hosted runner acquisition and macOS arm64 capacity failures. This is not
+a Darwin compiler result; actual
+signatures, failure preservation and the warm odd-path fixture remain required.
+The older `62da158b` Linux job has separately completed successfully; its
+[original log and receipts](evidence/native-linux-original-62da-20261119/README.md)
+remain old-source evidence, including the donor gate's 29 unsupported versions.
+The separate old macOS failure still makes that older matrix unsuccessful.
+
+## Remaining compiler boundary
 
 These changes advance Lust coverage, composition, retained dependencies and
 qualification in checklist items 1, 3, 4 and 6. No new competing Rust frontend

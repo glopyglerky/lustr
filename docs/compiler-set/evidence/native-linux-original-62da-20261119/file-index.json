@@ -1,0 +1,76 @@
+{
+  "original_job_log_sha256": "8c2d4729bc1061a563c8d5e1f1f85dc80ae431dfed513df60e4032259de33edd",
+  "original_job_log_bytes": 287408,
+  "files": [
+    {
+      "path": "artifact-receipts/native-cargo-layout-qualification/verification.json",
+      "sha256": "f195f1e486d95d475d610def24004bb3fbd5c50ecaa567d6985e47e7ecbc4e1f",
+      "bytes": 2570
+    },
+    {
+      "path": "artifact-receipts/native-cargo-layout.txt",
+      "sha256": "b0e929a4b8288374d2911818ebd122509726aef08429e9cfafe1f9cc2f66e2ab",
+      "bytes": 430
+    },
+    {
+      "path": "artifact-receipts/native-gate-builds.sha256",
+      "sha256": "f385bdf9881df52071e50d3f8c27ca8c95ccb2f4e58f2e7551600adedf6b177d",
+      "bytes": 177
+    },
+    {
+      "path": "artifact-receipts/native-gate-host.json",
+      "sha256": "fdcaf6c8d312ce3126e496572d8613008dd790677b6e11e7b6142d35087e0545",
+      "bytes": 2279
+    },
+    {
+      "path": "artifact-receipts/native-gate-identity.txt",
+      "sha256": "a9defef4b3fc20d277ea37d064ca952c06b187e8ef370dea687f48caf23ee89b",
+      "bytes": 681
+    },
+    {
+      "path": "artifact-receipts/native-main-transitions/report.json",
+      "sha256": "b1f01567556c2995bb7c76d6052f3bc0b6a82df6be1a48b5e6fd326c54649803",
+      "bytes": 17061
+    },
+    {
+      "path": "artifact-receipts/native-range-panic.json",
+      "sha256": "f2d238fd9449faa49d8d0be9adf45f69e9f19fc963fd457e4092a310dc8162ac",
+      "bytes": 536
+    },
+    {
+      "path": "artifact-receipts/native-unicode/result.json",
+      "sha256": "f8de264fac57d7cee04752091b72811d690360f409005eae94ddf9b3043be4e7",
+      "bytes": 3733
+    },
+    {
+      "path": "artifact-receipts/native-unwind-eh-identity.txt",
+      "sha256": "2643bc5728fc11532122082bf4dd580424d4c47a50f852fa17b709df644011dd",
+      "bytes": 1155
+    },
+    {
+      "path": "artifact-receipts/native-unwind-identity.txt",
+      "sha256": "a6e15d635ebf500059f8349147cf77117e114242c6f4aeecf413099ba8f296a7",
+      "bytes": 658
+    },
+    {
+      "path": "artifact.json",
+      "sha256": "14dbdbfbb41d1b3afac87dc98217fbf10c162de5eb2b5d7f3cef26014e0dea7e",
+      "bytes": 3050
+    },
+    {
+      "path": "original-job.log.gz",
+      "sha256": "a3c1bd970676a09059357a20624dbcb8982580f2e481501ab96d29a471e6c0a9",
+      "bytes": 67005
+    },
+    {
+      "path": "results.json",
+      "sha256": "7dd1a33f356b23d8a1ef9e78812a37df78e653971a9e9e9ef9821bc0b1c6edb8",
+      "bytes": 3338
+    },
+    {
+      "path": "run-source.json",
+      "sha256": "aaf47399b71682d2c933b3fcc5decae2c8b127805bc38db5d4185a18b7705cd7",
+      "bytes": 6399
+    }
+  ]
+}

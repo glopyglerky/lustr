@@ -1,0 +1,65 @@
+{
+  "schema": "lustr-record-packaging-control-evidence-v1",
+  "compiler_qualification": false,
+  "hosted_execution": false,
+  "scope": "Local packaging and original-byte retention controls only; no compiler or Darwin execution.",
+  "parent_source": "fb2b24802180321d3bbc534dee7083fb2a385d6b",
+  "commands": [
+    {
+      "argv": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+        "tools/test-qualification-records.py",
+        "-v"
+      ],
+      "exit": 0,
+      "tests": 13,
+      "stdout": "controls.stdout",
+      "stderr": "controls.stderr"
+    },
+    {
+      "argv": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+        "tools/package-qualification-records.py",
+        "--root",
+        "/tmp/lustr-qualification-records-proof/source-roots",
+        "--output",
+        "/tmp/lustr-qualification-records-proof/captured"
+      ],
+      "exit": 0,
+      "stdout": "sample.stdout",
+      "stderr": "sample.stderr"
+    }
+  ],
+  "source_sha256": {
+    "tools/package-qualification-records.py": "3363ca74981e99ecc48689dfe46c4cf8f16b5aa6c29dc396599532fffb9b056e",
+    "tools/test-qualification-records.py": "d4252c57d3857f2010c583ffb7e90d56e3d9c2631e2e9f0f26ce762e7c05a8b1",
+    ".github/workflows/compiler-set.yml": "d8d3c4df1cb3cba45614ff4fa3f72ee7f0b11845027ce0071f6a8e7881bae7b6"
+  },
+  "source_control_material": {
+    "compiled_original_path": "/usr/bin/true",
+    "compiled_original_sha256": "b381cc8c55ec524b9fa92897f0882e855357468b4a763519cec47e05994d61ff",
+    "appended_zero_bytes": 1048576,
+    "executed": false,
+    "compiled_payload_included": false
+  },
+  "sample": {
+    "original_root_patterns": 26,
+    "regular_files": 8,
+    "retained_regular_files": 7,
+    "omitted_compiled_files": 1,
+    "all_retained_bytes_match": true,
+    "omitted_file_hash_matches": true,
+    "original_files_unchanged": true,
+    "external_link_not_followed": true,
+    "archive_bytes": 577,
+    "archive_sha256": "2141c572810949e6c09616d5059d81aeed85593ceb88f0767e548aec8e05899b"
+  },
+  "evidence_sha256": {
+    "sample.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sample.stdout": "31f2b5f34d9c771dca1760be6ad07f9d7c0795403e043111cc470ead04bcc08f",
+    "controls.stderr": "cda8817f30224872f6734f9d82ea79c5ac8fb4d0daae6a4226d02d729ff80b66",
+    "controls.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sample/records.tar.gz": "2141c572810949e6c09616d5059d81aeed85593ceb88f0767e548aec8e05899b",
+    "sample/inventory.json": "970c46195df1a5ecf084be09a29b500bcbf5f2c0eb8f3c64aa92caf887066ff7"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "root_head_at_amendment": "77257c8a3aefc8ced71fce553cf644408df43546",
+  "native_tree": "bf933c382fd99e52dd2586ebc46f0d0aceaa71a8",
+  "patch_blob": "d3777126382c8c592e4130cdc67abf9efe6b2bb8",
+  "qualification_blob_before": "8ad6230f7f533320100f63331279848be6f455c7",
+  "qualification_blob_after": "e4fff80964f369091a7dbf09e8e189d763149a65",
+  "protected_sha256_unchanged": {
+    "upstream/lust-integration.patch": "d65207d8f988517ec2cd950e11fd9c77e58c81ff16c0aa46b647297548791c42",
+    "compiler/native/scripts/build-tcc.sh": "46ae40af0fcfaf23a784cf9e40c4c0de8becda2c78b73b8cb28313017cbd9aca",
+    "upstream/bluefe-core.pin": "ae93e7fb837097658ddda8881795aec4c6abe474b00f133806079a044c7dec2b",
+    "upstream/lust.pin": "a2f2937ceb269149ad52ddf3a6b60f6034bfa54867d5987eb272c2230e85d204"
+  },
+  "changed_files": {
+    "upstream/lust-integration.qualification": "5488f811f2b17b4ec86179143824af66224b26a29ad8bfcb8c213ddbb5bd54f9",
+    "upstream/lust.integration": "460865831c493c6dd22d84221030421ac0242cefb8100a6ea269558e3743142d"
+  },
+  "status": "candidate",
+  "scope": "Evidence amendment only; files left uncommitted for parent review.",
+  "checker": {
+    "path": "/tmp/lustr-integration-hosted-fb2b2480-20261119/lust-upstream-check",
+    "sha256": "b735ce317395e27a621a9d7a3b4a02cb5077dd42bd9bc3078efa52084f45a64d",
+    "source_sha256": "e0e7423043772133457f6d60a799ad90a27b78ffd6468d801ce2128a9aacd92e",
+    "compiler_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "candidate_exit": 0
+  }
+}

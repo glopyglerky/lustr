@@ -26,6 +26,8 @@ on:
       - 'tools/build-tinycc-pic.rs'
       - 'tools/apply-tinycc-signing.py'
       - 'tools/test-tinycc-signing.py'
+      - 'tools/package-qualification-records.py'
+      - 'tools/test-qualification-records.py'
       - 'upstream/tinycc-macho-signing.*'
       - 'tools/build-native-toolchain.rs'
       - 'tools/selection-toolchain-receipt.rs'
@@ -78,6 +80,8 @@ on:
       - 'tools/build-tinycc-pic.rs'
       - 'tools/apply-tinycc-signing.py'
       - 'tools/test-tinycc-signing.py'
+      - 'tools/package-qualification-records.py'
+      - 'tools/test-qualification-records.py'
       - 'upstream/tinycc-macho-signing.*'
       - 'tools/build-native-toolchain.rs'
       - 'tools/selection-toolchain-receipt.rs'
@@ -381,6 +385,23 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           python3 tools/qualify-shared-upstream.py --cargo "$(rustup which cargo)" --rustc "$(rustup which rustc)" --tcc "$RUNNER_TEMP/lustr-tinycc/install" --output "$RUNNER_TEMP/lustr-import-emission" --emission-only
+      - name: Exercise supplemental qualification record packaging
+        if: always()
+        run: python3 tools/test-qualification-records.py -v
+      - name: Package supplemental qualification records
+        if: always()
+        run: |
+          python3 tools/package-qualification-records.py \
+            --root "$RUNNER_TEMP" --output "$RUNNER_TEMP/lustr-qualification-records"
+      - name: Retain supplemental qualification records
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: exclusive-qualification-records
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/lustr-qualification-records/inventory.json
+            ${{ runner.temp }}/lustr-qualification-records/records.tar.gz
       - name: Retain source-bound results and every failure
         if: always()
         uses: actions/upload-artifact@v4

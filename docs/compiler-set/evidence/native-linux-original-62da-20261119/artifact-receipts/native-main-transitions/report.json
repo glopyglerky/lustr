@@ -1,0 +1,516 @@
+{
+  "schema": "lustr-native-main-transitions-v1",
+  "status": "passed",
+  "commands": [
+    {
+      "label": "rustc-version",
+      "argv": [
+        "/home/runner/.rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc",
+        "--version",
+        "--verbose"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "bbc9b960fe50c84bca20f3109950bcb87c48b6d1ce61d2fc2fc1519aaba2daaa",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "v1-rustc-build",
+      "argv": [
+        "/home/runner/.rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc",
+        "--edition=2024",
+        "-C",
+        "overflow-checks=on",
+        "main.rs",
+        "-o",
+        "v1-oracle"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "v1-warm-check",
+      "argv": [
+        "/home/runner/work/lustr/lustr/compiler/native/target/release/lust",
+        "check",
+        "main.rs"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "2508a4c4aa3a47650607a0cfb4b3ca27347d6177465055aa01d11b769acd4bf7"
+    },
+    {
+      "label": "v1-warm-recheck",
+      "argv": [
+        "/home/runner/work/lustr/lustr/compiler/native/target/release/lust",
+        "check",
+        "main.rs"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "ca47ad7a7490e54fae7401ec3871680343c9c41c3409f6b4e94c9d58d03116d2"
+    },
+    {
+      "label": "v1-warm-build",
+      "argv": [
+        "/home/runner/work/lustr/lustr/compiler/native/target/release/lust",
+        "build",
+        "main.rs",
+        "-o",
+        "v1-warm"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "9110c73789a45b49eedf0634d12e909323bf8876478aae014830c886f486a116"
+    },
+    {
+      "label": "v1-cold-build",
+      "argv": [
+        "/home/runner/work/lustr/lustr/compiler/native/target/release/lust",
+        "build",
+        "main.rs",
+        "-o",
+        "v1-cold"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "5ebf6d2515114804299e112f8cdc85af2f7e99fba9c38347878b0d3edf85b330"
+    },
+    {
+      "label": "v1-rustc-run",
+      "argv": [
+        "/home/runner/work/_temp/native-main-transitions/work/v1-oracle"
+      ],
+      "exit": 1,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "f86687606f8ec45aacd2c10940b70faae4fd2545fd8441d4208522d178fd8ba0",
+      "stderr_sha256": "3366fa451374333d12c2a1223a80a0ad3801d2c0a3ab394276db538fef449020"
+    },
+    {
+      "label": "v1-warm-run",
+      "argv": [
+        "/home/runner/work/_temp/native-main-transitions/work/v1-warm"
+      ],
+      "exit": 1,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "f86687606f8ec45aacd2c10940b70faae4fd2545fd8441d4208522d178fd8ba0",
+      "stderr_sha256": "3366fa451374333d12c2a1223a80a0ad3801d2c0a3ab394276db538fef449020"
+    },
+    {
+      "label": "v1-cold-run",
+      "argv": [
+        "/home/runner/work/_temp/native-main-transitions/work/v1-cold"
+      ],
+      "exit": 1,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "f86687606f8ec45aacd2c10940b70faae4fd2545fd8441d4208522d178fd8ba0",
+      "stderr_sha256": "3366fa451374333d12c2a1223a80a0ad3801d2c0a3ab394276db538fef449020"
+    },
+    {
+      "label": "v2-rustc-build",
+      "argv": [
+        "/home/runner/.rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc",
+        "--edition=2024",
+        "-C",
+        "overflow-checks=on",
+        "main.rs",
+        "-o",
+        "v2-oracle"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "v2-warm-check",
+      "argv": [
+        "/home/runner/work/lustr/lustr/compiler/native/target/release/lust",
+        "check",
+        "main.rs"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "cb68d008be47bf7d6f0882f6d1c923e5912ca781b66debefcd942b88ff101467"
+    },
+    {
+      "label": "v2-warm-recheck",
+      "argv": [
+        "/home/runner/work/lustr/lustr/compiler/native/target/release/lust",
+        "check",
+        "main.rs"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "0d2dd0b5780c101accdc3d7c1ff74c19f446eb2e70f76053a9def5f6ae387a2d"
+    },
+    {
+      "label": "v2-warm-build",
+      "argv": [
+        "/home/runner/work/lustr/lustr/compiler/native/target/release/lust",
+        "build",
+        "main.rs",
+        "-o",
+        "v2-warm"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "d9921d89b6bdae47416bba89f99063fb7e3f52098f11d28a4ed179a623b612a7"
+    },
+    {
+      "label": "v2-cold-build",
+      "argv": [
+        "/home/runner/work/lustr/lustr/compiler/native/target/release/lust",
+        "build",
+        "main.rs",
+        "-o",
+        "v2-cold"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "0a1898702d87a8c9b1cadf6e263780b0aef9964037689db6a41b0c88fc0f397d"
+    },
+    {
+      "label": "v2-rustc-run",
+      "argv": [
+        "/home/runner/work/_temp/native-main-transitions/work/v2-oracle"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "60f59a97433681138c489341c0b71dedc18862c25c2e67e6ca0297336cccf785",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "v2-warm-run",
+      "argv": [
+        "/home/runner/work/_temp/native-main-transitions/work/v2-warm"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "60f59a97433681138c489341c0b71dedc18862c25c2e67e6ca0297336cccf785",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "v2-cold-run",
+      "argv": [
+        "/home/runner/work/_temp/native-main-transitions/work/v2-cold"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "60f59a97433681138c489341c0b71dedc18862c25c2e67e6ca0297336cccf785",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "v3-rustc-build",
+      "argv": [
+        "/home/runner/.rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc",
+        "--edition=2024",
+        "-C",
+        "overflow-checks=on",
+        "main.rs",
+        "-o",
+        "v3-oracle"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "v3-warm-check",
+      "argv": [
+        "/home/runner/work/lustr/lustr/compiler/native/target/release/lust",
+        "check",
+        "main.rs"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "b67d51e444878c656240ce3f994329a2da197c459ed42a1ec182784fccdd8e5d"
+    },
+    {
+      "label": "v3-warm-recheck",
+      "argv": [
+        "/home/runner/work/lustr/lustr/compiler/native/target/release/lust",
+        "check",
+        "main.rs"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "ca47ad7a7490e54fae7401ec3871680343c9c41c3409f6b4e94c9d58d03116d2"
+    },
+    {
+      "label": "v3-warm-build",
+      "argv": [
+        "/home/runner/work/lustr/lustr/compiler/native/target/release/lust",
+        "build",
+        "main.rs",
+        "-o",
+        "v3-warm"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "c94b3259d196eb945802b3713fdaedc0550fed7b41bc953662389a8ec222c669"
+    },
+    {
+      "label": "v3-cold-build",
+      "argv": [
+        "/home/runner/work/lustr/lustr/compiler/native/target/release/lust",
+        "build",
+        "main.rs",
+        "-o",
+        "v3-cold"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "3420398099823743285e7eba0278a81ce7b216400c4f7a83549a0b54f15351c6"
+    },
+    {
+      "label": "v3-rustc-run",
+      "argv": [
+        "/home/runner/work/_temp/native-main-transitions/work/v3-oracle"
+      ],
+      "exit": 7,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "90cf25d88fdf25fde209669a8a417d5e1e17d2464da855644ecb5ce1ab9dfd60",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "v3-warm-run",
+      "argv": [
+        "/home/runner/work/_temp/native-main-transitions/work/v3-warm"
+      ],
+      "exit": 7,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "90cf25d88fdf25fde209669a8a417d5e1e17d2464da855644ecb5ce1ab9dfd60",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "v3-cold-run",
+      "argv": [
+        "/home/runner/work/_temp/native-main-transitions/work/v3-cold"
+      ],
+      "exit": 7,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "90cf25d88fdf25fde209669a8a417d5e1e17d2464da855644ecb5ce1ab9dfd60",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "v4-rustc-build",
+      "argv": [
+        "/home/runner/.rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc",
+        "--edition=2024",
+        "-C",
+        "overflow-checks=on",
+        "main.rs",
+        "-o",
+        "v4-oracle"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "v4-warm-check",
+      "argv": [
+        "/home/runner/work/lustr/lustr/compiler/native/target/release/lust",
+        "check",
+        "main.rs"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "cb68d008be47bf7d6f0882f6d1c923e5912ca781b66debefcd942b88ff101467"
+    },
+    {
+      "label": "v4-warm-recheck",
+      "argv": [
+        "/home/runner/work/lustr/lustr/compiler/native/target/release/lust",
+        "check",
+        "main.rs"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "0d2dd0b5780c101accdc3d7c1ff74c19f446eb2e70f76053a9def5f6ae387a2d"
+    },
+    {
+      "label": "v4-warm-build",
+      "argv": [
+        "/home/runner/work/lustr/lustr/compiler/native/target/release/lust",
+        "build",
+        "main.rs",
+        "-o",
+        "v4-warm"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "8981191123e0d949716d3d2affd8e0c6beba8689d1c1a5bfed38cb787f801590"
+    },
+    {
+      "label": "v4-cold-build",
+      "argv": [
+        "/home/runner/work/lustr/lustr/compiler/native/target/release/lust",
+        "build",
+        "main.rs",
+        "-o",
+        "v4-cold"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "62972593ebc94babb11c9fc9a10c2a83b1ac3b15ec06370c140f5ff5fbca26e2"
+    },
+    {
+      "label": "v4-rustc-run",
+      "argv": [
+        "/home/runner/work/_temp/native-main-transitions/work/v4-oracle"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "5da3e143e99f64c9db8e96fb3b8e4ae47d40981c1cfe3ec22fede00b81088292",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "v4-warm-run",
+      "argv": [
+        "/home/runner/work/_temp/native-main-transitions/work/v4-warm"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "5da3e143e99f64c9db8e96fb3b8e4ae47d40981c1cfe3ec22fede00b81088292",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "v4-cold-run",
+      "argv": [
+        "/home/runner/work/_temp/native-main-transitions/work/v4-cold"
+      ],
+      "exit": 0,
+      "timed_out": false,
+      "status": "completed",
+      "stdout_sha256": "5da3e143e99f64c9db8e96fb3b8e4ae47d40981c1cfe3ec22fede00b81088292",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "results": [
+    {
+      "version": "v1.rs",
+      "fixture_sha256": "170241a9b42c373be4d94ff2fe90936017f213b6d296567c423b9a7056857e74",
+      "expected_exit": 1,
+      "passed": true,
+      "retained_recheck": true,
+      "retained_build": true,
+      "compile_accepted": true,
+      "oracle_exit": 1,
+      "warm_exit": 1,
+      "cold_exit": 1,
+      "warm_timed_out": false,
+      "cold_timed_out": false,
+      "warm_matches": true,
+      "cold_matches": true
+    },
+    {
+      "version": "v2.rs",
+      "fixture_sha256": "4c08057755a47ecc88caf07361a6aca6f74f7024404473b82ab9af30ec7e7d9c",
+      "expected_exit": 0,
+      "passed": true,
+      "retained_recheck": true,
+      "retained_build": true,
+      "compile_accepted": true,
+      "oracle_exit": 0,
+      "warm_exit": 0,
+      "cold_exit": 0,
+      "warm_timed_out": false,
+      "cold_timed_out": false,
+      "warm_matches": true,
+      "cold_matches": true
+    },
+    {
+      "version": "v3.rs",
+      "fixture_sha256": "8b451fc0f186e4a24fc6bf7e4d46632c650662e1a14db83526935271b3365558",
+      "expected_exit": 7,
+      "passed": true,
+      "retained_recheck": true,
+      "retained_build": true,
+      "compile_accepted": true,
+      "oracle_exit": 7,
+      "warm_exit": 7,
+      "cold_exit": 7,
+      "warm_timed_out": false,
+      "cold_timed_out": false,
+      "warm_matches": true,
+      "cold_matches": true
+    },
+    {
+      "version": "v4.rs",
+      "fixture_sha256": "3f37ba79dda6ae52941d2633e998edc83701d69d8411c284b4fdcba2f6b327a1",
+      "expected_exit": 0,
+      "passed": true,
+      "retained_recheck": true,
+      "retained_build": true,
+      "compile_accepted": true,
+      "oracle_exit": 0,
+      "warm_exit": 0,
+      "cold_exit": 0,
+      "warm_timed_out": false,
+      "cold_timed_out": false,
+      "warm_matches": true,
+      "cold_matches": true
+    }
+  ],
+  "passed": true,
+  "source_head": "a3c878f6123b4f5dc5e2eff598b52c83ab5b4ec3",
+  "execution_workspace_cgen_sha256": "dd75d68bb65d023bf52b2e204f8476bad8848994667ae2dbb510955d92cf0167",
+  "lust_sha256": "aedc107f653d98c13b25cd353284eb1b5eb3d0164a13c1a42afd2d8539341f70",
+  "lust_core_sha256": "b0a917d7891175b352e75750c04e05b1e6870d54ecbd99555d3746d63a7f538a",
+  "rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+  "runner_sha256": "1f391308d2bb4671b211408282ef0ab7a446ccfc38a1450e78a477d9ff56879e"
+}

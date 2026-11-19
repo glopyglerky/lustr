@@ -1,0 +1,17 @@
+a3c878f6123b4f5dc5e2eff598b52c83ab5b4ec3
+run=44525981171
+attempt=1
+difftest_jobs=2
+Linux 7.0.0-1017-azure x86_64
+rustc 1.102.0-nightly (5b7b37aef 2026-11-08)
+binary: rustc
+commit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494
+commit-date: 2026-11-08
+host: x86_64-unknown-linux-gnu
+release: 1.102.0-nightly
+LLVM version: 23.1.5
+cargo 1.102.0-nightly (c07ac2c4d 2026-11-06)
+e02ac7490881846b14550a7793cce3c0eb23d87141d564fbc05470f99bdbde64  Cargo.toml
+aba44b4ef538689103916c17a2675bd86411a137ea59916ff797d21f33d370bf  Cargo.lock
+49d9bd4eb42a1389219a0e9c4ee87f85a91fcf0a357b038d8520afad61adecff  build.rs
+a075fd6c10a20f2455aacbaa939de9772f826d8fac354429cc6c6a11835fd94d  scripts/ci.sh

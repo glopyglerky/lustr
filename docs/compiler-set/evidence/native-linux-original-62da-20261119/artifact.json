@@ -1,0 +1,77 @@
+{
+  "id": 14541155848,
+  "run_id": 44525981171,
+  "attempt": 1,
+  "name": "native-gate-Linux-X64-a3c878f6123b4f5dc5e2eff598b52c83ab5b4ec3-1",
+  "api_url": "https://api.github.com/repos/glopyglerky/lustr/actions/artifacts/14541155848",
+  "sha256": "dff8ac3705cc56a618de144c76129a6e02805151d59fb8e91e8aa6378b137432",
+  "size_bytes": 48436126,
+  "members": 569,
+  "created_at": "2026-11-19T14:34:08Z",
+  "expires_at": "2027-02-17T12:39:56Z",
+  "downloaded_digest_verified": true,
+  "archive_committed": false,
+  "local_archive": "/tmp/lustr-ci-monitor-20261119/old-linux-native-gate-14541155848.zip",
+  "selected_receipts": [
+    {
+      "artifact_member": "native-gate-identity.txt",
+      "saved_as": "artifact-receipts/native-gate-identity.txt",
+      "sha256": "a9defef4b3fc20d277ea37d064ca952c06b187e8ef370dea687f48caf23ee89b",
+      "bytes": 681
+    },
+    {
+      "artifact_member": "native-gate-builds.sha256",
+      "saved_as": "artifact-receipts/native-gate-builds.sha256",
+      "sha256": "f385bdf9881df52071e50d3f8c27ca8c95ccb2f4e58f2e7551600adedf6b177d",
+      "bytes": 177
+    },
+    {
+      "artifact_member": "native-gate-host.json",
+      "saved_as": "artifact-receipts/native-gate-host.json",
+      "sha256": "fdcaf6c8d312ce3126e496572d8613008dd790677b6e11e7b6142d35087e0545",
+      "bytes": 2279
+    },
+    {
+      "artifact_member": "native-cargo-layout.txt",
+      "saved_as": "artifact-receipts/native-cargo-layout.txt",
+      "sha256": "b0e929a4b8288374d2911818ebd122509726aef08429e9cfafe1f9cc2f66e2ab",
+      "bytes": 430
+    },
+    {
+      "artifact_member": "native-unwind-identity.txt",
+      "saved_as": "artifact-receipts/native-unwind-identity.txt",
+      "sha256": "a6e15d635ebf500059f8349147cf77117e114242c6f4aeecf413099ba8f296a7",
+      "bytes": 658
+    },
+    {
+      "artifact_member": "native-unwind-eh-identity.txt",
+      "saved_as": "artifact-receipts/native-unwind-eh-identity.txt",
+      "sha256": "2643bc5728fc11532122082bf4dd580424d4c47a50f852fa17b709df644011dd",
+      "bytes": 1155
+    },
+    {
+      "artifact_member": "native-range-panic.json",
+      "saved_as": "artifact-receipts/native-range-panic.json",
+      "sha256": "f2d238fd9449faa49d8d0be9adf45f69e9f19fc963fd457e4092a310dc8162ac",
+      "bytes": 536
+    },
+    {
+      "artifact_member": "native-cargo-layout-qualification/verification.json",
+      "saved_as": "artifact-receipts/native-cargo-layout-qualification/verification.json",
+      "sha256": "f195f1e486d95d475d610def24004bb3fbd5c50ecaa567d6985e47e7ecbc4e1f",
+      "bytes": 2570
+    },
+    {
+      "artifact_member": "native-unicode/result.json",
+      "saved_as": "artifact-receipts/native-unicode/result.json",
+      "sha256": "f8de264fac57d7cee04752091b72811d690360f409005eae94ddf9b3043be4e7",
+      "bytes": 3733
+    },
+    {
+      "artifact_member": "native-main-transitions/report.json",
+      "saved_as": "artifact-receipts/native-main-transitions/report.json",
+      "sha256": "b1f01567556c2995bb7c76d6052f3bc0b6a82df6be1a48b5e6fd326c54649803",
+      "bytes": 17061
+    }
+  ]
+}

@@ -86,6 +86,7 @@ fn read_public_transport_request(
     identity: &str,
     source: &Path,
     output: &Path,
+    target_explicit: bool,
 ) -> Result<(), String> {
     use std::io::{BufRead, Read};
     use std::os::unix::ffi::OsStrExt;
@@ -98,11 +99,11 @@ fn read_public_transport_request(
     let features: usize = words[11].parse().map_err(|_| "invalid feature count")?;
     let environment: usize = if words[12] == "-" { 0 } else { words[12].parse().map_err(|_| "invalid environment count")? };
     if features > 4096 || environment > 65536 { return Err("request field count exceeds bound".into()); }
-    // Consume the actual complete frame: nine fixed fields, feature names,
+    // Consume the actual complete frame: ten fixed fields, feature names,
     // the displayed source path, then environment key/value pairs. Validate
     // identity and paths without rewriting the incoming header or overriding
     // the product's build identity.
-    for index in 0..10 + features + 2 * environment {
+    for index in 0..11 + features + 2 * environment {
         let mut size = String::new();
         reader.take(32).read_line(&mut size).map_err(|error| error.to_string())?;
         if !size.ends_with('\n') { return Err("truncated request field size".into()); }
@@ -113,6 +114,9 @@ fn read_public_transport_request(
         if index == 0 && bytes != source.as_os_str().as_bytes()
             || index == 1 && bytes != output.as_os_str().as_bytes() {
             return Err("public request names a different source or output".into());
+        }
+        if index == 7 && bytes.as_slice() != if target_explicit { b"1" } else { b"0" } {
+            return Err("public request has a different explicit-target selection".into());
         }
     }
     Ok(())
@@ -126,15 +130,19 @@ fn transport_peer_consumes_and_validates_the_actual_encoded_request() {
     let Some(transport_protocol::Invocation::Compile { mut req, .. }) = transport_protocol::parse_args(&args) else { panic!("build request"); };
     req.session.features = vec!["one".into(), "two".into()];
     req.client.env = Some(vec![("KEY".into(), "value λ".into()), ("EMPTY".into(), String::new())]);
-    let encoded = transport_protocol::encode(&req);
     let identity = transport_protocol::build_id();
-    let mut reader = Cursor::new(&encoded);
-    read_public_transport_request(&mut reader, identity, &req.file, &req.out).unwrap();
-    assert_eq!(reader.position() as usize, encoded.len(), "peer must consume every environment and source field");
-    assert!(read_public_transport_request(&mut Cursor::new(&encoded), "another-build", &req.file, &req.out).is_err());
-    assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, Path::new("/wrong-source.rs"), &req.out).is_err());
-    assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, &req.file, Path::new("/wrong-output")).is_err());
-    assert!(read_public_transport_request(&mut Cursor::new(&encoded[..encoded.len() - 1]), identity, &req.file, &req.out).is_err());
+    for target_explicit in [false, true] {
+        req.session.krate.target_explicit = target_explicit;
+        let encoded = transport_protocol::encode(&req);
+        let mut reader = Cursor::new(&encoded);
+        read_public_transport_request(&mut reader, identity, &req.file, &req.out, target_explicit).unwrap();
+        assert_eq!(reader.position() as usize, encoded.len(), "peer must consume every environment and source field");
+        assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, &req.file, &req.out, !target_explicit).is_err());
+        assert!(read_public_transport_request(&mut Cursor::new(&encoded), "another-build", &req.file, &req.out, target_explicit).is_err());
+        assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, Path::new("/wrong-source.rs"), &req.out, target_explicit).is_err());
+        assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, &req.file, Path::new("/wrong-output"), target_explicit).is_err());
+        assert!(read_public_transport_request(&mut Cursor::new(&encoded[..encoded.len() - 1]), identity, &req.file, &req.out, target_explicit).is_err());
+    }
 }
 
 #[test]
@@ -180,7 +188,7 @@ fn public_entries_keep_ambiguous_daemon_failures_terminal() {
                     }
                 };
                 stream.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
-                read_public_transport_request(&mut BufReader::new(&stream), &identity, &expected_source, &expected_output)
+                read_public_transport_request(&mut BufReader::new(&stream), &identity, &expected_source, &expected_output, false)
                     .expect("peer received the complete request for this installed compiler, source and output");
                 stream.write_all(&reply).unwrap();
             });
