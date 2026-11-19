@@ -134,6 +134,41 @@ jobs:
           } > "$RUNNER_TEMP/native-gate-identity.txt"
           python3 ../../tools/capture-benchmark-host.py "$RUNNER_TEMP/native-gate-host.json"
           bash scripts/ci.sh 2>&1 | tee "$RUNNER_TEMP/native-gate.log"
+      - name: Require native panic-unwind differential cases
+        if: always() && !cancelled()
+        env:
+          PANIC: unwind
+          LUST_STRICT: '1'
+          DIFFTEST_JOBS: '2'
+        run: |
+          set -euo pipefail
+          {
+            git rev-parse HEAD
+            rustc -vV
+            printf 'panic=unwind\nstrict=1\nfilter=unwind-\ndifftest_jobs=%s\n' "$DIFFTEST_JOBS"
+            sha256sum target/release/lust target/release/lust-core scripts/difftest.sh scripts/case-pool.sh
+          } > "$RUNNER_TEMP/native-unwind-identity.txt"
+          bash scripts/difftest.sh unwind- 2>&1 | tee "$RUNNER_TEMP/native-unwind.log"
+      - name: Require emitted-C panic-unwind differential cases
+        if: always() && !cancelled()
+        env:
+          PANIC: unwind
+          EH: '1'
+          EH_CC: gcc
+          EH_CXX: g++
+          LUST_STRICT: '1'
+          DIFFTEST_JOBS: '2'
+        run: |
+          set -euo pipefail
+          {
+            git rev-parse HEAD
+            rustc -vV
+            "$EH_CC" --version
+            "$EH_CXX" --version
+            printf 'panic=unwind\neh=1\nstrict=1\nfilter=unwind-\ndifftest_jobs=%s\n' "$DIFFTEST_JOBS"
+            sha256sum target/release/lust target/release/lust-core scripts/difftest.sh scripts/case-pool.sh
+          } > "$RUNNER_TEMP/native-unwind-eh-identity.txt"
+          bash scripts/difftest.sh unwind- 2>&1 | tee "$RUNNER_TEMP/native-unwind-eh.log"
       - name: Compare every Unicode scalar with the declared Rust semantics
         if: always() && !cancelled()
         run: |
@@ -181,6 +216,10 @@ jobs:
             ${{ runner.temp }}/native-gate-identity.txt
             ${{ runner.temp }}/native-gate-host.json
             ${{ runner.temp }}/native-gate.log
+            ${{ runner.temp }}/native-unwind-identity.txt
+            ${{ runner.temp }}/native-unwind.log
+            ${{ runner.temp }}/native-unwind-eh-identity.txt
+            ${{ runner.temp }}/native-unwind-eh.log
             ${{ runner.temp }}/native-gate-builds.sha256
             ${{ runner.temp }}/native-main-transitions/report.json
             ${{ runner.temp }}/native-main-transitions/*.stdout
@@ -327,6 +366,41 @@ jobs:
             sha256sum Cargo.toml Cargo.lock build.rs scripts/ci.sh
           } > "$RUNNER_TEMP/native-gate-identity.txt"
           bash scripts/ci.sh 2>&1 | tee "$RUNNER_TEMP/native-gate.log"
+      - name: Require native panic-unwind differential cases
+        if: always() && !cancelled()
+        env:
+          PANIC: unwind
+          LUST_STRICT: '1'
+          DIFFTEST_JOBS: '2'
+        run: |
+          set -euo pipefail
+          {
+            git rev-parse HEAD
+            rustc -vV
+            printf 'panic=unwind\nstrict=1\nfilter=unwind-\ndifftest_jobs=%s\n' "$DIFFTEST_JOBS"
+            sha256sum target/release/lust target/release/lust-core scripts/difftest.sh scripts/case-pool.sh
+          } > "$RUNNER_TEMP/native-unwind-identity.txt"
+          bash scripts/difftest.sh unwind- 2>&1 | tee "$RUNNER_TEMP/native-unwind.log"
+      - name: Require emitted-C panic-unwind differential cases
+        if: always() && !cancelled()
+        env:
+          PANIC: unwind
+          EH: '1'
+          LUST_STRICT: '1'
+          DIFFTEST_JOBS: '2'
+        run: |
+          set -euo pipefail
+          export EH_CC="$SAN_CC"
+          export EH_CXX="${SAN_CC%/*}/clang++"
+          {
+            git rev-parse HEAD
+            rustc -vV
+            "$EH_CC" --version
+            "$EH_CXX" --version
+            printf 'panic=unwind\neh=1\nstrict=1\nfilter=unwind-\ndifftest_jobs=%s\n' "$DIFFTEST_JOBS"
+            sha256sum target/release/lust target/release/lust-core scripts/difftest.sh scripts/case-pool.sh
+          } > "$RUNNER_TEMP/native-unwind-eh-identity.txt"
+          bash scripts/difftest.sh unwind- 2>&1 | tee "$RUNNER_TEMP/native-unwind-eh.log"
       - name: Compare every Unicode scalar with the declared Rust semantics
         if: always() && !cancelled()
         run: |
@@ -373,6 +447,10 @@ jobs:
           path: |
             ${{ runner.temp }}/native-gate-identity.txt
             ${{ runner.temp }}/native-gate.log
+            ${{ runner.temp }}/native-unwind-identity.txt
+            ${{ runner.temp }}/native-unwind.log
+            ${{ runner.temp }}/native-unwind-eh-identity.txt
+            ${{ runner.temp }}/native-unwind-eh.log
             ${{ runner.temp }}/native-gate-builds.sha256
             ${{ runner.temp }}/native-main-transitions/report.json
             ${{ runner.temp }}/native-main-transitions/*.stdout

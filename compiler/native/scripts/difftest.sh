@@ -31,7 +31,8 @@
 #     thread::spawn) is UNSUPPORTED, and LUST_STRICT=1 makes it fail.
 #     The filter `unwind-` runs only the tests/unwind cases (their names get that prefix).
 #   EH=1 (with PANIC=unwind or RELEASE=1): lust's C with unwind tables (LUST_UNWIND_TABLES=1),
-#     built by clang -fexceptions (eh_build), in place of the tcc build.
+#     built by EH_CC/EH_CXX (default clang/clang++) with -fexceptions
+#     (eh_build), in place of the tcc build.
 #   CC_DRIVER=1 (with RELEASE=1): the lust release driver builds each case (cc_build:
 #     lust build --release --target $CC_TARGET, default the host triple, the libc rustc
 #     builds for, with the compiler LUST_CC names), the shipped release path: unwind
@@ -174,9 +175,11 @@ sanitize_case() {
 }
 
 # eh_build <fixture> <name>: EH=1 (unwind tables, runtime/panic.c mode 2): lust emits the C with
-# LUST_UNWIND_TABLES=1, clang builds it with -fexceptions and the C++ unit (<name>.eh.cc, the
-# throw and the catch) with clang++, and clang++ links <name>.lust. Objects are cached per run
+# LUST_UNWIND_TABLES=1, EH_CC builds it with -fexceptions and the C++ unit (<name>.eh.cc, the
+# throw and the catch) with EH_CXX, and EH_CXX links <name>.lust. Objects are cached per run
 # by the unit's hash, as the sanitized build's are.
+eh_cc=${EH_CC:-clang}
+eh_cxx=${EH_CXX:-clang++}
 eh_obj=$work/eh-obj
 mkdir -p "$eh_obj"
 eh_build() {
@@ -187,12 +190,12 @@ eh_build() {
     objs+=("$o")
     (
       flock 9
-      local cc=clang
-      [[ "$c" == *.cc ]] && cc=clang++
-      [ -f "$o" ] || { $cc -O1 -fexceptions -fno-strict-aliasing -fwrapv -w -Wno-error=implicit-function-declaration -c -o "$o.tmp" "$c" && mv "$o.tmp" "$o"; }
+      local cc=$eh_cc
+      [[ "$c" == *.cc ]] && cc=$eh_cxx
+      [ -f "$o" ] || { "$cc" -O1 -fexceptions -fno-strict-aliasing -fwrapv -w -Wno-error=implicit-function-declaration -c -o "$o.tmp" "$c" && mv "$o.tmp" "$o"; }
     ) 9>"$o.lock" || return 1
   done
-  clang++ -o "$name.lust" "${objs[@]}" -lm -lpthread
+  "$eh_cxx" -o "$name.lust" "${objs[@]}" -lm -lpthread
 }
 
 # cc_build <fixture> <name>: CC_DRIVER=1, the release driver build of one case (see the header).
