@@ -108,9 +108,25 @@ The candidate also carries PR #27's distinct scanner-fixture name and restores
 All sanitizer probes remain required. The earlier process-directory ownership
 repair is already present; it has not been implemented again.
 
+The [final native continuation record](docs/compiler-set/native-final-qualification.md)
+recovers the later 5,546-case ordinary and 2,309-case unwind runs with their
+original source identities. A separately rebuilt pointer correction passes
+49 native/C/Rust comparisons and 2,884 C declaration checks, including the
+previous macOS callback cases. Independent 8-bit arithmetic and shift checks
+also pass through undefined-behavior instrumentation. These results remain
+separate from the current complete hosted sanitizer and package gates.
+
+[Public daemon failure handling](docs/compiler-set/native-transport-failures.md)
+now rejects ambiguous transport failures without replaying the compilation.
+The actual Darwin host suite passes all 30 tests, including lost replies and
+long socket paths. This does not remove the separate language-level retries
+or complete the public semantic integration.
+
 The daemon starts directly and does not require systemd. Active source, build
 rules, workflows, lockfiles and compiler loader graphs were audited; a CI guard
-rejects service-manager dependencies. The
+rejects service-manager dependencies across runtime libraries, packaging inputs,
+extensionless scripts and service unit types. Its planted regression cases
+verify those paths instead of relying on a directory allowlist. The
 [native host runtime](docs/compiler-set/host-portability.md) documents the Linux
 and Darwin adapters, source-built SDK receipts, focused tests and remaining
 native macOS qualification. The primary native daemon is not yet a Windows

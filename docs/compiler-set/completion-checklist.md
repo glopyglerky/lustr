@@ -181,6 +181,12 @@ two unrelated examples separately is insufficient.
 
 **Depends on:** steps 2 and 3.
 
+The [public transport continuation](native-transport-failures.md) now preserves
+failures after a request may have executed. Actual old/new public-process
+controls and the Darwin host socket suite qualify that behavior. This advances
+failure ownership; it does not supply retained imported semantic generations
+or remove language-level retry from the standalone path.
+
 Preserve Lust's daemon, fast unchanged requests and current successful scalar
 reuse. Extend dependency tracking beyond the limited literal/body-edit
 certificate to signatures, types, traits, macros, generated source, build scripts,
