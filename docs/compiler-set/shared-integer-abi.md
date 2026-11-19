@@ -95,6 +95,11 @@ compiler failure. None authorizes a second implementation to compile the
 consumer. Failed requests preserve the previous successful executable. The
 internal qualifier's failure controls leave shared SDK files untouched.
 
+The later [owned-emission repair](shared-import-emission.md) proves and fixes
+adapter execution during preparation/checking. Its focused 29-control record
+has its own exact source identity; the original semantic campaign below keeps
+its predecessor scope.
+
 ## Qualification scope
 
 The clean source-bound campaign at

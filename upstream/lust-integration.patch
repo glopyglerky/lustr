@@ -5096,7 +5096,7 @@ index da28835400f894866adb85f436e2cbdf109797d7..6cf91ad37bd9d2192a7f1d876a0c7b47
          assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
          assert!(decode_response(b"short").is_none());
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f7a9df9f9584f81954dc9b8299f8dd8576e30bcd 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a02052271304a152c059abe21e95888e08e5af17 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
 @@ -401,6 +401,24 @@ fn check_fingerprint(req: &Request) -> Option<u64> {
@@ -5395,7 +5395,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f7a9df9f9584f81954dc9b8299f8dd85
 +    visits: Visits,
 +    timer: Timer,
 +    imported_dependencies: Vec<super::imports::Dependency>,
-+    imported_objects: Vec<Arc<[u8]>>,
++    imported_emission: Option<Box<dyn super::imports::Emission + 'static>>,
 +}
 +
 +impl PreparedRequest<'_> {
@@ -5491,7 +5491,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f7a9df9f9584f81954dc9b8299f8dd85
 +        }
 +        fn validate_checked(&self, program: &collect::Program) -> Result<(), String> { self.inner.validate_checked(program) }
 +        fn dependencies(&self) -> Vec<super::imports::Dependency> { self.inner.dependencies() }
-+        fn objects(&self) -> Vec<Arc<[u8]>> { self.inner.objects() }
++        fn take_emission(&self) -> Result<Box<dyn super::imports::Emission + 'static>, String> { self.inner.take_emission() }
 +    }
 +    let guard = Guard { inner: definitions, failed: std::cell::Cell::new(false) };
 +    let outcome = prepare_with_definitions(req, session, None, Some(&guard));
@@ -5766,7 +5766,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f7a9df9f9584f81954dc9b8299f8dd85
      // A one-shot process (`leak_at_exit`) exits right after this call. Freeing the IR and
      // program arenas, mostly built on worker threads, costs about 10 ms on a 31k-line crate,
      // so leak them on every return below and let the OS reclaim the memory at exit. A
-@@ -4396,10 +4687,87 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4396,10 +4687,93 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
              }
          }
@@ -5792,12 +5792,18 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f7a9df9f9584f81954dc9b8299f8dd85
 +            code: 3, stderr: format!("error: checked request ownership failed: {error}\n"), ..Default::default()
 +        }),
 +    };
++    let imported_dependencies = imports.map_or_else(Vec::new, |i| i.dependencies());
++    let imported_emission = match imports.map(|i| i.take_emission()).transpose() {
++        Ok(emission) => emission,
++        Err(error) => return Preparation::Failed(Response {
++            code: 3, stderr: format!("error: imported emission ownership failed: {error}\n"), ..Default::default()
++        }),
++    };
 +    let state = CheckedRequest {
 +        program, results, reemit, map, source: src, path, work, fn_count, fn_lines_all, body_hashes_all,
 +        inst_ids, mode, check_fp, verified, reads_reused, reads_invalidated, reemitted, mixed, release,
 +        foreign, visits, timer: t,
-+        imported_dependencies: imports.map_or_else(Vec::new, |i| i.dependencies()),
-+        imported_objects: imports.map_or_else(Vec::new, |i| i.objects()),
++        imported_dependencies, imported_emission,
 +    };
 +    Preparation::Ready(PreparedRequest { request: req, session, state: Some(state) })
 +}
@@ -5806,7 +5812,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f7a9df9f9584f81954dc9b8299f8dd85
 +    let CheckedRequest {
 +        mut program, results, reemit, map, source: src, path, work, fn_count, fn_lines_all, body_hashes_all,
 +        inst_ids, mode, check_fp, verified, reads_reused, reads_invalidated, reemitted, mixed, release,
-+        foreign, visits, timer: mut t, imported_dependencies: _imported_dependencies, imported_objects,
++        foreign, visits, timer: mut t, imported_dependencies: _imported_dependencies, imported_emission,
 +    } = state;
 +    let results: Vec<_> = results.into_iter().map(|(body, diagnostics)| (body.map(|b| b.attach(&program)), diagnostics)).collect();
 +    let reemit: Vec<_> = reemit.into_iter().map(|(id, body)| (id, body.attach(&program))).collect();
@@ -5856,7 +5862,23 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f7a9df9f9584f81954dc9b8299f8dd85
          // The answer, before the timing and stats lines, for a no-op
          // check of the same request to reuse.
          if let Some(fp) = check_fp {
-@@ -4450,6 +4818,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4446,10 +4820,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+         return resp;
+     }
+ 
++    // Only an admitted build consumes the imported code plan. Check and every
++    // earlier return merely drop it; preparation never invokes its emitter.
++    let imported_objects = match imported_emission {
++        Some(emission) => match emission.emit() {
++            Ok(objects) => objects,
++            Err(error) => return Response {
++                code: 3, stderr: format!("error: imported code emission failed: {error}\n"), ..Default::default()
++            },
++        },
++        None => Vec::new(),
++    };
++
+     // Codegen for the work set, plus any slot-moved re-emits rebuilt
      // from cached IR above.
      let mut bodies: Vec<(usize, ir::Body)> = work.iter().copied().zip(results).filter_map(|(i, r)| r.0.map(|b| (i, b))).collect();
      bodies.extend(reemit);
@@ -5865,7 +5887,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f7a9df9f9584f81954dc9b8299f8dd85
      // Each fn's base line: cgen stores its line numbers relative to it
      // and the main unit adds each slot's base back, so a reused body's
      // C stays right when its source text moves. An instance's base is
-@@ -4471,7 +4841,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4471,7 +4859,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let line_base_of = |_: &Front, i: usize| -> u32 { line_bases.get(i).copied().unwrap_or(0) };
      // Release C (driver/release_c.rs): content-addressed names, set as cgen's naming
      // context around every step that prints C.
@@ -5874,7 +5896,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f7a9df9f9584f81954dc9b8299f8dd85
      let rn = rnames.as_ref();
      // A release C build to the release driver streams its cc step (`cc::Stream`): each unit the
      // assembly makes compiles from the time its text exists. Not with --emit-c nor LLVM units.
-@@ -4498,7 +4868,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4498,7 +4886,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let (outs, cg_noted): (Vec<_>, Vec<_>) = par_map(&bodies, |(i, b)| {
          check::derive_delta::scoped(program.record_reads, || {
              cgen::in_layout_phase(layout_tag, || {
@@ -5892,7 +5914,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f7a9df9f9584f81954dc9b8299f8dd85
              })
          })
      })
-@@ -4681,6 +5060,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4681,6 +5078,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      }
      let glue_changed = shared_changed || regenerated || statics_changed;
      t.lap("codegen (par)");
@@ -5907,7 +5929,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f7a9df9f9584f81954dc9b8299f8dd85
      // Nothing reads the IR after codegen. A one-shot build leaks it at exit
      // (`leak_at_exit`), but on a large program it is the largest block
      // alive at the peak (ts-rust's bins: about 2.4 GB of 9.4 GB, through
-@@ -4751,7 +5138,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4751,7 +5156,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // rebuilds and the base
      // relinks over the existing unit objects. Unrelated units keep
      // their objects, in the session and in the disk unit cache.
@@ -5917,7 +5939,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f7a9df9f9584f81954dc9b8299f8dd85
      let cap_grown = n_slots > caches.table_cap;
      if fresh_base || cap_grown {
          caches.table_cap = n_slots * 2 + 64;
-@@ -5807,6 +6195,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5807,6 +6213,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // this check keeps that a pin, not a hope.
      if let Some(run_args) = &req.run_args
          && !caches.persistent
@@ -5925,7 +5947,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f7a9df9f9584f81954dc9b8299f8dd85
          && fresh_base
          && groups.len() == 1
          && !req.debug
-@@ -5883,9 +6272,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5883,9 +6290,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      caches.objects = Some(req.debug);
      t.lap("tcc compile");
      let all_base: Vec<PathBuf> = [1, 2, 3, LOC_UNIT].into_iter().chain(link_fn_units.iter().copied()).map(base_obj).collect();
@@ -5945,7 +5967,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f7a9df9f9584f81954dc9b8299f8dd85
          crate::tcc::link(&objs, &req.out, req.debug)
      } else {
          // The base library lives in a persistent dir under a content name
-@@ -5901,18 +6299,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5901,18 +6317,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
          let base = if rebuild_base {
              caches.base_gen += 1;
@@ -5986,7 +6008,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f7a9df9f9584f81954dc9b8299f8dd85
                      install_base(&tmp, &base_dir.join(&soname))?;
                      if !caches.base_files.contains(&soname) {
                          caches.base_files.push_back(soname);
-@@ -5922,24 +6333,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5922,24 +6351,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              if built.is_err() {
                  let _ = std::fs::remove_file(&tmp);
              }
@@ -6018,7 +6040,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f7a9df9f9584f81954dc9b8299f8dd85
              built
          } else {
              Ok(())
-@@ -5958,8 +6370,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5958,8 +6388,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // a small grace count while no known output file still references them. A binary the user
      // kept keeps its base; one that was overwritten or deleted does not. A running program
      // keeps its mapped copy after unlink.
@@ -6029,7 +6051,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f7a9df9f9584f81954dc9b8299f8dd85
          if let Some(base_dir) = caches.base_dir.clone() {
              record_base_user(&base_dir, &soname, &req.out);
          }
-@@ -6058,6 +6470,66 @@ mod tests {
+@@ -6058,6 +6488,66 @@ mod tests {
          panic!("{}: still busy", bin.display())
      }
  
@@ -6096,7 +6118,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f7a9df9f9584f81954dc9b8299f8dd85
      /// The base sweep never deletes a live owner's base (it may be a live
      /// session's current base, found by fuzz seed 7 multi when a guard
      /// session's first-build sweep deleted the warm session's base), but
-@@ -6421,6 +6893,524 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
+@@ -6421,6 +6911,524 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
          }
      }
  
@@ -6688,10 +6710,10 @@ index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..49c2c2b74f0f78f21579eb5971a032b4
                  }
 diff --git a/src/driver/imports.rs b/src/driver/imports.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..7bc419623c74571cf6dfe94b7afa718523a50aef
+index 0000000000000000000000000000000000000000..bc14f747b9ff323d663d14683993546ebd6a2105
 --- /dev/null
 +++ b/src/driver/imports.rs
-@@ -0,0 +1,33 @@
+@@ -0,0 +1,43 @@
 +//! Imported semantic definitions for one owned native request.
 +//!
 +//! The provider installs resolved definitions before collection checks any
@@ -6715,15 +6737,25 @@ index 0000000000000000000000000000000000000000..7bc419623c74571cf6dfe94b7afa7185
 +#[derive(Debug)]
 +pub struct Unintegrated(pub &'static str);
 +
++/// Owned code generation for one already checked imported request. The plan
++/// contains no borrowed compiler arenas and is consumed exactly once by Build.
++/// Checking or abandoning a prepared request drops it without executing it.
++pub trait Emission: Send {
++    fn emit(self: Box<Self>) -> Result<Vec<std::sync::Arc<[u8]>>, String>;
++}
++
 +/// Facts and code belonging to an authoritative imported compiler context.
 +/// The provider must finish semantic/ABI admission before publishing a def.
 +/// A provider error is a compiler failure, never a complementary fallback.
 +pub trait Definitions {
 +    fn mount(&self, tables: &mut ResolvedTables, interner: &Interner) -> Result<(), Diag>;
 +    fn install(&self, program: &mut Program) -> Result<(), Vec<Diag>>;
++    /// Validate the installed semantic facts without executing an emitter.
 +    fn validate_checked(&self, program: &Program) -> Result<(), String>;
 +    fn dependencies(&self) -> Vec<Dependency>;
-+    fn objects(&self) -> Vec<std::sync::Arc<[u8]>>;
++    /// Transfer the immutable, single-use plan after semantic validation.
++    /// Constructing or taking the plan must not emit code or materialize objects.
++    fn take_emission(&self) -> Result<Box<dyn Emission + 'static>, String>;
 +}
 diff --git a/src/driver/ir_cache.rs b/src/driver/ir_cache.rs
 index 8fbed03aaba6dac6347970d1fd7926ae705631a0..6f36947a858612928e941b3c81e6bd794cae18ff 100644

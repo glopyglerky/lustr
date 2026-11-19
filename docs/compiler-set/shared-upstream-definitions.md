@@ -51,6 +51,10 @@ dependency reads and imported input snapshots enter the ordinary checked
 continuation. Emission consumes that state without another native check. No
 Rust arena reference enters the native retained session.
 
+The [owned-emission continuation](shared-import-emission.md) separates adapter
+validation from execution: checks and abandoned preparations drop a single-use
+plan, while an admitted build consumes it.
+
 ## Admission is a semantic and ABI proof
 
 The first profile admits public, nongeneric, one-field tuple structs declared
