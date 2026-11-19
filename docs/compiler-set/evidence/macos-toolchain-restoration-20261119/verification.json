@@ -1,0 +1,112 @@
+{
+  "schema": 1,
+  "observed_on": "2026-11-19",
+  "restored_source": "ea1cd30c5e8425228a6e9a7c482e8790382f03f8",
+  "restored_files": {
+    "tools/install-macos-sanitizer.py": {
+      "sha256": "3a298fa6b4a7d3229ac7f8487135082c66ffb284829ac66935f8519e0306c808",
+      "copied_unchanged_from": "ea1cd30c5e8425228a6e9a7c482e8790382f03f8"
+    },
+    "tools/test-macos-sanitizer-installer.py": {
+      "sha256": "f2b49b9476964318f132cd0a60175f3935259872e8d3ff8921eabe245e8e66f9",
+      "copied_unchanged_from": "ea1cd30c5e8425228a6e9a7c482e8790382f03f8"
+    },
+    "tools/macos-sanitizer-toolchain.json": {
+      "sha256": "a73b7046c63f3d8621ab094f4d34984b3c4211cb0bb599170db727516d07248d",
+      "copied_unchanged_from": "ea1cd30c5e8425228a6e9a7c482e8790382f03f8"
+    }
+  },
+  "selected_pin": {
+    "schema": 1,
+    "version": "23.1.5",
+    "release": "https://github.com/llvm/llvm-project/releases/tag/llvmorg-23.1.5",
+    "release_api": "https://api.github.com/repos/llvm/llvm-project/releases/432551565",
+    "repository": "llvm/llvm-project",
+    "source_commit": "392dfff97d29b59d77e5cac6d4b6ef2585fe7117",
+    "source_ref": "refs/tags/llvmorg-23.1.5",
+    "signer_workflow": "llvm/llvm-project/.github/workflows/release-binaries.yml",
+    "certificate_identity": "https://github.com/llvm/llvm-project/.github/workflows/release-binaries.yml@refs/tags/llvmorg-23.1.5",
+    "root_directory": "LLVM-23.1.5-macOS-ARM64",
+    "archive": {
+      "name": "LLVM-23.1.5-macOS-ARM64.tar.zst",
+      "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.5/LLVM-23.1.5-macOS-ARM64.tar.zst",
+      "bytes": 870686518,
+      "sha256": "503de30ef90311e0b143623801b19af2250adac6d69faed65ad0051170202e3b",
+      "asset_id": 705801926
+    },
+    "attestation": {
+      "name": "LLVM-23.1.5-macOS-ARM64.tar.zst.jsonl",
+      "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.5/LLVM-23.1.5-macOS-ARM64.tar.zst.jsonl",
+      "bytes": 11135,
+      "sha256": "961b20e89b54952add75ab7a3a565de1db1e300b546cceb091ade31afe21d671",
+      "asset_id": 705803995
+    }
+  },
+  "upstream_metadata_verification": {
+    "release_23_1_6": {
+      "url": "https://github.com/llvm/llvm-project/releases/tag/llvmorg-23.1.6",
+      "api": "https://api.github.com/repos/llvm/llvm-project/releases/448854669",
+      "id": 448854669,
+      "published_at": "2026-11-17T16:32:45Z",
+      "asset_inventory_api": "https://api.github.com/repos/llvm/llvm-project/releases/448854669/assets?per_page=100",
+      "asset_count": 37,
+      "macos_asset_count": 0,
+      "asset_names": [
+        "clang+llvm-23.1.6-aarch64-pc-windows-msvc.tar.xz",
+        "clang+llvm-23.1.6-aarch64-pc-windows-msvc.tar.xz.jsonl",
+        "clang+llvm-23.1.6-aarch64-pc-windows-msvc.tar.zst",
+        "clang+llvm-23.1.6-aarch64-pc-windows-msvc.tar.zst.jsonl",
+        "clang+llvm-23.1.6-x86_64-pc-windows-msvc.tar.xz",
+        "clang+llvm-23.1.6-x86_64-pc-windows-msvc.tar.xz.jsonl",
+        "clang+llvm-23.1.6-x86_64-pc-windows-msvc.tar.zst",
+        "clang+llvm-23.1.6-x86_64-pc-windows-msvc.tar.zst.jsonl",
+        "clang-tools-extra_doxygen-23.1.6.tar.xz",
+        "clang-tools-extra_doxygen-23.1.6.tar.xz.jsonl",
+        "clang_doxygen-23.1.6.tar.xz",
+        "clang_doxygen-23.1.6.tar.xz.jsonl",
+        "flang_doxygen-23.1.6.tar.xz",
+        "flang_doxygen-23.1.6.tar.xz.jsonl",
+        "LLVM-23.1.6-Linux-ARM64.tar.xz",
+        "LLVM-23.1.6-Linux-ARM64.tar.xz.jsonl",
+        "LLVM-23.1.6-Linux-ARM64.tar.zst",
+        "LLVM-23.1.6-Linux-ARM64.tar.zst.jsonl",
+        "LLVM-23.1.6-Linux-X64.tar.xz",
+        "LLVM-23.1.6-Linux-X64.tar.xz.jsonl",
+        "LLVM-23.1.6-Linux-X64.tar.zst",
+        "LLVM-23.1.6-Linux-X64.tar.zst.jsonl",
+        "LLVM-23.1.6-win64.msi",
+        "LLVM-23.1.6-win64.msi.jsonl",
+        "LLVM-23.1.6-woa64.msi",
+        "LLVM-23.1.6-woa64.msi.jsonl",
+        "llvm-project-23.1.6.src.tar.xz",
+        "llvm-project-23.1.6.src.tar.xz.jsonl",
+        "llvm-project-23.1.6.src.tar.xz.sig",
+        "llvm_doxygen-23.1.6.tar.xz",
+        "llvm_doxygen-23.1.6.tar.xz.jsonl",
+        "llvm_man_pages-23.1.6.tar.xz",
+        "llvm_man_pages-23.1.6.tar.xz.jsonl",
+        "llvm_man_pages-23.1.6.tar.xz.sig",
+        "test-suite-23.1.6.src.tar.xz",
+        "test-suite-23.1.6.src.tar.xz.jsonl",
+        "test-suite-23.1.6.src.tar.xz.sig"
+      ]
+    },
+    "selected_archive_and_attestation_match_reviewed_pin": true,
+    "selected_tag_commit": "392dfff97d29b59d77e5cac6d4b6ef2585fe7117"
+  },
+  "local_verification": {
+    "installer_tests": {
+      "passed": 10,
+      "failed": 0
+    },
+    "yaml_parsed": true,
+    "changed_shell_bodies_parsed": true,
+    "all_sanitizer_and_native_gates_preserved": true,
+    "both_new_unwind_differential_gates_preserved": true
+  },
+  "limits": [
+    "No macOS compiler acquisition or native execution occurred in this restoration check.",
+    "Historical PR23 source-bound component and capability evidence remains separate from new hosted qualification.",
+    "Release23.1.6 had no macOS asset in the complete37-asset response when checked; selection is explicitly pinned23.1.5, not a runtime fallback."
+  ]
+}

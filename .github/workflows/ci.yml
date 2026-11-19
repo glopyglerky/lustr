@@ -249,37 +249,24 @@ jobs:
         run: |
           # The upstream gate uses Bash associative arrays and wait -n.
           # macOS /bin/bash 3.2 cannot run that test harness.
-          brew install bash coreutils findutils gnu-sed flock
+          brew install bash coreutils findutils gnu-sed flock zstd
           echo "$(brew --prefix bash)/bin" >> "$GITHUB_PATH"
           for tool in coreutils findutils gnu-sed; do
             echo "$(brew --prefix "$tool")/libexec/gnubin" >> "$GITHUB_PATH"
           done
       - name: Select a sanitizer runtime with native leak detection
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           # Apple Clang's ASan rejects detect_leaks=1 on this platform.
-          # Keep the leak gate and select the upstream runtime explicitly.
-          # Runner images can retain a catalog or installed formula from an
-          # earlier patch release. Refresh both before checking the exact identity.
-          brew update
-          if brew list --versions llvm@23 >/dev/null; then
-            brew upgrade llvm@23
-          else
-            brew install llvm@23
-          fi
-          sanitizer_tools=$(brew --prefix llvm@23)/bin
-          test -x "$sanitizer_tools/clang"
-          test -x "$sanitizer_tools/llvm-symbolizer"
-          echo "SAN_CC=$sanitizer_tools/clang" >> "$GITHUB_ENV"
-          echo "ASAN_SYMBOLIZER_PATH=$sanitizer_tools/llvm-symbolizer" >> "$GITHUB_ENV"
-          "$sanitizer_tools/clang" --version
-          expected_sanitizer_version=23.1.6
-          actual_sanitizer_version=$("$sanitizer_tools/clang" -dumpversion)
-          if test "$actual_sanitizer_version" != "$expected_sanitizer_version"; then
-            printf 'Expected sanitizer Clang %s; acquired %s\n' \
-              "$expected_sanitizer_version" "$actual_sanitizer_version" >&2
-            exit 1
-          fi
+          # Pin the complete upstream compiler/runtime archive and signed
+          # provenance. Floating Homebrew releases cannot satisfy an exact pin.
+          python3 ../../tools/test-macos-sanitizer-installer.py
+          python3 ../../tools/install-macos-sanitizer.py \
+            --directory "$RUNNER_TEMP/lustr-macos-sanitizer" \
+            --github-env "$GITHUB_ENV" \
+            2>&1 | tee "$RUNNER_TEMP/macos-sanitizer-setup.log"
       - name: Verify actual Bash and GNU test commands
         run: |
           set -euo pipefail
@@ -466,4 +453,10 @@ jobs:
             ${{ runner.temp }}/native-erased-callbacks-eh/report.json
             ${{ runner.temp }}/native-erased-callbacks-eh/*.stdout
             ${{ runner.temp }}/native-erased-callbacks-eh/*.stderr
+            ${{ runner.temp }}/macos-sanitizer-setup.log
+            ${{ runner.temp }}/lustr-macos-sanitizer/receipt.json
+            ${{ runner.temp }}/lustr-macos-sanitizer/environment.json
+            ${{ runner.temp }}/lustr-macos-sanitizer/*.stdout
+            ${{ runner.temp }}/lustr-macos-sanitizer/*.stderr
+            ${{ runner.temp }}/lustr-macos-sanitizer/*.status.json
           if-no-files-found: warn
