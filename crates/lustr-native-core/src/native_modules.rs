@@ -54,7 +54,12 @@ use pinned::{ast, borrowck, capabilities, cc, cgen, colwidth, daemon, def, diag,
 #[path = "expanded_check.rs"] mod check;
 
 use protocol::Invocation;
+// rustc_driver's shared Rust runtime and this executable exchange owned Rust
+// allocations. Its embedding uses System consistently; a private mimalloc
+// global would free blocks allocated inside the DSO with another allocator.
+// The ordinary native worker retains its original image allocator unchanged.
 #[global_allocator]
+#[cfg(not(feature = "upstream-semantic"))]
 static GLOBAL: image::Alloc = image::Alloc;
 const BIG_FILE: u64 = 256 << 10;
 fn own_env(req: &mut driver::Request) { req.client.env = None; }

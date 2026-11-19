@@ -2115,6 +2115,7 @@ fn resolved_setup(
     t: &mut Timer,
     visits: &mut Visits,
     reusable: Option<(u64, Response)>,
+    imports: Option<&dyn super::imports::Definitions>,
 ) -> Result<(SourceMap, Vec<usize>, Vec<usize>, bool, usize, &'static str, Vec<u32>, Vec<u64>, Option<std::sync::Arc<crate::resolve::imports::ResolvedTables>>), Response> {
     use crate::resolve::cargo::{self, GraphRequest};
     use crate::resolve::cfg::CfgEnv;
@@ -2378,7 +2379,12 @@ fn resolved_setup(
         // The cache's final chunks are parts of the session's merged Ast: the resolve takes
         // its hits out of it, and lets go of it before any patch writes it.
         front.resolve_cache.set_merged(front.ast.clone(), front.ast_gen);
-        let out = worklist::resolve_crate_with(&input, &front.interner, &front.known, &mut front.resolve_cache, plan.platform);
+        let out = if let Some(imports) = imports {
+            let mut mount = |tables: &mut crate::resolve::imports::ResolvedTables| imports.mount(tables, &front.interner);
+            worklist::resolve_crate_with_imports(&input, &front.interner, &front.known, plan.platform, &mut mount)
+        } else {
+            worklist::resolve_crate_with(&input, &front.interner, &front.known, &mut front.resolve_cache, plan.platform)
+        };
         front.resolve_cache.clear_merged();
         if super::item_oracle::on() || super::resolve_oracle::on() {
             oracle_input = Some(super::item_oracle::ColdInput { input: input.clone(), platform: plan.platform });
@@ -2707,6 +2713,8 @@ struct CheckedRequest {
     foreign: bool,
     visits: Visits,
     timer: Timer,
+    imported_dependencies: Vec<super::imports::Dependency>,
+    imported_objects: Vec<Arc<[u8]>>,
 }
 
 impl PreparedRequest<'_> {
@@ -2731,6 +2739,11 @@ impl PreparedRequest<'_> {
 
     pub fn source(&self) -> &str {
         &self.state.as_ref().expect("checked request is consumed").source
+    }
+
+    /// Exact imported input snapshots held by this checked continuation.
+    pub fn imported_dependencies(&self) -> &[super::imports::Dependency] {
+        &self.state.as_ref().expect("checked request is consumed").imported_dependencies
     }
 
     /// Consume the same checked state once. A check finishes without emitting;
@@ -2763,6 +2776,54 @@ impl Drop for PreparedRequest<'_> {
 }
 
 pub(super) fn prepare_observed<'a>(req: &'a Request, session: &'a mut Session, observer: Option<&dyn super::PhaseObserver>) -> Preparation<'a> {
+    if session.imported_request {
+        return Preparation::Failed(Response { code: 3, stderr: "error: imported semantic state cannot be reused without its dependency generation\n".into(), ..Default::default() });
+    }
+    prepare_with_definitions(req, session, observer, None)
+}
+
+pub(super) fn prepare_imported<'a>(req: &'a Request, session: &'a mut Session, definitions: &dyn super::imports::Definitions) -> Result<Preparation<'a>, super::imports::Unintegrated> {
+    if session.imported_request || session.caches.persistent || session.front.env_hash.is_some()
+        || !session.front.src.is_empty() || !session.front.slot_of.is_empty()
+        || req.session.krate.manifest_path.is_some() || req.session.krate.target_kind != "bin"
+        || !req.session.profile.panic_abort || req.run_args.is_some() || req.harness || req.cc || req.emit_c.is_some()
+        || session.caches.output != super::OutputKind::Standalone || crate::image::state_dir().is_some()
+        || std::env::var_os("LUST_FRONT_ARENA").is_some() {
+        return Err(super::imports::Unintegrated("imported definitions require a fresh standalone abort-profile native request"));
+    }
+    // None of the old per-source cache keys includes an imported generation.
+    // Keep them unavailable until the joined retained contract is implemented.
+    session.imported_request = true;
+    session.cache_tried = true;
+    session.disk_cache = None;
+    struct Guard<'a> { inner: &'a dyn super::imports::Definitions, failed: std::cell::Cell<bool> }
+    impl super::imports::Definitions for Guard<'_> {
+        fn mount(&self, tables: &mut crate::resolve::imports::ResolvedTables, interner: &Interner) -> Result<(), Diag> {
+            let answer = self.inner.mount(tables, interner);
+            if answer.is_err() { self.failed.set(true); }
+            answer
+        }
+        fn install(&self, program: &mut collect::Program) -> Result<(), Vec<Diag>> {
+            let answer = self.inner.install(program);
+            if answer.is_err() { self.failed.set(true); }
+            answer
+        }
+        fn validate_checked(&self, program: &collect::Program) -> Result<(), String> { self.inner.validate_checked(program) }
+        fn dependencies(&self) -> Vec<super::imports::Dependency> { self.inner.dependencies() }
+        fn objects(&self) -> Vec<Arc<[u8]>> { self.inner.objects() }
+    }
+    let guard = Guard { inner: definitions, failed: std::cell::Cell::new(false) };
+    let outcome = prepare_with_definitions(req, session, None, Some(&guard));
+    Ok(match outcome {
+        Preparation::Rejected(mut response) if guard.failed.get() => {
+            response.code = 3;
+            Preparation::Failed(response)
+        }
+        outcome => outcome,
+    })
+}
+
+fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, observer: Option<&dyn super::PhaseObserver>, imports: Option<&dyn super::imports::Definitions>) -> Preparation<'a> {
     let phase_id = observer.map(|_| super::PhaseId::next());
     let mut t = Timer::new();
     crate::driver::cache::begin_build(&req.file);
@@ -2882,7 +2943,7 @@ pub(super) fn prepare_observed<'a>(req: &'a Request, session: &'a mut Session, o
     } else {
         crate::resolve::worklist::route_root_std(&src, &front.interner, true)
     };
-    let wants_resolver = wants_resolver || std_mods != 0;
+    let wants_resolver = imports.is_some() || wants_resolver || std_mods != 0;
     let route_std_mods = req.session.krate.manifest_path.is_none().then_some(std_mods);
     if front.resolved_crate && !wants_resolver {
         front.ast = Arc::default();
@@ -2938,7 +2999,7 @@ pub(super) fn prepare_observed<'a>(req: &'a Request, session: &'a mut Session, o
 
     // Both front ends produce the same locals for the shared tail.
     let (map, mut changed, mut mention_only, mut const_fn_changed, fn_count, mode, fn_lines_all, body_hashes_all, resolved_tables) = if use_resolver {
-        match resolved_setup(req, front, caches, std_cache, &src, root_lexed, route_std_mods, crate_ids, &mut std_ranges, &mut std_routes, &mut std_methods, &mut t, &mut visits, reusable) {
+        match resolved_setup(req, front, caches, std_cache, &src, root_lexed, route_std_mods, crate_ids, &mut std_ranges, &mut std_routes, &mut std_methods, &mut t, &mut visits, reusable, imports) {
             Ok(x) => x,
             Err(resp) => return Preparation::finished(resp),
         }
@@ -3779,6 +3840,14 @@ pub(super) fn prepare_observed<'a>(req: &'a Request, session: &'a mut Session, o
     // Template check errors from the kept program are collect's errors
     // (`gen_reuse.template_errors` counts them).
     let collect = |front: &mut Front, caches: &mut Caches| {
+        if let Some(imports) = imports {
+            let mut definitions = |program: &mut collect::Program| imports.install(program);
+            return collect::collect_reuse_with_definitions(
+                front.ast.clone(), front.interner.clone(), front.known.clone(), crate_ids,
+                req.cmd == Cmd::Build, &mut front.def_order, resolved_tables.clone(),
+                &mut caches.gen_reuse, &std_routes, &mut definitions,
+            );
+        }
         collect::collect_reuse(
             front.ast.clone(),
             front.interner.clone(),
@@ -4620,6 +4689,10 @@ pub(super) fn prepare_observed<'a>(req: &'a Request, session: &'a mut Session, o
         }
         return Preparation::finished(resp);
     }
+    if let Some(imports) = imports
+        && let Err(error) = imports.validate_checked(&program) {
+        return Preparation::Failed(Response { code: 3, stderr: format!("error: imported checked-state contract failed: {error}\n"), ..Default::default() });
+    }
     // Move the lowered arenas and read sets out of their temporary Program
     // borrows. This is not the structural IR cache: ids and allocations stay
     // exactly as checked, and only this same Program can reattach the bodies.
@@ -4638,6 +4711,8 @@ pub(super) fn prepare_observed<'a>(req: &'a Request, session: &'a mut Session, o
         program, results, reemit, map, source: src, path, work, fn_count, fn_lines_all, body_hashes_all,
         inst_ids, mode, check_fp, verified, reads_reused, reads_invalidated, reemitted, mixed, release,
         foreign, visits, timer: t,
+        imported_dependencies: imports.map_or_else(Vec::new, |i| i.dependencies()),
+        imported_objects: imports.map_or_else(Vec::new, |i| i.objects()),
     };
     Preparation::Ready(PreparedRequest { request: req, session, state: Some(state) })
 }
@@ -4646,7 +4721,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
     let CheckedRequest {
         mut program, results, reemit, map, source: src, path, work, fn_count, fn_lines_all, body_hashes_all,
         inst_ids, mode, check_fp, verified, reads_reused, reads_invalidated, reemitted, mixed, release,
-        foreign, visits, timer: mut t,
+        foreign, visits, timer: mut t, imported_dependencies: _imported_dependencies, imported_objects,
     } = state;
     let results: Vec<_> = results.into_iter().map(|(body, diagnostics)| (body.map(|b| b.attach(&program)), diagnostics)).collect();
     let reemit: Vec<_> = reemit.into_iter().map(|(id, body)| (id, body.attach(&program))).collect();
@@ -6200,6 +6275,15 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
     let linked = if standalone {
         let mut objs = vec![base_obj(0)];
         objs.extend(all_base);
+        // The imported provider supplied immutable snapshots, so a dependency
+        // path changing after prepare cannot substitute code at emission.
+        for (index, bytes) in imported_objects.iter().enumerate() {
+            let path = caches.obj_dir.join(format!("imported-{index}.o"));
+            if let Err(error) = std::fs::write(&path, bytes) {
+                return Response { code: 3, stderr: format!("error: cannot materialize imported object: {error}\n"), ..Default::default() };
+            }
+            objs.push(path);
+        }
         crate::tcc::link(&objs, &req.out, req.debug)
     } else {
         // The base library lives in a persistent dir under a content name

@@ -469,8 +469,7 @@ fn represented_signature<'tcx>(tcx: TyCtxt<'tcx>, instance: ty::Instance<'tcx>) 
         return None;
     };
     let mode_equal = |a: &rustc_target::callconv::PassMode, b: &rustc_target::callconv::PassMode| {
-        matches!((a, b), (rustc_target::callconv::PassMode::Direct(_), rustc_target::callconv::PassMode::Direct(_)))
-            && format!("{a:?}") == format!("{b:?}")
+        matches!((a, b), (rustc_target::callconv::PassMode::Direct(a), rustc_target::callconv::PassMode::Direct(b)) if a == b)
     };
     // The pinned LLVM backend maps canonical Rust and C to the
     // same LLVM C calling convention (upstream abi.rs). Compare

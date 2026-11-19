@@ -2,6 +2,22 @@ use std::path::PathBuf;
 use std::process::Command;
 
 fn main() {
+    if std::env::var_os("CARGO_FEATURE_UPSTREAM_SEMANTIC").is_some() {
+        let compiler = std::env::var_os("RUSTC").unwrap();
+        let query = |args: &[&str]| {
+            let out = Command::new(&compiler).env_remove("LD_LIBRARY_PATH").args(args).output().unwrap();
+            assert!(out.status.success(), "cannot inspect imported compiler identity");
+            String::from_utf8(out.stdout).unwrap()
+        };
+        let identity = query(&["-vV"]);
+        let commit = "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494";
+        assert!(identity.lines().any(|line| line == format!("commit-hash: {commit}")), "upstream semantic service requires {commit}");
+        let root = PathBuf::from(query(&["--print", "sysroot"]).trim()).canonicalize().unwrap();
+        println!("cargo:rustc-env=LUSTR_IMPORTED_SYSROOT={}", root.display());
+        println!("cargo:rustc-env=LUSTR_IMPORTED_COMMIT={commit}");
+        println!("cargo:rustc-link-search=native={}", root.join("lib").display());
+        println!("cargo:rustc-link-arg=-Wl,-rpath,{}", root.join("lib").display());
+    }
     let source = PathBuf::from(std::env::var_os("CARGO_MANIFEST_DIR").unwrap()).join("../../compiler/native").canonicalize().unwrap();
     let helper = PathBuf::from(std::env::var_os("OUT_DIR").unwrap()).join("upstream-build-helper");
     let status = Command::new(std::env::var_os("RUSTC").unwrap())

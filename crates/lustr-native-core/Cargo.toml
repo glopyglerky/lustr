@@ -10,9 +10,15 @@ resolver = "3"
 
 [features]
 native-inference = []
+upstream-semantic = ["native-inference"]
 
 [lib]
 crate-type = ["cdylib"]
+
+[[example]]
+name = "native-upstream-qualification"
+path = "../../tools/native-upstream-qualification.rs"
+required-features = ["upstream-semantic"]
 
 [[example]]
 name = "native-output-layout-qualification"

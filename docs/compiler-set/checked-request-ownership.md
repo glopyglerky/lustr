@@ -52,20 +52,20 @@ This ownership boundary does **not** remove the transitional standalone retry in
 it does not yet turn partially checked native work into deferred imported Rust
 semantic requests. No full architecture or package completion follows from it.
 
-## First imported service to connect
+## First connected imported service
 
-The existing pinned Rust `FnAbi` and layout queries are the first concrete
-service to connect to this continuation. They already decide the scalar mixed
-calling boundary. `PreparedRequest` exposes the exact native program, request
-profile and source map while retaining ownership of generation state. A caller
-with the matching Rust compilation context can therefore validate a real
-definition/instance and its calling contract before consuming the native
-continuation.
+The [shared upstream definitions service](shared-upstream-definitions.md) now
+connects genuine imported Rust metadata, layout, obligation and `FnAbi` queries
+to this continuation. It installs actual external nominal and function records
+before native checking, then emits the same checked consumer state and links
+owned code from that dependency generation. The first qualification slice is
+limited to transparent non-Copy `u64` aggregates on x86_64 Linux with an explicit
+abort profile. It does not change normal public routing.
 
-That connection must carry the actual Rust definition/instance identity and ABI
-facts into the emission plan. Aggregate layouts, narrow-argument extension,
-drop glue and unwinding cannot be inferred from native storage size. The next
-implementation must also make unsupported native semantic queries explicit and
+The connection carries actual Rust definition/instance identity and ABI facts
+into the emission plan. Wider aggregate layouts, narrow-argument extension,
+drop glue and unwinding cannot be inferred from native storage size. Further
+integration must make unsupported native semantic queries explicit and
 suspend them before emission so imported services can resolve them inside the
 same compilation. Redirecting a rejected whole-source request to another
 compiler would leave that work unfinished.

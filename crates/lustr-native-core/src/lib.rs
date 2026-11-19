@@ -28,11 +28,19 @@ type Sink = unsafe extern "C" fn(*mut c_void, i32, *const u8, usize);
 // into that pipeline, including calls through different experimental ABIs.
 static NATIVE_ENTRY: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
+// The imported-Rust embedding uses its shared System allocation contract.
+// No exported native entry may start a front image with that allocation mode.
+fn embedding_environment_supported() -> bool {
+    !cfg!(feature = "upstream-semantic")
+        || (image::state_dir().is_none() && std::env::var_os("LUST_FRONT_ARENA").is_none())
+}
+
 /// Experimental native object phase interface. No compiler fallback, Cargo
 /// metadata fiction, std runtime or retained-result reuse is involved.
 #[cfg(feature = "native-inference")]
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn lustr_native_object_v1(argc: usize, argv: *const *const c_char, sink: Sink, context: *mut c_void) -> i32 {
+    if !embedding_environment_supported() { return 3; }
     let Ok(_entry) = NATIVE_ENTRY.try_lock() else { return 3; };
     static USED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
     if USED.swap(true,std::sync::atomic::Ordering::SeqCst) || argc>4096 || argv.is_null() { return 3; }
@@ -55,6 +63,7 @@ pub unsafe extern "C" fn lustr_native_v2(
     sink: Sink,
     context: *mut c_void,
 ) -> i32 {
+    if !embedding_environment_supported() { return 3; }
     static USED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
     if USED.swap(true, std::sync::atomic::Ordering::SeqCst) {
         return 3;
@@ -75,6 +84,7 @@ pub unsafe extern "C" fn lustr_native_retained_v1(
     sink: Sink,
     context: *mut c_void,
 ) -> i32 {
+    if !embedding_environment_supported() { return 3; }
     static CALLS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
     if CALLS.fetch_add(1, std::sync::atomic::Ordering::SeqCst) >= 64 {
         return 3;
@@ -95,6 +105,7 @@ pub unsafe extern "C" fn lustr_native_session_v1(
     sink: Sink,
     context: *mut c_void,
 ) -> i32 {
+    if !embedding_environment_supported() { return 3; }
     static OWNER: std::sync::Mutex<Option<std::thread::ThreadId>> = std::sync::Mutex::new(None);
     static CALLS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
     let Ok(mut owner) = OWNER.try_lock() else { return 3; };
@@ -128,6 +139,9 @@ unsafe fn sequential_entry(
     let env: Vec<_> = env.chunks_exact(2).map(|p| (p[0].clone(), p[1].clone())).collect();
     if env.iter().any(|(k, _)| k.is_empty() || k.contains('=')) {
         return 2;
+    }
+    if cfg!(feature = "upstream-semantic") && env.iter().any(|(key, _)| matches!(key.as_str(), "LUST_FRONT_STATE" | "LUST_FRONT_ARENA")) {
+        return 3;
     }
     let mut names = std::collections::BTreeSet::new();
     if env.iter().any(|(k, _)| !names.insert(k)) {

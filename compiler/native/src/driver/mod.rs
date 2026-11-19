@@ -7,6 +7,7 @@ mod ir_cache;
 pub mod buildscript;
 pub mod cache;
 mod compile;
+pub mod imports;
 mod const_reach;
 pub(crate) mod kept_delta;
 mod kept_derive;
@@ -55,6 +56,13 @@ pub fn prepare<'a>(req: &'a Request, session: &'a mut Session) -> Preparation<'a
         Preparation::Complete(response) | Preparation::Rejected(response)
         | Preparation::Failed(response) | Preparation::Complementary(response) => Preparation::finished(mixed_response(req, response)),
     }
+}
+
+/// One fresh request with checked definitions supplied by an imported compiler.
+/// This uses the ordinary native resolver/checker/lowerer and the same owned
+/// emission continuation. Reuse of this imported session remains unintegrated.
+pub fn prepare_imported<'a>(req: &'a Request, session: &'a mut Session, definitions: &dyn imports::Definitions) -> Result<Preparation<'a>, imports::Unintegrated> {
+    compile::prepare_imported(req, session, definitions)
 }
 
 /// An optional, call-borrowed view of the actual body-checking phase. Early

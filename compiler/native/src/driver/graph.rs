@@ -494,15 +494,17 @@ impl Reads {
 
 /// The stable crate half a def hashes under in a fingerprint. Local-crate
 /// defs use the program's stable crate hash and builtin defs use theirs, so
-/// fingerprints match across sessions. A foreign session crate cannot occur
-/// today (one crate per session); when W-RESOLVE loads more crates it gives
-/// `Program` a crate table and this fallback goes away.
+/// fingerprints match across sessions. Imported definitions use the upstream
+/// stable crate identity installed before native checking, including nominal
+/// types with no function linkage of their own.
 pub(crate) fn def_crate_hash(p: &Program, def: DefId) -> u64 {
     if def.krate == p.krate {
         p.stable_crate.0
     } else if def.krate == BUILTIN_CRATE {
         static BUILTIN: std::sync::OnceLock<u64> = std::sync::OnceLock::new();
         *BUILTIN.get_or_init(|| crate::def::stable_crate_hash("lust-builtin-v1", "lib", "builtin", false).0)
+    } else if let Some(stable) = p.imported_crates.get(&def.krate) {
+        stable.0
     } else if let Some((_, _, link)) = p.native_fn(def) {
         link.id.krate.0
     } else {

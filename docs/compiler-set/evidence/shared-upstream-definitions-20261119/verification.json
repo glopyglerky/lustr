@@ -1,0 +1,561 @@
+{
+  "schema": 1,
+  "scope": "First shared upstream nominal-definition and FnAbi service before native consumer checking; internal qualification only",
+  "base_commit": "f3440c71dabcec15b7957b46a848567dd15d2885",
+  "source_sha256": {
+    "compiler/native/Cargo.lock": "88353a6a0b836d08de3a7e6916c6846b797995b05e35191e6a0098fe0540aa9f",
+    "compiler/native/src/check/collect.rs": "83b46a5b5769c8eff34eacc7ebd55cafea0d5a52d1b9c0abc0e9db83b8f7341a",
+    "compiler/native/src/check/delta_audit.rs": "690df1c2f9d115f3cc0203eb5ca24692d8d6756b0c496d35e09f57a45c2c2c61",
+    "compiler/native/src/check/prog_shift.rs": "3415bef9a00e761c59c7528c1d27dad009cc446e2603096b303e86239b9db9ae",
+    "compiler/native/src/driver/compile.rs": "318558288252ffe8b6167f84d2d55091049a940af4b4b79e94846a35012e87a4",
+    "compiler/native/src/driver/graph.rs": "049e01354016b93cf70f640ee89dd26ff0442f0d8e7d156b13ff3c2ab1a61027",
+    "compiler/native/src/driver/imports.rs": "e4b6e43f676bf4ba11d1275deaa0d6c399175bc6a3c97a63a8810e0e4a1e80ab",
+    "compiler/native/src/driver/mod.rs": "db5bcaf7e49a8f2b40d99cb82c18766afe8cdb0ea7864f02a4964c7d0e13612b",
+    "compiler/native/src/driver/session.rs": "3006859e65fc980329b28b266c2de81193ea0533cd1757a107c9d8bcd192a694",
+    "crates/lustr-native-core/Cargo.lock": "f7c09195fa16ede9dfb6224bef5c96ac97963472614b2e6c6af9122dd1c2cb58",
+    "crates/lustr-native-core/Cargo.toml": "635ec327da20d53012672f844068f7b1b15fe6b43d7a75af78e3482b6b5cc336",
+    "crates/lustr-native-core/build.rs": "8d4d75465c3bf2fc7adc771f61de592eff60a3ec1a397366f8fc6b78a79c792f",
+    "crates/lustr-native-core/src/lib.rs": "25361b9d0cf438fad7417d1e51304dc8aa015854ee03a0fd8957410e20af2955",
+    "crates/lustr-native-core/src/native_modules.rs": "f84cf9fdd891454ee0038fc60515561dc5fda5a7554c95eed8c3c2be67147bf7",
+    "crates/lustr-native-core/src/upstream_definitions.rs": "eb2ff3f35444fbcdd1888e295cdcb97df2cb66c1c8a640d59c1cee4dcd48cbea",
+    "crates/lustr-semantic/Cargo.lock": "b2cfffdc831d758d5a77d9f2e9c0532ed8e97f96fda5608b8925a5aaad26353b",
+    "crates/lustr-semantic/src/mixed_main.rs": "24eb0c7d74a0f0847046f277d249e2e4e62cbe8520dd4134c2c6f1904a3efd29",
+    "tests/shared-imports/consumer.rs": "18b709388c47d40814f7ee2cbfc384d58ddbadaec09115dbf7f165a278bdd4ba",
+    "tests/shared-imports/function-pointer.rs": "03e9b88e34bf33b325f1ea1448cbcd89aa453df305f5a31b638418fcefbe2761",
+    "tests/shared-imports/inherent-rejected.rs": "393f6e0604d9d81eb8b7f8e4d383812f0997895f83f3df47ca7e2538350a4365",
+    "tests/shared-imports/local-trait.rs": "69fc20606d583ce43d629c8790ea8303d27185b0c6ff21fc20c550f2dc5b54bc",
+    "tests/shared-imports/move-rejected.rs": "de12c22fb1d3b8f65b8c1213ce0401406e7d07151e551a9a39c0b9248062ce47",
+    "tests/shared-imports/orphan-rejected.rs": "eef3d7c061c7d2354a6a496e93e81e17ebdaa9f110226ead5f56a097dc8309dc",
+    "tests/shared-imports/peer.rs": "63a2bb2ffb0bcb64a0304d66bf8421151606f33cdf97f116819d5115ec33c7c5",
+    "tests/shared-imports/type-rejected.rs": "8629a2b9d52157ee1d2353058c0d33562eed8466c53839d957d266980d9d59cc",
+    "tools/native-upstream-qualification.rs": "62e5901d57284b144aad0a0496a1131382bda19da24a834d7974f09e3fa2c134",
+    "tools/test-native-upstream.py": "3e13b7fab2c334b2ab3e6abb822c1492a5be6a7ff8108ae250869159c9e35001"
+  },
+  "source_manifest_sha256": "c3424fe88d887be856883202351f1a7e65c5ca5341af0768868a5079926e2fec",
+  "compiler": {
+    "rustc_identity": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+    "rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "rustc_driver_sha256": "ace7e2aa6ae11ca4c9b1edaf70701fc9390de38dd86bcf16bb8f22d5e658bd72",
+    "native_build_hash": "0f55ef399b484c15",
+    "tcc_binary_sha256": "a96a3206c9674ee8ab4917c5a08c9555f68b28b3838a346fee7219dbe1e4736e",
+    "tcc_archive_sha256": "1c71abde8d0299e82a3fa416e5527e281de3720673813de0d76b88a53cdd4248"
+  },
+  "qualifier": {
+    "sha256": "14f5aa6bdda35cc2228d537980968c13aba72631383cb471eb504fa3df24641a",
+    "profile": "dev, debug=0, incremental=false",
+    "feature": "upstream-semantic",
+    "target": "x86_64-unknown-linux-gnu",
+    "native_body_typechecking_passes": 1,
+    "consumer_rust_typeck_queries": 0,
+    "consumer_rust_analysis_queries": 0,
+    "query_control": "Both consumer queries panic if invoked; no fake result is supplied. Rust global expansion/resolution remains part of this imported request."
+  },
+  "commands": {
+    "build": "LUST_TCC_HOME=\"$TCC\" RUSTC=\"$SDK/bin/rustc\" \"$SDK/bin/cargo\" build --manifest-path crates/lustr-native-core/Cargo.toml --locked --offline --jobs 2 --target-dir \"$TARGET\" --config 'build.build-dir=\"<INTERMEDIATES>\"' --config profile.dev.debug=0 --config profile.dev.incremental=false --features upstream-semantic --example native-upstream-qualification",
+    "qualification": "LUST_NO_CACHE=1 LUST_TCC_HOME=\"$TCC\" python3 tools/test-native-upstream.py --rustc \"$SDK/bin/rustc\" --qualifier \"$QUALIFIER\" --out \"$NEW_EVIDENCE\"",
+    "ordinary_driver": "__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT=1 LUST_NO_CACHE=1 LUST_TCC_HOME=\"$TCC\" RUSTC=\"$SDK/bin/rustc\" \"$SDK/bin/cargo\" test --manifest-path compiler/native/Cargo.toml --locked --offline --jobs 2 --target-dir \"$NATIVE_TARGET\" --config 'build.build-dir=\"<NATIVE_INTERMEDIATES>\"' --profile gate --bin lust-core driver:: -- --test-threads=1",
+    "semantic": "LUSTR_NATIVE_BUILD_HASH=baea78ae8589c84b RUSTC=\"$SDK/bin/rustc\" \"$SDK/bin/cargo\" test --manifest-path crates/lustr-semantic/Cargo.toml --locked --offline --jobs 2 --target-dir \"$SEMANTIC_TARGET\" --config 'build.build-dir=\"<SEMANTIC_INTERMEDIATES>\"' --features full-core --bin lustr-mixed -- --test-threads=1",
+    "environment": "PATH begins with the exact SDK bin; Cargo uses its prepared offline dependency directory; LUST_CACHE_DIR and TMPDIR name owned scratch directories. The native Cargo compatibility opt-out is explicit, not an ambient compiler modification. The semantic build hash is that harness build input, not the current native acceptance identity."
+  },
+  "results": {
+    "shared_compiler_runtime_controls": {
+      "passed": 76,
+      "failed": 0,
+      "direct_nominal_call_values": 65541,
+      "function_pointer_call_values": 65541,
+      "expected_direct_stdout": "shared nominal calls: 65541\n",
+      "expected_indirect_stdout": "shared function pointers: 65541\n",
+      "matching_rust_and_arithmetic_oracle": true
+    },
+    "ordinary_native_driver": {
+      "passed": 133,
+      "failed": 0,
+      "test_executable_sha256": "6c3fa0fc1e2c237fb3ccfcc5603060307b8fb3cb2e4a0c92ae56ec9138969cc4",
+      "native_source_identity": "0f55ef399b484c15"
+    },
+    "semantic_regressions": {
+      "passed": 34,
+      "failed": 0,
+      "test_executable_sha256": "b0aa22192360e8a297377d120061b1b699fd0cb3b4ef122bd35b6c764e8162b3"
+    },
+    "cases": [
+      {
+        "name": "peer-compile",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "good",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "good-run",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "good-reference-compile",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "good-reference-run",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "malformed",
+        "status": 3,
+        "expected": 3
+      },
+      {
+        "name": "malformed-reference-compile",
+        "status": 1,
+        "expected": 1
+      },
+      {
+        "name": "invalid-archive",
+        "status": 3,
+        "expected": 3
+      },
+      {
+        "name": "move-rejected",
+        "status": 1,
+        "expected": 1
+      },
+      {
+        "name": "move-rejected-reference-compile",
+        "status": 1,
+        "expected": 1
+      },
+      {
+        "name": "type-rejected",
+        "status": 1,
+        "expected": 1
+      },
+      {
+        "name": "type-rejected-reference-compile",
+        "status": 1,
+        "expected": 1
+      },
+      {
+        "name": "inherent-rejected",
+        "status": 1,
+        "expected": 1
+      },
+      {
+        "name": "inherent-rejected-reference-compile",
+        "status": 1,
+        "expected": 1
+      },
+      {
+        "name": "orphan-rejected",
+        "status": 1,
+        "expected": 1
+      },
+      {
+        "name": "orphan-rejected-reference-compile",
+        "status": 1,
+        "expected": 1
+      },
+      {
+        "name": "local-trait",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "local-trait-reference-compile",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "local-trait-run",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "local-trait-reference-run",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "function-pointer",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "function-pointer-reference-compile",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "function-pointer-run",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "function-pointer-reference-run",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "negative-send-compile",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "negative-send",
+        "status": 2,
+        "expected": 2
+      },
+      {
+        "name": "negative-send-reference-compile",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "negative-send-bound",
+        "status": 2,
+        "expected": 2
+      },
+      {
+        "name": "negative-send-bound-reference-compile",
+        "status": 1,
+        "expected": 1
+      },
+      {
+        "name": "negative-sync-compile",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "negative-sync",
+        "status": 2,
+        "expected": 2
+      },
+      {
+        "name": "negative-sync-reference-compile",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "negative-sync-bound",
+        "status": 2,
+        "expected": 2
+      },
+      {
+        "name": "negative-sync-bound-reference-compile",
+        "status": 1,
+        "expected": 1
+      },
+      {
+        "name": "negative-unpin-compile",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "negative-unpin",
+        "status": 2,
+        "expected": 2
+      },
+      {
+        "name": "negative-unpin-reference-compile",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "negative-unpin-bound",
+        "status": 2,
+        "expected": 2
+      },
+      {
+        "name": "negative-unpin-bound-reference-compile",
+        "status": 1,
+        "expected": 1
+      },
+      {
+        "name": "unwind",
+        "status": 2,
+        "expected": 2
+      },
+      {
+        "name": "copy-compile",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "copy",
+        "status": 2,
+        "expected": 2
+      },
+      {
+        "name": "copy-reference-compile",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "narrow-compile",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "narrow",
+        "status": 2,
+        "expected": 2
+      },
+      {
+        "name": "narrow-reference-compile",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "external-method-compile",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "external-method",
+        "status": 2,
+        "expected": 2
+      },
+      {
+        "name": "external-method-reference-compile",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "external-clone-compile",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "external-clone",
+        "status": 2,
+        "expected": 2
+      },
+      {
+        "name": "external-clone-reference-compile",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "image-guard-lust_front_state",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "image-guard-lust_front_arena",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "image-client-guards",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "removed-snapshot",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "removed-snapshot-run",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "edited-compile",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "dependency-old",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "dependency-old-run",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "dependency-old-reference-compile",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "dependency-old-reference-run",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "dependency-new",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "dependency-new-run",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "dependency-new-reference-compile",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "dependency-new-reference-run",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "dependency-revert",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "dependency-revert-run",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "dependency-revert-reference-compile",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "dependency-revert-reference-run",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "link-failed",
+        "status": 3,
+        "expected": 3
+      },
+      {
+        "name": "link-recovered",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "link-recovered-run",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "object-failed",
+        "status": 3,
+        "expected": 3
+      },
+      {
+        "name": "object-recovered",
+        "status": 0,
+        "expected": 0
+      },
+      {
+        "name": "object-recovered-run",
+        "status": 0,
+        "expected": 0
+      }
+    ],
+    "artifact_preservation": "Invalid native body/coherence inputs, explicit capability refusals, malformed consumer/archive input, and real object/link failures preserve an existing successful executable; fresh-request recovery executes correctly.",
+    "snapshot_ownership": "The prepared request emits correctly after its owned archive pathname is removed. Archive contents and extracted objects remain owned by the continuation."
+  },
+  "independent_review": {
+    "nominal_blockers": {
+      "passed": true,
+      "cases": [
+        "negative-send",
+        "negative-sync",
+        "negative-unpin",
+        "inherent-rejected",
+        "orphan-rejected",
+        "local-trait"
+      ],
+      "executable_sha256": "960f4454af86d33277ef4f3ab8ad0b4428bc1a250b75ada9b40ba61a41acd501",
+      "scope": "Actual negative Send/Sync/Unpin controls, external inherent/orphan rejections, legal local trait and positive bounds; this executable predates only the later region-signature repair and qualifier archive-error propagation."
+    },
+    "function_pointer": {
+      "passed": true,
+      "final_executable_sha256": "14f5aa6bdda35cc2228d537980968c13aba72631383cb471eb504fa3df24641a",
+      "provider_source_sha256": "eb2ff3f35444fbcdd1888e295cdcb97df2cb66c1c8a640d59c1cee4dcd48cbea",
+      "evidence_sha256": "3789ff5c1c92bf5a5e171f7d55e24d9d6a80eb1f2a8ee543664465be25f5798f",
+      "scope": "The exact previously failing fixture/archive now compiles and executes identically to pinned Rust; reviewer checked the actual empty binder, zero-region record and all revalidation fields."
+    }
+  },
+  "nonpassing_controls_and_repairs": [
+    {
+      "control": "private global allocator with imported compiler DSO",
+      "before": "SIGSEGV; isolated custom-allocator counterfactual returns -11",
+      "after": "same program/input with System returns 0",
+      "scope": "Only explicit upstream-semantic embedding changes allocation; all front-image entries are guarded. Ordinary native allocator unchanged."
+    },
+    {
+      "control": "external negative auto traits and crate ownership",
+      "before": "review identified that structural field facts and dummy source spans were insufficient admission authority",
+      "after": "actual upstream trait solver establishes positive facts; unsupported negative facts return Unintegrated; real DefId crate rejects illegal inherent/orphan implementations"
+    },
+    {
+      "control": "imported function item to function pointer",
+      "before": "valid Rust rejected with native L0203/status1 because RegionSig was absent",
+      "after": "actual empty binder and region-free nominal signature install a complete checked RegionSig; 65541 indirect calls and independent original witness pass"
+    },
+    {
+      "control": "object materialization failure setup",
+      "before": "first expanded campaign reached 66 passing controls, then its fault-injection fixture omitted a parent directory and panicked before emission",
+      "after": "fixture creates the owned parent; real object write failure returns3, preserves prior output, and recovery passes"
+    },
+    {
+      "control": "upstream errors before after_expansion",
+      "before": "pinned driver collapses ErrorGuaranteed into one failure outcome",
+      "after": "remains conservatively Failed3 with original diagnostics and preserved prior output; public routing must obtain a typed distinction first"
+    },
+    {
+      "control": "initial SDK API adaptation builds",
+      "before": "compile failures adapting pinned Unnormalized and binder query APIs",
+      "after": "final exact-source build succeeds; failed build logs retained with the evidence archive"
+    }
+  ],
+  "allocator_counterfactual": {
+    "custom_status": -11,
+    "custom_sha256": "28e1c33274ab6072fa42bf5e687e82fba08cfae4bf469ddb6bf2e0bbbcb970e2",
+    "system_status": 0,
+    "system_sha256": "7699705cf2ad0239361f45b780f3ff5fcf25bd08433789af6b15cc088fc71614",
+    "source_sha256": "0c8cd41bba12fc35d3294c3c26896c978a5b650d286409962833460832c82e08",
+    "input_sha256": "6902c380fdb241aec8e064112ccdf238192c055b57fbd22746f1b9e64c6c38b6",
+    "custom_feature": "custom-allocator",
+    "system_feature": "default",
+    "input_bytes": 4566,
+    "system_stdout": "4566\n"
+  },
+  "allocator_counterfactual_source": "#![feature(rustc_private)]\nextern crate rustc_driver;\n#[cfg(feature = \"custom-allocator\")]\n#[global_allocator]\nstatic ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;\nfn main() {\n    rustc_driver::catch_with_exit_code(|| ());\n    let path = std::env::args().nth(1).unwrap();\n    let bytes: std::sync::Arc<[u8]> = std::fs::read(path).unwrap().into();\n    println!(\"{}\", bytes.len());\n}\n",
+  "allocator_counterfactual_manifest": "[package]\nname = \"imported-allocator-control\"\nversion = \"0.0.0\"\nedition = \"2024\"\npublish = false\n\n[workspace]\n\n[features]\ncustom-allocator = [\"dep:mimalloc\"]\n\n[dependencies]\nmimalloc = { version = \"=0.1.52\", default-features = false, optional = true }\n\n[profile.dev]\ndebug = 0\nincremental = false\n",
+  "raw_log_sha256": {
+    "service-build9.stderr": "780dc165617db83a68e5d96c4cd29b0c09b7857d5ccd8d6ea8ec8cbdf72569df",
+    "ordinary-driver.stdout": "9b29b2ee3aa33e01d5d95eb4224de328820bc698b2da2c089f9baae51cfb1e9b",
+    "ordinary-driver.stderr": "9d1b403f1b71a4c36b85267c60d4f045eeb49fcd7fdb3ec5d55ff3d47cedb6b0",
+    "semantic.stdout": "e316596440c0f98fbc6c42400a9106cd0d06c57a6d204273300142d37b32a0de",
+    "semantic.stderr": "584f2492010c4e3cdcbb781f3c5ef344c931cd4c2ef725e2129b3f49311e550b",
+    "qualification5.stdout": "ba037cd1cda9fb2e3886a191387cb3a35f8cb94de575e87c14ee92ff344c228e",
+    "qualification5.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "good.stderr": "515bceaee25e124685f0f16d2baabf70266f28d10c89f5fbaf183d65f1dabd80",
+    "function-pointer.stderr": "515bceaee25e124685f0f16d2baabf70266f28d10c89f5fbaf183d65f1dabd80",
+    "object-failed.stderr": "33e72e35de51f953dc5df816e35195722b516ce872bc366e3e7c422a77c96e4a",
+    "link-failed.stderr": "88dfdbe0a0825053f9632f97d91956810abae7426ff5dcdfb816baebcbcf3c2d",
+    "malformed.stderr": "0f5f5b607b60147bd8c7a987279fac1080d08349450c56c0c640f5bde31f40fc",
+    "invalid-archive.stderr": "182db3032e11ca7768ee076f91821b9ee233f134006dd651f4b9aa80340c256e"
+  },
+  "limits": [
+    "Internal qualification entry only; normal public routing and its standalone retry are unchanged.",
+    "Fresh single-use imported session; no retained imported generation or old disk-cache certificate is authorized.",
+    "One root dependency with public nongeneric transparent one-field u64 non-Copy/no-drop structs and safe nongeneric one-argument nominal functions.",
+    "Actual positive Send/Sync/Unpin facts required; negative/unknown facts and additional external inherent or trait impl records are unintegrated.",
+    "Actual empty signature binder and complete zero-region signature only; references and lifetime-bearing types need shared region records.",
+    "x86_64 GNU/Linux and explicit consumer/dependency abort profile only; no flag rewriting.",
+    "No consumer Rust body typechecking or full analysis; an imported Rust global parsing/expansion/resolution context is still used.",
+    "Wider aggregates, generic/const/trait/drop/unwind/macro semantics, metadata output and native retained imports remain unfinished.",
+    "No full native corpus, macOS, package publication, formal proof, performance or completed architecture claim from this bounded campaign."
+  ]
+}

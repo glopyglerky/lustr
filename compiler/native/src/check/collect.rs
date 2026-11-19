@@ -398,6 +398,9 @@ pub struct Program {
     /// The crate this program was collected as: session-local id and stable hash.
     pub krate: CrateId,
     pub stable_crate: StableCrateHash,
+    /// Imported metadata's actual stable identities, indexed by this shared
+    /// request's crate handles. Nominal reads must not hash a session index.
+    pub imported_crates: HashMap<CrateId, StableCrateHash>,
     /// Each function's stable identity, in `fns` order (the `Vec<DefId>` side
     /// table of docs/ARCH.md section 1.7). User Adts carry their `DefId` in
     /// `defs` and in the type store, where `TyKind::Adt(DefId, ArgsId)` reads it.
@@ -3485,6 +3488,20 @@ pub fn collect_with_definitions(
     collect_with_definitions_inner(ast, interner, known, crate_ids, walk_instances, def_order, resolved, &mut Default::default(), &[], Some(definitions))
 }
 
+/// The ordinary driver collection with authoritative imported definitions.
+/// The caller owns the import generation and excludes unkeyed retained reuse.
+#[allow(clippy::too_many_arguments)]
+pub fn collect_reuse_with_definitions(
+    ast: Arc<Ast>, interner: Arc<Interner>, known: Arc<Known>, crate_ids: CrateIds,
+    walk_instances: bool, def_order: &mut DefOrder,
+    resolved: Option<Arc<crate::resolve::imports::ResolvedTables>>,
+    reuse: &mut crate::driver::gen_reuse::GenReuse,
+    std_routes: &[&'static crate::ty::lang::StdFnDef],
+    definitions: &mut dyn FnMut(&mut Program) -> Result<(), Vec<Diag>>,
+) -> Result<Program, Vec<Diag>> {
+    collect_with_definitions_inner(ast, interner, known, crate_ids, walk_instances, def_order, resolved, reuse, std_routes, Some(definitions))
+}
+
 #[allow(clippy::too_many_arguments)]
 fn collect_with_definitions_inner(
     ast: Arc<Ast>, interner: Arc<Interner>, known: Arc<Known>, crate_ids: CrateIds,
@@ -3537,6 +3554,7 @@ fn collect_with_definitions_inner(
         main: None,
         krate: crate_ids.local,
         stable_crate: crate_ids.stable,
+        imported_crates: HashMap::default(),
         fn_defs: Vec::new(),
         def_by_hash: Default::default(),
         std_fns: Vec::new(),
@@ -5320,8 +5338,11 @@ fn collect_with_definitions_inner(
                 // Rustc E0116: no inherent impl on a std type (W-STD-C).
                 if trait_ref.is_none()
                     && let Some(a) = owner
-                    && p.is_std_adt(a)
-                    && !p.std_source_span(imp.span)
+                    && ((p.is_std_adt(a) && !p.std_source_span(imp.span))
+                        // Imported definitions have no local source span.
+                        // Their actual crate identity owns the type; a dummy
+                        // span must never make them local to this impl.
+                        || (p.def_of_adt(a).krate != p.krate && p.def_of_adt(a).krate != BUILTIN_CRATE))
                 {
                     errs.push(Diag::new(
                         "L0616",

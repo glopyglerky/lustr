@@ -451,6 +451,9 @@ pub struct Session {
     /// "not opened yet" from "cache is off".
     pub(crate) disk_cache: Option<crate::driver::cache::Cache>,
     pub(crate) cache_tried: bool,
+    /// The first imported-definition seam owns one fresh request only. No
+    /// ordinary or imported request may reuse its unkeyed retained state.
+    pub(crate) imported_request: bool,
 }
 
 impl Front {
@@ -587,6 +590,7 @@ impl Session {
             std_cache: None,
             disk_cache: None,
             cache_tried: false,
+            imported_request: false,
         }
     }
     pub fn obj_dir(&self) -> &Path {
