@@ -91,6 +91,26 @@ internal qualifier's failure controls leave shared SDK files untouched.
 
 ## Qualification scope
 
+The clean source-bound campaign at
+`8bdb0d54db41330611a6f1b5bc2f2700183befbf`, complete tree
+`6e86842a838b12ff023326b566de5c140a025f3e`, rebuilt the real qualifier and passed
+all **120 compiler/runtime controls**. Its executable SHA-256 is
+`3e91ac3442a62c6faec7b6332f473373385cb9f999d65e4f941c63505c6a65c0`.
+The [verification record](evidence/shared-integer-abi-20261119/verification.json)
+and [case inventory](evidence/shared-integer-abi-20261119/campaign.json) retain
+commands, tool identities and original-output hashes. The
+[actual LLVM adapters](evidence/shared-integer-abi-20261119/integer-adapters.ll)
+show the 30 represented ABI bridges in the integer dependency.
+
+An independent review reproduced the original missing-inline-body
+[link failure](evidence/shared-integer-abi-20261119/original-inline-failure.json)
+and reran the unchanged witness after repair. The
+[repaired result](evidence/shared-integer-abi-20261119/independent-inline-repair.json)
+refuses before native checking and preserves the prior executable byte for
+byte, while matching Rust still executes successfully. That separate replay
+records its own development-build executable identity rather than inheriting
+the clean-build identity above.
+
 `tests/shared-imports/integer-peer.rs` and `integer-consumer.rs` exercise every
 declared integer width, mixed scalar/nominal parameters, primitive returns,
 zero-argument functions and eight-argument calls. The last scalar arguments
@@ -110,6 +130,13 @@ rejections. It also tests a seventh nominal argument: the upstream C classifier
 places that aggregate on the stack by value, which this adapter does not yet
 encode. That valid Rust case returns `Unintegrated` before emission and preserves
 the previous executable.
+
+Two valid dependency cases explicitly require more integration before admission:
+an `inline(always)` function whose body must be materialized from metadata, and
+a checked-add function whose object references an unavailable panic runtime.
+Both matching Rust controls execute successfully on the supplied valid inputs.
+The import provider reports these different missing records before native
+checking, with no compiler retry and no changed successful artifact.
 
 Actual LLVM failure controls exercise a missing executable, a rejected
 invocation, assembly in place of ELF and an empty object stream. A native

@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "reviewed_source": "8bdb0d54db41330611a6f1b5bc2f2700183befbf",
+  "scope": "independent replay of the unchanged frozen inline(always) witness against the repaired qualifier; not a full compiler qualification",
+  "qualifier_sha256": "daa293d543940e1fc13abedfd1ba58c9358302c1b7906e9c0944f914d6d0fb1d",
+  "inputs": {
+    "inline-peer.rs": "a6cae392c26fdfb37be4f0f9ba6c24f4f2a6f5548ac20a1967234c52ce6d8121",
+    "inline-consumer.rs": "dc93ddab279568b6874175904a23d1701661b9e33598b86152047f77327351bc",
+    "libpeer-inline.rlib": "90ce07a80b73df32f28d0da614f33db37ed4edc6b5cf21e2ce251fe0b4152216"
+  },
+  "command": [
+    "$DEVELOPMENT_BUILD/debug/examples/native-upstream-qualification",
+    "$INDEPENDENT_REVIEW/inline-consumer.rs",
+    "$INDEPENDENT_REVIEW/libpeer-inline.rlib",
+    "$INDEPENDENT_REVIEW/inline-repaired.native",
+    "$INDEPENDENT_REVIEW/inline-repaired-state"
+  ],
+  "status": 2,
+  "stdout": "",
+  "stderr": "import outcome: Unintegrated(\"imported instance peer::add requires complementary body materialization\")\n",
+  "previous_artifact_sha256": "3e88f46ea35fc513bbaf260de8b05e3dd2620af00b8702c7eaa6b8b0fcdc4bd5",
+  "result_artifact_sha256": "3e88f46ea35fc513bbaf260de8b05e3dd2620af00b8702c7eaa6b8b0fcdc4bd5",
+  "reference_status": 0,
+  "reference_stdout": "5\n",
+  "reference_stderr": "",
+  "original_record_sha256": "619b2e6475d58fa220f6cc506b4c04b86bc305fc660e1d75f88238d406616428",
+  "path_rendering": "Absolute execution paths are represented by role variables; original records retain exact commands."
+}
