@@ -178,6 +178,9 @@ enum Step {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Glue {
+    /// `void drop_T(void *raw)`: the same C ABI for direct calls, vtables,
+    /// channels and unwind callbacks. Each body restores its concrete `T *`.
+    /// Casting a typed function pointer does not change its C function type.
     Drop,
     Clone,
     /// `void clonefrom_T(T *d, T *s)`: `Clone::clone_from` by
@@ -13246,7 +13249,7 @@ fn glue_def_value(
     match g {
         Glue::CloneFrom => unreachable!("clonefrom glue returns above"),
         Glue::Drop => {
-            let _ = writeln!(protos, "void drop_{m}({ct} *p);");
+            let _ = writeln!(protos, "void drop_{m}(void *raw);");
             match t {
                 CTy::String => body.push_str("  lust_string_drop(p);\n"),
                 CTy::Hash(k, _) if hash::is_table(*k) => body.push_str(&hash::drop_body(p, t, &mut need)),
@@ -13484,7 +13487,7 @@ fn glue_def_value(
             } else {
                 body = body.replace(UNW_DSTEP, "").replace("UNW_DSTEP ", "");
             }
-            let _ = writeln!(defs, "void drop_{m}({ct} *p) {{\n{body}}}\n");
+            let _ = writeln!(defs, "void drop_{m}(void *raw) {{\n  {ct} *p = raw;\n{body}}}\n");
         }
         Glue::Clone => {
             let _ = writeln!(protos, "{ct} clone_{m}({ct} *p);");

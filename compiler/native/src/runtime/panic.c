@@ -520,6 +520,13 @@ static void lust_unw_take_any(lust_exc *ex) {
 }
 #endif
 
+/* The runtime-owned String vtable uses the same erased drop ABI as generated
+   glue. An object-pointer conversion belongs inside a correctly typed function;
+   casting lust_string_drop itself would make its indirect call undefined. */
+#ifdef LUST_IMPL
+static void lust_string_drop_erased(void *p) { lust_string_drop((lust_String *)p); }
+#endif
+
 /* Setup from main: the payload type ids (see lust_any_ids), and whether
    panics unwind. */
 void lust_unw_init(int32_t unwind, uint64_t str_lo, uint64_t str_hi, uint64_t string_lo, uint64_t string_hi) LUST_BODY({
@@ -535,7 +542,7 @@ void lust_unw_init(int32_t unwind, uint64_t str_lo, uint64_t str_hi, uint64_t st
     lust_vt_str[4] = 0;
     lust_vt_str[5] = (const void *)(uintptr_t)str_lo;
     lust_vt_str[6] = (const void *)(uintptr_t)str_hi;
-    lust_vt_string[0] = (const void *)lust_string_drop;
+    lust_vt_string[0] = (const void *)lust_string_drop_erased;
     lust_vt_string[1] = (const void *)(uintptr_t)sizeof(lust_String);
     lust_vt_string[2] = (const void *)(uintptr_t)8;
     lust_vt_string[3] = 0;

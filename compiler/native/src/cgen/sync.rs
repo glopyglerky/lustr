@@ -184,15 +184,15 @@ pub(super) fn sync_glue_def(
             } else {
                 String::new()
             };
-            let _ = writeln!(protos, "void drop_{m}({ct} *p);");
+            let _ = writeln!(protos, "void drop_{m}(void *raw);");
             let _ = writeln!(
                 defs,
-                "void drop_{m}({ct} *p) {{\n  if (lust_arc_dec(&(*p)->strong)) {{ {inner}if (lust_arc_dec(&(*p)->weak)) {dealloc}; }}\n}}\n"
+                "void drop_{m}(void *raw) {{\n  {ct} *p = raw;\n  if (lust_arc_dec(&(*p)->strong)) {{ {inner}if (lust_arc_dec(&(*p)->weak)) {dealloc}; }}\n}}\n"
             );
         }
         (Glue::Drop, SyncTy::ArcWeak) => {
-            let _ = writeln!(protos, "void drop_{m}({ct} *p);");
-            let _ = writeln!(defs, "void drop_{m}({ct} *p) {{\n  if (*p != ({it}*)~(uint64_t)0 && lust_arc_dec(&(*p)->weak)) {dealloc};\n}}\n");
+            let _ = writeln!(protos, "void drop_{m}(void *raw);");
+            let _ = writeln!(defs, "void drop_{m}(void *raw) {{\n  {ct} *p = raw;\n  if (*p != ({it}*)~(uint64_t)0 && lust_arc_dec(&(*p)->weak)) {dealloc};\n}}\n");
         }
         (Glue::Clone, SyncTy::Arc) => {
             let _ = writeln!(protos, "{ct} clone_{m}({ct} *p);");
@@ -232,16 +232,16 @@ pub(super) fn sync_glue_def(
             let _ = writeln!(defs, "{ct} default_{m}(void) {{\n  {ct} r = {{0, 0}}; return r;\n}}\n");
         }
         (Glue::Drop, SyncTy::Duration) => {
-            let _ = writeln!(protos, "void drop_{m}({ct} *p);");
-            let _ = writeln!(defs, "void drop_{m}({ct} *p) {{\n  (void)p;\n}}\n");
+            let _ = writeln!(protos, "void drop_{m}(void *raw);");
+            let _ = writeln!(defs, "void drop_{m}(void *raw) {{\n  {ct} *p = raw;\n  (void)p;\n}}\n");
         }
         (Glue::Default, _) if k.atomic_value().is_some() => {
             let _ = writeln!(protos, "{ct} default_{m}(void);");
             let _ = writeln!(defs, "{ct} default_{m}(void) {{\n  return 0;\n}}\n");
         }
         (Glue::Drop, _) if k.atomic_value().is_some() => {
-            let _ = writeln!(protos, "void drop_{m}({ct} *p);");
-            let _ = writeln!(defs, "void drop_{m}({ct} *p) {{\n  (void)p;\n}}\n");
+            let _ = writeln!(protos, "void drop_{m}(void *raw);");
+            let _ = writeln!(defs, "void drop_{m}(void *raw) {{\n  {ct} *p = raw;\n  (void)p;\n}}\n");
         }
         _ => unreachable!("internal: no {g:?} glue for `{}`", k.name()),
     }
@@ -255,8 +255,8 @@ fn builder_glue_def(p: &Program, g: Glue, m: &str, ct: &str, protos: &mut String
     match g {
         Glue::Drop => {
             need(Glue::Drop, &CTy::String);
-            let _ = writeln!(protos, "void drop_{m}({ct} *p);");
-            let _ = writeln!(defs, "void drop_{m}({ct} *p) {{\n  if (p->has_name) drop_{}(&p->name);\n}}\n", mangle(&CTy::String));
+            let _ = writeln!(protos, "void drop_{m}(void *raw);");
+            let _ = writeln!(defs, "void drop_{m}(void *raw) {{\n  {ct} *p = raw;\n  if (p->has_name) drop_{}(&p->name);\n}}\n", mangle(&CTy::String));
         }
         Glue::Debug => {
             // `Builder { name: Some("x"), stack_size: None }` over
@@ -302,9 +302,9 @@ fn once_glue_def(p: &Program, g: Glue, k: SyncTy, e: &CTy, m: &str, ct: &str, pr
             } else {
                 "(void)p;".into()
             };
-            (format!("void drop_{m}({ct} *p)"), body)
+            (format!("void drop_{m}(void *raw)"), body)
         }
-        (Glue::Drop, _) => (format!("void drop_{m}({ct} *p)"), "(void)p;".into()),
+        (Glue::Drop, _) => (format!("void drop_{m}(void *raw)"), "(void)p;".into()),
         (Glue::Default, _) => (format!("{ct} default_{m}(void)"), format!("{ct} r; {} return r;", zero_c("r"))),
         // `OnceLock(5)` or `OnceLock(<uninit>)` (a `format_args!`).
         (Glue::Debug, SyncTy::OnceLock) => {
@@ -333,7 +333,8 @@ fn once_glue_def(p: &Program, g: Glue, k: SyncTy, e: &CTy, m: &str, ct: &str, pr
         _ => unreachable!("internal: no {g:?} glue for `{}`", k.name()),
     };
     let _ = writeln!(protos, "{proto};");
-    let _ = writeln!(defs, "{proto} {{\n  {body}\n}}\n");
+    let drop_bind = if g == Glue::Drop { format!("{ct} *p = raw; ") } else { String::new() };
+    let _ = writeln!(defs, "{proto} {{\n  {drop_bind}{body}\n}}\n");
 }
 
 /// Glue of the channel ends and `SendError` (std's impls).
@@ -341,8 +342,8 @@ fn once_glue_def(p: &Program, g: Glue, k: SyncTy, e: &CTy, m: &str, ct: &str, pr
 fn chan_glue_def(p: &Program, g: Glue, k: SyncTy, e: &CTy, m: &str, ct: &str, protos: &mut String, defs: &mut String, need: &mut dyn FnMut(Glue, &CTy)) {
     let lit = |s: &str| format!("(lust_str){{(uint8_t*)\"{s}\", {}}}", s.len());
     let (proto, body) = match (g, k) {
-        (Glue::Drop, SyncTy::Sender | SyncTy::SyncSender) => (format!("void drop_{m}({ct} *p)"), "lust_chan_drop_sender(*p);".to_string()),
-        (Glue::Drop, SyncTy::Receiver) => (format!("void drop_{m}({ct} *p)"), "lust_chan_drop_receiver(*p);".to_string()),
+        (Glue::Drop, SyncTy::Sender | SyncTy::SyncSender) => (format!("void drop_{m}(void *raw)"), "lust_chan_drop_sender(*p);".to_string()),
+        (Glue::Drop, SyncTy::Receiver) => (format!("void drop_{m}(void *raw)"), "lust_chan_drop_receiver(*p);".to_string()),
         (Glue::Drop, _) => {
             let body = if needs_drop_c(p, e) {
                 need(Glue::Drop, e);
@@ -350,7 +351,7 @@ fn chan_glue_def(p: &Program, g: Glue, k: SyncTy, e: &CTy, m: &str, ct: &str, pr
             } else {
                 "(void)p;".into()
             };
-            (format!("void drop_{m}({ct} *p)"), body)
+            (format!("void drop_{m}(void *raw)"), body)
         }
         (Glue::Clone, SyncTy::Sender | SyncTy::SyncSender) => (format!("{ct} clone_{m}({ct} *p)"), "return lust_chan_clone_sender(*p);".to_string()),
         // `Sender { .. }`, `SyncSender { .. }`, `Receiver { .. }`, and
@@ -365,7 +366,8 @@ fn chan_glue_def(p: &Program, g: Glue, k: SyncTy, e: &CTy, m: &str, ct: &str, pr
         _ => unreachable!("internal: no {g:?} glue for `{}`", k.name()),
     };
     let _ = writeln!(protos, "{proto};");
-    let _ = writeln!(defs, "{proto} {{\n  {body}\n}}\n");
+    let drop_bind = if g == Glue::Drop { format!("{ct} *p = raw; ") } else { String::new() };
+    let _ = writeln!(defs, "{proto} {{\n  {drop_bind}{body}\n}}\n");
 }
 
 /// Glue of the thread types (std's impls): a `JoinHandle` drop detaches
@@ -374,9 +376,9 @@ fn thread_glue_def(g: Glue, k: SyncTy, m: &str, ct: &str, protos: &mut String, d
     let lit = |s: &str| format!("(lust_str){{(uint8_t*)\"{s}\", {}}}", s.len());
     let dbg = format!("int dbg_{m}(lust_Formatter *f, {ct} *p)");
     let (proto, body) = match (g, k) {
-        (Glue::Drop, SyncTy::JoinHandle | SyncTy::ScopedJoinHandle) => (format!("void drop_{m}({ct} *p)"), "lust_join_drop(*p);".to_string()),
-        (Glue::Drop, SyncTy::Thread) => (format!("void drop_{m}({ct} *p)"), "lust_thread_drop(*p);".to_string()),
-        (Glue::Drop, _) => (format!("void drop_{m}({ct} *p)"), "(void)p;".to_string()),
+        (Glue::Drop, SyncTy::JoinHandle | SyncTy::ScopedJoinHandle) => (format!("void drop_{m}(void *raw)"), "lust_join_drop(*p);".to_string()),
+        (Glue::Drop, SyncTy::Thread) => (format!("void drop_{m}(void *raw)"), "lust_thread_drop(*p);".to_string()),
+        (Glue::Drop, _) => (format!("void drop_{m}(void *raw)"), "(void)p;".to_string()),
         (Glue::Clone, SyncTy::Thread) => (format!("{ct} clone_{m}({ct} *p)"), "return lust_thread_clone(*p);".to_string()),
         (Glue::Clone, SyncTy::ThreadId) => (format!("{ct} clone_{m}({ct} *p)"), "return *p;".to_string()),
         (Glue::Eq, SyncTy::ThreadId) => (format!("uint8_t eq_{m}({ct} *a, {ct} *b)"), "return *a == *b;".to_string()),
@@ -414,7 +416,8 @@ return lust_dstruct_finish_ne(&b);",
         _ => unreachable!("internal: no {g:?} glue for `{}`", k.name()),
     };
     let _ = writeln!(protos, "{proto};");
-    let _ = writeln!(defs, "{proto} {{\n  {body}\n}}\n");
+    let drop_bind = if g == Glue::Drop { format!("{ct} *p = raw; ") } else { String::new() };
+    let _ = writeln!(defs, "{proto} {{\n  {drop_bind}{body}\n}}\n");
 }
 
 /// Glue of the locks, their guards, and `PoisonError` (std's impls).
@@ -430,15 +433,15 @@ fn lock_glue_def(p: &Program, g: Glue, k: SyncTy, e: &CTy, m: &str, ct: &str, pr
             } else {
                 "(void)p;".into()
             };
-            (format!("void drop_{m}({ct} *p)"), inner)
+            (format!("void drop_{m}(void *raw)"), inner)
         }
         // A guard gives its lock back (runtime/sync.c).
         // A write guard dropped by a panic poisons its lock (runtime/sync.c
         // `lust_poison_leave`).
-        (Glue::Drop, SyncTy::MutexGuard) => (format!("void drop_{m}({ct} *p)"), "lust_poison_leave(&(*p)->poison); lust_mutex_unlock(&(*p)->st);".into()),
-        (Glue::Drop, SyncTy::RwLockReadGuard) => (format!("void drop_{m}({ct} *p)"), "lust_rw_read_unlock(&(*p)->st);".into()),
+        (Glue::Drop, SyncTy::MutexGuard) => (format!("void drop_{m}(void *raw)"), "lust_poison_leave(&(*p)->poison); lust_mutex_unlock(&(*p)->st);".into()),
+        (Glue::Drop, SyncTy::RwLockReadGuard) => (format!("void drop_{m}(void *raw)"), "lust_rw_read_unlock(&(*p)->st);".into()),
         (Glue::Drop, SyncTy::RwLockWriteGuard) => {
-            (format!("void drop_{m}({ct} *p)"), "lust_poison_leave(&(*p)->poison); lust_rw_write_unlock(&(*p)->st);".into())
+            (format!("void drop_{m}(void *raw)"), "lust_poison_leave(&(*p)->poison); lust_rw_write_unlock(&(*p)->st);".into())
         }
         (Glue::Default, SyncTy::Mutex | SyncTy::RwLock) => {
             need(Glue::Default, e);
@@ -485,7 +488,8 @@ if ((w = lust_dstruct_field(&b, &s, {}))) lust_dstruct_field_end(&b, &s, lust_f_
         _ => unreachable!("internal: no {g:?} glue for `{}`", k.name()),
     };
     let _ = writeln!(protos, "{proto};");
-    let _ = writeln!(defs, "{proto} {{\n  {body}\n}}\n");
+    let drop_bind = if g == Glue::Drop { format!("{ct} *p = raw; ") } else { String::new() };
+    let _ = writeln!(defs, "{proto} {{\n  {drop_bind}{body}\n}}\n");
 }
 
 /// What a closure-taking thread or sync call calls (`FnGen::callee_of`).

@@ -625,6 +625,13 @@ static void lust_packet_free(lust_JoinHdr *h) {
     if (sc && __atomic_sub_fetch(&sc->live, 1, 5) == 0) lust_futex_wake(&sc->live, 0x7fffffff);
 }
 
+/* The exception catcher calls void (*)(void *); the thread packet retains its
+   own typed callback. Keep that type conversion at the object boundary. */
+static void lust_thread_run_erased(void *p) {
+    lust_JoinHdr *h = (lust_JoinHdr *)p;
+    h->run(h);
+}
+
 static void *lust_thread_entry(void *p) {
     lust_JoinHdr *h = (lust_JoinHdr *)p;
     lust_ThreadInfo *self = h->th;
@@ -648,7 +655,7 @@ static void *lust_thread_entry(void *p) {
        root is a catch point. */
     lust_exc ex;
     if (lust_unwind_mode == 2) {
-        if (lust_unw_try((void (*)(void *))h->run, h)) {
+        if (lust_unw_try(lust_thread_run_erased, h)) {
             lust_unw_take_any(&ex);
             h->payload = lust_exc_box(&ex);
             h->panicked = 1;
