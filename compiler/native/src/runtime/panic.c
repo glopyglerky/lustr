@@ -31,7 +31,7 @@ static unsigned long long lust_os_tid(void) {
 
 /* Std source locations of panics that Rust raises inside std (no
    track_caller), as rustc 1.99 prints them. */
-#define LUST_STD_SRC "/rustc/b940084d7eb6a299eb4bfeb8e34901bc051e7ac4/library/"
+#define LUST_STD_SRC "/rustc/5b7b37aefcb5b2fba3c2392bc9065b9e4602d494/library/"
 #endif
 
 /* ---------- Unwinding (panic=unwind, ARCH 7.2) ----------
@@ -716,11 +716,12 @@ static const char *const lust_std_files[] = {
     LUST_STD_SRC "alloc/src/io/read.rs",
     LUST_STD_SRC "alloc/src/io/impls.rs",
     LUST_STD_SRC "core/src/io/borrowed_buf.rs",
-    LUST_STD_SRC "alloc/src/rc.rs",
-    LUST_STD_SRC "alloc/src/sync.rs",
+    LUST_STD_SRC "alloc/src/rcs/rc.rs",
+    LUST_STD_SRC "alloc/src/rcs/arc.rs",
     LUST_STD_SRC "core/src/str/mod.rs",
     LUST_STD_SRC "std/src/os/unix/fs.rs",
     LUST_STD_SRC "alloc/src/str.rs",
+    LUST_STD_SRC "alloc/src/io/buffered/bufwriter.rs",
 };
 #endif
 
@@ -872,7 +873,7 @@ void lust_panic_std_lit(const char *msg, const char *where) LUST_BODY({ lust_pan
 
 /* core 1.99's `BorrowedCursor::advance_checked` assert, as `io::copy`'s
    default `read_buf` hits it when `read` returns more than the buffer. */
-void lust_panic_read_buf_overrun(void) LUST_BODY({ lust_panic_std_kind(LUST_EXC_STR, "assertion failed: n <= init_unfilled", "core/src/io/borrowed_buf.rs:287:9"); })
+void lust_panic_read_buf_overrun(void) LUST_BODY({ lust_panic_std_kind(LUST_EXC_STR, "assertion failed: n <= init_unfilled", "core/src/io/borrowed_buf.rs:380:9"); })
 
 /* `panic_any(payload)`: the hook prints the payload's text, then it
    unwinds (abort mode: aborts). */
@@ -949,7 +950,7 @@ static void lust_out_raw(const uint8_t *p, uint64_t n) {
             else if (e == 0) lust_string_push_cstr(&s, "failed to write whole buffer");
             else { char b[32]; snprintf(b, sizeof b, " (os error %d)", e); lust_string_push_cstr(&s, strerror(e)); lust_string_push_cstr(&s, b); }
             lust_out_len = 0;
-            lust_panic_at(s.ptr, s.len, LUST_STD_SRC "std/src/io/stdio.rs", 1168, 9);
+            lust_panic_at(s.ptr, s.len, LUST_STD_SRC "std/src/io/stdio.rs", 1162, 9);
             return;
         }
         p += w;

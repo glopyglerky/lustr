@@ -526,23 +526,23 @@ fn std_loc(file: u64, line: u64, col: u64) -> String {
 }
 
 /// The std location of an integer method that panics inside core
-/// (`abs`, `pow`, signed wrapping/overflowing/saturating division):
+/// (`abs`, `pow`, next-multiple and next-power overflow):
 /// the `int_impl!` or `uint_impl!` line for its type in
 /// core/src/num/mod.rs.
 fn num_loc(i: IntTy, pow: bool) -> String {
     let line = match i {
-        IntTy::I8 => 379,
-        IntTy::I16 => 404,
-        IntTy::I32 => 429,
-        IntTy::I64 => 454,
-        IntTy::I128 => 479,
-        IntTy::Isize => 559,
-        IntTy::U8 => 586,
-        IntTy::U16 => 1234,
-        IntTy::U32 => 1290,
-        IntTy::U64 => 1322,
-        IntTy::U128 => 1354,
-        IntTy::Usize => 1452,
+        IntTy::I8 => 387,
+        IntTy::I16 => 412,
+        IntTy::I32 => 437,
+        IntTy::I64 => 462,
+        IntTy::I128 => 487,
+        IntTy::Isize => 567,
+        IntTy::U8 => 594,
+        IntTy::U16 => 1243,
+        IntTy::U32 => 1299,
+        IntTy::U64 => 1331,
+        IntTy::U128 => 1363,
+        IntTy::Usize => 1461,
     };
     std_loc(if pow { 0x40 } else { 0 }, line, 5)
 }
@@ -2765,22 +2765,22 @@ impl<'b, 'p> FnGen<'b, 'p> {
 }
 
 /// The line of `ty`'s `int_impl!` or `uint_impl!` invocation in
-/// core/src/num/mod.rs (rustc 1.99, 64-bit targets): where a panic in
+/// core/src/num/mod.rs (the pinned Rust source, 64-bit targets): where a panic in
 /// one of its methods called through a fn pointer is reported.
 fn int_impl_line(ty: IntTy) -> u32 {
     match ty {
-        IntTy::I8 => 379,
-        IntTy::I16 => 404,
-        IntTy::I32 => 429,
-        IntTy::I64 => 454,
-        IntTy::I128 => 479,
-        IntTy::Isize => 559,
-        IntTy::U8 => 586,
-        IntTy::U16 => 1234,
-        IntTy::U32 => 1290,
-        IntTy::U64 => 1322,
-        IntTy::U128 => 1354,
-        IntTy::Usize => 1452,
+        IntTy::I8 => 387,
+        IntTy::I16 => 412,
+        IntTy::I32 => 437,
+        IntTy::I64 => 462,
+        IntTy::I128 => 487,
+        IntTy::Isize => 567,
+        IntTy::U8 => 594,
+        IntTy::U16 => 1243,
+        IntTy::U32 => 1299,
+        IntTy::U64 => 1331,
+        IntTy::U128 => 1363,
+        IntTy::Usize => 1461,
     }
 }
 
@@ -6629,7 +6629,7 @@ impl FnGen<'_, '_> {
             B::FromStrRadix(it) => {
                 // core panics on a radix outside 2..=36 before parsing,
                 // at its `from_str_radix` line for the type's sign.
-                let sloc = std_loc(0, if it.signed() { 1866 } else { 1867 }, 1);
+                let sloc = std_loc(0, if it.signed() { 1888 } else { 1889 }, 1);
                 let _ = writeln!(self.out, "    lust_radix_check({}, {sloc});", vals[1]);
                 self.parse_int_c(it, &str_of(&vals[0], &tys[0]), &vals[1])
             }
@@ -7323,9 +7323,9 @@ impl FnGen<'_, '_> {
                 let (d, n, t) = (self.tmp(), self.tmp(), self.tmp());
                 let dt = ctype(&tys[1]);
                 let (helper, sloc) = if b == B::CharEncodeUtf8 {
-                    ("lust_char_encode_utf8", std_loc(1, 2518, 9))
+                    ("lust_char_encode_utf8", std_loc(1, 2581, 9))
                 } else {
-                    ("lust_char_encode_utf16", std_loc(1, 2612, 13))
+                    ("lust_char_encode_utf16", std_loc(1, 2675, 13))
                 };
                 let _ = writeln!(
                     self.out,
@@ -7351,7 +7351,7 @@ impl FnGen<'_, '_> {
                 format!("(((*{0} >= '0' && *{0} <= '9') || ((*{0} | 32) >= 'a' && (*{0} | 32) <= 'f')))", vals[0])
             }
             B::CharIsAsciiControl => format!("(*{0} < 32u || *{0} == 127u)", vals[0]),
-            B::CharIsDigitRadix => format!("(lust_digit({}, {}, {}) != 0xFFFFFFFFu)", vals[0], vals[1], std_loc(1, 407, 9)),
+            B::CharIsDigitRadix => format!("(lust_digit({}, {}, {}) != 0xFFFFFFFFu)", vals[0], vals[1], std_loc(1, 410, 9)),
             // `abs` and `pow` inherit the caller's overflow checks
             // (`#[rustc_inherit_overflow_checks]`): off, they wrap.
             B::Abs if !self.p.overflow_checks => {
@@ -7436,7 +7436,12 @@ impl FnGen<'_, '_> {
             B::VecDrain | B::StringDrain => {
                 let f = if matches!(b, B::VecDrain) { "lust_vec_drain" } else { "lust_string_drain" };
                 let t = if self.unwind && !self.unwind_tables { "" } else { "_t" };
-                format!("{f}{t}({}, {}, {}, {}, {}, {loc})", vals[0], vals[1], vals[2], vals[3], vals[4])
+                // Vec::drain is not track_caller. A shipped adapter may name its
+                // own upstream operation with a source marker (VecDeque::drain).
+                let marked = self.body.blocks.get(self.at.0 as usize)
+                    .and_then(|bb| crate::stdloc::site(self.p, self.map, bb.term_span)).is_some();
+                let at = if b == B::VecDrain && !marked { std_loc(3, 3095, 36) } else { loc.to_string() };
+                format!("{f}{t}({}, {}, {}, {}, {}, {at})", vals[0], vals[1], vals[2], vals[3], vals[4])
             }
             B::VecDrainLen => format!("({0}->back - {0}->front)", vals[0]),
             B::VecDrainNext | B::VecDrainNextBack => {
@@ -7629,8 +7634,8 @@ impl FnGen<'_, '_> {
                     rt = ctype(&rc),
                     et = ctype(e),
                     // `swap` is not track_caller: its two `borrow_mut`s panic in cell.rs.
-                    la = std_loc(9, 1083, 30),
-                    lb = std_loc(9, 1083, 56)
+                    la = std_loc(9, 1085, 30),
+                    lb = std_loc(9, 1085, 56)
                 );
                 "((lust_Unit){})".into()
             }
@@ -7661,7 +7666,7 @@ impl FnGen<'_, '_> {
                         ctype(cell),
                         vals[0],
                         // `take` is not track_caller: its `replace` panics in cell.rs.
-                        std_loc(9, 1434, 14)
+                        std_loc(9, 1436, 14)
                     );
                 } else {
                     let _ = writeln!(self.out, "    {et}* {c} = {}; {et} {old} = *{c}; *{c} = {def};", vals[0]);
@@ -8193,7 +8198,7 @@ impl FnGen<'_, '_> {
                 let _ = writeln!(
                     self.out,
                     "    if ({i} >= {vv}->len) lust_panic_nn(\"swap_remove index (is \", {i}, \") should be < len (is \", {vv}->len, \")\", {});\n    {et} {t} = (({et}*){vv}->ptr)[{i}];\n    (({et}*){vv}->ptr)[{i}] = (({et}*){vv}->ptr)[{vv}->len - 1];\n    {vv}->len--;",
-                    std_loc(3, 2258, 13)
+                    std_loc(3, 2180, 13)
                 );
                 t
             }
@@ -8691,7 +8696,7 @@ impl FnGen<'_, '_> {
                     "    {{ uint32_t d = lust_digit({}, {}, {}); if (d != 0xFFFFFFFFu) {{ {field} = d;{some} }} }}",
                     vals[0],
                     vals[1],
-                    std_loc(1, 407, 9)
+                    std_loc(1, 410, 9)
                 );
                 t
             }
@@ -8834,8 +8839,8 @@ impl FnGen<'_, '_> {
                 let op = if b == B::WrappingDiv { 3 } else { 4 };
                 let (o, rc) = checked_call(self, &ua, &ub, op);
                 let msg = div0(b);
-                // The signed forms divide inside core; the unsigned ones at the caller.
-                let at = if sgn { num_loc(it, false) } else { loc.to_string() };
+                // The pinned signed and unsigned methods both track their caller.
+                let at = loc;
                 let _ = writeln!(self.out, "    if ({rc} < 0) lust_panic_cstr(\"{msg}\", {at});");
                 format!("(({ct}){o})")
             }
@@ -9162,8 +9167,8 @@ impl FnGen<'_, '_> {
             let (o, rc) = (self.tmp(), self.tmp());
             let _ = writeln!(self.out, "    uint64_t {o}; int {rc} = lust_checked_op({ua}, {ub}, {bits}, {}, {op}, &{o});", sgn as i32);
             let div0msg = if op == 4 { "attempt to calculate the remainder with a divisor of zero" } else { "attempt to divide by zero" };
-            // The signed forms divide inside core; the unsigned ones at the caller.
-            let at = if sgn { num_loc(it, false) } else { loc.to_string() };
+            // The pinned signed and unsigned methods both track their caller.
+            let at = loc;
             let _ = writeln!(self.out, "    if ({rc} < 0) lust_panic_cstr(\"{div0msg}\", {at});");
             if matches!(b, B::SaturatingAdd | B::SaturatingSub | B::SaturatingMul | B::SaturatingDiv) {
                 // Clamp to the endpoint the true result passes.

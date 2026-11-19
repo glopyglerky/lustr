@@ -323,7 +323,7 @@ pub mod unix {
                         Ok(0) => break,
                         Ok(n) => {
                             let tmp = buf;
-                            buf = &mut tmp[n..]; //@ std/src/os/unix/fs.rs:126:35
+                            buf = &mut tmp[n..]; //@ std/src/os/unix/fs.rs:134:35
                             offset += n as u64;
                         }
                         Err(e) => {
@@ -349,7 +349,7 @@ pub mod unix {
                             return Err(crate::io::Error::simple_message(crate::io::ErrorKind::WriteZero, "failed to write whole buffer"));
                         }
                         Ok(n) => {
-                            buf = &buf[n..]; //@ std/src/os/unix/fs.rs:349:31
+                            buf = &buf[n..]; //@ std/src/os/unix/fs.rs:357:31
                             offset += n as u64
                         }
                         Err(e) => {

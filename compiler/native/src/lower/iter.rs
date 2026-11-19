@@ -4714,14 +4714,14 @@ impl Ex<'_, '_> {
             this.call(CallTarget::Indirect(fl), vec![Operand::Move(Place::local(er))], Place::local(out));
             out
         };
-        // `mid > len` at alloc/src/str.rs:200:22 (`STD_FILES` 34) when `len` bytes do not
+        // `mid > len` at alloc/src/str.rs:207:18 (`STD_FILES` 34) when `len` bytes do not
         // fit in the `remain` left.
         let fits = |this: &mut Self, len: Operand, remain: Local| {
             let c = this.cmp(Gt, len, Operand::Copy(Place::local(remain)));
             let (bad, good) = this.branch(c);
             this.cur = bad;
             this.term(Terminator::Panic(vec![FmtPart::Lit("mid > len".into())]));
-            this.body.blocks[this.cur.0 as usize].term_span = crate::diag::Span::std_site(34, 200, 22);
+            this.body.blocks[this.cur.0 as usize].term_span = crate::diag::Span::std_site(34, 207, 18);
             this.cur = good;
         };
         let join = self.block();
@@ -6300,7 +6300,7 @@ impl Ex<'_, '_> {
                 self.cur = bad;
                 self.term(Terminator::Panic(vec![FmtPart::Lit("count overflowed usize".into())]));
                 // `Step::steps_between(..).expect(..)` in core's range.rs.
-                self.body.blocks[self.cur.0 as usize].term_span = crate::diag::Span::std_site(8, 1200, 59);
+                self.body.blocks[self.cur.0 as usize].term_span = crate::diag::Span::std_site(8, 1204, 59);
             }
             K::RangeInclusive => {
                 let (w, _) = self.wide_ty(a[0])?;
@@ -6326,7 +6326,7 @@ impl Ex<'_, '_> {
                 self.goto(join);
                 self.cur = bad;
                 self.term(Terminator::Panic(vec![FmtPart::Lit("count overflowed usize".into())]));
-                self.body.blocks[self.cur.0 as usize].term_span = crate::diag::Span::std_site(8, 1560, 14);
+                self.body.blocks[self.cur.0 as usize].term_span = crate::diag::Span::std_site(8, 1568, 14);
                 self.cur = zero;
                 self.assign(dest.clone(), Rvalue::Use(Self::usize_c(0)));
                 self.goto(join);
@@ -7663,7 +7663,7 @@ impl Ex<'_, '_> {
         self.cur = none;
         self.term(Terminator::Panic(vec![FmtPart::Lit("capacity overflow".into())]));
         // rc.rs and sync.rs (`stdloc::STD_FILES` 30 and 31).
-        let (file, line) = if k == crate::check::own::Owner::Rc { (30, 3174) } else { (31, 4241) };
+        let (file, line) = if k == crate::check::own::Owner::Rc { (30, 3333) } else { (31, 4368) };
         self.body.blocks[self.cur.0 as usize].term_span = crate::diag::Span::std_site(file, line, 13);
         self.cur = some;
         let r = self.local(dest_ty);

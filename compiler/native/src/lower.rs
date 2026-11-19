@@ -4377,7 +4377,7 @@ impl<'p> Lower<'p> {
                 // bounds in the text; `Ord::clamp` and bool's own `clamp`
                 // assert inside core's cmp.rs.
                 let prim = matches!(self.kind(ty), TyKind::Int(_) | TyKind::Char);
-                let site = if prim { span } else if matches!(self.kind(ty), TyKind::Bool) { Span::std_site(4, 2303, 13) } else { Span::std_site(4, 1115, 9) };
+                let site = if prim { span } else if matches!(self.kind(ty), TyKind::Bool) { Span::std_site(4, 2383, 13) } else { Span::std_site(4, 1166, 9) };
                 let parts = if prim {
                     // A format argument is a reference to the value.
                     let dbg = FmtSpec { kind: FmtKind::Debug, ..FmtSpec::default() };
