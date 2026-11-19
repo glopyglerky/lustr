@@ -171,6 +171,32 @@ measurements and PR #29 [performance checkpoint](performance-review-2026-11-18.m
 retain their original sources and hosts. The numbered completion criteria stay
 in the [single checklist](completion-checklist.md).
 
+### Subsequent shared service and declared-SDK repairs
+
+The [first connected upstream definition service](shared-upstream-definitions.md)
+installs actual imported nominal and function records before Lust checks an
+unchanged consumer. Its non-Copy values cross a genuine Rust dependency by value
+and through function pointers; the exact checked native state and immutable
+archive/object snapshots reach emission. Actual Rust query traps forbid
+consumer body checking and complete analysis. The combined-source campaign has
+76 passing compiler/runtime controls. This is an internal, fresh-session Linux
+x86_64 abort-profile slice, with general types, traits, regions, drop/unwind,
+consumer metadata and retained imported generations still to connect.
+
+The native lexer now uses the declared compiler's exact normalization dependency
+closure, with [original spans and explicit raw-token identity](identifier-normalization.md).
+The source projection guard in the older scalar bridge remains conservative;
+fixing native normalization does not by itself qualify arbitrary projections.
+The [build-script reader](native-cargo-layout.md) now reads both declared Cargo
+layouts, preserves relocation and invalidates older possibly incomplete records.
+
+Required CI now executes the shared-definition campaign independently of the
+existing mixed suites. Its failure blocks performance measurements and retains
+the original build and compiler outputs. [Historical warm applicability](historical-warm-applicability.md)
+is checked before expensive construction; unchanged disqualified historical
+comparisons remain blocked with zero admitted timings. These changes preserve
+the existing architecture and performance criteria.
+
 ## Boundary acceptance
 
 Implement in the order given by the [plan](architecture-plan.md#implementation-order-and-acceptance).

@@ -139,3 +139,21 @@ method records, drop glue, unwinding, macro/hygiene composition, mixed consumer
 Rust metadata output and retained imported generations remain unfinished. The
 ordinary native path is not routed through this experiment. No latency, complete
 architecture or installable-package claim follows from this first slice.
+
+## Combined source and required CI
+
+The [combined-source record](evidence/shared-upstream-definitions-20261119/combined-ci-verification.json)
+rebuilds this service after the native NFC and Cargo reader repairs. All 76 real
+compiler/runtime controls pass again. The qualifier executable has SHA-256
+`7b52b4be6d18e990a852bfb5e889e6b5ef00b2a5b71043fe5bae8133773f7ed9`;
+the record binds its source trees, compiler/TinyCC identities, build commands
+and original output hashes. An actual Rust 1.99 control is refused before the
+service is built or loaded.
+
+`tools/qualify-shared-upstream.py` builds the real qualification executable with
+the declared SDK and discovers it from Cargo's JSON artifact report. It keeps
+build failures, runtime failures and the campaign summary. Compiler-set CI now
+requires this independent campaign before any performance campaign. Workflow
+controls verify that a failed, skipped or cancelled shared-service gate blocks
+timing admission while allowing other correctness suites to run. These controls
+are distinct from the 76 real compiler/runtime cases.

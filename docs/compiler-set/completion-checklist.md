@@ -32,6 +32,15 @@ earlier frozen failures qualifies this newer candidate. Update completion status
 from the applicable source-bound records; do not repeat an already integrated
 repair because the historical review described its predecessor.
 
+The subsequent [shared-definition service](shared-upstream-definitions.md),
+[native NFC repair](identifier-normalization.md), and
+[Cargo output-layout repair](native-cargo-layout.md) are integrated into this
+candidate. They have separate source-bound qualification records. The first
+non-scalar service slice passes 76 actual compiler/runtime controls on the
+combined NFC source; it remains internal and deliberately refuses retained import
+reuse. These results advance steps 1, 2, 3 and 6 without completing their general
+coverage or public routing.
+
 ## 0. Make the contract authoritative and consolidate existing work
 
 **Status: corrected contract and existing repairs consolidated on the candidate;
@@ -79,7 +88,9 @@ A documentation PR does not merge the compiler stack.
 **Depends on:** the recorded integration source.
 
 The current mixed bridge accepts a limited family of root, nongeneric scalar
-functions. That is not the full Lust-supported subset. Extend the existing
+and inline-module functions. The separate nominal-import slice now installs
+authoritative upstream definitions into an owning native checked request.
+Neither boundary represents the full Lust-supported subset. Extend the existing
 checked preparation interface to cover Lust's real supported semantics,
 dependencies, layouts, runtime requirements, targets and profiles.
 
@@ -116,11 +127,20 @@ layouts and semantic dependency reads. Import the needed upstream services and
 their dependency closure. Do not independently recreate the missing Rust
 compiler or assume its complement is a detachable directory.
 
-The first implementation slice should use an unchanged mixed program that
-carries a checked non-scalar Lust-supported value or definition through an
-imported complementary service and back. Reuse a genuine upstream-supported
-fixture to establish what Lust owns. Carry actual checked state and dependencies,
-not generated source that starts an independent compilation.
+The [first implementation slice](shared-upstream-definitions.md) now uses an
+unchanged consumer that carries a checked non-Copy nominal value through an
+actual Rust dependency and back. It imports genuine definitions, type/layout,
+ownership, region and function ABI facts before native checking. The owning
+continuation carries the actual checked bodies and immutable dependency objects
+into emission. Its executable query traps prove that this slice does not run
+consumer Rust body checking or complete analysis. It still uses shared upstream
+global parsing/expansion/resolution, admits a narrow target/profile/type contract,
+and does not produce consumer Rust metadata or retain imported generations.
+
+Continue from those actual records toward the full supported coverage and the
+normal public entries. Preserve the finite slice and its failure controls as
+the boundary expands; do not replace it with generated source that starts an
+independent compilation.
 
 **Done when:**
 
@@ -197,7 +217,7 @@ A passing transitional path cannot close this item.
 | Required work | Observable completion |
 | --- | --- |
 | Unicode and Rust-version alignment | Native constants, runtime tables and reported character semantics agree with the declared SDK from reproducibly generated, pinned data. Version text alone is insufficient. Reconcile all known native-vs-SDK differential failures. |
-| Lexical Unicode behavior | Identifier/NFC behavior matches its own pinned Rust lexical dependencies. Do not blindly set lexical tables to the core character version. Address the separate non-NFC rejection versus normalization gap. |
+| Lexical Unicode behavior | The [native normalization gap is repaired](identifier-normalization.md) with the actual pinned Rust dependency closure, raw-token identities, retained-edit controls and original source spans. Qualify the composed source and its bridge projections; lexical Unicode 17 and core Unicode 18 remain distinct upstream contracts. |
 | Erased callback ABI | PR #30 or its reviewed successor fixes incompatible C callback calls without casting away the mismatch. Resolve the two new unit failures and complete the full native sanitizer gate on that exact source. |
 | Broader mixed outcomes | Exercise an actual complementary outcome alongside a native peer in a real unchanged mixed program. The PR #29 schema-3 workload covered emitted and failed responses, not this outcome. |
 | Full Rust compatibility | Version-matched compile/run/rejection and dependency tests cover unchanged supported, complementary and mixed projects, including macros, generics/traits, unsafe/FFI, allocation, drop and panic behavior. |

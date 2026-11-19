@@ -1,0 +1,552 @@
+{
+  "schema": 1,
+  "scope": "internal shared definition service; no public routing or performance claim",
+  "passed": true,
+  "commands": [
+    {
+      "name": "rustc-identity",
+      "command": [
+        "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc",
+        "-vV"
+      ],
+      "status": 0,
+      "stdout_sha256": "bbc9b960fe50c84bca20f3109950bcb87c48b6d1ce61d2fc2fc1519aaba2daaa",
+      "stdout_bytes": 214,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_bytes": 0
+    },
+    {
+      "name": "cargo-identity",
+      "command": [
+        "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "-Vv"
+      ],
+      "status": 0,
+      "stdout_sha256": "e68d82cabd7db65483f4ea6542e3df95c0dbd3cacb1ceb88314a538e703b2499",
+      "stdout_bytes": 354,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_bytes": 0
+    },
+    {
+      "name": "source",
+      "command": [
+        "git",
+        "rev-parse",
+        "HEAD",
+        "HEAD^{tree}",
+        "HEAD:compiler/native"
+      ],
+      "status": 0,
+      "stdout_sha256": "7d0fee25544307ebf08fc5763eb3ebde63faccaa80e8730f062d4fd5563dfd66",
+      "stdout_bytes": 123,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_bytes": 0
+    },
+    {
+      "name": "source-state",
+      "command": [
+        "git",
+        "status",
+        "--porcelain",
+        "--",
+        "compiler/native",
+        "crates/lustr-native-core",
+        "tests/shared-imports",
+        "tools/native-upstream-qualification.rs",
+        "tools/test-native-upstream.py"
+      ],
+      "status": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_bytes": 0
+    },
+    {
+      "name": "build",
+      "command": [
+        "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "build",
+        "--manifest-path",
+        "/workspace/scratch/a8090bfdb586/lustr-completion/crates/lustr-native-core/Cargo.toml",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--target-dir",
+        "/workspace/scratch/a8090bfdb586/shared-upstream-ci-validation/attempt1/target",
+        "--config",
+        "build.build-dir=\"/workspace/scratch/a8090bfdb586/shared-upstream-ci-validation/attempt1/intermediates\"",
+        "--config",
+        "profile.dev.debug=0",
+        "--config",
+        "profile.dev.incremental=false",
+        "--features",
+        "upstream-semantic",
+        "--example",
+        "native-upstream-qualification",
+        "--message-format=json"
+      ],
+      "status": 0,
+      "stdout_sha256": "7d6a41d574d328c1cfcc67c2da0c543080254a09004d685c08cf89502e674204",
+      "stdout_bytes": 135095,
+      "stderr_sha256": "a26b843bdda131071fe77a9668fbaa85d3db96038352efe637eb56b94717447f",
+      "stderr_bytes": 435
+    },
+    {
+      "name": "campaign",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+        "/workspace/scratch/a8090bfdb586/lustr-completion/tools/test-native-upstream.py",
+        "--rustc",
+        "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc",
+        "--qualifier",
+        "/workspace/scratch/a8090bfdb586/shared-upstream-ci-validation/attempt1/target/debug/examples/native-upstream-qualification",
+        "--out",
+        "/workspace/scratch/a8090bfdb586/shared-upstream-ci-validation/attempt1/campaign"
+      ],
+      "status": 0,
+      "stdout_sha256": "ba037cd1cda9fb2e3886a191387cb3a35f8cb94de575e87c14ee92ff344c228e",
+      "stdout_bytes": 41,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_bytes": 0
+    }
+  ],
+  "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "rustc_identity": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+  "cargo_identity": "cargo 1.102.0-nightly (c07ac2c4d 2026-11-06)\nrelease: 1.102.0-nightly\ncommit-hash: c07ac2c4d12237effc4b94f4543769b421790045\ncommit-date: 2026-11-06\nhost: x86_64-unknown-linux-gnu\nlibgit2: 1.9.6 (sys:0.21.0 vendored)\nlibcurl: 8.21.0-DEV (sys:0.4.90+curl-8.21.0 vendored ssl:OpenSSL/3.6.3)\nssl: OpenSSL 3.6.3 9 Jun 2026\nos: Debian 13.0.0 (trixie) [64-bit]\n",
+  "source": [
+    "a437cacdf1b77b0bd3651218477d86ebdb5f5377",
+    "31de72bb634b04b21a6f1b3ae2dc10ffcc5966fc",
+    "03905426ae02c12149f4365e282ce9fe7cbe7ff6"
+  ],
+  "inputs_sha256": {
+    "rustc": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "cargo": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+    "tcc": "a96a3206c9674ee8ab4917c5a08c9555f68b28b3838a346fee7219dbe1e4736e",
+    "libtcc": "1c71abde8d0299e82a3fa416e5527e281de3720673813de0d76b88a53cdd4248",
+    "launcher": "9b9a16af9745aacd573bea9e38b8884670430c9d36493eb866c633cd4074f280",
+    "campaign": "3e13b7fab2c334b2ab3e6abb822c1492a5be6a7ff8108ae250869159c9e35001"
+  },
+  "qualifier_sha256": "7b52b4be6d18e990a852bfb5e889e6b5ef00b2a5b71043fe5bae8133773f7ed9",
+  "qualifier": "/workspace/scratch/a8090bfdb586/shared-upstream-ci-validation/attempt1/target/debug/examples/native-upstream-qualification",
+  "controls": 76,
+  "campaign_controls": [
+    {
+      "name": "peer-compile",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "good",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "good-run",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "good-reference-compile",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "good-reference-run",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "malformed",
+      "status": 3,
+      "expected": 3
+    },
+    {
+      "name": "malformed-reference-compile",
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "invalid-archive",
+      "status": 3,
+      "expected": 3
+    },
+    {
+      "name": "move-rejected",
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "move-rejected-reference-compile",
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "type-rejected",
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "type-rejected-reference-compile",
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "inherent-rejected",
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "inherent-rejected-reference-compile",
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "orphan-rejected",
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "orphan-rejected-reference-compile",
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "local-trait",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "local-trait-reference-compile",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "local-trait-run",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "local-trait-reference-run",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "function-pointer",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "function-pointer-reference-compile",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "function-pointer-run",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "function-pointer-reference-run",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "negative-send-compile",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "negative-send",
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "negative-send-reference-compile",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "negative-send-bound",
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "negative-send-bound-reference-compile",
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "negative-sync-compile",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "negative-sync",
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "negative-sync-reference-compile",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "negative-sync-bound",
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "negative-sync-bound-reference-compile",
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "negative-unpin-compile",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "negative-unpin",
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "negative-unpin-reference-compile",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "negative-unpin-bound",
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "negative-unpin-bound-reference-compile",
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "unwind",
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "copy-compile",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "copy",
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "copy-reference-compile",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "narrow-compile",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "narrow",
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "narrow-reference-compile",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "external-method-compile",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "external-method",
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "external-method-reference-compile",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "external-clone-compile",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "external-clone",
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "external-clone-reference-compile",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "image-guard-lust_front_state",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "image-guard-lust_front_arena",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "image-client-guards",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "removed-snapshot",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "removed-snapshot-run",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "edited-compile",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-old",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-old-run",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-old-reference-compile",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-old-reference-run",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-new",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-new-run",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-new-reference-compile",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-new-reference-run",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-revert",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-revert-run",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-revert-reference-compile",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-revert-reference-run",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "link-failed",
+      "status": 3,
+      "expected": 3
+    },
+    {
+      "name": "link-recovered",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "link-recovered-run",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "object-failed",
+      "status": 3,
+      "expected": 3
+    },
+    {
+      "name": "object-recovered",
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "object-recovered-run",
+      "status": 0,
+      "expected": 0
+    }
+  ],
+  "limitations": [
+    "fresh imported sessions only",
+    "transparent u64 non-Copy aggregates",
+    "Linux x86_64 abort profile",
+    "no consumer Rust metadata output",
+    "normal public routing is unchanged",
+    "no performance claim"
+  ],
+  "workflow_controls": {
+    "passed": 23,
+    "failed": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_sha256": "61574c9e4ab5e601015c1759971647eee06450f46746da784961d9ca098347f7"
+  },
+  "wrong_sdk_control": {
+    "schema": 1,
+    "scope": "internal shared definition service; no public routing or performance claim",
+    "passed": false,
+    "commands": [
+      {
+        "name": "rustc-identity",
+        "command": [
+          "/workspace/scratch/3ff9b6fc98dd/warm-rustup/toolchains/1.99.0-x86_64-unknown-linux-gnu/bin/rustc",
+          "-vV"
+        ],
+        "status": 0,
+        "stdout_sha256": "b569b0c98ea3133c7252b4b8ea6b39b7b353813df0dd5f5c412c355691424112",
+        "stdout_bytes": 196,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_bytes": 0
+      }
+    ],
+    "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+    "rustc_identity": "rustc 1.99.0 (b940084d7 2026-09-28)\nbinary: rustc\ncommit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4\ncommit-date: 2026-09-28\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.0\nLLVM version: 23.1.1\n",
+    "error": "the imported service requires the exact declared Rust source"
+  },
+  "raw_evidence": "Source-bound raw build and campaign streams retained in the private evidence archive."
+}

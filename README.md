@@ -60,12 +60,30 @@ on that platform.
 ## Current candidate continuation
 
 This reconciliation carries the corrected PR #31 contract onto the combined
-implementation candidate. Its latest qualified native tree is
+implementation candidate. The first published combined continuation used native tree
 `7dbb7ac001f81c17adbbbd030573220dadfc079a`. The
 [source-bound design continuation](docs/compiler-set/design.md#candidate-continuation--19-november-2026)
 records the actual owning native prepare/emit boundary, scalar ABI and inline
 module identity checks, and further correctness repairs. The general imported
 semantic continuation and standalone retry removal remain unfinished.
+
+The newer [shared-definition service](docs/compiler-set/shared-upstream-definitions.md)
+now imports genuine Rust nominal types, ownership facts, symbols and call ABIs
+before Lust checks the original consumer. The checked native request owns those
+facts and the imported archive through emission. Its 76 real compiler/runtime
+controls pass again with the combined NFC source, including 65,541 direct value
+calls and 65,541 function-pointer calls. Rust consumer body checking and complete
+analysis are forbidden by executable traps in that campaign. This is an internal
+Linux x86_64 abort-profile slice; general types, retained imported generations,
+consumer metadata and automatic public routing remain open.
+
+Native [identifier normalization](docs/compiler-set/identifier-normalization.md)
+now uses the exact upstream implementation and locked dependencies from the
+declared Rust compiler. Canonically equivalent identifiers and lifetimes resolve
+consistently while source spans, raw markers and literal bytes remain intact.
+The [Cargo build-script repair](docs/compiler-set/native-cargo-layout.md) reads
+both layouts of the declared Cargo version and preserves relocated directives;
+missing output can no longer silently become empty configuration.
 
 The [correctness continuation](docs/compiler-set/correctness-continuation-2026-11-18.md)
 repairs the native const/runtime Unicode disagreement with shared data from the
@@ -77,7 +95,13 @@ records 5,540 ordinary cases passing at `af0a281f2`, then all 65 unwind cases
 passing through both native propagation and GCC exception tables after the
 separately identified hash-table diagnostic correction. The original failures
 remain recorded. These are Linux native results; fresh hosted sanitizer,
-daemon, mixed-package and macOS qualification is still required.
+daemon, mixed-package and macOS qualification is still required for the newer
+source. The [hosted native follow-up](docs/compiler-set/hosted-native-followup.md)
+preserves the initial hosted corpus passes and the subsequently diagnosed macro
+oracle and Unicode verifier setup failures. The
+[mixed qualification follow-up](docs/compiler-set/mixed-hosted-qualification-repair.md)
+preserves the stale definition-count and Cargo artifact-restoration controls.
+Neither repair changes the required compiler or runtime assertions.
 
 The candidate also carries PR #27's distinct scanner-fixture name and restores
 [PR #23's pinned macOS LLVM acquisition and SDK selection](docs/compiler-set/macos-toolchain.md).
