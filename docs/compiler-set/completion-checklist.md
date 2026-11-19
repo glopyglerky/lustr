@@ -41,6 +41,15 @@ combined NFC source; it remains internal and deliberately refuses retained impor
 reuse. These results advance steps 1, 2, 3 and 6 without completing their general
 coverage or public routing.
 
+The later [integer-signature continuation](shared-integer-abi.md) extends this
+internal service with authoritative scalar/nominal signatures and explicit
+native-C-to-Rust ABI adapters. Its separately identified clean build passes
+120 controls, including 262,720 arithmetic results and terminal LLVM failure
+cases. The provider now identifies metadata-only bodies and unsatisfied runtime
+symbol dependencies before native preparation. General body materialization,
+shared runtime dependencies, consumer metadata, retained imported generations
+and public routing still require implementation.
+
 ## 0. Make the contract authoritative and consolidate existing work
 
 **Status: corrected contract and existing repairs consolidated on the candidate;

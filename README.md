@@ -77,6 +77,16 @@ analysis are forbidden by executable traps in that campaign. This is an internal
 Linux x86_64 abort-profile slice; general types, retained imported generations,
 consumer metadata and automatic public routing remain open.
 
+The [integer-signature continuation](docs/compiler-set/shared-integer-abi.md)
+extends that service to the represented signed, unsigned and pointer-width
+integers, scalar/nominal argument combinations, and explicit adapters between
+the checked native C and Rust ABIs. Its clean source-bound campaign passes
+120 compiler/runtime controls and 262,720 direct and function-pointer arithmetic
+results. Metadata-only bodies and missing runtime dependencies are identified
+before native checking; failed LLVM emission preserves the previous artifact.
+These results retain their own tested source identity and do not complete the
+general public semantic boundary.
+
 Native [identifier normalization](docs/compiler-set/identifier-normalization.md)
 now uses the exact upstream implementation and locked dependencies from the
 declared Rust compiler. Canonically equivalent identifiers and lifetimes resolve
