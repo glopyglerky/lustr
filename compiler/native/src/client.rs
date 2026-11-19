@@ -160,11 +160,15 @@ fn main() {
             // start one nor send work to a live one.
             // A std or adapter source override is never served warm (see
             // `protocol::source_override`).
-            if !env_on("LUST_NO_DAEMON")
-                && protocol::source_override().is_none()
-                && let Some(resp) = protocol::request(&sock, &req)
-            {
-                protocol::finish(resp, run, &req.out, &run_args);
+            if !env_on("LUST_NO_DAEMON") && protocol::source_override().is_none() {
+                match protocol::request(&sock, &req) {
+                    Ok(Some(resp)) => protocol::finish(resp, run, &req.out, &run_args),
+                    Ok(None) => {},
+                    Err(error) => {
+                        eprintln!("error: {error}");
+                        std::process::exit(3);
+                    }
+                }
             }
             // No daemon answered: start one for the next command, answer this one cold.
             maybe_autostart(&sock, &req.file, &core);

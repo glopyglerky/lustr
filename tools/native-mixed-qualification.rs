@@ -52,7 +52,7 @@ fn main() {
         req.session.krate.target_name = "kernel".into();
         req.session.krate.package_id = "lustr-mixed-1111".into();
         req.client.env = None;
-        let response = protocol::request(&socket, &req).expect("same-build native response");
+        let response = protocol::request_mixed(&socket, &req).expect("complete mixed exchange").expect("same-build native response");
         fs::write(work.join(format!("{label}.stdout")), &response.stdout).unwrap();
         fs::write(work.join(format!("{label}.stderr")), &response.stderr).unwrap();
         assert_eq!(response.code, 0, "{}", response.stderr);

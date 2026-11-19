@@ -68,7 +68,32 @@ mod tests {
         let reached = server.join().unwrap();
         std::fs::remove_file(&short).unwrap();
         assert!(reached, "the request never reached the bound socket");
-        assert_eq!(answer.map(|response| response.code), Some(0));
+        assert_eq!(answer.expect("complete native exchange").map(|response| response.code), Some(0));
+    }
+
+    #[test]
+    fn accepted_request_with_a_lost_or_invalid_reply_is_terminal() {
+        let root = Temporary::new("lost-reply");
+        let args = vec!["check".to_owned(), root.0.join("main.rs").to_str().unwrap().to_owned()];
+        let Some(protocol::Invocation::Compile { req, .. }) = protocol::parse_args(&args) else { panic!("check request"); };
+        for (index, reply) in [
+            Vec::new(),
+            b"0 0 0\n".to_vec(),
+            b"0 0 0 another-build\n".to_vec(),
+            format!("0 1 0 {}\n", protocol::build_id()).into_bytes(),
+            format!("0 0 1 {}\n", protocol::build_id()).into_bytes(),
+        ].into_iter().enumerate() {
+            let socket = root.0.join(format!("reply-{index}.sock"));
+            let listener = UnixListener::bind(&socket).unwrap();
+            let server = std::thread::spawn(move || {
+                let (mut stream, _) = listener.accept().unwrap();
+                protocol::read_request(&mut BufReader::new(&stream)).expect("daemon accepted the complete request");
+                stream.write_all(&reply).unwrap();
+            });
+            assert!(protocol::request(&socket, &req).is_err(), "an executed request cannot become a daemon miss");
+            server.join().unwrap();
+            assert!(socket.exists(), "an ambiguous peer reply must not unlink the endpoint");
+        }
     }
 
     #[test]

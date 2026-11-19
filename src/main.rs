@@ -94,27 +94,27 @@ mod lust {
         }
     }
 
-    pub fn answer(call: &Call, core: &Path) -> Option<(i32, Vec<u8>, Vec<u8>)> {
+    pub fn answer(call: &Call, core: &Path) -> Result<Option<(i32, Vec<u8>, Vec<u8>)>, String> {
         if env_on("LUST_NO_DAEMON") || protocol::source_override().is_some() {
-            return None;
+            return Ok(None);
         }
         let socket = protocol::socket_path();
         answer_at(call, core, &socket)
     }
 
-    pub fn expanded_answer(call: &Call, parent: &Path) -> Option<(i32, Vec<u8>, Vec<u8>)> {
+    pub fn expanded_answer(call: &Call, parent: &Path) -> Result<Option<(i32, Vec<u8>, Vec<u8>)>, String> {
         if env_on("LUST_NO_DAEMON") {
-            return None;
+            return Ok(None);
         }
-        let sealed = crate::native_expansion::sealed(parent, &protocol::socket_path())?;
+        let Some(sealed) = crate::native_expansion::sealed(parent, &protocol::socket_path()) else { return Ok(None); };
         answer_at(&call.expanded(&sealed.identity), &sealed.core, &sealed.socket)
     }
 
-    fn answer_at(call: &Call, core: &Path, socket: &Path) -> Option<(i32, Vec<u8>, Vec<u8>)> {
-        let address = protocol::host_runtime::DaemonSocket::resolve(socket).ok()?;
+    fn answer_at(call: &Call, core: &Path, socket: &Path) -> Result<Option<(i32, Vec<u8>, Vec<u8>)>, String> {
+        let address = protocol::host_runtime::DaemonSocket::resolve(socket).map_err(|e| format!("native daemon address: {e}"))?;
         let socket = address.path();
-        if let Some(r) = protocol::request(&socket, &call.0) {
-            return Some((r.code, r.stdout.into_bytes(), r.stderr.into_bytes()));
+        if let Some(r) = protocol::request(&socket, &call.0)? {
+            return Ok(Some((r.code, r.stdout.into_bytes(), r.stderr.into_bytes())));
         }
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
         let mut started = false;
@@ -123,8 +123,9 @@ mod lust {
                 if let Some(lock) = claim_start(&protocol::daemon_lock_path(&socket)) {
                     let fd = lock.as_raw_fd();
                     let dir = log_dir(&call.0.file);
-                    std::fs::create_dir_all(&dir).ok()?;
-                    let log = std::fs::OpenOptions::new().create(true).append(true).open(dir.join("daemon.log")).ok()?;
+                    std::fs::create_dir_all(&dir).map_err(|e| format!("native daemon log directory: {e}"))?;
+                    let log = std::fs::OpenOptions::new().create(true).append(true).open(dir.join("daemon.log"))
+                        .map_err(|e| format!("native daemon log: {e}"))?;
                     let mut command = std::process::Command::new(core);
                     command
                         .arg("daemon")
@@ -135,7 +136,7 @@ mod lust {
                         .env_remove("LUST_DAEMON_PREWARM")
                         .env_remove("LUST_DAEMON_PREWARM_AFTER")
                         .stdin(std::process::Stdio::null())
-                        .stdout(log.try_clone().ok()?)
+                        .stdout(log.try_clone().map_err(|e| format!("native daemon log handle: {e}"))?)
                         .stderr(log);
                     // Start the unchanged daemon once. The first request compiles in that
                     // retained session instead of compiling cold and prewarming it again.
@@ -153,16 +154,16 @@ mod lust {
                             Ok(())
                         });
                     }
-                    command.spawn().ok()?;
+                    command.spawn().map_err(|e| format!("cannot start the native daemon: {e}"))?;
                     started = true;
                 }
             }
-            if let Some(r) = protocol::request(&socket, &call.0) {
-                return Some((r.code, r.stdout.into_bytes(), r.stderr.into_bytes()));
+            if let Some(r) = protocol::request(&socket, &call.0)? {
+                return Ok(Some((r.code, r.stdout.into_bytes(), r.stderr.into_bytes())));
             }
             std::thread::sleep(std::time::Duration::from_micros(100));
         }
-        None
+        Err("native daemon did not become ready before the startup deadline".into())
     }
 }
 
@@ -233,7 +234,10 @@ fn main() -> ExitCode {
         let mut entry = "unattempted";
         let mut result = if call.needs_rust_artifact() {
             None
-        } else if let Some(response) = lust::answer(&call, &parent.join("lust-core")) {
+        } else if let Some(response) = match lust::answer(&call, &parent.join("lust-core")) {
+            Ok(response) => response,
+            Err(error) => { eprintln!("{error}"); return ExitCode::from(3); }
+        } {
             entry = "daemon";
             Some(response)
         } else if let Some(result) =
@@ -289,7 +293,10 @@ fn main() -> ExitCode {
             native_diagnostic(stderr);
             entry = "source-library-extension";
             engine = "lustr-native";
-            result = if let Some(answer) = lust::expanded_answer(&call, &parent) {
+            result = if let Some(answer) = match lust::expanded_answer(&call, &parent) {
+                Ok(response) => response,
+                Err(error) => { eprintln!("{error}"); return ExitCode::from(3); }
+            } {
                 entry = "source-library-daemon";
                 Some(answer)
             } else {
