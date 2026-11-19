@@ -2714,7 +2714,7 @@ struct CheckedRequest {
     visits: Visits,
     timer: Timer,
     imported_dependencies: Vec<super::imports::Dependency>,
-    imported_objects: Vec<Arc<[u8]>>,
+    imported_emission: Option<Box<dyn super::imports::Emission + 'static>>,
 }
 
 impl PreparedRequest<'_> {
@@ -2810,7 +2810,7 @@ pub(super) fn prepare_imported<'a>(req: &'a Request, session: &'a mut Session, d
         }
         fn validate_checked(&self, program: &collect::Program) -> Result<(), String> { self.inner.validate_checked(program) }
         fn dependencies(&self) -> Vec<super::imports::Dependency> { self.inner.dependencies() }
-        fn objects(&self) -> Vec<Arc<[u8]>> { self.inner.objects() }
+        fn take_emission(&self) -> Result<Box<dyn super::imports::Emission + 'static>, String> { self.inner.take_emission() }
     }
     let guard = Guard { inner: definitions, failed: std::cell::Cell::new(false) };
     let outcome = prepare_with_definitions(req, session, None, Some(&guard));
@@ -4707,12 +4707,18 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
             code: 3, stderr: format!("error: checked request ownership failed: {error}\n"), ..Default::default()
         }),
     };
+    let imported_dependencies = imports.map_or_else(Vec::new, |i| i.dependencies());
+    let imported_emission = match imports.map(|i| i.take_emission()).transpose() {
+        Ok(emission) => emission,
+        Err(error) => return Preparation::Failed(Response {
+            code: 3, stderr: format!("error: imported emission ownership failed: {error}\n"), ..Default::default()
+        }),
+    };
     let state = CheckedRequest {
         program, results, reemit, map, source: src, path, work, fn_count, fn_lines_all, body_hashes_all,
         inst_ids, mode, check_fp, verified, reads_reused, reads_invalidated, reemitted, mixed, release,
         foreign, visits, timer: t,
-        imported_dependencies: imports.map_or_else(Vec::new, |i| i.dependencies()),
-        imported_objects: imports.map_or_else(Vec::new, |i| i.objects()),
+        imported_dependencies, imported_emission,
     };
     Preparation::Ready(PreparedRequest { request: req, session, state: Some(state) })
 }
@@ -4721,7 +4727,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
     let CheckedRequest {
         mut program, results, reemit, map, source: src, path, work, fn_count, fn_lines_all, body_hashes_all,
         inst_ids, mode, check_fp, verified, reads_reused, reads_invalidated, reemitted, mixed, release,
-        foreign, visits, timer: mut t, imported_dependencies: _imported_dependencies, imported_objects,
+        foreign, visits, timer: mut t, imported_dependencies: _imported_dependencies, imported_emission,
     } = state;
     let results: Vec<_> = results.into_iter().map(|(body, diagnostics)| (body.map(|b| b.attach(&program)), diagnostics)).collect();
     let reemit: Vec<_> = reemit.into_iter().map(|(id, body)| (id, body.attach(&program))).collect();
@@ -4813,6 +4819,18 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
         }
         return resp;
     }
+
+    // Only an admitted build consumes the imported code plan. Check and every
+    // earlier return merely drop it; preparation never invokes its emitter.
+    let imported_objects = match imported_emission {
+        Some(emission) => match emission.emit() {
+            Ok(objects) => objects,
+            Err(error) => return Response {
+                code: 3, stderr: format!("error: imported code emission failed: {error}\n"), ..Default::default()
+            },
+        },
+        None => Vec::new(),
+    };
 
     // Codegen for the work set, plus any slot-moved re-emits rebuilt
     // from cached IR above.

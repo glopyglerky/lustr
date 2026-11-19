@@ -67,8 +67,12 @@ another Rust frontend. Equal represented signatures keep direct linkage.
 
 The provider admits every required type, signature and adapter before native
 checking. After the unchanged consumer passes native checking and the installed
-records pass validation, the exact SDK's `llc` emits the adapter object. The
-ordinary native path and imports with equal represented ABIs do not invoke it.
+records pass validation, preparation transfers an owned, single-use code plan
+into the checked continuation. Semantic validation emits no code. A check or a
+dropped prepared request destroys the unused plan without invoking `llc` or
+materializing object files. Only consuming an admitted build runs the exact
+SDK's `llc`. The ordinary native path and imports with equal represented ABIs
+do not invoke it.
 
 `upstream/bluefe-core.pin` declares the required `llc` executable hash and actual
 LLVM DSO hash. Emission uses the SDK path, never ambient `llc`. The actual DSO is
@@ -81,8 +85,10 @@ The adapter uses stdin and stdout and creates no shared temporary pathname.
 The bounded ELF validator checks emitted architecture, sections and symbols.
 Its global function set must equal the planned adapter set; its undefined
 symbols must equal the admitted original Rust instances. The checked
-continuation owns the validated object bytes and the original dependency's
-immutable objects. It never reopens an archive to select replacement code.
+continuation owns the plan's immutable LLVM input, tool identities and original
+dependency objects; the consumed plan returns validated adapter bytes for that
+same build. It contains no borrowed Rust compiler context, cannot be cloned or
+taken twice, and never reopens an archive to select replacement code.
 
 A missing tool, failed invocation, malformed object or missing object is a
 compiler failure. None authorizes a second implementation to compile the

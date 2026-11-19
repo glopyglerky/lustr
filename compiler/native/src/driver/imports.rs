@@ -21,13 +21,23 @@ pub struct Dependency {
 #[derive(Debug)]
 pub struct Unintegrated(pub &'static str);
 
+/// Owned code generation for one already checked imported request. The plan
+/// contains no borrowed compiler arenas and is consumed exactly once by Build.
+/// Checking or abandoning a prepared request drops it without executing it.
+pub trait Emission: Send {
+    fn emit(self: Box<Self>) -> Result<Vec<std::sync::Arc<[u8]>>, String>;
+}
+
 /// Facts and code belonging to an authoritative imported compiler context.
 /// The provider must finish semantic/ABI admission before publishing a def.
 /// A provider error is a compiler failure, never a complementary fallback.
 pub trait Definitions {
     fn mount(&self, tables: &mut ResolvedTables, interner: &Interner) -> Result<(), Diag>;
     fn install(&self, program: &mut Program) -> Result<(), Vec<Diag>>;
+    /// Validate the installed semantic facts without executing an emitter.
     fn validate_checked(&self, program: &Program) -> Result<(), String>;
     fn dependencies(&self) -> Vec<Dependency>;
-    fn objects(&self) -> Vec<std::sync::Arc<[u8]>>;
+    /// Transfer the immutable, single-use plan after semantic validation.
+    /// Constructing or taking the plan must not emit code or materialize objects.
+    fn take_emission(&self) -> Result<Box<dyn Emission + 'static>, String>;
 }
