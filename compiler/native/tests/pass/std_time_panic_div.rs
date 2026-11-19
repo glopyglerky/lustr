@@ -1,4 +1,4 @@
-// panic: divide by zero error when dividing duration by scalar
+// panic: divisor should not be zero
 // `Duration / 0` panics with std's message (W-STD-C).
 use std::time::Duration;
 fn zero() -> u32 {
