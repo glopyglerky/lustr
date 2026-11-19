@@ -362,7 +362,7 @@ impl CrateStore {
         }else{None};
         let i=Arc::new(intern::Interner::default());let k=Arc::new(intern::Known::new(&i));
         let mut resolved=self.resolve(input,&i,&k).map_err(|mut e|diag::render(&mut e.diags,&e.map,&e.all_text,false,20))?;
-        if let Some(ast)=crate::inference::original_assertion_text(&resolved.ast,&resolved.map,&input.root_text,&i,&k){resolved.ast=ast;}
+        if let Some(ast)=crate::native_assertion_text::proposal(&resolved.ast,&resolved.map,&input.root_text,&i,&k){resolved.ast=ast;}
         let report=|mut errors:Vec<diag::Diag>|diag::render(&mut errors,&resolved.map,&resolved.all_text,false,20);
         let mut order=check::collect::DefOrder::default();
         let mut definitions=|p:&mut check::collect::Program|self.install_signatures_with_runtime(p,runtime_object.is_some()).map_err(|e|vec![diag::Diag::new("L0508",diag::Span::default(),e,"Independent native signatures were not installed.")]);

@@ -63,6 +63,15 @@ These steps are dependencies, not permission to call a partial interface the
 completed compiler. Useful correctness repairs can proceed alongside structural
 work, but cannot substitute for it.
 
+Support rules are established from pinned upstream source and qualification,
+then applied during the ordinary frontend/retained-state update. Do not add a
+trial compilation, scanner pass or second checker as an admission stage. Unknown
+donor evidence is not complementary ownership. Evaluate each material boundary's
+added cost during integration; step 7 qualifies the final package rather than
+deferring all performance work to the end. The
+[support and cost analysis](exclusive-coverage-mathematics.md) records the CI
+coverage and cost deductions behind these requirements.
+
 ## Immediate missing artifact capability
 
 Continue the [existing genuine-metadata study](https://github.com/glopyglerky/lustr/blob/cb0721d49be95ec3f34a113c2354bc9d2a38bbf3/docs/compiler-set/shared-consumer-metadata.md). The original encoder

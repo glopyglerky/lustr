@@ -6,10 +6,9 @@ complement. These measurements describe their recorded implementations, includin
 transitional compatibility paths. A timing result does not qualify a coordinator
 or whole-program retry as the completed compiler.
 
-## Current snapshot, 18 November 2026
+## Recorded snapshot, 18 November 2026
 
-The [current README](README.md#performance-and-release-status) and
-[PR #26 evidence](performance/2026-11-18-43a7e07/README.md) contain the latest
+The [PR #26 evidence](performance/2026-11-18-43a7e07/README.md) contains the recorded
 completed 29-row dashboard, all 59 comparisons, raw samples, original artifact
 identities and independent replay. Warm public check/build medians are
 1.407/3.333 ms for Lustr, 1.098/3.127 ms for pristine Lust and 8.443/8.623 ms
@@ -17,11 +16,13 @@ for matching Cargo/rustc. Ordinary full-Rust project medians range from 0.06%
 faster to 1.04% slower than stock Rust. Mixed opt0/debug0 Cargo work retains
 two wins and seven regressions.
 
-The [practical acceptance policy](docs/compiler-set/practical-performance.md)
-accepts close-to-Lust supported work and near-stock ordinary full Rust. It does
-not require substantial acceleration outside the Lust subset. Correctness and
-platform release conditions remain mandatory. No historical failed gate, sample
-or performance target below has been rewritten.
+These measurements retain their original source and historical interpretation.
+They do not qualify the current exclusive compiler or a selective complement.
+The [current performance policy](docs/compiler-set/practical-performance.md)
+requires relative evidence for a new near-stock claim; the former 0.5 ms alternate
+rule cannot excuse a large relative slowdown. Correctness, ownership and platform
+release conditions remain mandatory. No historical failed gate, sample or
+performance target below has been rewritten.
 
 ## Historical status on 17 November 2026
 

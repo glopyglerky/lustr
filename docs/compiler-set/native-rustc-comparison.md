@@ -1,5 +1,10 @@
 # Direct packaged-native comparison with matched rustc
 
+> Historical comparison of the recorded mixed package. The fixed-corpus
+> comparator, independent oracle and original evidence remain available. Its
+> required `rustc-full` package layout is retired and does not qualify the
+> current exclusive native compiler or the unfinished full replacement.
+
 The [fixed-corpus runner](../../crates/lustr-bench/src/bin/lustr-mixed-bench.rs)'s schema 2 adds the missing **matched standalone rustc
 → packaged native entry** comparison on the identical supported scalar source.
 It keeps the existing pristine→integrated Lust, pristine→entry and matched

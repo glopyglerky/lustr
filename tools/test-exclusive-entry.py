@@ -64,7 +64,7 @@ def main():
         source.write_text("fn main() { println!(\"42\"); }\n")
         log = root / "executed"
         trap = '#!/bin/sh\nprintf "%s\\n" "FORBIDDEN:$0" >> "$TEST_LOG"\nexit 0\n'
-        for name in ["rustc-full", "rustc-reference", "lustr-native-worker", "cargo"]:
+        for name in ["rustc-full", "rustc-reference", "lustr-native-worker", "cargo", "lust-port"]:
             executable(binary / name, trap)
         # The old diagnostic retry path required this source-library marker.
         marker = package / "lib/lustr/std/src/platform.rs"
@@ -72,6 +72,10 @@ def main():
         marker.write_text("// Test-only old expansion marker.\n")
         env = dict(os.environ)
         env.update(LUST_NO_DAEMON="1", TEST_LOG=str(log), RUSTC=str(binary / "rustc-full"))
+        # Catch both beside-the-package and PATH-selected scanner launchers.
+        # Capability research runs outside requests; it cannot precompile or
+        # scan user source before selecting the actual native compiler.
+        env["PATH"] = str(binary) + os.pathsep + env.get("PATH", "")
         for name in ["LUST_LIBRARY", "LUST_SOURCES_READY", "LUSTR_TRACE_PATH", "LUSTR_NATIVE_DIAGNOSTICS", "LUST_PROBE_FAKE_DIR", "RUSTC_WRAPPER", "RUSTC_WORKSPACE_WRAPPER", "__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT", "MIMALLOC_PURGE_DELAY", "LUST_DAEMON_LOCK_FD"]:
             env.pop(name, None)
         env["LUST_CACHE_DIR"] = str(root / "cache")

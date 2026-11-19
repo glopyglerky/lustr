@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate compact selection records and the actual Cargo/Rust fallback.
+"""Validate compact selection records and fresh Cargo metadata selection.
 
 This is a component gate. It does not run the retained native compiler or
 establish public-entry performance. Deliberately malformed private records

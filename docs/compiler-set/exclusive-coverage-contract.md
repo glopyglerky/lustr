@@ -73,6 +73,34 @@ Capability admission is a typed pre-emission decision using actual compiler
 representations and required semantics. It must retain checked state rather
 than check once for routing and then start a second compilation for generation.
 
+### Known support without trial compilation
+
+Maintain versioned capability rules from the pinned Lust implementation, its
+supported contexts and development-time qualification. Apply those rules to
+facts already produced by the normal native frontend or retained-state update.
+This is part of compiling the request once. It is not a preceding pass that
+compiles, parses or type-checks the request to choose a compiler and discards
+the result. Preserve the resulting owner and checked state through generation.
+
+The upstream `capabilities.rs` vocabulary and capability tests are inputs to
+that evidence. The `lust-port` syntax scanner does not expand all macros or
+know actual resolved types, and its unknown constructs can count as supported.
+It cannot authoritatively classify production requests. Keep scanners and
+capability probes in research/CI. No helper process, trial compile, diagnostic
+retry, duplicate frontend or eager complementary-driver startup is permitted
+merely to choose ownership.
+
+Distinguish unexamined donor evidence from a demonstrated unsupported operation.
+Unknown support does not establish membership in the complement. Resolve it
+through source review and independent qualification before claiming coverage.
+A defect in an advertised Lust-owned operation remains a Lust repair with a
+retained failing witness. Do not shrink the supported set or transfer ownership
+to excuse a compiler defect.
+Normal required name resolution, macro expansion and semantic work cannot be
+assumed free; assign each such operation once and retain its results. A static
+feature-name table cannot replace those facts. See the
+[support and cost analysis](exclusive-coverage-mathematics.md).
+
 | Outcome | Required meaning |
 | --- | --- |
 | Lust prepared | A supported obligation has checked state, identity, dependency reads and represented runtime/ABI requirements. Lust remains its owner through emission. |
@@ -116,6 +144,15 @@ establish compliance. The whole Rust source tree and full `rustc_driver`
 pipeline are not an acceptable shortcut for this import contract. If a chosen
 root pulls in duplicate Lust-owned compiler stages, narrow the boundary or
 supply a verified adapter before admitting it to production.
+
+Apply this rule to the effective Cargo dependency and feature graph, not only
+the normal constructor command. Review defaults, optional and renamed packages,
+target/build dependencies, feature unification and transitive lockfile changes.
+A product-labelled library must not activate a full Rust SDK or an alternative
+retrying ABI through a research feature. Remove obsolete general launchers and
+retrying exported entry points; preserve useful bounded mechanism/oracle
+qualifiers outside product admission. Structural package checks run before
+construction and add no per-request compilation work.
 
 The machine-readable inventory is
 [`upstream/complement-imports.json`](../../upstream/complement-imports.json),
@@ -197,13 +234,19 @@ must be measured. This equation is conditional reasoning, not a prediction or
 a universal optimum. Full Rust analysis before native emission increases work
 and can erase the gain even when selected objects come from Lust.
 
-The [performance policy](practical-performance.md) retains the current budgets
-without changing them after observing new results. Supported warm operations
-use 10% or 0.5 ms added latency; ordinary complementary operations use 5% or
-0.5 ms, whichever allowance is larger. These are engineering assessment
-assumptions, not exact numbers supplied in the user's goal or evidence of a pass.
-Apply them per operation with paired uncertainty. Other workloads remain
-explicitly reviewed; do not invent passing results or hide regressions in means.
+The [performance policy](practical-performance.md) requires relative evidence
+for future near-stock claims: 10% supported warm overhead and 5% ordinary
+complementary overhead, assessed per operation with paired uncertainty. These
+are engineering assumptions, not exact numbers supplied by the user. The older
+0.5 ms alternative remains part of its historical assessments only. For example,
+adding 0.4 ms to a 0.2 ms baseline triples latency despite satisfying that old
+absolute allowance. It cannot establish preserved near-stock speed.
+
+Keep historical samples, thresholds, decisions and failures unchanged. Fix the
+future assessment before measurement and report uncertain comparisons as
+unqualified. Review cold work, other edits, tails and complete user operations
+separately. Assess boundary overhead during integration, then qualify the exact
+complete package. Do not postpone all speed assessment until coverage is done.
 
 ## Portability preference without a competing destination
 

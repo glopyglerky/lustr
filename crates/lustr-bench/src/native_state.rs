@@ -1,5 +1,7 @@
-//! Explicitly owned retained state for complete-project Lustr campaigns.
-//! Nothing here is enabled for historical generic-runner specifications.
+//! Explicitly owned retained state for the historical mixed-package campaign.
+//! The opt-in policy verifies that old package's binaries and receipts; it does
+//! not admit the current exclusive native package. Generic command-vector
+//! specifications without this policy retain their independent behavior.
 use super::{R, daemons::Daemons, hash};
 use nix::sys::prctl::set_child_subreaper;
 use serde::{Deserialize, Serialize};

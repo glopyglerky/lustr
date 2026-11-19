@@ -29,6 +29,7 @@ on:
       - 'tools/check-exclusive-coverage.py'
       - 'tools/test-exclusive-entry.py'
       - 'tools/test-exclusive-coverage-guard.py'
+      - 'tools/test-native-build-policy.py'
       - 'upstream/complement-imports.json'
       - 'tools/native-target-layout-qualification.rs'
       - 'tools/profile-native-preflight.rs'
@@ -71,6 +72,7 @@ on:
       - 'tools/check-exclusive-coverage.py'
       - 'tools/test-exclusive-entry.py'
       - 'tools/test-exclusive-coverage-guard.py'
+      - 'tools/test-native-build-policy.py'
       - 'upstream/complement-imports.json'
       - 'tools/native-target-layout-qualification.rs'
       - 'tools/profile-native-preflight.rs'
@@ -211,6 +213,8 @@ jobs:
           persist-credentials: false
       - name: Install the declared build SDK and research oracle
         run: rustup toolchain install nightly-2026-11-09 --profile minimal --component rustc-dev --component llvm-tools
+      - name: Reject product and research feature unification before compiler work
+        run: python3 tools/test-native-build-policy.py --rustc "$(rustup which rustc)" --output "$RUNNER_TEMP/native-build-policy.json"
       - name: Obtain the pinned TinyCC source
         uses: actions/checkout@v4
         with:
@@ -253,6 +257,21 @@ jobs:
           test -f "$RUNNER_TEMP/lustr-native-built/toolchain/PARTIAL-NATIVE-COMPILER"
           test ! -e "$RUNNER_TEMP/lustr-native-built/toolchain/bin/rustc-full"
           test ! -e "$RUNNER_TEMP/lustr-native-built/toolchain/bin/rustc-reference"
+      - name: Check declared upstream capabilities against the constructed native compiler
+        if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
+        run: |
+          set -o pipefail
+          native="$RUNNER_TEMP/lustr-native-built/toolchain/bin/lust"
+          "$native" capabilities --json > "$RUNNER_TEMP/lustr-native-built/logs/capabilities.json"
+          sha256sum "$native" "$RUNNER_TEMP/lustr-native-built/toolchain/bin/lust-core" compiler/native/scripts/test-capabilities.py > "$RUNNER_TEMP/lustr-native-built/logs/capability-inputs.sha256"
+          python3 compiler/native/scripts/test-capabilities.py "$native" 2>&1 | tee "$RUNNER_TEMP/lustr-native-built/logs/capability-probes.log"
+          cat >> "$GITHUB_STEP_SUMMARY" <<'MARKDOWN'
+          Capability probes check the pinned upstream declarations in eight
+          sections with the script's explicit unprobed exceptions. They run
+          only in qualification, never as request routing or trial compilation.
+          This functional debug-package gate does not prove all Rust coverage,
+          contextual support beyond its probes, or matched compilation speed.
+          MARKDOWN
       - name: Build the actual native target-selector diagnostic
         id: selector_build
         if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
@@ -290,6 +309,7 @@ jobs:
           if-no-files-found: error
           path: |
             ${{ runner.temp }}/release-refusal.json
+            ${{ runner.temp }}/native-build-policy.json
             ${{ runner.temp }}/exclusive-entry.json
             ${{ runner.temp }}/native-selection-cache
             ${{ runner.temp }}/native-selection-seed

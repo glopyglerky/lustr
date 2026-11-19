@@ -26,6 +26,11 @@ passing compatibility tests and historical release assets cannot change this goa
 - Assign semantic and emission work before generation from real compiler facts.
   No keyword selector, diagnostic-based routing, native-fail/rustc-retry path,
   hidden stock compiler, or complete competing frontend on supported work.
+- Maintain the pinned upstream capability rules outside the request path. Apply
+  contextual rules during the one normal frontend/retained-state update. Do not
+  run a scanner, probe compilation, second parser or second checker to decide
+  which implementation to use. Upstream capability probes belong in development
+  and CI; an unprobed entry is unknown evidence, not complementary ownership.
 - A full Rust driver library is not a minimal complement merely because its
   executable is absent or selected LLVM definitions are disabled. Inspect source
   dependencies and actual semantic work, not only the binary name.
@@ -33,6 +38,11 @@ passing compatibility tests and historical release assets cannot change this goa
   capability or required dependency witness, feature/target closure, an actual
   caller and an explicit semantic owner. A file allowlist alone does not prove
   minimality. Exclude Rust implementation that duplicates Lust-owned work.
+- Review product Cargo features and dependency closure, including defaults,
+  optional, renamed, build and target dependencies. A research-only label does
+  not isolate a full compiler if a product feature combination can activate it.
+  Delete obsolete retrying launchers and ABI entry points; retain useful bounded
+  mechanism qualifiers separately from product construction.
 - Reuse upstream implementation for genuine gaps. Do not independently rebuild
   every missing Rust semantic feature as an alternative destination.
 - Preserve the unchanged source, Cargo graph, features, target, profiles,
@@ -120,10 +130,18 @@ first; retain these preferences for later work that can meet those conditions.
 Keep Lust-covered work near matched stock Lust speed. Keep complementary work
 near matched stock rustc speed. These are separate requirements; a gain on one
 cannot conceal a loss on the other. The [performance policy](docs/compiler-set/practical-performance.md)
-retains existing engineering review budgets: 10% or 0.5 ms for supported warm
-operations, and 5% or 0.5 ms for ordinary complementary operations, per case.
-They are assumptions for assessment, not the user's exact numerical wording or
-proof that the current candidate passes.
+requires the relative comparison for a new near-stock claim: 10% for supported
+warm operations and 5% for ordinary complementary operations, per case with
+paired uncertainty. These remain engineering assumptions, not the user's exact
+numerical wording or proof that the candidate passes. The old 0.5 ms alternative
+is historical only; small absolute overhead cannot excuse a large relative
+slowdown. Keep original historical assessments unchanged.
+
+Assess incremental boundary overhead while integrating each component. Do not
+defer speed work until the final package or force every narrow source/guard
+change through an unrelated full benchmark. Required compiler work is performed
+once; dispatch, conversions, initialization and transport are included in the
+measured public request.
 
 Preserve cold, no-op, body/signature/type/trait/macro/dependency edits, rejection,
 linking, tails, memory, generated-program runtime and compile-plus-test results.

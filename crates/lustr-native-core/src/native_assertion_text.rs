@@ -1,13 +1,11 @@
-//! Owned original-AST assertion text extension. The application and protected
-//! compilers are unchanged. See docs/compiler-set/proofs/native-assert-text.md.
+//! Original assertion text for the bounded native artifact qualifier.
+//! This pure AST operation never starts or retries compilation.
 use crate::{
     ast::{self, Expr, FmtPiece, MacroKind, Stmt},
     diag::{CtxtId, FileId, Span},
-    driver,
     intern::Interner,
     lexer::{self, Tok, Token},
 };
-use std::sync::Arc;
 
 const LIMIT: usize = 65536;
 
@@ -1020,18 +1018,6 @@ pub(super) fn proposal(input: &ast::Ast, map: &crate::diag::SourceMap, root_text
             }
         }
     }
-    eprintln!("native inference: {} original-AST assertion texts; full native recheck follows", changes.len());
+    eprintln!("native artifact: {} original-AST assertion texts; native checking follows", changes.len());
     Some(ast)
-}
-
-pub(super) fn seed(session: &mut driver::Session) -> bool {
-    let front = &session.front;
-    let Some(ast) = proposal(&front.ast, &front.map, &front.src, &front.interner, &front.known) else { return false; };
-    session.front.ast = Arc::new(ast);
-    session.front.kept = [None, None];
-    session.front.last_check = None;
-    session.caches.ok.fill(false);
-    session.caches.has_out.fill(false);
-    session.caches.gen_reuse.clear();
-    true
 }

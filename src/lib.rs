@@ -10,7 +10,8 @@ pub struct Native {
 }
 
 /// This recognizes compiler requests, not source keywords. Requests requiring
-/// Rust metadata or an unrepresented option require complementary integration.
+/// Rust metadata or an unrepresented option expose an integration gap. They do
+/// not establish that the underlying work lies outside Lust's coverage.
 /// Returning None is never permission to invoke a complete second compiler.
 pub fn native_request(args: &[OsString]) -> Option<Native> {
     let mut input = None;

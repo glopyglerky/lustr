@@ -23,6 +23,11 @@ repairs and provenance work continue alongside integration. Do not replace the
 goal with independent Rust reimplementation, a memory-safety rewrite, broad
 compiler tuning, a coordinator or all-Rust-source vendoring.
 
+Measure material boundary overhead during implementation. The final performance
+row is package qualification, not a reason to postpone the speed requirement.
+Upstream support rules are qualified outside production requests and applied
+inside normal compilation, without a trial compiler or duplicate frontend.
+
 The [design checkpoint](design.md) separates pre-correction default `7cea76c9`,
 historical candidate evidence, audited PR #32 `cb0721d4` and the documentation
 merged through PR #31. The [implementation cleanup](exclusive-coverage-cleanup.md)

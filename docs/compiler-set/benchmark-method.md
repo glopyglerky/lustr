@@ -5,11 +5,14 @@
 neither selects a compiler automatically nor installs or changes defaults.
 Wrapping unchanged Cargo does not itself accelerate compilation.
 
-Build with the campaign's explicitly selected coordinator and produced compiler:
+Build this independent measurement tool with the campaign's pinned bootstrap
+SDK. The specification supplies the compiler lanes; building the measurement
+tool does not select them:
 
 ```text
-<toolchain>/bin/lustr --bluefe-root <toolchain> build --locked \
-  --manifest-path crates/lustr-bench/Cargo.toml --target-dir <build-output> -j 2
+RUSTC=<sdk>/bin/rustc <sdk>/bin/cargo build --locked \
+  --manifest-path crates/lustr-bench/Cargo.toml --bin lustr-bench \
+  --target-dir <build-output> -j 2
 <build-output>/debug/lustr-bench <spec.json> <new-absolute-report-directory>
 ```
 
@@ -36,7 +39,7 @@ interpolation, or lossy decoding is involved. File path fields use UTF-8 paths.
 | Spec field | Type and meaning |
 | --- | --- |
 | `schema` | Integer `1`. |
-| `native_state` | Optional explicit owned-Lustr state policy, disabled when absent. See the [unchanged coordinator campaign](coordinator-performance.md) for constructor receipts, cache/daemon ownership, cold boundaries and separate private/public evidence. Resource measurement must remain disabled for this policy. |
+| `native_state` | Optional historical `owned-lustr-mixed-v1` policy, disabled when absent. It requires the retired mixed package and cannot qualify the current exclusive native package. See the [historical coordinator campaign](coordinator-performance.md) for constructor receipts, cache/daemon ownership, cold boundaries and separate private/public evidence. Resource measurement must remain disabled for this policy. |
 | `source` | Absolute canonical frozen source directory outside canonical repositories. |
 | `repository`, `revision` | Public upstream URL and pinned revision or complete fixture identity; declarations retained with content hashes. The runner does not fetch or authenticate revisions. |
 | `package`, `root_crate` | Package label and actual rustc `--crate-name` root name. |

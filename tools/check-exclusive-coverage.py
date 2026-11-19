@@ -13,6 +13,111 @@ import sys
 import tomllib
 
 
+# These are the dependency edges of the three packages the native constructor
+# actually builds. They are deliberately not hashes of entire manifests: source,
+# descriptions, profiles and ordinary version updates do not need a new gate.
+# An added package, source override or dependency edge does need source/import
+# review. Cargo.lock is an over-approximation across targets and features, not a
+# proof of the feature-specific minimum or of semantic ownership.
+PRODUCT_PACKAGES = {
+    "Cargo.toml": ("lustr-compiler", {"serde_json", "sha2"}, {"exclusive-native", "source-native-runtime"}),
+    "compiler/native/Cargo.toml": ("lust", {"mimalloc", "libmimalloc-sys", "unicode-normalization"}, {"exclusive-native"}),
+    "crates/lustr-native-core/Cargo.toml": ("lustr-native-core", {"mimalloc", "libmimalloc-sys", "unicode-normalization"}, {"exclusive-native"}),
+}
+REVIEWED_DEPENDENCY_EDGES = {
+    "serde_json": {"itoa", "memchr", "serde", "serde_core", "zmij"},
+    "serde": {"serde_core"}, "serde_core": {"serde_derive"},
+    "serde_derive": {"proc-macro2", "quote", "syn"},
+    "proc-macro2": {"unicode-ident"}, "quote": {"proc-macro2"},
+    "syn": {"proc-macro2", "quote", "unicode-ident"},
+    "sha2": {"cfg-if", "cpufeatures", "digest"}, "cpufeatures": {"libc"},
+    "digest": {"block-buffer", "const-oid", "crypto-common"},
+    "block-buffer": {"hybrid-array"}, "crypto-common": {"hybrid-array"},
+    "hybrid-array": {"typenum"},
+    "mimalloc": {"libmimalloc-sys"}, "libmimalloc-sys": {"cc"},
+    "cc": {"find-msvc-tools", "shlex"},
+    "unicode-normalization": {"tinyvec"}, "tinyvec": {"tinyvec_macros"},
+}
+RESEARCH_FEATURES = {"native-inference", "native-qualification", "upstream-semantic"}
+REGISTRY_SOURCE = "registry+https://github.com/rust-lang/crates.io-index"
+# Every current direct package is required and selects no extra named features.
+# Both native allocator packages explicitly disable their defaults. Enabling a
+# different configuration requires review even if Cargo.lock's package names
+# happen not to change.
+NO_DEFAULT_FEATURES = {"mimalloc", "libmimalloc-sys"}
+
+
+def product_package_checks(root, require):
+    for manifest, (package_name, direct, selected) in PRODUCT_PACKAGES.items():
+        data = tomllib.loads((root / manifest).read_text())
+        require(data["package"]["name"] == package_name, f"{manifest}: unreviewed product package identity")
+        require(not data.get("patch") and not data.get("replace"), f"{manifest}: unreviewed dependency source override")
+        workspace = data.get("workspace", {})
+        require(not workspace.get("dependencies") and not workspace.get("members")
+                and not workspace.get("default-members"), f"{manifest}: unreviewed workspace dependency or build member")
+        scopes = [("", data)] + [(f"target.{target}.", table) for target, table in data.get("target", {}).items()]
+        actual = set()
+        for prefix, table in scopes:
+            for kind in ("dependencies", "build-dependencies", "dev-dependencies"):
+                dependencies = table.get(kind, {})
+                require(not dependencies or (not prefix and kind == "dependencies"),
+                        f"{manifest}: unreviewed {prefix}{kind} edges")
+                for alias, dependency in dependencies.items():
+                    declaration = {"version": dependency} if isinstance(dependency, str) else dependency
+                    name = declaration.get("package", alias)
+                    if not prefix and kind == "dependencies":
+                        actual.add(name)
+                    require(name in direct, f"{manifest}: unreviewed product dependency {alias} -> {name}")
+                    require(not any(key in declaration for key in ("path", "git", "registry", "registry-index", "workspace")),
+                            f"{manifest}: unreviewed source for dependency {alias}")
+                    require(declaration.get("default-features", True) == (name not in NO_DEFAULT_FEATURES)
+                            and declaration.get("optional", False) is False
+                            and declaration.get("features", []) == [],
+                            f"{manifest}: unreviewed feature configuration for dependency {alias}")
+        require(actual == direct, f"{manifest}: product dependency roots differ from the reviewed graph")
+
+        # Cargo enables defaults unless explicitly disabled by the constructor.
+        # Follow every local feature edge, including aliases, before deciding
+        # whether a product build can acquire the separate research compiler.
+        features = data.get("features", {})
+        require(selected <= set(features), f"{manifest}: constructor product features are not declared")
+        pending = list(selected | {"default"})
+        enabled = set()
+        while pending:
+            feature = pending.pop()
+            if feature in enabled:
+                continue
+            enabled.add(feature)
+            require(feature not in RESEARCH_FEATURES, f"{manifest}: product features enable research compiler {feature}")
+            for edge in features.get(feature, []):
+                require(not edge.startswith("dep:") and "/" not in edge,
+                        f"{manifest}: product feature has an unreviewed dependency activation {edge}")
+                if not edge.startswith("dep:") and "/" not in edge:
+                    require(edge in features, f"{manifest}: product feature references unreviewed implicit dependency {edge}")
+                    pending.append(edge)
+
+        locked = tomllib.loads((root / manifest).with_name("Cargo.lock").read_text())["package"]
+        packages = {item["name"]: item for item in locked}
+        require(len(packages) == len(locked), f"{manifest}: multiple package versions need dependency-identity review")
+        expected = {package_name}
+        pending = list(direct)
+        while pending:
+            name = pending.pop()
+            if name not in expected:
+                expected.add(name)
+                pending.extend(REVIEWED_DEPENDENCY_EDGES.get(name, set()))
+        require(set(packages) == expected, f"{manifest}: lockfile package closure differs from the reviewed graph")
+        for name, package in packages.items():
+            dependencies = {edge.split()[0] for edge in package.get("dependencies", [])}
+            require(dependencies == (direct if name == package_name else REVIEWED_DEPENDENCY_EDGES.get(name, set())),
+                    f"{manifest}: unreviewed lockfile dependency edges from {name}")
+            if name == package_name:
+                require("source" not in package, f"{manifest}: product package unexpectedly comes from another source")
+            else:
+                require(package.get("source") == REGISTRY_SOURCE and re.fullmatch(r"[0-9a-f]{64}", package.get("checksum", "")),
+                        f"{manifest}: unreviewed locked package source {name}")
+
+
 def check(root):
     failures = []
 
@@ -20,6 +125,7 @@ def check(root):
         if not condition:
             failures.append(message)
 
+    product_package_checks(root, require)
     inventory = json.loads((root / "upstream/complement-imports.json").read_text())
     require(inventory["schema"] == "lustr-complement-imports-v1", "unknown complement inventory schema")
     require(inventory["full_rust_coverage"] is False, "full Rust coverage needs an independent admission change")

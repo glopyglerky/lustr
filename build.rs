@@ -40,9 +40,6 @@ fn main() {
         // The primary entry can run the compiler in-process. Reserve the same
         // main-thread stack as lust-core; Darwin cannot grow it with setrlimit.
         println!("cargo:rustc-link-arg-bin=lustr=-Wl,-stack_size,0x10000000");
-        if cfg!(feature = "native-inference") {
-            println!("cargo:rustc-link-arg-bin=lustr-native-worker=-Wl,-stack_size,0x10000000");
-        }
         let receipt = std::env::var_os("LUSTR_HOST_SDK_RECEIPT").expect("LUSTR_HOST_SDK_RECEIPT must name the selected Darwin SDK receipt");
         let receipt = Path::new(&receipt);
         assert!(receipt.is_absolute(), "host SDK receipt must have an absolute path");

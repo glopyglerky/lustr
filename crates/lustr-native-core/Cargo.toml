@@ -10,8 +10,8 @@ resolver = "3"
 
 [features]
 exclusive-native = []
-native-inference = []
-upstream-semantic = ["native-inference"]
+native-qualification = []
+upstream-semantic = ["native-qualification"]
 
 [lib]
 crate-type = ["cdylib"]
@@ -24,17 +24,17 @@ required-features = ["upstream-semantic"]
 [[example]]
 name = "native-output-layout-qualification"
 path = "../../tools/native-output-layout-qualification.rs"
-required-features = ["native-inference"]
+required-features = ["native-qualification"]
 
 [[example]]
 name = "native-phase-qualification"
 path = "../../tools/native-phase-qualification.rs"
-required-features = ["native-inference"]
+required-features = ["native-qualification"]
 
 [[example]]
 name = "native-crate-qualification"
 path = "../../tools/native-crate-qualification.rs"
-required-features = ["native-inference"]
+required-features = ["native-qualification"]
 
 [dependencies]
 mimalloc = { version = "=0.1.52", default-features = false }

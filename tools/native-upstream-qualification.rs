@@ -152,24 +152,8 @@ mod qualification {
             assert!(!embedding_environment_supported());
             unsafe {
                 assert_eq!(lustr_native_object_v1(0, std::ptr::null(), unused_sink, std::ptr::null_mut()), 3);
-                assert_eq!(lustr_native_v2(0, std::ptr::null(), std::ptr::null(), unused_sink, std::ptr::null_mut()), 3);
-                assert_eq!(lustr_native_retained_v1(0, std::ptr::null(), 0, std::ptr::null(), std::ptr::null(), unused_sink, std::ptr::null_mut()), 3);
-                assert_eq!(lustr_native_session_v1(0, std::ptr::null(), 0, std::ptr::null(), std::ptr::null(), unused_sink, std::ptr::null_mut()), 3);
             }
-            eprintln!("front-image entry guards: 4 passed");
-            return 0;
-        }
-        if arguments.first().is_some_and(|argument| argument == "--front-client-control") {
-            unsafe extern "C" fn unused_sink(_: *mut std::ffi::c_void, _: i32, _: *const u8, _: usize) { panic!("refused entry called the sink") }
-            assert!(embedding_environment_supported());
-            for key in [c"LUST_FRONT_STATE", c"LUST_FRONT_ARENA"] {
-                let environment = [key.as_ptr(), c"requested".as_ptr()];
-                unsafe {
-                    assert_eq!(lustr_native_retained_v1(0, std::ptr::null(), 2, environment.as_ptr(), std::ptr::null(), unused_sink, std::ptr::null_mut()), 3);
-                    assert_eq!(lustr_native_session_v1(0, std::ptr::null(), 2, environment.as_ptr(), std::ptr::null(), unused_sink, std::ptr::null_mut()), 3);
-                }
-            }
-            eprintln!("front-image client guards: 4 passed");
+            eprintln!("front-image object entry guard: passed");
             return 0;
         }
         assert!(arguments.len() == 4, "SOURCE RLIB OUTPUT NEW_SCRATCH");

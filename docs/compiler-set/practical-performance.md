@@ -7,27 +7,42 @@ ownership, source selection, correctness and actual artifact integration.
 A coordinator or full-driver wrapper cannot pass architecture by meeting a
 timing budget.
 
-This policy retains the existing engineering budgets and assessment rules from
-the [candidate policy at cb0721d4](https://github.com/glopyglerky/lustr/blob/cb0721d49be95ec3f34a113c2354bc9d2a38bbf3/docs/compiler-set/practical-performance.md)
-and [18 November checkpoint](performance-review-2026-11-18.md). The numeric
-budgets were engineering choices informed by prior measurements. They are not
-the user's exact numerical wording, universal guarantees or evidence that the
-current source passes. Do not relax them after observing a new campaign.
+Revised 19 November 2026 to enforce the repeated near-stock requirement. The
+relative budgets below remain engineering choices, not the user's exact
+numerical wording, universal guarantees or evidence of a pass. Fix assessment
+and workload definitions before a new campaign; do not relax them after seeing
+the results.
+
+The [candidate policy at cb0721d4](https://github.com/glopyglerky/lustr/blob/cb0721d49be95ec3f34a113c2354bc9d2a38bbf3/docs/compiler-set/practical-performance.md)
+and [18 November checkpoint](performance-review-2026-11-18.md) allowed either a
+relative bound or 0.5 ms added latency. Preserve those historical assessments
+and their original decisions. Their absolute alternative no longer establishes
+a new near-stock claim. A 0.2 ms baseline plus 0.4 ms is three times slower,
+despite satisfying the old absolute allowance.
 
 ## Supported warm work
 
-For each matched warm check and build, allow 10% relative overhead or 0.5 ms
-added latency, whichever allowance is larger. Preserve the original strict
-comparison alongside the practical decision. Match source, configuration,
-complete commands, artifacts and applicable correctness. No averaging a slow
-operation away with a faster one.
+For each matched warm check and build, require the 10% relative overhead bound.
+Match source, configuration, complete commands, artifacts and applicable
+correctness. No averaging a slow operation away with a faster one.
 
-The complete-package assessor replays its evidence first. Its existing paired
-ratio interval assesses the relative budget, and a separately reported paired
-bootstrap interval assesses median added latency. The upper added-latency bound
-must be at most 0.5 ms, or the lower Lust/Lustr ratio bound at least `1 / 1.10`.
-Both warm operations also need a Rust/Lustr ratio interval entirely above one.
-These are conditional intervals for that repeated workload and host.
+Replay exact-source evidence before assessment. Require the lower paired 95%
+Lust/Lustr ratio bound to be at least `1 / 1.10`. Both warm operations also need
+a matched Rust/Lustr ratio interval entirely above one. Report paired absolute
+added-latency intervals and the former 0.5 ms reference for diagnosis, but they
+cannot override a failed or inconclusive relative comparison. These are
+conditional intervals for that repeated workload and host. Noise is a reason
+to improve the predeclared measurement design, not to report a pass.
+
+The paired ratio statistic is the geometric mean of within-pair
+reference/candidate ratios, with the existing paired bootstrap interval. It is
+not a ratio of marginal medians or a bound on every individual request. Retain
+sample distributions and latency tails independently.
+
+`tools/assess-warm-performance.py` and its version-1 schema replay the historical
+practical rule. Their `meets_practical_target` field is not current near-stock
+admission. The integrated selective compiler and its complete current campaign
+remain unfinished; no current performance pass is inferred from that tool.
 
 The existing complete-package campaign requires 24 matched pairs plus applicable
 qualification. A different proposed design must be justified and fixed before
@@ -41,14 +56,29 @@ The complementary implementation must be the actual integrated selective
 implementation. A historical packaged-rustc measurement retains its historical
 scope and does not qualify the new complement.
 
-Use 5% relative overhead or 0.5 ms absolute overhead as the per-operation
-near-stock review budget, whichever allowance is larger. Report paired intervals
-and uncertainty for each operation. Investigate an out-of-budget result. Gains
-on Lust-supported work do not cancel it. No large complementary speedup is
-required. Do not reduce debug information, alter panic behavior or substitute
-an easier program/profile to improve the ratio.
+Use 5% relative overhead as the per-operation near-stock review budget. Require
+the lower paired 95% stock-Rust/Lustr ratio bound to be at least `1 / 1.05`.
+Report absolute added latency separately without an alternate passing rule.
+Investigate an out-of-budget or inconclusive result. Gains on Lust-supported
+work do not cancel it. No large complementary speedup is required. Do not reduce
+debug information, alter panic behavior or substitute an easier program/profile
+to improve the ratio.
 
 ## Other work and overhead diagnosis
+
+Measure boundary overhead as components are integrated, before accepting a
+design that spends Lust's gain on repeated work. Qualification probes and
+independent oracles run outside the user request. Actual dispatch, required
+preparation, conversions, initialization, transport and publication stay inside
+its measurement. A no_std or transport change needs applicable operation and
+retention evidence before replacing the existing path; neither is a prerequisite
+that can delay the sole compiler goal.
+
+Compare equivalent work. If stock Lust cannot produce a requested artifact,
+identify the matching supported operation and separately report the extra
+artifact service and complete public request. A Lust run and a full Cargo
+library build are not interchangeable denominators. Do not call an isolated
+body-emission ratio the full compilation speedup.
 
 Keep cold and cached-cold builds, no-op, body/signature/type/trait/macro/dependency
 edits, rejection, priming, linking, tails, memory, application execution and

@@ -32,6 +32,11 @@ but the bridge cannot represent is an integration gap. It must not quietly move
 to rustc. A whole-program retry or a complete Rust frontend followed by native
 emission of a few functions does not meet the contract.
 
+Lust's support rules come from its pinned implementation and qualification.
+Apply them during the normal compilation using the native state already being
+produced. Do not first run a scanner, trial compile or duplicate frontend to
+choose an implementation. An unexamined capability remains an evidence gap.
+
 Existing repairs and their failures remain useful. The
 [retained-work disposition](docs/compiler-set/retained-work-disposition.md)
 explains what to keep, retire from production, or use only as research. Source
@@ -48,8 +53,10 @@ history and historical evidence remain intact.
 | [Completion checklist](docs/compiler-set/completion-checklist.md) | One work list with observable completion conditions. |
 | [Implementation cleanup](docs/compiler-set/exclusive-coverage-cleanup.md) | Removed routes, preserved components, focused validation and remaining gaps. |
 | [Ownership follow-through](docs/compiler-set/exclusive-coverage-followthrough.md) | Remaining bridge, daemon and acceptance conflicts, native runtime repair and portability priority. |
+| [Sole-goal audit](docs/compiler-set/sole-goal-audit.md) | Removes latent retry interfaces and build-feature escapes; records actual verification and tightened future speed claims. |
 | [Lust upstream review](docs/compiler-set/upstream-lust-review-2026-11-19.md) | Retention, precise invalidation, CI, performance history and reverts. |
 | [Rust upstream review](docs/compiler-set/upstream-rust-review-2026-11-19.md) | Existing selective reuse interfaces, dependency closure, CI and performance history. |
+| [Support and cost analysis](docs/compiler-set/exclusive-coverage-mathematics.md) | Known capability rules, CI coverage limits and the cost of extra dispatch or semantic work. |
 | [Performance policy](docs/compiler-set/practical-performance.md) | Separate near-Lust and near-rustc assessment and its limits. |
 | [Contributor instructions](AGENTS.md) | Rules for continuing without changing direction. |
 
@@ -77,11 +84,13 @@ not qualify this implementation correction or the complete replacement. The
 likewise preserves what actually ran at its recorded sources. Later repairs
 need their own evidence; old failures must not be silently reclassified.
 
-The current review budgets allow 10% or 0.5 ms added latency for supported warm
-work and 5% or 0.5 ms for ordinary complementary work, whichever allowance is
-larger, assessed per case. These are engineering assumptions, not demonstrated
-current results. Cold builds, edits, rejection, memory and compile-plus-test
-remain separate. Large gains outside Lust's subset are unnecessary.
+Current near-stock claims require the relative review bounds: 10% overhead for
+supported warm work and 5% for ordinary complementary work, per case with paired
+uncertainty. These are engineering assumptions, not demonstrated current
+results. The former 0.5 ms alternate rule remains historical; small absolute
+overhead cannot excuse a large relative slowdown. Cold builds, edits, rejection,
+memory and compile-plus-test remain separate. Large gains outside Lust's subset
+are unnecessary.
 
 ## Source and history
 

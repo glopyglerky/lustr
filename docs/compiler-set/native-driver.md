@@ -8,6 +8,10 @@
 > They are not the required architecture. Follow the [architecture plan](architecture-plan.md),
 > [current design checkpoint](design.md) and [completion checklist](completion-checklist.md).
 > Later candidate qualification is recorded separately by exact source.
+> The diagnostic-driven `native-inference` worker and retrying exported ABIs
+> described later in this file are retired by the current sole-goal audit.
+> Original source and fixtures remain in history. Their removal does not remove
+> the ordinary retained Lust compiler or qualify the missing Rust complement.
 
 The owned original-AST panic-text extension also models list-array expressions
 from their ordered native element IDs and exact original spans/commas/brackets.

@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Qualify the unchanged coordinator with the existing paired runner.
+"""Reproduce the historical mixed-package campaign with the paired runner.
 
 Private originals remain under private/; only the explicit allowlist projection
 under public/ is suitable for publication. This script does not publish anything.
+The retired package's compiler layout is required. Its results do not qualify
+the current exclusive native package or select a production compiler route.
 """
 import argparse
 import hashlib

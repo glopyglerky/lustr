@@ -217,8 +217,7 @@ try:
     for name in ["LUST_FRONT_STATE", "LUST_FRONT_ARENA"]:
         answer = run(f"image-guard-{name.lower()}", [args.qualifier, "--front-image-control"],
                      env={name: str(args.out / "refused-image")})
-        assert b"front-image entry guards: 4 passed" in answer.stderr
-    assert b"front-image client guards: 4 passed" in run("image-client-guards", [args.qualifier, "--front-client-control"]).stderr
+        assert b"front-image object entry guard: passed" in answer.stderr
 
     # Emission owns its exact imported objects, not their original pathname.
     snapshot, _ = native("removed-snapshot", fixture / "consumer.rs", library,

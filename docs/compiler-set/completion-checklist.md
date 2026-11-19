@@ -41,6 +41,13 @@ fixtures. Expose prepared checked state and dependency reads before emission.
 Keep native preparation, genuine complement requirements, unintegrated supported
 work, invalid input and implementation failure distinct.
 
+Derive and qualify support rules in development/CI, then apply them inside the
+one normal frontend or retained-state update. A scanner, separate parser/checker,
+probe compilation or diagnostic retry cannot select the production owner.
+Unprobed/unknown donor evidence is not proof of a complementary obligation.
+Capability test coverage must state its exceptions; a general CI pass is not
+proof that the capability tests ran.
+
 Done when pure and mixed programs retain Lust ownership for the complete covered
 set being claimed. The current scalar bridge cannot define that set. Failure
 in a represented native emission must fail the request without reassignment.
@@ -52,6 +59,12 @@ source revision, paths/symbols/hashes, licenses, feature/target dependencies,
 verified adapters, necessity witnesses, actual callers and semantic ownership.
 Include existing partial Unicode/normalization imports and their dependencies.
 Disclose full SDK/compiler-private research components separately.
+
+Check effective product dependency and feature closure, including defaults,
+optional, renamed, target and build dependencies and transitive lock changes.
+No product feature combination may activate a retrying experimental ABI or a
+full competing SDK. Remove obsolete general launchers and retain only useful
+bounded research qualifiers outside production admission.
 
 Done when admitted imports implement their claimed complementary obligations
 inside the owned compilation and the closure contains no unjustified duplicate
@@ -123,17 +136,24 @@ integrated native platform. No current artifact is qualified as the full product
 
 ## 7. Assess near-Lust and near-rustc behavior, then release
 
-Use the [performance policy](practical-performance.md). Preserve its existing
-budgets and complete-package assessment design. Match source versions, requested
+Use the [performance policy](practical-performance.md). Keep all historical
+budgets and decisions immutable. For new assessments, match source versions, requested
 work, flags, targets, thread counts, cache/lifecycle state, workload inputs and
 actual artifacts. The existing complete-package assessor requires 24 matched
 pairs plus applicable qualification. Historical 12-pair characterization is
 not that prospective assessment.
 
-Supported warm check/build permits 10% or 0.5 ms added latency, whichever is
-larger, under the existing paired uncertainty rule and useful measured gain over
-rustc. Ordinary complementary operations use 5% or 0.5 ms as a per-case review
-budget; large speedups are unnecessary. These are engineering assumptions.
+Supported warm check/build requires the 10% relative bound under the paired
+uncertainty rule and a useful measured gain over rustc. Ordinary complementary
+operations require the 5% relative bound; large speedups are unnecessary.
+These are engineering assumptions. Absolute added latency remains visible, but
+the historical 0.5 ms alternative cannot admit a new near-stock claim.
+
+Assess the overhead of each material integration boundary during development.
+This final package gate consolidates those results; it is not permission to
+postpone all speed checks until implementation is complete. Include the whole
+public request and compare equivalent work, with additional artifacts reported
+separately when stock Lust cannot produce them.
 
 Keep cold/no-op, body/signature/type/trait/macro/dependency edits, rejection,
 priming, link, tails, memory, generated-program execution and compile-plus-test

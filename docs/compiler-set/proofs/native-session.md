@@ -1,5 +1,12 @@
 # Shared native driver session
 
+This is historical component evidence. The diagnostic-driven session and
+retained inference ABIs, along with their general executable qualifiers, are
+retired by the sole-goal audit after `d1328bc2`. Their retries cannot be restored
+as product behavior. The ordinary Lust retained daemon is preserved. Follow the
+[current exclusive contract](../exclusive-coverage-contract.md); the source,
+fixtures and receipts below keep their original scope.
+
 This record describes the retained V59 component. The subsequent unadmitted
 [standalone-output candidate](native-standalone-output.md) separates semantic
 persistence from linking; its qualification does not alter the V59 evidence.

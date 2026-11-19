@@ -349,8 +349,8 @@ paired pristine-Lust/candidate geometric speed ratio whose conditional bootstrap
 A completed strict-target miss still exits 2 and preserves the full result.
 An incomplete build, gate or campaign fails without a performance table.
 
-The continuation workflow applies a separate
-[practical warm acceptance policy](practical-performance.md) after this complete
+The historical continuation workflow applied a separate
+[practical warm acceptance policy at its recorded source](https://github.com/glopyglerky/lustr/blob/d1328bc2df289835b7a48d72575a103154b3c9e3/docs/compiler-set/practical-performance.md) after this complete
 record has passed original replay. It records the measurement's actual exit
 status and accepts only completed status 0 or 2 for assessment. Missing, failed,
 tampered or unexpectedly terminated evidence remains a failure. Each warm mode
@@ -359,6 +359,11 @@ Cargo/rustc. The assessor writes separate JSON and Markdown; original raw
 records, statistics and strict-target fields remain unchanged. Passing the warm
 budget does not waive runtime/platform qualification or establish a universal
 Rust speed ratio.
+
+This paragraph preserves that historical assessment. The
+[current policy](practical-performance.md) requires relative evidence for a new
+near-stock claim; the old 0.5 ms alternate pass is not current admission. The
+version-1 assessor and frozen original results remain unchanged.
 
 ## Execution and replay
 

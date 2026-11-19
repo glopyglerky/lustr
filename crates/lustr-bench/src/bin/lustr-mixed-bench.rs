@@ -1,6 +1,7 @@
-//! Paired measurements of the actual source-built toolchain and matched references.
-//! Linux x86-64 is the current mixed implementation's qualification boundary.
-//! Successful execution establishes only this corpus; timing never admits a release.
+//! Historical paired measurements of the retired mixed package and references.
+//! This explicit Linux x86-64 experiment requires that historical package layout.
+//! It is not a product compiler route or current-package qualification. The
+//! independent Rust oracle adapter and evidence controls remain useful separately.
 #![forbid(unsafe_code)]
 
 #[path = "../daemons.rs"]
@@ -685,7 +686,7 @@ fn main() -> R<()> {
     if all_arguments.first().is_some_and(|value| value == "--native-rustc-test") {
         std::process::exit(rustc_test(&all_arguments[1..])?);
     }
-    require(cfg!(all(target_os = "linux", target_arch = "x86_64")), "current mixed qualification requires Linux x86-64")?;
+    require(cfg!(all(target_os = "linux", target_arch = "x86_64")), "historical mixed-package measurements require Linux x86-64")?;
     let mut args = std::env::args_os().skip(1);
     let pristine_source =
         PathBuf::from(args.next().ok_or("PRISTINE_SOURCE PRISTINE_LUST SOURCE_BUILT_OUTPUT NEW_OUTPUT [PAIRS]")?).canonicalize()?;
@@ -818,7 +819,7 @@ fn main() -> R<()> {
     campaign.raw.sync_all()?;
     result?;
     println!(
-        "Completed bounded native and mixed measurements; assess per-mode ratios and release requirements in {}",
+        "Completed historical package measurements, without current compiler qualification; inspect per-mode results in {}",
         campaign.root.join("report.json").display()
     );
     Ok(())

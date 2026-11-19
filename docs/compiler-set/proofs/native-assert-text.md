@@ -1,5 +1,12 @@
 # Original-AST assertion text extension
 
+This record preserves the original experiments and witnesses. The current
+sole-goal cleanup removes the diagnostic-driven inference/retry pipeline while
+retaining its bounded assertion printer in
+`crates/lustr-native-core/src/native_assertion_text.rs` for narrow native
+qualification. Preserving this helper does not restore the retired worker or
+qualify a general complementary compiler.
+
 The array-repeat candidate binds `Expr::ArrayRepeat` value/length IDs to exact
 original spans and the bracket/semicolon tokens. It emits the repeat indentation
 box, value expression, semicolon break and length expression. The count is the

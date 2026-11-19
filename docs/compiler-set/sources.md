@@ -11,6 +11,12 @@ the [exclusive coverage contract](exclusive-coverage-contract.md).
 | Declared Lustr Rust SDK | `upstream/bluefe-core.pin`, source `5b7b37aefcb5b2fba3c2392bc9065b9e4602d494` | Exact SDK/tool identities; a full SDK dependency is not selective complementary implementation. |
 | Audited Lustr candidate | PR #32 `cb0721d49be95ec3f34a113c2354bc9d2a38bbf3` | Retained native implementation, partial source/data reuse and shared/mixed experiments. Prohibited retries and broad consumer-analysis dependency remain at this snapshot. |
 | Fresh Rust research | `rust-lang/rust`, `b0b600668bb9b4a897e2299b0a44289d42276545` | Reviewed current interfaces and CI/history. Research does not update the protected donor pin or authorize mixed semantic versions. |
+| Later same-day research | Rust `c884ecfbabb04b04fa5054dafc67ec258ecde745`; Lust `240e08d91d4aed0299639f6f11fd522912b248f9` | Refreshed CI history and capability call graph in the [support/cost review](exclusive-coverage-mathematics.md). Both protected Lustr pins remain unchanged. |
+
+The [sole-goal audit](sole-goal-audit.md) records the subsequent source cleanup
+against PR #33 input `d1328bc2`. Its verification repeats the blueFe/Rust
+`compiler`, `library` and `src` tree comparison and binds the actual compiled
+product inputs. Complete source equality does not qualify Lustr's complement.
 
 The [Lust review](upstream-lust-review-2026-11-19.md) and
 [Rust review](upstream-rust-review-2026-11-19.md) contain primary links and

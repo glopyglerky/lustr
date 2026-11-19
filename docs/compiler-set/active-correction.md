@@ -7,6 +7,14 @@ controlling direction, merged through [PR #31](https://github.com/glopyglerky/lu
 Refresh the current PR head and checks before continuing. Earlier PRs are
 preserved sources and evidence, not competing product directions.
 
+The [sole-goal audit after d1328bc2](sole-goal-audit.md) is the latest
+follow-through. It removes latent diagnostic-driven worker/ABI paths and old
+launchers, isolates product and bounded qualification builds, checks effective
+dependency features, connects upstream capability probes to CI, and requires
+relative evidence for future near-stock claims. Its source-bound
+[verification](evidence/sole-goal-audit-20261119/verification.json) is separate
+from the earlier construction records below. The full compiler remains unfinished.
+
 ## Published code and actual scope
 
 The first published correction is
