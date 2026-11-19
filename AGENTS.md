@@ -45,17 +45,23 @@ passing compatibility tests and historical release assets cannot change this goa
 ## Establish source and evidence before continuing
 
 The pre-correction default implementation was `next` at
-`7cea76c9d3adc587b54ccff168fe07efafd40309`. The audited continuation was
+`7cea76c9d3adc587b54ccff168fe07efafd40309`. The audited predecessor is
 [PR #32](https://github.com/glopyglerky/lustr/pull/32) at
-`cb0721d49be95ec3f34a113c2354bc9d2a38bbf3`. The latter retains prohibited public
-retry paths and a mixed path with whole-consumer Rust analysis. It is evidence
-and a source of reusable fixes, not the completed architecture. The governing
-documentation landed through [PR #31](https://github.com/glopyglerky/lustr/pull/31)
-at `2fbafe391fdf3d0a59b8cc24e9b0f55be3570cbd`. This implementation correction
-removes the conflicting routes; its [cleanup record](docs/compiler-set/exclusive-coverage-cleanup.md)
-states the actual changes, evidence and unfinished coverage. Refresh live heads
-before work. Do not treat either a documentation merge or route removal as
-full compiler qualification.
+`cb0721d49be95ec3f34a113c2354bc9d2a38bbf3`. That snapshot retains prohibited
+retry paths and whole-consumer Rust analysis. It is evidence and a source of
+reusable fixes, not the completed architecture.
+
+The sole active implementation correction is
+[PR #33](https://github.com/glopyglerky/lustr/pull/33), targeting `next`. Its
+[cleanup record](docs/compiler-set/exclusive-coverage-cleanup.md) states the
+removed routes, actual verification and unfinished coverage. The
+[active correction record](docs/compiler-set/active-correction.md) binds the
+published source and preserved PR history. The governing contract landed through
+[PR #31](https://github.com/glopyglerky/lustr/pull/31), and
+[PR #34](https://github.com/glopyglerky/lustr/pull/34) placed this single lane in
+the default-branch instructions. Refresh live heads before work. Do not resume
+a superseded PR as a competing architecture or treat documentation, route
+removal or bounded tests as full compiler qualification.
 
 Use the [retained-work disposition](docs/compiler-set/retained-work-disposition.md)
 to preserve useful source and failed evidence while removing conflicting active

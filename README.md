@@ -25,7 +25,7 @@ compiler described above.**
 | Pre-correction default `next`, [7cea76c9](https://github.com/glopyglerky/lustr/tree/7cea76c9d3adc587b54ccff168fe07efafd40309) | Earlier native-first entry, library retry and full-Rust compatibility paths. It predates the scalar mixed bridge. |
 | Reviewed [PR #32](https://github.com/glopyglerky/lustr/pull/32), [cb0721d4](https://github.com/glopyglerky/lustr/tree/cb0721d49be95ec3f34a113c2354bc9d2a38bbf3) | Retained native work, useful correctness repairs, partial shared semantic work, scalar composition and genuine Rust artifacts. Public retries and whole-consumer Rust analysis still conflict with the required design. |
 | Governing documentation, merged [PR #31](https://github.com/glopyglerky/lustr/pull/31), [2fbafe39](https://github.com/glopyglerky/lustr/tree/2fbafe391fdf3d0a59b8cc24e9b0f55be3570cbd) | One controlling direction, explicit selective-import and ownership rules, upstream source/history research, and reconciled active plans. This merge changed no product source. |
-| This [implementation correction](docs/compiler-set/exclusive-coverage-cleanup.md) | Removes public retries, the whole-program mixed launcher and whole-compiler packaging. Adds an explicit partial import inventory and guarded native package boundaries. The full complement and speed qualification remain unfinished. |
+| Current [implementation correction](docs/compiler-set/exclusive-coverage-cleanup.md), [PR #33](https://github.com/glopyglerky/lustr/pull/33) | Removes public retries, the whole-program mixed launcher and whole-compiler packaging. Adds the partial import inventory and guarded native package boundaries; repairs Cargo discovery, selection caching and environment preservation. The full complement and speed qualification remain unfinished. |
 
 A narrow bridge cannot redefine Lust's supported subset. Work Lust can compile
 but the bridge cannot represent is an integration gap. It must not quietly move
@@ -42,6 +42,7 @@ history and historical evidence remain intact.
 | Document | Purpose |
 | --- | --- |
 | [Exclusive coverage contract](docs/compiler-set/exclusive-coverage-contract.md) | Sole goal, exact work sets, import closure, ownership and performance mathematics. |
+| [Active correction](docs/compiler-set/active-correction.md) | One current implementation PR, exact evidence, preserved history and remaining work. |
 | [Architecture plan](docs/compiler-set/architecture-plan.md) | Implementation order and architecture acceptance. |
 | [Design checkpoint](docs/compiler-set/design.md) | Real source state, reusable interfaces and remaining defects. |
 | [Completion checklist](docs/compiler-set/completion-checklist.md) | One work list with observable completion conditions. |
