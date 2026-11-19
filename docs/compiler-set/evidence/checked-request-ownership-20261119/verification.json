@@ -1,0 +1,93 @@
+{
+  "schema": "lustr.checked-native-request-verification",
+  "version": 1,
+  "parent_commit": "d4fab3bbf0d8e29fd33b0c962f0401babe95e3b1",
+  "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "target": "x86_64-unknown-linux-gnu",
+  "native_build": "f2881546e0d2d1a3",
+  "test_binary_sha256": "615b7d330dc00191ffe4ea46e8c39a6e95ff79365f24c2459480122ea2a317eb",
+  "source_files": [
+    {
+      "path": "compiler/native/src/driver/compile.rs",
+      "sha256": "726579e8f8b7787c391017740748ecc7cbb2fc12eb61e8c216a550540af2aef0"
+    },
+    {
+      "path": "compiler/native/src/driver/mod.rs",
+      "sha256": "338106714a652ddebb1072cc068121da43fe8c5230e0dee8e49732dda7645aa4"
+    },
+    {
+      "path": "compiler/native/src/ir.rs",
+      "sha256": "7b482b466bceae5579c86ca0b0be4921cef66545952dbd5546f22431bbf9c216"
+    },
+    {
+      "path": "compiler/native/src/ty/mod.rs",
+      "sha256": "ddb29a473d2eccf624bdd9c9ec889709ea78c238a4286b34700e00cf0483f654"
+    }
+  ],
+  "checked_request_controls": {
+    "passed": 7,
+    "failed": 0,
+    "independent_rerun_passed": 7,
+    "scope": [
+      "Original checked IR and local allocations survive preparation without cloning.",
+      "Captured source emits successfully after the file is replaced by invalid Rust; no second frontend pass occurs.",
+      "An unchanged retained build checks zero bodies; a one-body edit checks one.",
+      "Generic predicate environments remain the exact original slice.",
+      "Cold and warm abandoned preparations preserve artifacts; reverted and subsequent source builds run correctly.",
+      "Invalid source is rejected before emission and preserves the last executable.",
+      "Read/session failures and a real link failure remain failures; a later native request recovers.",
+      "Structs, references, a generic instance and a closure execute through ordinary native generation."
+    ]
+  },
+  "local_tests": {
+    "native_driver": {
+      "passed": 133,
+      "failed": 0,
+      "includes": "The seven owning-request tests, thirteen mixed admission/object tests and existing retained driver tests."
+    },
+    "native_codegen": {
+      "passed": 34,
+      "failed": 0
+    },
+    "native_types": {
+      "passed": 33,
+      "failed": 0
+    },
+    "native_core_native_inference_cargo_check": {
+      "passed": true
+    }
+  },
+  "qualification_environment": {
+    "cargo": "matching pinned SDK, on PATH",
+    "__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT": "1",
+    "LUST_NO_CACHE": "1"
+  },
+  "preserved_nonpassing_runs": [
+    {
+      "name": "initial owning API test run",
+      "passed": 3,
+      "failed": 3,
+      "reason": "The tests incorrectly equated has_out=true with emitted code. Generic templates intentionally have default empty FnOut and has_out=true. Tests were changed to inspect actual generated code; production code was unchanged."
+    },
+    {
+      "name": "driver group without Cargo on PATH",
+      "passed": 132,
+      "failed": 1,
+      "reason": "Unchanged buildscript harness could not launch cargo."
+    },
+    {
+      "name": "driver group with new Cargo build layout",
+      "passed": 132,
+      "failed": 1,
+      "reason": "Unchanged buildscript harness expected the previous output-file location. The declared compatibility layout environment restores its existing contract."
+    }
+  ],
+  "limits": [
+    "This is the ordinary native prepare/emit ownership boundary, not a complete cross-implementation partitioner.",
+    "Standalone status-1 whole-source retry remains in src/main.rs.",
+    "Native frontend rejections still do not distinguish invalid Rust from missing native support; they never become complementary outcomes in this API.",
+    "No extra Rust frontend or new source classifier was added.",
+    "Imported FnAbi/layout integration and typed deferred semantic requests remain subsequent work.",
+    "No latency claim or new platform qualification is made."
+  ]
+}

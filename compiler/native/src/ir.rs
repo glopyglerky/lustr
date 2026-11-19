@@ -291,9 +291,9 @@ pub struct LocalDecl {
 }
 
 /// Local 0 is the return value. Locals `1..=arg_count` are the parameters.
-pub struct Body<'g> {
+pub struct BodyData<T> {
     pub fn_id: LocalDefId,
-    pub tys: Tys<'g>,
+    pub tys: T,
     pub locals: Vec<LocalDecl>,
     pub blocks: Vec<BlockData>,
     pub arg_count: usize,
@@ -373,6 +373,15 @@ pub struct Body<'g> {
     /// keeps its own `unwind` successor. Codegen checks for a new
     /// exception after each such statement (docs/ARCH.md section 7.2).
     pub stmt_unwind: Vec<(Bb, u32, Bb)>,
+}
+
+pub type Body<'g> = BodyData<Tys<'g>>;
+
+impl<T> BodyData<T> {
+    pub(crate) fn map_types<U>(self, f: impl FnOnce(T) -> U) -> BodyData<U> {
+        let Self { fn_id, tys, locals, blocks, arg_count, reads, lower_errs, annotations, promoted, index_exprs, pat_back_index, pat_front_index, pat_subslice, dyn_coerce, false_edges, opaque_locals, opaque_nodrop, stmt_unwind } = self;
+        BodyData { tys: f(tys), fn_id, locals, blocks, arg_count, reads, lower_errs, annotations, promoted, index_exprs, pat_back_index, pat_front_index, pat_subslice, dyn_coerce, false_edges, opaque_locals, opaque_nodrop, stmt_unwind }
+    }
 }
 
 impl Body<'_> {

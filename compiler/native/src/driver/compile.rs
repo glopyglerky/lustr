@@ -2613,11 +2613,161 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
 }
 
 pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&dyn super::PhaseObserver>) -> Response {
+    match prepare_observed(req, session, observer) {
+        Preparation::Ready(prepared) => prepared.emit_unobserved(),
+        Preparation::Complete(response) | Preparation::Rejected(response)
+        | Preparation::Failed(response) | Preparation::Complementary(response) => response,
+    }
+}
+
+/// Preparation either owns the exact passing native state or has already
+/// finished before that boundary. A native rejection does not establish that
+/// Rust is invalid or complementary; only the existing mixed capability proof
+/// can produce Complementary. Neither rejection nor failure permits a retry.
+pub enum Preparation<'a> {
+    Ready(PreparedRequest<'a>),
+    Complete(Response),
+    Rejected(Response),
+    Failed(Response),
+    Complementary(Response),
+}
+
+impl Preparation<'_> {
+    pub(super) fn finished(response: Response) -> Self {
+        match (response.code, response.mixed) {
+            (0, Some(crate::protocol::MixedOutcome::Complementary)) => Self::Complementary(response),
+            (0, _) => Self::Complete(response),
+            (1, _) => Self::Rejected(response),
+            _ => Self::Failed(response),
+        }
+    }
+}
+
+/// One native request between checking and emission. There is no Clone and no
+/// constructor outside this module. The session and request remain exclusively
+/// borrowed, so no later request can mutate the retained facts before emission.
+/// Program, IR, local type arenas and read sets are moved here, never rebuilt.
+pub struct PreparedRequest<'a> {
+    request: &'a Request,
+    session: &'a mut Session,
+    state: Option<CheckedRequest>,
+}
+
+struct OwnedBody {
+    body: ir::BodyData<crate::ty::OwnedTys>,
+    environment: Option<LocalDefId>,
+}
+
+impl OwnedBody {
+    fn take(body: ir::Body<'_>, program: &collect::Program) -> Result<Self, &'static str> {
+        if !std::ptr::eq(body.tys.global, &program.tys) {
+            return Err("checked body belongs to another global type store");
+        }
+        let environment = if body.tys.env.is_empty() {
+            None
+        } else {
+            let expected = program.gx.fn_scopes.get(body.fn_id.0 as usize)
+                .ok_or("checked body has no owning predicate environment")?;
+            if !std::ptr::eq(body.tys.env, expected.env.as_slice()) {
+                return Err("checked body belongs to another predicate environment");
+            }
+            Some(body.fn_id)
+        };
+        Ok(Self { body: body.map_types(crate::ty::Tys::detach), environment })
+    }
+
+    fn attach(self, program: &collect::Program) -> ir::Body<'_> {
+        // Both the program and this body are privately owned by CheckedRequest;
+        // no mutation or substitution can occur between take and attach.
+        let env = self.environment.map_or(&[][..], |id| program.gx.fn_scopes[id.0 as usize].env.as_slice());
+        self.body.map_types(|tys| tys.attach(&program.tys, env))
+    }
+}
+
+struct CheckedRequest {
+    program: collect::Program,
+    results: Vec<(Option<OwnedBody>, Vec<Diag>)>,
+    reemit: Vec<(usize, OwnedBody)>,
+    map: SourceMap,
+    source: String,
+    path: String,
+    work: Vec<usize>,
+    fn_count: usize,
+    fn_lines_all: Vec<u32>,
+    body_hashes_all: Vec<u64>,
+    inst_ids: Vec<(u32, u64)>,
+    mode: &'static str,
+    check_fp: Option<u64>,
+    verified: u64,
+    reads_reused: usize,
+    reads_invalidated: usize,
+    reemitted: usize,
+    mixed: bool,
+    release: bool,
+    foreign: bool,
+    visits: Visits,
+    timer: Timer,
+}
+
+impl PreparedRequest<'_> {
+    pub fn request(&self) -> &Request {
+        self.request
+    }
+
+    /// Actual semantic facts for this request, held immutable until emission.
+    pub fn program(&self) -> &collect::Program {
+        &self.state.as_ref().expect("checked request is consumed").program
+    }
+
+    /// Body ids checked in this invocation. Other passing bodies were reused
+    /// only after the existing native dependency-read validation.
+    pub fn checked_functions(&self) -> &[usize] {
+        &self.state.as_ref().expect("checked request is consumed").work
+    }
+
+    pub fn source_map(&self) -> &SourceMap {
+        &self.state.as_ref().expect("checked request is consumed").map
+    }
+
+    pub fn source(&self) -> &str {
+        &self.state.as_ref().expect("checked request is consumed").source
+    }
+
+    /// Consume the same checked state once. A check finishes without emitting;
+    /// a build enters the original generator, object builder and linker.
+    pub fn emit(mut self) -> Response {
+        let state = self.state.take().expect("checked request is consumed");
+        let response = super::mixed_response(self.request, emit_checked(self.request, self.session, state));
+        if super::item_oracle::on() {
+            super::item_oracle::compare_response(self.request, self.session, &response);
+        }
+        response
+    }
+
+    fn emit_unobserved(mut self) -> Response {
+        let state = self.state.take().expect("checked request is consumed");
+        emit_checked(self.request, self.session, state)
+    }
+}
+
+impl Drop for PreparedRequest<'_> {
+    fn drop(&mut self) {
+        if let Some(mut state) = self.state.take() {
+            // Abandoning a prepared request cannot emit or replace artifacts.
+            // Preserve its passing semantic state for the session's next request.
+            drop((state.results, state.reemit));
+            state.program.verified = state.verified;
+            super::patch::keep(&mut self.session.front, state.program);
+        }
+    }
+}
+
+pub(super) fn prepare_observed<'a>(req: &'a Request, session: &'a mut Session, observer: Option<&dyn super::PhaseObserver>) -> Preparation<'a> {
     let phase_id = observer.map(|_| super::PhaseId::next());
     let mut t = Timer::new();
     crate::driver::cache::begin_build(&req.file);
     if req.session != session.key {
-        return Response {
+        return Preparation::finished(Response {
             stderr: format!(
                 "error: internal: request routed to the wrong session\n  request: {}\n  session: {}\n",
                 req.session.describe(),
@@ -2625,16 +2775,16 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
             ),
             code: 3,
             ..Default::default()
-        };
+        });
     }
     // A lib target has no `main` to link and lust has no rlib format: `check --lib` works,
     // `build`/`run --lib` is a clear error (Cargo release builds still build libs).
     if req.session.krate.target_kind == "lib" && !req.harness && !matches!(req.cmd, crate::protocol::Cmd::Check) {
-        return Response {
+        return Preparation::finished(Response {
             stderr: "error: lust builds bin targets only: use `lust check --lib` for a lib target\n".into(),
             code: 1,
             ..Default::default()
-        };
+        });
     }
     // Lust links for the host target only (tcc). A named non-host triple
     // is a clear error for a link, not a host binary under a foreign
@@ -2653,19 +2803,19 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
     // product; no link runs).
     let cc_build = req.cc && (triple.is_empty() || crate::resolve::cfg::CfgEnv::is_release_target(triple));
     if foreign && !foreign_check && !cc_build && req.emit_c.is_none() {
-        return Response {
+        return Preparation::finished(Response {
             stderr: format!(
                 "error: unsupported target `{triple}`: lust builds for the host target `{}` today\n",
                 crate::protocol::host_triple()
             ),
             code: 2,
             ..Default::default()
-        };
+        });
     }
     let path = req.file.to_string_lossy().to_string();
     let mut src = match std::fs::read_to_string(&req.file) {
         Ok(s) => s,
-        Err(e) => return Response { stderr: format!("error: cannot read {path}: {e}\n"), code: 2, ..Default::default() },
+        Err(e) => return Preparation::finished(Response { stderr: format!("error: cannot read {path}: {e}\n"), code: 2, ..Default::default() }),
     };
     // The crate identity for stable defs comes from the session's key (its
     // package and target identity, `Session::crate_ids`). For a single-file
@@ -2781,7 +2931,7 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
     if needs.any() {
         match splice_std(&mut src, std_cache, needs) {
             Ok(sp) => (std_ranges, std_routes, std_methods) = (sp.ranges, sp.routes, sp.methods),
-            Err(resp) => return resp,
+            Err(resp) => return Preparation::finished(resp),
         }
         t.lap("std load+splice");
     }
@@ -2790,7 +2940,7 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
     let (map, mut changed, mut mention_only, mut const_fn_changed, fn_count, mode, fn_lines_all, body_hashes_all, resolved_tables) = if use_resolver {
         match resolved_setup(req, front, caches, std_cache, &src, root_lexed, route_std_mods, crate_ids, &mut std_ranges, &mut std_routes, &mut std_methods, &mut t, &mut visits, reusable) {
             Ok(x) => x,
-            Err(resp) => return resp,
+            Err(resp) => return Preparation::finished(resp),
         }
     } else {
     // Lex and scan in chunks of whole items, in parallel. Only the region an edit touched is
@@ -2935,7 +3085,7 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
     // A macro error in a chunk is the answer, not a lexing fallback.
     if let Some(Err(d)) = fresh.iter().find(|l| matches!(l, Err(d) if d.code.starts_with("L08"))) {
         let mut d = d.clone();
-        return errors(std::slice::from_mut(&mut d), &map, &src, req);
+        return Preparation::finished(errors(std::slice::from_mut(&mut d), &map, &src, req));
     }
     let split_inner_attr = ranges.len() > 1
         && (reused.iter().flatten().any(|c| c.inner_attr) || fresh.iter().flatten().any(|&(_, _, _, inner_attr)| inner_attr));
@@ -2951,7 +3101,7 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
         // file has an inner attribute (`has_inner_attr`): lex the whole file. Its error is the
         // answer; if it lexes, compile as one chunk. Never panic.
         match lexer::lex(&src, ROOT_FILE, 0, &front.interner).and_then(|l| expand_tokens(front, l, &req.file, &src, test_mode, req.session.profile, &req.session)) {
-            Err(mut d) => return errors(std::slice::from_mut(&mut d), &map, &src, req),
+            Err(mut d) => return Preparation::finished(errors(std::slice::from_mut(&mut d), &map, &src, req)),
             Ok((whole, deps)) => {
                 let mut sc = scan::scan(&whole);
                 fold_fn_text(&mut sc, &whole, &src);
@@ -3134,7 +3284,7 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
                     front.chunks[fn_at[i].0].items = None;
                 }
                 front.chunks_blanked = true;
-                return errors(&mut [d], &map, &src, req);
+                return Preparation::finished(errors(&mut [d], &map, &src, req));
             }
             for (&i, (body_ast, body, exprs, pats)) in changed.iter().zip(parsed) {
                 let before = (front.ast.exprs.len() as u32, front.ast.pats.len() as u32, front.ast.blocks.len() as u32);
@@ -3207,7 +3357,7 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
         if let Some(Err(d)) = parsed.iter().find(|p| p.is_err()) {
             let d = d.clone();
             front.chunks_blanked = old_len > 0;
-            return errors(&mut [d], &map, &src, req);
+            return Preparation::finished(errors(&mut [d], &map, &src, req));
         }
         let mut new_asts: FxMap<usize, Ast> = todo.iter().copied().zip(parsed.into_iter().map(|p| p.unwrap())).collect();
         // Splice every per-chunk list in chunk order: a re-parsed chunk
@@ -3283,7 +3433,7 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
             Ok(c) => c,
             Err(e) => {
                 front.env_hash = None;
-                return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
+                return Preparation::finished(Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() });
             }
         }
     } else {
@@ -3317,14 +3467,14 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
                     Ok((w, _deps)) => w,
                     Err(mut d) => {
                         front.env_hash = None;
-                        return errors(std::slice::from_mut(&mut d), &map, &src, req);
+                        return Preparation::finished(errors(std::slice::from_mut(&mut d), &map, &src, req));
                     }
                 };
             match parser::parse(&whole, &front.interner, &front.known) {
                 Ok(a) => a,
                 Err(d) => {
                     front.env_hash = None;
-                    return errors(&mut [d], &map, &src, req);
+                    return Preparation::finished(errors(&mut [d], &map, &src, req));
                 }
             }
         };
@@ -3335,7 +3485,7 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
             Ok(c) => c,
             Err(e) => {
                 front.env_hash = None;
-                return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
+                return Preparation::finished(Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() });
             }
         }
     };
@@ -3728,7 +3878,7 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
             front.last_visits.clear();
             visits.render(&mut front.last_visits);
             log_visits(&front.last_visits);
-            return errors(&mut ds, &map, &src, req);
+            return Preparation::finished(errors(&mut ds, &map, &src, req));
         }
     };
     // Every body of a generic program rechecks when the trait system
@@ -3819,11 +3969,11 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
                 }
                 None => {
                     front.env_hash = None;
-                    return Response {
+                    return Preparation::finished(Response {
                         stderr: format!("error: lust std load failed: spliced std fn `{}` is missing after collect\n", def.path.join("::")),
                         code: 3,
                         ..Default::default()
-                    };
+                    });
                 }
             }
         }
@@ -3834,7 +3984,7 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
     if program.fns.len() < fn_count {
         // The scanner and the parser disagree (only possible with unusual syntax). Start over.
         front.env_hash = None;
-        return Response { stderr: "error: internal: function count mismatch; run again\n".into(), code: 3, ..Default::default() };
+        return Preparation::finished(Response { stderr: "error: internal: function count mismatch; run again\n".into(), code: 3, ..Default::default() });
     }
     // Mono instance slots (docs/ARCH.md section 4.2; W-TRAITS-CORE
     // through W-DRIVER): collect appends materialized instances
@@ -3852,7 +4002,7 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
             let disk = program.disk_id(LocalDefId(i as u32));
             if let Err(c) = def::insert_path(&mut front.slot_paths, disk, &format!("instance#{}", disk.hash.0)) {
                 front.env_hash = None;
-                return Response { stderr: format!("error: {c}\n"), code: 3, ..Default::default() };
+                return Preparation::finished(Response { stderr: format!("error: {c}\n"), code: 3, ..Default::default() });
             }
             let slot = match front.slot_of.get(&disk) {
                 Some(&slot) => slot,
@@ -4468,8 +4618,42 @@ pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&
                 }
             }
         }
-        return resp;
+        return Preparation::finished(resp);
     }
+    // Move the lowered arenas and read sets out of their temporary Program
+    // borrows. This is not the structural IR cache: ids and allocations stay
+    // exactly as checked, and only this same Program can reattach the bodies.
+    let owned_results = results.into_iter().map(|(body, diagnostics)| {
+        body.map(|body| OwnedBody::take(body, &program)).transpose().map(|body| (body, diagnostics))
+    }).collect::<Result<Vec<_>, _>>();
+    let owned_reemit = reemit.into_iter().map(|(id, body)| OwnedBody::take(body, &program).map(|body| (id, body)))
+        .collect::<Result<Vec<_>, _>>();
+    let (results, reemit) = match (owned_results, owned_reemit) {
+        (Ok(results), Ok(reemit)) => (results, reemit),
+        (Err(error), _) | (_, Err(error)) => return Preparation::finished(Response {
+            code: 3, stderr: format!("error: checked request ownership failed: {error}\n"), ..Default::default()
+        }),
+    };
+    let state = CheckedRequest {
+        program, results, reemit, map, source: src, path, work, fn_count, fn_lines_all, body_hashes_all,
+        inst_ids, mode, check_fp, verified, reads_reused, reads_invalidated, reemitted, mixed, release,
+        foreign, visits, timer: t,
+    };
+    Preparation::Ready(PreparedRequest { request: req, session, state: Some(state) })
+}
+
+fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> Response {
+    let CheckedRequest {
+        mut program, results, reemit, map, source: src, path, work, fn_count, fn_lines_all, body_hashes_all,
+        inst_ids, mode, check_fp, verified, reads_reused, reads_invalidated, reemitted, mixed, release,
+        foreign, visits, timer: mut t,
+    } = state;
+    let results: Vec<_> = results.into_iter().map(|(body, diagnostics)| (body.map(|b| b.attach(&program)), diagnostics)).collect();
+    let reemit: Vec<_> = reemit.into_iter().map(|(id, body)| (id, body.attach(&program))).collect();
+    let Session { front, caches, disk_cache, .. } = session;
+    let leak_at_exit = caches.leak_at_exit;
+    let slot = |i: usize| front.fn_slot[i] as usize;
+    let scan_of = |_: &Front, i: usize| (body_hashes_all[i], fn_lines_all[i]);
     // The mixed bridge admits work from the same checked/lowered state that
     // codegen consumes below. Ordinary checks, including the early NoChange
     // return, do not allocate a mixed plan or compute release names.
@@ -6622,6 +6806,225 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
             run_args: None,
             harness: false, cc: false,
             client: Default::default(),
+        }
+    }
+
+    mod checked_request {
+        use super::*;
+        use std::sync::{Mutex, atomic::{AtomicUsize, Ordering}};
+
+        struct Fixture { root: PathBuf, request: Request, session: Session }
+        impl Fixture {
+            fn new(source: &str, persistent: bool) -> Self {
+                static NEXT: AtomicUsize = AtomicUsize::new(0);
+                let root = std::env::temp_dir().join(format!("lust-checked-request-{}-{}", std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)));
+                std::fs::create_dir(&root).unwrap();
+                let file = root.join("input.rs");
+                std::fs::write(&file, source).unwrap();
+                let key = crate::protocol::SessionKey::synthetic(&file, false);
+                let request = Request { cmd: Cmd::Build, out: root.join("program"), ..req_for(key.clone()) };
+                let mut session = Session::new(root.join("objects"), persistent, key);
+                session.caches.output = crate::driver::OutputKind::Standalone;
+                Self { root, request, session }
+            }
+        }
+        impl Drop for Fixture {
+            fn drop(&mut self) {
+                if !std::thread::panicking() { let _ = std::fs::remove_dir_all(&self.root); }
+            }
+        }
+        fn ready(preparation: Preparation<'_>) -> PreparedRequest<'_> {
+            match preparation {
+                Preparation::Ready(prepared) => prepared,
+                Preparation::Complete(r) | Preparation::Rejected(r) | Preparation::Failed(r) | Preparation::Complementary(r) =>
+                    panic!("expected an owned checked request, got {}: {}", r.code, r.stderr),
+            }
+        }
+        fn assert_run(path: &Path, expected: &str) {
+            let output = run_bin(path);
+            assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+            assert_eq!(String::from_utf8_lossy(&output.stdout), expected);
+            assert!(output.stderr.is_empty());
+        }
+        const SOURCE: &str = "struct Pair { a:i64, b:i64 }\nfn id<T:Copy>(x:T)->T{x}\nfn sum(p:&Pair)->i64{p.a+p.b}\nfn value()->i64{41}\nfn main(){let p=Pair{a:value(),b:1};let f=|x:i64|x+1;println!(\"{}\",id(sum(&p))+f(1));}\n";
+
+        #[derive(Default)]
+        struct Probe {
+            phases: AtomicUsize,
+            checks: AtomicUsize,
+            lowered: Mutex<Vec<(usize, usize, usize)>>,
+        }
+        impl crate::driver::PhaseObserver for Probe {
+            fn prepared(&self, _: crate::driver::Prepared<'_>) { self.phases.fetch_add(1, Ordering::Relaxed); }
+            fn checked(&self, _: crate::driver::Prepared<'_>, _: LocalDefId, _: &crate::check::Checked<'_>, _: &[Diag]) {
+                self.checks.fetch_add(1, Ordering::Relaxed);
+            }
+            fn lowered(&self, _: crate::driver::Prepared<'_>, function: LocalDefId, body: &ir::Body<'_>, diagnostics: &[Diag]) {
+                assert!(diagnostics.is_empty());
+                self.lowered.lock().unwrap().push((function.0 as usize, body.blocks.as_ptr() as usize, body.locals.as_ptr() as usize));
+            }
+        }
+
+        #[test]
+        fn owns_checked_snapshot_and_emits_without_another_frontend_pass() {
+            for persistent in [false, true] {
+                let mut f = Fixture::new(SOURCE, persistent);
+                let probe = Probe::default();
+                let prepared = ready(prepare_observed(&f.request, &mut f.session, Some(&probe)));
+                assert_eq!(prepared.source(), SOURCE);
+                assert_eq!(prepared.request().out, f.request.out);
+                assert!(!f.request.out.exists(), "preparation did not link");
+                assert!(prepared.session.caches.out.iter().all(|out| !out.has_code()), "preparation did not generate C");
+                let checks = probe.checks.load(Ordering::Relaxed);
+                assert!(checks >= 5, "the aggregate, reference, generic instance and closure were checked");
+                assert_eq!(probe.phases.load(Ordering::Relaxed), 1);
+                assert_eq!(prepared.checked_functions().len(), checks);
+                for (id, blocks, locals) in probe.lowered.lock().unwrap().iter() {
+                    let state = prepared.state.as_ref().unwrap();
+                    let at = state.work.iter().position(|f| f == id).unwrap();
+                    let body = &state.results[at].0.as_ref().unwrap().body;
+                    assert_eq!(body.blocks.as_ptr() as usize, *blocks, "IR allocation moved without cloning");
+                    assert_eq!(body.locals.as_ptr() as usize, *locals, "local allocation moved without cloning");
+                }
+                // The continuation owns a snapshot. If emission reparsed/rechecked,
+                // this deliberately invalid replacement would prevent the build.
+                std::fs::write(&f.request.file, "fn main(){let x:u32=true;}\n").unwrap();
+                let result = prepared.emit();
+                assert_eq!(result.code, 0, "{}", result.stderr);
+                assert_eq!(probe.checks.load(Ordering::Relaxed), checks);
+                assert_eq!(probe.phases.load(Ordering::Relaxed), 1);
+                assert_run(&f.request.out, "44\n");
+
+                std::fs::write(&f.request.file, SOURCE.replace("value()->i64{41}", "value()->i64{43}")).unwrap();
+                let result = crate::driver::compile(&f.request, &mut f.session);
+                assert_eq!(result.code, 0, "{}", result.stderr);
+                assert_run(&f.request.out, "46\n");
+            }
+        }
+
+        #[test]
+        fn retains_warm_edits_and_rejects_invalid_source_before_emission() {
+            let original = "fn value()->i64{41}\nfn main(){println!(\"{}\",value());}\n";
+            let mut f = Fixture::new(original, true);
+            let first = ready(crate::driver::prepare(&f.request, &mut f.session));
+            assert_eq!(first.checked_functions().len(), 2);
+            assert_eq!(first.emit().code, 0);
+            assert_run(&f.request.out, "41\n");
+            let no_change = ready(crate::driver::prepare(&f.request, &mut f.session));
+            assert!(no_change.checked_functions().is_empty(), "unchanged native bodies retained");
+            assert_eq!(no_change.emit().code, 0);
+            std::fs::write(&f.request.file, original.replace("{41}", "{42}")).unwrap();
+            let edit = ready(crate::driver::prepare(&f.request, &mut f.session));
+            assert_eq!(edit.checked_functions().len(), 1, "only the edited body is checked");
+            assert_eq!(edit.emit().code, 0);
+            assert_run(&f.request.out, "42\n");
+            let previous = std::fs::read(&f.request.out).unwrap();
+            std::fs::write(&f.request.file, original.replace("{41}", "{true}")).unwrap();
+            match crate::driver::prepare(&f.request, &mut f.session) {
+                Preparation::Rejected(r) => assert_eq!(r.code, 1),
+                _ => panic!("invalid source must not produce a prepared emission or complementary result"),
+            }
+            assert_eq!(std::fs::read(&f.request.out).unwrap(), previous);
+            std::fs::write(&f.request.file, original.replace("{41}", "{43}")).unwrap();
+            assert_eq!(ready(crate::driver::prepare(&f.request, &mut f.session)).emit().code, 0);
+            assert_run(&f.request.out, "43\n");
+        }
+
+        #[test]
+        fn abandoning_preparation_does_not_replace_artifacts_and_session_recovers() {
+            let mut f = Fixture::new(SOURCE, true);
+            std::fs::write(&f.request.out, b"previous artifact").unwrap();
+            let prepared = ready(crate::driver::prepare(&f.request, &mut f.session));
+            drop(prepared);
+            assert_eq!(std::fs::read(&f.request.out).unwrap(), b"previous artifact");
+            assert!(f.session.caches.out.iter().all(|out| !out.has_code()));
+            assert_eq!(ready(crate::driver::prepare(&f.request, &mut f.session)).emit().code, 0);
+            assert_run(&f.request.out, "44\n");
+            let previous = std::fs::read(&f.request.out).unwrap();
+            std::fs::write(&f.request.file, SOURCE.replace("value()->i64{41}", "value()->i64{43}")).unwrap();
+            let edited = ready(crate::driver::prepare(&f.request, &mut f.session));
+            assert!(!edited.checked_functions().is_empty());
+            drop(edited);
+            assert_eq!(std::fs::read(&f.request.out).unwrap(), previous);
+            // Revert after the abandoned edit: retained C from the original
+            // build must not be confused with checked state from the edit.
+            std::fs::write(&f.request.file, SOURCE).unwrap();
+            assert_eq!(ready(crate::driver::prepare(&f.request, &mut f.session)).emit().code, 0);
+            assert_run(&f.request.out, "44\n");
+            std::fs::write(&f.request.file, SOURCE.replace("value()->i64{41}", "value()->i64{45}")).unwrap();
+            drop(ready(crate::driver::prepare(&f.request, &mut f.session)));
+            assert_eq!(ready(crate::driver::prepare(&f.request, &mut f.session)).emit().code, 0);
+            assert_run(&f.request.out, "48\n");
+        }
+
+        #[test]
+        fn prepared_link_failure_is_terminal_and_can_recover_natively() {
+            let mut f = Fixture::new("fn main(){println!(\"42\");}\n", true);
+            let prepared = ready(crate::driver::prepare(&f.request, &mut f.session));
+            std::fs::create_dir(&f.request.out).unwrap();
+            let result = prepared.emit();
+            assert_eq!(result.code, 3, "{}", result.stderr);
+            assert!(f.request.out.is_dir());
+            std::fs::remove_dir(&f.request.out).unwrap();
+            assert_eq!(ready(crate::driver::prepare(&f.request, &mut f.session)).emit().code, 0);
+            assert_run(&f.request.out, "42\n");
+        }
+
+        #[test]
+        fn preserves_the_exact_predicate_environment_without_cloning_it() {
+            let mut f = Fixture::new(SOURCE, true);
+            let prepared = ready(crate::driver::prepare(&f.request, &mut f.session));
+            let program = prepared.program();
+            let (id, scope) = program.gx.fn_scopes.iter().enumerate().find(|(id, scope)|
+                !scope.env.is_empty() && program.interner.get(program.fns[*id].name) == "id").unwrap();
+            let function = LocalDefId(id as u32);
+            let (checked, diagnostics) = check::check_fn(program, function);
+            assert!(diagnostics.is_empty());
+            let body = lower::lower(program, function, checked);
+            assert!(std::ptr::eq(body.tys.env, scope.env.as_slice()));
+            let before = body.blocks.as_ptr();
+            let owned = OwnedBody::take(body, program).unwrap();
+            assert_eq!(owned.environment, Some(function));
+            let body = owned.attach(program);
+            assert!(std::ptr::eq(body.tys.env, scope.env.as_slice()));
+            assert!(std::ptr::eq(body.tys.global, &program.tys));
+            assert_eq!(body.blocks.as_ptr(), before);
+            drop(body);
+            drop(prepared);
+        }
+
+        #[test]
+        fn read_and_session_failures_do_not_create_a_checked_request() {
+            let mut f = Fixture::new(SOURCE, true);
+            std::fs::remove_file(&f.request.file).unwrap();
+            match crate::driver::prepare(&f.request, &mut f.session) {
+                Preparation::Failed(r) => assert_eq!(r.code, 2),
+                _ => panic!("I/O failure must remain a failure"),
+            }
+            f.request.session.krate.package_id.push_str("-different");
+            match crate::driver::prepare(&f.request, &mut f.session) {
+                Preparation::Failed(r) => assert_eq!(r.code, 3),
+                _ => panic!("session mismatch must remain a failure"),
+            }
+            assert!(!f.request.out.exists());
+        }
+
+        #[test]
+        fn check_completion_does_not_generate_and_still_reuses_checked_state() {
+            let mut f = Fixture::new(SOURCE, true);
+            f.request.cmd = Cmd::Check;
+            assert_eq!(ready(crate::driver::prepare(&f.request, &mut f.session)).emit().code, 0);
+            assert!(!f.request.out.exists());
+            assert!(f.session.caches.out.iter().all(|out| !out.has_code()));
+            match crate::driver::prepare(&f.request, &mut f.session) {
+                Preparation::Complete(r) => assert_eq!(r.code, 0),
+                Preparation::Ready(prepared) => {
+                    assert!(prepared.checked_functions().is_empty());
+                    assert_eq!(prepared.emit().code, 0);
+                }
+                _ => panic!("unchanged checked request should reuse its passing native state"),
+            }
+            assert!(!f.request.out.exists());
         }
     }
 

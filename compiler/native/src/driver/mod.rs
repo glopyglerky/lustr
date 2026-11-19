@@ -39,6 +39,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     compile_observed(req, session, None)
 }
 
+pub use compile::{Preparation, PreparedRequest};
+
+/// Prepare an ordinary native request without generating C, objects or a link.
+/// The owned continuation retains the actual checked program and body arenas.
+/// A rejection or failure is terminal for this native request and does
+/// not classify the source as a complementary Rust capability.
+pub fn prepare<'a>(req: &'a Request, session: &'a mut Session) -> Preparation<'a> {
+    if req.session.krate.target_kind == "lustr-mixed-native" && req.session == session.key
+        && let Some(reason) = mixed::request_complement(req) {
+        return Preparation::finished(mixed::complementary(reason));
+    }
+    match compile::prepare_observed(req, session, None) {
+        Preparation::Ready(prepared) => Preparation::Ready(prepared),
+        Preparation::Complete(response) | Preparation::Rejected(response)
+        | Preparation::Failed(response) | Preparation::Complementary(response) => Preparation::finished(mixed_response(req, response)),
+    }
+}
+
 /// An optional, call-borrowed view of the actual body-checking phase. Early
 /// parse/collect failures and cached check answers produce no phase events.
 /// Observations do not grant acceptance or establish cross-request reuse.
