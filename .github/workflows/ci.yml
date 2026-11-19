@@ -93,11 +93,16 @@ jobs:
       - name: Build pinned tcc
         if: steps.tcc.outputs.cache-hit != 'true'
         run: scripts/build-tcc.sh
-      - name: Install rustc 1.99
+      - name: Install the declared Rust SDK and Unicode oracle
         run: |
+          set -euo pipefail
           rustup set profile minimal
-          rustup toolchain install 1.99.0
-          rustup default 1.99.0
+          rustup toolchain install nightly-2026-11-09 --component rustc-dev
+          rustup default nightly-2026-11-09
+          expected_source=$(sed -n 's/^source = "\(.*\)"$/\1/p' ../../upstream/bluefe-core.pin)
+          actual_source=$(rustc -vV | sed -n 's/^commit-hash: //p')
+          test -n "$expected_source"
+          test "$actual_source" = "$expected_source"
       - name: Cache cargo registry
         uses: actions/cache@v4
         with:
@@ -129,6 +134,13 @@ jobs:
           } > "$RUNNER_TEMP/native-gate-identity.txt"
           python3 ../../tools/capture-benchmark-host.py "$RUNNER_TEMP/native-gate-host.json"
           bash scripts/ci.sh 2>&1 | tee "$RUNNER_TEMP/native-gate.log"
+      - name: Compare every Unicode scalar with the declared Rust semantics
+        if: always() && !cancelled()
+        run: |
+          python3 ../../tools/qualify-native-unicode.py \
+            --native-core "$GITHUB_WORKSPACE/compiler/native/target/release/lust-core" \
+            --rustc "$(rustup which rustc)" \
+            --output "$RUNNER_TEMP/native-unicode"
       - name: Check exact erased callback C types and runtime
         if: always() && !cancelled()
         run: |
@@ -174,6 +186,10 @@ jobs:
             ${{ runner.temp }}/native-main-transitions/*.stdout
             ${{ runner.temp }}/native-main-transitions/*.stderr
             ${{ runner.temp }}/host-dependencies.json
+            ${{ runner.temp }}/native-unicode/result.json
+            ${{ runner.temp }}/native-unicode/commands.json
+            ${{ runner.temp }}/native-unicode/*.stdout
+            ${{ runner.temp }}/native-unicode/*.stderr
             ${{ runner.temp }}/native-erased-callbacks/report.json
             ${{ runner.temp }}/native-erased-callbacks/*.stdout
             ${{ runner.temp }}/native-erased-callbacks/*.stderr
@@ -268,11 +284,16 @@ jobs:
       - name: Build pinned tcc
         if: steps.tcc.outputs.cache-hit != 'true'
         run: scripts/build-tcc.sh
-      - name: Install rustc 1.99
+      - name: Install the declared Rust SDK and Unicode oracle
         run: |
+          set -euo pipefail
           rustup set profile minimal
-          rustup toolchain install 1.99.0
-          rustup default 1.99.0
+          rustup toolchain install nightly-2026-11-09 --component rustc-dev
+          rustup default nightly-2026-11-09
+          expected_source=$(sed -n 's/^source = "\(.*\)"$/\1/p' ../../upstream/bluefe-core.pin)
+          actual_source=$(rustc -vV | sed -n 's/^commit-hash: //p')
+          test -n "$expected_source"
+          test "$actual_source" = "$expected_source"
       - name: Cache cargo registry
         uses: actions/cache@v4
         with:
@@ -306,6 +327,13 @@ jobs:
             sha256sum Cargo.toml Cargo.lock build.rs scripts/ci.sh
           } > "$RUNNER_TEMP/native-gate-identity.txt"
           bash scripts/ci.sh 2>&1 | tee "$RUNNER_TEMP/native-gate.log"
+      - name: Compare every Unicode scalar with the declared Rust semantics
+        if: always() && !cancelled()
+        run: |
+          python3 ../../tools/qualify-native-unicode.py \
+            --native-core "$GITHUB_WORKSPACE/compiler/native/target/release/lust-core" \
+            --rustc "$(rustup which rustc)" \
+            --output "$RUNNER_TEMP/native-unicode"
       - name: Check exact erased callback C types and runtime
         if: always() && !cancelled()
         run: |
@@ -350,6 +378,10 @@ jobs:
             ${{ runner.temp }}/native-main-transitions/*.stdout
             ${{ runner.temp }}/native-main-transitions/*.stderr
             ${{ runner.temp }}/host-dependencies.json
+            ${{ runner.temp }}/native-unicode/result.json
+            ${{ runner.temp }}/native-unicode/commands.json
+            ${{ runner.temp }}/native-unicode/*.stdout
+            ${{ runner.temp }}/native-unicode/*.stderr
             ${{ runner.temp }}/native-erased-callbacks/report.json
             ${{ runner.temp }}/native-erased-callbacks/*.stdout
             ${{ runner.temp }}/native-erased-callbacks/*.stderr
