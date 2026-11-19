@@ -74,6 +74,8 @@ jobs:
       DIFFTEST_JOBS: '2'
     steps:
       - uses: actions/checkout@v4
+      - name: Reject service-manager dependencies
+        run: python3 ../../tools/check-host-dependencies.py --output "$RUNNER_TEMP/host-dependencies.json"
       - name: Check actual Unix-address helper bounds with ASan and UBSan
         run: python3 ../../tools/test-native-unix-address.py
       - name: Verify actual native dependency metadata
@@ -127,6 +129,20 @@ jobs:
           } > "$RUNNER_TEMP/native-gate-identity.txt"
           python3 ../../tools/capture-benchmark-host.py "$RUNNER_TEMP/native-gate-host.json"
           bash scripts/ci.sh 2>&1 | tee "$RUNNER_TEMP/native-gate.log"
+      - name: Check exact erased callback C types and runtime
+        if: always() && !cancelled()
+        run: |
+          python3 ../../tools/test-native-erased-callbacks.py \
+            --lust "$GITHUB_WORKSPACE/compiler/native/target/release/lust" \
+            --rustc "$(rustup which rustc)" \
+            --output "$RUNNER_TEMP/native-erased-callbacks"
+      - name: Check erased callbacks with unwind tables
+        if: always() && !cancelled()
+        run: |
+          python3 ../../tools/test-native-erased-callbacks.py \
+            --lust "$GITHUB_WORKSPACE/compiler/native/target/release/lust" \
+            --rustc "$(rustup which rustc)" --unwind-tables \
+            --output "$RUNNER_TEMP/native-erased-callbacks-eh"
       - name: Verify base image lifetime through a real daemon
         run: python3 scripts/test-base-lifetime.py "$GITHUB_WORKSPACE/compiler/native/target/release/lust"
       - name: Require exact runtime results after main return-type edits
@@ -157,6 +173,13 @@ jobs:
             ${{ runner.temp }}/native-main-transitions/report.json
             ${{ runner.temp }}/native-main-transitions/*.stdout
             ${{ runner.temp }}/native-main-transitions/*.stderr
+            ${{ runner.temp }}/host-dependencies.json
+            ${{ runner.temp }}/native-erased-callbacks/report.json
+            ${{ runner.temp }}/native-erased-callbacks/*.stdout
+            ${{ runner.temp }}/native-erased-callbacks/*.stderr
+            ${{ runner.temp }}/native-erased-callbacks-eh/report.json
+            ${{ runner.temp }}/native-erased-callbacks-eh/*.stdout
+            ${{ runner.temp }}/native-erased-callbacks-eh/*.stderr
           if-no-files-found: warn
 
   macos-arm64:
@@ -165,6 +188,8 @@ jobs:
     runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['macos-26'] || 'macos-26' }}
     steps:
       - uses: actions/checkout@v4
+      - name: Reject service-manager dependencies
+        run: python3 ../../tools/check-host-dependencies.py --output "$RUNNER_TEMP/host-dependencies.json"
       - name: Install upstream gate's GNU Bash and command tools
         run: |
           # The upstream gate uses Bash associative arrays and wait -n.
@@ -281,6 +306,20 @@ jobs:
             sha256sum Cargo.toml Cargo.lock build.rs scripts/ci.sh
           } > "$RUNNER_TEMP/native-gate-identity.txt"
           bash scripts/ci.sh 2>&1 | tee "$RUNNER_TEMP/native-gate.log"
+      - name: Check exact erased callback C types and runtime
+        if: always() && !cancelled()
+        run: |
+          python3 ../../tools/test-native-erased-callbacks.py \
+            --lust "$GITHUB_WORKSPACE/compiler/native/target/release/lust" \
+            --rustc "$(rustup which rustc)" \
+            --output "$RUNNER_TEMP/native-erased-callbacks"
+      - name: Check erased callbacks with unwind tables
+        if: always() && !cancelled()
+        run: |
+          python3 ../../tools/test-native-erased-callbacks.py \
+            --lust "$GITHUB_WORKSPACE/compiler/native/target/release/lust" \
+            --rustc "$(rustup which rustc)" --unwind-tables \
+            --output "$RUNNER_TEMP/native-erased-callbacks-eh"
       - name: Verify base image lifetime through a real daemon
         run: python3 scripts/test-base-lifetime.py "$GITHUB_WORKSPACE/compiler/native/target/release/lust"
       - name: Require exact runtime results after main return-type edits
@@ -310,4 +349,11 @@ jobs:
             ${{ runner.temp }}/native-main-transitions/report.json
             ${{ runner.temp }}/native-main-transitions/*.stdout
             ${{ runner.temp }}/native-main-transitions/*.stderr
+            ${{ runner.temp }}/host-dependencies.json
+            ${{ runner.temp }}/native-erased-callbacks/report.json
+            ${{ runner.temp }}/native-erased-callbacks/*.stdout
+            ${{ runner.temp }}/native-erased-callbacks/*.stderr
+            ${{ runner.temp }}/native-erased-callbacks-eh/report.json
+            ${{ runner.temp }}/native-erased-callbacks-eh/*.stdout
+            ${{ runner.temp }}/native-erased-callbacks-eh/*.stderr
           if-no-files-found: warn

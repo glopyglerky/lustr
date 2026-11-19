@@ -33,9 +33,11 @@ def main():
     parser.add_argument("--lust", required=True, type=Path)
     parser.add_argument("--rustc", required=True, type=Path)
     parser.add_argument("--cc", default=os.environ.get("SAN_CC", "cc"))
+    parser.add_argument("--cxx", default="c++")
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--fixture", action="append", help="existing pass fixture stem")
     parser.add_argument("--sanitize", action="store_true")
+    parser.add_argument("--unwind-tables", action="store_true")
     args = parser.parse_args()
     args.lust = args.lust.resolve(strict=True)
     args.rustc = args.rustc.resolve(strict=True)
@@ -47,12 +49,18 @@ def main():
     env["LUST_CACHE_DIR"] = str(args.output / "native-cache")
     (args.output / "tmp").mkdir()
     env["TMPDIR"] = str(args.output / "tmp")
+    if args.unwind_tables:
+        env["LUST_UNWIND_TABLES"] = "1"
     report = {"schema": 1, "lust_sha256": digest(args.lust),
+              "lust_core_sha256": digest(args.lust.with_name("lust-core")),
               "rustc_sha256": digest(args.rustc), "sanitizers": args.sanitize,
+              "unwind_tables": args.unwind_tables,
               "commands": [], "cases": [], "passed": False}
     objects = args.output / "objects"
     objects.mkdir()
     flags = ["-std=gnu11", "-O1", "-Werror=incompatible-pointer-types"]
+    if args.unwind_tables:
+        flags += ["-fexceptions", "-fno-strict-aliasing", "-fwrapv"]
     if args.sanitize:
         flags += ["-fsanitize=address,undefined", "-fno-sanitize-recover=undefined"]
         env["ASAN_OPTIONS"] = "detect_leaks=1:allocator_may_return_null=1"
@@ -115,11 +123,27 @@ def main():
                 unit_objects.append(object_file)
             if not checked:
                 raise RuntimeError("fixture exercised no erased callback type checks")
-            run(fixture + "-cc-link", [args.cc, *flags, *unit_objects, "-lm", "-o", compiled])
+            linker = args.cc
+            link_flags = flags
+            if args.unwind_tables:
+                eh_source = args.output / (fixture + ".eh.cc")
+                eh_object = objects / (digest(eh_source) + ".eh.o")
+                link_flags = [f for f in flags if f not in {
+                    "-std=gnu11", "-Werror=incompatible-pointer-types"}]
+                if not eh_object.exists():
+                    run(fixture + "-eh-build", [args.cxx, *link_flags, "-c", eh_source, "-o", eh_object])
+                unit_objects.append(eh_object)
+                linker = args.cxx
+            run(fixture + "-cc-link", [linker, *link_flags, *unit_objects, "-lm", "-o", compiled])
             expected = run(fixture + "-rust-run", [oracle], required=False)
-            actual = run(fixture + "-native-run", [native], required=False)
             sanitized = run(fixture + "-cc-run", [compiled], required=False)
-            for mode, result in [("native", actual), ("C", sanitized)]:
+            executions = [("C", sanitized)]
+            if not args.unwind_tables:
+                executions.append(("native", run(fixture + "-native-run", [native], required=False)))
+            # With unwind tables, the .eh.cc unit supplies exception handling.
+            # As in upstream's EH lane, only the separately linked C/C++ output
+            # is the executable under test; the emitter's TCC temporary is not.
+            for mode, result in executions:
                 if (result.returncode, result.stdout) != (expected.returncode, expected.stdout):
                     raise RuntimeError(f"{fixture} {mode} output/status differs from Rust")
             if re.search(rb"[0-9]: runtime error|Sanitizer", sanitized.stderr):
