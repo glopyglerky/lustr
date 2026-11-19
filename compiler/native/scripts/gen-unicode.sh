@@ -17,7 +17,11 @@ if [[ "$actual" != "$rust_source_pin" ]]; then
     echo "gen-unicode: expected Rust source $rust_source_pin, got $actual" >&2
     exit 1
 fi
-rg -Fqx "source = \"$rust_source_pin\"" "$root/../../upstream/bluefe-core.pin"
+declared=$(sed -n 's/^source = "\(.*\)"$/\1/p' "$root/../../upstream/bluefe-core.pin")
+if [[ "$declared" != "$rust_source_pin" ]]; then
+    echo "gen-unicode: declared Rust source and Unicode generator disagree" >&2
+    exit 1
+fi
 LUSTR_UNICODE_RUST_SOURCE="$rust_source_pin" "$rustc_bin" --edition 2024 -O -o "$work/gen_unicode" "$root/tools/gen_unicode_semantics.rs"
 "$work/gen_unicode" "$work/data"
 if [[ "$mode" == --check ]]; then
