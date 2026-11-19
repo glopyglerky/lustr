@@ -22,9 +22,10 @@ compiler described above.**
 
 | Snapshot | What is actually present |
 | --- | --- |
-| Observed default `next`, [7cea76c9](https://github.com/glopyglerky/lustr/tree/7cea76c9d3adc587b54ccff168fe07efafd40309) | Earlier native-first entry, library retry and full-Rust compatibility paths. It predates the scalar mixed bridge. |
+| Pre-correction default `next`, [7cea76c9](https://github.com/glopyglerky/lustr/tree/7cea76c9d3adc587b54ccff168fe07efafd40309) | Earlier native-first entry, library retry and full-Rust compatibility paths. It predates the scalar mixed bridge. |
 | Reviewed [PR #32](https://github.com/glopyglerky/lustr/pull/32), [cb0721d4](https://github.com/glopyglerky/lustr/tree/cb0721d49be95ec3f34a113c2354bc9d2a38bbf3) | Retained native work, useful correctness repairs, partial shared semantic work, scalar composition and genuine Rust artifacts. Public retries and whole-consumer Rust analysis still conflict with the required design. |
-| This documentation correction | One controlling direction, explicit selective-import and ownership rules, upstream source/history research, and a reconciliation of active plans. Product cleanup and the full complement remain implementation work. |
+| Governing documentation, merged [PR #31](https://github.com/glopyglerky/lustr/pull/31) | One controlling direction, explicit selective-import and ownership rules, upstream source/history research, and reconciled active plans. This merge changed no product source. |
+| Current implementation lane, [PR #33](https://github.com/glopyglerky/lustr/pull/33) | Removes conflicting compiler routes and packaging, restores native Cargo discovery/cache behavior, and records focused verification. The [active correction record](docs/compiler-set/active-correction.md) distinguishes reviewed code, remaining coverage and qualification limits. Product code is not merged by this documentation update. |
 
 A narrow bridge cannot redefine Lust's supported subset. Work Lust can compile
 but the bridge cannot represent is an integration gap. It must not quietly move
@@ -41,6 +42,7 @@ history and historical evidence remain intact.
 | Document | Purpose |
 | --- | --- |
 | [Exclusive coverage contract](docs/compiler-set/exclusive-coverage-contract.md) | Sole goal, exact work sets, import closure, ownership and performance mathematics. |
+| [Active correction](docs/compiler-set/active-correction.md) | One current implementation PR, exact evidence, preserved history and remaining work. |
 | [Architecture plan](docs/compiler-set/architecture-plan.md) | Implementation order and architecture acceptance. |
 | [Design checkpoint](docs/compiler-set/design.md) | Real source state, reusable interfaces and remaining defects. |
 | [Completion checklist](docs/compiler-set/completion-checklist.md) | One work list with observable completion conditions. |
