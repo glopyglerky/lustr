@@ -284,6 +284,14 @@ jobs:
         id: mixed_libraries
         if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.library_qualifier.outcome == 'success' }}
         run: '"$RUNNER_TEMP/mixed-library-qualification" "$RUNNER_TEMP/mixed-library-project" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/lustr" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/rustc-reference"'
+      - name: Build mixed integer and module identity qualification
+        id: scalar_qualifier
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' }}
+        run: rustc --edition=2024 tools/mixed-scalar-qualification.rs -o "$RUNNER_TEMP/mixed-scalar-qualification"
+      - name: Execute mixed integer widths and retained module identities
+        id: mixed_scalars
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.scalar_qualifier.outcome == 'success' }}
+        run: '"$RUNNER_TEMP/mixed-scalar-qualification" "$RUNNER_TEMP/mixed-scalar-project" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/lustr" "$RUNNER_TEMP/lustr-source-built/toolchain/bin/rustc-reference"'
       - name: Execute the complete compiler entry and runtime contract
         id: entry_contract
         if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' }}
@@ -299,7 +307,7 @@ jobs:
           cargo test --manifest-path Cargo.toml --release --features source-native-runtime --test compiler_contract --locked --offline --jobs 2 --target-dir "$RUNNER_TEMP/lustr-source-built/work/entry-target" --config "build.build-dir=\"$RUNNER_TEMP/lustr-source-built/work/entry-intermediates\"" -- --ignored --test-threads=1 2>&1 | tee "$RUNNER_TEMP/full-entry-contract.log"
       - name: Build matched pristine Lust for the performance comparison
         id: pristine_build
-        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.target_layout.outcome == 'success' && steps.baseline_regression.outcome == 'success' && steps.mixed_execution.outcome == 'success' && steps.retained_checks.outcome == 'success' && steps.mixed_libraries.outcome == 'success' && steps.entry_contract.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.target_layout.outcome == 'success' && steps.baseline_regression.outcome == 'success' && steps.mixed_execution.outcome == 'success' && steps.retained_checks.outcome == 'success' && steps.mixed_libraries.outcome == 'success' && steps.mixed_scalars.outcome == 'success' && steps.entry_contract.outcome == 'success' }}
         env:
           LUST_TCC_HOME: ${{ runner.temp }}/lustr-tinycc/install
         run: |
@@ -309,7 +317,7 @@ jobs:
           sha256sum "$RUNNER_TEMP/lustr-pristine-target/release/lust" "$RUNNER_TEMP/lustr-pristine-target/release/lust-core" > "$RUNNER_TEMP/lustr-pristine-binaries.sha256"
       - name: Profile mixed phases in a separate instrumented qualification
         id: mixed_profile
-        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.mixed_qualifier.outcome == 'success' && steps.target_layout.outcome == 'success' && steps.baseline_regression.outcome == 'success' && steps.mixed_execution.outcome == 'success' && steps.retained_checks.outcome == 'success' && steps.mixed_libraries.outcome == 'success' && steps.entry_contract.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.mixed_qualifier.outcome == 'success' && steps.target_layout.outcome == 'success' && steps.baseline_regression.outcome == 'success' && steps.mixed_execution.outcome == 'success' && steps.retained_checks.outcome == 'success' && steps.mixed_libraries.outcome == 'success' && steps.mixed_scalars.outcome == 'success' && steps.entry_contract.outcome == 'success' }}
         run: python3 tools/profile-mixed-compiler.py --qualifier "$RUNNER_TEMP/mixed-compiler-qualification" --cargo "$RUNNER_TEMP/lustr-source-built/toolchain/bin/cargo" --lustr "$RUNNER_TEMP/lustr-source-built/toolchain/bin/lustr" --output "$RUNNER_TEMP/lustr-mixed-profile"
       - name: Record benchmark host facts before timing
         id: host_record
@@ -323,13 +331,13 @@ jobs:
         run: cargo build --manifest-path crates/lustr-bench/Cargo.toml --release --locked --bin lustr-mixed-bench --target-dir "$RUNNER_TEMP/lustr-bench-target"
       - name: Characterize complete supported and mixed work without granting release admission
         id: measurements
-        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.target_layout.outcome == 'success' && steps.baseline_regression.outcome == 'success' && steps.mixed_execution.outcome == 'success' && steps.retained_checks.outcome == 'success' && steps.mixed_libraries.outcome == 'success' && steps.entry_contract.outcome == 'success' && steps.pristine_build.outcome == 'success' && steps.bench_build.outcome == 'success' && steps.host_record.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.target_layout.outcome == 'success' && steps.baseline_regression.outcome == 'success' && steps.mixed_execution.outcome == 'success' && steps.retained_checks.outcome == 'success' && steps.mixed_libraries.outcome == 'success' && steps.mixed_scalars.outcome == 'success' && steps.entry_contract.outcome == 'success' && steps.pristine_build.outcome == 'success' && steps.bench_build.outcome == 'success' && steps.host_record.outcome == 'success' }}
         env:
           LUSTR_BENCH_HOST_RECORD: ${{ runner.temp }}/lustr-benchmark-host.json
         run: '"$RUNNER_TEMP/lustr-bench-target/release/lustr-mixed-bench" "$RUNNER_TEMP/lustr-pristine-source" "$RUNNER_TEMP/lustr-pristine-target/release/lust" "$RUNNER_TEMP/lustr-source-built" "$RUNNER_TEMP/lustr-paired-measurements" 12'
       - name: Measure the public upstream slice against retained Lust and incremental Cargo
         id: slice_measurements
-        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.target_layout.outcome == 'success' && steps.baseline_regression.outcome == 'success' && steps.mixed_execution.outcome == 'success' && steps.retained_checks.outcome == 'success' && steps.mixed_libraries.outcome == 'success' && steps.entry_contract.outcome == 'success' && steps.pristine_build.outcome == 'success' && steps.host_record.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.target_layout.outcome == 'success' && steps.baseline_regression.outcome == 'success' && steps.mixed_execution.outcome == 'success' && steps.retained_checks.outcome == 'success' && steps.mixed_libraries.outcome == 'success' && steps.mixed_scalars.outcome == 'success' && steps.entry_contract.outcome == 'success' && steps.pristine_build.outcome == 'success' && steps.host_record.outcome == 'success' }}
         run: |
           python3 tools/run-upstream-slice-benchmark.py \
             --repository "$GITHUB_WORKSPACE" \
@@ -367,7 +375,7 @@ jobs:
           python3 tools/test-coordinator-campaign.py --replay "$RUNNER_TEMP/lustr-bench-target/release/examples/replay"
       - name: Measure the unchanged coordinator under its default development profile
         id: project_measurements
-        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.target_layout.outcome == 'success' && steps.baseline_regression.outcome == 'success' && steps.mixed_execution.outcome == 'success' && steps.retained_checks.outcome == 'success' && steps.mixed_libraries.outcome == 'success' && steps.entry_contract.outcome == 'success' && steps.project_bench_build.outcome == 'success' && steps.host_record.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' && steps.target_layout.outcome == 'success' && steps.baseline_regression.outcome == 'success' && steps.mixed_execution.outcome == 'success' && steps.retained_checks.outcome == 'success' && steps.mixed_libraries.outcome == 'success' && steps.mixed_scalars.outcome == 'success' && steps.entry_contract.outcome == 'success' && steps.project_bench_build.outcome == 'success' && steps.host_record.outcome == 'success' }}
         run: |
           python3 tools/measure-coordinator-project.py \
             --repository "$GITHUB_WORKSPACE" \
@@ -475,6 +483,15 @@ jobs:
             ${{ runner.temp }}/mixed-check-project/Cargo.lock
             ${{ runner.temp }}/mixed-check-project/*/Cargo.toml
             ${{ runner.temp }}/mixed-check-project/*/src/*.rs
+            ${{ runner.temp }}/mixed-scalar-project/*.command
+            ${{ runner.temp }}/mixed-scalar-project/*.stdout
+            ${{ runner.temp }}/mixed-scalar-project/*.stderr
+            ${{ runner.temp }}/mixed-scalar-project/*.status
+            ${{ runner.temp }}/mixed-scalar-project/*.trace
+            ${{ runner.temp }}/mixed-scalar-project/summary.txt
+            ${{ runner.temp }}/mixed-scalar-project/Cargo.toml
+            ${{ runner.temp }}/mixed-scalar-project/Cargo.lock
+            ${{ runner.temp }}/mixed-scalar-project/src/*.rs
             ${{ runner.temp }}/mixed-library-project/*.stdout
             ${{ runner.temp }}/mixed-library-project/*.stderr
             ${{ runner.temp }}/mixed-library-project/*.status

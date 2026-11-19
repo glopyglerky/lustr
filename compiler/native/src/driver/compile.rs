@@ -6654,6 +6654,21 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
                 if !std::thread::panicking() { let _ = std::fs::remove_dir_all(&self.root); }
             }
         }
+        fn bounded(command: &mut std::process::Command) -> std::process::Output {
+            command.stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped());
+            let mut child = command.spawn().unwrap();
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+            loop {
+                if child.try_wait().unwrap().is_some() { break child.wait_with_output().unwrap(); }
+                if std::time::Instant::now() >= deadline {
+                    let _ = child.kill();
+                    let output = child.wait_with_output().unwrap();
+                    panic!("mixed object caller child timed out: {command:?}: {}", String::from_utf8_lossy(&output.stderr));
+                }
+                std::thread::sleep(std::time::Duration::from_millis(5));
+            }
+        }
+
         const SCALAR: &str = "fn kernel(x:u64)->u64{x ^ 17}\nfn main(){let _=kernel(0);}\n";
 
         #[test]
@@ -6725,20 +6740,6 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
             }
             let mut f = Fixture::new(SCALAR, true);
             f.req.cmd = Cmd::Build;
-            let bounded = |command: &mut std::process::Command| {
-                command.stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped());
-                let mut child = command.spawn().unwrap();
-                let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
-                loop {
-                    if child.try_wait().unwrap().is_some() { break child.wait_with_output().unwrap(); }
-                    if std::time::Instant::now() >= deadline {
-                        let _ = child.kill();
-                        let output = child.wait_with_output().unwrap();
-                        panic!("mixed object caller child timed out: {command:?}: {}", String::from_utf8_lossy(&output.stderr));
-                    }
-                    std::thread::sleep(std::time::Duration::from_millis(5));
-                }
-            };
             for (index, operand) in [17, 17, 19].into_iter().enumerate() {
                 f.req.out = f.root.join(format!("native-{index}.o"));
                 std::fs::write(&f.req.file, SCALAR.replace("x ^ 17", &format!("x ^ {operand}"))).unwrap();
@@ -6777,6 +6778,88 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
                 let expected = [0u64, 1, 42, u64::MAX].into_iter().map(|x| format!("{x}:{}\n", x ^ operand)).collect::<String>();
                 assert_eq!(runtime.stdout, expected.as_bytes());
                 assert!(runtime.stderr.is_empty(), "native object caller {index}: {}", String::from_utf8_lossy(&runtime.stderr));
+            }
+        }
+
+        #[test]
+        fn integer32_native_objects_match_wide_integer_oracles_after_retained_edits() {
+            for signed in [false, true] {
+                let ty = if signed { "i32" } else { "u32" };
+                let factor = if signed { "-1" } else { "4294967295" };
+                let source = format!("fn kernel(x:{ty})->{ty}{{x.wrapping_mul({factor}).wrapping_add(17).rotate_left(13)}}\nfn main(){{let _=kernel(0);}}\n");
+                let mut f = Fixture::new(&source, true);
+                f.req.cmd = Cmd::Build;
+                for (index, bias) in [17, 17, 19].into_iter().enumerate() {
+                    f.req.out = f.root.join(format!("native-{index}.o"));
+                    std::fs::write(&f.req.file, source.replace("wrapping_add(17)", &format!("wrapping_add({bias})"))).unwrap();
+                    let response = f.run();
+                    assert_eq!(response.code, 0, "{ty}: {}", response.stderr);
+                    assert_eq!(response.mixed, Some(MixedOutcome::Emitted));
+                    if index == 1 { assert!(response.stderr.contains("0 function(s) generated"), "{}", response.stderr); }
+                    let caller = f.root.join(format!("caller-{index}.rs"));
+                    let executable = f.root.join(format!("caller-{index}"));
+                    // Every 16-bit pattern plus the wide sign/overflow boundaries.
+                    // u64/i64 arithmetic computes the exact mathematical product;
+                    // the mask implements the modulo-2^32 result independently
+                    // of the compiled wrapping/rotate implementation.
+                    let exact = if signed {
+                        format!("let raw=((-(input as i32 as i64)+{bias}) as u64)&0xffff_ffff;")
+                    } else {
+                        format!("let raw=(u64::from(input)*4294967295+{bias})&0xffff_ffff;")
+                    };
+                    std::fs::write(&caller, format!(
+                        "unsafe extern \"C\"{{fn lustr_mixed_1234(x:{ty})->{ty};}}\n\
+                         fn main(){{let mut count=0;for input in (0u32..=65535).chain([65536,0x7fff_ffff,0x8000_0000,0xffff_0000,0xffff_ffff]){{\
+                         {exact}let expected=(((raw<<13)|(raw>>19))&0xffff_ffff) as u32 as {ty};\
+                         let actual=unsafe{{lustr_mixed_1234(input as {ty})}};assert_eq!(actual,expected,\"input {{input}}\");count+=1;}}\
+                         println!(\"{{count}}\");}}\n"
+                    )).unwrap();
+                    let rustc = std::env::var_os("RUSTC").unwrap_or_else(|| "rustc".into());
+                    let built = bounded(std::process::Command::new(rustc).env_remove("LD_LIBRARY_PATH")
+                        .args(["--edition=2024", "--crate-name", "integer32_native_caller"])
+                        .arg(&caller).arg("-o").arg(&executable).arg(format!("-Clink-arg={}", f.req.out.display())));
+                    assert!(built.status.success(), "Rust caller {ty}/{index}: {}", String::from_utf8_lossy(&built.stderr));
+                    let runtime = bounded(std::process::Command::new(&executable).env_remove("LD_LIBRARY_PATH"));
+                    assert!(runtime.status.success(), "native {ty}/{index}: {}", String::from_utf8_lossy(&runtime.stderr));
+                    assert_eq!(runtime.stdout, b"65541\n");
+                    assert!(runtime.stderr.is_empty());
+                }
+            }
+        }
+
+        #[test]
+        fn narrow_native_returns_match_exact_modular_oracles() {
+            for (ty, width, signed) in [("i8", 8, true), ("u8", 8, false), ("i16", 16, true), ("u16", 16, false)] {
+                let source = format!("fn kernel(x:u32)->{ty}{{(x ^ 17) as {ty}}}\nfn main(){{let _=kernel(0);}}\n");
+                let mut f = Fixture::new(&source, true);
+                f.req.cmd = Cmd::Build;
+                for (index, bias) in [17, 17, 19].into_iter().enumerate() {
+                    f.req.out = f.root.join(format!("native-{index}.o"));
+                    std::fs::write(&f.req.file, source.replace("x ^ 17", &format!("x ^ {bias}"))).unwrap();
+                    let response = f.run();
+                    assert_eq!(response.code, 0, "{ty}: {}", response.stderr);
+                    assert_eq!(response.mixed, Some(MixedOutcome::Emitted));
+                    if index == 1 { assert!(response.stderr.contains("0 function(s) generated"), "{}", response.stderr); }
+                    let caller = f.root.join(format!("caller-{index}.rs"));
+                    let executable = f.root.join(format!("caller-{index}"));
+                    std::fs::write(&caller, format!(
+                        "unsafe extern \"C\"{{fn lustr_mixed_1234(x:u32)->{ty};}}\n\
+                         fn main(){{let mut count=0;for input in (0u32..=65535).chain([65536,0x7fff_ffff,0x8000_0000,0xffff_0000,0xffff_ffff]){{\
+                         let bits=((u64::from(input)^{bias})&((1u64<<{width})-1)) as i64;\
+                         let expected=if {signed} && bits>=(1i64<<({width}-1)){{bits-(1i64<<{width})}}else{{bits}};\
+                         let actual=unsafe{{lustr_mixed_1234(input)}};assert_eq!(i64::from(actual),expected,\"input {{input}}\");count+=1;}}\
+                         println!(\"{{count}}\");}}\n"
+                    )).unwrap();
+                    let rustc = std::env::var_os("RUSTC").unwrap_or_else(|| "rustc".into());
+                    let built = bounded(std::process::Command::new(rustc).env_remove("LD_LIBRARY_PATH")
+                        .args(["--edition=2024", "--crate-name", "narrow_native_caller"])
+                        .arg(&caller).arg("-o").arg(&executable).arg(format!("-Clink-arg={}", f.req.out.display())));
+                    assert!(built.status.success(), "Rust caller {ty}/{index}: {}", String::from_utf8_lossy(&built.stderr));
+                    let runtime = bounded(std::process::Command::new(&executable).env_remove("LD_LIBRARY_PATH"));
+                    assert!(runtime.status.success(), "native {ty}/{index}: {}", String::from_utf8_lossy(&runtime.stderr));
+                    assert_eq!(runtime.stdout, b"65541\n");
+                    assert!(runtime.stderr.is_empty());
+                }
             }
         }
 

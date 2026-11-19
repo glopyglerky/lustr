@@ -55,7 +55,7 @@ pub fn context(tcx: TyCtxt<'_>, native: &BTreeSet<String>) -> Option<Value> {
 pub fn read(index: &Path) -> Option<Value> {
     let state: Value = serde_json::from_slice(&fs::read(index).ok()?).ok()?;
     (state["schema"] == "lustr.checked-mixed-link"
-        && state["version"] == 5
+        && state["version"] == 6
         && state["rustc"] == env!("LUSTR_BUILD_RUSTC_COMMIT")
         && state["native"] == env!("LUST_BUILD_HASH"))
     .then_some(state)
@@ -63,7 +63,7 @@ pub fn read(index: &Path) -> Option<Value> {
 
 pub fn publish(index: &Path, directory: &Path, context: Value, kernels: Vec<Value>, check_only: bool) -> std::io::Result<()> {
     let _profile = super::mixed_profile::span("publish-certificate");
-    let state = json!({"schema":"lustr.checked-mixed-link","version":5,"check_only":check_only,
+    let state = json!({"schema":"lustr.checked-mixed-link","version":6,"check_only":check_only,
         "rustc":env!("LUSTR_BUILD_RUSTC_COMMIT"),"native":env!("LUST_BUILD_HASH"),
         "directory":directory,"context":context,"kernels":kernels});
     fs::create_dir_all(index.parent().unwrap())?;
@@ -154,9 +154,9 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
         .map(|owner| (format!("{:?}", tcx.def_path_hash(owner.def_id.to_def_id())), owner.def_id))
         .collect();
     for kernel in kernels {
-        let name = text(kernel, "name")?;
-        let candidate = compiler.candidates.get(name)?;
-        if !super::represented_body(tcx, *definitions.get(text(kernel, "definition")?)?, candidate, super::BodyBindings::Retained) {
+        let definition = *definitions.get(text(kernel, "definition")?)?;
+        let candidate = super::candidate_for(&compiler.candidates, tcx, definition)?;
+        if !super::represented_body(tcx, definition, candidate, super::BodyBindings::Retained) {
             return None;
         }
         if candidate.header != text(kernel, "header")? {
@@ -192,10 +192,7 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
             tcx.ensure_ok().has_ffi_unwind_calls(owner.def_id);
             tcx.ensure_ok().check_liveness(owner.def_id);
             tcx.ensure_ok().mir_drops_elaborated_and_const_checked(owner.def_id);
-            let kernel = kernels
-                .iter()
-                .find(|k| text(k, "definition") == Some(format!("{:?}", tcx.def_path_hash(owner.def_id.to_def_id())).as_str()))?;
-            let candidate = compiler.candidates.get(text(kernel, "name")?)?;
+            let candidate = super::candidate_for(&compiler.candidates, tcx, owner.def_id)?;
             if !super::represented_body(tcx, owner.def_id, candidate, super::BodyBindings::Current) {
                 return None;
             }
@@ -224,7 +221,8 @@ pub fn attempt(compiler: &mut super::Compiler, tcx: TyCtxt<'_>) -> Option<()> {
     let mut objects = BTreeMap::new();
     for (index, kernel) in kernels.iter().enumerate() {
         let name = text(kernel, "name")?;
-        let candidate = compiler.candidates.get(name)?;
+        let definition = *definitions.get(text(kernel, "definition")?)?;
+        let candidate = super::candidate_for(&compiler.candidates, tcx, definition)?;
         let edited = candidate.body != text(kernel, "body")?;
         if compiler.check_only && !edited {
             continue;

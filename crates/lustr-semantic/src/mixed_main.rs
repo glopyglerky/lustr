@@ -268,14 +268,31 @@ struct Candidate {
     body: String,
     body_span: rustc_span::Span,
 }
-#[derive(Default)]
-struct Macros(bool);
-impl<'a> Visitor<'a> for Macros {
-    fn visit_mac_call(&mut self, _: &'a ast::MacCall) {
-        self.0 = true;
+fn canonical_identifier(map: &rustc_span::source_map::SourceMap, ident: rustc_span::Ident) -> bool {
+    let Ok(spelling) = map.span_to_snippet(ident.span) else { return false };
+    fn unquoted(s: &str) -> &str {
+        let s = s.strip_prefix("r#").unwrap_or(s);
+        s.strip_prefix('\'').unwrap_or(s)
     }
-    fn visit_attribute(&mut self, _: &'a ast::Attribute) {
-        self.0 = true;
+    // Rust's parsed identifier is canonical. Lust's lexer currently requires
+    // source identifiers already in NFC. This is a checked spelling capability,
+    // not an ASCII filter: Unicode comments and canonical names remain eligible.
+    unquoted(&spelling) == unquoted(ident.name.as_str())
+}
+
+struct NativeSource<'a> {
+    map: &'a rustc_span::source_map::SourceMap,
+    represented: bool,
+}
+impl<'ast> Visitor<'ast> for NativeSource<'_> {
+    fn visit_mac_call(&mut self, _: &'ast ast::MacCall) {
+        self.represented = false;
+    }
+    fn visit_attribute(&mut self, _: &'ast ast::Attribute) {
+        self.represented = false;
+    }
+    fn visit_ident(&mut self, ident: &'ast rustc_span::Ident) {
+        self.represented &= canonical_identifier(self.map, *ident);
     }
 }
 
@@ -294,7 +311,11 @@ fn represented_body(tcx: TyCtxt<'_>, id: rustc_span::def_id::LocalDefId, candida
         def::{DefKind, Res},
         intravisit::{self, Visitor},
     };
-    if tcx.def_kind(id) != DefKind::Fn || tcx.opt_local_parent(id) != Some(rustc_span::def_id::CRATE_DEF_ID) {
+    if tcx.def_kind(id) != DefKind::Fn {
+        return false;
+    }
+    let Some(parent) = tcx.opt_local_parent(id) else { return false };
+    if parent != rustc_span::def_id::CRATE_DEF_ID && tcx.def_kind(parent) != DefKind::Mod {
         return false;
     }
     let body = tcx.hir_body_owned_by(id);
@@ -424,11 +445,127 @@ fn represented_request(args: &[String]) -> bool {
     true
 }
 
+fn represented_signature<'tcx>(tcx: TyCtxt<'tcx>, instance: ty::Instance<'tcx>) -> Option<ty::FnSig<'tcx>> {
+    let id = instance.def_id();
+    let signature = tcx.fn_sig(id).instantiate_identity().skip_binder();
+    let primitive = |t: ty::Ty<'tcx>| {
+        matches!(
+            t.kind(),
+            ty::TyKind::Int(ty::IntTy::I8 | ty::IntTy::I16 | ty::IntTy::I32 | ty::IntTy::I64 | ty::IntTy::Isize)
+                | ty::TyKind::Uint(ty::UintTy::U8 | ty::UintTy::U16 | ty::UintTy::U32 | ty::UintTy::U64 | ty::UintTy::Usize)
+        )
+    };
+    // Unsupported signatures can contain late-bound regions. They remain
+    // with Rust before constructing a C ABI query; putting an opened bound
+    // region in Binder::dummy is an internal compiler error, not a capability.
+    if !primitive(signature.output()) || !signature.inputs().iter().all(|t| primitive(*t)) {
+        return None;
+    }
+    let mut c_signature = signature;
+    c_signature.fn_sig_kind = c_signature.fn_sig_kind.set_abi(rustc_abi::ExternAbi::C { unwind: false });
+    let environment = TypingEnv::fully_monomorphized();
+    let Ok(rust_abi) = tcx.fn_abi_of_instance(environment.as_query_input((instance, ty::List::empty()))) else { return None };
+    let Ok(c_abi) = tcx.fn_abi_of_fn_ptr(environment.as_query_input((ty::Binder::dummy(c_signature), ty::List::empty()))) else {
+        return None;
+    };
+    let mode_equal = |a: &rustc_target::callconv::PassMode, b: &rustc_target::callconv::PassMode| {
+        matches!((a, b), (rustc_target::callconv::PassMode::Direct(_), rustc_target::callconv::PassMode::Direct(_)))
+            && format!("{a:?}") == format!("{b:?}")
+    };
+    // The pinned LLVM backend maps canonical Rust and C to the
+    // same LLVM C calling convention (upstream abi.rs). Compare
+    // the actual argument/return modes too; a canonical ABI name
+    // alone neither establishes nor disproves compatibility.
+    let same_convention =
+        rust_abi.conv == c_abi.conv || matches!((rust_abi.conv, c_abi.conv), (rustc_abi::CanonAbi::Rust, rustc_abi::CanonAbi::C));
+    if !same_convention
+        || !mode_equal(&rust_abi.ret.mode, &c_abi.ret.mode)
+        || rust_abi.args.len() != c_abi.args.len()
+        || !rust_abi.args.iter().zip(&c_abi.args).all(|(a, b)| mode_equal(&a.mode, &b.mode))
+    {
+        return None;
+    }
+    Some(signature)
+}
+
+fn parsed_candidates(compiler: &interface::Compiler, krate: &ast::Crate) -> BTreeMap<(u32, u32), Candidate> {
+    struct Collect<'a> {
+        compiler: &'a interface::Compiler,
+        candidates: BTreeMap<(u32, u32), Candidate>,
+    }
+    impl<'ast> Visitor<'ast> for Collect<'_> {
+        fn visit_item(&mut self, item: &'ast ast::Item) {
+            // An attribute on a module can transform all nested source. Only
+            // unmodified loaded source items are projected into native units.
+            if !item.attrs.is_empty() {
+                return;
+            }
+            if matches!(&item.kind, ast::ItemKind::Mod(..)) {
+                visit::walk_item(self, item);
+                return;
+            }
+            let ast::ItemKind::Fn(f) = &item.kind else { return };
+            if f.sig.header.has_qualifiers() || !f.generics.params.is_empty() {
+                return;
+            }
+            let Some(body) = &f.body else { return };
+            let map = self.compiler.sess.source_map();
+            if !canonical_identifier(map, f.ident) {
+                return;
+            }
+            let mut source = NativeSource { map, represented: true };
+            visit::walk_block(&mut source, body);
+            if !source.represented {
+                return;
+            }
+            let params: Option<Vec<_>> = f
+                .sig
+                .decl
+                .inputs
+                .iter()
+                .map(|p| match &p.pat.kind {
+                    ast::PatKind::Ident(_, ident, None) if p.attrs.is_empty() && canonical_identifier(map, *ident) => {
+                        map.span_to_snippet(p.pat.span).ok()
+                    }
+                    _ => None,
+                })
+                .collect();
+            let Some(params) = params else { return };
+            let map = self.compiler.sess.source_map();
+            let Ok(header) = map.span_to_snippet(item.span.with_hi(body.span.lo())) else { return };
+            let body_span = body.span;
+            let Ok(body) = map.span_to_snippet(body_span) else { return };
+            // Keep required raw-identifier quoting in the internal source.
+            let Ok(name) = map.span_to_snippet(f.ident.span) else { return };
+            self.candidates.insert((body_span.lo().0, body_span.hi().0), Candidate { name, params, header, body, body_span });
+        }
+    }
+    let mut collect = Collect { compiler, candidates: BTreeMap::new() };
+    visit::walk_crate(&mut collect, krate);
+    collect.candidates
+}
+
+fn candidate_for<'a>(
+    candidates: &'a BTreeMap<(u32, u32), Candidate>,
+    tcx: TyCtxt<'_>,
+    id: rustc_span::def_id::LocalDefId,
+) -> Option<&'a Candidate> {
+    if tcx.def_kind(id) != rustc_hir::def::DefKind::Fn {
+        return None;
+    }
+    let body = tcx.hir_body_owned_by(id);
+    let span = body.value.span;
+    // Same spellings in distinct modules have distinct source and definition
+    // identities. Never use a short name as cross-invocation authority.
+    let candidate = candidates.get(&(span.lo().0, span.hi().0))?;
+    (candidate.body_span.ctxt() == span.ctxt()).then_some(candidate)
+}
+
 struct Compiler {
     directory: PathBuf,
     index: PathBuf,
     cached: Option<serde_json::Value>,
-    candidates: BTreeMap<String, Candidate>,
+    candidates: BTreeMap<(u32, u32), Candidate>,
     selected: Vec<String>,
     frontend: bool,
     enabled: bool,
@@ -489,34 +626,7 @@ impl Callbacks for Compiler {
             return Compilation::Continue;
         }
         self.reuse_allowed &= krate.attrs.is_empty();
-        for item in &krate.items {
-            let ast::ItemKind::Fn(f) = &item.kind else { continue };
-            if !item.attrs.is_empty() || f.sig.header.has_qualifiers() || !f.generics.params.is_empty() {
-                continue;
-            }
-            let Some(body) = &f.body else { continue };
-            let mut macros = Macros::default();
-            visit::walk_block(&mut macros, body);
-            if macros.0 {
-                continue;
-            }
-            let params: Option<Vec<_>> = f
-                .sig
-                .decl
-                .inputs
-                .iter()
-                .map(|p| match &p.pat.kind {
-                    ast::PatKind::Ident(_, _, None) if p.attrs.is_empty() => compiler.sess.source_map().span_to_snippet(p.pat.span).ok(),
-                    _ => None,
-                })
-                .collect();
-            let Some(params) = params else { continue };
-            let Ok(header) = compiler.sess.source_map().span_to_snippet(item.span.with_hi(body.span.lo())) else { continue };
-            let body_span = body.span;
-            let Ok(body) = compiler.sess.source_map().span_to_snippet(body_span) else { continue };
-            let name = f.ident.to_string();
-            self.candidates.insert(name.clone(), Candidate { name, params, header, body, body_span });
-        }
+        self.candidates = parsed_candidates(compiler, krate);
         Compilation::Continue
     }
     fn after_expansion<'tcx>(&mut self, _: &interface::Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
@@ -550,14 +660,13 @@ impl Callbacks for Compiler {
         let mut considered = BTreeSet::new();
         let instances: Vec<_> = if self.check_only {
             // A metadata request has no monomorphization/codegen units.
-            // Use actual nongeneric root definitions from the checked HIR.
+            // Use actual nongeneric definitions from the checked HIR.
+            // The candidate/owner checks retain the module and source identity.
             tcx.hir_crate_items(())
                 .owners()
                 .filter_map(|owner| {
                     let id = owner.def_id.to_def_id();
-                    (tcx.def_kind(id) == rustc_hir::def::DefKind::Fn
-                        && tcx.opt_local_parent(owner.def_id) == Some(rustc_span::def_id::CRATE_DEF_ID)
-                        && tcx.generics_of(id).count() == 0)
+                    (tcx.def_kind(id) == rustc_hir::def::DefKind::Fn && tcx.generics_of(id).count() == 0)
                         .then(|| ty::Instance::mono(tcx, id))
                 })
                 .collect()
@@ -580,45 +689,12 @@ impl Callbacks for Compiler {
             }
             let Some(name) = tcx.opt_item_name(id) else { continue };
             let name = name.to_string();
-            let Some(candidate) = self.candidates.get(&name) else { continue };
+            let Some(candidate) = candidate_for(&self.candidates, tcx, id.expect_local()) else { continue };
             if !represented_body(tcx, id.expect_local(), candidate, BodyBindings::Current) {
                 continue;
             }
-            let signature = tcx.fn_sig(id).instantiate_identity().skip_binder();
-            let mut c_signature = signature;
-            c_signature.fn_sig_kind = c_signature.fn_sig_kind.set_abi(rustc_abi::ExternAbi::C { unwind: false });
-            let environment = TypingEnv::fully_monomorphized();
-            let Ok(rust_abi) = tcx.fn_abi_of_instance(environment.as_query_input((instance, ty::List::empty()))) else { continue };
-            let Ok(c_abi) = tcx.fn_abi_of_fn_ptr(environment.as_query_input((ty::Binder::dummy(c_signature), ty::List::empty()))) else {
-                continue;
-            };
-            let mode_equal = |a: &rustc_target::callconv::PassMode, b: &rustc_target::callconv::PassMode| {
-                matches!((a, b), (rustc_target::callconv::PassMode::Direct(_), rustc_target::callconv::PassMode::Direct(_)))
-                    && format!("{a:?}") == format!("{b:?}")
-            };
-            // The pinned LLVM backend maps canonical Rust and C to the
-            // same LLVM C calling convention (upstream abi.rs). Compare
-            // the actual argument/return modes too; a canonical ABI name
-            // alone neither establishes nor disproves compatibility.
-            let same_convention =
-                rust_abi.conv == c_abi.conv || matches!((rust_abi.conv, c_abi.conv), (rustc_abi::CanonAbi::Rust, rustc_abi::CanonAbi::C));
-            if !same_convention
-                || !mode_equal(&rust_abi.ret.mode, &c_abi.ret.mode)
-                || rust_abi.args.len() != c_abi.args.len()
-                || !rust_abi.args.iter().zip(&c_abi.args).all(|(a, b)| mode_equal(&a.mode, &b.mode))
-            {
-                continue;
-            }
-            let primitive = |t: ty::Ty<'tcx>| {
-                matches!(
-                    t.kind(),
-                    ty::TyKind::Int(ty::IntTy::I64 | ty::IntTy::Isize) | ty::TyKind::Uint(ty::UintTy::U64 | ty::UintTy::Usize)
-                )
-            };
-            if !primitive(signature.output())
-                || !signature.inputs().iter().all(|t| primitive(*t))
-                || candidate.params.len() != signature.inputs().len()
-            {
+            let Some(signature) = represented_signature(tcx, instance) else { continue };
+            if candidate.params.len() != signature.inputs().len() {
                 continue;
             }
             let symbol = tcx.symbol_name(instance).name.to_owned();
@@ -668,6 +744,7 @@ impl Callbacks for Compiler {
                     "definition":format!("{:?}",tcx.def_path_hash(id)),"header":candidate.header,
                     "body":candidate.body,"prefix":prefix,"suffix":suffix}));
             self.selected.push(symbol.clone());
+            trace(&format!("native-admitted-definition={}", tcx.def_path_str(id)));
         }
         trace(&format!("{}={}", if self.check_only { "native-checked-definitions" } else { "native-definitions" }, self.records.len()));
         if !self.records.is_empty() {
@@ -784,4 +861,103 @@ fn main() -> ExitCode {
     drop(request);
     mixed_profile::finish(status == ExitCode::SUCCESS, callbacks.reused, callbacks.check_only, &key);
     status
+}
+
+#[cfg(test)]
+mod capability_tests {
+    use super::*;
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    #[derive(Default)]
+    struct Probe {
+        candidates: BTreeMap<(u32, u32), Candidate>,
+        admitted: BTreeSet<String>,
+    }
+    impl Callbacks for Probe {
+        fn after_crate_root_parsing(&mut self, compiler: &interface::Compiler, krate: &mut ast::Crate) -> Compilation {
+            self.candidates = parsed_candidates(compiler, krate);
+            Compilation::Continue
+        }
+        fn after_analysis<'tcx>(&mut self, _: &interface::Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
+            for owner in tcx.hir_crate_items(()).owners() {
+                let id = owner.def_id;
+                if tcx.def_kind(id) != rustc_hir::def::DefKind::Fn || tcx.generics_of(id).count() != 0 {
+                    continue;
+                }
+                let Some(candidate) = candidate_for(&self.candidates, tcx, id) else { continue };
+                if tcx.opt_item_name(id).is_some_and(|name| name.as_str() == "type") {
+                    assert_eq!(candidate.name, "r#type", "projected source must retain raw keyword quoting");
+                }
+                if represented_body(tcx, id, candidate, BodyBindings::Current)
+                    && represented_signature(tcx, ty::Instance::mono(tcx, id.to_def_id())).is_some()
+                {
+                    self.admitted.insert(tcx.def_path_str(id.to_def_id()));
+                }
+            }
+            Compilation::Stop
+        }
+    }
+
+    fn admitted(source: &str) -> BTreeSet<String> {
+        static NEXT: AtomicU64 = AtomicU64::new(0);
+        let directory =
+            std::env::temp_dir().join(format!("lustr-mixed-capability-{}-{}", std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)));
+        fs::create_dir(&directory).unwrap();
+        let input = directory.join("input.rs");
+        fs::write(&input, source).unwrap();
+        let args = vec![
+            "rustc".into(),
+            input.display().to_string(),
+            "--edition=2024".into(),
+            "--crate-name=capability".into(),
+            "--crate-type=rlib".into(),
+            "--emit=metadata".into(),
+            "-Adead_code".into(),
+            "--sysroot".into(),
+            env!("LUSTR_BUILD_SYSROOT").into(),
+            "--out-dir".into(),
+            directory.display().to_string(),
+        ];
+        let mut probe = Probe::default();
+        assert_eq!(rustc_driver::catch_with_exit_code(|| rustc_driver::compiler_entrypoint(&args, &mut probe)), ExitCode::SUCCESS);
+        fs::remove_dir_all(directory).unwrap();
+        probe.admitted
+    }
+
+    #[test]
+    fn checked_integer_signatures_preserve_actual_extension_contracts() {
+        let types = ["i8", "u8", "i16", "u16", "i32", "u32", "i64", "u64", "isize", "usize"];
+        let source = types.iter().map(|ty| format!("pub fn kernel_{ty}(x:{ty})->{ty}{{x.wrapping_add(17)}}\n")).collect::<String>();
+        // x86_64 Rust and C use different extension attributes for i8/u8/i16/u16.
+        // Those calls need an ABI adapter, even though Lust can emit their bodies.
+        let expected = ["i32", "u32", "i64", "u64", "isize", "usize"].iter().map(|ty| format!("kernel_{ty}")).collect();
+        assert_eq!(admitted(&source), expected);
+    }
+
+    #[test]
+    fn narrow_returns_with_wide_arguments_use_their_matching_abi() {
+        let types = ["i8", "u8", "i16", "u16"];
+        let source = types.iter().map(|ty| format!("pub fn return_{ty}(x:u32)->{ty}{{x as {ty}}}\n")).collect::<String>();
+        let expected = types.iter().map(|ty| format!("return_{ty}")).collect();
+        assert_eq!(admitted(&source), expected);
+    }
+
+    #[test]
+    fn unrepresented_source_bindings_do_not_enter_native_units() {
+        let source = "pub fn wide(x:u128)->u128{x ^ 17}\n            pub fn borrowed(x:&u32)->u32{*x}\n            pub fn generic<T>(x:T)->T{x}\n            pub fn nested(x:u64)->u64{fn kernel(x:u64)->u64{x ^ 17} kernel(x)}\n            #[allow(dead_code)] pub mod attributed {pub fn kernel(x:u64)->u64{x ^ 17}}\n            pub mod arithmetic {pub fn kernel(x:u64)->u64{x ^ 17}}\n            pub fn calls(x:u64)->u64{arithmetic::kernel(x)}\n";
+        assert_eq!(admitted(source), ["arithmetic::kernel"].into_iter().map(str::to_owned).collect());
+    }
+
+    #[test]
+    fn identifier_normalization_is_an_explicit_native_source_capability() {
+        let source = "pub mod names {\n            pub fn decomposed(e\u{301}:u64)->u64{e\u{301} ^ 17}\n            pub fn local(x:u64)->u64{let e\u{301}=x;e\u{301} ^ 17}\n            pub fn canonical(é:u64)->u64{é ^ 17}\n            pub fn comments(x:u64)->u64{/* e\u{301} */x ^ 17}\n            pub fn r#type(r#match:u32)->u32{r#match ^ 17}\n}
+";
+        assert_eq!(admitted(source), ["names::canonical", "names::comments", "names::r#type"].into_iter().map(str::to_owned).collect());
+    }
+
+    #[test]
+    fn same_named_module_functions_keep_distinct_checked_identities() {
+        let source = "pub fn kernel(x:u64)->u64{x ^ 17}\n            pub mod first { pub fn kernel(x:u64)->u64{x ^ 19} }\n            pub mod second { pub mod nested { pub fn kernel(x:u64)->u64{x ^ 23} } }\n";
+        assert_eq!(admitted(source), ["kernel", "first::kernel", "second::nested::kernel"].into_iter().map(str::to_owned).collect());
+    }
 }
