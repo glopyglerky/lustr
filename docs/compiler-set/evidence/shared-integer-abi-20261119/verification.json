@@ -1,0 +1,143 @@
+{
+  "schema": 1,
+  "scope": "internal shared definition service; no public routing or performance claim",
+  "passed": true,
+  "commands": [
+    {
+      "name": "rustc-identity",
+      "command": [
+        "$SDK/bin/rustc",
+        "-vV"
+      ],
+      "status": 0,
+      "stdout_sha256": "bbc9b960fe50c84bca20f3109950bcb87c48b6d1ce61d2fc2fc1519aaba2daaa",
+      "stdout_bytes": 214,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_bytes": 0
+    },
+    {
+      "name": "cargo-identity",
+      "command": [
+        "$SDK/bin/cargo",
+        "-Vv"
+      ],
+      "status": 0,
+      "stdout_sha256": "e68d82cabd7db65483f4ea6542e3df95c0dbd3cacb1ceb88314a538e703b2499",
+      "stdout_bytes": 354,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_bytes": 0
+    },
+    {
+      "name": "source",
+      "command": [
+        "git",
+        "rev-parse",
+        "HEAD",
+        "HEAD^{tree}",
+        "HEAD:compiler/native"
+      ],
+      "status": 0,
+      "stdout_sha256": "369efe50553fa8764e5f38eb9d21a5d704d66007c29bc3b80b1cc14b0cbb43c0",
+      "stdout_bytes": 123,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_bytes": 0
+    },
+    {
+      "name": "source-state",
+      "command": [
+        "git",
+        "status",
+        "--porcelain",
+        "--",
+        "compiler/native",
+        "crates/lustr-native-core",
+        "tests/shared-imports",
+        "tools/native-upstream-qualification.rs",
+        "tools/test-native-upstream.py",
+        "upstream/bluefe-core.pin"
+      ],
+      "status": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_bytes": 0
+    },
+    {
+      "name": "build",
+      "command": [
+        "$SDK/bin/cargo",
+        "build",
+        "--manifest-path",
+        "$SOURCE/crates/lustr-native-core/Cargo.toml",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--target-dir",
+        "$QUALIFICATION/target",
+        "--config",
+        "build.build-dir=\"$QUALIFICATION/intermediates\"",
+        "--config",
+        "profile.dev.debug=0",
+        "--config",
+        "profile.dev.incremental=false",
+        "--features",
+        "upstream-semantic",
+        "--example",
+        "native-upstream-qualification",
+        "--message-format=json"
+      ],
+      "status": 0,
+      "stdout_sha256": "b939c55d314aa7596eeaa745f95e52bd243ec2555ab8688d2c1b5d77866642b4",
+      "stdout_bytes": 134001,
+      "stderr_sha256": "fa137d437cabf6f205498ebd726b0d660d8462ab415b16845178343daa088b66",
+      "stderr_bytes": 431
+    },
+    {
+      "name": "campaign",
+      "command": [
+        "python3",
+        "$SOURCE/tools/test-native-upstream.py",
+        "--rustc",
+        "$SDK/bin/rustc",
+        "--qualifier",
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "--out",
+        "$QUALIFICATION/campaign"
+      ],
+      "status": 0,
+      "stdout_sha256": "42fc621555ddfb3dc4962912431e8f2ee540312d77a1c05d12af385d04ae8090",
+      "stdout_bytes": 42,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_bytes": 0
+    }
+  ],
+  "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "rustc_identity": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+  "cargo_identity": "cargo 1.102.0-nightly (c07ac2c4d 2026-11-06)\nrelease: 1.102.0-nightly\ncommit-hash: c07ac2c4d12237effc4b94f4543769b421790045\ncommit-date: 2026-11-06\nhost: x86_64-unknown-linux-gnu\nlibgit2: 1.9.6 (sys:0.21.0 vendored)\nlibcurl: 8.21.0-DEV (sys:0.4.90+curl-8.21.0 vendored ssl:OpenSSL/3.6.3)\nssl: OpenSSL 3.6.3 9 Jun 2026\nos: Debian 13.0.0 (trixie) [64-bit]\n",
+  "source": [
+    "8bdb0d54db41330611a6f1b5bc2f2700183befbf",
+    "6e86842a838b12ff023326b566de5c140a025f3e",
+    "eb8b4a8f1c31a6bbbeaded61a01ddd8691f5dff1"
+  ],
+  "inputs_sha256": {
+    "rustc": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "cargo": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+    "tcc": "a96a3206c9674ee8ab4917c5a08c9555f68b28b3838a346fee7219dbe1e4736e",
+    "libtcc": "1c71abde8d0299e82a3fa416e5527e281de3720673813de0d76b88a53cdd4248",
+    "launcher": "e25c020a97f8d9e112a0c37783e770c5b469547bbe0c307a71bbb10d6b10e19d",
+    "campaign": "c1cd8f9d9009cc51fbbf5102239fff849740e73141f65ed6131270ca03c63eb2",
+    "sdk_declaration": "ae93e7fb837097658ddda8881795aec4c6abe474b00f133806079a044c7dec2b"
+  },
+  "qualifier_sha256": "3e91ac3442a62c6faec7b6332f473373385cb9f999d65e4f941c63505c6a65c0",
+  "qualifier": "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+  "controls": 120,
+  "integer_adapters": {
+    "count": 30,
+    "checked_results": 262720,
+    "llvm_input_sha256": "8c7d4e0a20eacf0d94912b635039bfa65cffabacc14d090768a3e02793e021da",
+    "tool_identity": "rust=5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\nllc=1aafd7aebc24b8026e5ac4a065d73d3f4f8424f0510b0c65c0d1deb1e1a94922\nLLVM=5b12901d3a06a2eca8eae8e0781f678a6b2213740e2754f90dc22aef3f23dc21\n"
+  },
+  "original_record_sha256": "5a57cc663099ba86c6f4827a9f9a4bc0db0760cfbb13e849b6126267b11e0f5c",
+  "path_rendering": "Absolute execution paths are represented by role variables; original records retain exact commands."
+}
