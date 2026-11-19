@@ -10571,13 +10571,13 @@ impl crate::ty::layout::AdtShapes for UserLayout<'_> {
         // `OnceCell<T>` is std's `UnsafeCell<Option<T>>`: its source
         // fields (the `Option<T>` and a `PhantomData`) with the niche
         // hidden.
-        // `ManuallyDrop<T>` is core's repr(transparent) wrapper over its
-        // `MaybeDangling<T>`, itself repr(transparent) over `T`: the
-        // source form is exact, and `T`'s niche stays visible.
+        // `ManuallyDrop<T>` is the pinned core's repr(transparent) wrapper
+        // directly over `T`: the source form is exact, and `T`'s niche
+        // stays visible.
         if p.std_source_span(adt.span) && !p.is_phantom_adt(id) && !p.is_known_allocator_adt(id) {
             match p.display_path(adt.name).as_str() {
                 "core::cell::OnceCell" => return p.adt_shape(id).map(|s| crate::ty::layout::AdtShape { hide_niche: true, ..s }),
-                "core::mem::ManuallyDrop" | "core::mem::MaybeDangling" => return p.adt_shape(id),
+                "core::mem::ManuallyDrop" => return p.adt_shape(id),
                 _ => return None,
             }
         }
