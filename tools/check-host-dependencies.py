@@ -15,15 +15,38 @@ import tomllib
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ACTIVE = ("src/", "crates/", "compiler/native/", "tools/", "scripts/", ".github/", ".cargo/")
+# New runtime/package directories must not silently escape this check. Scan
+# source and build inputs wherever they live; only immutable evidence and prose
+# are excluded. The guard and its planted negative controls name forbidden APIs
+# without depending on them.
+HISTORICAL = ("docs/", "performance/")
+AUDIT_TOOLS = {"tools/check-host-dependencies.py", "tools/test-host-dependencies.py"}
+UNIT_EXTENSIONS = {".service", ".socket", ".timer", ".target", ".path", ".slice",
+                   ".scope", ".mount", ".automount", ".swap", ".device"}
 SOURCE_EXTENSIONS = {".rs", ".c", ".h", ".cc", ".cpp", ".py", ".sh", ".bash",
-                     ".yml", ".yaml", ".toml", ".lock", ".service", ".socket", ".timer", ".target"}
+                     ".yml", ".yaml", ".toml", ".lock", ".ps1", ".bat", ".cmd",
+                     ".mk", ".cmake", ".nix", ".spec", ".install", ".pc"} | UNIT_EXTENSIONS
+BUILD_NAMES = {"makefile", "gnumakefile", "cmakelists.txt", "meson.build",
+               "meson_options.txt", "pkgbuild", ".gitmodules"}
 FORBIDDEN = re.compile(
     rb"(?<![A-Za-z0-9_])(?:libsystemd(?:[-_][A-Za-z0-9_-]+)?|systemd(?:[-_][A-Za-z0-9_-]+)?|"
     rb"systemctl|journalctl|loginctl|sd_notify[a-z_0-9]*|sd_listen_fds[a-z_0-9]*|"
+    rb"sd_(?:bus|event|journal|device|id128|hwdb|boot|path|machine|login|pid|peer|uid|seat|session|get)[a-z_0-9]*|"
     rb"sd-notify|NOTIFY_SOCKET|LISTEN_FDS|LISTEN_PID|LISTEN_FDNAMES)(?![A-Za-z0-9_])",
     re.IGNORECASE,
 )
+
+
+def source_input(path):
+    name = path.name.lower()
+    if path.suffix.lower() in SOURCE_EXTENSIONS or name in BUILD_NAMES:
+        return True
+    if name in {"dockerfile", "containerfile"} or name.startswith(("dockerfile.", "containerfile.")):
+        return True
+    # Executable entry scripts often have no extension. Reading only the prefix
+    # avoids loading unrelated generated binaries merely to classify them.
+    with path.open("rb") as file:
+        return file.read(2) == b"#!"
 
 
 def main():
@@ -39,16 +62,14 @@ def main():
     checked = []
     packages = set()
     for name in paths:
-        if name == "tools/check-host-dependencies.py":
-            continue
-        if name not in {"Cargo.toml", "Cargo.lock", "build.rs", "rust-toolchain.toml"} and not name.startswith(ACTIVE):
+        if name in AUDIT_TOOLS or name.startswith(HISTORICAL):
             continue
         path = ROOT / name
-        if not path.is_file() or path.suffix not in SOURCE_EXTENSIONS:
+        if not path.is_file() or not source_input(path):
             continue
         data = path.read_bytes()
         checked.append(name)
-        if path.suffix in {".service", ".socket", ".timer", ".target"}:
+        if path.suffix.lower() in UNIT_EXTENSIONS:
             violations.append({"path": name, "line": 1, "token": "service-manager unit file"})
         if path.name == "Cargo.lock":
             lock = tomllib.loads(data.decode())

@@ -21,6 +21,24 @@ temporary controls were removed. Historical evidence and documentation stay
 intact. This is a source/dependency guard, not a claim that text scanning proves
 the behavior of every dynamically constructed command or every host library.
 
+The subsequent guard review found a coverage defect, not a runtime dependency:
+its directory allowlist omitted `library/lustr`, examples and future packaging
+directories. Extensionless entry scripts and several unit kinds also escaped
+the scan. The guard now examines source, build recipes and script entry points
+throughout the checkout, including the runtime library and root install paths.
+It recognizes the complete service-unit suffix set and the bus, event, journal
+and login APIs supplied by the same library. Historical records and the guard's
+own planted controls remain explicit exclusions.
+
+The [source-bound guard record](evidence/host-dependencies-20261119/verification.json)
+reports 12,528 inspected files and no dependency violations at candidate
+`28ed726e6a55dd55f98222069c650bd923cc43b2` with the recorded guard revision.
+The previous guard missed 25 of the planted controls; the corrected guard passes
+all 31 observations across eight tests, including missing-checkout rejection and
+preservation of historical records. Both native CI jobs run these controls
+before inspecting the actual checkout. This closes the demonstrated scan gap;
+it does not claim that a text audit proves every possible dynamic dependency.
+
 Rust's `std` library is distinct from systemd. Removing a service-manager
 requirement does not remove the host APIs that this compiler currently uses.
 

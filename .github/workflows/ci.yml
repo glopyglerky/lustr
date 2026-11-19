@@ -74,6 +74,8 @@ jobs:
       DIFFTEST_JOBS: '2'
     steps:
       - uses: actions/checkout@v4
+      - name: Exercise service dependency guard with planted package and runtime inputs
+        run: python3 ../../tools/test-host-dependencies.py
       - name: Reject service-manager dependencies
         run: python3 ../../tools/check-host-dependencies.py --output "$RUNNER_TEMP/host-dependencies.json"
       - name: Check actual Unix-address helper bounds with ASan and UBSan
@@ -271,6 +273,8 @@ jobs:
     runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['macos-26'] || 'macos-26' }}
     steps:
       - uses: actions/checkout@v4
+      - name: Exercise service dependency guard with planted package and runtime inputs
+        run: python3 ../../tools/test-host-dependencies.py
       - name: Reject service-manager dependencies
         run: python3 ../../tools/check-host-dependencies.py --output "$RUNNER_TEMP/host-dependencies.json"
       - name: Install upstream gate's GNU Bash and command tools
