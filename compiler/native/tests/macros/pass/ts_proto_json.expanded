@@ -1,6 +1,6 @@
 use std :: fmt ; pub struct JsonError ( pub String ) ; # [ automatically_derived ] impl :: core ::
 fmt :: Debug for JsonError { # [ inline ] fn fmt ( & self , f : & mut :: core :: fmt :: Formatter )
--> :: core :: fmt :: Result { :: core :: fmt :: Formatter :: debug_tuple_field1_finish ( f ,
+-> :: core :: fmt :: Result { :: core :: fmt :: Formatter :: debug_struct_field1_finish ( f ,
 "JsonError" , && self . 0 ) } } pub struct JsonDecoder < 'a > { pub fields : & 'a [ & 'a str ] , pub
 uint : u32 , pub text : & 'a str } pub trait MarshalerTo { fn marshal_json_to ( & self , enc : & mut
 String ) -> Result < ( ) , JsonError > ; } pub trait UnmarshalerFrom { fn unmarshal_json_from ( &
@@ -44,32 +44,32 @@ SemanticError { pub go_type : String } impl SemanticError { pub fn of ( _e : & J
 < SemanticError > { None } pub fn into_json_error ( self ) -> JsonError { JsonError ( self . go_type
 ) } } pub struct InitResponse { pub version : u32 , pub name : String , pub ready : bool } # [
 automatically_derived ] impl :: core :: default :: Default for InitResponse { # [ inline ] fn
-default ( ) -> InitResponse { InitResponse { version : :: core :: default :: Default :: default ( )
-, name : :: core :: default :: Default :: default ( ) , ready : :: core :: default :: Default ::
-default ( ) } } } # [ automatically_derived ] impl :: core :: fmt :: Debug for InitResponse { # [
-inline ] fn fmt ( & self , f : & mut :: core :: fmt :: Formatter ) -> :: core :: fmt :: Result { ::
-core :: fmt :: Formatter :: debug_struct_field3_finish ( f , "InitResponse" , "version" , & self .
-version , "name" , & self . name , "ready" , && self . ready ) } } impl MarshalerTo for InitResponse
-{ fn marshal_json_to ( & self , enc : & mut String ) -> Result < ( ) , JsonError > {
-write_object_start ( enc ) ; let mut first = true ; marshal_field ( enc , & mut first , "version" ,
-& self . version ) ? ; ; marshal_field_omitempty ( enc , & mut first , "name" , & self . name ) ? ;
-; marshal_field_omitzero ( enc , & mut first , "ready" , & self . ready ) ? ; ; write_object_end (
-enc ) ; Ok ( ) } } impl UnmarshalerFrom for InitResponse { fn unmarshal_json_from ( & mut self , dec
-: & mut JsonDecoder < '_ > ) -> Result < ( ) , JsonError > { let is_object = unmarshal_struct_fields
-( dec , "api.InitResponse" , | name , dec | { match name { "version" => json_unmarshal_decode ( dec
-, & mut self . version ) ? , "name" => json_unmarshal_decode ( dec , & mut self . name ) ? , "ready"
+default ( ) -> Self { InitResponse { version : :: core :: default :: Default :: default ( ) , name :
+:: core :: default :: Default :: default ( ) , ready : :: core :: default :: Default :: default ( )
+} } } # [ automatically_derived ] impl :: core :: fmt :: Debug for InitResponse { # [ inline ] fn
+fmt ( & self , f : & mut :: core :: fmt :: Formatter ) -> :: core :: fmt :: Result { :: core :: fmt
+:: Formatter :: debug_struct_field3_finish ( f , "InitResponse version name ready" , & self .
+version , & self . name , && self . ready ) } } impl MarshalerTo for InitResponse { fn
+marshal_json_to ( & self , enc : & mut String ) -> Result < ( ) , JsonError > { write_object_start (
+enc ) ; let mut first = true ; marshal_field ( enc , & mut first , "version" , & self . version ) ?
+; ; marshal_field_omitempty ( enc , & mut first , "name" , & self . name ) ? ; ;
+marshal_field_omitzero ( enc , & mut first , "ready" , & self . ready ) ? ; ; write_object_end ( enc
+) ; Ok ( ) } } impl UnmarshalerFrom for InitResponse { fn unmarshal_json_from ( & mut self , dec : &
+mut JsonDecoder < '_ > ) -> Result < ( ) , JsonError > { let is_object = unmarshal_struct_fields (
+dec , "api.InitResponse" , | name , dec | { match name { "version" => json_unmarshal_decode ( dec ,
+& mut self . version ) ? , "name" => json_unmarshal_decode ( dec , & mut self . name ) ? , "ready"
 => json_unmarshal_decode ( dec , & mut self . ready ) ? , _ => return Ok ( false ) } Ok ( true ) } )
 ? ; if ! is_object { * self = InitResponse :: default ( ) ; } Ok ( ) } } pub struct NodeHandle ( pub
 u32 ) ; # [ automatically_derived ] impl :: core :: default :: Default for NodeHandle { # [ inline ]
-fn default ( ) -> NodeHandle { NodeHandle ( :: core :: default :: Default :: default ( ) ) } } # [
+fn default ( ) -> Self { NodeHandle ( :: core :: default :: Default :: default ( ) ) } } # [
 automatically_derived ] impl :: core :: fmt :: Debug for NodeHandle { # [ inline ] fn fmt ( & self ,
 f : & mut :: core :: fmt :: Formatter ) -> :: core :: fmt :: Result { :: core :: fmt :: Formatter ::
-debug_tuple_field1_finish ( f , "NodeHandle" , && self . 0 ) } } pub struct NameHandle ( pub String
+debug_struct_field1_finish ( f , "NodeHandle" , && self . 0 ) } } pub struct NameHandle ( pub String
 ) ; # [ automatically_derived ] impl :: core :: default :: Default for NameHandle { # [ inline ] fn
-default ( ) -> NameHandle { NameHandle ( :: core :: default :: Default :: default ( ) ) } } # [
+default ( ) -> Self { NameHandle ( :: core :: default :: Default :: default ( ) ) } } # [
 automatically_derived ] impl :: core :: fmt :: Debug for NameHandle { # [ inline ] fn fmt ( & self ,
 f : & mut :: core :: fmt :: Formatter ) -> :: core :: fmt :: Result { :: core :: fmt :: Formatter ::
-debug_tuple_field1_finish ( f , "NameHandle" , && self . 0 ) } } impl MarshalerTo for NodeHandle {
+debug_struct_field1_finish ( f , "NameHandle" , && self . 0 ) } } impl MarshalerTo for NodeHandle {
 fn marshal_json_to ( & self , enc : & mut String ) -> Result < ( ) , JsonError > { self . 0 .
 marshal_json_to ( enc ) } } impl UnmarshalerFrom for NodeHandle { fn unmarshal_json_from ( & mut
 self , dec : & mut JsonDecoder < '_ > ) -> Result < ( ) , JsonError > { { self . 0 = json_ext ::
@@ -85,10 +85,10 @@ NameHandle { fn is_zero ( & self ) -> bool { self . 0 . is_zero ( ) } } impl std
 for NameHandle { fn fmt ( & self , f : & mut std :: fmt :: Formatter < '_ > ) -> std :: fmt ::
 Result { std :: fmt :: Display :: fmt ( & self . 0 , f ) } } pub struct ModuleKind ( pub u32 ) ; # [
 automatically_derived ] impl :: core :: default :: Default for ModuleKind { # [ inline ] fn default
-( ) -> ModuleKind { ModuleKind ( :: core :: default :: Default :: default ( ) ) } } # [
+( ) -> Self { ModuleKind ( :: core :: default :: Default :: default ( ) ) } } # [
 automatically_derived ] impl :: core :: fmt :: Debug for ModuleKind { # [ inline ] fn fmt ( & self ,
 f : & mut :: core :: fmt :: Formatter ) -> :: core :: fmt :: Result { :: core :: fmt :: Formatter ::
-debug_tuple_field1_finish ( f , "ModuleKind" , && self . 0 ) } } impl MarshalerTo for ModuleKind {
+debug_struct_field1_finish ( f , "ModuleKind" , && self . 0 ) } } impl MarshalerTo for ModuleKind {
 fn marshal_json_to ( & self , enc : & mut String ) -> Result < ( ) , JsonError > { self . 0 .
 marshal_json_to ( enc ) } } impl UnmarshalerFrom for ModuleKind { fn unmarshal_json_from ( & mut
 self , dec : & mut JsonDecoder < '_ > ) -> Result < ( ) , JsonError > { self . 0 .

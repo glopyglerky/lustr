@@ -1,11 +1,11 @@
 use std :: cell :: RefCell ; use std :: collections :: HashMap ; pub struct Cache ( RefCell <
 HashMap < u32 , String > > ) ; # [ automatically_derived ] impl :: core :: default :: Default for
-Cache { # [ inline ] fn default ( ) -> Cache { Cache ( :: core :: default :: Default :: default ( )
-) } } impl Cache { pub fn get ( & self , k : & u32 ) -> Option < String > { self . 0 . borrow ( ) .
+Cache { # [ inline ] fn default ( ) -> Self { Cache ( :: core :: default :: Default :: default ( ) )
+} } impl Cache { pub fn get ( & self , k : & u32 ) -> Option < String > { self . 0 . borrow ( ) .
 get ( k ) . cloned ( ) } pub fn insert ( & self , k : u32 , v : String ) { self . 0 . borrow_mut ( )
 . insert ( k , v ) ; } } pub struct Links { pub by_node : Cache , pub by_name : Cache } # [
 automatically_derived ] impl :: core :: default :: Default for Links { # [ inline ] fn default ( )
--> Links { Links { by_node : :: core :: default :: Default :: default ( ) , by_name : :: core ::
+-> Self { Links { by_node : :: core :: default :: Default :: default ( ) , by_name : :: core ::
 default :: Default :: default ( ) } } } pub struct TypeParser { links_store : Links , pub computes :
 RefCell < u32 > } impl TypeParser { pub fn links ( & self ) -> & Links { & self . links_store } pub
 fn label ( & self , node : u32 ) -> String { { let key = node ; if let Some ( value ) = self . links

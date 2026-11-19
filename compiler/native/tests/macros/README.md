@@ -3,6 +3,18 @@
 This is the test corpus for W-MACRO (ARCH section 6). The gate is
 `scripts/test-macros.sh`. Run it before you change macro work.
 
+The active expansion oracle is the declared Rust source
+`5b7b37aefcb5b2fba3c2392bc9065b9e4602d494` (the pinned 1.102 nightly SDK).
+Fourteen stored expansions originally matched Rust 1.99 exactly. They were
+reconciled on 19 November 2026 after the candidate oracle moved to the declared
+SDK: upstream derive implementations now print `Self` in their signatures and
+variant paths and use the new combined-name Debug helpers. Both actual compiler
+versions produced the unchanged runtime `.out` files; every token outside the
+generated derive implementations remained identical. The normalizer, fixture
+sources and rejection expectations were unchanged. Exact old/new identities and
+per-fixture hashes are in the
+[hosted qualification follow-up](../../../../docs/compiler-set/hosted-native-followup.md).
+
 ## Layout
 
 | Path | What |

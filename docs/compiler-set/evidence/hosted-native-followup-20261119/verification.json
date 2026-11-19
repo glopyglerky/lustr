@@ -1,0 +1,789 @@
+{
+  "schema": 1,
+  "investigation_base": "dc5ea3de8b6dc8a37d6c16739c43aa11525cc35f",
+  "verifier_fix_commit": "f43bce6a8a1ed4d782600da6485fa3ae19f7f909",
+  "hosted": {
+    "run": 44465150002,
+    "job": 135361018008,
+    "published_head": "0170b9834a15f104f303d4497f93a00773564bd0",
+    "actual_checkout": "91735c0778238f7ea3800c4ce6a4d91d2413e3ff",
+    "equal_tree": "0e132a28f854afa6544f63da633229061fd84ede",
+    "conclusion": "failure",
+    "job_log_sha256": "4dc818efacc14fd3dbbdfdad477e55ade3323ff3a0159dd894c021ced0c0f910",
+    "artifact_sha256": "d1cf838d5bde29a5187688ab3b35c69844d52780d536bd1c486f12b6147d7c6d",
+    "unicode_link_stderr_sha256": "8f412e51b969f4d02e2885ee078d8d4a6dc9e3625b1bdd63c001837fc8086f90",
+    "ordinary": {
+      "passed": 5540,
+      "failed": 0
+    },
+    "unwind_native": {
+      "passed": 65,
+      "failed": 0,
+      "unsupported": 0
+    },
+    "unwind_emitted_eh": {
+      "passed": 65,
+      "failed": 0,
+      "unsupported": 0
+    }
+  },
+  "macro": {
+    "oracle_identities": {
+      "old": "rustc 1.99.0 (b940084d7 2026-09-28)\nbinary: rustc\ncommit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4\ncommit-date: 2026-09-28\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.0\nLLVM version: 23.1.1\n",
+      "declared": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n"
+    },
+    "old_runner_status": 1,
+    "old_runner_summary": "44 passed, 14 failed",
+    "candidate_runner": {
+      "command": [
+        "bash",
+        "scripts/test-macros.sh"
+      ],
+      "status": 0,
+      "stdout_sha256": "a98f96aae69a99de0323c44d4888deb721d5556dce6863245027cd067b42cc9c",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "normalizer_sha256": "0ef09dbc2f8e64ea6cae028a1ab1e7f37acd285a5e2a7bd4e5e8ae5a6dfaf1a0",
+    "comparisons": [
+      {
+        "fixture": "tests/macros/pass/ts_args_handle.rs",
+        "fixture_sha256": "8c05fa7d0863b11012c684a2d7bb329ac817d0952062522f8033efd1359e2355",
+        "old_expanded_sha256": "10f57e7ff4ded132f2a845a94b06e462682ad08ccca8541b33164dec5de48e03",
+        "declared_expanded_sha256": "c6e8d2bc603d8b782eb84b63dfc3a71be545e61106ec48c512379c3f279b094e",
+        "output_sha256": "8682bf53bdc6ce67fbff29339702aebde85604eae7469a4762f74db079364005",
+        "derived_impls": 28,
+        "changed_derived_impls": 15,
+        "outside_derived_impls_exactly_equal": true,
+        "both_runtimes_equal_original_output": true
+      },
+      {
+        "fixture": "tests/macros/pass/ts_arithmetic.rs",
+        "fixture_sha256": "b47e4a43b8e7a334d459bca57f7354182d978abd4982ce4f60f227780236d02a",
+        "old_expanded_sha256": "312e70c3132197200370278fa5f8edfef4fc7929822c05d09357f68276dd70e3",
+        "declared_expanded_sha256": "856fbafb3c492435efd5b685dd56ebfb8b6f204a2be0f5bf69c012cf80952099",
+        "output_sha256": "f9946e9b25014f535b01f95eaa6037fbc9fb597a3bcf3c546f34b4cf036b627d",
+        "derived_impls": 6,
+        "changed_derived_impls": 3,
+        "outside_derived_impls_exactly_equal": true,
+        "both_runtimes_equal_original_output": true
+      },
+      {
+        "fixture": "tests/macros/pass/ts_effect_cached.rs",
+        "fixture_sha256": "ec537f88306221f3252ee3018fabdb80bfb13f93cdde2eb844ab8507ac75555a",
+        "old_expanded_sha256": "b6809838573622eb0335c8f6baa6ec0c0b164f74ce5b2014dee9a1029e19ac0d",
+        "declared_expanded_sha256": "5c32eec698e113f74b42ea8f35705170b5313b914bcf61aa7c447961472158ba",
+        "output_sha256": "1aa55d1408429548048197df333b602652de960b0cc6c98502508af93ec59b70",
+        "derived_impls": 2,
+        "changed_derived_impls": 2,
+        "outside_derived_impls_exactly_equal": true,
+        "both_runtimes_equal_original_output": true
+      },
+      {
+        "fixture": "tests/macros/pass/ts_field_macros.rs",
+        "fixture_sha256": "c9cb955eeb7b0062f2c027a644019478ed65b2dc3095f29e06a80a93fa59ca04",
+        "old_expanded_sha256": "7a876ea76f20b5e1156ef270fbf5ac971a6bf99b8724a251587928190cec01ec",
+        "declared_expanded_sha256": "2e8c8ffe54dd62c0a9d29ee473abc4b2a94fd2b06c818eab9d698f2a0b7f5e1b",
+        "output_sha256": "d38443057f99048579799f99d45a5fc88bb02635b7d97330c84e386cdf7b4551",
+        "derived_impls": 8,
+        "changed_derived_impls": 7,
+        "outside_derived_impls_exactly_equal": true,
+        "both_runtimes_equal_original_output": true
+      },
+      {
+        "fixture": "tests/macros/pass/ts_flags.rs",
+        "fixture_sha256": "cb4d7648aa7a13370c3dabe3072c50737121ce2b99797b3f41c8758d5c61dd16",
+        "old_expanded_sha256": "132804acb5b6d441d2cab0580e1b71bf651c733a1e366fda759b208ebe1a7e1e",
+        "declared_expanded_sha256": "b9a468b04d14cfdc5f9edb7a8a00ee936a6366fb934eb684f97414c857c22247",
+        "output_sha256": "0146b56a20d6527300ab0d246f7f9cc0f0dd9c8bb6d2df69ca2c7cd00a53fbe9",
+        "derived_impls": 21,
+        "changed_derived_impls": 11,
+        "outside_derived_impls_exactly_equal": true,
+        "both_runtimes_equal_original_output": true
+      },
+      {
+        "fixture": "tests/macros/pass/ts_go_file_ref.rs",
+        "fixture_sha256": "32a3896baef64991c8290dc2afa04c373478ea6120bde307cd90a6fe8777a1ca",
+        "old_expanded_sha256": "5208b6d738390eeb13a060bb361c87197f1011cba8acf2ef453e3c8540d864c4",
+        "declared_expanded_sha256": "b43236eff94bf3feec8b09816f461141b01e2bc54356c21b8f2586d8f480f590",
+        "output_sha256": "f0367efe1521a63a6ff6ac1d425dfa9f35c226429daeb3a30f46108acf01e3fb",
+        "derived_impls": 1,
+        "changed_derived_impls": 1,
+        "outside_derived_impls_exactly_equal": true,
+        "both_runtimes_equal_original_output": true
+      },
+      {
+        "fixture": "tests/macros/pass/ts_impl_es_transformer.rs",
+        "fixture_sha256": "8cdfbd895d24b1876ba9c7932d7f9cc69d62f721d521e3a4c05618107d96705f",
+        "old_expanded_sha256": "37804773cea5c7f550c1149fa20737f213c733ec5ebca5110eb125eb88a63bce",
+        "declared_expanded_sha256": "101fb91a4840c1f64d10f8724e23440cfcee264fe9c08d9db7cddd994dc83ab7",
+        "output_sha256": "5b1beca73b8f045eadb5974f1131c4e1c9cd930f085dd20b91c8cae145fae469",
+        "derived_impls": 1,
+        "changed_derived_impls": 1,
+        "outside_derived_impls_exactly_equal": true,
+        "both_runtimes_equal_original_output": true
+      },
+      {
+        "fixture": "tests/macros/pass/ts_node_accessors.rs",
+        "fixture_sha256": "2d7b4fc58387fd7f1b79ae2e8fab3db35c758ab508fa9a32e22f41c191ef2f5a",
+        "old_expanded_sha256": "e7ff845eaea772b06d4ba59646af696a133765350fc5b2bcb0ea04be49575996",
+        "declared_expanded_sha256": "54b1bccc79fda8749a090c135f98306496486e7f3fd4c4de6ff0a97407225db9",
+        "output_sha256": "1852f9c6251a6c9054f919387cea19194e600a96a5ce5a098634bb8a503bb6af",
+        "derived_impls": 305,
+        "changed_derived_impls": 272,
+        "outside_derived_impls_exactly_equal": true,
+        "both_runtimes_equal_original_output": true
+      },
+      {
+        "fixture": "tests/macros/pass/ts_node_walk.rs",
+        "fixture_sha256": "6ae2504b8650713c950dcb3c6acc38f275f1f0114116fe9882026626d3c43320",
+        "old_expanded_sha256": "c5ba951a42715ab2deeb5a40a9607aa83e6d9d08817bd65f5c36616f631dadff",
+        "declared_expanded_sha256": "76f8779989c39aa23243c48dc94d95e953ae93f3b867ddf8a93f1ec0c0fc192e",
+        "output_sha256": "2f03a9dcec513ed42858ce1a52c696f946a10eb92a8fb1808aca562dea802216",
+        "derived_impls": 305,
+        "changed_derived_impls": 272,
+        "outside_derived_impls_exactly_equal": true,
+        "both_runtimes_equal_original_output": true
+      },
+      {
+        "fixture": "tests/macros/pass/ts_payload_codec.rs",
+        "fixture_sha256": "df6a36a4b367fbc85c3d05012146c9ad7e308f7915a3286be0bc67cfdb17d8c5",
+        "old_expanded_sha256": "81a23ee7a7f1a5b74a251a02c683bb028dcdd90dade4e4286117033606589213",
+        "declared_expanded_sha256": "1812182f842e66ed686ff2b71404891d160a88095b190f8d37d9952fa180c9e7",
+        "output_sha256": "3832cd4ee58dc5e201685a4b0eca970818a080b7172ba4cb2c29cf52d0535e97",
+        "derived_impls": 5,
+        "changed_derived_impls": 5,
+        "outside_derived_impls_exactly_equal": true,
+        "both_runtimes_equal_original_output": true
+      },
+      {
+        "fixture": "tests/macros/pass/ts_pref_field.rs",
+        "fixture_sha256": "3963bc84d0c1e4d9fab295c497587eced236720b80f60a966131659902f83c64",
+        "old_expanded_sha256": "885416c9015438522c05818ad8d1ba22361570a18ce34f75425586790db5a118",
+        "declared_expanded_sha256": "6eaf870ecce0af80acade6a6cad29ae0f03d7244f9acdb2858a8070ce930a308",
+        "output_sha256": "014361eff8630be0419018f547c98316da061c5e6ff25e4d2a7e08ed8a123618",
+        "derived_impls": 3,
+        "changed_derived_impls": 3,
+        "outside_derived_impls_exactly_equal": true,
+        "both_runtimes_equal_original_output": true
+      },
+      {
+        "fixture": "tests/macros/pass/ts_proto_json.rs",
+        "fixture_sha256": "e915c86e248a5a66a1fb27f1df520a9fd7cbbdfbfd6b410b8b0ed564856eecf3",
+        "old_expanded_sha256": "3aa15852b18d69c128088f9c8c9c37b326a9e91adad87f5c38f5c641958a7b2c",
+        "declared_expanded_sha256": "bd22cda2caae9ce7a9d47a5ce147acca326e52cd923e58e667888ca8f4499355",
+        "output_sha256": "775340751de9d8442209c67e56d682ab2c1418f5d72c6e87d73b14687a3109fa",
+        "derived_impls": 9,
+        "changed_derived_impls": 9,
+        "outside_derived_impls_exactly_equal": true,
+        "both_runtimes_equal_original_output": true
+      },
+      {
+        "fixture": "tests/macros/pass/ts_test_support.rs",
+        "fixture_sha256": "8274734540e8d86938d0767bff67e617423514595acf167bbfdf4378cf7e00fb",
+        "old_expanded_sha256": "26b2da26bb00252ae28c85e57f02db198d723562706a7472928c88fbaf235cf5",
+        "declared_expanded_sha256": "dd22be0e783b938820f0bb89779936e7da6358e27ec8842241cb1426a771d2ad",
+        "output_sha256": "85bb8dcc77c2840f7539a4cb16e490f6d63433b409ff37c1117aacc71721c112",
+        "derived_impls": 4,
+        "changed_derived_impls": 3,
+        "outside_derived_impls_exactly_equal": true,
+        "both_runtimes_equal_original_output": true
+      },
+      {
+        "fixture": "tests/macros/pass/ts_with_function_like.rs",
+        "fixture_sha256": "171bad082e55fb9b82853dd3142acf21cbdab1a9c34814aec8714004fedd0a2e",
+        "old_expanded_sha256": "433e119c9a23f36ec0b75ac7bc4a811c5188fcfe478b303a3f9ed7b0f9d18a94",
+        "declared_expanded_sha256": "dc841655b84f238e80636492494706ae31cf79f185c2f3d1c01c5ef93ca5f1f0",
+        "output_sha256": "2e5f793e6df563fe7793011f633a14960f3f6b7a71ed91c1e656fea8e69805a8",
+        "derived_impls": 305,
+        "changed_derived_impls": 272,
+        "outside_derived_impls_exactly_equal": true,
+        "both_runtimes_equal_original_output": true
+      }
+    ],
+    "actual_commands": [
+      {
+        "name": "old-identity",
+        "status": 0,
+        "stdout_sha256": "b569b0c98ea3133c7252b4b8ea6b39b7b353813df0dd5f5c412c355691424112",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "declared-identity",
+        "status": 0,
+        "stdout_sha256": "bbc9b960fe50c84bca20f3109950bcb87c48b6d1ce61d2fc2fc1519aaba2daaa",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_args_handle-old-expand",
+        "status": 0,
+        "stdout_sha256": "2911bbc1780cfa481eda7105f7b2172f3876d9cab1265c1b968818ac3f729ced",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_args_handle-old-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_args_handle-old-run",
+        "status": 0,
+        "stdout_sha256": "8682bf53bdc6ce67fbff29339702aebde85604eae7469a4762f74db079364005",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_args_handle-declared-expand",
+        "status": 0,
+        "stdout_sha256": "83fc8f391ca7639af2997a541feb02c5d54e960f5060bec011d98beae77b1b88",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_args_handle-declared-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_args_handle-declared-run",
+        "status": 0,
+        "stdout_sha256": "8682bf53bdc6ce67fbff29339702aebde85604eae7469a4762f74db079364005",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_arithmetic-old-expand",
+        "status": 0,
+        "stdout_sha256": "1f65cf483085b5f51aaefa4221ed2857e979182dfa502a8701ec7155a875b8bb",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_arithmetic-old-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_arithmetic-old-run",
+        "status": 0,
+        "stdout_sha256": "f9946e9b25014f535b01f95eaa6037fbc9fb597a3bcf3c546f34b4cf036b627d",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_arithmetic-declared-expand",
+        "status": 0,
+        "stdout_sha256": "65dd6cec637aaa292d4188d1357c5892493ba4e3b04cc2ac79c005f8b73cee87",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_arithmetic-declared-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_arithmetic-declared-run",
+        "status": 0,
+        "stdout_sha256": "f9946e9b25014f535b01f95eaa6037fbc9fb597a3bcf3c546f34b4cf036b627d",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_effect_cached-old-expand",
+        "status": 0,
+        "stdout_sha256": "96d019b96737e7b940fd9a345bb0600a3db6c94ede55c5ba6385a905f5c54180",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_effect_cached-old-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_effect_cached-old-run",
+        "status": 0,
+        "stdout_sha256": "1aa55d1408429548048197df333b602652de960b0cc6c98502508af93ec59b70",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_effect_cached-declared-expand",
+        "status": 0,
+        "stdout_sha256": "cfa681e9274ed4a832658f8f70dc14fa4644846c560506e2e62b2b6b3ef992f0",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_effect_cached-declared-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_effect_cached-declared-run",
+        "status": 0,
+        "stdout_sha256": "1aa55d1408429548048197df333b602652de960b0cc6c98502508af93ec59b70",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_field_macros-old-expand",
+        "status": 0,
+        "stdout_sha256": "8bfa41b16f5f9ab9f4c70a9be796f1bf9f46cceb4ed1c4e604b55db61f94c5e9",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_field_macros-old-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_field_macros-old-run",
+        "status": 0,
+        "stdout_sha256": "d38443057f99048579799f99d45a5fc88bb02635b7d97330c84e386cdf7b4551",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_field_macros-declared-expand",
+        "status": 0,
+        "stdout_sha256": "11b469929a0e7ae6711a421ec1e1b4834148b588f98e1afaf714852dce4e9194",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_field_macros-declared-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_field_macros-declared-run",
+        "status": 0,
+        "stdout_sha256": "d38443057f99048579799f99d45a5fc88bb02635b7d97330c84e386cdf7b4551",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_flags-old-expand",
+        "status": 0,
+        "stdout_sha256": "13632252d1e51d582aad5179629abba7167459ca8053afec65c8389c5c79a81b",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_flags-old-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_flags-old-run",
+        "status": 0,
+        "stdout_sha256": "0146b56a20d6527300ab0d246f7f9cc0f0dd9c8bb6d2df69ca2c7cd00a53fbe9",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_flags-declared-expand",
+        "status": 0,
+        "stdout_sha256": "79e4b6a6fcc8af8c959014cb28514422d851b805fa7717b17a4be88b9948ec95",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_flags-declared-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_flags-declared-run",
+        "status": 0,
+        "stdout_sha256": "0146b56a20d6527300ab0d246f7f9cc0f0dd9c8bb6d2df69ca2c7cd00a53fbe9",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_go_file_ref-old-expand",
+        "status": 0,
+        "stdout_sha256": "f79fcfc60f2ff31eb7c6dc678fae04ff56beff97db8e8caebda143447adc0d6d",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_go_file_ref-old-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_go_file_ref-old-run",
+        "status": 0,
+        "stdout_sha256": "f0367efe1521a63a6ff6ac1d425dfa9f35c226429daeb3a30f46108acf01e3fb",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_go_file_ref-declared-expand",
+        "status": 0,
+        "stdout_sha256": "099b5965473287285c1ed81d22dcdf13f65db1442e45ae075748182a93b5dd27",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_go_file_ref-declared-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_go_file_ref-declared-run",
+        "status": 0,
+        "stdout_sha256": "f0367efe1521a63a6ff6ac1d425dfa9f35c226429daeb3a30f46108acf01e3fb",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_impl_es_transformer-old-expand",
+        "status": 0,
+        "stdout_sha256": "b5cdaf8ebf3a63d229df8c4d67bbf74791ed3cf43cf9c5ee05eb37ebd6e29ef6",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_impl_es_transformer-old-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_impl_es_transformer-old-run",
+        "status": 0,
+        "stdout_sha256": "5b1beca73b8f045eadb5974f1131c4e1c9cd930f085dd20b91c8cae145fae469",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_impl_es_transformer-declared-expand",
+        "status": 0,
+        "stdout_sha256": "b70f13835f403f78a3fe2e9a03f2712d865994a0ccc8994bf5f25b0d48bedba5",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_impl_es_transformer-declared-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_impl_es_transformer-declared-run",
+        "status": 0,
+        "stdout_sha256": "5b1beca73b8f045eadb5974f1131c4e1c9cd930f085dd20b91c8cae145fae469",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_node_accessors-old-expand",
+        "status": 0,
+        "stdout_sha256": "1255b7d3dbe819314f4d69cd50ca0d6dd6aa90139c1a3d6eeb642c6627bffe85",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_node_accessors-old-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_node_accessors-old-run",
+        "status": 0,
+        "stdout_sha256": "1852f9c6251a6c9054f919387cea19194e600a96a5ce5a098634bb8a503bb6af",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_node_accessors-declared-expand",
+        "status": 0,
+        "stdout_sha256": "2fee3c90786fbd986928fd7ce03770d935a236086067b0b7ac00a8a526f57435",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_node_accessors-declared-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_node_accessors-declared-run",
+        "status": 0,
+        "stdout_sha256": "1852f9c6251a6c9054f919387cea19194e600a96a5ce5a098634bb8a503bb6af",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_node_walk-old-expand",
+        "status": 0,
+        "stdout_sha256": "2a1c370a1259c2c3ff5b42fa012feb664da3b55487bcbee8bf7751a1a5245181",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_node_walk-old-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_node_walk-old-run",
+        "status": 0,
+        "stdout_sha256": "2f03a9dcec513ed42858ce1a52c696f946a10eb92a8fb1808aca562dea802216",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_node_walk-declared-expand",
+        "status": 0,
+        "stdout_sha256": "44999583efffa143f84a7f9a8ef89cd6e7e250faba0541c2d5b2df5ebc6b93e6",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_node_walk-declared-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_node_walk-declared-run",
+        "status": 0,
+        "stdout_sha256": "2f03a9dcec513ed42858ce1a52c696f946a10eb92a8fb1808aca562dea802216",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_payload_codec-old-expand",
+        "status": 0,
+        "stdout_sha256": "6170ce477c0e961d22aa112cbfacb433c780790434dca3d29450370f66c968d1",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_payload_codec-old-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_payload_codec-old-run",
+        "status": 0,
+        "stdout_sha256": "3832cd4ee58dc5e201685a4b0eca970818a080b7172ba4cb2c29cf52d0535e97",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_payload_codec-declared-expand",
+        "status": 0,
+        "stdout_sha256": "3ac705ab1c080c3277f546d307eae8c1ded3eb31a4b21fa9937f5e7c12e024c9",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_payload_codec-declared-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_payload_codec-declared-run",
+        "status": 0,
+        "stdout_sha256": "3832cd4ee58dc5e201685a4b0eca970818a080b7172ba4cb2c29cf52d0535e97",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_pref_field-old-expand",
+        "status": 0,
+        "stdout_sha256": "b913ee32254ee127d5ede2db9439c84438bb47f607e9ad0be8f190868cdf80d9",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_pref_field-old-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_pref_field-old-run",
+        "status": 0,
+        "stdout_sha256": "014361eff8630be0419018f547c98316da061c5e6ff25e4d2a7e08ed8a123618",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_pref_field-declared-expand",
+        "status": 0,
+        "stdout_sha256": "47db6374c51057fb1328de66d54a49ce28a31642fa62088207b8b3e3697ef0f4",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_pref_field-declared-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_pref_field-declared-run",
+        "status": 0,
+        "stdout_sha256": "014361eff8630be0419018f547c98316da061c5e6ff25e4d2a7e08ed8a123618",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_proto_json-old-expand",
+        "status": 0,
+        "stdout_sha256": "5ffaebeb3f4fc4954a2eb515b3290b51f9c94e8153472969d35a54e4e7f3c2d9",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_proto_json-old-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_proto_json-old-run",
+        "status": 0,
+        "stdout_sha256": "775340751de9d8442209c67e56d682ab2c1418f5d72c6e87d73b14687a3109fa",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_proto_json-declared-expand",
+        "status": 0,
+        "stdout_sha256": "03ec3d316edc77f5555f8828c226465346992e61a9ed7d4b32fea8982e8455c6",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_proto_json-declared-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_proto_json-declared-run",
+        "status": 0,
+        "stdout_sha256": "775340751de9d8442209c67e56d682ab2c1418f5d72c6e87d73b14687a3109fa",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_test_support-old-expand",
+        "status": 0,
+        "stdout_sha256": "5f2f1983f737f41769ce72340c11e1a7ab24d74acb7ddb4d3ac4127f1ccff53e",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_test_support-old-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_test_support-old-run",
+        "status": 0,
+        "stdout_sha256": "85bb8dcc77c2840f7539a4cb16e490f6d63433b409ff37c1117aacc71721c112",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_test_support-declared-expand",
+        "status": 0,
+        "stdout_sha256": "27dbad09e4696677b3b816c31fb809e783ef0fd11fa4ec8745309978cb433f0a",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_test_support-declared-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_test_support-declared-run",
+        "status": 0,
+        "stdout_sha256": "85bb8dcc77c2840f7539a4cb16e490f6d63433b409ff37c1117aacc71721c112",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_with_function_like-old-expand",
+        "status": 0,
+        "stdout_sha256": "8dc31d3b6fd727ff565617655102221bb47cfb18e65ec94d99f92410fabc19e7",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_with_function_like-old-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_with_function_like-old-run",
+        "status": 0,
+        "stdout_sha256": "2e5f793e6df563fe7793011f633a14960f3f6b7a71ed91c1e656fea8e69805a8",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_with_function_like-declared-expand",
+        "status": 0,
+        "stdout_sha256": "95975cd0bd810bc68f21432fcd3fbc89a9c4e1c524a47c80e0a2643b95b01106",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_with_function_like-declared-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "ts_with_function_like-declared-run",
+        "status": 0,
+        "stdout_sha256": "2e5f793e6df563fe7793011f633a14960f3f6b7a71ed91c1e656fea8e69805a8",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "unchanged_files_sha256": {
+      "compiler/native/scripts/test-macros.sh": "07016582f5ba54b951bdddc881278fa4c70d2bfe96b295e4b462a83ee9c2257c",
+      "compiler/native/tests/macros/normalize.py": "0ef09dbc2f8e64ea6cae028a1ab1e7f37acd285a5e2a7bd4e5e8ae5a6dfaf1a0",
+      "compiler/native/tests/macros/pass/ts_args_handle.rs": "8c05fa7d0863b11012c684a2d7bb329ac817d0952062522f8033efd1359e2355",
+      "compiler/native/tests/macros/pass/ts_args_handle.out": "8682bf53bdc6ce67fbff29339702aebde85604eae7469a4762f74db079364005",
+      "compiler/native/tests/macros/pass/ts_arithmetic.rs": "b47e4a43b8e7a334d459bca57f7354182d978abd4982ce4f60f227780236d02a",
+      "compiler/native/tests/macros/pass/ts_arithmetic.out": "f9946e9b25014f535b01f95eaa6037fbc9fb597a3bcf3c546f34b4cf036b627d",
+      "compiler/native/tests/macros/pass/ts_effect_cached.rs": "ec537f88306221f3252ee3018fabdb80bfb13f93cdde2eb844ab8507ac75555a",
+      "compiler/native/tests/macros/pass/ts_effect_cached.out": "1aa55d1408429548048197df333b602652de960b0cc6c98502508af93ec59b70",
+      "compiler/native/tests/macros/pass/ts_field_macros.rs": "c9cb955eeb7b0062f2c027a644019478ed65b2dc3095f29e06a80a93fa59ca04",
+      "compiler/native/tests/macros/pass/ts_field_macros.out": "d38443057f99048579799f99d45a5fc88bb02635b7d97330c84e386cdf7b4551",
+      "compiler/native/tests/macros/pass/ts_flags.rs": "cb4d7648aa7a13370c3dabe3072c50737121ce2b99797b3f41c8758d5c61dd16",
+      "compiler/native/tests/macros/pass/ts_flags.out": "0146b56a20d6527300ab0d246f7f9cc0f0dd9c8bb6d2df69ca2c7cd00a53fbe9",
+      "compiler/native/tests/macros/pass/ts_go_file_ref.rs": "32a3896baef64991c8290dc2afa04c373478ea6120bde307cd90a6fe8777a1ca",
+      "compiler/native/tests/macros/pass/ts_go_file_ref.out": "f0367efe1521a63a6ff6ac1d425dfa9f35c226429daeb3a30f46108acf01e3fb",
+      "compiler/native/tests/macros/pass/ts_impl_es_transformer.rs": "8cdfbd895d24b1876ba9c7932d7f9cc69d62f721d521e3a4c05618107d96705f",
+      "compiler/native/tests/macros/pass/ts_impl_es_transformer.out": "5b1beca73b8f045eadb5974f1131c4e1c9cd930f085dd20b91c8cae145fae469",
+      "compiler/native/tests/macros/pass/ts_node_accessors.rs": "2d7b4fc58387fd7f1b79ae2e8fab3db35c758ab508fa9a32e22f41c191ef2f5a",
+      "compiler/native/tests/macros/pass/ts_node_accessors.out": "1852f9c6251a6c9054f919387cea19194e600a96a5ce5a098634bb8a503bb6af",
+      "compiler/native/tests/macros/pass/ts_node_walk.rs": "6ae2504b8650713c950dcb3c6acc38f275f1f0114116fe9882026626d3c43320",
+      "compiler/native/tests/macros/pass/ts_node_walk.out": "2f03a9dcec513ed42858ce1a52c696f946a10eb92a8fb1808aca562dea802216",
+      "compiler/native/tests/macros/pass/ts_payload_codec.rs": "df6a36a4b367fbc85c3d05012146c9ad7e308f7915a3286be0bc67cfdb17d8c5",
+      "compiler/native/tests/macros/pass/ts_payload_codec.out": "3832cd4ee58dc5e201685a4b0eca970818a080b7172ba4cb2c29cf52d0535e97",
+      "compiler/native/tests/macros/pass/ts_pref_field.rs": "3963bc84d0c1e4d9fab295c497587eced236720b80f60a966131659902f83c64",
+      "compiler/native/tests/macros/pass/ts_pref_field.out": "014361eff8630be0419018f547c98316da061c5e6ff25e4d2a7e08ed8a123618",
+      "compiler/native/tests/macros/pass/ts_proto_json.rs": "e915c86e248a5a66a1fb27f1df520a9fd7cbbdfbfd6b410b8b0ed564856eecf3",
+      "compiler/native/tests/macros/pass/ts_proto_json.out": "775340751de9d8442209c67e56d682ab2c1418f5d72c6e87d73b14687a3109fa",
+      "compiler/native/tests/macros/pass/ts_test_support.rs": "8274734540e8d86938d0767bff67e617423514595acf167bbfdf4378cf7e00fb",
+      "compiler/native/tests/macros/pass/ts_test_support.out": "85bb8dcc77c2840f7539a4cb16e490f6d63433b409ff37c1117aacc71721c112",
+      "compiler/native/tests/macros/pass/ts_with_function_like.rs": "171bad082e55fb9b82853dd3142acf21cbdab1a9c34814aec8714004fedd0a2e",
+      "compiler/native/tests/macros/pass/ts_with_function_like.out": "2e5f793e6df563fe7793011f633a14960f3f6b7a71ed91c1e656fea8e69805a8"
+    },
+    "upstream_source_sha256": {
+      "compiler/rustc_builtin_macros/src/deriving/clone.rs": "56cbc994cf97b60f12433ef11905701a79cdb0ab97d2be4946e957ac10c915ae",
+      "compiler/rustc_builtin_macros/src/deriving/default.rs": "f742914ba3c974a26237bfdcff25ebf550cc1d6ec18913c506fc6ac6dfa3731e",
+      "compiler/rustc_builtin_macros/src/deriving/debug.rs": "64bc056a84f489d8e87effcb43447c16d66a98b31e64adf9f7d9c30694247d61",
+      "compiler/rustc_builtin_macros/src/deriving/generic/mod.rs": "a5ac400e1bcd9bd6e8fbbb23433c44197d91cb4e04e2ffd787213471496b6a53"
+    },
+    "private_observer_initial_failure": "Initial derive-range audit assumed impl immediately followed automatically_derived; corrected to parse doc attributes and unsafe, retaining first failed observer and original data. No test gate changed."
+  },
+  "unicode_verifier": {
+    "source_sha256": "f6071d7b938c224c1c18b70d992977d165000c3e8a312912376e9ebd765108dd",
+    "rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "original_local_duplicate_sdk_status": 0,
+    "isolated_standard_sdk_before_status": 1,
+    "isolated_standard_sdk_before_stderr_sha256": "640439b9f718ad3452a2bbe5abf31d542d198aada6e94f8f6b25b1c4cc945e35",
+    "after": [
+      {
+        "name": "standard-verifier-after-build",
+        "status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "standard-verifier-after-run",
+        "status": 0,
+        "stdout_sha256": "fa795b2aa6360d21f8491af166d1b04a64c3cc7182b7efb6d930af71ac27f000",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "scope": "Targeted verifier build/run with candidate -L native flag and scoped loader directory; isolated SDK view points to the same exact compiler/library bytes. All1112064 scalars plus961 composition pairs pass."
+  },
+  "limits": [
+    "Original hosted run remains failed; later main-gate stages had not executed.",
+    "No new full composed native compiler qualification or package admission.",
+    "Macro equivalence controls cover the14 unchanged fixture programs; no claim for all possible derives.",
+    "Frozen historical oracle remains Rust1.99."
+  ]
+}
