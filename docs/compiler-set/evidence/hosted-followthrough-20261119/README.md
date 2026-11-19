@@ -77,4 +77,3 @@ portable process/IPC/SDK checks, and both Cargo-layout transition checks. Full
 native, sanitizer corpus, exhaustive Unicode, daemon, and later runtime results
 remain pending until their original logs report completion. No installable
 package or complete integrated compiler is admitted by this checkpoint.
-
