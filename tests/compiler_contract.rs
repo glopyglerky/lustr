@@ -2,6 +2,10 @@ use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
+#[path = "../compiler/native/src/protocol.rs"]
+#[allow(dead_code)]
+mod transport_protocol;
+
 struct Fixture {
     root: PathBuf,
     package: PathBuf,
@@ -71,6 +75,60 @@ impl Fixture {
         );
         assert_eq!(result.status.code(), Some(1), "expanded native accepted {label}");
         assert!(!artifact.exists(), "expanded native published invalid {label}");
+    }
+}
+
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT on a Unix socket host"]
+fn public_entries_keep_ambiguous_daemon_failures_terminal() {
+    use std::io::{BufReader, Write};
+    use std::os::unix::net::UnixListener;
+    use std::time::{Duration, Instant};
+    let f = Fixture::new("native-transport");
+    let source = f.source("valid.rs", "fn main() { println!(\"valid native program\"); }\n");
+    let artifact = f.root.join("previous-program");
+    let prior = b"previous successful artifact must remain unchanged";
+    let socket = f.root.join("daemon.sock");
+    let replies = [
+        ("lost-reply", Vec::new()),
+        ("old-protocol", b"0 0 0\n".to_vec()),
+        ("wrong-build", b"0 0 0 another-build\n".to_vec()),
+        ("truncated-body", format!("0 7 0 {}\n", transport_protocol::build_id()).into_bytes()),
+        ("reported-failure", format!("3 0 7 {}\nfailure", transport_protocol::build_id()).into_bytes()),
+    ];
+    for tool in ["lust", "lustr"] {
+        for (label, reply) in &replies {
+            std::fs::write(&artifact, prior).unwrap();
+            let listener = UnixListener::bind(&socket).expect("required real daemon socket");
+            listener.set_nonblocking(true).unwrap();
+            let reply = reply.clone();
+            let server = std::thread::spawn(move || {
+                let deadline = Instant::now() + Duration::from_secs(10);
+                let mut stream = loop {
+                    match listener.accept() {
+                        Ok((stream, _)) => break stream,
+                        Err(error) if error.kind() == std::io::ErrorKind::WouldBlock && Instant::now() < deadline => {
+                            std::thread::sleep(Duration::from_millis(1));
+                        }
+                        Err(error) => panic!("public entry did not deliver a request: {error}"),
+                    }
+                };
+                stream.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
+                transport_protocol::read_request(&mut BufReader::new(&stream)).expect("daemon received the complete compiler request");
+                stream.write_all(&reply).unwrap();
+            });
+            let result = f.invoke(
+                &format!("{tool}-{label}"),
+                f.command(tool).arg("build").arg(&source).arg("-o").arg(&artifact)
+                    .env_remove("LUST_NO_DAEMON").env_remove("LUST_LIBRARY").env_remove("LUST_SOURCES_READY"),
+            );
+            server.join().unwrap();
+            assert_eq!(result.status.code(), Some(3), "{tool}-{label}: {}", String::from_utf8_lossy(&result.stderr));
+            assert_eq!(std::fs::read(&artifact).unwrap(), prior, "{tool}-{label} replayed a failed compiler request");
+            assert!(result.stdout.is_empty(), "{tool}-{label} produced success output");
+            assert!(socket.exists(), "{tool}-{label} removed an ambiguously responding daemon");
+            std::fs::remove_file(&socket).unwrap();
+        }
     }
 }
 
