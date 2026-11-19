@@ -212,7 +212,7 @@ class MixedSymbolTests(unittest.TestCase):
             stream.truncate(64 * 1024 * 1024 + 1)
         self.assertEqual(self.candidate(huge).returncode, 1)
 
-    def test_production_build_identity_requires_and_hashes_host_and_validator_sources(self):
+    def test_production_build_identity_requires_and_hashes_host_validator_and_dependency_sources(self):
         repository = self.root / "identity-repo"
         native = repository / "compiler/native"
         owned = repository / "crates/lustr-native-core/src"
@@ -228,6 +228,9 @@ class MixedSymbolTests(unittest.TestCase):
         self.assertEqual(build.returncode, 0, build.stderr)
         for filename in ("mixed_unit.rs", "mixed_symbols.rs", "native_cache_inputs.rs"):
             shutil.copyfile(ROOT / "crates/lustr-native-core/src" / filename, owned / filename)
+        lockfiles = (native / "Cargo.lock", owned.parent / "Cargo.lock")
+        for lock in lockfiles:
+            shutil.copyfile(ROOT / lock.relative_to(repository), lock)
         environment = dict(os.environ, CARGO_MANIFEST_DIR=str(native), OUT_DIR=str(output),
                            LUST_TCC_HOME=str(Path(TCC).resolve().parents[1]), CARGO_CFG_TARGET_OS="linux")
         environment.pop("DEP_MIMALLOC_INCLUDE_DIR", None)
@@ -237,8 +240,23 @@ class MixedSymbolTests(unittest.TestCase):
             lines = result.stdout.decode().splitlines()
             self.assertIn(f"cargo:rerun-if-changed={native}/../../crates/lustr-native-core/src/mixed_symbols.rs", lines)
             self.assertIn(f"cargo:rerun-if-changed={native}/../../src/host_runtime.rs", lines)
+            self.assertIn(f"cargo:rerun-if-changed={native}/Cargo.lock", lines)
+            self.assertIn(f"cargo:rerun-if-changed={native}/../../crates/lustr-native-core/Cargo.lock", lines)
             return next(line for line in lines if line.startswith("cargo:rustc-env=LUST_BUILD_HASH="))
         original = identity()
+        for lock in lockfiles:
+            with self.subTest(lock=lock.relative_to(repository)):
+                lock_bytes = lock.read_bytes()
+                lock.write_bytes(lock_bytes + b"\n# dependency identity mutation probe\n")
+                self.assertNotEqual(identity(), original)
+                lock.write_bytes(lock_bytes)
+                self.assertEqual(identity(), original)
+                lock.unlink()
+                missing_lock = command([helper], env=environment)
+                self.assertNotEqual(missing_lock.returncode, 0)
+                self.assertIn(b"native compiler dependency lockfile is required", missing_lock.stderr)
+                lock.write_bytes(lock_bytes)
+                self.assertEqual(identity(), original)
         host_bytes = host.read_bytes()
         host.write_bytes(host_bytes + b"\n// host identity mutation probe\n")
         self.assertNotEqual(identity(), original)
