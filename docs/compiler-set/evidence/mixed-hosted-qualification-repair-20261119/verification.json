@@ -1,0 +1,125 @@
+{
+  "schema": 1,
+  "scope": "Repair two hosted qualification assumptions; no compiler routing/admission change",
+  "base_commit": "20d69b5cbfef0472a20e021adbe6dd0e5aff2ef0",
+  "hosted_source": "0170b983",
+  "original_hosted_job_id": 135361017938,
+  "original_job_log_sha256": "d4eb7717e664a1aa73574eae5e5b7f02bff97e696e4f25c52892ee5a9c9474b3",
+  "source_sha256": {
+    "tools/mixed-compiler-qualification.rs": "45ce349042f5a60aeee905cb72c52d425388886fd2d26251def322d156a0529e",
+    "tools/mixed-scalar-qualification.rs": "c2c44943bf535f709dbb1fd6ef5f9ee1256ce68ff7da21fb046b183b06be17a1",
+    "tools/test-mixed-workflow.py": "75e516319baf5cc3b36e2b875bb7b0bdcb11c9ed39049bcbf2b2ab3ba750f51d",
+    ".github/workflows/compiler-set.yml": "0f959be164af9885daf847344a6567c092bd6ba8acf3de3ba8c4e082322e67f9",
+    "tests/fixtures/mixed-six-definitions.trace": "23a8b5e23b7eb1a0adb1de41089f42a0f95d503d316ada4a10158e76d91dce52"
+  },
+  "compiler_identity": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+  "findings": [
+    {
+      "name": "mixed graph",
+      "observed": "cold executable matched its expected result; trace records six admitted/omitted definitions including nested::kernel; old assertion required five",
+      "repair": "separate exact six current and exact five historical compile-time expectations; current inventory checks actual admitted paths"
+    },
+    {
+      "name": "unchanged scalar request",
+      "observed": "cold build/runtime passed; deleting published executable led to empty trace because Cargo copied the retained intermediate artifact",
+      "repair": "public Cargo clean of only the fixture package, with byte-identical retained certificates checked, then the identical compiler request must reuse checked Rust objects"
+    }
+  ],
+  "cargo_controls": [
+    {
+      "layout": "default",
+      "events": [
+        {
+          "operation": "cold",
+          "compiler_calls": 1,
+          "status": 0
+        },
+        {
+          "operation": "published-artifact-removed",
+          "compiler_calls": 0,
+          "status": 0
+        },
+        {
+          "operation": "cargo-clean",
+          "compiler_calls": 0,
+          "status": 0
+        },
+        {
+          "operation": "after-cargo-clean",
+          "compiler_calls": 1,
+          "status": 0
+        }
+      ],
+      "identical_compiler_argv": true,
+      "identical_relevant_environment": true,
+      "excluded_environment": [
+        "CARGO_MAKEFLAGS",
+        "MAKEFLAGS",
+        "MFLAGS",
+        "NUM_JOBS"
+      ],
+      "source_unchanged": true,
+      "identical_executable_bytes": true,
+      "environment_sha256": "920e732114126337c2b87d1b897b78bf24b83f7a3aa104f9c2bb656bcf6dcc93"
+    },
+    {
+      "layout": "compatibility",
+      "events": [
+        {
+          "operation": "cold",
+          "compiler_calls": 1,
+          "status": 0
+        },
+        {
+          "operation": "published-artifact-removed",
+          "compiler_calls": 0,
+          "status": 0
+        },
+        {
+          "operation": "cargo-clean",
+          "compiler_calls": 0,
+          "status": 0
+        },
+        {
+          "operation": "after-cargo-clean",
+          "compiler_calls": 1,
+          "status": 0
+        }
+      ],
+      "identical_compiler_argv": true,
+      "identical_relevant_environment": true,
+      "excluded_environment": [
+        "CARGO_MAKEFLAGS",
+        "MAKEFLAGS",
+        "MFLAGS",
+        "NUM_JOBS"
+      ],
+      "source_unchanged": true,
+      "identical_executable_bytes": true,
+      "environment_sha256": "89e58efc6f0c6f5b316e40deefb8fc9344cde2c9fb712a4fd063e2bb4d5df82a"
+    }
+  ],
+  "tests": {
+    "captured_hosted_trace": {
+      "passed": 2,
+      "failed": 0,
+      "command": "rustc --edition=2024 --test tools/mixed-compiler-qualification.rs -o \"$TRACE_TESTS\"; \"$TRACE_TESTS\" --test-threads=1"
+    },
+    "workflow": {
+      "passed": 21,
+      "failed": 0,
+      "command": "python3 tools/test-mixed-workflow.py"
+    },
+    "compiled_qualifiers": [
+      "current test executable",
+      "historical_mixed_baseline executable",
+      "scalar executable"
+    ]
+  },
+  "limitations": [
+    "No compiler production changes in this repair.",
+    "Full mixed worker suites must run on the next hosted source build; local harness and Cargo controls do not qualify them.",
+    "The expected historical 1080-versus1081 failed-link control remains required; it is not a failure of the current compiler.",
+    "No performance claim."
+  ]
+}

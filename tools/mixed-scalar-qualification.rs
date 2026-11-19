@@ -124,6 +124,23 @@ impl Qualification {
         assert_eq!(source.matches(old).count(), 1, "unambiguous source edit");
         fs::write(path, source.replacen(old, new, 1)).unwrap();
     }
+
+    fn remove_cargo_artifacts(&self) {
+        let certificates = self.certificates();
+        assert!(!certificates.is_empty());
+        self.run(
+            "clean-cargo-artifacts",
+            Command::new(&self.compiler)
+                .current_dir(&self.root)
+                .args(["clean", "--offline", "-p", "mixed_scalar", "--target-dir"])
+                .arg(self.root.join("target"))
+                .arg("--config")
+                .arg(format!("build.build-dir={:?}", self.root.join("intermediates"))),
+            true,
+        );
+        assert!(!self.root.join("target/debug/mixed_scalar").exists());
+        assert_eq!(self.certificates(), certificates, "Cargo cleanup changed the compiler's retained certificates");
+    }
 }
 
 fn exact_count(trace: &str, prefix: &str, expected: usize) {
@@ -155,9 +172,11 @@ fn main() {
     assert_eq!(trace.lines().filter(|line| line.starts_with("native-definition-omitted=")).count(), 7, "{trace}");
     q.execute("cold-run", &["17", "19", "23", "17", "17"]);
 
-    // The artifact removal asks Cargo to run the identical compiler request;
-    // it does not alter semantic inputs or the compiler's retained certificates.
-    fs::remove_file(q.root.join("target/debug/mixed_scalar")).unwrap();
+    // Cargo can restore its published executable from the intermediate build
+    // without invoking rustc. Ask Cargo to remove this package's artifacts so
+    // the next build executes the identical compiler request. The native/Rust
+    // retained generation lives outside Cargo's artifact directories.
+    q.remove_cargo_artifacts();
     let trace = q.compile("unchanged-build", false, true);
     assert!(trace.contains("reused-rust-objects=1 full-analysis=0"), "{trace}");
     q.execute("unchanged-run", &["17", "19", "23", "17", "17"]);

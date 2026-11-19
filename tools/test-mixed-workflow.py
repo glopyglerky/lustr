@@ -96,6 +96,9 @@ class MixedWorkflowTests(unittest.TestCase):
         for item in ("receipt.json", "constructor-source.rs", "*.stdout", "*.stderr"):
             self.assertIn("${{ runner.temp }}/lustr-regression-constructor/" + item, self.section)
         self.assertNotIn("lustr-regression-baseline/BUILD-PROFILE.txt", self.section)
+        self.assertIn("--cfg historical_mixed_baseline", self.steps["mixed_qualifier"])
+        self.assertIn('"$RUNNER_TEMP/mixed-compiler-baseline-qualification"', self.steps["baseline_regression"])
+        self.assertIn('"$RUNNER_TEMP/mixed-compiler-qualification"', self.steps["mixed_execution"])
 
     def shell_probe(self, status, diagnostic, missing_command=False):
         block = self.steps["baseline_regression"].split("        run: |\n", 1)[1]
@@ -116,7 +119,7 @@ class MixedWorkflowTests(unittest.TestCase):
                 executable = shutil.which(name)
                 self.assertIsNotNone(executable, name)
                 (commands / name).symlink_to(executable)
-            probe = root / "mixed-compiler-qualification"
+            probe = root / "mixed-compiler-baseline-qualification"
             if not missing_command:
                 probe.write_text(
                     f'#!{bash}\nprintf "%s\\n" "$PROBE_DIAGNOSTIC" >&2\nexit "$PROBE_STATUS"\n',

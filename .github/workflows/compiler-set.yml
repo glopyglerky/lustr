@@ -295,7 +295,9 @@ jobs:
       - name: Build real mixed-project qualifier
         id: mixed_qualifier
         if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' }}
-        run: rustc --edition=2024 tools/mixed-compiler-qualification.rs -o "$RUNNER_TEMP/mixed-compiler-qualification"
+        run: |
+          rustc --edition=2024 tools/mixed-compiler-qualification.rs -o "$RUNNER_TEMP/mixed-compiler-qualification"
+          rustc --edition=2024 --cfg historical_mixed_baseline tools/mixed-compiler-qualification.rs -o "$RUNNER_TEMP/mixed-compiler-baseline-qualification"
       - name: Build native target-layout qualification
         id: layout_qualifier
         if: ${{ !cancelled() && steps.source_toolchain.outcome == 'success' }}
@@ -320,7 +322,7 @@ jobs:
         if: ${{ !cancelled() && steps.baseline_toolchain.outcome == 'success' && steps.mixed_qualifier.outcome == 'success' }}
         run: |
           set +e
-          "$RUNNER_TEMP/mixed-compiler-qualification" "$RUNNER_TEMP/baseline-mixed-project" "$RUNNER_TEMP/lustr-regression-baseline/toolchain/bin/cargo" "$RUNNER_TEMP/lustr-regression-baseline/toolchain/bin/lustr" > "$RUNNER_TEMP/baseline-regression.stdout" 2> "$RUNNER_TEMP/baseline-regression.stderr"
+          "$RUNNER_TEMP/mixed-compiler-baseline-qualification" "$RUNNER_TEMP/baseline-mixed-project" "$RUNNER_TEMP/lustr-regression-baseline/toolchain/bin/cargo" "$RUNNER_TEMP/lustr-regression-baseline/toolchain/bin/lustr" > "$RUNNER_TEMP/baseline-regression.stdout" 2> "$RUNNER_TEMP/baseline-regression.stderr"
           regression_status=$?
           set -e
           printf '%s\n' "$regression_status" > "$RUNNER_TEMP/baseline-regression.status"

@@ -80,6 +80,24 @@ fn no_replacement_success(trace: &str, label: &str) {
     assert!(!trace.contains("reused-rust-objects=1"), "{label}: failure reported successful retained Rust execution: {trace}");
     assert!(!trace.contains("native-boundary=complementary-before-emission"), "{label}: failure became complementary work: {trace}");
 }
+
+fn check_cold_native_definitions(cold: &str) {
+    // The frozen regression compiler predates inline-module admission. Its
+    // separate qualifier must still reach the specific failed-link witness;
+    // the current compiler must prove the complete expanded inventory.
+    let expected = if cfg!(historical_mixed_baseline) { 5 } else { 6 };
+    assert!(
+        cold.lines().any(|line| line == format!("native-definitions={expected}"))
+            && cold.lines().filter(|line| line.starts_with("native-definition-omitted=")).count() == expected,
+        "missing mixed definitions: {cold}"
+    );
+    if !cfg!(historical_mixed_baseline) {
+        let mut definitions: Vec<_> = cold.lines().filter_map(|line| line.strip_prefix("native-admitted-definition=")).collect();
+        definitions.sort_unstable();
+        assert_eq!(definitions, ["arithmetic", "choose", "kernel", "nested::kernel", "rotation", "signed_rotation"], "{cold}");
+    }
+}
+
 fn main() {
     // Adopt the original Lust daemon after its short-lived compiler client
     // exits, so the qualifier observes its real idle-exit status too.
@@ -185,10 +203,7 @@ fn main() {
     build("cold", true);
     execute("cold", b"1083\n");
     let cold = fs::read_to_string(&trace).unwrap();
-    assert!(
-        cold.contains("native-definitions=5") && cold.matches("native-definition-omitted=").count() == 5,
-        "missing mixed definitions: {cold}"
-    );
+    check_cold_native_definitions(&cold);
     fs::write(&trace, "").unwrap();
     let edited = source.replace("x ^ 17", "x ^ 19");
     fs::write(&path, &edited).unwrap();
@@ -361,4 +376,18 @@ fn main() {
     println!(
         "real Cargo/proc macro + core/alloc no_std library + mixed execution + native warm edit + rejection/recovery + failed-link cache isolation + versioned native object reuse + native output/retained recipe failure isolation and recovery + signature/dependency/macro invalidation + late warning/deny preservation: actual0"
     );
+}
+
+#[cfg(all(test, not(historical_mixed_baseline)))]
+mod tests {
+    #[test]
+    fn actual_hosted_six_definition_trace_passes() {
+        super::check_cold_native_definitions(include_str!("../tests/fixtures/mixed-six-definitions.trace"));
+    }
+
+    #[test]
+    fn missing_module_identity_is_rejected_even_with_six_objects() {
+        let trace = include_str!("../tests/fixtures/mixed-six-definitions.trace").replace("native-admitted-definition=nested::kernel\n", "");
+        assert!(std::panic::catch_unwind(|| super::check_cold_native_definitions(&trace)).is_err());
+    }
 }
