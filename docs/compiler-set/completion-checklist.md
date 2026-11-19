@@ -1,0 +1,151 @@
+# Completion checklist
+
+Reviewed 19 November 2026. This is the single work register for the
+[exclusive coverage contract](exclusive-coverage-contract.md). Lustr's sole goal
+is full rustc replacement with exclusive Lust ownership of covered work and
+only necessary upstream complementary implementation. Full Rust stays in blueFe.
+
+Observed default: `7cea76c9d3adc587b54ccff168fe07efafd40309`.
+Audited continuation: [PR #32](https://github.com/glopyglerky/lustr/pull/32),
+`cb0721d49be95ec3f34a113c2354bc9d2a38bbf3`.
+This docs-only correction does not remove candidate/default product code.
+
+## 0. Correct active direction and reconcile existing work
+
+Status: the documentation correction is prepared. Product cleanup and source
+consolidation are separate work and must be linked to exact reviewed commits.
+
+- Keep AGENTS, README, architecture, contract, design, roadmap and performance
+  policy consistent. Supersede permission for a full compiler import graph,
+  whole-compiler fallback and independent reimplementation of every Rust gap.
+- Record one integration head, ancestry, full/native trees and artifact evidence.
+  Preserve unique fixes and failed evidence before removing active routes.
+- Use the [disposition record](retained-work-disposition.md) to retire conflicting
+  production code and packaging claims without losing useful components.
+- Preserve already integrated process ownership, scanner-fixture, SDK acquisition,
+  callback, Unicode, normalization, native runtime and retained-state repairs.
+  Verify whether a fix is present at the chosen head before reimplementing it.
+
+Done when current instructions agree and every code disposition has an exact
+implementation change. A documentation merge alone does not close code cleanup.
+
+## 1. Cover Lust's real supported set
+
+Inventory support from the pinned native implementation, its contexts and actual
+fixtures. Expose prepared checked state and dependency reads before emission.
+Keep native preparation, genuine complement requirements, unintegrated supported
+work, invalid input and implementation failure distinct.
+
+Done when pure and mixed programs retain Lust ownership for the complete covered
+set being claimed. The current scalar bridge cannot define that set. Failure
+in a represented native emission must fail the request without reassignment.
+
+## 2. Admit only necessary upstream complementary code
+
+Choose a demonstrated missing capability and a real upstream interface. Record
+source revision, paths/symbols/hashes, licenses, feature/target dependencies,
+verified adapters, necessity witnesses, actual callers and semantic ownership.
+Include existing partial Unicode/normalization imports and their dependencies.
+Disclose full SDK/compiler-private research components separately.
+
+Done when admitted imports implement their claimed complementary obligations
+inside the owned compilation and the closure contains no unjustified duplicate
+Lust-owned stages. Neither an allowlist nor a dependency count proves global
+minimality. Full-driver linking and whole-source vendoring cannot close this item.
+A structural guard does not establish full Rust semantics or runtime correctness.
+
+## 3. Compose semantic state, runtime and real artifacts
+
+Share or bridge authoritative definitions, hygiene, types, obligations,
+monomorphized instances, layouts, ABI, constants, symbols, allocation ownership,
+drops and unwinding. Reuse necessary genuine metadata/archive/link machinery.
+Avoid running complete consumer analysis merely to choose native instances.
+
+Continue the existing [consumer-metadata completion study](https://github.com/glopyglerky/lustr/blob/cb0721d49be95ec3f34a113c2354bc9d2a38bbf3/docs/compiler-set/shared-consumer-metadata.md) first. The
+real encoder demands frozen definitions through `analysis(())`; native prepared
+state does not yet provide all declaration/privacy/lint obligations. Supply a
+narrow upstream completion service consuming actual native proofs. Preserve
+original applicable checks, real emitted instances and the exported-symbol
+query. Unconditional analysis success, fabricated typed results or empty
+instance graphs are forbidden. The generic solver seam in the upstream report
+is researched future reuse, not a replacement task for this established boundary.
+
+Done when unchanged mixed programs and real downstream Cargo crates consume
+valid artifacts. Every obligation has one owner and every required instance is
+emitted exactly once. Unsupported interfaces remain visible as integration gaps.
+
+## 4. Retain correct work across changes
+
+Connect precise native and complementary semantic dependencies. Cover body,
+signature, type, trait, macro, included-file, dependency, environment/build-script,
+target/profile and policy changes. Track negative lookups and real const/runtime
+inputs. Test edit/reversal histories, restart and failed publication.
+
+Done when fresh and retained results agree, relevant changes invalidate consumers,
+unaffected native work stays retained and failed/ambiguous work cannot overwrite
+the last successful state. Preserve independent oracles in qualification.
+
+## 5. Replace conflicting public execution paths
+
+Remove ordinary whole-program native-fail/rustc-retry, diagnostic-based routing,
+user-selectable language engines and hidden stock/full-driver escape paths from
+public compilation and package builders. Preserve useful Cargo graph/argument,
+configuration, artifact and process handling. Disable invalid product claims
+until the actual complement is delivered.
+
+Done when production entry points use the exclusive boundary, a supported case
+cannot invoke the competing compiler, and incomplete coverage fails honestly.
+Failing unsupported work is a direction-enforcement milestone, not full Rust
+replacement or successful complement implementation.
+
+## 6. Qualify exact source, semantics and packages
+
+Reconcile current evidence before rerunning gates. Historical
+[qualification](qualification-review-2026-11-18.md) is preserved unchanged.
+Do not declare a predecessor's failure fixed without evidence or assume a later
+source still has a repaired defect.
+
+Qualification must cover version-bound character/lexical semantics and NFC,
+callback ABI, valid/invalid programs, actual complementary outcomes, full-language
+constructs, macros/build scripts, dependencies, real metadata, allocation/drop,
+panic/unwind, runtime and the integrated path on every advertised target/profile.
+Inspect matching tools/sysroot, source/binary manifests, relocation, offline
+rebuilds, invalidation, required assets and notices for the exact package.
+
+Done when the package satisfies architecture and applicable correctness with
+no fallback hiding a known gap. Cargo-only compatibility does not qualify an
+integrated native platform. No current artifact is qualified as the full product.
+
+## 7. Assess near-Lust and near-rustc behavior, then release
+
+Use the [performance policy](practical-performance.md). Preserve its existing
+budgets and complete-package assessment design. Match source versions, requested
+work, flags, targets, thread counts, cache/lifecycle state, workload inputs and
+actual artifacts. The existing complete-package assessor requires 24 matched
+pairs plus applicable qualification. Historical 12-pair characterization is
+not that prospective assessment.
+
+Supported warm check/build permits 10% or 0.5 ms added latency, whichever is
+larger, under the existing paired uncertainty rule and useful measured gain over
+rustc. Ordinary complementary operations use 5% or 0.5 ms as a per-case review
+budget; large speedups are unnecessary. These are engineering assumptions.
+
+Keep cold/no-op, body/signature/type/trait/macro/dependency edits, rejection,
+priming, link, tails, memory, generated-program execution and compile-plus-test
+results separate. Do not offset one class's regression with another's gain or
+weaken correctness to meet a timing number. Keep known-inapplicable historical
+campaigns unchanged rather than bypassing their guards.
+
+Done when one exact integrated package passes the applicable assessment and its
+README reports actual source/tool identities, complete commands, confidence
+limits, failures, losses and raw evidence. Only then describe and publish it as
+the qualified replacement for its stated scope.
+
+## Required PR explanation
+
+Every compiler change must identify the item it advances; the supported work
+that remains with Lust; the justified complementary imports; their shared fact
+owners; any remaining duplicate analysis or gap; and exact source-bound
+correctness/performance evidence. A requested-engine label or planner trace is
+not proof of actual ownership. Reject architecture substitutions even when a
+compatibility demonstration passes.

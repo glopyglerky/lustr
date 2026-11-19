@@ -1,62 +1,105 @@
-# Work on this fork
+# Work on Lustr
 
-## Current priority and ownership
+## Sole product goal
 
-The user's later clarification makes native compiler expansion the current
-requirement: start with Lust, retain its fast compilation path for everything it
-supports, and extend that pipeline through Lustr to cover the full Rust language.
-blueFe delivers the combined toolchain. A coordinator that forwards full Rust
-to rustc and rustc build tuning do not complete this requirement. Migration
-toward memory-safe Rust remains a separate, later optimization goal.
+Lustr is a full rustc replacement built around Lust. Lustr's Lust implementation
+must compile every operation that the pinned Lust implementation covers in the
+requested context. Import only the upstream implementation and dependencies
+needed for the remaining Rust work, and integrate them into that same unchanged
+program. The full upstream Rust source stays in blueFe.
 
-`compiler/native` is the exact upstream Lust baseline, not an unrestricted
-Lustr editing area. Keep its complete tracked tree identical to `upstream/lust.pin`.
-Lustr-owned expansion, fixtures and helpers belong outside that tree. The same
-necessity and faster-results requirement applies to Rust implementation changes
-in blueFe, under its upstream source pin. No generated
-overlay, vendored copy rename or build-time patch may conceal a Lust divergence.
-Any proposed Lust change needs both a reproducible necessity case and faster
-equivalent-workload results before admission. Correctness tests alone are insufficient.
-The current root Cargo project builds the compiler entry candidate in `src/`.
-The owned C ABI native entry is `crates/lustr-native-core`; the transitional
-coordinator is a separate project in `crates/lustr`. Read
-[the entry contract](docs/compiler-set/native-driver.md) before changing routing.
-Do not mistake this integration for completed native language coverage. The
-optional pinned semantic driver is `crates/lustr-semantic`. Keep the primary
-README, source map, decisions and divergence records about this fork's actual
-behavior. Preserve required upstream compatibility, licensing and source history.
-Do not claim complete native Rust or whole-toolchain memory safety prematurely.
+Read the [exclusive coverage contract](docs/compiler-set/exclusive-coverage-contract.md)
+first. It is the canonical direction, reaffirmed on 19 November 2026. Then read
+the [architecture plan](docs/compiler-set/architecture-plan.md),
+[design checkpoint](docs/compiler-set/design.md),
+[completion checklist](docs/compiler-set/completion-checklist.md), and
+[performance policy](docs/compiler-set/practical-performance.md). Earlier plans,
+passing compatibility tests and historical release assets cannot change this goal.
 
-## Product contract
+## Required boundaries
 
-Follow [the native compiler contract](docs/compiler-set/native-contract.md).
-Use unchanged upstream Lust for its supported code and implement missing support
-in Lustr-owned code through explicit, qualified interfaces. Preserve accepted behavior and differential testing
-discipline. Added features must execute through native compilation, with actual
-runtime and rejection evidence. Do not rewrite applications into the subset,
-disable required checks, or count a rustc fallback as native feature support.
+- Preserve Lust's frontend, checked state, retained worker, precise semantic
+  dependency reads, native emission and fast body-edit behavior.
+- Distinguish Lust's actual support from the narrower support of an integration
+  bridge. A bridge gap is unfinished integration. It is not permission to send
+  Lust-owned work to a different compiler or redefine the complement.
+- Assign semantic and emission work before generation from real compiler facts.
+  No keyword selector, diagnostic-based routing, native-fail/rustc-retry path,
+  hidden stock compiler, or complete competing frontend on supported work.
+- A full Rust driver library is not a minimal complement merely because its
+  executable is absent or selected LLVM definitions are disabled. Inspect source
+  dependencies and actual semantic work, not only the binary name.
+- Every imported source slice needs pinned provenance, licenses, a missing
+  capability or required dependency witness, feature/target closure, an actual
+  caller and an explicit semantic owner. A file allowlist alone does not prove
+  minimality. Exclude Rust implementation that duplicates Lust-owned work.
+- Reuse upstream implementation for genuine gaps. Do not independently rebuild
+  every missing Rust semantic feature as an alternative destination.
+- Preserve the unchanged source, Cargo graph, features, target, profiles,
+  dependencies, panic behavior, build scripts, procedural macros and real Rust
+  artifacts. Do not fabricate rlib/rmeta or weaken semantics to obtain a pass.
+- A compiler, transport, emitter, object, link or publication failure fails the
+  request. It cannot become a capability decision or successful compiler retry.
+  Never retry a program or test that has already executed.
 
-## Correctness rules
+## Establish source and evidence before continuing
 
-- Full Rust support currently comes from the installed Cargo/rustc toolchain. Name that dependency honestly. Do not claim that this fork independently implements all of Rust.
-- Never infer semantic compatibility from source keywords, a successful parser run, or a compiler accepting the source. Macros, traits, lifetimes, layouts, generics, drops, panic strategy, and crate metadata interact.
-- Lust currently has no Rust rlib format. Do not place its output in Cargo's artifact graph as a Rust library or forge metadata or dep-info. Whole-target Lust compilation and a future verified semantic-IR bridge are separate routes.
-- Preserve the project's source, features, target, profiles, Cargo flags, dependency versions, panic strategy, and build-script behavior. Adapter substitutions and reduced features require explicit qualification against the requested Cargo build.
-- Never turn compiler errors into success. Never retry an executed program or test automatically through another compiler. Do not change panic behavior to obtain a passing or faster result.
-- The stock rustup Cranelift preview failed the real panic-recovery gate. Build the pinned complement with its `unwinding` feature and use the matching compiler plus explicit backend path. A panic flag cannot supply backend code that was not compiled in. Preserve the recovery/drop gate.
-- Keep stdout usable for Cargo JSON and program output. Pass OS arguments without a shell or lossy decoding. Preserve subprocess failures and signals.
-- Scope compiler backend settings to the current Cargo invocation. Injected `CARGO_PROFILE_*_CODEGEN_BACKEND` environment variables leak into programs and tests and can break nested Cargo commands. Place generated Cargo configuration after the subcommand and before caller arguments so later package overrides preserve it. Retain the real configuration-precedence and nested-Cargo regression gates. Verify actual compiler flags when qualifying a backend; a requested plan or successful program alone is insufficient.
-- Key any future cache by the compiler/runtime identities, complete semantic inputs, target/profile/features, build-script observations, and transitive dependency identities. An untracked input forces recomputation.
+The observed default implementation is `next` at
+`7cea76c9d3adc587b54ccff168fe07efafd40309`. The current reviewed continuation is
+[PR #32](https://github.com/glopyglerky/lustr/pull/32) at
+`cb0721d49be95ec3f34a113c2354bc9d2a38bbf3`. The latter retains prohibited public
+retry paths and a mixed path with whole-consumer Rust analysis. It is evidence
+and a source of reusable fixes, not the completed architecture. This docs-only
+change does not remove or land product code. Refresh live heads before work.
 
-## Work layout and validation
+Use the [retained-work disposition](docs/compiler-set/retained-work-disposition.md)
+to preserve useful source and failed evidence while removing conflicting active
+routes. Keep one integration head. Review unique changes and ownership before
+cleanup; do not destroy other worktrees or rewrite shared history. Work on
+branches and PRs. Documentation publication does not authorize a package release
+or a direct product-code merge into the default branch.
 
-`crates/lustr` is the independently installable coordinator. Its own build must not require tcc, nightly Rust, or registry dependencies. Required native compiler sources remain in `compiler/native/src/` and
-`compiler/native/library/`, as described in the primary README.
+Keep public content generic. Do not add personal infrastructure, credentials,
+private coordination or unrelated project composition. Preserve original licenses
+and the user's other repositories.
 
-Read `docs/compiler-set/design.md` and `docs/compiler-set/roadmap.md` before changing routing or claiming coverage. The upstream `DESIGN.md`, `docs/ARCH.md`, and `docs/PLAN.md` contain historical plans. Check executable code and tests before treating those plans as implemented behavior.
+## Source and correctness discipline
 
-Use real integration tests for the Cargo path, including build scripts, proc macros, full-language constructs, rejection of invalid Rust, and observable runtime behavior. Keep the upstream differential gates for changes to Lust itself. Report which engines and platforms actually ran.
+Keep the pristine Lust reference in `upstream/lust.pin` and declared Rust identity
+in `upstream/bluefe-core.pin`. Follow the [source policy](docs/compiler-set/upstream-lust.md).
+An explicit integration patch requires source identities, a necessity case,
+applicable correctness evidence and performance characterization. A necessary
+correctness repair does not itself need a speedup. Do not hide changes in an
+overlay, disable a source guard or alter a frozen historical comparison.
 
-Measure cold builds, no-op builds, body edits, signature edits, rejection latency, and compile-plus-test time separately. Preserve raw samples and exact compiler identities. Report regressions. Do not transfer upstream Lust's speed ratios to this fork, Cranelift, or arbitrary Rust projects.
+Preserve authoritative definitions, instances, types, macro hygiene, ABI/layout,
+constants, ownership, drops, unwinding, metadata and dependency state. Bind
+language/library semantics to the declared SDK, independently of Lustr's build
+host. Root source equality does not establish SDK equality or runtime correctness.
 
-Keep changes reviewable on a branch. Do not change repository visibility, upstream licensing, or the user's other forks as part of compiler work.
+Cache keys and dependency reads must include all relevant source, macro,
+build-script, toolchain, target/profile, feature and dependency observations.
+Track negative lookups and semantic policy limits. Unknown inputs require valid
+recomputation within the assigned owner. Failed work cannot replace the last
+successful retained state or be hidden as a cache miss.
+
+Keep stdout suitable for Cargo JSON and program output. Preserve OS arguments,
+failures, signals, configuration precedence, nested Cargo behavior and owned
+cleanup. Actual sanitizer, differential, panic/drop and retained-edit evidence
+must remain visible. Re-run only changed behavior and concrete remaining risks.
+
+## Performance and claims
+
+Keep Lust-covered work near matched stock Lust speed. Keep complementary work
+near matched stock rustc speed. These are separate requirements; a gain on one
+cannot conceal a loss on the other. The [performance policy](docs/compiler-set/practical-performance.md)
+retains existing engineering review budgets: 10% or 0.5 ms for supported warm
+operations, and 5% or 0.5 ms for ordinary complementary operations, per case.
+They are assumptions for assessment, not the user's exact numerical wording or
+proof that the current candidate passes.
+
+Preserve cold, no-op, body/signature/type/trait/macro/dependency edits, rejection,
+linking, tails, memory, generated-program runtime and compile-plus-test results.
+A complete replacement claim requires actual exclusive ownership, the justified
+selective complement, correct mixed artifacts, exact package qualification and
+matched performance. No current package is qualified as that full replacement.

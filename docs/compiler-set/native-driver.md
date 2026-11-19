@@ -1,5 +1,13 @@
 # Native compiler entry candidate
 
+> Historical implementation description for default snapshot
+> [`7cea76c9`](https://github.com/glopyglerky/lustr/tree/7cea76c9d3adc587b54ccff168fe07efafd40309).
+> The retries and whole-program `rustc-full` routes described below are
+> transitional behavior that must be removed from the completed product.
+> They are not the required architecture. Follow the [architecture plan](architecture-plan.md),
+> [current design checkpoint](design.md) and [completion checklist](completion-checklist.md).
+> Later candidate qualification is recorded separately by exact source.
+
 Status: source candidate, not a released or fully qualified replacement.
 
 The primary Cargo project and command entry point are at the repository root.
