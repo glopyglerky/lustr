@@ -3475,6 +3475,26 @@ impl FnGen<'_, '_> {
     /// out of a type with a `Drop` impl (E0509, borrowck), so no place
     /// split here has one.
     fn elab_drop(&mut self, l: Local, prefix: &[Step]) -> String {
+        let body = self.elab_drop_inner(l, prefix);
+        let partial = self.move_paths[l as usize].iter().any(|p| p.len() > prefix.len() && p.starts_with(prefix));
+        if self.p.unwind
+            && partial
+            && self.path_place(l, prefix).is_some_and(|(_, t)| unwind::drop_may_unwind(self.p, &t, &mut HashSet::new()))
+        {
+            // A partially moved value bypasses its whole-value drop glue.
+            // Give the complete remaining value one continuation boundary:
+            // a panic in a child still drops later children, including those
+            // outside a nested field, before the original panic propagates.
+            unwind::partial_drop_body(&body, self.unwind_tables)
+        } else {
+            body
+        }
+    }
+
+    /// The recursive projection walk shares the outer `elab_drop` boundary.
+    /// Catching and rethrowing at each nested projection would skip its later
+    /// siblings when a destructor panics.
+    fn elab_drop_inner(&mut self, l: Local, prefix: &[Step]) -> String {
         let paths = &self.move_paths[l as usize];
         let own = paths.iter().position(|p| p == prefix);
         let deeper = paths.iter().any(|p| p.len() > prefix.len() && p.starts_with(prefix));
@@ -3532,10 +3552,13 @@ impl FnGen<'_, '_> {
         };
         match t {
             CTy::Array(el, n) if variant.is_none() => {
-                // rustc's open drop of an array (`open_drop_for_array`):
+                // The pinned rustc's open drop of an array (`open_drop_for_array`):
                 // a run of elements with no move path drops as one
                 // subslice (in index order), an element with one drops
-                // on its own, and the runs and elements go in reverse.
+                // on its own, and those parts also run in index order.
+                // Rust builds its control-flow ladder backwards but enters
+                // at the last block it created; that does not reverse the
+                // observable order of its forward `drop_ranges` list.
                 let kept: Vec<u64> = next_steps.iter().filter_map(|s| if let Step::Elem(c) = s { Some(*c) } else { None }).collect();
                 let mut parts: Vec<Result<(u64, u64), u64>> = Vec::new();
                 let (mut dropping, mut start) = (true, 0);
@@ -3555,7 +3578,7 @@ impl FnGen<'_, '_> {
                 if dropping {
                     parts.push(Ok((start, *n)));
                 }
-                for part in parts.into_iter().rev() {
+                for part in parts {
                     match part {
                         Ok((a, b)) if b > a => {
                             let i = self.tmp();
@@ -3563,7 +3586,7 @@ impl FnGen<'_, '_> {
                             let _ = write!(out, " for (uint64_t {i} = {a}; {i} < {b}; {i}++) drop_{}(&{e}.v[{i}]);", mangle(el));
                         }
                         Ok(_) => {}
-                        Err(c) => out += &self.elab_drop(l, &sub(Step::Elem(c))),
+                        Err(c) => out += &self.elab_drop_inner(l, &sub(Step::Elem(c))),
                     }
                 }
             }
@@ -3578,7 +3601,7 @@ impl FnGen<'_, '_> {
             CTy::Boxed(inner) => {
                 // Drop the still-owned part behind the pointer,
                 // then free the allocation itself (its `sizeof` needs the type defined).
-                out += &self.elab_drop(l, &sub(Step::Deref));
+                out += &self.elab_drop_inner(l, &sub(Step::Deref));
                 self.note_held(inner);
                 let et = ctype(inner);
                 let _ = write!(out, " lust_dealloc((void*){e}, sizeof({et}), _Alignof({et}));");
@@ -3588,7 +3611,7 @@ impl FnGen<'_, '_> {
                 let _ = write!(out, " switch ({d}) {{");
                 for s in next_steps {
                     if let Step::Downcast(v) = s {
-                        let body = self.elab_drop(l, &sub(s));
+                        let body = self.elab_drop_inner(l, &sub(s));
                         let _ = write!(out, " case {v}: {{{body} }} break;");
                     }
                 }
@@ -3605,7 +3628,7 @@ impl FnGen<'_, '_> {
                     _ => 0,
                 };
                 for f in 0..n {
-                    out += &self.elab_drop(l, &sub(Step::Field(f as u32)));
+                    out += &self.elab_drop_inner(l, &sub(Step::Field(f as u32)));
                 }
             }
         }

@@ -1,8 +1,8 @@
 // Moves of array elements by pattern and by-value iteration, at an
 // element type with a user `Drop` impl and at String and Vec: the
 // moved elements drop with their new owners, the rest drop with the
-// array in rustc's order for a partially moved array (runs of
-// unmoved elements and moved paths in reverse index order).
+// array in the declared rustc's order for a partially moved array:
+// remaining elements, including partial elements, in index order.
 struct D(u8);
 
 impl Drop for D {
