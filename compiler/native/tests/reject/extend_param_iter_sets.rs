@@ -1,4 +1,6 @@
 // expect: L0306
+// Accepted by declared Rust source 5b7b37aef; native capability rejection.
+// Historical rejection comments below refer to the Rust 1.99 oracle.
 // rustc E0597: an adapter over a type param iterator (`take`, `chain`) passes its fixed
 // items on, into a library collection (`BTreeSet`) as into a builtin one.
 use std::collections::BTreeSet;

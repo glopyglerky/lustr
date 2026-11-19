@@ -1,4 +1,6 @@
 // expect: L0303
+// Accepted by declared Rust source 5b7b37aef; native capability rejection.
+// Historical rejection comments below refer to the Rust 1.99 oracle.
 fn head_mut(v: &mut Vec<i32>) -> Option<&mut i32> {
     if v.is_empty() { None } else { Some(&mut v[0]) }
 }

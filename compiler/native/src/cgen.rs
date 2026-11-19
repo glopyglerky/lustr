@@ -195,8 +195,8 @@ pub enum Glue {
     /// Like `Cmp`, but `PartialOrd::partial_cmp` order where it can
     /// differ from `Ord::cmp`: a written `partial_cmp` is called even
     /// when an `Ord` impl exists, and composite types compare their
-    /// parts with `PCmp`. Only the sort adapters ask for it (std's
-    /// sort compares with `lt`).
+    /// parts with `PCmp`. Sorting and iterator min/max use it because
+    /// the pinned standard library compares with PartialOrd::lt.
     PCmp,
     /// `T default_T(void)`: the value derived and core `Default` build.
     Default,

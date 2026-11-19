@@ -25,6 +25,13 @@ and actual native, object and linker failures remain failures on cold and
 retained requests. This advances the existing mixed bridge; wider Lust coverage
 and removal of the standalone retry remain required.
 
+The [correctness continuation](docs/compiler-set/correctness-continuation-2026-11-18.md)
+repairs the native const/runtime Unicode disagreement with shared data from the
+declared Rust SDK, verifies every Unicode scalar, and gives erased destructor
+callbacks their actual required C signatures. It also extends the checked mixed
+integer boundary and preserves failures from qualification against that SDK.
+These repairs are under review in [draft PR #30](https://github.com/glopyglerky/lustr/pull/30).
+
 The [compiler contract](docs/compiler-set/native-contract.md),
 [design](docs/compiler-set/design.md), [roadmap](docs/compiler-set/roadmap.md) and
 [contributor instructions](AGENTS.md) preserve this direction for subsequent work.
@@ -32,7 +39,9 @@ Importing upstream Rust is allowed; independently rebuilding all missing Rust
 features is not required. The imported code must serve the integrated compiler,
 not become a different whole-program fallback architecture by default.
 
-The daemon starts directly and does not require systemd. The
+The daemon starts directly and does not require systemd. Active source, build
+rules, workflows, lockfiles and compiler loader graphs were audited; a CI guard
+rejects service-manager dependencies. The
 [native host runtime](docs/compiler-set/host-portability.md) documents the Linux
 and Darwin adapters, source-built SDK receipts, focused tests and remaining
 native macOS qualification. The primary native daemon is not yet a Windows
@@ -241,11 +250,13 @@ wrong-oracle comparison: 5,428 cases passed and 99 failed against the newer
 package SDK. The corrected, separately verified Rust 1.99 oracle reduced that
 to **5,526 passes and one failure**: the frozen native compiler reports Unicode
 18 from its build toolchain while Rust 1.99 reports Unicode 17. That remaining
-[Unicode semantic dependency](docs/compiler-set/unicode-semantics.md) is a
-correctness blocker. A subsequent compiled witness found that native constant
+[Unicode semantic dependency](docs/compiler-set/unicode-semantics.md) blocks that
+frozen source. A subsequent compiled witness found that native constant
 evaluation returns `true, true` for two character predicates while the same
 program returns `false, false` at runtime; the matching Rust SDK returns
-`true, true` in both contexts. The original frozen comparison remains intact.
+`true, true` in both contexts. The current repair derives both paths from the
+matching SDK and passes exhaustive local Unicode checks. The original frozen
+comparison remains intact and has not produced admitted timings.
 
 The separate warm-entry campaign correctly refused to compare different native
 source trees. Neither campaign produced admitted timing samples. No causal speed

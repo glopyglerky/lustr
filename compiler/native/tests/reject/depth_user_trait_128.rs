@@ -1,4 +1,6 @@
 // expect: L0611
+// Accepted by declared Rust source 5b7b37aef; native capability rejection.
+// Historical rejection comments below refer to the Rust 1.99 oracle.
 // rustc E0275: the impl for Option asks `T: Tr` one level down, 128 times.
 trait Tr {
     fn d(&self) -> u32;

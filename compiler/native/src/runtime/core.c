@@ -2349,8 +2349,8 @@ int lust_parse_char(lust_str s, uint32_t *out, int *kind) LUST_BODY({
    pushes one char at a time, with U+FFFD for each unpaired
    surrogate, so capacities grow as std's do. */
 lust_String lust_string_from_utf16_lossy(const uint16_t *v, uint64_t n) LUST_BODY({
-    lust_String s = lust_string_new();
-    lust_string_reserve(&s, (n + 1) / 2);
+    /* FromCharIterSpec uses with_capacity before Extend's reserve. */
+    lust_String s = lust_string_with_capacity(n / 2 + n % 2);
     uint64_t i = 0;
     while (i < n) {
         uint16_t u = v[i++];

@@ -1,4 +1,6 @@
 // expect: L0611
+// Accepted by declared Rust source 5b7b37aef; native capability rejection.
+// Historical rejection comments below refer to the Rust 1.99 oracle.
 // rustc E0275: `x.clone()` on an Option nested 128 deep asks `u8: Clone`
 // at depth 128, past the recursion limit. lust answers Clone on Option
 // structurally, so the depth comes from the type (check/depth.rs).

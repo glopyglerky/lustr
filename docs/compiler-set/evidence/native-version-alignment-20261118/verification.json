@@ -1,0 +1,236 @@
+{
+  "schema": 1,
+  "status": "component qualification; full declared-SDK gate remains separate",
+  "source": {
+    "base_revision": "a74cb52ce9d0946d08db7ceb889e24507c4a47a1",
+    "native_tree": "6589009f3bc4ba49c62300e375e90d62a468f99d",
+    "modified_compiler_inputs_sha256": {
+      "compiler/native/src/cgen.rs": "1bbb266172e927bbcae7cd3507f54855381b76472dc6544cd44ac8c15e0d3e3a",
+      "compiler/native/src/check/iter.rs": "97dac43802cde4baf64edd62aa55d8e9c3c551c066697618ca9bafd608d7be46",
+      "compiler/native/src/check/mod.rs": "766dc51b66897ba1e8c9d7b98c1ae365884ac420ea6a0519b829b901612b37c2",
+      "compiler/native/src/expand/recognize.rs": "ffe00003b2b352710f70cd9d08fe53951cc4cbf9d6681a610e6e2f491a133c15",
+      "compiler/native/src/lower/iter.rs": "aabf1e8698d1f37716f352f2df3075c10e36801599f0be3c32bc0e3ce2754845",
+      "compiler/native/src/runtime/core.c": "bd8c8bccfad896d08b975f81b43174937de65842477e252804267663fd472e9a",
+      "compiler/native/src/driver/compile.rs": "de40b425cb56772270266e24f4e7d6dfa91fad9ba2a053a842545aeefdfcdee7"
+    }
+  },
+  "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "native_core_sha256": "ea28136a1c2174a07eb4df16f7bd79d3dd02c645d47793537f3dbe381f4c64b3",
+  "native_profile": "gate",
+  "host": "x86_64-unknown-linux-gnu",
+  "runtime_fixtures": [
+    {
+      "fixture": "compiler/native/tests/pass/string_collect_pinned_semantics.rs",
+      "sha256": "6fc51674d5e023805153a7537c06c390ac2249b795f4f0ed7258cd6d0bc33560",
+      "matching_stdout_stderr_status": true
+    },
+    {
+      "fixture": "compiler/native/tests/pass/from_iter_paths.rs",
+      "sha256": "252ab4d402eb0f2d692c489bbe827cfb0ec756ab4ee122a042c09188a1273bb6",
+      "matching_stdout_stderr_status": true
+    },
+    {
+      "fixture": "compiler/native/tests/pass/iter_size_hint_override.rs",
+      "sha256": "e187b378491c6930e14830e88897a48fa0265de9c9aec3898839170d37d991bf",
+      "matching_stdout_stderr_status": true
+    },
+    {
+      "fixture": "compiler/native/tests/pass/iter_minmax_pinned_semantics.rs",
+      "sha256": "3a1145620acd062b527d4a964f8aa4a1c6a5246865f33b64b50eb541aac20f13",
+      "matching_stdout_stderr_status": true
+    },
+    {
+      "fixture": "compiler/native/tests/pass/sort_partialord_lt.rs",
+      "sha256": "62ab2ebf29985740eee258964432443857be0fbe8c666f4a46b4e92c0fdf7fbf",
+      "matching_stdout_stderr_status": true
+    },
+    {
+      "fixture": "compiler/native/tests/pass/str_utf16_ascii.rs",
+      "sha256": "3b4dfe2778721da189dda27aa6dda2cbffed61d2f844d551ace2083f398222c8",
+      "matching_stdout_stderr_status": true
+    },
+    {
+      "fixture": "compiler/native/tests/pass/iter_drops.rs",
+      "sha256": "07c28218c6d31b0e0716bdf696ee6b62e322c6f59ea2740487548e5efa7f6335",
+      "matching_stdout_stderr_status": true
+    },
+    {
+      "fixture": "compiler/native/tests/pass/recursive_container_order.rs",
+      "sha256": "7086b2f1b5dba6e6ed83405fc22725778cd857fddd713e9dc297ed0ecbc2d995",
+      "matching_stdout_stderr_status": true
+    },
+    {
+      "fixture": "compiler/native/tests/pass/ord_min_max_clamp.rs",
+      "sha256": "82088d5b26c811baa586d95c8a36aff37ccb4cdfd54fed34f30b04b80b3e6e02",
+      "matching_stdout_stderr_status": true
+    },
+    {
+      "fixture": "compiler/native/tests/pass/str_ord_pick.rs",
+      "sha256": "81e419a65430ed5024955080bbc9829f1207d6d640309631e57b9837628f7f94",
+      "matching_stdout_stderr_status": true
+    }
+  ],
+  "corpus_fixtures": [
+    {
+      "fixture": "compiler/native/tests/reject/closure_reads_creator_item_bound.rs",
+      "kind": "reject",
+      "sha256": "22c21b6e669153efe6501e3efeae0e3c25539e2e4cc4eb85e6e0ccf24c271297",
+      "passed": true
+    },
+    {
+      "fixture": "compiler/native/tests/reject/depth_option_clone_128.rs",
+      "kind": "reject",
+      "sha256": "4060931a8b4e20fdfaa654654a224859afefe28637fd0d9a6569bae57976a015",
+      "passed": true
+    },
+    {
+      "fixture": "compiler/native/tests/reject/depth_user_trait_128.rs",
+      "kind": "reject",
+      "sha256": "35a6deb0765e531b3baf4a9e495fcd4492c1579a2b3319bfa754c7fbb4fd05e6",
+      "passed": true
+    },
+    {
+      "fixture": "compiler/native/tests/reject/extend_param_iter_vec.rs",
+      "kind": "reject",
+      "sha256": "ba4506962c491532fac32f22fb350f3e31b2db856e8ca2087d8d76a58fead13b",
+      "passed": true
+    },
+    {
+      "fixture": "compiler/native/tests/reject/extend_param_iter_mutref.rs",
+      "kind": "reject",
+      "sha256": "6e01505f437642d95cd2a6484ee4872ebbcfe4c2d85275628a0f7ce6be5412e0",
+      "passed": true
+    },
+    {
+      "fixture": "compiler/native/tests/reject/extend_param_iter_sets.rs",
+      "kind": "reject",
+      "sha256": "b972d228d928e092c515304f7842037548a547a12f4aa4c7dab3aaf6a2aaaf02",
+      "passed": true
+    },
+    {
+      "fixture": "compiler/native/tests/reject/lifetime_launder_vec.rs",
+      "kind": "reject",
+      "sha256": "267b9634f0ba011cdce1c43b78d27e60c94795aaf92ef3c9f32562376bd2ca1b",
+      "passed": true
+    },
+    {
+      "fixture": "compiler/native/tests/reject/lifetime_launder_local.rs",
+      "kind": "reject",
+      "sha256": "e848bd77cd9b871e15d519d1a88aa52040192c0a2864452fe2dd8f7042dd4f45",
+      "passed": true
+    },
+    {
+      "fixture": "compiler/native/tests/reject/nll_problem_case3.rs",
+      "kind": "reject",
+      "sha256": "7390bce6c62cfcfcf87755e44ac57a5b78be9c4d491cf170a31017b87701bac8",
+      "passed": true
+    },
+    {
+      "fixture": "compiler/native/tests/reject/never_type_generic_arg.rs",
+      "kind": "reject",
+      "sha256": "3ab7f4a9644a2cd9cd5c8a7219036cbd62e611ca8fe59522fb089d4f2bb886f8",
+      "passed": true
+    },
+    {
+      "fixture": "compiler/native/tests/reject/never_type_fn_sugar_ret.rs",
+      "kind": "reject",
+      "sha256": "ef2ae42bf0c1e4947ce2683cc02c7d6af6ad0b740577183b2734a0206ff5a207",
+      "passed": true
+    },
+    {
+      "fixture": "compiler/native/tests/reject/nll_reassigned_ref_keeps_loan.rs",
+      "kind": "reject",
+      "sha256": "e7f858cd527eec9ea98244cbf68dc2b2668e0db9527ddcf4cb31c5fc822a701f",
+      "passed": true
+    },
+    {
+      "fixture": "compiler/native/tests/reject/never_type_fn_arg.rs",
+      "kind": "reject",
+      "sha256": "3bfecde3e93b295b408990ab2afd2336578a6e3b667213d428c67204bb8fa1e0",
+      "passed": true
+    },
+    {
+      "fixture": "compiler/native/tests/reject/nll_cond_return_mut.rs",
+      "kind": "reject",
+      "sha256": "a5a038f079e9db7411636776164bf518ce790335db2cb2c2b4c96fe86c0cd2b5",
+      "passed": true
+    },
+    {
+      "fixture": "compiler/native/tests/reject/never_type_cell_layout.rs",
+      "kind": "reject",
+      "sha256": "236b9c53c4e5704ba95506fbbaaed79a2b563bb418e8fe43c95e531f29430e1d",
+      "passed": true
+    },
+    {
+      "fixture": "compiler/native/tests/reject/never_type_nested_ret.rs",
+      "kind": "reject",
+      "sha256": "deb1d53c43977e3a03edb66cb7f8cd3a3960194d39d062bdcd7ec244e96b35e2",
+      "passed": true
+    },
+    {
+      "fixture": "compiler/native/tests/reject/rpit_reassign_drop.rs",
+      "kind": "reject",
+      "sha256": "0f9ca043a89a57784690c08079e95309ce1fb31d4f044d9374156a4c54d41b16",
+      "passed": true
+    },
+    {
+      "fixture": "compiler/native/tests/reject/sol_nll_problem_case_3.rs",
+      "kind": "reject",
+      "sha256": "412551520705a31c647ccb07ff783fe824ea4e18669ab840782d1744d08d673d",
+      "passed": true
+    },
+    {
+      "fixture": "compiler/native/tests/reject/trait_where_overflow_unused.rs",
+      "kind": "reject",
+      "sha256": "3e06a93ae52e98678f0b0e89b438f21803e571611c7d8642cab803b6c29b390e",
+      "passed": true
+    },
+    {
+      "fixture": "compiler/native/tests/reject/trait_where_overflow_mutual.rs",
+      "kind": "reject",
+      "sha256": "ed5837f5adefb749ad047e374f0de771ceea42612364ad233d8c62c4e421e3d6",
+      "passed": true
+    },
+    {
+      "fixture": "compiler/native/tests/pass/macro_fragment_kinds.rs",
+      "kind": "pass",
+      "sha256": "3641fc71417d6c1283c38adab71fcfb5e69562a95ffbded3699505513955fc2e",
+      "passed": true
+    },
+    {
+      "fixture": "compiler/native/tests/fail/macro_fragment_box_removed.rs",
+      "kind": "fail",
+      "sha256": "0fe754564913a34a882a022dbfdcca76946c5f9d10426787d331d9ab2dbc4b88",
+      "passed": true
+    },
+    {
+      "fixture": "compiler/native/tests/fail/macro_fragment_nested_box_removed.rs",
+      "kind": "fail",
+      "sha256": "497b5fa78730cc0dd9c5fde1da055314c3e5ada7ce22fefdb83a8c1642e6c71e",
+      "passed": true
+    }
+  ],
+  "negative_controls": {
+    "string_initial_allocation": "Previous compiler builds permanent fixture but exits101: capacity8 differs from required2. Matching Rust succeeds.",
+    "iterator_minmax": "Previous implementation omits written PartialOrd calls and returns different values for the existing sort_partialord_lt fixture. Candidate matches all10 selected reference programs.",
+    "removed_box_patterns": {
+      "prior_native_core_sha256": "d7ed22dc772424f3cd732f5c33b1a76b4b1b77743d1665c586cfe30a7b7771c3",
+      "previous_native_accepts": true,
+      "candidate_native_and_pinned_rust_reject": true
+    }
+  },
+  "preserved_red_corpus": {
+    "source_revision": "3e5cd0ba67a71ae83e4856b2b184f2000ece3862",
+    "native_core_sha256": "d7ed22dc772424f3cd732f5c33b1a76b4b1b77743d1665c586cfe30a7b7771c3",
+    "passed": 5432,
+    "failed": 98,
+    "failed_cases_preserved": 98,
+    "comparison": "Original ordinary differential script, original masks, exact declared Rust oracle; no sanitizer or performance claim."
+  },
+  "limits": [
+    "Direct cold native compilation on Linux only; no daemon or hosted platform pass inferred.",
+    "Ten runtime fixtures and23 corpus acceptance/rejection fixtures are bounded checks.",
+    "Other standard-library, destructor, architecture and package qualification remain independent requirements.",
+    "No timing samples admitted and no change to frozen baseline comparisons."
+  ]
+}

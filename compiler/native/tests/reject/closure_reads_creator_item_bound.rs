@@ -1,4 +1,6 @@
 // expect: L0306
+// Accepted by declared Rust source 5b7b37aef; native capability rejection.
+// Historical rejection comments below refer to the Rust 1.99 oracle.
 // rustc E0597: in the closure, `v.extend(it)` makes `v`'s items `&'a u8` exactly (the enclosing fn's
 // bound), so `&x0` (the closure's own copy) must live for `'a` (tf-borrow p51).
 use std::collections::{VecDeque, BTreeSet, HashSet};
