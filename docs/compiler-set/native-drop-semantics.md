@@ -103,6 +103,18 @@ The record does not claim a macOS run, a Clang sanitizer run, full native-suite
 qualification or a performance result. Those remain separate checks of the
 composed source candidate.
 
+### Combined runtime repair
+
+The subsequent combined source at `af0a281f2d1fae04e8ebfd5aa2c4872b20245c04`
+includes the cleanup hook repair. Its
+[combined verification](evidence/native-drop-repair-20261119/combined-verification.json)
+passes all six fixtures in both native setjmp and GCC exception-table modes.
+All 332 finite scenarios match both pinned Rust and their independent ordering
+oracle. The double-panic fixture now matches exact stdout, stderr and `SIGABRT`
+in both modes. This closes the specific failing hook comparison above; its
+original failed reports remain unchanged. The full platform and sanitizer gates
+still qualify their own exact source and toolchains.
+
 ## Reproduction
 
 Use the matching `nightly-2026-11-09` SDK and the native README's TCC setup.
