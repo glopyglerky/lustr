@@ -469,9 +469,7 @@ fn represented_signature<'tcx>(tcx: TyCtxt<'tcx>, instance: ty::Instance<'tcx>) 
     let Ok(c_abi) = tcx.fn_abi_of_fn_ptr(environment.as_query_input((ty::Binder::dummy(c_signature), ty::List::empty()))) else {
         return None;
     };
-    let mode_equal = |a: &rustc_target::callconv::PassMode, b: &rustc_target::callconv::PassMode| {
-        matches!((a, b), (rustc_target::callconv::PassMode::Direct(a), rustc_target::callconv::PassMode::Direct(b)) if a == b)
-    };
+    let mode_equal = |a: &rustc_target::callconv::PassMode, b: &rustc_target::callconv::PassMode| matches!((a, b), (rustc_target::callconv::PassMode::Direct(a), rustc_target::callconv::PassMode::Direct(b)) if a == b);
     // The pinned LLVM backend maps canonical Rust and C to the
     // same LLVM C calling convention (upstream abi.rs). Compare
     // the actual argument/return modes too; a canonical ABI name
