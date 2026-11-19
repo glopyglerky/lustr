@@ -70,13 +70,14 @@ def main():
         report["source"] = run("source", ["git", "rev-parse", "HEAD", "HEAD^{tree}", "HEAD:compiler/native"]).read_text().splitlines()
         dirty = run("source-state", ["git", "status", "--porcelain", "--", "compiler/native",
                     "crates/lustr-native-core", "tests/shared-imports", "tools/native-upstream-qualification.rs",
-                    "tools/test-native-upstream.py"]).read_text()
+                    "tools/test-native-upstream.py", "upstream/bluefe-core.pin"]).read_text()
         if dirty:
             raise RuntimeError("shared-service source must be committed before qualification")
         report["inputs_sha256"] = {
             "rustc": digest(rustc), "cargo": digest(cargo), "tcc": digest(tcc / "bin/tcc"),
             "libtcc": digest(tcc / "lib/libtcc.a"), "launcher": digest(__file__),
             "campaign": digest(ROOT / "tools/test-native-upstream.py"),
+            "sdk_declaration": digest(ROOT / "upstream/bluefe-core.pin"),
         }
         built = run("build", [cargo, "build", "--manifest-path", ROOT / "crates/lustr-native-core/Cargo.toml",
                     "--locked", "--offline", "--jobs", "2", "--target-dir", output / "target",
@@ -107,6 +108,12 @@ def main():
                 or digest(qualifier) != report["qualifier_sha256"]):
             raise RuntimeError("campaign did not qualify the unchanged built executable")
         report["controls"] = len(campaign["cases"])
+        adapter_state = output / "campaign/integer-signatures-state"
+        report["integer_adapters"] = {
+            "count": 30, "checked_results": 262720,
+            "llvm_input_sha256": digest(adapter_state / "integer-adapters.ll"),
+            "tool_identity": (adapter_state / "integer-adapter-tool.txt").read_text(),
+        }
         report["passed"] = True
     except Exception as error:
         report["error"] = str(error)

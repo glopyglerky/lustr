@@ -47,7 +47,15 @@ mod qualification {
         }
 
         fn after_expansion<'tcx>(&mut self, _: &interface::Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
-            let provider = match upstream_definitions::Provider::capture(tcx, &self.alias, &self.archive) {
+            let adapter_control = match std::env::var("LUSTR_QUALIFICATION_ADAPTER_FAILURE").as_deref() {
+                Ok("missing") => upstream_definitions::abi::Control::MissingTool,
+                Ok("failed") => upstream_definitions::abi::Control::FailedTool,
+                Ok("malformed") => upstream_definitions::abi::Control::MalformedObject,
+                Ok("empty") => upstream_definitions::abi::Control::EmptyObject,
+                Err(_) => upstream_definitions::abi::Control::Normal,
+                _ => panic!("unknown adapter qualification control"),
+            };
+            let provider = match upstream_definitions::Provider::capture(tcx, &self.alias, &self.archive, adapter_control) {
                 Ok(provider) => provider,
                 Err(error) => {
                     eprintln!("import outcome: {error:?}");
@@ -72,14 +80,19 @@ mod qualification {
             match driver::prepare_imported(&request, &mut session, &provider) {
                 Ok(driver::Preparation::Ready(prepared)) => {
                     assert!(!prepared.checked_functions().is_empty());
-                    assert_eq!(prepared.imported_dependencies().len(), 1);
+                    assert_eq!(prepared.imported_dependencies().len(), if provider.adapter_count() == 0 { 1 } else { 3 });
                     assert_eq!(prepared.imported_dependencies()[0].contents.as_ref(), self.archive.contents());
                     eprintln!("imported-generation={}", prepared.imported_dependencies()[0].identity);
                     let upstream_source = tcx.sess.source_map().files().iter()
                         .find_map(|file| file.src.as_ref().filter(|source| source.as_str() == prepared.source()))
                         .expect("native request and imported global context must use the same original source snapshot").clone();
                     assert_eq!(upstream_source.as_str(), prepared.source());
-                    eprintln!("shared request: native-checked={} imported-inputs=1 consumer-rust-typeck=0 consumer-rust-analysis=0", prepared.checked_functions().len());
+                    eprintln!("shared request: native-checked={} imported-inputs={} integer-adapters={} consumer-rust-typeck=0 consumer-rust-analysis=0",
+                        prepared.checked_functions().len(), prepared.imported_dependencies().len(), provider.adapter_count());
+                    for dependency in prepared.imported_dependencies() {
+                        if dependency.identity == "imported-LLVM-adapter-IR" { std::fs::write(self.scratch.join("integer-adapters.ll"), &dependency.contents).unwrap(); }
+                        if dependency.identity == "imported-LLVM-adapter-tool" { std::fs::write(self.scratch.join("integer-adapter-tool.txt"), &dependency.contents).unwrap(); }
+                    }
                     if std::env::var_os("LUSTR_QUALIFICATION_OBJECT_FAILURE").is_some() {
                         std::fs::create_dir_all(self.scratch.join("native-state/imported-0.o")).unwrap();
                     }

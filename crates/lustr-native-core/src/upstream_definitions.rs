@@ -1,7 +1,7 @@
 //! First semantic import from genuine pinned Rust metadata.
 //!
-//! This bounded service admits public, nongeneric, non-Copy transparent u64
-//! structs and safe Rust functions taking and returning one such struct.
+//! This bounded service admits public, nongeneric, non-Copy transparent integer
+//! structs and safe Rust functions with represented integer/nominal signatures.
 //! Every definition retains Rust's full stable crate/path identity. Native
 //! bodies are checked once against these facts; Rust never checks those bodies.
 //! Wider types, obligations, modules, unwind and retained generations remain
@@ -13,10 +13,13 @@ use rustc_hir::def::{DefKind, Res};
 use rustc_middle::ty::{self as upstream, TyCtxt, TypingEnv};
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_span::def_id::{DefId, CRATE_DEF_INDEX};
-use rustc_target::callconv::PassMode;
+use rustc_target::callconv::{ArgAbi, ArgAttribute, ArgAttributes, FnAbi, PassMode};
 use rustc_trait_selection::infer::InferCtxtExt;
 use std::sync::Arc;
 use ty::TyIntern;
+
+#[path = "upstream_abi.rs"]
+pub(super) mod abi;
 
 /// One archive generation. Its private fields bind every object to the same
 /// bytes supplied to Rust's metadata loader; callers cannot supply unrelated
@@ -87,7 +90,20 @@ struct Nominal<'tcx> {
     disk: def::DiskDefId,
     name: String,
     ty: upstream::Ty<'tcx>,
+    field: ty::IntTy,
     layout: ty::layout::Layout,
+}
+
+#[derive(Clone, Copy)]
+enum ValueKind {
+    Integer(ty::IntTy),
+    Nominal(usize),
+}
+
+struct Value {
+    kind: ValueKind,
+    size: u64,
+    align: u64,
 }
 
 struct Function {
@@ -95,8 +111,8 @@ struct Function {
     disk: def::DiskDefId,
     name: String,
     symbol: String,
-    input: usize,
-    output: usize,
+    inputs: Vec<Value>,
+    output: Value,
 }
 
 /// Call-borrowed upstream context plus immutable code/metadata snapshots.
@@ -110,10 +126,84 @@ pub struct Provider<'tcx> {
     functions: Vec<Function>,
     dependencies: Vec<(String, Arc<[u8]>)>,
     objects: Vec<Arc<[u8]>>,
+    adapters: Option<abi::Module>,
 }
 
 fn native_type(program: &check::collect::Program, id: def::DefId) -> Result<ty::Ty, String> {
     program.tys.get(ty::TyKind::Adt(id, ty::EMPTY_ARGS)).ok_or_else(|| "missing imported nominal type".into())
+}
+
+fn integer(actual: upstream::Ty<'_>) -> Option<ty::IntTy> {
+    use ty::IntTy as N;
+    Some(match actual.kind() {
+        upstream::Int(upstream::IntTy::I8) => N::I8,
+        upstream::Int(upstream::IntTy::I16) => N::I16,
+        upstream::Int(upstream::IntTy::I32) => N::I32,
+        upstream::Int(upstream::IntTy::I64) => N::I64,
+        upstream::Int(upstream::IntTy::Isize) => N::Isize,
+        upstream::Uint(upstream::UintTy::U8) => N::U8,
+        upstream::Uint(upstream::UintTy::U16) => N::U16,
+        upstream::Uint(upstream::UintTy::U32) => N::U32,
+        upstream::Uint(upstream::UintTy::U64) => N::U64,
+        upstream::Uint(upstream::UintTy::Usize) => N::Usize,
+        _ => return None,
+    })
+}
+
+impl Value {
+    fn capture<'tcx>(tcx: TyCtxt<'tcx>, actual: upstream::Ty<'tcx>, nominals: &[Nominal<'tcx>]) -> Result<Self, Error> {
+        let kind = if let Some(value) = integer(actual) { ValueKind::Integer(value) }
+            else { ValueKind::Nominal(nominals.iter().position(|n| n.ty == actual)
+                .ok_or_else(|| missing("external signature type requires additional shared semantic records"))?) };
+        let layout = tcx.layout_of(TypingEnv::fully_monomorphized().as_query_input(actual))
+            .map_err(|e| Error::Failed(format!("upstream signature layout failed: {e:?}")))?;
+        if layout.uninhabited || layout.largest_niche.is_some() {
+            return Err(missing("external signature validity requires additional shared records"));
+        }
+        Ok(Self { kind, size: layout.size.bytes(), align: layout.align.bytes() })
+    }
+
+    fn install(&self, program: &mut check::collect::Program, nominals: &[Nominal<'_>]) -> Result<ty::Ty, String> {
+        match self.kind {
+            ValueKind::Integer(value) => Ok(program.tys.intern(ty::TyKind::Int(value))),
+            ValueKind::Nominal(index) => native_type(program, nominals[index].native),
+        }
+    }
+
+    fn verify(&self, program: &check::collect::Program, nominals: &[Nominal<'_>]) -> Result<ty::Ty, String> {
+        let native = match self.kind {
+            ValueKind::Integer(value) => program.tys.get(ty::TyKind::Int(value)).ok_or("missing imported integer type")?,
+            ValueKind::Nominal(index) => native_type(program, nominals[index].native)?,
+        };
+        let abi = crate::cgen::native_type_abi(program, native).ok_or("native signature ABI is unavailable")?;
+        if abi.size != self.size || abi.align != self.align || abi.param_dropped || abi.param_by_ptr || abi.ret_by_out {
+            return Err("native signature representation differs from the admitted upstream ABI".into());
+        }
+        Ok(native)
+    }
+
+    fn matches_backend(&self, repr: rustc_abi::BackendRepr, nominals: &[Nominal<'_>]) -> bool {
+        let field = match self.kind { ValueKind::Integer(field) => field, ValueKind::Nominal(index) => nominals[index].field };
+        matches!(repr, rustc_abi::BackendRepr::Scalar(scalar)
+            if matches!(scalar.primitive(), rustc_abi::Primitive::Int(integer, signed)
+                if integer.size().bytes() == self.size && signed == field.signed()))
+    }
+
+    fn native_c_layout<'tcx>(&self, tcx: TyCtxt<'tcx>, actual: upstream::Ty<'tcx>) -> Result<rustc_abi::TyAndLayout<'tcx, upstream::Ty<'tcx>>, Error> {
+        let mut layout = tcx.layout_of(TypingEnv::fully_monomorphized().as_query_input(actual))
+            .map_err(|e| Error::Failed(format!("native C representation layout failed: {e:?}")))?;
+        if matches!(self.kind, ValueKind::Nominal(_)) {
+            // Native C emits a real one-field C struct, not Rust's scalar
+            // repr(transparent) calling representation. Keep the authoritative
+            // field offsets/size/alignment but classify this C aggregate with
+            // the imported target ABI implementation. This is a separate view;
+            // the original Rust type and its FnAbi remain unchanged.
+            let mut aggregate = (**layout.layout).clone();
+            aggregate.backend_repr = rustc_abi::BackendRepr::Memory { sized: true };
+            layout.layout = tcx.mk_layout(aggregate);
+        }
+        Ok(layout)
+    }
 }
 
 fn ids(tcx: TyCtxt<'_>, original: DefId) -> (def::DefId, def::DiskDefId) {
@@ -127,7 +217,7 @@ fn ids(tcx: TyCtxt<'_>, original: DefId) -> (def::DefId, def::DiskDefId) {
 
 impl<'tcx> Provider<'tcx> {
     /// Consume only a privately constructed, complete archive generation.
-    pub(super) fn capture(tcx: TyCtxt<'tcx>, alias: &str, archive: &Archive) -> Result<Self, Error> {
+    pub(super) fn capture(tcx: TyCtxt<'tcx>, alias: &str, archive: &Archive, adapter_control: abi::Control) -> Result<Self, Error> {
         if tcx.sess.target.llvm_target.as_ref() != "x86_64-unknown-linux-gnu"
             || tcx.sess.panic_strategy().unwinds() {
             return Err(missing("this semantic import requires x86_64 Linux and an explicit abort profile"));
@@ -157,12 +247,13 @@ impl<'tcx> Provider<'tcx> {
             let upstream::Adt(adt, args) = actual.kind() else { return Err(Error::Failed("struct metadata has a non-ADT type".into())) };
             let variant = adt.non_enum_variant();
             let field = variant.fields.iter().next().ok_or_else(|| missing("external aggregate needs a nonzero field"))?;
+            let field_type = tcx.normalize_erasing_regions(environment, field.ty(tcx, *args));
+            let field_integer = integer(field_type).ok_or_else(|| missing("external aggregate field requires additional shared type records"))?;
             if !args.is_empty() || tcx.generics_of(id).count() != 0 || !tcx.param_env(id).is_empty()
                 || !adt.is_struct() || !adt.repr().transparent() || adt.repr().pack.is_some() || adt.repr().align.is_some()
                 || adt.is_variant_list_non_exhaustive() || variant.is_field_list_non_exhaustive()
                 || variant.fields.len() != 1 || !field.vis.is_public()
                 || variant.ctor_kind() != Some(rustc_hir::def::CtorKind::Fn)
-                || tcx.normalize_erasing_regions(environment, field.ty(tcx, *args)) != tcx.types.u64
                 || actual.needs_drop(tcx, environment) || tcx.type_is_copy_modulo_regions(environment, actual) {
                 return Err(missing("external aggregate needs additional type, obligation, Copy or drop records"));
             }
@@ -170,7 +261,8 @@ impl<'tcx> Provider<'tcx> {
                 return Err(missing("external inherent methods require their shared definition records"));
             }
             let layout = tcx.layout_of(environment.as_query_input(actual)).map_err(|e| Error::Failed(format!("upstream layout failed: {e:?}")))?;
-            if layout.size.bytes() != 8 || layout.align.bytes() != 8 || layout.fields.offset(0).bytes() != 0
+            let field_layout = tcx.layout_of(environment.as_query_input(field_type)).map_err(|e| Error::Failed(format!("upstream field layout failed: {e:?}")))?;
+            if layout.size != field_layout.size || layout.align != field_layout.align || layout.fields.offset(0).bytes() != 0
                 || layout.largest_niche.is_some() || layout.uninhabited {
                 return Err(missing("transparent aggregate layout is outside this call boundary"));
             }
@@ -186,7 +278,7 @@ impl<'tcx> Provider<'tcx> {
             }
             let (native, disk) = ids(tcx, id);
             nominals.push(Nominal {
-                original: id, native, disk, name: child.ident.name.to_string(), ty: actual,
+                original: id, native, disk, name: child.ident.name.to_string(), ty: actual, field: field_integer,
                 layout: ty::layout::Layout { size: layout.size.bytes(), align: layout.align.bytes(), field_offsets: vec![layout.fields.offset(0).bytes()], variant_offsets: Vec::new(),
                     niche: None, enum_tag: None, uninhabited: false },
             });
@@ -194,7 +286,25 @@ impl<'tcx> Provider<'tcx> {
         if !tcx.trait_impls_in_crate(*krate).is_empty() {
             return Err(missing("external trait implementations require their shared obligation records"));
         }
+        // Metadata may retain a body for downstream monomorphization without
+        // emitting an object definition, for example #[inline(always)]. Such
+        // a function needs the complementary instance-materialization service;
+        // a later unresolved-symbol linker error must not discover capability.
+        let mut available_functions = std::collections::BTreeSet::new();
+        let mut available_definitions = std::collections::BTreeSet::new();
+        let mut required_definitions = std::collections::BTreeSet::new();
+        for object in &archive.objects {
+            let symbols = crate::unit_object::symbols(object)
+                .map_err(|e| Error::Failed(format!("invalid imported definition object: {e}")))?;
+            available_functions.extend(symbols.functions);
+            available_definitions.extend(symbols.defined);
+            required_definitions.extend(symbols.undefined);
+        }
+        if required_definitions.iter().any(|name| !available_definitions.contains(name)) {
+            return Err(missing("imported object closure requires additional shared runtime or dependency records"));
+        }
         let mut functions = Vec::new();
+        let mut adapters = Vec::new();
         for child in children {
             if !child.vis.is_public() { continue; }
             let Res::Def(DefKind::Fn, id) = child.res else { continue };
@@ -208,42 +318,69 @@ impl<'tcx> Provider<'tcx> {
             }
             let signature = signature.skip_binder();
             if !signature.fn_sig_kind.is_safe() || signature.abi() != ExternAbi::Rust
-                || signature.c_variadic() || signature.inputs().len() != 1 {
+                || signature.c_variadic() {
                 return Err(missing("external function qualifier/signature is outside this call boundary"));
             }
-            let input = nominals.iter().position(|n| n.ty == signature.inputs()[0])
-                .ok_or_else(|| missing("external argument is not an admitted nominal type"))?;
-            let output = nominals.iter().position(|n| n.ty == signature.output())
-                .ok_or_else(|| missing("external return is not an admitted nominal type"))?;
-            let mut c_signature = signature;
-            c_signature.fn_sig_kind = c_signature.fn_sig_kind.set_abi(ExternAbi::C { unwind: false });
+            let inputs: Vec<_> = signature.inputs().iter().map(|&actual| Value::capture(tcx, actual, &nominals)).collect::<Result<_, _>>()?;
+            let output = Value::capture(tcx, signature.output(), &nominals)?;
             let rust_abi = tcx.fn_abi_of_instance(environment.as_query_input((instance, upstream::List::empty())))
                 .map_err(|e| Error::Failed(format!("upstream Rust FnAbi failed: {e:?}")))?;
-            let c_abi = tcx.fn_abi_of_fn_ptr(environment.as_query_input((upstream::Binder::dummy(c_signature), upstream::List::empty())))
-                .map_err(|e| Error::Failed(format!("upstream C FnAbi failed: {e:?}")))?;
+            let argument = |value: &Value, actual| -> Result<_, Error> {
+                Ok(ArgAbi::new(value.native_c_layout(tcx, actual)?, |_, _| {
+                    let mut attributes = ArgAttributes::new();
+                    attributes.regular |= ArgAttribute::NoUndef;
+                    attributes
+                }))
+            };
+            let mut c_abi = FnAbi {
+                args: inputs.iter().zip(signature.inputs()).map(|(value, &actual)| argument(value, actual)).collect::<Result<Vec<_>, _>>()?.into_boxed_slice(),
+                ret: argument(&output, signature.output())?, c_variadic: false,
+                fixed_count: inputs.len().try_into().map_err(|_| Error::Failed("native C signature has too many arguments".into()))?,
+                conv: CanonAbi::C, can_unwind: false,
+            };
+            c_abi.adjust_for_foreign_abi(&upstream::layout::LayoutCx::new(tcx, environment), ExternAbi::C { unwind: false });
             let direct = |a: &PassMode, b: &PassMode| matches!((a, b), (PassMode::Direct(a), PassMode::Direct(b)) if a == b);
             if !matches!((rust_abi.conv, c_abi.conv), (CanonAbi::Rust, CanonAbi::C))
                 || rust_abi.can_unwind || c_abi.can_unwind || rust_abi.c_variadic || c_abi.c_variadic
-                || rust_abi.fixed_count != c_abi.fixed_count || rust_abi.args.len() != 1 || c_abi.args.len() != 1
-                || !direct(&rust_abi.args[0].mode, &c_abi.args[0].mode) || !direct(&rust_abi.ret.mode, &c_abi.ret.mode) {
-                return Err(missing("actual upstream Rust and C FnAbi are not equal for this instance"));
+                || rust_abi.fixed_count != c_abi.fixed_count || rust_abi.args.len() != inputs.len() || c_abi.args.len() != inputs.len() {
+                return Err(missing("actual upstream Rust and C FnAbi conventions are outside this call boundary"));
+            }
+            if !inputs.iter().zip(&rust_abi.args).all(|(value, rust)| value.matches_backend(rust.layout.backend_repr, &nominals))
+                || !output.matches_backend(rust_abi.ret.layout.backend_repr, &nominals) {
+                return Err(missing("integer call lowering differs from the authoritative signature representation"));
             }
             let symbol = tcx.symbol_name(instance).name;
             if symbol.is_empty() || !symbol.bytes().enumerate().all(|(index, byte)| byte == b'_' || byte.is_ascii_alphabetic() || index != 0 && byte.is_ascii_digit()) {
                 return Err(missing("the actual imported symbol needs a quoted linkage representation"));
             }
+            if !available_functions.contains(symbol.as_bytes()) {
+                return Err(Error::Unintegrated(format!("imported instance {} requires complementary body materialization", tcx.def_path_str(id))));
+            }
             let (native, disk) = ids(tcx, id);
+            let symbol = if rust_abi.args.iter().zip(&c_abi.args).all(|(a, b)| direct(&a.mode, &b.mode))
+                && direct(&rust_abi.ret.mode, &c_abi.ret.mode) { symbol.to_owned() }
+            else {
+                let adapter = abi::Function::capture(format!("lustr_import_abi_{:016x}_{:016x}", disk.krate.0, disk.hash.0),
+                    symbol, &inputs, &output, &rust_abi.args.iter().map(|arg| arg.mode.clone()).collect::<Vec<_>>(),
+                    &rust_abi.ret.mode, &c_abi.args.iter().map(|arg| arg.mode.clone()).collect::<Vec<_>>(), &c_abi.ret.mode)?;
+                if available_definitions.contains(adapter.symbol.as_bytes()) {
+                    return Err(Error::Failed("integer adapter symbol is already owned by the imported archive".into()));
+                }
+                let symbol = adapter.symbol.clone();
+                adapters.push(adapter);
+                symbol
+            };
             functions.push(Function { native, disk, name: child.ident.name.to_string(),
-                symbol: symbol.to_owned(), input, output });
+                symbol, inputs, output });
         }
-        if nominals.is_empty() || functions.is_empty() { return Err(missing("this shared call slice needs a real nominal and function")); }
+        if functions.is_empty() { return Err(missing("this shared call slice needs a real function")); }
         let mut identities = std::collections::BTreeSet::new();
         for id in nominals.iter().map(|n| n.disk).chain(functions.iter().map(|f| f.disk)) {
             if !identities.insert(id) { return Err(Error::Failed("duplicate upstream definition identity".into())); }
         }
         Ok(Self { tcx, alias: alias.into(), root: ids(tcx, root).0, stable: ids(tcx, root).1.krate, nominals, functions,
             dependencies: vec![(format!("rust:{}:{:?}", env!("LUSTR_IMPORTED_COMMIT"), tcx.crate_hash(*krate)), archive.contents.clone())],
-            objects: archive.objects.clone() })
+            objects: archive.objects.clone(), adapters: abi::Module::capture(&adapters, adapter_control)? })
     }
 
     fn verify(&self, program: &check::collect::Program) -> Result<(), String> {
@@ -268,8 +405,9 @@ impl<'tcx> Provider<'tcx> {
         }
         for function in &self.functions {
             let (params, result, linkage) = program.native_fn(function.native).ok_or("missing imported signature")?;
-            if params != [native_type(program, self.nominals[function.input].native)?]
-                || result != native_type(program, self.nominals[function.output].native)?
+            let expected_params: Vec<_> = function.inputs.iter().map(|value| value.verify(program, &self.nominals)).collect::<Result<_, _>>()?;
+            if params != expected_params
+                || result != function.output.verify(program, &self.nominals)?
                 || linkage.id != function.disk || linkage.symbol != function.symbol {
                 return Err("imported function identity/signature changed".into());
             }
@@ -326,8 +464,8 @@ impl driver::imports::Definitions for Provider<'_> {
             || program.imported_crates.insert(self.root.krate, self.stable).is_some() {
             return Err(report("imported stable crate identity is already owned".into()));
         }
-        let word = program.tys.intern(ty::TyKind::Int(ty::IntTy::U64));
         for nominal in &self.nominals {
+            let word = program.tys.intern(ty::TyKind::Int(nominal.field));
             let info = program.resolved.as_ref().and_then(|tables| tables.def_info.get(&nominal.native)).ok_or_else(|| report("imported type has no original binding".into()))?;
             let (flat, module) = (info.flat, info.module);
             let local = ty::AdtId(program.adts.len() as u32);
@@ -353,14 +491,14 @@ impl driver::imports::Definitions for Provider<'_> {
             let info = program.resolved.as_ref().and_then(|tables| tables.def_info.get(&function.native)).ok_or_else(|| report("imported function has no original binding".into()))?;
             let mut data = ty::defs::DefData::skeleton(ty::defs::DefKind::ForeignFn, None, info.flat, ty::defs::Vis::Pub, diag::Span::default());
             data.module = info.module;
-            let params = vec![native_type(program, self.nominals[function.input].native).map_err(&report)?];
-            let ret = native_type(program, self.nominals[function.output].native).map_err(&report)?;
+            let params = function.inputs.iter().map(|value| value.install(program, &self.nominals)).collect::<Result<Vec<_>, _>>().map_err(&report)?;
+            let ret = function.output.install(program, &self.nominals).map_err(&report)?;
             data.sig = ty::SigData::Fn { params: params.clone(), ret };
             data.native_linkage = Some(Box::new(ty::defs::NativeLinkage { id: function.disk, symbol: function.symbol.clone() }));
             program.defs.insert(function.native, data);
-            // The checked upstream binder is empty, both nominal arguments
-            // have no generic or lifetime parameters, and their only field
-            // is u64. Preserve that real zero-region signature for item-to-
+            // The checked upstream binder is empty. Every admitted argument
+            // and result is an integer or a nongeneric transparent integer
+            // nominal. Preserve that real zero-region signature for item-to-
             // pointer coercion and call proofs; absence is not such a proof.
             program.regions.native_fns.insert(function.native, crate::borrowck::RegionSig {
                 n_univ: 0, params, ret, facts: Vec::new(), names: Vec::new(), early: Vec::new(),
@@ -371,9 +509,18 @@ impl driver::imports::Definitions for Provider<'_> {
         self.verify(program).map_err(report)
     }
 
-    fn validate_checked(&self, program: &check::collect::Program) -> Result<(), String> { self.verify(program) }
-    fn dependencies(&self) -> Vec<driver::imports::Dependency> {
-        self.dependencies.iter().map(|(identity, contents)| driver::imports::Dependency { identity: identity.clone(), contents: contents.clone() }).collect()
+    fn validate_checked(&self, program: &check::collect::Program) -> Result<(), String> {
+        self.verify(program)?;
+        if let Some(adapters) = &self.adapters { adapters.emit()?; }
+        Ok(())
     }
-    fn objects(&self) -> Vec<Arc<[u8]>> { self.objects.clone() }
+    fn dependencies(&self) -> Vec<driver::imports::Dependency> {
+        self.dependencies.iter().cloned().chain(self.adapters.iter().flat_map(|module| module.dependencies()))
+            .map(|(identity, contents)| driver::imports::Dependency { identity, contents }).collect()
+    }
+    fn objects(&self) -> Vec<Arc<[u8]>> { self.objects.iter().cloned().chain(self.adapters.iter().map(|module| module.object())).collect() }
+}
+
+impl Provider<'_> {
+    pub(super) fn adapter_count(&self) -> usize { self.adapters.as_ref().map_or(0, |module| module.count()) }
 }
