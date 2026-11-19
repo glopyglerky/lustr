@@ -20,6 +20,9 @@ int64_t lust_sys_net_getopt(int32_t fd, int32_t opt) { (void)fd; (void)opt; retu
 int64_t lust_sys_net_sendto(int32_t fd, const uint8_t *p, uint64_t len, const uint8_t *rec, uint64_t rlen) { (void)fd; (void)p; (void)len; (void)rec; (void)rlen; return -LUST_NET_NOSUP; }
 int64_t lust_sys_net_recvfrom(int32_t fd, uint64_t max, int32_t flags, lust_Vec *out, lust_Vec *addrout) { (void)fd; (void)max; (void)flags; (void)out; (void)addrout; return -LUST_NET_NOSUP; }
 int32_t lust_sys_net_unix_pair(lust_Vec *out) { (void)out; return -LUST_NET_NOSUP; }
+int32_t lust_sys_net_unix_socket(void) { return -LUST_NET_NOSUP; }
+int32_t lust_sys_net_unix_connect_fd(int32_t fd, const uint8_t *p, uint64_t len, int32_t abstract) { (void)fd; (void)p; (void)len; (void)abstract; return LUST_NET_NOSUP; }
+int32_t lust_sys_net_unix_bind_fd(int32_t fd, const uint8_t *p, uint64_t len, int32_t abstract, int32_t backlog) { (void)fd; (void)p; (void)len; (void)abstract; (void)backlog; return LUST_NET_NOSUP; }
 int32_t lust_sys_net_unix_bind(const uint8_t *p, uint64_t len, int32_t abstract) { (void)p; (void)len; (void)abstract; return -LUST_NET_NOSUP; }
 int32_t lust_sys_net_unix_connect(const uint8_t *p, uint64_t len, int32_t abstract) { (void)p; (void)len; (void)abstract; return -LUST_NET_NOSUP; }
 int32_t lust_sys_net_unix_accept(int32_t fd, lust_Vec *out) { (void)fd; (void)out; return -LUST_NET_NOSUP; }

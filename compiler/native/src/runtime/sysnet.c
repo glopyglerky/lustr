@@ -11,6 +11,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
@@ -499,15 +500,47 @@ int32_t lust_sys_net_unix_pair(lust_Vec *out) {
     return fds[0];
 }
 
-int32_t lust_sys_net_unix_bind(const uint8_t *p, uint64_t len, int32_t abstract) {
-    struct sockaddr_un un;
-    socklen_t sl = lust_sysnet_unix_addr(p, len, abstract, &un);
-    if (sl == 0) return -errno;
+int32_t lust_sys_net_unix_socket(void) {
     int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
     if (fd < 0) return -errno;
-    lust_sock_after_create(fd, 0);
-    if (bind(fd, (struct sockaddr *)&un, sl) != 0 || listen(fd, 128) != 0) {
+#ifdef __APPLE__
+    /* Match the declared Rust Socket::new: creation, checked CLOEXEC,
+       then checked SIGPIPE suppression, before any user pathname code. */
+    if (ioctl(fd, FIOCLEX) < 0) {
         int e = errno;
+        close(fd);
+        return -e;
+    }
+    int enabled = 1;
+    if (setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &enabled, sizeof enabled) < 0) {
+        int e = errno;
+        close(fd);
+        return -e;
+    }
+#endif
+    return fd;
+}
+
+int32_t lust_sys_net_unix_bind_fd(int32_t fd, const uint8_t *p, uint64_t len, int32_t abstract, int32_t backlog) {
+    struct sockaddr_un un;
+    socklen_t sl = lust_sysnet_unix_addr(p, len, abstract, &un);
+    if (sl == 0) return errno;
+    if (bind(fd, (struct sockaddr *)&un, sl) != 0 || listen(fd, backlog) != 0) return errno;
+    return 0;
+}
+
+int32_t lust_sys_net_unix_connect_fd(int32_t fd, const uint8_t *p, uint64_t len, int32_t abstract) {
+    struct sockaddr_un un;
+    socklen_t sl = lust_sysnet_unix_addr(p, len, abstract, &un);
+    if (sl == 0) return errno;
+    return connect(fd, (struct sockaddr *)&un, sl) != 0 ? errno : 0;
+}
+
+int32_t lust_sys_net_unix_bind(const uint8_t *p, uint64_t len, int32_t abstract) {
+    int fd = lust_sys_net_unix_socket();
+    if (fd < 0) return fd;
+    int e = lust_sys_net_unix_bind_fd(fd, p, len, abstract, 128);
+    if (e != 0) {
         close(fd);
         return -e;
     }
@@ -515,14 +548,10 @@ int32_t lust_sys_net_unix_bind(const uint8_t *p, uint64_t len, int32_t abstract)
 }
 
 int32_t lust_sys_net_unix_connect(const uint8_t *p, uint64_t len, int32_t abstract) {
-    struct sockaddr_un un;
-    socklen_t sl = lust_sysnet_unix_addr(p, len, abstract, &un);
-    if (sl == 0) return -errno;
-    int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
-    if (fd < 0) return -errno;
-    lust_sock_after_create(fd, 0);
-    if (connect(fd, (struct sockaddr *)&un, sl) != 0) {
-        int e = errno;
+    int fd = lust_sys_net_unix_socket();
+    if (fd < 0) return fd;
+    int e = lust_sys_net_unix_connect_fd(fd, p, len, abstract);
+    if (e != 0) {
         close(fd);
         return -e;
     }

@@ -1382,6 +1382,11 @@ pub const INTRINSICS: &[IntrinsicDef] = &[
     // Darwin F_GETPATH: appends an open descriptor's path; 0 or errno.
     // The std call is target-gated, including for release cross builds.
     IntrinsicDef { name: "sys_fd_path", c_symbol: "lust_sys_fd_path", params: &[S::I32, S::VecU8Mut], ret: S::I32, allowed: ONLY_STD, implemented: true },
+    // Unix socket ownership before user pathname evaluation. Existing registry
+    // indices remain stable; fd operations return 0/errno and never close it.
+    IntrinsicDef { name: "sys_net_unix_socket", c_symbol: "lust_sys_net_unix_socket", params: &[], ret: S::I32, allowed: ONLY_STD, implemented: true },
+    IntrinsicDef { name: "sys_net_unix_connect_fd", c_symbol: "lust_sys_net_unix_connect_fd", params: &[S::I32, S::Bytes, S::I32], ret: S::I32, allowed: ONLY_STD, implemented: true },
+    IntrinsicDef { name: "sys_net_unix_bind_fd", c_symbol: "lust_sys_net_unix_bind_fd", params: &[S::I32, S::Bytes, S::I32, S::I32], ret: S::I32, allowed: ONLY_STD, implemented: true },
 ];
 
 /// The intrinsic with this `core::intrinsics` name: its registry id.
