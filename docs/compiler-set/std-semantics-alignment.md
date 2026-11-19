@@ -81,10 +81,19 @@ in a default panic header is normalized in these focused comparisons.
 
 Private controls also check the hook's `can_unwind` value for normal panics under
 both strategies and for the final cleanup panic. Rust needs its unstable feature
-attribute for this API; native exposes the method but rejects that attribute.
-Those controls disclose the input difference and are not ordinary differential
-fixtures or a claim of feature-attribute support. The ordinary fixture uses
-stable APIs and identical source for both compilers.
+attribute for this API. At the runtime-qualification revision, native exposed
+the method but rejected that attribute. Those controls disclose the input
+difference and are not ordinary differential fixtures or a claim of
+feature-attribute support. The ordinary fixture uses stable APIs and identical
+source for both compilers.
+
+That investigation also found a false-acceptance defect: native accepted a
+program using the unstable accessor without its feature attribute, while the
+pinned Rust compiler rejected it with E0658. The bounded follow-up removes the
+public accessor while preserving the runtime flag and internal hook runner.
+The permanent `tests/fail/panic_hook_can_unwind_unstable.rs` fixture requires
+native check and build to reject it with L0104. It remains an invalid-program
+fixture; it is not reclassified as complementary work.
 
 ## Qualification boundaries
 
@@ -98,3 +107,12 @@ the hosted Clang sanitizer gates or native macOS qualification.
 The failing full run and the focused green run remain distinct evidence. The
 combined source must pass the complete ordinary corpus and the independent
 platform and integration gates before a release claim is made.
+
+
+## Combined source follow-up
+
+The [combined native qualification](native-combined-qualification.md) records
+5,540 passing ordinary cases on the combined source and complete 65-case
+unwinding passes in both execution modes after the separately identified
+hash-table dependency-location correction. Earlier failing and focused results
+above retain their original source identities.

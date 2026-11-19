@@ -1,0 +1,279 @@
+{
+  "schema": 1,
+  "declared_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "target": "x86_64-unknown-linux-gnu",
+  "profile_note": "Unmodified gate-profile binaries were copied into the script-required target/release path. These are not release-profile builds or latency measurements.",
+  "rustc_vV": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+  "rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+  "runs": [
+    {
+      "kind": "ordinary",
+      "source_head": "af0a281f2d1fae04e8ebfd5aa2c4872b20245c04",
+      "native_tree": "a3f37f8a4d2364757a3bebf476e530e6ddf4735a",
+      "profile": "gate",
+      "native_binaries": {
+        "lust": "9ffb8514f123aa1393630e36d68d11494e87781dd68f936de5ae3a498815ee07",
+        "lust-core": "066f71a26794945a3a704e692268483be96776b2a064a3ca02b8cda3462d1793"
+      },
+      "command": [
+        "bash",
+        "scripts/difftest.sh"
+      ],
+      "environment": {
+        "DIFFTEST_JOBS": "2",
+        "DIFFTEST_RUSTC_CACHE": "off",
+        "LUST_NO_DAEMON": "1"
+      },
+      "library_source": "Frozen snapshot byte-equal to checked-in compiler/native/library at the listed source",
+      "library_file_count": 160,
+      "library_manifest_sha256": "60b9112beae338cb2ab0c60608935fb238333968d50e707088b5b84dd54dc549",
+      "fixture_count": 5540,
+      "fixture_manifest_sha256": "aa4baa5ffaa8a1a5de0f2c2bd16afe9dbccd8923e166cea7e217e69891aaeed9",
+      "script_sha256": "fa7844f8638e1e03456f1a48731eeea637079108247263addf804533252ef5e4",
+      "case_pool_sha256": "f90ec0c777b72751f91efb84a8169a00f5d35a1ffd591b46718d606eaeca12fc",
+      "result": {
+        "passed": 5540,
+        "failed": 0,
+        "unsupported": 0,
+        "status": 0,
+        "failed_fixtures": []
+      },
+      "raw_sha256": {
+        "identity.json": "180e2ae9180053f992d418eeb8be4779821997198032fb2c832ae0d9606e57de",
+        "result.json": "efc0c33616c71b1e2b970069ca01b17fda9db83ed34ab83fca1036e270d2ecae",
+        "run.log": "bf22fbdaa76519d07345b0fcef0fd616213b04902be9ab73872944dc8286a9a3"
+      },
+      "binaries_and_library_unchanged": true,
+      "harness_oracle_masks_timeouts_changed": false
+    },
+    {
+      "kind": "unwind TCC before dependency-path repair",
+      "source_head": "af0a281f2d1fae04e8ebfd5aa2c4872b20245c04",
+      "native_tree": "a3f37f8a4d2364757a3bebf476e530e6ddf4735a",
+      "profile": "gate",
+      "native_binaries": {
+        "lust": "9ffb8514f123aa1393630e36d68d11494e87781dd68f936de5ae3a498815ee07",
+        "lust-core": "066f71a26794945a3a704e692268483be96776b2a064a3ca02b8cda3462d1793"
+      },
+      "command": [
+        "bash",
+        "scripts/difftest.sh",
+        "unwind-"
+      ],
+      "environment": {
+        "DIFFTEST_JOBS": "2",
+        "DIFFTEST_RUSTC_CACHE": "off",
+        "LUST_NO_DAEMON": "1",
+        "PANIC": "unwind",
+        "LUST_STRICT": "1"
+      },
+      "library_source": "Frozen snapshot byte-equal to checked-in compiler/native/library at the listed source",
+      "library_file_count": 160,
+      "library_manifest_sha256": "60b9112beae338cb2ab0c60608935fb238333968d50e707088b5b84dd54dc549",
+      "fixture_count": 65,
+      "fixture_manifest_sha256": "0998928c2c04a3bf95238340b89f298a0aeccfac6b21c9216b91027512d51bd8",
+      "script_sha256": "fa7844f8638e1e03456f1a48731eeea637079108247263addf804533252ef5e4",
+      "case_pool_sha256": "f90ec0c777b72751f91efb84a8169a00f5d35a1ffd591b46718d606eaeca12fc",
+      "result": {
+        "passed": 64,
+        "failed": 1,
+        "unsupported": 0,
+        "status": 1,
+        "failed_fixtures": [
+          "tests/unwind/hash_capacity_overflow.rs"
+        ]
+      },
+      "raw_sha256": {
+        "identity.json": "8fcae6e5a60edaf84747c67a5fb7d94b57ae4ef87659f296d278d3ff56e4ec8b",
+        "result.json": "63257bc35066caa9d5409be9fa0881cd0f20de9f1460411f174050928eeaa06e",
+        "run.log": "ca50689fc198831404bb7ef414d813dff2daac10b2e57f1340574310443a73c9"
+      },
+      "binaries_and_library_unchanged": true,
+      "harness_oracle_masks_timeouts_changed": false
+    },
+    {
+      "kind": "unwind GCC EH before dependency-path repair",
+      "source_head": "af0a281f2d1fae04e8ebfd5aa2c4872b20245c04",
+      "native_tree": "a3f37f8a4d2364757a3bebf476e530e6ddf4735a",
+      "profile": "gate",
+      "native_binaries": {
+        "lust": "9ffb8514f123aa1393630e36d68d11494e87781dd68f936de5ae3a498815ee07",
+        "lust-core": "066f71a26794945a3a704e692268483be96776b2a064a3ca02b8cda3462d1793"
+      },
+      "command": [
+        "bash",
+        "scripts/difftest.sh",
+        "unwind-"
+      ],
+      "environment": {
+        "DIFFTEST_JOBS": "2",
+        "DIFFTEST_RUSTC_CACHE": "off",
+        "LUST_NO_DAEMON": "1",
+        "PANIC": "unwind",
+        "LUST_STRICT": "1",
+        "EH": "1",
+        "EH_CC": "gcc",
+        "EH_CXX": "g++"
+      },
+      "library_source": "Frozen snapshot byte-equal to checked-in compiler/native/library at the listed source",
+      "library_file_count": 160,
+      "library_manifest_sha256": "60b9112beae338cb2ab0c60608935fb238333968d50e707088b5b84dd54dc549",
+      "fixture_count": 65,
+      "fixture_manifest_sha256": "0998928c2c04a3bf95238340b89f298a0aeccfac6b21c9216b91027512d51bd8",
+      "script_sha256": "fa7844f8638e1e03456f1a48731eeea637079108247263addf804533252ef5e4",
+      "case_pool_sha256": "f90ec0c777b72751f91efb84a8169a00f5d35a1ffd591b46718d606eaeca12fc",
+      "result": {
+        "passed": 64,
+        "failed": 1,
+        "unsupported": 0,
+        "status": 1,
+        "failed_fixtures": [
+          "tests/unwind/hash_capacity_overflow.rs"
+        ]
+      },
+      "raw_sha256": {
+        "identity.json": "0555e2b630c68adb90aff07b161e873bff8d03ab883b28edf9196cabdc5aff08",
+        "result.json": "5c85e35a7af9506533bd001426e96a0fb67e2e90bcb9ce7e2cb76a946bddb572",
+        "run.log": "ca50689fc198831404bb7ef414d813dff2daac10b2e57f1340574310443a73c9"
+      },
+      "binaries_and_library_unchanged": true,
+      "harness_oracle_masks_timeouts_changed": false
+    },
+    {
+      "kind": "unwind TCC after dependency-path repair",
+      "source_head": "ba10b745c5197182c9bea8dc6c3728df5bae756c",
+      "native_tree": "7dbb7ac001f81c17adbbbd030573220dadfc079a",
+      "profile": "gate",
+      "native_binaries": {
+        "lust": "4e05c45e92e1e0ba31f67d01d628c19a273fd450743c8212c73ae9e1bdeaf282",
+        "lust-core": "44ccdf62cedf42ea228e2fb74f32f70039dbd031689fe72ad134bb3514469cf7"
+      },
+      "command": [
+        "bash",
+        "scripts/difftest.sh",
+        "unwind-"
+      ],
+      "environment": {
+        "DIFFTEST_JOBS": "2",
+        "DIFFTEST_RUSTC_CACHE": "off",
+        "LUST_NO_DAEMON": "1",
+        "PANIC": "unwind",
+        "LUST_STRICT": "1"
+      },
+      "library_source": "Frozen snapshot byte-equal to checked-in compiler/native/library at the listed source",
+      "library_file_count": 160,
+      "library_manifest_sha256": "60b9112beae338cb2ab0c60608935fb238333968d50e707088b5b84dd54dc549",
+      "fixture_count": 65,
+      "fixture_manifest_sha256": "0998928c2c04a3bf95238340b89f298a0aeccfac6b21c9216b91027512d51bd8",
+      "script_sha256": "fa7844f8638e1e03456f1a48731eeea637079108247263addf804533252ef5e4",
+      "case_pool_sha256": "f90ec0c777b72751f91efb84a8169a00f5d35a1ffd591b46718d606eaeca12fc",
+      "result": {
+        "passed": 65,
+        "failed": 0,
+        "unsupported": 0,
+        "status": 0,
+        "failed_fixtures": []
+      },
+      "raw_sha256": {
+        "identity.json": "9c7e233b8df7e2dcf5827a1df977bf6655d0bf83668f035c7ffb039e213c5ab3",
+        "result.json": "f2efcf2df5f428827553aa0d888872c872f5785669d1ce607b2981904581318c",
+        "run.log": "e35e3f2cfd884119851b5ebd9baff4889bce399a5aea9fb980df889a106271f3"
+      },
+      "binaries_and_library_unchanged": true,
+      "harness_oracle_masks_timeouts_changed": false
+    },
+    {
+      "kind": "unwind GCC EH after dependency-path repair",
+      "source_head": "ba10b745c5197182c9bea8dc6c3728df5bae756c",
+      "native_tree": "7dbb7ac001f81c17adbbbd030573220dadfc079a",
+      "profile": "gate",
+      "native_binaries": {
+        "lust": "4e05c45e92e1e0ba31f67d01d628c19a273fd450743c8212c73ae9e1bdeaf282",
+        "lust-core": "44ccdf62cedf42ea228e2fb74f32f70039dbd031689fe72ad134bb3514469cf7"
+      },
+      "command": [
+        "bash",
+        "scripts/difftest.sh",
+        "unwind-"
+      ],
+      "environment": {
+        "DIFFTEST_JOBS": "2",
+        "DIFFTEST_RUSTC_CACHE": "off",
+        "LUST_NO_DAEMON": "1",
+        "PANIC": "unwind",
+        "LUST_STRICT": "1",
+        "EH": "1",
+        "EH_CC": "gcc",
+        "EH_CXX": "g++"
+      },
+      "library_source": "Frozen snapshot byte-equal to checked-in compiler/native/library at the listed source",
+      "library_file_count": 160,
+      "library_manifest_sha256": "60b9112beae338cb2ab0c60608935fb238333968d50e707088b5b84dd54dc549",
+      "fixture_count": 65,
+      "fixture_manifest_sha256": "0998928c2c04a3bf95238340b89f298a0aeccfac6b21c9216b91027512d51bd8",
+      "script_sha256": "fa7844f8638e1e03456f1a48731eeea637079108247263addf804533252ef5e4",
+      "case_pool_sha256": "f90ec0c777b72751f91efb84a8169a00f5d35a1ffd591b46718d606eaeca12fc",
+      "result": {
+        "passed": 65,
+        "failed": 0,
+        "unsupported": 0,
+        "status": 0,
+        "failed_fixtures": []
+      },
+      "raw_sha256": {
+        "identity.json": "bd3babddd738f2b160eaaa7dfddbb69e911a35b2d88c7e5793b9036fbb8489da",
+        "result.json": "5422ddf5c80b44373199b7184d17f1e9aa249560c3f77790bda9d163d1f31f5f",
+        "run.log": "e35e3f2cfd884119851b5ebd9baff4889bce399a5aea9fb980df889a106271f3"
+      },
+      "binaries_and_library_unchanged": true,
+      "harness_oracle_masks_timeouts_changed": false
+    }
+  ],
+  "dependency_location_repair": {
+    "source_commit": "ba10b745c5197182c9bea8dc6c3728df5bae756c",
+    "built_base_head": "af0a281f2d1fae04e8ebfd5aa2c4872b20245c04",
+    "built_source_delta": "Only compiler/native/src/runtime/hash.c changed from the base before building; the exact content is committed in source_commit.",
+    "hash_c_sha256": "f080e59031113755838cfe5afe19133e06f62b92166feccfe520667804aed288",
+    "prior": "/rust/deps/hashbrown-0.17.1/src/raw.rs:36:40",
+    "matching_declared_sdk": "/cargo/registry/25cdd57fae9f0462/hashbrown-0.17.1/src/raw.rs:36:40",
+    "upstream_provenance": {
+      "verified_git_blobs": {
+        "rust-bootstrap-cargo.rs": "27de3ec60b96b1d2a4136887538818e4b0887274",
+        "cargo-trim_paths.rs": "aaf8deb034cdbff487ed352e577aa95d28ab656f"
+      },
+      "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "cargo_source": "c07ac2c4d12237effc4b94f4543769b421790045",
+      "registry_virtual_path_witness": "/cargo/registry/25cdd57fae9f0462/hashbrown-0.17.1/src/raw.rs:36:40",
+      "c_tools": {
+        "gcc": {
+          "version": "gcc (Debian 14.2.0-19) 14.2.0",
+          "sha256": "a23ecab8ff08f09ad8c80602c2c5df7f49e09c25905cb8975902e101bf72635f"
+        },
+        "g++": {
+          "version": "g++ (Debian 14.2.0-19) 14.2.0",
+          "sha256": "6b3696e4dcb85e1c949c732a02befa50e3983ecf94ce7e8e58d9d503b954b79d"
+        }
+      }
+    },
+    "repair_changes_runtime_or_collection_semantics": false
+  },
+  "unstable_hook_accessor": {
+    "invalid_fixture": "compiler/native/tests/fail/panic_hook_can_unwind_unstable.rs",
+    "baseline_native_source": "77f712ce864e4ad358864e2447b56f4075ec5e4a",
+    "baseline_native_check_status": 0,
+    "baseline_native_build_status": 0,
+    "matching_rust_status": 1,
+    "matching_rust_diagnostic": "E0658",
+    "repair_commit": "0e3b8eccfc311e63831fdb293eee0d83275def30",
+    "required_native_diagnostic": "L0104",
+    "compiled_source_followup": "Included in the 5540-case ordinary pass; both native check and build reject the same invalid source.",
+    "internal_hook_flag_and_runner_preserved": true,
+    "raw_red_sha256": "f2d4cc3bcf1afcdbdce87055d4cbce50853b3e4a1272c7faada76b4158655ed7"
+  },
+  "limits": [
+    "Full ordinary pass belongs to af0a281f2. The later one-path runtime correction has a separately identified rebuilt binary and complete65-case unwind passes in both modes.",
+    "The original98-failure run and each64-pass/1-failure unwind run remain preserved; no failing result is reclassified as passing.",
+    "No full Clang sanitizer, native macOS, daemon, mixed-compiler integration, performance or release qualification is claimed by this record.",
+    "This finite fixture corpus is not a proof for every Rust program."
+  ]
+}
