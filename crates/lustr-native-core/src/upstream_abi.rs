@@ -5,7 +5,7 @@
 //! extension is never erased merely because both conventions use a register.
 use super::{Error, Value, missing};
 use rustc_target::callconv::{ArgAttribute, ArgAttributes, ArgExtension, CastTarget, PassMode};
-use std::{collections::BTreeSet, io::Write, path::PathBuf, process::{Command, Stdio}, sync::{Arc, OnceLock}};
+use std::{collections::BTreeSet, io::Write, path::PathBuf, process::{Command, Stdio}, sync::Arc};
 
 fn attributes(mode: &PassMode, value: &Value) -> Result<String, Error> {
     let attributes = match mode {
@@ -72,7 +72,6 @@ pub(super) struct Module {
     ir: Arc<[u8]>,
     definitions: BTreeSet<Vec<u8>>,
     imports: BTreeSet<Vec<u8>>,
-    object: OnceLock<Arc<[u8]>>,
     control: Control,
 }
 
@@ -103,7 +102,7 @@ impl Module {
         // Hash the actual NEEDED DSO, not the similarly named linker script.
         let library = root.join("lib").join(pin("llvm_file").map_err(Error::Failed)?);
         let mut module = Self { tool, library, identity: Arc::from([]), ir: Arc::from([]),
-            definitions: BTreeSet::new(), imports: BTreeSet::new(), object: OnceLock::new(), control };
+            definitions: BTreeSet::new(), imports: BTreeSet::new(), control };
         module.identity = module.read_identity().map_err(Error::Failed)?.into();
         let mut ir = String::from("target triple = \"x86_64-unknown-linux-gnu\"\n");
         for function in functions {
@@ -131,10 +130,9 @@ impl Module {
         [("imported-LLVM-adapter-tool".into(), self.identity.clone()), ("imported-LLVM-adapter-IR".into(), self.ir.clone())]
     }
 
-    /// Called only after the installed semantic records and checked native
-    /// bodies pass validation. Failure is terminal and publishes no artifact.
-    pub(super) fn emit(&self) -> Result<(), String> {
-        if self.object.get().is_some() { return Err("integer adapter emission already consumed".into()); }
+    /// Consumed only by an admitted build's owned continuation, after semantic
+    /// validation. Check/Drop never call this. Failure publishes no artifact.
+    pub(super) fn emit(self) -> Result<Arc<[u8]>, String> {
         if self.read_identity()?.as_slice() != self.identity.as_ref() { return Err("imported LLVM tool generation changed".into()); }
         let path = if matches!(self.control, Control::MissingTool) { self.tool.join("missing-qualification-tool") } else { self.tool.clone() };
         let mut command = Command::new(path);
@@ -154,9 +152,8 @@ impl Module {
         if symbols.defined != self.definitions || symbols.functions != self.definitions || symbols.undefined != self.imports {
             return Err("imported LLVM adapter object disagrees with its admitted symbols".into());
         }
-        self.object.set(output.stdout.into()).map_err(|_| "integer adapter emission generation changed".into())
+        Ok(output.stdout.into())
     }
 
-    pub(super) fn object(&self) -> Arc<[u8]> { self.object.get().expect("validated adapter object precedes ownership transfer").clone() }
     pub(super) fn count(&self) -> usize { self.definitions.len() }
 }

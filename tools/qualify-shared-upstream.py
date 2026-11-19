@@ -26,6 +26,8 @@ def main():
     parser.add_argument("--rustc", type=Path, required=True)
     parser.add_argument("--tcc", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--emission-only", action="store_true",
+                        help="qualify the imported code ownership lifecycle without repeating the full semantic campaign")
     args = parser.parse_args()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
@@ -36,7 +38,7 @@ def main():
                LUST_LIBRARY=str(ROOT / "compiler/native/library"))
     env["PATH"] = str(rustc.parent) + os.pathsep + env.get("PATH", "")
     (output / "tmp").mkdir()
-    report = {"schema": 1, "scope": "internal shared definition service; no public routing or performance claim",
+    report = {"schema": 1, "scope": ("internal imported emission lifecycle" if args.emission_only else "internal shared definition service") + "; no public routing or performance claim",
               "passed": False, "commands": [], "rust_source": RUST_SOURCE}
 
     def save():
@@ -70,13 +72,15 @@ def main():
         report["source"] = run("source", ["git", "rev-parse", "HEAD", "HEAD^{tree}", "HEAD:compiler/native"]).read_text().splitlines()
         dirty = run("source-state", ["git", "status", "--porcelain", "--", "compiler/native",
                     "crates/lustr-native-core", "tests/shared-imports", "tools/native-upstream-qualification.rs",
-                    "tools/test-native-upstream.py", "upstream/bluefe-core.pin"]).read_text()
+                    "tools/test-native-upstream.py", "tools/test-native-import-emission.py",
+                    "tools/qualify-shared-upstream.py", "upstream/bluefe-core.pin"]).read_text()
         if dirty:
             raise RuntimeError("shared-service source must be committed before qualification")
         report["inputs_sha256"] = {
             "rustc": digest(rustc), "cargo": digest(cargo), "tcc": digest(tcc / "bin/tcc"),
             "libtcc": digest(tcc / "lib/libtcc.a"), "launcher": digest(__file__),
             "campaign": digest(ROOT / "tools/test-native-upstream.py"),
+            "emission_campaign": digest(ROOT / "tools/test-native-import-emission.py"),
             "sdk_declaration": digest(ROOT / "upstream/bluefe-core.pin"),
         }
         built = run("build", [cargo, "build", "--manifest-path", ROOT / "crates/lustr-native-core/Cargo.toml",
@@ -101,19 +105,28 @@ def main():
         qualifier = Path(executables.pop())
         report["qualifier_sha256"] = digest(qualifier)
         report["qualifier"] = str(qualifier)
-        run("campaign", [sys.executable, ROOT / "tools/test-native-upstream.py", "--rustc", rustc,
+        campaign_script = "tools/test-native-import-emission.py" if args.emission_only else "tools/test-native-upstream.py"
+        run("campaign", [sys.executable, ROOT / campaign_script, "--rustc", rustc,
                          "--qualifier", qualifier, "--out", output / "campaign"], timeout=900)
         campaign = json.loads((output / "campaign/summary.json").read_text())
         if (not campaign.get("passed") or campaign.get("qualifier_sha256") != report["qualifier_sha256"]
                 or digest(qualifier) != report["qualifier_sha256"]):
             raise RuntimeError("campaign did not qualify the unchanged built executable")
         report["controls"] = len(campaign["cases"])
-        adapter_state = output / "campaign/integer-signatures-state"
-        report["integer_adapters"] = {
-            "count": 30, "checked_results": 262720,
-            "llvm_input_sha256": digest(adapter_state / "integer-adapters.ll"),
-            "tool_identity": (adapter_state / "integer-adapter-tool.txt").read_text(),
-        }
+        if not args.emission_only:
+            adapter_state = output / "campaign/integer-signatures-state"
+            report["integer_adapters"] = {
+                "count": 30, "checked_results": 262720,
+                "llvm_input_sha256": digest(adapter_state / "integer-adapters.ll"),
+                "tool_identity": (adapter_state / "integer-adapter-tool.txt").read_text(),
+            }
+            run("emission-campaign", [sys.executable, ROOT / "tools/test-native-import-emission.py",
+                "--rustc", rustc, "--qualifier", qualifier, "--out", output / "emission-campaign"], timeout=900)
+            emission = json.loads((output / "emission-campaign/summary.json").read_text())
+            if (not emission.get("passed") or emission.get("qualifier_sha256") != report["qualifier_sha256"]
+                    or digest(qualifier) != report["qualifier_sha256"]):
+                raise RuntimeError("emission campaign did not qualify the unchanged built executable")
+            report["emission_controls"] = len(emission["cases"])
         report["passed"] = True
     except Exception as error:
         report["error"] = str(error)

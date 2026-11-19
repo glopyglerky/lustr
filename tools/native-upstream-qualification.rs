@@ -47,6 +47,9 @@ mod qualification {
         }
 
         fn after_expansion<'tcx>(&mut self, _: &interface::Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
+            let action = std::env::var("LUSTR_QUALIFICATION_ACTION").unwrap_or_else(|_| "build".into());
+            assert!(matches!(action.as_str(), "build" | "check" | "abandon"));
+            eprintln!("shared-action={action}");
             let adapter_control = match std::env::var("LUSTR_QUALIFICATION_ADAPTER_FAILURE").as_deref() {
                 Ok("missing") => upstream_definitions::abi::Control::MissingTool,
                 Ok("failed") => upstream_definitions::abi::Control::FailedTool,
@@ -64,6 +67,9 @@ mod qualification {
                     return Compilation::Stop;
                 }
             };
+            if std::env::var_os("LUSTR_QUALIFICATION_TAKE_EMISSION").is_some() {
+                drop(driver::imports::Definitions::take_emission(&provider).unwrap());
+            }
             let mut key = driver::SessionKey::synthetic(&self.source, false);
             key.target_triple = tcx.sess.target.llvm_target.to_string();
             key.profile = protocol::ProfileFlags {
@@ -73,7 +79,8 @@ mod qualification {
             };
             let mut session = driver::Session::new(self.scratch.join("native-state"), false, key.clone());
             let request = driver::Request {
-                cmd: driver::Cmd::Build, session: key, file: self.source.clone(), out: self.output.clone(),
+                cmd: if action == "check" { driver::Cmd::Check } else { driver::Cmd::Build },
+                session: key, file: self.source.clone(), out: self.output.clone(),
                 json: false, timings: false, debug: false, emit_c: None, max_errors: 0,
                 run_args: None, harness: false, cc: false, client: Default::default(),
             };
@@ -82,6 +89,12 @@ mod qualification {
                     assert!(!prepared.checked_functions().is_empty());
                     assert_eq!(prepared.imported_dependencies().len(), if provider.adapter_count() == 0 { 1 } else { 3 });
                     assert_eq!(prepared.imported_dependencies()[0].contents.as_ref(), self.archive.contents());
+                    assert!(driver::imports::Definitions::take_emission(&provider).is_err(), "the owned code plan cannot be transferred twice");
+                    let current = driver::imports::Definitions::dependencies(&provider);
+                    assert_eq!(prepared.imported_dependencies().len(), current.len());
+                    assert!(prepared.imported_dependencies().iter().zip(&current).all(|(owned, current)|
+                        owned.identity == current.identity && owned.contents == current.contents));
+                    eprintln!("imported-emission-transfer=once dependencies=preserved");
                     eprintln!("imported-generation={}", prepared.imported_dependencies()[0].identity);
                     let upstream_source = tcx.sess.source_map().files().iter()
                         .find_map(|file| file.src.as_ref().filter(|source| source.as_str() == prepared.source()))
@@ -99,9 +112,15 @@ mod qualification {
                     if std::env::var_os("LUSTR_QUALIFICATION_REMOVE_SNAPSHOT").is_some() {
                         std::fs::remove_file(self.archive.path()).unwrap();
                     }
-                    let response = prepared.emit();
-                    eprint!("{}", response.stderr);
-                    self.status = response.code as u8;
+                    if action == "abandon" {
+                        drop(prepared);
+                        self.status = 0;
+                        eprintln!("shared-prepared-request=abandoned");
+                    } else {
+                        let response = prepared.emit();
+                        eprint!("{}", response.stderr);
+                        self.status = response.code as u8;
+                    }
                 }
                 Ok(driver::Preparation::Complete(response) | driver::Preparation::Rejected(response)
                     | driver::Preparation::Failed(response) | driver::Preparation::Complementary(response)) => {
@@ -114,11 +133,11 @@ mod qualification {
                 }
             }
             if self.status == 0 {
-                let previous = std::fs::read(&self.output).unwrap();
+                let previous = std::fs::read(&self.output).ok();
                 assert!(driver::prepare_imported(&request, &mut session, &provider).is_err(), "an imported generation must not be reused without a dependency contract");
                 assert!(matches!(driver::prepare(&request, &mut session), driver::Preparation::Failed(response) if response.code == 3),
                     "ordinary native preparation must not reuse unkeyed imported state");
-                assert_eq!(std::fs::read(&self.output).unwrap(), previous);
+                assert_eq!(std::fs::read(&self.output).ok(), previous);
                 eprintln!("imported-generation-reuse=refused previous-artifact=preserved");
             }
             self.completed = true;

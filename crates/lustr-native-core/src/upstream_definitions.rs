@@ -15,7 +15,7 @@ use rustc_infer::infer::TyCtxtInferExt;
 use rustc_span::def_id::{DefId, CRATE_DEF_INDEX};
 use rustc_target::callconv::{ArgAbi, ArgAttribute, ArgAttributes, FnAbi, PassMode};
 use rustc_trait_selection::infer::InferCtxtExt;
-use std::sync::Arc;
+use std::{cell::RefCell, sync::Arc};
 use ty::TyIntern;
 
 #[path = "upstream_abi.rs"]
@@ -125,8 +125,23 @@ pub struct Provider<'tcx> {
     nominals: Vec<Nominal<'tcx>>,
     functions: Vec<Function>,
     dependencies: Vec<(String, Arc<[u8]>)>,
+    emission: RefCell<Option<OwnedEmission>>,
+    adapter_count: usize,
+}
+
+/// No TyCtxt, arena reference or dependency archive pathname escapes into the
+/// native continuation. Taking this plan moves it; it cannot be cloned/reused.
+struct OwnedEmission {
     objects: Vec<Arc<[u8]>>,
     adapters: Option<abi::Module>,
+}
+
+impl driver::imports::Emission for OwnedEmission {
+    fn emit(self: Box<Self>) -> Result<Vec<Arc<[u8]>>, String> {
+        let Self { mut objects, adapters } = *self;
+        if let Some(adapters) = adapters { objects.push(adapters.emit()?); }
+        Ok(objects)
+    }
 }
 
 fn native_type(program: &check::collect::Program, id: def::DefId) -> Result<ty::Ty, String> {
@@ -378,9 +393,12 @@ impl<'tcx> Provider<'tcx> {
         for id in nominals.iter().map(|n| n.disk).chain(functions.iter().map(|f| f.disk)) {
             if !identities.insert(id) { return Err(Error::Failed("duplicate upstream definition identity".into())); }
         }
+        let adapters = abi::Module::capture(&adapters, adapter_control)?;
+        let adapter_count = adapters.as_ref().map_or(0, |module| module.count());
+        let dependencies = std::iter::once((format!("rust:{}:{:?}", env!("LUSTR_IMPORTED_COMMIT"), tcx.crate_hash(*krate)), archive.contents.clone()))
+            .chain(adapters.iter().flat_map(|module| module.dependencies())).collect();
         Ok(Self { tcx, alias: alias.into(), root: ids(tcx, root).0, stable: ids(tcx, root).1.krate, nominals, functions,
-            dependencies: vec![(format!("rust:{}:{:?}", env!("LUSTR_IMPORTED_COMMIT"), tcx.crate_hash(*krate)), archive.contents.clone())],
-            objects: archive.objects.clone(), adapters: abi::Module::capture(&adapters, adapter_control)? })
+            dependencies, adapter_count, emission: RefCell::new(Some(OwnedEmission { objects: archive.objects.clone(), adapters })) })
     }
 
     fn verify(&self, program: &check::collect::Program) -> Result<(), String> {
@@ -510,17 +528,18 @@ impl driver::imports::Definitions for Provider<'_> {
     }
 
     fn validate_checked(&self, program: &check::collect::Program) -> Result<(), String> {
-        self.verify(program)?;
-        if let Some(adapters) = &self.adapters { adapters.emit()?; }
-        Ok(())
+        self.verify(program)
     }
     fn dependencies(&self) -> Vec<driver::imports::Dependency> {
-        self.dependencies.iter().cloned().chain(self.adapters.iter().flat_map(|module| module.dependencies()))
+        self.dependencies.iter().cloned()
             .map(|(identity, contents)| driver::imports::Dependency { identity, contents }).collect()
     }
-    fn objects(&self) -> Vec<Arc<[u8]>> { self.objects.iter().cloned().chain(self.adapters.iter().map(|module| module.object())).collect() }
+    fn take_emission(&self) -> Result<Box<dyn driver::imports::Emission + 'static>, String> {
+        self.emission.borrow_mut().take().map(|emission| Box::new(emission) as Box<dyn driver::imports::Emission>)
+            .ok_or_else(|| "imported emission plan was already transferred".into())
+    }
 }
 
 impl Provider<'_> {
-    pub(super) fn adapter_count(&self) -> usize { self.adapters.as_ref().map_or(0, |module| module.count()) }
+    pub(super) fn adapter_count(&self) -> usize { self.adapter_count }
 }

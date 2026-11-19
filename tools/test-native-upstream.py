@@ -127,7 +127,8 @@ try:
         _, answer = native(f"adapter-{failure}", fixture / "integer-consumer.rs", integer_library,
                            3, integer_output, {"LUSTR_QUALIFICATION_ADAPTER_FAILURE": failure})
         assert diagnostic in answer.stderr and integer_output.read_bytes() == integer_successful
-        assert not (args.out / f"adapter-{failure}-state/integer-adapters.ll").exists()
+        assert b"shared request:" in answer.stderr
+        assert (args.out / f"adapter-{failure}-state/integer-adapters.ll").exists()
     # Native rejection precedes adapter emission. An intentionally failed LLVM
     # command therefore cannot replace this actual move diagnostic with status 3.
     invalid = args.out / "integer-move.rs"
