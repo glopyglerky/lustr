@@ -1,25 +1,16 @@
-name: Complete native-package warm performance
+name: Historical native performance evidence
 
 on:
   pull_request:
     paths:
-      - 'compiler/native/**'
-      - 'src/**'
-      - 'crates/lustr-native-core/**'
-      - 'library/**'
-      - 'upstream/lust*'
       - 'tools/run-warm-native-comparison.py'
-      - 'tools/run-warm-entry-comparison.py'
-      - 'tools/check-warm-applicability.py'
-      - 'tools/test-warm-applicability.py'
-      - 'docs/compiler-set/evidence/hosted-warm-failures-20261118/summary.json'
       - 'tools/test-warm-native-comparison.py'
       - 'tools/run-warm-native-startup.py'
       - 'tools/test-warm-native-startup.py'
       - 'tools/assess-warm-performance.py'
       - 'tools/test-assess-warm-performance.py'
-      - 'tools/build-mixed-toolchain.rs'
-      - 'tools/selection-toolchain-receipt.rs'
+      - 'docs/compiler-set/evidence/native-nochange-2026-11-18/**'
+      - 'docs/compiler-set/evidence/hosted-warm-failures-20261118/**'
       - '.github/workflows/warm-native-performance.yml'
   workflow_dispatch:
 
@@ -28,199 +19,31 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
-  complete-native:
-    name: Independent complete native packages
-    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
-    timeout-minutes: 180
-    env:
-      RUSTUP_TOOLCHAIN: nightly-2026-11-09
-      CARGO_BUILD_JOBS: '2'
+  historical-evidence:
+    name: Frozen evidence replay (no current compiler qualification)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Validate independent-package evidence controls
+        with:
+          persist-credentials: false
+      - name: Exercise reporting and evidence refusal controls
         run: |
           python3 tools/test-warm-native-comparison.py
           python3 tools/test-warm-native-startup.py
           python3 tools/test-assess-warm-performance.py
           python3 tools/test-warm-applicability.py
-      - uses: actions/checkout@v4
-        with:
-          repository: glopyglerky/lustr
-          ref: 3c378a11d60149a3ec99fa49ea1b336e9406fca8
-          path: .native-complete-baseline
-          persist-credentials: false
-      - name: Require historical complete-package applicability before package builds
+      - name: Replay immutable historical source and results
         run: |
-          python3 tools/check-warm-applicability.py complete \
-            --repository "$GITHUB_WORKSPACE" --baseline-source "$GITHUB_WORKSPACE/.native-complete-baseline" \
-            --output "$RUNNER_TEMP/warm-native-applicability"
-      - uses: actions/checkout@v4
-        with:
-          repository: t3dotgg/lust-lang
-          ref: 240e08d91d4aed0299639f6f11fd522912b248f9
-          path: .native-pristine-reference
-          persist-credentials: false
-      - uses: actions/checkout@v4
-        with:
-          repository: TinyCC/tinycc
-          ref: 43c7708b85681a2fd4451c8a541af4494a8919b2
-          path: .native-tinycc-reference
-          persist-credentials: false
-      - name: Isolate immutable source references
+          python3 docs/compiler-set/evidence/native-nochange-2026-11-18/replay.py
+      - name: State applicability
         run: |
-          cp -a "$GITHUB_WORKSPACE/.native-complete-baseline" "$RUNNER_TEMP/native-baseline-source"
-          cp -a "$GITHUB_WORKSPACE/.native-pristine-reference" "$RUNNER_TEMP/native-pristine-source"
-      - name: Install the pinned Rust SDK
-        run: rustup toolchain install nightly-2026-11-09 --profile minimal --component rustc-dev --component llvm-tools --component rustfmt --component clippy --target wasm32-unknown-unknown --target x86_64-apple-darwin --target aarch64-apple-darwin --target x86_64-pc-windows-gnu
-      - name: Install the native differential oracle
-        run: rustup toolchain install 1.99.0 --profile minimal
-      - name: Build the pinned TinyCC dependency
-        run: |
-          rustc --edition=2024 tools/build-tinycc-pic.rs -o "$RUNNER_TEMP/build-native-tinycc"
-          "$RUNNER_TEMP/build-native-tinycc" "$GITHUB_WORKSPACE/.native-tinycc-reference" "$RUNNER_TEMP/native-tinycc"
-      - name: Acquire locked dependencies for both complete source packages
-        run: |
-          for source in "$RUNNER_TEMP/native-baseline-source" "$GITHUB_WORKSPACE"; do
-            for manifest in compiler/native/Cargo.toml crates/lustr-native-core/Cargo.toml crates/lustr/Cargo.toml crates/lustr-semantic/Cargo.toml Cargo.toml; do
-              cargo fetch --manifest-path "$source/$manifest" --locked
-            done
-          done
-          cargo fetch --manifest-path "$RUNNER_TEMP/native-pristine-source/Cargo.toml" --locked
-      - name: Build the complete frozen baseline with its own constructor
-        id: baseline_build
-        run: |
-          python3 tools/run-warm-native-comparison.py build-package --lane baseline \
-            --source "$RUNNER_TEMP/native-baseline-source" \
-            --sdk "$(rustc --print sysroot)" --tcc "$RUNNER_TEMP/native-tinycc/install" \
-            --cargo-home "${CARGO_HOME:-$HOME/.cargo}" \
-            --pristine-source "$RUNNER_TEMP/native-pristine-source" \
-            --built "$RUNNER_TEMP/native-baseline-built" --output "$RUNNER_TEMP/native-baseline-build"
-      - name: Build the complete candidate with its own constructor
-        id: candidate_build
-        run: |
-          python3 tools/run-warm-native-comparison.py build-package --lane entry \
-            --source "$GITHUB_WORKSPACE" \
-            --sdk "$(rustc --print sysroot)" --tcc "$RUNNER_TEMP/native-tinycc/install" \
-            --cargo-home "${CARGO_HOME:-$HOME/.cargo}" \
-            --pristine-source "$RUNNER_TEMP/native-pristine-source" \
-            --built "$RUNNER_TEMP/native-candidate-built" --output "$RUNNER_TEMP/native-candidate-build"
-      - name: Qualify the actual baseline source and package
-        id: baseline_gates
-        run: |
-          python3 tools/run-warm-native-comparison.py qualify-package --lane baseline \
-            --build-receipt "$RUNNER_TEMP/native-baseline-build" \
-            --native-oracle-sdk "$(rustup run 1.99.0 rustc --print sysroot)" \
-            --output "$RUNNER_TEMP/native-baseline-gates"
-      - name: Qualify the actual candidate source and package
-        id: candidate_gates
-        run: |
-          python3 tools/run-warm-native-comparison.py qualify-package --lane entry \
-            --build-receipt "$RUNNER_TEMP/native-candidate-build" \
-            --native-oracle-sdk "$(rustup run 1.99.0 rustc --print sysroot)" \
-            --output "$RUNNER_TEMP/native-candidate-gates"
-      - name: Build pristine Lust with the matched release profile
-        id: pristine_build
-        env:
-          LUST_TCC_HOME: ${{ runner.temp }}/native-tinycc/install
-        run: |
-          set -o pipefail
-          export RUSTC="$(rustc --print sysroot)/bin/rustc"
-          cargo build --manifest-path "$RUNNER_TEMP/native-pristine-source/Cargo.toml" --release --locked --offline --jobs 2 --bin lust --bin lust-core --target-dir "$RUNNER_TEMP/native-pristine-target" --config "build.build-dir=\"$RUNNER_TEMP/native-pristine-intermediates\"" 2>&1 | tee "$RUNNER_TEMP/native-pristine-build.log"
-      - name: Measure all four lanes after both package gates
-        id: comparison
-        run: |
-          set +e
-          python3 tools/run-warm-native-comparison.py measure \
-            --repository "$GITHUB_WORKSPACE" --baseline-source "$RUNNER_TEMP/native-baseline-source" \
-            --built "$RUNNER_TEMP/native-candidate-built" --baseline-built "$RUNNER_TEMP/native-baseline-built" \
-            --baseline-receipt "$RUNNER_TEMP/native-baseline-build" --candidate-receipt "$RUNNER_TEMP/native-candidate-build" \
-            --baseline-gates "$RUNNER_TEMP/native-baseline-gates" --candidate-gates "$RUNNER_TEMP/native-candidate-gates" \
-            --pristine-source "$RUNNER_TEMP/native-pristine-source" \
-            --pristine-lust "$RUNNER_TEMP/native-pristine-target/release/lust" \
-            --pristine-build-log "$RUNNER_TEMP/native-pristine-build.log" \
-            --output "$RUNNER_TEMP/native-warm-comparison" --pairs 24
-          measurement_status=$?
-          set -e
-          printf '%s\n' "$measurement_status" > "$RUNNER_TEMP/native-warm-measurement.status"
-          python3 - "$RUNNER_TEMP/native-warm-comparison/report.json" "$GITHUB_OUTPUT" "$measurement_status" <<'PY'
-          import json, pathlib, sys
-          measurement_status = int(sys.argv[3])
-          try:
-              completed = json.loads(pathlib.Path(sys.argv[1]).read_text()).get('status') == 'completed'
-          except (OSError, ValueError, AttributeError):
-              completed = False
-          with open(sys.argv[2], 'a') as stream:
-              stream.write('completed=' + str(completed).lower() + '\n')
-              stream.write('measurement_status=' + str(measurement_status) + '\n')
-          print('Original strict measurement exit:', measurement_status)
-          # A completed strict miss is retained as exit 2. The separate practical
-          # assessor must replay all evidence before making the new decision.
-          if measurement_status not in (0, 2):
-              raise SystemExit(measurement_status)
-          if not completed:
-              raise SystemExit(1)
-          PY
-      - name: Assess practical warm performance after full evidence replay
-        if: always() && steps.comparison.outputs.completed == 'true'
-        run: |
-          python3 tools/assess-warm-performance.py \
-            --campaign "$RUNNER_TEMP/native-warm-comparison" \
-            --measurement-status "$RUNNER_TEMP/native-warm-measurement.status" \
-            --output "$RUNNER_TEMP/native-warm-assessment"
-      - name: Diagnose frozen native-client startup after completed measurement
-        if: always() && steps.comparison.outputs.completed == 'true'
-        run: |
-          python3 tools/run-warm-native-startup.py run \
-            --campaign "$RUNNER_TEMP/native-warm-comparison" \
-            --pristine-intermediates "$RUNNER_TEMP/native-pristine-intermediates" \
-            --output "$RUNNER_TEMP/native-startup-diagnostic"
-      - name: Preserve every completed or failed command
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: complete-native-warm-${{ github.run_attempt }}
-          if-no-files-found: warn
-          path: |
-            ${{ runner.temp }}/warm-native-applicability
-            ${{ runner.temp }}/native-warm-measurement.status
-            ${{ runner.temp }}/native-warm-assessment/assessment.json
-            ${{ runner.temp }}/native-warm-assessment/README.md
-            ${{ runner.temp }}/native-warm-assessment/SHA256SUMS
-            ${{ runner.temp }}/native-warm-comparison/report.json
-            ${{ runner.temp }}/native-warm-comparison/README.md
-            ${{ runner.temp }}/native-warm-comparison/raw.jsonl
-            ${{ runner.temp }}/native-warm-comparison/samples.csv
-            ${{ runner.temp }}/native-warm-comparison/commands
-            ${{ runner.temp }}/native-warm-comparison/fixture
-            ${{ runner.temp }}/native-warm-comparison/build-receipts
-            ${{ runner.temp }}/native-warm-comparison/runtime-oracle.stdout
-            ${{ runner.temp }}/native-warm-comparison/rejected.rs
-            ${{ runner.temp }}/native-*-build/receipt.json
-            ${{ runner.temp }}/native-*-build/raw.jsonl
-            ${{ runner.temp }}/native-*-build/commands
-            ${{ runner.temp }}/native-*-build/constructor-source
-            ${{ runner.temp }}/native-*-build/package-receipts
-            ${{ runner.temp }}/native-*-built/logs
-            ${{ runner.temp }}/native-*-built/COMPONENTS.txt
-            ${{ runner.temp }}/native-*-built/BUILD-PROFILE.txt
-            ${{ runner.temp }}/native-*-built/NATIVE-BUILD-RECEIPT.txt
-            ${{ runner.temp }}/native-*-built/HOST-SDK-RECEIPT.txt
-            ${{ runner.temp }}/native-*-gates/receipt.json
-            ${{ runner.temp }}/native-*-gates/raw.jsonl
-            ${{ runner.temp }}/native-*-gates/commands
-            ${{ runner.temp }}/native-*-gates/work/entry-contract/**/*.stdout
-            ${{ runner.temp }}/native-*-gates/work/entry-contract/**/*.stderr
-            ${{ runner.temp }}/native-*-gates/work/entry-contract/**/*.status
-            ${{ runner.temp }}/native-*-gates/work/entry-contract/**/*.jsonl
-            ${{ runner.temp }}/native-pristine-build.log
-            ${{ runner.temp }}/native-tinycc/COMPONENTS.txt
-            ${{ runner.temp }}/native-tinycc/logs
-            ${{ runner.temp }}/native-startup-diagnostic/report.json
-            ${{ runner.temp }}/native-startup-diagnostic/README.md
-            ${{ runner.temp }}/native-startup-diagnostic/raw.jsonl
-            ${{ runner.temp }}/native-startup-diagnostic/samples.csv
-            ${{ runner.temp }}/native-startup-diagnostic/commands
-            ${{ runner.temp }}/native-startup-diagnostic/provenance
+          cat >> "$GITHUB_STEP_SUMMARY" <<'MARKDOWN'
+          This job validates frozen historical evidence. It does not construct
+          the retired whole-rustc package or qualify the current native package.
+          Current entry, Cargo selection and shared-service controls run in
+          Compiler set. Current performance remains unqualified.
+          MARKDOWN

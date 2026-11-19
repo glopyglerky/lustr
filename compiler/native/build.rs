@@ -99,6 +99,11 @@ fn main() {
     // Build hash: compiler sources, the shipped library sources (built into
     // the binary by src/stdload.rs, S5), the manifest, and the tcc tree.
     let mut h = std::collections::hash_map::DefaultHasher::new();
+    let exclusive_native = std::env::var_os("CARGO_FEATURE_EXCLUSIVE_NATIVE").is_some();
+    println!("cargo:rustc-env=LUST_EXCLUSIVE_NATIVE={}", u8::from(exclusive_native));
+    // A product helper must never reuse an oracle-enabled daemon or artifact,
+    // even when both binaries were built from the same source tree.
+    ("exclusive-native", exclusive_native).hash(&mut h);
     hash_tree(&mut h, &root.join("src"));
     let host_runtime = root.join("../../src/host_runtime.rs");
     ("lustr-host-runtime", std::fs::read(&host_runtime).expect("native host adapter is required")).hash(&mut h);

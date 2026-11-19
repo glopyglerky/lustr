@@ -1,5 +1,10 @@
 # Direct Cargo entry
 
+> Historical dispatch architecture. The direct whole-program compiler route
+> described below is removed by the [exclusive coverage cleanup](exclusive-coverage-cleanup.md).
+> Its source-bound fixes and measurements remain evidence for the original
+> implementation. They do not authorize this route in the current compiler.
+
 ## Direct compiler entry inside Cargo
 
 The assembled mixed toolchain now provides `bin/lustr-cargo/rustc` as a direct link

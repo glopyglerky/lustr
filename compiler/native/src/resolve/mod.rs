@@ -10,6 +10,7 @@ pub mod mdr;
 pub mod modules;
 pub mod order;
 pub mod prefetch;
+#[cfg(not(feature = "exclusive-native"))]
 pub mod probe;
 pub mod stdpaths;
 pub mod worklist;

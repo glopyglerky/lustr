@@ -4,6 +4,11 @@ version = "0.2.0"
 edition = "2024"
 description = "A Rust subset compiler for fast dev checks and builds"
 
+[features]
+# Product helpers cannot delegate compilation to the separately built oracle.
+# This selection is part of LUST_BUILD_HASH and therefore the daemon/cache identity.
+exclusive-native = []
+
 [[bin]]
 name = "lust"
 path = "src/client.rs"

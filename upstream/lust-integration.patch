@@ -39,10 +39,22 @@ index 9e3bf4d8cb0c3e50b3b19cedff6e67ac874e290f..7a9142ddc515d497ff5533ef0952a01d
 + "tinyvec",
 +]
 diff --git a/Cargo.toml b/Cargo.toml
-index 23f51988c14da29b6c32cfa193862cb3693001a1..92c2a9185b1d3449231075f2076c3f060f430e66 100644
+index 23f51988c14da29b6c32cfa193862cb3693001a1..dc3c64a547e4643e5f5b93eb2eada2cb7a402723 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
-@@ -16,6 +16,8 @@ path = "src/main.rs"
+@@ -4,6 +4,11 @@ version = "0.2.0"
+ edition = "2024"
+ description = "A Rust subset compiler for fast dev checks and builds"
+ 
++[features]
++# Product helpers cannot delegate compilation to the separately built oracle.
++# This selection is part of LUST_BUILD_HASH and therefore the daemon/cache identity.
++exclusive-native = []
++
+ [[bin]]
+ name = "lust"
+ path = "src/client.rs"
+@@ -16,6 +21,8 @@ path = "src/main.rs"
  mimalloc = { version = "0.1.52", default-features = false }
  # Direct, for its C source: build.rs amalgamates it for musl release builds (src/cc.rs).
  libmimalloc-sys = { version = "0.1.49", default-features = false }
@@ -216,7 +228,7 @@ index 0000000000000000000000000000000000000000..5695f52885df8aa2d0ccb0b375445110
 +compiler correct, qualify every host, or admit an installable release. Frozen
 +baselines retain their original Unicode disagreement and Rust 1.99 oracle.
 diff --git a/build.rs b/build.rs
-index 302f9cb99f823cf7dac098971267b8e99e997188..1ef9d02fce50baaa425df59bd68e290cc849c677 100644
+index 302f9cb99f823cf7dac098971267b8e99e997188..3d75c66cd743b31073534f188b22e39882ecaf42 100644
 --- a/build.rs
 +++ b/build.rs
 @@ -76,6 +76,12 @@ fn main() {
@@ -232,9 +244,15 @@ index 302f9cb99f823cf7dac098971267b8e99e997188..1ef9d02fce50baaa425df59bd68e290c
      println!("cargo:rustc-env=LUST_TCC_LIB_PATH={}", lib.join("tcc").display());
      println!("cargo:rustc-env=LUST_TCC_BIN={}", tcc.join("bin/tcc").display());
      println!("cargo:rerun-if-env-changed=LUST_TCC_HOME");
-@@ -94,10 +100,33 @@ fn main() {
+@@ -93,11 +99,39 @@ fn main() {
+     // Build hash: compiler sources, the shipped library sources (built into
      // the binary by src/stdload.rs, S5), the manifest, and the tcc tree.
      let mut h = std::collections::hash_map::DefaultHasher::new();
++    let exclusive_native = std::env::var_os("CARGO_FEATURE_EXCLUSIVE_NATIVE").is_some();
++    println!("cargo:rustc-env=LUST_EXCLUSIVE_NATIVE={}", u8::from(exclusive_native));
++    // A product helper must never reuse an oracle-enabled daemon or artifact,
++    // even when both binaries were built from the same source tree.
++    ("exclusive-native", exclusive_native).hash(&mut h);
      hash_tree(&mut h, &root.join("src"));
 +    let host_runtime = root.join("../../src/host_runtime.rs");
 +    ("lustr-host-runtime", std::fs::read(&host_runtime).expect("native host adapter is required")).hash(&mut h);
@@ -4523,7 +4541,7 @@ index a4c5744991577f9dac3b0ad981d6090182d98193..fef0fc527e567b99fd73ff97bfdd95a1
          def_by_hash: _,
          std_fns: _,
 diff --git a/src/client.rs b/src/client.rs
-index 136b1f4aa7efc99f8e5bd2b23446fad2578f1851..cf77b8ca7d58fa0aa311093f0108fecb7823c791 100644
+index 136b1f4aa7efc99f8e5bd2b23446fad2578f1851..5a9cfb3f385dc3bbd827935e7afddde2bd4fec8e 100644
 --- a/src/client.rs
 +++ b/src/client.rs
 @@ -24,7 +24,7 @@ use std::path::{Path, PathBuf};
@@ -4571,7 +4589,16 @@ index 136b1f4aa7efc99f8e5bd2b23446fad2578f1851..cf77b8ca7d58fa0aa311093f0108fecb
              Ok(())
          });
      }
-@@ -150,11 +160,15 @@ fn main() {
+@@ -108,6 +118,8 @@ fn maybe_autostart(sock: &Path, file: &Path, core: &Path) {
+ }
+ 
+ fn main() {
++    protocol::reject_internal_probe();
++    if protocol::product_identity_query() { return; }
+     let args: Vec<String> = std::env::args().skip(1).collect();
+     // The package version and the build hash (which also keys the daemon socket and the cache).
+     if matches!(args.first().map(String::as_str), Some("--version" | "-V")) {
+@@ -150,11 +162,15 @@ fn main() {
              // start one nor send work to a live one.
              // A std or adapter source override is never served warm (see
              // `protocol::source_override`).
@@ -4832,7 +4859,7 @@ index 8ca2afbab14918fd47873db9af4de91a790ae0a1..3984b5ed9a90d9bb6611789edcc8814a
                              v.hash(h);
                              suf.map(|s| s as u8).hash(h);
 diff --git a/src/driver/buildscript.rs b/src/driver/buildscript.rs
-index cf100a227987f3903e88c8cc9a5684db93dce243..3165e85d9c406dc072f7b4201d50d8e25fb26833 100644
+index cf100a227987f3903e88c8cc9a5684db93dce243..fcbec2105af8d7ef89015c76b6b1cdedf44a02c8 100644
 --- a/src/driver/buildscript.rs
 +++ b/src/driver/buildscript.rs
 @@ -43,7 +43,7 @@ fn cargo_vars(env: ClientEnv) -> Vec<(String, String)> {
@@ -4881,7 +4908,52 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..3165e85d9c406dc072f7b4201d50d8e2
              return None;
          }
          let (mut script, mut setup, mut output_hash) = (None, None, None);
-@@ -817,10 +818,48 @@ fn cargo_error(stderr: &str) -> String {
+@@ -543,6 +544,14 @@ impl Refresh {
+ /// check stays cheap. One record per manifest dir serves every client: a
+ /// client whose `rerun-if-env-changed` values or Cargo vars differ from
+ /// the record's re-runs the script, as Cargo would from its shell.
++#[cfg(feature = "exclusive-native")]
++pub fn refresh(manifest_dir: &Path, _cache_dir: &Path, _env: ClientEnv) -> Refresh {
++    if build_script_for(manifest_dir).is_none() { return Refresh::None; }
++    let error = "Lustr build-script integration is incomplete; product helpers do not delegate compilation to rustc or Cargo".to_string();
++    Refresh::Failed { hash: hash_parts(&[b"failed", error.as_bytes()]), error }
++}
++
++#[cfg(not(feature = "exclusive-native"))]
+ pub fn refresh(manifest_dir: &Path, cache_dir: &Path, env: ClientEnv) -> Refresh {
+     let Some(script) = build_script_for(manifest_dir) else { return Refresh::None };
+     if let Some(rec) = fresh_record(manifest_dir, cache_dir, &script, env) {
+@@ -563,6 +572,7 @@ pub fn refresh(manifest_dir: &Path, cache_dir: &Path, env: ClientEnv) -> Refresh
+ /// say), the script's compile is replayed: the same binary means the same
+ /// run, so the record takes the new sources (and any var the compile now
+ /// reads) and stands.
++#[cfg(not(feature = "exclusive-native"))]
+ fn fresh_record(manifest_dir: &Path, cache_dir: &Path, script: &Path, env: ClientEnv) -> Option<Record> {
+     let path = record_path(cache_dir, manifest_dir);
+     let mut rec = std::fs::read_to_string(&path).ok().and_then(|t| Record::decode(&t))?;
+@@ -611,6 +621,7 @@ fn source_hashes(mut sources: Vec<PathBuf>, script: &Path) -> Vec<(PathBuf, u64)
+ /// vars Cargo set, and with rustc as Cargo gave it to the script when the
+ /// compile named a bare `rustc`: the binary's hash, and the sources and
+ /// vars the compile read (its dep-info). None when it fails.
++#[cfg(not(feature = "exclusive-native"))]
+ fn replay(c: &Compile, rustc: Option<&Path>, script: &Path, cache_dir: &Path, env: ClientEnv) -> Option<(u64, Vec<PathBuf>, Vec<String>)> {
+     let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.subsec_nanos());
+     let scratch = cache_dir.join(format!("buildscript-replay-{}-{nanos:x}", std::process::id()));
+@@ -680,6 +691,13 @@ pub struct Outputs {
+ /// has no build script. An Err means a script exists but its run
+ /// failed; the caller must not compile the crate without its outputs.
+ /// `env` is the requesting client's env, as for `refresh`.
++#[cfg(feature = "exclusive-native")]
++pub fn outputs(manifest_dir: &Path, _cache_dir: &Path, _env: ClientEnv) -> Result<Option<Outputs>, String> {
++    if build_script_for(manifest_dir).is_none() { return Ok(None); }
++    Err("Lustr build-script integration is incomplete; product helpers do not delegate compilation to rustc or Cargo".into())
++}
++
++#[cfg(not(feature = "exclusive-native"))]
+ pub fn outputs(manifest_dir: &Path, cache_dir: &Path, env: ClientEnv) -> Result<Option<Outputs>, String> {
+     let Some(script) = build_script_for(manifest_dir) else { return Ok(None) };
+     let rec = match fresh_record(manifest_dir, cache_dir, &script, env) {
+@@ -817,16 +835,55 @@ fn cargo_error(stderr: &str) -> String {
      lines.join(" ")
  }
  
@@ -4932,7 +5004,14 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..3165e85d9c406dc072f7b4201d50d8e2
  /// script's compile and run with the vars it set: the compile names its
  /// dep-info (the script crate's sources, the vars it read) and the run
  /// names rustc. The run is the cheap probe of `resolve::probe` (rustc runs
-@@ -891,8 +930,7 @@ fn run_through_cargo(manifest_dir: &Path, script: &Path, cache_dir: &Path, env:
+ /// only for build scripts and proc macros). Cargo runs with the client's
+ /// whole `env` (Cargo passes its env on to the script), plus the vars the
+ /// probe command sets for itself.
++#[cfg(not(feature = "exclusive-native"))]
+ fn run_through_cargo(manifest_dir: &Path, script: &Path, cache_dir: &Path, env: ClientEnv) -> Result<Record, String> {
+     // Cargo decides script freshness by mtime; an input edited within
+     // the same filesystem timestamp tick as the last run can look
+@@ -891,8 +948,7 @@ fn run_through_cargo(manifest_dir: &Path, script: &Path, cache_dir: &Path, env:
      let Some(out_dir_path) = out_dir.filter(|d| !d.as_os_str().is_empty()) else {
          return Err("cargo check ran no build script for this manifest".to_string());
      };
@@ -4942,7 +5021,7 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..3165e85d9c406dc072f7b4201d50d8e2
      let parsed = parse_output(&text);
      // This package's script compile and run, as Cargo printed them.
      let printed = printed_commands(&stderr);
-@@ -903,7 +941,7 @@ fn run_through_cargo(manifest_dir: &Path, script: &Path, cache_dir: &Path, env:
+@@ -903,7 +959,7 @@ fn run_through_cargo(manifest_dir: &Path, script: &Path, cache_dir: &Path, env:
          printed.iter().find(|(vars, argv)| ours(vars) && argv.windows(2).any(|w| w[0] == "--crate-name" && w[1] == "build_script_build"));
      let run = printed.iter().find(|(vars, argv)| {
          ours(vars)
@@ -4951,7 +5030,7 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..3165e85d9c406dc072f7b4201d50d8e2
      });
      let rustc = run.and_then(|(vars, _)| vars.iter().find(|(k, _)| k == "RUSTC")).map(|(_, v)| PathBuf::from(v));
      let dep = compile.and_then(|(_, argv)| compile_dep_info(argv, script));
-@@ -960,6 +998,43 @@ fn run_through_cargo(manifest_dir: &Path, script: &Path, cache_dir: &Path, env:
+@@ -960,6 +1016,43 @@ fn run_through_cargo(manifest_dir: &Path, script: &Path, cache_dir: &Path, env:
  mod tests {
      use super::*;
  
@@ -4995,7 +5074,7 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..3165e85d9c406dc072f7b4201d50d8e2
      /// Both directive spellings parse, and unrecorded keys are ignored.
      #[test]
      fn output_directives_parse() {
-@@ -1014,7 +1089,9 @@ mod tests {
+@@ -1014,7 +1107,9 @@ mod tests {
              output,
              compile: None,
          };
@@ -5006,7 +5085,7 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..3165e85d9c406dc072f7b4201d50d8e2
          assert_eq!(
              (back.sources.clone(), back.inputs.clone(), back.setup, back.output_hash),
              (rec.sources.clone(), rec.inputs.clone(), rec.setup, rec.output_hash)
-@@ -1022,6 +1099,7 @@ mod tests {
+@@ -1022,6 +1117,7 @@ mod tests {
          assert_eq!((back.out_dir.clone(), back.output.clone()), (rec.out_dir.clone(), rec.output.clone()));
          let cache = dir.join("cache");
          assert_eq!(back.holds(&cache, Some(&base)), Holds::All, "unchanged inputs hold");
@@ -5014,6 +5093,14 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..3165e85d9c406dc072f7b4201d50d8e2
          // Env values come from the client's env, not this process's.
          assert_eq!(back.holds(&cache, Some(&with("LUST_BS_TEST_ENV", "1"))), Holds::No, "a client with the var set is stale");
          assert_eq!(back.holds(&cache, Some(&with("LUST_BS_TEST_ENV", ""))), Holds::No, "set to empty is not unset");
+@@ -1049,6 +1145,7 @@ mod tests {
+     /// re-runs exactly when something it read changed, and only then. The
+     /// script appends a line to a log at each run.
+     #[test]
++    #[cfg(not(feature = "exclusive-native"))]
+     fn script_reruns_when_what_it_read_changes() {
+         let root = std::env::temp_dir().join(format!("lust-buildscript-cargo-{}", std::process::id()));
+         let _ = std::fs::remove_dir_all(&root);
 diff --git a/src/driver/cache.rs b/src/driver/cache.rs
 index da28835400f894866adb85f436e2cbdf109797d7..6cf91ad37bd9d2192a7f1d876a0c7b478b2e5cc1 100644
 --- a/src/driver/cache.rs
@@ -9779,7 +9866,7 @@ index 5a8d06b853ee2f1f83e6f8e37f315b032a4eaa78..63621063a9205665426630d9d9845130
              self.drop_local(g);
          } else {
 diff --git a/src/main.rs b/src/main.rs
-index 20f43a0f0b85fac8b27e4569d433f3cf101f05eb..0d84bbe78f1d9a315e9c0727488cfe52340d68b6 100644
+index 20f43a0f0b85fac8b27e4569d433f3cf101f05eb..f5152e12d53d17b0c7e5c21be510560ac09e5624 100644
 --- a/src/main.rs
 +++ b/src/main.rs
 @@ -43,6 +43,7 @@ mod testrun;
@@ -9790,6 +9877,32 @@ index 20f43a0f0b85fac8b27e4569d433f3cf101f05eb..0d84bbe78f1d9a315e9c0727488cfe52
  
  use protocol::Invocation;
  
+@@ -368,10 +369,25 @@ fn image_run(reqs: &[driver::Request], dir: &std::path::Path) -> Vec<driver::Res
+ }
+ 
+ fn main() {
++    protocol::reject_internal_probe();
++    if protocol::product_identity_query() { return; }
++    #[cfg(feature = "exclusive-native")]
++    if std::env::args_os().skip(1).eq([std::ffi::OsString::from("--lustr-print-cfg")]) {
++        // Cargo's read-only compiler query uses the same target/profile facts
++        // as native compilation. The product entry admits only this host mode.
++        let cfg = resolve::cfg::CfgEnv::new(protocol::host_triple(), &[], false, protocol::ProfileFlags::DEV_UNWIND);
++        let mut lines: Vec<String> = cfg.flags.into_iter().collect();
++        lines.extend(cfg.pairs.into_iter().map(|(name, value)| format!("{name}={value:?}")));
++        lines.sort();
++        lines.dedup();
++        for line in lines { println!("{line}"); }
++        return;
++    }
+     // A re-executed image process (src/image.rs) runs with randomization
+     // off and an arena variable: its children get neither.
+     image::process_start();
+     // Cargo runs lust-core as its RUSTC_WRAPPER during the feature probe.
++    #[cfg(not(feature = "exclusive-native"))]
+     if let Some(code) = resolve::probe::wrapper_main() {
+         std::process::exit(code);
+     }
 diff --git a/src/parser.rs b/src/parser.rs
 index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17be869f1c 100644
 --- a/src/parser.rs
@@ -10418,7 +10531,7 @@ index c4b23e007d746b984e392919dcf1bc9bc87a265e..47bb8992d04e52e8ba9774e3e865ddf1
              _ => return None,
          }
 diff --git a/src/protocol.rs b/src/protocol.rs
-index 504b467a9d240272c85f999b59f57a5d52b3cd4e..b94a8b06abed28a906b34b6fe2cba7848be5802d 100644
+index 504b467a9d240272c85f999b59f57a5d52b3cd4e..626f3634743c31474ac446a7ea1895748a23748f 100644
 --- a/src/protocol.rs
 +++ b/src/protocol.rs
 @@ -14,9 +14,11 @@
@@ -10600,7 +10713,76 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..b94a8b06abed28a906b34b6fe2cba784
  }
  
  /// Prints a response. For `run`, runs the program after a successful build. Never returns.
-@@ -1461,6 +1540,131 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
+@@ -1331,9 +1410,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
+     Some(PathBuf::from(text[at..end].replace("\\\\", "\\")))
+ }
+ 
++/// Refuse delegated compiler contexts before either executable reads arguments,
++/// touches probe artifacts, or connects to a daemon. Ordinary semantic environment
++/// inputs remain unchanged. Research builds retain the upstream probe implementation.
++pub fn reject_internal_probe() {
++    #[cfg(feature = "exclusive-native")]
++    {
++        if std::env::var_os("LUST_PROBE_FAKE_DIR").is_some() {
++            reject_delegation("LUST_PROBE_FAKE_DIR probe compilation");
++        }
++        for name in ["RUSTC_WRAPPER", "RUSTC_WORKSPACE_WRAPPER"] {
++            if std::env::var_os(name).is_some_and(|value| !value.is_empty()) {
++                reject_delegation(name);
++            }
++        }
++    }
++}
++
++/// Exact executable identity for product construction. Both helpers answer from
++/// their own build, so a guarded client cannot stand in for an unguarded core.
++pub fn product_identity_query() -> bool {
++    #[cfg(feature = "exclusive-native")]
++    if std::env::args_os().skip(1).eq([std::ffi::OsString::from("--lustr-runtime-identity")]) {
++        println!("lustr-exclusive-native-v1\nbuild={}", env!("LUST_BUILD_HASH"));
++        return true;
++    }
++    false
++}
++
++#[cfg(feature = "exclusive-native")]
++fn reject_delegation(mode: &str) -> ! {
++    eprintln!("error: Lustr product helper does not delegate {mode} to rustc or Cargo; native integration is incomplete");
++    std::process::exit(2);
++}
++
++#[cfg(feature = "exclusive-native")]
++pub fn run_release(_file: &Path, _out: Option<&Path>, _profile: Option<&str>, _debug: bool, _net: CargoNet) -> ! {
++    reject_delegation("release/profile compilation");
++}
++
+ /// `lust build --release` / `--profile <name>`. With a Cargo.toml above the file, Cargo
+ /// builds it with the file's package and bin selection. Without one, rustc builds the
+ /// single file with the release oracle flags from DESIGN.md. Never returns.
++#[cfg(not(feature = "exclusive-native"))]
+ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug: bool, net: CargoNet) -> ! {
+     let profile = profile.unwrap_or("release");
+     let dev = profile == "dev";
+@@ -1408,12 +1527,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
+     exit_with(status);
+ }
+ 
++#[cfg(feature = "exclusive-native")]
++pub fn run_rustc_check(_file: &Path) -> ! {
++    reject_delegation("rustc oracle compilation");
++}
++
+ /// `lust check --rustc`: the real rustc verdict with the dev oracle flags from DESIGN.md at
+ /// rustc's default lint levels. A second opinion for agents. It emits an object file (no link),
+ /// not metadata: `--emit=metadata` stops before the MIR passes, so it misses deny-by-default
+ /// lints (unconditional_panic, arithmetic_overflow) and post-monomorphization const errors that
+ /// `rustc` and `cargo build` reject. On a 950-line file the object takes 190 ms against 160 ms
+ /// for metadata and 250 ms for a linked binary. Never returns.
++#[cfg(not(feature = "exclusive-native"))]
+ pub fn run_rustc_check(file: &Path) -> ! {
+     let obj = std::env::temp_dir().join(format!("lust-rustc-check-{}.o", std::process::id()));
+     eprintln!("lust: checking with rustc (oracle): rustc --edition 2024 --emit=obj {}", file.display());
+@@ -1461,6 +1586,131 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
  mod tests {
      use super::*;
  
@@ -10733,10 +10915,49 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..b94a8b06abed28a906b34b6fe2cba784
          list.iter().map(|s| s.to_string()).collect()
      }
 diff --git a/src/resolve/cargo.rs b/src/resolve/cargo.rs
-index 203135afe54ba9bb04d1295435f9424670379c71..a6e774e289a99ebebac566f33b6aa7fd02910a59 100644
+index 203135afe54ba9bb04d1295435f9424670379c71..8a1862d94c371f415ff99e9b6f8754dabd0bf442 100644
 --- a/src/resolve/cargo.rs
 +++ b/src/resolve/cargo.rs
-@@ -932,15 +932,24 @@ pub fn select_unit(
+@@ -369,6 +369,7 @@ pub fn apply_cargo_env(cmd: &mut Command, env: Option<&[(String, String)]>) {
+ /// names a bare program makes std fork instead of posix_spawn, and a fork
+ /// copies the page table of every resident page of this process: several
+ /// GB after a front image restore (src/image.rs), hundreds of ms a spawn.
++#[cfg(not(feature = "exclusive-native"))]
+ pub fn cargo_command(env: Option<&[(String, String)]>) -> Command {
+     use std::os::unix::fs::PermissionsExt;
+     let path = match env {
+@@ -381,6 +382,22 @@ pub fn cargo_command(env: Option<&[(String, String)]>) -> Command {
+     cmd
+ }
+ 
++/// Product metadata uses the packaged Cargo and its own compiler query service.
++/// Only this child command receives those paths; the requesting program retains
++/// the exact semantic environment. Missing siblings fail instead of using PATH.
++#[cfg(feature = "exclusive-native")]
++pub fn cargo_command(env: Option<&[(String, String)]>) -> Command {
++    let executable = std::env::current_exe().ok();
++    // An unavailable executable identity produces an empty, unexecutable path.
++    let sibling = |name| executable.as_ref().map(|path| path.with_file_name(name)).unwrap_or_default();
++    let mut cmd = Command::new(sibling("cargo"));
++    apply_cargo_env(&mut cmd, env);
++    cmd.env("RUSTC", sibling("lustr"))
++        .env("RUSTC_WRAPPER", "")
++        .env("RUSTC_WORKSPACE_WRAPPER", "");
++    cmd
++}
++
+ impl GraphRequest {
+     /// One env var as Cargo sees it for this request.
+     fn var(&self, name: &str) -> Option<String> {
+@@ -800,6 +817,7 @@ pub fn build_dir(manifest: &Path, env: Option<&[(String, String)]>) -> Option<Pa
+ /// not depend on the sources. Returns None when the run fails; the caller then falls back
+ /// to resolve-node features and the session still works for single-package
+ /// graphs.
++#[cfg(not(feature = "exclusive-native"))]
+ fn unit_features_via_check(req: &GraphRequest, graph: &CrateGraph) -> Option<std::collections::HashMap<(String, String), Vec<String>>> {
+     let key = graph.key;
+     static CACHE: OnceLock<Mutex<std::collections::HashMap<u64, std::collections::HashMap<(String, String), Vec<String>>>>> =
+@@ -932,16 +950,36 @@ pub fn select_unit(
          .or_else(|| graph.packages.iter().find(|p| p.manifest_path == req.manifest_path))
          .or_else(|| graph.packages.iter().find(|p| graph.workspace_members.contains(&p.id_repr)))
          .ok_or_else(|| format!("no package in the Cargo graph matches {}", req.manifest_path.display()))?;
@@ -10767,8 +10988,20 @@ index 203135afe54ba9bb04d1295435f9424670379c71..a6e774e289a99ebebac566f33b6aa7fd
 +    }
 +    .ok_or_else(|| format!("package `{}` has no {target_kind} target named `{target_name}`", pkg.name))?;
      let simple_graph = graph.workspace_members.len() <= 1 && pkg.dependencies.is_empty();
++    // The upstream probe compiles host units through rustc and can fall back
++    // to a full Cargo check. Neither is a product compilation service. Reject
++    // before consulting probe caches; their presence cannot authorize delegation
++    // or change the actual Lust-supported subset.
++    #[cfg(feature = "exclusive-native")]
++    if !simple_graph || pkg.targets.iter().any(|target| target.kind.iter().any(|kind| kind == "custom-build")) {
++        return Err("Lustr Cargo feature/build-script probe integration is incomplete; product helpers do not delegate compilation to rustc or Cargo".into());
++    }
++    #[cfg(feature = "exclusive-native")]
++    let check_map: Option<std::collections::HashMap<(String, String), Vec<String>>> = None;
++    #[cfg(not(feature = "exclusive-native"))]
      let check_map = if simple_graph { None } else { unit_features_via_check(req, graph) };
      let features = check_map
+         .as_ref()
 diff --git a/src/resolve/cfg.rs b/src/resolve/cfg.rs
 index 55a9c568452cde1f283fc02894b4d304b14891cb..11132624ec311935b4529e1186d3dd6e8bad0fa5 100644
 --- a/src/resolve/cfg.rs
@@ -10822,6 +11055,18 @@ index 05fa1af6472a45f59b544080121faf48c73f55eb..c8df2d5631259c9d935d02efbf47606a
          let (ra, ma) = self.vis_region(vis, def_module, interner);
          let (rb, mb) = self.vis_region(outer, outer_module, interner);
          if rb == 2 {
+diff --git a/src/resolve/mod.rs b/src/resolve/mod.rs
+index fc01334135114510c734e64d61334ecbfc3ce108..247c3b8dcf032bdc1f57382d0112f4a6ebd99cf1 100644
+--- a/src/resolve/mod.rs
++++ b/src/resolve/mod.rs
+@@ -10,6 +10,7 @@ pub mod mdr;
+ pub mod modules;
+ pub mod order;
+ pub mod prefetch;
++#[cfg(not(feature = "exclusive-native"))]
+ pub mod probe;
+ pub mod stdpaths;
+ pub mod worklist;
 diff --git a/src/resolve/worklist.rs b/src/resolve/worklist.rs
 index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..fc51b3d781033e229fffd1a11299cbd44b791201 100644
 --- a/src/resolve/worklist.rs

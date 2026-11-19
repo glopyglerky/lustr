@@ -472,10 +472,15 @@ class PackageComparisonControls(unittest.TestCase):
         with self.assertRaises(ValueError): self.verify_gate(self.gate_corruption(mutate))
 
 
-class WorkflowControls(unittest.TestCase):
+class HistoricalWorkflowControls(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.text = (HERE.parent / ".github/workflows/warm-native-performance.yml").read_text()
+        # Frozen workflow source from cb0721d49be95ec3f34a113c2354bc9d2a38bbf3.
+        # These controls replay historical admission/status logic as test data;
+        # the active workflow only replays evidence and never builds a compiler.
+        data = (HERE / "fixtures/warm-native-workflow-cb0721d.txt").read_bytes()
+        assert hashlib.sha256(data).hexdigest() == "d91ceb68a2493e78b6a87f3983782a6ff1e9f3cd78a4e56d828ef6cbd449e2bf"
+        cls.text = data.decode()
         starts = list(re.finditer(r"^      - (?:name|uses): .+$", cls.text, re.M))
         cls.blocks = [cls.text[match.start():starts[i+1].start() if i+1 < len(starts) else len(cls.text)] for i, match in enumerate(starts)]
         cls.steps = {}

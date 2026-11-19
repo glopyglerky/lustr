@@ -248,46 +248,34 @@ def steps(text):
 
 
 class WorkflowControls(unittest.TestCase):
-    def test_historical_preflights_fail_before_any_expensive_setup_and_retain_receipts(self):
-        for mode, filename, directory in (("entry", "warm-entry-performance.yml", "warm-entry-applicability"),
-                                          ("complete", "warm-native-performance.yml", "warm-native-applicability")):
-            with self.subTest(mode=mode):
+    def test_active_historical_jobs_replay_without_constructing_compilers(self):
+        for filename in ("warm-entry-performance.yml", "warm-native-performance.yml"):
+            with self.subTest(workflow=filename):
                 text = (HERE.parent / ".github/workflows" / filename).read_text()
-                blocks = steps(text)
-                preflight, = [block for block in blocks if "check-warm-applicability.py " + mode in block]
-                position = blocks.index(preflight)
-                self.assertNotIn("\n        if:", preflight)
-                self.assertNotIn("continue-on-error", text)
-                self.assertNotIn("|| true", preflight)
-                for index, block in enumerate(blocks):
-                    if "rustup toolchain install" in block or "build-package --lane" in block or "--current-sdk" in block:
-                        self.assertLess(position, index)
-                upload, = [block for block in blocks if "actions/upload-artifact@" in block]
-                self.assertIn("if: always()", upload)
-                self.assertIn("${{ runner.temp }}/" + directory, upload)
+                self.assertIn("Frozen evidence replay", text)
+                self.assertIn("/replay.py", text)
+                self.assertIn("Current performance remains unqualified", text)
+                for forbidden in ("rustup toolchain install", "build-package --lane", "--current-sdk", " measure ", "continue-on-error"):
+                    self.assertNotIn(forbidden, text)
 
-    def test_selector_suites_use_the_existing_candidate_package_and_keep_raw_artifacts(self):
+    def test_native_selector_suites_keep_actual_package_and_raw_evidence(self):
         text = (HERE.parent / ".github/workflows/compiler-set.yml").read_text()
-        section = text.split("  mixed-source-build:\n", 1)[1].split("\n  compatibility:\n", 1)[0]
+        section = text.split("  native-entry-and-services:\n", 1)[1].split("\n  compatibility:\n", 1)[0]
         blocks = steps(section)
-        for script, output in (("test-native-selection-cache.py", "lustr-selection-contract"),
-                               ("test-native-selection-seed.py", "lustr-selection-seed-contract"),
-                               ("test-native-compact-selection.py", "lustr-compact-selection-contract")):
+        upload, = [block for block in blocks if "actions/upload-artifact@" in block]
+        self.assertIn("if: always()", upload)
+        for script, output in (("test-native-selection-cache.py", "native-selection-cache"),
+                               ("test-native-selection-seed.py", "native-selection-seed"),
+                               ("test-native-compact-selection.py", "native-compact-selection")):
             block, = [block for block in blocks if "python3 tools/" + script in block]
-            self.assertIn('"$RUNNER_TEMP/lustr-source-built/toolchain/bin"', block)
-            self.assertIn("steps.selector_gate_build.outcome == 'success'", block)
+            self.assertIn('"$RUNNER_TEMP/lustr-native-built/toolchain/bin"', block)
+            self.assertIn("steps.selector_build.outcome == 'success'", block)
             self.assertIn("!cancelled()", block)
             self.assertNotIn("continue-on-error", block)
-            self.assertIn("${{ runner.temp }}/" + output + "/results.json", section)
-            self.assertIn("${{ runner.temp }}/" + output + ("/streams" if "compact" in output else "/*.stderr"), section)
-        for name in ("measurements", "slice_measurements", "project_measurements", "mixed_profile", "pristine_build"):
-            block, = [block for block in blocks if "\n        id: " + name + "\n" in block]
-            for gate in ("selector_gate_build", "selection_contract", "selection_seed_contract", "compact_selection_contract"):
-                self.assertIn("steps." + gate + ".outcome == 'success'", block)
-        outcome, = [block for block in blocks if "name: Record candidate selector qualification outcomes" in block]
-        self.assertIn("if: always()", outcome)
-        self.assertIn("failed-or-incomplete", outcome)
-        self.assertIn("${{ runner.temp }}/lustr-selector-outcomes.json", section)
+            # Upload the whole evidence directory, including failure streams.
+            self.assertIn("${{ runner.temp }}/" + output, upload)
+        self.assertIn("--require-daemon", section)
+        self.assertNotIn("continue-on-error", section)
 
 
 if __name__ == "__main__":

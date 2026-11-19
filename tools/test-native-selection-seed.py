@@ -48,7 +48,7 @@ def main():
         package = root / name
         (package / 'bin').mkdir(parents=True)
         (package / 'lib').mkdir()
-        for tool in ['cargo', 'rustc-full', 'rustc-reference', 'rustdoc']:
+        for tool in ['cargo', 'lustr', 'rustc']:
             (package / 'bin' / tool).symlink_to(source / tool)
         for path in (source.parent / 'lib').iterdir():
             if path.name != 'lustr-selection-verified':
@@ -85,7 +85,7 @@ def main():
         env = {'PATH':str(package / 'bin') + os.pathsep + '/usr/local/bin:/usr/bin:/bin',
                'HOME':str(root / 'home'), 'CARGO_HOME':str(root / 'cargo-home'), 'TMPDIR':str(root / 'tmp'),
                'CARGO_NET_OFFLINE':'true', 'LUSTR_SELECTION_DIAGNOSTICS':str(root / 'diagnostics.jsonl')}
-        setup_env = dict(env, RUSTC=str(package / 'bin/rustc-full'), RUSTDOC=str(package / 'bin/rustdoc'))
+        setup_env = dict(env, RUSTC=str(package / 'bin/rustc'))
         setup, _ = run('cargo-setup', [package / 'bin/cargo', 'metadata', '--format-version=1', '--offline'], setup_env, project)
         require(setup.returncode == 0, 'real Cargo establishes lockfile and package-cache lock')
 

@@ -1410,9 +1410,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
     Some(PathBuf::from(text[at..end].replace("\\\\", "\\")))
 }
 
+/// Refuse delegated compiler contexts before either executable reads arguments,
+/// touches probe artifacts, or connects to a daemon. Ordinary semantic environment
+/// inputs remain unchanged. Research builds retain the upstream probe implementation.
+pub fn reject_internal_probe() {
+    #[cfg(feature = "exclusive-native")]
+    {
+        if std::env::var_os("LUST_PROBE_FAKE_DIR").is_some() {
+            reject_delegation("LUST_PROBE_FAKE_DIR probe compilation");
+        }
+        for name in ["RUSTC_WRAPPER", "RUSTC_WORKSPACE_WRAPPER"] {
+            if std::env::var_os(name).is_some_and(|value| !value.is_empty()) {
+                reject_delegation(name);
+            }
+        }
+    }
+}
+
+/// Exact executable identity for product construction. Both helpers answer from
+/// their own build, so a guarded client cannot stand in for an unguarded core.
+pub fn product_identity_query() -> bool {
+    #[cfg(feature = "exclusive-native")]
+    if std::env::args_os().skip(1).eq([std::ffi::OsString::from("--lustr-runtime-identity")]) {
+        println!("lustr-exclusive-native-v1\nbuild={}", env!("LUST_BUILD_HASH"));
+        return true;
+    }
+    false
+}
+
+#[cfg(feature = "exclusive-native")]
+fn reject_delegation(mode: &str) -> ! {
+    eprintln!("error: Lustr product helper does not delegate {mode} to rustc or Cargo; native integration is incomplete");
+    std::process::exit(2);
+}
+
+#[cfg(feature = "exclusive-native")]
+pub fn run_release(_file: &Path, _out: Option<&Path>, _profile: Option<&str>, _debug: bool, _net: CargoNet) -> ! {
+    reject_delegation("release/profile compilation");
+}
+
 /// `lust build --release` / `--profile <name>`. With a Cargo.toml above the file, Cargo
 /// builds it with the file's package and bin selection. Without one, rustc builds the
 /// single file with the release oracle flags from DESIGN.md. Never returns.
+#[cfg(not(feature = "exclusive-native"))]
 pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug: bool, net: CargoNet) -> ! {
     let profile = profile.unwrap_or("release");
     let dev = profile == "dev";
@@ -1487,12 +1527,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
     exit_with(status);
 }
 
+#[cfg(feature = "exclusive-native")]
+pub fn run_rustc_check(_file: &Path) -> ! {
+    reject_delegation("rustc oracle compilation");
+}
+
 /// `lust check --rustc`: the real rustc verdict with the dev oracle flags from DESIGN.md at
 /// rustc's default lint levels. A second opinion for agents. It emits an object file (no link),
 /// not metadata: `--emit=metadata` stops before the MIR passes, so it misses deny-by-default
 /// lints (unconditional_panic, arithmetic_overflow) and post-monomorphization const errors that
 /// `rustc` and `cargo build` reject. On a 950-line file the object takes 190 ms against 160 ms
 /// for metadata and 250 ms for a linked binary. Never returns.
+#[cfg(not(feature = "exclusive-native"))]
 pub fn run_rustc_check(file: &Path) -> ! {
     let obj = std::env::temp_dir().join(format!("lust-rustc-check-{}.o", std::process::id()));
     eprintln!("lust: checking with rustc (oracle): rustc --edition 2024 --emit=obj {}", file.display());

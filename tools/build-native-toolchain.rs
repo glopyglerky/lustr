@@ -1,6 +1,6 @@
-//! Build a local development toolchain from checked lustr source and the pinned
-//! upstream Rust SDK. No predecessor lustr binary or historical package is used.
-//! SDK, TinyCC and source library references remain explicit local dependencies.
+//! Build the partial native Lustr entry and runtime from checked source.
+//! The pinned Rust SDK bootstraps the compiler; it is never a packaged fallback.
+//! No complete Rust-replacement package is admitted by this constructor.
 use std::{
     fs,
     io::Write,
@@ -20,7 +20,7 @@ mod native_expansion;
 #[path = "../src/owned_child.rs"]
 mod owned_child;
 #[path = "selection-toolchain-receipt.rs"]
-mod selection_toolchain_receipt;
+mod selection_toolchain;
 
 #[derive(Clone, Copy)]
 enum BuildProfile {
@@ -88,6 +88,9 @@ fn source_library(repo: &Path, package: &Path) {
     // The executable path selects the expanded support prefix, while its inode
     // must retain the original core's wire identity.
     fs::hard_link(package.join("bin/lust-core"), expanded.join("bin/lust-core")).unwrap();
+    for name in ["lustr", "cargo"] {
+        symlink(format!("../../../bin/{name}"), expanded.join("bin").join(name)).unwrap();
+    }
 }
 fn seal_source_library(package: &Path, logs: &Path) -> String {
     let library = package.join("lib/lustr");
@@ -165,6 +168,29 @@ fn main() {
         .as_bytes(),
     );
     checked("source-revision", Command::new("git").arg("-C").arg(&repo).args(["rev-parse", "HEAD", "HEAD^{tree}"]), &logs);
+    let source_status = checked(
+        "source-status",
+        Command::new("git").arg("-C").arg(&repo).args([
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=all",
+            "--",
+            "Cargo.toml",
+            "Cargo.lock",
+            "build.rs",
+            "src",
+            "compiler/native",
+            "crates/lustr-native-core",
+            "library",
+            "upstream",
+            "tools/build-native-toolchain.rs",
+            "tools/selection-toolchain-receipt.rs",
+            "tools/host-sdk.rs",
+            "tools/lust-upstream-check.rs",
+        ]),
+        &logs,
+    );
+    assert!(source_status.is_empty(), "commit the exact compiler/build inputs before constructing a source-identified package");
     let version = checked("sdk-version", Command::new(sdk.join("bin/rustc")).arg("-vV"), &logs);
     let pin = fs::read_to_string(repo.join("upstream/bluefe-core.pin")).unwrap();
     let source = pin.lines().find_map(|line| line.strip_prefix("source = \"").and_then(|line| line.strip_suffix('"'))).unwrap();
@@ -195,34 +221,28 @@ fn main() {
     }
     checked("source-identity", &mut check, &logs);
     let mut native = cargo(&sdk, &repo, "compiler/native/Cargo.toml", &work, "native", profile);
-    native.args(["--bin", "lust", "--bin", "lust-core"]).env("LUST_TCC_HOME", &tcc);
+    native.args(["--bin", "lust", "--bin", "lust-core", "--features", "exclusive-native"]).env("LUST_TCC_HOME", &tcc);
     checked("native-build", &mut native, &logs);
     let mut receipts = Vec::new();
     native_receipts(&work.join("native-intermediates").join(profile.directory()).join("build"), &mut receipts);
     assert_eq!(receipts.len(), 1, "one fresh native build receipt");
     let receipt = &receipts[0];
     let native_output = fs::read_to_string(receipt).unwrap();
+    assert!(native_output.lines().any(|line| line == "cargo:rustc-env=LUST_EXCLUSIVE_NATIVE=1"));
     let hash = native_output.lines().find_map(|line| line.strip_prefix("cargo:rustc-env=LUST_BUILD_HASH=")).unwrap();
     assert!(hash.len() == 16 && hash.bytes().all(|b| b.is_ascii_hexdigit()));
     let package = output.join("toolchain");
     fs::create_dir(&package).unwrap();
+    fs::write(
+        package.join("PARTIAL-NATIVE-COMPILER"),
+        "Native Lustr development build. Complementary compilation and complete-replacement release are unavailable.\n",
+    )
+    .unwrap();
     fs::create_dir(package.join("bin")).unwrap();
     fs::create_dir(package.join("lib")).unwrap();
-    for entry in fs::read_dir(sdk.join("lib")).unwrap() {
-        let entry = entry.unwrap();
-        symlink(entry.path(), package.join("lib").join(entry.file_name())).unwrap();
-    }
-    for entry in fs::read_dir(sdk.join("bin")).unwrap() {
-        let entry = entry.unwrap();
-        let name = entry.file_name();
-        if !["rustc", "rustc-full", "rustc-cargo", "lustr-cargo", "rustc-reference", "lustr", "lust", "lust-core", "cargo-lustr"]
-            .iter()
-            .any(|reserved| name == *reserved)
-        {
-            symlink(entry.path(), package.join("bin").join(name)).unwrap();
-        }
-    }
-    symlink(sdk.join("bin/rustc"), package.join("bin/rustc-reference")).unwrap();
+    // Cargo is used only for native package/target discovery. No rustc,
+    // rustdoc, compiler driver or LLVM runtime is copied into this package.
+    symlink(sdk.join("bin/cargo"), package.join("bin/cargo")).unwrap();
     fs::create_dir(package.join("lib/lust")).unwrap();
     symlink(repo.join("compiler/native/library"), package.join("lib/lust/library")).unwrap();
     symlink(&tcc, package.join("lib/lust/tcc")).unwrap();
@@ -241,45 +261,23 @@ fn main() {
     checked("entry-build", &mut entry, &logs);
     copy(&work.join("entry-target").join(profile.directory()).join("lustr"), &package.join("bin/lustr"));
     symlink("lustr", package.join("bin/rustc")).unwrap();
-    let mut coordinator = cargo(&sdk, &repo, "crates/lustr/Cargo.toml", &work, "coordinator", profile);
-    coordinator.args(["--bin", "cargo-lustr"]);
-    checked("cargo-entry-build", &mut coordinator, &logs);
-    copy(&work.join("coordinator-target").join(profile.directory()).join("cargo-lustr"), &package.join("bin/cargo-lustr"));
     let mut library = cargo(&sdk, &repo, "crates/lustr-native-core/Cargo.toml", &work, "native-library", profile);
-    library.env("LUST_TCC_HOME", &tcc);
+    library.args(["--features", "exclusive-native"]).env("LUST_TCC_HOME", &tcc);
     checked("native-library-build", &mut library, &logs);
     let library = package.join("lib").join(host_runtime::NATIVE_LIBRARY);
     copy(&work.join("native-library-target").join(profile.directory()).join(host_runtime::NATIVE_LIBRARY), &library);
     let identity = checked("hash-native-library", host_runtime::sha256_command().arg(&library), &logs);
     let identity = std::str::from_utf8(&identity).unwrap().split_whitespace().next().unwrap();
     record(&package.join("lib/lustr-native.id"), format!("{identity}\n").as_bytes());
+    selection_toolchain::write(&package, source, host);
+    if host == "x86_64-unknown-linux-gnu" {
+        checked("prime-selection-tools", Command::new(package.join("bin/lustr")).arg("--lustr-prime-selection-tools"), &logs);
+    }
     let source_identity = seal_source_library(&package, &logs);
-    let mixed_route = if host == "x86_64-unknown-linux-gnu" {
-        let mut mixed = cargo(&sdk, &repo, "crates/lustr-semantic/Cargo.toml", &work, "mixed", profile);
-        mixed.args(["--features", "full-core", "--bin", "lustr-mixed"]).env("LUSTR_NATIVE_BUILD_HASH", hash);
-        checked("mixed-build", &mut mixed, &logs);
-        copy(&work.join("mixed-target").join(profile.directory()).join("lustr-mixed"), &package.join("bin/rustc-full"));
-        "ELF mixed-object candidate"
-    } else {
-        // The current bridge validates ELF objects only. Darwin keeps native
-        // whole-target Lust and the complete, matching upstream Rust fallback.
-        symlink(sdk.join("bin/rustc"), package.join("bin/rustc-full")).unwrap();
-        "whole-target native Lust plus matching upstream Rust; no mixed Mach-O bridge"
-    };
-    // The source-built package is the one used by Cargo correctness and
-    // paired-speed qualification. Give it the same direct Cargo entry as
-    // the component assembler; retain the public rustc -> lustr path.
-    fs::create_dir(package.join("bin/lustr-cargo")).unwrap();
-    symlink("../rustc-full", package.join("bin/lustr-cargo/rustc")).unwrap();
-    assert_eq!(
-        package.join("bin/lustr-cargo/rustc").canonicalize().unwrap(),
-        package.join("bin/rustc-full").canonicalize().unwrap()
-    );
-    // rustc-full resolves current_exe to this directory, alongside its matching
-    // native core and the original compiler used for non-UTF8 OS arguments.
+    let mixed_route = "exclusive native Lust; complementary compilation unavailable";
     record(&output.join("NATIVE-BUILD-RECEIPT.txt"), native_output.as_bytes());
     let mut manifest = format!(
-        "Local source-built development candidate; native host qualification, release admission and broad mixed performance remain pending.\nReferenced source={}, SDK={}, TinyCC={}\nNative build={}\nCargo artifact profile={}\nSource library identity={}\nHost={}\nRoute={}\nSDK receipt={}\n",
+        "Partial native development build; complementary compilation and full-replacement release are unavailable.\nReferenced source={}, SDK={}, TinyCC={}\nNative build={}\nCargo artifact profile={}\nSource library identity={}\nHost={}\nRoute={}\nSDK receipt={}\n",
         repo.display(),
         sdk.display(),
         tcc.display(),
@@ -290,16 +288,12 @@ fn main() {
         mixed_route,
         host_receipt.display()
     );
-    for name in ["lustr", "rustc-full", "lust", "lust-core", "cargo-lustr"] {
+    for name in ["lustr", "lust", "lust-core"] {
         let result = checked(&format!("hash-{name}"), host_runtime::sha256_command().arg(package.join("bin").join(name)), &logs);
         manifest.push_str(std::str::from_utf8(&result).unwrap());
     }
     record(&output.join("COMPONENTS.txt"), manifest.as_bytes());
-    selection_toolchain_receipt::write(&package, source, &host);
-    if host == "x86_64-unknown-linux-gnu" {
-        checked("preverify-selection-tools", Command::new(package.join("bin/lustr")).arg("--lustr-prime-selection-tools"), &logs);
-    }
-    for p in [package.join("bin/lustr-cargo"), package.join("bin"), package.join("lib"), package, logs, output.clone()] {
+    for p in [package.join("bin"), package.join("lib"), package, logs, output.clone()] {
         fs::File::open(p).unwrap().sync_all().unwrap();
     }
     println!("Source-built local toolchain: {}", output.join("toolchain/bin/lustr").display());

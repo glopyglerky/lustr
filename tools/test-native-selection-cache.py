@@ -163,9 +163,11 @@ def main():
         lock = project / "Cargo.lock"
         original_lock = lock.read_bytes()
         original_stat = lock.stat()
+        # --no-deps metadata does not parse Cargo.lock, but its changed bytes
+        # still invalidate our cache and must agree with a fresh Cargo lookup.
         lock.write_bytes(b"x" * len(original_lock))
         os.utime(lock, ns=(original_stat.st_atime_ns, original_stat.st_mtime_ns))
-        pair("same-size-mtime-lock-corruption", expected=2, event="miss")
+        pair("same-size-mtime-lock-corruption", event="miss")
         lock.write_bytes(original_lock)
         warm("lock-restored")
 
@@ -175,8 +177,8 @@ def main():
         warm("manifest-restored")
 
         (project / "build.rs").write_text("fn main() {}\n")
-        pair("new-build-script", event="miss")
-        pair("build-script-remains-ineligible-for-store", event="miss")
+        pair("new-build-script", expected=2, event="miss")
+        pair("build-script-remains-ineligible-for-store", expected=2, event="miss")
         (project / "build.rs").unlink()
         warm("build-script-removed")
 
@@ -203,7 +205,7 @@ def main():
         saved_package_lock = root / "cargo-home/.package-cache.saved"
         package_lock.rename(saved_package_lock)
         package_lock.mkdir()
-        pair("package-lock-replaced-by-directory", expected=2, event="ineligible")
+        pair("package-lock-replaced-by-directory", event="ineligible")
         package_lock.rmdir()
         saved_package_lock.rename(package_lock)
         warm("package-lock-restored")
@@ -252,7 +254,7 @@ def main():
         for original in (package_bin.parent / "lib").iterdir():
             if original.name != "lustr-selection-verified":
                 (projection_lib / original.name).symlink_to(original, target_is_directory=original.is_dir())
-        for name in ["cargo", "rustc-full", "rustdoc", "rustc-reference"]:
+        for name in ["cargo", "lustr", "rustc"]:
             original = package_bin / name
             if not original.exists():
                 continue
@@ -274,22 +276,22 @@ def main():
         (projection_bin / "cargo").chmod(mode)
         warm("cargo-execute-permission-restored", bin_path=projection_bin)
 
-        # A private copy of one included library permits an access transition
-        # without chmod following a symlink into the caller's actual SDK.
-        library = min((path for path in projection_lib.iterdir()
-                       if ".so" in path.name or path.name.endswith(".dylib")),
-                      key=lambda path: path.stat().st_size)
-        library_source = library.readlink()
-        library.unlink()
-        shutil.copy2(library_source, library)
-        warm("projected-library-access", bin_path=projection_bin)
-        library_mode = library.stat().st_mode
-        try:
-            library.chmod(0)
-            pair("included-library-unreadable", bin_path=projection_bin, event="ineligible")
-        finally:
-            library.chmod(library_mode)
-        warm("included-library-access-restored", bin_path=projection_bin)
+        # Rust query identity is the package's native entry. Replacing its
+        # bytes invalidates certificates without depending on an SDK driver.
+        query = projection_bin / "lustr"
+        query_source = query.resolve()
+        query.unlink()
+        shutil.copy2(query_source, query)
+        rustc_alias = projection_bin / "rustc"
+        rustc_alias.unlink()
+        rustc_alias.symlink_to("lustr")
+        pair("native-query-replaced-identically", bin_path=projection_bin, event="miss")
+        warm("native-query-replacement-retained", bin_path=projection_bin)
+        with query.open("ab") as stream:
+            stream.write(b"native-query-mutated")
+        pair("native-query-bytes-changed", bin_path=projection_bin, event=("miss", "ineligible"))
+        shutil.copy2(query_source, query)
+        warm("native-query-bytes-restored", bin_path=projection_bin)
 
         # These paths are controlled copies or symlinks in the projection. A
         # cache preflight must not wait for a FIFO writer before Cargo executes.

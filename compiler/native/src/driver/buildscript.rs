@@ -544,6 +544,14 @@ impl Refresh {
 /// check stays cheap. One record per manifest dir serves every client: a
 /// client whose `rerun-if-env-changed` values or Cargo vars differ from
 /// the record's re-runs the script, as Cargo would from its shell.
+#[cfg(feature = "exclusive-native")]
+pub fn refresh(manifest_dir: &Path, _cache_dir: &Path, _env: ClientEnv) -> Refresh {
+    if build_script_for(manifest_dir).is_none() { return Refresh::None; }
+    let error = "Lustr build-script integration is incomplete; product helpers do not delegate compilation to rustc or Cargo".to_string();
+    Refresh::Failed { hash: hash_parts(&[b"failed", error.as_bytes()]), error }
+}
+
+#[cfg(not(feature = "exclusive-native"))]
 pub fn refresh(manifest_dir: &Path, cache_dir: &Path, env: ClientEnv) -> Refresh {
     let Some(script) = build_script_for(manifest_dir) else { return Refresh::None };
     if let Some(rec) = fresh_record(manifest_dir, cache_dir, &script, env) {
@@ -564,6 +572,7 @@ pub fn refresh(manifest_dir: &Path, cache_dir: &Path, env: ClientEnv) -> Refresh
 /// say), the script's compile is replayed: the same binary means the same
 /// run, so the record takes the new sources (and any var the compile now
 /// reads) and stands.
+#[cfg(not(feature = "exclusive-native"))]
 fn fresh_record(manifest_dir: &Path, cache_dir: &Path, script: &Path, env: ClientEnv) -> Option<Record> {
     let path = record_path(cache_dir, manifest_dir);
     let mut rec = std::fs::read_to_string(&path).ok().and_then(|t| Record::decode(&t))?;
@@ -612,6 +621,7 @@ fn source_hashes(mut sources: Vec<PathBuf>, script: &Path) -> Vec<(PathBuf, u64)
 /// vars Cargo set, and with rustc as Cargo gave it to the script when the
 /// compile named a bare `rustc`: the binary's hash, and the sources and
 /// vars the compile read (its dep-info). None when it fails.
+#[cfg(not(feature = "exclusive-native"))]
 fn replay(c: &Compile, rustc: Option<&Path>, script: &Path, cache_dir: &Path, env: ClientEnv) -> Option<(u64, Vec<PathBuf>, Vec<String>)> {
     let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.subsec_nanos());
     let scratch = cache_dir.join(format!("buildscript-replay-{}-{nanos:x}", std::process::id()));
@@ -681,6 +691,13 @@ pub struct Outputs {
 /// has no build script. An Err means a script exists but its run
 /// failed; the caller must not compile the crate without its outputs.
 /// `env` is the requesting client's env, as for `refresh`.
+#[cfg(feature = "exclusive-native")]
+pub fn outputs(manifest_dir: &Path, _cache_dir: &Path, _env: ClientEnv) -> Result<Option<Outputs>, String> {
+    if build_script_for(manifest_dir).is_none() { return Ok(None); }
+    Err("Lustr build-script integration is incomplete; product helpers do not delegate compilation to rustc or Cargo".into())
+}
+
+#[cfg(not(feature = "exclusive-native"))]
 pub fn outputs(manifest_dir: &Path, cache_dir: &Path, env: ClientEnv) -> Result<Option<Outputs>, String> {
     let Some(script) = build_script_for(manifest_dir) else { return Ok(None) };
     let rec = match fresh_record(manifest_dir, cache_dir, &script, env) {
@@ -866,6 +883,7 @@ fn recorded_output(out_dir: &Path) -> Result<String, String> {
 /// only for build scripts and proc macros). Cargo runs with the client's
 /// whole `env` (Cargo passes its env on to the script), plus the vars the
 /// probe command sets for itself.
+#[cfg(not(feature = "exclusive-native"))]
 fn run_through_cargo(manifest_dir: &Path, script: &Path, cache_dir: &Path, env: ClientEnv) -> Result<Record, String> {
     // Cargo decides script freshness by mtime; an input edited within
     // the same filesystem timestamp tick as the last run can look
@@ -1127,6 +1145,7 @@ mod tests {
     /// re-runs exactly when something it read changed, and only then. The
     /// script appends a line to a log at each run.
     #[test]
+    #[cfg(not(feature = "exclusive-native"))]
     fn script_reruns_when_what_it_read_changes() {
         let root = std::env::temp_dir().join(format!("lust-buildscript-cargo-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);

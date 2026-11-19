@@ -1,5 +1,11 @@
 # Reusing public-entry Cargo selection
 
+> Baseline design and source-bound evidence for the earlier public entry. The
+> [exclusive coverage cleanup](exclusive-coverage-cleanup.md) preserves useful
+> selection caching, changes tool identities to match the native-only package
+> and removes the Rust fallback described below. Historical results apply only
+> to their recorded implementations; current changes need their own controls.
+
 The public native entry previously ran Cargo metadata, and Cargo pkgid when a
 package selector was supplied, before every retained native request. Pristine
 Lust's retained compiler did not pay that public-entry preflight cost. This

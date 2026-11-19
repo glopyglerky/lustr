@@ -9,6 +9,7 @@ license = "MIT"
 resolver = "3"
 
 [features]
+exclusive-native = []
 native-inference = []
 upstream-semantic = ["native-inference"]
 

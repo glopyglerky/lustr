@@ -1,5 +1,11 @@
 # Native host runtime and daemon portability
 
+> The source-bound host findings below remain useful. Its historical mixed
+> package instructions and installed full-compiler layout are superseded by the
+> [exclusive coverage cleanup](exclusive-coverage-cleanup.md). The current
+> partial native constructor is `tools/build-native-toolchain.rs`; removed
+> constructor commands below apply only to their recorded source snapshots.
+
 The daemon starts directly as `lust-core daemon`. A client claims its socket
 lock, starts a detached process and sends requests over local IPC. It has no
 systemd dependency. The foreground entry, daemon and installed Cargo/Rust SDK

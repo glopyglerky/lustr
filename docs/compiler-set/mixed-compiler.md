@@ -1,5 +1,12 @@
 # Mixed compiler development candidate
 
+> Historical implementation and measurements. The whole-program mixed launcher,
+> fallback routes and package constructors described below are removed by the
+> [exclusive coverage cleanup](exclusive-coverage-cleanup.md). Commands below
+> apply to their recorded source snapshots, not the current product. Useful ABI,
+> metadata and retained-state components remain subject to the
+> [canonical contract](exclusive-coverage-contract.md).
+
 The [governing plan](architecture-plan.md) requires automatic native and
 complementary work inside one Lustr compiler, with Lust's fast frontend and
 retained path preserved. This document records the narrower implementation

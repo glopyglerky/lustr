@@ -1,5 +1,11 @@
 # Unchanged coordinator project campaign
 
+> Historical campaign for the recorded mixed package. That package layout and
+> whole-program coordinator are retired by the
+> [exclusive coverage cleanup](exclusive-coverage-cleanup.md). Preserve the
+> runner, source identities and results for replay; they do not qualify the
+> current native package or the unfinished full replacement.
+
 [`tools/measure-coordinator-project.py`](../../tools/measure-coordinator-project.py)
 prepares and runs the real `crates/lustr` package through the existing
 [`lustr-bench`](benchmark-method.md) paired runner. It adds no measured fixture

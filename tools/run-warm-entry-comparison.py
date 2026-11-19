@@ -158,7 +158,7 @@ def build_selector_gate(args):
     receipt = {"schema":SCHEMA, "status":"failed", "scope":"Production parser/selector/child owner component only; no compiler timing claim.",
                "source":source_identity(args.repository), "native_build_hash":build_hash, "commands":[],
                "source_sha256":{str(args.repository / path):S.digest(args.repository / path) for path in
-                                ("tools/profile-native-preflight.rs", "src/full.rs", "src/selection_cache.rs", "src/owned_child.rs", "src/host_runtime.rs", "compiler/native/src/protocol.rs")}}
+                                ("tools/profile-native-preflight.rs", "src/cargo_selection.rs", "src/selection_cache.rs", "src/owned_child.rs", "src/host_runtime.rs", "compiler/native/src/protocol.rs")}}
     commands = [[str(sdk / "bin/cargo"), "generate-lockfile", "--offline", "--manifest-path", str(manifest)],
                 [str(sdk / "bin/cargo"), "build", "--release", "--locked", "--offline", "--manifest-path", str(manifest),
                  "--target-dir", str(args.output / "target"), "--config", f'build.build-dir="{args.output / "intermediates"}"']]

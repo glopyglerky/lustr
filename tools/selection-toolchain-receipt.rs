@@ -5,17 +5,9 @@ use std::{fs, io::Write, path::Path, process::Command};
 mod host_sdk;
 
 pub fn write(package: &Path, source: &str, host: &str) {
-    let mut paths = ["bin/cargo", "bin/rustc-full", "bin/rustc-reference", "bin/rustdoc"].map(std::path::PathBuf::from).to_vec();
-    for entry in fs::read_dir(package.join("lib")).unwrap() {
-        let entry = entry.unwrap();
-        let name = entry.file_name();
-        let name = name.to_str().unwrap();
-        if name.contains(".so") || name.ends_with(".dylib") {
-            paths.push(Path::new("lib").join(name));
-        }
-    }
-    paths.sort();
-    let mut record = format!("lustr-selection-toolchain-v1\nsource={source}\nhost={host}\n");
+    let paths = ["bin/cargo", "bin/lustr", "bin/rustc"].map(std::path::PathBuf::from);
+    assert_eq!(package.join("bin/lustr").canonicalize().unwrap(), package.join("bin/rustc").canonicalize().unwrap());
+    let mut record = format!("lustr-native-selection-toolchain-v2\nsource={source}\nhost={host}\n");
     for path in paths {
         record.push_str(&format!("{}  {}\n", host_sdk::sha256(&package.join(&path)).unwrap(), path.display()));
     }
@@ -29,16 +21,23 @@ pub fn write(package: &Path, source: &str, host: &str) {
 fn main() {
     let package = std::env::args_os().nth(1).expect("PACKAGE_ROOT");
     let package = Path::new(&package);
-    let output = Command::new(package.join("bin/rustc-reference")).arg("-vV").output().unwrap();
+    let output = Command::new(package.join("bin/lustr")).arg("--lustr-version").output().unwrap();
     assert!(output.status.success());
     let version = std::str::from_utf8(&output.stdout).unwrap();
-    let host = version.lines().find_map(|line| line.strip_prefix("host: ")).unwrap();
+    let host = match (std::env::consts::OS, std::env::consts::ARCH) {
+        ("linux", "x86_64") => "x86_64-unknown-linux-gnu",
+        ("macos", "aarch64") => "aarch64-apple-darwin",
+        ("macos", "x86_64") => "x86_64-apple-darwin",
+        _ => panic!("native package host is unsupported"),
+    };
     let pins = include_str!("../upstream/bluefe-core.pin");
     let pin = |key: &str| pins.lines().find_map(|line| line.strip_prefix(&format!("{key} = \""))).unwrap().trim_end_matches('"');
-    host_sdk::check_compiler_version(version, pin("source"), host).unwrap();
+    assert!(
+        version.contains(&format!("declared Rust source {}", pin("source"))),
+        "receipt requires the native entry's declared source identity"
+    );
     if host == "x86_64-unknown-linux-gnu" {
         assert_eq!(host_sdk::sha256(&package.join("bin/cargo")).unwrap(), pin("cargo_sha256"));
-        assert_eq!(host_sdk::sha256(&package.join("bin/rustc-reference")).unwrap(), pin("rustc_sha256"));
     }
     write(package, pin("source"), host);
 }

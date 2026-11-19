@@ -82,8 +82,8 @@ fn compile_entry(
         return None;
     }
     // The upstream one-shot pipeline returns THP to its normal enabled state.
-    // Keep nondefault caller policies in a child, where they cannot leak into
-    // a subsequent full-core exec.
+    // Keep nondefault caller policies in a child so native setup cannot change
+    // the calling process's policy.
     if !process_compatible() {
         return None;
     }

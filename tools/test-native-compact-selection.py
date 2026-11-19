@@ -57,7 +57,7 @@ def main():
     }
     records, assertions = [], []
     report = {"schema": "lustr-compact-selection-regression-v1",
-              "scope": "complete selection identity, malformed private records, and actual Cargo/Rust fallback; no native or performance qualification",
+              "scope": "complete selection identity, malformed private records, and actual Cargo selection; no native or performance qualification",
               "profiler_sha256": sha256(profiler.read_bytes()), "runner_sha256": sha256(Path(__file__).read_bytes()),
               "environment": environment, "records": records, "assertions": assertions,
               "status": "running", "error": None}
@@ -116,10 +116,8 @@ def main():
         require(result.returncode == expected, label + " preserves the expected exit status")
         data = json.loads(result.stdout)
         record["result"] = data
-        if expected == 0 or phase == "selection-fallback":
+        if expected == 0:
             require(isinstance(data.get("selection"), dict), label + " exposes the complete actual Selection")
-        if phase == "selection-fallback":
-            require(data["exit"] == expected and data["signal"] is None, label + " reports the normal Cargo status")
         if event is not None:
             require(events == [{"selection_cache": event}], label + " observes " + event)
         save()
@@ -144,7 +142,7 @@ def main():
             if path.name.startswith("tools-"):
                 continue
             record = json.loads(path.read_bytes())
-            if record["payload"].get("schema") == "lustr-cargo-selection-v3":
+            if record["payload"].get("schema") == "lustr-cargo-selection-exclusive-v2":
                 entries.append((path, record))
         require(len(entries) == 1, "malformed-record controls address the only current selection context")
         path, record = entries[0]
@@ -161,34 +159,6 @@ def main():
         (root / (label + ".json")).write_bytes(encoded(record))
         selection_pair(label, event="miss")
         selection_pair(label + "-recovered", event="hit")
-
-    def runtime(label, output, expected):
-        require(output.is_file() and not output.is_symlink() and os.access(output, os.X_OK),
-                label + " publishes an ordinary executable")
-        result, record = execute(label, [str(output)], kind="runtime")
-        record["executable_sha256"] = sha256(output.read_bytes())
-        require(result.returncode == 0 and result.stdout == expected and result.stderr == b"",
-                label + " executes the selected artifact with exact output and exit status")
-        return record["executable_sha256"]
-
-    def fallback_pair(label, native_args, *, output=None, expected_output=None, expected=0):
-        artifacts = []
-        results = []
-        for uncached in (False, True):
-            suffix = "-uncached" if uncached else "-cached"
-            if output is not None:
-                output.unlink(missing_ok=True)
-            data, result = invoke(label + suffix, native_args, phase="selection-fallback",
-                                  uncached=uncached, expected=expected, event=None if uncached else "hit")
-            results.append(data)
-            if expected == 101:
-                require(b"E0308" in result.stderr, label + suffix + " preserves the Rust type error")
-                require(output is None or not output.exists(), label + suffix + " publishes no artifact after failure")
-            elif output is not None:
-                artifacts.append(runtime(label + suffix + "-runtime", output, expected_output))
-        require(results[0] == results[1], label + " preserves complete Selection and actual Cargo status")
-        if artifacts:
-            require(artifacts[0] == artifacts[1], label + " publishes byte-identical cached/fresh Rust artifacts")
 
     try:
         setup, _ = execute("setup", [str(package_bin / "cargo"), "generate-lockfile", "--offline", "--manifest-path", str(manifest)], kind="setup")
@@ -214,27 +184,13 @@ def main():
         for label, mutate in controls:
             malformed(label, mutate)
 
-        # These requests use the original parser and actual full::run Cargo
-        # artifact matcher. Profile flags have an observable program result.
-        check_args = arguments(flags=("--package", "compact-selection-regression"))
-        prime("explicit-package-check", check_args)
-        fallback_pair("explicit-package-check", check_args)
-        output = root / "first-program"
-        build_args = arguments("build", out=output)
-        prime("default-build", build_args)
-        fallback_pair("default-build", build_args, output=output, expected_output=b"selected-first:debug\n")
-        changed_output = root / "changed-output-program"
-        profile_args = arguments("build", out=changed_output, flags=("-C", "debug-assertions=off"))
-        prime("changed-profile-and-output", profile_args)
-        fallback_pair("changed-profile-and-output", profile_args, output=changed_output, expected_output=b"selected-first:nodebug\n")
-        second_output = root / "second-program"
-        second_args = arguments("build", second=True, out=second_output, flags=("--package", "compact-selection-regression"))
-        prime("different-selected-target", second_args)
-        fallback_pair("different-selected-target", second_args, output=second_output, expected_output=b"selected-second\n")
-        source.write_text('fn main() { let _: u32 = "wrong"; }\n')
-        fallback_pair("invalid-rust-body", build_args, output=output, expected=101)
-        source.write_text(original)
-        fallback_pair("restored-rust-body", build_args, output=output, expected_output=b"selected-first:debug\n")
+        # Profile/output/target context changes still compare complete cached
+        # and fresh Cargo selection. Native emission is independently exercised
+        # by the public-entry controls; the old stock retry no longer exists.
+        prime("explicit-package-check", arguments(flags=("--package", "compact-selection-regression")))
+        prime("default-build", arguments("build", out=root / "first-program"))
+        prime("changed-profile-and-output", arguments("build", out=root / "changed-output-program", flags=("-C", "debug-assertions=off")))
+        prime("different-selected-target", arguments("build", second=True, out=root / "second-program", flags=("--package", "compact-selection-regression")))
         wrong_package_args = arguments(flags=("--package", "absent-package"))
         selection_pair("wrong-package-rejected", wrong_package_args, expected=2, event="miss")
         report["status"] = "completed"

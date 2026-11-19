@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Compare independently source-built complete native packages with Lust/Cargo.
+"""Historical complete-package comparison and evidence replay.
+
+The whole-rustc constructor belongs to the frozen source commits. Current native
+packages do not satisfy this historical harness and must never be substituted.
 
 This campaign has a separate schema and package proof. The existing entry-only
 comparison and its identical-native-source guard remain unchanged.

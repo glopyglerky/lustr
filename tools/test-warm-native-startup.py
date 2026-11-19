@@ -106,7 +106,11 @@ class StartupControls(unittest.TestCase):
         report = json.loads((output / "report.json").read_text()); self.assertEqual(report["status"], "failed"); self.assertEqual(report["samples"], [])
 
     def test_workflow_uses_completion_only_and_preserves_diagnostic(self):
-        text = (HERE.parent / ".github/workflows/warm-native-performance.yml").read_text()
+        # Historical diagnostic scheduling is frozen test data; the active
+        # workflow now replays evidence without constructing compiler packages.
+        data = (HERE / "fixtures/warm-native-workflow-cb0721d.txt").read_bytes()
+        self.assertEqual(E.hashlib.sha256(data).hexdigest(), "d91ceb68a2493e78b6a87f3983782a6ff1e9f3cd78a4e56d828ef6cbd449e2bf")
+        text = data.decode()
         block = text.split("      - name: Diagnose frozen native-client startup", 1)[1].split("      - name:", 1)[0]
         self.assertIn("if: always() && steps.comparison.outputs.completed == 'true'", block)
         self.assertNotIn("meets_target", block)

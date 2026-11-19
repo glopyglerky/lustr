@@ -4,7 +4,7 @@
 > the pre-reconciliation candidate. The original default snapshot is
 > [`7cea76c9`](https://github.com/glopyglerky/lustr/tree/7cea76c9d3adc587b54ccff168fe07efafd40309).
 > The retries and whole-program `rustc-full` routes described below are
-> transitional behavior that must be removed from the completed product.
+> removed by the [exclusive coverage cleanup](exclusive-coverage-cleanup.md).
 > They are not the required architecture. Follow the [architecture plan](architecture-plan.md),
 > [current design checkpoint](design.md) and [completion checklist](completion-checklist.md).
 > Later candidate qualification is recorded separately by exact source.

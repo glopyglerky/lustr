@@ -10,7 +10,8 @@ pub struct Native {
 }
 
 /// This recognizes compiler requests, not source keywords. Requests requiring
-/// Rust metadata or an unrepresented option stay with the full compiler core.
+/// Rust metadata or an unrepresented option require complementary integration.
+/// Returning None is never permission to invoke a complete second compiler.
 pub fn native_request(args: &[OsString]) -> Option<Native> {
     let mut input = None;
     let mut output = None;
@@ -107,7 +108,7 @@ pub fn native_command(args: &[OsString]) -> Option<Vec<OsString>> {
 }
 
 pub fn is_native_command(args: &[OsString]) -> bool {
-    args.first().is_some_and(|a| a == "build" || a == "check" || a == "test")
+    args.first().is_some_and(|a| a == "build" || a == "check" || a == "run" || a == "test")
         && args.get(1).and_then(|a| a.to_str()).is_some_and(|a| a.ends_with(".rs"))
 }
 
@@ -214,7 +215,7 @@ mod tests {
         for input in ["main.rs", "./clean", "custom-check", "--edition=2024", "-vV", "-"] {
             assert!(!cargo_command(&args(&[input])), "compiler or ambiguous input {input} was treated as Cargo");
         }
-        for command in ["build", "check", "test"] {
+        for command in ["build", "check", "run", "test"] {
             assert!(is_native_command(&args(&[command, "main.rs"])), "native source selection changed");
             assert!(!is_native_command(&args(&[command, "--workspace"])));
         }

@@ -369,6 +369,7 @@ pub fn apply_cargo_env(cmd: &mut Command, env: Option<&[(String, String)]>) {
 /// names a bare program makes std fork instead of posix_spawn, and a fork
 /// copies the page table of every resident page of this process: several
 /// GB after a front image restore (src/image.rs), hundreds of ms a spawn.
+#[cfg(not(feature = "exclusive-native"))]
 pub fn cargo_command(env: Option<&[(String, String)]>) -> Command {
     use std::os::unix::fs::PermissionsExt;
     let path = match env {
@@ -378,6 +379,22 @@ pub fn cargo_command(env: Option<&[(String, String)]>) -> Command {
     let found = path.iter().flat_map(std::env::split_paths).map(|d| d.join("cargo")).find(|c| c.metadata().is_ok_and(|m| m.is_file() && m.permissions().mode() & 0o111 != 0));
     let mut cmd = Command::new(found.unwrap_or_else(|| PathBuf::from("cargo")));
     apply_cargo_env(&mut cmd, env);
+    cmd
+}
+
+/// Product metadata uses the packaged Cargo and its own compiler query service.
+/// Only this child command receives those paths; the requesting program retains
+/// the exact semantic environment. Missing siblings fail instead of using PATH.
+#[cfg(feature = "exclusive-native")]
+pub fn cargo_command(env: Option<&[(String, String)]>) -> Command {
+    let executable = std::env::current_exe().ok();
+    // An unavailable executable identity produces an empty, unexecutable path.
+    let sibling = |name| executable.as_ref().map(|path| path.with_file_name(name)).unwrap_or_default();
+    let mut cmd = Command::new(sibling("cargo"));
+    apply_cargo_env(&mut cmd, env);
+    cmd.env("RUSTC", sibling("lustr"))
+        .env("RUSTC_WRAPPER", "")
+        .env("RUSTC_WORKSPACE_WRAPPER", "");
     cmd
 }
 
@@ -800,6 +817,7 @@ pub fn build_dir(manifest: &Path, env: Option<&[(String, String)]>) -> Option<Pa
 /// not depend on the sources. Returns None when the run fails; the caller then falls back
 /// to resolve-node features and the session still works for single-package
 /// graphs.
+#[cfg(not(feature = "exclusive-native"))]
 fn unit_features_via_check(req: &GraphRequest, graph: &CrateGraph) -> Option<std::collections::HashMap<(String, String), Vec<String>>> {
     let key = graph.key;
     static CACHE: OnceLock<Mutex<std::collections::HashMap<u64, std::collections::HashMap<(String, String), Vec<String>>>>> =
@@ -951,6 +969,17 @@ pub fn select_unit(
     }
     .ok_or_else(|| format!("package `{}` has no {target_kind} target named `{target_name}`", pkg.name))?;
     let simple_graph = graph.workspace_members.len() <= 1 && pkg.dependencies.is_empty();
+    // The upstream probe compiles host units through rustc and can fall back
+    // to a full Cargo check. Neither is a product compilation service. Reject
+    // before consulting probe caches; their presence cannot authorize delegation
+    // or change the actual Lust-supported subset.
+    #[cfg(feature = "exclusive-native")]
+    if !simple_graph || pkg.targets.iter().any(|target| target.kind.iter().any(|kind| kind == "custom-build")) {
+        return Err("Lustr Cargo feature/build-script probe integration is incomplete; product helpers do not delegate compilation to rustc or Cargo".into());
+    }
+    #[cfg(feature = "exclusive-native")]
+    let check_map: Option<std::collections::HashMap<(String, String), Vec<String>>> = None;
+    #[cfg(not(feature = "exclusive-native"))]
     let check_map = if simple_graph { None } else { unit_features_via_check(req, graph) };
     let features = check_map
         .as_ref()

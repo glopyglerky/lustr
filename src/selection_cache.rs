@@ -12,10 +12,10 @@ use std::path::{Component, Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 const LIMIT: u64 = 1024 * 1024;
-const SCHEMA: &str = "lustr-cargo-selection-v2";
+const SCHEMA: &str = "lustr-cargo-selection-exclusive-v1";
 // Tool verification certificates keep their existing schema and seed behavior.
 // This separate version memoizes only a previously validated unique selection.
-const SELECTION_SCHEMA: &str = "lustr-cargo-selection-v3";
+const SELECTION_SCHEMA: &str = "lustr-cargo-selection-exclusive-v2";
 
 unsafe extern "C" {
     fn geteuid() -> u32;
@@ -279,7 +279,7 @@ struct Tools {
 }
 
 fn toolchain(parent: &Path) -> Option<Tools> {
-    // Other hosts retain fresh Cargo selection until their source-built SDK
+    // Other hosts retain fresh Cargo selection until their Cargo executable
     // identity has an equally narrow admission rule.
     if super::super::protocol::host_triple() != "x86_64-unknown-linux-gnu" {
         return None;
@@ -287,7 +287,7 @@ fn toolchain(parent: &Path) -> Option<Tools> {
     let package = parent.parent()?;
     let receipt = text(&package.join("lib/lustr-selection-tools.txt"))?;
     let mut lines = receipt.lines();
-    if lines.next()? != "lustr-selection-toolchain-v1"
+    if lines.next()? != "lustr-native-selection-toolchain-v2"
         || lines.next()? != format!("source={}", pin("source")?)
         || lines.next()? != "host=x86_64-unknown-linux-gnu"
     {
@@ -305,42 +305,25 @@ fn toolchain(parent: &Path) -> Option<Tools> {
             return None;
         }
     }
-    if expected.get(Path::new("bin/cargo"))? != pin("cargo_sha256")?
-        || expected.get(Path::new("bin/rustc-reference"))? != pin("rustc_sha256")?
+    if expected.get(Path::new("bin/cargo"))? != pin("cargo_sha256")? {
+        return None;
+    }
+    // Cargo target selection invokes only metadata/pkgid. Bind its Rust query
+    // entry to this package's native compiler, never to an SDK driver.
+    if expected.get(Path::new("bin/lustr"))? != expected.get(Path::new("bin/rustc"))?
+        || fs::canonicalize(parent.join("lustr")).ok()? != fs::canonicalize(parent.join("rustc")).ok()?
     {
         return None;
     }
     let mut identities = vec![native_executable(&std::env::current_exe().ok()?)?];
     let mut verified = Vec::new();
-    for name in ["cargo", "rustc-full", "rustdoc", "rustc-reference"] {
+    for name in ["cargo", "lustr", "rustc"] {
         let path = parent.join(name);
         let hash = expected.remove(&Path::new("bin").join(name))?;
         // The native-executable check already opened and stamped this exact
         // path. Use that same observation for both the lookup identity and
         // later byte verification; do not canonicalize/stat each tool twice.
         let identity = native_executable(&path)?;
-        identities.push(identity.clone());
-        verified.push((path, hash, identity));
-    }
-    let lib = parent.parent()?.join("lib");
-    let mut libraries = Vec::new();
-    for entry in fs::read_dir(&lib).ok()? {
-        let path = entry.ok()?.path();
-        let name = path.file_name()?.to_str()?;
-        if name.contains(".so") || name.ends_with(".dylib") {
-            libraries.push(path);
-        }
-    }
-    // Every source-built package contains its matching rustc driver. Unknown
-    // layouts and externally selected loaders/wrappers do not use this cache.
-    if !libraries.iter().any(|p| p.file_name().unwrap().to_string_lossy().starts_with("librustc_driver-")) {
-        return None;
-    }
-    libraries.sort();
-    for path in libraries {
-        effective_access(&path, 4)?; // R_OK for the loader's shared-library input.
-        let identity = stamp(&path)?;
-        let hash = expected.remove(&Path::new("lib").join(path.file_name()?))?;
         identities.push(identity.clone());
         verified.push((path, hash, identity));
     }

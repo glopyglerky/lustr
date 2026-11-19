@@ -1,0 +1,123 @@
+{
+  "schema": "lustr-complement-imports-v1",
+  "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "full_rust_coverage": false,
+  "release_status": "unavailable",
+  "imports": [
+    {
+      "id": "identifier-normalization",
+      "missing_capability": "Rust identifier NFC semantics at the declared compiler version",
+      "status": "implemented-partial",
+      "owner": "Lustr native lexer",
+      "semantic_boundary": "identifier and lifetime canonical names; original source spans and literal bytes retained",
+      "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "upstream_paths": {
+        "compiler/rustc_parse/src/lexer/mod.rs": "a4544945c1beae414bc684e017bdcb0eb817cc2318316adddc72920a02a18421",
+        "compiler/rustc_ast_pretty/src/pprust/state.rs": "5dec2aac97fcf576138e6b8c3579bd4e5b91fb1e9323a469166b566789041076",
+        "compiler/rustc_span/src/symbol.rs": "d570a196be56ba01b1ac141fc5a9ab581b044ae6960dafff9ffb394a47ba640f"
+      },
+      "source_dependencies": {
+        "unicode-normalization": {
+          "version": "0.1.25",
+          "crate_sha256": "5fd4f6878c9cb28d874b009da9e8d183b5abc80117c40bbd187a1fde336be6e8",
+          "upstream_vcs_commit": "5a69b3bafb625caccdec7871a42bed0d9a6604d1"
+        },
+        "tinyvec": {
+          "version": "1.10.0",
+          "crate_sha256": "bfa5fdc3bce6191a1dbc8c02d5c8bffcf557bafa17c124c5264a458f1b0613fa",
+          "upstream_vcs_commit": "3c613ad020738e6fb49e207ff51d38e403bb98ed"
+        },
+        "tinyvec_macros": {
+          "version": "0.1.1",
+          "crate_sha256": "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20",
+          "upstream_vcs_commit": "860c23a09d91c8b9203134a81de7888b7191d5f2"
+        }
+      },
+      "dependency_edges": [
+        [
+          "unicode-normalization",
+          "tinyvec"
+        ],
+        [
+          "tinyvec",
+          "tinyvec_macros"
+        ]
+      ],
+      "targets": "native compiler hosts; exact compiled target still requires qualification",
+      "features": {
+        "unicode-normalization": [
+          "default"
+        ],
+        "tinyvec": [
+          "alloc"
+        ],
+        "tinyvec_macros": []
+      },
+      "adapter": "compiler/native/src/lexer.rs",
+      "licenses": "compiler/native/licenses/identifier-normalization",
+      "excluded_duplicate_phases": [
+        "complete rustc parser",
+        "macro expansion",
+        "name resolution",
+        "type checking",
+        "code generation"
+      ],
+      "qualification": "compiler/native/unicode-semantics.json and docs/compiler-set/identifier-normalization.md; source-bound evidence only"
+    },
+    {
+      "id": "declared-sdk-unicode-data",
+      "missing_capability": "One declared standard-library Unicode meaning for native constant and runtime evaluation",
+      "status": "implemented-partial",
+      "owner": "Lustr native Unicode operations",
+      "semantic_boundary": "shared generated predicate/case/escape data",
+      "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "upstream_paths": [
+        "library/core/src/unicode"
+      ],
+      "generated_inputs": {
+        "compiler/native/src/unicode_data.rs": "19692251b2b66785911239bb96896a1fea64f5e1643b6e850896b6eb1fa05df3",
+        "compiler/native/src/runtime/unicode_table.h": "3ed00af6ecc047de68b800ded7006ae8eef3fd68364101cfa61a7574b51bf6e5",
+        "compiler/native/src/runtime/case_tables.h": "8388d8bf830301c51b814b450ab2018f58a2c10f7831069ceb1efc4beb22282a",
+        "compiler/native/src/runtime/escape_table.h": "243c2081962b704de8779e80339795765aabbff89508392a91ee359c79a7aa54",
+        "compiler/native/src/xid_table.rs": "77ab11c1239e3c6d66abb629baad403ed48ca95a7ea1e99c3407ab95d83fceda",
+        "compiler/native/LICENSE-UNICODE": "f5062c9a188d81dfe66b56db4182dcf9e4b17c0d9b0d311a8e20b3a1b075c443"
+      },
+      "dependency_edges": [],
+      "targets": "native compiler and C runtime targets; exact host/runtime qualification remains separate",
+      "features": {},
+      "adapter": "compiler/native/tools/gen_unicode_semantics.rs",
+      "licenses": [
+        "compiler/native/LICENSE-UNICODE"
+      ],
+      "excluded_duplicate_phases": [
+        "complete rustc frontend",
+        "complete rustc code generator"
+      ],
+      "qualification": "compiler/native/unicode-semantics.json; exhaustive scalar comparison is data qualification, not full Rust coverage"
+    }
+  ],
+  "research_components": [
+    {
+      "path": "crates/lustr-native-core/src/upstream_definitions.rs",
+      "scope": "internal shared definition and owned emission experiments under upstream-semantic feature",
+      "dependency": "complete rustc_private SDK graph at declared rust_source",
+      "production_admitted": false,
+      "required_for": "tools/qualify-shared-upstream.py validates actual provider identity, native consumer ownership, ABI and terminal imported-emission failures",
+      "blocking_reason": "dependency closure is whole rustc_driver; selective source replacement and complete semantic ownership are unfinished"
+    },
+    {
+      "path": "crates/lustr-semantic",
+      "scope": "read-only pinned semantic inspection and retained bridge modules",
+      "dependency": "complete rustc_private SDK graph; no lustr-mixed executable target",
+      "production_admitted": false,
+      "required_for": "genuine metadata/ABI research and earlier source-bound experiments",
+      "blocking_reason": "not a selective complementary source implementation"
+    }
+  ],
+  "not_imported": [
+    "general trait solver",
+    "general Rust metadata encoder",
+    "full Rust compiler source"
+  ],
+  "guard_scope": "structural source and public entry constraints only; source inventories do not prove minimal dependency closure or semantic exclusivity"
+}

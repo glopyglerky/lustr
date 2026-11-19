@@ -1,5 +1,11 @@
 # Mixed compiler completion qualification
 
+> Historical qualification for the exact mixed-compiler snapshots below. The
+> [exclusive coverage cleanup](exclusive-coverage-cleanup.md) retires their
+> whole-program launcher and package route. Passing these gates does not qualify
+> the current implementation or establish the exclusive ownership and selective
+> imports required by the [canonical contract](exclusive-coverage-contract.md).
+
 This candidate extends PR7 from
 `2add988c6397ac5175fcdf89a3aac17d359bf283`. It preserves the pinned Lust
 reference, the matched full Rust implementation, and the existing Cargo graph.

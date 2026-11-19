@@ -1,5 +1,10 @@
 # Single-file full Rust check repair
 
+> Historical repair and performance evidence for a compiler fallback that is
+> removed by the [exclusive coverage cleanup](exclusive-coverage-cleanup.md).
+> Preserve the artifact/error-handling lessons and original measurements.
+> The native-refusal/rustc-retry behavior described below is not a current route.
+
 The public `lustr check` command now checks valid Rust after a native refusal
 without asking rustc to publish metadata to `/dev/null`. This fixes the real
 `EBUSY` failure reproduced from

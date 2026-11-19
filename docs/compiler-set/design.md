@@ -1,233 +1,135 @@
-# Lustr compiler design
+# Compiler design and implementation checkpoint
 
-The [governing plan](architecture-plan.md) and [compiler contract](native-contract.md)
-define the required architecture. This document specifies responsibilities and
-interfaces that implementation must satisfy. It is not a claim that these
-interfaces are already complete. Status and evidence belong in the
-[completion checklist](completion-checklist.md) and
-[qualification review](qualification-review-2026-11-18.md).
+The [exclusive coverage contract](exclusive-coverage-contract.md) defines the
+only goal. This document separates the required interfaces from observed code.
+Reviewed 19 November 2026. Refresh source and CI identities before new claims.
 
-## Compilation ownership
+## Ownership and representation
 
-Lustr owns the unchanged program, its semantic context, unit assignments,
-retained dependencies, diagnostics, and artifact publication. Lust keeps its
-frontend and retained worker for supported work. Imported upstream Rust services
-supply missing shared facts and complementary implementation.
+Lustr owns one compilation context for the unchanged program. Lust retains its
+frontend and checked/incremental state. Selected upstream components provide
+missing semantic operations and artifacts through explicit interfaces. Each
+operation and emitted instance has one owner. The actual Lust-supported set,
+current bridge coverage and true complement are distinct.
 
-```mermaid
-flowchart TD
-    A["Unchanged Rust request"] --> B["Owned compilation context"]
-    B --> C["Retained Lust preparation"]
-    B --> D["Imported Rust services"]
-    C --> B
-    D --> B
-    B --> E["Native and complementary emission"]
-    E --> F["Rust metadata and final artifacts"]
-```
+| Interface | Required invariant |
+| --- | --- |
+| Prepare supported work | Use actual native representations before emission; retain checked state, source/instance identities, dependencies and ABI/runtime obligations. |
+| Request a complementary fact | Invoke an admitted necessary upstream component through the shared context; record inputs, result owner and dependency reads. |
+| Report incomplete integration | Preserve the true Lust support inventory and expose bridge/complement gaps. Do not substitute a stock compiler. |
+| Emit native or complementary work | Consume the assigned checked state once and produce validated objects/symbols. An emitter failure remains a failure. |
+| Encode metadata and link | Consume genuine identities, checked facts and complete object inventory. Preserve real Rust downstream compatibility. |
+| Retain/publish | Commit only complete successful artifacts and dependency state; failed work cannot overwrite the last success or become a hidden cache miss. |
 
-The context holds compiler state and dependency relationships. It is not a
-separate source-language selector. The two implementations may inspect shared
-facts, but each semantic result and emitted instance needs an authoritative
-owner. A general invalidation or unsupported capability may require new work
-inside the same invocation; an executed compiler failure cannot authorize a
-second whole-program attempt.
+These are role descriptions, not claims of a complete current API. A process or
+daemon boundary is permitted when ownership and lifetime rules are explicit.
+Borrowed in-process state and generation-bound worker handles must not be
+confused with persistent semantic identities. Context needed for coherence,
+resolution or metadata must be shared or retained without running a complete
+second frontend over covered work.
 
-## Semantic responsibilities
+## Observed snapshots
 
-| Responsibility | Required ownership | Existing work to reuse |
+| Source | Observed implementation | Consequence |
 | --- | --- | --- |
-| Source, definitions, expansion, hygiene, and bindings | One identity model and source mapping across the compilation; imported services may supply missing resolution/expansion behavior | Native `Program` and resolver state; pinned Rust AST/HIR/definition queries |
-| Body checking, types, obligations, and constants | Lust owns its supported checking; requested upstream services supply missing facts without unconditional duplicate checking | Native checked/lowered state and read sets; upstream type, trait, const, and borrow queries |
-| Layouts, calling conventions, and generic instances | Explicit agreement for each represented boundary and target; a matching size or source signature is insufficient | Candidate Rust `FnAbi` comparisons, native ABI queries, instance and symbol identities |
-| Runtime requirements | Explicit allocation, ownership, drop, panic/unwind, thread-local, and standard-library contracts for interacting values | Native runtime and upstream implementations with source-bound qualification |
-| Code generation | One owner for each admitted definition or instance; backend outputs compose through validated symbols and objects | Candidate native object validation and LLVM codegen-unit filtering |
-| Metadata, archives, dep-info, and linking | Genuine Rust machinery consumes valid semantic facts and actual object inventory | Candidate upstream metadata encoding, distinct native rlib members, and original linker |
-| Retained work | Inputs and identities determine validity; edits invalidate consumers across both implementations | Native dependency reads and candidate HIR/dependency certificates |
+| Default [7cea76c9](https://github.com/glopyglerky/lustr/tree/7cea76c9d3adc587b54ccff168fe07efafd40309) | Native-first public entry, library retry and full-Rust compatibility. No later scalar mixed implementation. | Default has not delivered the required boundary. |
+| [PR #29](https://github.com/glopyglerky/lustr/pull/29), [a9fd4c63](https://github.com/glopyglerky/lustr/tree/a9fd4c6336b1e39c4f584f7da50a437c5c248a0d) | Typed scalar preparation, retained checked state, native object handoff and real Rust metadata. Cold mixed selection follows Rust analysis. | Valuable components and scoped evidence, with narrow coverage and duplicated analysis. |
+| [PR #32](https://github.com/glopyglerky/lustr/pull/32), [cb0721d4](https://github.com/glopyglerky/lustr/tree/cb0721d49be95ec3f34a113c2354bc9d2a38bbf3) | Later native/correctness and shared semantic work, plus the retained scalar/metadata implementation. Public compiler retries and whole-consumer Rust analysis remain. | Current audited source for corrective work. Reuse repairs; retire prohibited routes and replace broad driver dependence with admitted complementary interfaces. |
+| Merged [PR #31](https://github.com/glopyglerky/lustr/pull/31), [2fbafe39](https://github.com/glopyglerky/lustr/tree/2fbafe391fdf3d0a59b8cc24e9b0f55be3570cbd) | Reconciles active requirements and source/history evidence. | Changes no product source and does not qualify a package. |
+| Current [implementation cleanup](exclusive-coverage-cleanup.md) | Removes conflicting public retries, alternate whole-program launchers and whole-compiler packaging; inventories partial imports and guards native package boundaries. | Exposes remaining integration gaps. Full complementary semantics, artifacts and performance qualification remain unfinished. |
 
-Importing a service includes the dependencies necessary to use it correctly.
-The full upstream source graph is allowed. Dependency count, binary names, or
-process count do not establish whether the architecture satisfies the contract.
-The execution trace must show that a complete extra frontend is not imposed on
-every supported request.
+Primary candidate paths:
 
-Upstream services can need crate-wide context for resolution, coherence, macros,
-or metadata. The implementation must explain how that context is shared or
-retained. Calling the unmodified whole Rust analysis pipeline before every
-native decision does not answer that ownership problem. Rebuilding all missing
-Rust semantics independently is also not required.
+- [Public entry](https://github.com/glopyglerky/lustr/blob/cb0721d49be95ec3f34a113c2354bc9d2a38bbf3/src/main.rs).
+- [Mixed driver](https://github.com/glopyglerky/lustr/blob/cb0721d49be95ec3f34a113c2354bc9d2a38bbf3/crates/lustr-semantic/src/mixed_main.rs).
+- [Native preparation](https://github.com/glopyglerky/lustr/blob/cb0721d49be95ec3f34a113c2354bc9d2a38bbf3/crates/lustr-native-core/src/mixed_unit.rs).
+- [Native emission filtering and metadata integration](https://github.com/glopyglerky/lustr/blob/cb0721d49be95ec3f34a113c2354bc9d2a38bbf3/crates/lustr-semantic/src/mixed_backend.rs).
 
-## Required internal interfaces
+Omitting successfully emitted native instances from LLVM is useful artifact
+composition. It does not remove the Rust frontend work already done on those
+instances. Likewise, additional shared-definition experiments are progress only
+within their actual scope, not proof that a full consumer-analysis dependency
+has disappeared.
 
-These are interface obligations for the next implementation. Names below denote
-roles; they are not declarations of an existing API or a separate planner.
+## What to reuse and what to replace
 
-| Interface | Consumes | Produces | Required invariant |
-| --- | --- | --- | --- |
-| Prepare a unit | Owned compilation context, stable unit/instance identity, requested target/profile, current dependencies | Admitted native state, a complementary-work requirement, invalid-Rust diagnostics, or implementation failure | Capability is established before emission from actual semantics; preserve the work already performed |
-| Request a shared upstream fact | Retained context, a resolved query and its inputs | An authoritative semantic result and its dependencies, or a diagnostic/failure | Do not restart an independent whole-program compilation to obtain the result |
-| Emit native work | The admitted native state and its represented runtime/ABI obligations | A validated native object and symbol inventory, or failure | Consume the same prepared state; do not parse/check the unit again or fall back after emission fails |
-| Complete complementary work | The shared context and explicit unresolved work | Checked complementary results and objects, or diagnostics/failure | Keep already admitted Lust work on Lust and use the same identities and semantics |
-| Publish the result | Validated objects, genuine metadata, dependency information, and complete successful compilation state | User artifacts and a committed retained-state record | A failed object, link, sync, or publication cannot become a cache miss that hides the error |
+Keep the native worker and explicit source patches, strict preparation/failure
+contracts, validated object/symbol handling, genuine metadata knowledge,
+retained dependency observations and version/callback/runtime repairs. Preserve
+original failure evidence and their exact source identities.
 
-The preparation result has four meanings:
+Remove whole-program retry and stock-compiler escape routes from production.
+Delete obsolete whole-program alternate compiler launchers and their package
+assembly paths. Retain only necessary compiler-private dependencies in independent
+bounded mechanism/oracle qualifiers, with explicit disclosure. Renaming a general
+alternate compiler as research-only does not satisfy this cleanup. Do not weaken
+an ownership guard to preserve a compatibility demo. Missing full Rust support
+must be reported as unfinished until the admitted complement exists.
 
-- `NativePrepared` retains the actual checked/lowered state, definition and
-  instance identities, source mapping, dependency reads, and represented ABI
-  and runtime obligations. A later emitter consumes this preparation once.
-- `RustComplement` identifies missing capability or a required shared service.
-  It continues the same request. It does not assert that source awaiting the
-  imported checks is valid Rust.
-- `InvalidRust` carries authoritative diagnostics. A missing native feature
-  must not be mislabeled as invalid Rust merely because the native checker
-  cannot process it.
-- `Failure` carries a compiler, invariant, transport, emitter, object, or linker
-  error. It cannot be converted into complementary work after the fact.
+The [disposition register](retained-work-disposition.md) is the detailed record.
+The [Rust review](upstream-rust-review-2026-11-19.md) identifies existing generic
+solver and representation interfaces. Every real import still requires its
+own necessity, closure, owner, caller and qualification evidence.
 
-Within one process, retained values can borrow their actual semantic owner.
-Across a worker boundary, use owned serialized facts or generation-bound handles
-with explicit lifetimes. Process-local pointers and local IDs cannot become
-persistent semantic identities. Bind request and response identities and reject
-unknown or inconsistent outcomes. Once a request may have executed, ambiguous
-transport failure cannot trigger a hidden replay.
+## Immediate continuation: genuine consumer metadata
 
-Post-emission object and relocation validation remains mandatory. Its failure is
-an artifact failure, not evidence that native capability was absent. Separate
-admission from validation without weakening either.
+The established next artifact boundary is already recorded in the
+[PR #32 metadata study](https://github.com/glopyglerky/lustr/blob/cb0721d49be95ec3f34a113c2354bc9d2a38bbf3/docs/compiler-set/shared-consumer-metadata.md) and its
+[original dependency probe](https://github.com/glopyglerky/lustr/blob/cb0721d49be95ec3f34a113c2354bc9d2a38bbf3/docs/compiler-set/evidence/shared-metadata-dependency-20261119/verification.json). Keep this work ahead of an arbitrary
+new solver import.
 
-## Preserve the native worker and fast path
+The genuine Rust encoder calls `LocalDefsRemapping::new`, which reaches
+`TyCtxt::definitions`; that accessor demands `analysis(())` before freezing
+local definitions. In the recorded probe, consumer `typeck_root` and complete
+`analysis` were panic traps. The encoder reached the analysis trap, exited 101
+and produced no requested rmeta. This is a useful dependency failure, not a
+metadata qualification pass.
 
-The native worker already owns useful parser, resolver, checker, lowering,
-code-generation, and dependency state. Extend its preparation/continuation
-boundary rather than replacing it with complete Rust analysis followed by
-native code generation. Keep unchanged and body-edit shortcuts when their
-recorded inputs remain valid.
+Native prepared state currently lacks a joined proof for all declaration,
+attribute, visibility, privacy, lint and diagnostic obligations that original
+analysis establishes. Import or adapt the narrow upstream completion service
+so the real encoder consumes the validated definition inventory and actual
+native checked proofs. Preserve applicable original checks. Keep unrepresented
+obligations explicit. Never replace analysis with unconditional success,
+fabricate typed-body results or run the complete consumer frontend to recreate
+facts Lust already checked.
 
-A fully supported cold request must demonstrate native preparation without a
-complete second frontend. A mixed request must share required facts and import
-complementary work while preserving native participation. Actual phase evidence
-must distinguish these cases; a successful binary or an engine label is not
-sufficient.
+After completion is valid, retain the real exported-symbol query and give it
+the exact native monomorphized-instance graph. An empty fabricated graph or
+changed shared-generics/profile flags is not an adapter. First qualify a bounded
+nongeneric native library with genuine metadata/archive and a separately built
+matching-Rust caller. Preserve traps against consumer Rust body checking/MIR,
+invalid and uncovered native controls, symbol ownership, output failure,
+artifact preservation and recovery. That bounded result still does not deliver
+the full complement or all supported Lust artifact integration.
 
-Shared services and retained results do not waive validation. Signature, type,
-trait, macro, dependency, target, profile, and build-script changes can affect
-previously accepted native bodies. Missing input observations require
-recomputation within the owned compilation. Differential qualification must
-compare cold and retained results without replacing the user's failed request
-with a successful retry.
+## Evidence and acceptance
 
-## Current implementation and the missing continuation
+The [18 November qualification record](qualification-review-2026-11-18.md)
+and [performance record](performance-review-2026-11-18.md) remain unchanged
+historical evidence. Their passed gates must not be described as missing;
+their failures must not be erased. A later source does not inherit a pass or
+remain broken merely because its predecessor failed. Follow exact evidence.
 
-The default at
-[`7cea76c9`](https://github.com/glopyglerky/lustr/commit/7cea76c9d3adc587b54ccff168fe07efafd40309)
-has a native-first entry and optional Rust semantic inspection. It does not have
-the later scalar mixed driver. Do not treat the candidate files below as present
-in the default merely because this plan links them.
+The next complete slice must show an unchanged mixed program through retained
+Lust and a justified complementary service, with observed phase/instance
+ownership, real artifacts, invalid-input controls and retained-edit correctness.
+It must preserve the full supported inventory rather than redefine it around
+what the slice can demonstrate. Apply the [checklist](completion-checklist.md)
+and [performance policy](practical-performance.md) before any release claim.
 
-The architecture-audited PR29 snapshot is
-[`a9fd4c6336b1e39c4f584f7da50a437c5c248a0d`](https://github.com/glopyglerky/lustr/commit/a9fd4c6336b1e39c4f584f7da50a437c5c248a0d).
-It supplies concrete components:
+## Documentation validation boundary
 
-| Candidate source | Implemented behavior | Remaining limit |
-| --- | --- | --- |
-| [`driver/mod.rs`](https://github.com/glopyglerky/lustr/blob/a9fd4c6336b1e39c4f584f7da50a437c5c248a0d/compiler/native/src/driver/mod.rs) | Borrowed observation of actual native phases and typed mixed-response validation | Observation is not general semantic ownership transfer |
-| [`mixed_unit.rs`](https://github.com/glopyglerky/lustr/blob/a9fd4c6336b1e39c4f584f7da50a437c5c248a0d/crates/lustr-native-core/src/mixed_unit.rs) | Private non-cloneable `PreparedMixed` admits represented scalar IR before C generation and is consumed by emission | No general runtime, aggregate, call, or full Lust-subset boundary |
-| [`mixed_main.rs`](https://github.com/glopyglerky/lustr/blob/a9fd4c6336b1e39c4f584f7da50a437c5c248a0d/crates/lustr-semantic/src/mixed_main.rs) | Real HIR bindings, primitive method identities, Rust/C ABI checks, and strict native outcomes | Cold selection follows whole-crate Rust analysis, then Lust parses/checks an isolated source projection |
-| [`mixed_backend.rs`](https://github.com/glopyglerky/lustr/blob/a9fd4c6336b1e39c4f584f7da50a437c5c248a0d/crates/lustr-semantic/src/mixed_backend.rs) and [`mixed_objects.rs`](https://github.com/glopyglerky/lustr/blob/a9fd4c6336b1e39c4f584f7da50a437c5c248a0d/crates/lustr-semantic/src/mixed_objects.rs) | Native definitions are omitted from LLVM only after successful native emission; genuine Rust metadata and objects compose | Rust still owns whole-crate semantic decisions; broader layouts/runtime contracts are absent |
-| [`mixed_cache.rs`](https://github.com/glopyglerky/lustr/blob/a9fd4c6336b1e39c4f584f7da50a437c5c248a0d/crates/lustr-semantic/src/mixed_cache.rs) | Fresh expansion, actual HIR/dependency identities, schema-5 certificates, and fatal post-admission errors | General edits exceed the unchanged or narrowly certified literal-edit boundary |
-| [`src/main.rs`](https://github.com/glopyglerky/lustr/blob/a9fd4c6336b1e39c4f584f7da50a437c5c248a0d/src/main.rs) | Public native entry and preserved compatibility tools | Standalone status-1 and diagnostic-driven retry remains |
-
-The candidate's bridge has stronger correctness boundaries than the default,
-but it does not carry arbitrary original Rust item meanings into Lust. Its
-source projection is safe only under its bounded checks. Extending it requires
-shared definitions and semantics, not copying larger body strings or adding
-more keyword exclusions.
-
-PR30 at
-[`b94d3713616804fead3f30b18a530e2e81a9510b`](https://github.com/glopyglerky/lustr/commit/b94d3713616804fead3f30b18a530e2e81a9510b)
-continues correctness work without adding the missing general boundary. Its
-proposed callback repair and exhaustive arithmetic checks require their own
-exact-source validation.
-Read the qualification review for current results and failures.
-
-## Candidate continuation — 19 November 2026
-
-This documentation reconciliation starts from implementation candidate
-`af0a281f2d1fae04e8ebfd5aa2c4872b20245c04`, complete tree
-`371768e6e12308f73acb2e7242925541bf96d6a7`, native tree
-`a3f37f8a4d2364757a3bebf476e530e6ddf4735a`. It carries PR #31's corrected
-contract forward; it does not change the product destination or transfer earlier
-qualification to this source.
-
-| Implemented continuation | Source-bound record | Remaining boundary |
-| --- | --- | --- |
-| Ordinary native preparation now owns the actual checked `Program`, lowered bodies, local type arenas, source snapshot and dependency reads until emission. Abandoned preparation preserves the previous output; cold and retained tests cover invalid input, real link failure and recovery. | [Checked-request ownership](checked-request-ownership.md) | This does not yet suspend unsupported native queries for imported services or remove the standalone retry. |
-| Scalar mixed admission checks actual Rust/C `FnAbi`; source-spelling checks, inline-module identities and schema-6 retained certificates guard projection and reuse. | [Mixed scalar and module qualification](mixed-integer-modules.md) | General aggregate, call, runtime and cross-implementation semantic ownership remain open; the native identifier-normalization gap is separate. |
-| Shared pinned Unicode data, erased callback signatures and declared-SDK standard-library repairs are present, with preserved red witnesses and scoped qualification. | [Correctness continuation](correctness-continuation-2026-11-18.md), [Unicode semantics](unicode-semantics.md), [partial-drop semantics](native-drop-semantics.md) | Component evidence does not qualify the whole changed package or all programs. Full applicable native, sanitizer, mixed and platform gates remain separate. |
-| The distinct scanner fixture name from PR #27 is carried into the candidate; the existing process-directory ownership repair is retained. | `compiler/native/tools/lust-port/tests/scan_fixture.rs`; `crates/lustr/tests/process.rs` | Source guards and final qualification must bind the complete integrated source. |
-| The daemon starts directly, with an active-source service-manager dependency guard and documented host adapters. | [Host portability](host-portability.md) | This does not supply the missing integrated Mach-O bridge or native Windows daemon. |
-
-No new performance result is claimed for this candidate. The PR #26 README
-measurements and PR #29 [performance checkpoint](performance-review-2026-11-18.md)
-retain their original sources and hosts. The numbered completion criteria stay
-in the [single checklist](completion-checklist.md).
-
-### Subsequent shared service and declared-SDK repairs
-
-The [first connected upstream definition service](shared-upstream-definitions.md)
-installs actual imported nominal and function records before Lust checks an
-unchanged consumer. Its non-Copy values cross a genuine Rust dependency by value
-and through function pointers; the exact checked native state and immutable
-archive/object snapshots reach emission. Actual Rust query traps forbid
-consumer body checking and complete analysis. The combined-source campaign has
-76 passing compiler/runtime controls. This is an internal, fresh-session Linux
-x86_64 abort-profile slice, with general types, traits, regions, drop/unwind,
-consumer metadata and retained imported generations still to connect.
-
-The native lexer now uses the declared compiler's exact normalization dependency
-closure, with [original spans and explicit raw-token identity](identifier-normalization.md).
-The source projection guard in the older scalar bridge remains conservative;
-fixing native normalization does not by itself qualify arbitrary projections.
-The [build-script reader](native-cargo-layout.md) now reads both declared Cargo
-layouts, preserves relocation and invalidates older possibly incomplete records.
-
-Required CI now executes the shared-definition campaign independently of the
-existing mixed suites. Its failure blocks performance measurements and retains
-the original build and compiler outputs. [Historical warm applicability](historical-warm-applicability.md)
-is checked before expensive construction; unchanged disqualified historical
-comparisons remain blocked with zero admitted timings. These changes preserve
-the existing architecture and performance criteria.
-
-## Boundary acceptance
-
-Implement in the order given by the [plan](architecture-plan.md#implementation-order-and-acceptance).
-Each step must include an unchanged executable example and invalid-input or
-failure controls relevant to the boundary. Required evidence includes:
-
-- Fully supported work preserves Lust preparation and retention without a
-  complete extra Rust frontend.
-- Mixed work executes native and imported implementations through one shared
-  context, with source/instance identities and actual phase participation.
-- Cross-boundary data, calls, drops, unwinding, and allocation preserve the
-  declared Rust semantics and requested configuration.
-- Real rlib/rmeta, dep-info, archives, and dependent Cargo crates work through
-  upstream metadata machinery with no fabricated placeholders.
-- Edits invalidate affected facts across both implementations, and failed work
-  leaves prior successful retained state intact.
-- The public path uses this boundary automatically, without ordinary
-  compile/fail/retry or a separate source-language selector.
-
-Retain the existing native differential gates and source-preservation discipline.
-Unicode semantic identity and sanitizer failures are correctness obligations
-before affected capabilities are admitted. They cannot be repaired through a
-version string, suppressed diagnostic, changed panic setting, or easier test
-profile.
-
-Performance qualification follows correctness and actual architecture coverage.
-Keep complete-command latency, native worker time, complementary work, linking,
-and generated-program runtime distinguishable. Practical tolerances permit
-small overhead; they do not authorize changing the design or hiding regressions.
-
-The previous design remains available at its
-[immutable pre-plan source](https://github.com/glopyglerky/lustr/blob/7cea76c9d3adc587b54ccff168fe07efafd40309/docs/compiler-set/design.md).
-Its requirement for independent native expansion of every gap and faster results
-for every necessary modification is superseded by this contract.
+PR #31's earlier docs-only source
+[f42649f4](https://github.com/glopyglerky/lustr/tree/f42649f4f02d170dc899ac70fcc048db2b91da73)
+retained the pristine native compiler. Its
+[Linux native job](https://github.com/glopyglerky/lustr/actions/runs/44459525498/job/135342625059)
+reported 5,525 sanitized passes and the `unicode_props_hash` timeout; its
+[macOS native job](https://github.com/glopyglerky/lustr/actions/runs/44459525498/job/135342624876)
+failed linking `_personality`. These match the observed donor failure classes
+recorded in the Lust review. They do not qualify or invalidate later source
+repairs automatically. The merged documentation correction changed no compiled
+inputs and made no fresh compiler or performance qualification claim. The later
+[implementation cleanup](exclusive-coverage-cleanup.md) has its own source and
+verification record. Preserve the failed native gates as evidence rather than
+presenting documentation checks as compiler qualification.

@@ -1,5 +1,11 @@
 # Native entry selection and lifecycle contracts
 
+> Historical conditional arguments for the recorded entry implementation.
+> The [exclusive coverage cleanup](../exclusive-coverage-cleanup.md) removes
+> compiler fallback and changes package identities. Preserve applicable target
+> selection and lifecycle reasoning, but reassess it against the current source;
+> the fallback arguments below do not authorize a retired route.
+
 These are conditional program arguments, with executable regression checks.
 They do not prove full Rust coverage, compiler equivalence, memory safety or
 performance. The protected upstream compiler implementations are unchanged.

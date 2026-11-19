@@ -1,0 +1,132 @@
+{
+  "schema": "lustr-exclusive-native-helper-qualification-v1",
+  "status": "candidate-scoped",
+  "native_tree": "a5223b8045f75660281342bf547769fc1b098725",
+  "reference_revision": "240e08d91d4aed0299639f6f11fd522912b248f9",
+  "reference_tree": "0ab1b09815802894e6078de0af59273cbdf46cb0",
+  "complete_patch_blob": "cf3585b60d0d3c5ace5824f0f321db40bc3daa0c",
+  "sdk_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "host": "x86_64-unknown-linux-gnu",
+  "profile": "dev (unoptimized + debuginfo)",
+  "tinycc_sha256": {
+    "bin/tcc": "a96a3206c9674ee8ab4917c5a08c9555f68b28b3838a346fee7219dbe1e4736e",
+    "lib/libtcc.a": "1c71abde8d0299e82a3fa416e5527e281de3720673813de0d76b88a53cdd4248"
+  },
+  "feature_identity_control": {
+    "method": "Execute the actual native build helper twice with identical source and TinyCC inputs; toggle CARGO_FEATURE_EXCLUSIVE_NATIVE only. OUT_DIR is isolated for each invocation.",
+    "research": {
+      "build_hash": "2e78fd94c0970b12",
+      "exclusive_native": "0"
+    },
+    "product": {
+      "build_hash": "b48307d68f2f2b4e",
+      "exclusive_native": "1"
+    },
+    "different_build_hashes": true
+  },
+  "guarded_helper_build": {
+    "command": [
+      "cargo",
+      "build",
+      "--offline",
+      "--manifest-path",
+      "compiler/native/Cargo.toml",
+      "--target-dir",
+      "<isolated-output>",
+      "--features",
+      "exclusive-native",
+      "--bin",
+      "lust",
+      "--bin",
+      "lust-core",
+      "--jobs",
+      "2"
+    ],
+    "status": 0,
+    "paths_normalized": true
+  },
+  "executable_identity_queries": [
+    {
+      "binary": "lust",
+      "status": 0,
+      "stdout": "lustr-exclusive-native-v1\nbuild=b48307d68f2f2b4e\n",
+      "sha256": "3c842da7e78e0c33825f033742f07b1a99e5e8b28e287742c43ca3b68fc8756a",
+      "bytes": 7148592
+    },
+    {
+      "binary": "lust-core",
+      "status": 0,
+      "stdout": "lustr-exclusive-native-v1\nbuild=b48307d68f2f2b4e\n",
+      "sha256": "d345d3f7c78e45abb7029453011b1ccde6c876448b49cec5966a6ef0b4dc4e20",
+      "bytes": 323960448
+    }
+  ],
+  "guarded_host_cfg_query": {
+    "argv": [
+      "lust-core",
+      "--lustr-print-cfg"
+    ],
+    "status": 0,
+    "meaning": "Existing native CfgEnv host DEV_UNWIND facts; no additional target/artifact support inferred.",
+    "stdout_sha256": "a5a1499735adc6ae2c2c655f5220b274be5024f8d3af040711997a623d22fc22",
+    "lines": [
+      "debug_assertions",
+      "overflow_checks",
+      "panic=\"unwind\"",
+      "target_abi=\"\"",
+      "target_arch=\"x86_64\"",
+      "target_endian=\"little\"",
+      "target_env=\"gnu\"",
+      "target_family=\"unix\"",
+      "target_feature=\"fxsr\"",
+      "target_feature=\"sse\"",
+      "target_feature=\"sse2\"",
+      "target_has_atomic=\"16\"",
+      "target_has_atomic=\"32\"",
+      "target_has_atomic=\"64\"",
+      "target_has_atomic=\"8\"",
+      "target_has_atomic=\"ptr\"",
+      "target_has_atomic_primitive_alignment=\"16\"",
+      "target_has_atomic_primitive_alignment=\"32\"",
+      "target_has_atomic_primitive_alignment=\"64\"",
+      "target_has_atomic_primitive_alignment=\"8\"",
+      "target_has_atomic_primitive_alignment=\"ptr\"",
+      "target_os=\"linux\"",
+      "target_pointer_width=\"64\"",
+      "target_thread_local",
+      "target_vendor=\"unknown\"",
+      "unix"
+    ]
+  },
+  "prior_source_control": {
+    "native_tree": "43fe4adf36c1bb0f5a8340229e69325bc6035eea",
+    "build_hash": "1195c0e457e032e2",
+    "native_core_cargo_check": {
+      "features": [
+        "exclusive-native"
+      ],
+      "status": 0,
+      "receipt_marker": "1",
+      "receipt_build_hash": "1195c0e457e032e2"
+    },
+    "scope": "Type checking only, before the both-helper identity query; not a final-source cdylib-link or package claim."
+  },
+  "retained_failed_draft": {
+    "status": 101,
+    "error": "E0433: cannot find probe in resolve",
+    "location": "compiler/native/src/driver/buildscript.rs, run_through_cargo",
+    "cause": "Initial product draft excluded the probe module but missed its build-script caller and recorded rustc replay path.",
+    "correction": "Product refresh/outputs refuse before record use; fresh_record/replay/run_through_cargo are excluded.",
+    "source_scope": "Uncommitted draft; no complete tree identity was captured. It is not counted as a successful qualification."
+  },
+  "runtime_compilation_controls": "Recorded with the independently constructed product entry/package controls; this record currently contains helper construction and identity checks only.",
+  "not_established": [
+    "complete complementary compiler",
+    "full Rust coverage",
+    "new-source macOS runtime",
+    "new-source complete native or sanitizer qualification",
+    "near-Lust performance",
+    "near-rustc complement performance",
+    "full replacement release admission"
+  ]
+}

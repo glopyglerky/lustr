@@ -118,6 +118,8 @@ fn maybe_autostart(sock: &Path, file: &Path, core: &Path) {
 }
 
 fn main() {
+    protocol::reject_internal_probe();
+    if protocol::product_identity_query() { return; }
     let args: Vec<String> = std::env::args().skip(1).collect();
     // The package version and the build hash (which also keys the daemon socket and the cache).
     if matches!(args.first().map(String::as_str), Some("--version" | "-V")) {
