@@ -167,7 +167,8 @@ class MixedWorkflowTests(unittest.TestCase):
 
     def test_independent_suites_run_after_baseline_failure(self):
         outcomes = dict(self.success, baseline_regression="failure", baseline_toolchain="failure")
-        for name in ("mixed_execution", "check_qualifier", "retained_checks", "library_qualifier", "mixed_libraries", "mixed_scalars", "entry_contract"):
+        for name in ("mixed_execution", "check_qualifier", "retained_checks", "library_qualifier", "mixed_libraries", "mixed_scalars", "entry_contract",
+                     "selector_gate_build", "selection_contract", "selection_seed_contract", "compact_selection_contract"):
             with self.subTest(step=name):
                 self.assertTrue(self.eligible(name, outcomes))
         self.assertFalse(self.eligible("measurements", outcomes))
@@ -177,6 +178,20 @@ class MixedWorkflowTests(unittest.TestCase):
         for name in ("retained_checks", "mixed_libraries", "mixed_scalars", "entry_contract"):
             self.assertTrue(self.eligible(name, outcomes), name)
         self.assertFalse(self.eligible("measurements", outcomes))
+
+    def test_selector_failures_preserve_other_suites_and_block_every_timing_admission(self):
+        suites = ("selection_contract", "selection_seed_contract", "compact_selection_contract")
+        for failed in suites:
+            for state in ("failure", "skipped", "cancelled"):
+                with self.subTest(failed=failed, state=state):
+                    outcomes = dict(self.success, **{failed: state})
+                    for other in suites:
+                        if other != failed:
+                            self.assertTrue(self.eligible(other, outcomes))
+                    self.assertTrue(self.eligible("entry_contract", outcomes))
+                    self.assertTrue(self.eligible("mixed_execution", outcomes))
+                    for step in ("measurements", "slice_measurements", "project_measurements", "mixed_profile", "pristine_build"):
+                        self.assertFalse(self.eligible(step, outcomes))
 
     def test_no_suite_runs_after_failed_toolchain(self):
         outcomes = dict.fromkeys(self.steps, "skipped")
@@ -199,7 +214,7 @@ class MixedWorkflowTests(unittest.TestCase):
                     self.assertTrue(self.eligible("entry_contract", outcomes))
 
     def test_measurements_require_every_correctness_gate(self):
-        required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution", "retained_checks", "mixed_libraries", "mixed_scalars", "entry_contract", "pristine_build", "bench_build", "host_record"}
+        required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution", "retained_checks", "mixed_libraries", "mixed_scalars", "entry_contract", "pristine_build", "bench_build", "host_record", "selector_gate_build", "selection_contract", "selection_seed_contract", "compact_selection_contract"}
         self.assertEqual(set(dependencies(self.steps["measurements"])), required)
         self.assertTrue(self.eligible("measurements"))
         for gate in required:
@@ -217,7 +232,7 @@ class MixedWorkflowTests(unittest.TestCase):
 
     def test_public_slice_requires_correctness_without_masking_other_campaign_failures(self):
         required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution",
-                    "retained_checks", "mixed_libraries", "mixed_scalars", "entry_contract", "pristine_build", "host_record"}
+                    "retained_checks", "mixed_libraries", "mixed_scalars", "entry_contract", "pristine_build", "host_record", "selector_gate_build", "selection_contract", "selection_seed_contract", "compact_selection_contract"}
         self.assertEqual(set(dependencies(self.steps["slice_measurements"])), required)
         for gate in required:
             for outcome in ("failure", "skipped", "cancelled"):
@@ -237,7 +252,7 @@ class MixedWorkflowTests(unittest.TestCase):
         self.assertEqual(paths, expected)
 
     def test_project_measurements_require_correctness_and_own_runner(self):
-        required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution", "retained_checks", "mixed_libraries", "mixed_scalars", "entry_contract", "project_bench_build", "host_record"}
+        required = {"source_toolchain", "target_layout", "baseline_regression", "mixed_execution", "retained_checks", "mixed_libraries", "mixed_scalars", "entry_contract", "project_bench_build", "host_record", "selector_gate_build", "selection_contract", "selection_seed_contract", "compact_selection_contract"}
         self.assertEqual(set(dependencies(self.steps["project_measurements"])), required)
         for gate in required:
             for outcome in ("failure", "skipped", "cancelled"):

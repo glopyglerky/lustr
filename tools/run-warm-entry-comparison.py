@@ -32,6 +32,8 @@ SCHEMA = "lustr-warm-entry-comparison-v1"
 LANES = ("baseline", "entry", "pristine", "cargo")
 PHASES = ("cold-check", "no-op-check", "cold-build", "no-op-build")
 SEED = 0x5741524D
+SHARED_SOURCE_PATHS = ("compiler/native", "crates/lustr-native-core", "library", "upstream/bluefe-core.pin",
+                       "src/host_runtime.rs", "tools/native-tcc-input-observer.rs", "upstream/runtime")
 
 
 def git(source, *args):
@@ -97,8 +99,7 @@ def build_baseline(args):
         baseline, candidate = source_identity(args.baseline_source), source_identity(args.repository)
         require(baseline["revision"] == BASELINE, "baseline revision differs")
         shared = {}
-        for path in ("compiler/native", "crates/lustr-native-core", "library", "upstream/bluefe-core.pin",
-                     "src/host_runtime.rs", "tools/native-tcc-input-observer.rs", "upstream/runtime"):
+        for path in SHARED_SOURCE_PATHS:
             before = git(args.baseline_source, "rev-parse", f"HEAD:{path}")
             after = git(args.repository, "rev-parse", f"HEAD:{path}")
             require(before == after, f"shared runtime source differs: {path}")

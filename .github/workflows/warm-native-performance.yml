@@ -9,6 +9,10 @@ on:
       - 'library/**'
       - 'upstream/lust*'
       - 'tools/run-warm-native-comparison.py'
+      - 'tools/run-warm-entry-comparison.py'
+      - 'tools/check-warm-applicability.py'
+      - 'tools/test-warm-applicability.py'
+      - 'docs/compiler-set/evidence/hosted-warm-failures-20261118/summary.json'
       - 'tools/test-warm-native-comparison.py'
       - 'tools/run-warm-native-startup.py'
       - 'tools/test-warm-native-startup.py'
@@ -41,12 +45,18 @@ jobs:
           python3 tools/test-warm-native-comparison.py
           python3 tools/test-warm-native-startup.py
           python3 tools/test-assess-warm-performance.py
+          python3 tools/test-warm-applicability.py
       - uses: actions/checkout@v4
         with:
           repository: glopyglerky/lustr
           ref: 3c378a11d60149a3ec99fa49ea1b336e9406fca8
           path: .native-complete-baseline
           persist-credentials: false
+      - name: Require historical complete-package applicability before package builds
+        run: |
+          python3 tools/check-warm-applicability.py complete \
+            --repository "$GITHUB_WORKSPACE" --baseline-source "$GITHUB_WORKSPACE/.native-complete-baseline" \
+            --output "$RUNNER_TEMP/warm-native-applicability"
       - uses: actions/checkout@v4
         with:
           repository: t3dotgg/lust-lang
@@ -174,6 +184,7 @@ jobs:
           name: complete-native-warm-${{ github.run_attempt }}
           if-no-files-found: warn
           path: |
+            ${{ runner.temp }}/warm-native-applicability
             ${{ runner.temp }}/native-warm-measurement.status
             ${{ runner.temp }}/native-warm-assessment/assessment.json
             ${{ runner.temp }}/native-warm-assessment/README.md

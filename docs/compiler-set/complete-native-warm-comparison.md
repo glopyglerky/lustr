@@ -1,5 +1,10 @@
 # Compare independently built complete native packages
 
+Current execution policy: the [historical applicability checks](historical-warm-applicability.md)
+retain these failures and reject the unchanged inapplicable configurations
+before another package construction. The records below describe their original
+executions; a valid final performance campaign remains separate.
+
 Status: separately named measurement infrastructure. Local controls exercise
 the real orchestration and replay with explicitly synthetic child results. They
 are not compiler execution or speed evidence. All three hosted complete-package

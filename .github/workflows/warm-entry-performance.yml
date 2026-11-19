@@ -12,6 +12,8 @@ on:
       - 'tools/test-native-selection-cache.py'
       - 'tools/test-native-selection-seed.py'
       - 'tools/test-native-compact-selection.py'
+      - 'tools/check-warm-applicability.py'
+      - 'tools/test-warm-applicability.py'
       - 'tools/build-mixed-toolchain.rs'
       - 'tools/selection-toolchain-receipt.rs'
       - '.github/workflows/warm-entry-performance.yml'
@@ -38,12 +40,18 @@ jobs:
         run: |
           python3 tools/test-warm-entry-comparison.py
           python3 tools/test-warm-entry-diagnostics.py
+          python3 tools/test-warm-applicability.py
       - uses: actions/checkout@v4
         with:
           repository: glopyglerky/lustr
           ref: d57f485eeb2b638d1f95a0594294d11e8001fe8e
           path: .warm-entry-baseline
           persist-credentials: false
+      - name: Require historical entry comparison applicability before package builds
+        run: |
+          python3 tools/check-warm-applicability.py entry \
+            --repository "$GITHUB_WORKSPACE" --baseline-source "$GITHUB_WORKSPACE/.warm-entry-baseline" \
+            --output "$RUNNER_TEMP/warm-entry-applicability"
       - uses: actions/checkout@v4
         with:
           repository: t3dotgg/lust-lang
@@ -174,6 +182,7 @@ jobs:
           name: warm-entry-comparison-${{ github.run_attempt }}
           if-no-files-found: warn
           path: |
+            ${{ runner.temp }}/warm-entry-applicability
             ${{ runner.temp }}/lustr-warm-comparison/report.json
             ${{ runner.temp }}/lustr-warm-comparison/README.md
             ${{ runner.temp }}/lustr-warm-comparison/raw.jsonl
