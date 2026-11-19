@@ -361,7 +361,7 @@ pub(super) fn frame_glue(m: &str, ct: &str, body: &str) -> Option<String> {
         && !has_loop
         && nothing_after(&body[d.end..])
     {
-        return Some(format!("void drop_{m}({ct} *p) {{\n{body}}}\n"));
+        return Some(format!("void drop_{m}(void *raw) {{\n  {ct} *p = raw;\n{body}}}\n"));
     }
     let (mut fast, mut rest) = (String::with_capacity(body.len() + 64), String::with_capacity(body.len() + 64));
     let mut copied = 0;
@@ -402,14 +402,14 @@ pub(super) fn frame_glue(m: &str, ct: &str, body: &str) -> Option<String> {
     let mut out = String::with_capacity(fast.len() + tail.len() + 512);
     // The prototype first: a unit that keeps this glue to itself puts `static ` before the
     // definition text (`fn_unit`), and the definition below then inherits that linkage.
-    let _ = writeln!(out, "void drop_{m}({ct} *p);");
+    let _ = writeln!(out, "void drop_{m}(void *raw);");
     let _ = writeln!(out, "struct dgf_{m} {{ int32_t st; {ct} *p;{i_field} }};");
     let _ = writeln!(out, "static void dgc_{m}(struct dgf_{m} *Lc);");
     let _ = writeln!(
         out,
         "static inline __attribute__((always_inline)) void dgw_{m}(struct dgf_{m} *Lc) {{ if (__builtin_expect(Lc->st != 0, 0)) dgc_{m}(Lc); }}"
     );
-    let _ = writeln!(out, "void drop_{m}({ct} *p) {{\n  struct dgf_{m} L __attribute__((cleanup(dgw_{m})));\n  L.st = 0; L.p = p;{i_init}");
+    let _ = writeln!(out, "void drop_{m}(void *raw) {{\n  {ct} *p = raw;\n  struct dgf_{m} L __attribute__((cleanup(dgw_{m})));\n  L.st = 0; L.p = p;{i_init}");
     out.push_str(&fast);
     out.push_str("  L.st = 0;\n}\n");
     let _ = writeln!(out, "static void dgc_{m}(struct dgf_{m} *Lc) {{\n  {ct} *p = Lc->p;\n{i_local}{decls}  switch (Lc->st) {{");

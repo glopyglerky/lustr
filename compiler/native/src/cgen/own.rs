@@ -57,7 +57,7 @@ pub(super) fn weak_own_glue_def(g: Glue, arc: bool, x: &CTy, protos: &mut String
     let k = if arc { Owner::Arc } else { Owner::Rc };
     let (proto, body) = match g {
         Glue::Drop => (
-            format!("void drop_{m}({ct} *p)"),
+            format!("void drop_{m}(void *raw)"),
             format!(
                 "  uint64_t *h = {h}; if ({}) lust_dealloc((void *)h, {} + {}, 16);\n",
                 dec(k, "&h[1]"),
@@ -73,7 +73,8 @@ pub(super) fn weak_own_glue_def(g: Glue, arc: bool, x: &CTy, protos: &mut String
         _ => unreachable!("Weak<str> and Weak<[T]> have only Drop, Clone, and Debug glue"),
     };
     let _ = writeln!(protos, "{proto};");
-    let _ = writeln!(defs, "{proto} {{\n{body}}}\n");
+    let drop_bind = if g == Glue::Drop { format!("  {ct} *p = raw;\n") } else { String::new() };
+    let _ = writeln!(defs, "{proto} {{\n{drop_bind}{body}}}\n");
 }
 
 /// The glue `g` of a `Weak<dyn Tr>` (`arc`: `sync::Weak`): Drop gives
@@ -88,7 +89,7 @@ pub(super) fn weak_dyn_glue_def(g: Glue, arc: bool, protos: &mut String, defs: &
     let k = if arc { Owner::Arc } else { Owner::Rc };
     let (proto, body) = match g {
         Glue::Drop => (
-            format!("void drop_{m}({ct} *p)"),
+            format!("void drop_{m}(void *raw)"),
             format!(
                 "  if ({live}) {{ uint64_t *h = {h}; if ({}) lust_dealloc((void *)h, {} + (uint64_t)(uintptr_t)p->vt[1], (uint64_t)(uintptr_t)p->vt[2]); }}\n",
                 dec(k, "&h[1]"),
@@ -103,7 +104,8 @@ pub(super) fn weak_dyn_glue_def(g: Glue, arc: bool, protos: &mut String, defs: &
         _ => unreachable!("Weak<dyn Tr> has only Drop, Clone, and Debug glue"),
     };
     let _ = writeln!(protos, "{proto};");
-    let _ = writeln!(defs, "{proto} {{\n{body}}}\n");
+    let drop_bind = if g == Glue::Drop { format!("  {ct} *p = raw;\n") } else { String::new() };
+    let _ = writeln!(defs, "{proto} {{\n{drop_bind}{body}}}\n");
 }
 
 /// The data pointer of the fat value `v` of pointee place `x`, as a
@@ -223,7 +225,7 @@ pub(super) fn own_glue_def(
                     value_size(x, "(*p)"),
                 )
             };
-            (format!("void drop_{m}({ct} *p)"), body)
+            (format!("void drop_{m}(void *raw)"), body)
         }
         Glue::Clone => {
             let body = match k {
@@ -271,7 +273,8 @@ pub(super) fn own_glue_def(
         }
     };
     let _ = writeln!(protos, "{proto};");
-    let _ = writeln!(defs, "{proto} {{\n{body}}}\n");
+    let drop_bind = if g == Glue::Drop { format!("  {ct} *p = raw;\n") } else { String::new() };
+    let _ = writeln!(defs, "{proto} {{\n{drop_bind}{body}}}\n");
 }
 
 impl FnGen<'_, '_> {
@@ -671,8 +674,8 @@ pub(super) fn dyn_guard_drop(t: &CTy, protos: &mut String, defs: &mut String) {
         CTy::DynGuard(m) => format!("((int64_t *)p->data)[0] {}= 1;", if *m { "+" } else { "-" }),
         _ => "lust_poison_leave((uint8_t *)p->data + 4); lust_mutex_unlock((uint32_t *)p->data);".into(),
     };
-    let _ = writeln!(protos, "void drop_{mn}({ct} *p);");
-    let _ = writeln!(defs, "void drop_{mn}({ct} *p) {{\n  {body}\n}}\n");
+    let _ = writeln!(protos, "void drop_{mn}(void *raw);");
+    let _ = writeln!(defs, "void drop_{mn}(void *raw) {{\n  {ct} *p = raw;\n  {body}\n}}\n");
 }
 
 /// The byte offset of the value inside a `Mutex` whose value's vtable is
