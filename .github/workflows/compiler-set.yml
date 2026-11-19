@@ -34,6 +34,7 @@ on:
       - 'tools/test-warm-applicability.py'
       - 'tools/qualify-shared-upstream.py'
       - 'tools/test-native-upstream.py'
+      - 'tools/test-native-import-emission.py'
       - 'tools/native-upstream-qualification.rs'
       - 'tests/shared-imports/**'
       - '.github/workflows/compiler-set.yml'
@@ -69,6 +70,7 @@ on:
       - 'tools/test-warm-applicability.py'
       - 'tools/qualify-shared-upstream.py'
       - 'tools/test-native-upstream.py'
+      - 'tools/test-native-import-emission.py'
       - 'tools/native-upstream-qualification.rs'
       - 'tests/shared-imports/**'
       - '.github/workflows/compiler-set.yml'
@@ -536,6 +538,10 @@ jobs:
             ${{ runner.temp }}/lustr-shared-upstream/campaign/*.stdout
             ${{ runner.temp }}/lustr-shared-upstream/campaign/*.stderr
             ${{ runner.temp }}/lustr-shared-upstream/campaign/*.rs
+            ${{ runner.temp }}/lustr-shared-upstream/emission-campaign/summary.json
+            ${{ runner.temp }}/lustr-shared-upstream/emission-campaign/*.stdout
+            ${{ runner.temp }}/lustr-shared-upstream/emission-campaign/*.stderr
+            ${{ runner.temp }}/lustr-shared-upstream/emission-campaign/*.rs
             ${{ runner.temp }}/lustr-selector-outcomes.json
             ${{ runner.temp }}/lustr-selector-build/receipt.json
             ${{ runner.temp }}/lustr-selector-build/Cargo.toml
