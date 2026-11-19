@@ -2580,7 +2580,9 @@ int lust_utf8_check(const uint8_t *v, uint64_t len, uint64_t *valid_up_to, uint8
    them, each invalid byte as \xNN). */
 lust_String lust_env_arg(uint64_t i, int back) LUST_BODY({
     lust_str a;
-    a.ptr = (const uint8_t *)lust_argv[i];
+    /* argv is char **. Match lust_str's byte-pointer representation; the
+       validated bytes are copied into the owned String below. */
+    a.ptr = (uint8_t *)lust_argv[i];
     a.len = strlen(lust_argv[i]);
     uint64_t up;
     uint8_t el;
