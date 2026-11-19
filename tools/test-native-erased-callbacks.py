@@ -58,7 +58,10 @@ def main():
               "commands": [], "cases": [], "passed": False}
     objects = args.output / "objects"
     objects.mkdir()
-    flags = ["-std=gnu11", "-O1", "-Werror=incompatible-pointer-types"]
+    # Clang treats discarded pointer qualifiers as an incompatible-pointer
+    # diagnostic; GCC gives that same defect its own warning. Reject default
+    # C diagnostics on both hosts instead of depending on one warning name.
+    flags = ["-std=gnu11", "-O1", "-Werror"]
     if args.unwind_tables:
         flags += ["-fexceptions", "-fno-strict-aliasing", "-fwrapv"]
     if args.sanitize:
@@ -129,7 +132,7 @@ def main():
                 eh_source = args.output / (fixture + ".eh.cc")
                 eh_object = objects / (digest(eh_source) + ".eh.o")
                 link_flags = [f for f in flags if f not in {
-                    "-std=gnu11", "-Werror=incompatible-pointer-types"}]
+                    "-std=gnu11"}]
                 if not eh_object.exists():
                     run(fixture + "-eh-build", [args.cxx, *link_flags, "-c", eh_source, "-o", eh_object])
                 unit_objects.append(eh_object)

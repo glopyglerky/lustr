@@ -1,0 +1,507 @@
+{
+  "schema": 1,
+  "source": {
+    "source_head": "28ed726e6a55dd55f98222069c650bd923cc43b2",
+    "native_tree": "eb8b4a8f1c31a6bbbeaded61a01ddd8691f5dff1",
+    "profile": "gate",
+    "native_binaries_sha256": {
+      "lust": "330c87f240ec02e8194362dea00bc60a79255c2afb166f6793bd50c72e7a5f01",
+      "lust-core": "0a83fc2a5a0956839fd4cac04814c1f2bacdd04a58149b8364412e21d1b40037"
+    },
+    "native_build_hash": "f6dcae63010c2430",
+    "receipt_sha256": "7d1ee7c613cf69fbe34d33fd0217dd4d788c92822e76e544c93f9befd0b57685",
+    "build_jsonl_sha256": "f51a47725fe22674ce07c9c932afbca3af84e7a540c4d6cb587d7749fec42c10"
+  },
+  "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "rustc_vV": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+  "c_compiler": "gcc (Debian 14.2.0-19) 14.2.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+  "strict_callback_campaign": {
+    "passed": true,
+    "fixture_count": 49,
+    "declaration_checks": 2884,
+    "emitted_c_units": 476,
+    "cases": [
+      {
+        "fixture": "any_arc_downcast_new_cyclic",
+        "source_sha256": "676a956ab69ad98169da70fb6846937e25f14250c9e728aa58e0e2b48a670d59",
+        "checked_declarations": 11,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "any_downcast",
+        "source_sha256": "52443e159605556763987b61f257138f8cb2d8908b11e6303b1a0ae84d797819",
+        "checked_declarations": 9,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "any_supertrait",
+        "source_sha256": "769364c122634a0b3d9dd0265e32b8cffbe21ce7fc44cb5e9afd0f1f8ed689f8",
+        "checked_declarations": 11,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "any_turbofish_static_ref",
+        "source_sha256": "5bc5a9751819a9e8b050ea2f2119e497321c0c88960fac9628ae0b2bf6ab8121",
+        "checked_declarations": 9,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "arc_any_context_key",
+        "source_sha256": "d1915aa32550de08969785544340d24ce9d8a8cf93f30429f6886118472fc49b",
+        "checked_declarations": 13,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "arc_any_downcast",
+        "source_sha256": "b589f1915143724d40c7bae0fbc8f085e6b0e31714a78b0bec594d018b554887",
+        "checked_declarations": 12,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "bool_then_dyn_capture",
+        "source_sha256": "8f2ff3960dd1e3076efe1c7597e0ab14593fb75ecfbd1ba09279e3f7b9594a2d",
+        "checked_declarations": 12,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "cell_ref_named_types",
+        "source_sha256": "2d11d18e01fc9d4e590653c3d188ecd8626617ebfcc9bb59120d8bfa73a93445",
+        "checked_declarations": 20,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "closure_any_receiver",
+        "source_sha256": "f09fb7de0d446e307a28680de8c75e41cf319f1c7cb557300a49fad87f6b141f",
+        "checked_declarations": 10,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "default_panic_unwinds",
+        "source_sha256": "6d2bb310d2651598f47c48dc440b6eafe9e4e5826f0d8e3799282db6b6ea8ce4",
+        "checked_declarations": 6,
+        "c_units": 6,
+        "exit_code": 101,
+        "passed": true
+      },
+      {
+        "fixture": "dyn_any_static_source_infer",
+        "source_sha256": "bafc23e8a178159f769ec8029685ff271b6eb24cf5c6d511475decf7ed0f72ec",
+        "checked_declarations": 248,
+        "c_units": 24,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "dyn_auto_traits_only",
+        "source_sha256": "3e24976f3f7415d1576a47f4e206eee80d96e81c4011d56821abdb4608eadce0",
+        "checked_declarations": 28,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "dyn_body_annotation_inferred",
+        "source_sha256": "c369a924de54d19b8c7daa808cc92cc1a83bc00b2a2a89db002c8c7664a25a8e",
+        "checked_declarations": 266,
+        "c_units": 24,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "dyn_box_drop",
+        "source_sha256": "9a0bf290848d8841d38b196ccb40eb77ad7fb94e3518bb34135f41c1f1b9e6ee",
+        "checked_declarations": 10,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "dyn_box_trait",
+        "source_sha256": "9518fc4f970fd5f8a3f43a83a455cc7cf706cb6f19c94230aaa10b1955cd8265",
+        "checked_declarations": 8,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "dyn_debug_display",
+        "source_sha256": "25e738a5e93f5a5abfd5ec0ebe9b7367e5a0d4f4c32f73146a3f92542525a8e3",
+        "checked_declarations": 14,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "dyn_fmt_call_object_candidates",
+        "source_sha256": "57bdd8dff2ddd9c9db48274f90e66999e7e9e2b5d3777a7a5f2ac37a5f6f0258",
+        "checked_declarations": 11,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "dyn_fn_call_keeps_body_clean",
+        "source_sha256": "1df17ac56a072ae09015e1fe10eb6b52bd4180ef3935c12417bb68c6d8837123",
+        "checked_declarations": 15,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "dyn_fn_owned",
+        "source_sha256": "8352a071ec799e3b9dea160f3c89eefb40c98725e8f364f6cb43467bb3e16ad0",
+        "checked_declarations": 15,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "dyn_fnonce_box",
+        "source_sha256": "4b969e1cb866e0827e104ca314d17dd8bd6ad00898f974487ed6ffadb312ec7e",
+        "checked_declarations": 11,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "dyn_rc_high_align",
+        "source_sha256": "159d81b624d4ee56f1568a421a3929ccd61b4181b2f51de59d6afb1e97d6d501",
+        "checked_declarations": 16,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "dyn_rc_trait",
+        "source_sha256": "ba64c65655c0420bcd3c0c51e7d48535f85b65e2d2ae122f7e2fc1e0c1e5d079",
+        "checked_declarations": 7,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "fat_raw_ptr_host_key",
+        "source_sha256": "a3efa17578e0702a32c114f2e34ca1922e954b81d41aef63434fd350533e6a46",
+        "checked_declarations": 16,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "impl_dyn_generic_methods",
+        "source_sha256": "6405bae52330fe7feec4246c6559e70e86a639c8655e78e12d0302c06f4673c1",
+        "checked_declarations": 9,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "mpsc_p04",
+        "source_sha256": "b92f17d1ecacd3d3acda248c2ae39ce09c477b91fb02abd02bcbb047fd6bdb9c",
+        "checked_declarations": 12,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "outlives_dyn_implied",
+        "source_sha256": "9394e20b5e232b239080d580ed33867ca77aa38ff71bcef78f2fca32fd9c584c",
+        "checked_declarations": 7,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "panic_any_string_only",
+        "source_sha256": "8ef3534d9bc30451a2e3fa3c9588eabf1dd07267d9b696619f6e2979d7cc8b30",
+        "checked_declarations": 5,
+        "c_units": 6,
+        "exit_code": 101,
+        "passed": true
+      },
+      {
+        "fixture": "panic_any_string_payload",
+        "source_sha256": "eaf3c54e4ed05e1b528a27686823ef0ce9e11fb1fc015ece536e11118f476953",
+        "checked_declarations": 5,
+        "c_units": 6,
+        "exit_code": 101,
+        "passed": true
+      },
+      {
+        "fixture": "rc_arc_from_box_dyn",
+        "source_sha256": "836cbce6e3581b6d262059fa7ba0a2eafe210932b798d31884449117dd518531",
+        "checked_declarations": 253,
+        "c_units": 24,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "rc_dyn_counts",
+        "source_sha256": "bb98bacdbf679dc370a665e41b789a7313738b159ac1519bdc0320608fd4cb99",
+        "checked_declarations": 8,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "rc_refcell_closures",
+        "source_sha256": "24f441e716e008581eac33bcaa2a3309454f14c4a788c5fcbb66265d6128342c",
+        "checked_declarations": 23,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "static_ref_capture",
+        "source_sha256": "3ecf1e30772748c9bb092ab79e971f314ac0e7103c0f38513734745c9113e529",
+        "checked_declarations": 16,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "std_error_box",
+        "source_sha256": "b319c8f0a630149b041425781776bc13eed085e9372099c9e850e42b11044cc1",
+        "checked_declarations": 228,
+        "c_units": 24,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "std_error_dyn",
+        "source_sha256": "21437fc77be0e2a6c8bc711c086ad558ab709986668cefbadb020d0a317e7bec",
+        "checked_declarations": 228,
+        "c_units": 24,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "std_open_ext_box_read_weak",
+        "source_sha256": "e5b250f77b20efaa14b4847ba5c862b53d2d5c3811114bc37a570e5d3cf4a418",
+        "checked_declarations": 243,
+        "c_units": 24,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "thread_result_alias",
+        "source_sha256": "6df36cde2ec6e7cf29d27872f3a5b8a537f34acd305923784807ba5dc42e4f26",
+        "checked_declarations": 20,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "thread_result_box_coerce",
+        "source_sha256": "18498b2083b34784367784f62bb4469548ccb2611e37ed6ffb370c569530c468",
+        "checked_declarations": 228,
+        "c_units": 24,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "thread_spawn_boxed_dyn_once",
+        "source_sha256": "da48df021e0d77911d7b299c92361cd260c2e33e1130a114cb4ec921f2285852",
+        "checked_declarations": 252,
+        "c_units": 24,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "unsized_arc_dyn_drop",
+        "source_sha256": "7577a06af47b21d886f9d98a4bbfa6dc48e3ceb152afb737393ceaa8e3b5d3e1",
+        "checked_declarations": 5,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "unsized_arc_dyn_struct_field",
+        "source_sha256": "fa6668ef1dab479c60f37b0c17d0164e81dc674b9675644e70631e2b07d0894c",
+        "checked_declarations": 12,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "unsized_arc_mutex_dyn_counter",
+        "source_sha256": "1c364019397b5388287d8330ba433294e6ca127e733b9bcbbd8320037326bc87",
+        "checked_declarations": 20,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "unsized_bufwriter_box_dyn",
+        "source_sha256": "8e2e574455165450ed7baa2fd284e7794bbc4df9504d65eeae57fef256ff558b",
+        "checked_declarations": 224,
+        "c_units": 24,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "unsized_rc_refcell_dyn_printer",
+        "source_sha256": "2c4379c0c932e3a6e409c0a39ee9b28ba721b0059e5281139ae299f446af843b",
+        "checked_declarations": 10,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "unsized_refcell_dyn_drop",
+        "source_sha256": "55d85019ab86fbda1d7e92dd7afaaaf3a9477f02965a3836a26745a01fe9d43b",
+        "checked_declarations": 16,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "unsized_refcell_dyn",
+        "source_sha256": "e2f9a6235438f154fce3b530005bc1060ec0aa6f033a57b160702fb727a56e16",
+        "checked_declarations": 9,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "weak_dyn_arc",
+        "source_sha256": "69ae5819c8d055c3a3e7775e56479e5c3c8554ed0b447c3944f25efe66506982",
+        "checked_declarations": 20,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "weak_dyn_rc",
+        "source_sha256": "f4e95e3995ae4134890c30eb81fd5bfc19d8f712c41d96da9998c9fd4339bd92",
+        "checked_declarations": 14,
+        "c_units": 6,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "env_args_utf8_owned",
+        "source_sha256": "34112790271e957b578fb6762a5f14db45c423eb1729e94b2fc0d878e3a41583",
+        "checked_declarations": 237,
+        "c_units": 24,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "fixture": "integer_exhaustive_8bit",
+        "source_sha256": "d3132cb7d6140ea44c3fdc9167a73f1ecc9fe5e7302ef5406df8cb612e646484",
+        "checked_declarations": 2,
+        "c_units": 8,
+        "exit_code": 0,
+        "passed": true
+      }
+    ],
+    "report_sha256": "36ea7da0dbb8d08a61c9248bf985cffdf6649272678ebcc1324a39df410e5919",
+    "qualifier_sha256_at_execution": "3f50eb854243b30ea974924aa99c98811b68450786cc48f1719df11d98578be7",
+    "gcc_wrapper_sha256": "fa2d67eac66536442a71a0dd3d9b172290a1180f30911fd37bf4d04dfd5f9b22",
+    "gcc_additional_flag": "-Werror=discarded-qualifiers",
+    "comparison": "Native and C status/stdout compared to matching Rust; this script does not generally compare panic stderr."
+  },
+  "ubsan": {
+    "passed": true,
+    "flags": [
+      "-std=gnu11",
+      "-O1",
+      "-Werror",
+      "-fsanitize=undefined",
+      "-fno-sanitize-recover=all"
+    ],
+    "cases": [
+      {
+        "fixture": "env_args_utf8_owned",
+        "units": 24,
+        "status": 0,
+        "stdout_sha256": "6b531df09ae870ef3b4e97797f2d87625a1b3c2f46b26f2e5a6b80758892cd44",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "matches_pinned_rust": true
+      },
+      {
+        "fixture": "integer_exhaustive_8bit",
+        "units": 8,
+        "status": 0,
+        "stdout_sha256": "e14df9fa6e0d364e7ec57d064a1b9f9f31c17acd181ff0f5352fba76a323cf8b",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "matches_pinned_rust": true
+      }
+    ],
+    "report_sha256": "733736dc2aaa670358f018e93164097769c4988ee2b8fadcfe049eb10edc16ae",
+    "comparison": "Status/stdout/stderr exactly match the pinned Rust controls."
+  },
+  "updated_qualifier": {
+    "sha256": "edd165a688db6d1a3b45e038f825a89c722aceb3ef821d9830c7f433a9a9e843",
+    "controls": {
+      "updated-qualifier": {
+        "passed": true,
+        "lust_sha256": "330c87f240ec02e8194362dea00bc60a79255c2afb166f6793bd50c72e7a5f01",
+        "lust_core_sha256": "0a83fc2a5a0956839fd4cac04814c1f2bacdd04a58149b8364412e21d1b40037",
+        "report_sha256": "06303b37c4298543cb5ee89d0e1b998d40582800901d8ff9941d53c4a9871e25",
+        "cases": [
+          {
+            "fixture": "dyn_box_drop",
+            "source_sha256": "9a0bf290848d8841d38b196ccb40eb77ad7fb94e3518bb34135f41c1f1b9e6ee",
+            "checked_declarations": 10,
+            "c_units": 6,
+            "exit_code": 0,
+            "passed": true
+          }
+        ],
+        "expected_to_pass": true
+      },
+      "updated-qualifier-red": {
+        "passed": false,
+        "lust_sha256": "18b134d4a7a5ca834a0297d334139655805759c7f9be6185f06ce2e88f5ecb74",
+        "lust_core_sha256": "1fcd2eaead30d31d3a29933d91f2a4f1b882fb7e9ad2f10b4e08699966aadf32",
+        "report_sha256": "2e242de93bc8d14063fad8b83c85a11d6fb35ebf6c6443e2bfba0678b438063c",
+        "cases": [],
+        "expected_to_pass": false
+      },
+      "updated-qualifier-eh": {
+        "passed": true,
+        "lust_sha256": "330c87f240ec02e8194362dea00bc60a79255c2afb166f6793bd50c72e7a5f01",
+        "lust_core_sha256": "0a83fc2a5a0956839fd4cac04814c1f2bacdd04a58149b8364412e21d1b40037",
+        "report_sha256": "473b413b2c8814ee31eeb891f2366c69a18f577adc7e12146dbde071116f0e77",
+        "cases": [
+          {
+            "fixture": "dyn_box_drop",
+            "source_sha256": "9a0bf290848d8841d38b196ccb40eb77ad7fb94e3518bb34135f41c1f1b9e6ee",
+            "checked_declarations": 10,
+            "c_units": 6,
+            "exit_code": 0,
+            "passed": true
+          }
+        ],
+        "expected_to_pass": true
+      }
+    },
+    "reason": "Reject the discarded-qualifier defect under either GCC or Clang warning classification; no warning or sanitizer suppression."
+  },
+  "limits": [
+    "This gate-profile Linux build does not establish macOS or complete address/leak sanitizer qualification.",
+    "The finite arithmetic domain does not prove other widths, floating point, or general Rust semantics.",
+    "The exact source is 28ed726e6; subsequent native protocol changes require separate controls.",
+    "No release-profile latency, package admission, or general mixed-compiler completion claim."
+  ]
+}
