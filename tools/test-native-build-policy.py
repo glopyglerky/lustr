@@ -65,6 +65,14 @@ def construction_controls(root, rustc, work):
                      "crates/lustr-semantic/src/main.rs", "crates/lustr-semantic/Cargo.toml",
                      "crates/lustr-semantic/build.rs", "crates/lustr/src/lib.rs"):
         copy(relative)
+    # Admission now verifies the public library's complete declared source cut,
+    # including shared artifact code, the SDK receipt and dependency/tool records.
+    # Copy those original bytes; do not regenerate identities for this fixture.
+    public_inventory = Path("upstream/public-library-integration.json")
+    copy(public_inventory)
+    public = json.loads((root / public_inventory).read_text())
+    for relative in public["source_sha256"]:
+        copy(relative)
     unicode = json.loads((root / "compiler/native/unicode-semantics.json").read_text())
     for relative in unicode["generated_and_retained_data"]:
         copy(relative)
