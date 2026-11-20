@@ -338,6 +338,22 @@ jobs:
         run: |
           rustc --edition=2024 tools/build-native-toolchain.rs -o "$RUNNER_TEMP/build-native-toolchain"
           "$RUNNER_TEMP/build-native-toolchain" "$GITHUB_WORKSPACE" --current-sdk "$RUNNER_TEMP/lustr-tinycc/install" "$RUNNER_TEMP/lustr-native-built" --debug
+      - name: Qualify real Cargo scalar libraries through the installed retained compiler
+        if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          records="$RUNNER_TEMP/public-native-library"
+          mkdir -p "$records"
+          git rev-parse HEAD HEAD^{tree} HEAD:compiler/native > "$records/source.txt"
+          sha256sum tools/test-public-native-library.py tools/test-public-native-library-controls.py tools/test-retained-native-metadata.py tools/test-native-consumer-metadata.py tools/build-metadata-sdk-receipt.py > "$records/evaluator-inputs.sha256"
+          python3 tools/test-public-native-library-controls.py -v 2>&1 | tee "$records/evaluator-controls.log"
+          python3 tools/test-public-native-library.py \
+            --package "$RUNNER_TEMP/lustr-native-built/toolchain" \
+            --sdk "$(rustc --print sysroot)" \
+            --output "$records/campaign" 2>&1 | tee "$records/campaign.log"
+          python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["passed"] is True and r["functional_passed"] is True and r["exec_trace_qualified"] is True and r["retained_public_integration"] is True and r["raw_public_json"]["passed"] is True and len(r["observed_history"]) == 9 and len(r["raw_public_history"]) == 3 and len(r["original_consumers"]) == 8 and len(r["refusals"]) == 2 and r["checked_runtime_results"] == 2097216 and not r["full_compiler_qualification"] and not r["full_rust_coverage"] and not r["performance_qualified"]' "$records/campaign/report.json"
+          python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); e=r["eviction"]; assert e["passed"] is True and len(e["observed_history"]) == 4 and len(e["original_consumers"]) == 4 and e["checked_runtime_results"] == 1048608 and r["version_refusal"]["passed"] is True and r["version_refusal"]["owner_request_observed"] is True and r["total_original_consumers"] == 12 and r["total_checked_runtime_results"] == 3145824' "$records/campaign/report.json"
+          sha256sum --check "$records/evaluator-inputs.sha256"
       - name: Require product bridge ownership and one retained compilation attempt
         if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
         env:
@@ -515,6 +531,7 @@ jobs:
             ${{ runner.temp }}/native-selection-seed
             ${{ runner.temp }}/native-compact-selection
             ${{ runner.temp }}/native-cargo-plan
+            ${{ runner.temp }}/public-native-library
             ${{ runner.temp }}/tinycc-signing-qualification
             ${{ runner.temp }}/lustr-tinycc/logs
             ${{ runner.temp }}/lustr-tinycc/COMPONENTS.txt
