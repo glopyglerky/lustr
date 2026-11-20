@@ -24,6 +24,8 @@ pub(crate) struct Service {
     sdk:Arc<metadata::Sdk>, sysroot:PathBuf, context:Context,
     originals:BTreeMap<u64,Original>, renamed:BTreeMap<(u64,String),Renamed>,
     pub artifact:Option<Arc<Artifact>>,
+    // At most three embedding choices for the current native snapshot.
+    variants:BTreeMap<Option<bool>,Arc<Artifact>>,
     published:Option<Arc<Artifact>>, policy:history::Policy,
     original_used:BTreeMap<u64,u64>, renamed_used:BTreeMap<(u64,String),u64>,
     evicted_originals:Vec<u64>, evicted_renamed:Vec<(u64,String)>,
@@ -32,7 +34,7 @@ pub(crate) struct Service {
 }
 impl Service {
     pub fn new(sdk:Arc<metadata::Sdk>,sysroot:PathBuf,context:Context)->Result<Self,String> {
-        Ok(Self{sdk,sysroot,context,originals:BTreeMap::new(),renamed:BTreeMap::new(),artifact:None,published:None,
+        Ok(Self{sdk,sysroot,context,originals:BTreeMap::new(),renamed:BTreeMap::new(),artifact:None,variants:BTreeMap::new(),published:None,
             policy:history::policy()?,original_used:BTreeMap::new(),renamed_used:BTreeMap::new(),
             evicted_originals:Vec::new(),evicted_renamed:Vec::new(),active_entries:0,inactive_entries:0,inactive_bytes:0})
     }
@@ -45,6 +47,7 @@ impl Service {
     }
     pub fn history(&self)->Value {
         json!({"active_entries":self.active_entries,"inactive_entries":self.inactive_entries,"inactive_bytes":self.inactive_bytes,
+            "metadata_variants":self.variants.len(),"metadata_variant_limit":3,
             "evicted_original_serials":self.evicted_originals,"evicted_renamed":self.evicted_renamed.iter().map(|(serial,mapping)|
                 json!({"serial":serial,"mapping_sha256":hash(mapping.as_bytes())})).collect::<Vec<_>>()})
     }
@@ -53,7 +56,7 @@ impl Service {
         enum Key{Original(u64),Renamed((u64,String))}
         let mut protected=BTreeSet::new();
         let generation=self.artifact.as_ref().map_or(0,|a|a.generation);
-        for artifact in self.artifact.iter().chain(self.published.iter()) {
+        for artifact in self.variants.values().chain(self.published.iter()) {
             protected.extend(artifact.native_serials.iter().copied().map(Key::Original));
             protected.extend(artifact.rename_keys.iter().cloned().map(Key::Renamed));
         }
@@ -266,9 +269,13 @@ fn verify_members(bytes:&[u8],files:&BTreeMap<String,Arc<Vec<u8>>>,members:&[Str
 }
 impl Service {
     pub(crate) fn artifact(&mut self,snapshot:&Snapshot,step:&Path,report:&mut Value,materialize:bool)->Result<Arc<Artifact>,String> {
+        self.artifact_with_options(snapshot,step,report,materialize,None)
+    }
+    pub(crate) fn artifact_with_options(&mut self,snapshot:&Snapshot,step:&Path,report:&mut Value,materialize:bool,embed_metadata:Option<bool>)->Result<Arc<Artifact>,String> {
         let stage=step.join("staging");
         report["phase"]=json!("staging");
-        let reused=self.artifact.as_ref().is_some_and(|a|a.generation==snapshot.generation);
+        let cached=self.variants.get(&embed_metadata).filter(|a|a.generation==snapshot.generation).cloned();
+        let reused=cached.is_some();
         if !reused || materialize { std::fs::create_dir(&stage).map_err(|e|format!("create owned staging: {e}"))?; }
         if !reused {
             let functions=mapped_functions(snapshot);
@@ -284,7 +291,7 @@ impl Service {
             objects.sort_by(|a,b|a.member.cmp(&b.member));
             let helpers:Vec<_>=snapshot.objects.iter().flat_map(|(o,_)|self.originals[&o.serial].helpers.clone()).collect();
             report["phase"]=json!("source-owned-encode");report["counts"]["metadata_encodes"]=json!(1);
-            let encoded=metadata::encode(&metadata::Input {crate_name:&self.context.crate_name,metadata:&self.context.metadata,extra_filename:&self.context.extra_filename,
+            let encoded=metadata::encode(&metadata::Input {crate_name:&self.context.crate_name,metadata:&self.context.metadata,extra_filename:&self.context.extra_filename,embed_metadata,
                 source_path:self.context.source.to_str().ok_or("source path is not Unicode")?,working_directory:&self.context.cwd,
                 source:&snapshot.source,root_span:metadata::Span{lo:0,hi:snapshot.source.len() as u32},
                 profile:self.context.profile,functions:&functions,emitted:&instances,backend_helpers:&helpers,objects:&objects},&self.sdk)?;
@@ -293,7 +300,7 @@ impl Service {
             let mut files:BTreeMap<String,Arc<Vec<u8>>>=BTreeMap::new();
             files.insert("symbols.map".into(),Arc::new(rename_text.as_bytes().to_vec()));
             files.insert(format!("{}.rmeta",self.context.crate_name),Arc::new(encoded.metadata.clone()));
-            files.insert("lib.rmeta".into(),Arc::new(archive::wrapper(b".rmeta",&encoded.metadata)?));
+            files.insert("lib.rmeta".into(),Arc::new(archive::wrapper(b".rmeta",encoded.metadata_stub.as_deref().unwrap_or(&encoded.metadata))?));
             let member_names:Vec<_>=objects.iter().map(|o|o.member.as_str()).collect();
             let link=metadata::encode_rlib_link(&member_names)?;
             files.insert("lib.rmeta-link".into(),Arc::new(archive::wrapper(b".rmeta-link",&link)?));
@@ -347,6 +354,7 @@ impl Service {
             let bytes=read(&stage.join(self.context.archive_name()))?;verify_members(&bytes,&files,&members)?;
             let fields=json!({"objects":object_records,"archive_members":members,"rlib_sha256":hash(&bytes),
                 "source_sha256":hash(snapshot.source.as_bytes()),"metadata_sha256":hash(&encoded.metadata),"backend_helpers":helpers,
+                "embed_metadata":embed_metadata,"metadata_is_stub":encoded.metadata_stub.is_some(),
                 "stable_crate_id":format!("{:016x}",encoded.stable_crate_id),
                 "crate_hash_le_hex":encoded.crate_hash.iter().map(|b|format!("{b:02x}")).collect::<String>(),
                 "symbol_mapping":encoded.symbols.iter().map(|s|json!({"native_id":[s.definition.krate,s.definition.path],"rust_def_index":s.rust_def_index,
@@ -354,11 +362,16 @@ impl Service {
                 "functions":functions.iter().map(|f|json!({"name":f.name,"native_id":[f.definition.krate,f.definition.path],"public":f.public,
                     "name_span":[f.name_span.lo,f.name_span.hi],"span":[f.span.lo,f.span.hi],"parameters":f.parameters.iter().map(|p|json!({"name":p.name,"span":[p.span.lo,p.span.hi]})).collect::<Vec<_>>(),
                     "calls":f.calls.iter().map(|id|json!([id.krate,id.path])).collect::<Vec<_>>()})).collect::<Vec<_>>()});
-            self.artifact=Some(Arc::new(Artifact{generation:snapshot.generation,files,fields,archive:Arc::new(bytes),
-                native_serials:snapshot.objects.iter().map(|(object,_)|object.serial).collect(),rename_keys}));
-            // Construction succeeded. Protect both this artifact and the last
-            // durable publication while retiring only older inactive history.
+            let artifact=Arc::new(Artifact{generation:snapshot.generation,files,fields,archive:Arc::new(bytes),
+                native_serials:snapshot.objects.iter().map(|(object,_)|object.serial).collect(),rename_keys});
+            // Replace variant history only after construction succeeds. The last
+            // durable publication remains protected even across generations.
+            self.variants.retain(|_,a|a.generation==snapshot.generation);
+            self.variants.insert(embed_metadata,artifact.clone());
+            self.artifact=Some(artifact);
             self.prune();
+        } else {
+            self.artifact=cached;
         }
         let artifact=self.artifact.as_ref().unwrap();
         if reused && materialize {

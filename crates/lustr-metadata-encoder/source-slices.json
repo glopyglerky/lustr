@@ -174,9 +174,11 @@
         "EncodeContext::encode_hygiene",
         "EncodeContext::encode_source_map",
         "EncodeContext::encode_crate_root",
-        "with_encode_metadata_header"
+        "with_encode_metadata_header",
+        "encode_metadata CrateHeader stub branch",
+        "with_encode_metadata_header tracked-option SVH supplement"
       ],
-      "adaptation": "Use native completion records instead of semantic query access. Keep original scalar serialization and complete v12 schema. No consumer TyCtxt, Rust parser/checker/MIR or analysis success override exists. Text/offset symbol encoding has no predefined Rust interner IDs. Native checked source/request/object/SDK identities replace the HIR supplement in the original metadata hash algorithm. Wider types/declarations/attributes/profiles remain unintegrated.",
+      "adaptation": "Use native completion records instead of semantic query access. Keep original scalar serialization and complete v12 schema. No consumer TyCtxt, Rust parser/checker/MIR or analysis success override exists. Text/offset symbol encoding has no predefined Rust interner IDs. Native checked source/request/object/SDK identities replace the HIR supplement in the original metadata hash algorithm. Wider types/declarations/attributes/profiles remain unintegrated. Split layout retains a full standalone metadata record and emits only the original CrateHeader stub in the archive, with unhashed position zero and the same full SVH. The unstable embedding Option<bool> is represented as absent/true/false in the native supplement; no second native analysis or separate stub hash is used.",
       "semantic_owner": "metadata serialization of Lust-owned completed facts",
       "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
@@ -480,6 +482,43 @@
       "adaptation": "Original target support branch yields None for the represented unmodified stack-protector request.",
       "semantic_owner": "metadata mitigation context",
       "necessity": "Required by the original reader when comparing the native library with an ordinary Rust consumer; prevents an absent-record mismatch without suppressing diagnostics."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_metadata/src/rmeta/mod.rs",
+      "source_sha256": "d6d5d627a4876ddd5d371c2260f0d68303f1e483a5209fcace3893765bfd5948",
+      "sections": [
+        "CrateHeader field order"
+      ],
+      "adaptation": "Preserve target, crate name, proc-macro flag and stub flag in their original order for both full and stub headers; no compiler metadata decoder is imported.",
+      "semantic_owner": "required metadata artifact and hash identity",
+      "necessity": "Represent the actual pinned Cargo split-metadata request without changing native body ownership or invoking another compiler."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_session/src/options.rs",
+      "source_sha256": "9ac7d7de14cbef1624c9998593b081000dcd496413d2bb3643aac2bd1c9c7e69",
+      "sections": [
+        "CodegenOptions::embed_metadata TRACKED",
+        "UnstableOptions::embed_metadata TRACKED",
+        "hash_opt TRACKED_NO_CRATE_HASH exclusion",
+        "Options::lint_opts",
+        "Options::json_unused_externs"
+      ],
+      "adaptation": "Admit only the actual unstable -Z option and distinguish its absent/true/false values in the native metadata supplement. The separate stable -C channel remains unrepresented. Forced lint and JSON emission do not join the crate-hash identity. The full option parser, session and tracking machinery are not imported.",
+      "semantic_owner": "required metadata artifact and hash identity",
+      "necessity": "Represent the actual pinned Cargo split-metadata request without changing native body ownership or invoking another compiler."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_session/src/session.rs",
+      "source_sha256": "cf93aa2f3af4a4be00930d9c1078c17a91add82ac6206e38e3fee74c724e93a8",
+      "sections": [
+        "Session::embed_metadata"
+      ],
+      "adaptation": "Specialize the original effective default to the admitted unstable-only channel: absent and explicit true embed full metadata, false uses the matching stub. Preserve tracked request distinctions outside native semantic state.",
+      "semantic_owner": "required metadata artifact and hash identity",
+      "necessity": "Represent the actual pinned Cargo split-metadata request without changing native body ownership or invoking another compiler."
     }
   ],
   "dependencies": [
@@ -749,9 +788,9 @@
     "production_source_authored": true
   },
   "adapted_sources_sha256": {
-    "src/encode.rs": "d6630d985cb343eb7d7f5614881cff8183d14c4909d482d39daf01ba289f23a6",
+    "src/encode.rs": "ee39ed07bda3d08ebf22f81e219a28b7c4808724dfd2248a7ed9273bdca37637",
     "src/identity.rs": "995799a9938d78fd5c800a1d28af4039f4e5868cea71536d0f70b2fc3643724d",
-    "src/lib.rs": "5f1c46f701b0caed5c64a7e2e1d08cbd6e96a3ee529216e0d5311b3dbc13af37",
+    "src/lib.rs": "0a4b3c27e550aa3259eff323509bb42a3ee3030552d460169e40b8c986e05af5",
     "src/sdk.rs": "a088d99b04d3046c52830699b15c960e849d84d1a101c52df68b1aaeb64898b6",
     "src/table.rs": "5ad2fa46decc550bfd5f7d23cc051c7087d4ef1f5b361b154630c122097c92bb",
     "src/upstream/codec.rs": "916922c930d3dc46c7003d65d920b6c84efa780ac5b0c06eec1586ead0216a7a",

@@ -33,10 +33,21 @@ struct Context {
 }
 
 impl Context {
-    fn new() -> Self {
+    fn empty() -> Self {
         Self { opaque: MemEncoder::new(), lazy_state: LazyState::NoNode,
-            symbols: BTreeMap::new(), spans: BTreeMap::new(),
-            tables: TABLE_FIELDS.iter().map(|_| TableBuilder::default()).collect() }
+            symbols: BTreeMap::new(), spans: BTreeMap::new(), tables: Vec::new() }
+    }
+    fn new() -> Self {
+        Self { tables: TABLE_FIELDS.iter().map(|_| TableBuilder::default()).collect(), ..Self::empty() }
+    }
+    fn metadata_header(&mut self, sdk: &Sdk) {
+        self.opaque.emit_raw_bytes(METADATA_HEADER);
+        self.opaque.emit_raw_bytes(&[0; 32]); // root, unhashed root, SVH; filled after encoding.
+        self.opaque.emit_str(&format!("rustc {}", sdk.cfg_version));
+    }
+    fn crate_header(&mut self, name: &str, is_stub: bool) {
+        self.opaque.emit_u8(0); self.opaque.emit_str(crate::TARGET); // TargetTuple
+        self.symbol(name); self.opaque.emit_bool(false); self.opaque.emit_bool(is_stub);
     }
     fn table(&mut self, field: &str) -> &mut TableBuilder {
         let index = TABLE_FIELDS.iter().position(|&name| name == field).expect("original table field");
@@ -140,9 +151,7 @@ pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk) -> Result<Encoded, String> {
     }
 
     let mut cx = Context::new();
-    cx.opaque.emit_raw_bytes(METADATA_HEADER);
-    cx.opaque.emit_raw_bytes(&[0; 32]); // root, unhashed root, SVH; filled after encoding.
-    cx.opaque.emit_str(&format!("rustc {}", sdk.cfg_version));
+    cx.metadata_header(sdk);
 
     let dependencies = cx.array(&sdk.dependencies, |cx, dep| {
         cx.symbol(&dep.name);
@@ -316,10 +325,7 @@ pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk) -> Result<Encoded, String> {
         let mut field = |name: &str, f: &mut dyn FnMut(&mut Context)| {
             assert_eq!(ROOT_FIELDS[field_index], name); field_index += 1; f(cx);
         };
-        field("header", &mut |cx| {
-            cx.opaque.emit_u8(0); cx.opaque.emit_str(crate::TARGET); // TargetTuple
-            cx.symbol(input.crate_name); cx.opaque.emit_bool(false); cx.opaque.emit_bool(false);
-        });
+        field("header", &mut |cx| cx.crate_header(input.crate_name, false));
         field("stable_crate_id", &mut |cx| cx.opaque.emit_raw_bytes(&stable_id.to_le_bytes()));
         field("required_panic_strategy", &mut |cx| { cx.opaque.emit_u8(1); cx.opaque.emit_u8(1); });
         field("panic_in_drop_strategy", &mut |cx| cx.opaque.emit_u8(0));
@@ -376,7 +382,19 @@ pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk) -> Result<Encoded, String> {
     metadata[8..16].copy_from_slice(&(root as u64).to_le_bytes());
     metadata[16..24].copy_from_slice(&(unhashed as u64).to_le_bytes());
     metadata[24..40].copy_from_slice(&crate_hash);
-    Ok(Encoded { metadata, stable_crate_id: stable_id, crate_hash, symbols: mappings })
+    let metadata_stub = (input.embed_metadata == Some(false)).then(|| {
+        // Original encode_metadata stub: only CrateHeader, unhashed position 0,
+        // and the already computed full metadata SVH. No second analysis/hash.
+        let mut stub = Context::empty();
+        stub.metadata_header(sdk);
+        let root = stub.node(|cx| cx.crate_header(input.crate_name, true));
+        stub.opaque.emit_raw_bytes(b"rust-end-file");
+        let mut bytes = stub.opaque.finish();
+        bytes[8..16].copy_from_slice(&(root as u64).to_le_bytes());
+        bytes[24..40].copy_from_slice(&crate_hash);
+        bytes
+    });
+    Ok(Encoded { metadata, metadata_stub, stable_crate_id: stable_id, crate_hash, symbols: mappings })
 }
 
 fn encode_u64_type(cx: &mut Context) {
@@ -498,6 +516,14 @@ fn semantic_fingerprint(input: &Input<'_>, sdk: &Sdk) -> [u8; 16] {
         for definition in &object.definitions { digest.write_u64(definition.krate); digest.write_u64(definition.path); }
     }
     digest.write(&[input.profile.overflow_checks as u8, input.profile.debug_assertions as u8]);
+    // Upstream tracks the unstable Option<bool> itself, not just its effective
+    // default. Keep the qualified absent-option encoding unchanged; explicit
+    // true/false are distinct native supplemental facts. Forced lint/JSON are
+    // excluded from the upstream crate hash and do not enter this supplement.
+    if let Some(embed) = input.embed_metadata {
+        digest.write(b"lustr-tracked-unstable-embed-metadata");
+        digest.write_u8(embed as u8);
+    }
     let Fingerprint([a, b]) = digest.finish::<Fingerprint>();
     let mut bytes = [0; 16]; bytes[..8].copy_from_slice(&a.to_le_bytes()); bytes[8..].copy_from_slice(&b.to_le_bytes()); bytes
 }

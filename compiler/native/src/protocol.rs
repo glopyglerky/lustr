@@ -33,7 +33,7 @@ use std::path::{Path, PathBuf};
 pub mod host_runtime;
 #[path = "../../../src/library_contract.rs"]
 pub mod library_contract;
-pub use library_contract::LibraryKey;
+pub use library_contract::{LibraryKey, LibraryOptions};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Cmd {
@@ -315,6 +315,7 @@ pub struct Request {
     /// release builds always compile cold, in the client-spawned
     /// `lust-core`, never warm.
     pub cc: bool,
+    pub library_options: LibraryOptions,
     pub client: Client,
 }
 
@@ -682,6 +683,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     let mut crate_flags = CrateFlags::default();
     let (mut library_name, mut library_metadata, mut library_extra, mut library_cwd) = (None,None,None,None);
     let (mut library_cfg, mut library_search) = (Vec::new(),Vec::new());
+    let mut library_options = LibraryOptions::default();
     // Every --target named, in order. One builds a session; several are
     // the release driver's list and build one session each.
     let mut targets: Vec<String> = Vec::new();
@@ -715,6 +717,8 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
             "--lustr-library-cwd" if library_cwd.is_none() => library_cwd = Some(PathBuf::from(it.next()?)),
             "--lustr-library-check-cfg" => library_cfg.push(it.next()?.clone()),
             "--lustr-library-search" => library_search.push(PathBuf::from(it.next()?)),
+            "--lustr-library-embed-metadata" if library_options.embed_metadata.is_none() => library_options.embed_metadata = Some(rustc_bool(it.next()?)?),
+            "--lustr-library-force-warn-unused-crate-dependencies" if !library_options.force_warn_unused_crate_dependencies => library_options.force_warn_unused_crate_dependencies = true,
             "--json" => json = true,
             "--timings" => timings = true,
             "-g" => debug = true,
@@ -759,6 +763,9 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     if file.as_os_str().is_empty() {
         return None;
     }
+    let library_supplied = library_name.is_some() || library_metadata.is_some() || library_extra.is_some() || library_cwd.is_some()
+        || !library_cfg.is_empty() || !library_search.is_empty() || library_options != LibraryOptions::default();
+    if library_supplied && (rustc || release || profile.is_some()) { return None; }
     let abs = |p: &Path| std::path::absolute(p).unwrap_or_else(|_| p.to_path_buf());
     // Release and the rustc oracle are build/check-only, with no extra lust flags.
     // Crate-selection flags are lust dev flags today: reject them there rather
@@ -819,6 +826,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
                 run_args: None,
                 harness: false,
                 cc: true,
+                library_options: LibraryOptions::default(),
                 client: Client::current(&typed),
             });
         }
@@ -854,8 +862,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     if let Some(on) = debug_assertions {
         session.profile.debug_assertions = on;
     }
-    if library_name.is_some() || library_metadata.is_some() || library_extra.is_some() || library_cwd.is_some()
-        || !library_cfg.is_empty() || !library_search.is_empty() {
+    if library_supplied {
         let key = LibraryKey {crate_name:library_name?, metadata:library_metadata?, extra_filename:library_extra?,
             source_path:file.clone(), working_directory:library_cwd?, check_cfg:library_cfg, search_paths:library_search,
             sdk_receipt:library_contract::SDK_RECEIPT.into()};
@@ -878,6 +885,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
         max_errors,
         run_args: if run { Some(run_args.clone()) } else { None },
         harness: false, cc: false,
+        library_options,
         client: Client::current(&typed),
     };
     Some(Invocation::Compile { req, run, args: run_args })
@@ -998,6 +1006,8 @@ pub fn encode(r: &Request) -> Vec<u8> {
         for value in &library.check_cfg { put_field(&mut out,value.as_bytes()); }
         put_field(&mut out,library.search_paths.len().to_string().as_bytes());
         for path in &library.search_paths { path_field(&mut out,Some(path)); }
+        put_field(&mut out,match r.library_options.embed_metadata {None=>b"-",Some(true)=>b"1",Some(false)=>b"0"});
+        put_field(&mut out,if r.library_options.force_warn_unused_crate_dependencies {b"1"} else {b"0"});
     }
     for f in &s.features {
         put_field(&mut out, f.as_bytes());
@@ -1046,6 +1056,7 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
     };
     let root = path(get_field(r)?);
     let target_triple = text(get_field(r)?)?;
+    let mut library_options = LibraryOptions::default();
     let library = match get_field(r)?.as_slice() {
         b"0" => None,
         b"1" => {
@@ -1056,6 +1067,8 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
             let check_cfg=(0..count).map(|_|text(get_field(r)?)).collect::<Option<Vec<_>>>()?;
             let count:usize=text(get_field(r)?)?.parse().ok()?; if count>4096{return None;}
             let search_paths=(0..count).map(|_|Some(path(get_field(r)?))).collect::<Option<Vec<_>>>()?;
+            library_options.embed_metadata=match get_field(r)?.as_slice() {b"-"=>None,b"1"=>Some(true),b"0"=>Some(false),_=>return None};
+            library_options.force_warn_unused_crate_dependencies=match get_field(r)?.as_slice() {b"0"=>false,b"1"=>true,_=>return None};
             let library=LibraryKey{crate_name,metadata,extra_filename,source_path,working_directory,check_cfg,search_paths,sdk_receipt};
             if !library.valid() || library.outputs(&out).is_none() || library.source_path!=file
                 || target_triple!=library_contract::TARGET || target_kind!="lib" || f[0]!="build" {return None;}
@@ -1118,6 +1131,7 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
         max_errors: f[4].parse().ok()?,
         run_args: None,
         harness: false, cc: false,
+        library_options,
         client: Client { env, shown: if shown.is_empty() { None } else { Some(path(shown)) } },
     })
 }

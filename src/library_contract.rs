@@ -13,6 +13,15 @@ pub const fn supported_host()->bool {
         target_pointer_width="64",target_endian="little"))
 }
 
+/// Artifact/lint requests do not change the native semantic session. Only the
+/// unstable -Z embedding option is admitted; the stable -C channel is separate
+/// upstream and remains unrepresented. None is the actual absent option.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct LibraryOptions {
+    pub embed_metadata: Option<bool>,
+    pub force_warn_unused_crate_dependencies: bool,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct LibraryKey {
     pub crate_name: String,

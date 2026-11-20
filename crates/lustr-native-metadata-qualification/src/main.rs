@@ -232,6 +232,7 @@ fn compile(source: &Path, root: &Path, receipt: &Path, sysroot: &Path, report: &
     let objects = [metadata::ObjectMember { member:"consumer.o".into(), producer_object_sha256:Sha256::digest(original).into(), definitions }];
     let input = metadata::Input {
         extra_filename: "",
+        embed_metadata: None,
             crate_name: prepared.crate_name(),
             metadata: prepared.metadata(),
             source_path: prepared.source_path().to_str().ok_or("native source path is not Unicode")?,

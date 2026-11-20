@@ -110,6 +110,8 @@ impl Owner {
         let profile=req.session.profile;
         let mut report=if observed {json!({"schema":"lustr-public-scalar-library-v1","owner_pid":std::process::id(),"owner_start":owner_start,
             "request_index":serial,"session_identity":self.identity,"native_context":req.session.describe(),
+            "library_options":{"embed_metadata":req.library_options.embed_metadata,
+                "force_warn_unused_crate_dependencies":req.library_options.force_warn_unused_crate_dependencies},
             "context":{"crate_name":key.crate_name,"metadata":key.metadata,"extra_filename":key.extra_filename,
                 "source_path":key.source_path,"cwd":key.working_directory,"target":req.session.target_triple,"edition":"2024",
                 "emits":["dep-info","metadata","link"],"sdk_receipt_sha256":key.sdk_receipt,
@@ -121,6 +123,7 @@ impl Owner {
                 "metadata_encodes":0,"archive_builds":0,"sdk_loads":SDK_LOADS.load(Ordering::Relaxed)},"timings_ns":{}})}
             else {json!({"phase":"native-prepare","commands":[],"objects":[],"counts":{"metadata_encodes":0,"archive_builds":0}})};
         let mut response=driver::Response::default();
+        let mut dependency_lint_ready=false;
         let outcome=(||->Result<(),String>{
             if let Some(root)=&report_root {
                 if !root.is_absolute() || !root.is_dir(){return Err("library report directory must be an existing absolute directory".into());}
@@ -143,6 +146,7 @@ impl Owner {
             if let Some(start)=native_start{report["timings_ns"]["native"]=json!(start.elapsed().as_nanos().min(u64::MAX as u128) as u64);}
             session.prune_library_history();
             let state=session.library_state().ok_or("library native state disappeared")?;
+            dependency_lint_ready=state.dependency_lint_ready;
             if observed {
             report["generation"]=json!(state.generation);
             report["source_sha256"]=json!(hash(state.source.as_bytes()));
@@ -160,7 +164,7 @@ impl Owner {
             }
             let snapshot=state.snapshot.clone().ok_or("native library returned no actual emission snapshot")?;
             let artifact_start=observed.then(std::time::Instant::now);
-            let artifact=self.artifacts.artifact(&snapshot,&step,&mut report,observed)?;
+            let artifact=self.artifacts.artifact_with_options(&snapshot,&step,&mut report,observed,req.library_options.embed_metadata)?;
             if let Some(start)=artifact_start{report["timings_ns"]["artifact"]=json!(start.elapsed().as_nanos().min(u64::MAX as u128) as u64);}
             report["phase"]=json!("publication");
             let publication_start=observed.then(std::time::Instant::now);
@@ -217,6 +221,13 @@ impl Owner {
             report["error"]=json!(error);
         }
         normalize_failure(req,&mut response);
+        // The admitted request has no explicit extern dependencies. Rust emits
+        // this empty structured forced-lint result before body diagnostics and
+        // artifacts, including a type-invalid body after required analyses.
+        if dependency_lint_ready && req.json && req.library_options.force_warn_unused_crate_dependencies {
+            let lint=json!({"$message_type":"unused_extern","lint_level":"force-warn","unused_extern_names":[]});
+            response.stderr.insert_str(0,&format!("{lint}\n"));
+        }
         if observed {
             let policy=self.artifacts.policy();
             let native=session.library_state().map(|state|{

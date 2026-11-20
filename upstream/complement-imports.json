@@ -243,13 +243,13 @@
   "selective_components": [
     {
       "path": "crates/lustr-metadata-encoder",
-      "scope": "standalone core-plus-alloc serializer for completed native scalar-library records",
+      "scope": "standalone core-plus-alloc serializer for completed native scalar-library records and source-bound full/stub metadata variants",
       "dependency": "selective pinned Rust encoding/identity/schema operations and source-owned stable-hash/ODHT writer slices; md-5 and twox-hash with std disabled",
       "source_inventory": "crates/lustr-metadata-encoder/source-slices.json",
       "production_admitted": false,
       "native_caller_committed": true,
       "required_for": "intended serialization of genuine native completed definitions and actual emitted instances without whole-consumer Rust analysis",
-      "blocking_reason": "Current public Cargo scalar-library path is authored; exact-source public qualification and measured bridge performance are pending. Wider Rust completion remains unintegrated.",
+      "blocking_reason": "The actual Cargo split-metadata and forced-lint request correction is authored but uncompiled/unqualified. Exact-source public campaigns and measured bridge performance are pending; wider Rust completion remains unintegrated.",
       "native_caller_path": "crates/lustr-native-metadata-qualification",
       "public_retained_integration": true,
       "qualification_record": "docs/compiler-set/evidence/native-metadata-join-20261120/README.md",

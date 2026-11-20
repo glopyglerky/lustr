@@ -63,7 +63,7 @@ fn nfc_identifiers_survive_retained_edits_and_rejected_duplicates() {
         let req = protocol::Request {
             cmd: protocol::Cmd::Build, session: key, file: file.clone(), out: owner.0.join("program"),
             json: false, timings: true, debug: false, emit_c: None, max_errors: 20,
-            run_args: None, harness: false, cc: false, client: protocol::Client::default(),
+            run_args: None, harness: false, cc: false, library_options: Default::default(), client: protocol::Client::default(),
         };
         // The two middle edits have the same source byte length but different
         // rawness. Name, span length or normalized spelling alone cannot key

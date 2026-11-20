@@ -549,6 +549,7 @@ mod tests {
             max_errors: 20,
             run_args: None,
             harness: false, cc: false,
+            library_options: Default::default(),
             client: Default::default(),
         }
     }

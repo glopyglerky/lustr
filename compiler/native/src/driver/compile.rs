@@ -4687,6 +4687,10 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
     if let (Some(observer), Some(phase)) = (observer, phase) { observer.prepared(phase); }
     if let Some(library)=&mut caches.library {
         library.current((0..program.fns.len()).map(|i|program.disk_id(LocalDefId(i as u32))));
+        // The admitted graph has no explicit extern dependencies. Rust reports
+        // its unused-dependency result at this resolved-program boundary, even
+        // if the following body check diagnoses a type error.
+        library.dependency_lint_ready=true;
         library.checked=work.iter().map(|&i|program.disk_id(LocalDefId(i as u32))).collect();
         library.checked_names=work.iter().map(|&i|{let id=LocalDefId(i as u32);(program.disk_id(id),program.interner.get(program.fns[i].name).to_owned())}).collect();
     }
@@ -7055,6 +7059,7 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
             max_errors: 20,
             run_args: None,
             harness: false, cc: false,
+            library_options: Default::default(),
             client: Default::default(),
         }
     }

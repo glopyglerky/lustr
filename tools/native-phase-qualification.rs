@@ -127,7 +127,7 @@ fn main() {
         let mut request = driver::Request {
             cmd: driver::Cmd::Build, session: key.clone(), file: file.clone(), out: output.clone(),
             json: false, timings: false, debug: false, emit_c: None, max_errors: 0,
-            run_args: None, harness: false, cc: false, client: Default::default(),
+            run_args: None, harness: false, cc: false, library_options: Default::default(), client: Default::default(),
         };
         let _proof = check::collect::provenance::begin();
         observed.caches.objects = None;
@@ -165,7 +165,7 @@ fn main() {
     // resolver path, which owns the native last-check response cache.
     std::fs::write(&file, format!("type OtherNumber=i64;\n{good}")).unwrap();
     for (label, cached) in [("check-first", false), ("check-cached", true)] {
-        let request = driver::Request { cmd:driver::Cmd::Check, session:key.clone(), file:file.clone(), out:root.join("check-unused"), json:false, timings:false, debug:false, emit_c:None, max_errors:0, run_args:None, harness:false, cc:false, client:Default::default() };
+        let request = driver::Request { cmd:driver::Cmd::Check, session:key.clone(), file:file.clone(), out:root.join("check-unused"), json:false, timings:false, debug:false, emit_c:None, max_errors:0, run_args:None, harness:false, cc:false, library_options:Default::default(), client:Default::default() };
         let recorder=Recorder::default(); let _proof=check::collect::provenance::begin();
         let answer=driver::compile_observed(&request,&mut observed,Some(&recorder));
         put(&root.join(format!("{label}.stderr")),answer.stderr.as_bytes()); assert_eq!(answer.code,0);
@@ -191,7 +191,7 @@ fn main() {
     ] {
         std::fs::write(&preferred_file,text).unwrap();put(&root.join(format!("{label}.source.rs")),text.as_bytes());
         let out=root.join(format!("{label}.elf"));
-        let request=driver::Request {cmd:driver::Cmd::Build,session:preferred_key.clone(),file:preferred_file.clone(),out:out.clone(),json:false,timings:false,debug:false,emit_c:None,max_errors:0,run_args:None,harness:false,cc:false,client:Default::default()};
+        let request=driver::Request {cmd:driver::Cmd::Build,session:preferred_key.clone(),file:preferred_file.clone(),out:out.clone(),json:false,timings:false,debug:false,emit_c:None,max_errors:0,run_args:None,harness:false,cc:false,library_options:Default::default(),client:Default::default()};
         let recorder=Recorder::default();let _proof=check::collect::provenance::begin();preferred.caches.objects=None;
         let answer=driver::compile_observed(&request,&mut preferred,Some(&recorder));
         put(&root.join(format!("{label}.stderr")),answer.stderr.as_bytes());assert_eq!(answer.code,code,"{label}: {}",answer.stderr);

@@ -3119,6 +3119,7 @@ pub fn run() -> i64 {
             max_errors: 0,
             run_args: None,
             harness: false, cc: false,
+            library_options: Default::default(),
             client: Default::default(),
         };
         let resp = compile(&req, session);

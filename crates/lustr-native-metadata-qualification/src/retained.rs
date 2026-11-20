@@ -72,7 +72,7 @@ impl Host {
             "counts":{"checked_bodies":0,"generated_bodies":0,"compiled_objects":0,"reused_objects":0,"metadata_encodes":0,"archive_builds":0,"sdk_loads":1},
             "artifact_reused":false,"last_successful_request":self.last_success});
         let request=driver::Request{cmd:if action=="check"{driver::Cmd::Check}else{driver::Cmd::Build},session:self.key.clone(),file:self.source.clone(),
-            out:step.join("libconsumer.rlib"),json:false,timings:false,debug:false,emit_c:None,max_errors:20,run_args:None,harness:false,cc:false,client:Default::default()};
+            out:step.join("libconsumer.rlib"),json:false,timings:false,debug:false,emit_c:None,max_errors:20,run_args:None,harness:false,cc:false,library_options:Default::default(),client:Default::default()};
         let result=match driver::prepare(&request,&mut self.session) {
             driver::Preparation::Ready(prepared)=>if action=="prepare-drop"{drop(prepared);driver::Response::default()}else{prepared.emit()},
             driver::Preparation::Complete(r)|driver::Preparation::Rejected(r)|driver::Preparation::Failed(r)|driver::Preparation::IntegrationIncomplete(r)=>r,

@@ -1,6 +1,6 @@
 //! Parse the actual Rust compiler request used by the pinned Cargo leaf unit.
 //! Unsupported options remain refusals; this adapter never reads Rust source.
-use crate::{Native, library_contract::{LibraryKey, SDK_RECEIPT, TARGET}};
+use crate::{Native, library_contract::{LibraryKey, LibraryOptions, SDK_RECEIPT, TARGET}};
 use std::{collections::{BTreeMap,BTreeSet}, ffi::OsString, path::PathBuf};
 
 pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
@@ -17,6 +17,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     let mut check_cfg = Vec::new();
     let mut search_paths = Vec::new();
     let mut codegen = BTreeMap::new();
+    let mut options = LibraryOptions::default();
     let mut i = 0;
     while i < args.len() {
         let arg = args[i].to_str()?;
@@ -44,6 +45,17 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
             let value = if arg == "-C" { i += 1; args.get(i)?.to_str()? } else { &arg[2..] };
             let (key,value) = value.split_once('=')?;
             if codegen.insert(key.to_owned(),value.to_owned()).is_some() { return None; }
+        } else if arg == "-Z" || arg.starts_with("-Z") {
+            let value = if arg == "-Z" { i += 1; args.get(i)?.to_str()? } else { &arg[2..] };
+            if options.embed_metadata.is_some() { return None; }
+            options.embed_metadata = Some(match value.strip_prefix("embed-metadata=")? {
+                "y" | "yes" | "on" | "true" => true,
+                "n" | "no" | "off" | "false" => false,
+                _ => return None,
+            });
+        } else if arg == "--force-warn" || arg.starts_with("--force-warn=") {
+            if options.force_warn_unused_crate_dependencies || value("--force-warn")? != "unused_crate_dependencies" { return None; }
+            options.force_warn_unused_crate_dependencies = true;
         } else if !arg.starts_with('-') && arg.ends_with(".rs") && source.is_none() { source = Some(arg.to_owned()); }
         else { return None; }
         i += 1;
@@ -98,6 +110,12 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
         native.extend(["--manifest-path".into(),std::path::absolute(manifest).ok()?.to_str()?.into()]);
     }
     if cargo_json { native.push("--json".into()); }
+    if let Some(embed) = options.embed_metadata {
+        native.extend(["--lustr-library-embed-metadata".into(),if embed {"yes"} else {"no"}.into()]);
+    }
+    if options.force_warn_unused_crate_dependencies {
+        native.push("--lustr-library-force-warn-unused-crate-dependencies".into());
+    }
     for (flag,value) in [("--lustr-library-name",context.crate_name.as_str()),
         ("--lustr-library-metadata",context.metadata.as_str()),("--lustr-library-extra-filename",context.extra_filename.as_str()),
         ("--lustr-library-cwd",context.working_directory.to_str()?)] {

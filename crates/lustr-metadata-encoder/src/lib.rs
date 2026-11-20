@@ -99,6 +99,8 @@ pub struct Input<'a> {
     pub crate_name: &'a str,
     pub metadata: &'a str,
     pub extra_filename: &'a str,
+    /// Actual unstable -Z request; absent and explicit true remain distinct tracked facts.
+    pub embed_metadata: Option<bool>,
     pub source_path: &'a str,
     pub working_directory: &'a str,
     pub source: &'a str,
@@ -123,6 +125,8 @@ pub struct SymbolMapping {
 
 pub struct Encoded {
     pub metadata: Vec<u8>,
+    /// Split rlibs contain this header-only stub, bound to the full metadata SVH.
+    pub metadata_stub: Option<Vec<u8>>,
     pub stable_crate_id: u64,
     pub crate_hash: [u8; 16],
     pub symbols: Vec<SymbolMapping>,

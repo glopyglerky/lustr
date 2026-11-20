@@ -1205,6 +1205,7 @@ pub fn serve(sock: &Path) -> ! {
             max_errors: 20,
             run_args: None,
             harness: false, cc: false,
+            library_options: Default::default(),
             client: protocol::Client::default(),
             file: file.clone(),
         };
@@ -1499,6 +1500,7 @@ mod tests {
             max_errors: 20,
             run_args: None,
             harness: false, cc: false,
+            library_options: Default::default(),
             client: protocol::Client::default(),
             file: file.to_path_buf(),
         }

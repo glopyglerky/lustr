@@ -1427,6 +1427,7 @@ fn main() {
             max_errors: 20,
             run_args: None,
             harness: false, cc: false,
+            library_options: Default::default(),
             client: Default::default(),
         };
         let mut s = Session::new(dir.join("obj"), false, key);

@@ -56,6 +56,7 @@ pub(crate) struct State {
     pub checked: Vec<def::DiskDefId>,
     pub(crate) checked_names: BTreeMap<def::DiskDefId,String>,
     pub snapshot: Option<Snapshot>,
+    pub(crate) dependency_lint_ready: bool,
 }
 
 #[derive(Default)]
@@ -92,6 +93,7 @@ impl Session {
     pub(crate) fn configure_library_history(&mut self,policy:history::Policy) {
         if let Some(state)=&mut self.caches.library {
             state.history_policy=policy;state.history.evicted_object_serials.clear();state.history.retired_definition_ids.clear();
+            state.dependency_lint_ready=false;
         }
     }
     pub(crate) fn prune_library_history(&mut self) {prune(&self.front,&mut self.caches);}
@@ -110,7 +112,7 @@ impl Session {
 /// Public contexts are validated before reading or preparing source. The
 /// constructor derives the mode from the same key, including after every reset.
 pub(crate) fn request_supported(req: &Request) -> bool {
-    let Some(key) = &req.session.library else { return true; };
+    let Some(key) = &req.session.library else { return req.library_options == crate::protocol::LibraryOptions::default(); };
     key.valid() && key.source_path == req.file && key.outputs(&req.out).is_some()
         && req.cmd == crate::protocol::Cmd::Build && req.session.krate.target_kind == "lib"
         && req.session.krate.target_name == key.crate_name && req.session.profile.panic_abort
@@ -127,6 +129,7 @@ impl State {
         self.source = Arc::from(source);
         self.checked.clear(); self.checked_names.clear(); self.generated.clear(); self.compiled_objects=0; self.reused_objects=0;
         self.snapshot = None;
+        self.dependency_lint_ready = false;
         self.history.evicted_object_serials.clear();self.history.retired_definition_ids.clear();
     }
     pub(super) fn changed(&mut self) { self.generation += 1; self.history_dirty=true; }

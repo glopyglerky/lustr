@@ -82,7 +82,7 @@ mod qualification {
                 cmd: if action == "check" { driver::Cmd::Check } else { driver::Cmd::Build },
                 session: key, file: self.source.clone(), out: self.output.clone(),
                 json: false, timings: false, debug: false, emit_c: None, max_errors: 0,
-                run_args: None, harness: false, cc: false, client: Default::default(),
+                run_args: None, harness: false, cc: false, library_options: Default::default(), client: Default::default(),
             };
             match driver::prepare_imported(&request, &mut session, &provider) {
                 Ok(driver::Preparation::Ready(prepared)) => {

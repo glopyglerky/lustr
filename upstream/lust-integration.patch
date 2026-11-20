@@ -5093,7 +5093,7 @@ index 136b1f4aa7efc99f8e5bd2b23446fad2578f1851..5a9cfb3f385dc3bbd827935e7afddde2
              // No daemon answered: start one for the next command, answer this one cold.
              maybe_autostart(&sock, &req.file, &core);
 diff --git a/src/daemon.rs b/src/daemon.rs
-index db807083aa56d24a804b47f7ffd31e33c563ad52..8c3b9be7e823cd9a80d6493a707e5f396bbc12c8 100644
+index db807083aa56d24a804b47f7ffd31e33c563ad52..dee104fdf88bc851e5eeead8202368e9fb6f4a3c 100644
 --- a/src/daemon.rs
 +++ b/src/daemon.rs
 @@ -23,6 +23,10 @@
@@ -5363,7 +5363,15 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..8c3b9be7e823cd9a80d6493a707e5f39
      // Sessions load std once; a std or adapter source override must be
      // read fresh by every compile (see `protocol::source_override`).
      if let Some(var) = protocol::source_override() {
-@@ -1190,8 +1300,142 @@ pub fn serve(sock: &Path) -> ! {
+@@ -1095,6 +1205,7 @@ pub fn serve(sock: &Path) -> ! {
+             max_errors: 20,
+             run_args: None,
+             harness: false, cc: false,
++            library_options: Default::default(),
+             client: protocol::Client::default(),
+             file: file.clone(),
+         };
+@@ -1190,8 +1301,142 @@ pub fn serve(sock: &Path) -> ! {
  mod tests {
      use super::*;
  
@@ -5507,7 +5515,15 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..8c3b9be7e823cd9a80d6493a707e5f39
      }
  
      fn done(key: &SessionKey, seq: u64, served: u64, warm: Response, fresh: Response, dir: PathBuf) -> GuardDone {
-@@ -1610,6 +1854,12 @@ mod tests {
+@@ -1255,6 +1500,7 @@ mod tests {
+             max_errors: 20,
+             run_args: None,
+             harness: false, cc: false,
++            library_options: Default::default(),
+             client: protocol::Client::default(),
+             file: file.to_path_buf(),
+         }
+@@ -1610,6 +1856,12 @@ mod tests {
      fn client_gone_sees_a_closed_peer_only() {
          let (ours, theirs) = std::os::unix::net::UnixStream::pair().unwrap();
          assert!(!client_gone(ours.as_raw_fd()));
@@ -5873,10 +5889,10 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..8fb71d588ee9a5905ff5cb6eb540ecf1
          let _ = std::fs::remove_dir_all(&root);
 diff --git a/src/driver/buildscript/native.rs b/src/driver/buildscript/native.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..338e9f3e0c0ce5fca9dd2465d2fff6594eda8549
+index 0000000000000000000000000000000000000000..53d264109fa82bbac388bcf149b60f2dbc1d9f95
 --- /dev/null
 +++ b/src/driver/buildscript/native.rs
-@@ -0,0 +1,1391 @@
+@@ -0,0 +1,1393 @@
 +//! Cargo-planned host scripts compiled by the ordinary native pipeline.
 +//!
 +//! The planner supplies the original host unit, not a probe result. Only this
@@ -6215,6 +6231,7 @@ index 0000000000000000000000000000000000000000..338e9f3e0c0ce5fca9dd2465d2fff659
 +        run_args: None,
 +        harness: false,
 +        cc: false,
++        library_options: Default::default(),
 +        client: crate::protocol::Client {
 +            env: Some(env.clone()),
 +            shown: Some(plan.script.strip_prefix(&plan.workspace_root).unwrap_or(&plan.script).to_path_buf()),
@@ -6805,6 +6822,7 @@ index 0000000000000000000000000000000000000000..338e9f3e0c0ce5fca9dd2465d2fff659
 +                run_args: None,
 +                harness: false,
 +                cc: false,
++                library_options: Default::default(),
 +                client: crate::protocol::Client { env: Some(Vec::new()), shown: None },
 +            };
 +            Self { root, plan, request, compiled: Cell::new(0), ran: Cell::new(0) }
@@ -7269,7 +7287,7 @@ index 0000000000000000000000000000000000000000..338e9f3e0c0ce5fca9dd2465d2fff659
 +    }
 +}
 diff --git a/src/driver/cache.rs b/src/driver/cache.rs
-index da28835400f894866adb85f436e2cbdf109797d7..6cf91ad37bd9d2192a7f1d876a0c7b478b2e5cc1 100644
+index da28835400f894866adb85f436e2cbdf109797d7..7bf7b80e9fef80d6bff312bdc572dbf4940d5906 100644
 --- a/src/driver/cache.rs
 +++ b/src/driver/cache.rs
 @@ -131,7 +131,7 @@ fn tcc_hash() -> (u64, u64) {
@@ -7340,7 +7358,15 @@ index da28835400f894866adb85f436e2cbdf109797d7..6cf91ad37bd9d2192a7f1d876a0c7b47
  }
  
  #[cfg(test)]
-@@ -659,7 +671,7 @@ mod tests {
+@@ -537,6 +549,7 @@ mod tests {
+             max_errors: 20,
+             run_args: None,
+             harness: false, cc: false,
++            library_options: Default::default(),
+             client: Default::default(),
+         }
+     }
+@@ -659,7 +672,7 @@ mod tests {
  
      #[test]
      fn response_round_trips() {
@@ -7350,7 +7376,7 @@ index da28835400f894866adb85f436e2cbdf109797d7..6cf91ad37bd9d2192a7f1d876a0c7b47
          assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
          assert!(decode_response(b"short").is_none());
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f2b18c94110fc0885fcca30f36a3f5b057d9c8a6 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2e6239342 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
 @@ -59,6 +59,7 @@ fn expand_tokens(
@@ -8264,7 +8290,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f2b18c94110fc0885fcca30f36a3f5b0
      // `lust check` skips std platform bodies (`Program::check_skips`).
      // A skipped slot keeps its last marks; one that needed a check lost
      // its C above, so the next build checks it.
-@@ -4296,17 +4683,36 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4296,17 +4683,40 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          super::item_oracle::check(front, caches, Ok(&program), &work, fn_count, hashes, lines, visits.path, crate_ids, build, tables);
          t.lap("item oracle");
      }
@@ -8272,6 +8298,10 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f2b18c94110fc0885fcca30f36a3f5b0
 +    if let (Some(observer), Some(phase)) = (observer, phase) { observer.prepared(phase); }
 +    if let Some(library)=&mut caches.library {
 +        library.current((0..program.fns.len()).map(|i|program.disk_id(LocalDefId(i as u32))));
++        // The admitted graph has no explicit extern dependencies. Rust reports
++        // its unused-dependency result at this resolved-program boundary, even
++        // if the following body check diagnoses a type error.
++        library.dependency_lint_ready=true;
 +        library.checked=work.iter().map(|&i|program.disk_id(LocalDefId(i as u32))).collect();
 +        library.checked_names=work.iter().map(|&i|{let id=LocalDefId(i as u32);(program.disk_id(id),program.interner.get(program.fns[i].name).to_owned())}).collect();
 +    }
@@ -8301,7 +8331,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f2b18c94110fc0885fcca30f36a3f5b0
              (Some(body), errs)
          });
          let body = body.filter(|_| keep_bodies).map(|mut b| {
-@@ -4315,6 +4721,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4315,6 +4725,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          });
          (body, errs)
      });
@@ -8309,7 +8339,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f2b18c94110fc0885fcca30f36a3f5b0
      let mut diags: Vec<Diag> = Vec::new();
      for (k, &i) in work.iter().enumerate() {
          caches.ok[slot(i)] = results[k].1.is_empty();
-@@ -4350,6 +4757,13 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4350,6 +4761,13 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              stored.verified[mode_at] = verified;
              caches.slot_reads[slot(i)] = Some(stored);
          }
@@ -8323,7 +8353,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f2b18c94110fc0885fcca30f36a3f5b0
          diags.extend(results[k].1.iter().cloned());
      }
      // rustc stops before monomorphization once a pre-mono check fails, so an
-@@ -4370,6 +4784,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4370,6 +4788,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          diags.push(Diag::new("L0130", diag::Span::default(), "no `main` function", "Add `fn main() { ... }`."));
      }
      t.lap(if mode == "full" { "check+borrowck (par)" } else { "check changed fns (par)" });
@@ -8331,7 +8361,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f2b18c94110fc0885fcca30f36a3f5b0
      // A one-shot process (`leak_at_exit`) exits right after this call. Freeing the IR and
      // program arenas, mostly built on worker threads, costs about 10 ms on a 31k-line crate,
      // so leak them on every return below and let the OS reclaim the memory at exit. A
-@@ -4396,10 +4811,105 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4396,10 +4815,105 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
              }
          }
@@ -8439,7 +8469,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f2b18c94110fc0885fcca30f36a3f5b0
          // The answer, before the timing and stats lines, for a no-op
          // check of the same request to reuse.
          if let Some(fp) = check_fp {
-@@ -4446,10 +4956,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4446,10 +4960,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          return resp;
      }
  
@@ -8464,7 +8494,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f2b18c94110fc0885fcca30f36a3f5b0
      // Each fn's base line: cgen stores its line numbers relative to it
      // and the main unit adds each slot's base back, so a reused body's
      // C stays right when its source text moves. An instance's base is
-@@ -4471,7 +4995,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4471,7 +4999,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let line_base_of = |_: &Front, i: usize| -> u32 { line_bases.get(i).copied().unwrap_or(0) };
      // Release C (driver/release_c.rs): content-addressed names, set as cgen's naming
      // context around every step that prints C.
@@ -8473,7 +8503,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f2b18c94110fc0885fcca30f36a3f5b0
      let rn = rnames.as_ref();
      // A release C build to the release driver streams its cc step (`cc::Stream`): each unit the
      // assembly makes compiles from the time its text exists. Not with --emit-c nor LLVM units.
-@@ -4498,7 +5022,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4498,7 +5026,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let (outs, cg_noted): (Vec<_>, Vec<_>) = par_map(&bodies, |(i, b)| {
          check::derive_delta::scoped(program.record_reads, || {
              cgen::in_layout_phase(layout_tag, || {
@@ -8491,7 +8521,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f2b18c94110fc0885fcca30f36a3f5b0
              })
          })
      })
-@@ -4519,7 +5052,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4519,7 +5056,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // Cached IR serves only the slot-moved re-emit, which runs only in a
      // program with no generics: a generic program caches none (on tsgo it
      // was 1.5 GB of a daemon session, made serially per generated body).
@@ -8500,7 +8530,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f2b18c94110fc0885fcca30f36a3f5b0
      // The stable id of each fn whose slot the new C prints (`FnOut::used`),
      // by slot: the pairs below are the next renumber's re-emit trigger.
      let mut wanted = vec![false; if keep_ir { front.slot_of.len() } else { 0 }];
-@@ -4552,10 +5085,22 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4552,10 +5089,22 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          caches.out[s] = out;
          caches.has_out[s] = true;
          dirty_slots.push(s);
@@ -8524,7 +8554,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f2b18c94110fc0885fcca30f36a3f5b0
      // LUST_CHECK_GENREUSE=1 (genreuse_oracle.rs): every concrete body a release C build keeps
      // is checked, lowered and generated again without reuse (nothing stored), and its C must
      // equal the kept C. Release C names are content-addressed; dev C names a vtable by a
-@@ -4681,6 +5226,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4681,6 +5230,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      }
      let glue_changed = shared_changed || regenerated || statics_changed;
      t.lap("codegen (par)");
@@ -8539,7 +8569,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f2b18c94110fc0885fcca30f36a3f5b0
      // Nothing reads the IR after codegen. A one-shot build leaks it at exit
      // (`leak_at_exit`), but on a large program it is the largest block
      // alive at the peak (ts-rust's bins: about 2.4 GB of 9.4 GB, through
-@@ -4751,7 +5304,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4751,7 +5308,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // rebuilds and the base
      // relinks over the existing unit objects. Unrelated units keep
      // their objects, in the session and in the disk unit cache.
@@ -8549,7 +8579,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f2b18c94110fc0885fcca30f36a3f5b0
      let cap_grown = n_slots > caches.table_cap;
      if fresh_base || cap_grown {
          caches.table_cap = n_slots * 2 + 64;
-@@ -5807,6 +6361,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5807,6 +6365,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // this check keeps that a pin, not a hope.
      if let Some(run_args) = &req.run_args
          && !caches.persistent
@@ -8557,7 +8587,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f2b18c94110fc0885fcca30f36a3f5b0
          && fresh_base
          && groups.len() == 1
          && !req.debug
-@@ -5883,9 +6438,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5883,9 +6442,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      caches.objects = Some(req.debug);
      t.lap("tcc compile");
      let all_base: Vec<PathBuf> = [1, 2, 3, LOC_UNIT].into_iter().chain(link_fn_units.iter().copied()).map(base_obj).collect();
@@ -8577,7 +8607,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f2b18c94110fc0885fcca30f36a3f5b0
          crate::tcc::link(&objs, &req.out, req.debug)
      } else {
          // The base library lives in a persistent dir under a content name
-@@ -5901,18 +6465,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5901,18 +6469,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
          let base = if rebuild_base {
              caches.base_gen += 1;
@@ -8618,7 +8648,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f2b18c94110fc0885fcca30f36a3f5b0
                      install_base(&tmp, &base_dir.join(&soname))?;
                      if !caches.base_files.contains(&soname) {
                          caches.base_files.push_back(soname);
-@@ -5922,24 +6499,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5922,24 +6503,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              if built.is_err() {
                  let _ = std::fs::remove_file(&tmp);
              }
@@ -8650,7 +8680,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f2b18c94110fc0885fcca30f36a3f5b0
              built
          } else {
              Ok(())
-@@ -5958,8 +6536,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5958,8 +6540,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // a small grace count while no known output file still references them. A binary the user
      // kept keeps its base; one that was overwritten or deleted does not. A running program
      // keeps its mapped copy after unlink.
@@ -8661,7 +8691,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f2b18c94110fc0885fcca30f36a3f5b0
          if let Some(base_dir) = caches.base_dir.clone() {
              record_base_user(&base_dir, &soname, &req.out);
          }
-@@ -6058,6 +6636,66 @@ mod tests {
+@@ -6058,6 +6640,66 @@ mod tests {
          panic!("{}: still busy", bin.display())
      }
  
@@ -8728,7 +8758,12 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f2b18c94110fc0885fcca30f36a3f5b0
      /// The base sweep never deletes a live owner's base (it may be a live
      /// session's current base, found by fuzz seed 7 multi when a guard
      /// session's first-build sweep deleted the warm session's base), but
-@@ -6421,6 +7059,542 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
+@@ -6417,10 +7059,547 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
+             max_errors: 20,
+             run_args: None,
+             harness: false, cc: false,
++            library_options: Default::default(),
+             client: Default::default(),
          }
      }
  
@@ -9386,7 +9421,7 @@ index 0000000000000000000000000000000000000000..bc14f747b9ff323d663d14683993546e
 +    fn take_emission(&self) -> Result<Box<dyn Emission + 'static>, String>;
 +}
 diff --git a/src/driver/ir_cache.rs b/src/driver/ir_cache.rs
-index 8fbed03aaba6dac6347970d1fd7926ae705631a0..6f36947a858612928e941b3c81e6bd794cae18ff 100644
+index 8fbed03aaba6dac6347970d1fd7926ae705631a0..1830648d1f8e6a864ab1441d092d2a9446f2c6b9 100644
 --- a/src/driver/ir_cache.rs
 +++ b/src/driver/ir_cache.rs
 @@ -265,6 +265,11 @@ fn hash_rvalue(h: &mut FxHasher, p: &Program, tys: &impl TyIntern, r: &Rvalue, s
@@ -9458,6 +9493,14 @@ index 8fbed03aaba6dac6347970d1fd7926ae705631a0..6f36947a858612928e941b3c81e6bd79
                  },
                  args: args.iter().map(|a| operand(&mut intern, &mut tys, &strings, a)).collect::<Option<Vec<_>>>()?,
                  dest: dest.clone(),
+@@ -1414,6 +1427,7 @@ fn main() {
+             max_errors: 20,
+             run_args: None,
+             harness: false, cc: false,
++            library_options: Default::default(),
+             client: Default::default(),
+         };
+         let mut s = Session::new(dir.join("obj"), false, key);
 diff --git a/src/driver/item_outline.rs b/src/driver/item_outline.rs
 index 6709d7339b47a96a54a3495725cf9df9f6f3e7d7..ea417493cf49a697af828202996bf05bf98a2305 100644
 --- a/src/driver/item_outline.rs
@@ -9696,7 +9739,7 @@ index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..8d921133c7f85b95d116070942dd6721
 +    fn diagnostics(&self, _phase: Prepared<'_>, _diagnostics: &[crate::diag::Diag]) {}
 +}
 diff --git a/src/driver/patch.rs b/src/driver/patch.rs
-index a42971cf10bbbdd13511f51c07aef68556044221..73be0cff151a36eec76fe6527b906e909fa3ce6b 100644
+index a42971cf10bbbdd13511f51c07aef68556044221..dd3db440164d3a25122502b96d4caf0020a01885 100644
 --- a/src/driver/patch.rs
 +++ b/src/driver/patch.rs
 @@ -447,6 +447,13 @@ pub(super) struct Patched {
@@ -9849,7 +9892,15 @@ index a42971cf10bbbdd13511f51c07aef68556044221..73be0cff151a36eec76fe6527b906e90
  }
  
  /// Rescans the edited fn's item after its new body landed: the item
-@@ -3396,6 +3414,119 @@ pub fn run() -> i64 {
+@@ -3101,6 +3119,7 @@ pub fn run() -> i64 {
+             max_errors: 0,
+             run_args: None,
+             harness: false, cc: false,
++            library_options: Default::default(),
+             client: Default::default(),
+         };
+         let resp = compile(&req, session);
+@@ -3396,6 +3415,119 @@ pub fn run() -> i64 {
          warm.front.last_visits.clone()
      }
  
@@ -11342,7 +11393,7 @@ index ba5b50508c2f7c943dd1485e2d940496548fdb59..9a46b0c5550e5bf4d91210ea57c605ca
              out.push(Tt::Tok(Token { tok, span: this.stamp(name_tok.span) }));
 diff --git a/src/identifier_tests.rs b/src/identifier_tests.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..746e280b56fd0150fcfc899e6b87c4acbc3a6929
+index 0000000000000000000000000000000000000000..d23c95eed471134a167d89124656c41022c6730b
 --- /dev/null
 +++ b/src/identifier_tests.rs
 @@ -0,0 +1,105 @@
@@ -11411,7 +11462,7 @@ index 0000000000000000000000000000000000000000..746e280b56fd0150fcfc899e6b87c4ac
 +        let req = protocol::Request {
 +            cmd: protocol::Cmd::Build, session: key, file: file.clone(), out: owner.0.join("program"),
 +            json: false, timings: true, debug: false, emit_c: None, max_errors: 20,
-+            run_args: None, harness: false, cc: false, client: protocol::Client::default(),
++            run_args: None, harness: false, cc: false, library_options: Default::default(), client: protocol::Client::default(),
 +        };
 +        // The two middle edits have the same source byte length but different
 +        // rawness. Name, span length or normalized spelling alone cannot key
@@ -13103,7 +13154,7 @@ index c4b23e007d746b984e392919dcf1bc9bc87a265e..47bb8992d04e52e8ba9774e3e865ddf1
              _ => return None,
          }
 diff --git a/src/protocol.rs b/src/protocol.rs
-index 504b467a9d240272c85f999b59f57a5d52b3cd4e..2d0bd2526530098dae6996b36167067b8223f7e6 100644
+index 504b467a9d240272c85f999b59f57a5d52b3cd4e..c27e683305bbc499962536c7720b9a5b9fef2a33 100644
 --- a/src/protocol.rs
 +++ b/src/protocol.rs
 @@ -6,7 +6,7 @@
@@ -13140,7 +13191,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..2d0bd2526530098dae6996b36167067b
 +pub mod host_runtime;
 +#[path = "../../../src/library_contract.rs"]
 +pub mod library_contract;
-+pub use library_contract::LibraryKey;
++pub use library_contract::{LibraryKey, LibraryOptions};
 +
  #[derive(Clone, Copy, PartialEq, Eq)]
  pub enum Cmd {
@@ -13204,7 +13255,15 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..2d0bd2526530098dae6996b36167067b
      }
  }
  
-@@ -325,6 +345,40 @@ pub struct Response {
+@@ -295,6 +315,7 @@ pub struct Request {
+     /// release builds always compile cold, in the client-spawned
+     /// `lust-core`, never warm.
+     pub cc: bool,
++    pub library_options: LibraryOptions,
+     pub client: Client,
+ }
+ 
+@@ -325,6 +346,40 @@ pub struct Response {
      pub code: i32,
      /// The program already ran in memory; `code` is its exit code. Do not run `out` again.
      pub ran: bool,
@@ -13245,7 +13304,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..2d0bd2526530098dae6996b36167067b
  }
  
  pub enum Invocation {
-@@ -552,6 +606,7 @@ fn apply_dev_config(key: &mut SessionKey, file: &Path) {
+@@ -552,6 +607,7 @@ fn apply_dev_config(key: &mut SessionKey, file: &Path) {
  /// still the crate root: `lust check file.rs` keeps its meaning.
  fn session_key_for(file: &Path, flags: CrateFlags, net: CargoNet) -> SessionKey {
      let mut key = SessionKey::synthetic(file, false);
@@ -13253,16 +13312,17 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..2d0bd2526530098dae6996b36167067b
      let mut features = flags.features;
      sort_features(&mut features);
      key.features = features;
-@@ -625,6 +680,8 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -625,6 +681,9 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
      let (mut release, mut profile, mut rustc) = (false, None, false);
      let mut max_errors = 20usize;
      let mut crate_flags = CrateFlags::default();
 +    let (mut library_name, mut library_metadata, mut library_extra, mut library_cwd) = (None,None,None,None);
 +    let (mut library_cfg, mut library_search) = (Vec::new(),Vec::new());
++    let mut library_options = LibraryOptions::default();
      // Every --target named, in order. One builds a session; several are
      // the release driver's list and build one session each.
      let mut targets: Vec<String> = Vec::new();
-@@ -652,6 +709,12 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -652,6 +711,14 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
      }
      while let Some(a) = it.next() {
          match a.as_str() {
@@ -13272,15 +13332,34 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..2d0bd2526530098dae6996b36167067b
 +            "--lustr-library-cwd" if library_cwd.is_none() => library_cwd = Some(PathBuf::from(it.next()?)),
 +            "--lustr-library-check-cfg" => library_cfg.push(it.next()?.clone()),
 +            "--lustr-library-search" => library_search.push(PathBuf::from(it.next()?)),
++            "--lustr-library-embed-metadata" if library_options.embed_metadata.is_none() => library_options.embed_metadata = Some(rustc_bool(it.next()?)?),
++            "--lustr-library-force-warn-unused-crate-dependencies" if !library_options.force_warn_unused_crate_dependencies => library_options.force_warn_unused_crate_dependencies = true,
              "--json" => json = true,
              "--timings" => timings = true,
              "-g" => debug = true,
-@@ -791,6 +854,18 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -696,6 +763,9 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+     if file.as_os_str().is_empty() {
+         return None;
+     }
++    let library_supplied = library_name.is_some() || library_metadata.is_some() || library_extra.is_some() || library_cwd.is_some()
++        || !library_cfg.is_empty() || !library_search.is_empty() || library_options != LibraryOptions::default();
++    if library_supplied && (rustc || release || profile.is_some()) { return None; }
+     let abs = |p: &Path| std::path::absolute(p).unwrap_or_else(|_| p.to_path_buf());
+     // Release and the rustc oracle are build/check-only, with no extra lust flags.
+     // Crate-selection flags are lust dev flags today: reject them there rather
+@@ -756,6 +826,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+                 run_args: None,
+                 harness: false,
+                 cc: true,
++                library_options: LibraryOptions::default(),
+                 client: Client::current(&typed),
+             });
+         }
+@@ -791,6 +862,17 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
      if let Some(on) = debug_assertions {
          session.profile.debug_assertions = on;
      }
-+    if library_name.is_some() || library_metadata.is_some() || library_extra.is_some() || library_cwd.is_some()
-+        || !library_cfg.is_empty() || !library_search.is_empty() {
++    if library_supplied {
 +        let key = LibraryKey {crate_name:library_name?, metadata:library_metadata?, extra_filename:library_extra?,
 +            source_path:file.clone(), working_directory:library_cwd?, check_cfg:library_cfg, search_paths:library_search,
 +            sdk_receipt:library_contract::SDK_RECEIPT.into()};
@@ -13294,7 +13373,15 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..2d0bd2526530098dae6996b36167067b
      let req = Request {
          cmd: if cmd == "check" { Cmd::Check } else { Cmd::Build },
          session,
-@@ -909,8 +984,21 @@ pub fn encode(r: &Request) -> Vec<u8> {
+@@ -803,6 +885,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+         max_errors,
+         run_args: if run { Some(run_args.clone()) } else { None },
+         harness: false, cc: false,
++        library_options,
+         client: Client::current(&typed),
+     };
+     Some(Invocation::Compile { req, run, args: run_args })
+@@ -909,8 +992,23 @@ pub fn encode(r: &Request) -> Vec<u8> {
      path_field(&mut out, s.krate.manifest_path.as_deref());
      put_field(&mut out, s.krate.target_kind.as_bytes());
      put_field(&mut out, s.krate.target_name.as_bytes());
@@ -13312,11 +13399,13 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..2d0bd2526530098dae6996b36167067b
 +        for value in &library.check_cfg { put_field(&mut out,value.as_bytes()); }
 +        put_field(&mut out,library.search_paths.len().to_string().as_bytes());
 +        for path in &library.search_paths { path_field(&mut out,Some(path)); }
++        put_field(&mut out,match r.library_options.embed_metadata {None=>b"-",Some(true)=>b"1",Some(false)=>b"0"});
++        put_field(&mut out,if r.library_options.force_warn_unused_crate_dependencies {b"1"} else {b"0"});
 +    }
      for f in &s.features {
          put_field(&mut out, f.as_bytes());
      }
-@@ -951,8 +1039,30 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -951,8 +1049,33 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
      let manifest = get_field(r)?;
      let target_kind = text(get_field(r)?)?;
      let target_name = text(get_field(r)?)?;
@@ -13327,6 +13416,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..2d0bd2526530098dae6996b36167067b
 +    };
      let root = path(get_field(r)?);
      let target_triple = text(get_field(r)?)?;
++    let mut library_options = LibraryOptions::default();
 +    let library = match get_field(r)?.as_slice() {
 +        b"0" => None,
 +        b"1" => {
@@ -13337,6 +13427,8 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..2d0bd2526530098dae6996b36167067b
 +            let check_cfg=(0..count).map(|_|text(get_field(r)?)).collect::<Option<Vec<_>>>()?;
 +            let count:usize=text(get_field(r)?)?.parse().ok()?; if count>4096{return None;}
 +            let search_paths=(0..count).map(|_|Some(path(get_field(r)?))).collect::<Option<Vec<_>>>()?;
++            library_options.embed_metadata=match get_field(r)?.as_slice() {b"-"=>None,b"1"=>Some(true),b"0"=>Some(false),_=>return None};
++            library_options.force_warn_unused_crate_dependencies=match get_field(r)?.as_slice() {b"0"=>false,b"1"=>true,_=>return None};
 +            let library=LibraryKey{crate_name,metadata,extra_filename,source_path,working_directory,check_cfg,search_paths,sdk_receipt};
 +            if !library.valid() || library.outputs(&out).is_none() || library.source_path!=file
 +                || target_triple!=library_contract::TARGET || target_kind!="lib" || f[0]!="build" {return None;}
@@ -13347,7 +13439,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..2d0bd2526530098dae6996b36167067b
      // A feature count this large is a bad request, not a loop to run.
      let n_features: usize = f[11].parse().ok()?;
      if n_features > 4096 {
-@@ -982,11 +1092,13 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -982,11 +1105,13 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
      Some(Request {
          cmd: if f[0] == "check" { Cmd::Check } else { Cmd::Build },
          session: SessionKey {
@@ -13361,7 +13453,13 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..2d0bd2526530098dae6996b36167067b
                  root,
                  test: f[5] == "1",
              },
-@@ -1011,7 +1123,11 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -1006,12 +1131,17 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+         max_errors: f[4].parse().ok()?,
+         run_args: None,
+         harness: false, cc: false,
++        library_options,
+         client: Client { env, shown: if shown.is_empty() { None } else { Some(path(shown)) } },
+     })
  }
  
  pub fn write_response(w: &mut impl Write, r: &Response) -> std::io::Result<()> {
@@ -13374,7 +13472,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..2d0bd2526530098dae6996b36167067b
  }
  
  /// The whole answer to a request of another build: a head no client takes
-@@ -1020,37 +1136,78 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
+@@ -1020,37 +1150,78 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
      write!(w, "- - - {}\n", build_id())
  }
  
@@ -13482,7 +13580,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..2d0bd2526530098dae6996b36167067b
  }
  
  /// Prints a response. For `run`, runs the program after a successful build. Never returns.
-@@ -1331,9 +1488,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
+@@ -1331,9 +1502,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
      Some(PathBuf::from(text[at..end].replace("\\\\", "\\")))
  }
  
@@ -13532,7 +13630,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..2d0bd2526530098dae6996b36167067b
  pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug: bool, net: CargoNet) -> ! {
      let profile = profile.unwrap_or("release");
      let dev = profile == "dev";
-@@ -1408,12 +1605,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
+@@ -1408,12 +1619,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
      exit_with(status);
  }
  
@@ -13551,7 +13649,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..2d0bd2526530098dae6996b36167067b
  pub fn run_rustc_check(file: &Path) -> ! {
      let obj = std::env::temp_dir().join(format!("lust-rustc-check-{}.o", std::process::id()));
      eprintln!("lust: checking with rustc (oracle): rustc --edition 2024 --emit=obj {}", file.display());
-@@ -1461,6 +1664,150 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
+@@ -1461,6 +1678,150 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
  mod tests {
      use super::*;
  
@@ -13702,7 +13800,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..2d0bd2526530098dae6996b36167067b
      fn args(list: &[&str]) -> Vec<String> {
          list.iter().map(|s| s.to_string()).collect()
      }
-@@ -1486,6 +1833,23 @@ mod tests {
+@@ -1486,6 +1847,23 @@ mod tests {
          assert_ne!(k, SessionKey::synthetic(Path::new("/tmp/x/other.rs"), false), "file differs");
      }
  
@@ -17601,6 +17699,18 @@ index b978e5092190f63396af29c882284e1446de35d8..cddd2ff213111602607c73ce2ee49115
          }
      }
      link_executable(&tcc, objs, out)
+diff --git a/src/testrun.rs b/src/testrun.rs
+index 3395a8b4b850e5fc7e80ddb3e36cce0fa641671d..5edce806b12a6bfd26ff0674b38a3aa2faa8a4d6 100644
+--- a/src/testrun.rs
++++ b/src/testrun.rs
+@@ -433,6 +433,7 @@ pub fn run(args: &[String]) -> i32 {
+         run_args: None,
+         // The check below runs on the user file before the generated `main` is added.
+         harness: cmd == Cmd::Check, cc: false,
++        library_options: Default::default(),
+         client: Default::default(),
+     };
+     let check = driver::compile(&req(Cmd::Check, file.clone(), dir.join("testbin")), &mut session);
 diff --git a/src/ty/consteval.rs b/src/ty/consteval.rs
 index 22458d8e8e678b885bef0622eeb976c9e96041fa..7fc2c4c0cae178a94f6833eee391d080ad569ee6 100644
 --- a/src/ty/consteval.rs
@@ -17967,7 +18077,7 @@ index d72108a0e4c91fe4c2bba4241bb3fa945212f00b..cd0bfe510bc8564cb471df056931bf21
      fn fake_def(hash: u64) -> DefId {
 diff --git a/src/unicode.rs b/src/unicode.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..f6e1f07ac4d1128deb4163cbd1d0101f498c114b
+index 0000000000000000000000000000000000000000..5532d6d85d315c8cc0f2385cef90695016b70661
 --- /dev/null
 +++ b/src/unicode.rs
 @@ -0,0 +1,107 @@
@@ -18052,7 +18162,7 @@ index 0000000000000000000000000000000000000000..f6e1f07ac4d1128deb4163cbd1d0101f
 +            let req = protocol::Request {
 +                cmd: protocol::Cmd::Build, session: key, file: file.clone(), out: owner.0.join("program"),
 +                json: false, timings: true, debug: false, emit_c: None, max_errors: 20,
-+                run_args: None, harness: false, cc: false, client: protocol::Client::default(),
++                run_args: None, harness: false, cc: false, library_options: Default::default(), client: protocol::Client::default(),
 +            };
 +            for (phase, cp, tag, expected) in [
 +                ("cold", 0x558u32, 0, true), ("unchanged", 0x558, 0, true),

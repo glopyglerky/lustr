@@ -336,6 +336,7 @@ fn compile_script(plan: &BuildScriptUnit, directory: &Path, binary: &Path, env: 
         run_args: None,
         harness: false,
         cc: false,
+        library_options: Default::default(),
         client: crate::protocol::Client {
             env: Some(env.clone()),
             shown: Some(plan.script.strip_prefix(&plan.workspace_root).unwrap_or(&plan.script).to_path_buf()),
@@ -926,6 +927,7 @@ mod tests {
                 run_args: None,
                 harness: false,
                 cc: false,
+                library_options: Default::default(),
                 client: crate::protocol::Client { env: Some(Vec::new()), shown: None },
             };
             Self { root, plan, request, compiled: Cell::new(0), ran: Cell::new(0) }

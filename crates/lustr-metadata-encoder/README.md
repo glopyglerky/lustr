@@ -77,6 +77,26 @@ bytes and a native semantic supplement. That supplement binds checked source,
 request, object, SDK and profile identities. It is a conservative native change
 detector, not byte-for-byte reproduction of Rust's HIR fingerprint.
 
+The public request now represents the pinned Cargo `-Z embed-metadata` choice.
+Absent, explicit true and explicit false remain distinct tracked metadata hash
+inputs. Only false uses a small original-format `CrateHeader` stub inside the
+archive's `lib.rmeta` member; the standalone `.rmeta` remains full. The stub
+has no unhashed root and carries exactly the full metadata SVH. The separate
+`-C embed-metadata` option is not admitted by this request boundary.
+
+These artifact variants share native checked definitions, generated bodies and
+TinyCC objects. The artifact service retains at most three choices for the
+current native snapshot, plus the last durable publication. A new choice encodes
+metadata and builds its archive without repeating native body work; a retained
+choice reuses its immutable bytes. Actual timings remain unqualified.
+
+The pinned forced unused-dependency lint is a per-request host response, outside
+metadata identity. This admitted leaf has no explicit extern dependencies, so
+the public owner emits the original empty `unused_extern` force-warn JSON event
+after resolved-program admission, including on a subsequent type error. Early
+context refusals do not fabricate that analysis event. Lint and JSON-only options
+do not change the metadata hash or artifact variant.
+
 The original `RUSTC_FORCE_RUSTC_VERSION` override is outside the represented
 request policy. Both host callers must reject an incompatible override; the public owner checks every actual client request. The
 encoder neither reads mutable process environment nor silently changes the

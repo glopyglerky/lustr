@@ -25,7 +25,7 @@ fn build(root: &std::path::Path, session: &mut driver::Session, file: &std::path
         cmd: driver::Cmd::Build, session: driver::SessionKey::synthetic(file, false),
         file: file.to_owned(), out: output.clone(), json: false, timings: true,
         debug: false, emit_c: None, max_errors: 0, run_args: None,
-        harness: false, cc: false, client: Default::default(),
+        harness: false, cc: false, library_options: Default::default(), client: Default::default(),
     };
     put(&root.join(format!("{label}.source.rs")), &std::fs::read(file).unwrap());
     put(&root.join(format!("{label}.request.bytes")), &protocol::encode(&request));
