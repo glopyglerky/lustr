@@ -6,8 +6,9 @@ or a performance claim. Cargo determines the actual compiler arguments. Native
 work observations are source instrumentation, corroborated by immutable objects;
 process, artifact, metadata-reader and runtime checks are independent evidence.
 Reference protocols: Rust 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494
-rustc_errors/src/json.rs and rustc_interface/src/passes.rs; Cargo submodule
-c07ac2c4d12237effc4b94f4543769b421790045, src/compiler/mod.rs.
+rustc_errors/src/json.rs, rustc_interface/src/passes.rs, and rustc_metadata/src
+rmeta/encoder.rs and locator.rs; Cargo submodule c07ac2c4d12237effc4b94f4543769b421790045,
+src/compiler/mod.rs (split-metadata emission and paired dependency paths).
 """
 import argparse
 import importlib.util
@@ -62,6 +63,13 @@ SUCCESS_CASES = [row[0] for row in HISTORY if row[-1] != "invalid"]
 EXPECTED_ASSERTIONS = len(SUCCESS_CASES) * ASSERTIONS_PER_CONSUMER
 EVICTION_MASKS = [255, 511, 1023, 127]
 EVICTION_ASSERTIONS = len(EVICTION_MASKS) * ASSERTIONS_PER_CONSUMER
+METADATA_TRANSITIONS = [
+    ("metadata-explicit-no", "no"),
+    ("metadata-default", None),
+    ("metadata-explicit-yes", "yes"),
+    ("metadata-restored-no", "no"),
+]
+METADATA_TRANSITION_ASSERTIONS = len(METADATA_TRANSITIONS) * ASSERTIONS_PER_CONSUMER
 VERSION_REFUSAL = "incompatible-public-library-version"
 RAW_REQUEST_OFFSET = len(HISTORY) + len(EVICTION_MASKS) + 1
 JSON_OPTIONS = "diagnostic-rendered-ansi,artifacts,future-incompat,unused-externs-silent"
@@ -191,7 +199,7 @@ def frozen_prefix(previous, current):
 
 def parse_compile(attempt):
     args = attempt["argv"][1:]
-    result = {"codegen": {}, "check_cfg": [], "search_dirs": []}
+    result = {"codegen": {}, "unstable": {}, "check_cfg": [], "search_dirs": []}
     position = 0
     while position < len(args):
         arg = args[position]
@@ -207,6 +215,11 @@ def parse_compile(attempt):
             key, separator, value = option.partition("=")
             require(separator and key not in result["codegen"], "duplicate or valueless codegen setting")
             result["codegen"][key] = value
+        elif arg == "-Z" or arg.startswith("-Z"):
+            option = next_value() if arg == "-Z" else arg[2:]
+            key, separator, value = option.partition("=")
+            require(separator and key not in result["unstable"], "duplicate or valueless unstable setting")
+            result["unstable"][key] = value
         elif arg == "-L" or arg.startswith("-L"):
             option = next_value() if arg == "-L" else arg[2:]
             require(option.startswith("dependency="), "unrepresented library search class")
@@ -226,6 +239,30 @@ def parse_compile(attempt):
     return result
 
 
+def library_options(facts):
+    require(set(facts["unstable"]) <= {"embed-metadata"}
+            and "embed-metadata" not in facts["codegen"], "unrepresented metadata option channel")
+    choice = facts["unstable"].get("embed-metadata")
+    require(choice in {None, "yes", "no"}, "unrepresented metadata embedding value")
+    require(facts.get("--force-warn") == "unused_crate_dependencies", "missing actual forced dependency lint")
+    return {"embed_metadata": None if choice is None else choice == "yes",
+            "force_warn_unused_crate_dependencies": True}
+
+
+def metadata_replay_argv(invocation, choice):
+    # Deliberate direct-request variation, never a rewrite of Cargo's invocation.
+    # The captured base must contain precisely the real split option pair.
+    argv = list(invocation["argv"])
+    require(argv.count("-Z") == 1, "captured Cargo unstable option inventory changed")
+    at = argv.index("-Z")
+    require(argv[at + 1] == "embed-metadata=no", "captured Cargo metadata option changed")
+    if choice is None:
+        del argv[at:at + 2]
+    else:
+        argv[at + 1] = "embed-metadata=" + choice
+    return argv
+
+
 def declared_compile(facts, project):
     require(facts.get("--crate-name") == CRATE and facts.get("--edition") == "2024"
             and facts.get("--crate-type") in {"lib", "rlib"}, "Cargo changed the declared leaf identity")
@@ -240,9 +277,14 @@ def declared_compile(facts, project):
     require(re.fullmatch(r"[0-9a-f]{16}", codegen["metadata"]) is not None
             and re.fullmatch(r"-[0-9a-f]{16}", codegen["extra-filename"]) is not None,
             "Cargo metadata or output disambiguator is malformed")
-    allowed = {"codegen", "check_cfg", "search_dirs", "source", "--crate-name", "--edition", "--crate-type",
-               "--emit", "--error-format", "--json", "--out-dir"}
-    require(set(facts) == allowed and facts["search_dirs"], "unknown actual Cargo compiler argument")
+    require(facts["unstable"] == {"embed-metadata": "no"}
+            and facts.get("--force-warn") == "unused_crate_dependencies",
+            "Cargo split-metadata or forced-lint request differs from pinned source")
+    allowed = {"codegen", "unstable", "check_cfg", "search_dirs", "source", "--crate-name", "--edition", "--crate-type",
+               "--emit", "--error-format", "--json", "--out-dir", "--force-warn"}
+    # This real dependency-free unit in pinned Cargo's new build layout has no
+    # -L dependency argument (ca383 cold invocation). Preserve that actual fact.
+    require(set(facts) == allowed and facts["search_dirs"] == [], "unknown actual Cargo compiler argument")
     out = Path(facts["--out-dir"]).resolve()
     require(out.is_relative_to(project["build"]), "Cargo compiler output escaped its configured build directory")
     suffix = codegen["extra-filename"]
@@ -420,7 +462,45 @@ def witness(root, relative):
     return path.read_bytes()
 
 
-def inspect_artifact(report_dir, record, outputs, source, source_bytes, kind, previous):
+def split_metadata(full, stub):
+    # Pinned Rust encoder2694-2705/2800-2819 writes a header-only stub with
+    # unhashed-position zero and the same SVH as the separately emitted rmeta.
+    for label, data in (("full", full), ("stub", stub)):
+        require(len(data) > 52 and data[:8] == b"rust\0\0\0\x0c"
+                and data.endswith(b"rust-end-file"), label + " metadata has an invalid pinned header or end marker")
+        root = int.from_bytes(data[8:16], "little")
+        require(40 <= root < len(data) - 13, label + " metadata has an invalid root/header position")
+    unhashed = int.from_bytes(full[16:24], "little")
+    require(40 <= unhashed < len(full) - 13 and stub[16:24] == bytes(8),
+            "split metadata changed full/stub unhashed positions")
+    require(stub[24:40] == full[24:40], "split metadata stub has a different crate hash")
+    require(len(stub) < len(full), "split metadata embedded a full payload instead of a stub")
+
+
+def compare_split_metadata(full, stub, reference_full, reference_stub):
+    split_metadata(full, stub)
+    split_metadata(reference_full, reference_stub)
+    # Only the SVH differs: native checked inputs replace Rust's HIR hash.
+    # All other stub bytes must equal the real original producer's output.
+    require(stub[:24] == reference_stub[:24] and stub[40:] == reference_stub[40:],
+            "split metadata stub format/identity differs from original Rust")
+    return {"full_sha256": sha(full), "stub_sha256": sha(stub),
+            "reference_full_sha256": sha(reference_full), "reference_stub_sha256": sha(reference_stub),
+            "crate_hash_le_hex": full[24:40].hex(), "reference_crate_hash_le_hex": reference_full[24:40].hex(),
+            "equal_except_crate_hash": True}
+
+
+def unused_dependencies(messages):
+    # json.rs EmitTyped::UnusedExtern uses singular snake_case, even though
+    # an older comment in rustc_errors/lib.rs spells the discriminator plural.
+    rows = [row for row in messages if row.get("$message_type") in {"unused_extern", "unused_externs"}
+            or "unused_extern_names" in row]
+    expected = {"$message_type": "unused_extern", "lint_level": "force-warn", "unused_extern_names": []}
+    require(rows == [expected], "forced unused-dependency JSON must contain exactly one original empty result")
+    return rows[0]
+
+
+def inspect_artifact(report_dir, record, outputs, source, source_bytes, kind, previous, *, embed_metadata=False):
     objects = source_rows(record.get("objects"), "native object")
     require(set(objects) == NAMES, "objects do not match original source declarations")
     mapping = {row["native_symbol"]: row["rust_symbol"] for row in objects.values()}
@@ -445,7 +525,7 @@ def inspect_artifact(report_dir, record, outputs, source, source_bytes, kind, pr
         require(isinstance(member, str) and Path(member).name == member and member.endswith(".o") and member not in expected_members,
                 "duplicate or unsafe object archive member")
         expected_members[member] = after
-        unchanged = kind == "noop" or (kind in {"edit", "repair"} and name != "limit")
+        unchanged = kind in {"noop", "options"} or (kind in {"edit", "repair"} and name != "limit")
         if unchanged:
             require(previous is not None and row.get("reused") is True, "unchanged object was not retained")
             old_row = previous["objects"][name]
@@ -463,8 +543,12 @@ def inspect_artifact(report_dir, record, outputs, source, source_bytes, kind, pr
     require(list(members) == ["lib.rmeta", "lib.rmeta-link", *sorted(expected_members)]
             and retained.rlib_link_members(members["lib.rmeta-link"]) == sorted(expected_members),
             "real archive inventory is incomplete, duplicated or out of order")
-    require(retained.elf_section(members["lib.rmeta"], b".rmeta") == metadata and metadata[:8] == b"rust\0\0\0\x0c",
-            "standalone and embedded genuine metadata differ")
+    embedded = retained.elf_section(members["lib.rmeta"], b".rmeta")
+    if embed_metadata is False:
+        split_metadata(metadata, embedded)
+    else:
+        require(embedded == metadata and metadata[:8] == b"rust\0\0\0\x0c",
+                "default/explicit embedding did not retain the full genuine metadata")
     for member, data in expected_members.items():
         require(members[member] == data, "published archive substituted different native object bytes")
     for row in objects.values():
@@ -507,6 +591,8 @@ def validate_context(record, facts, source_bytes, owner, *, prepared=True):
                 "profile": {"panic_abort": True, "overflow_checks": True, "debug_assertions": True}}
     for key, value in expected.items():
         require(context.get(key) == value, "public request context changed or omitted " + key)
+    require(record.get("library_options") == library_options(facts),
+            "public request lost actual metadata/lint options outside its native session key")
     require(record.get("counts", {}).get("sdk_loads") == 1, "native owner reloaded immutable SDK facts")
     require((record.get("source_sha256") == sha(source_bytes) if prepared else record.get("source_sha256") in {None, sha(source_bytes)})
             and isinstance(record.get("native_context"), str), "report does not bind original source/native session context")
@@ -657,7 +743,7 @@ def consumer(mask, operator):
 
 def oracle_case(commands, sdk, env, case, attempt, outputs, mask, operation, report):
     rustc = sdk / "bin/rustc"
-    root_text, _, _ = commands.run(case.name + "-original-reader", [rustc, "-Zls=root", outputs["link"]], case, env)
+    root_text, _, _ = commands.run(case.name + "-original-reader", [rustc, "-Zls=root", outputs["metadata"]], case, env)
     actual_root = construction.parse_root(root_text)
     oracle = case / "original-rust"
     oracle.mkdir()
@@ -666,11 +752,26 @@ def oracle_case(commands, sdk, env, case, attempt, outputs, mask, operation, rep
     argv[at + 1] = str(oracle)
     _, oracle_stderr, _ = commands.run(case.name + "-original-producer", [rustc, *argv], attempt["cwd"], env)
     original_messages = [json.loads(line) for line in oracle_stderr.splitlines() if line]
+    original_unused = unused_dependencies(original_messages)
     expected_oracle_outputs = {emit: oracle / path.name for emit, path in outputs.items()}
     notifications = {row.get("emit"): Path(row.get("artifact", "")) for row in original_messages if row.get("$message_type") == "artifact"}
     require(notifications == expected_oracle_outputs, "original Rust artifact protocol differs from fixed leaf contract")
-    original_root_text, _, _ = commands.run(case.name + "-reference-reader", [rustc, "-Zls=root", expected_oracle_outputs["link"]], case, env)
+    original_root_text, _, _ = commands.run(case.name + "-reference-reader", [rustc, "-Zls=root", expected_oracle_outputs["metadata"]], case, env)
     original_root = construction.parse_root(original_root_text)
+    actual_members, _, _ = retained.archive_members(outputs["link"].read_bytes())
+    reference_members, _, _ = retained.archive_members(expected_oracle_outputs["link"].read_bytes())
+    full, reference_full = outputs["metadata"].read_bytes(), expected_oracle_outputs["metadata"].read_bytes()
+    embedded = retained.elf_section(actual_members["lib.rmeta"], b".rmeta")
+    reference_embedded = retained.elf_section(reference_members["lib.rmeta"], b".rmeta")
+    options = library_options(parse_compile(attempt))
+    if options["embed_metadata"] is False:
+        metadata_evidence = {"layout": "split", **compare_split_metadata(full, embedded, reference_full, reference_embedded)}
+    else:
+        require(embedded == full and reference_embedded == reference_full,
+                "default/explicit full embedding differs from each original full metadata payload")
+        metadata_evidence = {"layout": "embedded", "full_sha256": sha(full), "embedded_sha256": sha(embedded),
+                             "reference_full_sha256": sha(reference_full),
+                             "reference_embedded_sha256": sha(reference_embedded)}
     # Native code and metadata hashes are expected to differ. Actual crate
     # identity, profile/ABI context and dependency identities must agree.
     for key in original_root:
@@ -680,15 +781,24 @@ def oracle_case(commands, sdk, env, case, attempt, outputs, mask, operation, rep
     caller = case / "independent-caller.rs"
     program = case / "independent-caller"
     write_new(caller, consumer(mask, "^" if operation == "xor" else "|"))
-    commands.run(case.name + "-consumer-compile", [rustc, "--edition=2024", "-Cpanic=abort", "-Copt-level=0",
-                 "-Dwarnings", caller, "--extern", CRATE + "=" + str(outputs["link"]), "-o", program], case, env)
+    # Cargo1974-1983 supplies the linkable path and, only for split metadata,
+    # the corresponding rmeta. The original locator resolves rmeta first.
+    dependencies = ["--extern", CRATE + "=" + str(outputs["link"])]
+    if options["embed_metadata"] is False:
+        dependencies += ["--extern", CRATE + "=" + str(outputs["metadata"])]
+    _, consumer_stderr, _ = commands.run(case.name + "-consumer-compile",
+        [rustc, "--edition=2024", "-Cpanic=abort", "-Copt-level=0", "-Dwarnings",
+         "--error-format=json", "--json=unused-externs-silent", "--force-warn=unused_crate_dependencies",
+         caller, *dependencies, "-o", program], case, env)
+    consumer_unused = unused_dependencies([json.loads(line) for line in consumer_stderr.splitlines() if line])
     stdout, stderr, _ = commands.run(case.name + "-consumer-run", [program], case, env)
     require(stdout == f"public-library-results={ASSERTIONS_PER_CONSUMER}\n".encode() and not stderr,
             "unchanged independent consumer returned incorrect results")
     report["checked_runtime_results"] += ASSERTIONS_PER_CONSUMER
     report["original_consumers"].append({"case": case.name, "assertions": ASSERTIONS_PER_CONSUMER,
         "crate_root": actual_root, "reference_crate_root": original_root, "source_sha256": sha(caller.read_bytes()),
-        "executable": file_identity(program)})
+        "metadata_artifacts": metadata_evidence, "original_producer_unused_dependencies": original_unused,
+        "original_consumer_unused_dependencies": consumer_unused, "executable": file_identity(program)})
     return actual_root
 
 
@@ -910,6 +1020,7 @@ def main():
             cargo_artifacts = [row for row in messages if row.get("reason") == "compiler-artifact"]
             native_stderr = witness(report_path.parent, "native.stderr")
             native_messages = [json.loads(line) for line in native_stderr.splitlines() if line]
+            unused_dependencies(native_messages)
             if kind == "invalid":
                 # Pinned Cargo removes selected intermediate/hardlinked outputs
                 # before invoking rustc (compiler/mod.rs:449-472). It may have
@@ -936,7 +1047,9 @@ def main():
                 argv = list(invocation["argv"][1:])
                 argv[argv.index("--out-dir") + 1] = str(oracle)
                 _, original_stderr, _ = commands.run(label + "-original-invalid", [sdk / "bin/rustc", *argv], project["root"], oracle_env, expected=1)
-                diagnostic([json.loads(line) for line in original_stderr.splitlines() if line], project["source"], source_bytes, "E0308")
+                original_messages = [json.loads(line) for line in original_stderr.splitlines() if line]
+                diagnostic(original_messages, project["source"], source_bytes, "E0308")
+                unused_dependencies(original_messages)
             else:
                 require(record.get("status") == 0 and len(cargo_artifacts) == 1 and cargo_artifacts[0].get("fresh") is False,
                         "successful public request was not a real completed Cargo compilation")
@@ -1030,6 +1143,7 @@ def main():
                     "eviction sequence changed source/metadata/profile/session context")
             require(witness(marker.parent, "native.stderr") == stderr, "eviction response witness differs from actual public bytes")
             messages = [json.loads(line) for line in stderr.splitlines() if line]
+            unused_dependencies(messages)
             notices = [row for row in messages if row.get("$message_type") == "artifact"]
             require(len(notices) == 3 and {row.get("emit"): Path(row.get("artifact", "")) for row in notices} == outputs,
                     "eviction request omitted actual output notifications")
@@ -1131,6 +1245,7 @@ def main():
         inspect_processes(parsed_replay, package, package / "bin/rustc", invocation["argv"], projects)
         require(parsed_replay["exits"].get(parsed_replay["root_pid"]) == 0, "raw public compiler did not exit successfully")
         messages = [json.loads(line) for line in stderr.splitlines() if line]
+        unused_dependencies(messages)
         notifications = [row for row in messages if row.get("$message_type") == "artifact"]
         require(len(notifications) == 3 and {row.get("emit"): Path(row.get("artifact", "")) for row in notifications} == saved_outputs["first"],
                 "raw public JSON omitted, duplicated or changed a requested artifact")
@@ -1186,6 +1301,7 @@ def main():
                     and record["native_context"] == contexts["first"], "raw invalid/repair request changed retained source identity")
             require(witness(marker.parent, "native.stderr") == stderr, "raw public response differs from retained witness bytes")
             direct_messages = [json.loads(line) for line in stderr.splitlines() if line]
+            unused_dependencies(direct_messages)
             if expected_status:
                 diagnostic(direct_messages, project["source"], text, "L0110")
                 require(not record.get("outputs") and not any(row.get("$message_type") == "artifact" for row in direct_messages)
@@ -1217,6 +1333,161 @@ def main():
         require([row["case"] for row in report["raw_public_history"]]
                 == ["raw-public-json-noop", "raw-public-typed-invalid", "raw-public-repair"],
                 "raw public no-op/rejection/recovery subhistory is incomplete")
+
+        # Separate direct-request group: Cargo's original nine invocations and
+        # the existing eviction/raw histories above remain unchanged.
+        transitions = {"passed": False, "request_kind": "direct replay of captured Cargo compiler argv",
+                       "observed_history": [], "original_consumers": [], "checked_runtime_results": 0,
+                       "malformed_option_refusals": [], "native_work_expected": "zero checks, generation and TinyCC"}
+        report["metadata_transitions"] = transitions
+        project = projects["first"]
+        outputs = saved_outputs["first"]
+        transition_baseline = previous["first"]
+        transition_files = file_snapshot(outputs)
+        transition_context = dict(record["context"])
+        transition_start = RAW_REQUEST_OFFSET + 3
+        require(record.get("request_index") == transition_start and record.get("status") == 0,
+                "metadata transitions did not follow the unchanged raw history")
+        captured = report["observed_history"][-1]["invocation"]
+        captured_facts = parse_compile(captured)
+        transition_roots = []
+        reference_roots = []
+        for index, (label, choice) in enumerate(METADATA_TRANSITIONS):
+            if index == 3:
+                # One deliberately malformed request, then the original false
+                # option must recover through the same owner without a gap.
+                bad_argv = metadata_replay_argv(captured, "bogus")
+                before_reports = set((root / "observations").glob("*/report.json"))
+                before_files = {unit: file_snapshot(paths) for unit, paths in saved_outputs.items()}
+                before_delivered = {unit: file_snapshot(paths) for unit, paths in saved_delivered.items()}
+                stdout, stderr, bad_trace = commands.run("metadata-bogus-refusal", bad_argv, captured["cwd"], replay_env,
+                                                        expected=2, traced=True)
+                parsed_bad = trace_events(bad_trace.read_bytes(), captured["cwd"])
+                bad_client = inspect_processes(parsed_bad, package, package / "bin/rustc", bad_argv, projects)
+                require(len(bad_client["compiles"]) == 1 and bad_client["compiles"][0]["argv"] == bad_argv
+                        and bad_client["compiles"][0]["environment"] == replay_env
+                        and parsed_bad["exits"].get(parsed_bad["root_pid"]) == 2 and not stdout
+                        and b"incomplete" in stderr.lower(), "malformed metadata option did not remain an actual terminal refusal")
+                require(set((root / "observations").glob("*/report.json")) == before_reports,
+                        "malformed metadata option reached a native owner request")
+                require(all(file_snapshot(saved_outputs[unit]) == before_files[unit] for unit in saved_outputs)
+                        and all(file_snapshot(saved_delivered[unit]) == before_delivered[unit] for unit in saved_delivered),
+                        "malformed metadata option changed a last successful output")
+                prefix = daemon_trace.read_bytes()
+                frozen_prefix(prefixes[-1]["bytes"], prefix)
+                owner_commands = inspect_processes(trace_events(prefix, root), package, Path(daemon_argv[0]), daemon_argv, projects, daemon=True)
+                require(len(owner_commands["artifacts"]) == prefixes[-1]["artifact_count"]
+                        and process_identity(owner[0], package / "bin/lust-core") == owner and not trap_log.exists(),
+                        "malformed metadata option performed artifact work or lost its owner")
+                prefixes.append({"name": "metadata-bogus-refusal", "bytes": prefix, "artifact_count": len(owner_commands["artifacts"])})
+                transitions["malformed_option_refusals"].append({"case": "metadata-bogus-refusal", "status": 2,
+                    "invocation": bad_client["compiles"][0], "owner_request_observed": False,
+                    "outputs_unchanged": True, "new_consumer_assertions": 0})
+                seal_reports()
+                save()
+            case = root / "cases" / label
+            case.mkdir()
+            require(project["source"].read_bytes() == EDIT, "metadata transition changed the original source")
+            write_new(case / "source.rs", EDIT)
+            argv = metadata_replay_argv(captured, choice)
+            before_reports = set((root / "observations").glob("*/report.json"))
+            before_files = file_snapshot(outputs)
+            stdout, stderr, trace = commands.run(label, argv, captured["cwd"], replay_env, traced=True)
+            require(not stdout and process_identity(owner[0], package / "bin/lust-core") == owner,
+                    "metadata option change replaced the owner or wrote ordinary stdout")
+            parsed_client = trace_events(trace.read_bytes(), captured["cwd"])
+            client = inspect_processes(parsed_client, package, package / "bin/rustc", argv, projects)
+            require(len(client["compiles"]) == 1 and parsed_client["exits"].get(parsed_client["root_pid"]) == 0,
+                    "metadata transition did not perform exactly one successful public invocation")
+            invocation = client["compiles"][0]
+            require(invocation["argv"] == argv and invocation["cwd"] == captured["cwd"]
+                    and invocation["environment"] == replay_env, "metadata replay changed captured argv/environment/context")
+            facts = parse_compile(invocation)
+            require({key: value for key, value in facts.items() if key != "unstable"}
+                    == {key: value for key, value in captured_facts.items() if key != "unstable"},
+                    "metadata transition changed another original compiler argument")
+            options = library_options(facts)
+            require(options["embed_metadata"] is (None if choice is None else choice == "yes"),
+                    "actual metadata transition differs from its preselected option")
+            new_reports = set((root / "observations").glob("*/report.json")) - before_reports
+            require(len(new_reports) == 1, "metadata transition lacks exactly one completed native response")
+            marker = next(iter(new_reports))
+            record = json.loads(marker.read_text())
+            context = validate_context(record, facts, EDIT, owner)
+            require(context == transition_context and record["native_context"] == contexts["first"]
+                    and record.get("request_index") == transition_start + index + 1 and record.get("status") == 0,
+                    "metadata request options changed native session/source ownership or request continuity")
+            require(witness(marker.parent, "native.stderr") == stderr, "metadata transition response differs from retained witness")
+            messages = [json.loads(line) for line in stderr.splitlines() if line]
+            unused_dependencies(messages)
+            notices = [row for row in messages if row.get("$message_type") == "artifact"]
+            require(len(notices) == 3 and {row.get("emit"): Path(row.get("artifact", "")) for row in notices} == outputs,
+                    "metadata transition omitted or changed the actual output notifications")
+            output_records = record.get("outputs", [])
+            require(len(output_records) == 3 and {row.get("emit") for row in output_records} == set(outputs),
+                    "metadata transition output receipt is incomplete")
+            for row in output_records:
+                path = outputs[row["emit"]]
+                require(row.get("path") == str(path) and row.get("sha256") == sha(path.read_bytes())
+                        and row.get("size") == path.stat().st_size, "metadata transition receipt differs from actual bytes")
+            observed = inspect_artifact(marker.parent, record, outputs, project["source"], EDIT, "options",
+                                        previous["first"], embed_metadata=options["embed_metadata"])
+            counts = observed["counts"]
+            require(not record.get("checked_definitions") and not record.get("generated_definitions")
+                    and all(counts.get(key) == 0 for key in ("checked_bodies", "generated_bodies", "compiled_objects"))
+                    and counts.get("reused_objects") == 3, "metadata-only option change repeated native checking/generation/TinyCC")
+            artifact_work = (counts.get("metadata_encodes"), counts.get("archive_builds"))
+            require(artifact_work in {(0, 0), (1, 1)}
+                    and record.get("artifact_reused") is (artifact_work == (0, 0)), "metadata artifact work observations are inconsistent")
+            if index == 0:
+                require(artifact_work == (0, 0) and file_snapshot(outputs) == before_files,
+                        "unchanged false-option replay repeated artifact work/publication")
+            elif index in (1, 2):
+                require(artifact_work == (1, 1), "new tracked metadata option reused a different serializer/archive context")
+            else:
+                require(artifact_work == (0, 0), "restored false option regenerated its still-retained artifact variant")
+            require(sha(outputs["dep-info"].read_bytes()) == transition_files["dep-info"]["sha256"],
+                    "metadata option changed the unchanged dependency prerequisites/targets")
+            prefix = daemon_trace.read_bytes()
+            frozen_prefix(prefixes[-1]["bytes"], prefix)
+            owner_commands = inspect_processes(trace_events(prefix, root), package, Path(daemon_argv[0]), daemon_argv, projects, daemon=True)
+            actual_tools = owner_commands["artifacts"][prefixes[-1]["artifact_count"]:]
+            wanted_tools = command_inventory(record, outputs, llvm)
+            reconcile_artifact_calls(actual_tools, wanted_tools)
+            require([command["name"] for command in record.get("commands", [])]
+                    == (["archive"] if artifact_work[1] else []), "metadata option repeated native object renaming or extra artifact work")
+            prefixes.append({"name": label, "bytes": prefix, "artifact_count": len(owner_commands["artifacts"])})
+            cache_observation(record, [row["native_object_serial"] for row in observed["objects"].values()])
+            frozen = case / "artifacts"
+            frozen.mkdir()
+            frozen_outputs = {}
+            for emit, path in outputs.items():
+                target = frozen / path.name
+                write_new(target, path.read_bytes())
+                frozen_outputs[emit] = target
+            identity = oracle_case(commands, sdk, oracle_env, case, invocation, frozen_outputs, 127, "xor", transitions)
+            require(identity["stable_crate_id_hex"] == crate_roots["first"], "metadata option changed stable crate/definition identity")
+            transition_roots.append(identity["svh_le_hex"])
+            reference_roots.append(transitions["original_consumers"][-1]["reference_crate_root"]["svh_le_hex"])
+            if index == 3:
+                require(observed["archive"] == transition_baseline["archive"] and observed["metadata"] == transition_baseline["metadata"],
+                        "restored false metadata choice did not recover its original exact artifacts")
+            require(project["source"].read_bytes() == EDIT and not trap_log.exists(), "metadata option rewrote source or invoked a competing compiler")
+            previous["first"] = observed
+            transitions["observed_history"].append({"case": label, "invocation": invocation, "library_options": options,
+                "native_report": str(marker.relative_to(root)), "source_sha256": sha(EDIT), "counts": counts,
+                "actual_artifact_tools": actual_tools, "crate_hash_le_hex": identity["svh_le_hex"],
+                "output_files": file_snapshot(outputs)})
+            seal_reports()
+            save()
+        require([row["case"] for row in transitions["observed_history"]] == [row[0] for row in METADATA_TRANSITIONS]
+                and [row["case"] for row in transitions["original_consumers"]] == [row[0] for row in METADATA_TRANSITIONS]
+                and transitions["checked_runtime_results"] == METADATA_TRANSITION_ASSERTIONS
+                and len(transitions["malformed_option_refusals"]) == 1, "metadata transition/refusal/consumer denominator changed")
+        require(len(set(transition_roots[:3])) == len(set(reference_roots[:3])) == 3
+                and transition_roots[-1] == transition_roots[0] and reference_roots[-1] == reference_roots[0],
+                "metadata option SVH identity does not match distinct upstream tracked states and restoration")
+        transitions["passed"] = True
 
         # These valid request classes remain explicitly outside the bounded
         # slice. A refusal is recorded as unqualified coverage, never success.
@@ -1267,10 +1538,14 @@ def main():
         for identity in report["tools"]:
             require(file_identity(identity["path"]) == identity, "source/tool changed during campaign")
         seal_reports()
-        report["total_original_consumers"] = len(report["original_consumers"]) + len(eviction["original_consumers"])
-        report["total_checked_runtime_results"] = report["checked_runtime_results"] + eviction["checked_runtime_results"]
-        require(report["total_original_consumers"] == 12 and report["total_checked_runtime_results"] == 3145824,
-                "combined independent assertion inventory changed")
+        report["baseline_original_consumers"] = len(report["original_consumers"]) + len(eviction["original_consumers"])
+        report["baseline_checked_runtime_results"] = report["checked_runtime_results"] + eviction["checked_runtime_results"]
+        require(report["baseline_original_consumers"] == 12 and report["baseline_checked_runtime_results"] == 3145824,
+                "baseline independent assertion inventory changed")
+        report["total_original_consumers"] = report["baseline_original_consumers"] + len(transitions["original_consumers"])
+        report["total_checked_runtime_results"] = report["baseline_checked_runtime_results"] + transitions["checked_runtime_results"]
+        require(report["total_original_consumers"] == 16 and report["total_checked_runtime_results"] == 4194432,
+                "baseline plus explicit metadata-transition assertion inventory changed")
         report["functional_passed"] = True
     except Exception as error:
         report["failure"] = repr(error)
@@ -1346,14 +1621,17 @@ def main():
                 report["exec_trace_qualified"] = "cleanup_failure" not in report
             except Exception as error:
                 report["trace_failure"] = repr(error)
-        report["total_original_consumers"] = len(report["original_consumers"]) + len(report.get("eviction", {}).get("original_consumers", []))
-        report["total_checked_runtime_results"] = report["checked_runtime_results"] + report.get("eviction", {}).get("checked_runtime_results", 0)
+        report["baseline_original_consumers"] = len(report["original_consumers"]) + len(report.get("eviction", {}).get("original_consumers", []))
+        report["baseline_checked_runtime_results"] = report["checked_runtime_results"] + report.get("eviction", {}).get("checked_runtime_results", 0)
+        report["total_original_consumers"] = report["baseline_original_consumers"] + len(report.get("metadata_transitions", {}).get("original_consumers", []))
+        report["total_checked_runtime_results"] = report["baseline_checked_runtime_results"] + report.get("metadata_transitions", {}).get("checked_runtime_results", 0)
         report["retained_public_integration"] = bool(report["functional_passed"] and report["exec_trace_qualified"])
         report["passed"] = report["retained_public_integration"]
         report["sealed_request_files"] = sealed
         save()
     print(json.dumps({key: report[key] for key in ("passed", "functional_passed", "exec_trace_qualified",
-           "retained_public_integration", "checked_runtime_results", "total_original_consumers", "total_checked_runtime_results",
+           "retained_public_integration", "checked_runtime_results", "baseline_original_consumers", "baseline_checked_runtime_results",
+           "total_original_consumers", "total_checked_runtime_results",
            "full_compiler_qualification", "performance_qualified")}))
     return 0 if report["passed"] else 1
 

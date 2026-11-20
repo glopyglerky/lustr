@@ -126,6 +126,85 @@ class ArtifactAndDiagnosticEvidence(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "authoritative type"):
             campaign.diagnostic([error], self.source, campaign.INVALID, "L0110")
 
+    def test_actual_cargo_split_request_preserves_flags_and_empty_search_inventory(self):
+        # Flags and identities are from the retained ca383 cold argv; only this
+        # temporary fixture's source/build paths differ from the hosted paths.
+        build = self.root / "intermediates"
+        argv = ["/installed/rustc", "--crate-name", campaign.CRATE, "--edition=2024",
+                str(self.source.relative_to(self.root)), "--error-format=json", "--json=" + campaign.JSON_OPTIONS,
+                "--crate-type", "lib", "--emit=dep-info,metadata,link", "-Z", "embed-metadata=no",
+                "-C", "panic=abort", "-C", "embed-bitcode=no",
+                "--check-cfg", campaign.CHECK_CFG[0], "--check-cfg", campaign.CHECK_CFG[1],
+                "-C", "metadata=24b6c5ad5c09908c", "-C", "extra-filename=-8ede6661f55aba71",
+                "--out-dir", str(build / "debug/build/public-leaf-fixture/8ede6661f55aba71/out"),
+                "--force-warn=unused_crate_dependencies"]
+        project = {"source": self.source, "build": build}
+        def decode(arguments):
+            return campaign.declared_compile(campaign.parse_compile({"argv": arguments, "cwd": str(self.root)}), project)
+        outputs = decode(argv)
+        self.assertEqual(outputs["metadata"].name, "libnative_leaf-8ede6661f55aba71.rmeta")
+        self.assertEqual(campaign.parse_compile({"argv": argv, "cwd": str(self.root)})["search_dirs"], [])
+        facts = campaign.parse_compile({"argv": argv, "cwd": str(self.root)})
+        for choice, expected in (("no", False), (None, None), ("yes", True)):
+            changed = campaign.metadata_replay_argv({"argv": argv}, choice)
+            observed = campaign.parse_compile({"argv": changed, "cwd": str(self.root)})
+            self.assertIs(campaign.library_options(observed)["embed_metadata"], expected)
+            self.assertEqual({key: value for key, value in observed.items() if key != "unstable"},
+                             {key: value for key, value in facts.items() if key != "unstable"})
+        altered = []
+        for value in ("embed-metadata=yes", "unknown-unstable=no"):
+            changed = list(argv)
+            changed[changed.index("embed-metadata=no")] = value
+            altered.append(changed)
+        altered.append(argv[:argv.index("-Z")] + argv[argv.index("-Z") + 2:])
+        altered.append(argv[:-1] + ["--force-warn=unused_variables"])
+        altered.append(argv + ["-L", "dependency=" + str(self.root / "invented-dependency")])
+        altered.append(argv + ["-Z", "embed-metadata=no"])
+        altered.append(argv + ["-C", "embed-metadata=no"])  # Separate upstream channel remains refused.
+        for arguments in altered:
+            with self.subTest(arguments=arguments):
+                with self.assertRaises(AssertionError):
+                    decode(arguments)
+
+    def test_split_metadata_reference_rejects_hash_format_and_identity_mutations(self):
+        # Synthetic bytes exercise rejection paths only. Qualification requires
+        # the original Rust-produced reference bytes and genuine metadata reader.
+        def payload(svh, stub):
+            return (b"rust\0\0\0\x0c" + (40).to_bytes(8, "little")
+                    + (0 if stub else 64).to_bytes(8, "little") + svh
+                    + b"fixture-only crate/target/version" + (b"" if stub else b"x" * 96) + b"rust-end-file")
+        full, stub = payload(b"n" * 16, False), payload(b"n" * 16, True)
+        reference_full, reference_stub = payload(b"r" * 16, False), payload(b"r" * 16, True)
+        evidence = campaign.compare_split_metadata(full, stub, reference_full, reference_stub)
+        self.assertTrue(evidence["equal_except_crate_hash"])
+        mutations = [
+            (full, full, reference_full, reference_stub),
+            (full, stub[:24] + b"x" * 16 + stub[40:], reference_full, reference_stub),
+            (full, b"wronghdr" + stub[8:], reference_full, reference_stub),
+            (full, stub[:44] + b"X" + stub[45:], reference_full, reference_stub),
+            (full, stub[:-13] + b"extra" + stub[-13:], reference_full, reference_stub),
+            (full, stub, reference_full, reference_stub[:24] + b"x" * 16 + reference_stub[40:]),
+            (full[:16] + bytes(8) + full[24:], stub, reference_full, reference_stub),
+            (full, stub[:8] + (1).to_bytes(8, "little") + stub[16:], reference_full, reference_stub),
+        ]
+        for index, values in enumerate(mutations):
+            with self.subTest(mutation=index):
+                with self.assertRaises(AssertionError):
+                    campaign.compare_split_metadata(*values)
+
+    def test_forced_unused_dependency_json_requires_one_exact_empty_result(self):
+        expected = {"$message_type": "unused_extern", "lint_level": "force-warn", "unused_extern_names": []}
+        self.assertEqual(campaign.unused_dependencies([expected]), expected)
+        for messages in ([], [expected, expected],
+                         [dict(expected, lint_level="warn")],
+                         [dict(expected, unused_extern_names=["native_leaf"])],
+                         [dict(expected, unused_extern_names=None)],
+                         [dict(expected, unexpected=True)],
+                         [dict(expected, **{"$message_type": "unused_externs"})]):
+            with self.subTest(messages=messages):
+                with self.assertRaisesRegex(AssertionError, "exactly one original empty"):
+                    campaign.unused_dependencies(messages)
+
 
 if __name__ == "__main__":
     unittest.main()

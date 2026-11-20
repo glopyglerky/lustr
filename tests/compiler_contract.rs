@@ -107,7 +107,7 @@ fn read_public_transport_request(
     source: &Path,
     output: &Path,
     target_explicit: bool,
-    expected_library: Option<&transport_protocol::LibraryKey>,
+    expected_library: Option<(&transport_protocol::LibraryKey, transport_protocol::library_contract::LibraryOptions)>,
 ) -> Result<(), String> {
     use std::io::{BufRead, Read};
     use std::os::unix::ffi::OsStrExt;
@@ -121,8 +121,8 @@ fn read_public_transport_request(
     let environment: usize = if words[12] == "-" { 0 } else { words[12].parse().map_err(|_| "invalid environment count")? };
     if features > 4096 || environment > 65536 { return Err("request field count exceeds bound".into()); }
     // Ten common fields precede the library discriminator. A library frame
-    // carries six values/paths and two counted vectors before the ordinary
-    // features, displayed source and environment. Decode that actual schema;
+    // carries six values/paths, two counted vectors, then two request-only
+    // options before features, displayed source and environment. Decode that schema;
     // neither trailing fields nor a substituted compiler identity are ignored.
     let mut fixed = Vec::with_capacity(10);
     for _ in 0..10 { fixed.push(read_public_transport_field(reader)?); }
@@ -136,7 +136,7 @@ fn read_public_transport_request(
     let present = read_public_transport_field(reader)?;
     match (present.as_slice(), expected_library) {
         (b"0", None) => {}
-        (b"1", Some(library)) => {
+        (b"1", Some((library, options))) => {
             if !fixed[2].is_empty() || fixed[5].as_slice() != b"lib" || fixed[6].as_slice() != library.crate_name.as_bytes()
                 || fixed[8].as_slice() != source.as_os_str().as_bytes()
                 || fixed[9].as_slice() != transport_protocol::library_contract::TARGET.as_bytes()
@@ -168,6 +168,17 @@ fn read_public_transport_request(
                 if read_public_transport_field(reader)?.as_slice() != expected.as_os_str().as_bytes() {
                     return Err("public library search path changed".into());
                 }
+            }
+            let embedding = match read_public_transport_field(reader)?.as_slice() {
+                b"-" => None, b"1" => Some(true), b"0" => Some(false),
+                _ => return Err("invalid public library embedding option".into()),
+            };
+            let force_warn = match read_public_transport_field(reader)?.as_slice() {
+                b"0" => false, b"1" => true,
+                _ => return Err("invalid public library forced-lint option".into()),
+            };
+            if embedding != options.embed_metadata || force_warn != options.force_warn_unused_crate_dependencies {
+                return Err("public library request changed its metadata or lint options".into());
             }
         }
         (b"0" | b"1", _) => return Err("public request changed its library presence".into()),
@@ -227,15 +238,18 @@ fn transport_peer_validates_library_values_and_counted_vectors() {
     req.session.target_triple = transport_protocol::library_contract::TARGET.into();
     req.session.profile = transport_protocol::ProfileFlags::DEV;
     req.session.library = Some(library.clone());
+    req.library_options = transport_protocol::library_contract::LibraryOptions {
+        embed_metadata: Some(false), force_warn_unused_crate_dependencies: true,
+    };
     req.session.features = vec!["one".into(), "two".into()];
     req.client.env = Some(vec![("KEY".into(), "value λ".into()), ("EMPTY".into(), String::new())]);
     let encoded = transport_protocol::encode(&req);
     let identity = transport_protocol::build_id();
     let mut reader = Cursor::new(&encoded);
-    read_public_transport_request(&mut reader, identity, &req.file, &req.out, true, Some(&library)).unwrap();
+    read_public_transport_request(&mut reader, identity, &req.file, &req.out, true, Some((&library, req.library_options))).unwrap();
     assert_eq!(reader.position() as usize, encoded.len(), "library peer must consume every vector and environment field");
     assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, &req.file, &req.out, true, None).is_err());
-    assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, &req.file, &req.out, false, Some(&library)).is_err());
+    assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, &req.file, &req.out, false, Some((&library, req.library_options))).is_err());
 
     // Keep mutations bound to actual length-prefixed fields from the real
     // encoder. This changes one field, without dropping the remaining frame.
@@ -247,7 +261,7 @@ fn transport_peer_validates_library_values_and_counted_vectors() {
         read_public_transport_field(&mut cursor).unwrap();
         fields.push((start, cursor.position() as usize));
     }
-    assert_eq!(fields.len(), 30, "library schema plus two features and two environment pairs");
+    assert_eq!(fields.len(), 32, "library schema/options plus two features and two environment pairs");
     let replace_field = |index: usize, bytes: &[u8]| {
         let (start, end) = fields[index];
         let mut changed = encoded[..start].to_vec();
@@ -264,16 +278,27 @@ fn transport_peer_validates_library_values_and_counted_vectors() {
         (19, b"cfg(wrong)"),
         (20, b"4097"), (20, b"1"), // oversized or incomplete search inventory
         (22, b"/wrong/dependency"),
+        (23, b"invalid"), (23, b"-"), (23, b"1"), // malformed, absent or different embedding choice
+        (24, b"2"), (24, b"0"), // malformed or different forced-lint choice
     ];
     for &(index, bytes) in wrong_fields {
         let changed = replace_field(index, bytes);
-        assert!(read_public_transport_request(&mut Cursor::new(&changed), identity, &req.file, &req.out, true, Some(&library)).is_err(),
+        assert!(read_public_transport_request(&mut Cursor::new(&changed), identity, &req.file, &req.out, true, Some((&library, req.library_options))).is_err(),
                 "changed library field {index} was accepted");
     }
-    for index in [19, 22, 29] {
+    for index in [19, 22, 23, 24, 31] {
         let truncated = &encoded[..fields[index].1 - 1];
-        assert!(read_public_transport_request(&mut Cursor::new(truncated), identity, &req.file, &req.out, true, Some(&library)).is_err(),
-                "truncated vector or final environment field {index} was accepted");
+        assert!(read_public_transport_request(&mut Cursor::new(truncated), identity, &req.file, &req.out, true, Some((&library, req.library_options))).is_err(),
+                "truncated vector, request option or final environment field {index} was accepted");
+    }
+    for (embed_metadata, force_warn_unused_crate_dependencies) in [(None, false), (Some(true), true), (Some(false), true)] {
+        req.library_options = transport_protocol::library_contract::LibraryOptions {
+            embed_metadata, force_warn_unused_crate_dependencies,
+        };
+        let frame = transport_protocol::encode(&req);
+        let mut reader = Cursor::new(&frame);
+        read_public_transport_request(&mut reader, identity, &req.file, &req.out, true, Some((&library, req.library_options))).unwrap();
+        assert_eq!(reader.position() as usize, frame.len(), "every actual metadata/lint choice must consume its complete frame");
     }
 }
 
