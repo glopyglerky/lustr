@@ -1,0 +1,50 @@
+{
+  "source_commit": "960b1fa47efed2324388565f387fd9e7a00ca547",
+  "cwd": "<CHECKOUT>",
+  "argv": [
+    "bash",
+    "--noprofile",
+    "--norc",
+    "-eo",
+    "pipefail",
+    "-c",
+    "set -euo pipefail\n{\n  git rev-parse HEAD HEAD^{tree}\n  rustc +1.99.1 -vV\n  cargo +1.99.1 --version\n  sha256sum .github/workflows/native-probe-tests.yml crates/lustr-bench/Cargo.toml crates/lustr-bench/Cargo.lock crates/lustr-bench/src/bin/lustr-bench-gate.rs crates/lustr-bench/src/main.rs crates/lustr-bench/tests/routed.rs\n  cargo +1.99.1 test --manifest-path crates/lustr-bench/Cargo.toml --locked --bin lustr-bench-gate --test routed\n} 2>&1 | tee \"$RUNNER_TEMP/cargo-gate-controls.log\"\n"
+  ],
+  "source_before": {
+    ".github/workflows/native-probe-tests.yml": "c6fe0d9794fbe1081e4ee5b4a26050bb19b880a8c70cb623430415386b1345e2",
+    "crates/lustr-bench/Cargo.toml": "171da99f41dcbf6c51cbf9401ea885404d441b0873b18f23a51c5d726b56fbbc",
+    "crates/lustr-bench/Cargo.lock": "0a91bce153dfd86eace542bdf0dccabf2c7fc1035e1c332481d9a45f55a00970",
+    "crates/lustr-bench/src/bin/lustr-bench-gate.rs": "e4f8c32b267c45814e60753c75decc214c34b3e2cac24bc538a423333447dcb1",
+    "crates/lustr-bench/src/main.rs": "e40c826b097d227616f4e439baf1b4879b2e582e73458d4946aa128d3231f476",
+    "crates/lustr-bench/tests/routed.rs": "c310a9f892ac6088560f90101703cfa984cf8c4525b792df84b5daf69a079bfc"
+  },
+  "source_after": {
+    ".github/workflows/native-probe-tests.yml": "c6fe0d9794fbe1081e4ee5b4a26050bb19b880a8c70cb623430415386b1345e2",
+    "crates/lustr-bench/Cargo.toml": "171da99f41dcbf6c51cbf9401ea885404d441b0873b18f23a51c5d726b56fbbc",
+    "crates/lustr-bench/Cargo.lock": "0a91bce153dfd86eace542bdf0dccabf2c7fc1035e1c332481d9a45f55a00970",
+    "crates/lustr-bench/src/bin/lustr-bench-gate.rs": "e4f8c32b267c45814e60753c75decc214c34b3e2cac24bc538a423333447dcb1",
+    "crates/lustr-bench/src/main.rs": "e40c826b097d227616f4e439baf1b4879b2e582e73458d4946aa128d3231f476",
+    "crates/lustr-bench/tests/routed.rs": "c310a9f892ac6088560f90101703cfa984cf8c4525b792df84b5daf69a079bfc"
+  },
+  "exit_code": 0,
+  "explicit_environment": {
+    "PATH": "<RUSTUP_PROXY_BIN>:<INHERITED_PATH>",
+    "RUSTUP_HOME": "<RUSTUP_HOME>",
+    "CARGO_HOME": "<CARGO_CACHE>",
+    "CARGO_TARGET_DIR": "<OUTPUT>/ci-rust-1991-focused-target",
+    "CARGO_BUILD_JOBS": "2",
+    "RUNNER_TEMP": "<OUTPUT>/ci-rust-1991-correction-originals/actual",
+    "CARGO_NET_OFFLINE": "true"
+  },
+  "note": "Literal workflow command and declared Rust1.99.1; separate owned output/cache environment. This is an evaluator test, not compiler coverage or performance evidence.",
+  "streams": {
+    "stdout": {
+      "path": "focused-controls.stdout",
+      "sha256": "41e1da0d7ddc82fdc13b430a068490e689571c2066cdce57ed81f9a6f000c5ae"
+    },
+    "stderr": {
+      "path": "focused-controls.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  }
+}

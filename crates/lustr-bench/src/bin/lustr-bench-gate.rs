@@ -15,7 +15,7 @@ fn test_summary(stdout: &[u8]) -> Result<Value, String> {
     let mut ignored_names = Vec::new();
     let mut group_names = Vec::new();
     let mut group_ignored_names = Vec::new();
-    let mut observed = std::collections::BTreeMap::new();
+    let mut observed: std::collections::BTreeMap<String, bool> = std::collections::BTreeMap::new();
     for line in text.lines() {
         if let Some(result) = line.strip_prefix("test result: ok. ") {
             let counts = result.split("; finished in ").next().ok_or("missing test counts")?;

@@ -93,7 +93,15 @@ jobs:
           python3 tools/test-retired-acquisition.py -v
           python3 tools/test-workflow-inputs.py -v
       - name: Reject false Cargo test summaries and retired engine selectors
-        run: cargo +1.99.1 test --manifest-path crates/lustr-bench/Cargo.toml --locked --bin lustr-bench-gate --test routed
+        run: |
+          set -euo pipefail
+          {
+            git rev-parse HEAD HEAD^{tree}
+            rustc +1.99.1 -vV
+            cargo +1.99.1 --version
+            sha256sum .github/workflows/native-probe-tests.yml crates/lustr-bench/Cargo.toml crates/lustr-bench/Cargo.lock crates/lustr-bench/src/bin/lustr-bench-gate.rs crates/lustr-bench/src/main.rs crates/lustr-bench/tests/routed.rs
+            cargo +1.99.1 test --manifest-path crates/lustr-bench/Cargo.toml --locked --bin lustr-bench-gate --test routed
+          } 2>&1 | tee "$RUNNER_TEMP/cargo-gate-controls.log"
       - name: Reject invalid current performance and release assessments
         run: python3 tools/test-assess-current-performance.py -v
       - name: Reject false success in retained-history results
@@ -140,6 +148,7 @@ jobs:
           name: link-input-evidence-${{ github.sha }}-${{ github.run_attempt }}
           if-no-files-found: error
           path: |
+            ${{ runner.temp }}/cargo-gate-controls.log
             ${{ runner.temp }}/link-input-tests.log
             ${{ runner.temp }}/project-evidence-replay.log
             ${{ runner.temp }}/link-input-identity.txt

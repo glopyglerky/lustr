@@ -1,0 +1,164 @@
+{
+  "schema": 1,
+  "scope": "Focused evaluator compatibility with the exact CI Rust version and early failed-step log retention. No compiler semantic change, new product build or performance qualification.",
+  "source_commit": "960b1fa47efed2324388565f387fd9e7a00ca547",
+  "source_tree": "799f97870b3514a144021850ed9d3a172fce0001",
+  "source_sha256": {
+    ".github/workflows/native-probe-tests.yml": "c6fe0d9794fbe1081e4ee5b4a26050bb19b880a8c70cb623430415386b1345e2",
+    "crates/lustr-bench/Cargo.toml": "171da99f41dcbf6c51cbf9401ea885404d441b0873b18f23a51c5d726b56fbbc",
+    "crates/lustr-bench/Cargo.lock": "0a91bce153dfd86eace542bdf0dccabf2c7fc1035e1c332481d9a45f55a00970",
+    "crates/lustr-bench/src/bin/lustr-bench-gate.rs": "e4f8c32b267c45814e60753c75decc214c34b3e2cac24bc538a423333447dcb1",
+    "crates/lustr-bench/src/main.rs": "e40c826b097d227616f4e439baf1b4879b2e582e73458d4946aa128d3231f476",
+    "crates/lustr-bench/tests/routed.rs": "c310a9f892ac6088560f90101703cfa984cf8c4525b792df84b5daf69a079bfc"
+  },
+  "hosted_failure": {
+    "run_id": 44668278618,
+    "job_id": 136062829348,
+    "head_commit": "227960cb6614c9a2ba41bc1986309fd6e97dc18c",
+    "checkout_commit": "282d3ac145898847c3bf07cd72bdfd25f2fa8ef1",
+    "tree": "4f1fcce53de4d88e3b477cf0ee50ee53917be4e2",
+    "local_equivalent_commit": "7033575e03b12e0e7508f791dce01dcdcf2e1378",
+    "result": "failed",
+    "error": "Rust1.99.1 E0282 at lustr-bench-gate.rs:18: BTreeMap value type needed before boolean negation in filter. Later artifact upload found no output files because its listed steps had not executed.",
+    "log": "hosted-failure.log",
+    "log_sha256": "31e1dc5f08d0ef574cc10908b4b97dabf50d82fc58390a8624d01049d32ed7d5",
+    "immutable_failure_preserved": true
+  },
+  "changes": [
+    "Declare observed as BTreeMap<String, bool>; parser behavior and test expectations are unchanged.",
+    "Capture source commit/tree, exact compiler/tool versions, source hashes and combined Cargo streams in cargo-gate-controls.log under pipefail.",
+    "Include that early log in the existing always-run artifact upload."
+  ],
+  "verification": {
+    "exact_toolchain": {
+      "rustc_sha256": "b53b780f77f952062f8ca8a3b70aef2390b1e45ad91939be94afdc9543026853",
+      "cargo_sha256": "a670e02cfa39ac2e53f77a2d911ca1fc9e2c479b0603ec956625be1daf24e3af",
+      "rustc_commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+      "release": "1.99.1",
+      "host": "x86_64-unknown-linux-gnu"
+    },
+    "literal_workflow_step_receipt": "focused-controls.json",
+    "result": "passed",
+    "parser_controls": 4,
+    "retired_acquisition_controls": 3,
+    "skipped": 0,
+    "original_source_before_equals_after": true,
+    "captured_log_equals_step_stdout": true,
+    "pipeline_failure_control": {
+      "receipt": "pipeline-failure-control.json",
+      "expected_and_observed_exit": 101,
+      "log_created_and_failure_text_retained": true,
+      "always_upload_log_path_present": true,
+      "synthetic_only": true
+    }
+  },
+  "projection": {
+    "scope": "New correction evidence only; prior evidence was not edited.",
+    "method": "Replace checkout, toolchain, Cargo cache and owned output-directory prefixes with generic tokens; elide only the inherited PATH tail in the public execution receipt. Test output, statuses, source hashes, tool hashes and source coordinates retain their meaning.",
+    "embedded_hashes": "Execution receipts retain original byte hashes. records below maps each original record to its published projection.",
+    "exact_originals_retained": true
+  },
+  "records": {
+    "hosted-failure.log": {
+      "original_sha256": "31e1dc5f08d0ef574cc10908b4b97dabf50d82fc58390a8624d01049d32ed7d5",
+      "published_sha256": "31e1dc5f08d0ef574cc10908b4b97dabf50d82fc58390a8624d01049d32ed7d5",
+      "path_projected": false,
+      "original_bytes": 20358,
+      "published_bytes": 20358
+    },
+    "workflow-step.sh": {
+      "original_sha256": "1160684ceea0fa4c0b82caba21f2d17fcd5c8179fd619e47a105ba6838cdf64e",
+      "published_sha256": "1160684ceea0fa4c0b82caba21f2d17fcd5c8179fd619e47a105ba6838cdf64e",
+      "path_projected": false,
+      "original_bytes": 490,
+      "published_bytes": 490
+    },
+    "focused-controls.stdout": {
+      "original_sha256": "41e1da0d7ddc82fdc13b430a068490e689571c2066cdce57ed81f9a6f000c5ae",
+      "published_sha256": "2abd69fd331ca4be252c94c5211a51b62f939ed6486fcba75671cf2c2ac03937",
+      "path_projected": true,
+      "original_bytes": 2859,
+      "published_bytes": 2773
+    },
+    "focused-controls.stderr": {
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "path_projected": false,
+      "original_bytes": 0,
+      "published_bytes": 0
+    },
+    "focused-controls.json": {
+      "original_sha256": "fd491edea7896177165fe8421d0ea5abe71879d6d60b001ee5ddbee3601e7f66",
+      "published_sha256": "6e74d5344b81d785b7ffe79f18dae4a9313c2174beea3a572b1a313a3b9c5745",
+      "path_projected": true,
+      "original_bytes": 3521,
+      "published_bytes": 2933
+    },
+    "actual/cargo-gate-controls.log": {
+      "original_sha256": "41e1da0d7ddc82fdc13b430a068490e689571c2066cdce57ed81f9a6f000c5ae",
+      "published_sha256": "2abd69fd331ca4be252c94c5211a51b62f939ed6486fcba75671cf2c2ac03937",
+      "path_projected": true,
+      "original_bytes": 2859,
+      "published_bytes": 2773
+    },
+    "pipeline-failure-control.stdout": {
+      "original_sha256": "f91654fb6cf45d7c873b0d0e715515d9d3669d673aeba1e925a773ce1e1fbb1f",
+      "published_sha256": "f91654fb6cf45d7c873b0d0e715515d9d3669d673aeba1e925a773ce1e1fbb1f",
+      "path_projected": false,
+      "original_bytes": 967,
+      "published_bytes": 967
+    },
+    "pipeline-failure-control.stderr": {
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "path_projected": false,
+      "original_bytes": 0,
+      "published_bytes": 0
+    },
+    "pipeline-failure-control.json": {
+      "original_sha256": "5787b98bd77567c9a9044ffd1ac9ce263d8f9e23ebcda77734a3827c67a000d4",
+      "published_sha256": "5787b98bd77567c9a9044ffd1ac9ce263d8f9e23ebcda77734a3827c67a000d4",
+      "path_projected": false,
+      "original_bytes": 769,
+      "published_bytes": 769
+    },
+    "forced-failure/cargo-gate-controls.log": {
+      "original_sha256": "f91654fb6cf45d7c873b0d0e715515d9d3669d673aeba1e925a773ce1e1fbb1f",
+      "published_sha256": "f91654fb6cf45d7c873b0d0e715515d9d3669d673aeba1e925a773ce1e1fbb1f",
+      "path_projected": false,
+      "original_bytes": 967,
+      "published_bytes": 967
+    },
+    "pipeline-cargo-sentinel.sh": {
+      "original_sha256": "2703d9eccf59383c64a66daa402bd8da2eb852c74ccb33b8ca83d76862049cbe",
+      "published_sha256": "82db1944a4ac8c6f7eb7dbc689eb9efed2d65221a1997b29ef9b111c6860e368",
+      "path_projected": true,
+      "original_bytes": 202,
+      "published_bytes": 175
+    },
+    "rustc-version.stdout": {
+      "original_sha256": "f22d5e4e9ced367e774ce5bc140d9e6b1235c1882fec80d011044851f3ae6369",
+      "published_sha256": "f22d5e4e9ced367e774ce5bc140d9e6b1235c1882fec80d011044851f3ae6369",
+      "path_projected": false,
+      "original_bytes": 196,
+      "published_bytes": 196
+    },
+    "rustc-version.stderr": {
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "path_projected": false,
+      "original_bytes": 0,
+      "published_bytes": 0
+    },
+    "tool-identities.json": {
+      "original_sha256": "a3a9a571771d0a6dd5eb4f52f5c0615c324eaab714f9cffeba4ef3094eb9a257",
+      "published_sha256": "a3a9a571771d0a6dd5eb4f52f5c0615c324eaab714f9cffeba4ef3094eb9a257",
+      "path_projected": false,
+      "original_bytes": 298,
+      "published_bytes": 298
+    }
+  },
+  "new_head_hosted_ci_status": "not established by this local record",
+  "full_compiler_qualification": false,
+  "release_admission": false
+}
