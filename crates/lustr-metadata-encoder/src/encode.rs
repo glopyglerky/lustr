@@ -366,7 +366,7 @@ pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk) -> Result<Encoded, String> {
     hasher.write(&supplement[..16]); hasher.write(&cx.opaque.data);
     let crate_hash = hasher.finish_128().to_le_bytes();
     let unhashed = cx.node(|cx| {
-        cx.opaque.emit_str(""); // Request has no extra-filename option.
+        cx.opaque.emit_str(input.extra_filename); // Actual original request, outside the semantic hash.
         cx.opaque.emit_usize(sdk.dependencies.len() + 1);
         cx.opaque.emit_str(""); // LOCAL_CRATE filler.
         for dep in &sdk.dependencies { cx.opaque.emit_str(&dep.extra_filename); }

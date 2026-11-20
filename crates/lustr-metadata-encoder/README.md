@@ -1,9 +1,10 @@
 # Selective native metadata encoder
 
-This standalone research crate writes the pinned Rust metadata format from an
-already completed native library and its actual emitted function inventory.
-It is not reachable through a product Cargo feature. It does not parse a Rust
-consumer, run Rust analysis, synthesize HIR or typed bodies, or retry compilation.
+This selective crate writes the pinned Rust metadata format from an already
+completed native library and its actual emitted function inventory. Its public
+retained caller is authored under the exclusive-native product feature and awaits
+exact-source hosted qualification. It does not parse a Rust consumer, run Rust
+analysis, synthesize HIR or typed bodies, or retry compilation.
 
 The first caller is the separate native metadata qualification executable. Its private
 `CompletedUnit` establishes the admitted declaration, body, privacy and lint
@@ -11,7 +12,9 @@ facts using the unchanged source and the existing native checked program. It
 joins checked calls to lowered/generated calls and actual emitted ELF symbols.
 The research caller converts those actual facts to `Input`, invokes this encoder,
 and constructs metadata and object members for an original Rust consumer. It is
-separate from the installed compiler and has its own required CI campaign. The public record
+separate from the installed compiler and has its own required CI campaign. The
+new public retained owner uses the same artifact service with actual request,
+source and output facts; it does not link the research qualifier. The public record
 types in this serialization crate do not themselves certify source correctness.
 The encoder checks that the definition, call and emitted-instance inventories
 are complete, unique and mutually consistent before writing any metadata.
@@ -75,7 +78,7 @@ request, object, SDK and profile identities. It is a conservative native change
 detector, not byte-for-byte reproduction of Rust's HIR fingerprint.
 
 The original `RUSTC_FORCE_RUSTC_VERSION` override is outside the represented
-request policy. The host qualifier must reject an incompatible override; the
+request policy. Both host callers must reject an incompatible override; the public owner checks every actual client request. The
 encoder neither reads mutable process environment nor silently changes the
 pinned Rust version used in crate identity.
 
@@ -128,15 +131,14 @@ the serializer for a target without `std` proves this library's dependency cut,
 not new output-target coverage, a `no_std` compiler or socket-independent retained
 compilation.
 
-The seam remains separate research components, not integration into the public
-retained compiler. Full Rust consumer metadata, wider declaration/lint/privacy
-obligations, the justified complementary implementation and overall speedup
-remain incomplete. The central import inventory and structural guard track
-these research components without admitting them to the product. The CI checks
-their source records, core dependency cut, original byte/hash controls and SDK
-receipt refusals. The separate joined campaign qualifies only its declared
-scalar-library scope when it actually passes on the exact source. Neither
-campaign establishes a full Rust compiler, retained integration or a release.
+The shared/public integration is authored but unqualified. Full Rust consumer
+metadata, wider declaration/lint/privacy obligations, the justified complementary
+implementation and overall speedup remain incomplete. The central import inventory
+and structural guard declare the selective product source separately from the
+research qualifier. The CI checks source records, the core dependency cut,
+original byte/hash controls and SDK receipt refusals. Existing campaigns qualify
+only their declared scalar-library scope on their exact source. They do not
+establish this new public caller, a full Rust compiler or a release.
 
 
 ## Retained caller source
@@ -149,4 +151,7 @@ object digest and exact source definitions. The host verifies symbol renaming
 and separately records final member bytes, avoiding a metadata/symbol/hash
 cycle. No upstream source, dependency or pin was broadened by this interface
 change. The [retained caller description](../lustr-native-metadata-qualification/README.md#retained-native-candidate)
-records its implementation and pending exact-source hosted qualification.
+records its implementation and retained historical evidence. The
+[public library contract](../../docs/compiler-set/public-scalar-library.md) records
+the newly authored shared service, actual Cargo request boundary and its pending
+exact-source qualification.

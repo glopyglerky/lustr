@@ -1,7 +1,7 @@
 //! Read-only Rust-compatible discovery for the current native package.
 //!
 //! This is deliberately smaller than rustc's query surface. It reports native
-//! capabilities; it never claims Rust metadata or library artifacts exist.
+//! capabilities. Library filenames describe only the packaged scalar-library contract.
 use std::{ffi::OsString, io::Read, path::Path, process::Command};
 
 pub fn answer(args: &[OsString], bin: &Path, host: &str) -> Option<Result<(), String>> {
@@ -96,6 +96,10 @@ fn query(args: &[OsString], bin: &Path, host: &str) -> Result<(), String> {
                 for kind in &crate_types {
                     if *kind == "bin" {
                         println!("{name}");
+                    } else if matches!(*kind,"lib"|"rlib") && lustr_compiler::public_library_host_supported()
+                        && host == "x86_64-unknown-linux-gnu"
+                        && bin.parent().is_some_and(|root|root.join("lib/lustr-metadata/sdk-receipt.json").is_file()) {
+                        println!("lib{name}.rlib");
                     } else {
                         // Cargo's pinned target_info parser skips a type with
                         // this warning without consuming a filename for it.

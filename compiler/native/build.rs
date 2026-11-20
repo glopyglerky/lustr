@@ -116,6 +116,27 @@ fn main() {
     let mixed_symbols = root.join("../../crates/lustr-native-core/src/mixed_symbols.rs");
     ("lustr-mixed-symbols", std::fs::read(&mixed_symbols).expect("mixed object symbol validator is required")).hash(&mut h);
     println!("cargo:rerun-if-changed={}", mixed_symbols.display());
+    // External native completion and artifact modules participate in the same
+    // daemon identity. Changing the caller/serializer must not reach old state.
+    for relative in ["../../src/library_contract.rs","../../src/library_request.rs",
+        "../../crates/lustr-native-core/src/native_library.rs",
+        "../../crates/lustr-native-core/src/library_history.rs",
+        "../../crates/lustr-native-core/src/native_completion.rs",
+        "../../crates/lustr-native-core/src/library_artifact.rs",
+        "../../crates/lustr-native-core/src/metadata_archive.rs",
+        "../../crates/lustr-native-core/src/public_library.rs",
+        "../../crates/lustr-native-core/src/unit_object.rs",
+        "../../crates/lustr-native-core/src/unit_publication.rs",
+        "../../upstream/metadata-artifact-tools.json",
+        "../../docs/compiler-set/evidence/metadata-sdk-receipt-20261120/receipt.json"] {
+        let path=root.join(relative);
+        (relative,std::fs::read(&path).expect("public library source input is required")).hash(&mut h);
+        println!("cargo:rerun-if-changed={}",path.display());
+    }
+    for relative in ["../../crates/lustr-metadata-encoder/src","../../crates/lustr-metadata-sdk/src"] {
+        let path=root.join(relative);hash_tree(&mut h,&path);
+        println!("cargo:rerun-if-changed={}",path.display());
+    }
     hash_tree(&mut h, &root.join("library"));
     if let Ok(bytes) = std::fs::read(root.join("Cargo.toml")) {
         bytes.hash(&mut h);

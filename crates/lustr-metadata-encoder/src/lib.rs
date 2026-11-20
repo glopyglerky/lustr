@@ -2,8 +2,8 @@
 //!
 //! This crate does not parse or accept Rust programs. Its separate research
 //! caller owns a private native completion token and emitted object, and
-//! converts their immutable facts into `Input`. The public compiler does not
-//! yet invoke this seam.
+//! converts their immutable facts into `Input`. The authored public retained scalar-library caller
+//! shares that producer; qualification remains source-bound.
 //! The encoder checks the supplied inventory and
 //! preserves the pinned Rust metadata schema. It does not contain a Rust
 //! frontend, type checker, MIR builder, compiler driver, or fallback route.
@@ -98,6 +98,7 @@ pub struct ObjectMember {
 pub struct Input<'a> {
     pub crate_name: &'a str,
     pub metadata: &'a str,
+    pub extra_filename: &'a str,
     pub source_path: &'a str,
     pub working_directory: &'a str,
     pub source: &'a str,
@@ -173,6 +174,11 @@ fn validate(input: &Input<'_>) -> Result<(), String> {
         || !input.metadata.bytes().all(|c| c.is_ascii_alphanumeric() || c == b'_')
     {
         return Err(failure("invalid original crate identity"));
+    }
+    if input.extra_filename.len() > 128
+        || !(input.extra_filename.is_empty() || input.extra_filename.starts_with('-'))
+        || !input.extra_filename.bytes().all(|c| c.is_ascii_alphanumeric() || b"_-".contains(&c)) {
+        return Err(failure("invalid original extra-filename"));
     }
     if !input.source_path.starts_with('/') || input.source_path.contains('\0')
         || !input.working_directory.starts_with('/') || input.working_directory.contains('\0')

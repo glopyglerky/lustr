@@ -2,6 +2,10 @@
 
 use std::ffi::{OsStr, OsString};
 use std::path::PathBuf;
+mod library_contract;
+mod library_request;
+/// Whether this compiled host implements the bounded public library artifact path.
+pub use library_contract::supported_host as public_library_host_supported;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Native {
@@ -14,6 +18,7 @@ pub struct Native {
 /// not establish that the underlying work lies outside Lust's coverage.
 /// Returning None is never permission to invoke a complete second compiler.
 pub fn native_request(args: &[OsString]) -> Option<Native> {
+    if let Some(request) = library_request::parse(args) { return Some(request); }
     let mut input = None;
     let mut output = None;
     let mut settings = Vec::new();

@@ -187,6 +187,10 @@ fn main() {
             "src",
             "compiler/native",
             "crates/lustr-native-core",
+            "crates/lustr-metadata-encoder",
+            "crates/lustr-metadata-sdk",
+            "docs/compiler-set/evidence/metadata-sdk-receipt-20261120/receipt.json",
+            "tools/install-native-metadata-sdk.py",
             "upstream",
             "tools/build-native-toolchain.rs",
             "tools/selection-toolchain-receipt.rs",
@@ -251,8 +255,9 @@ fn main() {
     .unwrap();
     fs::create_dir(package.join("bin")).unwrap();
     fs::create_dir(package.join("lib")).unwrap();
-    // Cargo is used only for native package/target discovery. No rustc,
-    // rustdoc, compiler driver or LLVM runtime is copied into this package.
+    // Cargo is the build orchestrator and package selector. The bounded
+    // metadata SDK adds only core/builtins data and artifact-tool dependencies;
+    // no Rust compiler, compiler driver or research caller is packaged.
     symlink(sdk.join("bin/cargo"), package.join("bin/cargo")).unwrap();
     fs::create_dir(package.join("lib/lust")).unwrap();
     symlink(repo.join("compiler/native/library"), package.join("lib/lust/library")).unwrap();
@@ -281,6 +286,11 @@ fn main() {
     record(&package.join("lib/lustr-native.id"), format!("{identity}\n").as_bytes());
     selection_toolchain::write(&package, source, host);
     if host == "x86_64-unknown-linux-gnu" {
+        checked("metadata-sdk-package", Command::new("python3").arg(repo.join("tools/install-native-metadata-sdk.py"))
+            .arg(&repo).arg(&sdk).arg(&package), &logs);
+        for tool in ["llvm-ar","llvm-objcopy"] {
+            checked(&format!("installed-{tool}"),Command::new(package.join("lib/rustlib/x86_64-unknown-linux-gnu/bin").join(tool)).arg("--version"),&logs);
+        }
         checked("prime-selection-tools", Command::new(package.join("bin/lustr")).arg("--lustr-prime-selection-tools"), &logs);
     }
     let mixed_route = "exclusive native Lust; complementary compilation unavailable";

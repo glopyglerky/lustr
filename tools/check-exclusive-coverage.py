@@ -22,8 +22,8 @@ import tomllib
 # proof of the feature-specific minimum or of semantic ownership.
 PRODUCT_PACKAGES = {
     "Cargo.toml": ("lustr-compiler", {"serde_json", "sha2"}, {"source-native-runtime"}),
-    "compiler/native/Cargo.toml": ("lust", {"mimalloc", "libmimalloc-sys", "unicode-normalization"}, {"exclusive-native"}),
-    "crates/lustr-native-core/Cargo.toml": ("lustr-native-core", {"mimalloc", "libmimalloc-sys", "unicode-normalization"}, {"exclusive-native"}),
+    "compiler/native/Cargo.toml": ("lust", {"mimalloc", "libmimalloc-sys", "unicode-normalization", "lustr-metadata-encoder", "lustr-metadata-sdk", "object", "serde_json", "sha2"}, {"exclusive-native"}),
+    "crates/lustr-native-core/Cargo.toml": ("lustr-native-core", {"mimalloc", "libmimalloc-sys", "unicode-normalization", "lustr-metadata-encoder", "lustr-metadata-sdk", "object", "serde_json", "sha2"}, {"exclusive-native"}),
 }
 # Bind the files Cargo actually compiles, including its implicit library and
 # binary discovery. Dependency checks alone cannot establish this: a manifest
@@ -74,6 +74,19 @@ REGISTRY_SOURCE = "registry+https://github.com/rust-lang/crates.io-index"
 # different configuration requires review even if Cargo.lock's package names
 # happen not to change.
 NO_DEFAULT_FEATURES = {"mimalloc", "libmimalloc-sys"}
+
+
+METADATA_PRODUCT_ROOTS = {"compiler/native/Cargo.toml", "crates/lustr-native-core/Cargo.toml"}
+
+def metadata_product_dependencies(manifest):
+    prefix = "../../crates" if manifest.startswith("compiler/") else ".."
+    return {
+        "lustr-metadata-encoder": {"path": prefix + "/lustr-metadata-encoder", "optional": True},
+        "lustr-metadata-sdk": {"path": prefix + "/lustr-metadata-sdk", "optional": True},
+        "object": {"version": "=0.39.1", "default-features": False, "features": ["write_std", "read_core", "elf", "archive"], "optional": True},
+        "serde_json": {"version": "=1.0.154", "optional": True},
+        "sha2": {"version": "=0.11.1", "optional": True},
+    }
 
 
 def retired_path_checks(root, require):
@@ -205,12 +218,17 @@ def product_package_checks(root, require):
                     if not prefix and kind == "dependencies":
                         actual.add(name)
                     require(name in direct, f"{manifest}: unreviewed product dependency {alias} -> {name}")
-                    require(not any(key in declaration for key in ("path", "git", "registry", "registry-index", "workspace")),
-                            f"{manifest}: unreviewed source for dependency {alias}")
-                    require(declaration.get("default-features", True) == (name not in NO_DEFAULT_FEATURES)
-                            and declaration.get("optional", False) is False
-                            and declaration.get("features", []) == [],
-                            f"{manifest}: unreviewed feature configuration for dependency {alias}")
+                    metadata_dependencies = metadata_product_dependencies(manifest) if manifest in METADATA_PRODUCT_ROOTS else {}
+                    if name in metadata_dependencies:
+                        require(alias == name and declaration == metadata_dependencies[name],
+                                f"{manifest}: unreviewed selective metadata dependency declaration {alias}")
+                    else:
+                        require(not any(key in declaration for key in ("path", "git", "registry", "registry-index", "workspace")),
+                                f"{manifest}: unreviewed source for dependency {alias}")
+                        require(declaration.get("default-features", True) == (name not in NO_DEFAULT_FEATURES)
+                                and declaration.get("optional", False) is False
+                                and declaration.get("features", []) == [],
+                                f"{manifest}: unreviewed feature configuration for dependency {alias}")
         require(actual == direct, f"{manifest}: product dependency roots differ from the reviewed graph")
 
         # Cargo enables defaults unless explicitly disabled by the constructor.
@@ -227,7 +245,9 @@ def product_package_checks(root, require):
             enabled.add(feature)
             require(feature not in RESEARCH_FEATURES, f"{manifest}: product features enable research compiler {feature}")
             for edge in features.get(feature, []):
-                require(not edge.startswith("dep:") and "/" not in edge,
+                admitted_metadata_edge = (manifest in METADATA_PRODUCT_ROOTS and feature == "exclusive-native"
+                                          and edge.startswith("dep:") and edge[4:] in metadata_product_dependencies(manifest))
+                require(admitted_metadata_edge or (not edge.startswith("dep:") and "/" not in edge),
                         f"{manifest}: product feature has an unreviewed dependency activation {edge}")
                 if not edge.startswith("dep:") and "/" not in edge:
                     require(edge in features, f"{manifest}: product feature references unreviewed implicit dependency {edge}")
@@ -236,6 +256,19 @@ def product_package_checks(root, require):
                 f"{manifest}: constructor feature closure omits exclusive-native")
 
         locked = tomllib.loads((root / manifest).with_name("Cargo.lock").read_text())["package"]
+        if manifest in METADATA_PRODUCT_ROOTS:
+            closure = json.loads((root / "upstream/metadata-dependency-closure.json").read_text())
+            expected_packages = closure["packages"]
+            actual_packages = [item for item in locked if item["name"] != package_name]
+            identity = lambda item: (item["name"], item["version"])
+            require(sorted(actual_packages, key=identity) == sorted(expected_packages, key=identity),
+                    f"{manifest}: exact selective dependency identities or edges changed")
+            roots = [item for item in locked if item["name"] == package_name]
+            require(len(roots) == 1 and set(roots[0].get("dependencies", [])) == direct and "source" not in roots[0],
+                    f"{manifest}: selected product root dependency cut changed")
+            require(set(features.get("exclusive-native", [])) == {"dep:" + name for name in metadata_product_dependencies(manifest)},
+                    f"{manifest}: selective product feature closure changed")
+            continue
         packages = {item["name"]: item for item in locked}
         require(len(packages) == len(locked), f"{manifest}: multiple package versions need dependency-identity review")
         expected = {package_name}
@@ -269,7 +302,7 @@ def metadata_research_checks(root, inventory, require):
     encoder = "crates/lustr-metadata-encoder"
     sdk = "crates/lustr-metadata-sdk"
     qualifier = "crates/lustr-native-metadata-qualification"
-    components = {item["path"]: item for item in inventory["research_components"]}
+    components = {item["path"]: item for item in inventory["selective_components"] + inventory["research_components"]}
     for path in (encoder, sdk):
         component = components.get(path, {})
         require(component.get("source_inventory") == encoder + "/source-slices.json",
@@ -278,8 +311,9 @@ def metadata_research_checks(root, inventory, require):
                 and component.get("native_caller_committed") is True
                 and component.get("native_caller_path") == qualifier
                 and component.get("retained_native_caller_authored") is True
-                and component.get("public_retained_integration") is False,
-                path + ": metadata caller must remain the separate reviewed research executable")
+                and component.get("public_retained_integration") is True
+                and component.get("public_native_caller_path") == "crates/lustr-native-core/src/public_library.rs",
+                path + ": selective metadata public caller boundary changed")
 
     source_root = root / encoder
     slices = json.loads((source_root / "source-slices.json").read_text())
@@ -291,7 +325,8 @@ def metadata_research_checks(root, inventory, require):
             and status.get("native_caller_committed") is True
             and status.get("native_caller_path") == qualifier
             and status.get("retained_native_caller_authored") is True
-            and status.get("public_retained_integration") is False,
+            and status.get("public_retained_integration") is True
+            and status.get("public_native_caller_path") == "crates/lustr-native-core/src/public_library.rs",
             "metadata source inventory misstates integration")
     actual = {str(path.relative_to(source_root)): hashlib.sha256(path.read_bytes()).hexdigest()
               for path in (source_root / "src").rglob("*.rs")}
@@ -376,6 +411,9 @@ def metadata_research_checks(root, inventory, require):
             "native metadata qualifier source identity or product boundary changed")
     files = ["Cargo.toml", "Cargo.lock", "build.rs"] + sorted(
         str(path.relative_to(root / qualifier)) for path in (root / qualifier / "src").rglob("*.rs"))
+    shared = ["../lustr-native-core/src/library_history.rs", "../lustr-native-core/src/library_artifact.rs", "../lustr-native-core/src/metadata_archive.rs",
+              "../lustr-native-core/src/unit_object.rs", "../lustr-native-core/src/unit_publication.rs"]
+    files += shared
     actual = {path: hashlib.sha256((root / qualifier / path).read_bytes()).hexdigest() for path in files}
     require(record.get("adapted_sources_sha256") == actual,
             "native metadata qualifier adapted sources differ from reviewed identities")
@@ -405,7 +443,7 @@ def check(root):
     unicode = json.loads((root / "compiler/native/unicode-semantics.json").read_text())
     require(inventory["rust_source"] == unicode["rust_source"], "import inventory and native Unicode contract disagree")
     imports = {item["id"]: item for item in inventory["imports"]}
-    require(set(imports) == {"identifier-normalization", "declared-sdk-unicode-data"}, "new import needs a reviewed necessity/ownership gate")
+    require(set(imports) == {"identifier-normalization", "declared-sdk-unicode-data", "native-scalar-metadata", "native-scalar-artifact-host"}, "new import needs a reviewed necessity/ownership gate")
     normalization = imports.get("identifier-normalization", {})
     expected_dependencies = {name: unicode["compiler_dependencies"][name]
                              for name in unicode["native_identifier_normalization"]["dependencies"]}
@@ -437,6 +475,18 @@ def check(root):
         require(component["production_admitted"] is False, "whole rustc SDK research is not a selective production import")
         require(bool(component["required_for"]) and bool(component["blocking_reason"]), "research closure needs its actual purpose and block")
     metadata_research_checks(root, inventory, require)
+    public = json.loads((root / "upstream/public-library-integration.json").read_text())
+    require(public.get("schema") == "lustr-public-library-integration-v1"
+            and public.get("full_rust_coverage") is False
+            and public.get("performance_qualified") is False,
+            "public library declaration must preserve its bounded unqualified scope")
+    for path, digest in public["source_sha256"].items():
+        require(hashlib.sha256((root / path).read_bytes()).hexdigest() == digest,
+                "public library source identity changed: " + path)
+    require(public["metadata_dependency_closure"] == "upstream/metadata-dependency-closure.json"
+            and public["artifact_tool_closure"] == "upstream/metadata-artifact-tools.json",
+            "public library dependency/tool boundary changed")
+
 
     entry = (root / "src/main.rs").read_text()
     for token in ["rustc-full", "rustc-reference", "full-rust-core", "run_cli_with_default_root", "expanded_answer", "native-inference-worker"]:

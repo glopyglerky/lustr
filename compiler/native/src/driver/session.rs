@@ -483,6 +483,7 @@ impl Session {
     pub fn new(obj_dir: PathBuf, persistent: bool, key: SessionKey) -> Session {
         let interner = Interner::default();
         let known = Known::new(&interner);
+        let library_mode = key.library.is_some();
         Session {
             key,
             front: Front {
@@ -548,7 +549,7 @@ impl Session {
                 out: Vec::new(),
                 has_out: Vec::new(),
                 mixed_checked: None,
-                library: None,
+                library: library_mode.then(super::library::State::default),
                 slot_reads: Vec::new(),
                 read_keys: Default::default(),
                 unit_reads: Default::default(),
@@ -582,7 +583,7 @@ impl Session {
                 obj_dir,
                 objects: None,
                 persistent,
-                output: if persistent { OutputKind::SessionImage } else { OutputKind::Standalone },
+                output: if persistent && !library_mode { OutputKind::SessionImage } else { OutputKind::Standalone },
                 leak_at_exit: false,
                 image_one_shot: false,
                 overlays: Default::default(),
@@ -591,7 +592,7 @@ impl Session {
             },
             std_cache: None,
             disk_cache: None,
-            cache_tried: false,
+            cache_tried: library_mode,
             imported_request: false,
         }
     }

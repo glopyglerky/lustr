@@ -2,7 +2,10 @@
 //! This executable is a research qualifier, not the installed compiler route.
 #![allow(dead_code, unused_imports, unexpected_cfgs)]
 include!("../../lustr-native-core/src/lib.rs");
+#[path="../../lustr-native-core/src/metadata_archive.rs"]
 mod archive;
+#[path="../../lustr-native-core/src/library_artifact.rs"]
+mod library_artifact;
 mod retained;
 
 #[link(name = "tcc", kind = "static")]
@@ -79,72 +82,7 @@ fn command(root: &Path, label: &str, command: &mut std::process::Command, report
     Ok(result.stdout)
 }
 
-/// Compare allocated bytes and actual relocation targets across symbol
-/// renaming. Numeric symbol indexes may change; their semantic targets may not.
-fn object_contents(bytes: &[u8], mapping: &BTreeMap<String, String>) -> Result<Value, String> {
-    let file = object::File::parse(bytes).map_err(|error| error.to_string())?;
-    let mut sections = Vec::new();
-    for section in file.sections() {
-        let object::SectionFlags::Elf { sh_flags } = section.flags() else {
-            return Err("non-ELF emitted section".into());
-        };
-        if sh_flags & u64::from(object::elf::SHF_ALLOC) == 0 {
-            continue;
-        }
-        let mut relocations = Vec::new();
-        for (offset, relocation) in section.relocations() {
-            let target = match relocation.target() {
-                object::RelocationTarget::Symbol(index) => {
-                    let symbol = file.symbol_by_index(index).map_err(|error| error.to_string())?;
-                    if symbol.kind() == object::SymbolKind::Section {
-                        let index = symbol.section_index().ok_or("section symbol has no section")?;
-                        format!(
-                            "section:{}",
-                            file.section_by_index(index).map_err(|error| error.to_string())?.name().map_err(|error| error.to_string())?
-                        )
-                    } else {
-                        let name = symbol.name().map_err(|error| error.to_string())?;
-                        format!("symbol:{}", mapping.get(name).map_or(name, String::as_str))
-                    }
-                }
-                object::RelocationTarget::Section(index) => format!(
-                    "section:{}",
-                    file.section_by_index(index).map_err(|error| error.to_string())?.name().map_err(|error| error.to_string())?
-                ),
-                object::RelocationTarget::Absolute => "absolute".into(),
-                _ => return Err("unrepresented emitted relocation target".into()),
-            };
-            relocations.push(json!([
-                offset,
-                format!("{:?}", relocation.kind()),
-                format!("{:?}", relocation.encoding()),
-                relocation.size(),
-                relocation.addend(),
-                target
-            ]));
-        }
-        sections.push(
-            json!({"name":section.name().map_err(|error| error.to_string())?,"size":section.size(),"align":section.align(),"flags":sh_flags,
-            "data_sha256":hash(section.data().map_err(|error| error.to_string())?),"relocations":relocations}),
-        );
-    }
-    let mut symbols = Vec::new();
-    for symbol in file.symbols() {
-        let name = symbol.name().map_err(|error| error.to_string())?;
-        let section = match symbol.section() {
-            object::SymbolSection::Section(index) => format!(
-                "section:{}",
-                file.section_by_index(index).map_err(|error| error.to_string())?.name().map_err(|error| error.to_string())?
-            ),
-            other => format!("{other:?}"),
-        };
-        symbols.push(json!([mapping.get(name).map_or(name, String::as_str), section,
-            symbol.address(), symbol.size(), format!("{:?}", symbol.kind()),
-            format!("{:?}", symbol.scope()), symbol.is_weak(), format!("{:?}", symbol.flags())]));
-    }
-    symbols.sort_by_cached_key(Value::to_string);
-    Ok(json!({"sections": sections, "symbols": symbols}))
-}
+use library_artifact::object_contents;
 
 /// These controls corrupt records from the actual checked and emitted unit.
 /// They run only in this research executable, never in a compiler request.
@@ -293,6 +231,7 @@ fn compile(source: &Path, root: &Path, receipt: &Path, sysroot: &Path, report: &
     let mut definitions: Vec<_> = instances.iter().map(|f|f.definition).collect(); definitions.sort();
     let objects = [metadata::ObjectMember { member:"consumer.o".into(), producer_object_sha256:Sha256::digest(original).into(), definitions }];
     let input = metadata::Input {
+        extra_filename: "",
             crate_name: prepared.crate_name(),
             metadata: prepared.metadata(),
             source_path: prepared.source_path().to_str().ok_or("native source path is not Unicode")?,

@@ -39,6 +39,10 @@ pub(crate) use patch::drop_unkept;
 /// patch oracle (`item_oracle.rs`) a daemon check request then compares
 /// its answer with a fresh session's.
 pub fn compile(req: &Request, session: &mut Session) -> Response {
+    #[cfg(feature="exclusive-native")]
+    if req.session.library.is_some() {
+        return Response{code:4,stderr:"public library artifacts require their retained publication owner\n".into(),..Default::default()};
+    }
     compile_observed(req, session, None)
 }
 

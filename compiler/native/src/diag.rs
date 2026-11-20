@@ -1025,3 +1025,55 @@ mod tests {
         assert!(out.contains(r#""span":{"start":3,"end":4,"line":2,"col":2,"end_line":2,"end_col":3}"#), "{out}");
     }
 }
+
+
+/// Rust-compatible transport for the actual native diagnostics. This does not
+/// reinterpret a diagnostic as a compiler-selection signal or re-read source.
+#[cfg(feature="exclusive-native")]
+pub(crate) fn cargo_message(message:&str)->String {
+    serde_json::json!({"$message_type":"diagnostic","message":message,"code":null,
+        "level":"error","spans":[],"children":[],"rendered":message}).to_string()+"\n"
+}
+#[cfg(feature="exclusive-native")]
+pub(crate) fn render_cargo(diags:&mut [Diag],map:&SourceMap,src:&str,max_errors:usize)->String {
+    use serde_json::{Value,json};
+    fn span_value(map:&SourceMap,span:Span,primary:bool,label:Option<&str>,replacement:Option<&str>,auto:bool)->Value {
+        let span=map.call_site(span);
+        let (line,col)=map.line_col(span);
+        let (end_line,end_col)=map.line_col_at(span.file,span.hi);
+        let source=map.text(span.file).unwrap_or("");
+        let text:Vec<_>=source.lines().enumerate().filter_map(|(n,text)| {
+            let n=n as u32+1;
+            (n>=line&&n<=end_line).then(||json!({"text":text,
+                "highlight_start":if n==line{col}else{1},
+                "highlight_end":if n==end_line{end_col}else{text.chars().count() as u32+1}}))
+        }).collect();
+        json!({"file_name":map.path(span.file),"byte_start":span.lo,"byte_end":span.hi,
+            "line_start":line,"line_end":end_line,"column_start":col,"column_end":end_col,
+            "is_primary":primary,"text":text,"label":label,"suggested_replacement":replacement,
+            "suggestion_applicability":replacement.map(|_|if auto{"MachineApplicable"}else{"MaybeIncorrect"}),
+            "expansion":null})
+    }
+    diags.sort_by(|a,b|diag_order(map,a,b));
+    let shown=if max_errors==0{diags.len()}else{max_errors.min(diags.len())};
+    let mut output=String::new();
+    for d in &diags[..shown] {
+        let mut spans=vec![span_value(map,d.span,true,None,None,false)];
+        spans.extend(d.labels.iter().map(|l|span_value(map,l.span,false,Some(&l.text),None,false)));
+        let mut suggestions=Vec::new();
+        for edit in &d.edits {
+            suggestions.push(span_value(map,Span{lo:edit.start,hi:edit.end,..d.span},true,None,Some(&edit.replacement),edit.auto));
+        }
+        let children=if d.fix.is_empty(){Vec::new()}else{vec![json!({"message":d.fix,"code":null,"level":"help",
+            "spans":suggestions,"children":[],"rendered":null})]};
+        let rendered=render(&mut [d.clone()],map,src,false,0);
+        output.push_str(&json!({"$message_type":"diagnostic","message":d.message,
+            "code":{"code":d.code,"explanation":null},"level":d.severity,
+            "spans":spans,"children":children,"rendered":rendered}).to_string());
+        output.push('\n');
+    }
+    if shown<diags.len() {
+        output.push_str(&cargo_message(&format!("{} additional native diagnostics omitted by the requested limit",diags.len()-shown)));
+    }
+    output
+}

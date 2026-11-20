@@ -31,6 +31,9 @@ use std::path::{Path, PathBuf};
 // Lustr owns the host adapter; the retained compiler/session core is shared.
 #[path = "../../../src/host_runtime.rs"]
 pub mod host_runtime;
+#[path = "../../../src/library_contract.rs"]
+pub mod library_contract;
+pub use library_contract::LibraryKey;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Cmd {
@@ -89,6 +92,7 @@ impl ProfileFlags {
 /// `target_triple` empty means the host.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct SessionKey {
+    pub library: Option<LibraryKey>,
     pub krate: CrateKey,
     pub features: Vec<String>,
     pub default_features: bool,
@@ -126,6 +130,7 @@ impl SessionKey {
         let stem = path.rsplit('/').next().unwrap_or(&path);
         let stem = stem.strip_suffix(".rs").unwrap_or(stem);
         SessionKey {
+            library: None,
             krate: CrateKey {
                 package_id: format!("file:{path}"),
                 manifest_path: None,
@@ -149,7 +154,7 @@ impl SessionKey {
     pub fn describe(&self) -> String {
         let b = |x: bool| if x { "1" } else { "0" };
         let manifest = self.krate.manifest_path.as_ref().map_or_else(|| "-".to_string(), |p| p.to_string_lossy().into_owned());
-        format!(
+        let mut result = format!(
             "pkg={} manifest={} {}:{} explicit_target={} root={} test={} features=[{}] default_features={} all_features={} target={} panic_abort={} overflow_checks={} debug_assertions={} offline={} locked={}",
             self.krate.package_id,
             manifest,
@@ -167,7 +172,9 @@ impl SessionKey {
             b(self.profile.debug_assertions),
             b(self.cargo_net.offline),
             b(self.cargo_net.locked),
-        )
+        );
+        if let Some(library) = &self.library { result.push_str(&format!(" library={library:?}")); }
+        result
     }
 }
 
@@ -673,6 +680,8 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     let (mut release, mut profile, mut rustc) = (false, None, false);
     let mut max_errors = 20usize;
     let mut crate_flags = CrateFlags::default();
+    let (mut library_name, mut library_metadata, mut library_extra, mut library_cwd) = (None,None,None,None);
+    let (mut library_cfg, mut library_search) = (Vec::new(),Vec::new());
     // Every --target named, in order. One builds a session; several are
     // the release driver's list and build one session each.
     let mut targets: Vec<String> = Vec::new();
@@ -700,6 +709,12 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     }
     while let Some(a) = it.next() {
         match a.as_str() {
+            "--lustr-library-name" if library_name.is_none() => library_name = Some(it.next()?.clone()),
+            "--lustr-library-metadata" if library_metadata.is_none() => library_metadata = Some(it.next()?.clone()),
+            "--lustr-library-extra-filename" if library_extra.is_none() => library_extra = Some(it.next()?.clone()),
+            "--lustr-library-cwd" if library_cwd.is_none() => library_cwd = Some(PathBuf::from(it.next()?)),
+            "--lustr-library-check-cfg" => library_cfg.push(it.next()?.clone()),
+            "--lustr-library-search" => library_search.push(PathBuf::from(it.next()?)),
             "--json" => json = true,
             "--timings" => timings = true,
             "-g" => debug = true,
@@ -839,6 +854,18 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     if let Some(on) = debug_assertions {
         session.profile.debug_assertions = on;
     }
+    if library_name.is_some() || library_metadata.is_some() || library_extra.is_some() || library_cwd.is_some()
+        || !library_cfg.is_empty() || !library_search.is_empty() {
+        let key = LibraryKey {crate_name:library_name?, metadata:library_metadata?, extra_filename:library_extra?,
+            source_path:file.clone(), working_directory:library_cwd?, check_cfg:library_cfg, search_paths:library_search,
+            sdk_receipt:library_contract::SDK_RECEIPT.into()};
+        if !key.valid() || cmd != "build" || session.krate.target_kind != "lib"
+            || !session.profile.panic_abort || session.target_triple != library_contract::TARGET
+            || debug || emit_c.is_some() || !run_args.is_empty() || key.outputs(&abs(&out)).is_none() { return None; }
+        session.krate.target_name = key.crate_name.clone();
+        session.krate.target_explicit = true;
+        session.library = Some(key);
+    }
     let req = Request {
         cmd: if cmd == "check" { Cmd::Check } else { Cmd::Build },
         session,
@@ -960,6 +987,18 @@ pub fn encode(r: &Request) -> Vec<u8> {
     put_field(&mut out, if s.krate.target_explicit { b"1" } else { b"0" });
     path_field(&mut out, Some(&s.krate.root));
     put_field(&mut out, s.target_triple.as_bytes());
+    put_field(&mut out, if s.library.is_some() {b"1"} else {b"0"});
+    if let Some(library) = &s.library {
+        for value in [&library.crate_name,&library.metadata,&library.extra_filename,&library.sdk_receipt] {
+            put_field(&mut out,value.as_bytes());
+        }
+        path_field(&mut out,Some(&library.source_path));
+        path_field(&mut out,Some(&library.working_directory));
+        put_field(&mut out,library.check_cfg.len().to_string().as_bytes());
+        for value in &library.check_cfg { put_field(&mut out,value.as_bytes()); }
+        put_field(&mut out,library.search_paths.len().to_string().as_bytes());
+        for path in &library.search_paths { path_field(&mut out,Some(path)); }
+    }
     for f in &s.features {
         put_field(&mut out, f.as_bytes());
     }
@@ -1007,6 +1046,23 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
     };
     let root = path(get_field(r)?);
     let target_triple = text(get_field(r)?)?;
+    let library = match get_field(r)?.as_slice() {
+        b"0" => None,
+        b"1" => {
+            let crate_name=text(get_field(r)?)?; let metadata=text(get_field(r)?)?;
+            let extra_filename=text(get_field(r)?)?; let sdk_receipt=text(get_field(r)?)?;
+            let source_path=path(get_field(r)?); let working_directory=path(get_field(r)?);
+            let count:usize=text(get_field(r)?)?.parse().ok()?; if count>2{return None;}
+            let check_cfg=(0..count).map(|_|text(get_field(r)?)).collect::<Option<Vec<_>>>()?;
+            let count:usize=text(get_field(r)?)?.parse().ok()?; if count>4096{return None;}
+            let search_paths=(0..count).map(|_|Some(path(get_field(r)?))).collect::<Option<Vec<_>>>()?;
+            let library=LibraryKey{crate_name,metadata,extra_filename,source_path,working_directory,check_cfg,search_paths,sdk_receipt};
+            if !library.valid() || library.outputs(&out).is_none() || library.source_path!=file
+                || target_triple!=library_contract::TARGET || target_kind!="lib" || f[0]!="build" {return None;}
+            Some(library)
+        },
+        _ => return None,
+    };
     // A feature count this large is a bad request, not a loop to run.
     let n_features: usize = f[11].parse().ok()?;
     if n_features > 4096 {
@@ -1036,6 +1092,7 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
     Some(Request {
         cmd: if f[0] == "check" { Cmd::Check } else { Cmd::Build },
         session: SessionKey {
+            library,
             krate: CrateKey {
                 package_id,
                 manifest_path: if manifest.is_empty() { None } else { Some(path(manifest)) },

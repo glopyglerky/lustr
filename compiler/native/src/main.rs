@@ -17,6 +17,12 @@ mod cgen;
 mod check;
 mod colwidth;
 mod daemon;
+#[cfg(feature="exclusive-native")]
+#[path="../../../crates/lustr-native-core/src/library_artifact.rs"]
+mod library_artifact;
+#[cfg(feature="exclusive-native")]
+#[path="../../../crates/lustr-native-core/src/public_library.rs"]
+mod public_library;
 mod def;
 mod diag;
 mod driver;

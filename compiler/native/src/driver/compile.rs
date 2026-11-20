@@ -1343,6 +1343,10 @@ fn errors(diags: &mut [Diag], map: &SourceMap, src: &str, req: &Request) -> Resp
     // fresh session's (render order itself is `diag::diag_order`).
     let n = diag::dedup_exact(diags, map);
     let diags = &mut diags[..n];
+    #[cfg(feature="exclusive-native")]
+    if req.session.library.is_some() && req.json {
+        return Response{code:1,stderr:diag::render_cargo(diags,map,src,req.max_errors),..Default::default()};
+    }
     let json = req.json;
     let text = diag::render(diags, map, src, json, req.max_errors);
     let mut r = Response { code: 1, ..Default::default() };
@@ -2175,8 +2179,16 @@ fn resolved_setup(
             cargo::select_unit(&graph, &greq, &key.krate.target_kind, &key.krate.target_name, &pre_env, &front.interner, key.krate.test, &req.file, key.krate.target_explicit, req.cmd, key.profile)
                 .map_err(code2)?;
         #[cfg(feature = "exclusive-native")]
-        if req.cmd == Cmd::Build && !unit.target.kind.iter().any(|kind| kind == "bin") {
+        if req.cmd == Cmd::Build && !unit.target.kind.iter().any(|kind| kind == "bin")
+            && req.session.library.is_none() {
             return Err(code2("Lustr integration is incomplete for the requested Rust library artifact; no stock compiler was invoked".into()));
+        }
+        if let Some(library) = &key.library {
+            if !unit.target.kind.iter().any(|kind| matches!(kind.as_str(),"lib"|"rlib"))
+                || unit.target.name != library.crate_name || !unit.deps.is_empty()
+                || unit.build_script.is_some() || !unit.features.is_empty() || key.krate.test {
+                return Err(code2("public scalar-library integration requires the actual dependency-free, script-free library unit".into()));
+            }
         }
         let selected_source = std::fs::canonicalize(&unit.target.src_path).map_err(|e| code2(format!("cannot bind selected Cargo source: {e}")))?;
         let requested_source = std::fs::canonicalize(&req.file).map_err(|e| code2(format!("cannot bind requested Cargo source: {e}")))?;
@@ -2195,6 +2207,7 @@ fn resolved_setup(
             }
         }
         let mut env = CfgEnv::new(&key.target_triple, &unit.features, key.krate.test, key.profile);
+        if let Some(library) = &key.library { for cfg in &library.check_cfg { env.add_check_cfg(cfg); } }
         // Cargo env for the selected unit plus its build script
         // outputs (section 1.1): `OUT_DIR` and `rustc-env` pairs for
         // `env!`, `rustc-cfg` values for `#[cfg]`. Product scripts use their
@@ -2242,7 +2255,8 @@ fn resolved_setup(
     } else {
         front.display_root = None;
         let stem = key.krate.target_name.clone();
-        let env = CfgEnv::new(&key.target_triple, &key.features, key.krate.test, key.profile);
+        let mut env = CfgEnv::new(&key.target_triple, &key.features, key.krate.test, key.profile);
+        if let Some(library) = &key.library { for cfg in &library.check_cfg { env.add_check_cfg(cfg); } }
         (key.krate.root.clone(), user_src.to_string(), crate_ids_default, env, Vec::new(), stem, Vec::new())
     };
     // Body patch (driver/patch.rs): when every edit since the last full
@@ -2894,6 +2908,9 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
             code: 3,
             ..Default::default()
         });
+    }
+    if !super::library::request_supported(req) {
+        return Preparation::Failed(Response {code:3, stderr:"public library request context is not represented\n".into(), ..Default::default()});
     }
     if session.caches.library.is_some() && (req.cc || req.debug || req.emit_c.is_some() || req.harness || req.run_args.is_some()) {
         return Preparation::Failed(Response {code:3, stderr:"native library output context changed\n".into(), ..Default::default()});
@@ -4658,6 +4675,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
     let phase = phase_id.map(|id| super::Prepared { id, request: req, input: &front.ast, program: &program, map: &map, source: &src, work: &work });
     if let (Some(observer), Some(phase)) = (observer, phase) { observer.prepared(phase); }
     if let Some(library)=&mut caches.library {
+        library.current((0..program.fns.len()).map(|i|program.disk_id(LocalDefId(i as u32))));
         library.checked=work.iter().map(|&i|program.disk_id(LocalDefId(i as u32))).collect();
         library.checked_names=work.iter().map(|&i|{let id=LocalDefId(i as u32);(program.disk_id(id),program.interner.get(program.fns[i].name).to_owned())}).collect();
     }

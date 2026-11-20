@@ -94,6 +94,113 @@
         "complete rustc code generator"
       ],
       "qualification": "compiler/native/unicode-semantics.json; exhaustive scalar comparison is data qualification, not full Rust coverage"
+    },
+    {
+      "status": "authored-pending-exact-source-qualification",
+      "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "targets": "x86_64-unknown-linux-gnu only; edition 2024; explicit abort/O0/no debug/no embedded bitcode",
+      "features": {
+        "native": [
+          "exclusive-native"
+        ],
+        "encoder": [
+          "core",
+          "alloc"
+        ]
+      },
+      "excluded_duplicate_phases": [
+        "Rust parsing",
+        "macro expansion",
+        "name resolution",
+        "type checking",
+        "body lowering",
+        "native function compilation",
+        "complete rustc driver"
+      ],
+      "qualification": "upstream/public-library-integration.json; exact-source public campaign pending, no full-Rust or speed claim",
+      "id": "native-scalar-metadata",
+      "missing_capability": "Genuine Rust metadata and symbol identity for the completed native scalar-library graph",
+      "owner": "Original Rust metadata serializer after native completion",
+      "semantic_boundary": "Only native completed scalar declarations and actual native emitted instances; full source ownership remains native",
+      "upstream_paths": [
+        "crates/lustr-metadata-encoder/source-slices.json"
+      ],
+      "dependency_edges": [
+        [
+          "lustr-metadata-encoder",
+          "md-5"
+        ],
+        [
+          "lustr-metadata-encoder",
+          "twox-hash"
+        ]
+      ],
+      "adapter": "crates/lustr-metadata-encoder/src/lib.rs",
+      "licenses": [
+        "crates/lustr-metadata-encoder/LICENSE-MIT",
+        "crates/lustr-metadata-encoder/LICENSE-APACHE"
+      ]
+    },
+    {
+      "status": "authored-pending-exact-source-qualification",
+      "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "targets": "x86_64-unknown-linux-gnu only; edition 2024; explicit abort/O0/no debug/no embedded bitcode",
+      "features": {
+        "native": [
+          "exclusive-native"
+        ],
+        "encoder": [
+          "core",
+          "alloc"
+        ]
+      },
+      "excluded_duplicate_phases": [
+        "Rust parsing",
+        "macro expansion",
+        "name resolution",
+        "type checking",
+        "body lowering",
+        "native function compilation",
+        "complete rustc driver"
+      ],
+      "qualification": "upstream/public-library-integration.json; exact-source public campaign pending, no full-Rust or speed claim",
+      "id": "native-scalar-artifact-host",
+      "missing_capability": "Public Cargo outputs, original metadata wrappers, SDK data and owned retained publication",
+      "owner": "Shared retained library artifact host",
+      "semantic_boundary": "One native continuation; original ELF metadata wrappers and qualified tool operations; no full compiler SDK or qualifier linked into product",
+      "upstream_paths": [
+        "compiler/rustc_codegen_ssa/src/back/metadata.rs",
+        "compiler/rustc_interface/src/passes.rs",
+        "compiler/rustc_errors/src/json.rs"
+      ],
+      "dependency_edges": [
+        [
+          "native-library-host",
+          "lustr-metadata-sdk"
+        ],
+        [
+          "native-library-host",
+          "lustr-metadata-encoder"
+        ],
+        [
+          "native-library-host",
+          "object"
+        ],
+        [
+          "native-library-host",
+          "llvm-ar"
+        ],
+        [
+          "native-library-host",
+          "llvm-objcopy"
+        ]
+      ],
+      "adapter": "crates/lustr-native-core/src/public_library.rs",
+      "licenses": [
+        "crates/lustr-native-core/LICENSE-LLVM",
+        "crates/lustr-metadata-encoder/LICENSE-MIT",
+        "crates/lustr-metadata-encoder/LICENSE-APACHE"
+      ]
     }
   ],
   "research_components": [
@@ -114,36 +221,6 @@
       "blocking_reason": "not a selective complementary source implementation"
     },
     {
-      "path": "crates/lustr-metadata-encoder",
-      "scope": "standalone core-plus-alloc serializer for completed native scalar-library records",
-      "dependency": "selective pinned Rust encoding/identity/schema operations and source-owned stable-hash/ODHT writer slices; md-5 and twox-hash with std disabled",
-      "source_inventory": "crates/lustr-metadata-encoder/source-slices.json",
-      "production_admitted": false,
-      "native_caller_committed": true,
-      "required_for": "intended serialization of genuine native completed definitions and actual emitted instances without whole-consumer Rust analysis",
-      "blocking_reason": "The actual retained native/TinyCC caller is authored but unqualified; public entry, wider Rust obligations and compiler speed remain unfinished. Earlier passing evidence stays scoped to its original one-shot source.",
-      "native_caller_path": "crates/lustr-native-metadata-qualification",
-      "public_retained_integration": false,
-      "qualification_record": "docs/compiler-set/evidence/native-metadata-join-20261120/README.md",
-      "retained_native_caller_authored": true,
-      "retained_native_qualification": "pending exact-source hosted compilation and campaign"
-    },
-    {
-      "path": "crates/lustr-metadata-sdk",
-      "scope": "standalone host adapter for construction-qualified pinned SDK receipts",
-      "dependency": "lustr-metadata-encoder, std filesystem/path services, serde_json and sha2; excluded from the encoder core dependency graph",
-      "source_inventory": "crates/lustr-metadata-encoder/source-slices.json",
-      "production_admitted": false,
-      "native_caller_committed": true,
-      "required_for": "immutable ordered core/compiler_builtins context intended to be loaded once outside repeated consumer compilation",
-      "blocking_reason": "The actual retained native/TinyCC caller is authored but unqualified; public entry, wider Rust obligations and compiler speed remain unfinished. Earlier passing evidence stays scoped to its original one-shot source.",
-      "native_caller_path": "crates/lustr-native-metadata-qualification",
-      "public_retained_integration": false,
-      "qualification_record": "docs/compiler-set/evidence/native-metadata-join-20261120/README.md",
-      "retained_native_caller_authored": true,
-      "retained_native_qualification": "pending exact-source hosted compilation and campaign"
-    },
-    {
       "path": "crates/lustr-native-metadata-qualification",
       "scope": "Separate original one-shot qualifier and actual retained native Session/TinyCC to selective metadata/archive candidate; no public compiler route",
       "dependency": "existing native qualifier sources, selective metadata encoder/SDK loader, object writer and pinned LLVM object/archive utilities; no rustc_private dependency or compiler invocation",
@@ -162,5 +239,41 @@
     "general Rust metadata encoder beyond the bounded research source slices",
     "full Rust compiler source"
   ],
-  "guard_scope": "structural source and public entry constraints only; source inventories do not prove minimal dependency closure or semantic exclusivity"
+  "guard_scope": "structural source and public entry constraints only; source inventories do not prove minimal dependency closure or semantic exclusivity",
+  "selective_components": [
+    {
+      "path": "crates/lustr-metadata-encoder",
+      "scope": "standalone core-plus-alloc serializer for completed native scalar-library records",
+      "dependency": "selective pinned Rust encoding/identity/schema operations and source-owned stable-hash/ODHT writer slices; md-5 and twox-hash with std disabled",
+      "source_inventory": "crates/lustr-metadata-encoder/source-slices.json",
+      "production_admitted": false,
+      "native_caller_committed": true,
+      "required_for": "intended serialization of genuine native completed definitions and actual emitted instances without whole-consumer Rust analysis",
+      "blocking_reason": "Current public Cargo scalar-library path is authored; exact-source public qualification and measured bridge performance are pending. Wider Rust completion remains unintegrated.",
+      "native_caller_path": "crates/lustr-native-metadata-qualification",
+      "public_retained_integration": true,
+      "qualification_record": "docs/compiler-set/evidence/native-metadata-join-20261120/README.md",
+      "retained_native_caller_authored": true,
+      "retained_native_qualification": "pending exact-source hosted compilation and campaign",
+      "public_native_caller_path": "crates/lustr-native-core/src/public_library.rs",
+      "production_source_authored": true
+    },
+    {
+      "path": "crates/lustr-metadata-sdk",
+      "scope": "standalone host adapter for construction-qualified pinned SDK receipts",
+      "dependency": "lustr-metadata-encoder, std filesystem/path services, serde_json and sha2; excluded from the encoder core dependency graph",
+      "source_inventory": "crates/lustr-metadata-encoder/source-slices.json",
+      "production_admitted": false,
+      "native_caller_committed": true,
+      "required_for": "immutable ordered core/compiler_builtins context intended to be loaded once outside repeated consumer compilation",
+      "blocking_reason": "Current public Cargo scalar-library path is authored; exact-source public qualification and measured bridge performance are pending. Wider Rust completion remains unintegrated.",
+      "native_caller_path": "crates/lustr-native-metadata-qualification",
+      "public_retained_integration": true,
+      "qualification_record": "docs/compiler-set/evidence/native-metadata-join-20261120/README.md",
+      "retained_native_caller_authored": true,
+      "retained_native_qualification": "pending exact-source hosted compilation and campaign",
+      "public_native_caller_path": "crates/lustr-native-core/src/public_library.rs",
+      "production_source_authored": true
+    }
+  ]
 }

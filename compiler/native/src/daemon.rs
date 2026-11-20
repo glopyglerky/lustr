@@ -421,6 +421,8 @@ fn refresh_key(key: &SessionKey, env: Option<&[(String, String)]>) -> u64 {
 
 struct Entry {
     session: Session,
+    #[cfg(feature="exclusive-native")]
+    library: Option<Result<crate::public_library::Owner,String>>,
     /// Directory stem for this crate's sessions; fresh sessions get "<dir>r<n>".
     dir: PathBuf,
     resets: u64,
@@ -452,6 +454,8 @@ impl Entry {
         let rk = refresh_key(&key, env);
         Entry {
             session: Session::new(dir.clone(), true, key),
+            #[cfg(feature="exclusive-native")]
+            library: None,
             dir,
             resets: 0,
             refresh_key: rk,
@@ -469,6 +473,8 @@ impl Entry {
 /// (panic recovery, guard mismatch, graph change) must not leave its
 /// dir behind for the daemon's whole life.
 fn replace_session(entry: &mut Entry, key: &SessionKey) {
+    #[cfg(feature="exclusive-native")]
+    { entry.library=None; }
     let dir = entry.fresh_dir();
     let old = std::mem::replace(&mut entry.session, Session::new(dir, true, key.clone()));
     let _ = std::fs::remove_dir_all(old.obj_dir());
@@ -905,6 +911,19 @@ fn compile_fresh(entry: &mut Entry, req: &Request) -> (Response, bool) {
 /// Product and mixed requests get one attempt in the retained session. The
 /// separately built donor oracle keeps its original fresh-session guard.
 fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Response {
+    #[cfg(feature="exclusive-native")]
+    if req.session.library.is_some() {
+        entry.served+=1;
+        if entry.recompute_next {entry.recompute_next=false;replace_session(entry,&req.session);}
+        let result=std::panic::catch_unwind(std::panic::AssertUnwindSafe(||{
+            if entry.library.is_none(){entry.library=Some(crate::public_library::Owner::new(req));}
+            match entry.library.as_mut().unwrap() {
+                Ok(owner)=>owner.compile(req,&mut entry.session),
+                Err(error)=>crate::public_library::failed(req,error),
+            }
+        }));
+        return terminal_answer(entry,req,result);
+    }
     compile_guarded_with(entry, req, jobs, driver::compile)
 }
 

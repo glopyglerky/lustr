@@ -12,7 +12,7 @@
       ],
       "adaptation": "Only the encoder-required addition helper; subtraction is not imported.",
       "semantic_owner": "required metadata serializer dependency",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/upstream/leb128.rs",
@@ -26,7 +26,7 @@
       ],
       "adaptation": "Encoder-only extraction; decoder and its dependencies are excluded; module import adjusted.",
       "semantic_owner": "required metadata serializer dependency",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/upstream/codec.rs",
@@ -39,7 +39,7 @@
       ],
       "adaptation": "Only scalar/string encoding interface; hash-map ordering and all decoder/collection adapters are excluded.",
       "semantic_owner": "required metadata serializer dependency",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/upstream/mem_encoder.rs",
@@ -52,7 +52,7 @@
       ],
       "adaptation": "Module imports adjusted; generic Encodable specialization and unused fixed-size wrapper excluded.",
       "semantic_owner": "required metadata serializer dependency",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/upstream/schema.rs",
@@ -65,7 +65,7 @@
       ],
       "adaptation": "Schema names/order extracted exactly; TyCtxt-bound semantic payload types are replaced by the checked native adapter, not imported.",
       "semantic_owner": "required metadata serializer dependency",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/identity.rs",
@@ -76,7 +76,7 @@
       ],
       "adaptation": "Create original Rust crate identity from actual name, metadata and pinned cfg_version. One original metadata argument is already sorted and unique; forced mutable environment versions are excluded from this seam.",
       "semantic_owner": "metadata definition identity",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/identity.rs",
@@ -90,7 +90,7 @@
       ],
       "adaptation": "Keep all DefPathData discriminants, original parent/name/disambiguator hash and root hash. Native IDs are mapped, never cast. Collisions fail. Only actual flat ordinary function definitions are allocated.",
       "semantic_owner": "metadata definition identity",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/identity.rs",
@@ -102,7 +102,7 @@
       ],
       "adaptation": "Preserve the first-word stable-hash conversion without importing unrelated compiler tables.",
       "semantic_owner": "required identity dependency",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/identity.rs",
@@ -117,7 +117,7 @@
       ],
       "adaptation": "Specialize to actual flat ValueNs Item instances with no generic arguments. Preserve original fixed-width crate disambiguator and ASCII identifier operations. No export_name attribute is fabricated.",
       "semantic_owner": "metadata/object symbol identity",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/identity.rs",
@@ -129,7 +129,7 @@
       ],
       "adaptation": "Specialize original arithmetic to the u64/base62 disambiguator used above.",
       "semantic_owner": "required symbol dependency",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/upstream/odht_writer.rs",
@@ -140,7 +140,7 @@
       ],
       "adaptation": "Preserve original u64/u32 on-disk map configuration in the required ODHT writer-only extraction; mapped identities retain original layout.",
       "semantic_owner": "required definition-map dependency",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/table.rs",
@@ -154,7 +154,7 @@
       ],
       "adaptation": "Preserve sparse/dense threshold, widths, bitmap/base indexes and interleaved fixed-size lazy records. Replace generic IndexVec with bounded mapped-index Vec; all supported row encodings fit original sixteen-byte maximum.",
       "semantic_owner": "metadata serialization",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/encode.rs",
@@ -178,7 +178,7 @@
       ],
       "adaptation": "Use native completion records instead of semantic query access. Keep original scalar serialization and complete v12 schema. No consumer TyCtxt, Rust parser/checker/MIR or analysis success override exists. Text/offset symbol encoding has no predefined Rust interner IDs. Native checked source/request/object/SDK identities replace the HIR supplement in the original metadata hash algorithm. Wider types/declarations/attributes/profiles remain unintegrated.",
       "semantic_owner": "metadata serialization of Lust-owned completed facts",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/encode.rs",
@@ -190,7 +190,7 @@
       ],
       "adaptation": "Preserve bound-vars-before-value encoding; bound variables and generic args are actually absent in the private completed scope.",
       "semantic_owner": "required scalar signature encoding",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/encode.rs",
@@ -203,7 +203,7 @@
       ],
       "adaptation": "Use original Uint(U64)/FnDef discriminants and safe Rust packed signature fields from native primitive signatures. No fake TypeckResults or typed bodies are constructed.",
       "semantic_owner": "required scalar type encoding",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/encode.rs",
@@ -214,7 +214,7 @@
       ],
       "adaptation": "Preserve original UintTy::U64 ordinal.",
       "semantic_owner": "required scalar type encoding",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/encode.rs",
@@ -226,7 +226,7 @@
       ],
       "adaptation": "Preserve original packed Rust ABI value in FnSigKind; actual artifact convention requires downstream runtime qualification.",
       "semantic_owner": "required scalar ABI representation",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/encode.rs",
@@ -238,7 +238,7 @@
       ],
       "adaptation": "Preserve original field sequence for actually empty generic/where/lifetime records. Wider obligations cannot be admitted by supplying defaults.",
       "semantic_owner": "required declaration encoding",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/encode.rs",
@@ -251,7 +251,7 @@
       ],
       "adaptation": "Original attribute field order/defaults apply only because native completion establishes no attributes and requested profile admits no overriding mode.",
       "semantic_owner": "required declaration encoding",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/encode.rs",
@@ -262,7 +262,7 @@
       ],
       "adaptation": "Original NoStd=>No explains its absent cross-crate payload. Original no_std source/core semantics are retained, never rewritten to no_core.",
       "semantic_owner": "required root-attribute policy",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/encode.rs",
@@ -275,7 +275,7 @@
       ],
       "adaptation": "Specialize original filters to completed ordinary nonconst nongeneric Item functions at actual opt0. Public effective visibility determines exports. The actual nonempty joined emitted inventory is visited before the no-generic-arguments branch yields no generic exports; missing instances fail, never become an empty graph. This is a source-owned specialization, not execution of the full TyCtxt query.",
       "semantic_owner": "shared symbol-export service",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/encode.rs",
@@ -286,7 +286,7 @@
       ],
       "adaptation": "Original sdylib-only guard makes exportable_items empty for this actual rlib request, independently of ordinary Rust symbol exports.",
       "semantic_owner": "required crate metadata policy",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/encode.rs",
@@ -297,7 +297,7 @@
       ],
       "adaptation": "Actual requested opt0, no MIR inlining/always-encode override and nonconst/noninline/non-generic functions do not require encoded MIR. No compiler flag is rewritten.",
       "semantic_owner": "required metadata MIR policy",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/encode.rs",
@@ -308,7 +308,7 @@
       ],
       "adaptation": "Actual abort request requires Some(Abort), without inspecting or generating Rust MIR.",
       "semantic_owner": "required panic metadata policy",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/encode.rs",
@@ -321,7 +321,7 @@
       ],
       "adaptation": "Encode actual root expansion record and original zero root expansion hash. Macro/non-root context completion remains excluded.",
       "semantic_owner": "required source hygiene encoding",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/encode.rs",
@@ -336,7 +336,7 @@
       ],
       "adaptation": "Preserve actual source path/working directory, exact ASCII/LF bytes, line differences and source spans. Non-ASCII/CR normalization is explicit unintegrated scope. No fabricated source or AST is used. POSIX absolute Unicode path component hashing is implemented with core string slices and differentially checked against the original host Path/OsStr identities.",
       "semantic_owner": "required source provenance encoding",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/encode.rs",
@@ -349,7 +349,7 @@
       ],
       "adaptation": "Preserve original source-file identity path boundary tags and option values. Declared host is Linux.",
       "semantic_owner": "required source identity dependency",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/encode.rs",
@@ -360,7 +360,7 @@
       ],
       "adaptation": "Preserve original u8 syntactic enum tags in source-file identity. No procedural macro/compiler syntax dependency is imported.",
       "semantic_owner": "required identity encoding rule",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/encode.rs",
@@ -372,7 +372,7 @@
       ],
       "adaptation": "Preserve original exported-symbol enum and field order. Backend helpers are tracked separately from source definitions.",
       "semantic_owner": "required symbol serialization",
-      "necessity": "Required for encoding completed native scalar-library facts consumed by the separate native metadata research qualifier. See README.md for the admitted record scope and excluded closures."
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
     {
       "destination": "src/encode.rs",
@@ -741,15 +741,17 @@
     "production_admitted": false,
     "native_caller_committed": true,
     "native_caller_path": "crates/lustr-native-metadata-qualification",
-    "public_retained_integration": false,
-    "qualification": "The fixed native scalar-library campaign passed on source 974eb097ea9fc84a18c716fe0c2d469fdfcfab6c, tree 948074da4b3b23ed25fa789b17a924555f24e4ca, with 31 named controls, 262152 runtime assertions and 8 actual candidate traces. Original failures and exact evidence are retained in docs/compiler-set/evidence/native-metadata-join-20261120. No public compiler, retained-session, general metadata, full Rust or speed qualification follows.",
+    "public_retained_integration": true,
+    "qualification": "Current shared/public path requires exact-source hosted qualification; no broader Rust or performance admission.",
     "retained_native_caller_authored": true,
-    "retained_native_qualification": "pending exact-source hosted compilation and campaign; public integration remains false"
+    "retained_native_qualification": "Earlier exact-source retained evidence remains in the repository; the authored shared/public integration requires new exact-source hosted qualification.",
+    "public_native_caller_path": "crates/lustr-native-core/src/public_library.rs",
+    "production_source_authored": true
   },
   "adapted_sources_sha256": {
-    "src/encode.rs": "380f57a3605a2be20c54f65e304e4eb064b6b4cdb031dacb0a9e2441d57e9d1c",
+    "src/encode.rs": "d6630d985cb343eb7d7f5614881cff8183d14c4909d482d39daf01ba289f23a6",
     "src/identity.rs": "995799a9938d78fd5c800a1d28af4039f4e5868cea71536d0f70b2fc3643724d",
-    "src/lib.rs": "b5088c5c9f7572a8428989bbab393565a110e3119914b131daf59bd23e1479e1",
+    "src/lib.rs": "5f1c46f701b0caed5c64a7e2e1d08cbd6e96a3ee529216e0d5311b3dbc13af37",
     "src/sdk.rs": "a088d99b04d3046c52830699b15c960e849d84d1a101c52df68b1aaeb64898b6",
     "src/table.rs": "5ad2fa46decc550bfd5f7d23cc051c7087d4ef1f5b361b154630c122097c92bb",
     "src/upstream/codec.rs": "916922c930d3dc46c7003d65d920b6c84efa780ac5b0c06eec1586ead0216a7a",

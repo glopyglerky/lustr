@@ -26,11 +26,11 @@ mod lust {
 
     impl Call {
         pub fn needs_rust_artifact(&self) -> bool {
-            matches!(self.0.cmd, protocol::Cmd::Build) && self.0.session.krate.target_kind == "lib"
+            matches!(self.0.cmd, protocol::Cmd::Build) && self.0.session.krate.target_kind == "lib" && self.0.session.library.is_none()
                 || !(self.0.session.target_triple.is_empty() || self.0.session.target_triple == protocol::host_triple())
         }
         pub fn library_compatible(&self) -> bool {
-            self.0.session.krate.manifest_path.is_none() && self.expansion_compatible()
+            self.0.session.library.is_none() && self.0.session.krate.manifest_path.is_none() && self.expansion_compatible()
         }
         pub fn expansion_compatible(&self) -> bool {
             protocol::source_override().is_none()
@@ -97,6 +97,9 @@ mod lust {
 
     pub fn answer(call: &Call, core: &Path) -> Result<Option<(i32, Vec<u8>, Vec<u8>)>, String> {
         if env_on("LUST_NO_DAEMON") || protocol::source_override().is_some() {
+            if call.0.session.library.is_some() {
+                return Err("the represented library requires its retained owner; the selected mode cannot retain this session".into());
+            }
             return Ok(None);
         }
         let socket = protocol::socket_path();

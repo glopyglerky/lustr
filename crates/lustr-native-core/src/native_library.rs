@@ -3,6 +3,8 @@
 //! and actual per-function TinyCC objects from the same Session.
 #[path = "native_completion.rs"]
 pub(crate) mod completion;
+#[path = "library_history.rs"]
+pub(crate) mod history;
 use crate::{ast, check, cgen, def, diag, intern, ir, lexer};
 use crate::driver::{Request, Response, Session, SessionKey};
 use super::session::{Caches, Front};
@@ -37,6 +39,14 @@ pub(crate) struct State {
     by_definition: BTreeMap<def::DiskDefId, (u64, Arc<Object>)>,
     code_generation: BTreeMap<def::DiskDefId, u64>,
     next_code: u64,
+    history_policy:history::Policy,
+    history_dirty:bool,
+    current_definitions:BTreeSet<def::DiskDefId>,
+    object_used:BTreeMap<u64,u64>,
+    identity_used:BTreeMap<def::DiskDefId,u64>,
+    published:Option<Snapshot>,
+    pub(crate) history:History,
+
     pub(crate) generation: u64,
     pub(crate) next_object: u64,
     pub(crate) compiled_objects: usize,
@@ -48,18 +58,30 @@ pub(crate) struct State {
     pub snapshot: Option<Snapshot>,
 }
 
+#[derive(Default)]
+pub(crate) struct History {
+    pub active_objects:usize, pub inactive_objects:usize, pub inactive_object_bytes:usize,
+    pub active_definitions:usize, pub inactive_definitions:usize, pub inactive_definition_bytes:usize,
+    pub evicted_object_serials:Vec<u64>, pub retired_definition_ids:Vec<def::DiskDefId>,
+}
+impl StoredBody {
+    fn bytes(&self)->usize {
+        std::mem::size_of::<Self>()+self.facts.expressions.capacity()*std::mem::size_of::<Resolution>()
+            +(self.facts.lowered_calls.as_ref().map_or(0,BTreeSet::len)+self.facts.generated_uses.as_ref().map_or(0,BTreeSet::len))*std::mem::size_of::<def::DiskDefId>()
+    }
+}
 impl Session {
     /// The mode is fixed before the first native request. No existing checked
     /// cache or image can be promoted to library proof state after the fact.
     pub(crate) fn scalar_library(obj_dir: PathBuf, key: SessionKey) -> Result<Self, String> {
-        if key.krate.target_kind != "lib" || key.krate.manifest_path.is_some()
+        if key.krate.target_kind != "lib" || key.krate.manifest_path.is_some() && key.library.is_none()
             || !key.profile.panic_abort || key.target_triple != "x86_64-unknown-linux-gnu"
             || crate::protocol::host_triple() != "x86_64-unknown-linux-gnu"
             || crate::image::state_dir().is_some() || std::env::var_os("LUST_FRONT_ARENA").is_some() {
             return Err("retained scalar library requires its fixed single-file Linux x64 abort context".into());
         }
         let mut session = Self::new(obj_dir, true, key);
-        session.caches.library = Some(State::default());
+        session.caches.library = Some(State{history_policy:history::policy()?,..Default::default()});
         session.caches.output = super::OutputKind::Standalone;
         // This first join retains immutable object bytes inside the Session.
         // Disk image/object restoration needs a separately qualified proof key.
@@ -67,6 +89,35 @@ impl Session {
         Ok(session)
     }
     pub(crate) fn library_state(&self) -> Option<&State> { self.caches.library.as_ref() }
+    pub(crate) fn configure_library_history(&mut self,policy:history::Policy) {
+        if let Some(state)=&mut self.caches.library {
+            state.history_policy=policy;state.history.evicted_object_serials.clear();state.history.retired_definition_ids.clear();
+        }
+    }
+    pub(crate) fn prune_library_history(&mut self) {prune(&self.front,&mut self.caches);}
+    /// Called only after durable publication (or exact existing output reuse).
+    /// Maintenance is infallible and cannot turn a committed output into a
+    /// claimed pre-publication failure.
+    pub(crate) fn library_published(&mut self) {
+        if let Some(state)=&mut self.caches.library {
+            if state.published.as_ref().map(|s|s.generation)!=state.snapshot.as_ref().map(|s|s.generation) {
+                state.published=state.snapshot.clone();state.history_dirty=true;
+            }
+        }
+        self.prune_library_history();
+    }
+}
+/// Public contexts are validated before reading or preparing source. The
+/// constructor derives the mode from the same key, including after every reset.
+pub(crate) fn request_supported(req: &Request) -> bool {
+    let Some(key) = &req.session.library else { return true; };
+    key.valid() && key.source_path == req.file && key.outputs(&req.out).is_some()
+        && req.cmd == crate::protocol::Cmd::Build && req.session.krate.target_kind == "lib"
+        && req.session.krate.target_name == key.crate_name && req.session.profile.panic_abort
+        && req.session.target_triple == crate::protocol::library_contract::TARGET
+        && crate::protocol::host_triple() == crate::protocol::library_contract::TARGET
+        && !req.debug && !req.cc && !req.harness && req.emit_c.is_none() && req.run_args.is_none()
+        && crate::image::state_dir().is_none() && std::env::var_os("LUST_FRONT_ARENA").is_none()
 }
 impl State {
     pub(crate) fn function_name(&self, id:def::DiskDefId)->Option<&str> {
@@ -76,8 +127,80 @@ impl State {
         self.source = Arc::from(source);
         self.checked.clear(); self.checked_names.clear(); self.generated.clear(); self.compiled_objects=0; self.reused_objects=0;
         self.snapshot = None;
+        self.history.evicted_object_serials.clear();self.history.retired_definition_ids.clear();
     }
-    pub(super) fn changed(&mut self) { self.generation += 1; }
+    pub(super) fn changed(&mut self) { self.generation += 1; self.history_dirty=true; }
+    pub(super) fn current(&mut self,ids:impl Iterator<Item=def::DiskDefId>) {
+        let current:BTreeSet<_>=ids.collect();
+        if current!=self.current_definitions {self.current_definitions=current;self.history_dirty=true;}
+    }
+    fn prune(&mut self)->Vec<def::DiskDefId>{
+        if !self.history_dirty{return Vec::new();}
+        self.history_dirty=false;
+        let mut protected_ids=self.current_definitions.clone();
+        let mut protected_objects:BTreeSet<_>=self.by_definition.iter().filter(|(id,_)|self.current_definitions.contains(*id))
+            .map(|(_,(_,object))|object.serial).collect();
+        if let Some(published)=&self.published {
+            protected_ids.extend(published.functions.iter().map(Function::definition));
+            protected_objects.extend(published.objects.iter().map(|(object,_)|object.serial));
+        }
+        if let Some(snapshot)=&self.snapshot {
+            protected_objects.extend(snapshot.objects.iter().map(|(object,_)|object.serial));
+        }
+        for id in &self.current_definitions {self.identity_used.insert(*id,self.generation);}
+        for serial in &protected_objects {self.object_used.insert(*serial,self.generation);}
+        let object_bytes=|key:&String,object:&Object|key.capacity()+object.c_source.len()+object.bytes.capacity()+object.symbol.capacity()+std::mem::size_of::<Object>();
+        let inactive:Vec<_>=self.objects.iter().filter(|(_,o)|!protected_objects.contains(&o.serial))
+            .map(|(key,o)|(key.clone(),*self.object_used.get(&o.serial).unwrap_or(&0),object_bytes(key,o))).collect();
+        for key in history::victims(inactive,self.history_policy) {
+            if let Some(object)=self.objects.remove(&key) {
+                self.history.evicted_object_serials.push(object.serial);self.object_used.remove(&object.serial);
+                self.by_definition.retain(|_,(_,held)|held.serial!=object.serial);
+            }
+        }
+        let identities:BTreeSet<_>=self.bodies.keys().chain(self.by_definition.keys()).chain(self.code_generation.keys()).copied().collect();
+        let identity_bytes=|id:&def::DiskDefId|self.bodies.get(id).map_or(0,StoredBody::bytes)
+            +usize::from(self.by_definition.contains_key(id))*std::mem::size_of::<(def::DiskDefId,u64,Arc<Object>)>()
+            +usize::from(self.code_generation.contains_key(id))*std::mem::size_of::<(def::DiskDefId,u64)>();
+        let inactive:Vec<_>=identities.iter().filter(|id|!protected_ids.contains(*id))
+            .map(|id|(*id,*self.identity_used.get(id).unwrap_or(&0),identity_bytes(id))).collect();
+        let retired=history::victims(inactive,self.history_policy);
+        for id in &retired {
+            self.bodies.remove(id);self.by_definition.remove(id);self.code_generation.remove(id);self.identity_used.remove(id);
+        }
+        self.history.retired_definition_ids.extend(retired.iter().copied());
+        self.history.active_objects=self.objects.values().filter(|o|protected_objects.contains(&o.serial)).count();
+        self.history.inactive_objects=self.objects.len()-self.history.active_objects;
+        self.history.inactive_object_bytes=self.objects.iter().filter(|(_,o)|!protected_objects.contains(&o.serial)).map(|(k,o)|object_bytes(k,o)).sum();
+        let identities:BTreeSet<_>=self.bodies.keys().chain(self.by_definition.keys()).chain(self.code_generation.keys()).copied().collect();
+        self.history.active_definitions=identities.iter().filter(|id|protected_ids.contains(*id)).count();
+        self.history.inactive_definitions=identities.len()-self.history.active_definitions;
+        self.identity_used.retain(|id,_|identities.contains(id));
+        let object_serials:BTreeSet<_>=self.objects.values().map(|o|o.serial).collect();
+        self.object_used.retain(|serial,_|object_serials.contains(serial));
+        self.history.inactive_definition_bytes=identities.iter().filter(|id|!protected_ids.contains(*id)).map(|id|
+            self.bodies.get(id).map_or(0,StoredBody::bytes)
+                +usize::from(self.by_definition.contains_key(id))*std::mem::size_of::<(def::DiskDefId,u64,Arc<Object>)>()
+                +usize::from(self.code_generation.contains_key(id))*std::mem::size_of::<(def::DiskDefId,u64)>()).sum();
+        retired
+    }
+}
+
+fn prune(front:&Front,caches:&mut Caches) {
+    let Some(state)=&mut caches.library else{return;};
+    for id in state.prune() {
+        // Retire the joined native verdict with its metadata facts. A later
+        // reintroduction enters the existing worklist once; stale accepted
+        // slots cannot bypass checking after their facts were evicted.
+        if let Some(&slot)=front.slot_of.get(&id) {
+            let slot=slot as usize;
+            if let Some(ok)=caches.ok.get_mut(slot){*ok=false;}
+            if let Some(output)=caches.has_out.get_mut(slot){*output=false;}
+            if let Some(ir)=caches.slot_ir.get_mut(slot){*ir=None;}
+            if let Some(reads)=caches.slot_reads.get_mut(slot){*reads=None;}
+            if let Some(output)=caches.out.get_mut(slot){*output=cgen::FnOut::default();}
+        }
+    }
 }
 
 /// The native resolver's ordinary original-root parser, with the one admitted
@@ -132,6 +255,7 @@ fn function_span(p: &check::collect::Program, id: def::LocalDefId) -> Option<dia
 
 pub(super) fn store(p: &check::collect::Program, state: &mut State, facts: AcceptedBody, body_hash: u64, head_hash: u64) {
     let origin = function_span(p, facts.local());
+    state.history_dirty=true;
     state.bodies.insert(facts.definition(),StoredBody {body_hash,head_hash,origin,facts});
 }
 
@@ -206,6 +330,7 @@ pub(super) fn remember(caches: &mut Caches, functions: Arc<Vec<Function>>) {
 pub(super) fn finish(req: &Request, p: &check::collect::Program, front: &Front, caches: &mut Caches,
     functions:Arc<Vec<Function>>, names:&cgen::names::Names, generated:&[usize]) -> Response {
     let state=caches.library.as_mut().unwrap();
+    state.current(functions.iter().map(Function::definition));
     // Generated C may already be current when a later TinyCC operation fails.
     // Invalidate old definition-to-object joins before any fallible emission;
     // content-addressed immutable objects remain available for exact reuse.
@@ -258,6 +383,6 @@ pub(super) fn finish(req: &Request, p: &check::collect::Program, front: &Front, 
         Ok(Snapshot { generation:state.generation,source:state.source.clone(),functions,
             objects,checked:state.checked.clone(),generated:generated.iter().map(|&n|p.disk_id(def::LocalDefId(n as u32))).collect() })
     })();
-    match result { Ok(snapshot)=>{state.snapshot=Some(snapshot);Response::default()},
+    match result { Ok(snapshot)=>{state.snapshot=Some(snapshot);prune(front,caches);Response::default()},
         Err(error)=>Response{code:3,stderr:format!("native library emission failed: {error}\n"),..Default::default()} }
 }
