@@ -1,0 +1,518 @@
+   Compiling typenum v1.20.1
+   Compiling version_check v0.9.5
+   Compiling generic-array v0.14.7
+   Compiling cfg-if v1.0.5
+   Compiling find-msvc-tools v0.1.14
+   Compiling shlex v2.0.1
+   Compiling cc v1.8.0
+   Compiling hybrid-array v0.4.15
+   Compiling crypto-common v0.1.7
+   Compiling block-buffer v0.10.4
+   Compiling serde_core v1.0.229
+   Compiling libmimalloc-sys v0.1.49
+   Compiling zmij v1.0.23
+   Compiling digest v0.10.7
+   Compiling crypto-common v0.2.2
+   Compiling block-buffer v0.12.1
+   Compiling const-oid v0.10.3
+   Compiling serde_json v1.0.154
+   Compiling memchr v2.8.3
+   Compiling foldhash v0.2.0
+   Compiling crc32fast v1.5.0
+   Compiling hashbrown v0.17.1
+   Compiling digest v0.11.3
+   Compiling md-5 v0.10.6
+   Compiling cpufeatures v0.3.1
+   Compiling equivalent v1.0.2
+   Compiling tinyvec_macros v0.1.1
+   Compiling object v0.39.1
+   Compiling itoa v1.0.19
+   Compiling twox-hash v2.1.2
+   Compiling lustr-metadata-encoder v0.1.0 (/home/runner/work/lustr/lustr/crates/lustr-metadata-encoder)
+   Compiling tinyvec v1.10.0
+   Compiling indexmap v2.14.0
+   Compiling sha2 v0.11.1
+   Compiling lustr-native-metadata-qualification v0.1.0 (/home/runner/work/lustr/lustr/crates/lustr-native-metadata-qualification)
+   Compiling lustr-metadata-sdk v0.1.0 (/home/runner/work/lustr/lustr/crates/lustr-metadata-sdk)
+   Compiling mimalloc v0.1.52
+   Compiling unicode-normalization v0.1.25
+error[E0609]: no field `span` on type `&pinned::ast::FnDef`
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/driver/compile.rs:4736:139
+     |
+4736 | ...ot_head[slot(i)],program.fn_def(LocalDefId(i as u32)).span);
+     |                                                          ^^^^ unknown field
+     |
+help: some of the expressions' fields have a field of the same name
+     |
+4736 |             super::library::store(library, facts, front.slot_hash[slot(i)], front.slot_head[slot(i)],program.fn_def(LocalDefId(i as u32)).generics.span);
+     |                                                                                                                                           +++++++++
+4736 |             super::library::store(library, facts, front.slot_hash[slot(i)], front.slot_head[slot(i)],program.fn_def(LocalDefId(i as u32)).where_clause.span);
+     |                                                                                                                                           +++++++++++++
+
+error[E0609]: no field `span` on type `&pinned::ast::FnDef`
+   --> src/../../lustr-native-core/src/../../../compiler/native/src/driver/../../../../crates/lustr-native-core/src/native_library.rs:138:30
+    |
+138 |     let current=p.fn_def(id).span;
+    |                              ^^^^ unknown field
+    |
+help: some of the expressions' fields have a field of the same name
+    |
+138 |     let current=p.fn_def(id).generics.span;
+    |                              +++++++++
+138 |     let current=p.fn_def(id).where_clause.span;
+    |                              +++++++++++++
+
+warning: use of deprecated method `std::sync::atomic::Atomic::<u64>::fetch_update`: renamed to `try_update` for consistency
+   --> src/../../lustr-native-core/src/../../../compiler/native/src/driver/mod.rs:134:19
+    |
+134 |         Self(NEXT.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1)).expect("native phase identity exhausted"))
+    |                   ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+134 -         Self(NEXT.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1)).expect("native phase identity exhausted"))
+134 +         Self(NEXT.try_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1)).expect("native phase identity exhausted"))
+    |
+
+error[E0277]: `?` couldn't convert the error to `std::string::String`
+   --> src/retained.rs:220:104
+    |
+220 |         match unit_publication::publish(&stage.join("libconsumer.rlib"),&step.join("libconsumer.rlib"))? {
+    |               -----------------------------------------------------------------------------------------^ the trait `From<std::io::Error>` is not implemented for `std::string::String`
+    |               |
+    |               this can't be annotated with `?` because it has type `Result<_, std::io::Error>`
+    |
+    = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+    = help: `std::string::String` implements trait `From<T>`:
+              From<&mut str>
+              From<&std::string::String>
+              From<&str>
+              From<Box<str>>
+              From<char>
+              From<std::borrow::Cow<'_, str>>
+
+warning: unused variable: `dt`
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/borrowck/regions.rs:6112:57
+     |
+6112 |     fn call_from_ref(&mut self, avs: &[(Ty, Vec<u32>)], dt: Ty, dv: &[u32]) -> bool {
+     |                                                         ^^ help: if this is intentional, prefix it with an underscore: `_dt`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> src/../../lustr-native-core/src/../../../compiler/native/src/cgen/kconst.rs:643:13
+    |
+643 |     let mut bytes = |at: usize, val: u128, n: usize, b: &mut [u8], cls: &mut [u8]| {
+    |         ----^^^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `variants`
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/cgen.rs:1447:30
+     |
+1447 | fn enum_is_exact(l: &Layout, variants: usize) -> bool {
+     |                              ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_variants`
+
+warning: variable does not need to be mutable
+   --> src/../../lustr-native-core/src/../../../compiler/native/src/check/any.rs:722:13
+    |
+722 |     let mut one = |p: &Program, tys: &mut _, path: &str| Some(tn_apply(path, vec![tn_first(p, tys, t, open, in_sig)?]));
+    |         ----^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> src/../../lustr-native-core/src/../../../compiler/native/src/check/any.rs:859:13
+    |
+859 |     let mut arg = |tys: &mut _, i: usize| tn_arg(p, tys, *args.get(i)?, open, in_sig);
+    |         ----^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: unused variable: `def`
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/check/closure.rs:2338:33
+     |
+2338 |                 TyKind::Closure(def, _) => {
+     |                                 ^^^ help: if this is intentional, prefix it with an underscore: `_def`
+
+warning: unused variable: `x`
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/check/collect.rs:2455:20
+     |
+2455 |         (SVal::Int(x, None), SVal::Int(_, Some(it))) if !matches!(op, BinOp::Shl | BinOp::Shr) => {
+     |                    ^ help: if this is intentional, prefix it with an underscore: `_x`
+
+warning: value assigned to `static_count` is never read
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/check/collect.rs:6306:28
+     |
+6306 |     let mut static_count = 0u32;
+     |                            ^^^^ this value is reassigned later and never used
+...
+6484 |         static_count = ranks.iter().copied().max().map_or(0, |m| m + 1);
+     |         --------------------------------------------------------------- `static_count` is overwritten here before the previous value is read
+     |
+     = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/check/collect.rs:7017:13
+     |
+7017 |     let mut take = |g: &ast::Generics, out: &mut Vec<Sym>| {
+     |         ----^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/check/collect.rs:7383:13
+     |
+7383 |     let mut args_match = |a: crate::ty::ArgsId, b: crate::ty::ArgsId, map: &mut Vec<(u32, Ty)>, cmap: &mut Vec<(u32, crate::ty::Co...
+     |         ----^^^^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: unused variable: `extend`
+   --> src/../../lustr-native-core/src/../../../compiler/native/src/check/generics.rs:206:13
+    |
+206 |         let extend = lang_trait(&["core", "iter"], "Extend");
+    |             ^^^^^^ help: if this is intentional, prefix it with an underscore: `_extend`
+
+warning: unreachable pattern
+   --> src/../../lustr-native-core/src/../../../compiler/native/src/check/generics.rs:392:13
+    |
+388 |             "Extend" => self.extend,
+    |             -------- matches all the relevant values
+...
+392 |             "Extend" => self.extend,
+    |             ^^^^^^^^ no value can reach this
+    |
+    = note: `#[warn(unreachable_patterns)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/check/generics.rs:1597:13
+     |
+1597 |     let mut lt = |lt: ast::Lifetime, bound: &[Sym], out: &mut Vec<(ast::Lifetime, bool)>| {
+     |         ----^^
+     |         |
+     |         help: remove this `mut`
+
+warning: value assigned to `to_glue` is never read
+     --> src/../../lustr-native-core/src/../../../compiler/native/src/check/generics.rs:11788:27
+      |
+11788 |           let mut to_glue = false;
+      |                             ^^^^^ this value is reassigned later and never used
+...
+11801 | /             to_glue = !has_rel
+11802 | |                 && !prove_goal(p, &[], TraitRef { def: lang.ord, args: ord_args, bindings: EMPTY_BINDINGS })
+11803 | |                 && crate::check::collect::has_ord(p, &p.tys, self_ty);
+      | |_____________________________________________________________________- `to_glue` is overwritten here before the previous value is read
+
+warning: unused variable: `m`
+     --> src/../../lustr-native-core/src/../../../compiler/native/src/check/generics.rs:13432:28
+      |
+13432 |             TyKind::Ref(_, m, e) if is_default => matches!(cx.tys.kind(e), TyKind::Str | TyKind::Slice(_)).then_some(Vec::new()),
+      |                            ^ help: if this is intentional, prefix it with an underscore: `_m`
+
+warning: unreachable pattern
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/check/iter.rs:1667:19
+     |
+1635 |                 | "size_hint"
+     |                   ----------- matches all the relevant values
+...
+1667 |                 | "size_hint"
+     |                   ^^^^^^^^^^^ no value can reach this
+
+warning: variable does not need to be mutable
+   --> src/../../lustr-native-core/src/../../../compiler/native/src/check/depth.rs:397:13
+    |
+397 |     let mut max_of = |ts: Vec<Ty>, memo: &mut FxMap<Ty, usize>| {
+    |         ----^^^^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: unused variable: `p`
+  --> src/../../lustr-native-core/src/../../../compiler/native/src/check/opaque.rs:88:13
+   |
+88 |         let p = self.p;
+   |             ^ help: if this is intentional, prefix it with an underscore: `_p`
+
+warning: variable does not need to be mutable
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/check/opaque.rs:1138:13
+     |
+1138 |     let mut in_args = |a: ArgsId, out: &mut Vec<Ty>| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: unused variable: `p`
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/check/mod.rs:9159:13
+     |
+9159 |         let p = self.p;
+     |             ^ help: if this is intentional, prefix it with an underscore: `_p`
+
+warning: unused variable: `a`
+     --> src/../../lustr-native-core/src/../../../compiler/native/src/check/mod.rs:16578:26
+      |
+16578 |         for (_, _, n, _, a, g) in &spine {
+      |                          ^ help: if this is intentional, prefix it with an underscore: `_a`
+
+warning: value assigned to `last` is never read
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/daemon.rs:1230:9
+     |
+1230 |         last = std::time::Instant::now();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this value is reassigned later and never used
+...
+1276 |         last = std::time::Instant::now();
+     |         -------------------------------- `last` is overwritten here before the previous value is read
+
+warning: variable does not need to be mutable
+   --> src/../../lustr-native-core/src/../../../compiler/native/src/driver/span_shift.rs:178:13
+    |
+178 |     let mut list = |extras: &mut Vec<ExtraNodes>, own: Span, spans: &[Span], pick: fn(&mut ExtraNodes) -> &mut Vec<usize>, i: usize...
+    |         ----^^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: unused variable: `m`
+   --> src/../../lustr-native-core/src/../../../compiler/native/src/expand/match_.rs:802:23
+    |
+802 |     fn current(&self, m: &Matcher) -> Cur {
+    |                       ^ help: if this is intentional, prefix it with an underscore: `_m`
+
+warning: variable does not need to be mutable
+   --> src/../../lustr-native-core/src/../../../compiler/native/src/ir.rs:409:13
+    |
+409 |     let mut scan_rv = |rv: &Rvalue, bad: &mut Vec<bool>| match rv {
+    |         ----^^^^^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> src/../../lustr-native-core/src/../../../compiler/native/src/lower/any.rs:177:17
+    |
+177 |         let mut word = |this: &mut Self, k: u32| {
+    |             ----^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: unreachable pattern
+   --> src/../../lustr-native-core/src/../../../compiler/native/src/lower/iter.rs:100:15
+    |
+ 49 |             | B::IterNextBack
+    |               --------------- matches all the relevant values
+...
+100 |             | B::IterNextBack
+    |               ^^^^^^^^^^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> src/../../lustr-native-core/src/../../../compiler/native/src/lower/iter.rs:116:15
+    |
+ 50 |             | B::IterSizeHint
+    |               --------------- matches all the relevant values
+...
+116 |             | B::IterSizeHint
+    |               ^^^^^^^^^^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> src/../../lustr-native-core/src/../../../compiler/native/src/lower/iter.rs:142:15
+    |
+ 51 |             | B::IterLen
+    |               ---------- matches all the relevant values
+...
+142 |             | B::IterLen
+    |               ^^^^^^^^^^ no value can reach this
+
+warning: variable does not need to be mutable
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/lower/iter.rs:5954:17
+     |
+5954 |         let mut side_ok = |this: &mut Self, side: Place, is_start: bool| -> Local {
+     |             ----^^^^^^^
+     |             |
+     |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/lower/iter.rs:6784:17
+     |
+6784 |         let mut side = |this: &mut Self, v: Local, vt: Ty, q: Option<(AdtId, Ty)>, dt: Ty| -> Operand {
+     |             ----^^^^
+     |             |
+     |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+  --> src/../../lustr-native-core/src/../../../compiler/native/src/lower/range_fmt.rs:24:17
+   |
+24 |         let mut field = |this: &mut Self, i: u32| -> FmtPart {
+   |             ----^^^^^
+   |             |
+   |             help: remove this `mut`
+
+warning: unreachable pattern
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/lower.rs:3118:13
+     |
+2092 |             Expr::Int(..) | Expr::Float(_) | Expr::Bool(_) | Expr::Char(_) | Expr::Str(_) | Expr::ByteStr(_) | Expr::Unit => {
+     |                             -------------- matches all the relevant values
+...
+3118 |             Expr::Float(_)
+     |             ^^^^^^^^^^^^^^ no value can reach this
+
+warning: variable does not need to be mutable
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/lower.rs:4011:17
+     |
+4011 |         let mut dest_arg = |this: &mut Self| {
+     |             ----^^^^^^^^
+     |             |
+     |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/lower.rs:4200:25
+     |
+4200 |                 let mut side = |this: &mut Self, site: ExprId, f: LocalDefId| -> (Operand, Operand) {
+     |                     ----^^^^
+     |                     |
+     |                     help: remove this `mut`
+
+warning: unused variable: `a`
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/lower.rs:5128:27
+     |
+5128 |                 for (ai, &a) in args.iter().enumerate() {
+     |                           ^ help: if this is intentional, prefix it with an underscore: `_a`
+
+warning: unreachable pattern
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/lower.rs:6995:13
+     |
+6905 |             Pat::Slice { prefix, middle, suffix } => {
+     |             ------------------------------------- matches all the relevant values
+...
+6995 |             Pat::Slice { .. } | Pat::QPath { .. } | Pat::MacroCall(_) => {}
+     |             ^^^^^^^^^^^^^^^^^ no value can reach this
+
+warning: unreachable pattern
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/lower.rs:6995:33
+     |
+6934 |             Pat::Path(_) | Pat::QPath { .. } | Pat::TupleStruct { .. } | Pat::Struct { .. } => {
+     |                            ----------------- matches all the relevant values
+...
+6995 |             Pat::Slice { .. } | Pat::QPath { .. } | Pat::MacroCall(_) => {}
+     |                                 ^^^^^^^^^^^^^^^^^ no value can reach this
+
+warning: unused variable: `source`
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/resolve/cargo.rs:1029:5
+     |
+1029 |     source: &Path,
+     |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_source`
+
+warning: unused variable: `target_explicit`
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/resolve/cargo.rs:1030:5
+     |
+1030 |     target_explicit: bool,
+     |     ^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_target_explicit`
+
+warning: unused variable: `command`
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/resolve/cargo.rs:1031:5
+     |
+1031 |     command: crate::protocol::Cmd,
+     |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_command`
+
+warning: unused variable: `profile`
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/resolve/cargo.rs:1032:5
+     |
+1032 |     profile: crate::protocol::ProfileFlags,
+     |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_profile`
+
+warning: value assigned to `last` is never read
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/resolve/worklist.rs:3553:13
+     |
+3549 |     macro_rules! lap {
+...
+3553 |             last = now;
+     |             ^^^^^^^^^^
+...
+4367 |     lap!("resolve: chunk scan+concat");
+     |     ---------------------------------- in this macro invocation
+     |
+     = help: maybe it is overwritten before being read?
+
+warning: unreachable pattern
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/ty/consteval.rs:4117:13
+     |
+4114 |             ConstValue::Aggregate(vals) => vals.get(i).cloned(),
+     |             --------------------------- matches all the relevant values
+...
+4117 |             ConstValue::Aggregate(_) | ConstValue::Repeat(..) => None,
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^ no value can reach this
+
+warning: variable does not need to be mutable
+    --> src/../../lustr-native-core/src/../../../compiler/native/src/ty/lang.rs:2309:13
+     |
+2309 |     let mut find = |rows: &[&str], kind| rows.iter().any(|r| std_row_eq(r, path)).then_some(kind);
+     |         ----^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: taking a mutable reference to a `const` item
+  --> src/../../lustr-native-core/src/native_types.rs:42:38
+   |
+42 |     supported_at(Some(p),tys,t,depth,&mut MAX_EDGES)
+   |                                      ^^^^^^^^^^^^^^
+   |
+   = note: each usage of a `const` item creates a new temporary
+   = note: the mutable reference will refer to this temporary, not the original `const` item
+note: `const` item defined here
+  --> src/../../lustr-native-core/src/native_types.rs:12:1
+   |
+12 | const MAX_EDGES:usize=32768;
+   | ^^^^^^^^^^^^^^^^^^^^^
+   = note: `#[warn(const_item_mutation)]` on by default
+
+warning: taking a mutable reference to a `const` item
+   --> src/../../lustr-native-core/src/native_types.rs:103:81
+    |
+103 |     pub(super) fn kept(&self,id:u32)->Result<(),String>{self.kept_at(id,false,0,&mut MAX_EDGES)}
+    |                                                                                 ^^^^^^^^^^^^^^
+    |
+    = note: each usage of a `const` item creates a new temporary
+    = note: the mutable reference will refer to this temporary, not the original `const` item
+note: `const` item defined here
+   --> src/../../lustr-native-core/src/native_types.rs:12:1
+    |
+ 12 | const MAX_EDGES:usize=32768;
+    | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: taking a mutable reference to a `const` item
+   --> src/../../lustr-native-core/src/native_types.rs:123:116
+    |
+123 | ...gram,t:ty::Ty)->Result<u32,String>{self.capture_at(p,t,0,&mut MAX_EDGES,&mut Default::default())}
+    |                                                             ^^^^^^^^^^^^^^
+    |
+    = note: each usage of a `const` item creates a new temporary
+    = note: the mutable reference will refer to this temporary, not the original `const` item
+note: `const` item defined here
+   --> src/../../lustr-native-core/src/native_types.rs:12:1
+    |
+ 12 | const MAX_EDGES:usize=32768;
+    | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: taking a mutable reference to a `const` item
+   --> src/../../lustr-native-core/src/native_types.rs:231:110
+    |
+231 | ...   if matches!(node.kind,Kind::FnPtr{..}){self.kept(n as u32)?;if !supported_at(None,tys,types[n],0,&mut MAX_EDGES){return Err("...
+    |                                                                                                        ^^^^^^^^^^^^^^
+    |
+    = note: each usage of a `const` item creates a new temporary
+    = note: the mutable reference will refer to this temporary, not the original `const` item
+note: `const` item defined here
+   --> src/../../lustr-native-core/src/native_types.rs:12:1
+    |
+ 12 | const MAX_EDGES:usize=32768;
+    | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `types`
+   --> src/../../lustr-native-core/src/native_nominals.rs:121:79
+    |
+121 |     pub(super) fn publish(&self,p:&mut check::collect::Program,def:def::DefId,types:&[ty::Ty])->Result<(),String>{
+    |                                                                               ^^^^^ help: if this is intentional, prefix it with an underscore: `_types`
+
+Some errors have detailed explanations: E0277, E0609.
+For more information about an error, try `rustc --explain E0277`.
+warning: `lustr-native-metadata-qualification` (bin "lustr-native-metadata-qualification") generated 51 warnings
+error: could not compile `lustr-native-metadata-qualification` (bin "lustr-native-metadata-qualification") due to 3 previous errors; 51 warnings emitted

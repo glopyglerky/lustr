@@ -1,0 +1,34 @@
+{
+  "schema": "lustr-retained-metadata-trace-review-v1",
+  "baseline": "cdec0f7a75cc2fe0d1dadbed689b5ae8e9d9e62e",
+  "scope": "Focused independent source review of retained candidate process-trace accounting and nine newly authored evaluator controls. No whole-compiler or all-history review is claimed.",
+  "files": {
+    "tools/test-retained-native-metadata.py": "39bbefe8208fa85bd40f5b522b7ff0b63176631e8123a0358936c600fddf3786",
+    "tools/test-retained-metadata-controls.py": "ee6d1ae83b14cd116403de982eeadca9d198d2bd3d2ad3b90c2dccf3f45a5c1d"
+  },
+  "finding": "The preceding evaluator allowed any number of allowed LLVM utility processes in a session. Candidate-reported counters alone could not prove absence of repeated artifact work in a no-op request.",
+  "reviewed_correction": [
+    "Externally observed readiness and response boundaries capture trace bytes, sizes and hashes. Final reconciliation requires every captured prefix to remain unchanged.",
+    "Each response interval accounts for actual PID-specific successful chdir, exact executable and argv, and eventual child exit status. Missing, extra and failed artifact executions cannot be hidden by candidate reports.",
+    "No-op and non-emitting request records require an empty artifact command inventory. The actual trace interval must match it.",
+    "Split calls cannot cross a response boundary. New work after the final response is refused, while delayed exit and signal observations remain admissible.",
+    "The actual Rust caller records command Debug text, numeric process exit status, and label.stdout/stderr bytes. Command expectations match its exact llvm-ar and llvm-objcopy arguments, ordering, working directory and preserved streams.",
+    "The pinned Rust source confirms nonalternate Unix Command Debug uses the expected working-directory prefix and quoted program/arguments. This relies on the bounded fixture's ordinary ASCII paths and arguments, not arbitrary Debug syntax.",
+    "Initial trace capture is within startup cleanup. The shared original one-shot trace parser remains unchanged."
+  ],
+  "primary_format_source": "https://github.com/rust-lang/rust/blob/5b7b37aefcb5b2fba3c2392bc9065b9e4602d494/library/std/src/sys/process/unix/common.rs",
+  "history_and_consumer_constants": {
+    "byte_identical_to_baseline": true,
+    "bytes": 6434,
+    "sha256": "a90c2de27c84d7392680637f7b6246ff5962cc5c60a1f669c5144c702f3e7a87",
+    "transitions": 29,
+    "consumers": 25,
+    "runtime_assertions": 6815952,
+    "meaning": "Fixed authored expectations, not observed passes."
+  },
+  "verdict": "No source blocker found for exact-source hosted qualification.",
+  "tests_executed": false,
+  "candidate_executed": false,
+  "performance_measured": false,
+  "remaining_scope": "The trace bounds observed external artifact work. In-process parser/checker/TinyCC counters still require source correspondence and real execution; this change does not itself measure speed or qualify the public compiler."
+}
