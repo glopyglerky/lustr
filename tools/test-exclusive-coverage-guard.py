@@ -6,12 +6,28 @@ import json
 from pathlib import Path
 import shutil
 import tempfile
+import tomllib
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location("guard", ROOT / "tools/check-exclusive-coverage.py")
 GUARD = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(GUARD)
+
+
+def declared_row(data, collection, key, identity):
+    rows = [row for row in data[collection] if row.get(key) == identity]
+    assert len(rows) == 1, (collection, key, identity, "fixture identity is missing or repeated")
+    return rows[0]
+
+
+def extend_feature(text, name, edge, definitions=""):
+    edges = tomllib.loads(text)["features"][name]
+    assert isinstance(edges, list) and edge not in edges
+    before = name + " = " + json.dumps(edges)
+    after = name + " = " + json.dumps([*edges, edge]) + definitions
+    assert text.count(before) == 1, (name, "fixture feature declaration changed")
+    return text.replace(before, after, 1)
 
 
 def product_package_controls():
@@ -35,6 +51,9 @@ def product_package_controls():
                 path = root / Path(manifest).parent / relative
                 path.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(ROOT / Path(manifest).parent / relative, path)
+        closure = Path("upstream/metadata-dependency-closure.json")
+        (root / closure).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(ROOT / closure, root / closure)
 
         def checked():
             failures = []
@@ -43,12 +62,15 @@ def product_package_controls():
 
         def rewrite(name, transform):
             path = root / name
-            path.write_text(transform(path.read_text()))
+            before = path.read_text()
+            after = transform(before)
+            assert after != before, (name, "fixture mutation changed no bytes")
+            path.write_text(after)
 
         assert not checked()
         # An unrelated profile change and a local empty feature alias do not
         # change the package source graph and must remain admissible.
-        rewrite("compiler/native/Cargo.toml", lambda text: text.replace("exclusive-native = []", 'exclusive-native = ["selected"]\nselected = ["cycle"]\ncycle = ["selected"]'))
+        rewrite("compiler/native/Cargo.toml", lambda text: extend_feature(text, "exclusive-native", "selected", '\nselected = ["cycle"]\ncycle = ["selected"]'))
         rewrite("Cargo.toml", lambda text: text.replace('version = "0.1.0"', 'version = "0.1.1"').replace('opt-level = 3', 'opt-level = 2'))
         rewrite("Cargo.toml", lambda text: text.replace('source-native-runtime = ["exclusive-native"]',
                 'source-native-runtime = ["selected-policy"]\nselected-policy = ["exclusive-native"]'))
@@ -58,7 +80,7 @@ def product_package_controls():
             ("default-feature-sdk", "crates/lustr-native-core/Cargo.toml",
              lambda text: text.replace("[features]", '[features]\ndefault = ["upstream-semantic"]'), "product features enable research"),
             ("transitive-feature-sdk", "crates/lustr-native-core/Cargo.toml",
-             lambda text: text.replace("exclusive-native = []", 'exclusive-native = ["ordinary"]\nordinary = ["upstream-semantic"]'), "product features enable research"),
+             lambda text: extend_feature(text, "exclusive-native", "ordinary", '\nordinary = ["upstream-semantic"]'), "product features enable research"),
             ("source-runtime-research", "Cargo.toml",
              lambda text: text.replace('source-native-runtime = ["exclusive-native"]', 'source-native-runtime = ["exclusive-native", "hidden"]\nhidden = ["native-qualification"]\nnative-qualification = []'), "product features enable research"),
             ("source-runtime-loses-product-policy", "Cargo.toml",
@@ -189,6 +211,11 @@ def metadata_research_controls():
         for crate in ("lustr-metadata-encoder", "lustr-metadata-sdk", "lustr-native-metadata-qualification"):
             shutil.copytree(ROOT / "crates" / crate, root / "crates" / crate,
                             ignore=shutil.ignore_patterns("target"))
+        shared = root / "crates/lustr-native-core/src"
+        shared.mkdir(parents=True)
+        for name in ("library_history.rs", "library_artifact.rs", "metadata_archive.rs",
+                     "unit_object.rs", "unit_publication.rs"):
+            shutil.copyfile(ROOT / "crates/lustr-native-core/src" / name, shared / name)
 
         def checked():
             failures = []
@@ -209,12 +236,14 @@ def metadata_research_controls():
             ("crates/lustr-metadata-sdk/Cargo.toml", lambda text: text + '\n[profile.dev]\nrustflags = [\'--cfg=feature="unreviewed"\']\n', "unreviewed compiler flags or backend"),
             ("crates/lustr-native-metadata-qualification/Cargo.toml", lambda text: text.replace('native-qualification = []', 'native-qualification = ["upstream-semantic"]\nupstream-semantic = []'), "research mode changed"),
             ("crates/lustr-native-metadata-qualification/Cargo.toml", lambda text: text + '\nlustr-semantic = { path = "../lustr-semantic", optional = true }\n', "dependency or target closure changed"),
-            ("crates/lustr-native-metadata-qualification/src/archive.rs", lambda text: text + '\n// changed object wrapper\n', "qualifier adapted sources differ"),
+            ("crates/lustr-native-core/src/metadata_archive.rs", lambda text: text + '\n// changed object wrapper\n', "qualifier adapted sources differ"),
         ]
         for name, change, diagnostic in cases:
             path = root / name
             original = path.read_text()
-            path.write_text(change(original))
+            changed = change(original)
+            assert changed != original, (name, "fixture mutation changed no bytes")
+            path.write_text(changed)
             failures = checked()
             assert any(diagnostic in failure for failure in failures), (name, failures)
             path.write_text(original)
@@ -258,26 +287,35 @@ def main():
     original = json.loads(inventory_path.read_text())
     _, failures = GUARD.check(ROOT)
     assert not failures, failures
+    # Preserve the original semantic mutations by component identity. Encoder
+    # and SDK now live in selective_components; research[2] is the qualifier.
+    imported = lambda data, identity: declared_row(data, "imports", "id", identity)
+    selective = lambda data, path: declared_row(data, "selective_components", "path", path)
+    research = lambda data, path: declared_row(data, "research_components", "path", path)
+    qualifier = "crates/lustr-native-metadata-qualification"
     mutations = [
-        lambda data: data["imports"][0]["source_dependencies"]["tinyvec"].update(crate_sha256="0" * 64),
-        lambda data: data["imports"][0]["upstream_paths"].update({"compiler/rustc_parse/src/lexer/mod.rs": "0" * 64}),
-        lambda data: data["imports"][1]["generated_inputs"].update({"compiler/native/src/unicode_data.rs": "0" * 64}),
-        lambda data: data["imports"][0].update(upstream_rust_source="0" * 40),
-        lambda data: data["research_components"][0].update(production_admitted=True),
-        lambda data: data.update(full_rust_coverage=True),
-        lambda data: data["research_components"].pop(),
-        lambda data: data["research_components"][2].update(native_caller_committed=False),
+        ("normalization-dependency-digest", lambda data: imported(data, "identifier-normalization")["source_dependencies"]["tinyvec"].update(crate_sha256="0" * 64)),
+        ("normalization-donor-source", lambda data: imported(data, "identifier-normalization")["upstream_paths"].update({"compiler/rustc_parse/src/lexer/mod.rs": "0" * 64})),
+        ("unicode-generated-source", lambda data: imported(data, "declared-sdk-unicode-data")["generated_inputs"].update({"compiler/native/src/unicode_data.rs": "0" * 64})),
+        ("normalization-rust-revision", lambda data: imported(data, "identifier-normalization").update(upstream_rust_source="0" * 40)),
+        ("full-sdk-production-admission", lambda data: research(data, "crates/lustr-native-core/src/upstream_definitions.rs").update(production_admitted=True)),
+        ("full-rust-coverage-claim", lambda data: data.update(full_rust_coverage=True)),
+        ("missing-native-qualifier", lambda data: data["research_components"].remove(research(data, qualifier))),
+        ("encoder-native-caller-denied", lambda data: selective(data, "crates/lustr-metadata-encoder").update(native_caller_committed=False)),
+        ("sdk-native-caller-denied", lambda data: selective(data, "crates/lustr-metadata-sdk").update(native_caller_committed=False)),
+        ("qualifier-unknown-caller-provenance", lambda data: research(data, qualifier).update(native_caller_committed=False)),
     ]
-    for mutate in mutations:
+    for label, mutate in mutations:
         candidate = copy.deepcopy(original)
         mutate(candidate)
+        assert candidate != original, (label, "fixture mutation changed no provenance")
 
         def read(path, *args, **kwargs):
             return json.dumps(candidate) if path == inventory_path else original_read(path, *args, **kwargs)
 
         with patch.object(Path, "read_text", read):
             _, failures = GUARD.check(ROOT)
-            assert failures, "forged import provenance was admitted"
+            assert failures, (label, "forged import provenance was admitted")
     pin_path = ROOT / "upstream/bluefe-core.pin"
 
     def moved_pin(path, *args, **kwargs):
