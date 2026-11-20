@@ -742,7 +742,7 @@
     "native_caller_committed": true,
     "native_caller_path": "crates/lustr-native-metadata-qualification",
     "public_retained_integration": false,
-    "qualification": "Bounded research caller and required original-consumer/process-trace campaign are authored; exact-source execution and its retained results determine compatibility. No public compiler, retained-session or full Rust qualification follows."
+    "qualification": "The fixed native scalar-library campaign passed on source 974eb097ea9fc84a18c716fe0c2d469fdfcfab6c, tree 948074da4b3b23ed25fa789b17a924555f24e4ca, with 31 named controls, 262152 runtime assertions and 8 actual candidate traces. Original failures and exact evidence are retained in docs/compiler-set/evidence/native-metadata-join-20261120. No public compiler, retained-session, general metadata, full Rust or speed qualification follows."
   },
   "adapted_sources_sha256": {
     "src/encode.rs": "96c41345a408c04f89a9c54a06152141eb17b6b5a7172287e95ab77c63d0d779",

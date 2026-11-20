@@ -151,9 +151,12 @@ blanket solver import. A bridge gap remains Lust-owned integration work.
 
 The separate [bounded metadata caller](../../crates/lustr-native-metadata-qualification/README.md)
 now connects those records to the selective serializer in a research executable.
-Its required original-consumer CI has its own exact-source evidence. Source
-publication alone does not establish a passing join, public retained compilation
-or full Rust replacement; continue from the observed campaign result.
+Its [hosted qualification](evidence/native-metadata-join-20261120/README.md) passed
+for published source `974eb097ea9fc84a18c716fe0c2d469fdfcfab6c`, tree
+`948074da4b3b23ed25fa789b17a924555f24e4ca`: 31 named controls, 262,152 runtime
+assertions and eight actual candidate traces. The original failures are
+preserved. This finite scalar-library result does not integrate the public
+retained path or establish full Rust replacement or compilation speed.
 
 This documentation publication directs ongoing work to the reviewed correction.
 It does not merge product code, publish a compiler package or turn an incomplete

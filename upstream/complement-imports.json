@@ -123,7 +123,8 @@
       "required_for": "intended serialization of genuine native completed definitions and actual emitted instances without whole-consumer Rust analysis",
       "blocking_reason": "The separate bounded native metadata research caller is present; its exact-source qualification is separate from production retained integration, wider declarations/artifacts and measured compiler speed, which remain unfinished.",
       "native_caller_path": "crates/lustr-native-metadata-qualification",
-      "public_retained_integration": false
+      "public_retained_integration": false,
+      "qualification_record": "docs/compiler-set/evidence/native-metadata-join-20261120/README.md"
     },
     {
       "path": "crates/lustr-metadata-sdk",
@@ -135,7 +136,8 @@
       "required_for": "immutable ordered core/compiler_builtins context intended to be loaded once outside repeated consumer compilation",
       "blocking_reason": "The separate bounded native metadata research caller is present; its exact-source qualification is separate from production retained integration, wider declarations/artifacts and measured compiler speed, which remain unfinished.",
       "native_caller_path": "crates/lustr-native-metadata-qualification",
-      "public_retained_integration": false
+      "public_retained_integration": false,
+      "qualification_record": "docs/compiler-set/evidence/native-metadata-join-20261120/README.md"
     },
     {
       "path": "crates/lustr-native-metadata-qualification",
@@ -145,7 +147,8 @@
       "production_admitted": false,
       "public_retained_integration": false,
       "required_for": "actual ordinary Rust-consumer acceptance, runtime results, privacy/signature refusal and independent exec trace for the bounded native metadata join",
-      "blocking_reason": "Finite flat scalar-library qualification cannot establish wider Rust metadata, public retained compilation or full replacement performance."
+      "blocking_reason": "Finite flat scalar-library qualification cannot establish wider Rust metadata, public retained compilation or full replacement performance.",
+      "qualification_record": "docs/compiler-set/evidence/native-metadata-join-20261120/README.md"
     }
   ],
   "not_imported": [

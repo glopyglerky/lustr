@@ -98,13 +98,16 @@ subprocess access.
 ## Checkpoint status and required qualification
 
 The standalone research caller now joins the native generation to the metadata
-and rlib-link writers. Its exact-source CI campaign must establish that an
-ordinary Rust caller accepts the produced metadata and executes the renamed
-native object correctly. The campaign includes private-access rejection,
-malformed/missing/duplicate mappings and actual archive-member controls.
-Authored controls are not execution evidence. Source completion and
-serialization costs must be reported separately from native body compilation;
-no compiler speed claim follows from this build.
+and rlib-link writers. The [hosted campaign](../../docs/compiler-set/evidence/native-metadata-join-20261120/README.md)
+passed on published source `974eb097ea9fc84a18c716fe0c2d469fdfcfab6c`, tree
+`948074da4b3b23ed25fa789b17a924555f24e4ca`: the original Rust metadata reader and
+ordinary `--extern` caller accepted the fixed native library, with 262,152
+runtime assertions, 31 named controls and eight complete candidate process
+traces. Private-access/signature rejection, mapping/member mutations and
+failure/recovery controls are retained alongside the earlier failed attempt.
+This finite fixture is not general metadata coverage. Source completion and
+serialization costs still require separate measurement; no compiler speed
+claim follows from this result.
 
 The serialization crate uses `core` plus `alloc`, with an actual library check
 on `x86_64-unknown-none`. Its production dependencies are `md-5` with default

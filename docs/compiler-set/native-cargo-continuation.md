@@ -21,11 +21,21 @@ same read used to construct immutable SDK facts. Clang's research capture
 disables implicit configuration and explicitly retains the represented
 no-stack-protector mode. Original consumer warnings remain failures.
 
-These are authored source and qualification changes. Their exact-source run,
-including any failed attempt, is required before reporting joined compatibility.
-The earlier checkpoints below retain their original unjoined scope. Wider Rust
-coverage, public retained integration, portability and matched speed remain
-unfinished.
+The [hosted campaign and original failures](evidence/native-metadata-join-20261120/README.md)
+are retained. Published source `974eb097ea9fc84a18c716fe0c2d469fdfcfab6c`, tree
+`948074da4b3b23ed25fa789b17a924555f24e4ca`, passed 31 named controls and 262,152
+runtime assertions with eight complete candidate traces. The original Rust
+metadata reader and ordinary `--extern` consumer accepted the fixed native
+library. Actual source and built-tool identities matched after the campaign.
+
+The first hosted attempt failed on a missing constructor-fixture input and an
+undeclared digest process. Both original outcomes remain failed evidence. The
+repair adds the missing fixture crate and captures native runtime records only
+where semantic artifacts consume them; freestanding objects still require an
+empty undefined-symbol set. No compiler/process exception was added to the
+trace policy. Earlier checkpoints below retain their original unjoined scope.
+This finite scalar-library result does not establish general Rust coverage,
+public retained integration, portability or matched speed.
 
 ## What the first independent campaign established
 

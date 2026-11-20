@@ -45,8 +45,23 @@ their target assumptions, licenses and adapted files. Encoder source provenance
 remains in its own inventory. Runtime generation facts stay native-owned; no
 second parser, checker, MIR builder or complete driver is imported.
 
-The Compiler set workflow builds and executes this campaign separately. A
-source change, authored test, old failed campaign or encoder-only test does not
-qualify this joined source. Read the exact workflow result and retained reports
-before reporting a pass. `--functional-only` is an explicit local diagnostic
-mode, leaves trace qualification false, and is not used by required CI.
+## Observed hosted result
+
+The [retained hosted record](../../docs/compiler-set/evidence/native-metadata-join-20261120/README.md)
+binds the passing Compiler set job to published source
+`974eb097ea9fc84a18c716fe0c2d469fdfcfab6c`, tree
+`948074da4b3b23ed25fa789b17a924555f24e4ca`. Its fixed source and 31 named controls
+passed, with 262,152 runtime assertions and eight completely accounted actual
+candidate traces. The original consumer compiled with `-Dwarnings` and empty
+stderr. Source inputs and built-tool identities matched after the campaign.
+
+The earlier attempt's missing construction-fixture crate and undeclared
+`sha256sum` process remain recorded as failures. The repair includes the fixture
+input and stops capturing an unused runtime record for freestanding objects;
+the trace allowlist and ELF undefined-symbol closure check stay unchanged.
+
+This finite campaign does not qualify every program in the admitted grammar or
+integrate this executable into retained/public compilation. Later source and
+broader coverage require their own evidence. `--functional-only` is an explicit
+local diagnostic mode, leaves trace qualification false, and is not used by
+required CI.

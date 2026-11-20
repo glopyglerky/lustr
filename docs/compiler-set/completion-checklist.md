@@ -90,9 +90,11 @@ is researched future reuse, not a replacement task for this established boundary
 
 The [bounded native metadata caller](../../crates/lustr-native-metadata-qualification/README.md)
 joins actual completed scalar declarations and emitted objects to the selective
-serializer. Its original-consumer qualification is separate from this item's
-general completion and from the still-unintegrated public retained path. Check
-its actual source-bound CI outcome before attributing a compatibility result.
+serializer. Its [exact-source hosted campaign](evidence/native-metadata-join-20261120/README.md)
+passed on tree `948074da4b3b23ed25fa789b17a924555f24e4ca`, with 31 named controls,
+262,152 runtime assertions and eight complete candidate traces. This fixed
+scalar-library evidence remains separate from this item's general completion
+and from the still-unintegrated public retained path.
 
 Done when unchanged mixed programs and real downstream Cargo crates consume
 valid artifacts. Every obligation has one owner and every required instance is
