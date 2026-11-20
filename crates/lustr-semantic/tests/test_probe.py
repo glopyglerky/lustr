@@ -287,16 +287,23 @@ class ProbeTests(unittest.TestCase):
         [report] = self.load_reports()
         self.assertIn(f"@{response}", report["invocation"]["arguments"])
 
-    @unittest.skipUnless(os.name == "posix", "byte-preserving exec is a Unix contract")
-    def test_non_utf8_arguments_are_delegated_intact_without_inspection(self):
+    @unittest.skipUnless(os.name == "posix", "raw byte argument fixture requires Unix")
+    def test_non_utf8_inspection_fails_before_any_compiler_invocation(self):
         fake = self.directory / "compiler"
+        marker = self.directory / "compiler-was-invoked"
         fake.write_text(
-            f"#!{sys.executable}\nimport os, sys\n"
-            "sys.stdout.buffer.write(os.fsencode(sys.argv[1]))\nraise SystemExit(42)\n"
+            f"#!{sys.executable}\nfrom pathlib import Path\n"
+            f"Path({str(marker)!r}).write_text('invoked')\nraise SystemExit(42)\n"
         )
         fake.chmod(0o755)
-        result = self.run_command([os.fsencode(PROBE), os.fsencode(fake), b"non-utf8-\xff"], expected=42)
-        self.assertEqual(result.stdout, b"non-utf8-\xff")
+        raw_alias = os.fsencode(self.directory) + b"/compiler-\xff"
+        os.symlink(os.fsencode(fake), raw_alias)
+        for compiler, argument in [(os.fsencode(fake), b"non-utf8-\xff"), (raw_alias, b"--version")]:
+            with self.subTest(compiler=compiler, argument=argument):
+                result = self.run_command([os.fsencode(PROBE), compiler, argument], expected=2)
+                self.assertEqual(result.stdout, b"")
+                self.assertIn(b"non-UTF-8 inspection arguments are unsupported", result.stderr)
+                self.assertFalse(marker.exists(), "unsupported inspection invoked its supplied compiler")
         self.assertEqual(self.load_reports(), [])
 
     def test_concurrent_reports_are_complete_and_do_not_overwrite(self):

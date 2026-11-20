@@ -1,0 +1,19 @@
+test_artifact_receipt_changes_with_actual_bytes (__main__.Controls.test_artifact_receipt_changes_with_actual_bytes) ... ok
+test_cli_has_no_user_source_input (__main__.Controls.test_cli_has_no_user_source_input) ... ok
+test_duplicate_dependency_name_fails (__main__.Controls.test_duplicate_dependency_name_fails) ... ok
+test_existing_output_is_preserved (__main__.Controls.test_existing_output_is_preserved) ... ok
+test_extra_reader_output_cannot_be_ignored (__main__.Controls.test_extra_reader_output_cannot_be_ignored) ... ok
+test_failed_original_command_is_recorded_once_without_retry (__main__.Controls.test_failed_original_command_is_recorded_once_without_retry) ... ok
+test_header_requires_original_hash_version_and_positions (__main__.Controls.test_header_requires_original_hash_version_and_positions) ... ok
+test_missing_or_reordered_dependency_numbers_fail (__main__.Controls.test_missing_or_reordered_dependency_numbers_fail) ... ok
+test_missing_root_field_and_wide_stable_id_fail (__main__.Controls.test_missing_root_field_and_wide_stable_id_fail) ... ok
+test_original_reader_facts_and_svh_byte_order (__main__.Controls.test_original_reader_facts_and_svh_byte_order) ... ok
+test_rlib_or_truncated_metadata_is_not_admitted (__main__.Controls.test_rlib_or_truncated_metadata_is_not_admitted) ... ok
+test_sdk_artifact_cannot_escape_through_a_symlink (__main__.Controls.test_sdk_artifact_cannot_escape_through_a_symlink) ... ok
+test_unknown_dependency_kind_and_host_context_fail (__main__.Controls.test_unknown_dependency_kind_and_host_context_fail) ... ok
+test_unpinned_sdk_fails_before_any_original_compiler_command (__main__.Controls.test_unpinned_sdk_fails_before_any_original_compiler_command) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.208s
+
+OK

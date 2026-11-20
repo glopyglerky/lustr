@@ -101,11 +101,11 @@ Cargo's JSON message stream remains parseable. Compiler failures retain their
 failure exit status and diagnostics. It does not retry a failed compiler,
 linker, test or program.
 
-`rustc_driver` accepts UTF-8 arguments. On Unix, an invocation with a non-UTF-8
-argument is delegated with `exec` to the supplied compiler, preserving its
-argument bytes, stdout, stderr, signals and exit status. That path produces no
-inspection report and makes no in-process compiler ABI claim; the pin and
-entrypoint checks apply to inspection, not to this exact passthrough.
+`rustc_driver` accepts UTF-8 arguments. An invocation with a non-UTF-8
+argument or compiler path fails with status 2 before any compiler query or
+execution. It produces no report and cannot delegate to the supplied executable.
+The independent original-Rust inspection oracle remains outside Lustr product
+compilation; its retained artifact checks do not establish Lustr coverage.
 
 Inspection errors or report publication errors fail the explicit probe
 invocation. Compiler timing output includes inspection overhead; this tool is

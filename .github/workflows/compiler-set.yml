@@ -11,6 +11,8 @@ on:
       - 'tests/compiler_contract.rs'
       - 'compiler/native/**'
       - 'crates/lustr-native-core/**'
+      - 'crates/lustr-metadata-encoder/**'
+      - 'crates/lustr-metadata-sdk/**'
       - 'crates/lustr/**'
       - 'crates/lustr-semantic/**'
       - 'crates/lustr-bench/**'
@@ -54,6 +56,9 @@ on:
       - 'tools/test-native-upstream.py'
       - 'tools/test-native-import-emission.py'
       - 'tools/native-upstream-qualification.rs'
+      - 'tools/native-consumer-qualification.rs'
+      - 'tools/build-metadata-sdk-receipt.py'
+      - 'tools/test-metadata-sdk-receipt.py'
       - 'tests/shared-imports/**'
       - '.github/workflows/compiler-set.yml'
   pull_request:
@@ -65,6 +70,8 @@ on:
       - 'tests/compiler_contract.rs'
       - 'compiler/native/**'
       - 'crates/lustr-native-core/**'
+      - 'crates/lustr-metadata-encoder/**'
+      - 'crates/lustr-metadata-sdk/**'
       - 'crates/lustr/**'
       - 'crates/lustr-semantic/**'
       - 'crates/lustr-bench/**'
@@ -108,6 +115,9 @@ on:
       - 'tools/test-native-upstream.py'
       - 'tools/test-native-import-emission.py'
       - 'tools/native-upstream-qualification.rs'
+      - 'tools/native-consumer-qualification.rs'
+      - 'tools/build-metadata-sdk-receipt.py'
+      - 'tools/test-metadata-sdk-receipt.py'
       - 'tests/shared-imports/**'
       - '.github/workflows/compiler-set.yml'
   workflow_dispatch:
@@ -190,6 +200,49 @@ jobs:
         run: |
           rustc +1.99.1 --edition=2024 --test tools/lust-upstream-check.rs -o "$RUNNER_TEMP/lust-upstream-check-tests"
           "$RUNNER_TEMP/lust-upstream-check-tests"
+
+  selective-metadata-research:
+    name: Selective metadata research and core dependency cut
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
+    timeout-minutes: 15
+    env:
+      RUSTUP_TOOLCHAIN: nightly-2026-11-09
+      CARGO_BUILD_JOBS: '2'
+      CARGO_TARGET_DIR: ${{ runner.temp }}/metadata-research-target
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record source and enforce the research-only import boundary
+        run: |
+          mkdir -p "$RUNNER_TEMP/metadata-research-evidence"
+          git rev-parse HEAD HEAD^{tree} > "$RUNNER_TEMP/metadata-research-evidence/source.txt"
+          python3 tools/check-exclusive-coverage.py
+          python3 tools/test-exclusive-coverage-guard.py
+      - name: Install the declared SDK and a target without std
+        run: rustup toolchain install nightly-2026-11-09 --profile minimal --target x86_64-unknown-none
+      - name: Verify original encoding and hashing controls
+        run: |
+          set -o pipefail
+          rustc -vV > "$RUNNER_TEMP/metadata-research-evidence/compiler.txt"
+          cargo test --manifest-path crates/lustr-metadata-encoder/Cargo.toml --package lustr-metadata-encoder --lib --locked 2>&1 | tee "$RUNNER_TEMP/metadata-research-evidence/core-oracles.log"
+      - name: Require the serializer dependency graph to build without std
+        run: |
+          set -o pipefail
+          cargo check --manifest-path crates/lustr-metadata-encoder/Cargo.toml --package lustr-metadata-encoder --lib --all-features --target x86_64-unknown-none --locked 2>&1 | tee "$RUNNER_TEMP/metadata-research-evidence/core-no-std.log"
+          cargo tree --manifest-path crates/lustr-metadata-encoder/Cargo.toml --package lustr-metadata-encoder --edges normal --locked > "$RUNNER_TEMP/metadata-research-evidence/core-dependencies.txt"
+      - name: Check the separate host adapter and SDK receipt refusals
+        run: |
+          set -o pipefail
+          cargo check --manifest-path crates/lustr-metadata-sdk/Cargo.toml --package lustr-metadata-sdk --lib --locked 2>&1 | tee "$RUNNER_TEMP/metadata-research-evidence/host-adapter.log"
+          python3 tools/test-metadata-sdk-receipt.py -v 2>&1 | tee "$RUNNER_TEMP/metadata-research-evidence/receipt-controls.log"
+          cargo tree --manifest-path crates/lustr-metadata-sdk/Cargo.toml --package lustr-metadata-sdk --edges normal --locked > "$RUNNER_TEMP/metadata-research-evidence/host-dependencies.txt"
+      - name: Retain bounded research evidence including failed attempts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: selective-metadata-research-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/metadata-research-evidence
+          if-no-files-found: error
+          retention-days: 14
 
   semantic:
     name: Checked rustc semantic inspection
@@ -377,6 +430,34 @@ jobs:
         run: |
           python3 tools/test-mixed-symbols.py --tcc "$RUNNER_TEMP/lustr-tinycc/install/bin/tcc"
           python3 tools/test-mixed-symbol-rename.py --tcc "$RUNNER_TEMP/lustr-tinycc/install/bin/tcc"
+      - name: Qualify actual native consumer completion and emitted objects
+        if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
+        env:
+          LUST_TCC_HOME: ${{ runner.temp }}/lustr-tinycc/install
+          RUST_MIN_STACK: '268435456'
+        run: |
+          set -euo pipefail
+          records="$RUNNER_TEMP/native-consumer-records"
+          mkdir -p "$records"
+          git rev-parse HEAD HEAD^{tree} HEAD:compiler/native > "$records/source.txt"
+          sha256sum crates/lustr-native-core/Cargo.toml crates/lustr-native-core/Cargo.lock crates/lustr-native-core/src/lib.rs crates/lustr-native-core/src/native_consumer.rs crates/lustr-native-core/src/native_object.rs crates/lustr-native-core/src/unit_object.rs tools/native-consumer-qualification.rs > "$records/source-inputs.sha256"
+          export RUSTC="$(rustup which rustc)"
+          "$RUSTC" -vV > "$records/compiler.txt"
+          sha256sum "$RUSTC" "$LUST_TCC_HOME/lib/libtcc.a" > "$records/tools.sha256"
+          cargo build --manifest-path crates/lustr-native-core/Cargo.toml --package lustr-native-core --example native-consumer-qualification --features native-qualification --locked --offline --jobs 2 --target-dir "$RUNNER_TEMP/native-consumer-target" --config "build.build-dir=\"$RUNNER_TEMP/native-consumer-intermediates\"" 2>&1 | tee "$records/build.log"
+          qualifier="$RUNNER_TEMP/native-consumer-target/debug/examples/native-consumer-qualification"
+          sha256sum "$qualifier" > "$records/qualifier.sha256"
+          "$qualifier" "$records/campaign" "$RUSTC" 2>&1 | tee "$records/qualification.log"
+          python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["passed"] is True and r["controls"] == 17 and r["native_functions"] == 3 and r["checked_runtime_results"] == 131076' "$records/campaign/summary.json"
+          sha256sum --check "$records/source-inputs.sha256"
+      - name: Retain native consumer records including failed attempts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-consumer-records-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/native-consumer-records
+          if-no-files-found: error
+          retention-days: 14
       - name: Qualify genuine provider definitions and native consumer semantics
         if: ${{ !cancelled() }}
         run: |

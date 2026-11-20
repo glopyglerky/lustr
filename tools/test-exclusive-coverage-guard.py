@@ -113,6 +113,66 @@ def retired_policy_control():
     return 1
 
 
+def metadata_research_controls():
+    with tempfile.TemporaryDirectory(prefix="lustr-metadata-admission-") as directory:
+        root = Path(directory)
+        inventory = json.loads((ROOT / "upstream/complement-imports.json").read_text())
+        for crate in ("lustr-metadata-encoder", "lustr-metadata-sdk"):
+            shutil.copytree(ROOT / "crates" / crate, root / "crates" / crate,
+                            ignore=shutil.ignore_patterns("target"))
+
+        def checked():
+            failures = []
+            GUARD.metadata_research_checks(root, inventory, lambda condition, message: None if condition else failures.append(message))
+            return failures
+
+        assert not checked(), checked()
+        cases = [
+            ("crates/lustr-metadata-encoder/src/upstream/odht_writer.rs", lambda text: text + "\n// changed adapted source\n", "adapted sources differ"),
+            ("crates/lustr-metadata-encoder/Cargo.toml", lambda text: text.replace("default-features = false", "default-features = true", 1), "dependency or oracle boundary changed"),
+            ("crates/lustr-metadata-encoder/Cargo.toml", lambda text: text.replace("[dev-dependencies]", 'odht = "=0.3.1"\n\n[dev-dependencies]'), "dependency or oracle boundary changed"),
+            ("crates/lustr-metadata-sdk/Cargo.toml", lambda text: text + '\n[features]\nhidden = []\n', "unreviewed metadata feature"),
+            ("crates/lustr-metadata-encoder/source-slices.json", lambda text: text.replace('"native_caller_committed": false', '"native_caller_committed": true'), "overstates integration"),
+            ("crates/lustr-metadata-encoder/Cargo.toml", lambda text: text + '\n[lib]\npath = "unreviewed.rs"\n', "library source or workspace selection changed"),
+            ("crates/lustr-metadata-encoder/Cargo.toml", lambda text: text.replace('[workspace]', '[workspace]\ndefault-members = ["other"]'), "library source or workspace selection changed"),
+            ("crates/lustr-metadata-sdk/Cargo.toml", lambda text: text.replace('name = "lustr-metadata-sdk"', 'name = "other"'), "library source or workspace selection changed"),
+        ]
+        for name, change, diagnostic in cases:
+            path = root / name
+            original = path.read_text()
+            path.write_text(change(original))
+            failures = checked()
+            assert any(diagnostic in failure for failure in failures), (name, failures)
+            path.write_text(original)
+        extra = root / "crates/lustr-metadata-encoder/src/unreviewed.rs"
+        extra.write_text("pub fn alternate_encoder() {}\n")
+        assert any("adapted sources differ" in failure for failure in checked())
+        extra.unlink()
+        assert not checked(), checked()
+        return len(cases) + 1
+
+
+def inspection_passthrough_controls():
+    relative = "crates/lustr-semantic/src/main.rs"
+    with tempfile.TemporaryDirectory(prefix="lustr-inspection-admission-") as directory:
+        root = Path(directory)
+        source = root / relative
+        source.parent.mkdir(parents=True)
+        original = (ROOT / relative).read_text()
+
+        def checked():
+            failures = []
+            GUARD.inspection_passthrough_checks(root, lambda condition, message: None if condition else failures.append(message))
+            return failures
+
+        source.write_text(original)
+        assert not checked()
+        for restored in ("\nfn delegate() {}\n", "\nfn launch() { command.exec(); }\n"):
+            source.write_text(original + restored)
+            assert checked() == ["independent semantic inspection regained an unchecked compiler passthrough"]
+        return 2
+
+
 def main():
     inventory_path = ROOT / "upstream/complement-imports.json"
     original_read = Path.read_text
@@ -126,6 +186,8 @@ def main():
         lambda data: data["imports"][0].update(upstream_rust_source="0" * 40),
         lambda data: data["research_components"][0].update(production_admitted=True),
         lambda data: data.update(full_rust_coverage=True),
+        lambda data: data["research_components"].pop(),
+        lambda data: data["research_components"][2].update(native_caller_committed=True),
     ]
     for mutate in mutations:
         candidate = copy.deepcopy(original)
@@ -139,9 +201,13 @@ def main():
             assert failures, "forged import provenance was admitted"
     packages = product_package_controls()
     retired = retired_policy_control()
+    metadata = metadata_research_controls()
+    inspection = inspection_passthrough_controls()
     print(json.dumps({"original_passed": True, "tampered_inventories_rejected": len(mutations),
                       "product_package_mutations_rejected": packages, "unrelated_manifest_changes_admitted": True,
-                      "restored_retired_policy_rejected": retired}))
+                      "restored_retired_policy_rejected": retired,
+                      "metadata_research_mutations_rejected": metadata,
+                      "inspection_passthrough_mutations_rejected": inspection}))
 
 
 if __name__ == "__main__":

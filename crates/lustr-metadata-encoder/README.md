@@ -5,11 +5,12 @@ already completed native library and its actual emitted function inventory.
 It is not reachable through a product Cargo feature. It does not parse a Rust
 consumer, run Rust analysis, synthesize HIR or typed bodies, or retry compilation.
 
-The first caller is the separate native consumer qualifier. Its private
+The intended first caller is the separate native consumer qualifier. Its private
 `CompletedUnit` establishes the admitted declaration, body, privacy and lint
 facts using the unchanged source and the existing native checked program. It
 joins checked calls to lowered/generated calls and actual emitted ELF symbols.
-Only then does the caller convert those facts to `Input`. The public record
+The committed qualifier stops at that completed-record and C ABI object boundary;
+it does not yet convert those facts to `Input` or call this encoder. The public record
 types in this serialization crate do not themselves certify source correctness.
 The encoder checks that the definition, call and emitted-instance inventories
 are complete, unique and mutually consistent before writing any metadata.
@@ -95,7 +96,8 @@ subprocess access.
 
 ## Checkpoint status and required qualification
 
-This checkpoint builds as a standalone library with the exact pinned SDK. It
+This checkpoint builds as a standalone library with the exact pinned SDK. No
+committed native caller invokes its metadata or rlib-link writer. It
 does not yet establish that an ordinary Rust caller accepts the produced
 metadata or executes the renamed native object correctly. That joined gate,
 including private-access rejection and malformed/missing/duplicate mapping
@@ -122,7 +124,10 @@ the serializer for a target without `std` proves this library's dependency cut,
 not new output-target coverage, a `no_std` compiler or socket-independent retained
 compilation.
 
-The seam is currently one-shot research, not integration into the public
+The seam is currently separate research components, not integration into the public
 retained compiler. Full Rust consumer metadata, wider declaration/lint/privacy
 obligations, the justified complementary implementation and overall speedup
-remain incomplete. No product guard or release criterion is changed here.
+remain incomplete. The central import inventory and structural guard track
+these research components without admitting them to the product. The CI checks
+their source records, core dependency cut, original byte/hash controls and SDK
+receipt refusals. Those checks do not qualify joined Rust metadata or a release.

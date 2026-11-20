@@ -107,16 +107,36 @@
     },
     {
       "path": "crates/lustr-semantic",
-      "scope": "read-only pinned semantic inspection and retained bridge modules",
+      "scope": "independent pinned original-Rust oracle with full compiler SDK analysis, code generation and artifact checks; never product compilation or Lustr coverage",
       "dependency": "complete rustc_private SDK graph; no lustr-mixed executable target",
       "production_admitted": false,
-      "required_for": "genuine metadata/ABI research and earlier source-bound experiments",
+      "required_for": "independent genuine Rust metadata/ABI/artifact observations and source-bound inspection experiments; not a complementary product compiler",
       "blocking_reason": "not a selective complementary source implementation"
+    },
+    {
+      "path": "crates/lustr-metadata-encoder",
+      "scope": "standalone core-plus-alloc serializer for completed native scalar-library records",
+      "dependency": "selective pinned Rust encoding/identity/schema operations and source-owned stable-hash/ODHT writer slices; md-5 and twox-hash with std disabled",
+      "source_inventory": "crates/lustr-metadata-encoder/source-slices.json",
+      "production_admitted": false,
+      "native_caller_committed": false,
+      "required_for": "intended serialization of genuine native completed definitions and actual emitted instances without whole-consumer Rust analysis",
+      "blocking_reason": "the committed native qualifier does not invoke this encoder; joined original Rust metadata/artifact compatibility, broader obligations and retained performance remain unqualified"
+    },
+    {
+      "path": "crates/lustr-metadata-sdk",
+      "scope": "standalone host adapter for construction-qualified pinned SDK receipts",
+      "dependency": "lustr-metadata-encoder, std filesystem/path services, serde_json and sha2; excluded from the encoder core dependency graph",
+      "source_inventory": "crates/lustr-metadata-encoder/source-slices.json",
+      "production_admitted": false,
+      "native_caller_committed": false,
+      "required_for": "immutable ordered core/compiler_builtins context intended to be loaded once outside repeated consumer compilation",
+      "blocking_reason": "no committed native-to-encoder caller binds the construction receipt; host adapter and complete compiler remain std-dependent"
     }
   ],
   "not_imported": [
     "general trait solver",
-    "general Rust metadata encoder",
+    "general Rust metadata encoder beyond the bounded research source slices",
     "full Rust compiler source"
   ],
   "guard_scope": "structural source and public entry constraints only; source inventories do not prove minimal dependency closure or semantic exclusivity"

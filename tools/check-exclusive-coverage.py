@@ -54,6 +54,12 @@ def retired_path_checks(root, require):
         require(not (root / path).exists(), "retired whole-compiler route reappeared: " + path)
 
 
+def inspection_passthrough_checks(root, require):
+    inspection = (root / "crates/lustr-semantic/src/main.rs").read_text()
+    require("fn delegate(" not in inspection and ".exec()" not in inspection,
+            "independent semantic inspection regained an unchecked compiler passthrough")
+
+
 def product_package_checks(root, require):
     for manifest, (package_name, direct, selected) in PRODUCT_PACKAGES.items():
         data = tomllib.loads((root / manifest).read_text())
@@ -125,6 +131,81 @@ def product_package_checks(root, require):
                         f"{manifest}: unreviewed locked package source {name}")
 
 
+def metadata_research_checks(root, inventory, require):
+    """Bind the selective research cut without admitting it to production.
+
+    The donor hashes are provenance records, not re-fetched donor verification.
+    Adapted file hashes bind those records to the actual local source. The
+    separate bare-metal CI compile verifies the core's effective dependency cut.
+    None of these checks supplies the still-missing native-to-encoder caller.
+    """
+    encoder = "crates/lustr-metadata-encoder"
+    sdk = "crates/lustr-metadata-sdk"
+    components = {item["path"]: item for item in inventory["research_components"]}
+    for path in (encoder, sdk):
+        component = components.get(path, {})
+        require(component.get("source_inventory") == encoder + "/source-slices.json",
+                path + ": selective research source inventory is missing")
+        require(component.get("production_admitted") is False
+                and component.get("native_caller_committed") is False,
+                path + ": unjoined metadata research cannot claim a product caller")
+
+    source_root = root / encoder
+    slices = json.loads((source_root / "source-slices.json").read_text())
+    require(slices.get("schema") == "lustr-original-source-slices-v1"
+            and slices.get("revision") == inventory["rust_source"],
+            "metadata source inventory differs from the declared Rust identity")
+    status = slices.get("integration_status", {})
+    require(status.get("production_admitted") is False
+            and status.get("native_caller_committed") is False,
+            "metadata source inventory overstates integration")
+    actual = {str(path.relative_to(source_root)): hashlib.sha256(path.read_bytes()).hexdigest()
+              for path in (source_root / "src").rglob("*.rs")}
+    require(slices.get("adapted_sources_sha256") == actual,
+            "metadata adapted sources differ from their reviewed inventory")
+    require(bool(slices.get("sources")) and bool(slices.get("registry_sources")),
+            "metadata source inventory omits its donor slices")
+    for item in slices.get("sources", []) + slices.get("registry_sources", []):
+        require(all(item.get(field) for field in
+                    ("source", "source_sha256", "destination", "adaptation", "necessity", "semantic_owner")),
+                "metadata donor slice lacks source, adaptation or ownership")
+        require(re.fullmatch(r"[0-9a-f]{64}", item.get("source_sha256", "")) is not None
+                and item.get("destination") in actual,
+                "metadata donor slice has an invalid identity or unbound destination")
+        for license_file in item.get("license_files", []):
+            path = source_root / license_file
+            require(path.is_file() and path.resolve().is_relative_to(source_root.resolve()),
+                    "metadata donor license is missing or outside the source cut")
+    require(slices.get("no_std_scope", {}).get("qualification_target") == "x86_64-unknown-none"
+            and "#![no_std]" in (source_root / "src/lib.rs").read_text(),
+            "metadata serializer no_std boundary changed without review")
+
+    # The core's original std-dependent hashing/map crates remain independent
+    # dev-only oracles. The SDK loader is the sole host service adapter here.
+    expected = {
+        encoder: ({"md-5": {"version": "=0.10.6", "default-features": False},
+                   "twox-hash": {"version": "=2.1.2", "default-features": False,
+                                 "features": ["alloc", "xxhash3_128"]}},
+                  {"odht": "=0.3.1", "rustc-stable-hash": "=0.1.2"}),
+        sdk: ({"lustr-metadata-encoder": {"path": "../lustr-metadata-encoder"},
+               "serde_json": "=1.0.154", "sha2": "=0.11.1"}, {}),
+    }
+    for relative, (dependencies, dev_dependencies) in expected.items():
+        manifest = tomllib.loads((root / relative / "Cargo.toml").read_text())
+        require(manifest["package"].get("name") == Path(relative).name
+                and manifest.get("lib", {}) in ({}, {"path": "src/lib.rs"})
+                and manifest.get("workspace", {}) == {"resolver": "3"},
+                relative + ": metadata package, library source or workspace selection changed without review")
+        require(manifest.get("dependencies", {}) == dependencies
+                and manifest.get("dev-dependencies", {}) == dev_dependencies,
+                relative + ": metadata dependency or oracle boundary changed without review")
+        require(not any(manifest.get(key) for key in
+                        ("features", "target", "build-dependencies", "patch", "replace"))
+                and "build" not in manifest["package"]
+                and not (root / relative / "build.rs").exists(),
+                relative + ": unreviewed metadata feature, target or construction dependency")
+
+
 def check(root):
     failures = []
 
@@ -171,6 +252,7 @@ def check(root):
         require((root / component["path"]).exists(), "missing disclosed research path: " + component["path"])
         require(component["production_admitted"] is False, "whole rustc SDK research is not a selective production import")
         require(bool(component["required_for"]) and bool(component["blocking_reason"]), "research closure needs its actual purpose and block")
+    metadata_research_checks(root, inventory, require)
 
     entry = (root / "src/main.rs").read_text()
     for token in ["rustc-full", "rustc-reference", "full-rust-core", "run_cli_with_default_root", "expanded_answer", "native-inference-worker"]:
@@ -184,6 +266,7 @@ def check(root):
     require("cargo_lust" not in cargo["dependencies"], "public compiler must not depend on the retired coordinator")
     semantic = tomllib.loads((root / "crates/lustr-semantic/Cargo.toml").read_text())
     require(not any(item.get("name") == "lustr-mixed" for item in semantic.get("bin", [])), "whole-rustc driver is a product target again")
+    inspection_passthrough_checks(root, require)
     coordinator = (root / "crates/lustr/src/lib.rs").read_text()
     require("fn execute(" not in coordinator and ".exec()" not in coordinator, "retired coordinator must not execute compiler plans")
     builder = (root / "tools/build-native-toolchain.rs").read_text()

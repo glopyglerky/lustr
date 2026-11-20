@@ -409,6 +409,32 @@ signing, publication-failure and warm odd-path qualification remains open, so
 the complete platform matrix is not passing. This recovery reran no compiler
 or generated program and does not qualify subsequent metadata work.
 
+## Selective metadata research and ownership follow-through
+
+The preserved continuation adds native completed-record/object qualification,
+a standalone selective metadata serializer and a separate SDK receipt adapter.
+The serializer uses `core` and `alloc` and retains original upstream encoding,
+hashing and map operations. Its source-slice inventory is now indexed by the
+central [import inventory](../../upstream/complement-imports.json). The committed
+native qualifier does not yet call the encoder or its rlib-link writer.
+
+The [ownership verification record](evidence/ownership-closure-20261119/README.md)
+records the new required metadata CI paths, source/package/workspace guards,
+real core-only build and original byte/hash controls. A manifest cannot redirect
+those checks to an unrelated library while retaining the reviewed source hashes.
+All records continue to deny product admission and joined metadata coverage.
+The existing native-entry job now also requires the actual completed-record
+qualifier and preserves its source/tool/binary identities and failed output
+through a separate artifact. That new hosted step still needs its own run;
+the retained earlier 17-control result is not relabeled as new CI evidence.
+
+That same follow-through removes the independent semantic inspector's unchecked
+non-UTF-8 compiler passthrough. The request now fails before any compiler query
+or invocation. Its actual sentinel tests remain required in the inspector's
+pinned hosted job, since that old SDK was unavailable for local execution.
+The useful original-Rust inspection and artifact comparisons remain separate
+research evidence; they cannot count as Lustr compilation.
+
 ## Remaining compiler boundary
 
 These changes advance Lust coverage, composition, retained dependencies and

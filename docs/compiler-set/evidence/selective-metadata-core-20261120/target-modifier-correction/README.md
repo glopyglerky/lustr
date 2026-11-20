@@ -1,10 +1,11 @@
 # Preserve the explicit target-feature modifier
 
-The first native candidate's root metadata decoded successfully with the pinned
-original reader. A normal Rust caller then failed in the original crate reader
-because the candidate had omitted its synthetic target-feature modifier record.
-The failed artifact and complete caller log are preserved by the joined native
-consumer qualification record; this correction does not relabel that attempt.
+The development attempt motivating this correction used an unpublished joined
+native caller. Its failed artifact and complete caller log are not included in
+this record. This record does not claim that the committed native qualifier calls
+the encoder or that an ordinary Rust caller accepts a native metadata artifact.
+The included evidence is the original reader's observation of the fixed Rust
+reference described below.
 
 Original `rustc_interface::util::add_target_modifiers` always inserts a synthetic
 `TargetFeatures` record. Original `Options::gather_target_modifiers` retains it,
