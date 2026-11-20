@@ -40,6 +40,22 @@ preview tags remain historical sources, not alternative development lanes.
 | Governing documentation, merged [PR #31](https://github.com/glopyglerky/lustr/pull/31), [2fbafe39](https://github.com/glopyglerky/lustr/tree/2fbafe391fdf3d0a59b8cc24e9b0f55be3570cbd) | One controlling direction, explicit selective-import and ownership rules, upstream source/history research, and reconciled active plans. This merge changed no product source. |
 | Current [implementation correction](docs/compiler-set/exclusive-coverage-cleanup.md), [PR #33](https://github.com/glopyglerky/lustr/pull/33) | Removes public retries, the whole-program mixed launcher and whole-compiler packaging. Adds the partial import inventory and guarded native package boundaries; repairs Cargo discovery, selection caching and environment preservation. The full complement and speed qualification remain unfinished. |
 
+The current [public scalar-library candidate](docs/compiler-set/public-scalar-library.md)
+connects the installed `RUSTC` entry and retained native owner to genuine `.rlib`,
+`.rmeta` and dep-info output. It is authored and pending exact-source hosted
+qualification. The [declared profile and Cargo command](docs/compiler-set/native-cargo-continuation.md#authored-public-scalar-library-path)
+cover a dependency-free edition-2024, Linux x86-64, flat `no_std` scalar library.
+Metadata-only `cargo check`, under-Lustr `--extern` ingestion and wider Rust/Cargo
+coverage remain open. The [public qualifier](tools/test-public-native-library.py)
+requires real Cargo requests, retained state, genuine artifacts and independent
+result-checked consumers.
+
+The public host still uses `std` and Unix sockets. Its pinned archive/object tools
+require a 208,283,952-byte LLVM shared library, about 208 MB, which remains a
+package-size and portability limitation. This candidate has no matched speed
+result. The [passing predecessor evidence](docs/compiler-set/evidence/retained-metadata-correction-20261120/runtime-success-fab59023.json)
+remains tied to `fab59023` and does not qualify this new public source.
+
 A narrow bridge cannot redefine Lust's supported subset. Work Lust can compile
 but the bridge cannot represent is an integration gap. It must not quietly move
 to rustc. A whole-program retry or a complete Rust frontend followed by native
@@ -70,7 +86,8 @@ history and historical evidence remain intact.
 | [Documentation disposition](docs/compiler-set/documentation-disposition.json) | Complete baseline Markdown inventory, active authority, scoped checkpoints and untouched donor/evidence boundaries. |
 | [Capability result qualification](docs/compiler-set/capability-result-qualification.md) | Compares real generated output and test outcomes through the public compiler; runs installed-package contracts in CI. |
 | [Retained-history result qualifier](tools/qualify-retained-results.py) | Uses pinned acceptance expectations, separate compile/runtime results and the same surviving daemon; unresolved histories remain visible. |
-| [Native Cargo continuation](docs/compiler-set/native-cargo-continuation.md) | Required dependency/host-script integration, exact unit planning, retained input proofs, original failures and Darwin signing repair. |
+| [Native Cargo continuation](docs/compiler-set/native-cargo-continuation.md) | Authored public scalar-library profile and Cargo command; existing dependency/host-script integration, retained proofs and source-bound evidence. |
+| [Public scalar-library contract](docs/compiler-set/public-scalar-library.md) | Real request identity, artifact publication, retained history and current package/coverage limits. |
 | [Lust upstream review](docs/compiler-set/upstream-lust-review-2026-11-19.md) | Retention, precise invalidation, CI, performance history and reverts. |
 | [Rust upstream review](docs/compiler-set/upstream-rust-review-2026-11-19.md) | Existing selective reuse interfaces, dependency closure, CI and performance history. |
 | [Support and cost analysis](docs/compiler-set/exclusive-coverage-mathematics.md) | Known capability rules, CI coverage limits and the cost of extra dispatch or semantic work. |

@@ -5,13 +5,75 @@ This continues [PR #33](https://github.com/glopyglerky/lustr/pull/33) under the
 Lust-owned integration uncovered by independent retained-result qualification.
 It is not a complete Rust compiler, a new complementary owner, or a release.
 
+## Authored public scalar-library path
+
+Status: authored, pending exact-source hosted construction and qualification.
+The installed public `RUSTC` entry now connects the retained native owner to the
+shared metadata and archive service. The [bounded contract](public-scalar-library.md)
+and [source inventory](../../upstream/public-library-integration.json) identify
+the actual request, completed native facts, imported operations and package inputs.
+
+The declared Cargo fixture is a dependency-free edition-2024 library on the
+actual `x86_64-unknown-linux-gnu` host. Its single ASCII `#![no_std]` source uses
+the represented flat `u64` functions and expression graph. Its profile is:
+
+```toml
+[profile.dev]
+panic = "abort"
+debug = 0
+opt-level = 0
+debug-assertions = true
+overflow-checks = true
+incremental = false
+strip = "none"
+```
+
+For the installed candidate at `PACKAGE_ROOT`, the qualifier invokes pinned Cargo:
+
+```sh
+RUSTC="$PACKAGE_ROOT/bin/rustc" "$PACKAGE_ROOT/bin/cargo" build --lib --offline --message-format=json
+```
+
+Cargo supplies the real crate name, source, `-Cmetadata`, `-Cextra-filename`,
+`--out-dir`, check-cfg and JSON options. The admitted request emits exactly
+`dep-info,metadata,link` with `embed-bitcode=no`. The public path preserves those
+inputs and returns the named `.d`, `.rmeta` and `.rlib` artifacts. Metadata-only
+`cargo check`, under-Lustr `--extern` ingestion, dependencies/build scripts in this
+library context and wider declarations, profiles and targets remain integration gaps.
+
+The [independent public qualifier](../../tools/test-public-native-library.py)
+requires real Cargo invocations, actual process traces, same-owner edits and
+recovery, exact diagnostics, genuine metadata/archive readers and result-checked
+consumers. Its eviction and raw-protocol subgroups directly replay captured Cargo
+compiler requests; they are separate from the real Cargo history. The pinned Rust
+reader and consumer run only as evaluators. The
+[mutation controls](../../tools/test-public-native-library-controls.py) and new
+Compiler set step are authored; no result for this candidate is claimed here.
+
+The public owner still uses `std` and Unix sockets. The metadata encoder's
+`no_std` plus `alloc` boundary does not make the installed compiler portable.
+The pinned LLVM archive/object tools require a 208,283,952-byte shared library,
+about 208 MB. The [tool closure](../../upstream/metadata-artifact-tools.json)
+records this package-size and runtime limitation. No matched speed result is
+available for the public candidate.
+
+The predecessor at `fab59023b9635f2c5e5d03d29b44865839dc3eba`, tree
+`0cb22f9ea67923ac59ae1fd54533aa14615f6091`, passed all ten jobs in its
+[Compiler set run](https://github.com/glopyglerky/lustr/actions/runs/44698641439).
+Its [source-bound original evidence](evidence/retained-metadata-correction-20261120/runtime-success-fab59023.json)
+records 29 retained metadata transitions, 25 consumers and 6,815,952 assertions,
+plus all 349 required native histories. Thirteen registered native histories
+remain unresolved. Those historical passes do not qualify the new
+public integration, its broader CI matrix, full Rust coverage or performance.
+
 ## Bounded native metadata join
 
 The separate [metadata research caller](../../crates/lustr-native-metadata-qualification/README.md)
-now consumes native completed declarations and actual emitted instances, invokes
-the selective encoder and constructs original metadata/archive members. It uses
-the checked native generation once. The installed compiler and retained Cargo
-path do not yet invoke it.
+consumes native completed declarations and actual emitted instances, invokes the
+selective encoder and constructs original metadata/archive members. It uses the
+checked native generation once. At the one-shot source qualified below, the
+installed compiler and retained Cargo path did not invoke it. The authored public
+candidate above now shares the artifact service with the retained research caller.
 
 Its new required Compiler set job uses an ordinary pinned Rust consumer and
 actual process traces, with runtime, privacy, signature, record/member mutation
@@ -79,8 +141,9 @@ enter Lust's existing dependency worklist and native compiler.
 The planner binds package, target kind, target name and canonical source before
 body or host-script work. An explicit selector remains distinct from a name
 inferred from a source filename. Ambiguity, a foreign source and an unavailable
-target are errors. An inferred library cannot bypass the existing refusal to
-claim an unimplemented Rust library artifact.
+target are errors. An inferred library cannot bypass request admission. The new
+public library path requires its represented source, profile and artifact context;
+other library requests remain integration gaps.
 
 Ordinary manifest-selected requests no longer repeat a separate public Cargo
 metadata pass before the retained native resolver. Explicit package binding and
@@ -485,10 +548,10 @@ time. The [total-time policy](practical-performance.md) governs the eventual
 measurement; historical or synthetic performance records cannot qualify this
 source.
 
-The next compiler boundary remains [genuine consumer metadata](shared-consumer-metadata.md):
-accepted definitions, declaration/privacy/lint completion and the actual emitted
-instance graph must reach the genuine encoder without whole-consumer Rust
-analysis. General complementary coverage, all required Rust artifacts and full
+Beyond the authored public scalar path, [genuine consumer metadata](shared-consumer-metadata.md)
+still requires wider accepted definitions, declaration/privacy/lint completion
+and emitted instance graphs without whole-consumer Rust analysis. Metadata-only
+checks, under-Lustr `--extern` ingestion, general complementary coverage and full
 language/profile/target qualification remain unfinished. The implementation
 still uses `std` and Unix sockets.
 
@@ -502,5 +565,5 @@ binds compiler construction to reviewed source/target modes, removes unused
 expanded-source packaging and retires the remaining whole-compiler measurement
 routes. It also tightens independent test-result admission. Those changes
 preserve this continuation's actual native work and failed evidence; they do
-not complete the metadata caller, general complement, portability migration or
-matched speed qualification.
+not qualify the new public scalar-library source, complete the general complement
+or establish portability and matched speed.

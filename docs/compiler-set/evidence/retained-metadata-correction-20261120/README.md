@@ -96,3 +96,29 @@ Compiler source, the 29-request history and the 25-consumer inventory are
 unchanged. The corrected evaluator and complete campaign require their own
 hosted execution. Partial passes from the failed source are not qualification of
 the new source.
+
+## Completed retained research on the corrected source
+
+Source `fab59023b9635f2c5e5d03d29b44865839dc3eba` passed all ten jobs in
+[Compiler set run 44698641439](https://github.com/glopyglerky/lustr/actions/runs/44698641439).
+Its retained metadata job passed the complete fixed campaign: 30 evaluator
+methods, 29 history transitions, 33 total requests across three sessions,
+25 ordinary Rust consumers and 6,815,952 actual runtime assertions.
+
+[runtime-success-fab59023.json](runtime-success-fab59023.json) binds the exact
+source and matching merge tree, original artifact upload digests, candidate
+binary and independent original-record audits. All five no-op intervals have
+zero artifact-tool calls, and the research sessions make no Unix socket calls.
+The source/tool checks after execution, rejection, publication preservation,
+SDK refusals and fresh-session comparisons completed.
+
+The same source's public-native job passed 349 required selected histories.
+Thirteen registered histories remain unresolved and `full_retained_coverage`
+remains false. The separate broader Linux/macOS workflow was still running at
+this observation. These distinctions are preserved in the success record.
+
+This is qualification of the bounded research caller at the stated source.
+It does not establish public retained library integration, complete Rust
+coverage, compiler-wide `no_std`, public socket independence, matched speed or
+a release. New public integration source needs its own construction and
+runtime evidence. All earlier failures above remain unchanged.
