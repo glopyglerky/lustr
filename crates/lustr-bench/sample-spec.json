@@ -7,9 +7,7 @@
     {
       "command": {
         "argv": [
-          "/toolchain/bin/lustr",
-          "--bluefe-root",
-          "/toolchain",
+          "/toolchain/bin/cargo",
           "check",
           "--locked",
           "--offline",
@@ -30,9 +28,7 @@
       },
       "evidence": {
         "argv": [
-          "/toolchain/bin/lustr",
-          "--bluefe-root",
-          "/toolchain",
+          "/toolchain/bin/cargo",
           "check",
           "--locked",
           "--offline",
@@ -48,9 +44,7 @@
         {
           "command": {
             "argv": [
-              "/toolchain/bin/lustr",
-              "--bluefe-root",
-              "/toolchain",
+              "/toolchain/bin/cargo",
               "run",
               "--quiet",
               "--locked",
@@ -132,13 +126,6 @@
           ]
         },
         {
-          "path": "/toolchain/bin/lustr",
-          "sha256": "REPLACE_WITH_ACTUAL_BINARY_SHA256",
-          "version_args": [
-            "--version"
-          ]
-        },
-        {
           "path": "/experiment/tools/lustr-bench-gate",
           "sha256": "REPLACE_WITH_ACTUAL_BINARY_SHA256",
           "version_args": [
@@ -150,9 +137,7 @@
     {
       "command": {
         "argv": [
-          "/toolchain/bin/lustr",
-          "--bluefe-root",
-          "/toolchain",
+          "/toolchain/bin/cargo",
           "check",
           "--locked",
           "--offline",
@@ -173,9 +158,7 @@
       },
       "evidence": {
         "argv": [
-          "/toolchain/bin/lustr",
-          "--bluefe-root",
-          "/toolchain",
+          "/toolchain/bin/cargo",
           "check",
           "--locked",
           "--offline",
@@ -191,9 +174,7 @@
         {
           "command": {
             "argv": [
-              "/toolchain/bin/lustr",
-              "--bluefe-root",
-              "/toolchain",
+              "/toolchain/bin/cargo",
               "run",
               "--quiet",
               "--locked",
@@ -269,13 +250,6 @@
         },
         {
           "path": "/toolchain/bin/rustdoc",
-          "sha256": "REPLACE_WITH_ACTUAL_BINARY_SHA256",
-          "version_args": [
-            "--version"
-          ]
-        },
-        {
-          "path": "/toolchain/bin/lustr",
           "sha256": "REPLACE_WITH_ACTUAL_BINARY_SHA256",
           "version_args": [
             "--version"

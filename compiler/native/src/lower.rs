@@ -488,7 +488,7 @@ impl<'p> Lower<'p> {
             }
             Expr::Path(_) => {
                 self.ck.const_value(e).is_some()
-                    || matches!(self.ck.res(e), Res::OptNone | Res::Fn(_))
+                    || matches!(self.ck.res(e), Res::OptNone | Res::Fn(_) | Res::NativeFn(_))
                     || (matches!(self.ck.res(e), Res::Variant(..)) && !matches!(self.kind(ty), TyKind::FnDef(..)))
             }
             Expr::StructLit { fields, update: None, .. } => fields.clone().iter().all(|f| self.promotable(f.2)),
@@ -674,7 +674,7 @@ impl<'p> Lower<'p> {
                     Rvalue::Use(o) | Rvalue::Opt(_, Some(o)) | Rvalue::Res(_, _, o) => op_indexed(o),
                     Rvalue::Ref(_, pl) | Rvalue::Discriminant(pl) | Rvalue::SliceOf(pl) | Rvalue::LenOf(pl) => indexed(pl),
                     Rvalue::Aggregate(_, _, os) | Rvalue::TupleAgg(_, os) | Rvalue::ArrayAgg(_, os) => os.iter().any(op_indexed),
-                    Rvalue::Opt(_, None) | Rvalue::StaticRef(_) | Rvalue::FnValue(..) | Rvalue::ItemShim(..) => false,
+                    Rvalue::Opt(_, None) | Rvalue::StaticRef(_) | Rvalue::FnValue(..) | Rvalue::NativeFnValue(..) | Rvalue::ItemShim(..) => false,
                     Rvalue::MakeDyn { ptr, .. } | Rvalue::DynUpcast { ptr, .. } | Rvalue::DynMeta { ptr, .. } | Rvalue::DynData { ptr, .. } => {
                         op_indexed(ptr)
                     }
@@ -1718,7 +1718,12 @@ impl<'p> Lower<'p> {
             self.assign(Place::local(t), Rvalue::ItemShim(found, target), span);
             return Operand::Copy(Place::local(t));
         }
-        let f = self.p.local_def(def.hash).expect("ReifyFn names a local fn");
+        if self.p.native_fn(def).is_some() {
+            let t = self.temp(target);
+            self.assign(Place::local(t), Rvalue::NativeFnValue(def, target), span);
+            return Operand::Copy(Place::local(t));
+        }
+        let f = self.p.local_def(def.hash).filter(|&f| self.p.def_id(f) == def).expect("ReifyFn names a local fn");
         let args = self.body.tys.args(args).to_vec();
         let f = if args.is_empty() { f } else { crate::check::generics::instance_for(self.p, &self.body.tys, f, &args).unwrap_or(f) };
         let t = self.temp(target);
@@ -2130,6 +2135,10 @@ impl<'p> Lower<'p> {
                     };
                     self.set_or_temp(dest, Rvalue::FnValue(f, want), ty, span)
                 }
+                Res::NativeFn(def) => {
+                    let want = self.fn_ptr_dest(dest).unwrap_or(ty);
+                    self.set_or_temp(dest, Rvalue::NativeFnValue(def, want), ty, span)
+                }
                 // A static's value of a non-Copy type moves out of a
                 // place reached through its address (`place`), which the
                 // borrow checker rejects as a move out of a reference
@@ -2325,7 +2334,11 @@ impl<'p> Lower<'p> {
                     let op = self.operand(*callee);
                     match op {
                         Operand::Copy(pl) | Operand::Move(pl) if pl.proj.is_empty() && matches!(self.kind(ct), TyKind::FnPtr(_)) => {
-                            Some(pl.local)
+                            // Evaluate the pointer value now: an argument
+                            // may assign a different pointer to its place.
+                            let t = self.temp(ct);
+                            self.assign(Place::local(t), Rvalue::Use(Operand::Copy(pl)), span);
+                            Some(t)
                         }
                         Operand::Copy(pl) | Operand::Move(pl) => {
                             // A callee behind references or smart pointers
@@ -2362,7 +2375,7 @@ impl<'p> Lower<'p> {
                 // the call does not read it, but rustc borrows it to
                 // autoderef, so borrowck must see that use. A temporary
                 // callee drops at once (it holds no destructor of note).
-                if matches!(res, Res::Fn(_) | Res::Variant(..) | Res::Builtin(_) | Res::Intrinsic(_)) {
+                if matches!(res, Res::Fn(_) | Res::NativeFn(_) | Res::Variant(..) | Res::Builtin(_) | Res::Intrinsic(_)) {
                     let ct = self.ty(*callee);
                     if matches!(self.kind(ct), TyKind::Ref(..)) || self.body.tys.smart_elem(ct).is_some() {
                         if self.is_place_expr(*callee) {
@@ -2386,13 +2399,24 @@ impl<'p> Lower<'p> {
                                 self.push(StmtKind::Drop(t), span);
                             }
                         }
+                    } else if matches!(self.kind(ct), TyKind::FnDef(..)) {
+                        // Even a zero-sized item callee is evaluated before
+                        // its arguments. Copying the item records its place
+                        // use for borrowck and preserves non-path effects.
+                        let op = self.operand(*callee);
+                        let t = self.temp(ct);
+                        self.assign(Place::local(t), Rvalue::Use(op), span);
                     }
                 }
                 let ops: Vec<Operand> = match res {
-                    Res::Fn(_) | Res::Indirect => self.call_arg_operands(args, span),
+                    Res::Fn(_) | Res::NativeFn(_) | Res::Indirect => self.call_arg_operands(args, span),
                     _ => self.ordered_operands(args),
                 };
                 match res {
+                    Res::NativeFn(def) => {
+                        let d = self.call_dest(dest, ty);
+                        self.call_into(CallTarget::NativeFn(def), ops, d, span);
+                    }
                     Res::Fn(f) => {
                         let f = self.resolve_generic_fn(e, f);
                         let d = self.call_dest(dest, ty);
@@ -4353,7 +4377,7 @@ impl<'p> Lower<'p> {
                 // bounds in the text; `Ord::clamp` and bool's own `clamp`
                 // assert inside core's cmp.rs.
                 let prim = matches!(self.kind(ty), TyKind::Int(_) | TyKind::Char);
-                let site = if prim { span } else if matches!(self.kind(ty), TyKind::Bool) { Span::std_site(4, 2303, 13) } else { Span::std_site(4, 1115, 9) };
+                let site = if prim { span } else if matches!(self.kind(ty), TyKind::Bool) { Span::std_site(4, 2383, 13) } else { Span::std_site(4, 1166, 9) };
                 let parts = if prim {
                     // A format argument is a reference to the value.
                     let dbg = FmtSpec { kind: FmtKind::Debug, ..FmtSpec::default() };

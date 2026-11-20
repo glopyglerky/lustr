@@ -1,0 +1,42 @@
+{
+  "base_revision": "a03b1e2d9787523c72efe628a72cb02afbfaa491",
+  "compiler_executed": false,
+  "execution": {
+    "command": [
+      "python3",
+      "tools/test-assess-current-performance.py",
+      "-v"
+    ],
+    "exit_status": 0,
+    "python_version": "3.12.14",
+    "tests_passed": 22
+  },
+  "limits": [
+    "These are evaluator tests using synthetic records, not actual compiler or performance qualification.",
+    "File hashes do not prove independent capture, truthful durations, plan chronology, semantic equivalence or completeness of declared execution dependencies.",
+    "Version1 binds direct compiler entry execution only; arbitrary Cargo and wrapper invocation chains remain outside its supported capture contract.",
+    "Full Rust coverage, exclusive ownership, selective import closure and package qualification remain independently unproven."
+  ],
+  "meaningful_controls": [
+    "Favorable geometric mean with a slower weighted elapsed total is rejected.",
+    "Both near-stock numeric budgets can pass while overall total is slower; no overall pass follows.",
+    "An actual synthetic total speedup with a near-Lust miss stays distinct and never grants release admission.",
+    "Complete pair blocks, declared frequencies, confidence interval and empirical tails are retained.",
+    "Changed plans, requests, argv, identities, helper binaries, outputs, status, signal, durations and missing observations are refused.",
+    "A matching plan and receipt for an unrelated executable cannot substitute for the declared direct compiler entry.",
+    "Numeric per-case targets apply only to the documented operation/lifecycle scopes.",
+    "Expected rejection remains measured separately and cannot receive the successful supported warm near-stock target."
+  ],
+  "measured_compiler_speedup": false,
+  "native_product_inputs_changed": false,
+  "release_admission": false,
+  "schema": "lustr-current-performance-assessor-controls-v1",
+  "scope": "Current performance evaluator arithmetic and evidence-integrity controls only",
+  "source_and_result_sha256": {
+    "docs/compiler-set/current-performance-assessment.md": "c3e5d9f2dbdc5a041efa56b0b0ef1f01c884b8d3cb5c17a74db21ac95268f599",
+    "docs/compiler-set/evidence/current-performance-assessment-20261119/tests.txt": "72cbd528e59e41642ba193eec2ffb97e74a2f624a341d6a9907b842a8798c694",
+    "tools/assess-current-performance.py": "affab6a4778fb7f59cf767699c4aa6f6fd1aba36185b04cfc901251e5b6ee085",
+    "tools/test-assess-current-performance.py": "9afe63643b4007ce706c1c528e56903f4c71472966464dbc373137c8f2266ff4"
+  },
+  "synthetic_inputs": true
+}

@@ -1,0 +1,49 @@
+{
+  "binary_sha256": "badee2554f4d6f5bae77c02338200f874a8d8ed97ef8d56651d1928c32ab00d2",
+  "commands": [
+    {
+      "argv": [
+        "<RUST_SDK_WORKSPACE>/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "generate-lockfile",
+        "--offline",
+        "--manifest-path",
+        "<DESCRIPTOR_PATH_HELPER_BUILD>/Cargo.toml"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "<RUST_SDK_WORKSPACE>/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "build",
+        "--release",
+        "--locked",
+        "--offline",
+        "--manifest-path",
+        "<DESCRIPTOR_PATH_HELPER_BUILD>/Cargo.toml",
+        "--target-dir",
+        "<DESCRIPTOR_PATH_HELPER_BUILD>/target",
+        "--config",
+        "build.build-dir=\"<DESCRIPTOR_PATH_HELPER_BUILD>/intermediates\""
+      ],
+      "exit": 0
+    }
+  ],
+  "lock_sha256": "f7760201a2d7a3e6781de074b4a425b40b35fc106f08bb80d522c2e9d68c7381",
+  "manifest_sha256": "57bf94355abf3bfdab4b6dd4c8e505232e193166a565f9f9a4f70a266a2af80a",
+  "native_build_hash": "dc82dab611c87e7e",
+  "schema": "lustr-warm-entry-comparison-v1",
+  "scope": "Production parser/selector/child owner component only; no compiler timing claim.",
+  "source": {
+    "revision": "ddf84bc779d4aef0b866708624940eed5815ae1a",
+    "tree": "ee13a019e62c3140817deb3232eb329ef80cb272"
+  },
+  "source_sha256": {
+    "<DESCRIPTOR_PATH_SOURCE>/compiler/native/src/protocol.rs": "4da4c32fb16b62f3819a3d774ef63b76e201e2414c3b4540b4a6ccb27133fe1c",
+    "<DESCRIPTOR_PATH_SOURCE>/src/full.rs": "04836e406a227fcf0f831bc0214c301eb2302973a1257fc82b8a0ef3dc32248d",
+    "<DESCRIPTOR_PATH_SOURCE>/src/host_runtime.rs": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223",
+    "<DESCRIPTOR_PATH_SOURCE>/src/owned_child.rs": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20",
+    "<DESCRIPTOR_PATH_SOURCE>/src/selection_cache.rs": "4622d61d898c56c886d52caa3a2198a7aebe7e9cd258fc73f8ed18aa74c1fb81",
+    "<DESCRIPTOR_PATH_SOURCE>/tools/profile-native-preflight.rs": "70a406ab61f69da2710d0215bdcc8acb6c57f7aa20719530cebed9a6693628f7"
+  },
+  "status": "completed"
+}

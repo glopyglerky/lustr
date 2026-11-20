@@ -1,0 +1,16 @@
+{
+  "executable_freshly_rehashed": true,
+  "locked": true,
+  "offline": true,
+  "profile": "release",
+  "recorded_source_revision": "5a3c5666a16d46629a4787e37ca9b20e65720ccc",
+  "recorded_source_subtree": "62c9fe321be80c576209406aaedcda24fc3eafb3",
+  "reused_existing_build": true,
+  "rustc": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5",
+  "schema": "lustr-local-statistical-replay-build-v1",
+  "scope": "Existing local release statistics replay, freshly rehashed and matched to the recorded runner source subtree; not the archived original compiler or original runner/replay binary.",
+  "sha256": "8507386515f84245c4f3ae3005b05551c73384a7d0c0b07f2e9acf4964b3a537",
+  "source_matches_recorded_candidate": true,
+  "source_revision": "5a3f4937d94e8f028dd85385ea65d51fcfe35a3b",
+  "source_subtree": "62c9fe321be80c576209406aaedcda24fc3eafb3"
+}

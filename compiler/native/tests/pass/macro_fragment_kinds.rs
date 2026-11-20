@@ -22,7 +22,8 @@ fn main() {
     println!("{}", ke!(#[allow(unused)] 1));
     println!("{}", ke!(const { 1 }));
     println!("{}", kp!(1.0));
-    println!("{}", kp!(box x));
+    // Removed box-pattern grammar has dedicated rejection fixtures.
+    println!("{}", kp!(r#box));
     println!("{}", kp!(..=5));
     println!("{}", kp!(x @ 1..=5));
     println!("{}", kp!(S { a, .. }));

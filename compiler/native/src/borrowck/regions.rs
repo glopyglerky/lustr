@@ -232,6 +232,9 @@ pub const RPIT_PARAM: u32 = u32::MAX;
 /// are computed on first use.
 #[derive(Default)]
 pub struct RegionTables {
+    /// Independently checked native signatures, keyed by complete foreign ID.
+    /// The provider validates type shapes, bounds and generations before collect.
+    pub native_fns: FxMap<DefId, RegionSig>,
     /// Source fns and methods, by local def.
     pub fns: FxMap<LocalDefId, RegionSig>,
     /// Trait method signatures by method def (the stubs' callee signatures).
@@ -3746,6 +3749,10 @@ impl<'b, 'p> Builder<'b, 'p> {
                 self.place(dest, &mut dv, &mut d);
                 self.fn_item_to_ptr(*f, *ty, &dv);
             }
+            Rvalue::NativeFnValue(def, ty) if matches!(self.body.tys.kind(*ty), TyKind::FnPtr(_)) => {
+                self.place(dest, &mut dv, &mut d);
+                self.native_item_to_ptr(*def, *ty, &dv);
+            }
             Rvalue::Ref(_, place) | Rvalue::SliceOf(place) | Rvalue::Subslice { base: place, .. } => {
                 let mut li = self.loan_at[self.stmt_base[bi] + si];
                 // A reference to a slice pattern's subslice temporary holds
@@ -4805,6 +4812,15 @@ impl<'b, 'p> Builder<'b, 'p> {
                 }
             }
             if !self.call_sig_with(sig, &t.params, t.ret, &avs, dt, &dv, &[]) {
+                self.call_opaque(&avs, dt, &dv);
+            }
+            return;
+        }
+        if let CallTarget::NativeFn(def) = target
+            && let Some((params, ret, _)) = self.p.native_fn(def)
+            && let Some(sig) = self.p.regions.native_fns.get(&def)
+        {
+            if !self.call_sig_with(sig, params, ret, &avs, dt, &dv, &[]) {
                 self.call_opaque(&avs, dt, &dv);
             }
             return;

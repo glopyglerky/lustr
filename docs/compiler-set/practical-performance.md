@@ -152,7 +152,7 @@ hashes, runner and C/linker identities, failure records and replay commands.
 Historical gains and losses remain in the [performance checkpoint](performance-review-2026-11-18.md).
 This document makes no new measured performance claim.
 
-The [current evaluator](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/current-performance-assessment.md) implements paired
+The [current evaluator](current-performance-assessment.md) implements paired
 total-time statistics for the overall workload and separate per-case claims.
 Its version-2 reports retain geometric ratios as diagnostics. The unchanged
 version-1 capture contract covers direct compiler entries only, with the numeric

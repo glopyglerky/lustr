@@ -1,0 +1,288 @@
+{
+  "bootstrap_resamples": 1000,
+  "external_inputs": [],
+  "features": [],
+  "force_root": "src/main.rs",
+  "lanes": [
+    {
+      "command": {
+        "argv": [
+          "<PINNED_SDK>/bin/cargo",
+          "check",
+          "--locked",
+          "--offline",
+          "-vv"
+        ],
+        "expected_exit": 0
+      },
+      "env": {
+        "CARGO": "<PINNED_SDK>/bin/cargo",
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_HOME": "<OUTPUT>/ci-audit-tiny/cargo-home",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_TERM_COLOR": "never",
+        "HOME": "<OUTPUT>/ci-audit-tiny",
+        "PATH": "<PINNED_SDK>/bin:/usr/bin:/bin",
+        "RUSTC": "<PINNED_SDK>/bin/rustc",
+        "RUSTDOC": "<PINNED_SDK>/bin/rustdoc"
+      },
+      "evidence": {
+        "argv": [
+          "<PINNED_SDK>/bin/cargo",
+          "check",
+          "--locked",
+          "--offline",
+          "-vv"
+        ],
+        "expected_exit": 0
+      },
+      "evidence_contains": [
+        "--edition=2024",
+        "-C debuginfo=2"
+      ],
+      "gates": [
+        {
+          "command": {
+            "argv": [
+              "<PINNED_SDK>/bin/cargo",
+              "run",
+              "--quiet",
+              "--locked",
+              "--offline"
+            ],
+            "expected_exit": 0
+          },
+          "compare": "stdout",
+          "kind": "runtime",
+          "name": "run-and-unwind"
+        },
+        {
+          "command": {
+            "argv": [
+              "<OUTPUT>/ci-audit-target/debug/lustr-bench-gate",
+              "tests",
+              "test",
+              "--locked",
+              "--offline"
+            ],
+            "expected_exit": 0
+          },
+          "compare": "stdout",
+          "kind": "tests",
+          "name": "executed-tests"
+        },
+        {
+          "command": {
+            "argv": [
+              "<OUTPUT>/ci-audit-target/debug/lustr-bench-gate",
+              "reject",
+              "reject.rs"
+            ],
+            "expected_exit": 1
+          },
+          "compare": "stdout",
+          "kind": "rejection",
+          "name": "invalid-borrow"
+        }
+      ],
+      "name": "baseline",
+      "normalize": [
+        [
+          "<OUTPUT>/ci-audit-tiny/passed/targets/baseline",
+          "<TARGET>"
+        ]
+      ],
+      "selection": {
+        "argv": [
+          "<PINNED_SDK>/bin/cargo",
+          "metadata",
+          "--format-version",
+          "1",
+          "--locked",
+          "--offline"
+        ],
+        "expected_exit": 0
+      },
+      "tools": [
+        {
+          "path": "<PINNED_SDK>/bin/cargo",
+          "sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+          "version_args": [
+            "--version"
+          ]
+        },
+        {
+          "path": "<PINNED_SDK>/bin/rustc",
+          "sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+          "version_args": [
+            "--version"
+          ]
+        },
+        {
+          "path": "<PINNED_SDK>/bin/rustdoc",
+          "sha256": "631825ada1565bad37c9ccab5cc9a339dbfb4b132697cc8ebd7ad336be638644",
+          "version_args": [
+            "--version"
+          ]
+        },
+        {
+          "path": "<OUTPUT>/ci-audit-target/debug/lustr-bench-gate",
+          "sha256": "eea173c2ca80bd52c4a1043e32c3971af80a62200b4b10f7fc2a31e8ba899422",
+          "version_args": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "command": {
+        "argv": [
+          "<PINNED_SDK>/bin/cargo",
+          "check",
+          "--locked",
+          "--offline",
+          "-vv"
+        ],
+        "expected_exit": 0
+      },
+      "env": {
+        "CARGO": "<PINNED_SDK>/bin/cargo",
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_HOME": "<OUTPUT>/ci-audit-tiny/cargo-home",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_TERM_COLOR": "never",
+        "HOME": "<OUTPUT>/ci-audit-tiny",
+        "PATH": "<PINNED_SDK>/bin:/usr/bin:/bin",
+        "RUSTC": "<PINNED_SDK>/bin/rustc",
+        "RUSTDOC": "<PINNED_SDK>/bin/rustdoc"
+      },
+      "evidence": {
+        "argv": [
+          "<PINNED_SDK>/bin/cargo",
+          "check",
+          "--locked",
+          "--offline",
+          "-vv"
+        ],
+        "expected_exit": 0
+      },
+      "evidence_contains": [
+        "--edition=2024",
+        "-C debuginfo=2"
+      ],
+      "gates": [
+        {
+          "command": {
+            "argv": [
+              "<PINNED_SDK>/bin/cargo",
+              "run",
+              "--quiet",
+              "--locked",
+              "--offline"
+            ],
+            "expected_exit": 0
+          },
+          "compare": "stdout",
+          "kind": "runtime",
+          "name": "run-and-unwind"
+        },
+        {
+          "command": {
+            "argv": [
+              "<OUTPUT>/ci-audit-target/debug/lustr-bench-gate",
+              "tests",
+              "test",
+              "--locked",
+              "--offline"
+            ],
+            "expected_exit": 0
+          },
+          "compare": "stdout",
+          "kind": "tests",
+          "name": "executed-tests"
+        },
+        {
+          "command": {
+            "argv": [
+              "<OUTPUT>/ci-audit-target/debug/lustr-bench-gate",
+              "reject",
+              "reject.rs"
+            ],
+            "expected_exit": 1
+          },
+          "compare": "stdout",
+          "kind": "rejection",
+          "name": "invalid-borrow"
+        }
+      ],
+      "name": "control",
+      "normalize": [
+        [
+          "<OUTPUT>/ci-audit-tiny/passed/targets/control",
+          "<TARGET>"
+        ]
+      ],
+      "selection": {
+        "argv": [
+          "<PINNED_SDK>/bin/cargo",
+          "metadata",
+          "--format-version",
+          "1",
+          "--locked",
+          "--offline"
+        ],
+        "expected_exit": 0
+      },
+      "tools": [
+        {
+          "path": "<PINNED_SDK>/bin/cargo",
+          "sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+          "version_args": [
+            "--version"
+          ]
+        },
+        {
+          "path": "<PINNED_SDK>/bin/rustc",
+          "sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+          "version_args": [
+            "--version"
+          ]
+        },
+        {
+          "path": "<PINNED_SDK>/bin/rustdoc",
+          "sha256": "631825ada1565bad37c9ccab5cc9a339dbfb4b132697cc8ebd7ad336be638644",
+          "version_args": [
+            "--version"
+          ]
+        },
+        {
+          "path": "<OUTPUT>/ci-audit-target/debug/lustr-bench-gate",
+          "sha256": "eea173c2ca80bd52c4a1043e32c3971af80a62200b4b10f7fc2a31e8ba899422",
+          "version_args": [
+            "--version"
+          ]
+        }
+      ]
+    }
+  ],
+  "output_limit_bytes": 1048576,
+  "package": "bench-tiny",
+  "pairs": 8,
+  "profile": "dev",
+  "repository": "https://github.com/glopyglerky/lustr",
+  "revision": "fixture bytes in runner source manifest",
+  "root_crate": "bench_tiny",
+  "scenario": "primed-root-check",
+  "schema": 1,
+  "seed": 6757,
+  "semantic_settings": {
+    "debug": "2",
+    "overflow-checks": "true",
+    "panic": "unwind"
+  },
+  "snapshot_mtime_authorized": true,
+  "source": "<OUTPUT>/ci-audit-tiny/snapshot",
+  "target": "x86_64-unknown-linux-gnu",
+  "timeout_seconds": 30,
+  "warmup_pairs": 1
+}

@@ -1,0 +1,14 @@
+{
+  "schema": "lustr-ci-merge-source-bundle-v1",
+  "head": "6bf6e3e3384a99fbaeab2c66aa7c97bc73231996",
+  "checkout": "5a3c5666a16d46629a4787e37ca9b20e65720ccc",
+  "tree": "02652f033e84c0957dd2b99eb562db8171289e50",
+  "bundle": "source.bundle",
+  "bundle_sha256": "e9bd0b9a8bf6c9dd8baac61972a6d5eb3ac1092d535772d0780b006ce90f42e4",
+  "bundle_bytes": 1207,
+  "ref": "refs/retained/lustr-ci-6bf6e3e",
+  "prerequisites": [
+    "6bf6e3e3384a99fbaeab2c66aa7c97bc73231996",
+    "5a3f4937d94e8f028dd85385ea65d51fcfe35a3b"
+  ]
+}

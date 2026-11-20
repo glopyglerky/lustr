@@ -1,0 +1,79 @@
+[
+  {
+    "cleanup_verified": null,
+    "command": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/home/runner/work/_temp/lustr-unicode-diagnostic/upstream-isolated-10s.time",
+      "bash",
+      "scripts/difftest.sh",
+      "unicode_props_hash"
+    ],
+    "cwd": "/home/runner/work/lustr/lustr/compiler/native",
+    "environment_overrides": {
+      "DIFFTEST_JOBS": "1",
+      "SANITIZE": "1"
+    },
+    "label": "upstream-isolated-10s",
+    "load_after": [
+      1.4140625,
+      1.0361328125,
+      0.52392578125
+    ],
+    "load_before": [
+      1.39599609375,
+      1.0048828125,
+      0.50146484375
+    ],
+    "max_rss_kib": 295064.0,
+    "outer_watchdog_fired": false,
+    "outer_watchdog_seconds": 900,
+    "returncode": 0,
+    "session_id": 3110,
+    "started_utc": "2026-11-10T04:50:17.172266+00:00",
+    "status": "finished",
+    "system_seconds": 9.91,
+    "timeout_seconds": null,
+    "user_seconds": 19.61,
+    "wall_seconds": 22.42116529699996
+  },
+  {
+    "cleanup_verified": null,
+    "command": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/home/runner/work/_temp/lustr-unicode-diagnostic/upstream-unicode-pool-10s.time",
+      "bash",
+      "scripts/difftest.sh",
+      "unicode_"
+    ],
+    "cwd": "/home/runner/work/lustr/lustr/compiler/native",
+    "environment_overrides": {
+      "SANITIZE": "1"
+    },
+    "label": "upstream-unicode-pool-10s",
+    "load_after": [
+      1.7216796875,
+      1.14453125,
+      0.57470703125
+    ],
+    "load_before": [
+      1.4140625,
+      1.0361328125,
+      0.52392578125
+    ],
+    "max_rss_kib": 295120.0,
+    "outer_watchdog_fired": false,
+    "outer_watchdog_seconds": 900,
+    "returncode": 0,
+    "session_id": 8860,
+    "started_utc": "2026-11-10T04:50:39.594014+00:00",
+    "status": "finished",
+    "system_seconds": 13.76,
+    "timeout_seconds": null,
+    "user_seconds": 48.17,
+    "wall_seconds": 25.757305304000056
+  }
+]

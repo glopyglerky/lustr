@@ -2,6 +2,10 @@
 
 use std::ffi::{OsStr, OsString};
 use std::path::PathBuf;
+mod library_contract;
+mod library_request;
+/// Whether this compiled host implements the bounded public library artifact path.
+pub use library_contract::supported_host as public_library_host_supported;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Native {
@@ -10,8 +14,11 @@ pub struct Native {
 }
 
 /// This recognizes compiler requests, not source keywords. Requests requiring
-/// Rust metadata or an unrepresented option stay with the full compiler core.
+/// Rust metadata or an unrepresented option expose an integration gap. They do
+/// not establish that the underlying work lies outside Lust's coverage.
+/// Returning None is never permission to invoke a complete second compiler.
 pub fn native_request(args: &[OsString]) -> Option<Native> {
+    if let Some(request) = library_request::parse(args) { return Some(request); }
     let mut input = None;
     let mut output = None;
     let mut settings = Vec::new();
@@ -107,13 +114,73 @@ pub fn native_command(args: &[OsString]) -> Option<Vec<OsString>> {
 }
 
 pub fn is_native_command(args: &[OsString]) -> bool {
-    args.first().is_some_and(|a| a == "build" || a == "check") && args.get(1).and_then(|a| a.to_str()).is_some_and(|a| a.ends_with(".rs"))
+    args.first().is_some_and(|a| a == "build" || a == "check" || a == "run" || a == "test")
+        && args.get(1).and_then(|a| a.to_str()).is_some_and(|a| a.ends_with(".rs"))
 }
 
 pub fn cargo_command(args: &[OsString]) -> bool {
     args.first().is_some_and(|arg| {
-        matches!(arg.to_str(), Some("doctor" | "plan" | "test" | "run" | "build" | "check" | "clippy" | "fmt" | "--engine" | "--explain"))
-            || arg == OsStr::new("--bluefe-root")
+        // Keep Cargo's command and built-in alias expansion in Cargo. Unknown
+        // bare names remain possible Rust source paths; explicit coordinator
+        // prefixes already provide an unambiguous route for custom aliases.
+        matches!(
+            arg.to_str(),
+            Some(
+                "add"
+                    | "b"
+                    | "bench"
+                    | "build"
+                    | "c"
+                    | "check"
+                    | "clean"
+                    | "config"
+                    | "d"
+                    | "doc"
+                    | "fetch"
+                    | "fix"
+                    | "generate-lockfile"
+                    | "git-checkout"
+                    | "help"
+                    | "info"
+                    | "init"
+                    | "install"
+                    | "locate-project"
+                    | "login"
+                    | "logout"
+                    | "metadata"
+                    | "new"
+                    | "owner"
+                    | "package"
+                    | "pkgid"
+                    | "publish"
+                    | "r"
+                    | "read-manifest"
+                    | "remove"
+                    | "report"
+                    | "rm"
+                    | "run"
+                    | "rustc"
+                    | "rustdoc"
+                    | "search"
+                    | "t"
+                    | "test"
+                    | "tree"
+                    | "uninstall"
+                    | "update"
+                    | "vendor"
+                    | "verify-project"
+                    | "version"
+                    | "yank"
+                    | "clippy"
+                    | "fmt"
+                    | "doctor"
+                    | "plan"
+                    | "--engine"
+                    | "--explain"
+            )
+        ) || arg == OsStr::new("--bluefe-root")
+            || arg == OsStr::new("--frontend-jobs")
+            || arg.to_str().is_some_and(|arg| arg.starts_with("--engine=") || arg.starts_with("--frontend-jobs=") || arg.starts_with('+'))
     })
 }
 
@@ -144,5 +211,20 @@ mod tests {
         }
         assert!(native_request(&args(&["main.rs"])).is_none());
         assert!(native_request(&args(&["--edition=2021", "main.rs"])).is_none());
+    }
+
+    #[test]
+    fn cargo_subcommands_preserve_explicit_rust_source_routes() {
+        for command in ["metadata", "clean", "tree", "bench", "doc", "rustc", "b", "c", "d", "r", "t", "rm"] {
+            assert!(cargo_command(&args(&[command])), "Cargo command {command} was treated as Rust source");
+        }
+        for input in ["main.rs", "./clean", "custom-check", "--edition=2024", "-vV", "-"] {
+            assert!(!cargo_command(&args(&[input])), "compiler or ambiguous input {input} was treated as Cargo");
+        }
+        for command in ["build", "check", "run", "test"] {
+            assert!(is_native_command(&args(&[command, "main.rs"])), "native source selection changed");
+            assert!(!is_native_command(&args(&[command, "--workspace"])));
+        }
+        assert!(cargo_command(&args(&["--bluefe-root", "/toolchain", "custom-check"])));
     }
 }

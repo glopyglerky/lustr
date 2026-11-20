@@ -1,0 +1,87 @@
+{
+  "component": {
+    "baseline_median_ns": 435237,
+    "bootstrap_95": [
+      1.051282881989696,
+      1.2165992739217368
+    ],
+    "candidate_median_ns": 383465,
+    "hit_diagnostics": "Enabled identically in both lanes; excluded from public-entry performance claims.",
+    "original_record_bytes": {
+      "after": 1651,
+      "before": 8458
+    },
+    "paired_geometric_ratio": 1.1339030530092251
+  },
+  "metadata_digest_role": "Provenance only. Successful sole writer, private ownership, input binding and checksum are trusted; no malicious-owner authentication claim.",
+  "native_source_closure_unchanged": {
+    "compiler/native": "12ae35ee30f81d11f55b184134f8a0c4a977a496",
+    "crates/lustr-native-core": "41b1ab87e952f0fe4282c4699d0cf0f2fbbcec30",
+    "library": "27b519aadbbb4aa386beff12f940a526816c6e25",
+    "src/host_runtime.rs": "748da275aba3250ca351c72dc850c771d63e4a1c",
+    "tools/native-tcc-input-observer.rs": "8242d2612904c504aee194dd967f28ea7b8271c3",
+    "upstream/bluefe-core.pin": "ada26570137047454b8eba363cf7a7167077abe3",
+    "upstream/runtime": "faf950dd5f2b1d3aaa04912861a01a236b4d8835"
+  },
+  "schema": "lustr-compact-selection-evidence-v1",
+  "scope": "Bounded selection correctness and one instrumented selector component comparison; no native runtime, public-command or parity qualification.",
+  "sets": {
+    "compact-gate": {
+      "assertions": 486,
+      "original_report_sha256": "f5f0469cb14ece85c5c61a1175b2990cd9d113979397c5806df9ff9b4b0bc5ed",
+      "public_report_sha256": "2d2059b4cd5686500b22ffcfccfe8ab48521f0a026ac0c9a58b0b93d657e0139",
+      "records": 103
+    },
+    "component": {
+      "original_report_sha256": "e160539082f088482866cc7c1b52e89c1ec06558800086f5c0829f4b498e46c7",
+      "public_report_sha256": "9bd7d2a7e635a0002622d1dcdf166dd543fe2ea6ad65b436f8bbeb5725331f20",
+      "records": 230
+    },
+    "selector-gate": {
+      "assertions": 265,
+      "original_report_sha256": "656c99333074f0cc7fe995bb6012a64e20233a5521ded1c714ecb3f7f26dce6b",
+      "public_report_sha256": "aa3770f2012d8e99a70ee2aa921493627c35a53188fd481b25a8b1ebc91dc3ba",
+      "records": 140
+    }
+  },
+  "shared_source_issue": "Executable-access credentials are not fully observed in either compared version. Source-level concern only; no changed-credentials runtime reproduction in this evidence.",
+  "sources": {
+    "after": {
+      "helper_sha256": "42d9816a188fcfa498c60717d34e08475889130fa86055cb5f6db89a5c76d1f1",
+      "original_build_receipt_sha256": "dfa7fee4e502045abb528109e3a8737736f984155ca09c5a72a120b1ce6af7c9",
+      "revision": "6f59c902a0890413ff82ae4a572fac7e362919a9",
+      "sha256": {
+        "LICENSE": "8095f9a9f97d074131f6a2ce09b952d12c18b36f09f4e5df0517c4e64e82c851",
+        "compiler/native/src/protocol.rs": "4da4c32fb16b62f3819a3d774ef63b76e201e2414c3b4540b4a6ccb27133fe1c",
+        "src/full.rs": "e7015c5462da232fd817091c2749e4e776287832f1279ebaab87314f0644412e",
+        "src/host_runtime.rs": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223",
+        "src/owned_child.rs": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20",
+        "src/selection_cache.rs": "e26403ccb50365af0778332e7bf8e130ccbdaf6bfebf7f1e64e3cd0012f12b8d",
+        "tools/profile-native-preflight.rs": "37cad7d0a4cf1c6318aaf60d7c24e9ab8a1f78bb00e2636cdc9d09da9d03681b",
+        "upstream/bluefe-core.pin": "73bd5e14a0d96979dccb1f89f145f6c1d9d947c8f4a192f0db64f6954f0218b6"
+      },
+      "tree": "ca59b783c4ba348856e6918dc42781dd72004bb2"
+    },
+    "before": {
+      "helper_sha256": "d47b65bd689a56633db78aa170e752f93a94a7b8178b39e1ab0b2c1d1d08250d",
+      "original_build_receipt_sha256": "4c1fcc107be2eebfa5477fdf6849be190966e08b638c0a05e1a244731de73096",
+      "revision": "93d882632570e1b0413630abaee939dcab16fd01",
+      "sha256": {
+        "LICENSE": "8095f9a9f97d074131f6a2ce09b952d12c18b36f09f4e5df0517c4e64e82c851",
+        "compiler/native/src/protocol.rs": "4da4c32fb16b62f3819a3d774ef63b76e201e2414c3b4540b4a6ccb27133fe1c",
+        "src/full.rs": "04836e406a227fcf0f831bc0214c301eb2302973a1257fc82b8a0ef3dc32248d",
+        "src/host_runtime.rs": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223",
+        "src/owned_child.rs": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20",
+        "src/selection_cache.rs": "0712718312cf16ab0fa494ab7c22374e15419a367d5bed42b527da5dab3ce92c",
+        "tools/profile-native-preflight.rs": "70a406ab61f69da2710d0215bdcc8acb6c57f7aa20719530cebed9a6693628f7",
+        "upstream/bluefe-core.pin": "73bd5e14a0d96979dccb1f89f145f6c1d9d947c8f4a192f0db64f6954f0218b6"
+      },
+      "tree": "07235def43af3ffbdc218353d40f3f9e22b8dfd9"
+    }
+  },
+  "validation_continuation": {
+    "difference": "Focused regression tool and documentation only; measured product/helper closure unchanged.",
+    "revision": "422ce5f111d934899f3c522e3b8ed77e2986fc86",
+    "tree": "017f91906ae087d80b0a2a216c345786eff69ec8"
+  }
+}

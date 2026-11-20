@@ -1,0 +1,22 @@
+{
+  "archive_manifest_verification_exit": 0,
+  "authenticated_decryption_exit": 0,
+  "ciphertext_sha256": "1e0d03c38a1b67555bdffb33e02227e28b54f38f4a7fb5e58ed005c788e7956d",
+  "documented_exact_mode_extraction_exit": 0,
+  "encrypted_artifact": 14375565377,
+  "extraction_method": "tar --same-permissions into a new private directory, after authenticated decryption and archive verification",
+  "head": "6bf6e3e3384a99fbaeab2c66aa7c97bc73231996",
+  "job": 134380277750,
+  "openssl_version": "OpenSSL 3.5.7 9 Jun 2026 (Library: OpenSSL 3.5.7 9 Jun 2026)",
+  "original_file_bytes": 9759145,
+  "original_file_count": 600,
+  "plaintext_archive_sha256": "d2d414da6ed8950da07a7cca8ceae59a7ff20a574516eaaac288aff103b19a83",
+  "public_artifact": 14374661651,
+  "reconciler_git_revision": "6bf6e3e3384a99fbaeab2c66aa7c97bc73231996",
+  "reconciler_sha256": "41eb1e7a6e4c3f991cd80505a21cb1208f61deb37b1f3b0175028c4204dc9ee7",
+  "reconciliation_exit": 0,
+  "reconciliation_result_sha256": "674e5e9b49200705fb9e6f3200170e51aab276f844ea1249c53908d3b9822271",
+  "run": 44179667793,
+  "schema": "lustr-actual-project-recovery-v1",
+  "scope": "Actual authenticated archive recovery and recorded-source public reconciliation; absent original compiler/runner binaries not freshly requalified."
+}

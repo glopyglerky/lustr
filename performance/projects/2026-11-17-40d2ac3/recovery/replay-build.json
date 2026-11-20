@@ -1,0 +1,12 @@
+{
+  "schema": "lustr-local-statistical-replay-build-v1",
+  "source_revision": "40d2ac3f0b71abaa1e73cd366d8c43f8eb4d4581",
+  "source_subtree": "2ac3fa9d6f6c281e1c7e36e3fe63d52691868efc",
+  "source_matches_recorded_candidate": true,
+  "rustc": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5",
+  "profile": "release",
+  "locked": true,
+  "offline": true,
+  "sha256": "8507386515f84245c4f3ae3005b05551c73384a7d0c0b07f2e9acf4964b3a537",
+  "scope": "Locally built existing statistics replay; not the archived original compiler or original runner binary."
+}

@@ -1,0 +1,14 @@
+{
+  "files": {
+    "Cargo.lock": "05496afc02d0612368e7b10322998df841230e3877714608b77e2dc84d2f3164",
+    "Cargo.toml": "cc187d3f8396349cf4cb3a155d45d897a21bc8d927758df9f08b4a5be41e90ec",
+    "compiler/native/src/protocol.rs": "4da4c32fb16b62f3819a3d774ef63b76e201e2414c3b4540b4a6ccb27133fe1c",
+    "src/full.rs": "04836e406a227fcf0f831bc0214c301eb2302973a1257fc82b8a0ef3dc32248d",
+    "src/host_runtime.rs": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223",
+    "src/owned_child.rs": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20",
+    "src/selection_cache.rs": "c6fc392e1a46980292fb4813a6fadba8a0c96d2686301ced2b1dcad38981c3f2",
+    "tools/profile-native-preflight.rs": "70a406ab61f69da2710d0215bdcc8acb6c57f7aa20719530cebed9a6693628f7",
+    "upstream/bluefe-core.pin": "73bd5e14a0d96979dccb1f89f145f6c1d9d947c8f4a192f0db64f6954f0218b6"
+  },
+  "revision": "1aff7f7331d1d4293d3f5c74c740318c9686b030"
+}

@@ -2,6 +2,17 @@
 
 # lust-lang
 
+## Lustr integration status
+
+This directory preserves the imported Lust implementation and its historical
+measurements below. The active Lustr candidate now targets the same declared
+Rust source as its integrated complement: `5b7b37aefcb5b2fba3c2392bc9065b9e4602d494`
+(nightly 2026-11-09, edition 2024). Use the repository-root CI for qualification.
+The [shared Unicode tables](UNICODE.md) and current runtime repairs target that
+SDK. Historical Rust 1.99 results below remain historical; they do not qualify
+the migrated compiler. See the [current correctness record](../../docs/compiler-set/correctness-continuation-2026-11-18.md)
+and [integrated compiler plan](../../docs/compiler-set/architecture-plan.md).
+
 Lust is an experiment. It asks one question: how fast can `check` and `build` of real Rust code get if the compiler supports only a subset of Rust, keeps a warm daemon, and gives up LLVM in dev builds?
 
 To test this, lust compiles a subset of Rust. Every program lust accepts must be valid Rust (rustc 1.99, edition 2024), and it must give the same output as the `rustc` build. When lust cannot match rustc, it rejects the program with an error code. That rule makes `rustc` a free test oracle, and it gives lust programs a release path: Cargo builds the release binary from the same source.

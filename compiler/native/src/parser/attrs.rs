@@ -27,7 +27,7 @@ pub(super) fn check_input(name: &str, attr: &Attr, interner: &Interner) -> PResu
         "inline" => match &attr.input {
             AttrInput::None => true,
             AttrInput::List(Delim::Paren, t) => {
-                matches!(t.as_slice(), [TokenTree::Token(x)] if matches!(x.tok, Tok::Ident(s) if matches!(interner.get(s), "always" | "never")))
+                matches!(t.as_slice(), [TokenTree::Token(x)] if matches!(x.tok, Tok::Ident(s, _) if matches!(interner.get(s), "always" | "never")))
             }
             _ => false,
         },
@@ -149,7 +149,7 @@ fn comma_pieces(trees: &[TokenTree]) -> Vec<&[TokenTree]> {
 fn key_str(piece: &[TokenTree], interner: &Interner) -> Option<String> {
     match piece {
         [TokenTree::Token(k), TokenTree::Token(e), TokenTree::Token(v)] if e.tok == Tok::Eq && matches!(v.tok, Tok::Str(..)) => match k.tok {
-            Tok::Ident(s) => Some(interner.get(s).to_string()),
+            Tok::Ident(s, _) => Some(interner.get(s).to_string()),
             _ => None,
         },
         _ => None,
@@ -214,7 +214,7 @@ fn lint_path(piece: &[TokenTree], interner: &Interner) -> Option<String> {
     for (i, t) in piece.iter().enumerate() {
         let TokenTree::Token(t) = t else { return None };
         match (i % 2, t.tok) {
-            (0, Tok::Ident(s)) => out.push_str(interner.get(s)),
+            (0, Tok::Ident(s, _)) => out.push_str(interner.get(s)),
             (1, Tok::PathSep) => out.push_str("::"),
             _ => return None,
         }

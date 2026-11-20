@@ -1,0 +1,3 @@
+7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a:crates/lustr-semantic/src/mixed_entry.rs:8:pub fn full_rust_only(args: &[String], host: &str) -> bool {
+7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a:crates/lustr-semantic/src/mixed_entry.rs:72:    use super::full_rust_only;
+7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a:crates/lustr-semantic/src/mixed_entry.rs:79:        full_rust_only(&request, HOST)

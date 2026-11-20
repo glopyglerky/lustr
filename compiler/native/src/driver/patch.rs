@@ -447,6 +447,13 @@ pub(super) struct Patched {
     pub reads: usize,
 }
 
+/// An unchanged check can reuse its answer after the ordinary patch
+/// housekeeping, without materializing the shared tail's unused inputs.
+pub(super) enum PatchOutcome {
+    Materialized(Patched),
+    ReuseCheck { fn_count: usize },
+}
+
 /// One edit proven to sit inside one fn body (`find_body_edit`), or
 /// inside cfg-disabled code (`find_inactive_edit`, no `body`).
 struct BodyEdit {
@@ -705,7 +712,8 @@ pub(super) fn try_patch(
     inputs: u64,
     root: &str,
     request_start: SystemTime,
-) -> Result<Patched, &'static str> {
+    reuse_check: bool,
+) -> Result<PatchOutcome, &'static str> {
     let (edits, reads) = find_edits(front, inputs, root, request_start)?;
     let edits_in: Vec<KeptEdit> = edits
         .iter()
@@ -750,7 +758,7 @@ pub(super) fn try_patch(
     // An item edit keeps the kept programs too: `reuse_kept` redoes its
     // headers (`kept_delta::apply_headers`) or the tail collects.
     let mut ctxts: Vec<FxMap<u32, CtxtId>> = Vec::new();
-    let out = apply(front, caches, edits, reads, &mut ctxts);
+    let out = apply(front, caches, edits, reads, &mut ctxts, reuse_check);
     if out.is_err() {
         front.patch = None;
     } else {
@@ -984,7 +992,7 @@ fn find_body_edit(front: &Front, text: &str, edit: Edit) -> Result<NewBody, &'st
         None => def.attrs.get(ast.items[item].attrs.len()..).unwrap_or(&[]),
         Some(_) => &[],
     };
-    let nested_fn = |t: &[lexer::Token]| t.windows(2).any(|w| w[0].tok == Tok::Fn && matches!(w[1].tok, Tok::Ident(_)));
+    let nested_fn = |t: &[lexer::Token]| t.windows(2).any(|w| w[0].tok == Tok::Fn && matches!(w[1].tok, Tok::Ident(_, _)));
     if sub.is_some() && !def.attrs.is_empty() && (nested_fn(&old_body.tokens) || nested_fn(&new_body.tokens)) {
         return Err("body items");
     }
@@ -1104,13 +1112,13 @@ fn find_derive_edit(front: &Front, text: &str, edit: Edit) -> Result<NewDerive, 
             out.push(t.get(tok.span.lo as usize..tok.span.hi as usize)?.to_owned());
             let opens = i >= 2
                 && toks[i - 2].tok == Tok::LBracket
-                && toks[i - 1].tok == Tok::Ident(derive)
+                && matches!(toks[i - 1].tok, Tok::Ident(s, _) if s == derive)
                 && tok.tok == Tok::LParen
                 && toks.get(i.wrapping_sub(3)).is_some_and(|t| t.tok == Tok::Pound);
             i += 1;
             if opens {
                 while i < toks.len() && toks[i].tok != Tok::RParen {
-                    if !matches!(toks[i].tok, Tok::Ident(_) | Tok::Comma | Tok::PathSep) {
+                    if !matches!(toks[i].tok, Tok::Ident(_, _) | Tok::Comma | Tok::PathSep) {
                         return None;
                     }
                     i += 1;
@@ -1273,7 +1281,7 @@ fn find_item_edit(front: &Front, text: &str, edit: Edit) -> Result<NewItem, Opti
     let edge = crate::diag::Span { file, lo, hi: lo, ctxt: CtxtId::ROOT };
     let placeholder = front.interner.intern("__LustItemPatch");
     if sub.is_some() {
-        for tok in [Tok::Impl, Tok::Ident(placeholder), Tok::LBrace] {
+        for tok in [Tok::Impl, Tok::Ident(placeholder, false), Tok::LBrace] {
             toks.push(lexer::Token { tok, span: edge });
         }
     }
@@ -1626,7 +1634,7 @@ fn find_inactive_edit(front: &Front, text: &str, edit: Edit) -> Result<(), Optio
                 | Tok::Static
                 | Tok::Const
                 | Tok::Type
-        ) || matches!(t.tok, Tok::Ident(s) if s == macro_rules || s == cfg || s == union)
+        ) || matches!(t.tok, Tok::Ident(s, _) if s == macro_rules || s == cfg || s == union)
     };
     // A construct those passes read starts with one of those tokens: one
     // that starts just before the window (`#` + `[cfg_attr(..)]`, `cfg` +
@@ -1642,7 +1650,7 @@ fn find_inactive_edit(front: &Front, text: &str, edit: Edit) -> Result<(), Optio
     let before = |i: usize, k: usize| i.checked_sub(k).map(|j| ot[j].tok);
     if chain.iter().any(|&i| {
         matches!(before(i, 1), Some(Tok::Pound))
-            || matches!((before(i, 2), before(i, 1)), (Some(Tok::Bang), Some(Tok::Ident(_))) | (Some(Tok::Pound), Some(Tok::Bang)))
+            || matches!((before(i, 2), before(i, 1)), (Some(Tok::Bang), Some(Tok::Ident(_, _))) | (Some(Tok::Pound), Some(Tok::Bang)))
     }) {
         return Err(Some("inactive macro"));
     }
@@ -1693,7 +1701,7 @@ fn outside_fn_reason(ast: &Ast, file: FileId, a: usize, b: usize) -> &'static st
 fn plain_body(lexed: &lexer::Lexed, interner: &crate::intern::Interner) -> bool {
     lexed.tokens.iter().all(|t| match t.tok {
         Tok::Dyn => false,
-        Tok::Ident(s) => !crate::check::generics::flag_scan_name(interner.get(s)),
+        Tok::Ident(s, _) => !crate::check::generics::flag_scan_name(interner.get(s)),
         _ => true,
     })
 }
@@ -1919,15 +1927,15 @@ fn body_tokens_ok(lexed: &lexer::Lexed, lo: usize, hi: usize, interner: &crate::
             // Attributes go through the expander (cfg stripping).
             Tok::Pound | Tok::DocStr(_) => pure = true,
             Tok::Dollar => return Err("body attr"),
-            Tok::Ident(s) if s == macro_rules || s == union => return Err("body item"),
+            Tok::Ident(s, _) if s == macro_rules || s == union => return Err("body item"),
             // A macro call: `name!`, never path-qualified. A user macro
             // is the last reason (`find_item_edit` can take its stored
             // expansion when no other rule refuses the body).
             Tok::Bang if i > 0 => match toks[i - 1].tok {
-                Tok::Ident(_) if i > 1 && toks[i - 2].tok == Tok::PathSep => user = true,
-                Tok::Ident(s) if crate::expand::builtin::is_passthrough(interner.get(s)) => calls = true,
-                Tok::Ident(s) if PURE_MACROS.contains(&interner.get(s)) => pure = true,
-                Tok::Ident(_) | Tok::SelfUpper | Tok::SelfLower | Tok::Crate | Tok::Super => user = true,
+                Tok::Ident(_, _) if i > 1 && toks[i - 2].tok == Tok::PathSep => user = true,
+                Tok::Ident(s, _) if crate::expand::builtin::is_passthrough(interner.get(s)) => calls = true,
+                Tok::Ident(s, _) if PURE_MACROS.contains(&interner.get(s)) => pure = true,
+                Tok::Ident(_, _) | Tok::SelfUpper | Tok::SelfLower | Tok::Crate | Tok::Super => user = true,
                 _ => {}
             },
             _ => {}
@@ -1952,7 +1960,7 @@ const PURE_MACROS: &[&str] =
 
 /// Applies the proven edits to the front state and runs the slot update.
 /// `ctxts` gets each edit's fresh expansion contexts, in edit order.
-fn apply(front: &mut Front, caches: &mut Caches, mut edits: Vec<BodyEdit>, reads: usize, ctxts: &mut Vec<FxMap<u32, CtxtId>>) -> Result<Patched, &'static str> {
+fn apply(front: &mut Front, caches: &mut Caches, mut edits: Vec<BodyEdit>, reads: usize, ctxts: &mut Vec<FxMap<u32, CtxtId>>, reuse_check: bool) -> Result<PatchOutcome, &'static str> {
     let mut base = front.patch.take().ok_or("no base")?;
     let (mut spans, files) = (0usize, edits.len());
     let nodes_before = super::compile::ast_nodes(&front.ast);
@@ -2333,6 +2341,16 @@ fn apply(front: &mut Front, caches: &mut Caches, mut edits: Vec<BodyEdit>, reads
     // signatures mode (`Patched::item_scans`).
     let item_level = !item_fns.is_empty() || derive_edit;
     let changed = if item_level { Vec::new() } else { slot_update(front, caches, &base.body_hashes, &edited, &base.live_slots) };
+    // Keep the complete empty-edit path above. In particular, ConstReach
+    // must observe nodes appended by the preceding check before a later
+    // edit can blank them, and slot_update must refresh its cache state.
+    // The caller permits this only for the same successful check with
+    // the resolve oracle off; that oracle consumes the materialized data.
+    if reuse_check && files == 0 {
+        let fn_count = front.ast_fn_count;
+        front.patch = Some(base);
+        return Ok(PatchOutcome::ReuseCheck { fn_count });
+    }
     let item_scans = item_level.then(|| front.chunks[0].scan.items.clone());
     let edits_len = edits.iter().filter(|e| e.body.is_some() || e.item.is_some() || e.derive.is_some()).count();
     let out = Patched {
@@ -2360,7 +2378,7 @@ fn apply(front: &mut Front, caches: &mut Caches, mut edits: Vec<BodyEdit>, reads
         reads,
     };
     front.patch = Some(base);
-    Ok(out)
+    Ok(PatchOutcome::Materialized(out))
 }
 
 /// Rescans the edited fn's item after its new body landed: the item
@@ -3101,6 +3119,7 @@ pub fn run() -> i64 {
             max_errors: 0,
             run_args: None,
             harness: false, cc: false,
+            library_options: Default::default(),
             client: Default::default(),
         };
         let resp = compile(&req, session);
@@ -3394,6 +3413,119 @@ pub fn run() -> i64 {
         assert_eq!(got, check(&mut cold, root), "warm and cold agree after {new:?}: {}", warm.front.last_visits);
         let _ = std::fs::remove_dir_all(&dir);
         warm.front.last_visits.clone()
+    }
+
+    /// A reused check still validates later edits, errors and module discovery.
+    /// Builds retain their ordinary path and publish the same runnable output.
+    #[test]
+    fn no_change_check_preserves_edit_error_restore_and_build() {
+        let dir = std::env::temp_dir().join(format!("lust-nochange-transitions-{}", std::process::id()));
+        let root = write_crate(&dir, 2);
+        let module = dir.join("m1.rs");
+        let mut warm = Session::new(dir.join("obj"), true, SessionKey::synthetic(&root, false));
+        assert_eq!(check(&mut warm, &root), (0, String::new()));
+        assert_eq!(check(&mut warm, &root), (0, String::new()));
+        assert_eq!(field(&warm.front.last_visits, "path"), "reuse");
+        let v = warm_equals_cold(&mut warm, &root, &module, "    a.get()\n", "    a.get() + 1\n");
+        assert_eq!(field(&v, "path"), "patch", "{v}");
+        assert_eq!(check(&mut warm, &root), (0, String::new()));
+        assert_eq!(field(&warm.front.last_visits, "path"), "reuse");
+        warm_equals_cold(&mut warm, &root, &module, "    a.get() + 1\n", "    a.get() + true\n");
+        let rejected = check(&mut warm, &root);
+        assert_ne!(rejected.0, 0);
+        assert_ne!(field(&warm.front.last_visits, "path"), "reuse");
+        let mut cold = Session::new(dir.join("invalid-cold"), false, SessionKey::synthetic(&root, false));
+        assert_eq!(rejected, check(&mut cold, &root));
+        warm_equals_cold(&mut warm, &root, &module, "    a.get() + true\n", "    a.get()\n");
+        assert_eq!(check(&mut warm, &root), (0, String::new()));
+        assert_eq!(field(&warm.front.last_visits, "path"), "reuse");
+
+        // A negative module lookup remains an input even after a reused check.
+        std::fs::create_dir(dir.join("m1")).unwrap();
+        std::fs::write(dir.join("m1/mod.rs"), MODULE).unwrap();
+        let rejected = check(&mut warm, &root);
+        assert_ne!(rejected.0, 0);
+        let mut cold = Session::new(dir.join("module-cold"), false, SessionKey::synthetic(&root, false));
+        assert_eq!(rejected, check(&mut cold, &root));
+        std::fs::remove_file(dir.join("m1/mod.rs")).unwrap();
+        assert_eq!(check(&mut warm, &root), (0, String::new()));
+        assert_eq!(check(&mut warm, &root), (0, String::new()));
+        assert_eq!(field(&warm.front.last_visits, "path"), "reuse");
+
+        assert_eq!(run(&mut warm, &root, Cmd::Build).0, 0);
+        assert_ne!(field(&warm.front.last_visits, "path"), "reuse");
+        let binary = root.with_extension("bin");
+        let actual = std::process::Command::new(&binary).output().unwrap();
+        assert!(actual.status.success(), "{:?}", actual.status);
+        assert_eq!(actual.stdout, b"180\n");
+        assert!(actual.stderr.is_empty());
+        let mut cold = Session::new(dir.join("build-cold"), false, SessionKey::synthetic(&root, false));
+        assert_eq!(run(&mut cold, &root, Cmd::Build).0, 0);
+        let expected = std::process::Command::new(&binary).output().unwrap();
+        assert!(expected.status.success(), "{:?}", expected.status);
+        assert_eq!((actual.status.code(), actual.stdout, actual.stderr), (expected.status.code(), expected.stdout, expected.stderr));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Directly exercise the owned state an empty patch must maintain. This
+    /// appends a const-evaluation root after the base's previous observation,
+    /// then blanks it after the no-change request. The test models that state
+    /// transition explicitly; it is not a claim of a reproduced source-level
+    /// compiler failure. Deferring reach.update until the next edit loses it.
+    #[test]
+    fn no_change_check_retains_new_const_observations_and_slot_updates() {
+        use crate::ast::{Expr, ExprId};
+        use std::sync::Arc;
+        let dir = std::env::temp_dir().join(format!("lust-nochange-state-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let root = dir.join("main.rs");
+        // A const item enters the resolver route; a const fn alone uses
+        // the chunk front end, which has no patch base to exercise.
+        std::fs::write(&root, "const ROUTE: usize = 0;\nconst fn no_change_late_const_marker() -> usize {\n    2\n}\nfn main() { let _n = no_change_late_const_marker(); }\n").unwrap();
+        let mut warm = Session::new(dir.join("obj"), true, SessionKey::synthetic(&root, false));
+        assert_eq!(check(&mut warm, &root), (0, String::new()));
+        assert_eq!(field(&warm.front.last_visits, "path"), "resolve");
+        let index = warm.front.fn_loc.iter().position(|&(item, sub)| {
+            let def = super::fn_def_at(&warm.front.ast, item, sub);
+            crate::intern::source_name(warm.front.interner.get(def.name)) == "no_change_late_const_marker"
+        }).unwrap();
+        let (item, sub) = warm.front.fn_loc[index];
+        let name = super::fn_def_at(&warm.front.ast, item, sub).name;
+        assert!(!warm.front.patch.as_ref().unwrap().reach.as_ref().unwrap().reaches(&warm.front, index));
+        let call = warm.front.ast.exprs.iter().enumerate().find_map(|(i, expr)| match expr {
+            Expr::Call { callee, .. } if matches!(warm.front.ast.expr(*callee), Expr::Path(path) if path.last().is_some_and(|p| p.name == name)) => Some(ExprId(i as u32)),
+            _ => None,
+        }).unwrap();
+        let span = warm.front.ast.expr_span(call);
+        let ast = Arc::make_mut(&mut warm.front.ast);
+        let value = ExprId(ast.exprs.len() as u32);
+        ast.exprs.push(Expr::Int(0, None));
+        ast.expr_spans.push(span);
+        let appended = ast.exprs.len();
+        ast.exprs.push(Expr::ArrayRepeat { value, len: call });
+        ast.expr_spans.push(span);
+        let slot = warm.front.fn_slot[index] as usize;
+        let expected_hash = warm.front.patch.as_ref().unwrap().body_hashes[index];
+        warm.front.slot_hash[slot] = expected_hash ^ 1;
+        warm.caches.has_out[slot] = true;
+
+        assert_eq!(check(&mut warm, &root), (0, String::new()));
+        assert_eq!(field(&warm.front.last_visits, "path"), "reuse");
+        assert!(warm.front.patch.as_ref().unwrap().reach.as_ref().unwrap().reaches(&warm.front, index));
+        assert_eq!(warm.front.slot_hash[slot], expected_hash);
+        assert!(!warm.caches.ok[slot] && !warm.caches.has_out[slot] && warm.caches.slot_reads[slot].is_none());
+        Arc::make_mut(&mut warm.front.ast).exprs[appended] = Expr::Unit;
+        assert!(warm.front.patch.as_ref().unwrap().reach.as_ref().unwrap().reaches(&warm.front, index));
+        warm_equals_cold(&mut warm, &root, &root, "    2\n", "    3\n");
+        assert_eq!(check(&mut warm, &root), (0, String::new()));
+        assert_eq!(field(&warm.front.last_visits, "path"), "reuse");
+        warm_equals_cold(&mut warm, &root, &root, "    3\n", "    true\n");
+        assert_ne!(check(&mut warm, &root).0, 0);
+        warm_equals_cold(&mut warm, &root, &root, "    true\n", "    2\n");
+        assert_eq!(check(&mut warm, &root), (0, String::new()));
+        assert_eq!(field(&warm.front.last_visits, "path"), "reuse");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     /// A body edit of a blanket impl method whose body coerces a type

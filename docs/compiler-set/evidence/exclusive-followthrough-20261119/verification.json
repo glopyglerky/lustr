@@ -1,0 +1,518 @@
+{
+  "schema": "lustr-combined-native-verification-v1",
+  "frozen_input_commit": "d2e0fe830be7e095efbd77e71768294e668a81c5",
+  "frozen_input_tree": "e4f517a5905d321e4c9749de101910ec5a5dd075",
+  "native_tree": "e0d5f908d528ec2048c717ae8ad89b6c52dd4dae",
+  "declaration": {
+    "reference_revision": "240e08d91d4aed0299639f6f11fd522912b248f9",
+    "reference_tree": "0ab1b09815802894e6078de0af59273cbdf46cb0",
+    "patch_blob": "14ed7bb3cfa9c999ccefe745fd0b93d1b31e6005",
+    "integrated_tree": "e0d5f908d528ec2048c717ae8ad89b6c52dd4dae",
+    "qualification_blob": "d4600bafc4f04f8669da09902d6728ce2bee04c6"
+  },
+  "declaration_status": "candidate",
+  "protected_pins": {
+    "lust.pin": {
+      "git_blob": "cce2d3a2a584a15bc2ab960eb0121c9afc484949",
+      "sha256": "a2f2937ceb269149ad52ddf3a6b60f6034bfa54867d5987eb272c2230e85d204"
+    },
+    "bluefe-core.pin": {
+      "git_blob": "3a3523a83c03958d9f242f6d9a905280c7a3e7a9",
+      "sha256": "ae93e7fb837097658ddda8881795aec4c6abe474b00f133806079a044c7dec2b"
+    }
+  },
+  "scope": "fresh debug partial package and focused source, entry, ownership, retained-attempt and original-range UBSan controls; no complete Rust, optimized, full ASan/LSan or native sanitizer corpus, macOS or near-stock performance qualification",
+  "full_rust_coverage": false,
+  "results": [
+    {
+      "label": "guard-build",
+      "exit_status": 0,
+      "expected_status": 0,
+      "matched_expected_status": true,
+      "logs": {
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "execution_log_filename": "logs/guard-build.stdout"
+        },
+        "stderr": {
+          "bytes": 316,
+          "sha256": "458d2d4d5476f5a641d970700fd345d3bc91fa610de721ba46b648fc359b4f96",
+          "execution_log_filename": "logs/guard-build.stderr"
+        }
+      }
+    },
+    {
+      "label": "guard-tests-build",
+      "exit_status": 0,
+      "expected_status": 0,
+      "matched_expected_status": true,
+      "logs": {
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "execution_log_filename": "logs/guard-tests-build.stdout"
+        },
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "execution_log_filename": "logs/guard-tests-build.stderr"
+        }
+      }
+    },
+    {
+      "label": "candidate-source-guard",
+      "exit_status": 0,
+      "expected_status": 0,
+      "matched_expected_status": true,
+      "logs": {
+        "stdout": {
+          "bytes": 246,
+          "sha256": "5845b388083722c923e714a1a1f333ff2d1edbcb714599517ebf055a732f2f7c",
+          "execution_log_filename": "logs/candidate-source-guard.stdout"
+        },
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "execution_log_filename": "logs/candidate-source-guard.stderr"
+        }
+      }
+    },
+    {
+      "label": "source-guard-controls",
+      "exit_status": 0,
+      "expected_status": 0,
+      "matched_expected_status": true,
+      "logs": {
+        "stdout": {
+          "bytes": 632,
+          "sha256": "c44901215b56f3bbe8ba4ddbe66f48335bf5336b147cdfcc03722b0b6ead57fe",
+          "execution_log_filename": "logs/source-guard-controls.stdout"
+        },
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "execution_log_filename": "logs/source-guard-controls.stderr"
+        }
+      }
+    },
+    {
+      "label": "structural-guard",
+      "exit_status": 0,
+      "expected_status": 0,
+      "matched_expected_status": true,
+      "logs": {
+        "stdout": {
+          "bytes": 322,
+          "sha256": "29e8b9779114dec7438f6aaf42b4fb57b351c9c122aeb0dcd5e1368f12b1c69e",
+          "execution_log_filename": "logs/structural-guard.stdout"
+        },
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "execution_log_filename": "logs/structural-guard.stderr"
+        }
+      }
+    },
+    {
+      "label": "import-negative-controls",
+      "exit_status": 0,
+      "expected_status": 0,
+      "matched_expected_status": true,
+      "logs": {
+        "stdout": {
+          "bytes": 62,
+          "sha256": "9ad4f93905b220d0cdbe80912b9b35423b80ed0d0edea7053b0b38be7ebbf4f4",
+          "execution_log_filename": "logs/import-negative-controls.stdout"
+        },
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "execution_log_filename": "logs/import-negative-controls.stderr"
+        }
+      }
+    },
+    {
+      "label": "release-refusal",
+      "exit_status": 1,
+      "expected_status": 1,
+      "matched_expected_status": true,
+      "logs": {
+        "stdout": {
+          "bytes": 447,
+          "sha256": "65d5fe87bb63c06c7251335cba84c2878563cac92656a242e64c0b72cebb282e",
+          "execution_log_filename": "logs/release-refusal.stdout"
+        },
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "execution_log_filename": "logs/release-refusal.stderr"
+        }
+      }
+    },
+    {
+      "label": "candidate-release-refusal",
+      "exit_status": 1,
+      "expected_status": 1,
+      "matched_expected_status": true,
+      "logs": {
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "execution_log_filename": "logs/candidate-release-refusal.stdout"
+        },
+        "stderr": {
+          "bytes": 83,
+          "sha256": "1c4eeb850ecf9cddc44efacb564688155f5937c61753989a21eff520ddcfba84",
+          "execution_log_filename": "logs/candidate-release-refusal.stderr"
+        }
+      }
+    },
+    {
+      "label": "constructor-build",
+      "exit_status": 0,
+      "expected_status": 0,
+      "matched_expected_status": true,
+      "logs": {
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "execution_log_filename": "logs/constructor-build.stdout"
+        },
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "execution_log_filename": "logs/constructor-build.stderr"
+        }
+      }
+    },
+    {
+      "label": "debug-partial-construction",
+      "exit_status": 0,
+      "expected_status": 0,
+      "matched_expected_status": true,
+      "logs": {
+        "stdout": {
+          "bytes": 672,
+          "sha256": "7a94b030ddc64d6c82eb6988a950994611f752081ddd31532cfcb2e35745166c",
+          "execution_log_filename": "logs/debug-partial-construction.stdout"
+        },
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "execution_log_filename": "logs/debug-partial-construction.stderr"
+        }
+      }
+    },
+    {
+      "label": "final-entry-controls",
+      "exit_status": 0,
+      "expected_status": 0,
+      "matched_expected_status": true,
+      "logs": {
+        "stdout": {
+          "bytes": 62,
+          "sha256": "121343c01aad194b170945859f5c07a607998815061512f0deaa6749cf3c2cab",
+          "execution_log_filename": "logs/final-entry-controls.stdout"
+        },
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "execution_log_filename": "logs/final-entry-controls.stderr"
+        }
+      }
+    },
+    {
+      "label": "mixed-admission-product-tests",
+      "exit_status": 101,
+      "expected_status": 0,
+      "matched_expected_status": false,
+      "logs": {
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "execution_log_filename": "logs/mixed-admission-product-tests.stdout"
+        },
+        "stderr": {
+          "bytes": 30714,
+          "sha256": "8b9118d5a5e3722bb2f6e2a224874e985e2663d5559ed0ab36f2e9e3f57a7229",
+          "execution_log_filename": "logs/mixed-admission-product-tests.stderr"
+        }
+      },
+      "outcome": "test binary compilation failed from ENOSPC; no test execution",
+      "retained_original": true
+    },
+    {
+      "label": "mixed-admission-product-tests-resumed",
+      "exit_status": 0,
+      "expected_status": 0,
+      "matched_expected_status": true,
+      "logs": {
+        "stdout": {
+          "bytes": 1427,
+          "sha256": "7dc0183724d46f2da561c905a0c1494bdb0e74645879081aab16ff0dff410863",
+          "execution_log_filename": "logs/mixed-admission-product-tests-resumed.stdout"
+        },
+        "stderr": {
+          "bytes": 30700,
+          "sha256": "d38011be47c5f3ca9353d9847d211a6b680bf966ad1a0fd1137b234cb5fee4ff",
+          "execution_log_filename": "logs/mixed-admission-product-tests-resumed.stderr"
+        }
+      }
+    },
+    {
+      "label": "product-daemon-tests",
+      "exit_status": 0,
+      "expected_status": 0,
+      "matched_expected_status": true,
+      "logs": {
+        "stdout": {
+          "bytes": 310,
+          "sha256": "9fe6d045f5fc5e2c4f96374520fd2f0537dc4df4691e19a4aae3fa45d22f326f",
+          "execution_log_filename": "logs/product-daemon-tests.stdout"
+        },
+        "stderr": {
+          "bytes": 30607,
+          "sha256": "2cee8f21099e9f6078a1069c92bc4b185489f0e47089a12bfeb05a0667a2f6c1",
+          "execution_log_filename": "logs/product-daemon-tests.stderr"
+        }
+      }
+    },
+    {
+      "label": "final-range-fixture",
+      "exit_status": 1,
+      "expected_status": 0,
+      "matched_expected_status": false,
+      "logs": {
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "execution_log_filename": "logs/final-range-fixture.stdout"
+        },
+        "stderr": {
+          "bytes": 445,
+          "sha256": "c73bf76ff238edffcee51eebd39d277bac46e2d10de3992899b231593a6a8c82",
+          "execution_log_filename": "logs/final-range-fixture.stderr"
+        }
+      },
+      "outcome": "witness directory setup failed from ENOSPC; no compilation or program execution",
+      "retained_original": true
+    },
+    {
+      "label": "final-range-fixture-resumed",
+      "exit_status": 0,
+      "expected_status": 0,
+      "matched_expected_status": true,
+      "logs": {
+        "stdout": {
+          "bytes": 708,
+          "sha256": "7063e5ff759aa7bc1646e4201830c56e151469ed55d2153d9e20f790e3faa3ab",
+          "execution_log_filename": "logs/final-range-fixture-resumed.stdout"
+        },
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "execution_log_filename": "logs/final-range-fixture-resumed.stderr"
+        }
+      }
+    }
+  ],
+  "built_source_commit": "2e8991f3179d79f074b890da78e647b7c1dc0fd4",
+  "built_source_tree": "68ebdc5c96de87295b97646a2ce833488df04e4e",
+  "compiled_input_git_objects": {
+    "Cargo.toml": "e7f75a13bc58dcdd5df001e99f7ec6515c7acd2d",
+    "Cargo.lock": "30435d33da10dd7dc05561437340e0784628f3fa",
+    "build.rs": "08c57c5316a9644aefa5d849eac8fb4cd457b641",
+    "src": "3f01914f28c883a1cf162fb87974107baa66db12",
+    "compiler/native": "e0d5f908d528ec2048c717ae8ad89b6c52dd4dae",
+    "crates/lustr-native-core": "3f72ace53ab6deda39f9ca724b021b3d45ab9044",
+    "library": "27b519aadbbb4aa386beff12f940a526816c6e25",
+    "upstream": "2c50c01a1fabe46b5e714fc79a839361a16bef28",
+    "tools/build-native-toolchain.rs": "3a5a9fb9bca9c7f3cbaf39cddb0d68ede38a7d27",
+    "tools/selection-toolchain-receipt.rs": "ee8b1ea16c101065e02c1e701a782beb22754930",
+    "tools/host-sdk.rs": "9e8e31eb3a9db67dd9e4c0a7e8ee958c623d944d",
+    "tools/lust-upstream-check.rs": "9b097533fc4d97a31a54241d8e86425dd2feee6b"
+  },
+  "compiled_input_tree_scope": "Git trees bind all tracked content recursively; individual files use Git blob identity. The later workflow-only publication fix is outside this set.",
+  "protected_pins_unchanged": true,
+  "construction": {
+    "status": "passed",
+    "profile": "debug",
+    "fresh_output": true,
+    "features": [
+      "exclusive-native"
+    ],
+    "native_build_identity": "4fbb2e5c41854f34",
+    "source_library_identity": "ae56487767b075fe45452efe32c4159f93ced805bab6a9f99cd6f346ff859030",
+    "host": "x86_64-unknown-linux-gnu",
+    "route": "exclusive native Lust; complementary compilation unavailable",
+    "compiled_input_status_clean": true,
+    "binary_sha256": {
+      "bin/lustr": "8d192d9c13796fbdc7e8528464a2917568154500a262a547e6f9530171464b62",
+      "bin/lust": "ff73b283b29bad925a72474e4f124d5df4c72fd1756db6e9fba21f07ab909053",
+      "bin/lust-core": "1a21b58880bc88cbcf5e410da519ab6d9fdb8770a909aec2984c78cad8d222ae",
+      "lib/liblustr_native_core.so": "92769ca4da9c1850207fcc932293e43fe54d5d1b75e966a40e8745ce63ef96d2"
+    },
+    "helper_identity_queries": {
+      "lust": {
+        "status": 0,
+        "stdout": "lustr-exclusive-native-v1\nbuild=4fbb2e5c41854f34\n"
+      },
+      "lust-core": {
+        "status": 0,
+        "stdout": "lustr-exclusive-native-v1\nbuild=4fbb2e5c41854f34\n"
+      }
+    },
+    "partial_marker": true,
+    "rustc_entry_symlink": "lustr",
+    "packaged_full_compiler": false,
+    "installed_binary_hashes_unchanged_after_controls": true
+  },
+  "sdk": {
+    "declared_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+    "version_output": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+    "host_receipt_sha256": "55338827dc3d75cd9ff81f4412f3692821d6508af946948b692c86c6c93cd11d"
+  },
+  "declaration_commit_integrated_by_root": "fbead1a9818a5b49bb7882498864b84b103a62ea",
+  "root_tree_differences_from_constructor": [
+    ".github/workflows/ci.yml"
+  ],
+  "summary": {
+    "candidate_source_identity": "passed",
+    "source_guard_controls": {
+      "passed": 7,
+      "failed": 0
+    },
+    "structural_ownership_guard": "passed",
+    "tampered_import_inventories_rejected": 6,
+    "full_replacement_release_refusal": {
+      "status": 1,
+      "release_status": "unavailable"
+    },
+    "candidate_release_refusal": {
+      "status": 1
+    },
+    "fresh_debug_partial_construction": "passed",
+    "product_mixed_admission": {
+      "passed": 13,
+      "failed": 0,
+      "features": [
+        "exclusive-native"
+      ],
+      "tests_executed_after_build_storage_recovery": true
+    },
+    "product_retained_daemon": {
+      "passed": 2,
+      "failed": 0,
+      "features": [
+        "exclusive-native"
+      ],
+      "scope": "in-process product attempt and retained-state tests; not live Unix socket transport"
+    },
+    "entry_controls": {
+      "passed": 56,
+      "failed": 0,
+      "unavailable": [
+        {
+          "case": "real-retained-daemon",
+          "status": "unavailable",
+          "reason": "Operation not permitted"
+        }
+      ],
+      "daemon_required_locally": false,
+      "required_hosted_daemon_gate_preserved": true,
+      "runner_sha256": "c1e94d10975748167390b9b04e3ed12e423b2198ef55f2d734a77a1cca3e5ced"
+    },
+    "original_range_fixture": {
+      "fixture": "compiler/native/tests/pass/std_declared_source_locations.rs",
+      "fixture_sha256": "46fc580a1140015fd013a0f2efa2a63ba25285abb44e45637e31d21be374e49b",
+      "native_oracle_status_stdout_stderr_equal": true,
+      "ubsan_oracle_status_stdout_stderr_equal": true,
+      "ubsan_diagnostics": false,
+      "asan_lsan_run": false,
+      "asan_lsan_limitation": "Prior local LeakSanitizer probe could not run under executor ptrace; the unchanged hosted sanitizer gate remains required.",
+      "commands": [
+        {
+          "label": "native-build",
+          "status": 0
+        },
+        {
+          "label": "oracle-build",
+          "status": 0
+        },
+        {
+          "label": "native-run",
+          "status": 0
+        },
+        {
+          "label": "oracle-run",
+          "status": 0
+        },
+        {
+          "label": "ubsan-build",
+          "status": 0
+        },
+        {
+          "label": "ubsan-run",
+          "status": 0
+        }
+      ]
+    }
+  },
+  "environment_failures": {
+    "reason": "Local filesystem exhausted after completed fresh construction and entry controls. Test-binary compilation failed before execution; range witness failed before directory setup.",
+    "removed": [
+      "earlier scoped native target debug/incremental",
+      "completed final native-library debug/incremental",
+      "completed final native client/core and failed test-build debug/incremental"
+    ],
+    "preserved": "installed packages, binaries, source, all original logs, receipts, dependency caches and other worktrees",
+    "original_test_build_label": "mixed-admission-product-tests",
+    "original_test_build_status": 101,
+    "original_range_setup_label": "final-range-fixture",
+    "original_range_setup_status": 1,
+    "constructor_repeated": false,
+    "source_changed": false,
+    "timestamp_utc": "2026-11-19T11:05:17.275607+00:00",
+    "free_bytes_after_cleanup": 3285446656
+  },
+  "status": "scoped_verification_passed_with_recorded_environment_limits",
+  "limits": [
+    "The product is a partial native compiler; complete Rust complement and full replacement remain unavailable.",
+    "Real local Unix socket creation returned EPERM; the required live retained daemon gate remains hosted.",
+    "Current aggregate LeakSanitizer was not run. A prior local actual probe failed under executor ptrace; original diagnostic remains in docs/compiler-set/evidence/native-range-panic-20261119/local-lsan-unavailable.stderr. The unchanged hosted sanitizer gate remains required.",
+    "Native ordinary and UBSan executions of the original range fixture passed; UBSan does not establish a LeakSanitizer pass.",
+    "Initial product-test build and range-witness setup failed from ENOSPC before execution; originals are retained. Only owned reproducible incremental caches were removed. The existing installed package and constructor source were unchanged.",
+    "No optimized construction, broad native corpus, actual macOS execution or near-stock performance qualification was performed. The original macOS odd-path root cause remains unresolved."
+  ],
+  "source_identity_note": "Local execution commit identities record construction provenance. Native trees and compiled-input Git objects are the authority for comparing the published source; publication may use a different commit parent.",
+  "log_scope": "Per-command log filenames and hashes identify the retained raw execution record. This public evidence also includes the original two pre-execution failure stderr logs and the selected exact successful control output files listed in published_control_logs.",
+  "published_control_logs": [
+    "source-guard-controls.stdout",
+    "candidate-source-guard.stdout",
+    "structural-guard.stdout",
+    "import-negative-controls.stdout",
+    "release-refusal.stdout",
+    "candidate-release-refusal.stderr",
+    "mixed-admission-product-tests-resumed.stdout",
+    "product-daemon-tests.stdout"
+  ],
+  "publication_input_validation": {
+    "matched_git_objects": {
+      "Cargo.toml": "e7f75a13bc58dcdd5df001e99f7ec6515c7acd2d",
+      "Cargo.lock": "30435d33da10dd7dc05561437340e0784628f3fa",
+      "build.rs": "08c57c5316a9644aefa5d849eac8fb4cd457b641",
+      "src": "3f01914f28c883a1cf162fb87974107baa66db12",
+      "compiler/native": "e0d5f908d528ec2048c717ae8ad89b6c52dd4dae",
+      "crates/lustr-native-core": "3f72ace53ab6deda39f9ca724b021b3d45ab9044",
+      "library": "27b519aadbbb4aa386beff12f940a526816c6e25",
+      "upstream": "2c50c01a1fabe46b5e714fc79a839361a16bef28",
+      "tools/build-native-toolchain.rs": "3a5a9fb9bca9c7f3cbaf39cddb0d68ede38a7d27",
+      "tools/selection-toolchain-receipt.rs": "ee8b1ea16c101065e02c1e701a782beb22754930",
+      "tools/host-sdk.rs": "9e8e31eb3a9db67dd9e4c0a7e8ee958c623d944d",
+      "tools/lust-upstream-check.rs": "9b097533fc4d97a31a54241d8e86425dd2feee6b"
+    },
+    "all_match": true,
+    "scope": "The publication uses a different commit parent. All recorded compiled-input trees and blobs match the clean constructor source; subsequent additions are documentation and evidence."
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "schema": "lustr-runner-context-validation-repair-v1",
+  "failed_run": {
+    "url": "https://github.com/glopyglerky/lustr/actions/runs/44663067508",
+    "run_id": 44663067508,
+    "head_sha": "770c6d6481d92f4b38a399e067adfa1b1dc4a58d",
+    "tree": "4e2dba6147853bd1eb1f837b6e03a9fdc59f617c",
+    "event": "push",
+    "status": "completed",
+    "conclusion": "failure",
+    "jobs_total_count": 0,
+    "jobs": [],
+    "created_at": "2026-11-20T02:45:40Z",
+    "annotation": "(Line: 211, Col: 25): Unrecognized named-value: 'runner'. Located at position 1 within expression: runner.temp",
+    "annotation_source": "public workflow page read by coordinating agent; run and empty jobs independently verified through GitHub API"
+  },
+  "documented_rule": {
+    "source": "https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#context-availability",
+    "job_env_contexts": [
+      "github",
+      "needs",
+      "strategy",
+      "matrix",
+      "vars",
+      "secrets",
+      "inputs"
+    ],
+    "runner_unavailable_at_job_env": true
+  },
+  "repair": "Set CARGO_TARGET_DIR from RUNNER_TEMP in an assigned-runner step through GITHUB_ENV, before any Cargo invocation. No compiler source or workload changed.",
+  "source_inputs": {
+    ".github/workflows/compiler-set.yml": "54ec73eb1f5ec511dcc77eb740aed00fda43a7f6d58c455e199333e331f5209b",
+    "tools/test-warm-applicability.py": "951a786b78be31d584a433a6c6463c8968313e56b602e230884a9eddf29496f7"
+  },
+  "setup_execution": {
+    "command": [
+      "bash",
+      "-e",
+      "-u",
+      "-o",
+      "pipefail",
+      "-c",
+      "printf 'CARGO_TARGET_DIR=%s\\n' \"$RUNNER_TEMP/metadata-research-target\" >> \"$GITHUB_ENV\""
+    ],
+    "status": 0,
+    "exact_environment_file_contents": true,
+    "runner_temp_path_contains_spaces": true
+  },
+  "workflow_controls": {
+    "argv": [
+      "python3",
+      "tools/test-warm-applicability.py"
+    ],
+    "python_sha256": "fa67443527ed9647f760d807e2a38f26340757123e643c4639cf273ed15d5ea7",
+    "exit": 0,
+    "tests": 21,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_sha256": "4930ed83041f4f772fc6e6f596ff126f9119cd5679bb659035f58eac15abb0ce",
+    "original_invalid_job_env_rejected": true
+  },
+  "scope": "Actual setup statement and bounded context regression controls. The original hosted run remains failed with no jobs. A new hosted job start is still required; compiler tests were not rerun for this wiring repair."
+}

@@ -1,0 +1,49 @@
+{
+  "binary_sha256": "a227a6af38b61324257f7b16e098aae385e7c9d9df61a05e4b1ff5f568861e55",
+  "commands": [
+    {
+      "argv": [
+        "<RUST_SDK_WORKSPACE>/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "generate-lockfile",
+        "--offline",
+        "--manifest-path",
+        "<ACCESS_HELPER_BUILD>/Cargo.toml"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "<RUST_SDK_WORKSPACE>/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "build",
+        "--release",
+        "--locked",
+        "--offline",
+        "--manifest-path",
+        "<ACCESS_HELPER_BUILD>/Cargo.toml",
+        "--target-dir",
+        "<ACCESS_HELPER_BUILD>/target",
+        "--config",
+        "build.build-dir=\"<ACCESS_HELPER_BUILD>/intermediates\""
+      ],
+      "exit": 0
+    }
+  ],
+  "lock_sha256": "f7760201a2d7a3e6781de074b4a425b40b35fc106f08bb80d522c2e9d68c7381",
+  "manifest_sha256": "c15b687f4fcdfb18776635160211850e37edf907837fa12668961a07ba8802a2",
+  "native_build_hash": "dc82dab611c87e7e",
+  "schema": "lustr-warm-entry-comparison-v1",
+  "scope": "Production parser/selector/child owner component only; no compiler timing claim.",
+  "source": {
+    "revision": "68395242e638abdde91ff73d14bde532583934a8",
+    "tree": "39f4d0b0ac3bd8f1f182be47471943c7cbbb82f8"
+  },
+  "source_sha256": {
+    "<ACCESS_SOURCE>/compiler/native/src/protocol.rs": "4da4c32fb16b62f3819a3d774ef63b76e201e2414c3b4540b4a6ccb27133fe1c",
+    "<ACCESS_SOURCE>/src/full.rs": "e7015c5462da232fd817091c2749e4e776287832f1279ebaab87314f0644412e",
+    "<ACCESS_SOURCE>/src/host_runtime.rs": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223",
+    "<ACCESS_SOURCE>/src/owned_child.rs": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20",
+    "<ACCESS_SOURCE>/src/selection_cache.rs": "dfead01bd5ef3c98f3da35250c15c37ea9ef19cdfc28de082fb8971d9591bbfd",
+    "<ACCESS_SOURCE>/tools/profile-native-preflight.rs": "37cad7d0a4cf1c6318aaf60d7c24e9ab8a1f78bb00e2636cdc9d09da9d03681b"
+  },
+  "status": "completed"
+}

@@ -1,0 +1,159 @@
+{
+  "schema": "lustr-warm-applicability-controls-v1",
+  "base_revision": "d185b66233ae0fcd8d2acf3850a68aa24b3fc08a",
+  "scope": "Source, fixture and workflow controls only; no compiler construction, runtime test or performance campaign.",
+  "actual_source_checks": [
+    {
+      "name": "actual-0-entry",
+      "exit": 1,
+      "status": "blocked",
+      "qualification": "unqualified",
+      "reason_code": "shared-runtime-source-differs",
+      "candidate": {
+        "revision": "d185b66233ae0fcd8d2acf3850a68aa24b3fc08a",
+        "tree": "0e132a28f854afa6544f63da633229061fd84ede"
+      },
+      "baseline": {
+        "revision": "d57f485eeb2b638d1f95a0594294d11e8001fe8e",
+        "tree": "07235def43af3ffbdc218353d40f3f9e22b8dfd9"
+      },
+      "admitted_timing_samples": 0,
+      "report_sha256": "624b6d28beb37cee9fec71a0f76ef153eded9820142a36953f6438685ba6c735"
+    },
+    {
+      "name": "actual-1-complete",
+      "exit": 1,
+      "status": "blocked",
+      "qualification": "unqualified",
+      "reason_code": "frozen-baseline-unicode-failure",
+      "candidate": {
+        "revision": "d185b66233ae0fcd8d2acf3850a68aa24b3fc08a",
+        "tree": "0e132a28f854afa6544f63da633229061fd84ede"
+      },
+      "baseline": {
+        "revision": "3c378a11d60149a3ec99fa49ea1b336e9406fca8",
+        "tree": "0256606d5793bfb890130f05fae013d0c5c5f9e1"
+      },
+      "admitted_timing_samples": 0,
+      "report_sha256": "b92c7af8d9132f01329b4ab600b4acbc411b6b2c6135fedd405196b10b91a24b"
+    },
+    {
+      "name": "actual-2-entry",
+      "exit": 0,
+      "status": "applicable",
+      "qualification": "unqualified",
+      "reason_code": "shared-runtime-source-identical",
+      "candidate": {
+        "revision": "d57f485eeb2b638d1f95a0594294d11e8001fe8e",
+        "tree": "07235def43af3ffbdc218353d40f3f9e22b8dfd9"
+      },
+      "baseline": {
+        "revision": "d57f485eeb2b638d1f95a0594294d11e8001fe8e",
+        "tree": "07235def43af3ffbdc218353d40f3f9e22b8dfd9"
+      },
+      "admitted_timing_samples": 0,
+      "report_sha256": "df82aae9393974971deca0e8dd77a6fe042248b19b8b35976c0294355d30ff8b"
+    },
+    {
+      "name": "actual-3-complete",
+      "exit": 1,
+      "status": "blocked",
+      "qualification": "unqualified",
+      "reason_code": "unverified-applicability",
+      "candidate": {
+        "revision": "d185b66233ae0fcd8d2acf3850a68aa24b3fc08a",
+        "tree": "0e132a28f854afa6544f63da633229061fd84ede"
+      },
+      "baseline": {
+        "revision": "3c378a11d60149a3ec99fa49ea1b336e9406fca8",
+        "tree": "0256606d5793bfb890130f05fae013d0c5c5f9e1"
+      },
+      "admitted_timing_samples": 0,
+      "report_sha256": "042f629781ffe2f3a8337446dc551f34c63f139ba197432f8cc5b730371a183d"
+    }
+  ],
+  "original_workflow_negative_control": {
+    "methods": 2,
+    "subtest_errors": 3,
+    "expected_rejection": true,
+    "log_sha256": "f14413c6efb592892dbbe04ec54ef09a2972dc51dffec875a904023e794c0064"
+  },
+  "workflow_preservation": {
+    "warm-entry-performance.yml": {
+      "shell_steps_parsed": 16,
+      "before_sha256": "87cc7bbdd9c2abd68541a0ff45eae64e5b323ae9536071843c09ca2c9694fe9b",
+      "after_sha256": "f9fec719695d15f29e18ed0b58c22fa678b946b6e96edd843812e0b4235e8911",
+      "all_original_steps_retained_in_order": true,
+      "only_modified_original_steps": [
+        "Validate paired evidence controls",
+        "Retain every measured and failed outcome"
+      ]
+    },
+    "warm-native-performance.yml": {
+      "shell_steps_parsed": 15,
+      "before_sha256": "98c5295f895ecb18ad88e7eb839f2ed8a289cdfa65783697c7086853651cfb39",
+      "after_sha256": "d91ceb68a2493e78b6a87f3983782a6ff1e9f3cd78a4e56d828ef6cbd449e2bf",
+      "all_original_steps_retained_in_order": true,
+      "only_modified_original_steps": [
+        "Validate independent-package evidence controls",
+        "Preserve every completed or failed command"
+      ]
+    },
+    "compiler-set.yml": {
+      "shell_steps_parsed": 64,
+      "before_sha256": "b1969be32c09784ad59eaad0e58674508c2400a44efbbe769a6a200cc43a0ab3",
+      "after_sha256": "abfdd2bc3b76f5a19baa0b1f96e3f7bbcb1d5049eca7d7259ef3452ac5adebe0"
+    }
+  },
+  "tests": [
+    {
+      "command": "python3 tools/test-warm-applicability.py",
+      "exit": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "a7c4633f777d40d1c05542e5e10973f3e85ccc1a94fce75ca88051bef425d003",
+      "tests_passed": 16
+    },
+    {
+      "command": "python3 tools/test-mixed-workflow.py",
+      "exit": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "b4f1c1d1765d61383ef044e7ebcaafe8040d39125e821b2b44fa395895aeffa5",
+      "tests_passed": 22
+    },
+    {
+      "command": "python3 tools/test-warm-entry-comparison.py",
+      "exit": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "d5c07afec254598eace5f192bb6b4167ce93d9a476ab41574120eceb7c2cbf38",
+      "tests_passed": 29
+    }
+  ],
+  "already_observed_unchanged_native_harness": {
+    "command": "python3 tools/test-warm-native-comparison.py",
+    "exit": 0,
+    "tests_passed": 43,
+    "evidence": "Direct tool transcript before the final additional selector-independence test; its exercised production code and warm-native workflow are unchanged."
+  },
+  "source_sha256": {
+    "tools/check-warm-applicability.py": "f1f4d27a34b51f6681073cd8b4052558fd8cc170b890d307ff824dc1cf947c4e",
+    "tools/test-warm-applicability.py": "60f9f3e09b719f6cc356ab31cd997d0e613f647ef14756a2cba6a1debbfeab8b",
+    "tools/run-warm-entry-comparison.py": "fde3d28d96a103d91c90db3b90818e8a779e5bc9db275ab005b8afc16f281ae9",
+    "tools/run-warm-native-comparison.py": "fa7c93f8264e5df8321067d27b12dc2273c41c0660244189fe4884a24332a9ed",
+    "tools/run-upstream-slice-benchmark.py": "ad7c4e2f74629ecf46c6c8e30bc2c7d62d5a22c8db37e6e346575c5edf3eb4c3",
+    "tools/test-mixed-workflow.py": "1e8cc0c4bfdff9e77bf2bb6a6d99d49e9db6d5d50075bc7f9c3236964abe4618",
+    ".github/workflows/compiler-set.yml": "abfdd2bc3b76f5a19baa0b1f96e3f7bbcb1d5049eca7d7259ef3452ac5adebe0",
+    ".github/workflows/warm-entry-performance.yml": "f9fec719695d15f29e18ed0b58c22fa678b946b6e96edd843812e0b4235e8911",
+    ".github/workflows/warm-native-performance.yml": "d91ceb68a2493e78b6a87f3983782a6ff1e9f3cd78a4e56d828ef6cbd449e2bf"
+  },
+  "prior_observer_failure": {
+    "classification": "Private observer expected two errors for two unittest methods; the first method has two subtests, so the actual expected rejection count is three. No source check or compiler result changed.",
+    "preserved_record_sha256": "978596881fd8fed201eabec977510e07f8dded52cb97d9cf0fb045c097c23cbc",
+    "preserved_original_log_sha256": "f14413c6efb592892dbbe04ec54ef09a2972dc51dffec875a904023e794c0064"
+  },
+  "limits": [
+    "No SDK installation, compiler construction, application execution, hosted workflow run or performance campaign was performed for this change.",
+    "The complete preflight preserves an already demonstrated failure for exact declared sources; it is not a fresh compiler correctness result.",
+    "The selector suites are wired to mandatory candidate qualification; their current hosted runtime outcome remains to be observed.",
+    "The source input for actual CLI checks is d185b6623; changed preflight/tool/workflow bytes are bound separately by SHA256."
+  ]
+}

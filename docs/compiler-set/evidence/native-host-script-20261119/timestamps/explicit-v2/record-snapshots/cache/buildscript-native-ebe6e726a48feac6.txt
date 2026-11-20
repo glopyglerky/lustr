@@ -1,0 +1,49 @@
+LBS-native-1
+runtime-reusable=1
+absent /tmp/lustr-cargo-plan-build/package-v2/lib/lust/library/std/src/io/mod.rs
+absent /tmp/lustr-cargo-plan-build/package-v2/lib/lust/library/std/src/ffi/mod.rs
+absent /tmp/lustr-cargo-plan-build/package-v2/lib/lust/library/std/src/path/mod.rs
+absent /tmp/lustr-cargo-plan-build/package-v2/lib/lust/library/std/src/env/mod.rs
+absent /tmp/lustr-cargo-plan-build/package-v2/lib/lust/library/std/src/fs/mod.rs
+absent /tmp/lustr-cargo-plan-build/package-v2/lib/lust/library/std/src/os/mod.rs
+rerun-path watched
+record
+script /tmp/lustr-host-mtime-review-v2/work/build.rs
+src 5848874415066989830 /tmp/lustr-cargo-plan-build/package-v2/lib/lust/library/std/src/env.rs
+src 7887507796902522467 /tmp/lustr-cargo-plan-build/package-v2/lib/lust/library/std/src/ffi.rs
+src 7471037038538767373 /tmp/lustr-cargo-plan-build/package-v2/lib/lust/library/std/src/fs.rs
+src 11462590208268259716 /tmp/lustr-cargo-plan-build/package-v2/lib/lust/library/std/src/io.rs
+src 17032339280010688379 /tmp/lustr-cargo-plan-build/package-v2/lib/lust/library/std/src/os.rs
+src 15402937894757234591 /tmp/lustr-cargo-plan-build/package-v2/lib/lust/library/std/src/path.rs
+src 14224603586794777884 /tmp/lustr-cargo-plan-build/package-v2/lib/lust/library/std/src/platform.rs
+src 10963334030401911380 /tmp/lustr-cargo-plan-build/package-v2/lib/lust/library/std/src/process_os.rs
+src 1703542100628288335 /tmp/lustr-host-mtime-review-v2/work/build.rs
+input 14453326844896670288 /tmp/lustr-host-mtime-review-v2/work/watched
+input 10400118720030183583 /tmp/lustr-host-mtime-review-v2/work/Cargo.toml
+input 6840911213775730273 /tmp/lustr-host-mtime-review-v2/work/Cargo.lock
+input 6775084513292944431 /tmp/lustr-host-mtime-review-v2/work/.cargo/config.toml
+input 6775084513292944431 /tmp/lustr-host-mtime-review-v2/work/.cargo/config
+input 6775084513292944431 /tmp/lustr-host-mtime-review-v2/work/rust-toolchain.toml
+input 6775084513292944431 /tmp/lustr-host-mtime-review-v2/work/rust-toolchain
+input 6775084513292944431 /tmp/lustr-host-mtime-review-v2/.cargo/config.toml
+input 6775084513292944431 /tmp/lustr-host-mtime-review-v2/.cargo/config
+input 6775084513292944431 /tmp/lustr-host-mtime-review-v2/rust-toolchain.toml
+input 6775084513292944431 /tmp/lustr-host-mtime-review-v2/rust-toolchain
+input 6775084513292944431 /tmp/.cargo/config.toml
+input 6775084513292944431 /tmp/.cargo/config
+input 6775084513292944431 /tmp/rust-toolchain.toml
+input 6775084513292944431 /tmp/rust-toolchain
+input 6775084513292944431 /.cargo/config.toml
+input 6775084513292944431 /.cargo/config
+input 6775084513292944431 /rust-toolchain.toml
+input 6775084513292944431 /rust-toolchain
+input 6775084513292944431 /tmp/lustr-host-mtime-review-v2/cargo-home/config.toml
+input 6775084513292944431 /tmp/lustr-host-mtime-review-v2/cargo-home/config
+setup 16998527996712184518
+outdir /tmp/lustr-host-mtime-review-v2/cache/native-buildscript-ebe6e726a48feac6/out
+renv SEEN 1795097626
+output 347721569330909565
+cwd /tmp/lustr-host-mtime-review-v2/work
+arg native-v1
+arg /tmp/lustr-host-mtime-review-v2/cache/native-buildscript-ebe6e726a48feac6/build-script
+bin 5763613396937239702

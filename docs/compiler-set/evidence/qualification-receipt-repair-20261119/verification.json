@@ -1,0 +1,144 @@
+{
+  "schema": "lustr-local-receipt-producer-repair-v1",
+  "scope": "Previously observed local selector-component and record-capture checks; no new compiler, hosted capture, Darwin or performance qualification.",
+  "source_base": {
+    "published_head": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+    "tree": "2a6a51f099bdcdb74871fdc2e65a4df87aa0c867"
+  },
+  "preceding_failed_capture": {
+    "record": "../native-cargo-hosted-7c3d095f-20261119/README.md",
+    "run_id": 44553094694,
+    "job_id": 135661771824,
+    "job_url": "https://github.com/glopyglerky/lustr/actions/runs/44553094694/job/135661771824",
+    "failure": "Two selector fixture receipt symlinks referred to bytes outside the captured record tree.",
+    "original_artifact": {
+      "id": 14546870100,
+      "name": "exclusive-qualification-records",
+      "bytes": 13603715,
+      "sha256": "4d7965327d6466f092c704992abca9baf950b8548d5e115225d5d2b5c4b4988a",
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44553094694/artifacts/14546870100",
+      "expires_at": "2027-02-17T15:17:23Z",
+      "original_failure_preserved": true
+    }
+  },
+  "reviewed_producer_sources": [
+    {
+      "path": "tools/test-native-selection-cache.py",
+      "blob_sha": "29bd738167996011cbb8edd971acbf7f72269ea8",
+      "sha256": "31c1316f42bd6d743c9ea8f8a9d1684700f32210406f60cb7ac3dfced13f16f5",
+      "bytes": 19117,
+      "read_back_verified": true
+    },
+    {
+      "path": "tools/test-native-selection-seed.py",
+      "blob_sha": "2250e67c4fb82e28768df4a1b394a0930c712b85",
+      "sha256": "3fd50ea6421249f153923674add201a1fc842b263834352e28b5cbd1761e3e14",
+      "bytes": 12217,
+      "read_back_verified": true
+    }
+  ],
+  "repair": {
+    "changes": "Copy the exact lustr-selection-tools.txt receipt bytes into owned fixture packages; retain existing tool/library behavior.",
+    "preserved_checks": [
+      "Cached/uncached selection and rejection equality",
+      "FIFO rejection and three-second timeout",
+      "Receipt rename/restore and exact original bytes",
+      "Relocation identity changes and unchanged old certificate",
+      "Changed-receipt refusal and no new seed certificate"
+    ],
+    "strengthened_checks": [
+      "Receipt is an owned regular file with the source bytes",
+      "FIFO restoration preserves exact regular receipt bytes",
+      "Input package receipt is unchanged",
+      "Relocated receipt remains byte-identical after the separate receipt mutation"
+    ],
+    "packager_changed": false,
+    "production_changed": false,
+    "workflow_changed": false
+  },
+  "previously_observed_local_executions": [
+    {
+      "producer": "tools/test-native-selection-cache.py",
+      "invocations": 156,
+      "assertions": 297,
+      "exit": 0,
+      "all_recorded_assertions_passed": true,
+      "all_recorded_stdout_stderr_hashes_independently_verified": true
+    },
+    {
+      "producer": "tools/test-native-selection-seed.py",
+      "invocations": 38,
+      "assertions": 87,
+      "exit": 0,
+      "all_recorded_assertions_passed": true,
+      "all_recorded_stdout_stderr_hashes_independently_verified": true
+    }
+  ],
+  "local_input_identities": {
+    "profiler_sha256": "9402adc8f11286c4aa2fd82afce0ff7378f90319447ddf9ec50eecf4e57912e7",
+    "cargo_sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+    "lustr_and_rustc_alias_sha256": "bda58fc525e6c9a15ca84237359fb0570132483725a3fba2c21cf6d13603df2e",
+    "input_receipt_sha256": "19c91bed69af163bea23a09f038f32f3d3cb31828a336cfdd67d81b0e2205429",
+    "profiler_source_match_reported": true,
+    "input_hashes_before_and_after_matched": true
+  },
+  "previously_observed_local_capture": {
+    "helper_sha256": "3363ca74981e99ecc48689dfe46c4cf8f16b5aa6c29dc396599532fffb9b056e",
+    "workflow_sha256": "d8d3c4df1cb3cba45614ff4fa3f72ee7f0b11845027ce0071f6a8e7881bae7b6",
+    "helper_byte_identity_with_published_base_independently_verified": true,
+    "exit": 0,
+    "capture_complete": true,
+    "errors": [],
+    "inventory_entries": 499,
+    "included_members": 498,
+    "regular_files_verified_by_capture_review": 442,
+    "regular_bytes_verified_by_capture_review": 1049374,
+    "raw_archive_bytes": 46157,
+    "raw_archive_sha256": "7bd374419d45b35dd92a1f1424e13647536c1d3489174098f78f5a660932b99d",
+    "inventory_sha256": "fd63f3ab1c054296f06774633314e9ce3c4237c0e01ada213a48887a9e0e45f5",
+    "archive_and_inventory_hashes_independently_verified_before_outage": true,
+    "archive_members_and_live_receipt_bytes_independently_verified_before_outage": [
+      {
+        "path": "native-selection-cache/package/lib/lustr-selection-tools.txt",
+        "kind": "regular",
+        "bytes": 342,
+        "sha256": "19c91bed69af163bea23a09f038f32f3d3cb31828a336cfdd67d81b0e2205429"
+      },
+      {
+        "path": "native-selection-seed/package/lib/lustr-selection-tools.txt",
+        "kind": "regular",
+        "bytes": 350,
+        "sha256": "6e12d29c1b33896df24dd792121bac0cd67b3bc57faa235386fc0de57767a70f",
+        "intentional_mutation": "source=invalid- refusal control"
+      },
+      {
+        "path": "native-selection-seed/relocated-package/lib/lustr-selection-tools.txt",
+        "kind": "regular",
+        "bytes": 342,
+        "sha256": "19c91bed69af163bea23a09f038f32f3d3cb31828a336cfdd67d81b0e2205429"
+      }
+    ]
+  },
+  "independent_review": {
+    "blocking_findings": 0,
+    "tests_rerun_by_reviewer": false,
+    "reviewed_source_hashes_match_reconstructed_github_blobs": true
+  },
+  "availability_after_workspace_outage": {
+    "original_local_raw_archive_published": false,
+    "original_local_raw_archive_currently_retrievable": false,
+    "normalized_review_archive": {
+      "reported_records": 403,
+      "published": false,
+      "currently_retrievable": false
+    },
+    "underlying_local_reports_and_streams_currently_retrievable": false,
+    "reconstructed_producer_source_in_github_blobs": true,
+    "this_record": "A compact account of checks observed before the outage, with byte identities; it does not supply the unavailable local archives.",
+    "fresh_hosted_run_required": true,
+    "fresh_hosted_capture_verified": false
+  },
+  "qualifies_compiler": false,
+  "qualifies_performance": false,
+  "release_admission": false
+}

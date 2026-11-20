@@ -530,7 +530,7 @@ pub(crate) fn may_panic_before_moves(dest: &Place, rv: &Rvalue) -> bool {
         Rvalue::Use(o) | Rvalue::Opt(_, Some(o)) | Rvalue::Res(_, _, o) => op_indexed(o),
         Rvalue::Ref(_, pl) | Rvalue::Discriminant(pl) | Rvalue::SliceOf(pl) | Rvalue::LenOf(pl) => indexed(pl),
         Rvalue::Aggregate(_, _, os) | Rvalue::TupleAgg(_, os) | Rvalue::ArrayAgg(_, os) => os.iter().any(op_indexed),
-        Rvalue::Opt(_, None) | Rvalue::StaticRef(_) | Rvalue::FnValue(..) | Rvalue::ItemShim(..) => false,
+        Rvalue::Opt(_, None) | Rvalue::StaticRef(_) | Rvalue::FnValue(..) | Rvalue::NativeFnValue(..) | Rvalue::ItemShim(..) => false,
         Rvalue::MakeDyn { ptr, .. } | Rvalue::DynUpcast { ptr, .. } | Rvalue::DynMeta { ptr, .. } | Rvalue::DynData { ptr, .. } => {
             op_indexed(ptr)
         }

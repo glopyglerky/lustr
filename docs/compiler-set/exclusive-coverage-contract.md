@@ -177,10 +177,10 @@ qualifiers outside product admission. Structural package checks run before
 construction and add no per-request compilation work.
 
 The machine-readable inventory is
-[`upstream/complement-imports.json`](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/upstream/complement-imports.json),
+[`upstream/complement-imports.json`](../../upstream/complement-imports.json),
 schema `lustr-complement-imports-v1`. It distinguishes actual partial source
 imports from retained research components and keeps `full_rust_coverage=false`.
-The [implementation cleanup](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/exclusive-coverage-cleanup.md) adds this inventory
+The [implementation cleanup](exclusive-coverage-cleanup.md) adds this inventory
 and structural enforcement. Neither the inventory nor its guard establishes
 full coverage, global source minimality or performance qualification.
 

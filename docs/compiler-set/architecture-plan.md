@@ -28,7 +28,7 @@ at [cb0721d4](https://github.com/glopyglerky/lustr/tree/cb0721d49be95ec3f34a113c
 It contains reusable native/correctness/metadata work but also prohibited retry
 and whole-consumer analysis paths. [PR #31](https://github.com/glopyglerky/lustr/pull/31)
 landed the governing documentation without changing product source. The current
-[implementation cleanup](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/exclusive-coverage-cleanup.md) removes the conflicting
+[implementation cleanup](exclusive-coverage-cleanup.md) removes the conflicting
 routes and records bounded verification. It does not implement the unfinished
 complement or qualify a replacement. The [design checkpoint](design.md) and
 [disposition](retained-work-disposition.md) preserve the source distinctions.

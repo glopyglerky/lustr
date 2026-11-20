@@ -1,0 +1,30 @@
+{
+  "evidence": [
+    {
+      "path": "warm-compact-selector-build/receipt.json",
+      "sha256": "dfa7fee4e502045abb528109e3a8737736f984155ca09c5a72a120b1ce6af7c9"
+    },
+    {
+      "path": "warm-review/compact-6f59c902a-regression/results.json",
+      "sha256": "656c99333074f0cc7fe995bb6012a64e20233a5521ded1c714ecb3f7f26dce6b"
+    },
+    {
+      "path": "warm-review/compact-6f59c902a-shapes-fallback-first/results.json",
+      "sha256": "f5f0469cb14ece85c5c61a1175b2990cd9d113979397c5806df9ff9b4b0bc5ed"
+    }
+  ],
+  "pending": "One quiet paired component comparison and later hosted full-command qualification; source shares any pre-existing tool-access issues outside this change.",
+  "replayed": {
+    "compact_assertions": 486,
+    "compact_commands": 103,
+    "exact_full_selection_pairs": 70,
+    "runtime_commands": 8,
+    "selector_assertions": 265,
+    "selector_invocations": 140
+  },
+  "reviewer": "/root/warm_entry_implementation",
+  "scope": "Independent product/tool/doc source review and raw evidence replay; no independent execution or performance claim.",
+  "source_finding": "No blocker found. Exact live Snapshot and every target binding retained; sole fresh Cargo/pkgid+unique filter writer; full package/target survives into fallback; tool certificate schema unchanged.",
+  "source_revision": "6f59c902a0890413ff82ae4a572fac7e362919a9",
+  "source_tree": "ca59b783c4ba348856e6918dc42781dd72004bb2"
+}

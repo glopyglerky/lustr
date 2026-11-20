@@ -35,13 +35,13 @@ impl OwnedGroup {
 }
 
 #[test]
+#[ignore = "requires explicit resource-test output and SDK inputs; run with --ignored"]
 fn collector_completion_preserves_sigpipe_blocked_signals_and_siblings() {
-    let Some(base) = std::env::var_os("LUSTR_BENCH_RESOURCE_TEST_OUTPUT") else {
-        return;
-    };
+    let base =
+        std::env::var_os("LUSTR_BENCH_RESOURCE_TEST_OUTPUT").expect("explicit test input LUSTR_BENCH_RESOURCE_TEST_OUTPUT is required");
     let root = Path::new(&base).with_extension("signals");
     fs::create_dir(&root).unwrap();
-    let toolchain = std::env::var_os("LUSTR_BENCH_TEST_BLUEFE_ROOT").expect("explicit qualified nightly toolchain");
+    let toolchain = std::env::var_os("LUSTR_BENCH_TEST_SDK").expect("explicit qualified nightly toolchain");
     let runner = Path::new(env!("CARGO_BIN_EXE_lustr-bench"));
     let fixture = Path::new(env!("CARGO_BIN_EXE_lustr-bench-resource-fixture"));
     let source = root.join("pipe.rs");
@@ -160,10 +160,10 @@ fn collector_completion_preserves_sigpipe_blocked_signals_and_siblings() {
     assert!(!report.exists());
 }
 #[test]
+#[ignore = "requires explicit resource-test output and SDK inputs; run with --ignored"]
 fn fresh_collectors_preserve_payload_and_do_not_accumulate_maxrss() {
-    let Some(root) = std::env::var_os("LUSTR_BENCH_RESOURCE_TEST_OUTPUT") else {
-        return;
-    };
+    let root =
+        std::env::var_os("LUSTR_BENCH_RESOURCE_TEST_OUTPUT").expect("explicit test input LUSTR_BENCH_RESOURCE_TEST_OUTPUT is required");
     let root = Path::new(&root);
     fs::create_dir(root).unwrap();
     let runner = Path::new(env!("CARGO_BIN_EXE_lustr-bench"));

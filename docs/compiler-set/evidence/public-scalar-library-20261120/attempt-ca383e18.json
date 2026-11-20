@@ -1,0 +1,191 @@
+{
+  "broader_ci": {
+    "run": 44713154017,
+    "scope": "Separate run owned by parent; no conclusion asserted by this evidence record."
+  },
+  "compiler_set": {
+    "conclusion": "failure",
+    "failed_jobs": 1,
+    "failed_steps": [
+      "Qualify real Cargo scalar libraries through the installed retained compiler",
+      "Run all public crate targets and real-package contracts",
+      "Preserve real symbol and ABI component controls"
+    ],
+    "native_job": 136209702903,
+    "native_job_duration": "16m31s",
+    "run": 44713154124,
+    "successful_jobs": 9
+  },
+  "head": "ca383e18cbed9b7a345fb71ab100d684eb20a8ad",
+  "merge_checkout": "7ca1fd3b601bde6187b847f61402d3a3f1a11286",
+  "mixed_symbol_controls": {
+    "failed": 1,
+    "methods": 11,
+    "passed": 10,
+    "source_cause": "Identity fixture omitted newly mandatory public-library source inputs required by the unchanged production build helper."
+  },
+  "native_job_log": {
+    "bytes": 651552,
+    "sha256": "f6e11afc2ef187c2800a3e7c6343c43dda1b6dead8a15aaa0e3b244a51f5b7cb"
+  },
+  "native_tree": "3a73767d60f57fd1e2b8ebc6279a447da752d152",
+  "original_artifacts": [
+    {
+      "bytes": 118845716,
+      "github_digest_matches": true,
+      "id": 14619040372,
+      "members": 1091,
+      "name": "native-metadata-join-44713154124-1",
+      "sha256": "a94b9cd5f270469a10af1062c216c4f9835fe317eae95bb6b1db240cec1bbf9c"
+    },
+    {
+      "bytes": 459,
+      "github_digest_matches": true,
+      "id": 14618770644,
+      "members": 1,
+      "name": "runner-source-44713154124-1",
+      "sha256": "24627da9217a37d215e22d1386262b189443ff953d9e7a3d511464fa10869fe4"
+    },
+    {
+      "bytes": 3589,
+      "github_digest_matches": true,
+      "id": 14618725425,
+      "members": 8,
+      "name": "selective-metadata-research-44713154124-1",
+      "sha256": "36640bd391f6b91bb0e7e8d5a19b2ddc314edd708ab5fe384a22092781c951ff"
+    },
+    {
+      "bytes": 647417143,
+      "github_digest_matches": true,
+      "id": 14619396948,
+      "members": 36630,
+      "name": "exclusive-entry-and-shared-services",
+      "sha256": "4cbb041f0ea1d1a9da682210ecc40a1d02638a659885b3bdfd2b569608b458d3"
+    },
+    {
+      "bytes": 12277276,
+      "github_digest_matches": true,
+      "id": 14618698419,
+      "members": 2,
+      "name": "exclusive-qualification-records",
+      "sha256": "813bbeb07395f0ce91b7f4176a5cdec69c42bfbeb5a73cd4c83a6c9f33b7d2bc"
+    },
+    {
+      "bytes": 1199795,
+      "github_digest_matches": true,
+      "id": 14619561054,
+      "members": 51,
+      "name": "native-consumer-records-44713154124-1",
+      "sha256": "2fa4ab24375a2672f157b9cba1ae687caec70c56e8237a7d692bbf71359ffe9a"
+    }
+  ],
+  "originals_preserved": true,
+  "peer_contract": {
+    "actual_failure": "complete-frame assertion consumed263bytes of265",
+    "failed": 1,
+    "ignored": 5,
+    "passed": 23,
+    "source_cause": "The independent peer had not consumed the new always-present length-prefixed library discriminator; this was a fixture defect, not a successful compiler execution."
+  },
+  "pr": 33,
+  "public_attempt": {
+    "actual_client_execs": 8,
+    "actual_refusal": "integration is incomplete for this rustc request or compiler command; no stock compiler was invoked",
+    "admission_source_sha256": "b3b1676733441b4f24d93d1da16ef1cc0568055e7b1b531c2858a29c88945b7c",
+    "campaign_started": true,
+    "cargo_status": 101,
+    "cold_stderr_sha256": "de84d143730ca2ce5fd15f67a4481c968302ae204f0238b138bce51259f09c66",
+    "cold_trace_sha256": "d27f04281a13d5a54f728c3a17b8961aa5b74110591ce8ecb80c8e1f553ec6ed",
+    "completed_histories": 0,
+    "components": [
+      {
+        "bytes": 15171784,
+        "name": "lustr",
+        "sha256": "1ec65675c5a2489b7ae032f4971118b00d449f76cc46cb9305fc7a510998f13f"
+      },
+      {
+        "bytes": 15171784,
+        "name": "rustc",
+        "sha256": "1ec65675c5a2489b7ae032f4971118b00d449f76cc46cb9305fc7a510998f13f"
+      },
+      {
+        "bytes": 7016824,
+        "name": "lust",
+        "sha256": "931ef6a02e59aa91ac5f13cfcd26940f2e3909647ee7dc7b78b0fa714df8203c"
+      },
+      {
+        "bytes": 325116864,
+        "name": "lust-core",
+        "sha256": "d4627e7a3fac721e276fb5949a9a5d17ddd1bbe395fc04f271ad0a9df5f1dbbb"
+      },
+      {
+        "bytes": 36722856,
+        "name": "cargo",
+        "sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530"
+      },
+      {
+        "bytes": 136504,
+        "name": "llvm-ar",
+        "sha256": "c43dcd1bf79f4df283e4599a1c9ef6c0d71d68d74b1a276fd748a7c4f98eb96b"
+      },
+      {
+        "bytes": 296072,
+        "name": "llvm-objcopy",
+        "sha256": "a8afaf147c812f54faaa9d47a59be44361dd086a125f25685519ac79f6695cc5"
+      },
+      {
+        "bytes": 12412,
+        "name": "sdk-receipt.json",
+        "sha256": "4e400b263bf9923616dea44ead2d77213703177d3bfaf6becd6a19a4c5a657a7"
+      }
+    ],
+    "evaluator_controls_passed": 13,
+    "independent_audit": {
+      "bytes": 27234,
+      "path": "independent-failed-public-audit.json",
+      "sha256": "067cf3b2aca3f7b886ac2420c7e1ba36cb641eb2a4fd27eba8a64adadcadbb54"
+    },
+    "original_consumers": 0,
+    "owner_ready_only": true,
+    "packaged_component_byte_identity_scope": "Eight runtime component identities match exact bytes retained under qualification package copies in the original aggregate ZIP; the runtime installation directory itself is not an archive prefix.",
+    "packaged_rustc_status": 2,
+    "public_artifacts_produced": 0,
+    "public_report_sha256": "deda61d4c87aa3a04701bc0686f09b1769dc60b8edc25d4d050f644032a71e61",
+    "runtime_assertions": 0,
+    "source_backed_first_refusal": "src/library_request.rs line48 has no -Z branch; the observed -Z embed-metadata=no reaches the terminal unknown-option catchall. The later --force-warn=unused_crate_dependencies is also unhandled. The actual four-value --json list is already admitted.",
+    "successful_noncompilation_query_execs": 6
+  },
+  "repository": "glopyglerky/lustr",
+  "schema": "lustr-public-scalar-source-bound-attempt-v1",
+  "scope": {
+    "candidate_or_test_rerun_by_reviewer": false,
+    "full_compiler_qualification": false,
+    "full_rust_coverage": false,
+    "no_std_entire_compiler": false,
+    "performance_qualified": false,
+    "retained_public_integration": false,
+    "socket_free_public_host": false
+  },
+  "separate_retained_metadata": {
+    "archive_joins": 25,
+    "candidate_bytes": 361104696,
+    "candidate_sha256": "cc1362653ed68c6056730d2e649c440b2a0d79425ca0767f8d13d9b4676f14d4",
+    "command_stream_pairs": 85,
+    "conclusion": "success",
+    "consumers": 25,
+    "history_transitions": 29,
+    "independent_original_record_audit": {
+      "bytes": 49645,
+      "path": "independent-original-record-audit.json",
+      "sha256": "725944a019234f778c6b029810f9e4b660abdf52443a577838ef263e56f2231b"
+    },
+    "job": 136209702918,
+    "literal_requests": 33,
+    "no_op_intervals_with_zero_actual_tool_calls": 5,
+    "runtime_assertions": 6815952,
+    "scope": "Separate research caller only; not public retained integration.",
+    "sdk_refusals": 2,
+    "sessions": 3
+  },
+  "tree": "0c4beb0e7e5b97fa8430e7a7a4b5577856351c8b"
+}

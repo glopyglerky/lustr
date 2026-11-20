@@ -1199,6 +1199,8 @@ mod tests {
         let units = || vec![UnitIn::text("u0", main.into()), UnitIn::text("u1", f.into()), UnitIn::text("u2", g.into())];
         let plain = crate::driver::cache::Cache::at(&root.join("c1"));
         super::build(&units(), &spec, &root.join("a"), false, Some(&plain), &root.join("w1")).unwrap();
+        let plain_bytes = std::fs::read(root.join("a")).unwrap();
+        assert_eq!(std::process::Command::new(root.join("a")).status().ok().and_then(|s| s.code()), Some(7));
         // The stream's cache already holds g's object (a build of another main and g): u2 is a
         // hit, u1 a miss the stream compiles, u0 a miss build compiles.
         let streamed = crate::driver::cache::Cache::at(&root.join("c2"));
@@ -1207,10 +1209,13 @@ mod tests {
         let Some(stream) = super::Stream::start(&spec.triple, false, Some(crate::driver::cache::Cache::at(&root.join("c2"))), root.join("w2")) else { return };
         stream.add("u1", f);
         stream.add("u2", g);
-        let r = super::build_with(&units(), &spec, &root.join("b"), false, Some(&streamed), &root.join("w2"), Some(stream)).unwrap();
+        // Apple ld includes the output filename in its required ad-hoc code
+        // signature. Hold that filename fixed while comparing the two paths;
+        // no signature or executable bytes are stripped from this assertion.
+        let r = super::build_with(&units(), &spec, &root.join("a"), false, Some(&streamed), &root.join("w2"), Some(stream)).unwrap();
         assert!(r.contains("3 units (1 from cache"), "u2 hit, u1 compiled by the stream, u0 by build: {r}");
-        assert_eq!(std::fs::read(root.join("a")).unwrap(), std::fs::read(root.join("b")).unwrap(), "the same binary");
-        assert_eq!(std::process::Command::new(root.join("b")).status().ok().and_then(|s| s.code()), Some(7));
+        assert_eq!(plain_bytes, std::fs::read(root.join("a")).unwrap(), "the same binary");
+        assert_eq!(std::process::Command::new(root.join("a")).status().ok().and_then(|s| s.code()), Some(7));
         let _ = std::fs::remove_dir_all(&root);
     }
 

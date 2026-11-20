@@ -2939,7 +2939,7 @@ fn source_fn_attrs(p: &Program, f: LocalDefId) -> String {
                 if let crate::ast::AttrInput::List(_, trees) = &a.input {
                     for t in trees {
                         if let TokenTree::Token(t) = t
-                            && let Tok::Ident(n) = t.tok
+                            && let Tok::Ident(n, _) = t.tok
                         {
                             match p.name(n) {
                                 "always" => how = " alwaysinline",

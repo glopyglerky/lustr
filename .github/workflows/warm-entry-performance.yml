@@ -1,0 +1,46 @@
+name: Historical warm entry evidence
+
+on:
+  pull_request:
+    paths:
+      - 'tools/*warm*'
+      - 'tools/*upstream-slice*'
+      - 'tools/*mixed-performance*'
+      - 'tools/*benchmark-host*'
+      - 'tools/test-retired-acquisition.py'
+      - 'tools/test-workflow-inputs.py'
+      - 'docs/compiler-set/evidence/warm-entry-2026-11-18/**'
+      - '.github/workflows/warm-entry-performance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  historical-evidence:
+    name: Frozen evidence replay (no current compiler qualification)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Exercise reporting and evidence refusal controls
+        run: |
+          python3 tools/test-warm-entry-comparison.py
+          python3 tools/test-warm-entry-diagnostics.py
+      - name: Replay immutable historical source and results
+        run: |
+          python3 docs/compiler-set/evidence/warm-entry-2026-11-18/replay.py
+      - name: State applicability
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'MARKDOWN'
+          This job validates frozen historical evidence. It does not construct
+          the retired whole-rustc package or qualify the current native package.
+          Current entry, Cargo selection and shared-service controls run in
+          Compiler set. Current performance remains unqualified.
+          MARKDOWN

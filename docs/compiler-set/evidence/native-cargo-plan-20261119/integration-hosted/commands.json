@@ -1,0 +1,33 @@
+[
+  {
+    "name": "compile",
+    "argv": [
+      "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc",
+      "--edition=2024",
+      "tools/lust-upstream-check.rs",
+      "-o",
+      "/tmp/lustr-integration-hosted-fb2b2480-20261119/lust-upstream-check"
+    ],
+    "cwd": "/workspace/scratch/9d482ba2ab85/lustr",
+    "unset_environment": [
+      "LD_LIBRARY_PATH"
+    ],
+    "exit_code": 0,
+    "stdout": "compile.stdout",
+    "stderr": "compile.stderr"
+  },
+  {
+    "name": "candidate",
+    "argv": [
+      "/tmp/lustr-integration-hosted-fb2b2480-20261119/lust-upstream-check",
+      "--candidate"
+    ],
+    "cwd": "/workspace/scratch/9d482ba2ab85/lustr",
+    "unset_environment": [
+      "LD_LIBRARY_PATH"
+    ],
+    "exit_code": 0,
+    "stdout": "candidate.stdout",
+    "stderr": "candidate.stderr"
+  }
+]

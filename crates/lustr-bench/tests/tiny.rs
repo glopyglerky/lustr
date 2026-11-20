@@ -19,11 +19,9 @@ fn gate_identity_probe_succeeds() {
     assert_eq!(String::from_utf8(output.stdout).unwrap().trim(), concat!("lustr-bench-gate ", env!("CARGO_PKG_VERSION")));
 }
 #[test]
-fn actual_bluefe_tiny() {
-    let Some(root) = std::env::var_os("LUSTR_BENCH_TEST_BLUEFE_ROOT").map(PathBuf::from) else {
-        eprintln!("not run: set LUSTR_BENCH_TEST_BLUEFE_ROOT and LUSTR_BENCH_TEST_OUTPUT for actual BlueFe integration");
-        return;
-    };
+#[ignore = "requires an explicit SDK and new output directory; run with --ignored"]
+fn actual_cargo_tiny() {
+    let root = PathBuf::from(std::env::var_os("LUSTR_BENCH_TEST_SDK").expect("explicit test input LUSTR_BENCH_TEST_SDK is required"));
     let out = PathBuf::from(std::env::var_os("LUSTR_BENCH_TEST_OUTPUT").expect("explicit NAS generated-output directory"));
     fs::create_dir(&out).unwrap();
     let fixture = out.join("snapshot");
@@ -33,7 +31,7 @@ fn actual_bluefe_tiny() {
     for file in ["Cargo.toml", "Cargo.lock", "src/main.rs", "reject.rs"] {
         fs::copy(input.join(file), fixture.join(file)).unwrap();
     }
-    let mut tools: Vec<_> = ["cargo", "rustc", "rustdoc", "lustr"]
+    let mut tools: Vec<_> = ["cargo", "rustc", "rustdoc"]
         .iter()
         .map(|n| {
             let p = root.join("bin").join(n);
@@ -42,18 +40,17 @@ fn actual_bluefe_tiny() {
         .collect();
     let gate = PathBuf::from(env!("CARGO_BIN_EXE_lustr-bench-gate"));
     tools.push(json!({"sha256":digest(&gate),"path":gate,"version_args":["--version"]}));
-    let coordinator = root.join("bin/lustr");
     let cargo = root.join("bin/cargo");
     let rustc = root.join("bin/rustc");
     let mut lanes = Vec::new();
     for name in ["baseline", "control"] {
         let target = out.join("passed/targets").join(name);
         lanes.push(json!({"name":name,"env":{"PATH":format!("{}:/usr/bin:/bin",root.join("bin").display()),"HOME":out,"CARGO_HOME":out.join("cargo-home"),"RUSTC":rustc,"RUSTDOC":root.join("bin/rustdoc"),"CARGO":cargo,"CARGO_BUILD_JOBS":"1","CARGO_NET_OFFLINE":"true","CARGO_TERM_COLOR":"never"},"tools":tools,
-            "command":cmd(json!([coordinator,"--bluefe-root",root,"check","--locked","--offline","-vv"]),0),
+            "command":cmd(json!([cargo,"check","--locked","--offline","-vv"]),0),
             "selection":cmd(json!([cargo,"metadata","--format-version","1","--locked","--offline"]),0),
-            "evidence":cmd(json!([coordinator,"--bluefe-root",root,"check","--locked","--offline","-vv"]),0),
+            "evidence":cmd(json!([cargo,"check","--locked","--offline","-vv"]),0),
             "evidence_contains":["--edition=2024","-C debuginfo=2"],
-            "gates":[{"name":"run-and-unwind","kind":"runtime","compare":"stdout","command":cmd(json!([coordinator,"--bluefe-root",root,"run","--quiet","--locked","--offline"]),0)},
+            "gates":[{"name":"run-and-unwind","kind":"runtime","compare":"stdout","command":cmd(json!([cargo,"run","--quiet","--locked","--offline"]),0)},
                 {"name":"executed-tests","kind":"tests","compare":"stdout","command":cmd(json!([gate,"tests","test","--locked","--offline"]),0)},
                 {"name":"invalid-borrow","kind":"rejection","compare":"stdout","command":cmd(json!([gate,"reject","reject.rs"]),1)}],
             "normalize":[[target,"<TARGET>"]]}));
@@ -140,21 +137,9 @@ fn actual_bluefe_tiny() {
     // Profile values cannot hide a feature difference from operation comparison.
     let mut unequal = spec.clone();
     for key in ["command", "evidence"] {
-        unequal["lanes"][0][key]["argv"] =
-            json!([coordinator, "--bluefe-root", root, "rustc", "--profile", "check", "--locked", "--offline", "-vv"]);
-        unequal["lanes"][1][key]["argv"] = json!([
-            coordinator,
-            "--bluefe-root",
-            root,
-            "rustc",
-            "--features",
-            "extra",
-            "--profile",
-            "check",
-            "--locked",
-            "--offline",
-            "-vv"
-        ]);
+        unequal["lanes"][0][key]["argv"] = json!([cargo, "rustc", "--profile", "check", "--locked", "--offline", "-vv"]);
+        unequal["lanes"][1][key]["argv"] =
+            json!([cargo, "rustc", "--features", "extra", "--profile", "check", "--locked", "--offline", "-vv"]);
     }
     fs::write(out.join("unequal.json"), serde_json::to_vec(&unequal).unwrap()).unwrap();
     assert!(!Command::new(exe).arg(out.join("unequal.json")).arg(out.join("unequal")).status().unwrap().success());
@@ -201,7 +186,7 @@ fn actual_bluefe_tiny() {
     clean["force_root"] = Value::Null;
     for lane in clean["lanes"].as_array_mut().unwrap() {
         for key in ["command", "evidence"] {
-            lane[key]["argv"] = json!([coordinator, "--bluefe-root", root, "build", "--locked", "--offline", "-vv"]);
+            lane[key]["argv"] = json!([cargo, "build", "--locked", "--offline", "-vv"]);
         }
     }
     fs::write(out.join("shared.json"), serde_json::to_vec(&clean).unwrap()).unwrap();
@@ -223,10 +208,9 @@ fn actual_bluefe_tiny() {
 }
 
 #[test]
+#[ignore = "requires an explicit SDK and new output directory; run with --ignored"]
 fn rejection_codes_cannot_be_spoofed_by_paths_or_source_text() {
-    let Some(root) = std::env::var_os("LUSTR_BENCH_TEST_BLUEFE_ROOT").map(PathBuf::from) else {
-        return;
-    };
+    let root = PathBuf::from(std::env::var_os("LUSTR_BENCH_TEST_SDK").expect("explicit test input LUSTR_BENCH_TEST_SDK is required"));
     let out = PathBuf::from(std::env::var_os("LUSTR_BENCH_TEST_OUTPUT").expect("explicit output")).with_extension("diagnostic-cases");
     fs::create_dir(&out).unwrap();
     for (name, source) in

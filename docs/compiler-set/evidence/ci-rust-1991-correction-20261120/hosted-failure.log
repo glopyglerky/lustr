@@ -1,0 +1,265 @@
+﻿2026-11-20T03:31:15.9746085Z Current runner version: '2.338.2'
+2026-11-20T03:31:15.9762486Z ##[group]Runner Image Provisioner
+2026-11-20T03:31:15.9763169Z Hosted Compute Agent
+2026-11-20T03:31:15.9763927Z Version: 20261103.629
+2026-11-20T03:31:15.9764524Z Commit: 15dbd9ccb5dbf34fae002b6ed1a2670f52df37bc
+2026-11-20T03:31:15.9765165Z Build Date: 2026-11-03T17:26:59Z
+2026-11-20T03:31:15.9765825Z Worker ID: {ab8561f7-5b4a-4f62-8471-42250d6b4477}
+2026-11-20T03:31:15.9766547Z Region: us-east-1
+2026-11-20T03:31:15.9767039Z Cloud: AWS
+2026-11-20T03:31:15.9767557Z ##[endgroup]
+2026-11-20T03:31:15.9769257Z ##[group]Operating System
+2026-11-20T03:31:15.9769864Z Ubuntu
+2026-11-20T03:31:15.9770486Z 24.04.5
+2026-11-20T03:31:15.9770960Z LTS
+2026-11-20T03:31:15.9771464Z ##[endgroup]
+2026-11-20T03:31:15.9772046Z ##[group]Runner Image
+2026-11-20T03:31:15.9772625Z Image: ubuntu-24.04
+2026-11-20T03:31:15.9773233Z Version: 20261111.127.1
+2026-11-20T03:31:15.9774845Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261111.127/images/ubuntu/Ubuntu2404-Readme.md
+2026-11-20T03:31:15.9776432Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261111.127
+2026-11-20T03:31:15.9777455Z ##[endgroup]
+2026-11-20T03:31:15.9778513Z ##[group]GITHUB_TOKEN Permissions
+2026-11-20T03:31:15.9780769Z Contents: read
+2026-11-20T03:31:15.9781350Z Metadata: read
+2026-11-20T03:31:15.9781899Z ##[endgroup]
+2026-11-20T03:31:15.9784287Z Secret source: Actions
+2026-11-20T03:31:15.9785283Z Cache mode: write
+2026-11-20T03:31:15.9786207Z Prepare workflow directory
+2026-11-20T03:31:16.0112890Z Prepare all required actions
+2026-11-20T03:31:16.0164341Z Getting action download info
+2026-11-20T03:31:16.1889740Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-11-20T03:31:17.1229888Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-11-20T03:31:17.3799281Z Complete job name: evidence
+2026-11-20T03:31:17.4621317Z ##[group]Run actions/checkout@v4
+2026-11-20T03:31:17.4622446Z with:
+2026-11-20T03:31:17.4623589Z   repository: glopyglerky/lustr
+2026-11-20T03:31:17.4630432Z   token: ***
+2026-11-20T03:31:17.4631207Z   ssh-strict: true
+2026-11-20T03:31:17.4631996Z   ssh-user: git
+2026-11-20T03:31:17.4632782Z   persist-credentials: true
+2026-11-20T03:31:17.4633808Z   clean: true
+2026-11-20T03:31:17.4634663Z   sparse-checkout-cone-mode: true
+2026-11-20T03:31:17.4635719Z   fetch-depth: 1
+2026-11-20T03:31:17.4636516Z   fetch-tags: false
+2026-11-20T03:31:17.4637333Z   show-progress: true
+2026-11-20T03:31:17.4638180Z   lfs: false
+2026-11-20T03:31:17.4638951Z   submodules: false
+2026-11-20T03:31:17.4639933Z   set-safe-directory: true
+2026-11-20T03:31:17.4640875Z   allow-unsafe-pr-checkout: false
+2026-11-20T03:31:17.4642004Z ##[endgroup]
+2026-11-20T03:31:19.5341657Z Syncing repository: glopyglerky/lustr
+2026-11-20T03:31:19.5342999Z ##[group]Getting Git version info
+2026-11-20T03:31:19.5343883Z Working directory is '/home/runner/work/lustr/lustr'
+2026-11-20T03:31:19.5344555Z [command]/usr/bin/git version
+2026-11-20T03:31:19.6181894Z git version 2.56.1
+2026-11-20T03:31:19.6195509Z ##[endgroup]
+2026-11-20T03:31:19.6207703Z Temporarily overriding HOME='/home/runner/work/_temp/9c6877b5-fb95-44b4-84a0-ba5ef58ec9be' before making global git config changes
+2026-11-20T03:31:19.6208625Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-20T03:31:19.6211015Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/lustr/lustr
+2026-11-20T03:31:19.6259284Z Deleting the contents of '/home/runner/work/lustr/lustr'
+2026-11-20T03:31:19.6261776Z ##[group]Initializing the repository
+2026-11-20T03:31:19.6265292Z [command]/usr/bin/git init /home/runner/work/lustr/lustr
+2026-11-20T03:31:19.6418330Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-20T03:31:19.6418924Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-20T03:31:19.6419534Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-20T03:31:19.6420186Z hint: call:
+2026-11-20T03:31:19.6420449Z hint:
+2026-11-20T03:31:19.6420795Z hint: 	git config --global init.defaultBranch <name>
+2026-11-20T03:31:19.6421105Z hint:
+2026-11-20T03:31:19.6421497Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-20T03:31:19.6421967Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-20T03:31:19.6434545Z hint:
+2026-11-20T03:31:19.6434909Z hint: 	git branch -m <name>
+2026-11-20T03:31:19.6435345Z hint:
+2026-11-20T03:31:19.6435785Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-20T03:31:19.6436292Z Initialized empty Git repository in /home/runner/work/lustr/lustr/.git/
+2026-11-20T03:31:19.6440741Z [command]/usr/bin/git remote add origin https://github.com/glopyglerky/lustr
+2026-11-20T03:31:19.6489662Z ##[endgroup]
+2026-11-20T03:31:19.6490233Z ##[group]Disabling automatic garbage collection
+2026-11-20T03:31:19.6491686Z [command]/usr/bin/git config --local gc.auto 0
+2026-11-20T03:31:19.6513738Z ##[endgroup]
+2026-11-20T03:31:19.6514309Z ##[group]Setting up auth
+2026-11-20T03:31:19.6518273Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-20T03:31:19.6544445Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-20T03:31:19.7841682Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-20T03:31:19.7864215Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-20T03:31:19.8010290Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-20T03:31:19.8033618Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-20T03:31:19.8179434Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-20T03:31:19.8206045Z ##[endgroup]
+2026-11-20T03:31:19.8206848Z ##[group]Fetching the repository
+2026-11-20T03:31:19.8216059Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +282d3ac145898847c3bf07cd72bdfd25f2fa8ef1:refs/remotes/pull/33/merge
+2026-11-20T03:31:21.3853720Z From https://github.com/glopyglerky/lustr
+2026-11-20T03:31:21.3854884Z  * [new ref]         282d3ac145898847c3bf07cd72bdfd25f2fa8ef1 -> pull/33/merge
+2026-11-20T03:31:21.3857376Z ##[endgroup]
+2026-11-20T03:31:21.3857954Z ##[group]Determining the checkout info
+2026-11-20T03:31:21.3859656Z ##[endgroup]
+2026-11-20T03:31:21.3864887Z [command]/usr/bin/git sparse-checkout disable
+2026-11-20T03:31:21.3929029Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-20T03:31:21.3950343Z ##[group]Checking out the ref
+2026-11-20T03:31:21.3953936Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/33/merge
+2026-11-20T03:31:21.9464445Z Note: switching to 'refs/remotes/pull/33/merge'.
+2026-11-20T03:31:21.9464823Z 
+2026-11-20T03:31:21.9465831Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-11-20T03:31:21.9466303Z changes and commit them, and you can discard any commits you make in this
+2026-11-20T03:31:21.9466795Z state without impacting any branches by switching back to a branch.
+2026-11-20T03:31:21.9467017Z 
+2026-11-20T03:31:21.9467228Z If you want to create a new branch to retain commits you create, you may
+2026-11-20T03:31:21.9467646Z do so (now or later) by using -c with the switch command. Example:
+2026-11-20T03:31:21.9467857Z 
+2026-11-20T03:31:21.9467990Z   git switch -c <new-branch-name>
+2026-11-20T03:31:21.9468254Z 
+2026-11-20T03:31:21.9468354Z Or undo this operation with:
+2026-11-20T03:31:21.9468763Z 
+2026-11-20T03:31:21.9468869Z   git switch -
+2026-11-20T03:31:21.9469042Z 
+2026-11-20T03:31:21.9469251Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-11-20T03:31:21.9469484Z 
+2026-11-20T03:31:21.9469803Z HEAD is now at 282d3ac Merge 227960cb6614c9a2ba41bc1986309fd6e97dc18c into d135be016fab5db2ba026f1229d4d77681d9b0a2
+2026-11-20T03:31:21.9534514Z ##[endgroup]
+2026-11-20T03:31:21.9537467Z [command]/usr/bin/git log -1 --format=%H
+2026-11-20T03:31:21.9564543Z 282d3ac145898847c3bf07cd72bdfd25f2fa8ef1
+2026-11-20T03:31:21.9739333Z ##[group]Run rustup toolchain install 1.99.1 --profile minimal
+2026-11-20T03:31:21.9739781Z [36;1mrustup toolchain install 1.99.1 --profile minimal[0m
+2026-11-20T03:31:22.3098491Z shell: /usr/bin/bash -e {0}
+2026-11-20T03:31:22.3098854Z ##[endgroup]
+2026-11-20T03:31:23.4016168Z info: syncing channel updates for 1.99.1-x86_64-unknown-linux-gnu
+2026-11-20T03:31:23.6803069Z info: latest update on 2026-10-15 for version 1.99.1 (58cf8f9c3 2026-10-13)
+2026-11-20T03:31:23.6803796Z info: downloading 3 components
+2026-11-20T03:31:30.5612022Z 
+2026-11-20T03:31:30.5664384Z   1.99.1-x86_64-unknown-linux-gnu installed - rustc 1.99.1 (58cf8f9c3 2026-10-13)
+2026-11-20T03:31:30.5664722Z 
+2026-11-20T03:31:30.5755981Z ##[group]Run python3 tools/test-retired-acquisition.py -v
+2026-11-20T03:31:30.5756429Z [36;1mpython3 tools/test-retired-acquisition.py -v[0m
+2026-11-20T03:31:30.5756756Z [36;1mpython3 tools/test-workflow-inputs.py -v[0m
+2026-11-20T03:31:30.5782408Z shell: /usr/bin/bash -e {0}
+2026-11-20T03:31:30.5782755Z ##[endgroup]
+2026-11-20T03:31:30.7045541Z test_historical_record_models_have_no_process_acquisition_sink (__main__.RetiredAcquisitionControls.test_historical_record_models_have_no_process_acquisition_sink) ... ok
+2026-11-20T03:31:31.3284406Z test_retired_commands_refuse_before_creating_output_or_invoking_a_tool (__main__.RetiredAcquisitionControls.test_retired_commands_refuse_before_creating_output_or_invoking_a_tool) ... ok
+2026-11-20T03:31:31.3286256Z test_retired_standalone_mixed_driver_launchers_are_absent (__main__.RetiredAcquisitionControls.test_retired_standalone_mixed_driver_launchers_are_absent) ... ok
+2026-11-20T03:31:31.3287694Z 
+2026-11-20T03:31:31.3288434Z ----------------------------------------------------------------------
+2026-11-20T03:31:31.3289159Z Ran 3 tests in 0.643s
+2026-11-20T03:31:31.3289420Z 
+2026-11-20T03:31:31.3289607Z OK
+2026-11-20T03:31:31.3700898Z test_compiler_set_covers_the_complete_source_guard_input_families (__main__.WorkflowInputControls.test_compiler_set_covers_the_complete_source_guard_input_families) ... ok
+2026-11-20T03:31:31.3714494Z test_historical_replay_changes_trigger_their_own_controls (__main__.WorkflowInputControls.test_historical_replay_changes_trigger_their_own_controls) ... ok
+2026-11-20T03:31:31.3720096Z test_native_probe_controls_cover_their_input_schema_and_package (__main__.WorkflowInputControls.test_native_probe_controls_cover_their_input_schema_and_package) ... ok
+2026-11-20T03:31:31.3721881Z test_paths_ignore_cannot_replace_positive_trigger_coverage (__main__.WorkflowInputControls.test_paths_ignore_cannot_replace_positive_trigger_coverage) ... ok
+2026-11-20T03:31:31.3725462Z test_single_star_cannot_claim_recursive_source_coverage (__main__.WorkflowInputControls.test_single_star_cannot_claim_recursive_source_coverage) ... ok
+2026-11-20T03:31:31.3726007Z 
+2026-11-20T03:31:31.3726159Z ----------------------------------------------------------------------
+2026-11-20T03:31:31.3726503Z Ran 5 tests in 0.005s
+2026-11-20T03:31:31.3726624Z 
+2026-11-20T03:31:31.3726726Z OK
+2026-11-20T03:31:31.3812389Z ##[group]Run cargo +1.99.1 test --manifest-path crates/lustr-bench/Cargo.toml --locked --bin lustr-bench-gate --test routed
+2026-11-20T03:31:31.3813070Z [36;1mcargo +1.99.1 test --manifest-path crates/lustr-bench/Cargo.toml --locked --bin lustr-bench-gate --test routed[0m
+2026-11-20T03:31:31.3838712Z shell: /usr/bin/bash -e {0}
+2026-11-20T03:31:31.3838982Z ##[endgroup]
+2026-11-20T03:31:31.4145175Z     Updating crates.io index
+2026-11-20T03:31:31.4840077Z  Downloading crates ...
+2026-11-20T03:31:31.5146042Z   Downloaded bitflags v2.10.0
+2026-11-20T03:31:31.5165264Z   Downloaded syn v3.0.10
+2026-11-20T03:31:31.5221409Z   Downloaded crypto-common v0.2.2
+2026-11-20T03:31:31.5226474Z   Downloaded cfg-if v1.0.5
+2026-11-20T03:31:31.5233583Z   Downloaded cpufeatures v0.3.1
+2026-11-20T03:31:31.5243636Z   Downloaded itoa v1.0.19
+2026-11-20T03:31:31.5250867Z   Downloaded zmij v1.0.23
+2026-11-20T03:31:31.5260910Z   Downloaded digest v0.11.3
+2026-11-20T03:31:31.5276308Z   Downloaded block-buffer v0.12.1
+2026-11-20T03:31:31.5282935Z   Downloaded cfg_aliases v0.2.2
+2026-11-20T03:31:31.5286756Z   Downloaded sha2 v0.11.1
+2026-11-20T03:31:31.5300233Z   Downloaded unicode-ident v1.0.27
+2026-11-20T03:31:31.5312066Z   Downloaded quote v1.0.47
+2026-11-20T03:31:31.5322837Z   Downloaded hybrid-array v0.4.15
+2026-11-20T03:31:31.5332432Z   Downloaded serde_core v1.0.229
+2026-11-20T03:31:31.5345206Z   Downloaded proc-macro2 v1.0.107
+2026-11-20T03:31:31.5358003Z   Downloaded serde_derive v1.0.229
+2026-11-20T03:31:31.5371416Z   Downloaded const-oid v0.10.2
+2026-11-20T03:31:31.5382856Z   Downloaded typenum v1.20.1
+2026-11-20T03:31:31.5400327Z   Downloaded serde v1.0.229
+2026-11-20T03:31:31.5416799Z   Downloaded serde_json v1.0.154
+2026-11-20T03:31:31.5448378Z   Downloaded memchr v2.8.3
+2026-11-20T03:31:31.5471167Z   Downloaded nix v0.31.3
+2026-11-20T03:31:31.5528147Z   Downloaded libc v0.2.191
+2026-11-20T03:31:31.5847071Z    Compiling proc-macro2 v1.0.107
+2026-11-20T03:31:31.5847582Z    Compiling unicode-ident v1.0.27
+2026-11-20T03:31:31.5881272Z    Compiling quote v1.0.47
+2026-11-20T03:31:31.5886970Z    Compiling typenum v1.20.1
+2026-11-20T03:31:31.6304523Z    Compiling serde_core v1.0.229
+2026-11-20T03:31:31.8485102Z    Compiling zmij v1.0.23
+2026-11-20T03:31:31.8524048Z    Compiling libc v0.2.191
+2026-11-20T03:31:31.9358570Z    Compiling cfg_aliases v0.2.2
+2026-11-20T03:31:31.9531178Z    Compiling nix v0.31.3
+2026-11-20T03:31:32.1087517Z    Compiling hybrid-array v0.4.15
+2026-11-20T03:31:32.1214727Z    Compiling const-oid v0.10.2
+2026-11-20T03:31:32.2824788Z    Compiling serde_json v1.0.154
+2026-11-20T03:31:32.3401567Z    Compiling syn v3.0.10
+2026-11-20T03:31:32.3434677Z    Compiling cfg-if v1.0.5
+2026-11-20T03:31:32.3588186Z    Compiling serde v1.0.229
+2026-11-20T03:31:32.4667520Z    Compiling crypto-common v0.2.2
+2026-11-20T03:31:32.4925799Z    Compiling block-buffer v0.12.1
+2026-11-20T03:31:33.2628644Z    Compiling digest v0.11.3
+2026-11-20T03:31:33.3344894Z    Compiling bitflags v2.10.0
+2026-11-20T03:31:33.4404796Z    Compiling memchr v2.8.3
+2026-11-20T03:31:33.6384800Z    Compiling itoa v1.0.19
+2026-11-20T03:31:33.7225014Z    Compiling cpufeatures v0.3.1
+2026-11-20T03:31:33.7414486Z    Compiling sha2 v0.11.1
+2026-11-20T03:31:34.0004824Z    Compiling serde_derive v1.0.229
+2026-11-20T03:31:35.4494745Z    Compiling lustr-bench v0.1.0 (/home/runner/work/lustr/lustr/crates/lustr-bench)
+2026-11-20T03:31:35.4794867Z error[E0282]: type annotations needed for `BTreeMap<_, _>`
+2026-11-20T03:31:35.4814593Z   --> src/bin/lustr-bench-gate.rs:18:9
+2026-11-20T03:31:35.4824174Z    |
+2026-11-20T03:31:35.4860794Z 18 |     let mut observed = std::collections::BTreeMap::new();
+2026-11-20T03:31:35.4874171Z    |         ^^^^^^^^^^^^
+2026-11-20T03:31:35.4883991Z ...
+2026-11-20T03:31:35.4914199Z 37 |             if parsed[0] != observed.values().filter(|&&ignored| !ignored).count()
+2026-11-20T03:31:35.4944160Z    |                                                                  -------- type must be known at this point
+2026-11-20T03:31:35.4968325Z    |
+2026-11-20T03:31:35.4974240Z help: consider giving `observed` an explicit type, where the type for type parameter `V` is specified
+2026-11-20T03:31:35.5014108Z    |
+2026-11-20T03:31:35.5044355Z 18 |     let mut observed: BTreeMap<K, V> = std::collections::BTreeMap::new();
+2026-11-20T03:31:35.5054113Z    |                     ++++++++++++++++
+2026-11-20T03:31:35.5073709Z 
+2026-11-20T03:31:35.5182542Z For more information about this error, try `rustc --explain E0282`.
+2026-11-20T03:31:35.5224296Z error: could not compile `lustr-bench` (bin "lustr-bench-gate" test) due to 1 previous error
+2026-11-20T03:31:35.5224927Z warning: build failed, waiting for other jobs to finish...
+2026-11-20T03:31:35.6239268Z ##[error]Process completed with exit code 101.
+2026-11-20T03:31:35.6357774Z ##[group]Run actions/upload-artifact@v4
+2026-11-20T03:31:35.6358122Z with:
+2026-11-20T03:31:35.6358449Z   name: link-input-evidence-282d3ac145898847c3bf07cd72bdfd25f2fa8ef1-1
+2026-11-20T03:31:35.6358790Z   if-no-files-found: error
+2026-11-20T03:31:35.6359418Z   path: /home/runner/work/_temp/link-input-tests.log
+/home/runner/work/_temp/project-evidence-replay.log
+/home/runner/work/_temp/link-input-identity.txt
+/home/runner/work/_temp/link-input-pairs.jsonl
+
+2026-11-20T03:31:35.6360029Z   compression-level: 6
+2026-11-20T03:31:35.6360240Z   overwrite: false
+2026-11-20T03:31:35.6360501Z   include-hidden-files: false
+2026-11-20T03:31:35.6360765Z ##[endgroup]
+2026-11-20T03:31:35.7589569Z (node:2640) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-20T03:31:35.7590204Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-20T03:31:35.7628506Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2026-11-20T03:31:35.7655017Z The least common ancestor is /home/runner/work/_temp. This will be the root directory of the artifact
+2026-11-20T03:31:35.7666248Z ##[error]No files were found with the provided path: /home/runner/work/_temp/link-input-tests.log
+/home/runner/work/_temp/project-evidence-replay.log
+/home/runner/work/_temp/link-input-identity.txt
+/home/runner/work/_temp/link-input-pairs.jsonl. No artifacts will be uploaded.
+2026-11-20T03:31:35.7831838Z Post job cleanup.
+2026-11-20T03:31:35.8494962Z [command]/usr/bin/git version
+2026-11-20T03:31:35.8514565Z git version 2.56.1
+2026-11-20T03:31:35.8539265Z Temporarily overriding HOME='/home/runner/work/_temp/f0ad229f-2af1-4f4e-beeb-d6749919959c' before making global git config changes
+2026-11-20T03:31:35.8540204Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-20T03:31:35.8542511Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/lustr/lustr
+2026-11-20T03:31:35.8571714Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-20T03:31:35.8599628Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-20T03:31:35.8815800Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-20T03:31:35.8837074Z http.https://github.com/.extraheader
+2026-11-20T03:31:35.8844556Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-11-20T03:31:35.8869700Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-20T03:31:35.9086568Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-20T03:31:35.9128647Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-20T03:31:35.9477141Z Cleaning up orphan processes
+2026-11-20T03:31:35.9725035Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

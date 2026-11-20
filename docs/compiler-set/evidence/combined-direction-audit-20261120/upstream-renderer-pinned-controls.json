@@ -1,0 +1,26 @@
+{
+  "command": [
+    "python3",
+    "tools/test-upstream-slice-benchmark.py",
+    "UpstreamDiagnosticTests",
+    "-v"
+  ],
+  "cwd": "<CHECKOUT>",
+  "explicit_environment": {
+    "RUSTC": "<PINNED_SDK>/bin/rustc"
+  },
+  "expected_exit": 0,
+  "exit_code": 0,
+  "duration_seconds": 4.008362531661987,
+  "expected_result_observed": true,
+  "stdout": {
+    "path": "upstream-renderer-pinned-controls.stdout",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stderr": {
+    "path": "upstream-renderer-pinned-controls.stderr",
+    "bytes": 904,
+    "sha256": "5fdf6e015878c2dd42695143197d887cab2ed88ba9a820ad970627f23e69b895"
+  }
+}

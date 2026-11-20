@@ -1,0 +1,909 @@
+{
+  "schema": 1,
+  "scope": "Repository CI/evaluator anti-regression audit, with actual finite controls and retained failures. Not completion of the lustr compiler.",
+  "base_commit": "f8fa2dee04e1c02f110ed9d725cda21c0b750e22",
+  "source_commit": "b30317e5fa028191d78e32275fe857295c568ed1",
+  "source_tree": "0efaa86cc56d64b72099891f4d6fa9a9ea9cb94c",
+  "source_inputs_observed_at_index_creation": {
+    ".github/workflows/compiler-set.yml": {
+      "status": "M",
+      "sha256": "31de7b07e2cc9ce4477a3bc77d8ff677b1deb31e1fc165967850dedad79f0e17"
+    },
+    ".github/workflows/native-probe-tests.yml": {
+      "status": "M",
+      "sha256": "0c13e54efbab9f7e06efae5908e17554a826a79e24ea19cdd273633ec7a192f8"
+    },
+    ".github/workflows/warm-entry-performance.yml": {
+      "status": "M",
+      "sha256": "f1dc5e1d88db509cdd8a3d65f1f13f251a8f9756ce7a620a31b963a26e18cb84"
+    },
+    ".github/workflows/warm-native-performance.yml": {
+      "status": "M",
+      "sha256": "3e9ddba3536f95ee1983fd7d9cf1506f04f95a31bb0dfb0c0df8d11f4e6a1aff"
+    },
+    "crates/lustr-bench/sample-spec.json": {
+      "status": "M",
+      "sha256": "ba3167dfcdfc73edd19e3bd36167117b1ba24ce3574f930c52cc432c1f127046"
+    },
+    "crates/lustr-bench/src/bin/lustr-bench-gate.rs": {
+      "status": "M",
+      "sha256": "88a6ad1f778cd5b7e243a542065291528147a5b176d70c79bb4f2867831f8bfd"
+    },
+    "crates/lustr-bench/src/bin/lustr-mixed-bench.rs": {
+      "status": "M",
+      "sha256": "736e804153cab87af98a72fbcdf830caa5827a05f1ffbcc0a37233512cdcbe4e"
+    },
+    "crates/lustr-bench/src/main.rs": {
+      "status": "M",
+      "sha256": "e40c826b097d227616f4e439baf1b4879b2e582e73458d4946aa128d3231f476"
+    },
+    "crates/lustr-bench/tests/metadata.rs": {
+      "status": "M",
+      "sha256": "9fbc853a748b0254010d8ba37d630c91de57b6035591ee93bed5845e62a85035"
+    },
+    "crates/lustr-bench/tests/native_state.rs": {
+      "status": "M",
+      "sha256": "2d965c27d594fc5ce0a5226a27500aa0de6f144f2234aeb5cd862ece5a75ba69"
+    },
+    "crates/lustr-bench/tests/resources.rs": {
+      "status": "M",
+      "sha256": "0cf45bf8d553e4c49c21bed28444f5364bace83a751366883e2151b8ff7a4357"
+    },
+    "crates/lustr-bench/tests/routed.rs": {
+      "status": "M",
+      "sha256": "c310a9f892ac6088560f90101703cfa984cf8c4525b792df84b5daf69a079bfc"
+    },
+    "crates/lustr-bench/tests/tiny.rs": {
+      "status": "M",
+      "sha256": "ca73615fea09a7189efd8bdc70439c31809ba738e5f6168abac8561bafe4f325"
+    },
+    "tools/measure-coordinator-project.py": {
+      "status": "M",
+      "sha256": "e47afd18ac3dd8bfaeea0ce19d6af78a00a1ea2c0d198a4005766a77b20bc61d"
+    },
+    "tools/mixed-check-qualification.rs": {
+      "status": "D",
+      "sha256": null
+    },
+    "tools/mixed-compiler-qualification.rs": {
+      "status": "D",
+      "sha256": null
+    },
+    "tools/mixed-library-qualification.rs": {
+      "status": "D",
+      "sha256": null
+    },
+    "tools/mixed-scalar-qualification.rs": {
+      "status": "D",
+      "sha256": null
+    },
+    "tools/qualify-capability-results.py": {
+      "status": "M",
+      "sha256": "32a04132df7e34e7cf858230a799a186809a92579fbadba8a483f6403ac97fd0"
+    },
+    "tools/qualify-retained-results.py": {
+      "status": "M",
+      "sha256": "f920747ba2eec90dc009efdd237becba6b0f207cabd3c07c38932c1186603326"
+    },
+    "tools/run-upstream-slice-benchmark.py": {
+      "status": "M",
+      "sha256": "2b9415da667d271d6c14d57d65d5c3967d11f3d49309ffc19f7aed0253c8c52a"
+    },
+    "tools/run-warm-entry-comparison.py": {
+      "status": "M",
+      "sha256": "872cd8d3cdf8f19bdc40488e8b84aec94eb99fafa902ddd75780c84e9027c712"
+    },
+    "tools/run-warm-entry-diagnostics.py": {
+      "status": "M",
+      "sha256": "ef9af744b24524895753c2b519dfa1453ca5d8892f94fc617c9598c5603fa8f4"
+    },
+    "tools/run-warm-native-comparison.py": {
+      "status": "M",
+      "sha256": "df66debe5231cafcf7c828efce92ea1ab00b0e12996ad117dee0c441b9a82ae1"
+    },
+    "tools/run-warm-native-startup.py": {
+      "status": "M",
+      "sha256": "528b5e71cf7bf3364d712045afabc9e89d4298e855e1c576909748376b8e5256"
+    },
+    "tools/test-capability-results.py": {
+      "status": "M",
+      "sha256": "77795f2cc65e099dc3626deff2a8a3784e79ae819390c6031598318414e68fc5"
+    },
+    "tools/test-retained-results.py": {
+      "status": "M",
+      "sha256": "a1e078b9c8cf1e6301c2d176f66f9913ec3463c342270a778446f48aedc1c894"
+    },
+    "tools/test-retired-acquisition.py": {
+      "status": "A",
+      "sha256": "01a95068d18c6cea935f84a937c976303f7f56ffd70b22e30983219fbe83e5cd"
+    },
+    "tools/test-upstream-slice-benchmark.py": {
+      "status": "M",
+      "sha256": "99003b6408ab4aae4ca186b46ab2f2ba119304e4ed5e271e5e0d2d39261bcebb"
+    },
+    "tools/test-warm-applicability.py": {
+      "status": "M",
+      "sha256": "8b858d72992ba0a5dd95c9761272fad1be797c90f1c635bf648c9825522f7c2a"
+    },
+    "tools/test-workflow-inputs.py": {
+      "status": "A",
+      "sha256": "187b14be61a40b3e58c0d5bb8005903e0a32abe6e821c096adcc9cfa79ee8768"
+    },
+    ".github/workflows/ci.yml": {
+      "status": "reviewed_unchanged",
+      "sha256": "e7153ed63717f940650dc1febfc29302425fb373ab964d68ca2eb0d160c41f95"
+    },
+    ".github/workflows/mixed-performance-report.yml": {
+      "status": "reviewed_unchanged",
+      "sha256": "bda01df1e9fdf6b4e635ded510f83d89ec58b1590bc63f17e773082c93e9f1ca"
+    },
+    ".github/workflows/runner-routing-canary.yml": {
+      "status": "reviewed_unchanged",
+      "sha256": "6bc270c0b7e912dd52fe9e8427192f0cd82d9e7017d4a143e5d3d6b1f2c4514a"
+    }
+  },
+  "workflow_audit": [
+    {
+      "workflow": "ci.yml",
+      "review": "Existing all-PR/push native donor gate has no source path filter. Donor source unchanged; finite independent coverage/retained result checks remain separate from donor unsupported cases. Strict panic/unwind rows are explicit. No full-Rust or current speed qualification inferred."
+    },
+    {
+      "workflow": "compiler-set.yml",
+      "review": "Fixed input-family triggers and added guard/retirement controls; genuine current native entry, supported capability and retained-history validation stay in this workflow. Full compiler release remains blocked."
+    },
+    {
+      "workflow": "native-probe-tests.yml",
+      "review": "Added unconditional acquisition and Cargo result refusal controls with explicit pinned Cargo. Existing synthetic and exact archived evidence tests preserved; actual five pinned oracle process controls still run in Compiler-set."
+    },
+    {
+      "workflow": "warm-entry-performance.yml",
+      "review": "Explicit immutable replay only; shared helper triggers corrected."
+    },
+    {
+      "workflow": "warm-native-performance.yml",
+      "review": "Explicit immutable replay only; shared helper/applicability triggers corrected."
+    },
+    {
+      "workflow": "mixed-performance-report.yml",
+      "review": "Reporting/replay scope retained. Current assessor uses fixed integer frequencies and ratios of weighted elapsed totals; geometric ratios are diagnostics only. Its release_admission is always false. Historical relative/absolute assessor remains historical."
+    },
+    {
+      "workflow": "runner-routing-canary.yml",
+      "review": "Runner source/environment provenance only; no compiler correctness or release conclusion."
+    }
+  ],
+  "findings": [
+    {
+      "id": "panic-outcome",
+      "problem": "The prior capability evaluator discarded the Rust should-panic marker and accepted a native pass label with either exit 0 or 101 for every test. A normal test panic and a should-panic test without a panic could pass.",
+      "fix": "Bind exact test names, status, observed exit, and default-hook single-line payload/location to the pinned Rust --show-output oracle. Reject malformed duplicate JSON fields, absent captures, wrong payload/location, unexpected normal/ignored output, booleans as counts and empty execution. The strict output parser is bounded to the pinned attributes fixture.",
+      "before": "capability-baseline.stderr",
+      "after": "final-test-capability-results.json"
+    },
+    {
+      "id": "fixed-inventory",
+      "problem": "Upstream capability probe declarations and retained-history row classification were mutable inputs. Required rows could be deleted or reclassified before a candidate run.",
+      "fix": "Bind the complete upstream capability fixture tree, probe declaration script, exact retained upstream tree, integration exception and unresolved-count map to the pinned Lust revision before candidate execution. Keep the 18 declared supported probes and 349 required/13 unresolved histories. Unresolved histories remain unqualified.",
+      "after": [
+        "final-test-capability-results.json",
+        "retained-pinned-oracle.stderr",
+        "retained-pinned-oracle-records/identities.json"
+      ]
+    },
+    {
+      "id": "retired-acquisition",
+      "problem": "Active measurement entry points and standalone qualifier launchers still constructed or invoked retired whole-compiler/coordinator packages.",
+      "fix": "Delete four unused mixed-driver launchers and unused acquisition pipelines. Make six old Python CLIs reject acquisition; keep only explicit historical replay/report readers and record models whose real child/daemon sinks are disabled. Remove routed tests-via and mixed campaign acquisition; reject native_state in the general independent command runner before execution/output.",
+      "after": [
+        "final-test-retired-acquisition.json",
+        "final-gate-controls.json"
+      ]
+    },
+    {
+      "id": "cargo-results",
+      "problem": "The direct Cargo gate accepted incomplete, inconsistent, duplicated or filtered result summaries and did not bind names to each observed harness group. Optional integration tests silently returned success when their required inputs were absent.",
+      "fix": "Require nonempty actual passing work, complete numeric counts matching unique individual outcomes, no failed/measured/filtered tests, and per-group passed/ignored names. Mark external-input tests explicitly ignored, requiring inputs when selected. Replace obsolete routed tests with unconditional refusal controls.",
+      "after": [
+        "final-gate-controls.json",
+        "direct-cargo-gate.json"
+      ]
+    },
+    {
+      "id": "trigger-coverage",
+      "problem": "The Compiler-set hand-maintained path list omitted actual upstream/bluefe-core.pin and did not protect future compiler inputs; historical replay workflows omitted imported shared helpers.",
+      "fix": "Use source input families including Cargo/config/toolchain/submodule declarations, examples, library, compiler, crates, upstream, tools and workflows. Add regression checks on the triggers themselves and shared historical replay inputs. The semantic research pin remains crates/lustr-semantic/rust-toolchain.toml at Nov 5; no upstream/rust-semantic.pin exists.",
+      "after": "final-workflow-input-coverage.json"
+    }
+  ],
+  "verification": {
+    "final_current_evaluator_controls": [
+      {
+        "receipt": "final-test-capability-results.json",
+        "passed": 24
+      },
+      {
+        "receipt": "final-test-retired-acquisition.json",
+        "passed": 3
+      },
+      {
+        "receipt": "final-workflow-input-coverage.json",
+        "passed": 3
+      },
+      {
+        "receipt": "final-test-assess-current-performance.json",
+        "passed": 25
+      },
+      {
+        "receipt": "final-gate-controls.json",
+        "passed": 7
+      },
+      {
+        "receipt": "workflow-parser-self-controls.json",
+        "passed": 5,
+        "supersedes_for_current_trigger_checker": "final-workflow-input-coverage.json"
+      }
+    ],
+    "retained_oracle": {
+      "log": "retained-pinned-oracle.stderr",
+      "passed": 58,
+      "skipped": 0,
+      "actual_pinned_process_controls": 5,
+      "original_identity_and_command_records": "retained-pinned-oracle-records/",
+      "identity_hashes_rechecked_against_final_source": true,
+      "earlier_unconfigured_run": "retained-controls.stderr",
+      "earlier_skipped": 5
+    },
+    "bench_control_suite": {
+      "stdout": "bench-controls-locked.stdout",
+      "stderr": "bench-controls-locked.stderr",
+      "top_level_passed": 41,
+      "top_level_ignored_child_helper": 1,
+      "child_helper_executed_by_parent": true,
+      "later_changed_gate_and_refusal_controls": "final-gate-controls.json",
+      "initial_locked_offline_failure": "bench-controls-first.stderr",
+      "locked_dependency_fetch": "bench-dependency-fetch.stderr"
+    },
+    "historical_control_suites": [
+      {
+        "log": "test-upstream-slice-benchmark.stderr",
+        "passed": 22
+      },
+      {
+        "log": "test-warm-entry-comparison.stderr",
+        "passed": 29
+      },
+      {
+        "log": "test-warm-entry-diagnostics.stderr",
+        "passed": 11
+      },
+      {
+        "log": "test-warm-native-comparison.stderr",
+        "passed": 43
+      },
+      {
+        "log": "test-warm-native-startup.stderr",
+        "passed": 8
+      },
+      {
+        "log": "test-warm-applicability.stderr",
+        "passed": 21,
+        "original_stale_control_failure": "test-warm-applicability-first.stderr"
+      }
+    ],
+    "historical_replay": [
+      {
+        "receipt": "final-test-coordinator-campaign.json",
+        "passed": 18
+      },
+      {
+        "receipt": "final-test-reconciled-evidence.json",
+        "passed": 11
+      },
+      {
+        "receipt": "final-check-coordinator-performance-archives.json",
+        "timings": 360,
+        "comparisons": 15,
+        "fresh_compilation": false,
+        "private_originals_decrypted": false
+      }
+    ],
+    "real_cargo_functional_gate": {
+      "receipt": "direct-cargo-gate.json",
+      "passed": 1,
+      "performance_claim": false,
+      "lustr_compilation": false
+    },
+    "real_cargo_study": {
+      "status": "failed",
+      "receipt": "direct-cargo-tiny-environment-failure.json",
+      "passed_tests": 1,
+      "failed_tests": 1,
+      "cause": "Host pressure observation files absent before first child. No requirement relaxed.",
+      "qualified": false
+    },
+    "archived_native_panic_compatibility": {
+      "receipt": "attributes-final-parser-review.json",
+      "original_execution_receipt": "attributes-spot-check.json",
+      "candidate_execution": "Previously captured published ea26 native output, unchanged protected fixture/engine code; not rerun locally.",
+      "oracle_execution": "Fresh pinned Rust with only the recorded source-path prefix remap for this comparison.",
+      "tests": 5,
+      "passed": 4,
+      "ignored": 1,
+      "current_compiler_qualification": false
+    },
+    "not_selected": [
+      "Two-Cargo metadata integration (requires a second explicit Cargo identity).",
+      "Independent resource integrations (require configured resource-output environment)."
+    ],
+    "earlier_logs": "Original failures and intermediate passing logs are retained with their original names. Not every early log has a before/after source receipt. Final JSON receipts capture their listed inputs; the final source map is an index-time observation, not a retroactive before-run receipt."
+  },
+  "retained_historical_reproducer": {
+    "path": "tools/build-regression-baseline.py",
+    "scope": "Explicit exact frozen PR7 failed-link counterexample only; no current product constructor, route, or current performance input. Original history and evidence preserved."
+  },
+  "limits": [
+    "No current native candidate was built or executed in this lane.",
+    "No full Rust coverage, stock-Lust speed parity, stock-rustc overall win, no_std compiler, or socket-independent engine is established by these tests.",
+    "Source controls do not establish GitHub branch protection or required checks.",
+    "Current performance assessment cannot grant release admission."
+  ],
+  "current_compiler_qualification": false,
+  "current_performance_qualification": false,
+  "release_admission": false,
+  "artifacts": {
+    "attributes-final-parser-review.json": {
+      "bytes": 559,
+      "sha256": "04a69d74015f4625063727e2c84a11371c9f56d41163ba1178f258f6efd7e824"
+    },
+    "attributes-native-captured.stdout": {
+      "bytes": 1285,
+      "sha256": "c9288bce2f24fcdaa304079f2472c42244546fd5541ec7f1b6dd78e22b31e8a7"
+    },
+    "attributes-oracle-build.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "attributes-oracle-build.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "attributes-oracle-run.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "attributes-oracle-run.stdout": {
+      "bytes": 749,
+      "sha256": "d9fb60b950bd0cc11934bf08e2b7983b316735bbdcf85fc01b1b64453729d793"
+    },
+    "attributes-oracle-version.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "attributes-oracle-version.stdout": {
+      "bytes": 214,
+      "sha256": "bbc9b960fe50c84bca20f3109950bcb87c48b6d1ce61d2fc2fc1519aaba2daaa"
+    },
+    "attributes-spot-check.json": {
+      "bytes": 3755,
+      "sha256": "2c0b70eaade99f39a2cfa22e0f118e452aecef1641dc4980ea923474113bb7ae"
+    },
+    "bench-controls-first.stderr": {
+      "bytes": 320,
+      "sha256": "5495cb5a12f4888aaf321f768f0a2a224af97de26733b8a2ce83dcebc9330ae3"
+    },
+    "bench-controls-first.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "bench-controls-locked.stderr": {
+      "bytes": 3595,
+      "sha256": "ad9673aed5b94699d14cad0f428031259d0eb2d157c34670edd1ae515fe86f66"
+    },
+    "bench-controls-locked.stdout": {
+      "bytes": 4077,
+      "sha256": "03924dfd9e6684b46116ef2a77ae0b24fba72d4c8eaa1c1b7477ea87820a604f"
+    },
+    "bench-dependency-fetch.stderr": {
+      "bytes": 140,
+      "sha256": "e27e8410d8eb92fcd8d4f1557c782d7be6317200a496b734f814c29801f7283f"
+    },
+    "bench-dependency-fetch.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "capability-baseline.json": {
+      "bytes": 90,
+      "sha256": "ed9c14fe370daa6dbc04817b58369b07b83b2135b922e9be9bb23c02ed1e9945"
+    },
+    "capability-baseline.stderr": {
+      "bytes": 3776,
+      "sha256": "2febb33f2ca8f77278e7cb8fc950bee59e424d7cb2e3d2c8b65b8b24f54b2fdc"
+    },
+    "capability-baseline.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "capability-final.stderr": {
+      "bytes": 3481,
+      "sha256": "3c3850b651c2f4c2f48dd682cc058b40c644eb199f377ca96ba673345a519fcc"
+    },
+    "capability-final.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "capability-panic-fixed.json": {
+      "bytes": 101,
+      "sha256": "ac472d9fbe299bf3f6a302e245cc36e68d3df0d6ed89b11ec9ab73e12232a3ca"
+    },
+    "capability-panic-fixed.stderr": {
+      "bytes": 2549,
+      "sha256": "053278fe97980ec48c7df9b614f24a636f6e5bed95ba7a2096daafccde153a33"
+    },
+    "capability-panic-fixed.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "direct-cargo-gate.json": {
+      "bytes": 2334,
+      "sha256": "5187650f262f7cac3c8a13c28fbc981dc5e787a03f6f00e26765f05ffeafa003"
+    },
+    "direct-cargo-gate.stderr": {
+      "bytes": 512,
+      "sha256": "ea8e136bfc0690f080d21ccbe72240a2a9af7a5f8e93c5744774a13e2f18ccff"
+    },
+    "direct-cargo-gate.stdout": {
+      "bytes": 259,
+      "sha256": "0bd5f750a866f781da5403df4a068bd3ee529a935908ecbde58b55d17a22e8ad"
+    },
+    "direct-cargo-tiny-environment-failure.json": {
+      "bytes": 1284,
+      "sha256": "c6b0d2ee37736acebf667f05da6731caa991dfa3a49d3014e0a93d527bf3689d"
+    },
+    "direct-cargo-tiny-failed-records/passed/00000.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "direct-cargo-tiny-failed-records/passed/00000.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "direct-cargo-tiny-failed-records/passed/report.json": {
+      "bytes": 11375,
+      "sha256": "ebeb885117fa9a809f0e58b9a14fc9bc9848813cb39ac81b65782ff3072e4036"
+    },
+    "direct-cargo-tiny-failed-records/passed/spec.original.json": {
+      "bytes": 7348,
+      "sha256": "21430fba63215296edf71e271115ec8c0440a83529c589f7fbbe5f8078eec13f"
+    },
+    "direct-cargo-tiny-failed-records/snapshot/Cargo.lock": {
+      "bytes": 154,
+      "sha256": "ff89af33adaa3239aefd01f0ae2af7067e6a74c91ae404cceb9fc36793fd4e64"
+    },
+    "direct-cargo-tiny-failed-records/snapshot/Cargo.toml": {
+      "bytes": 99,
+      "sha256": "16e99d215e56533d2358c918005eec67cd986a641cc1a0dd1d610f7b197ff471"
+    },
+    "direct-cargo-tiny-failed-records/snapshot/reject.rs": {
+      "bytes": 122,
+      "sha256": "b394e640a6dbebb41102d2edb863fb7632c7ebc0db5d9f23fb06599dfb080695"
+    },
+    "direct-cargo-tiny-failed-records/snapshot/src/main.rs": {
+      "bytes": 630,
+      "sha256": "af93ee5f010c5fd298f78984045fd4de6816e18279e1aa29bc2024c2399c05fc"
+    },
+    "direct-cargo-tiny-failed-records/spec.json": {
+      "bytes": 7348,
+      "sha256": "21430fba63215296edf71e271115ec8c0440a83529c589f7fbbe5f8078eec13f"
+    },
+    "direct-cargo-tiny.stderr": {
+      "bytes": 380,
+      "sha256": "36c7cf6f6f244c1ebf4101b05f8b261df31dcfaf45b2dfbc169026ffbf98a65b"
+    },
+    "direct-cargo-tiny.stdout": {
+      "bytes": 523,
+      "sha256": "f649f9eee4e361bfdd9de385b55009000b3b38dafb5a057884af6aa440fda671"
+    },
+    "final-check-coordinator-performance-archives.json": {
+      "bytes": 2137,
+      "sha256": "fe1f6580e37c25f87a70fa4ac6d7d6f1d2717cf96a3cf4f7dda801a062d514e0"
+    },
+    "final-check-coordinator-performance-archives.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "final-check-coordinator-performance-archives.stdout": {
+      "bytes": 430,
+      "sha256": "b399a325121750bc7d8d361c173a8cc36529ea8258e6be094f71755837ddc5e3"
+    },
+    "final-gate-controls.json": {
+      "bytes": 1983,
+      "sha256": "608e317f06836d13469a795d25ce63b9e34fa69cb2bfcf1e2c0607bdb65561ea"
+    },
+    "final-gate-controls.stderr": {
+      "bytes": 433,
+      "sha256": "1fbf28128f411213c27b043f8776e4e280644e4b780493a9cb3443829c25a880"
+    },
+    "final-gate-controls.stdout": {
+      "bytes": 755,
+      "sha256": "c3989800712340f14fdb1add77842e796895d550c5ae896011eb2c132c7cc529"
+    },
+    "final-test-assess-current-performance.json": {
+      "bytes": 2775,
+      "sha256": "a7ff4a920c3fe215d5bcdd0c2704219908cf333660cb520b703b0e05bc66d7cd"
+    },
+    "final-test-assess-current-performance.stderr": {
+      "bytes": 3966,
+      "sha256": "6e051f1ef38b73a5fba42456bb58101e9b5a2c2814c81e604dbd9a349af7d7e7"
+    },
+    "final-test-assess-current-performance.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "final-test-capability-results.json": {
+      "bytes": 2751,
+      "sha256": "8c0664d01f4e60438c5d29c8680167badb43f90d025bc7232983b49a6ed04db5"
+    },
+    "final-test-capability-results.stderr": {
+      "bytes": 3481,
+      "sha256": "08cf6eae4ae3f90bd21d2fed98c4bf3089bfc0a59b9f3d1e3d47452b0c0f7833"
+    },
+    "final-test-capability-results.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "final-test-coordinator-campaign.json": {
+      "bytes": 2098,
+      "sha256": "f9e81d1ec846baa6c9f6e305f56b73be85a316746ba57e8d9ab653eb55a5d792"
+    },
+    "final-test-coordinator-campaign.stderr": {
+      "bytes": 117,
+      "sha256": "35eaccd6943750f72766c76016f23b34ed9f84b5dcdc648a0da18a982b1393c4"
+    },
+    "final-test-coordinator-campaign.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "final-test-reconciled-evidence.json": {
+      "bytes": 2095,
+      "sha256": "efcf88b2b41286a3db076e49bde7e7465a37130d1aab3d3114012e7ed0e71ddd"
+    },
+    "final-test-reconciled-evidence.stderr": {
+      "bytes": 110,
+      "sha256": "7739528e3dc1214b8be886515a0b722f0d82feea3c46af67a643e130d625fd8c"
+    },
+    "final-test-reconciled-evidence.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "final-test-retired-acquisition.json": {
+      "bytes": 2754,
+      "sha256": "a2c047b9122bce4b041c29888a28a4c7f039d64565dd8d4945fc5872f402a0e3"
+    },
+    "final-test-retired-acquisition.stderr": {
+      "bytes": 617,
+      "sha256": "82bc75746487ca5445c1cfada15592022594dc0d1252dd258380347761a88052"
+    },
+    "final-test-retired-acquisition.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "final-test-workflow-inputs.json": {
+      "bytes": 2742,
+      "sha256": "5b1a769ac269b15f535d9f7cbfc82c90693ee28e84f28222f751cf0ecb3e4175"
+    },
+    "final-test-workflow-inputs.stderr": {
+      "bytes": 594,
+      "sha256": "ee2c748e9c58c13f40dcdf077e3cb333b7607141d9980554477d4943f26c0b93"
+    },
+    "final-test-workflow-inputs.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "final-workflow-input-coverage.json": {
+      "bytes": 1697,
+      "sha256": "78b3623b9cff1e4785a2fae79f7ea635c7152c243c793cbd107f3ab5227bbffd"
+    },
+    "final-workflow-input-coverage.stderr": {
+      "bytes": 594,
+      "sha256": "ee2c748e9c58c13f40dcdf077e3cb333b7607141d9980554477d4943f26c0b93"
+    },
+    "final-workflow-input-coverage.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "record-projections.json": {
+      "bytes": 46669,
+      "sha256": "2f38fe8ff4524944624af7626a7fdd169ce0001237e699fdb1982a9b4e02b4fc"
+    },
+    "replay-adapter-build.json": {
+      "bytes": 1989,
+      "sha256": "920212df5cc8d7a0e5ae43a38eeb777acdc2ffb18c6c0da6c64a358370e409e5"
+    },
+    "replay-adapter-build.stderr": {
+      "bytes": 136,
+      "sha256": "f51672a65608991337954eec2017f2bfe53feac4b6ff3281f11ff6a800a51849"
+    },
+    "replay-adapter-build.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-controls.stderr": {
+      "bytes": 14860,
+      "sha256": "bcd3b4094861762975e4462bf0dda323492dbacf8d0061ba56a0e14a7a4e7918"
+    },
+    "retained-controls.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-pinned-oracle-records/identities.json": {
+      "bytes": 498,
+      "sha256": "b4135599e714b0fae6a65eab764139e38b9d5b3dca5b54b17d2a8b2f1dabc605"
+    },
+    "retained-pinned-oracle-records/rustc-version.stdout": {
+      "bytes": 214,
+      "sha256": "bbc9b960fe50c84bca20f3109950bcb87c48b6d1ce61d2fc2fc1519aaba2daaa"
+    },
+    "retained-pinned-oracle-records/test_codegen_source_errors_are_not_lost_by_metadata_only_checks/00.stderr": {
+      "bytes": 119984,
+      "sha256": "2197b3e2d61e998f1355d0ee65ffba0a9b660005f78d367e5f0924abab9073bd"
+    },
+    "retained-pinned-oracle-records/test_codegen_source_errors_are_not_lost_by_metadata_only_checks/00.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-pinned-oracle-records/test_codegen_source_errors_are_not_lost_by_metadata_only_checks/01.stderr": {
+      "bytes": 120984,
+      "sha256": "596c3da56bf591ce4a9514ab5138dca2937b8ed091892ba0bb8422b32fdbbbe9"
+    },
+    "retained-pinned-oracle-records/test_codegen_source_errors_are_not_lost_by_metadata_only_checks/01.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-pinned-oracle-records/test_codegen_source_errors_are_not_lost_by_metadata_only_checks/02.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-pinned-oracle-records/test_codegen_source_errors_are_not_lost_by_metadata_only_checks/02.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-pinned-oracle-records/test_codegen_source_errors_are_not_lost_by_metadata_only_checks/03.stderr": {
+      "bytes": 3238,
+      "sha256": "2e3696c5580dabf4efc51217f4a8ac3fc2d7f7ab433d8ffbe37e1cea7f73a62a"
+    },
+    "retained-pinned-oracle-records/test_codegen_source_errors_are_not_lost_by_metadata_only_checks/03.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-pinned-oracle-records/test_codegen_source_errors_are_not_lost_by_metadata_only_checks/04.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-pinned-oracle-records/test_codegen_source_errors_are_not_lost_by_metadata_only_checks/04.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-pinned-oracle-records/test_codegen_source_errors_are_not_lost_by_metadata_only_checks/05.stderr": {
+      "bytes": 3441,
+      "sha256": "539f24c6d1f21d29f5be2db0b3d882c227d2c71b79124554472b84493fc03616"
+    },
+    "retained-pinned-oracle-records/test_codegen_source_errors_are_not_lost_by_metadata_only_checks/05.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-pinned-oracle-records/test_codegen_source_errors_are_not_lost_by_metadata_only_checks/06.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-pinned-oracle-records/test_codegen_source_errors_are_not_lost_by_metadata_only_checks/06.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-pinned-oracle-records/test_codegen_source_errors_are_not_lost_by_metadata_only_checks/07.stderr": {
+      "bytes": 3441,
+      "sha256": "3a0badfb808f46b4a50a9c5691c299eb8c7e699e1dee55c3322213299b83c2bb"
+    },
+    "retained-pinned-oracle-records/test_codegen_source_errors_are_not_lost_by_metadata_only_checks/07.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-pinned-oracle-records/test_codegen_source_errors_are_not_lost_by_metadata_only_checks/commands.json": {
+      "bytes": 2531,
+      "sha256": "9eaf241e81df09d16d100d475aecf39b34ede3583b72e15b6399a62a7c337965"
+    },
+    "retained-pinned-oracle-records/test_linker_and_sdk_failures_remain_failures/00.stderr": {
+      "bytes": 551,
+      "sha256": "0355d385e43878281fd517b9c8c1aed76cb4d348233ecb66d6a04c39b32d151e"
+    },
+    "retained-pinned-oracle-records/test_linker_and_sdk_failures_remain_failures/00.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-pinned-oracle-records/test_linker_and_sdk_failures_remain_failures/01.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-pinned-oracle-records/test_linker_and_sdk_failures_remain_failures/01.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-pinned-oracle-records/test_linker_and_sdk_failures_remain_failures/02.stderr": {
+      "bytes": 2870,
+      "sha256": "971b4e0cdf973e052390a470f2b442892d8ad86937f0487bc71434ce33c63fa0"
+    },
+    "retained-pinned-oracle-records/test_linker_and_sdk_failures_remain_failures/02.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-pinned-oracle-records/test_linker_and_sdk_failures_remain_failures/commands.json": {
+      "bytes": 1039,
+      "sha256": "fafd5b186592747f50c9963e6c306d11ad97a42b9718dd3000879c960f7af7fc"
+    },
+    "retained-pinned-oracle-records/test_missing_and_invalid_dependency_artifacts_are_not_source_errors/00.stderr": {
+      "bytes": 806,
+      "sha256": "b826c630983b1171d36ec4fcc772bd7d187c8c1e2976c7270e2d1f7af88372e8"
+    },
+    "retained-pinned-oracle-records/test_missing_and_invalid_dependency_artifacts_are_not_source_errors/00.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-pinned-oracle-records/test_missing_and_invalid_dependency_artifacts_are_not_source_errors/01.stderr": {
+      "bytes": 1803,
+      "sha256": "dbf270124a0f88e34aac63e048b26d55f7368d3b0819c9b49ea7d6734a0b86f6"
+    },
+    "retained-pinned-oracle-records/test_missing_and_invalid_dependency_artifacts_are_not_source_errors/01.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-pinned-oracle-records/test_missing_and_invalid_dependency_artifacts_are_not_source_errors/commands.json": {
+      "bytes": 728,
+      "sha256": "488cad4cd9798c34d4411896646fd95851874b0946ab407c3aa54498229ec9e7"
+    },
+    "retained-pinned-oracle-records/test_real_cargo_rejects_removed_target_then_restores_it/00.stderr": {
+      "bytes": 103,
+      "sha256": "946c13f06d1b5ffaf39d9cb2740cae78792be0528273945965ab05b7f5056d2d"
+    },
+    "retained-pinned-oracle-records/test_real_cargo_rejects_removed_target_then_restores_it/00.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-pinned-oracle-records/test_real_cargo_rejects_removed_target_then_restores_it/01.stderr": {
+      "bytes": 103,
+      "sha256": "946c13f06d1b5ffaf39d9cb2740cae78792be0528273945965ab05b7f5056d2d"
+    },
+    "retained-pinned-oracle-records/test_real_cargo_rejects_removed_target_then_restores_it/01.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-pinned-oracle-records/test_real_cargo_rejects_removed_target_then_restores_it/02.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-pinned-oracle-records/test_real_cargo_rejects_removed_target_then_restores_it/02.stdout": {
+      "bytes": 558,
+      "sha256": "febaa56da258e0f5ba2ff6f2bd6ee131e1ef1b7157ddee83c11f67e4110fd475"
+    },
+    "retained-pinned-oracle-records/test_real_cargo_rejects_removed_target_then_restores_it/commands.json": {
+      "bytes": 763,
+      "sha256": "22fead8ce8c27a8cf8337770859bd2d54008ad976d77ccae3c89616ac4d4e774"
+    },
+    "retained-pinned-oracle-records/test_real_std_macro_errors_resolve_through_primary_call_sites/00.stderr": {
+      "bytes": 33414,
+      "sha256": "02869a5f42379973181d394ef427b5fdfb5f2e30eda085def71ac12af4e1a0f4"
+    },
+    "retained-pinned-oracle-records/test_real_std_macro_errors_resolve_through_primary_call_sites/00.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained-pinned-oracle-records/test_real_std_macro_errors_resolve_through_primary_call_sites/commands.json": {
+      "bytes": 315,
+      "sha256": "89cbfd650ea9be860dc835aa6d88392f49e5324b82f0a48037826a170a524e80"
+    },
+    "retained-pinned-oracle.stderr": {
+      "bytes": 16418,
+      "sha256": "fda768c2bc235c0a381e48aef976d81dd89af3fa8d254235b741a2efbfbb5faf"
+    },
+    "retained-pinned-oracle.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "test-capability-results.stderr": {
+      "bytes": 3314,
+      "sha256": "afeaaa6fdd2d3e68d7632bf3ac0c463530dc74c0e460ce5c1e07a2bfaf56e447"
+    },
+    "test-capability-results.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "test-upstream-slice-benchmark.stderr": {
+      "bytes": 3323,
+      "sha256": "b6036c2d709fb508a725b09844dda4384102b32117253596f078e9db860c26b1"
+    },
+    "test-upstream-slice-benchmark.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "test-warm-applicability-first.stderr": {
+      "bytes": 3863,
+      "sha256": "b455a2fb3f8a2e2ac40a7667547735c1170b954d1cbd0592d1b0488ad614d569"
+    },
+    "test-warm-applicability-first.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "test-warm-applicability.stderr": {
+      "bytes": 3170,
+      "sha256": "c53be769493240fdbabf7bbac4f5aae92965971ef103785b894c2b3125f3cd7d"
+    },
+    "test-warm-applicability.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "test-warm-entry-comparison.stderr": {
+      "bytes": 3688,
+      "sha256": "3a8bdab54b103348acdb79015dfd7936575e99f181527e8d8ea002d2d291062c"
+    },
+    "test-warm-entry-comparison.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "test-warm-entry-diagnostics.stderr": {
+      "bytes": 1344,
+      "sha256": "dd5b935071975d1972670eaeeeb20564264a8b02c6bdac03af437823d0581954"
+    },
+    "test-warm-entry-diagnostics.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "test-warm-native-comparison.stderr": {
+      "bytes": 6454,
+      "sha256": "2b3e35ec6504eb40130fa0f931861478baf768c47aa88d9377d4ca1d7c05d56f"
+    },
+    "test-warm-native-comparison.stdout": {
+      "bytes": 324,
+      "sha256": "25bcebfb4874934b1d5f8cae097b26012ef85193f3ee441ffb85d59d98c31c7d"
+    },
+    "test-warm-native-startup.stderr": {
+      "bytes": 1193,
+      "sha256": "c84fd89e3b8b6cc43b3fd18d4cb9d64474e633e91aeb6d53a78f5b2c175b1789"
+    },
+    "test-warm-native-startup.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "workflow-parser-self-controls.json": {
+      "bytes": 1867,
+      "sha256": "e95e41343bd3c77cf92b1570a3b717830041a7cdd49c0c681703c72c66fec4f0"
+    },
+    "workflow-parser-self-controls.stderr": {
+      "bytes": 904,
+      "sha256": "37192d236ee123013f7a35ad724d0cf20e66d14dbc88553fcd21bde98abf42f3"
+    },
+    "workflow-parser-self-controls.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "published_baseline": {
+    "commit": "ea26fe16636d390763257a19c19df3db992cdbcb",
+    "tree": "9151b9c3c8fac46e2afc76ef0f2b9fc51a6a803f",
+    "relation": "Identical tree to the local f8fa2dee04e1c02f110ed9d725cda21c0b750e22 baseline; both tree objects were checked."
+  },
+  "source_followups": [
+    {
+      "commit": "d0af2c9221297982f0013dc0debe7525b199555b",
+      "source_sha256": {
+        "tools/test-workflow-inputs.py": "b5a79a6a1de61fa66d0d7301ed776416c953585780459bedc1141577a7870f58"
+      },
+      "receipt": "workflow-parser-self-controls.json",
+      "reason": "Require the positive paths key and slash-aware wildcard semantics; add both negative mutation controls."
+    }
+  ],
+  "final_source_commit": "d0af2c9221297982f0013dc0debe7525b199555b",
+  "normalization": {
+    "manifest": "record-projections.json",
+    "original_execution_bytes_retained": true,
+    "published_hashes": "artifacts",
+    "embedded_receipt_hashes": "Original execution identities, before path projection. See original and published hashes in the projection manifest."
+  }
+}

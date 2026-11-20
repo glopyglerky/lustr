@@ -1,0 +1,71 @@
+{
+  "schema": "native-consumer-record-verification-v1",
+  "base_commit": "c8218b7fc0f657314c9e9c59775091b53508c6b0",
+  "protected_native_tree": "bf933c382fd99e52dd2586ebc46f0d0aceaa71a8",
+  "protected_native_unchanged": true,
+  "source_stable_final": true,
+  "owned_source_sha256": {
+    "crates/lustr-native-core/Cargo.toml": "5f00a10af2a0c399c19863d08fb8af12f6699993deee8f2bb8dc68efc78b9d3f",
+    "crates/lustr-native-core/src/lib.rs": "5e1280097d0c0671b8ddc0d981634d0b35c0f980d2206f73f477791ffd4815e6",
+    "crates/lustr-native-core/src/native_object.rs": "565b4ba1d05dbd05aa261483dcb1e4bec295f1ab927803da32bebd986895cf08",
+    "crates/lustr-native-core/src/native_consumer.rs": "3fc6a55f17fb1fefc9c7a8f5f594f2528e27906329672855f65f8fb14294036d",
+    "crates/lustr-native-core/src/unit_object.rs": "d43929971c980ec395913ce5f6cb13955e012e72ef2fcddcd14a24adaea1bd24",
+    "tools/native-consumer-qualification.rs": "595fe29b409c959b826eaf73803c9be7724124b82b86a2145e44642ab9152081"
+  },
+  "tool_files": [
+    {
+      "path": "/workspace/scratch/9d482ba2ab85/sdk/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc",
+      "sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+      "bytes": 646208
+    },
+    {
+      "path": "/workspace/scratch/9d482ba2ab85/sdk/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+      "sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+      "bytes": 36722856
+    },
+    {
+      "path": "/workspace/scratch/9d482ba2ab85/sdk/clang/usr/lib/llvm-19/bin/clang",
+      "sha256": "0a3c55936ac43954fbe4914e6e73b577ca9e35e75d89ef13d3e28c187f41ca1a",
+      "bytes": 132352
+    },
+    {
+      "path": "/workspace/scratch/9d482ba2ab85/tinycc-built/install/lib/libtcc.a",
+      "sha256": "b942de6e6ed8536b668b62d8aae923b7f41e5e2efce5e6608064e76d1188d4d7",
+      "bytes": 583032
+    }
+  ],
+  "records_archive": {
+    "path": "records.tar.gz",
+    "sha256": "667ae970624cb7e975b2d28bca2b0374206ef11d9822aba504f4753d2a11fe92",
+    "bytes": 1768344
+  },
+  "records_inventory": {
+    "path": "inventory.json",
+    "sha256": "b149b4199a50f9541fd359fc7df28202df5bc8aaf235d55c9cb7c27c01b4c295"
+  },
+  "attempts": [
+    {
+      "build": "v1",
+      "build_exit": 0,
+      "qualified_source_identity": false,
+      "reason": "Source changed while build ran; no source-to-binary qualification claim."
+    },
+    {
+      "build": "v2",
+      "build_exit": 0,
+      "run_exit": 101,
+      "passed": false,
+      "reason": "The const-definition control used a const reference the pre-existing bare native object path does not resolve. Original fixture and failure preserved."
+    },
+    {
+      "build": "v3",
+      "build_exit": 0,
+      "run_exit": 0,
+      "passed": true,
+      "named_controls": 17,
+      "independent_runtime_assertions": 131076,
+      "binary_sha256": "80e35e1e4b1ba34b2c699c26ff8f82f3f4eea0f6a8f135b217f2931c51305a54"
+    }
+  ],
+  "scope": "Research native preparation/completion/object boundary; independent C ABI caller. Genuine Rust metadata, ordinary retained integration, full Rust coverage and speed remain unqualified."
+}

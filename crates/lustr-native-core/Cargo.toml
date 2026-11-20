@@ -8,12 +8,49 @@ license = "MIT"
 [workspace]
 resolver = "3"
 
+[features]
+exclusive-native = ["dep:lustr-metadata-encoder", "dep:lustr-metadata-sdk", "dep:object", "dep:serde_json", "dep:sha2"]
+native-qualification = []
+upstream-semantic = ["native-qualification"]
+
 [lib]
 crate-type = ["cdylib"]
+
+[[example]]
+name = "native-upstream-qualification"
+path = "../../tools/native-upstream-qualification.rs"
+required-features = ["upstream-semantic"]
+
+[[example]]
+name = "native-output-layout-qualification"
+path = "../../tools/native-output-layout-qualification.rs"
+required-features = ["native-qualification"]
+
+[[example]]
+name = "native-phase-qualification"
+path = "../../tools/native-phase-qualification.rs"
+required-features = ["native-qualification"]
+
+[[example]]
+name = "native-crate-qualification"
+path = "../../tools/native-crate-qualification.rs"
+required-features = ["native-qualification"]
+
+[[example]]
+name = "native-consumer-qualification"
+path = "../../tools/native-consumer-qualification.rs"
+required-features = ["native-qualification"]
 
 [dependencies]
 mimalloc = { version = "=0.1.52", default-features = false }
 libmimalloc-sys = { version = "=0.1.49", default-features = false }
+unicode-normalization = "=0.1.25"
+
+lustr-metadata-encoder = { path = "../lustr-metadata-encoder", optional = true }
+lustr-metadata-sdk = { path = "../lustr-metadata-sdk", optional = true }
+object = { version = "=0.39.1", default-features = false, features = ["write_std", "read_core", "elf", "archive"], optional = true }
+serde_json = { version = "=1.0.154", optional = true }
+sha2 = { version = "=0.11.1", optional = true }
 
 [profile.release]
 opt-level = 3

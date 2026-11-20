@@ -1,0 +1,1135 @@
+{
+  "schema": 1,
+  "declared_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "qualification_host_target": "x86_64-unknown-linux-gnu",
+  "profile": "gate",
+  "profile_note": "Gate-profile native binaries were copied unchanged into the script-required target/release directory. This is not a release-profile or latency measurement.",
+  "initial_ordinary_differential": {
+    "source_head": "3e5cd0ba67a71ae83e4856b2b184f2000ece3862",
+    "native_tree": "acabe3411779de826c1a9d42507c90cfbc63044c",
+    "native_binaries": {
+      "lust": "15af2212b5d27c1ef18a47fe43979209d389c27e3b8181b71ae4cef2708fc79b",
+      "lust-core": "d7ed22dc772424f3cd732f5c33b1a76b4b1b77743d1665c586cfe30a7b7771c3"
+    },
+    "rustc_vV": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+    "rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "command": [
+      "bash",
+      "scripts/difftest.sh"
+    ],
+    "script_sha256": "915d10be74653c2b15920caa7612a81716fd23713ec410830a51a44602b6a9a4",
+    "case_pool_sha256": "f90ec0c777b72751f91efb84a8169a00f5d35a1ffd591b46718d606eaeca12fc",
+    "passed": 5432,
+    "failed": 98,
+    "exit_status": 1,
+    "failures": [
+      "tests/pass/atomic_release_load_panics.rs",
+      "tests/pass/char_encode_utf16_panic_short.rs",
+      "tests/pass/char_encode_utf8_panic_short.rs",
+      "tests/pass/char_encode_utf16_panic.rs",
+      "tests/pass/derive_default_nested_generic.rs",
+      "tests/pass/drop_partial_move_array.rs",
+      "tests/pass/drop_partial_move_scope.rs",
+      "tests/pass/duration_new_overflow_panics.rs",
+      "tests/pass/from_iter_paths.rs",
+      "tests/pass/int_from_str_radix_bad_radix.rs",
+      "tests/pass/int_next_multiple_panic_overflow.rs",
+      "tests/pass/int_next_power_of_two_overflow.rs",
+      "tests/pass/int_next_multiple_panic_zero.rs",
+      "tests/pass/io_copy_read_overrun_panic.rs",
+      "tests/pass/io_is_terminal_file_ext.rs",
+      "tests/pass/iter_size_hint_override.rs",
+      "tests/pass/macro_fragment_kinds.rs",
+      "tests/pass/mem_manually_drop_const_pattern.rs",
+      "tests/pass/mem_manually_drop.rs",
+      "tests/pass/mem_manually_drop_sort_keys.rs",
+      "tests/pass/overflowing_div_zero_panic.rs",
+      "tests/pass/panic_audit_atomic_cas_weak.rs",
+      "tests/pass/panic_audit_abs_i8.rs",
+      "tests/pass/panic_audit_bool_clamp.rs",
+      "tests/pass/panic_audit_capacity.rs",
+      "tests/pass/panic_audit_atomic_store.rs",
+      "tests/pass/panic_audit_capacity_rawvec.rs",
+      "tests/pass/panic_audit_ord_clamp_site.rs",
+      "tests/pass/panic_audit_pow_abs.rs",
+      "tests/pass/panic_audit_refcell_swap.rs",
+      "tests/pass/panic_audit_range_count_site.rs",
+      "tests/pass/panic_audit_tls_sites.rs",
+      "tests/pass/panic_audit_swap_remove.rs",
+      "tests/pass/panic_audit_to_string_err.rs",
+      "tests/pass/panicloc_io_read_over.rs",
+      "tests/pass/panicloc_duration_scalar_mul.rs",
+      "tests/pass/panicloc_io_bufwriter_over.rs",
+      "tests/pass/panicloc_str_split_at.rs",
+      "tests/pass/panicloc_vecdeque_rotate_right.rs",
+      "tests/pass/prim_method_fn_ptr_panic.rs",
+      "tests/pass/range_count_overflow.rs",
+      "tests/pass/range_from_char_panic.rs",
+      "tests/pass/range_from_nth_panic.rs",
+      "tests/pass/range_from_overflow_panic.rs",
+      "tests/pass/refcell_take_panic.rs",
+      "tests/pass/slice_copy_within_panic_range.rs",
+      "tests/pass/slice_rotate_panic.rs",
+      "tests/pass/sort_partialord_lt.rs",
+      "tests/pass/std_debug_builders.rs",
+      "tests/pass/std_fs_file.rs",
+      "tests/pass/std_process_command.rs",
+      "tests/pass/std_time_panic_add.rs",
+      "tests/pass/std_time_panic_duration_div_loc.rs",
+      "tests/pass/std_time_panic_float.rs",
+      "tests/pass/std_time_panic_duration_div_assign_loc.rs",
+      "tests/pass/std_time_panic_div.rs",
+      "tests/pass/std_vecdeque_rotate_panic.rs",
+      "tests/pass/str_utf16_ascii.rs",
+      "tests/pass/string_reserve_exact_overflow.rs",
+      "tests/pass/string_drain_panic_range.rs",
+      "tests/pass/string_reserve_wrap_overflow.rs",
+      "tests/pass/string_with_capacity_overflow.rs",
+      "tests/pass/tls_access_destroyed_panic.rs",
+      "tests/pass/tls_refcell_set_borrowed_panic.rs",
+      "tests/pass/tls_refcell_borrow_panic.rs",
+      "tests/pass/type_name.rs",
+      "tests/pass/vec_drain_panic_start.rs",
+      "tests/pass/vec_drain.rs",
+      "tests/pass/vec_drain_panic_excl_start.rs",
+      "tests/pass/vec_drain_panic_order.rs",
+      "tests/pass/vec_drain_panic_incl.rs",
+      "tests/pass/vec_deque_drain_panic.rs",
+      "tests/pass/vec_drain_panic_end.rs",
+      "tests/pass/vec_extend_from_within_panic.rs",
+      "tests/pass/vec_zst_cap_overflow.rs",
+      "tests/pass/vec_splice_range_panic.rs",
+      "tests/pass/vecdeque_swap_oob_panic.rs",
+      "tests/pass/vecdeque_split_off_oob_panic.rs",
+      "tests/fail/closure_reads_creator_item_bound.rs",
+      "tests/fail/depth_option_clone_128.rs",
+      "tests/fail/depth_user_trait_128.rs",
+      "tests/fail/extend_param_iter_vec.rs",
+      "tests/fail/extend_param_iter_mutref.rs",
+      "tests/fail/extend_param_iter_sets.rs",
+      "tests/fail/lifetime_launder_vec.rs",
+      "tests/fail/lifetime_launder_local.rs",
+      "tests/fail/nll_problem_case3.rs",
+      "tests/fail/never_type_generic_arg.rs",
+      "tests/fail/never_type_fn_sugar_ret.rs",
+      "tests/fail/nll_reassigned_ref_keeps_loan.rs",
+      "tests/fail/never_type_fn_arg.rs",
+      "tests/fail/nll_cond_return_mut.rs",
+      "tests/fail/never_type_cell_layout.rs",
+      "tests/fail/never_type_nested_ret.rs",
+      "tests/fail/rpit_reassign_drop.rs",
+      "tests/fail/sol_nll_problem_case_3.rs",
+      "tests/fail/trait_where_overflow_unused.rs",
+      "tests/fail/trait_where_overflow_mutual.rs"
+    ],
+    "test_selection_oracle_and_normalization_changed": false
+  },
+  "focused_std": {
+    "source_head": "47d8fe2db78fc0dea7587be70e5547d961bea312",
+    "source_native_tree": "e415df0e001b352b338ab4fee90b089df6af19a7",
+    "profile": "gate",
+    "binaries": {
+      "lust-core": "9a8016d3230ed0a8a55f04a8bf7a83e8ee3f9afc29e9ef35ff006fb9845ab91a",
+      "lust": "3f489ea64752f31b559475db0cfb3d1c4243e82b140c5cdf782a2b6fef2a09b2"
+    },
+    "rustc_vV": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+    "filters": [
+      "std_declared_source_locations",
+      "panic_",
+      "panicloc_",
+      "duration_",
+      "std_time_",
+      "vec_drain",
+      "vec_splice",
+      "type_name",
+      "std_debug_builders",
+      "std_fs_file",
+      "std_process_command",
+      "tls_"
+    ],
+    "corpus_changes": "Three source-confirmed Duration panic assertions migrated; added source-identity hook regression. Test scripts and normalizations unchanged.",
+    "test_invocations": 232,
+    "distinct_fixtures": 212,
+    "fixtures": [
+      "tests/fail/attr_should_panic_bad_input.rs",
+      "tests/fail/core_panic_glob_no_set_hook.rs",
+      "tests/fail/panic_assert_msg_missing_arg.rs",
+      "tests/fail/panic_div_zero_local.rs",
+      "tests/fail/panic_index_assign.rs",
+      "tests/fail/panic_index_const.rs",
+      "tests/fail/panic_index_local.rs",
+      "tests/fail/panic_min_div_neg1.rs",
+      "tests/fail/panic_rem_zero_lit.rs",
+      "tests/fail/panic_todo_missing_arg.rs",
+      "tests/fail/panic_unimplemented_missing_arg.rs",
+      "tests/fail/panic_unimplemented_nonliteral.rs",
+      "tests/fail/std_fs_file_clone.rs",
+      "tests/fail/std_fs_file_open_int.rs",
+      "tests/fail/std_process_command_arg_int.rs",
+      "tests/fail/std_time_const_add.rs",
+      "tests/fail/std_time_const_float.rs",
+      "tests/fail/std_time_core_instant.rs",
+      "tests/fail/std_time_hidden_module.rs",
+      "tests/fail/std_time_inherent_impl.rs",
+      "tests/fail/std_time_instant_new.rs",
+      "tests/fail/std_time_orphan_impl.rs",
+      "tests/fail/std_time_private_ctor.rs",
+      "tests/fail/std_time_private_field.rs",
+      "tests/fail/std_time_private_item.rs",
+      "tests/fail/std_time_unstable_const.rs",
+      "tests/fail/std_time_unstable_fn.rs",
+      "tests/fail/std_time_wrong_type.rs",
+      "tests/fail/tls_assign_to_key.rs",
+      "tests/fail/tls_closure_stores_local.rs",
+      "tests/fail/tls_const_init_block_calls_non_const.rs",
+      "tests/fail/tls_const_init_box.rs",
+      "tests/fail/tls_const_init_non_const.rs",
+      "tests/fail/tls_const_init_overflow.rs",
+      "tests/fail/tls_fn_path_without_import.rs",
+      "tests/fail/tls_get_not_copy.rs",
+      "tests/fail/tls_init_reads_local.rs",
+      "tests/fail/tls_let_shadows_key.rs",
+      "tests/fail/tls_replace_non_static_ref.rs",
+      "tests/fail/tls_set_non_static_ref.rs",
+      "tests/fail/tls_set_param_ref.rs",
+      "tests/fail/tls_set_plain_value.rs",
+      "tests/fail/tls_take_no_default.rs",
+      "tests/fail/tls_with_borrow_on_cell.rs",
+      "tests/fail/tls_with_borrow_returns_guarded.rs",
+      "tests/fail/tls_with_returns_borrow.rs",
+      "tests/fail/tls_with_returns_guard.rs",
+      "tests/fail/tls_with_returns_ref.rs",
+      "tests/fail/type_name_const.rs",
+      "tests/fail/vec_drain_drop_uses_borrow.rs",
+      "tests/fail/vec_splice_iter_borrow.rs",
+      "tests/pass/char_encode_utf16_panic_short.rs",
+      "tests/pass/char_encode_utf8_panic_short.rs",
+      "tests/pass/const_panic_plain_forms.rs",
+      "tests/pass/default_panic_unwinds.rs",
+      "tests/pass/duration_new_overflow_panics.rs",
+      "tests/pass/fmt_arguments_panic_at_use.rs",
+      "tests/pass/int_next_multiple_panic_overflow.rs",
+      "tests/pass/int_next_multiple_panic_zero.rs",
+      "tests/pass/iter_type_names.rs",
+      "tests/pass/panic_any_string_only.rs",
+      "tests/pass/panic_any_string_payload.rs",
+      "tests/pass/panic_assert.rs",
+      "tests/pass/panic_assert_mod.rs",
+      "tests/pass/panic_assert_text_commas.rs",
+      "tests/pass/panic_assert_text_labels.rs",
+      "tests/pass/panic_assert_text_macro_rules.rs",
+      "tests/pass/panic_assert_text_macro_tokens.rs",
+      "tests/pass/panic_assert_text_paths.rs",
+      "tests/pass/panic_audit_abs_i8.rs",
+      "tests/pass/panic_audit_array_arg.rs",
+      "tests/pass/panic_audit_assert_match.rs",
+      "tests/pass/panic_audit_assert_text.rs",
+      "tests/pass/panic_audit_atomic_cas_weak.rs",
+      "tests/pass/panic_audit_atomic_store.rs",
+      "tests/pass/panic_audit_bool_clamp.rs",
+      "tests/pass/panic_audit_bracket_space.rs",
+      "tests/pass/panic_audit_capacity.rs",
+      "tests/pass/panic_audit_capacity_rawvec.rs",
+      "tests/pass/panic_audit_clamp.rs",
+      "tests/pass/panic_audit_debug_assert.rs",
+      "tests/pass/panic_audit_display_col.rs",
+      "tests/pass/panic_audit_empty_msg.rs",
+      "tests/pass/panic_audit_eprint_fmt_err.rs",
+      "tests/pass/panic_audit_fmt_err.rs",
+      "tests/pass/panic_audit_index_col.rs",
+      "tests/pass/panic_audit_index_newline.rs",
+      "tests/pass/panic_audit_macro_index.rs",
+      "tests/pass/panic_audit_macro_site.rs",
+      "tests/pass/panic_audit_main_err_order.rs",
+      "tests/pass/panic_audit_ord_clamp_site.rs",
+      "tests/pass/panic_audit_paren_expr.rs",
+      "tests/pass/panic_audit_paren_index.rs",
+      "tests/pass/panic_audit_paren_span.rs",
+      "tests/pass/panic_audit_pow_abs.rs",
+      "tests/pass/panic_audit_range_count_site.rs",
+      "tests/pass/panic_audit_refcell_swap.rs",
+      "tests/pass/panic_audit_slice_range.rs",
+      "tests/pass/panic_audit_split_off.rs",
+      "tests/pass/panic_audit_stdout_big_tail.rs",
+      "tests/pass/panic_audit_stdout_overflow.rs",
+      "tests/pass/panic_audit_stdout_tail.rs",
+      "tests/pass/panic_audit_step_by_site.rs",
+      "tests/pass/panic_audit_str_boundary.rs",
+      "tests/pass/panic_audit_str_order.rs",
+      "tests/pass/panic_audit_string_methods.rs",
+      "tests/pass/panic_audit_string_remove_end.rs",
+      "tests/pass/panic_audit_sum_site.rs",
+      "tests/pass/panic_audit_swap_remove.rs",
+      "tests/pass/panic_audit_tls_sites.rs",
+      "tests/pass/panic_audit_to_string_err.rs",
+      "tests/pass/panic_audit_todo_msg.rs",
+      "tests/pass/panic_audit_unimplemented.rs",
+      "tests/pass/panic_audit_unreachable_msg.rs",
+      "tests/pass/panic_audit_unwrap_col.rs",
+      "tests/pass/panic_column_long_line.rs",
+      "tests/pass/panic_divide_overflow.rs",
+      "tests/pass/panic_hook_abort.rs",
+      "tests/pass/panic_index.rs",
+      "tests/pass/panic_loc_generic.rs",
+      "tests/pass/panic_message_fmt_error.rs",
+      "tests/pass/panic_neg_ref_method.rs",
+      "tests/pass/panic_neg_ref_std_site.rs",
+      "tests/pass/panic_negate_overflow.rs",
+      "tests/pass/panic_nested_expect.rs",
+      "tests/pass/panic_nested_formatted.rs",
+      "tests/pass/panic_nested_in_message.rs",
+      "tests/pass/panic_no_lint.rs",
+      "tests/pass/panic_overflow.rs",
+      "tests/pass/panic_path_qualified_macro_location.rs",
+      "tests/pass/panic_print_buffer_pieces.rs",
+      "tests/pass/panic_print_display_partial.rs",
+      "tests/pass/panic_print_piece_flushed.rs",
+      "tests/pass/panic_stack_overflow.rs",
+      "tests/pass/panicloc_btree_range_empty.rs",
+      "tests/pass/panicloc_duration_nanos_u128.rs",
+      "tests/pass/panicloc_duration_scalar_mul.rs",
+      "tests/pass/panicloc_io_bufwriter_over.rs",
+      "tests/pass/panicloc_io_read_over.rs",
+      "tests/pass/panicloc_io_write_all_over.rs",
+      "tests/pass/panicloc_str_split_at.rs",
+      "tests/pass/panicloc_user_index_impl.rs",
+      "tests/pass/panicloc_vecdeque_rotate_right.rs",
+      "tests/pass/slice_copy_within_panic_dest.rs",
+      "tests/pass/slice_copy_within_panic_range.rs",
+      "tests/pass/slice_iter_type_name.rs",
+      "tests/pass/std_debug_builders.rs",
+      "tests/pass/std_declared_source_locations.rs",
+      "tests/pass/std_fs_file.rs",
+      "tests/pass/std_process_command.rs",
+      "tests/pass/std_range_panic_map.rs",
+      "tests/pass/std_range_panic_set.rs",
+      "tests/pass/std_time_duration.rs",
+      "tests/pass/std_time_instant.rs",
+      "tests/pass/std_time_panic_add.rs",
+      "tests/pass/std_time_panic_div.rs",
+      "tests/pass/std_time_panic_duration_div_assign_loc.rs",
+      "tests/pass/std_time_panic_duration_div_loc.rs",
+      "tests/pass/std_time_panic_float.rs",
+      "tests/pass/std_time_panic_instant.rs",
+      "tests/pass/std_time_panic_instant_add_loc.rs",
+      "tests/pass/std_time_panic_instant_sub_loc.rs",
+      "tests/pass/std_time_panic_system_add_loc.rs",
+      "tests/pass/std_time_panic_system_sub_loc.rs",
+      "tests/pass/std_time_thread_sleep.rs",
+      "tests/pass/string_drain_panic_boundary.rs",
+      "tests/pass/string_drain_panic_boundary_end.rs",
+      "tests/pass/string_drain_panic_range.rs",
+      "tests/pass/tls_access_destroyed_panic.rs",
+      "tests/pass/tls_access_error_debug.rs",
+      "tests/pass/tls_block_like_init.rs",
+      "tests/pass/tls_cell_refcell.rs",
+      "tests/pass/tls_closure_pushes_static_ref.rs",
+      "tests/pass/tls_const_init_statements.rs",
+      "tests/pass/tls_dtor_order.rs",
+      "tests/pass/tls_fn_item_callables.rs",
+      "tests/pass/tls_fn_path_callables.rs",
+      "tests/pass/tls_fn_path_user_type.rs",
+      "tests/pass/tls_generic_and_default_bodies.rs",
+      "tests/pass/tls_in_fn_body.rs",
+      "tests/pass/tls_json_error_shape.rs",
+      "tests/pass/tls_main_result_err.rs",
+      "tests/pass/tls_modules_methods_nested.rs",
+      "tests/pass/tls_process_exit.rs",
+      "tests/pass/tls_recursive_init.rs",
+      "tests/pass/tls_refcell_borrow_panic.rs",
+      "tests/pass/tls_refcell_set_borrowed_panic.rs",
+      "tests/pass/tls_threads.rs",
+      "tests/pass/tls_value_layouts.rs",
+      "tests/pass/tls_with_inner_closure_capture.rs",
+      "tests/pass/tls_with_lazy_const.rs",
+      "tests/pass/tls_with_returns_capture_borrow.rs",
+      "tests/pass/type_name.rs",
+      "tests/pass/unwrap_panic_column.rs",
+      "tests/pass/user_type_named_cell.rs",
+      "tests/pass/utf8_error_user_type_name.rs",
+      "tests/pass/vec_drain.rs",
+      "tests/pass/vec_drain_panic_end.rs",
+      "tests/pass/vec_drain_panic_excl_start.rs",
+      "tests/pass/vec_drain_panic_incl.rs",
+      "tests/pass/vec_drain_panic_order.rs",
+      "tests/pass/vec_drain_panic_start.rs",
+      "tests/pass/vec_splice_range_panic.rs",
+      "tests/pass/vec_splice_stmt.rs",
+      "tests/reject/fn_local_type_named_like_builtin.rs",
+      "tests/reject/phantom_debug_closure_type_name.rs",
+      "tests/reject/std_time_layout.rs",
+      "tests/reject/std_time_sum.rs",
+      "tests/reject/tls_key_through_reference.rs",
+      "tests/reject/type_name_lazy_lock.rs",
+      "tests/reject/vec_splice.rs",
+      "tests/reject/vec_splice_value_used.rs"
+    ],
+    "passed": 232,
+    "failed": 0,
+    "test_scripts_or_normalization_changed": false
+  },
+  "open_options_finite_domain": {
+    "flags": [
+      "read",
+      "write",
+      "append",
+      "truncate",
+      "create",
+      "create_new"
+    ],
+    "flag_combinations": 64,
+    "file_states": [
+      "missing",
+      "existing"
+    ],
+    "scenarios": 128,
+    "candidate_source": "47d8fe2db78fc0dea7587be70e5547d961bea312",
+    "baseline_source": "3e5cd0ba67a71ae83e4856b2b184f2000ece3862",
+    "baseline_library_source": "3e5cd0ba67a71ae83e4856b2b184f2000ece3862:compiler/native/library",
+    "baseline_mismatches": 16,
+    "candidate_mismatches": 0,
+    "stdout_compared_exactly": true,
+    "both_exit_zero": true,
+    "discarded_control": "Initial baseline attempt used an old core binary but its externally loaded platform library had already been updated. That control was discarded and rerun with an explicitly archived old library; both attempts remain in the private evidence."
+  },
+  "upstream_sources": [
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "alloc/src/collections/btree/search.rs",
+      "blob_sha": "96e5bf108024b66b22d94b17f3fd46455e589c1a",
+      "actual_blob_sha": "96e5bf108024b66b22d94b17f3fd46455e589c1a"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "alloc/src/collections/vec_deque/mod.rs",
+      "blob_sha": "cc137fc6cd56226c0e1afbfc9bdd208d9c0f250f",
+      "actual_blob_sha": "cc137fc6cd56226c0e1afbfc9bdd208d9c0f250f"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "alloc/src/fmt.rs",
+      "blob_sha": "78c7b76c0f5b4206a7deb98237f16144f8ba2acb",
+      "actual_blob_sha": "78c7b76c0f5b4206a7deb98237f16144f8ba2acb"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "alloc/src/io/impls.rs",
+      "blob_sha": "a6c9428ba62dcda97ad36bd35fb11069671ec1ad",
+      "actual_blob_sha": "a6c9428ba62dcda97ad36bd35fb11069671ec1ad"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "alloc/src/io/read.rs",
+      "blob_sha": "e3d26218c09a0d1000ccf2066c377fa4fa1d3a8d",
+      "actual_blob_sha": "e3d26218c09a0d1000ccf2066c377fa4fa1d3a8d"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "alloc/src/raw_vec/mod.rs",
+      "blob_sha": "5d4ad3ac4bf98b49c3bdaedefa9c791095799d50",
+      "actual_blob_sha": "5d4ad3ac4bf98b49c3bdaedefa9c791095799d50"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "alloc/src/rc.rs",
+      "blob_sha": "e639a3237070391a5559915d24e7268cf046b11f",
+      "actual_blob_sha": "e639a3237070391a5559915d24e7268cf046b11f"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "alloc/src/slice.rs",
+      "blob_sha": "e6b540f093ba5f60db54af8047e730336158a18b",
+      "actual_blob_sha": "e6b540f093ba5f60db54af8047e730336158a18b"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "alloc/src/str.rs",
+      "blob_sha": "4c86d7e06ae44abdf1c239d8d6966ec983fac206",
+      "actual_blob_sha": "4c86d7e06ae44abdf1c239d8d6966ec983fac206"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "alloc/src/string.rs",
+      "blob_sha": "256efc6c44f7d8db1f5cc3acc89839f2b71f4a6c",
+      "actual_blob_sha": "256efc6c44f7d8db1f5cc3acc89839f2b71f4a6c"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "alloc/src/sync.rs",
+      "blob_sha": "5ea0fd3a394d40d1be125e85d431c38a62d674dc",
+      "actual_blob_sha": "5ea0fd3a394d40d1be125e85d431c38a62d674dc"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "alloc/src/vec/mod.rs",
+      "blob_sha": "21d88f9f2042b52ae6be25d048605eddfecdd08a",
+      "actual_blob_sha": "21d88f9f2042b52ae6be25d048605eddfecdd08a"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "alloc/src/vec/spec_from_iter_nested.rs",
+      "blob_sha": "77f7761d22f95f91805bf463147d04f854131866",
+      "actual_blob_sha": "77f7761d22f95f91805bf463147d04f854131866"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/cell.rs",
+      "blob_sha": "2dc2c5981cafddb5cb7ceeabdadb269d52416ac7",
+      "actual_blob_sha": "2dc2c5981cafddb5cb7ceeabdadb269d52416ac7"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/cell/lazy.rs",
+      "blob_sha": "ba32fff2284fd9c464118fee49f6cc8a220fec14",
+      "actual_blob_sha": "ba32fff2284fd9c464118fee49f6cc8a220fec14"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/cell/once.rs",
+      "blob_sha": "01ba604e67949c6863e330768519171ec2963949",
+      "actual_blob_sha": "01ba604e67949c6863e330768519171ec2963949"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/char/convert.rs",
+      "blob_sha": "a60fc68c22990ca1f355e9253b3e35404b3bf1d0",
+      "actual_blob_sha": "a60fc68c22990ca1f355e9253b3e35404b3bf1d0"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/char/methods.rs",
+      "blob_sha": "f6930e0a60d429f37c5c63583ecd5a85397eeb2a",
+      "actual_blob_sha": "f6930e0a60d429f37c5c63583ecd5a85397eeb2a"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/cmp.rs",
+      "blob_sha": "6269c9fcf91360d67ddbc9892e9b2aefa9ebe16d",
+      "actual_blob_sha": "6269c9fcf91360d67ddbc9892e9b2aefa9ebe16d"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/fmt/builders.rs",
+      "blob_sha": "ceec98c8659fb457c3352ab065d0dca5ab234942",
+      "actual_blob_sha": "ceec98c8659fb457c3352ab065d0dca5ab234942"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/io/borrowed_buf.rs",
+      "blob_sha": "f2926f1ce7cf97246f80a30c6366e14a2d99f19c",
+      "actual_blob_sha": "f2926f1ce7cf97246f80a30c6366e14a2d99f19c"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/io/write.rs",
+      "blob_sha": "cdddd380885f4f9581647eb642a9867f283f7ba4",
+      "actual_blob_sha": "cdddd380885f4f9581647eb642a9867f283f7ba4"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/iter/adapters/step_by.rs",
+      "blob_sha": "c73dfa784b8d9551e2be52275216645ee3581978",
+      "actual_blob_sha": "c73dfa784b8d9551e2be52275216645ee3581978"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/iter/range.rs",
+      "blob_sha": "e6acf3081c890b4627fb854cd83f2dc634b983a7",
+      "actual_blob_sha": "e6acf3081c890b4627fb854cd83f2dc634b983a7"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/iter/traits/accum.rs",
+      "blob_sha": "3787e41f0a0b109134923182d5a6cd6e4677363e",
+      "actual_blob_sha": "3787e41f0a0b109134923182d5a6cd6e4677363e"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/iter/traits/exact_size.rs",
+      "blob_sha": "908830d8a95141763e1db55464e48faa9e8ee5c4",
+      "actual_blob_sha": "908830d8a95141763e1db55464e48faa9e8ee5c4"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/num/mod.rs",
+      "blob_sha": "3fe7b95283446b0ae82db3f7eb6f22d694d18d91",
+      "actual_blob_sha": "3fe7b95283446b0ae82db3f7eb6f22d694d18d91"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/ops/arith.rs",
+      "blob_sha": "34af7d97acb5a7a311c39facb7bd3e03c5abd092",
+      "actual_blob_sha": "34af7d97acb5a7a311c39facb7bd3e03c5abd092"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/ops/function.rs",
+      "blob_sha": "15b54243c1eed93232dcc27009c10eb2a3b4ab59",
+      "actual_blob_sha": "15b54243c1eed93232dcc27009c10eb2a3b4ab59"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/option.rs",
+      "blob_sha": "5d86f851dbd1dab94f0fc2fcd117a7151bdc0db4",
+      "actual_blob_sha": "5d86f851dbd1dab94f0fc2fcd117a7151bdc0db4"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/panicking.rs",
+      "blob_sha": "46790b620127bf156a641f7ce8d9ae985660e90f",
+      "actual_blob_sha": "46790b620127bf156a641f7ce8d9ae985660e90f"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/result.rs",
+      "blob_sha": "b257cd8c82a0ef853f5ed222c78a9fea4c2b674c",
+      "actual_blob_sha": "b257cd8c82a0ef853f5ed222c78a9fea4c2b674c"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/slice/index.rs",
+      "blob_sha": "b82d79232becc276be088b4cd3fc6bab1120b372",
+      "actual_blob_sha": "b82d79232becc276be088b4cd3fc6bab1120b372"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/slice/mod.rs",
+      "blob_sha": "f73f0c5390629dd3d60eb0e11191d1f3fb3f9ac5",
+      "actual_blob_sha": "f73f0c5390629dd3d60eb0e11191d1f3fb3f9ac5"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/str/mod.rs",
+      "blob_sha": "b3b4658645b9f1c4c7347a11ee6515b96e197d64",
+      "actual_blob_sha": "b3b4658645b9f1c4c7347a11ee6515b96e197d64"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/sync/atomic.rs",
+      "blob_sha": "71502f8d918e739c558710955e3fba31db2ad29e",
+      "actual_blob_sha": "71502f8d918e739c558710955e3fba31db2ad29e"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "core/src/time.rs",
+      "blob_sha": "682a61a07d10fe4a93605b178d2d2b37f25f1324",
+      "actual_blob_sha": "682a61a07d10fe4a93605b178d2d2b37f25f1324"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "std/src/env.rs",
+      "blob_sha": "f5c60f7562d4a65a3e0dfb34ca7a1fc0a2e207ef",
+      "actual_blob_sha": "f5c60f7562d4a65a3e0dfb34ca7a1fc0a2e207ef"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "std/src/os/unix/fs.rs",
+      "blob_sha": "aa604aabaffce421d0647f43c0cc4e65dfb2ae1a",
+      "actual_blob_sha": "aa604aabaffce421d0647f43c0cc4e65dfb2ae1a"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "std/src/panicking.rs",
+      "blob_sha": "7db6e93e8bd02ef3f5832eb8eee1f17984d737fb",
+      "actual_blob_sha": "7db6e93e8bd02ef3f5832eb8eee1f17984d737fb"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "std/src/path.rs",
+      "blob_sha": "be216d87f324116320faa7f0111526dfdb285433",
+      "actual_blob_sha": "be216d87f324116320faa7f0111526dfdb285433"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "std/src/sync/lazy_lock.rs",
+      "blob_sha": "9bb25287275b2fdbfff84654d0d8134126e0c350",
+      "actual_blob_sha": "9bb25287275b2fdbfff84654d0d8134126e0c350"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "std/src/sys/thread/unix.rs",
+      "blob_sha": "2dbb0314cb2714aa23a1801b3650b6d33b2b9053",
+      "actual_blob_sha": "2dbb0314cb2714aa23a1801b3650b6d33b2b9053"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "std/src/thread/local.rs",
+      "blob_sha": "18b0f3263ad59d2eafe18c14051d174ef6043f09",
+      "actual_blob_sha": "18b0f3263ad59d2eafe18c14051d174ef6043f09"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "std/src/time.rs",
+      "blob_sha": "5566c497e06cb01e20d980e5b5d5455fd8146f0c",
+      "actual_blob_sha": "5566c497e06cb01e20d980e5b5d5455fd8146f0c"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "std/src/io/stdio.rs",
+      "blob_sha": "957235f9f3fb0d211ba098cbedda39add74c6791",
+      "actual_blob_sha": "957235f9f3fb0d211ba098cbedda39add74c6791"
+    },
+    {
+      "ref": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "path": "alloc/src/io/buffered/bufwriter.rs",
+      "blob_sha": "806e71c2772ae9707a61ea43d84681ebd8669a3e",
+      "actual_blob_sha": "806e71c2772ae9707a61ea43d84681ebd8669a3e"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "alloc/src/collections/btree/search.rs",
+      "blob_sha": "c26a536d70e659b708ce04a58fb6c34ee6d6b58e",
+      "actual_blob_sha": "c26a536d70e659b708ce04a58fb6c34ee6d6b58e"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "alloc/src/collections/vec_deque/mod.rs",
+      "blob_sha": "51f5bc189281b3055d182c1789b9202f9afa7ccd",
+      "actual_blob_sha": "51f5bc189281b3055d182c1789b9202f9afa7ccd"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "alloc/src/fmt.rs",
+      "blob_sha": "334d49706dbb9a788e561fb6b4b2dead4fe88fe9",
+      "actual_blob_sha": "334d49706dbb9a788e561fb6b4b2dead4fe88fe9"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "alloc/src/io/impls.rs",
+      "blob_sha": "b16d7b424c163aa534138e32995b70729173c820",
+      "actual_blob_sha": "b16d7b424c163aa534138e32995b70729173c820"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "alloc/src/io/read.rs",
+      "blob_sha": "f805ffa255422d8e580db11fb242ea0807a93b69",
+      "actual_blob_sha": "f805ffa255422d8e580db11fb242ea0807a93b69"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "alloc/src/raw_vec/mod.rs",
+      "blob_sha": "2f284bb4229ebf8391aca2b4b95f8bb1fae9c7ce",
+      "actual_blob_sha": "2f284bb4229ebf8391aca2b4b95f8bb1fae9c7ce"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "alloc/src/slice.rs",
+      "blob_sha": "5583fce0b944d91f60174d9d6cee356ca392b0b6",
+      "actual_blob_sha": "5583fce0b944d91f60174d9d6cee356ca392b0b6"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "alloc/src/str.rs",
+      "blob_sha": "7997e0c053dc9c31c5df09b9da17370235faa72a",
+      "actual_blob_sha": "7997e0c053dc9c31c5df09b9da17370235faa72a"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "alloc/src/string.rs",
+      "blob_sha": "08ef554bcbef05215882788749dfda522c68590e",
+      "actual_blob_sha": "08ef554bcbef05215882788749dfda522c68590e"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "alloc/src/sync.rs",
+      "blob_sha": "afb1848d21a24afb9d47cfef1a66f1f7104a9327",
+      "actual_blob_sha": "afb1848d21a24afb9d47cfef1a66f1f7104a9327"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "alloc/src/vec/mod.rs",
+      "blob_sha": "99bdeea251bf4f3e3203dbbc5ef935a40098f07d",
+      "actual_blob_sha": "99bdeea251bf4f3e3203dbbc5ef935a40098f07d"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "alloc/src/vec/spec_from_iter_nested.rs",
+      "blob_sha": "b211687f207308269530d936b534499017b6eec8",
+      "actual_blob_sha": "b211687f207308269530d936b534499017b6eec8"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/cell.rs",
+      "blob_sha": "515b68de43bfbea6b56a182be78baeb870fc03e1",
+      "actual_blob_sha": "515b68de43bfbea6b56a182be78baeb870fc03e1"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/cell/lazy.rs",
+      "blob_sha": "d77abd456beb0d5ed420455e212f8a072fc5226c",
+      "actual_blob_sha": "d77abd456beb0d5ed420455e212f8a072fc5226c"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/cell/once.rs",
+      "blob_sha": "c3b7f845d4fe0530035914ee4b318ed4c7c259c2",
+      "actual_blob_sha": "c3b7f845d4fe0530035914ee4b318ed4c7c259c2"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/char/convert.rs",
+      "blob_sha": "a60fc68c22990ca1f355e9253b3e35404b3bf1d0",
+      "actual_blob_sha": "a60fc68c22990ca1f355e9253b3e35404b3bf1d0"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/char/methods.rs",
+      "blob_sha": "2a7b088070bd614d051c25b0b535c80ed6f2a170",
+      "actual_blob_sha": "2a7b088070bd614d051c25b0b535c80ed6f2a170"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/cmp.rs",
+      "blob_sha": "83a2925678e19b991f5ea149e03e2b723d42707f",
+      "actual_blob_sha": "83a2925678e19b991f5ea149e03e2b723d42707f"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/fmt/builders.rs",
+      "blob_sha": "20ce752dd7c41426d2f13937516937341f103869",
+      "actual_blob_sha": "20ce752dd7c41426d2f13937516937341f103869"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/io/borrowed_buf.rs",
+      "blob_sha": "2cc1ebba1a85cdcc8092a56c972e649a6438bfa6",
+      "actual_blob_sha": "2cc1ebba1a85cdcc8092a56c972e649a6438bfa6"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/io/write.rs",
+      "blob_sha": "1318d4bc0ee8a6d9cc229665fd1afe9fc742b87e",
+      "actual_blob_sha": "1318d4bc0ee8a6d9cc229665fd1afe9fc742b87e"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/iter/adapters/step_by.rs",
+      "blob_sha": "c73dfa784b8d9551e2be52275216645ee3581978",
+      "actual_blob_sha": "c73dfa784b8d9551e2be52275216645ee3581978"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/iter/range.rs",
+      "blob_sha": "331c367314e635195cd72ff81a4e7447c53dcb22",
+      "actual_blob_sha": "331c367314e635195cd72ff81a4e7447c53dcb22"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/iter/traits/accum.rs",
+      "blob_sha": "3787e41f0a0b109134923182d5a6cd6e4677363e",
+      "actual_blob_sha": "3787e41f0a0b109134923182d5a6cd6e4677363e"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/iter/traits/exact_size.rs",
+      "blob_sha": "908830d8a95141763e1db55464e48faa9e8ee5c4",
+      "actual_blob_sha": "908830d8a95141763e1db55464e48faa9e8ee5c4"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/num/mod.rs",
+      "blob_sha": "9bef5c8ce7ad18c2945ebac48571388db5065248",
+      "actual_blob_sha": "9bef5c8ce7ad18c2945ebac48571388db5065248"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/ops/arith.rs",
+      "blob_sha": "34af7d97acb5a7a311c39facb7bd3e03c5abd092",
+      "actual_blob_sha": "34af7d97acb5a7a311c39facb7bd3e03c5abd092"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/ops/function.rs",
+      "blob_sha": "276b75c53cc388db9e69fdcbd16525e388f41ce2",
+      "actual_blob_sha": "276b75c53cc388db9e69fdcbd16525e388f41ce2"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/option.rs",
+      "blob_sha": "f53eb4a294194d2f61370dd2e21fea19382bea75",
+      "actual_blob_sha": "f53eb4a294194d2f61370dd2e21fea19382bea75"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/panicking.rs",
+      "blob_sha": "8a5e0f035d775580c064c45b9ab6964543ed71dd",
+      "actual_blob_sha": "8a5e0f035d775580c064c45b9ab6964543ed71dd"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/result.rs",
+      "blob_sha": "255c93bd8109caa6ef08969c434a1b4e983e6c75",
+      "actual_blob_sha": "255c93bd8109caa6ef08969c434a1b4e983e6c75"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/slice/index.rs",
+      "blob_sha": "522603c574bad1c7181e2cca597dd9326e26500d",
+      "actual_blob_sha": "522603c574bad1c7181e2cca597dd9326e26500d"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/slice/mod.rs",
+      "blob_sha": "f62dcce8df324df45622848b7cf174b99955fe1a",
+      "actual_blob_sha": "f62dcce8df324df45622848b7cf174b99955fe1a"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/str/mod.rs",
+      "blob_sha": "01c93465ca2517f310b2d2bd1640332c873ed488",
+      "actual_blob_sha": "01c93465ca2517f310b2d2bd1640332c873ed488"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/sync/atomic.rs",
+      "blob_sha": "d388c9d6cd1422169387c02afe404a2e388abb06",
+      "actual_blob_sha": "d388c9d6cd1422169387c02afe404a2e388abb06"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/time.rs",
+      "blob_sha": "6fc40b4c25c2ebfc61d1bbdfa408ce1a8725592d",
+      "actual_blob_sha": "6fc40b4c25c2ebfc61d1bbdfa408ce1a8725592d"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "std/src/env.rs",
+      "blob_sha": "3e7634092132baa7431b8326f3ac7b4d33c26ebb",
+      "actual_blob_sha": "3e7634092132baa7431b8326f3ac7b4d33c26ebb"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "std/src/os/unix/fs.rs",
+      "blob_sha": "7a9524054ef7be75784bd4dfd1ae593aca82c6d3",
+      "actual_blob_sha": "7a9524054ef7be75784bd4dfd1ae593aca82c6d3"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "std/src/panicking.rs",
+      "blob_sha": "4a66d2c1d55f5cb4cf7018bdab958e356508694b",
+      "actual_blob_sha": "4a66d2c1d55f5cb4cf7018bdab958e356508694b"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "std/src/path.rs",
+      "blob_sha": "4eb3796ac026d65319e44765ee482231b62e5c9a",
+      "actual_blob_sha": "4eb3796ac026d65319e44765ee482231b62e5c9a"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "std/src/sync/lazy_lock.rs",
+      "blob_sha": "920a8596cdd99a3a6978880956d021eb8e0fd769",
+      "actual_blob_sha": "920a8596cdd99a3a6978880956d021eb8e0fd769"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "std/src/sys/thread/unix.rs",
+      "blob_sha": "b7908dea2b5deda94bca109deb29d0c2d1f1ff2a",
+      "actual_blob_sha": "b7908dea2b5deda94bca109deb29d0c2d1f1ff2a"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "std/src/thread/local.rs",
+      "blob_sha": "8285682c81ba01b9dfe99b2ed399ca98d6c68420",
+      "actual_blob_sha": "8285682c81ba01b9dfe99b2ed399ca98d6c68420"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "std/src/time.rs",
+      "blob_sha": "5566c497e06cb01e20d980e5b5d5455fd8146f0c",
+      "actual_blob_sha": "5566c497e06cb01e20d980e5b5d5455fd8146f0c"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "std/src/io/stdio.rs",
+      "blob_sha": "f72a55366bfdd8b08b7dddc599f7647158a70413",
+      "actual_blob_sha": "f72a55366bfdd8b08b7dddc599f7647158a70413"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "alloc/src/io/buffered/bufwriter.rs",
+      "blob_sha": "d7e09675968e1e2b9b9502240cc719a093364508",
+      "actual_blob_sha": "d7e09675968e1e2b9b9502240cc719a093364508"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "alloc/src/rcs/rc.rs",
+      "blob_sha": "bdf965ed076f02c8b2bc7cd5a0238115a01a6101",
+      "actual_blob_sha": "bdf965ed076f02c8b2bc7cd5a0238115a01a6101"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "alloc/src/rcs/arc.rs",
+      "blob_sha": "59048f9785263c4a949d97789f2be7a4eea3fd8b",
+      "actual_blob_sha": "59048f9785263c4a949d97789f2be7a4eea3fd8b"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/num/int_macros.rs",
+      "blob_sha": "fb86481c4244366c65fcd89952e6aad72786877b",
+      "actual_blob_sha": "fb86481c4244366c65fcd89952e6aad72786877b"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "core/src/num/uint_macros.rs",
+      "blob_sha": "e2026216736045b04ad70d0221b1c462b5f4873d",
+      "actual_blob_sha": "e2026216736045b04ad70d0221b1c462b5f4873d"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "std/src/sys/process/unix/unix.rs",
+      "blob_sha": "d1262ba3e2e6ecde26e42f6061ba0ca3c515b96b",
+      "actual_blob_sha": "d1262ba3e2e6ecde26e42f6061ba0ca3c515b96b"
+    },
+    {
+      "ref": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "std/src/sys/fs/unix.rs",
+      "blob_sha": "4b384aee7bc24d6bff391eb96790a3414fb98dcd",
+      "actual_blob_sha": "4b384aee7bc24d6bff391eb96790a3414fb98dcd"
+    }
+  ],
+  "limits": [
+    "Initial complete ordinary run failed; the focused green run is not a complete ordinary corpus pass.",
+    "This record does not establish Clang sanitizer, native macOS, Windows, performance, or integration completion.",
+    "Frozen Rust 1.99 baseline evidence and its oracle are unchanged."
+  ],
+  "cleanup_hook": {
+    "repair_commit": "77f712ce864e4ad358864e2447b56f4075ec5e4a",
+    "built_source_head": "b15b4507e86b6f9342e95337926846200f838245",
+    "source_delta": "Candidate panic.c only; test fixture additions do not enter compiler binary",
+    "panic_c_sha256": "d8af748fc4e0578bd340eeb9898c1caec69e8a9512173639bed3cbc02b910105",
+    "native_sha256": "14c6346d1deb19fc5161e92524de4af11738768e07ed36c1860e7117d797cfd5",
+    "backend": "TCC, direct source-built compiler",
+    "cases": [
+      {
+        "fixture": "panic_cleanup_hook.rs",
+        "reference_fixture": "panic_cleanup_hook.rs",
+        "strategy": "unwind",
+        "input_note": "Same fixture for both compilers",
+        "runs": [
+          {
+            "RUST_BACKTRACE": "0",
+            "native_status": -6,
+            "reference_status": -6,
+            "baseline_status": -6,
+            "native_equal": true,
+            "baseline_equal": false,
+            "normalization": "Only OS thread IDs in default panic headers"
+          },
+          {
+            "RUST_BACKTRACE": "1",
+            "native_status": -6,
+            "reference_status": -6,
+            "baseline_status": -6,
+            "native_equal": true,
+            "baseline_equal": false,
+            "normalization": "Only OS thread IDs in default panic headers"
+          }
+        ]
+      },
+      {
+        "fixture": "can-unwind-cleanup-native.rs",
+        "reference_fixture": "can-unwind-cleanup-reference.rs",
+        "strategy": "unwind",
+        "input_note": "Only Rust input has #![feature(panic_can_unwind)]; native exposes the method but rejects feature attributes. This is a private API control, not part of ordinary differential gates.",
+        "runs": [
+          {
+            "RUST_BACKTRACE": "0",
+            "native_status": -6,
+            "reference_status": -6,
+            "baseline_status": -6,
+            "native_equal": true,
+            "baseline_equal": false,
+            "normalization": "Only OS thread IDs in default panic headers"
+          }
+        ]
+      },
+      {
+        "fixture": "panic_hook_panics.rs",
+        "reference_fixture": "panic_hook_panics.rs",
+        "strategy": "unwind",
+        "input_note": "Same fixture for both compilers",
+        "runs": [
+          {
+            "RUST_BACKTRACE": "0",
+            "native_status": -6,
+            "reference_status": -6,
+            "baseline_status": -6,
+            "native_equal": true,
+            "baseline_equal": false,
+            "normalization": "Only OS thread IDs in default panic headers"
+          }
+        ]
+      },
+      {
+        "fixture": "can-unwind-native.rs",
+        "reference_fixture": "can-unwind-reference.rs",
+        "strategy": "abort",
+        "input_note": "Only Rust input has #![feature(panic_can_unwind)]; native exposes the method but rejects feature attributes. This is a private API control, not part of ordinary differential gates.",
+        "runs": [
+          {
+            "RUST_BACKTRACE": "0",
+            "native_status": -6,
+            "reference_status": -6,
+            "baseline_status": -6,
+            "native_equal": true,
+            "baseline_equal": false,
+            "normalization": "Only OS thread IDs in default panic headers"
+          }
+        ]
+      },
+      {
+        "fixture": "can-unwind-native.rs",
+        "reference_fixture": "can-unwind-reference.rs",
+        "strategy": "unwind",
+        "input_note": "Only Rust input has #![feature(panic_can_unwind)]; native exposes the method but rejects feature attributes. This is a private API control, not part of ordinary differential gates.",
+        "runs": [
+          {
+            "RUST_BACKTRACE": "0",
+            "native_status": 101,
+            "reference_status": 101,
+            "baseline_status": 101,
+            "native_equal": true,
+            "baseline_equal": true,
+            "normalization": "Only OS thread IDs in default panic headers"
+          }
+        ]
+      }
+    ],
+    "first_patch_tcc_result": "Failed: final generated hook returned early while second exception remained pending. Preserved and repaired; not counted as green.",
+    "partial_drop_composition": "Original final partial-drop emitted C plus the complete repaired panic.c matches pinned Rust stdout/stderr and SIGABRT under GCC EH with both RUST_BACKTRACE=0 and 1.",
+    "unchanged_source_emitted_eh": {
+      "source_head": "77f712ce864e4ad358864e2447b56f4075ec5e4a",
+      "native_sha256": "14c6346d1deb19fc5161e92524de4af11738768e07ed36c1860e7117d797cfd5",
+      "panic_c_sha256": "d8af748fc4e0578bd340eeb9898c1caec69e8a9512173639bed3cbc02b910105",
+      "kind": "Source-built native compiler, unchanged emitted C, GCC/g++ EH",
+      "runs": [
+        {
+          "RUST_BACKTRACE": "0",
+          "native_status": -6,
+          "reference_status": -6,
+          "equal": true,
+          "normalization": "Only OS thread IDs in default panic header"
+        },
+        {
+          "RUST_BACKTRACE": "1",
+          "native_status": -6,
+          "reference_status": -6,
+          "equal": true,
+          "normalization": "Only OS thread IDs in default panic header"
+        }
+      ]
+    }
+  },
+  "raw_evidence_sha256": {
+    "combined-normal-differential/identity.json": "581569b3a84e5babbd84bd0f3a04fcda660670d8bb2b2674f64b40c56bbde581",
+    "combined-normal-differential/result.json": "976835bd94db31fa7a568f7c0bbf221db585b86328f824f7d9a262006cb01db4",
+    "combined-normal-differential/run.log": "a92ad4045573de57b4a98bd694cc4abcf6f0b595007eef6c5082065a4f2e66a7",
+    "std-alignment-focused/identity.json": "e06c01ef146cc6984f3039ff63e832e7d7ac2b6982ad08e51c0abcf615a5f1b6",
+    "std-alignment-focused/results.json": "8150ddcdfd4438ed07cd29b1155022fa13f475c2298c9a9a3cd944c7857885ce",
+    "open-options-matrix-green/result.json": "46a3748ebe048816bc0e7b051fea810a45c8034ca11b8013dad8d4ce738d3718",
+    "cleanup-hook-source-native/result.json": "e4828bab74f130aa4384d44fab7701863018de59dcd69729025c84dd755ef9ba",
+    "cleanup-hook-source-native-v2/result.json": "397c1f0a6047b972981e0704aefac70120e1b8d2bc52326cee564b27995ea4ed",
+    "cleanup-hook-source-eh/result.json": "e5632ee2e04bbb9c0dc108c04a19161e11328cb0b28c72ad20946b791abe373c"
+  }
+}

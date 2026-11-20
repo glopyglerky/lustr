@@ -1,0 +1,29 @@
+test_actual_matching_child_streams_and_exit_are_accepted (__main__.ResultControls.test_actual_matching_child_streams_and_exit_are_accepted) ... ok
+test_duplicate_json_fields_cannot_overwrite_a_failure (__main__.ResultControls.test_duplicate_json_fields_cannot_overwrite_a_failure) ... ok
+test_empty_duplicate_and_incomplete_rust_results_are_rejected (__main__.ResultControls.test_empty_duplicate_and_incomplete_rust_results_are_rejected) ... ok
+test_empty_duplicate_and_inconsistent_native_results_are_rejected (__main__.ResultControls.test_empty_duplicate_and_inconsistent_native_results_are_rejected) ... ok
+test_empty_inventory_cannot_pass (__main__.ResultControls.test_empty_inventory_cannot_pass) ... ok
+test_every_supported_probe_is_selected_including_print_only (__main__.ResultControls.test_every_supported_probe_is_selected_including_print_only) ... ok
+test_expected_panic_requires_observed_output_in_both_formats (__main__.ResultControls.test_expected_panic_requires_observed_output_in_both_formats) ... ok
+test_ignored_test_panic_contract_does_not_claim_execution (__main__.ResultControls.test_ignored_test_panic_contract_does_not_claim_execution) ... ok
+test_malformed_success_counts_are_not_numbers (__main__.ResultControls.test_malformed_success_counts_are_not_numbers) ... ok
+test_matching_output_does_not_hide_failure_or_matching_failures (__main__.ResultControls.test_matching_output_does_not_hide_failure_or_matching_failures) ... ok
+test_missing_or_added_test_changes_the_compared_result (__main__.ResultControls.test_missing_or_added_test_changes_the_compared_result) ... ok
+test_only_thread_and_first_panic_note_are_normalized (__main__.ResultControls.test_only_thread_and_first_panic_note_are_normalized) ... ok
+test_ordinary_test_panic_cannot_pass_by_label (__main__.ResultControls.test_ordinary_test_panic_cannot_pass_by_label) ... ok
+test_passing_label_cannot_hide_a_signal_or_invalid_exit (__main__.ResultControls.test_passing_label_cannot_hide_a_signal_or_invalid_exit) ... ok
+test_pinned_inventory_cannot_shrink_or_reclassify_a_supported_case (__main__.ResultControls.test_pinned_inventory_cannot_shrink_or_reclassify_a_supported_case) ... ok
+test_real_signal_is_a_failure (__main__.ResultControls.test_real_signal_is_a_failure) ... ok
+test_should_panic_name_is_not_changed (__main__.ResultControls.test_should_panic_name_is_not_changed) ... ok
+test_should_panic_test_must_actually_panic (__main__.ResultControls.test_should_panic_test_must_actually_panic) ... ok
+test_should_panic_wrong_payload_or_location_cannot_pass_by_label (__main__.ResultControls.test_should_panic_wrong_payload_or_location_cannot_pass_by_label) ... ok
+test_stdout_substring_and_ignored_output_cannot_hide_a_wrong_panic (__main__.ResultControls.test_stdout_substring_and_ignored_output_cannot_hide_a_wrong_panic) ... ok
+test_successful_child_with_wrong_output_is_rejected (__main__.ResultControls.test_successful_child_with_wrong_output_is_rejected) ... ok
+test_successful_child_with_wrong_stderr_is_rejected (__main__.ResultControls.test_successful_child_with_wrong_stderr_is_rejected) ... ok
+test_test_names_and_statuses_match_independent_formats (__main__.ResultControls.test_test_names_and_statuses_match_independent_formats) ... ok
+test_unknown_and_nonobject_result_records_are_rejected (__main__.ResultControls.test_unknown_and_nonobject_result_records_are_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 24 tests in 0.424s
+
+OK

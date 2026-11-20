@@ -1,0 +1,527 @@
+[
+  {
+    "name": "rustc-identity",
+    "argv": [
+      "$PINNED_SDK/bin/rustc",
+      "-vV"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 214,
+    "stdout_sha256": "bbc9b960fe50c84bca20f3109950bcb87c48b6d1ce61d2fc2fc1519aaba2daaa",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "rustc-sysroot",
+    "argv": [
+      "$PINNED_SDK/bin/rustc",
+      "--print",
+      "sysroot"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 102,
+    "stdout_sha256": "600cf2f13ff3a6d20bfd263251d4e6ceacd6e0890a8f215382d5816c7b747b08",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "data-generation-check",
+    "argv": [
+      "bash",
+      "$SOURCE/compiler/native/scripts/gen-unicode.sh",
+      "--check"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 258,
+    "stdout_sha256": "e733d453dab963a916b35c5a82f8dfda73e504fcd7ed0b804b8d6239a91a24be",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "data-verifier-build",
+    "argv": [
+      "$PINNED_SDK/bin/rustc",
+      "--edition=2024",
+      "-O",
+      "-C",
+      "rpath",
+      "$SOURCE/compiler/native/tools/verify_unicode_semantics.rs",
+      "-o",
+      "$EVIDENCE/verify-compiler-data"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "data-verifier-run",
+    "argv": [
+      "$EVIDENCE/verify-compiler-data"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 182,
+    "stdout_sha256": "fa795b2aa6360d21f8491af166d1b04a64c3cc7182b7efb6d930af71ac27f000",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "const-runtime-native-build",
+    "argv": [
+      "$NATIVE_CORE",
+      "build",
+      "$SOURCE/compiler/native/tests/pass/unicode_const_runtime_semantics.rs",
+      "-o",
+      "$EVIDENCE/const-runtime-native"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "const-runtime-native-run",
+    "argv": [
+      "$EVIDENCE/const-runtime-native"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 31,
+    "stdout_sha256": "eb6cf2759dbd1616cc0ebb73297300d23b3c103f740dbc1ba9df4850b077ba36",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "const-runtime-rust-build",
+    "argv": [
+      "$PINNED_SDK/bin/rustc",
+      "--edition=2024",
+      "-O",
+      "$SOURCE/compiler/native/tests/pass/unicode_const_runtime_semantics.rs",
+      "-o",
+      "$EVIDENCE/const-runtime-rust"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "const-runtime-rust-run",
+    "argv": [
+      "$EVIDENCE/const-runtime-rust"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 31,
+    "stdout_sha256": "eb6cf2759dbd1616cc0ebb73297300d23b3c103f740dbc1ba9df4850b077ba36",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "runtime-exact-native-build",
+    "argv": [
+      "$NATIVE_CORE",
+      "build",
+      "$SOURCE/compiler/native/tools/unicode_runtime_exact.rs",
+      "-o",
+      "$EVIDENCE/runtime-exact-native"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "runtime-exact-native-run",
+    "argv": [
+      "$EVIDENCE/runtime-exact-native"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 114666345,
+    "stdout_sha256": "d8d2c58bf07f1acd5faadb78b78c9b732e79d5e6d4a019b7ce620e6cbb0ed69b",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "runtime-exact-rust-build",
+    "argv": [
+      "$PINNED_SDK/bin/rustc",
+      "--edition=2024",
+      "-O",
+      "$SOURCE/compiler/native/tools/unicode_runtime_exact.rs",
+      "-o",
+      "$EVIDENCE/runtime-exact-rust"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "runtime-exact-rust-run",
+    "argv": [
+      "$EVIDENCE/runtime-exact-rust"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 114666345,
+    "stdout_sha256": "d8d2c58bf07f1acd5faadb78b78c9b732e79d5e6d4a019b7ce620e6cbb0ed69b",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-nfc-native-build",
+    "argv": [
+      "$NATIVE_CORE",
+      "build",
+      "$SOURCE/compiler/native/tests/pass/identifier_nfc.rs",
+      "-o",
+      "$EVIDENCE/identifier-nfc-native"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-nfc-native-run",
+    "argv": [
+      "$EVIDENCE/identifier-nfc-native"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 12,
+    "stdout_sha256": "90e248c6de2c8733bd99247f06ba62fe52199fcffe9d3b83ef145a4c1a921bc5",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-nfc-rust-build",
+    "argv": [
+      "$PINNED_SDK/bin/rustc",
+      "--edition=2024",
+      "-O",
+      "$SOURCE/compiler/native/tests/pass/identifier_nfc.rs",
+      "-o",
+      "$EVIDENCE/identifier-nfc-rust"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-nfc-rust-run",
+    "argv": [
+      "$EVIDENCE/identifier-nfc-rust"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 12,
+    "stdout_sha256": "90e248c6de2c8733bd99247f06ba62fe52199fcffe9d3b83ef145a4c1a921bc5",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-macros-native-build",
+    "argv": [
+      "$NATIVE_CORE",
+      "build",
+      "$SOURCE/compiler/native/tests/pass/identifier_nfc_macros.rs",
+      "-o",
+      "$EVIDENCE/identifier-macros-native"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-macros-native-run",
+    "argv": [
+      "$EVIDENCE/identifier-macros-native"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 93,
+    "stdout_sha256": "632f55ace0695cd5420d874853ec863960dccb6f0240205b27b20f744f9b986b",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-macros-rust-build",
+    "argv": [
+      "$PINNED_SDK/bin/rustc",
+      "--edition=2024",
+      "-O",
+      "$SOURCE/compiler/native/tests/pass/identifier_nfc_macros.rs",
+      "-o",
+      "$EVIDENCE/identifier-macros-rust"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-macros-rust-run",
+    "argv": [
+      "$EVIDENCE/identifier-macros-rust"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 93,
+    "stdout_sha256": "632f55ace0695cd5420d874853ec863960dccb6f0240205b27b20f744f9b986b",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-includes-native-build",
+    "argv": [
+      "$NATIVE_CORE",
+      "build",
+      "$SOURCE/compiler/native/tests/pass/identifier_nfc_includes.rs",
+      "-o",
+      "$EVIDENCE/identifier-includes-native"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-includes-native-run",
+    "argv": [
+      "$EVIDENCE/identifier-includes-native"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 25,
+    "stdout_sha256": "37ab62b07ef18e786d41eda332cc5816b1807682c53ed98d534a92ccfa3d1262",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-includes-rust-build",
+    "argv": [
+      "$PINNED_SDK/bin/rustc",
+      "--edition=2024",
+      "-O",
+      "$SOURCE/compiler/native/tests/pass/identifier_nfc_includes.rs",
+      "-o",
+      "$EVIDENCE/identifier-includes-rust"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-includes-rust-run",
+    "argv": [
+      "$EVIDENCE/identifier-includes-rust"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 25,
+    "stdout_sha256": "37ab62b07ef18e786d41eda332cc5816b1807682c53ed98d534a92ccfa3d1262",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-modules-native-build",
+    "argv": [
+      "$NATIVE_CORE",
+      "build",
+      "$SOURCE/compiler/native/tests/pass/identifier_nfc_modules.rs",
+      "-o",
+      "$EVIDENCE/identifier-modules-native"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-modules-native-run",
+    "argv": [
+      "$EVIDENCE/identifier-modules-native"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 6,
+    "stdout_sha256": "b0e35de7ed8b81054f65be9a66d09f9c06b642e04df0a156871fdabbbeecddee",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-modules-rust-build",
+    "argv": [
+      "$PINNED_SDK/bin/rustc",
+      "--edition=2024",
+      "-O",
+      "$SOURCE/compiler/native/tests/pass/identifier_nfc_modules.rs",
+      "-o",
+      "$EVIDENCE/identifier-modules-rust"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-modules-rust-run",
+    "argv": [
+      "$EVIDENCE/identifier-modules-rust"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 6,
+    "stdout_sha256": "b0e35de7ed8b81054f65be9a66d09f9c06b642e04df0a156871fdabbbeecddee",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-equivalence-native-build",
+    "argv": [
+      "$NATIVE_CORE",
+      "build",
+      "$SOURCE/compiler/native/tests/pass/lex_ident_normalized.rs",
+      "-o",
+      "$EVIDENCE/identifier-equivalence-native"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-equivalence-native-run",
+    "argv": [
+      "$EVIDENCE/identifier-equivalence-native"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 3,
+    "stdout_sha256": "25d4f2a86deb5e2574bb3210b67bb24fcc4afb19f93a7b65a057daa874a9d18e",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-equivalence-rust-build",
+    "argv": [
+      "$PINNED_SDK/bin/rustc",
+      "--edition=2024",
+      "-O",
+      "$SOURCE/compiler/native/tests/pass/lex_ident_normalized.rs",
+      "-o",
+      "$EVIDENCE/identifier-equivalence-rust"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-equivalence-rust-run",
+    "argv": [
+      "$EVIDENCE/identifier-equivalence-rust"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 3,
+    "stdout_sha256": "25d4f2a86deb5e2574bb3210b67bb24fcc4afb19f93a7b65a057daa874a9d18e",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-assertions-native-build",
+    "argv": [
+      "$NATIVE_CORE",
+      "build",
+      "-C",
+      "panic=unwind",
+      "$SOURCE/compiler/native/tests/pass/identifier_nfc_assertions.rs",
+      "-o",
+      "$EVIDENCE/identifier-assertions-native"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-assertions-native-run",
+    "argv": [
+      "$EVIDENCE/identifier-assertions-native"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 426,
+    "stdout_sha256": "23695bca0b076d94bc39eec68ec25fd4dbc6a0381f7ff68ccb2730ed6285ff94",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-assertions-rust-build",
+    "argv": [
+      "$PINNED_SDK/bin/rustc",
+      "--edition=2024",
+      "-O",
+      "-C",
+      "panic=unwind",
+      "$SOURCE/compiler/native/tests/pass/identifier_nfc_assertions.rs",
+      "-o",
+      "$EVIDENCE/identifier-assertions-rust"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-assertions-rust-run",
+    "argv": [
+      "$EVIDENCE/identifier-assertions-rust"
+    ],
+    "returncode": 0,
+    "stdout_bytes": 426,
+    "stdout_sha256": "23695bca0b076d94bc39eec68ec25fd4dbc6a0381f7ff68ccb2730ed6285ff94",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "identifier-duplicate-native-build",
+    "argv": [
+      "$NATIVE_CORE",
+      "build",
+      "$SOURCE/compiler/native/tests/fail/identifier_nfc_duplicate.rs",
+      "-o",
+      "$EVIDENCE/identifier-duplicate-native"
+    ],
+    "returncode": 1,
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_bytes": 413,
+    "stderr_sha256": "9b94acefa433034dbcd92ce3b646ad8fd5bd03d21771d6a26455d937cfc71a66"
+  },
+  {
+    "name": "identifier-duplicate-rust-build",
+    "argv": [
+      "$PINNED_SDK/bin/rustc",
+      "--edition=2024",
+      "$SOURCE/compiler/native/tests/fail/identifier_nfc_duplicate.rs",
+      "-o",
+      "$EVIDENCE/identifier-duplicate-rust"
+    ],
+    "returncode": 1,
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_bytes": 542,
+    "stderr_sha256": "451752a3fcc1082d4726b8a5478ccd086f681020b8a184e1e95699d28fce34bb"
+  }
+]

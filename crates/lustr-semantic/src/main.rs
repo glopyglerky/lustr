@@ -61,10 +61,12 @@ fn main() -> ExitCode {
         };
     }
     let os_args: Vec<OsString> = std::iter::once(compiler.clone()).chain(args).collect();
-    // rustc_driver accepts UTF-8 arguments. Preserve other OS representations
-    // by delegating intact to rustc, without producing an inspection report.
+    // This independent inspection oracle has no compilation passthrough.
+    // Reject an unrepresentable request before any compiler identity query or
+    // execution. A missing inspection capability cannot select another route.
     let Ok(args) = os_args.iter().cloned().map(OsString::into_string).collect::<Result<Vec<_>, _>>() else {
-        return delegate(&compiler, &os_args[1..]);
+        eprintln!("lustr-semantic: non-UTF-8 inspection arguments are unsupported; no compiler was invoked");
+        return ExitCode::from(2);
     };
     match run(&compiler, &args) {
         Ok(code) => code,
@@ -244,24 +246,5 @@ fn os_value(value: &OsStr) -> Value {
     #[cfg(not(any(unix, windows)))]
     {
         json!({"encoded_os_bytes_hex": value.as_encoded_bytes().iter().map(|byte| format!("{byte:02x}")).collect::<String>()})
-    }
-}
-
-#[cfg(unix)]
-fn delegate(compiler: &OsStr, args: &[OsString]) -> ExitCode {
-    use std::os::unix::process::CommandExt;
-    let error = Command::new(compiler).args(args).exec();
-    eprintln!("lustr-semantic: cannot execute {compiler:?}: {error}");
-    ExitCode::from(if error.kind() == io::ErrorKind::NotFound { 127 } else { 126 })
-}
-
-#[cfg(not(unix))]
-fn delegate(compiler: &OsStr, args: &[OsString]) -> ExitCode {
-    match Command::new(compiler).args(args).status() {
-        Ok(status) => ExitCode::from(status.code().unwrap_or(1) as u8),
-        Err(error) => {
-            eprintln!("lustr-semantic: cannot execute {compiler:?}: {error}");
-            ExitCode::from(if error.kind() == io::ErrorKind::NotFound { 127 } else { 126 })
-        }
     }
 }

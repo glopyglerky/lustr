@@ -33,7 +33,7 @@ pub(crate) fn fn_outline(toks: &[Token], text: &str) -> Option<Vec<String>> {
     }
     let head = &toks[..body?];
     let at_fn = head.iter().position(|t| t.tok == Tok::Fn)?;
-    let name = head.get(at_fn + 1).filter(|t| matches!(t.tok, Tok::Ident(_)))?;
+    let name = head.get(at_fn + 1).filter(|t| matches!(t.tok, Tok::Ident(_, _)))?;
     let mut out: Vec<String> = head[..at_fn].iter().filter(|t| !matches!(t.tok, Tok::DocStr(_))).map(src).collect::<Option<_>>()?;
     out.push("fn".into());
     out.push(src(name)?);
@@ -61,7 +61,7 @@ pub(crate) fn fn_outline(toks: &[Token], text: &str) -> Option<Vec<String>> {
                     // A parameter's first token: its kind, then its name.
                     start = false;
                     match t.tok {
-                        Tok::Lifetime(_) => out.push(format!("'{}", src(t)?)),
+                        Tok::Lifetime(_, _) => out.push(format!("'{}", src(t)?)),
                         Tok::Const => out.push("const".into()),
                         _ => out.push(format!("T {}", src(t)?)),
                     }

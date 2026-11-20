@@ -1,0 +1,52 @@
+{
+  "cases": [
+    {
+      "name": "inline-peer",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-type=rlib",
+        "--crate-name=peer",
+        "-Cpanic=abort",
+        "$INDEPENDENT_REVIEW/inline-peer.rs",
+        "-o",
+        "$INDEPENDENT_REVIEW/libpeer-inline.rlib"
+      ],
+      "status": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "inline-reference",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "-Cpanic=abort",
+        "--extern",
+        "peer=$INDEPENDENT_REVIEW/libpeer-inline.rlib",
+        "$INDEPENDENT_REVIEW/inline-consumer.rs",
+        "-o",
+        "$INDEPENDENT_REVIEW/inline-reference"
+      ],
+      "status": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "inline-native",
+      "command": [
+        "$INDEPENDENT_REVIEW/qualifier",
+        "$INDEPENDENT_REVIEW/inline-consumer.rs",
+        "$INDEPENDENT_REVIEW/libpeer-inline.rlib",
+        "$INDEPENDENT_REVIEW/inline-native",
+        "$INDEPENDENT_REVIEW/inline-state"
+      ],
+      "status": 3,
+      "stdout": "",
+      "stderr": "imported-generation=rust:5b7b37aefcb5b2fba3c2392bc9065b9e4602d494:Svh { hash: Fingerprint(9258676308517033771, 6165006505845360887) }\nshared request: native-checked=1 imported-inputs=1 integer-adapters=0 consumer-rust-typeck=0 consumer-rust-analysis=0\nerror: tcc failed to link (this is a lust bug):\ntcc: error: unresolved reference to '_RNvCs2s9PSdYtRVi_4peer3add'\n"
+    }
+  ],
+  "scope": "Frozen development witness before body-materialization admission was repaired; it does not qualify any released compiler.",
+  "qualifier_sha256": "65afe9902243b4605063c4a638a2ee9ae3f1f9314b817ebf708dc40dd5031954",
+  "original_record_sha256": "d7df6c2f7a48fc975a6fbfbd4911ce1cbb6d9b60d6965e55892347fb84ea101f"
+}

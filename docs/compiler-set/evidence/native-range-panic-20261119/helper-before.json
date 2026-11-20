@@ -1,0 +1,12 @@
+{
+  "cases": 2205,
+  "invalid": 1505,
+  "failures": 1505,
+  "schema": "lustr-range-panic-v1",
+  "runtime_source_sha256": "16d76902dd3bbb803c323c5f43096516e86ad1e5eba6d8b21e43c779ced93c26",
+  "helper_sha256": "2591cc9e148dad2921b60366ceb71925b7ff525036a090b28911ce34d394bd7d",
+  "harness_sha256": "96d5a1578299795082aab2d1b09724ace1f07100ea0e743e1976ff9f81977c1a",
+  "exit_code": 1,
+  "stderr": "range len=0 start=(0,0) end=(0,0): panic calls=1 expected=1; outputs=(0,1)\nrange len=0 start=(0,0) end=(0,1): panic calls=1 expected=1; outputs=(0,2)\nrange len=0 start=(0,0) end=(0,2): panic calls=1 expected=1; outputs=(0,3)\nrange len=0 start=(0,0) end=(0,3): panic calls=1 expected=1; outputs=(0,4)\nrange len=0 start=(0,0) end=(0,4): panic calls=1 expected=1; outputs=(0,5)\nrange len=0 start=(0,0) end=(0,5): panic calls=1 expected=1; outputs=(0,6)\nrange len=0 start=(0,0) end=(0,6): panic calls=1 expected=1; outputs=(0,7)\nrange len=0 start=(0,0) end=(1,1): panic calls=1 expected=1; outputs=(0,1)\n",
+  "limits": "Host execution of the actual range helper with a returning panic; generated-program and platform qualification are separate."
+}

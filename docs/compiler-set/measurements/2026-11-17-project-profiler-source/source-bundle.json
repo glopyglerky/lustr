@@ -1,0 +1,12 @@
+{
+  "schema": "lustr-reviewed-source-bundle-v1",
+  "bundle": "source.bundle",
+  "sha256": "bd18d6f50bc2728b5ee5e78951405a86f5eb0be55d4edb6d45fcae4e75eebaec",
+  "bytes": 58577,
+  "prerequisite": "dec0ce2e3a68b82cac16eae238fc51b16e534e5e",
+  "head": "fe18584021d9a9dbea02a6ea1f19aa5c295dbddd",
+  "project_campaign_revision": "857a5fc93a8251902651ae63218fb0b73c720b29",
+  "encrypted_retention_revision": "e67c8fc96c48bb06f2c9274f9dfa19634e6d41f2",
+  "reviewed_profiler_revision": "fe18584021d9a9dbea02a6ea1f19aa5c295dbddd",
+  "runtime_qualified": false
+}

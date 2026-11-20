@@ -7,6 +7,7 @@ mod ir_cache;
 pub mod buildscript;
 pub mod cache;
 mod compile;
+pub mod imports;
 mod const_reach;
 pub(crate) mod kept_delta;
 mod kept_derive;
@@ -22,6 +23,10 @@ mod patch;
 pub(crate) mod sig_nodes;
 mod span_shift;
 mod session;
+#[path = "../../../../crates/lustr-native-core/src/mixed_unit.rs"]
+mod mixed;
+#[path = "../../../../crates/lustr-native-core/src/native_library.rs"]
+pub(crate) mod library;
 pub(crate) mod release_c;
 pub mod read_cover;
 
@@ -34,7 +39,47 @@ pub(crate) use patch::drop_unkept;
 /// patch oracle (`item_oracle.rs`) a daemon check request then compares
 /// its answer with a fresh session's.
 pub fn compile(req: &Request, session: &mut Session) -> Response {
-    let resp = compile::compile(req, session);
+    #[cfg(feature="exclusive-native")]
+    if req.session.library.is_some() {
+        return Response{code:4,stderr:"public library artifacts require their retained publication owner\n".into(),..Default::default()};
+    }
+    compile_observed(req, session, None)
+}
+
+pub use compile::{Preparation, PreparedRequest};
+
+/// Prepare an ordinary native request without generating C, objects or a link.
+/// The owned continuation retains the actual checked program and body arenas.
+/// A rejection or failure is terminal for this native request and does
+/// not classify the source as a complementary Rust capability.
+pub fn prepare<'a>(req: &'a Request, session: &'a mut Session) -> Preparation<'a> {
+    if req.session.krate.target_kind == "lustr-mixed-native" && req.session == session.key
+        && let Some(reason) = mixed::request_integration_gap(req) {
+        return Preparation::finished(mixed::integration_incomplete(reason));
+    }
+    match compile::prepare_observed(req, session, None) {
+        Preparation::Ready(prepared) => Preparation::Ready(prepared),
+        Preparation::Complete(response) | Preparation::Rejected(response)
+        | Preparation::Failed(response) | Preparation::IntegrationIncomplete(response) => Preparation::finished(mixed_response(req, response)),
+    }
+}
+
+/// One fresh request with checked definitions supplied by an imported compiler.
+/// This uses the ordinary native resolver/checker/lowerer and the same owned
+/// emission continuation. Reuse of this imported session remains unintegrated.
+pub fn prepare_imported<'a>(req: &'a Request, session: &'a mut Session, definitions: &dyn imports::Definitions) -> Result<Preparation<'a>, imports::Unintegrated> {
+    compile::prepare_imported(req, session, definitions)
+}
+
+/// An optional, call-borrowed view of the actual body-checking phase. Early
+/// parse/collect failures and cached check answers produce no phase events.
+/// Observations do not grant acceptance or establish cross-request reuse.
+pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&dyn PhaseObserver>) -> Response {
+    if req.session.krate.target_kind == "lustr-mixed-native" && req.session == session.key
+        && let Some(reason) = mixed::request_integration_gap(req) {
+        return mixed::integration_incomplete(reason);
+    }
+    let resp = mixed_response(req, compile::compile_observed(req, session, observer));
     if item_oracle::on() {
         item_oracle::compare_response(req, session, &resp);
     }
@@ -45,10 +90,79 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
 /// background guard checks: their file can change while they run, so a
 /// second read of it may see other bytes.
 pub fn compile_background(req: &Request, session: &mut Session) -> Response {
-    let resp = compile::compile(req, session);
+    if req.session.krate.target_kind == "lustr-mixed-native" && req.session == session.key
+        && let Some(reason) = mixed::request_integration_gap(req) {
+        return mixed::integration_incomplete(reason);
+    }
+    let resp = mixed_response(req, compile::compile(req, session));
     if item_oracle::on() {
         item_oracle::forget(session);
     }
     resp
 }
-pub use session::Session;
+
+/// All early frontend exits also cross the mixed boundary. A bridge gap is a
+/// terminal integration result; no response authorizes another compiler.
+fn mixed_response(req: &Request, mut response: Response) -> Response {
+    use crate::protocol::MixedOutcome;
+    if req.session.krate.target_kind != "lustr-mixed-native" {
+        return response;
+    }
+    let classified = match (response.mixed, response.code, req.cmd) {
+        (Some(MixedOutcome::Checked), 0, Cmd::Check)
+        | (Some(MixedOutcome::Emitted), 0, Cmd::Build) => true,
+        (Some(MixedOutcome::IntegrationIncomplete), 4, _) => true,
+        (Some(MixedOutcome::Failed), code, _) => code != 0,
+        _ => false,
+    };
+    if !classified {
+        response.mixed = Some(MixedOutcome::Failed);
+        if response.code == 0 {
+            response.code = 3;
+            response.stdout.clear();
+            response.stderr.push_str("error: mixed native request completed without a matching admission outcome\n");
+        }
+    }
+    response
+}
+pub use session::{OutputKind, Session};
+
+/// Process-local identity of one observed driver invocation, not crate metadata
+/// or a semantic fingerprint. Allocated only when an observer is requested.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PhaseId(u64);
+impl PhaseId {
+    fn next() -> Self {
+        use std::sync::atomic::{AtomicU64, Ordering};
+        static NEXT: AtomicU64 = AtomicU64::new(1);
+        Self(NEXT.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1)).expect("native phase identity exhausted"))
+    }
+}
+
+/// All references are borrowed from the current invocation. `program.resolved`
+/// is its actual resolver table generation; neither it nor the input AST is a
+/// stable on-disk identity. No retained preferred program is consulted here.
+#[derive(Clone, Copy)]
+pub struct Prepared<'a> {
+    pub id: PhaseId,
+    pub request: &'a Request,
+    pub input: &'a std::sync::Arc<crate::ast::Ast>,
+    pub program: &'a crate::check::collect::Program,
+    pub map: &'a crate::diag::SourceMap,
+    /// Root text used when the single-file path has no SourceMap entry.
+    pub source: &'a str,
+    /// Functions actually checked now; others may have qualified native reuse.
+    pub work: &'a [usize],
+}
+
+/// Callbacks receive shared phase borrows. Body callbacks run on native workers,
+/// before Checked is consumed by lowering and before IR is discarded. Their
+/// order is unspecified; aggregate diagnostics run after all workers settle,
+/// before rendering/drop/keep_err. There is no synthesized Checked for reused
+/// functions and no change to the driver's worklist or error decisions.
+pub trait PhaseObserver: Sync {
+    fn prepared(&self, _phase: Prepared<'_>) {}
+    fn checked(&self, _phase: Prepared<'_>, _function: crate::def::LocalDefId, _checked: &crate::check::Checked<'_>, _diagnostics: &[crate::diag::Diag]) {}
+    fn lowered(&self, _phase: Prepared<'_>, _function: crate::def::LocalDefId, _body: &crate::ir::Body<'_>, _diagnostics: &[crate::diag::Diag]) {}
+    fn diagnostics(&self, _phase: Prepared<'_>, _diagnostics: &[crate::diag::Diag]) {}
+}

@@ -840,7 +840,7 @@ void lust_dmap_new(lust_DebugMap *d, lust_Formatter *f) {
 lust_Formatter *lust_dmap_key(lust_DebugMap *d, lust_fmt_slot *s, lust_loc loc) {
     (void)loc;
     if (d->err) return 0;
-    if (d->has_key) { lust_panic_std_lit("attempted to begin a new map entry without completing the previous one", LUST_BUILDERS_RS "1001:13"); return 0; }
+    if (d->has_key) { lust_panic_std_lit("attempted to begin a new map entry without completing the previous one", LUST_BUILDERS_RS "1095:13"); return 0; }
     if (lust_f_alt(d->fmt)) {
         if (!d->has_fields && lust_f_write_str(d->fmt, lust_cstr("\n"))) goto fail;
         d->state = 1;
@@ -869,7 +869,7 @@ lust_Formatter *lust_dmap_value(lust_DebugMap *d, lust_fmt_slot *s, lust_loc loc
         d->has_fields = 1;
         return 0;
     }
-    if (!d->has_key) { lust_panic_std_lit("attempted to format a map value before its key", LUST_BUILDERS_RS "1077:13"); return 0; }
+    if (!d->has_key) { lust_panic_std_lit("attempted to format a map value before its key", LUST_BUILDERS_RS "1204:13"); return 0; }
     if (lust_f_alt(d->fmt)) return lust_f_wrap_pad(d->fmt, s, &d->state);
     return d->fmt;
 }
@@ -886,7 +886,7 @@ void lust_dmap_value_end(lust_DebugMap *d, lust_fmt_slot *s, int err) {
 int lust_dmap_finish(lust_DebugMap *d, lust_loc loc) {
     (void)loc;
     if (d->err) return 1;
-    if (d->has_key) { lust_panic_std_lit("attempted to finish a map with a partial entry", LUST_BUILDERS_RS "1229:13"); return 0; }
+    if (d->has_key) { lust_panic_std_lit("attempted to finish a map with a partial entry", LUST_BUILDERS_RS "1389:13"); return 0; }
     d->err = (uint8_t)lust_f_write_str(d->fmt, lust_cstr("}"));
     return d->err;
 }
@@ -894,7 +894,7 @@ int lust_dmap_finish(lust_DebugMap *d, lust_loc loc) {
 int lust_dmap_finish_ne(lust_DebugMap *d, lust_loc loc) {
     (void)loc;
     if (d->err) return 1;
-    if (d->has_key) { lust_panic_std_lit("attempted to finish a map with a partial entry", LUST_BUILDERS_RS "1180:13"); return 0; }
+    if (d->has_key) { lust_panic_std_lit("attempted to finish a map with a partial entry", LUST_BUILDERS_RS "1339:13"); return 0; }
     if (d->has_fields) {
         if (lust_f_alt(d->fmt)) {
             lust_fmt_slot s;
@@ -913,7 +913,7 @@ int lust_dmap_finish_ne(lust_DebugMap *d, lust_loc loc) {
 void lust_fmt_failed(uint32_t what, lust_loc loc) {
     (void)loc;
     /* Rust raises these inside std, so they report std's location. */
-    if (what == 1) lust_panic_std("a Display implementation returned an error unexpectedly: Error", "alloc/src/string.rs:2953:14");
+    if (what == 1) lust_panic_std("a Display implementation returned an error unexpectedly: Error", "alloc/src/string.rs:3049:14");
     else if (what == 0) lust_panic_std("a formatting trait implementation returned an error when the underlying stream did not: Error", "alloc/src/fmt.rs:657:14");
     else lust_panic_std_lit("a formatting trait implementation returned an error when the underlying stream did not", "core/src/io/write.rs:411:17");
 }

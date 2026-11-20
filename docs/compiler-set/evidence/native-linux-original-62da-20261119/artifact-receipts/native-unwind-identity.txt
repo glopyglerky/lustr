@@ -1,0 +1,16 @@
+a3c878f6123b4f5dc5e2eff598b52c83ab5b4ec3
+rustc 1.102.0-nightly (5b7b37aef 2026-11-08)
+binary: rustc
+commit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494
+commit-date: 2026-11-08
+host: x86_64-unknown-linux-gnu
+release: 1.102.0-nightly
+LLVM version: 23.1.5
+panic=unwind
+strict=1
+filter=unwind-
+difftest_jobs=2
+aedc107f653d98c13b25cd353284eb1b5eb3d0164a13c1a42afd2d8539341f70  target/release/lust
+b0a917d7891175b352e75750c04e05b1e6870d54ecbd99555d3746d63a7f538a  target/release/lust-core
+fa7844f8638e1e03456f1a48731eeea637079108247263addf804533252ef5e4  scripts/difftest.sh
+f90ec0c777b72751f91efb84a8169a00f5d35a1ffd591b46718d606eaeca12fc  scripts/case-pool.sh

@@ -1,0 +1,231 @@
+{
+  "schema": 1,
+  "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "fixtures": [
+    {
+      "from": "tests/fail/closure_reads_creator_item_bound.rs",
+      "to": "tests/reject/closure_reads_creator_item_bound.rs",
+      "original_sha256": "0018c63b434732e6dfcd753e87974493bf3a0878d443c14bda3598b689924e6b",
+      "migrated_sha256": "22c21b6e669153efe6501e3efeae0e3c25539e2e4cc4eb85e6e0ccf24c271297",
+      "expected_native_code": "L0306",
+      "rust_1_99": "rejected",
+      "declared_rust_5b7b37aef": "accepted",
+      "native_check": "rejected with expected code",
+      "native_build": "rejected"
+    },
+    {
+      "from": "tests/fail/depth_option_clone_128.rs",
+      "to": "tests/reject/depth_option_clone_128.rs",
+      "original_sha256": "ff6119bf110b8bc10bb39953f6ab8853ba3d51feb3a51b0ddcb7a18b3052d04e",
+      "migrated_sha256": "4060931a8b4e20fdfaa654654a224859afefe28637fd0d9a6569bae57976a015",
+      "expected_native_code": "L0611",
+      "rust_1_99": "rejected",
+      "declared_rust_5b7b37aef": "accepted",
+      "native_check": "rejected with expected code",
+      "native_build": "rejected"
+    },
+    {
+      "from": "tests/fail/depth_user_trait_128.rs",
+      "to": "tests/reject/depth_user_trait_128.rs",
+      "original_sha256": "d1b3d5ab67b5305a338ebc369245c6018315a844aa2be29171454c9876289ccf",
+      "migrated_sha256": "35a6deb0765e531b3baf4a9e495fcd4492c1579a2b3319bfa754c7fbb4fd05e6",
+      "expected_native_code": "L0611",
+      "rust_1_99": "rejected",
+      "declared_rust_5b7b37aef": "accepted",
+      "native_check": "rejected with expected code",
+      "native_build": "rejected"
+    },
+    {
+      "from": "tests/fail/extend_param_iter_vec.rs",
+      "to": "tests/reject/extend_param_iter_vec.rs",
+      "original_sha256": "8ca12d227123d3659e9f81f17912e019661097ab88646cbe2869ea0a8ad8fc12",
+      "migrated_sha256": "ba4506962c491532fac32f22fb350f3e31b2db856e8ca2087d8d76a58fead13b",
+      "expected_native_code": "L0306",
+      "rust_1_99": "rejected",
+      "declared_rust_5b7b37aef": "accepted",
+      "native_check": "rejected with expected code",
+      "native_build": "rejected"
+    },
+    {
+      "from": "tests/fail/extend_param_iter_mutref.rs",
+      "to": "tests/reject/extend_param_iter_mutref.rs",
+      "original_sha256": "da9ddfd3345afa8a849991b86f733891a7346c620746ecfaa63c179edcb4c25e",
+      "migrated_sha256": "6e01505f437642d95cd2a6484ee4872ebbcfe4c2d85275628a0f7ce6be5412e0",
+      "expected_native_code": "L0306",
+      "rust_1_99": "rejected",
+      "declared_rust_5b7b37aef": "accepted",
+      "native_check": "rejected with expected code",
+      "native_build": "rejected"
+    },
+    {
+      "from": "tests/fail/extend_param_iter_sets.rs",
+      "to": "tests/reject/extend_param_iter_sets.rs",
+      "original_sha256": "42f9af5c53dd7074de0a0f6c254af0363beb9e86cec0d86de91761623fd368d9",
+      "migrated_sha256": "b972d228d928e092c515304f7842037548a547a12f4aa4c7dab3aaf6a2aaaf02",
+      "expected_native_code": "L0306",
+      "rust_1_99": "rejected",
+      "declared_rust_5b7b37aef": "accepted",
+      "native_check": "rejected with expected code",
+      "native_build": "rejected"
+    },
+    {
+      "from": "tests/fail/lifetime_launder_vec.rs",
+      "to": "tests/reject/lifetime_launder_vec.rs",
+      "original_sha256": "7212e5edad0b252ddbb863dfb22a3234ab3febe9df2e70b92535a511f3595017",
+      "migrated_sha256": "267b9634f0ba011cdce1c43b78d27e60c94795aaf92ef3c9f32562376bd2ca1b",
+      "expected_native_code": "L0307",
+      "rust_1_99": "rejected",
+      "declared_rust_5b7b37aef": "accepted",
+      "native_check": "rejected with expected code",
+      "native_build": "rejected"
+    },
+    {
+      "from": "tests/fail/lifetime_launder_local.rs",
+      "to": "tests/reject/lifetime_launder_local.rs",
+      "original_sha256": "649c33db20226b764e92e648e6385dbd9b85743e765aca7eef2181f93e4d06fd",
+      "migrated_sha256": "e848bd77cd9b871e15d519d1a88aa52040192c0a2864452fe2dd8f7042dd4f45",
+      "expected_native_code": "L0307",
+      "rust_1_99": "rejected",
+      "declared_rust_5b7b37aef": "accepted",
+      "native_check": "rejected with expected code",
+      "native_build": "rejected"
+    },
+    {
+      "from": "tests/fail/nll_problem_case3.rs",
+      "to": "tests/reject/nll_problem_case3.rs",
+      "original_sha256": "0ae5d7928fb253785f7321a9ecc80c4dca436392c4c5415239c265848139f737",
+      "migrated_sha256": "7390bce6c62cfcfcf87755e44ac57a5b78be9c4d491cf170a31017b87701bac8",
+      "expected_native_code": "L0303",
+      "rust_1_99": "rejected",
+      "declared_rust_5b7b37aef": "accepted",
+      "native_check": "rejected with expected code",
+      "native_build": "rejected"
+    },
+    {
+      "from": "tests/fail/never_type_generic_arg.rs",
+      "to": "tests/reject/never_type_generic_arg.rs",
+      "original_sha256": "9c28991204007c95432e20d6aff2cef58b7c80a3a9b4ad1371fd6443f96e5dec",
+      "migrated_sha256": "3ab7f4a9644a2cd9cd5c8a7219036cbd62e611ca8fe59522fb089d4f2bb886f8",
+      "expected_native_code": "L0603",
+      "rust_1_99": "rejected",
+      "declared_rust_5b7b37aef": "accepted",
+      "native_check": "rejected with expected code",
+      "native_build": "rejected"
+    },
+    {
+      "from": "tests/fail/never_type_fn_sugar_ret.rs",
+      "to": "tests/reject/never_type_fn_sugar_ret.rs",
+      "original_sha256": "588e4cd418d1921d57027211dddc270da91ddad88638bd50d67885fcc3ae800e",
+      "migrated_sha256": "ef2ae42bf0c1e4947ce2683cc02c7d6af6ad0b740577183b2734a0206ff5a207",
+      "expected_native_code": "L0603",
+      "rust_1_99": "rejected",
+      "declared_rust_5b7b37aef": "accepted",
+      "native_check": "rejected with expected code",
+      "native_build": "rejected"
+    },
+    {
+      "from": "tests/fail/nll_reassigned_ref_keeps_loan.rs",
+      "to": "tests/reject/nll_reassigned_ref_keeps_loan.rs",
+      "original_sha256": "abc608321ad2a4e4d4db835ca3f96dae2433c132ee0d89e9df6ac55f57b1055e",
+      "migrated_sha256": "e7f858cd527eec9ea98244cbf68dc2b2668e0db9527ddcf4cb31c5fc822a701f",
+      "expected_native_code": "L0312",
+      "rust_1_99": "rejected",
+      "declared_rust_5b7b37aef": "accepted",
+      "native_check": "rejected with expected code",
+      "native_build": "rejected"
+    },
+    {
+      "from": "tests/fail/never_type_fn_arg.rs",
+      "to": "tests/reject/never_type_fn_arg.rs",
+      "original_sha256": "d681863ed374d57cb9c8b9311b4840ad1d40b2ad02df1e4ebec39561403be0f5",
+      "migrated_sha256": "3bfecde3e93b295b408990ab2afd2336578a6e3b667213d428c67204bb8fa1e0",
+      "expected_native_code": "L0603",
+      "rust_1_99": "rejected",
+      "declared_rust_5b7b37aef": "accepted",
+      "native_check": "rejected with expected code",
+      "native_build": "rejected"
+    },
+    {
+      "from": "tests/fail/nll_cond_return_mut.rs",
+      "to": "tests/reject/nll_cond_return_mut.rs",
+      "original_sha256": "2c36878373dbc3a6a67cd9850e6b0c5bd23adf90f95d83e0624a635cd1007d60",
+      "migrated_sha256": "a5a038f079e9db7411636776164bf518ce790335db2cb2c2b4c96fe86c0cd2b5",
+      "expected_native_code": "L0303",
+      "rust_1_99": "rejected",
+      "declared_rust_5b7b37aef": "accepted",
+      "native_check": "rejected with expected code",
+      "native_build": "rejected"
+    },
+    {
+      "from": "tests/fail/never_type_cell_layout.rs",
+      "to": "tests/reject/never_type_cell_layout.rs",
+      "original_sha256": "f896bcba5330b0fdcf716a258ace00ef255d0dbdb7ef52113b7f50526d2b69d8",
+      "migrated_sha256": "236b9c53c4e5704ba95506fbbaaed79a2b563bb418e8fe43c95e531f29430e1d",
+      "expected_native_code": "L0603",
+      "rust_1_99": "rejected",
+      "declared_rust_5b7b37aef": "accepted",
+      "native_check": "rejected with expected code",
+      "native_build": "rejected"
+    },
+    {
+      "from": "tests/fail/never_type_nested_ret.rs",
+      "to": "tests/reject/never_type_nested_ret.rs",
+      "original_sha256": "120bae3a25f463eeb02cf8eea59241f140d90be348bde7f2299270c72c5c2533",
+      "migrated_sha256": "deb1d53c43977e3a03edb66cb7f8cd3a3960194d39d062bdcd7ec244e96b35e2",
+      "expected_native_code": "L0603",
+      "rust_1_99": "rejected",
+      "declared_rust_5b7b37aef": "accepted",
+      "native_check": "rejected with expected code",
+      "native_build": "rejected"
+    },
+    {
+      "from": "tests/fail/rpit_reassign_drop.rs",
+      "to": "tests/reject/rpit_reassign_drop.rs",
+      "original_sha256": "583149e1ae68d692896ece561574915bd45c5236d9af1b39471b89d8e1476d39",
+      "migrated_sha256": "0f9ca043a89a57784690c08079e95309ce1fb31d4f044d9374156a4c54d41b16",
+      "expected_native_code": "L0312",
+      "rust_1_99": "rejected",
+      "declared_rust_5b7b37aef": "accepted",
+      "native_check": "rejected with expected code",
+      "native_build": "rejected"
+    },
+    {
+      "from": "tests/fail/sol_nll_problem_case_3.rs",
+      "to": "tests/reject/sol_nll_problem_case_3.rs",
+      "original_sha256": "c104e1212e50ecbaf50527cc3dd5439629d8b016efff05a4f50eb9808d63f9b4",
+      "migrated_sha256": "412551520705a31c647ccb07ff783fe824ea4e18669ab840782d1744d08d673d",
+      "expected_native_code": "L0303",
+      "rust_1_99": "rejected",
+      "declared_rust_5b7b37aef": "accepted",
+      "native_check": "rejected with expected code",
+      "native_build": "rejected"
+    },
+    {
+      "from": "tests/fail/trait_where_overflow_unused.rs",
+      "to": "tests/reject/trait_where_overflow_unused.rs",
+      "original_sha256": "44ed4f67e6399e0f2c0cca981181dfee57da41a1dd3621c39f0d249f6b19d910",
+      "migrated_sha256": "3e06a93ae52e98678f0b0e89b438f21803e571611c7d8642cab803b6c29b390e",
+      "expected_native_code": "L0611",
+      "rust_1_99": "rejected",
+      "declared_rust_5b7b37aef": "accepted",
+      "native_check": "rejected with expected code",
+      "native_build": "rejected"
+    },
+    {
+      "from": "tests/fail/trait_where_overflow_mutual.rs",
+      "to": "tests/reject/trait_where_overflow_mutual.rs",
+      "original_sha256": "c66688be047eb0175529279d3f0a3664c052bf55dbf846e1df3e4beee6941435",
+      "migrated_sha256": "ed5837f5adefb749ad047e374f0de771ceea42612364ad233d8c62c4e421e3d6",
+      "expected_native_code": "L0611",
+      "rust_1_99": "rejected",
+      "declared_rust_5b7b37aef": "accepted",
+      "native_check": "rejected with expected code",
+      "native_build": "rejected"
+    }
+  ],
+  "limits": [
+    "The native subset still rejects these valid programs. This does not establish full native Rust coverage.",
+    "The original program bodies and native rejection codes remain present. Each moved fixture still requires matching Rust acceptance and both native rejection checks.",
+    "Frozen baseline fixtures, source and comparison rules are unchanged."
+  ]
+}

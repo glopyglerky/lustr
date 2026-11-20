@@ -1,0 +1,50 @@
+{
+  "argv": [
+    "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+    "build",
+    "--bin",
+    "lustr",
+    "--features",
+    "source-native-runtime",
+    "--locked",
+    "--offline"
+  ],
+  "cwd": "/tmp/lustr-implementation-20261119",
+  "env": {
+    "RUSTC": "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc",
+    "CARGO_HOME": "/tmp/lustr-cargo-plan-build/cargo-home",
+    "CARGO_TARGET_DIR": "/tmp/lustr-cargo-plan-build/entry-target",
+    "CARGO_BUILD_BUILD_DIR": "/tmp/lustr-cargo-plan-build/entry-build",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_BUILD_JOBS": "2",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "LUSTR_CORE_ROOT": "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu",
+    "LUSTR_LUST_ROOT": "/tmp/lustr-cargo-plan-build/package-v3",
+    "LUSTR_NATIVE_BUILD_OUTPUT": "/tmp/lustr-cargo-plan-build/build/debug/build/lust/696925185fdeec22/run/stdout"
+  },
+  "unset": [
+    "RUSTC_WRAPPER",
+    "RUSTC_WORKSPACE_WRAPPER",
+    "LD_LIBRARY_PATH"
+  ],
+  "source_inputs": {
+    "compiler/native/src/resolve/cargo.rs": "60aa54180883fe69523cbfe96d038ed69794046cf44b73ef2acf3c8d4a7d5af6",
+    "compiler/native/src/resolve/cargo_plan.rs": "b69c2fa4bbffe4b3a8d00f5a82d3d0b698542f03fc039f6ca6828addc76f041d",
+    "compiler/native/src/resolve/worklist.rs": "1517c0916b4b6056e88a0c1db4b0584b11e4788d1a1106202bb9f44da8115a8f",
+    "compiler/native/src/protocol.rs": "87facaddc94fb88f56db20c115bef881ea95f28607b6d02c4d7f1a20004b962a",
+    "compiler/native/src/resolve/cfg.rs": "365c30bf756fdc3971ac0cc16451e569a278af75d8b69d8950464b40b7aff701",
+    "compiler/native/src/driver/buildscript.rs": "25d718ce233542d2ad73616404aedc32f4134d5e2671e205ee785b30594e267e",
+    "compiler/native/src/driver/buildscript/native.rs": "bd6109f50094e4f51045f08bfb0973f08678e5f602b596b669d17134dbd931ca",
+    "compiler/native/src/driver/compile.rs": "07b5f75a8aa7b712d166c2dee832fdddf01493796d946df4e55ef197739a43cb",
+    "compiler/native/src/daemon.rs": "beb8dc2d2105f19e5a3fb425f6c6d03b111a35d38ba4f0cd1282cbb10c9dc1dd",
+    "src/main.rs": "c3feee5e1366290284f48d54d74e3fb7e015d9ef006aa59155bf752528ab5c50",
+    "src/cargo_selection.rs": "421a372a91f401d619687c2c229fbaa0f538949b0eaa7281e60b89f11e271fbc"
+  },
+  "native_receipt_sha256": "8863e099b947762fd6f72086b00e67258d759a7bcbfef1dbd4fe0934f23d4123",
+  "native_binary_sha256": {
+    "lust": "e45d63df37ba29f06c0b9928eb5672759fc6d17fabe0a8e3f1081e434e922290",
+    "lust-core": "21d8043046e5277a011854cc45ae9df89d8851928fd3a48cf4aa78de41647587"
+  },
+  "base_commit": "62da158b33740279947c85f3fc425df6d1623c9f",
+  "exit": 0
+}

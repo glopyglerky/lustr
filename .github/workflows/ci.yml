@@ -10,18 +10,82 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.sha }}
+  # Preserve earlier source evidence without serializing independent commits.
+  cancel-in-progress: false
 
 defaults:
   run:
     working-directory: compiler/native
 
 jobs:
+  runner-source:
+    name: Runner source provenance
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
+    timeout-minutes: 5
+    steps:
+      - name: Record original workflow and source
+        uses: actions/github-script@v7
+        env:
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+        with:
+          script: |
+            const fs = require('fs');
+            const pr = context.payload.pull_request;
+            const receipt = {
+              schema: 1,
+              repository: context.repo.owner + '/' + context.repo.repo,
+              run_id: String(context.runId),
+              run_attempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+              event_name: context.eventName,
+              sha: context.sha,
+              ref: context.ref,
+              workflow_sha: process.env.WORKFLOW_SHA,
+              workflow_ref: process.env.WORKFLOW_REF,
+              actor: context.actor,
+              triggering_actor: process.env.TRIGGERING_ACTOR,
+              pull_request: pr ? {
+                number: pr.number,
+                head_sha: pr.head.sha,
+                base_sha: pr.base.sha,
+                head_repository_id: String(pr.head.repo.id),
+                base_repository_id: String(pr.base.repo.id),
+              } : null,
+            };
+            const encoded = JSON.stringify(receipt);
+            fs.writeFileSync(process.env.RUNNER_TEMP + '/runner-source.json', encoded);
+            core.notice(encoded, {title: 'runner-source-v1'});
+      - name: Retain original source receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: runner-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/runner-source.json
+          if-no-files-found: error
+          retention-days: 14
+
   linux-x86_64:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
+    env:
+      # The retained Unicode sanitizer diagnosis demonstrates contention at four
+      # concurrent executions on two physical cores. Keep every case and deadline;
+      # declare the correctness pool explicitly and record the actual host.
+      DIFFTEST_JOBS: '2'
     steps:
       - uses: actions/checkout@v4
+      - name: Exercise failed native crate artifact retention
+        run: python3 ../../tools/test-native-crate-failure-retention.py
+      - name: Exercise service dependency guard with planted package and runtime inputs
+        run: python3 ../../tools/test-host-dependencies.py
+      - name: Reject service-manager dependencies
+        run: python3 ../../tools/check-host-dependencies.py --output "$RUNNER_TEMP/host-dependencies.json"
+      - name: Check actual Unix-address helper bounds with ASan and UBSan
+        run: python3 ../../tools/test-native-unix-address.py
+      - name: Verify actual native dependency metadata
+        run: python3 ../../tools/test-native-dependencies.py
+      - name: Require working address, undefined-behavior and leak sanitizers
+        run: python3 ../../tools/test-native-sanitizers.py
       - name: Cache pinned tcc
         id: tcc
         uses: actions/cache@v4
@@ -29,34 +93,259 @@ jobs:
           path: |
             compiler/native/third_party/tcc
             compiler/native/third_party/tinycc
-          key: tcc-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('compiler/native/scripts/build-tcc.sh') }}
+          key: tcc-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('compiler/native/scripts/build-tcc.sh', 'tools/apply-tinycc-signing.py', 'upstream/tinycc-macho-signing.patch', 'upstream/tinycc-macho-signing.json') }}
       - name: Build pinned tcc
         if: steps.tcc.outputs.cache-hit != 'true'
         run: scripts/build-tcc.sh
-      - name: Install rustc 1.99
+      - name: Install the declared Rust SDK and Unicode oracle
         run: |
+          set -euo pipefail
           rustup set profile minimal
-          rustup toolchain install 1.99.0
-          rustup default 1.99.0
+          rustup toolchain install nightly-2026-11-09 --component rustc-dev
+          rustup default nightly-2026-11-09
+          expected_source=$(sed -n 's/^source = "\(.*\)"$/\1/p' ../../upstream/bluefe-core.pin)
+          actual_source=$(rustc -vV | sed -n 's/^commit-hash: //p')
+          test -n "$expected_source"
+          test "$actual_source" = "$expected_source"
+      - name: Qualify TinyCC signing arguments and native publication
+        run: |
+          python3 ../../tools/test-tinycc-signing.py \
+            --source third_party/tinycc --tcc third_party/tcc \
+            --output "$RUNNER_TEMP/tinycc-signing-qualification"
+      - name: Record the declared Cargo build-directory layout
+        run: |
+          set -euo pipefail
+          # rust-lang/rust at the declared pin imports this Cargo source.
+          # Native build-script output discovery supports both declared layouts.
+          # Preserve the caller's explicit setting; do not force the old layout.
+          expected_cargo_source=c07ac2c4d12237effc4b94f4543769b421790045
+          actual_cargo_source=$(cargo -Vv | sed -n 's/^commit-hash: //p')
+          if test "$actual_cargo_source" != "$expected_cargo_source"; then
+            printf 'Expected Cargo source %s; acquired %s\n' "$expected_cargo_source" "$actual_cargo_source" >&2
+            exit 1
+          fi
+          cargo_layout_source=inherited
+          cargo_layout_value=${__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT-unset}
+          if test "${__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT+present}" != present; then
+            cargo_layout_source=cargo-default
+          fi
+          {
+            cargo -Vv
+            printf 'selection=%s\n__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT=%s\n' \
+              "$cargo_layout_source" "$cargo_layout_value"
+          } > "$RUNNER_TEMP/native-cargo-layout.txt"
       - name: Cache cargo registry
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
           key: cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('compiler/native/Cargo.lock') }}
+      - name: Qualify portable process, IPC, and SDK boundaries
+        env:
+          LUST_TCC_HOME: ${{ github.workspace }}/compiler/native/third_party/tcc
+        run: |
+          set -euo pipefail
+          LUST_BUILD_HASH=0123456789abcdef rustc --edition=2024 --test ../../tools/host-runtime-qualification.rs -o "$RUNNER_TEMP/host-runtime"
+          "$RUNNER_TEMP/host-runtime" --test-threads=1
+          rustc --edition=2024 --test ../../tools/host-sdk.rs -o "$RUNNER_TEMP/host-sdk"
+          "$RUNNER_TEMP/host-sdk" --test-threads=1
+          cargo test --locked
+      - name: Require a single range panic and untouched failed bounds
+        run: python3 ../../tools/test-native-range-panic.py --output "$RUNNER_TEMP/native-range-panic.json"
+      - name: Require native build-script transitions under both Cargo layouts
+        env:
+          LUST_TCC_HOME: ${{ github.workspace }}/compiler/native/third_party/tcc
+        run: python3 ../../tools/qualify-native-cargo-layout.py --output "$RUNNER_TEMP/native-cargo-layout-qualification"
       - name: Run CI gate
         env:
           LUST_TCC_HOME: ${{ github.workspace }}/compiler/native/third_party/tcc
-        run: bash scripts/ci.sh
+          LUST_CRATE_FAILURE_DIR: ${{ runner.temp }}/native-crate-failures
+        run: |
+          set -euo pipefail
+          {
+            git rev-parse HEAD
+            printf 'run=%s\nattempt=%s\n' "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT"
+            printf 'difftest_jobs=%s\n' "$DIFFTEST_JOBS"
+            uname -srm
+            rustc -vV
+            cargo --version
+            sha256sum Cargo.toml Cargo.lock build.rs scripts/ci.sh
+          } > "$RUNNER_TEMP/native-gate-identity.txt"
+          python3 ../../tools/capture-benchmark-host.py "$RUNNER_TEMP/native-gate-host.json"
+          bash scripts/ci.sh 2>&1 | tee "$RUNNER_TEMP/native-gate.log"
+      - name: Require native panic-unwind differential cases
+        if: always() && !cancelled()
+        env:
+          PANIC: unwind
+          LUST_STRICT: '1'
+          DIFFTEST_JOBS: '2'
+        run: |
+          set -euo pipefail
+          {
+            git rev-parse HEAD
+            rustc -vV
+            printf 'panic=unwind\nstrict=1\nfilter=unwind-\ndifftest_jobs=%s\n' "$DIFFTEST_JOBS"
+            sha256sum target/release/lust target/release/lust-core scripts/difftest.sh scripts/case-pool.sh
+          } > "$RUNNER_TEMP/native-unwind-identity.txt"
+          bash scripts/difftest.sh unwind- 2>&1 | tee "$RUNNER_TEMP/native-unwind.log"
+      - name: Require emitted-C panic-unwind differential cases
+        if: always() && !cancelled()
+        env:
+          PANIC: unwind
+          EH: '1'
+          EH_CC: gcc
+          EH_CXX: g++
+          LUST_STRICT: '1'
+          DIFFTEST_JOBS: '2'
+        run: |
+          set -euo pipefail
+          {
+            git rev-parse HEAD
+            rustc -vV
+            "$EH_CC" --version
+            "$EH_CXX" --version
+            printf 'panic=unwind\neh=1\nstrict=1\nfilter=unwind-\ndifftest_jobs=%s\n' "$DIFFTEST_JOBS"
+            sha256sum target/release/lust target/release/lust-core scripts/difftest.sh scripts/case-pool.sh
+          } > "$RUNNER_TEMP/native-unwind-eh-identity.txt"
+          bash scripts/difftest.sh unwind- 2>&1 | tee "$RUNNER_TEMP/native-unwind-eh.log"
+      - name: Compare every Unicode scalar with the declared Rust semantics
+        if: always() && !cancelled()
+        run: |
+          python3 ../../tools/qualify-native-unicode.py \
+            --native-core "$GITHUB_WORKSPACE/compiler/native/target/release/lust-core" \
+            --rustc "$(rustup which rustc)" \
+            --output "$RUNNER_TEMP/native-unicode"
+      - name: Check exact erased callback C types and runtime
+        if: always() && !cancelled()
+        run: |
+          python3 ../../tools/test-native-erased-callbacks.py \
+            --lust "$GITHUB_WORKSPACE/compiler/native/target/release/lust" \
+            --rustc "$(rustup which rustc)" \
+            --output "$RUNNER_TEMP/native-erased-callbacks"
+      - name: Check erased callbacks with unwind tables
+        if: always() && !cancelled()
+        run: |
+          python3 ../../tools/test-native-erased-callbacks.py \
+            --lust "$GITHUB_WORKSPACE/compiler/native/target/release/lust" \
+            --rustc "$(rustup which rustc)" --unwind-tables \
+            --output "$RUNNER_TEMP/native-erased-callbacks-eh"
+      - name: Verify base image lifetime through a real daemon
+        run: python3 scripts/test-base-lifetime.py "$GITHUB_WORKSPACE/compiler/native/target/release/lust"
+      - name: Require exact runtime results after main return-type edits
+        if: always() && !cancelled()
+        run: |
+          python3 ../../tools/test-native-main-transitions.py \
+            --lust "$GITHUB_WORKSPACE/compiler/native/target/release/lust" \
+            --rustc "$(rustup which rustc)" \
+            --output "$RUNNER_TEMP/native-main-transitions"
+      - name: Record produced compiler identities
+        if: always()
+        run: |
+          for binary in target/release/lust target/release/lust-core; do
+            if test -f "$binary"; then
+              sha256sum "$binary"
+            fi
+          done > "$RUNNER_TEMP/native-gate-builds.sha256"
+      - name: Retain native gate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-gate-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/native-gate-identity.txt
+            ${{ runner.temp }}/native-cargo-layout.txt
+            ${{ runner.temp }}/tinycc-signing-qualification
+            ${{ runner.temp }}/native-cargo-layout-qualification
+            ${{ runner.temp }}/native-gate-host.json
+            ${{ runner.temp }}/native-gate.log
+            ${{ runner.temp }}/native-crate-failures
+            ${{ runner.temp }}/native-unwind-identity.txt
+            ${{ runner.temp }}/native-unwind.log
+            ${{ runner.temp }}/native-unwind-eh-identity.txt
+            ${{ runner.temp }}/native-unwind-eh.log
+            ${{ runner.temp }}/native-gate-builds.sha256
+            ${{ runner.temp }}/native-range-panic.json
+            ${{ runner.temp }}/native-main-transitions/report.json
+            ${{ runner.temp }}/native-main-transitions/*.stdout
+            ${{ runner.temp }}/native-main-transitions/*.stderr
+            ${{ runner.temp }}/host-dependencies.json
+            ${{ runner.temp }}/native-unicode/result.json
+            ${{ runner.temp }}/native-unicode/commands.json
+            ${{ runner.temp }}/native-unicode/*.stdout
+            ${{ runner.temp }}/native-unicode/*.stderr
+            ${{ runner.temp }}/native-erased-callbacks/report.json
+            ${{ runner.temp }}/native-erased-callbacks/*.stdout
+            ${{ runner.temp }}/native-erased-callbacks/*.stderr
+            ${{ runner.temp }}/native-erased-callbacks-eh/report.json
+            ${{ runner.temp }}/native-erased-callbacks-eh/*.stdout
+            ${{ runner.temp }}/native-erased-callbacks-eh/*.stderr
+          if-no-files-found: warn
 
   macos-arm64:
-    # macOS 14 runners retired on 2026-11-02. macos-15 is the supported Arm64 image.
-    runs-on: macos-15
+    # Retry current corrections on the standard macOS 26 Arm64 image after
+    # macOS 15 jobs were cancelled before execution. This is not a prior pass.
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['macos-26'] || 'macos-26' }}
     steps:
       - uses: actions/checkout@v4
-      - name: Install GNU test utilities
+      - name: Exercise service dependency guard with planted package and runtime inputs
+        run: python3 ../../tools/test-host-dependencies.py
+      - name: Reject service-manager dependencies
+        run: python3 ../../tools/check-host-dependencies.py --output "$RUNNER_TEMP/host-dependencies.json"
+      - name: Install upstream gate's GNU Bash and command tools
         run: |
-          brew install coreutils
-          echo "$(brew --prefix coreutils)/libexec/gnubin" >> "$GITHUB_PATH"
+          # The upstream gate uses Bash associative arrays and wait -n.
+          # macOS /bin/bash 3.2 cannot run that test harness.
+          brew install bash coreutils findutils gnu-sed flock zstd
+          echo "$(brew --prefix bash)/bin" >> "$GITHUB_PATH"
+          for tool in coreutils findutils gnu-sed; do
+            echo "$(brew --prefix "$tool")/libexec/gnubin" >> "$GITHUB_PATH"
+          done
+      - name: Select a sanitizer runtime with native leak detection
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Apple Clang's ASan rejects detect_leaks=1 on this platform.
+          # Pin the complete upstream compiler/runtime archive and signed
+          # provenance. Floating Homebrew releases cannot satisfy an exact pin.
+          python3 ../../tools/test-macos-sanitizer-installer.py
+          python3 ../../tools/install-macos-sanitizer.py \
+            --directory "$RUNNER_TEMP/lustr-macos-sanitizer" \
+            --github-env "$GITHUB_ENV" \
+            2>&1 | tee "$RUNNER_TEMP/macos-sanitizer-setup.log"
+      - name: Verify actual Bash and GNU test commands
+        run: |
+          set -euo pipefail
+          bash -c 'test "${BASH_VERSINFO[0]}" -ge 4; declare -A values=([supported]=yes); test "${values[supported]}" = yes'
+          for tool in find sed sort xargs timeout; do
+            "$tool" --version | grep -q GNU
+          done
+          command -v bash
+          command -v sed
+          command -v find
+          # The original client and sanitizer gates require fd-based locking.
+          # Verify contention and release, not just the executable's presence.
+          command -v flock
+          lock=$(mktemp)
+          (
+            exec 9>"$lock"
+            flock -n 9
+            if flock -n "$lock" true; then
+              echo 'flock accepted a second lock while fd 9 held it' >&2
+              exit 1
+            else
+              test "$?" -eq 1
+            fi
+          )
+          flock -n "$lock" true
+          rm -f "$lock"
+      - name: Exercise failed native crate artifact retention
+        run: python3 ../../tools/test-native-crate-failure-retention.py
+      - name: Check actual Unix-address helper bounds with ASan and UBSan
+        run: python3 ../../tools/test-native-unix-address.py
+      - name: Verify actual native dependency metadata
+        run: python3 ../../tools/test-native-dependencies.py
+      - name: Require working address, undefined-behavior and leak sanitizers
+        run: python3 ../../tools/test-native-sanitizers.py
       - name: Cache pinned tcc
         id: tcc
         uses: actions/cache@v4
@@ -64,24 +353,196 @@ jobs:
           path: |
             compiler/native/third_party/tcc
             compiler/native/third_party/tinycc
-          key: tcc-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('compiler/native/scripts/build-tcc.sh') }}
+          key: tcc-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('compiler/native/scripts/build-tcc.sh', 'tools/apply-tinycc-signing.py', 'upstream/tinycc-macho-signing.patch', 'upstream/tinycc-macho-signing.json') }}
       - name: Build pinned tcc
         if: steps.tcc.outputs.cache-hit != 'true'
         run: scripts/build-tcc.sh
-      - name: Install rustc 1.99
+      - name: Install the declared Rust SDK and Unicode oracle
         run: |
+          set -euo pipefail
           rustup set profile minimal
-          rustup toolchain install 1.99.0
-          rustup default 1.99.0
+          rustup toolchain install nightly-2026-11-09 --component rustc-dev
+          rustup default nightly-2026-11-09
+          expected_source=$(sed -n 's/^source = "\(.*\)"$/\1/p' ../../upstream/bluefe-core.pin)
+          actual_source=$(rustc -vV | sed -n 's/^commit-hash: //p')
+          test -n "$expected_source"
+          test "$actual_source" = "$expected_source"
+      - name: Qualify TinyCC signing arguments and native publication
+        run: |
+          python3 ../../tools/test-tinycc-signing.py \
+            --source third_party/tinycc --tcc third_party/tcc \
+            --output "$RUNNER_TEMP/tinycc-signing-qualification"
+      - name: Record the declared Cargo build-directory layout
+        run: |
+          set -euo pipefail
+          # rust-lang/rust at the declared pin imports this Cargo source.
+          # Native build-script output discovery supports both declared layouts.
+          # Preserve the caller's explicit setting; do not force the old layout.
+          expected_cargo_source=c07ac2c4d12237effc4b94f4543769b421790045
+          actual_cargo_source=$(cargo -Vv | sed -n 's/^commit-hash: //p')
+          if test "$actual_cargo_source" != "$expected_cargo_source"; then
+            printf 'Expected Cargo source %s; acquired %s\n' "$expected_cargo_source" "$actual_cargo_source" >&2
+            exit 1
+          fi
+          cargo_layout_source=inherited
+          cargo_layout_value=${__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT-unset}
+          if test "${__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT+present}" != present; then
+            cargo_layout_source=cargo-default
+          fi
+          {
+            cargo -Vv
+            printf 'selection=%s\n__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT=%s\n' \
+              "$cargo_layout_source" "$cargo_layout_value"
+          } > "$RUNNER_TEMP/native-cargo-layout.txt"
       - name: Cache cargo registry
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
           key: cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('compiler/native/Cargo.lock') }}
-      # Known macOS risks, tracked outside this file: tcc Mach-O output,
-      # the hardcoded libbase.so name, and BSD userland differences in
-      # bench scripts. This job exists to find them; expect red at first.
+      # This gate exercises the Darwin loader and real daemon on Apple silicon.
+      - name: Qualify portable process, IPC, and SDK boundaries
+        env:
+          LUST_TCC_HOME: ${{ github.workspace }}/compiler/native/third_party/tcc
+        run: |
+          set -euo pipefail
+          LUST_BUILD_HASH=0123456789abcdef rustc --edition=2024 --test ../../tools/host-runtime-qualification.rs -o "$RUNNER_TEMP/host-runtime"
+          "$RUNNER_TEMP/host-runtime" --test-threads=1
+          rustc --edition=2024 --test ../../tools/host-sdk.rs -o "$RUNNER_TEMP/host-sdk"
+          "$RUNNER_TEMP/host-sdk" --test-threads=1
+          cargo test --locked
+      - name: Require a single range panic and untouched failed bounds
+        run: python3 ../../tools/test-native-range-panic.py --output "$RUNNER_TEMP/native-range-panic.json"
+      - name: Require native build-script transitions under both Cargo layouts
+        env:
+          LUST_TCC_HOME: ${{ github.workspace }}/compiler/native/third_party/tcc
+        run: python3 ../../tools/qualify-native-cargo-layout.py --output "$RUNNER_TEMP/native-cargo-layout-qualification"
       - name: Run CI gate
         env:
           LUST_TCC_HOME: ${{ github.workspace }}/compiler/native/third_party/tcc
-        run: bash scripts/ci.sh
+          LUST_CRATE_FAILURE_DIR: ${{ runner.temp }}/native-crate-failures
+        run: |
+          set -euo pipefail
+          {
+            git rev-parse HEAD
+            printf 'run=%s\nattempt=%s\n' "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT"
+            uname -srm
+            sw_vers -productVersion
+            rustc -vV
+            cargo --version
+            "$SAN_CC" --version
+            sha256sum "$SAN_CC" "$ASAN_SYMBOLIZER_PATH"
+            sha256sum Cargo.toml Cargo.lock build.rs scripts/ci.sh
+          } > "$RUNNER_TEMP/native-gate-identity.txt"
+          bash scripts/ci.sh 2>&1 | tee "$RUNNER_TEMP/native-gate.log"
+      - name: Require native panic-unwind differential cases
+        if: always() && !cancelled()
+        env:
+          PANIC: unwind
+          LUST_STRICT: '1'
+          DIFFTEST_JOBS: '2'
+        run: |
+          set -euo pipefail
+          {
+            git rev-parse HEAD
+            rustc -vV
+            printf 'panic=unwind\nstrict=1\nfilter=unwind-\ndifftest_jobs=%s\n' "$DIFFTEST_JOBS"
+            sha256sum target/release/lust target/release/lust-core scripts/difftest.sh scripts/case-pool.sh
+          } > "$RUNNER_TEMP/native-unwind-identity.txt"
+          bash scripts/difftest.sh unwind- 2>&1 | tee "$RUNNER_TEMP/native-unwind.log"
+      - name: Require emitted-C panic-unwind differential cases
+        if: always() && !cancelled()
+        env:
+          PANIC: unwind
+          EH: '1'
+          LUST_STRICT: '1'
+          DIFFTEST_JOBS: '2'
+        run: |
+          set -euo pipefail
+          export EH_CC="$SAN_CC"
+          export EH_CXX="${SAN_CC%/*}/clang++"
+          {
+            git rev-parse HEAD
+            rustc -vV
+            "$EH_CC" --version
+            "$EH_CXX" --version
+            printf 'panic=unwind\neh=1\nstrict=1\nfilter=unwind-\ndifftest_jobs=%s\n' "$DIFFTEST_JOBS"
+            sha256sum target/release/lust target/release/lust-core scripts/difftest.sh scripts/case-pool.sh
+          } > "$RUNNER_TEMP/native-unwind-eh-identity.txt"
+          bash scripts/difftest.sh unwind- 2>&1 | tee "$RUNNER_TEMP/native-unwind-eh.log"
+      - name: Compare every Unicode scalar with the declared Rust semantics
+        if: always() && !cancelled()
+        run: |
+          python3 ../../tools/qualify-native-unicode.py \
+            --native-core "$GITHUB_WORKSPACE/compiler/native/target/release/lust-core" \
+            --rustc "$(rustup which rustc)" \
+            --output "$RUNNER_TEMP/native-unicode"
+      - name: Check exact erased callback C types and runtime
+        if: always() && !cancelled()
+        run: |
+          python3 ../../tools/test-native-erased-callbacks.py \
+            --lust "$GITHUB_WORKSPACE/compiler/native/target/release/lust" \
+            --rustc "$(rustup which rustc)" \
+            --output "$RUNNER_TEMP/native-erased-callbacks"
+      - name: Check erased callbacks with unwind tables
+        if: always() && !cancelled()
+        run: |
+          python3 ../../tools/test-native-erased-callbacks.py \
+            --lust "$GITHUB_WORKSPACE/compiler/native/target/release/lust" \
+            --rustc "$(rustup which rustc)" --unwind-tables \
+            --output "$RUNNER_TEMP/native-erased-callbacks-eh"
+      - name: Verify base image lifetime through a real daemon
+        run: python3 scripts/test-base-lifetime.py "$GITHUB_WORKSPACE/compiler/native/target/release/lust"
+      - name: Require exact runtime results after main return-type edits
+        if: always() && !cancelled()
+        run: |
+          python3 ../../tools/test-native-main-transitions.py \
+            --lust "$GITHUB_WORKSPACE/compiler/native/target/release/lust" \
+            --rustc "$(rustup which rustc)" \
+            --output "$RUNNER_TEMP/native-main-transitions"
+      - name: Record produced compiler identities
+        if: always()
+        run: |
+          for binary in target/release/lust target/release/lust-core; do
+            if test -f "$binary"; then
+              sha256sum "$binary"
+            fi
+          done > "$RUNNER_TEMP/native-gate-builds.sha256"
+      - name: Retain native gate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-gate-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/native-gate-identity.txt
+            ${{ runner.temp }}/native-cargo-layout.txt
+            ${{ runner.temp }}/tinycc-signing-qualification
+            ${{ runner.temp }}/native-cargo-layout-qualification
+            ${{ runner.temp }}/native-gate.log
+            ${{ runner.temp }}/native-crate-failures
+            ${{ runner.temp }}/native-unwind-identity.txt
+            ${{ runner.temp }}/native-unwind.log
+            ${{ runner.temp }}/native-unwind-eh-identity.txt
+            ${{ runner.temp }}/native-unwind-eh.log
+            ${{ runner.temp }}/native-gate-builds.sha256
+            ${{ runner.temp }}/native-range-panic.json
+            ${{ runner.temp }}/native-main-transitions/report.json
+            ${{ runner.temp }}/native-main-transitions/*.stdout
+            ${{ runner.temp }}/native-main-transitions/*.stderr
+            ${{ runner.temp }}/host-dependencies.json
+            ${{ runner.temp }}/native-unicode/result.json
+            ${{ runner.temp }}/native-unicode/commands.json
+            ${{ runner.temp }}/native-unicode/*.stdout
+            ${{ runner.temp }}/native-unicode/*.stderr
+            ${{ runner.temp }}/native-erased-callbacks/report.json
+            ${{ runner.temp }}/native-erased-callbacks/*.stdout
+            ${{ runner.temp }}/native-erased-callbacks/*.stderr
+            ${{ runner.temp }}/native-erased-callbacks-eh/report.json
+            ${{ runner.temp }}/native-erased-callbacks-eh/*.stdout
+            ${{ runner.temp }}/native-erased-callbacks-eh/*.stderr
+            ${{ runner.temp }}/macos-sanitizer-setup.log
+            ${{ runner.temp }}/lustr-macos-sanitizer/receipt.json
+            ${{ runner.temp }}/lustr-macos-sanitizer/environment.json
+            ${{ runner.temp }}/lustr-macos-sanitizer/*.stdout
+            ${{ runner.temp }}/lustr-macos-sanitizer/*.stderr
+            ${{ runner.temp }}/lustr-macos-sanitizer/*.status.json
+          if-no-files-found: warn

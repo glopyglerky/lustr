@@ -10,7 +10,7 @@ Audited continuation: [PR #32](https://github.com/glopyglerky/lustr/pull/32),
 `cb0721d49be95ec3f34a113c2354bc9d2a38bbf3`.
 Governing documentation landed through [PR #31](https://github.com/glopyglerky/lustr/pull/31)
 at `2fbafe391fdf3d0a59b8cc24e9b0f55be3570cbd`. The current
-[cleanup record](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/exclusive-coverage-cleanup.md) describes the implementation
+[cleanup record](exclusive-coverage-cleanup.md) describes the implementation
 correction separately from the unfinished full compiler.
 
 ## 0. Correct active direction and reconcile existing work
@@ -18,7 +18,7 @@ correction separately from the unfinished full compiler.
 Status: the documentation correction is merged. The implementation correction
 removes conflicting entry, helper and package routes, adds the partial import
 inventory and preserves useful components. Its focused validation and remaining
-limits are recorded in the [cleanup record](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/exclusive-coverage-cleanup.md).
+limits are recorded in the [cleanup record](exclusive-coverage-cleanup.md).
 
 - Keep AGENTS, README, architecture, contract, design, roadmap and performance
   policy consistent. Supersede permission for a full compiler import graph,
@@ -79,20 +79,48 @@ monomorphized instances, layouts, ABI, constants, symbols, allocation ownership,
 drops and unwinding. Reuse necessary genuine metadata/archive/link machinery.
 Avoid running complete consumer analysis merely to choose native instances.
 
-Continue the existing [consumer-metadata completion study](https://github.com/glopyglerky/lustr/blob/cb0721d49be95ec3f34a113c2354bc9d2a38bbf3/docs/compiler-set/shared-consumer-metadata.md) first. The
-real encoder demands frozen definitions through `analysis(())`; native prepared
-state does not yet provide all declaration/privacy/lint obligations. Supply a
-narrow upstream completion service consuming actual native proofs. Preserve
+For completion beyond the represented scalar path, the existing
+[consumer-metadata completion study](https://github.com/glopyglerky/lustr/blob/cb0721d49be95ec3f34a113c2354bc9d2a38bbf3/docs/compiler-set/shared-consumer-metadata.md)
+records the original encoder's frozen-definition boundary through `analysis(())`.
+Native prepared state does not yet provide all wider declaration/privacy/lint
+obligations. Supply the necessary completion using actual native proofs. Preserve
 original applicable checks, real emitted instances and the exported-symbol
 query. Unconditional analysis success, fabricated typed results or empty
 instance graphs are forbidden. The generic solver seam in the upstream report
 is researched future reuse, not a replacement task for this established boundary.
+
+The [bounded native metadata caller](../../crates/lustr-native-metadata-qualification/README.md)
+joins actual completed scalar declarations and emitted objects to the selective
+serializer. Its [exact-source hosted campaign](evidence/native-metadata-join-20261120/README.md)
+passed on tree `948074da4b3b23ed25fa789b17a924555f24e4ca`, with 31 named controls,
+262,152 runtime assertions and eight complete candidate traces. This fixed
+scalar-library evidence remains separate from this item's general completion.
+The later retained research campaign at `fab59023` passed its 29 transitions and
+25 consumers with 6,815,952 runtime assertions. Its
+[original evidence](evidence/retained-metadata-correction-20261120/runtime-success-fab59023.json)
+remains tied to that source.
+
+The [public scalar-library candidate](public-scalar-library.md) now connects the
+installed `RUSTC` entry and retained owner to genuine metadata/archive output
+under the [declared profile and actual Cargo command](native-cargo-continuation.md#authored-public-scalar-library-path).
+It is authored and pending exact-source hosted qualification through the
+[independent public evaluator](../../tools/test-public-native-library.py).
+Earlier passing research and native campaigns do not qualify this source.
+Metadata-only `cargo check`, under-Lustr `--extern` ingestion and wider Rust/Cargo
+coverage remain open.
 
 Done when unchanged mixed programs and real downstream Cargo crates consume
 valid artifacts. Every obligation has one owner and every required instance is
 emitted exactly once. Unsupported interfaces remain visible as integration gaps.
 
 ## 4. Retain correct work across changes
+
+The [native Cargo continuation](native-cargo-continuation.md) records the current
+unit-plan and host-script integration, narrow reuse checks, negative module
+lookups and generated-input leases. The new public scalar candidate adds retained
+artifact and inactive-history ownership with authored edit, rejection, repair and
+eviction checks. Those pending checks and the earlier bounded results do not
+close the wider completion conditions below.
 
 Connect precise native and complementary semantic dependencies. Cover body,
 signature, type, trait, macro, included-file, dependency, environment/build-script,
@@ -204,9 +232,13 @@ permits deferring this migration when it would slow completion or compilation;
 it is not an additional gate ahead of the work above.
 
 Current scope remains `std` with native host dependencies. The automatic warm
-CLI path still uses a Unix socket. A future adapter must preserve the same
-retained session, semantic environment, invalidation, failure and ownership
-contracts, with actual no-socket operation and matched timing evidence. A
+CLI path, including the authored public library route, still uses a Unix socket.
+The library artifact tools also require the pinned 208,283,952-byte LLVM shared
+library, about 208 MB. This remains a package-size and portability limitation;
+the selective encoder's `no_std` boundary does not remove it. A future adapter
+must preserve the same retained session, semantic environment, invalidation,
+failure and ownership contracts, with actual no-socket operation and matched timing
+evidence. A
 protocol-only `no_std` crate or fresh per-request compilation does not complete
 that migration. Continue the genuine metadata boundary first.
 

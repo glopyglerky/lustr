@@ -1,0 +1,32 @@
+test_archive_index_must_name_a_real_member (__main__.ArtifactControls.test_archive_index_must_name_a_real_member) ... ok
+test_artifact_path_cannot_escape_or_be_a_symlink (__main__.ArtifactControls.test_artifact_path_cannot_escape_or_be_a_symlink) ... ok
+test_changed_machine_bytes_cannot_hide_behind_symbol_rename (__main__.ArtifactControls.test_changed_machine_bytes_cannot_hide_behind_symbol_rename) ... ok
+test_changed_relocation_destination_is_visible (__main__.ArtifactControls.test_changed_relocation_destination_is_visible) ... ok
+test_direct_local_call_identity_and_rename (__main__.ArtifactControls.test_direct_local_call_identity_and_rename) ... ok
+test_duplicate_archive_members_fail (__main__.ArtifactControls.test_duplicate_archive_members_fail) ... ok
+test_original_rlib_link_framing_and_complete_inventory (__main__.ArtifactControls.test_original_rlib_link_framing_and_complete_inventory) ... ok
+test_truncated_and_wrong_machine_objects_fail (__main__.ArtifactControls.test_truncated_and_wrong_machine_objects_fail) ... ok
+test_unix_socket_call_cannot_be_hidden_in_a_passing_trace (__main__.ArtifactControls.test_unix_socket_call_cannot_be_hidden_in_a_passing_trace) ... ok
+test_actual_arguments_directory_and_status_are_required (__main__.TraceControls.test_actual_arguments_directory_and_status_are_required) ... ok
+test_command_records_bind_exact_artifact_work (__main__.TraceControls.test_command_records_bind_exact_artifact_work) ... ok
+test_extra_allowlisted_execution_on_noop_fails (__main__.TraceControls.test_extra_allowlisted_execution_on_noop_fails) ... ok
+test_missing_or_duplicate_allowed_execution_fails (__main__.TraceControls.test_missing_or_duplicate_allowed_execution_fails) ... ok
+test_observed_request_and_noop_are_accounted (__main__.TraceControls.test_observed_request_and_noop_are_accounted) ... ok
+test_prefix_rewrite_and_post_response_work_fail (__main__.TraceControls.test_prefix_rewrite_and_post_response_work_fail) ... ok
+test_setup_refusal_requires_actual_exit_without_tools (__main__.TraceControls.test_setup_refusal_requires_actual_exit_without_tools) ... ok
+test_socket_and_unrepresented_directory_calls_fail (__main__.TraceControls.test_socket_and_unrepresented_directory_calls_fail) ... ok
+test_split_calls_within_a_response_are_complete (__main__.TraceControls.test_split_calls_within_a_response_are_complete) ... ok
+test_boolean_counter_and_sdk_reload_fail (__main__.WorkControls.test_boolean_counter_and_sdk_reload_fail) ... ok
+test_check_and_rejection_cannot_emit_metadata (__main__.WorkControls.test_check_and_rejection_cannot_emit_metadata) ... ok
+test_complete_noop (__main__.WorkControls.test_complete_noop) ... ok
+test_duplicate_and_foreign_identity_inventories_fail (__main__.WorkControls.test_duplicate_and_foreign_identity_inventories_fail) ... ok
+test_noop_cannot_repeat_any_work (__main__.WorkControls.test_noop_cannot_repeat_any_work) ... ok
+test_original_type_diagnostic_cannot_be_replaced_by_operational_error (__main__.WorkControls.test_original_type_diagnostic_cannot_be_replaced_by_operational_error) ... ok
+test_partial_failure_recovery_requires_one_remaining_object (__main__.WorkControls.test_partial_failure_recovery_requires_one_remaining_object) ... ok
+test_required_native_work_cannot_disappear (__main__.WorkControls.test_required_native_work_cannot_disappear) ... ok
+test_unchanged_body_check_and_generation_fail (__main__.WorkControls.test_unchanged_body_check_and_generation_fail) ... ok
+
+----------------------------------------------------------------------
+Ran 27 tests in 0.010s
+
+OK

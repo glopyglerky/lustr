@@ -1,0 +1,35 @@
+{
+  "fixture": "compiler/native/tests/pass/std_declared_source_locations.rs",
+  "fixture_sha256": "46fc580a1140015fd013a0f2efa2a63ba25285abb44e45637e31d21be374e49b",
+  "native_oracle_status_stdout_stderr_equal": true,
+  "ubsan_oracle_status_stdout_stderr_equal": true,
+  "ubsan_diagnostics": false,
+  "asan_lsan_run": false,
+  "asan_lsan_limitation": "Prior local LeakSanitizer probe could not run under executor ptrace; the unchanged hosted sanitizer gate remains required.",
+  "commands": [
+    {
+      "label": "native-build",
+      "status": 0
+    },
+    {
+      "label": "oracle-build",
+      "status": 0
+    },
+    {
+      "label": "native-run",
+      "status": 0
+    },
+    {
+      "label": "oracle-run",
+      "status": 0
+    },
+    {
+      "label": "ubsan-build",
+      "status": 0
+    },
+    {
+      "label": "ubsan-run",
+      "status": 0
+    }
+  ]
+}

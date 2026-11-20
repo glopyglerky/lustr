@@ -1,0 +1,40 @@
+[
+  {
+    "tool": "rustc",
+    "argv": [
+      "--edition=2024",
+      "-C",
+      "overflow-checks=on",
+      "main.rs",
+      "--error-format=json",
+      "--extern",
+      "dep=missing.rlib",
+      "--emit=llvm-ir",
+      "-o",
+      "missing-dep.ll"
+    ],
+    "exit": 1,
+    "stdout": "00.stdout",
+    "stderr": "00.stderr",
+    "source_rejection": false
+  },
+  {
+    "tool": "rustc",
+    "argv": [
+      "--edition=2024",
+      "-C",
+      "overflow-checks=on",
+      "main.rs",
+      "--error-format=json",
+      "--extern",
+      "dep=libdep.rlib",
+      "--emit=llvm-ir",
+      "-o",
+      "missing-dep.ll"
+    ],
+    "exit": 1,
+    "stdout": "01.stdout",
+    "stderr": "01.stderr",
+    "source_rejection": false
+  }
+]

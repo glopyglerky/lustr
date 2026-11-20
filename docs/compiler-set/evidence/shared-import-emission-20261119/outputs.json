@@ -1,0 +1,332 @@
+{
+  "abandon-empty.stderr": {
+    "sha256": "1562347509a0ad7bda835d0060c99e0cb14e2145c92d9d6e7e6998217fede1c7",
+    "bytes": 426,
+    "text": "shared-action=abandon\nimported-emission-transfer=once dependencies=preserved\nimported-generation=rust:5b7b37aefcb5b2fba3c2392bc9065b9e4602d494:Svh { hash: Fingerprint(14501456759476673359, 5420825092718060903) }\nshared request: native-checked=1 imported-inputs=3 integer-adapters=1 consumer-rust-typeck=0 consumer-rust-analysis=0\nshared-prepared-request=abandoned\nimported-generation-reuse=refused previous-artifact=preserved\n"
+  },
+  "abandon-empty.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "abandon-failed.stderr": {
+    "sha256": "1562347509a0ad7bda835d0060c99e0cb14e2145c92d9d6e7e6998217fede1c7",
+    "bytes": 426,
+    "text": "shared-action=abandon\nimported-emission-transfer=once dependencies=preserved\nimported-generation=rust:5b7b37aefcb5b2fba3c2392bc9065b9e4602d494:Svh { hash: Fingerprint(14501456759476673359, 5420825092718060903) }\nshared request: native-checked=1 imported-inputs=3 integer-adapters=1 consumer-rust-typeck=0 consumer-rust-analysis=0\nshared-prepared-request=abandoned\nimported-generation-reuse=refused previous-artifact=preserved\n"
+  },
+  "abandon-failed.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "abandon-malformed.stderr": {
+    "sha256": "1562347509a0ad7bda835d0060c99e0cb14e2145c92d9d6e7e6998217fede1c7",
+    "bytes": 426,
+    "text": "shared-action=abandon\nimported-emission-transfer=once dependencies=preserved\nimported-generation=rust:5b7b37aefcb5b2fba3c2392bc9065b9e4602d494:Svh { hash: Fingerprint(14501456759476673359, 5420825092718060903) }\nshared request: native-checked=1 imported-inputs=3 integer-adapters=1 consumer-rust-typeck=0 consumer-rust-analysis=0\nshared-prepared-request=abandoned\nimported-generation-reuse=refused previous-artifact=preserved\n"
+  },
+  "abandon-malformed.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "abandon-missing.stderr": {
+    "sha256": "1562347509a0ad7bda835d0060c99e0cb14e2145c92d9d6e7e6998217fede1c7",
+    "bytes": 426,
+    "text": "shared-action=abandon\nimported-emission-transfer=once dependencies=preserved\nimported-generation=rust:5b7b37aefcb5b2fba3c2392bc9065b9e4602d494:Svh { hash: Fingerprint(14501456759476673359, 5420825092718060903) }\nshared request: native-checked=1 imported-inputs=3 integer-adapters=1 consumer-rust-typeck=0 consumer-rust-analysis=0\nshared-prepared-request=abandoned\nimported-generation-reuse=refused previous-artifact=preserved\n"
+  },
+  "abandon-missing.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "abandon-no-output.stderr": {
+    "sha256": "1562347509a0ad7bda835d0060c99e0cb14e2145c92d9d6e7e6998217fede1c7",
+    "bytes": 426,
+    "text": "shared-action=abandon\nimported-emission-transfer=once dependencies=preserved\nimported-generation=rust:5b7b37aefcb5b2fba3c2392bc9065b9e4602d494:Svh { hash: Fingerprint(14501456759476673359, 5420825092718060903) }\nshared request: native-checked=1 imported-inputs=3 integer-adapters=1 consumer-rust-typeck=0 consumer-rust-analysis=0\nshared-prepared-request=abandoned\nimported-generation-reuse=refused previous-artifact=preserved\n"
+  },
+  "abandon-no-output.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "abandon-normal.stderr": {
+    "sha256": "1562347509a0ad7bda835d0060c99e0cb14e2145c92d9d6e7e6998217fede1c7",
+    "bytes": 426,
+    "text": "shared-action=abandon\nimported-emission-transfer=once dependencies=preserved\nimported-generation=rust:5b7b37aefcb5b2fba3c2392bc9065b9e4602d494:Svh { hash: Fingerprint(14501456759476673359, 5420825092718060903) }\nshared request: native-checked=1 imported-inputs=3 integer-adapters=1 consumer-rust-typeck=0 consumer-rust-analysis=0\nshared-prepared-request=abandoned\nimported-generation-reuse=refused previous-artifact=preserved\n"
+  },
+  "abandon-normal.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "already-transferred.stderr": {
+    "sha256": "e739939e38840877aad8f7c4476280a26fe9bde47b802cdbb5e9c336605800ac",
+    "bytes": 110,
+    "text": "shared-action=build\nerror: imported emission ownership failed: imported emission plan was already transferred\n"
+  },
+  "already-transferred.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "build-empty.stderr": {
+    "sha256": "4d114dbb433c84dc329a1c04e8effd4f29d5c7543fbdb49d97b97033b99a48bf",
+    "bytes": 418,
+    "text": "shared-action=build\nimported-emission-transfer=once dependencies=preserved\nimported-generation=rust:5b7b37aefcb5b2fba3c2392bc9065b9e4602d494:Svh { hash: Fingerprint(14501456759476673359, 5420825092718060903) }\nshared request: native-checked=1 imported-inputs=3 integer-adapters=1 consumer-rust-typeck=0 consumer-rust-analysis=0\nerror: imported code emission failed: invalid imported LLVM adapter object: truncated ELF\n"
+  },
+  "build-empty.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "build-failed.stderr": {
+    "sha256": "7846b5d38abce600abded54f6146a1861d1b6d88cc6cc385a35472a3ffe3ef05",
+    "bytes": 692,
+    "text": "shared-action=build\nimported-emission-transfer=once dependencies=preserved\nimported-generation=rust:5b7b37aefcb5b2fba3c2392bc9065b9e4602d494:Svh { hash: Fingerprint(14501456759476673359, 5420825092718060903) }\nshared request: native-checked=1 imported-inputs=3 integer-adapters=1 consumer-rust-typeck=0 consumer-rust-analysis=0\nerror: imported code emission failed: imported LLVM adapter emission failed: llc: Unknown command line argument '--invalid-lustr-qualification-option'.  Try: '$SDK/lib/rustlib/x86_64-unknown-linux-gnu/bin/llc --help'\nllc: Did you mean '--asan-initialization-order'?\n\n"
+  },
+  "build-failed.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "build-malformed.stderr": {
+    "sha256": "9e5222a44db6b8fbe20158b2ae92900801bfdd572037176bd59e7efca3d6b581",
+    "bytes": 467,
+    "text": "shared-action=build\nimported-emission-transfer=once dependencies=preserved\nimported-generation=rust:5b7b37aefcb5b2fba3c2392bc9065b9e4602d494:Svh { hash: Fingerprint(14501456759476673359, 5420825092718060903) }\nshared request: native-checked=1 imported-inputs=3 integer-adapters=1 consumer-rust-typeck=0 consumer-rust-analysis=0\nerror: imported code emission failed: invalid imported LLVM adapter object: expected a bounded x86_64 little-endian ELF relocatable object\n"
+  },
+  "build-malformed.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "build-missing.stderr": {
+    "sha256": "a211d24a902f42ffec6b09aafe5fe23e3c5609cf5c92cf86434877ec4795b121",
+    "bytes": 434,
+    "text": "shared-action=build\nimported-emission-transfer=once dependencies=preserved\nimported-generation=rust:5b7b37aefcb5b2fba3c2392bc9065b9e4602d494:Svh { hash: Fingerprint(14501456759476673359, 5420825092718060903) }\nshared request: native-checked=1 imported-inputs=3 integer-adapters=1 consumer-rust-typeck=0 consumer-rust-analysis=0\nerror: imported code emission failed: start imported LLVM adapter emission: Not a directory (os error 20)\n"
+  },
+  "build-missing.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "build-run.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "build-run.stdout": {
+    "sha256": "c8001b6dad36664b914520f892e374d01dcd3e054b643bc516276f926ef76472",
+    "bytes": 31,
+    "text": "import emission: 65536 results\n"
+  },
+  "build.stderr": {
+    "sha256": "6ab58c7084b1ee509f6b569a8273be38261f12e48628970312e4ead4cda78e7d",
+    "bytes": 390,
+    "text": "shared-action=build\nimported-emission-transfer=once dependencies=preserved\nimported-generation=rust:5b7b37aefcb5b2fba3c2392bc9065b9e4602d494:Svh { hash: Fingerprint(14501456759476673359, 5420825092718060903) }\nshared request: native-checked=1 imported-inputs=3 integer-adapters=1 consumer-rust-typeck=0 consumer-rust-analysis=0\nimported-generation-reuse=refused previous-artifact=preserved\n"
+  },
+  "build.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "check-empty.stderr": {
+    "sha256": "84f152c2f80af30b99b0244aa16435e22df6210d1080a353f052ba10a8e1df07",
+    "bytes": 390,
+    "text": "shared-action=check\nimported-emission-transfer=once dependencies=preserved\nimported-generation=rust:5b7b37aefcb5b2fba3c2392bc9065b9e4602d494:Svh { hash: Fingerprint(14501456759476673359, 5420825092718060903) }\nshared request: native-checked=1 imported-inputs=3 integer-adapters=1 consumer-rust-typeck=0 consumer-rust-analysis=0\nimported-generation-reuse=refused previous-artifact=preserved\n"
+  },
+  "check-empty.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "check-failed.stderr": {
+    "sha256": "84f152c2f80af30b99b0244aa16435e22df6210d1080a353f052ba10a8e1df07",
+    "bytes": 390,
+    "text": "shared-action=check\nimported-emission-transfer=once dependencies=preserved\nimported-generation=rust:5b7b37aefcb5b2fba3c2392bc9065b9e4602d494:Svh { hash: Fingerprint(14501456759476673359, 5420825092718060903) }\nshared request: native-checked=1 imported-inputs=3 integer-adapters=1 consumer-rust-typeck=0 consumer-rust-analysis=0\nimported-generation-reuse=refused previous-artifact=preserved\n"
+  },
+  "check-failed.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "check-malformed.stderr": {
+    "sha256": "84f152c2f80af30b99b0244aa16435e22df6210d1080a353f052ba10a8e1df07",
+    "bytes": 390,
+    "text": "shared-action=check\nimported-emission-transfer=once dependencies=preserved\nimported-generation=rust:5b7b37aefcb5b2fba3c2392bc9065b9e4602d494:Svh { hash: Fingerprint(14501456759476673359, 5420825092718060903) }\nshared request: native-checked=1 imported-inputs=3 integer-adapters=1 consumer-rust-typeck=0 consumer-rust-analysis=0\nimported-generation-reuse=refused previous-artifact=preserved\n"
+  },
+  "check-malformed.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "check-missing.stderr": {
+    "sha256": "84f152c2f80af30b99b0244aa16435e22df6210d1080a353f052ba10a8e1df07",
+    "bytes": 390,
+    "text": "shared-action=check\nimported-emission-transfer=once dependencies=preserved\nimported-generation=rust:5b7b37aefcb5b2fba3c2392bc9065b9e4602d494:Svh { hash: Fingerprint(14501456759476673359, 5420825092718060903) }\nshared request: native-checked=1 imported-inputs=3 integer-adapters=1 consumer-rust-typeck=0 consumer-rust-analysis=0\nimported-generation-reuse=refused previous-artifact=preserved\n"
+  },
+  "check-missing.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "check-no-output.stderr": {
+    "sha256": "84f152c2f80af30b99b0244aa16435e22df6210d1080a353f052ba10a8e1df07",
+    "bytes": 390,
+    "text": "shared-action=check\nimported-emission-transfer=once dependencies=preserved\nimported-generation=rust:5b7b37aefcb5b2fba3c2392bc9065b9e4602d494:Svh { hash: Fingerprint(14501456759476673359, 5420825092718060903) }\nshared request: native-checked=1 imported-inputs=3 integer-adapters=1 consumer-rust-typeck=0 consumer-rust-analysis=0\nimported-generation-reuse=refused previous-artifact=preserved\n"
+  },
+  "check-no-output.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "check-normal.stderr": {
+    "sha256": "84f152c2f80af30b99b0244aa16435e22df6210d1080a353f052ba10a8e1df07",
+    "bytes": 390,
+    "text": "shared-action=check\nimported-emission-transfer=once dependencies=preserved\nimported-generation=rust:5b7b37aefcb5b2fba3c2392bc9065b9e4602d494:Svh { hash: Fingerprint(14501456759476673359, 5420825092718060903) }\nshared request: native-checked=1 imported-inputs=3 integer-adapters=1 consumer-rust-typeck=0 consumer-rust-analysis=0\nimported-generation-reuse=refused previous-artifact=preserved\n"
+  },
+  "check-normal.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "invalid-abandon.stderr": {
+    "sha256": "59d5f7133b01f4c815d584406162e988f0f7854d9a75a850cc8809659f9c949d",
+    "bytes": 507,
+    "text": "shared-action=abandon\nerror[L0110]: mismatched types: expected `i8`, found `bool`\n  --> $QUALIFICATION/campaign/invalid.rs:1:53\n   | extern crate peer;fn main(){peer::add(peer::Word(1),true);}\n   |                                                     ^^^^\n   = fix: Change the value to type `i8`, or change the expected type.\n\nerror: could not compile `$QUALIFICATION/campaign/invalid.rs` due to 1 previous error(s)\n"
+  },
+  "invalid-abandon.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "invalid-build.stderr": {
+    "sha256": "0b9090536e9a8b7687799995d4d2b27af4880c288d60ecb0bf354df977106e44",
+    "bytes": 505,
+    "text": "shared-action=build\nerror[L0110]: mismatched types: expected `i8`, found `bool`\n  --> $QUALIFICATION/campaign/invalid.rs:1:53\n   | extern crate peer;fn main(){peer::add(peer::Word(1),true);}\n   |                                                     ^^^^\n   = fix: Change the value to type `i8`, or change the expected type.\n\nerror: could not compile `$QUALIFICATION/campaign/invalid.rs` due to 1 previous error(s)\n"
+  },
+  "invalid-build.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "invalid-check.stderr": {
+    "sha256": "fc560e025c2a8a8183a5a9eb082e1cf841a0489bc293ec560bd83e0f5784ecdc",
+    "bytes": 505,
+    "text": "shared-action=check\nerror[L0110]: mismatched types: expected `i8`, found `bool`\n  --> $QUALIFICATION/campaign/invalid.rs:1:53\n   | extern crate peer;fn main(){peer::add(peer::Word(1),true);}\n   |                                                     ^^^^\n   = fix: Change the value to type `i8`, or change the expected type.\n\nerror: could not compile `$QUALIFICATION/campaign/invalid.rs` due to 1 previous error(s)\n"
+  },
+  "invalid-check.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "invalid-reference.stderr": {
+    "sha256": "deeff2f08dd72eb2150699c358ff26cc65566c65c716b21c187d68bc82909e7e",
+    "bytes": 713,
+    "text": "error[E0308]: mismatched types\n --> $QUALIFICATION/campaign/invalid.rs:1:53\n  |\n1 | extern crate peer;fn main(){peer::add(peer::Word(1),true);}\n  |                             ---------               ^^^^ expected `i8`, found `bool`\n  |                             |\n  |                             arguments to this function are incorrect\n  |\nnote: function defined here\n --> $QUALIFICATION/campaign/peer.rs:3:8\n  |\n3 | pub fn add(value:Word,offset:i8)->Word{Word(value.0.wrapping_add(offset))}\n  |        ^^^\n\nerror: aborting due to 1 previous error\n\nFor more information about this error, try `rustc --explain E0308`.\n"
+  },
+  "invalid-reference.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "object-publication-failed.stderr": {
+    "sha256": "36563a3ab17b461b8b3e0324c797070a9a2c2de0c43d02a64ba7595656f23dbf",
+    "bytes": 400,
+    "text": "shared-action=build\nimported-emission-transfer=once dependencies=preserved\nimported-generation=rust:5b7b37aefcb5b2fba3c2392bc9065b9e4602d494:Svh { hash: Fingerprint(14501456759476673359, 5420825092718060903) }\nshared request: native-checked=1 imported-inputs=3 integer-adapters=1 consumer-rust-typeck=0 consumer-rust-analysis=0\nerror: cannot materialize imported object: Is a directory (os error 21)\n"
+  },
+  "object-publication-failed.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "peer.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "peer.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "recovered-run.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "recovered-run.stdout": {
+    "sha256": "c8001b6dad36664b914520f892e374d01dcd3e054b643bc516276f926ef76472",
+    "bytes": 31,
+    "text": "import emission: 65536 results\n"
+  },
+  "recovered.stderr": {
+    "sha256": "6ab58c7084b1ee509f6b569a8273be38261f12e48628970312e4ead4cda78e7d",
+    "bytes": 390,
+    "text": "shared-action=build\nimported-emission-transfer=once dependencies=preserved\nimported-generation=rust:5b7b37aefcb5b2fba3c2392bc9065b9e4602d494:Svh { hash: Fingerprint(14501456759476673359, 5420825092718060903) }\nshared request: native-checked=1 imported-inputs=3 integer-adapters=1 consumer-rust-typeck=0 consumer-rust-analysis=0\nimported-generation-reuse=refused previous-artifact=preserved\n"
+  },
+  "recovered.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "reference-run.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "reference-run.stdout": {
+    "sha256": "c8001b6dad36664b914520f892e374d01dcd3e054b643bc516276f926ef76472",
+    "bytes": 31,
+    "text": "import emission: 65536 results\n"
+  },
+  "reference.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "reference.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "text": ""
+  },
+  "artifact_inventory": {
+    "consumer.native": {
+      "sha256": "b835d557910d08308f2e70d65ff289a4ea0979c964cb1900bae637ccd71f573b",
+      "bytes": 403654
+    },
+    "consumer.rs": {
+      "sha256": "e61e5ac1aea385b938db2be59ea4aa09bd1deb015bce28678741d5f2ee149c98",
+      "bytes": 256
+    },
+    "consumer.rust": {
+      "sha256": "2408ba0706bd93eec7579397147e05a503abe8e08d6328b67a0d4148aa6a4318",
+      "bytes": 4607320
+    },
+    "invalid.rs": {
+      "sha256": "18eb68eeb729b8b4442899d7ddb22777c855c754b6ae84e4d214473eba7c7f16",
+      "bytes": 60
+    },
+    "libpeer.rlib": {
+      "sha256": "69b47bc4395bc7a68796af9f6f6b2bda827432fe5463da45be209188c2e00578",
+      "bytes": 4492
+    },
+    "peer.rs": {
+      "sha256": "58105ce2c943ba994051a5a5c159817630599e9db5a027601fb0ed3bee8dd44f",
+      "bytes": 131
+    }
+  },
+  "check_and_drop_object_inventory": {
+    "abandon-empty-state": [],
+    "abandon-failed-state": [],
+    "abandon-malformed-state": [],
+    "abandon-missing-state": [],
+    "abandon-no-output-state": [],
+    "abandon-normal-state": [],
+    "check-empty-state": [],
+    "check-failed-state": [],
+    "check-malformed-state": [],
+    "check-missing-state": [],
+    "check-no-output-state": [],
+    "check-normal-state": []
+  }
+}

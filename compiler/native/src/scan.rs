@@ -50,12 +50,12 @@ pub fn env_hash<'a>(items: impl Iterator<Item = &'a ItemScan>) -> u64 {
 fn hash_tok(h: &mut FxHasher, t: &Tok, strings: &[String]) {
     std::mem::discriminant(t).hash(h);
     match t {
-        Tok::Ident(s) | Tok::Reserved(s) => s.hash(h),
+        Tok::Ident(s, raw) | Tok::Lifetime(s, raw) => { s.hash(h); raw.hash(h); }
+        Tok::Reserved(s) => s.hash(h),
         Tok::Int(v, suf, _) => {
             v.hash(h);
             suf.map(|s| s as u8).hash(h);
         }
-        Tok::Lifetime(s) => s.hash(h),
         Tok::Char(c, _) => c.hash(h),
         _ => {}
     }
@@ -99,7 +99,7 @@ fn nested_fn_scan(lexed: &Lexed, k: usize) -> Option<(FnScan, Vec<Sym>)> {
         match toks[end].tok {
             Tok::LBrace => d += 1,
             Tok::RBrace => d -= 1,
-            Tok::Ident(s) => idents.push(s),
+            Tok::Ident(s, _) => idents.push(s),
             Tok::Eof => return None,
             _ => {}
         }
@@ -145,7 +145,7 @@ pub fn scan(lexed: &Lexed) -> ChunkScan {
         // field or an alias is not an item (it took the next item's
         // braces as its body, W-CHECK-G).
         let fn_here =
-            *t == Tok::Fn && matches!(toks.get(i + 1).map(|t| t.tok), Some(Tok::Ident(_))) && (depth == 0 || (depth == 1 && in_impl));
+            *t == Tok::Fn && matches!(toks.get(i + 1).map(|t| t.tok), Some(Tok::Ident(_, _))) && (depth == 0 || (depth == 1 && in_impl));
         if fn_here {
             // The body is the first `{` at this depth after the signature.
             let mut j = i;
@@ -174,7 +174,7 @@ pub fn scan(lexed: &Lexed) -> ChunkScan {
                 // outer walk continues over its tokens, so deeper nesting
                 // records too and the outer hash still covers everything.
                 // A name must follow: a `fn(...)` pointer type is not an item.
-                if toks[k].tok == Tok::Fn && k > j && matches!(toks.get(k + 1).map(|t| t.tok), Some(Tok::Ident(_)))
+                if toks[k].tok == Tok::Fn && k > j && matches!(toks.get(k + 1).map(|t| t.tok), Some(Tok::Ident(_, _)))
                     && let Some((f, nidents)) = nested_fn_scan(lexed, k)
                 {
                     nested_fns.push(f);
@@ -183,7 +183,7 @@ pub fn scan(lexed: &Lexed) -> ChunkScan {
                 match toks[k].tok {
                     Tok::LBrace => d += 1,
                     Tok::RBrace => d -= 1,
-                    Tok::Ident(s) => idents.push(s),
+                    Tok::Ident(s, _) => idents.push(s),
                     Tok::Eof => break,
                     _ => {}
                 }
@@ -215,7 +215,7 @@ pub fn scan(lexed: &Lexed) -> ChunkScan {
                 // A fn returning `impl Trait` changes callers' generated
                 // code with its body: no fn-only shortcut, a full walk.
                 let fn_name = match toks.get(i + 1).map(|t| t.tok) {
-                    Some(Tok::Ident(s)) if !rpit => Some(s),
+                    Some(Tok::Ident(s, _)) if !rpit => Some(s),
                     _ => None,
                 };
                 items.push(ItemScan { hash: std::mem::take(&mut env).finish(), fn_name });
@@ -234,7 +234,7 @@ pub fn scan(lexed: &Lexed) -> ChunkScan {
         if *t == Tok::Fn
             && depth > 0
             && !(depth == 1 && in_trait)
-            && matches!(toks.get(i + 1).map(|t| t.tok), Some(Tok::Ident(_)))
+            && matches!(toks.get(i + 1).map(|t| t.tok), Some(Tok::Ident(_, _)))
             && let Some((f, nidents)) = nested_fn_scan(lexed, i)
         {
             item_nested.push(nested_fns.len());
@@ -494,7 +494,7 @@ pub fn outline(lexed: &Lexed, interner: &crate::intern::Interner) -> Outline {
                 }
                 let body = &toks[body_start..j.saturating_sub(1).max(body_start)];
                 let name = body.first().and_then(|t| match t.tok {
-                    Tok::Ident(s) => Some(interner.get(s).to_string()),
+                    Tok::Ident(s, _) => Some(interner.get(s).to_string()),
                     _ => None,
                 });
                 if inner && braces.is_empty() && name.as_deref() == Some("macro_use") {
@@ -542,7 +542,7 @@ pub fn outline(lexed: &Lexed, interner: &crate::intern::Interner) -> Outline {
                     Some("macro_export") => {
                         pending.macro_export = true;
                         pending.local_inner =
-                            body.iter().any(|t| matches!(t.tok, Tok::Ident(s) if interner.get(s) == "local_inner_macros"));
+                            body.iter().any(|t| matches!(t.tok, Tok::Ident(s, _) if interner.get(s) == "local_inner_macros"));
                     }
                     _ => {}
                 }
@@ -555,7 +555,7 @@ pub fn outline(lexed: &Lexed, interner: &crate::intern::Interner) -> Outline {
             Tok::Mod => {
                 let span = toks[i].span;
                 let name = match toks.get(i + 1).map(|t| t.tok) {
-                    Some(Tok::Ident(s)) => Some(s),
+                    Some(Tok::Ident(s, _)) => Some(s),
                     _ => None,
                 };
                 if let Some(name) = name {
@@ -590,8 +590,8 @@ pub fn outline(lexed: &Lexed, interner: &crate::intern::Interner) -> Outline {
                 pending_vis = OutlineVis::Private;
                 i += 1;
             }
-            Tok::Ident(s) if s == macro_rules && toks.get(i + 1).map(|t| t.tok) == Some(Tok::Bang) => {
-                if let Some(Tok::Ident(name)) = toks.get(i + 2).map(|t| t.tok) {
+            Tok::Ident(s, _) if s == macro_rules && toks.get(i + 1).map(|t| t.tok) == Some(Tok::Bang) => {
+                if let Some(Tok::Ident(name, _)) = toks.get(i + 2).map(|t| t.tok) {
                     let container = container_of(&braces);
                     out.macros.push(MacroDecl {
                         name,
@@ -732,7 +732,7 @@ fn main() {
             .map(|f| {
                 let pos = lexed.tokens.iter().position(|t| t.span.lo == f.fn_offset).unwrap();
                 match lexed.tokens[pos + 1].tok {
-                    Tok::Ident(s) => interner.get(s),
+                    Tok::Ident(s, _) => interner.get(s),
                     _ => "?",
                 }
             })

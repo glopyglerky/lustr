@@ -1,0 +1,13 @@
+test_ambiguous_emitted_build_receipt_is_rejected (__main__.StartupControls.test_ambiguous_emitted_build_receipt_is_rejected) ... ok
+test_changed_sample_order_is_rejected (__main__.StartupControls.test_changed_sample_order_is_rejected) ... ok
+test_completed_target_miss_allows_independent_192_observations (__main__.StartupControls.test_completed_target_miss_allows_independent_192_observations) ... ok
+test_incomplete_primary_records_failure_without_timing (__main__.StartupControls.test_incomplete_primary_records_failure_without_timing) ... ok
+test_missing_prime_is_rejected (__main__.StartupControls.test_missing_prime_is_rejected) ... ok
+test_request_work_cannot_replace_version_command (__main__.StartupControls.test_request_work_cannot_replace_version_command) ... ok
+test_workflow_uses_completion_only_and_preserves_diagnostic (__main__.StartupControls.test_workflow_uses_completion_only_and_preserves_diagnostic) ... ok
+test_wrong_version_stdout_is_rejected_even_with_new_stream_digest (__main__.StartupControls.test_wrong_version_stdout_is_rejected_even_with_new_stream_digest) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 15.586s
+
+OK

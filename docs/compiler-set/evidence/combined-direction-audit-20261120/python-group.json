@@ -1,0 +1,258 @@
+{
+  "group": "python",
+  "commands": [
+    {
+      "command": [
+        "python3",
+        "tools/check-exclusive-coverage.py"
+      ],
+      "cwd": "<CHECKOUT>",
+      "explicit_environment": {},
+      "expected_exit": 0,
+      "exit_code": 0,
+      "duration_seconds": 0.09337997436523438,
+      "expected_result_observed": true,
+      "stdout": {
+        "path": "structural-admission.stdout",
+        "bytes": 322,
+        "sha256": "29e8b9779114dec7438f6aaf42b4fb57b351c9c122aeb0dcd5e1368f12b1c69e"
+      },
+      "stderr": {
+        "path": "structural-admission.stderr",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "tools/check-exclusive-coverage.py",
+        "--release"
+      ],
+      "cwd": "<CHECKOUT>",
+      "explicit_environment": {},
+      "expected_exit": 1,
+      "exit_code": 1,
+      "duration_seconds": 0.11917686462402344,
+      "expected_result_observed": true,
+      "stdout": {
+        "path": "release-refusal.stdout",
+        "bytes": 447,
+        "sha256": "65d5fe87bb63c06c7251335cba84c2878563cac92656a242e64c0b72cebb282e"
+      },
+      "stderr": {
+        "path": "release-refusal.stderr",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "tools/test-exclusive-coverage-guard.py"
+      ],
+      "cwd": "<CHECKOUT>",
+      "explicit_environment": {},
+      "expected_exit": 0,
+      "exit_code": 0,
+      "duration_seconds": 0.6990101337432861,
+      "expected_result_observed": true,
+      "stdout": {
+        "path": "exclusive-mutations.stdout",
+        "bytes": 315,
+        "sha256": "d3b928adb1cf2a8e4e3c16a295adc5fe13ea2e6fa7158a7f810f1faa74b03e83"
+      },
+      "stderr": {
+        "path": "exclusive-mutations.stderr",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "tools/test-native-build-policy.py",
+        "--rustc",
+        "<PINNED_SDK>/bin/rustc"
+      ],
+      "cwd": "<CHECKOUT>",
+      "explicit_environment": {},
+      "expected_exit": 0,
+      "exit_code": 0,
+      "duration_seconds": 1.2382054328918457,
+      "expected_result_observed": true,
+      "stdout": {
+        "path": "actual-build-policy.stdout",
+        "bytes": 9770,
+        "sha256": "4afcb9818702ac9003cfb11aafe66ea1554ba3df938fcc5b92c7c8a7af1d91ec"
+      },
+      "stderr": {
+        "path": "actual-build-policy.stderr",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "tools/test-capability-results.py",
+        "-v"
+      ],
+      "cwd": "<CHECKOUT>",
+      "explicit_environment": {},
+      "expected_exit": 0,
+      "exit_code": 0,
+      "duration_seconds": 0.5066893100738525,
+      "expected_result_observed": true,
+      "stdout": {
+        "path": "capability-controls.stdout",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "capability-controls.stderr",
+        "bytes": 3481,
+        "sha256": "08cf6eae4ae3f90bd21d2fed98c4bf3089bfc0a59b9f3d1e3d47452b0c0f7833"
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "tools/test-retired-acquisition.py",
+        "-v"
+      ],
+      "cwd": "<CHECKOUT>",
+      "explicit_environment": {},
+      "expected_exit": 0,
+      "exit_code": 0,
+      "duration_seconds": 1.2308783531188965,
+      "expected_result_observed": true,
+      "stdout": {
+        "path": "retirement-controls.stdout",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "retirement-controls.stderr",
+        "bytes": 617,
+        "sha256": "aebf9e54ae87f0c98222a2dbc60682adfbf04f1933bcebe9294837e2662c8a7b"
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "tools/test-workflow-inputs.py",
+        "-v"
+      ],
+      "cwd": "<CHECKOUT>",
+      "explicit_environment": {},
+      "expected_exit": 0,
+      "exit_code": 0,
+      "duration_seconds": 0.08675861358642578,
+      "expected_result_observed": true,
+      "stdout": {
+        "path": "workflow-controls.stdout",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "workflow-controls.stderr",
+        "bytes": 904,
+        "sha256": "b8056118d88bc7003c5b5cccd9f216fc73033738da5c6576867522fe611b77b4"
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "tools/test-warm-applicability.py"
+      ],
+      "cwd": "<CHECKOUT>",
+      "explicit_environment": {},
+      "expected_exit": 0,
+      "exit_code": 0,
+      "duration_seconds": 2.1328492164611816,
+      "expected_result_observed": true,
+      "stdout": {
+        "path": "warm-applicability-controls.stdout",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "warm-applicability-controls.stderr",
+        "bytes": 3170,
+        "sha256": "aad7dd4d55ccc82ccf3fc8263b147e6e8ad9c6ff4f2d5be4d9b9f4d6063f761f"
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "tools/test-assess-current-performance.py",
+        "-v"
+      ],
+      "cwd": "<CHECKOUT>",
+      "explicit_environment": {},
+      "expected_exit": 0,
+      "exit_code": 0,
+      "duration_seconds": 4.862920522689819,
+      "expected_result_observed": true,
+      "stdout": {
+        "path": "assessment-controls.stdout",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "assessment-controls.stderr",
+        "bytes": 3966,
+        "sha256": "4a4ea0f4a4cc6f19ce9fabe9ddf2fa1346bf42adee4825a47e4b86136bdfab58"
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "tools/test-upstream-slice-benchmark.py"
+      ],
+      "cwd": "<CHECKOUT>",
+      "explicit_environment": {},
+      "expected_exit": 0,
+      "exit_code": 0,
+      "duration_seconds": 8.192569971084595,
+      "expected_result_observed": true,
+      "stdout": {
+        "path": "historical-slice-controls.stdout",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "historical-slice-controls.stderr",
+        "bytes": 129,
+        "sha256": "1102e0532d59c09615881924f67def8e2cc2d9ffd1df0f87b0788026cadbd3d3"
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "tools/test-retained-results.py",
+        "InventoryControls",
+        "-v"
+      ],
+      "cwd": "<CHECKOUT>",
+      "explicit_environment": {},
+      "expected_exit": 0,
+      "exit_code": 0,
+      "duration_seconds": 0.7256026268005371,
+      "expected_result_observed": true,
+      "stdout": {
+        "path": "retained-inventory-controls.stdout",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "retained-inventory-controls.stderr",
+        "bytes": 942,
+        "sha256": "1dcb551faba2dd00986d936f71308f6782354fb031a7469bbc6e2cae02b0f1a7"
+      }
+    }
+  ],
+  "all_expected_results_observed": true,
+  "source_unchanged": true
+}

@@ -128,10 +128,10 @@ impl<'a> Tx<'a> {
         // keyword; a raw identifier here is a plain `Ident`.
         let unbound = |this: &mut Self, out: &mut Vec<Tt>| {
             let tok = match name_tok.tok {
-                Tok::Reserved(s) => Tok::Ident(s),
-                Tok::True | Tok::False => Tok::Ident(this.interner.intern(&tok_text(&name_tok.tok, &[], this.interner))),
-                Tok::SelfLower | Tok::SelfUpper | Tok::Super | Tok::Crate | Tok::Ident(_) => name_tok.tok,
-                t => meta_sym(t, this.interner).map_or(t, Tok::Ident),
+                Tok::Reserved(s) => Tok::Ident(s, true),
+                Tok::True | Tok::False => Tok::Ident(this.interner.intern(&tok_text(&name_tok.tok, &[], this.interner)), true),
+                Tok::SelfLower | Tok::SelfUpper | Tok::Super | Tok::Crate | Tok::Ident(_, _) => name_tok.tok,
+                t => meta_sym(t, this.interner).map_or(t, |s| Tok::Ident(s, true)),
             };
             out.push(Tt::Tok(Token { tok: Tok::Dollar, span: this.stamp(dollar_span) }));
             out.push(Tt::Tok(Token { tok, span: this.stamp(name_tok.span) }));

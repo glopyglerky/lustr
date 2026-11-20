@@ -17,6 +17,12 @@ mod cgen;
 mod check;
 mod colwidth;
 mod daemon;
+#[cfg(feature="exclusive-native")]
+#[path="../../../crates/lustr-native-core/src/library_artifact.rs"]
+mod library_artifact;
+#[cfg(feature="exclusive-native")]
+#[path="../../../crates/lustr-native-core/src/public_library.rs"]
+mod public_library;
 mod def;
 mod diag;
 mod driver;
@@ -43,6 +49,7 @@ mod testrun;
 #[allow(dead_code)] // See `mod mono`.
 mod traits;
 mod ty;
+mod unicode;
 
 use protocol::Invocation;
 
@@ -368,10 +375,25 @@ fn image_run(reqs: &[driver::Request], dir: &std::path::Path) -> Vec<driver::Res
 }
 
 fn main() {
+    protocol::reject_internal_probe();
+    if protocol::product_identity_query() { return; }
+    #[cfg(feature = "exclusive-native")]
+    if std::env::args_os().skip(1).eq([std::ffi::OsString::from("--lustr-print-cfg")]) {
+        // Cargo's read-only compiler query uses the same target/profile facts
+        // as native compilation. The product entry admits only this host mode.
+        let cfg = resolve::cfg::CfgEnv::new(protocol::host_triple(), &[], false, protocol::ProfileFlags::DEV_UNWIND);
+        let mut lines: Vec<String> = cfg.flags.into_iter().collect();
+        lines.extend(cfg.pairs.into_iter().map(|(name, value)| format!("{name}={value:?}")));
+        lines.sort();
+        lines.dedup();
+        for line in lines { println!("{line}"); }
+        return;
+    }
     // A re-executed image process (src/image.rs) runs with randomization
     // off and an arena variable: its children get neither.
     image::process_start();
     // Cargo runs lust-core as its RUSTC_WRAPPER during the feature probe.
+    #[cfg(not(feature = "exclusive-native"))]
     if let Some(code) = resolve::probe::wrapper_main() {
         std::process::exit(code);
     }

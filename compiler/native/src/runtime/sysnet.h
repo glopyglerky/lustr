@@ -58,6 +58,12 @@ int64_t lust_sys_net_recvfrom(int32_t fd, uint64_t max, int32_t flags, lust_Vec 
 /* socketpair(AF_UNIX, SOCK_STREAM): the first fd or -errno; the
    second fd appended as one u64 field. */
 int32_t lust_sys_net_unix_pair(lust_Vec *out);
+/* Split creation from pathname evaluation. The source owner closes the
+   returned descriptor on validation errors, syscall errors and unwinding. */
+int32_t lust_sys_net_unix_socket(void);
+/* Operate on an owned descriptor; return 0 or errno without closing it. */
+int32_t lust_sys_net_unix_connect_fd(int32_t fd, const uint8_t *p, uint64_t len, int32_t abstract);
+int32_t lust_sys_net_unix_bind_fd(int32_t fd, const uint8_t *p, uint64_t len, int32_t abstract, int32_t backlog);
 /* socket + bind + listen(128) at a unix path: the fd or -errno. */
 int32_t lust_sys_net_unix_bind(const uint8_t *p, uint64_t len, int32_t abstract);
 /* socket + connect to a unix path: the fd or -errno. */

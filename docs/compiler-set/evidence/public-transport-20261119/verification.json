@@ -1,0 +1,106 @@
+{
+  "schema": 1,
+  "scope": "Actual public-entry connection-denial controls and repaired hosted packet-fixture identity; no accepted socket exchange executed locally",
+  "baseline_source": "28ed726e6a55dd55f98222069c650bd923cc43b2",
+  "candidate_source": "752d9eae7076449def1bf23a1e37455f9f566811",
+  "product_repair_commit": "64686b9c74606b3b25039e0415b12538480d0fc5",
+  "entry_test_sha256": "7c97f8d0d122e4a3458b05858ed1c61dd50abd1a3e131823c82ca5590234e98b",
+  "rustc_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "native_build_hash": "f6dcae63010c2430",
+  "native_core_sha256": "0a83fc2a5a0956839fd4cac04814c1f2bacdd04a58149b8364412e21d1b40037",
+  "native_receipt_sha256": "7d1ee7c613cf69fbe34d33fd0217dd4d788c92822e76e544c93f9befd0b57685",
+  "entry_binaries_sha256": {
+    "before": {
+      "lust": "6db0e2e0739c489ec7d45db7c2cbc8cdee626a612be5424109c34479e2d43e8c",
+      "lustr": "c29389a9c5169c0b5a2dc50af72ecb6b27cf39e8e886ab85a32ed7bc37560c61"
+    },
+    "after": {
+      "lust": "a9afebab637d3ab7db6a538afa4c79f9d93479726b170396508e7cb579a44c31",
+      "lustr": "4a052034a732486292a01a75834839060fd503b50defef2a6dc03fd25f6cf42d"
+    }
+  },
+  "build_profiles": {
+    "lustr": "Cargo dev, source-native-runtime, locked, offline",
+    "lust": "Direct declared rustc build of unchanged native client source with matching native build hash"
+  },
+  "valid_source": "fn main() { println!(\"valid native program\"); }\n",
+  "prior_artifact": "Explicit sentinel bytes used to detect replacement; not a previously executed program",
+  "connection_denial_controls": [
+    {
+      "lane": "before",
+      "tool": "lust",
+      "status": 0,
+      "stderr": "",
+      "stdout": "",
+      "prior_artifact_unchanged": false,
+      "output_sha256": "67712d332a943e2ca4e58fb70347c789616a4a02c992f4db96a5b9dd7f231dda",
+      "entry_trace": null
+    },
+    {
+      "lane": "before",
+      "tool": "lustr",
+      "status": 0,
+      "stderr": "",
+      "stdout": "",
+      "prior_artifact_unchanged": false,
+      "output_sha256": "c88590a1dff8f159f8de960a706b299c770997d63f64d3cb82c2d2a843245d2e",
+      "entry_trace": "{\"engine\":\"lust\",\"entry\":\"upstream-process\"}\n"
+    },
+    {
+      "lane": "after",
+      "tool": "lust",
+      "status": 3,
+      "stderr": "error: daemon connection: Operation not permitted (os error 1)\n",
+      "stdout": "",
+      "prior_artifact_unchanged": true,
+      "output_sha256": "819f2e6ad42bbf911e2d142055749178c1dc2e6a50f558be031252c78b13bf11",
+      "entry_trace": null
+    },
+    {
+      "lane": "after",
+      "tool": "lustr",
+      "status": 3,
+      "stderr": "daemon connection: Operation not permitted (os error 1)\n",
+      "stdout": "",
+      "prior_artifact_unchanged": true,
+      "output_sha256": "819f2e6ad42bbf911e2d142055749178c1dc2e6a50f558be031252c78b13bf11",
+      "entry_trace": null
+    }
+  ],
+  "wire_identity_control": {
+    "packet_sha256": "41a1dee196e8d9dcc868de06cdc176d7d5b101e8462d81db271abcec473f20ab",
+    "packaged_wire_identity": "f6dcae63010c2430.1b.32d3ce.1c3a988.6afe9886.374f551b",
+    "test_harness_wire_identity": "f6dcae63010c2430.-",
+    "old_decoder_status": 1,
+    "old_decoder_stderr": "OtherBuild\n",
+    "fixed_decoder_status": 0,
+    "fixed_decoder_stderr": ""
+  },
+  "encoder_fixture_control": {
+    "name": "transport_peer_consumes_and_validates_the_actual_encoded_request",
+    "passed": true,
+    "checks": [
+      "full production-encoded frame consumed",
+      "wrong build rejected",
+      "wrong source rejected",
+      "wrong output rejected",
+      "truncated environment field rejected"
+    ]
+  },
+  "hosted_controls": {
+    "cases": 10,
+    "status": "requires actual Unix socket host",
+    "coverage": [
+      "lost reply",
+      "old protocol",
+      "wrong compiler build",
+      "truncated same-build body",
+      "same-build compiler failure preserving exact stderr"
+    ]
+  },
+  "limitations": [
+    "Local transport failures occur before the daemon accepts a request; they do not substitute for the hosted lost-reply cases.",
+    "No compiler performance result or full package qualification.",
+    "The fake peer uses actual packaged compiler metadata; no product build identity is overridden."
+  ]
+}

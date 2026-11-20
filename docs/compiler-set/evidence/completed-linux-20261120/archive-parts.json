@@ -1,0 +1,19 @@
+{
+  "schema": "lustr-exact-archive-parts-v1",
+  "original_path": "c821-supplemental-original.zip",
+  "original_bytes": 13585105,
+  "original_sha256": "93c83be3ef1ccef020f3330868aad7f7ab4d3415d550763ff18d24ac3a9cce36",
+  "operation": "ordered binary concatenation; no recompression or byte transformation",
+  "parts": [
+    {
+      "path": "c821-supplemental-original.zip.part-01",
+      "bytes": 8000000,
+      "sha256": "043bbe11d02064562f0b292e6a18e01ff2b7579c7a796b2ff69cddb3c0b71d09"
+    },
+    {
+      "path": "c821-supplemental-original.zip.part-02",
+      "bytes": 5585105,
+      "sha256": "3e2f88691b67a1e062a5f9b85733dda5948ee797b35f882d7eb34682e1325db8"
+    }
+  ]
+}

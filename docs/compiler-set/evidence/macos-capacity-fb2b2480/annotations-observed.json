@@ -1,0 +1,66 @@
+{
+  "schema": "lustr-hosted-darwin-cancellation-observation-v1",
+  "observed_at": "2026-11-19 15:00:51 UTC",
+  "published_head": "fb2b24802180321d3bbc534dee7083fb2a385d6b",
+  "runner_merge": "5c733f1468b576432f57d48b69590a6982032fc9",
+  "tree": "afcc2cc8a565a8058c91f428e81e465d82896f0f",
+  "method": "Public GitHub job pages, opened in the browser and expanded using each page's Open job annotations button. No authentication or external mutation.",
+  "jobs": [
+    {
+      "run_id": 44546561737,
+      "job_id": 135638574284,
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44546561737/job/135638574284",
+      "name": "macos-arm64",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "created_at": "2026-11-19T14:41:53Z",
+      "completed_at": "2026-11-19T14:56:54Z",
+      "runner_id": 0,
+      "steps": [],
+      "annotations": [
+        {
+          "level": "error",
+          "text": "The job was not acquired by Runner of type hosted even after multiple attempts"
+        },
+        {
+          "level": "notice",
+          "text": "Due to capacity constraints, jobs targeting macOS arm64 runners may experience longer queue times.",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "run_id": 44546561681,
+      "job_id": 135638575181,
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44546561681/job/135638575181",
+      "name": "Retained Cargo planning helpers (macos-26)",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "created_at": "2026-11-19T14:41:53Z",
+      "completed_at": "2026-11-19T14:56:54Z",
+      "runner_id": 0,
+      "steps": [],
+      "annotations": [
+        {
+          "level": "error",
+          "text": "The job was not acquired by Runner of type hosted even after multiple attempts"
+        },
+        {
+          "level": "error",
+          "text": "Internal server error. Correlation ID: 47393554-4f9e-4c4a-972a-a2144844b08b"
+        },
+        {
+          "level": "notice",
+          "text": "Due to capacity constraints, jobs targeting macOS arm64 runners may experience longer queue times.",
+          "count": 3
+        }
+      ]
+    }
+  ],
+  "classification": "Hosted runner acquisition/capacity failure before execution; planning job also reports an internal server error.",
+  "cancellation_actor": "Not exposed by the inspected job/run/check metadata. The workflow actor is the original trigger identity, not evidence of who cancelled a job.",
+  "darwin_execution": false,
+  "tinycc_signing_qualified": false,
+  "odd_path_qualified": false,
+  "full_matrix_pass": false
+}

@@ -1,0 +1,1909 @@
+{
+  "schema": "native-metadata-join-original-records-v1",
+  "original_artifacts": [
+    {
+      "name": "success-campaign-artifact.zip",
+      "id": 14601761375,
+      "job_id": 136083000805,
+      "size": 49636393,
+      "sha256": "53864b3b7fe16b7edac292c7c4e07fa59a5bdf0a01b8dff9172c42b8fa0870f6"
+    }
+  ],
+  "projection": "Original file bytes; tar metadata normalized; exactly two compiled executables omitted and indexed. The independent consumer executable is retained.",
+  "entries": [
+    {
+      "original_url": "https://api.github.com/repos/glopyglerky/lustr/git/commits/974eb097ea9fc84a18c716fe0c2d469fdfcfab6c",
+      "record_path": "corrected-attempt/github-commits/974eb097ea9fc84a18c716fe0c2d469fdfcfab6c.json",
+      "size": 1845,
+      "sha256": "5789be293c818a6f29630e8edf2fcafab1052758cd85703d1e0125d9d1498930",
+      "hash_domain": "original downloaded GitHub git/commits API response bytes",
+      "included": true
+    },
+    {
+      "original_url": "https://api.github.com/repos/glopyglerky/lustr/git/commits/f747dbd3bb20576fd5bc3185b2d7477f8e48278b",
+      "record_path": "corrected-attempt/github-commits/f747dbd3bb20576fd5bc3185b2d7477f8e48278b.json",
+      "size": 2621,
+      "sha256": "0fa5e8b29403f013b010eea23bf193da2c64df3f766b29c0a155d77a1f464729",
+      "hash_domain": "original downloaded GitHub git/commits API response bytes",
+      "included": true
+    },
+    {
+      "original_job_id": 136083000805,
+      "record_path": "corrected-attempt/logs/success-campaign-job.log",
+      "size": 80014,
+      "sha256": "08229af5285b55e319ef57417243609830648e27bfa193856651e3b832cb1d36",
+      "hash_domain": "original downloaded job log bytes",
+      "included": true
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/build.log",
+      "size": 25567,
+      "sha256": "1c56e6be0499971214cf8192bf5defa9f02451dae9a624a51b08b34c77177313",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/build.log"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/built-tools.sha256",
+      "size": 434,
+      "sha256": "df2d4bc3a9f8b792b0f068b4f15fb5b98c462a1e18f6f0a78f361fac77dd564c",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/built-tools.sha256"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign.log",
+      "size": 939,
+      "sha256": "315f7e1d9204a4b2911dfb3992c6d1b53d66092246af7d4e25062edd0782ce4a",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign.log"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted.stdout",
+      "size": 106,
+      "sha256": "a0a31c40a3aeac49905d72d0b816db1214f3038db80362757c2ca42ed5fdee23",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted.trace",
+      "size": 3525,
+      "sha256": "16ca83d081b976444491831f0904f366b1be4fb2e6e7be1b04b8572a05df815b",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted.trace"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/archive.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/archive.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/archive.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/archive.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/duplicate-member-control.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/duplicate-member-control.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/duplicate-member-control.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/duplicate-member-control.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/libconsumer.rlib",
+      "size": 4704,
+      "sha256": "6b055e2cc857a68423f01e9a7c83910ff1ea5cb6d6e5a7fde4d64c12a789750b",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/libconsumer.rlib"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/missing-member-control.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/missing-member-control.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/missing-member-control.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/missing-member-control.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/objcopy.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/objcopy.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/objcopy.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/objcopy.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/report.json",
+      "size": 7130,
+      "sha256": "713cd559fa75ca4f154beb9fb2442ea8f048fb54cfe7d918c71d5020e164afc2",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/report.json"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/staging/.lustr-object-3346-0/backend.command",
+      "size": 428,
+      "sha256": "f95d917481fdd09c49e629ddbdcef9f1d8fb08168902fa8ba666a10664fb6ed9",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/staging/.lustr-object-3346-0/backend.command"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/staging/.lustr-object-3346-0/backend.status",
+      "size": 15,
+      "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/staging/.lustr-object-3346-0/backend.status"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/staging/.lustr-object-3346-0/backend.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/staging/.lustr-object-3346-0/backend.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/staging/.lustr-object-3346-0/backend.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/staging/.lustr-object-3346-0/backend.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/staging/.lustr-object-3346-0/unit.c",
+      "size": 102807,
+      "sha256": "af3d8d8ccadff7370a04cd0ac32d116bb2c306c88b0956b888849c1059fdf535",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/staging/.lustr-object-3346-0/unit.c"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/staging/.lustr-object-3346-0/unit.o",
+      "size": 1448,
+      "sha256": "cbf1db4af40e0d98315030d57745d873e5819392b870490e0f8512ee5aebb1ca",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/staging/.lustr-object-3346-0/unit.o"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/staging/consumer.o",
+      "size": 1504,
+      "sha256": "54d68edf0b5100920a08576ff194633fc68f1b7a8b918d04e744a2359ac9e2c0",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/staging/consumer.o"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/staging/consumer.rmeta",
+      "size": 1537,
+      "sha256": "b2974424afe4c0cf1f3f459513092e600d26575456ebcd6cf2b1683c80c03120",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/staging/consumer.rmeta"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/staging/duplicate-object.rlib",
+      "size": 6510,
+      "sha256": "112e87cab1f8a0a1c9e2474afc1cbb99d6c2096958dc4eac06e3324b86468814",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/staging/duplicate-object.rlib"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/staging/lib.rmeta",
+      "size": 2104,
+      "sha256": "12182a5c5bdca7750950cd3655f595221386f21c80288250d45f5bf93b0036b7",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/staging/lib.rmeta"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/staging/lib.rmeta-link",
+      "size": 600,
+      "sha256": "23c02cffecf348a6dea340b74424103949e393e3602bb23fbde5edbd75105e4c",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/staging/lib.rmeta-link"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/staging/libconsumer.rlib",
+      "size": 4704,
+      "sha256": "6b055e2cc857a68423f01e9a7c83910ff1ea5cb6d6e5a7fde4d64c12a789750b",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/staging/libconsumer.rlib"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/staging/missing-object.rlib",
+      "size": 2900,
+      "sha256": "2d3b13e01dd374483c2a2ec6e93b92e478d9b24b3c41c7736b56efb76f56a08f",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/staging/missing-object.rlib"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/staging/native.o",
+      "size": 1448,
+      "sha256": "cbf1db4af40e0d98315030d57745d873e5819392b870490e0f8512ee5aebb1ca",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/staging/native.o"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/accepted/staging/symbols.map",
+      "size": 166,
+      "sha256": "0ea32e42ef6aa95c7b6bc49c9ac35de64de8c8ccd01c028f2ee6a446c2f4ab15",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/accepted/staging/symbols.map"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/caller",
+      "size": 4611392,
+      "sha256": "882a6ce631241dcbf9f0d0472aba2adedbd962d9c5734e0fbdb613ad37d3f595",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2179792928,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/caller"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/caller-compile.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/caller-compile.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/caller-compile.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/caller-compile.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/caller-run.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/caller-run.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/caller-run.stdout",
+      "size": 29,
+      "sha256": "11eb063f6984270f918e4c2c6664911dfc4f7814708368212933111daf5f27c5",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/caller-run.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/caller.rs",
+      "size": 496,
+      "sha256": "637d9a97628ded19978d439229e0e7ddfb31c2fd4f66ef0b426e9e39265c1896",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/caller.rs"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/changed-receipt-refused.stderr",
+      "size": 66,
+      "sha256": "0386a87973e869c05cf2b8a3d2259af1d0939ad42b7ce8658768d8e05f39b5b5",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/changed-receipt-refused.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/changed-receipt-refused.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/changed-receipt-refused.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/changed-receipt-refused.trace",
+      "size": 569,
+      "sha256": "c376195c699172bac603d1b379258b47551cb46ce9ba76db30b3aae6ff9da7d6",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/changed-receipt-refused.trace"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/changed-receipt-refused/report.json",
+      "size": 309,
+      "sha256": "3f9e059b8144b6a997a15f06207ae3bdaf68e83b8155b9b46ff2a98966c938e6",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/changed-receipt-refused/report.json"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/changed-receipt.json",
+      "size": 12413,
+      "sha256": "83ea3499c2032cedc314a7a71dd185b9487e5a78ba2ac7648fee03ced0e45b13",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/changed-receipt.json"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/clang-identity.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/clang-identity.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/clang-identity.stdout",
+      "size": 122,
+      "sha256": "d5488a2e583e2cbd3f61386073b6c38a24a2bf4d45f3b6b6ac048b541121d804",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/clang-identity.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/commands.json",
+      "size": 29760,
+      "sha256": "11fe69c3a495714f902e1de1a7fe1dc05a42f2bc6bf533e007501f2cda4664b6",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/commands.json"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/compiler-trap-control.log",
+      "size": 75,
+      "sha256": "f256c7d724112718af8b72e634d5929309c6922028e85519fd6b94d0d5b9c4b9",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/compiler-trap-control.log"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/compiler-trap-control.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/compiler-trap-control.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/compiler-trap-control.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/compiler-trap-control.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/compiler-traps/cargo",
+      "size": 63,
+      "sha256": "b78794c8f3c3a7e6cfa23cf4581b18f1181f2f2b2172310a947bd758ee3ed4a7",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2179792928,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/compiler-traps/cargo"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/compiler-traps/clang",
+      "size": 140592,
+      "sha256": "8ef402d453d1ba4902e4ee0f0f847f6cfa01400c95aa43c24e97818b9c0e3f45",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2179792928,
+      "included": false,
+      "omission_reason": "host compiler executable retained in the complete original Actions artifact"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/compiler-traps/rustc",
+      "size": 63,
+      "sha256": "b78794c8f3c3a7e6cfa23cf4581b18f1181f2f2b2172310a947bd758ee3ed4a7",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2179792928,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/compiler-traps/rustc"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/compiler-traps/rustc-full",
+      "size": 63,
+      "sha256": "b78794c8f3c3a7e6cfa23cf4581b18f1181f2f2b2172310a947bd758ee3ed4a7",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2179792928,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/compiler-traps/rustc-full"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/compiler-traps/rustc-reference",
+      "size": 63,
+      "sha256": "b78794c8f3c3a7e6cfa23cf4581b18f1181f2f2b2172310a947bd758ee3ed4a7",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2179792928,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/compiler-traps/rustc-reference"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/consumer.rs",
+      "size": 183,
+      "sha256": "c88b4bbcdc31261137f1c98a7ed706202ffcd687fd6d60a5f73fc818cd5236ba",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/consumer.rs"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/different-version-refused.stderr",
+      "size": 67,
+      "sha256": "fc9ef106f68e6071f74e927190ba9b9762b41ee0ad345f515b0ef80d004e0c88",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/different-version-refused.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/different-version-refused.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/different-version-refused.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/different-version-refused.trace",
+      "size": 596,
+      "sha256": "6e2bcba484441605c3608b64760219f749d96f1cf331f490632d1275a66d817e",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/different-version-refused.trace"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/different-version-refused/report.json",
+      "size": 310,
+      "sha256": "a44d0e5ff73a118c785a8de838a6a2726933b593e228e936be38d00f5ad3ad07",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/different-version-refused/report.json"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/empty-version-refused.stderr",
+      "size": 67,
+      "sha256": "fc9ef106f68e6071f74e927190ba9b9762b41ee0ad345f515b0ef80d004e0c88",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/empty-version-refused.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/empty-version-refused.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/empty-version-refused.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/empty-version-refused.trace",
+      "size": 592,
+      "sha256": "268943ff018db89798b1c227c07f2353ad7aa427213983987d18be05cf0af111",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/empty-version-refused.trace"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/empty-version-refused/report.json",
+      "size": 310,
+      "sha256": "a44d0e5ff73a118c785a8de838a6a2726933b593e228e936be38d00f5ad3ad07",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/empty-version-refused/report.json"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context.stdout",
+      "size": 119,
+      "sha256": "3eaf415834c3c14c651f8d5152df8088cc96cbba790b6a853ba7c0f56cca2b68",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context.trace",
+      "size": 3564,
+      "sha256": "4f359ea2af0978c70c291f7ffe30c0530b5e7bf9fece9ad1b503250615677f56",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context.trace"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/archive.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/archive.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/archive.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/archive.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/duplicate-member-control.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/duplicate-member-control.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/duplicate-member-control.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/duplicate-member-control.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/libconsumer.rlib",
+      "size": 4704,
+      "sha256": "6b055e2cc857a68423f01e9a7c83910ff1ea5cb6d6e5a7fde4d64c12a789750b",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/libconsumer.rlib"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/missing-member-control.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/missing-member-control.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/missing-member-control.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/missing-member-control.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/objcopy.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/objcopy.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/objcopy.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/objcopy.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/report.json",
+      "size": 7195,
+      "sha256": "9244f2f00b7fc525ef1616455c237a61cd8941cb6d28292f131cfbf216c69544",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/report.json"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/staging/.lustr-object-3435-0/backend.command",
+      "size": 454,
+      "sha256": "c62c4c738adc3f5d5d1248358e0c8e756cb58d82068fe33f9ee152c11b19e603",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/staging/.lustr-object-3435-0/backend.command"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/staging/.lustr-object-3435-0/backend.status",
+      "size": 15,
+      "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/staging/.lustr-object-3435-0/backend.status"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/staging/.lustr-object-3435-0/backend.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/staging/.lustr-object-3435-0/backend.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/staging/.lustr-object-3435-0/backend.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/staging/.lustr-object-3435-0/backend.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/staging/.lustr-object-3435-0/unit.c",
+      "size": 102807,
+      "sha256": "af3d8d8ccadff7370a04cd0ac32d116bb2c306c88b0956b888849c1059fdf535",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/staging/.lustr-object-3435-0/unit.c"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/staging/.lustr-object-3435-0/unit.o",
+      "size": 1448,
+      "sha256": "cbf1db4af40e0d98315030d57745d873e5819392b870490e0f8512ee5aebb1ca",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/staging/.lustr-object-3435-0/unit.o"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/staging/consumer.o",
+      "size": 1504,
+      "sha256": "54d68edf0b5100920a08576ff194633fc68f1b7a8b918d04e744a2359ac9e2c0",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/staging/consumer.o"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/staging/consumer.rmeta",
+      "size": 1537,
+      "sha256": "b2974424afe4c0cf1f3f459513092e600d26575456ebcd6cf2b1683c80c03120",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/staging/consumer.rmeta"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/staging/duplicate-object.rlib",
+      "size": 6510,
+      "sha256": "112e87cab1f8a0a1c9e2474afc1cbb99d6c2096958dc4eac06e3324b86468814",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/staging/duplicate-object.rlib"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/staging/lib.rmeta",
+      "size": 2104,
+      "sha256": "12182a5c5bdca7750950cd3655f595221386f21c80288250d45f5bf93b0036b7",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/staging/lib.rmeta"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/staging/lib.rmeta-link",
+      "size": 600,
+      "sha256": "23c02cffecf348a6dea340b74424103949e393e3602bb23fbde5edbd75105e4c",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/staging/lib.rmeta-link"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/staging/libconsumer.rlib",
+      "size": 4704,
+      "sha256": "6b055e2cc857a68423f01e9a7c83910ff1ea5cb6d6e5a7fde4d64c12a789750b",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/staging/libconsumer.rlib"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/staging/missing-object.rlib",
+      "size": 2900,
+      "sha256": "2d3b13e01dd374483c2a2ec6e93b92e478d9b24b3c41c7736b56efb76f56a08f",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/staging/missing-object.rlib"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/staging/native.o",
+      "size": 1448,
+      "sha256": "cbf1db4af40e0d98315030d57745d873e5819392b870490e0f8512ee5aebb1ca",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/staging/native.o"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/exact-version-context/staging/symbols.map",
+      "size": 166,
+      "sha256": "0ea32e42ef6aa95c7b6bc49c9ac35de64de8c8ccd01c028f2ee6a446c2f4ab15",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/exact-version-context/staging/symbols.map"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/invalid-private-body.stderr",
+      "size": 296,
+      "sha256": "c075266d04171003286b5dfd42528bc2908ac6bcab580cb451648338c0f5b184",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/invalid-private-body.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/invalid-private-body.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/invalid-private-body.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/invalid-private-body.trace",
+      "size": 682,
+      "sha256": "8eaa1c2ffa1ad8e8218f8b1fc9932dfcc3bbb090381eec2fd2aa68d2dec99d6c",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/invalid-private-body.trace"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/invalid-private-body/report.json",
+      "size": 1161,
+      "sha256": "83cc1108539d75e437a5bb6d4e1e8e7d72d4b6c11ebb77c23a95c937a0c74e07",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/invalid-private-body/report.json"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/invalid-private-oracle.stderr",
+      "size": 2494,
+      "sha256": "2c1cd0fb89d94b4aa6a4518392e4b6ce721d8ffc77bdb5873d827c06f285a9b5",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/invalid-private-oracle.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/invalid-private-oracle.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/invalid-private-oracle.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/invalid-private.rs",
+      "size": 87,
+      "sha256": "658c395efc7247d8e14e25975fc63a126767849c2de3a31d168f10b9c0d53c1a",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/invalid-private.rs"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/oracle-identity.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/oracle-identity.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/oracle-identity.stdout",
+      "size": 214,
+      "sha256": "bbc9b960fe50c84bca20f3109950bcb87c48b6d1ce61d2fc2fc1519aaba2daaa",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/oracle-identity.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/original-metadata-root.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/original-metadata-root.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/original-metadata-root.stdout",
+      "size": 762,
+      "sha256": "7e7b9e81922cf69565d611263cae4b876e7553ce9ce5bd1e93e864590a6ab6d0",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/original-metadata-root.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/private-call.rs",
+      "size": 43,
+      "sha256": "d6bd944706104903cf69ac08352f941143c44b772c171ee588080ed328488b7c",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/private-call.rs"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/private-call.stderr",
+      "size": 2787,
+      "sha256": "b8e7f6da323894bcc03ce4a0e022bee7f82c783e8a2b55cc7955fb1c032d1a49",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/private-call.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/private-call.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/private-call.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/private-function-value.rs",
+      "size": 54,
+      "sha256": "b3ebf2858d180f8f02662cf9c68e96678fdef723f4ce3532bcfa55b561c56927",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/private-function-value.rs"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/private-function-value.stderr",
+      "size": 2843,
+      "sha256": "5d42ac179d51dfce496c5c1baa2072686e27af41435469b10a86c6fcb3125495",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/private-function-value.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/private-function-value.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/private-function-value.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure.stderr",
+      "size": 52,
+      "sha256": "df248e641375f73fe7f752914980b2ccb8c3c7e031347c222b6f690bd6c84287",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure.trace",
+      "size": 3558,
+      "sha256": "2803f2bb395f3386fad2188ce56967fa66819da14207270bd20d1ce52a86f457",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure.trace"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/archive.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/archive.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/archive.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/archive.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/duplicate-member-control.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/duplicate-member-control.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/duplicate-member-control.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/duplicate-member-control.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/libconsumer.rlib",
+      "size": 4704,
+      "sha256": "6b055e2cc857a68423f01e9a7c83910ff1ea5cb6d6e5a7fde4d64c12a789750b",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/libconsumer.rlib"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/missing-member-control.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/missing-member-control.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/missing-member-control.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/missing-member-control.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/objcopy.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/objcopy.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/objcopy.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/objcopy.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/report.json",
+      "size": 7255,
+      "sha256": "92792c40119cab97b0a1253cedc105a4999d324a90d7dbd9c59030e851fc49cd",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/report.json"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/staging/.lustr-object-3403-0/backend.command",
+      "size": 450,
+      "sha256": "c6f16397ec4ac6f834e8861294961d6097c1d42eb455744b72f63b80b82af302",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/staging/.lustr-object-3403-0/backend.command"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/staging/.lustr-object-3403-0/backend.status",
+      "size": 15,
+      "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/staging/.lustr-object-3403-0/backend.status"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/staging/.lustr-object-3403-0/backend.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/staging/.lustr-object-3403-0/backend.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/staging/.lustr-object-3403-0/backend.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/staging/.lustr-object-3403-0/backend.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/staging/.lustr-object-3403-0/unit.c",
+      "size": 102807,
+      "sha256": "af3d8d8ccadff7370a04cd0ac32d116bb2c306c88b0956b888849c1059fdf535",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/staging/.lustr-object-3403-0/unit.c"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/staging/.lustr-object-3403-0/unit.o",
+      "size": 1448,
+      "sha256": "cbf1db4af40e0d98315030d57745d873e5819392b870490e0f8512ee5aebb1ca",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/staging/.lustr-object-3403-0/unit.o"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/staging/consumer.o",
+      "size": 1504,
+      "sha256": "54d68edf0b5100920a08576ff194633fc68f1b7a8b918d04e744a2359ac9e2c0",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/staging/consumer.o"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/staging/consumer.rmeta",
+      "size": 1537,
+      "sha256": "b2974424afe4c0cf1f3f459513092e600d26575456ebcd6cf2b1683c80c03120",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/staging/consumer.rmeta"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/staging/duplicate-object.rlib",
+      "size": 6510,
+      "sha256": "112e87cab1f8a0a1c9e2474afc1cbb99d6c2096958dc4eac06e3324b86468814",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/staging/duplicate-object.rlib"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/staging/lib.rmeta",
+      "size": 2104,
+      "sha256": "12182a5c5bdca7750950cd3655f595221386f21c80288250d45f5bf93b0036b7",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/staging/lib.rmeta"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/staging/lib.rmeta-link",
+      "size": 600,
+      "sha256": "23c02cffecf348a6dea340b74424103949e393e3602bb23fbde5edbd75105e4c",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/staging/lib.rmeta-link"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/staging/libconsumer.rlib",
+      "size": 4704,
+      "sha256": "6b055e2cc857a68423f01e9a7c83910ff1ea5cb6d6e5a7fde4d64c12a789750b",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/staging/libconsumer.rlib"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/staging/missing-object.rlib",
+      "size": 2900,
+      "sha256": "2d3b13e01dd374483c2a2ec6e93b92e478d9b24b3c41c7736b56efb76f56a08f",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/staging/missing-object.rlib"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/staging/native.o",
+      "size": 1448,
+      "sha256": "cbf1db4af40e0d98315030d57745d873e5819392b870490e0f8512ee5aebb1ca",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/staging/native.o"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/publication-failure/staging/symbols.map",
+      "size": 166,
+      "sha256": "0ea32e42ef6aa95c7b6bc49c9ac35de64de8c8ccd01c028f2ee6a446c2f4ab15",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/publication-failure/staging/symbols.map"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/report.json",
+      "size": 45629,
+      "sha256": "a950203c94d6120e1125731921b385eaeb4588a5ab5315b2a6b56dc92b5eff01",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/report.json"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/stronger-mitigation-refused.stderr",
+      "size": 5748,
+      "sha256": "9f08f2dedbc09ef5ae7fd52407f7ba65787c33b539d40eef188f9a1e36925e86",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/stronger-mitigation-refused.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/stronger-mitigation-refused.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/stronger-mitigation-refused.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/stronger-mitigation.rs",
+      "size": 72,
+      "sha256": "50385fea588976ad73f2f9c1066c8479f8b0ae91597dd7444cc323d3b4551c89",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/stronger-mitigation.rs"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery.stdout",
+      "size": 112,
+      "sha256": "f5270ef8d993d33192eeb62ca57df2df57cb68a42b3fccaa12c5db74748e9536",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery.trace",
+      "size": 3543,
+      "sha256": "2d30e7a269822e5f7a7f71d42aa7fd945773dc67ffb6fa74b0d813d8e6fa8d51",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery.trace"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/archive.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/archive.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/archive.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/archive.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/duplicate-member-control.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/duplicate-member-control.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/duplicate-member-control.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/duplicate-member-control.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/libconsumer.rlib",
+      "size": 4704,
+      "sha256": "6b055e2cc857a68423f01e9a7c83910ff1ea5cb6d6e5a7fde4d64c12a789750b",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/libconsumer.rlib"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/missing-member-control.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/missing-member-control.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/missing-member-control.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/missing-member-control.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/objcopy.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/objcopy.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/objcopy.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/objcopy.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/report.json",
+      "size": 7160,
+      "sha256": "e4b970892ccf6fab86b37960ecbadc1d072159caa7cb8406ed63bbb501e4a5b4",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/report.json"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/staging/.lustr-object-3415-0/backend.command",
+      "size": 440,
+      "sha256": "1037b6bc81bab9c75f0be6f7e2e04c7efd64e3e0bfcd84c5ce60dc4afb09495d",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/staging/.lustr-object-3415-0/backend.command"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/staging/.lustr-object-3415-0/backend.status",
+      "size": 15,
+      "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/staging/.lustr-object-3415-0/backend.status"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/staging/.lustr-object-3415-0/backend.stderr",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/staging/.lustr-object-3415-0/backend.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/staging/.lustr-object-3415-0/backend.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/staging/.lustr-object-3415-0/backend.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/staging/.lustr-object-3415-0/unit.c",
+      "size": 102807,
+      "sha256": "af3d8d8ccadff7370a04cd0ac32d116bb2c306c88b0956b888849c1059fdf535",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/staging/.lustr-object-3415-0/unit.c"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/staging/.lustr-object-3415-0/unit.o",
+      "size": 1448,
+      "sha256": "cbf1db4af40e0d98315030d57745d873e5819392b870490e0f8512ee5aebb1ca",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/staging/.lustr-object-3415-0/unit.o"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/staging/consumer.o",
+      "size": 1504,
+      "sha256": "54d68edf0b5100920a08576ff194633fc68f1b7a8b918d04e744a2359ac9e2c0",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/staging/consumer.o"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/staging/consumer.rmeta",
+      "size": 1537,
+      "sha256": "b2974424afe4c0cf1f3f459513092e600d26575456ebcd6cf2b1683c80c03120",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/staging/consumer.rmeta"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/staging/duplicate-object.rlib",
+      "size": 6510,
+      "sha256": "112e87cab1f8a0a1c9e2474afc1cbb99d6c2096958dc4eac06e3324b86468814",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/staging/duplicate-object.rlib"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/staging/lib.rmeta",
+      "size": 2104,
+      "sha256": "12182a5c5bdca7750950cd3655f595221386f21c80288250d45f5bf93b0036b7",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/staging/lib.rmeta"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/staging/lib.rmeta-link",
+      "size": 600,
+      "sha256": "23c02cffecf348a6dea340b74424103949e393e3602bb23fbde5edbd75105e4c",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/staging/lib.rmeta-link"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/staging/libconsumer.rlib",
+      "size": 4704,
+      "sha256": "6b055e2cc857a68423f01e9a7c83910ff1ea5cb6d6e5a7fde4d64c12a789750b",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/staging/libconsumer.rlib"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/staging/missing-object.rlib",
+      "size": 2900,
+      "sha256": "2d3b13e01dd374483c2a2ec6e93b92e478d9b24b3c41c7736b56efb76f56a08f",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/staging/missing-object.rlib"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/staging/native.o",
+      "size": 1448,
+      "sha256": "cbf1db4af40e0d98315030d57745d873e5819392b870490e0f8512ee5aebb1ca",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/staging/native.o"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/valid-recovery/staging/symbols.map",
+      "size": 166,
+      "sha256": "0ea32e42ef6aa95c7b6bc49c9ac35de64de8c8ccd01c028f2ee6a446c2f4ab15",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/valid-recovery/staging/symbols.map"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/wrong-argument-type.rs",
+      "size": 49,
+      "sha256": "78d657f72d44158ca17581c0cbde787be9ee841983f29d66aba8691a8442fdd8",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/wrong-argument-type.rs"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/wrong-argument-type.stderr",
+      "size": 3271,
+      "sha256": "f377709525eb3616aba4089857a5601b77fc771595c6e59a5841db2a9931526f",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/wrong-argument-type.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/wrong-argument-type.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/wrong-argument-type.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/wrong-arity.rs",
+      "size": 44,
+      "sha256": "7205241056774bcec4de57186b7a45ba196fee210ecd6f77f86355c3de126154",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/wrong-arity.rs"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/wrong-arity.stderr",
+      "size": 3670,
+      "sha256": "671d6a4ee52df1d68ef2c66c3d88649ffd668b50566abb56284a28f467aa29c9",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/wrong-arity.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/wrong-arity.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/wrong-arity.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/wrong-function-value-type.rs",
+      "size": 57,
+      "sha256": "3a1e5da535d27ebe2195f53714b323e02ea14963da7116a4c5c8a857f64f9e5a",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/wrong-function-value-type.rs"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/wrong-function-value-type.stderr",
+      "size": 2856,
+      "sha256": "fc3d1457a8ae4e6211a74b2c8902a2c059d7b8840d5f1b26d7f12896ebf1141d",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/wrong-function-value-type.stderr"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/campaign/wrong-function-value-type.stdout",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/campaign/wrong-function-value-type.stdout"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/compiler.txt",
+      "size": 214,
+      "sha256": "bbc9b960fe50c84bca20f3109950bcb87c48b6d1ce61d2fc2fc1519aaba2daaa",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/compiler.txt"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/dependency-build.log",
+      "size": 348,
+      "sha256": "cc1a0f02ff82b87afe3dcd4ecd77b1c6d8806c85e9e90a1d7684bbb87882e6f7",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/dependency-build.log"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/dependency-constructor.log",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/dependency-constructor.log"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/dependency-fetch.log",
+      "size": 1344,
+      "sha256": "c4af27fd1b3b99ebf1aeff92eebef6bc8d2d1047108826a372849192a850a806",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/dependency-fetch.log"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/evaluator-controls.log",
+      "size": 1488,
+      "sha256": "8282cba7e05e2c283136d3a6c22a1f55751e14433d06923db6aec41b26ec4526",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/evaluator-controls.log"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/source-admission.log",
+      "size": 322,
+      "sha256": "29e8b9779114dec7438f6aaf42b4fb57b351c9c122aeb0dcd5e1368f12b1c69e",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/source-admission.log"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/source-capture.log",
+      "size": 154,
+      "sha256": "f1a3c20dac87c3f0d89809a2cba4ebbcf793b1b0a472d48f32a1aadf72784b46",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/source-capture.log"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/source-inputs.json",
+      "size": 3665854,
+      "sha256": "27f9fde8c360090c17085c064eb971298bce7e898715e9ae6ff4e1d17fcf7f09",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/source-inputs.json"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/source-verify.log",
+      "size": 154,
+      "sha256": "8a3231acc2a0ff910cc7bf7cec5ef891e29eb1e7f5c0a491c35ee520c237beea",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/source-verify.log"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-join/source.txt",
+      "size": 123,
+      "sha256": "c58f6d736841efead4fca365d960023eb417a7b34849841a5df8c8233b774776",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2175008800,
+      "included": true,
+      "record_path": "corrected-attempt/native-metadata-join/source.txt"
+    },
+    {
+      "original_artifact_id": 14601761375,
+      "original_member": "native-metadata-target/debug/lustr-native-metadata-qualification",
+      "size": 258941752,
+      "sha256": "6345a05078e470f6cbf365284a46c6deab1a0fd895b2eb72675c1dfcf01f5cfa",
+      "hash_domain": "original uncompressed member bytes",
+      "original_zip_external_attributes": 2179792928,
+      "included": false,
+      "omission_reason": "compiled qualifier retained in the complete original Actions artifact"
+    }
+  ]
+}

@@ -65,6 +65,18 @@ pub fn check_all(p: &mut Program, errs: &mut Vec<Diag>) {
     p.const_sites_shape = Shape::of(&p.ast);
 }
 
+/// Additive inspection of the original transient initializer checks. The
+/// caller supplies policy, without reconstructing bodies or function rows.
+pub fn check_all_with(
+    p: &mut Program,
+    errs: &mut Vec<Diag>,
+    checked: &(dyn Fn(&Program, LocalDefId, &super::Checked<'_>) -> Vec<Diag> + Sync),
+) {
+    p.const_body_reads.clear();
+    check_sites_with(p, errs, &|_| true, Some(checked));
+    p.const_sites_shape = Shape::of(&p.ast);
+}
+
 /// The AST counts that bound the initializer sites (`sites`): anonymous
 /// consts, items, and body items. A kept program's AST with the counts of
 /// the last walk over every site holds the same sites, except in the
@@ -172,6 +184,15 @@ pub fn check_dirty(
 
 /// Checks the initializer bodies `keep` selects and stores their reads.
 fn check_sites(p: &mut Program, errs: &mut Vec<Diag>, keep: &dyn Fn(FnLoc) -> bool) {
+    check_sites_with(p, errs, keep, None)
+}
+
+fn check_sites_with(
+    p: &mut Program,
+    errs: &mut Vec<Diag>,
+    keep: &dyn Fn(FnLoc) -> bool,
+    checked: Option<&(dyn Fn(&Program, LocalDefId, &super::Checked<'_>) -> Vec<Diag> + Sync)>,
+) {
     let sites = sites(p, keep);
     if sites.is_empty() {
         return;
@@ -183,6 +204,11 @@ fn check_sites(p: &mut Program, errs: &mut Vec<Diag>, keep: &dyn Fn(FnLoc) -> bo
         // Every checker error counts: a value the evaluator takes but the
         // checker does not type is a false reject, never a dropped error.
         let (ck, mut e) = super::check_fn(prog, f);
+        if e.is_empty() {
+            if let Some(checked) = checked {
+                e.extend(checked(prog, f, &ck));
+            }
+        }
         let reads = if e.is_empty() {
             // Lowering and borrowck read derive lists too (Copy operands).
             let ((mut reads, be), noted) = super::derive_delta::scoped(prog.record_reads, || {

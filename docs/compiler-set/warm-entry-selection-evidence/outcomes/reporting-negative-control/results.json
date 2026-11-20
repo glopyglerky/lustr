@@ -1,0 +1,26 @@
+{
+  "assertions": [
+    {
+      "description": "real Cargo lockfile setup succeeds",
+      "passed": true
+    }
+  ],
+  "error": "JSONDecodeError: Expecting value: line 1 column 1 (char 0)",
+  "profiler_sha256": "ca74524e50ecf39b19d36d5c7c9b399727df3ec4ecd5b7f815c05aeb59e8a984",
+  "public_projection": {
+    "paths": "stable role replacements; unmodified originals are encrypted",
+    "public_stream_hashes": "public_stdout_sha256/public_stderr_sha256 identify the displayed projected streams",
+    "raw_stream_hashes": "stdout_sha256/stderr_sha256 remain hashes of original bytes",
+    "stream_archive": {
+      "entries": 4,
+      "file": "public-streams.tar.gz",
+      "sha256": "0969c3a8ca7d0162506dc5ced595ddca832a8c8c186b8091aae2f3e1c0762fc8",
+      "storage": "regular basename entries only; normalized UTF-8 stream bytes"
+    }
+  },
+  "records": [],
+  "schema": "lustr-selection-cache-regression-v1",
+  "scope": "actual public Cargo target selection only; no native compile or performance claim",
+  "status": "failed",
+  "success": false
+}

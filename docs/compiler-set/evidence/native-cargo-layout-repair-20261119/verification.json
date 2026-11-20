@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "base_source": "d185b66233ae0fcd8d2acf3850a68aa24b3fc08a",
+  "declared_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "declared_cargo_source": "c07ac2c4d12237effc4b94f4543769b421790045",
+  "old_native_red": {
+    "status": 101,
+    "test_binary_sha256": "615b7d330dc00191ffe4ea46e8c39a6e95ff79365f24c2459480122ea2a317eb",
+    "compatibility_override": null
+  },
+  "original_failure": "existing real Cargo test observed empty cfg/env instead of bs_a and BS_DATA=v1",
+  "original_failure_stream_hashes": {
+    "stdout": "6c4318ac9ed05b4ce6d9d941a46d194c2ac7028b88325c9fcffb8f58e22ef134",
+    "stderr": "dbac613efda6839b685dc7bc030fbf099fd66b17d2a9095cbce434d266bf4ea7"
+  },
+  "component_qualification": {
+    "scope": "Exact buildscript.rs and probe.rs modules, with unchanged native FxHasher and Cargo command/path helpers. The unused full-compiler-wrapper route fails if reached. Existing real-Cargo transition test assertions were unchanged. This is not a full native compiler build.",
+    "binary_sha256": "eeae3417cb6445dad1f94e6bc2cd2331926461a36cbb822cfdac93f228a545dd",
+    "source_manifest": {
+      "source_sha256": {
+        "compiler/native/src/driver/buildscript.rs": "c808f01a24c6fbae3e73a714e9fb39481201bb6fc803f8d90cec842a8d39a9fe",
+        "compiler/native/src/resolve/probe.rs": "b81b8b4a61c7434fcea5adea53d36685d6f2e91b58ab8b77c30c091bd5082e2d",
+        "compiler/native/src/resolve/cargo.rs": "5fc55de731a5c3d77a4a084b056d94784ee455a7cef9c616f3aa6223154d90be",
+        "compiler/native/src/intern.rs": "119e80a7424863438ec8f6b9ad9d8990cbcab4ca368d9049ef3973edb1835809"
+      },
+      "helper_functions": [
+        "fn steers_cargo(",
+        "pub fn apply_cargo_env(",
+        "pub fn cargo_command(",
+        "pub fn path_package_dir("
+      ]
+    },
+    "runs": [
+      {
+        "layout": "new",
+        "setting": null,
+        "status": 0,
+        "stdout_sha256": "ebac124c9837ffb2f77408322f0026b505fcd3bce5d6fe2ad4c83ebb0799c726",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tests_passed": 6
+      },
+      {
+        "layout": "compatibility",
+        "setting": "1",
+        "status": 0,
+        "stdout_sha256": "bc9ed5c69e167b701677d47365f6bf8c0aecd57914b93749bf7da9c2a7f67ea3",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tests_passed": 6
+      }
+    ]
+  },
+  "independent_relocation_review": {
+    "scope": "Exact recorded_output function extracted unchanged from reviewed source; actual Cargo relocated saved output. This does not execute the entire native compiler.",
+    "source_sha256": "c808f01a24c6fbae3e73a714e9fb39481201bb6fc803f8d90cec842a8d39a9fe",
+    "helper_sha256": "4947af75e268b69559a797f7db1903587d34dd2a87bee47e8f04374cb7e16f66",
+    "harness_sha256": "d98570db4d897e876c64be231b142c3d903fdaebbbcdafd5df6fa78f93b959bf",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "matches_real_cargo_relocated_directives": true,
+    "stdout_sha256": "f2677554165f71d0970248b5656f13633f8939e0210c250aafd14f612ed60bca"
+  },
+  "native_build_attempt": {
+    "status": 101,
+    "compiler_termination": "SIGKILL",
+    "tests_executed": false,
+    "cause_proven": false,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_sha256": "872d3c225c5506fe1ccdd85df07dbad1d116360c883f513d375019c8e0482ae1"
+  },
+  "upstream_source_sha256": {
+    "upstream-layout.rs": "331bf7213f13b0e2b139e339f9d826e897ab82933450194c9fc0a6a7d07398b2",
+    "upstream-custom-build.rs": "4965b70363e1695455276095baf57576a5dcf93e39c93d968ee37266b7a06378"
+  },
+  "cache_record": "LBS5; old LBS4 records are misses",
+  "limits": [
+    "Fresh full native build and hosted qualification remain required.",
+    "No performance result is claimed.",
+    "The existing Cargo probe has other layout-sensitive behavior; this repair covers build-script outputs and their retained invalidation, not general frontend integration."
+  ]
+}

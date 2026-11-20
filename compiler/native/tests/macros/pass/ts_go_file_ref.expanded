@@ -1,8 +1,8 @@
 use std :: rc :: Rc ; pub mod ast { use std :: ops :: Deref ; use std :: rc :: Rc ; pub struct
 GoFile { pub info : i32 , pub items : Vec < i32 > } # [ automatically_derived ] impl :: core :: fmt
 :: Debug for GoFile { # [ inline ] fn fmt ( & self , f : & mut :: core :: fmt :: Formatter ) -> ::
-core :: fmt :: Result { :: core :: fmt :: Formatter :: debug_struct_field2_finish ( f , "GoFile" ,
-"info" , & self . info , "items" , && self . items ) } } pub struct FileVersion { file : GoFile }
+core :: fmt :: Result { :: core :: fmt :: Formatter :: debug_struct_field2_finish ( f ,
+"GoFile info items" , & self . info , && self . items ) } } pub struct FileVersion { file : GoFile }
 impl FileVersion { pub fn go_file ( & self ) -> & GoFile { & self . file } } pub type VersionPin =
 Rc < FileVersion > ; pub enum FileRef < T : ? Sized + 'static > { Static ( & 'static T ) , Pinned {
 version : VersionPin , key : usize , get : fn ( & FileVersion , usize ) -> & T } } impl < T : ?

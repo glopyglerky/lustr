@@ -1,0 +1,1 @@
+extern crate peer;fn main(){let mut count=0u32;for left in -128i16..128 {for right in -128i16..128 {let actual=peer::add(peer::Word(left as i8),right as i8).0;assert_eq!(actual,(left+right) as i8);count+=1;}}println!("import emission: {} results",count);}

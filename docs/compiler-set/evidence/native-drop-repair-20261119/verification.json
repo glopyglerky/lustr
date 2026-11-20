@@ -1,0 +1,226 @@
+{
+  "schema": "lustr.native-drop-semantics",
+  "version": 1,
+  "declared_rust_commit": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "source_commit": "e5a336e956fa66ee478d297f28beb0bc6bcf2868",
+  "source_tree": "aab9185d3003cf495ec0959de4e156ab899a3a16",
+  "host": "x86_64-unknown-linux-gnu",
+  "gcc_version": "gcc (Debian 14.2.0-19) 14.2.0",
+  "upstream_sources": {
+    "compiler/rustc_mir_transform/src/elaborate_drop.rs": "1a0f9cb6dd0ce2fa851428001feb7bca47bfcf4e173b16ed01381f0c3c3a26ba",
+    "library/core/src/mem/manually_drop.rs": "f9cce798828cc852c00feeea9a6218c225b68d92727a5edbddc7c08a731a4f25"
+  },
+  "source_sha256": {
+    "compiler/native/src/cgen.rs": "e69bcb9ad6f6d3bdf3c511158bf88d8aba0003a92515ba0735e86dd6d6dd2661",
+    "compiler/native/src/cgen/unwind.rs": "b1904877df4a403bb08159486f73631f1c8d637be63d13df9bd7382343f8cca1",
+    "compiler/native/src/check/collect.rs": "70b2cf3c61c4ebf1d87534c38287f2fc6b8e079d4c5851cfa28beb48e469a487",
+    "compiler/native/library/core/src/mem.rs": "30b2f6e02a7423b32a3f6db05990617d9e9009a54f8c12c4cb0fa7bc02b91bde"
+  },
+  "results": {
+    "final-tcc": {
+      "overall_passed": false,
+      "cases": [
+        {
+          "fixture": "pass/drop_partial_move_array_order.rs",
+          "source_sha256": "78afc5b46d3ba28e489d3dd2e4e00d18acdbab3d44bbf44e57b8b95fc5d8d319",
+          "candidate_status": 0,
+          "rustc_status": 0,
+          "exact_equal": true,
+          "stdout_equal": true,
+          "stderr_equal": true,
+          "candidate_stdout_sha256": "6c2f73f02272f7c9996e747c9a79549891b834eb71764229d3b906577baf6d7a",
+          "rustc_stdout_sha256": "6c2f73f02272f7c9996e747c9a79549891b834eb71764229d3b906577baf6d7a",
+          "finite_scenarios": 48,
+          "independent_oracle_equal": true
+        },
+        {
+          "fixture": "unwind/drop_partial_move_array_order.rs",
+          "source_sha256": "db10c57bc4e90cb6f4cd89b2f9e8a0010a9560b8ced84857ee84b58c4df1e222",
+          "candidate_status": 0,
+          "rustc_status": 0,
+          "exact_equal": true,
+          "stdout_equal": true,
+          "stderr_equal": true,
+          "candidate_stdout_sha256": "784b9fe72f7ecaaae5c08656f0fdab0423a67672437642573eb6a0eb0afd3054",
+          "rustc_stdout_sha256": "784b9fe72f7ecaaae5c08656f0fdab0423a67672437642573eb6a0eb0afd3054",
+          "finite_scenarios": 16,
+          "independent_oracle_equal": true
+        },
+        {
+          "fixture": "unwind/drop_partial_move_panic_order.rs",
+          "source_sha256": "dff079c3f6be4561e4459307969da83c09ca40a7e05510d5e530e97a8afdecd5",
+          "candidate_status": 0,
+          "rustc_status": 0,
+          "exact_equal": true,
+          "stdout_equal": true,
+          "stderr_equal": true,
+          "candidate_stdout_sha256": "9c7984e74fb7239876aed83a3d6c53a54c08d56cc39f954293fb02f6bcb974c3",
+          "rustc_stdout_sha256": "9c7984e74fb7239876aed83a3d6c53a54c08d56cc39f954293fb02f6bcb974c3",
+          "finite_scenarios": 268,
+          "independent_oracle_equal": true
+        },
+        {
+          "fixture": "unwind/drop_partial_move_double_panic.rs",
+          "source_sha256": "fdeb5b3effd238366f73b584d89b4dbc10c0e7d005269ede444222a723590d56",
+          "candidate_status": -6,
+          "rustc_status": -6,
+          "exact_equal": false,
+          "stdout_equal": false,
+          "stderr_equal": false,
+          "candidate_stdout_sha256": "f1afa6a345deabf13ab03db0ef1333fdc6830ddb5d10fde00660bfa0048564e8",
+          "rustc_stdout_sha256": "46583df2d91984af497ff81ff95fe3bfc5216155ff9b20dd127779d66bdbbbf5"
+        },
+        {
+          "fixture": "pass/mem_manually_drop.rs",
+          "source_sha256": "c3707e57bd49577117990116e4acd9ba38f5d60ce7d850ecbea15a08e4e737d5",
+          "candidate_status": 0,
+          "rustc_status": 0,
+          "exact_equal": true,
+          "stdout_equal": true,
+          "stderr_equal": true,
+          "candidate_stdout_sha256": "f035e4c572ea82f900c60620ca9869da5d0df8e46cc311b0e7b9d63cf4c94630",
+          "rustc_stdout_sha256": "f035e4c572ea82f900c60620ca9869da5d0df8e46cc311b0e7b9d63cf4c94630"
+        },
+        {
+          "fixture": "pass/derive_default_nested_generic.rs",
+          "source_sha256": "3fae2df2a1a1a069128beb688e552ccac2aafc51e7c4b54e877ff35cfe85d3f8",
+          "candidate_status": 0,
+          "rustc_status": 0,
+          "exact_equal": true,
+          "stdout_equal": true,
+          "stderr_equal": true,
+          "candidate_stdout_sha256": "36957b23583c6657f08afb5daa16f50cedee1329665bc846c7d4b9d042deb006",
+          "rustc_stdout_sha256": "36957b23583c6657f08afb5daa16f50cedee1329665bc846c7d4b9d042deb006"
+        }
+      ]
+    },
+    "final-eh": {
+      "overall_passed": false,
+      "cases": [
+        {
+          "fixture": "pass/drop_partial_move_array_order.rs",
+          "source_sha256": "78afc5b46d3ba28e489d3dd2e4e00d18acdbab3d44bbf44e57b8b95fc5d8d319",
+          "candidate_status": 0,
+          "rustc_status": 0,
+          "exact_equal": true,
+          "stdout_equal": true,
+          "stderr_equal": true,
+          "candidate_stdout_sha256": "6c2f73f02272f7c9996e747c9a79549891b834eb71764229d3b906577baf6d7a",
+          "rustc_stdout_sha256": "6c2f73f02272f7c9996e747c9a79549891b834eb71764229d3b906577baf6d7a",
+          "finite_scenarios": 48,
+          "independent_oracle_equal": true
+        },
+        {
+          "fixture": "unwind/drop_partial_move_array_order.rs",
+          "source_sha256": "db10c57bc4e90cb6f4cd89b2f9e8a0010a9560b8ced84857ee84b58c4df1e222",
+          "candidate_status": 0,
+          "rustc_status": 0,
+          "exact_equal": true,
+          "stdout_equal": true,
+          "stderr_equal": true,
+          "candidate_stdout_sha256": "784b9fe72f7ecaaae5c08656f0fdab0423a67672437642573eb6a0eb0afd3054",
+          "rustc_stdout_sha256": "784b9fe72f7ecaaae5c08656f0fdab0423a67672437642573eb6a0eb0afd3054",
+          "finite_scenarios": 16,
+          "independent_oracle_equal": true
+        },
+        {
+          "fixture": "unwind/drop_partial_move_panic_order.rs",
+          "source_sha256": "dff079c3f6be4561e4459307969da83c09ca40a7e05510d5e530e97a8afdecd5",
+          "candidate_status": 0,
+          "rustc_status": 0,
+          "exact_equal": true,
+          "stdout_equal": true,
+          "stderr_equal": true,
+          "candidate_stdout_sha256": "9c7984e74fb7239876aed83a3d6c53a54c08d56cc39f954293fb02f6bcb974c3",
+          "rustc_stdout_sha256": "9c7984e74fb7239876aed83a3d6c53a54c08d56cc39f954293fb02f6bcb974c3",
+          "finite_scenarios": 268,
+          "independent_oracle_equal": true
+        },
+        {
+          "fixture": "unwind/drop_partial_move_double_panic.rs",
+          "source_sha256": "fdeb5b3effd238366f73b584d89b4dbc10c0e7d005269ede444222a723590d56",
+          "candidate_status": -6,
+          "rustc_status": -6,
+          "exact_equal": false,
+          "stdout_equal": false,
+          "stderr_equal": false,
+          "candidate_stdout_sha256": "f1afa6a345deabf13ab03db0ef1333fdc6830ddb5d10fde00660bfa0048564e8",
+          "rustc_stdout_sha256": "46583df2d91984af497ff81ff95fe3bfc5216155ff9b20dd127779d66bdbbbf5"
+        },
+        {
+          "fixture": "pass/mem_manually_drop.rs",
+          "source_sha256": "c3707e57bd49577117990116e4acd9ba38f5d60ce7d850ecbea15a08e4e737d5",
+          "candidate_status": 0,
+          "rustc_status": 0,
+          "exact_equal": true,
+          "stdout_equal": true,
+          "stderr_equal": true,
+          "candidate_stdout_sha256": "f035e4c572ea82f900c60620ca9869da5d0df8e46cc311b0e7b9d63cf4c94630",
+          "rustc_stdout_sha256": "f035e4c572ea82f900c60620ca9869da5d0df8e46cc311b0e7b9d63cf4c94630"
+        },
+        {
+          "fixture": "pass/derive_default_nested_generic.rs",
+          "source_sha256": "3fae2df2a1a1a069128beb688e552ccac2aafc51e7c4b54e877ff35cfe85d3f8",
+          "candidate_status": 0,
+          "rustc_status": 0,
+          "exact_equal": true,
+          "stdout_equal": true,
+          "stderr_equal": true,
+          "candidate_stdout_sha256": "36957b23583c6657f08afb5daa16f50cedee1329665bc846c7d4b9d042deb006",
+          "rustc_stdout_sha256": "36957b23583c6657f08afb5daa16f50cedee1329665bc846c7d4b9d042deb006"
+        }
+      ]
+    },
+    "finite_domain": {
+      "distinct_scenarios_per_backend": 332,
+      "normal_and_assignment": 48,
+      "panic_before_cleanup": 16,
+      "destructor_panic_position_and_ownership": 268,
+      "backends": [
+        "native TCC with explicit unwind flags",
+        "emitted C/C++ with GCC unwind tables"
+      ],
+      "all_stdout_stderr_status_byte_equal": true,
+      "all_independent_order_oracles_equal": true,
+      "limits": "Finite ownership/position domains for the fixtures; not a proof of every Rust ownership, destructor, panic or compiler behavior."
+    },
+    "double_panic": {
+      "native_status": -6,
+      "rustc_status": -6,
+      "signal": "SIGABRT",
+      "unexpected_recovery": false,
+      "hook_output_equal": false,
+      "remaining_difference": "The existing cleanup-abort runtime bypasses the installed hook for the final nounwind panic. Runtime follow-up and combined source qualification are required."
+    }
+  },
+  "native_core_sha256": "47a037a1fb53abc87c8f488a51f4475a627c00f2744fc5bd8d739ff275715521",
+  "rustc_version": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+  "red_controls": {
+    "initial_source": "3e5cd0ba67a71ae83e4856b2b184f2000ece3862",
+    "initial_native_sha256": "d7ed22dc772424f3cd732f5c33b1a76b4b1b77743d1665c586cfe30a7b7771c3",
+    "initial_mismatches": [
+      "pass/drop_partial_move_array.rs",
+      "pass/drop_partial_move_scope.rs",
+      "pass/drop_partial_move_array_order.rs",
+      "unwind/drop_partial_move_array_order.rs",
+      "pass/derive_default_nested_generic.rs",
+      "pass/mem_manually_drop.rs"
+    ],
+    "order_only_candidate_core_sha256": "4dff924c979243a5bee9a610c8869c0773c849a03659dc3d9876bb2e1d535207",
+    "order_only_double_panic_status": 0,
+    "rustc_double_panic_status": -6,
+    "order_only_double_panic_reached_unexpected_recovery": true,
+    "evidence_retained": true
+  },
+  "limits": [
+    "The double-panic output/hook follow-up is required; reports intentionally remain failing until that behavior is source-qualified.",
+    "No macOS, Clang sanitizer, full native corpus, or performance qualification is claimed by this record.",
+    "The native ManuallyDrop overlay still does not support T:?Sized or unsafe drop/take methods; this repair does not expand that capability."
+  ],
+  "native_client_version": "lust 0.2.0 (build 5448365e)",
+  "independent_review": {
+    "reviewer": "parallel compiler integration reviewer",
+    "result": "No blocking new ownership or ordering issue found in the complete projection-tree continuation.",
+    "callback_abi_dependency": "Base includes exact void(void *) emitted drop targets."
+  }
+}

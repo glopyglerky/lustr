@@ -743,10 +743,22 @@ fn infer_adts(p: &mut Program) {
 fn check_adt_statics(p: &mut Program, errs: &mut Vec<Diag>) {
     let mut defs: Vec<DefId> = p.regions.adt_fields.keys().copied().collect();
     defs.sort_by_key(|d| (d.krate.0, d.hash.0));
-    for d in defs {
+    check_adt_statics_in(p, &defs, true, errs);
+}
+
+/// Validate newly staged native shapes before semantic publication. This
+/// reuses the original inference and static-obligation walk, leaves queued
+/// consumer obligations intact, and grants no trusted-source span exemption.
+pub fn check_native_adts(p: &mut Program, defs: &[DefId], errs: &mut Vec<Diag>) {
+    infer_adts(p);
+    check_adt_statics_in(p, defs, false, errs);
+}
+
+fn check_adt_statics_in(p: &mut Program, defs: &[DefId], trusted_source: bool, errs: &mut Vec<Diag>) {
+    for &d in defs {
         let Some(a) = p.adt_by_def(d) else { continue };
         let span = p.adt(a).span;
-        if p.shipped_crate_at(span).is_some() || p.in_lang_methods(span) {
+        if trusted_source && (p.shipped_crate_at(span).is_some() || p.in_lang_methods(span)) {
             continue;
         }
         let cx = Cx { regions: &p.regions, index: &p.gx.index };

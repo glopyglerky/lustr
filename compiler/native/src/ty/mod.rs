@@ -840,6 +840,8 @@ impl TyFlags {
 /// methods are the compat helpers the builtin code paths use; new code should prefer
 /// the general `TyKind` forms and reach a builtin only through them.
 pub trait TyIntern {
+    /// The program target's synchronization layout, also read by body overlays.
+    fn sync_layout(&self) -> layout::SyncLayout;
     fn intern(&mut self, k: TyKind) -> Ty;
     fn kind(&self, t: Ty) -> TyKind;
     /// The already-interned `Ty` for a kind, if any. Never interns.
@@ -1436,8 +1438,9 @@ impl TypePool {
         (total <= 2 * members.max(1)).then(|| TypePool { tys, krate, stable, interner: std::sync::Arc::as_ptr(interner) as usize })
     }
     /// The store for a new collect of crate `krate`/`stable` with `interner`, or None.
-    pub fn take(self, krate: crate::def::CrateId, stable: crate::def::StableCrateHash, interner: &std::sync::Arc<crate::intern::Interner>) -> Option<GlobalTys> {
-        let same = self.krate == krate && self.stable == stable && self.interner == std::sync::Arc::as_ptr(interner) as usize;
+    pub fn take(self, krate: crate::def::CrateId, stable: crate::def::StableCrateHash, interner: &std::sync::Arc<crate::intern::Interner>, sync_layout: layout::SyncLayout) -> Option<GlobalTys> {
+        let same = self.krate == krate && self.stable == stable && self.interner == std::sync::Arc::as_ptr(interner) as usize
+            && self.tys.sync_layout == sync_layout;
         same.then(|| {
             let mut tys = self.tys;
             tys.begin_collect();
@@ -1448,6 +1451,7 @@ impl TypePool {
 
 /// The frozen signature store of one crate session, built during collection.
 pub struct GlobalTys {
+    pub(crate) sync_layout: layout::SyncLayout,
     kinds: Arena<TyKind, Ty>,
     flags: Vec<TyFlags>,
     args_a: Arena<Box<[GenericArg]>, ArgsId>,
@@ -1509,6 +1513,7 @@ impl GlobalTys {
             hash_tys: hash::HashTy::ALL.map(hash::hash_def),
         };
         let mut g = GlobalTys {
+            sync_layout: layout::SyncLayout::host(),
             kinds: Arena::default(),
             flags: Vec::new(),
             args_a: Arena::default(),
@@ -1581,6 +1586,7 @@ impl GlobalTys {
         self.bounds.next_epoch();
         self.bindings_a.next_epoch();
         let GlobalTys {
+            sync_layout: _,
             kinds: _,
             flags: _,
             args_a: _,
@@ -1744,6 +1750,9 @@ impl GlobalTys {
 }
 
 impl TyIntern for GlobalTys {
+    fn sync_layout(&self) -> layout::SyncLayout {
+        self.sync_layout
+    }
     fn intern(&mut self, k: TyKind) -> Ty {
         if let Some(t) = self.kinds.get_id(&k) {
             return t;
@@ -1861,14 +1870,14 @@ impl TyIntern for GlobalTys {
 /// means the same value in every body and bodies need no locks. Clone copies the
 /// local additions (codegen's iterator expansion grows a copy, lower/iter.rs).
 #[derive(Clone)]
-pub struct Tys<'g> {
-    pub global: &'g GlobalTys,
+pub struct TypeStore<G, E> {
+    pub global: G,
     /// The param env of the template body this store belongs to
     /// (empty for a concrete body). Structural trait queries
     /// (`is_copy`, `has_clone`, and kin) answer a `Param` or
     /// projection type from it: such a type is rigid and has
     /// exactly the traits its bounds give it (ARCH 4.1).
-    pub env: &'g [Predicate],
+    pub env: E,
     kinds: Arena<TyKind, Ty>,
     flags: Vec<TyFlags>,
     args_a: Arena<Box<[GenericArg]>, ArgsId>,
@@ -1880,6 +1889,33 @@ pub struct Tys<'g> {
     bindings_a: Arena<Box<[(DefId, GenericArg)]>, BindingsId>,
     /// Body-local `mk_vec`/`mk_option` cache; global hits are read from `global`.
     adt1: FxMap<(DefId, Ty), Ty>,
+}
+
+/// A body overlay while it is checked or emitted against its owning Program.
+pub type Tys<'g> = TypeStore<&'g GlobalTys, &'g [Predicate]>;
+
+/// The same local arenas while the checked request owns them between phases.
+/// This type deliberately has no TyIntern implementation: its type ids only
+/// have meaning after reattachment to the exact owning Program.
+pub(crate) type OwnedTys = TypeStore<(), ()>;
+
+impl<G, E> TypeStore<G, E> {
+    fn with_context<H, F>(self, global: H, env: F) -> TypeStore<H, F> {
+        let Self { kinds, flags, args_a, tys_a, consts, sigs, bounds, bindings_a, adt1, .. } = self;
+        TypeStore { global, env, kinds, flags, args_a, tys_a, consts, sigs, bounds, bindings_a, adt1 }
+    }
+}
+
+impl Tys<'_> {
+    pub(crate) fn detach(self) -> OwnedTys {
+        self.with_context((), ())
+    }
+}
+
+impl OwnedTys {
+    pub(crate) fn attach<'g>(self, global: &'g GlobalTys, env: &'g [Predicate]) -> Tys<'g> {
+        self.with_context(global, env)
+    }
 }
 
 impl<'g> Tys<'g> {
@@ -1915,6 +1951,9 @@ impl<'g> Tys<'g> {
 }
 
 impl TyIntern for Tys<'_> {
+    fn sync_layout(&self) -> layout::SyncLayout {
+        self.global.sync_layout
+    }
     fn intern(&mut self, k: TyKind) -> Ty {
         if let Some(t) = self.global.kinds.get_id(&k) {
             return t;
@@ -2232,6 +2271,33 @@ pub fn lift_ty(t: Ty) -> Ty {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn type_pool_and_body_overlay_preserve_the_selected_sync_layout() {
+        use layout::SyncLayout::{Darwin, Futex, Windows};
+        let interner = std::sync::Arc::new(crate::intern::Interner::default());
+        let stable = crate::def::StableCrateHash(42);
+        for target in [Futex, Darwin, Windows] {
+            for next_target in [Futex, Darwin, Windows] {
+                let mut tys = GlobalTys::new();
+                tys.sync_layout = target;
+                let pool = TypePool {
+                    tys,
+                    krate: crate::def::LOCAL_CRATE,
+                    stable,
+                    interner: std::sync::Arc::as_ptr(&interner) as usize,
+                };
+                let reused = pool.take(crate::def::LOCAL_CRATE, stable, &interner, next_target);
+                if target == next_target {
+                    let reused = reused.expect("same target reuses the pool");
+                    assert_eq!(reused.sync_layout(), target);
+                    assert_eq!(Tys::new(&reused).sync_layout(), target);
+                } else {
+                    assert!(reused.is_none(), "a different target must discard pooled constants");
+                }
+            }
+        }
+    }
     use crate::def::{DefPathHash, LOCAL_CRATE};
 
     fn fake_def(hash: u64) -> DefId {

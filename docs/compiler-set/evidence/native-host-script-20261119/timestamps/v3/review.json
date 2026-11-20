@@ -1,0 +1,118 @@
+{
+  "passed": true,
+  "package_unchanged": true,
+  "tool_sha256": {
+    "/tmp/lustr-cargo-plan-build/package-v3/bin/lustr": "13a749328496d3576a51eff7580e8aecfa47195ce42e2a03a91fcc4f11988a13",
+    "/tmp/lustr-cargo-plan-build/package-v3/bin/lust": "e45d63df37ba29f06c0b9928eb5672759fc6d17fabe0a8e3f1081e434e922290",
+    "/tmp/lustr-cargo-plan-build/package-v3/bin/lust-core": "21d8043046e5277a011854cc45ae9df89d8851928fd3a48cf4aa78de41647587",
+    "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+    "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de"
+  },
+  "cases": [
+    {
+      "passed": true,
+      "scope": "cold-only partial-package timestamp control; no daemon or speed claim",
+      "source_origin": "/tmp/lustr-host-mtime-review-v2/work",
+      "source_hashes": {
+        "Cargo.toml": "ecceab475b10ededf77c82c694534db17523438ad751caa710aaf319d44f8beb",
+        "build.rs": "36ea25feb60168794a48b10142da426378b9c3f4cae863867e23e601873147c4",
+        "src/main.rs": "03dbccd41d64c938d2aa6fe38f365cb1f9e3a1075a3a6bc632e6752a2e146add",
+        "watched": "e35b2252583cefc6c764da00830c86b8d929c925703a88ebcb622c8f0caf24f9"
+      },
+      "unchanged_source_bytes": true,
+      "watched": "watched",
+      "commands": 8,
+      "compiled_host_reused": true,
+      "observed": [
+        {
+          "phase": "before",
+          "watched_mtime_ns": 1795098487000000000,
+          "expected_stdout": "1795098487\n",
+          "native_stdout": "1795098487\n",
+          "oracle_stdout": "1795098487\n",
+          "host_binary": {
+            "path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/native-cache/native-buildscript-aff21c48c82c47ad/build-script",
+            "sha256": "01c685823536059536f4a502f5553f3c55ce39a0934edf8a0020ea1661905a21",
+            "mtime_ns": 1795098498277370483,
+            "inode": 591411,
+            "size": 1542796
+          },
+          "native_artifact_sha256": "86e28177853912124bf643a348c92885e2ee08f3116f4fd158708c3531f60f5a",
+          "records": {
+            "before-buildscript-native-aff21c48c82c47ad.txt": "6a50eebf076e14a3451242d994620ae02436c3007f88d09c8159bf7f12a9dd26"
+          }
+        },
+        {
+          "phase": "after",
+          "watched_mtime_ns": 1795098617000000000,
+          "expected_stdout": "1795098617\n",
+          "native_stdout": "1795098617\n",
+          "oracle_stdout": "1795098617\n",
+          "host_binary": {
+            "path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/native-cache/native-buildscript-aff21c48c82c47ad/build-script",
+            "sha256": "01c685823536059536f4a502f5553f3c55ce39a0934edf8a0020ea1661905a21",
+            "mtime_ns": 1795098498277370483,
+            "inode": 591411,
+            "size": 1542796
+          },
+          "native_artifact_sha256": "57c7cdbdeddea230c6eb6abc56436287fbf94b14e41114886b9f424798ff909c",
+          "records": {
+            "after-buildscript-native-aff21c48c82c47ad.txt": "c16b0b007b6e8dc22ba20a27eedceeef0d73bc2e3cb67c21d9125b267135190e"
+          }
+        }
+      ]
+    },
+    {
+      "passed": true,
+      "scope": "cold-only partial-package timestamp control; no daemon or speed claim",
+      "source_origin": "/tmp/lustr-host-source-mtime-review-v2/project",
+      "source_hashes": {
+        "Cargo.toml": "fbbfcd03176f295242bc707ef953fd24ab6dafaf4082b08c80dbb781fc36d432",
+        "build.rs": "95a101d3d256ec80490beb49c6951e9a8b3d868ee1c934ea7091bca657b215eb",
+        "src/main.rs": "4eaa30bbe86e224aa921789ceee9eb4838301a8d3d3ca438c8821b590d51e8b9"
+      },
+      "unchanged_source_bytes": true,
+      "watched": "build.rs",
+      "commands": 8,
+      "compiled_host_reused": true,
+      "observed": [
+        {
+          "phase": "before",
+          "watched_mtime_ns": 1795098488000000000,
+          "expected_stdout": "1795098488\n",
+          "native_stdout": "1795098488\n",
+          "oracle_stdout": "1795098488\n",
+          "host_binary": {
+            "path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/native-cache/native-buildscript-0a9347da4ced76d5/build-script",
+            "sha256": "666791175f6e6cb3ed029a156d0f2cb2a080884778d238e2a66c0c4dfb328f01",
+            "mtime_ns": 1795098499525038065,
+            "inode": 591678,
+            "size": 1543004
+          },
+          "native_artifact_sha256": "3297eb9be6ad84e5bd68c94031c5faadf04ce1020a2c43545b5999173c532cf1",
+          "records": {
+            "before-buildscript-native-0a9347da4ced76d5.txt": "191f287889f5c771952d17d807e3455337cb0b649492c2f9ed1eec31d954acc9"
+          }
+        },
+        {
+          "phase": "after",
+          "watched_mtime_ns": 1795098618000000000,
+          "expected_stdout": "1795098618\n",
+          "native_stdout": "1795098618\n",
+          "oracle_stdout": "1795098618\n",
+          "host_binary": {
+            "path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/native-cache/native-buildscript-0a9347da4ced76d5/build-script",
+            "sha256": "666791175f6e6cb3ed029a156d0f2cb2a080884778d238e2a66c0c4dfb328f01",
+            "mtime_ns": 1795098499525038065,
+            "inode": 591678,
+            "size": 1543004
+          },
+          "native_artifact_sha256": "667eb800095709d71eb02f24041eeac6312efd082490d63610d20b7f908fec6d",
+          "records": {
+            "after-buildscript-native-0a9347da4ced76d5.txt": "fcb6a092a91feb5e442677f24963eb4585a76b0e9e835f9774f2db8ea9ee31ff"
+          }
+        }
+      ]
+    }
+  ]
+}

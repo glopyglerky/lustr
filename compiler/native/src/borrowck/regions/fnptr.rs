@@ -417,8 +417,6 @@ impl Builder<'_, '_> {
     pub(super) fn fn_item_to_ptr(&mut self, f: LocalDefId, ptr: Ty, dv: &[u32]) {
         let TyKind::FnPtr(s) = self.body.tys.kind(ptr) else { return };
         let s = self.body.tys.sig(s).value;
-        let ins: Vec<Ty> = self.body.tys.tys_of(s.inputs).to_vec();
-        let free = if s.free_slots != 0 { dv.first().copied() } else { None };
         let sig = match self.callee(f) {
             Callee::Sig(sig) => sig.clone(),
             _ => {
@@ -428,6 +426,22 @@ impl Builder<'_, '_> {
                 return;
             }
         };
+        self.item_sig_to_ptr(&sig, ptr, dv);
+    }
+
+    pub(super) fn native_item_to_ptr(&mut self, def: crate::def::DefId, ptr: Ty, dv: &[u32]) {
+        let Some(sig) = self.p.regions.native_fns.get(&def).cloned() else {
+            self.ptr_no_sig();
+            return;
+        };
+        self.item_sig_to_ptr(&sig, ptr, dv);
+    }
+
+    fn item_sig_to_ptr(&mut self, sig: &RegionSig, ptr: Ty, dv: &[u32]) {
+        let TyKind::FnPtr(s) = self.body.tys.kind(ptr) else { return };
+        let s = self.body.tys.sig(s).value;
+        let ins: Vec<Ty> = self.body.tys.tys_of(s.inputs).to_vec();
+        let free = if s.free_slots != 0 { dv.first().copied() } else { None };
         let Some(dst) = self.ptr_nodes(ptr, free, true, 0) else { return };
         let Some(src) = self.fn_nodes(&sig, &ins, s.output) else {
             if s.free_slots != 0 {

@@ -1,0 +1,27 @@
+[package]
+name = "lustr-no-std-frame-corpus"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "MIT"
+
+[workspace]
+
+[features]
+alloc = []
+freestanding = []
+
+[lib]
+name = "frame_core"
+path = "src/lib.rs"
+
+[[bin]]
+name = "frame-freestanding"
+path = "src/main.rs"
+required-features = ["freestanding"]
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"

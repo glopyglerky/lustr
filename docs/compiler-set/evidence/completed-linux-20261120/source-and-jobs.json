@@ -1,0 +1,1797 @@
+{
+  "c821_macos_cancellation_cause": null,
+  "current_original_job_fields": {
+    "jobs": [
+      {
+        "completed_at": "2026-11-19T16:20:38Z",
+        "conclusion": "cancelled",
+        "head_sha": "c8218b7fc0f657314c9e9c59775091b53508c6b0",
+        "html_url": "https://github.com/glopyglerky/lustr/actions/runs/44562165596/job/135694089936",
+        "id": 135694089936,
+        "labels": [
+          "macos-26"
+        ],
+        "name": "macos-arm64",
+        "run_attempt": 1,
+        "run_id": 44562165596,
+        "runner_assigned": false,
+        "started_at": "2026-11-19T16:05:37Z",
+        "status": "completed",
+        "steps": []
+      },
+      {
+        "completed_at": "2026-11-19T17:31:22Z",
+        "conclusion": "success",
+        "head_sha": "c8218b7fc0f657314c9e9c59775091b53508c6b0",
+        "html_url": "https://github.com/glopyglerky/lustr/actions/runs/44562165596/job/135694090003",
+        "id": 135694090003,
+        "labels": [
+          "ubuntu-24.04"
+        ],
+        "name": "linux-x86_64",
+        "run_attempt": 1,
+        "run_id": 44562165596,
+        "runner_assigned": true,
+        "started_at": "2026-11-19T16:05:39Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completed_at": "2026-11-19T16:05:41Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "started_at": "2026-11-19T16:05:40Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:05:47Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "started_at": "2026-11-19T16:05:41Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:05:49Z",
+            "conclusion": "success",
+            "name": "Exercise failed native crate artifact retention",
+            "number": 3,
+            "started_at": "2026-11-19T16:05:47Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:05:50Z",
+            "conclusion": "success",
+            "name": "Exercise service dependency guard with planted package and runtime inputs",
+            "number": 4,
+            "started_at": "2026-11-19T16:05:49Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:05:52Z",
+            "conclusion": "success",
+            "name": "Reject service-manager dependencies",
+            "number": 5,
+            "started_at": "2026-11-19T16:05:50Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:05:53Z",
+            "conclusion": "success",
+            "name": "Check actual Unix-address helper bounds with ASan and UBSan",
+            "number": 6,
+            "started_at": "2026-11-19T16:05:52Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:05:53Z",
+            "conclusion": "success",
+            "name": "Verify actual native dependency metadata",
+            "number": 7,
+            "started_at": "2026-11-19T16:05:53Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:05:53Z",
+            "conclusion": "success",
+            "name": "Require working address, undefined-behavior and leak sanitizers",
+            "number": 8,
+            "started_at": "2026-11-19T16:05:53Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:05:54Z",
+            "conclusion": "success",
+            "name": "Cache pinned tcc",
+            "number": 9,
+            "started_at": "2026-11-19T16:05:53Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:05:59Z",
+            "conclusion": "success",
+            "name": "Build pinned tcc",
+            "number": 10,
+            "started_at": "2026-11-19T16:05:54Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:06:13Z",
+            "conclusion": "success",
+            "name": "Install the declared Rust SDK and Unicode oracle",
+            "number": 11,
+            "started_at": "2026-11-19T16:05:59Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:06:14Z",
+            "conclusion": "success",
+            "name": "Qualify TinyCC signing arguments and native publication",
+            "number": 12,
+            "started_at": "2026-11-19T16:06:13Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:06:14Z",
+            "conclusion": "success",
+            "name": "Record the declared Cargo build-directory layout",
+            "number": 13,
+            "started_at": "2026-11-19T16:06:14Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:06:15Z",
+            "conclusion": "success",
+            "name": "Cache cargo registry",
+            "number": 14,
+            "started_at": "2026-11-19T16:06:14Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:07:47Z",
+            "conclusion": "success",
+            "name": "Qualify portable process, IPC, and SDK boundaries",
+            "number": 15,
+            "started_at": "2026-11-19T16:06:15Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:07:47Z",
+            "conclusion": "success",
+            "name": "Require a single range panic and untouched failed bounds",
+            "number": 16,
+            "started_at": "2026-11-19T16:07:47Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:07:51Z",
+            "conclusion": "success",
+            "name": "Require native build-script transitions under both Cargo layouts",
+            "number": 17,
+            "started_at": "2026-11-19T16:07:47Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T17:29:46Z",
+            "conclusion": "success",
+            "name": "Run CI gate",
+            "number": 18,
+            "started_at": "2026-11-19T16:07:51Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T17:30:06Z",
+            "conclusion": "success",
+            "name": "Require native panic-unwind differential cases",
+            "number": 19,
+            "started_at": "2026-11-19T17:29:46Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T17:30:56Z",
+            "conclusion": "success",
+            "name": "Require emitted-C panic-unwind differential cases",
+            "number": 20,
+            "started_at": "2026-11-19T17:30:06Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T17:31:02Z",
+            "conclusion": "success",
+            "name": "Compare every Unicode scalar with the declared Rust semantics",
+            "number": 21,
+            "started_at": "2026-11-19T17:30:56Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T17:31:07Z",
+            "conclusion": "success",
+            "name": "Check exact erased callback C types and runtime",
+            "number": 22,
+            "started_at": "2026-11-19T17:31:02Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T17:31:12Z",
+            "conclusion": "success",
+            "name": "Check erased callbacks with unwind tables",
+            "number": 23,
+            "started_at": "2026-11-19T17:31:07Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T17:31:13Z",
+            "conclusion": "success",
+            "name": "Verify base image lifetime through a real daemon",
+            "number": 24,
+            "started_at": "2026-11-19T17:31:12Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T17:31:14Z",
+            "conclusion": "success",
+            "name": "Require exact runtime results after main return-type edits",
+            "number": 25,
+            "started_at": "2026-11-19T17:31:13Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T17:31:14Z",
+            "conclusion": "success",
+            "name": "Record produced compiler identities",
+            "number": 26,
+            "started_at": "2026-11-19T17:31:14Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T17:31:19Z",
+            "conclusion": "success",
+            "name": "Retain native gate evidence",
+            "number": 27,
+            "started_at": "2026-11-19T17:31:14Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T17:31:19Z",
+            "conclusion": "success",
+            "name": "Post Cache cargo registry",
+            "number": 52,
+            "started_at": "2026-11-19T17:31:19Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T17:31:20Z",
+            "conclusion": "success",
+            "name": "Post Cache pinned tcc",
+            "number": 53,
+            "started_at": "2026-11-19T17:31:19Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T17:31:20Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 54,
+            "started_at": "2026-11-19T17:31:20Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T17:31:20Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 55,
+            "started_at": "2026-11-19T17:31:20Z",
+            "status": "completed"
+          }
+        ]
+      },
+      {
+        "completed_at": "2026-11-19T16:20:38Z",
+        "conclusion": "cancelled",
+        "head_sha": "c8218b7fc0f657314c9e9c59775091b53508c6b0",
+        "html_url": "https://github.com/glopyglerky/lustr/actions/runs/44562165627/job/135694089751",
+        "id": 135694089751,
+        "labels": [
+          "macos-26"
+        ],
+        "name": "Retained Cargo planning helpers (macos-26)",
+        "run_attempt": 1,
+        "run_id": 44562165627,
+        "runner_assigned": false,
+        "started_at": "2026-11-19T16:05:37Z",
+        "status": "completed",
+        "steps": []
+      },
+      {
+        "completed_at": "2026-11-19T16:21:15Z",
+        "conclusion": "success",
+        "head_sha": "c8218b7fc0f657314c9e9c59775091b53508c6b0",
+        "html_url": "https://github.com/glopyglerky/lustr/actions/runs/44562165627/job/135694089996",
+        "id": 135694089996,
+        "labels": [
+          "ubuntu-24.04"
+        ],
+        "name": "Exclusive native entry and shared-service research",
+        "run_attempt": 1,
+        "run_id": 44562165627,
+        "runner_assigned": true,
+        "started_at": "2026-11-19T16:05:40Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completed_at": "2026-11-19T16:05:45Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "started_at": "2026-11-19T16:05:41Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:05:56Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "started_at": "2026-11-19T16:05:45Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:05:56Z",
+            "conclusion": "success",
+            "name": "Enforce structural ownership and declared partial imports",
+            "number": 3,
+            "started_at": "2026-11-19T16:05:56Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:05:57Z",
+            "conclusion": "success",
+            "name": "Require complete-replacement release refusal",
+            "number": 4,
+            "started_at": "2026-11-19T16:05:56Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:05:58Z",
+            "conclusion": "success",
+            "name": "Obtain the exact pristine reference objects",
+            "number": 5,
+            "started_at": "2026-11-19T16:05:57Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:06:16Z",
+            "conclusion": "success",
+            "name": "Install the declared build SDK and research oracle",
+            "number": 6,
+            "started_at": "2026-11-19T16:05:58Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:06:16Z",
+            "conclusion": "success",
+            "name": "Install the native planning process observer",
+            "number": 7,
+            "started_at": "2026-11-19T16:06:16Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:06:17Z",
+            "conclusion": "success",
+            "name": "Reject product and research feature unification before compiler work",
+            "number": 8,
+            "started_at": "2026-11-19T16:06:16Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:06:18Z",
+            "conclusion": "success",
+            "name": "Obtain the pinned TinyCC source",
+            "number": 9,
+            "started_at": "2026-11-19T16:06:17Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:06:40Z",
+            "conclusion": "success",
+            "name": "Build the native TinyCC dependency",
+            "number": 10,
+            "started_at": "2026-11-19T16:06:18Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:06:41Z",
+            "conclusion": "success",
+            "name": "Qualify TinyCC signing arguments and native publication",
+            "number": 11,
+            "started_at": "2026-11-19T16:06:40Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:06:42Z",
+            "conclusion": "success",
+            "name": "Prepare the declared locked dependencies",
+            "number": 12,
+            "started_at": "2026-11-19T16:06:41Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:08:28Z",
+            "conclusion": "success",
+            "name": "Build the partial debug native compiler without a packaged Rust compiler",
+            "number": 13,
+            "started_at": "2026-11-19T16:06:42Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:09:23Z",
+            "conclusion": "success",
+            "name": "Require product bridge ownership and one retained compilation attempt",
+            "number": 14,
+            "started_at": "2026-11-19T16:08:28Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:09:25Z",
+            "conclusion": "success",
+            "name": "Require native execution, exclusive routing and terminal failures",
+            "number": 15,
+            "started_at": "2026-11-19T16:09:23Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:09:30Z",
+            "conclusion": "success",
+            "name": "Run all public crate targets and real-package contracts",
+            "number": 16,
+            "started_at": "2026-11-19T16:09:25Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:09:33Z",
+            "conclusion": "success",
+            "name": "Require exact native Cargo planning and warm process reuse",
+            "number": 17,
+            "started_at": "2026-11-19T16:09:30Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:09:40Z",
+            "conclusion": "success",
+            "name": "Check declared upstream capabilities against the constructed native compiler",
+            "number": 18,
+            "started_at": "2026-11-19T16:09:33Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:09:50Z",
+            "conclusion": "success",
+            "name": "Compare supported capability outputs through the public compiler",
+            "number": 19,
+            "started_at": "2026-11-19T16:09:40Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:17:44Z",
+            "conclusion": "success",
+            "name": "Compare pinned retained histories through the public compiler",
+            "number": 20,
+            "started_at": "2026-11-19T16:09:50Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:17:45Z",
+            "conclusion": "success",
+            "name": "Build the actual native target-selector diagnostic",
+            "number": 21,
+            "started_at": "2026-11-19T16:17:44Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:18:06Z",
+            "conclusion": "success",
+            "name": "Require native Cargo selection reuse and invalidation",
+            "number": 22,
+            "started_at": "2026-11-19T16:17:45Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:18:08Z",
+            "conclusion": "success",
+            "name": "Preserve real symbol and ABI component controls",
+            "number": 23,
+            "started_at": "2026-11-19T16:18:06Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:19:04Z",
+            "conclusion": "success",
+            "name": "Qualify genuine provider definitions and native consumer semantics",
+            "number": 24,
+            "started_at": "2026-11-19T16:18:08Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:19:49Z",
+            "conclusion": "success",
+            "name": "Qualify owned imported emission and failure preservation",
+            "number": 25,
+            "started_at": "2026-11-19T16:19:04Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:19:49Z",
+            "conclusion": "success",
+            "name": "Exercise supplemental qualification record packaging",
+            "number": 26,
+            "started_at": "2026-11-19T16:19:49Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:19:59Z",
+            "conclusion": "success",
+            "name": "Package supplemental qualification records",
+            "number": 27,
+            "started_at": "2026-11-19T16:19:49Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:20:02Z",
+            "conclusion": "success",
+            "name": "Retain supplemental qualification records",
+            "number": 28,
+            "started_at": "2026-11-19T16:19:59Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:21:10Z",
+            "conclusion": "success",
+            "name": "Retain source-bound results and every failure",
+            "number": 29,
+            "started_at": "2026-11-19T16:20:02Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:21:11Z",
+            "conclusion": "success",
+            "name": "Post Obtain the pinned TinyCC source",
+            "number": 56,
+            "started_at": "2026-11-19T16:21:10Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:21:11Z",
+            "conclusion": "success",
+            "name": "Post Obtain the exact pristine reference objects",
+            "number": 57,
+            "started_at": "2026-11-19T16:21:11Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:21:11Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 58,
+            "started_at": "2026-11-19T16:21:11Z",
+            "status": "completed"
+          },
+          {
+            "completed_at": "2026-11-19T16:21:11Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 59,
+            "started_at": "2026-11-19T16:21:11Z",
+            "status": "completed"
+          }
+        ]
+      }
+    ],
+    "scope": "Selected original GitHub API fields, reviewed 20 November 2026 UTC; actor and runner names omitted."
+  },
+  "job_summaries": {
+    "c821_canary": [
+      {
+        "conclusion": "success",
+        "id": 135694090326,
+        "name": "Runner source provenance",
+        "run_id": 44562165687,
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Record original workflow and source",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Retain original source receipt",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 4,
+            "status": "completed"
+          }
+        ]
+      },
+      {
+        "conclusion": "cancelled",
+        "id": 135694091043,
+        "name": "probe",
+        "run_id": 44562165687,
+        "status": "completed",
+        "steps": null
+      }
+    ],
+    "c821_ci": [
+      {
+        "conclusion": "success",
+        "id": 135694089731,
+        "name": "Runner source provenance",
+        "run_id": 44562165596,
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Record original workflow and source",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Retain original source receipt",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 4,
+            "status": "completed"
+          }
+        ]
+      },
+      {
+        "conclusion": "cancelled",
+        "id": 135694089936,
+        "name": "macos-arm64",
+        "run_id": 44562165596,
+        "status": "completed",
+        "steps": null
+      },
+      {
+        "conclusion": "success",
+        "id": 135694090003,
+        "name": "linux-x86_64",
+        "run_id": 44562165596,
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Exercise failed native crate artifact retention",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Exercise service dependency guard with planted package and runtime inputs",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Reject service-manager dependencies",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Check actual Unix-address helper bounds with ASan and UBSan",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Verify actual native dependency metadata",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Require working address, undefined-behavior and leak sanitizers",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Cache pinned tcc",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Build pinned tcc",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Install the declared Rust SDK and Unicode oracle",
+            "number": 11,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Qualify TinyCC signing arguments and native publication",
+            "number": 12,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Record the declared Cargo build-directory layout",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Cache cargo registry",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Qualify portable process, IPC, and SDK boundaries",
+            "number": 15,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Require a single range panic and untouched failed bounds",
+            "number": 16,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Require native build-script transitions under both Cargo layouts",
+            "number": 17,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run CI gate",
+            "number": 18,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Require native panic-unwind differential cases",
+            "number": 19,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Require emitted-C panic-unwind differential cases",
+            "number": 20,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Compare every Unicode scalar with the declared Rust semantics",
+            "number": 21,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Check exact erased callback C types and runtime",
+            "number": 22,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Check erased callbacks with unwind tables",
+            "number": 23,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Verify base image lifetime through a real daemon",
+            "number": 24,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Require exact runtime results after main return-type edits",
+            "number": 25,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Record produced compiler identities",
+            "number": 26,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Retain native gate evidence",
+            "number": 27,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Cache cargo registry",
+            "number": 52,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Cache pinned tcc",
+            "number": 53,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 54,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 55,
+            "status": "completed"
+          }
+        ]
+      }
+    ],
+    "c821_compiler": [
+      {
+        "conclusion": "success",
+        "id": 135694089360,
+        "name": "Pinned Lust reference and declared integration",
+        "run_id": 44562165627,
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Obtain the exact pristine reference objects",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Install Rust",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Check exact candidate source identity (release admission is separate)",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Verify exact integration and reject unexpected drift",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Obtain the exact pristine reference objects",
+            "number": 11,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 12,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 13,
+            "status": "completed"
+          }
+        ]
+      },
+      {
+        "conclusion": "success",
+        "id": 135694089609,
+        "name": "Retained Cargo planning helpers (windows-latest)",
+        "run_id": 44562165627,
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Install Rust",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Format check",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Check paired statistical methods",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Test every retained planning, retired entry and reference contract",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 12,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 13,
+            "status": "completed"
+          }
+        ]
+      },
+      {
+        "conclusion": "success",
+        "id": 135694089643,
+        "name": "Planning helpers minimum Rust",
+        "run_id": 44562165627,
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Install minimum supported Rust",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Build and test on minimum Rust",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 9,
+            "status": "completed"
+          }
+        ]
+      },
+      {
+        "conclusion": "cancelled",
+        "id": 135694089751,
+        "name": "Retained Cargo planning helpers (macos-26)",
+        "run_id": 44562165627,
+        "status": "completed",
+        "steps": null
+      },
+      {
+        "conclusion": "success",
+        "id": 135694089889,
+        "name": "Runner source provenance",
+        "run_id": 44562165627,
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Record original workflow and source",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Retain original source receipt",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 4,
+            "status": "completed"
+          }
+        ]
+      },
+      {
+        "conclusion": "success",
+        "id": 135694089899,
+        "name": "Retained Cargo planning helpers (ubuntu-24.04)",
+        "run_id": 44562165627,
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Install Rust",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Format check",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Check paired statistical methods",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Test every retained planning, retired entry and reference contract",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 12,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 13,
+            "status": "completed"
+          }
+        ]
+      },
+      {
+        "conclusion": "success",
+        "id": 135694089937,
+        "name": "Checked rustc semantic inspection",
+        "run_id": 44562165627,
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Install pinned compiler development libraries",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Format check",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Build pinned inspection tool",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Verify actual compiler semantics and artifact interoperability",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 12,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 13,
+            "status": "completed"
+          }
+        ]
+      },
+      {
+        "conclusion": "success",
+        "id": 135694089996,
+        "name": "Exclusive native entry and shared-service research",
+        "run_id": 44562165627,
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Enforce structural ownership and declared partial imports",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Require complete-replacement release refusal",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Obtain the exact pristine reference objects",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Install the declared build SDK and research oracle",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Install the native planning process observer",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Reject product and research feature unification before compiler work",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Obtain the pinned TinyCC source",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Build the native TinyCC dependency",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Qualify TinyCC signing arguments and native publication",
+            "number": 11,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Prepare the declared locked dependencies",
+            "number": 12,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Build the partial debug native compiler without a packaged Rust compiler",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Require product bridge ownership and one retained compilation attempt",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Require native execution, exclusive routing and terminal failures",
+            "number": 15,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run all public crate targets and real-package contracts",
+            "number": 16,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Require exact native Cargo planning and warm process reuse",
+            "number": 17,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Check declared upstream capabilities against the constructed native compiler",
+            "number": 18,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Compare supported capability outputs through the public compiler",
+            "number": 19,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Compare pinned retained histories through the public compiler",
+            "number": 20,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Build the actual native target-selector diagnostic",
+            "number": 21,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Require native Cargo selection reuse and invalidation",
+            "number": 22,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Preserve real symbol and ABI component controls",
+            "number": 23,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Qualify genuine provider definitions and native consumer semantics",
+            "number": 24,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Qualify owned imported emission and failure preservation",
+            "number": 25,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Exercise supplemental qualification record packaging",
+            "number": 26,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Package supplemental qualification records",
+            "number": 27,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Retain supplemental qualification records",
+            "number": 28,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Retain source-bound results and every failure",
+            "number": 29,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Obtain the pinned TinyCC source",
+            "number": 56,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Obtain the exact pristine reference objects",
+            "number": 57,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 58,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 59,
+            "status": "completed"
+          }
+        ]
+      }
+    ],
+    "prior7c_ci": [
+      {
+        "conclusion": "success",
+        "id": 135661770702,
+        "name": "Runner source provenance",
+        "run_id": 44553094710,
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Record original workflow and source",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Retain original source receipt",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 4,
+            "status": "completed"
+          }
+        ]
+      },
+      {
+        "conclusion": "success",
+        "id": 135661771306,
+        "name": "linux-x86_64",
+        "run_id": 44553094710,
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Exercise failed native crate artifact retention",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Exercise service dependency guard with planted package and runtime inputs",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Reject service-manager dependencies",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Check actual Unix-address helper bounds with ASan and UBSan",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Verify actual native dependency metadata",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Require working address, undefined-behavior and leak sanitizers",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Cache pinned tcc",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Build pinned tcc",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Install the declared Rust SDK and Unicode oracle",
+            "number": 11,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Qualify TinyCC signing arguments and native publication",
+            "number": 12,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Record the declared Cargo build-directory layout",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Cache cargo registry",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Qualify portable process, IPC, and SDK boundaries",
+            "number": 15,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Require a single range panic and untouched failed bounds",
+            "number": 16,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Require native build-script transitions under both Cargo layouts",
+            "number": 17,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run CI gate",
+            "number": 18,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Require native panic-unwind differential cases",
+            "number": 19,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Require emitted-C panic-unwind differential cases",
+            "number": 20,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Compare every Unicode scalar with the declared Rust semantics",
+            "number": 21,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Check exact erased callback C types and runtime",
+            "number": 22,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Check erased callbacks with unwind tables",
+            "number": 23,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Verify base image lifetime through a real daemon",
+            "number": 24,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Require exact runtime results after main return-type edits",
+            "number": 25,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Record produced compiler identities",
+            "number": 26,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Retain native gate evidence",
+            "number": 27,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Cache cargo registry",
+            "number": 52,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Cache pinned tcc",
+            "number": 53,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 54,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 55,
+            "status": "completed"
+          }
+        ]
+      },
+      {
+        "conclusion": "cancelled",
+        "id": 135661771391,
+        "name": "macos-arm64",
+        "run_id": 44553094710,
+        "status": "completed",
+        "steps": null
+      }
+    ],
+    "prior7c_historical": [
+      {
+        "conclusion": "failure",
+        "id": 135661773915,
+        "name": "Frozen evidence replay (no current compiler qualification)",
+        "run_id": 44553094553,
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "failure",
+            "name": "Exercise reporting and evidence refusal controls",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "Replay immutable historical source and results",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "State applicability",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 11,
+            "status": "completed"
+          }
+        ]
+      }
+    ]
+  },
+  "source": {
+    "7c": {
+      "checkout": "66963315e9736ce9f151ce8ccac248d35a01d048",
+      "native_tree": "bf933c382fd99e52dd2586ebc46f0d0aceaa71a8",
+      "published_head": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+      "tree": "2a6a51f099bdcdb74871fdc2e65a4df87aa0c867"
+    },
+    "c821": {
+      "checkout": "ec8f89f98e2701f7189d4310e54a1501cdd81f34",
+      "native_tree": "bf933c382fd99e52dd2586ebc46f0d0aceaa71a8",
+      "published_head": "c8218b7fc0f657314c9e9c59775091b53508c6b0",
+      "tree": "4c796fc9e34ddc09be79f6697125258da9c6c188"
+    }
+  },
+  "workflow_runs": {
+    "c821": [
+      {
+        "conclusion": "failure",
+        "id": 44562165687,
+        "name": "Runner routing canary",
+        "status": "completed"
+      },
+      {
+        "conclusion": "failure",
+        "id": 44562165627,
+        "name": "Compiler set",
+        "status": "completed"
+      },
+      {
+        "conclusion": "failure",
+        "id": 44562165596,
+        "name": "CI",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "id": 44562165575,
+        "name": "Native probe regression tests",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "id": 44562165763,
+        "name": "Historical warm entry evidence",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "id": 44562165664,
+        "name": "Mixed performance evidence",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "id": 44562165594,
+        "name": "Historical native performance evidence",
+        "status": "completed"
+      }
+    ],
+    "prior7c": [
+      {
+        "conclusion": "failure",
+        "id": 44553094694,
+        "name": "Compiler set",
+        "status": "completed"
+      },
+      {
+        "conclusion": "failure",
+        "id": 44553094710,
+        "name": "CI",
+        "status": "completed"
+      },
+      {
+        "conclusion": "failure",
+        "id": 44553094553,
+        "name": "Historical native performance evidence",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "id": 44553094690,
+        "name": "Historical warm entry evidence",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "id": 44553094556,
+        "name": "Native probe regression tests",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "id": 44553094603,
+        "name": "Mixed performance evidence",
+        "status": "completed"
+      },
+      {
+        "conclusion": "failure",
+        "id": 44553094656,
+        "name": "Runner routing canary",
+        "status": "completed"
+      }
+    ]
+  }
+}

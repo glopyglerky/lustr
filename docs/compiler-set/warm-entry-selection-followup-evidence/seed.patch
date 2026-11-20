@@ -1,0 +1,192 @@
+commit a0f2b79ee70952e8227a18663cb0aae2e9e7aa11
+Author:     Codex <codex@openai.com>
+AuthorDate: Wed Nov 18 04:31:02 2026 -0700
+Commit:     Codex <codex@openai.com>
+CommitDate: Wed Nov 18 04:31:02 2026 -0700
+
+    Preverify installed selection tools during source package construction
+
+diff --git a/docs/compiler-set/native-selection-cache.md b/docs/compiler-set/native-selection-cache.md
+index e808e87e5..351394adb 100644
+--- a/docs/compiler-set/native-selection-cache.md
++++ b/docs/compiler-set/native-selection-cache.md
+@@ -63,6 +63,15 @@ can use the same certificate while those identities remain unchanged. The
+ first population cost is separate from the steady-state cache-hit cost and
+ must be reported; it is not hidden inside a warm-speed claim.
+ 
++Normal source package construction now invokes the final installed launcher
++with `--lustr-prime-selection-tools` after placing all tools and writing the
++receipt. This uses the same actual byte verification and stores a private seed
++under `lib/lustr-selection-verified`. A new project's cache can copy that
++certificate only if the live launcher, tool and library identities and receipt
++still match. This moves verification cost into package construction. A missing,
++relocated, changed, corrupt or differently owned seed falls back to actual byte
++verification in the project cache; it cannot authorize unknown tools.
++
+ Selection does not read Rust function bodies. A body edit therefore retains a
+ valid target selection and still reaches the native compiler's existing source
+ invalidation and checking. This cache does not store successful compilations,
+diff --git a/src/full.rs b/src/full.rs
+index 69cdc6f27..d2543a73c 100644
+--- a/src/full.rs
++++ b/src/full.rs
+@@ -10,6 +10,10 @@ mod selection_cache {
+     include!("selection_cache.rs");
+ }
+ 
++pub fn prime_selection_tools(parent: &Path) -> io::Result<()> {
++    selection_cache::prime_tools(parent).ok_or_else(|| error("selection tools are not a stable admitted source package"))
++}
++
+ fn error(message: &str) -> io::Error {
+     io::Error::other(message)
+ }
+diff --git a/src/main.rs b/src/main.rs
+index 91c1816de..44f692d53 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -16,6 +16,10 @@ mod lust {
+ 
+     pub struct Call(protocol::Request, Option<full::Selection>);
+ 
++    pub fn prime_selection_tools(parent: &Path) -> std::io::Result<()> {
++        full::prime_selection_tools(parent)
++    }
++
+     impl Call {
+         pub fn expanded(&self, identity: &str) -> Self {
+             let mut request = self.0.clone();
+@@ -186,6 +190,15 @@ fn main() -> ExitCode {
+     }
+     let parent = std::env::current_exe().unwrap().parent().unwrap().to_path_buf();
+     let compiler_mode = program.is_some_and(|a| std::path::Path::new(&a).file_name().is_some_and(|n| n == "rustc"));
++    if !compiler_mode && args == ["--lustr-prime-selection-tools"] {
++        return match lust::prime_selection_tools(&parent) {
++            Ok(()) => ExitCode::SUCCESS,
++            Err(error) => {
++                eprintln!("cannot preverify Cargo selection tools: {error}");
++                ExitCode::from(2)
++            }
++        };
++    }
+     let native_cli = !compiler_mode && lustr_compiler::is_native_command(&args);
+     if !compiler_mode && !native_cli && lustr_compiler::cargo_command(&args) {
+         // Use the same coordinator as both Cargo extensions without loading an
+diff --git a/src/selection_cache.rs b/src/selection_cache.rs
+index 076497e7d..c0ab5bf9b 100644
+--- a/src/selection_cache.rs
++++ b/src/selection_cache.rs
+@@ -24,6 +24,10 @@ fn private_directory(root: &Path) -> Option<()> {
+         Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
+         Err(_) => return None,
+     }
++    private_directory_exists(root)
++}
++
++fn private_directory_exists(root: &Path) -> Option<()> {
+     let metadata = root.symlink_metadata().ok()?;
+     // SAFETY: geteuid has no arguments or preconditions and does not mutate
+     // process state. The directory itself must not be a symlink.
+@@ -235,6 +239,7 @@ fn pin(key: &str) -> Option<&'static str> {
+ struct Tools {
+     state: Value,
+     files: Vec<(PathBuf, String, Value)>,
++    seed: PathBuf,
+ }
+ 
+ fn toolchain(parent: &Path) -> Option<Tools> {
+@@ -304,18 +309,36 @@ fn toolchain(parent: &Path) -> Option<Tools> {
+     if !expected.is_empty() {
+         return None;
+     }
+-    Some(Tools { state: json!({"receipt":receipt, "identities":identities}), files: verified })
++    Some(Tools {
++        state: json!({"receipt":receipt, "identities":identities}),
++        files: verified,
++        seed: package.join("lib/lustr-selection-verified"),
++    })
+ }
+ 
+ impl Tools {
++    fn certificate(&self, root: &Path) -> Option<PathBuf> {
++        let key = digest(&serde_json::to_vec(&self.state).ok()?);
++        Some(root.join(format!("tools-{key}.json")))
++    }
++
++    fn certified(&self, root: &Path) -> bool {
++        self.certificate(root)
++            .and_then(|path| private_record(root, &path))
++            .is_some_and(|value| value["schema"] == SCHEMA && value["tools"] == self.state)
++    }
++
+     fn verify(&self, root: &Path) -> Option<()> {
+         private_directory(root)?;
+-        let key = digest(&serde_json::to_vec(&self.state).ok()?);
+-        let certificate = root.join(format!("tools-{key}.json"));
+-        if let Some(value) = private_record(root, &certificate) {
+-            if value["schema"] == SCHEMA && value["tools"] == self.state {
+-                return Some(());
+-            }
++        let certificate = self.certificate(root)?;
++        if self.certified(root) {
++            return Some(());
++        }
++        // Normal package assembly may preverify these exact installed tool
++        // identities. No receipt or seed with changed paths/stamps is trusted.
++        // Unknown, relocated and shared packages still hash the actual bytes.
++        if root != self.seed && self.certified(&self.seed) {
++            return write_record(root, &certificate, &json!({"schema":SCHEMA,"tools":self.state}));
+         }
+         for (path, expected, identity) in &self.files {
+             let mut file = File::open(path).ok()?;
+@@ -337,8 +360,15 @@ impl Tools {
+     }
+ }
+ 
++pub fn prime_tools(parent: &Path) -> Option<()> {
++    let before = toolchain(parent)?;
++    before.verify(&before.seed)?;
++    // This setup command does not certify a toolchain changed during hashing.
++    (toolchain(parent)? == before).then_some(())
++}
++
+ fn private_record(root: &Path, path: &Path) -> Option<Value> {
+-    private_directory(root)?;
++    private_directory_exists(root)?;
+     let owner = root.metadata().ok()?.uid();
+     let metadata = path.symlink_metadata().ok()?;
+     if !metadata.is_file() || metadata.uid() != owner || metadata.mode() & 0o077 != 0 || metadata.nlink() != 1 {
+diff --git a/tools/build-mixed-toolchain.rs b/tools/build-mixed-toolchain.rs
+index d7e7dc0c5..cdb93f2b3 100644
+--- a/tools/build-mixed-toolchain.rs
++++ b/tools/build-mixed-toolchain.rs
+@@ -296,6 +296,9 @@ fn main() {
+     }
+     record(&output.join("COMPONENTS.txt"), manifest.as_bytes());
+     selection_toolchain_receipt::write(&package, source, &host);
++    if host == "x86_64-unknown-linux-gnu" {
++        checked("preverify-selection-tools", Command::new(package.join("bin/lustr")).arg("--lustr-prime-selection-tools"), &logs);
++    }
+     for p in [package.join("bin/lustr-cargo"), package.join("bin"), package.join("lib"), package, logs, output.clone()] {
+         fs::File::open(p).unwrap().sync_all().unwrap();
+     }
+diff --git a/tools/profile-native-preflight.rs b/tools/profile-native-preflight.rs
+index 664d13ee0..79938008a 100644
+--- a/tools/profile-native-preflight.rs
++++ b/tools/profile-native-preflight.rs
+@@ -19,6 +19,15 @@ fn main() -> ExitCode {
+     let phase = arguments.next().expect("PHASE PACKAGE_BIN NATIVE_ARGUMENTS...");
+     let parent = PathBuf::from(arguments.next().expect("PACKAGE_BIN"));
+     assert!(parent.is_absolute(), "PACKAGE_BIN must be absolute");
++    if phase == "prime-selection-tools" {
++        return match full::prime_selection_tools(&parent) {
++            Ok(()) => ExitCode::SUCCESS,
++            Err(error) => {
++                eprintln!("{error}");
++                ExitCode::from(2)
++            }
++        };
++    }
+     let args: Vec<_> = arguments.collect();
+     let Some(protocol::Invocation::Compile { req, run: false, .. }) = protocol::parse_args(&args) else {
+         eprintln!("expected the same native check/build arguments as the public entry");

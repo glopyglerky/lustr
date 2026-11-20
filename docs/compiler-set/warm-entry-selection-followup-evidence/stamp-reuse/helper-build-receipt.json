@@ -1,0 +1,49 @@
+{
+  "schema": "lustr-warm-entry-comparison-v1",
+  "status": "completed",
+  "scope": "Production parser/selector/child owner component only; no compiler timing claim.",
+  "source": {
+    "revision": "1aff7f7331d1d4293d3f5c74c740318c9686b030",
+    "tree": "7553100fe259c3a45dcb5640fe9dd50c3f0ed2dd"
+  },
+  "native_build_hash": "dc82dab611c87e7e",
+  "commands": [
+    {
+      "argv": [
+        "<SDK_WORKSPACE>/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "generate-lockfile",
+        "--offline",
+        "--manifest-path",
+        "<STAMP_HELPER_BUILD>/Cargo.toml"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "<SDK_WORKSPACE>/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "build",
+        "--release",
+        "--locked",
+        "--offline",
+        "--manifest-path",
+        "<STAMP_HELPER_BUILD>/Cargo.toml",
+        "--target-dir",
+        "<STAMP_HELPER_BUILD>/target",
+        "--config",
+        "build.build-dir=\"<STAMP_HELPER_BUILD>/intermediates\""
+      ],
+      "exit": 0
+    }
+  ],
+  "source_sha256": {
+    "<STAMP_SOURCE>/tools/profile-native-preflight.rs": "70a406ab61f69da2710d0215bdcc8acb6c57f7aa20719530cebed9a6693628f7",
+    "<STAMP_SOURCE>/src/full.rs": "04836e406a227fcf0f831bc0214c301eb2302973a1257fc82b8a0ef3dc32248d",
+    "<STAMP_SOURCE>/src/selection_cache.rs": "c6fc392e1a46980292fb4813a6fadba8a0c96d2686301ced2b1dcad38981c3f2",
+    "<STAMP_SOURCE>/src/owned_child.rs": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20",
+    "<STAMP_SOURCE>/src/host_runtime.rs": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223",
+    "<STAMP_SOURCE>/compiler/native/src/protocol.rs": "4da4c32fb16b62f3819a3d774ef63b76e201e2414c3b4540b4a6ccb27133fe1c"
+  },
+  "binary_sha256": "82a6e270dc70d780d25838252c8050234fb06e5e957581863de965586c7e015a",
+  "manifest_sha256": "e9874d2b960a32e41df29b5f678aae052ba374c5b24ed5a6d4d1a103cd1ce84d",
+  "lock_sha256": "f7760201a2d7a3e6781de074b4a425b40b35fc106f08bb80d522c2e9d68c7381"
+}

@@ -1,0 +1,2 @@
+    Checking retained_oracle_diagnostic_control v0.0.0 ($ORACLE_CHECKS/work)
+error: could not compile `retained_oracle_diagnostic_control` (bin "retained_oracle_diagnostic_control") due to 1 previous error

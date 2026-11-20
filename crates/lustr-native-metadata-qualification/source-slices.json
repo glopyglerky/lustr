@@ -1,0 +1,40 @@
+{
+  "schema": "lustr-native-metadata-qualification-sources-v1",
+  "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "production_admitted": false,
+  "sources": [
+    {
+      "destination": "../lustr-native-core/src/metadata_archive.rs",
+      "source": "compiler/rustc_codegen_ssa/src/back/metadata.rs",
+      "source_sha256": "cb11be9978528bdd6950b7c07c61a9ad914569cc0a20281cb7a564a7bae1881b",
+      "sections": [
+        "add_gnu_property_note",
+        "create_object_file",
+        "elf_os_abi",
+        "elf_e_flags",
+        "create_wrapper_file"
+      ],
+      "adaptation": "Only the bound ELF x86-64 little-endian Linux branches with no extra target flags, original GNU property note, excluded metadata section and original object serialization. Other target branches and compiler session dependencies are excluded.",
+      "semantic_owner": "required original Rust metadata object wrapper",
+      "necessity": "Original Rust archive consumers require metadata/link-record object members around the actual source-owned encoded bytes.",
+      "license_files": [
+        "LICENSE-MIT",
+        "LICENSE-APACHE"
+      ]
+    }
+  ],
+  "adapted_sources_sha256": {
+    "Cargo.toml": "87f7c20309227c01fc37fb39c6432a9c34419982dcfd3ab0daa8ae62240c6dc2",
+    "Cargo.lock": "09697cd80e7e931f04618b99b8e4a801fbfc4644cec4056c5edf036254de80d2",
+    "build.rs": "cc4b2c326c5ade8942c432c5b8fcdad38f74ff7a960cb76a46ca6dc7fdc0b7f3",
+    "src/main.rs": "d42f32e6129078be938463dd4df1116aff0c58f62433aac1d945199f9bf9e2ad",
+    "src/retained.rs": "534893d391ae89e9cc9b6d20400653638df8550ddad392de5e437cad1fb40a51",
+    "../lustr-native-core/src/library_history.rs": "b9b5599d739bd221cfcdb59280f456c2556859d0dc400b8b1afe57407678354f",
+    "../lustr-native-core/src/library_artifact.rs": "69a42c196c885afe549589628f79f5f226d65f149f63ee2994ec58fe3c757a0f",
+    "../lustr-native-core/src/metadata_archive.rs": "4906cce455716560344bdb329c3bcbc563da21e8c615c357583c038a90e11dfa",
+    "../lustr-native-core/src/unit_object.rs": "d43929971c980ec395913ce5f6cb13955e012e72ef2fcddcd14a24adaea1bd24",
+    "../lustr-native-core/src/unit_publication.rs": "035ee3f6a763a9562348f50476815bd24e7b6bc67a1a14a69edcd2fe8f44ae05"
+  },
+  "retained_native_caller_authored": true,
+  "retained_native_qualification": "Current shared extraction requires exact-source hosted qualification; previous source results remain scoped to their original callers."
+}

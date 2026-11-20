@@ -4,6 +4,11 @@ version = "0.2.0"
 edition = "2024"
 description = "A Rust subset compiler for fast dev checks and builds"
 
+[features]
+# Product helpers cannot delegate compilation to the separately built oracle.
+# This selection is part of LUST_BUILD_HASH and therefore the daemon/cache identity.
+exclusive-native = ["dep:lustr-metadata-encoder", "dep:lustr-metadata-sdk", "dep:object", "dep:serde_json", "dep:sha2"]
+
 [[bin]]
 name = "lust"
 path = "src/client.rs"
@@ -16,6 +21,14 @@ path = "src/main.rs"
 mimalloc = { version = "0.1.52", default-features = false }
 # Direct, for its C source: build.rs amalgamates it for musl release builds (src/cc.rs).
 libmimalloc-sys = { version = "0.1.49", default-features = false }
+# The declared Rust compiler's identifier normalization implementation.
+unicode-normalization = "=0.1.25"
+
+lustr-metadata-encoder = { path = "../../crates/lustr-metadata-encoder", optional = true }
+lustr-metadata-sdk = { path = "../../crates/lustr-metadata-sdk", optional = true }
+object = { version = "=0.39.1", default-features = false, features = ["write_std", "read_core", "elf", "archive"], optional = true }
+serde_json = { version = "=1.0.154", optional = true }
+sha2 = { version = "=0.11.1", optional = true }
 
 [profile.release]
 opt-level = 3

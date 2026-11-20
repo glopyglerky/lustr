@@ -1,0 +1,26 @@
+{
+  "schema": "lustr-current-performance-v2-verification-v1",
+  "date": "2026-11-19",
+  "command": [
+    "python3",
+    "tools/test-assess-current-performance.py"
+  ],
+  "exit": 0,
+  "controls_passed": 25,
+  "source_sha256": {
+    "tools/assess-current-performance.py": "4391ed47c2549c9270bfa0c7bac2a269a24b5b3f42c704c944524a331360293f",
+    "tools/test-assess-current-performance.py": "5703fec1ca92f67bf72faf0fba1f87e07090e6d8064ddaf3c32712ccef2f9587"
+  },
+  "log_sha256": {
+    "controls.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "controls.stderr": "0d72d077fb37de0b7504462519ac296bd81d2cda2ad7692781c02f16934f98a5"
+  },
+  "scope": "Synthetic assessor arithmetic, evidence controls and rendering. No compiler execution or timing campaign.",
+  "report_schema": "lustr-current-performance-assessment-v2",
+  "change": "Use paired summed elapsed costs for current per-case near-stock claims and their rustc-speed condition. Preserve geometric ratios as diagnostic, and show means/maxima alongside p95. Overall workload and release policy unchanged.",
+  "historical_assessments_unchanged": true,
+  "full_rust_coverage": false,
+  "compiler_performance_qualified": false,
+  "release_admission": false,
+  "audit_base_commit": "5cd40fd313503d4a4fc935ee47ca7c05fce1471a"
+}

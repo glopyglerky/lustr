@@ -1,0 +1,57 @@
+diff --git a/tools/native-upstream-qualification.rs b/tools/native-upstream-qualification.rs
+index 23fe5d037..53091b950 100644
+--- a/tools/native-upstream-qualification.rs
++++ b/tools/native-upstream-qualification.rs
+@@ -47,6 +47,9 @@ mod qualification {
+         }
+ 
+         fn after_expansion<'tcx>(&mut self, _: &interface::Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
++            let action = std::env::var("LUSTR_QUALIFICATION_ACTION").unwrap_or_else(|_| "build".into());
++            assert!(matches!(action.as_str(), "build" | "check" | "abandon"));
++            eprintln!("shared-action={action}");
+             let adapter_control = match std::env::var("LUSTR_QUALIFICATION_ADAPTER_FAILURE").as_deref() {
+                 Ok("missing") => upstream_definitions::abi::Control::MissingTool,
+                 Ok("failed") => upstream_definitions::abi::Control::FailedTool,
+@@ -73,7 +76,8 @@ mod qualification {
+             };
+             let mut session = driver::Session::new(self.scratch.join("native-state"), false, key.clone());
+             let request = driver::Request {
+-                cmd: driver::Cmd::Build, session: key, file: self.source.clone(), out: self.output.clone(),
++                cmd: if action == "check" { driver::Cmd::Check } else { driver::Cmd::Build },
++                session: key, file: self.source.clone(), out: self.output.clone(),
+                 json: false, timings: false, debug: false, emit_c: None, max_errors: 0,
+                 run_args: None, harness: false, cc: false, client: Default::default(),
+             };
+@@ -99,9 +103,15 @@ mod qualification {
+                     if std::env::var_os("LUSTR_QUALIFICATION_REMOVE_SNAPSHOT").is_some() {
+                         std::fs::remove_file(self.archive.path()).unwrap();
+                     }
+-                    let response = prepared.emit();
+-                    eprint!("{}", response.stderr);
+-                    self.status = response.code as u8;
++                    if action == "abandon" {
++                        drop(prepared);
++                        self.status = 0;
++                        eprintln!("shared-prepared-request=abandoned");
++                    } else {
++                        let response = prepared.emit();
++                        eprint!("{}", response.stderr);
++                        self.status = response.code as u8;
++                    }
+                 }
+                 Ok(driver::Preparation::Complete(response) | driver::Preparation::Rejected(response)
+                     | driver::Preparation::Failed(response) | driver::Preparation::Complementary(response)) => {
+@@ -114,11 +124,11 @@ mod qualification {
+                 }
+             }
+             if self.status == 0 {
+-                let previous = std::fs::read(&self.output).unwrap();
++                let previous = std::fs::read(&self.output).ok();
+                 assert!(driver::prepare_imported(&request, &mut session, &provider).is_err(), "an imported generation must not be reused without a dependency contract");
+                 assert!(matches!(driver::prepare(&request, &mut session), driver::Preparation::Failed(response) if response.code == 3),
+                     "ordinary native preparation must not reuse unkeyed imported state");
+-                assert_eq!(std::fs::read(&self.output).unwrap(), previous);
++                assert_eq!(std::fs::read(&self.output).ok(), previous);
+                 eprintln!("imported-generation-reuse=refused previous-artifact=preserved");
+             }
+             self.completed = true;

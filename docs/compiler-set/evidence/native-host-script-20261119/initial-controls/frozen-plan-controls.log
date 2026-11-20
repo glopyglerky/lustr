@@ -1,0 +1,13 @@
+
+running 8 tests
+test resolve::cargo::product_plan::tests::product_cargo_plan_binds_host_script_context_without_running_it ... ok
+test resolve::cargo::product_plan::tests::product_cargo_plan_binds_unique_source_and_explicit_target ... ok
+test resolve::cargo::product_plan::tests::product_cargo_plan_graph_key_distinguishes_missing_and_invalid_config ... ok
+test resolve::cargo::product_plan::tests::product_cargo_plan_preserves_duplicate_root_and_binding_failures ... ok
+test resolve::cargo::product_plan::tests::product_cargo_plan_refuses_changed_context_or_unsupported_features ... ok
+test resolve::cargo::product_plan::tests::product_cargo_plan_refuses_other_roots_missing_units_and_cycles ... ok
+test resolve::cargo::product_plan::tests::product_cargo_plan_refuses_unrepresented_compiler_settings ... ok
+test resolve::cargo::product_plan::tests::product_cargo_plan_uses_exact_features_edges_and_renames ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 433 filtered out; finished in 0.00s
+

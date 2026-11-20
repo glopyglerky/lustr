@@ -1,0 +1,284 @@
+{
+  "schema": 1,
+  "observed_utc": "2026-11-19T05:51:43.834153+00:00",
+  "implementation_commit": "8b350f97950980c1c4824e9e605f2e7aa9039d80",
+  "implementation_tree": "2ee7a627f311af552072782fcb5fc51768eab3a7",
+  "native_tree": "f0b20a558fc1bd12a09402303dfaf7dffee22573",
+  "parent_commit": "0963d2f3004726b7ad3389df19dffcfd0a9c1c03",
+  "declared_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "rustc_vV": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+  "host": "x86_64-unknown-linux-gnu",
+  "identities": {
+    "native_core_sha256": "5b58156a946dbde21275b0b3a354c1e6d31176aa37a94b452a24db0c8d5a50bb",
+    "rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "native_core_tests_sha256": "51ad6d1f6aba859b3217c5d64a3cfc1911226c38a8328c7bfa528923c4e38539"
+  },
+  "changed_source_sha256": {
+    "compiler/native/Cargo.lock": "aba44b4ef538689103916c17a2675bd86411a137ea59916ff797d21f33d370bf",
+    "compiler/native/Cargo.toml": "df67c62d10d796830335a4e3f0ee2de15758bb0f9f6191c3a0b47359e68c46df",
+    "compiler/native/UNICODE.md": "dcecc3dddbafd38703175d44452e6187f5a810c5c6b0bd258d10f005badb0d08",
+    "compiler/native/build.rs": "7f2972fde790cbb0e0add2f730a6b24a05ba50f61bc557bcec84b9fc56d1d196",
+    "compiler/native/licenses/identifier-normalization/tinyvec-1.10.0/LICENSE-APACHE.md": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "compiler/native/licenses/identifier-normalization/tinyvec-1.10.0/LICENSE-MIT.md": "fd80a26fbb3f644af1fa994134446702932968519797227e07a1368dea80f0bc",
+    "compiler/native/licenses/identifier-normalization/tinyvec-1.10.0/LICENSE-ZLIB.md": "84b34dd7608f7fb9b17bd588a6bf392bf7de504e2716f024a77d89f1b145a151",
+    "compiler/native/licenses/identifier-normalization/tinyvec_macros-0.1.1/LICENSE-APACHE.md": "4f44572785f35152c1fd2eadf565b7e079c0f300b4324f0af653419f9d76b735",
+    "compiler/native/licenses/identifier-normalization/tinyvec_macros-0.1.1/LICENSE-MIT.md": "1dd8eca0f83669e75fa119e34fb9e1be9d16e3e9b6368962b8019db6e8ae5f7b",
+    "compiler/native/licenses/identifier-normalization/tinyvec_macros-0.1.1/LICENSE-ZLIB.md": "41ace205715d9f19a3214218cc1c01d57c533e02cd0fef7c8e51a49a7fce5ac5",
+    "compiler/native/licenses/identifier-normalization/unicode-normalization-0.1.25/COPYRIGHT": "23860c2a7b5d96b21569afedf033469bab9fe14a1b24a35068b8641c578ce24d",
+    "compiler/native/licenses/identifier-normalization/unicode-normalization-0.1.25/LICENSE-APACHE": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+    "compiler/native/licenses/identifier-normalization/unicode-normalization-0.1.25/LICENSE-MIT": "7b63ecd5f1902af1b63729947373683c32745c16a10e8e6292e2e2dcd7e90ae0",
+    "compiler/native/src/cgen.rs": "dd75d68bb65d023bf52b2e204f8476bad8848994667ae2dbb510955d92cf0167",
+    "compiler/native/src/cgen/ll.rs": "6e8246ea5f2c0e70c3504d1c3bc6c207196025becb71daf3e2ab10b7a4093a70",
+    "compiler/native/src/check/collect.rs": "ecffcbc851f3cb58c7badbf07f6a57aa2d77db7a98797b0739bd82f4d97be980",
+    "compiler/native/src/check/deny_lints.rs": "bada32553cf1ce93bd6b0e4971aa355f8e15eed7aa0a1246a313414e6af5eb7e",
+    "compiler/native/src/check/mod.rs": "7fb51f8ce131a5232a6e4329c3a3d2641d67f3fcbbed95aba1c3a0b5311a3a86",
+    "compiler/native/src/driver/ast_hash.rs": "ad300865ac6246f687ad734da3a1e5d57176985f9691070fff941207007a14b4",
+    "compiler/native/src/driver/item_outline.rs": "5d0047a4e42d2419c80dacb3f6159444984ffa495b181f021b8ffc46f1e271e7",
+    "compiler/native/src/driver/macro_scope.rs": "fa95baf8e764503f1e9cd6f2b18229182ab76af7e8a7587f58db5cf020c90e61",
+    "compiler/native/src/driver/patch.rs": "5a391bf5ba15129d5f252797da204c7b9303a56275fc18d9a844dada11b59186",
+    "compiler/native/src/expand/assert_msg.rs": "18369f252d4c49e7ed30e3f76ac45b1f9d0615ef65df277b41d188d6ef91eef9",
+    "compiler/native/src/expand/builtin.rs": "57d76d0adfcd8b3272b3cea373695b21a46806d3bf3db1cc508883f6d8e2de5d",
+    "compiler/native/src/expand/lazy.rs": "6d838579868869f6daaaf9a8b166b29d0406f9506ade5ce45b961ed9c13ebed0",
+    "compiler/native/src/expand/match_.rs": "1221a73a31a612756427417a2a578a5c71755f424861f13fb07e562a8ec764bb",
+    "compiler/native/src/expand/mod.rs": "e7b8f8f9848df2a0881f7c9a86833d4a136b424689e6ef268157eb8470f70461",
+    "compiler/native/src/expand/recognize.rs": "20c3793ff6caa5b028e94dacf00a511e0e01d6131f9841b681c8f2497ef8acbe",
+    "compiler/native/src/expand/transcribe.rs": "43efc1368797c4123bfa33dc90db5c0f396334e73a787386aee9312009f8366d",
+    "compiler/native/src/identifier_tests.rs": "4b76397044a14548637637b1257fa0ab65e018f36b7eb78e8b36c6f57a49bc95",
+    "compiler/native/src/lexer.rs": "c557ce400e26a8ec80b2d1d7843f05afdf6acf19794710839d4bea9f49d0ba36",
+    "compiler/native/src/parser.rs": "e845c64a67cd323dfffdfef21e25b31a9aa41b2730f5620ad7fa29927d175309",
+    "compiler/native/src/parser/attrs.rs": "3d68004d62d00bc9d07fd25cd1a8d02ef395374444a45b4236bd19978ffb9e81",
+    "compiler/native/src/resolve/cfg.rs": "9f1cee6574f906b87b8f03cfe9744a0a9ee22480ca5a5f0977463b1e616c3d19",
+    "compiler/native/src/resolve/worklist.rs": "25b2a7717cf8d4209b089d3207e0ae2c2bf12bea23ec9cafd49b1f8c8ad4d502",
+    "compiler/native/src/scan.rs": "988a71f95c3df7dac565ce3cd9f9e678a863969e7eb0dadc81838cf82ec5a054",
+    "compiler/native/tests/fail/identifier_nfc_duplicate.rs": "de5b466ea076e2e9698b571600f684d0794e4595e8a42bb5e2d46028f6361aad",
+    "compiler/native/tests/pass/identifier_nfc.rs": "fc71e01f6c89126f39df8fc17b0c3ccf8e6f6754c8010fa82cace33d92bebd15",
+    "compiler/native/tests/pass/identifier_nfc_assertions.rs": "ac2a3486d5ef6a3c1aaff151528f072aa548a106905f9bf4dd7093401b5f2926",
+    "compiler/native/tests/pass/identifier_nfc_included.rs.inc": "ebfe177f298a4abc021ce42a19b0d4fbcf87f099cb32191470c0789377a44f33",
+    "compiler/native/tests/pass/identifier_nfc_includes.rs": "7016ef5d20f20b427aca32b0afc0b06d828f5e5b2a16289b9fbdf0326e7beaeb",
+    "compiler/native/tests/pass/identifier_nfc_macros.rs": "2d96c66b7f732429150240cbfdd275bb1ec75faca6359b12f7e052957ff510e7",
+    "compiler/native/tests/pass/identifier_nfc_module.rs.inc": "2e50edab3de23b62f1754e561a65a0f610dedd491af66d426f41e63a37e9d224",
+    "compiler/native/tests/pass/identifier_nfc_modules.rs": "f8f5c30189629e4700b71525e13d95e6978458dda0c20ac72f81a100c6bf1a45",
+    "compiler/native/tests/pass/lex_ident_normalized.rs": "2aeb150ca5d3f2ceb3d8be3f495524eede6e8c748ad1c10ed161a131f3a87fed",
+    "compiler/native/unicode-semantics.json": "513f8f25ebbe0609e3a0867fa2af3d8b5696e4e2e8cce2280451770a883aff6d",
+    "crates/lustr-native-core/Cargo.lock": "bda5b2a372f53f120c627f0d8cadf4fe9dbc89750b9a7b4ea509b510abb46b79",
+    "crates/lustr-native-core/Cargo.toml": "f4697b21b47d4bb25dd17153ae9aa95985f3bb80e516861e62217bb1607c9106",
+    "crates/lustr-native-core/src/expanded_parser.rs": "bd88ca6796b2b36c48f5c463fb4eb22244aefe5f80891801488ceaad9f728be1",
+    "crates/lustr-native-core/src/inference/assert_text.rs": "381a274f9eae0b5099a0ba23630af8cbd9090f53ca32b886ae47c428a4580847",
+    "crates/lustr-native-core/src/native_cache_inputs.rs": "f2cd0edf307881cfaed20d06d3e79bca707cfccade85fff2976212491a955c03",
+    "crates/lustr-native-core/src/native_object.rs": "eaad50c40c500c05362a5b2a3086324cf62278bc177aa0e18339947c569f53f6",
+    "crates/lustr-semantic/src/mixed_main.rs": "58346f9e2c048b655e8aca55bafe716873382a6bb973f51ba414c7ef674b8830",
+    "tools/qualify-native-unicode.py": "5eec9554954279835c06a52909bb0225e27451b9a7bf7aacdc55a1efce343f2a"
+  },
+  "normalization_implementation": {
+    "implementation": "The declared Rust compiler dependency unicode-normalization; is_nfc_quick and UnicodeNormalization::nfc",
+    "upstream_entry": "https://github.com/rust-lang/rust/blob/5b7b37aefcb5b2fba3c2392bc9065b9e4602d494/compiler/rustc_parse/src/lexer/mod.rs",
+    "dependencies": [
+      "unicode-normalization",
+      "tinyvec",
+      "tinyvec_macros"
+    ],
+    "lockfiles": [
+      "compiler/native/Cargo.lock",
+      "crates/lustr-native-core/Cargo.lock"
+    ],
+    "licenses": "compiler/native/licenses/identifier-normalization",
+    "source_spans": "Original byte positions are retained. Ident and Lifetime tokens carry canonical names and an explicit raw marker.",
+    "literal_bytes": "String, raw string, character and macro literal contents do not undergo identifier normalization.",
+    "upstream_sources": {
+      "compiler/rustc_parse/src/lexer/mod.rs": "a4544945c1beae414bc684e017bdcb0eb817cc2318316adddc72920a02a18421",
+      "compiler/rustc_ast_pretty/src/pprust/state.rs": "5dec2aac97fcf576138e6b8c3579bd4e5b91fb1e9323a469166b566789041076",
+      "compiler/rustc_span/src/symbol.rs": "d570a196be56ba01b1ac141fc5a9ab581b044ae6960dafff9ffb394a47ba640f"
+    }
+  },
+  "dependency_archives": {
+    "unicode-normalization": {
+      "version": "0.1.25",
+      "crate_sha256": "5fd4f6878c9cb28d874b009da9e8d183b5abc80117c40bbd187a1fde336be6e8",
+      "upstream_vcs_commit": "5a69b3bafb625caccdec7871a42bed0d9a6604d1"
+    },
+    "tinyvec": {
+      "version": "1.10.0",
+      "crate_sha256": "bfa5fdc3bce6191a1dbc8c02d5c8bffcf557bafa17c124c5264a458f1b0613fa",
+      "upstream_vcs_commit": "3c613ad020738e6fb49e207ff51d38e403bb98ed"
+    },
+    "tinyvec_macros": {
+      "version": "0.1.1",
+      "crate_sha256": "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20",
+      "upstream_vcs_commit": "860c23a09d91c8b9203134a81de7888b7191d5f2"
+    }
+  },
+  "upstream_cargo_lock_sha256": "080fd4f801bd66eac0f2e1ec5de21ccd845ec75063922d35efe7a0203e46fcca",
+  "preserved_red": {
+    "native_sha256": "066f71a26794945a3a704e692268483be96776b2a064a3ca02b8cda3462d1793",
+    "rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "results": [
+      {
+        "fixture": "identifier_nfc_duplicate.rs",
+        "compiler": "native",
+        "returncode": 1,
+        "source_sha256": "d963f2594da1a28f73189ab90d5067f9a804bd87b760259b960aa290f2a9e8cd",
+        "diagnostic": "L0002"
+      },
+      {
+        "fixture": "identifier_nfc_duplicate.rs",
+        "compiler": "rust",
+        "returncode": 1,
+        "source_sha256": "d963f2594da1a28f73189ab90d5067f9a804bd87b760259b960aa290f2a9e8cd",
+        "diagnostic": "E0428"
+      },
+      {
+        "fixture": "identifier_nfc_macros.rs",
+        "compiler": "native",
+        "returncode": 1,
+        "source_sha256": "2d96c66b7f732429150240cbfdd275bb1ec75faca6359b12f7e052957ff510e7",
+        "diagnostic": "L0002"
+      },
+      {
+        "fixture": "identifier_nfc_macros.rs",
+        "compiler": "rust",
+        "returncode": 0,
+        "source_sha256": "2d96c66b7f732429150240cbfdd275bb1ec75faca6359b12f7e052957ff510e7",
+        "run_returncode": 0,
+        "stdout": "1 2 4 3\ncafé | r#café | r#café | r#café\n'é | 'r#é | 'é | 'r#é\n\"é\" | é | é | 31\n",
+        "stderr": ""
+      },
+      {
+        "fixture": "identifier_nfc.rs",
+        "compiler": "native",
+        "returncode": 1,
+        "source_sha256": "fc71e01f6c89126f39df8fc17b0c3ccf8e6f6754c8010fa82cace33d92bebd15",
+        "diagnostic": "L0002"
+      },
+      {
+        "fixture": "identifier_nfc.rs",
+        "compiler": "rust",
+        "returncode": 0,
+        "source_sha256": "fc71e01f6c89126f39df8fc17b0c3ccf8e6f6754c8010fa82cace33d92bebd15",
+        "run_returncode": 0,
+        "stdout": "18 99 99 99\n",
+        "stderr": ""
+      }
+    ]
+  },
+  "intermediate_assertion_mismatch": {
+    "records": [
+      {
+        "compiler": "native",
+        "returncode": 0,
+        "run_returncode": 0,
+        "stdout": "assertion failed: r#café == 2\nassertion failed: value.café == 2\nassertion failed: value.résumé()\n"
+      },
+      {
+        "compiler": "rust",
+        "returncode": 0,
+        "run_returncode": 0,
+        "stdout": "assertion failed: café == 2\nassertion failed: value.café == 2\nassertion failed: value.résumé()\n"
+      }
+    ],
+    "repair": "Parsed AST name printing removes unnecessary raw prefixes; token-tree printing retains rawness. The final eleven-payload fixture matches pinned Rust."
+  },
+  "final_unicode_qualification": "unicode-qualification.json",
+  "final_unicode_commands": "qualification-commands.json",
+  "final_native_core_tests": {
+    "nfc_filter_stdout": "\nrunning 3 tests\ntest inference::assert_text::nfc_tests::nfc_ast_names_and_macro_tokens_keep_distinct_printing_rules ... ok\ntest pinned::lexer::identifier_tests::nfc_identifiers_survive_retained_edits_and_rejected_duplicates ... ok\ntest pinned::lexer::tests::nfc_forms ... ok\n\ntest result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 414 filtered out; finished in 0.16s\n\n",
+    "packed_token_filter_stdout": "\nrunning 1 test\ntest pinned::lexer::identifier_tests::normalized_identifier_tokens_preserve_spans_rawness_and_packing ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 416 filtered out; finished in 0.00s\n\n",
+    "retained_successful_phases": [
+      "cold",
+      "unchanged",
+      "decomposed body",
+      "raw body at equal byte length",
+      "decomposed declarations",
+      "revert"
+    ],
+    "invalid_edit": "Canonical duplicate definitions reject with L0106 and preserve the preceding executable bytes.",
+    "ast_printing_cases": 7,
+    "token_spellings": 15,
+    "setup_correction": "The first native-core formatter test used an unsupported unexpanded custom macro in a scratch AST. Those two test cases were replaced by supported builtin vec token groups with the same pinned-Rust observables; no production change was required for that setup correction."
+  },
+  "existing_frontend_regressions": {
+    "binary_sha256": {
+      "native": "e5dee294e530ca92866c1644b687c624afe6200383c73dd908326dd17520185a",
+      "previous": "066f71a26794945a3a704e692268483be96776b2a064a3ca02b8cda3462d1793",
+      "rust": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de"
+    },
+    "cases": 185,
+    "passed": 184,
+    "failed": [
+      "compiler/native/tests/fail/macro_doubling_fuzz.rs"
+    ],
+    "limits": [
+      "Only the named lexer/macro-related ordinary pass/fail corpus.",
+      "Both old native and candidate were independently compiled; no retry or fallback.",
+      "Exact standard-stream files and statuses are preserved per case."
+    ],
+    "reference_limited_fixture": {
+      "fixture": "compiler/native/tests/fail/macro_doubling_fuzz.rs",
+      "source_sha256": "1e9c730819eb4fffe6e26cf99eca0538dabfcddae11988617fdf97e940123372",
+      "candidate_compile_exit": 1,
+      "previous_compile_exit": 1,
+      "rust_compile_exit": -9,
+      "candidate_diagnostic": "L0801",
+      "previous_diagnostic": "L0801",
+      "declared_fixture_timeout_seconds": 5,
+      "private_runner_timeout_seconds": 60,
+      "observation": "Rust emitted syntax diagnostics and then terminated by signal 9. This is not a completed reference rejection comparison.",
+      "stderr_sha256": {
+        "native": "7d63333496e948504aee692a39131d6ffbdb1c4d21e1f4bcb2de41ce2e3d1779",
+        "previous": "7d63333496e948504aee692a39131d6ffbdb1c4d21e1f4bcb2de41ce2e3d1779",
+        "rust": "a5e126b75fdb9945e9247f1b8f7ec4318d707eb529e6278992024d7445082e44"
+      }
+    },
+    "native_difference_after_this_run": "Final code subsequently corrects unnecessary raw prefixes in parsed AST assertion names and updates the native-core assertion formatter; nine relevant existing fixtures pass separately on the final binary."
+  },
+  "final_assertion_regressions": {
+    "binary_sha256": {
+      "native": "5b58156a946dbde21275b0b3a354c1e6d31176aa37a94b452a24db0c8d5a50bb",
+      "rust": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de"
+    },
+    "cases": 9,
+    "passed": 9,
+    "failed": [],
+    "limits": [
+      "Only the named lexer/macro-related ordinary pass/fail corpus.",
+      "Candidate and pinned reference each compiled independently; no retry or fallback.",
+      "Exact standard-stream files and statuses are preserved per case."
+    ],
+    "stdout_byte_comparison": "All nine preserved native/reference stdout files compare byte for byte, in addition to recorded statuses and hashes."
+  },
+  "rust_1_99_build_compatibility": {
+    "command": "CARGO_HOME=$CARGO_HOME RUSTC=$RUST_1_99/bin/rustc LUST_TCC_HOME=$TCC $RUST_1_99/bin/cargo check --manifest-path compiler/native/Cargo.toml --locked --offline --jobs 2 --target-dir $OLD_HOST_TARGET --bins",
+    "exit_code": 0,
+    "stderr_sha256": "232e65142a7e1197f6bf46a316a1960cf4e7d75b41441afd81d0245e902cc9fa",
+    "scope": "Both native binaries type-check with the locked dependencies. No full old-host executable or runtime qualification is claimed.",
+    "setup_correction": "An initial invocation requested --lib, but this package has no library target; the corrected --bins invocation passed."
+  },
+  "commands": {
+    "build": "CARGO_HOME=$CARGO_HOME RUSTC=$PINNED_SDK/bin/rustc LUST_TCC_HOME=$TCC $PINNED_SDK/bin/cargo build --manifest-path compiler/native/Cargo.toml --locked --offline --jobs 2 --target-dir $NATIVE_TARGET --config 'build.build-dir=\"$NATIVE_INTERMEDIATES\"' --profile gate --bin lust --bin lust-core",
+    "qualify": "python3 tools/qualify-native-unicode.py --native-core $NATIVE_CORE --rustc $PINNED_SDK/bin/rustc --output $EVIDENCE",
+    "core_test_build": "$PINNED_SDK/bin/cargo test --manifest-path crates/lustr-native-core/Cargo.toml --features native-inference --locked --offline --jobs 2 --target-dir $CORE_TARGET --config 'build.build-dir=\"$CORE_INTERMEDIATES\"' --lib --no-run --message-format=json",
+    "core_tests": [
+      "$CORE_TESTS nfc --test-threads=1 --nocapture",
+      "$CORE_TESTS normalized_identifier_tokens --test-threads=1 --nocapture"
+    ],
+    "runtime_environment": {
+      "LUST_NO_CACHE": "1",
+      "LUST_NO_DAEMON": "1",
+      "LUST_TCC_HOME": "$TCC",
+      "TMPDIR": "$PRIVATE_TEMP",
+      "LD_LIBRARY_PATH": "$PINNED_SDK/lib"
+    }
+  },
+  "review": {
+    "independent_agent": "platform reviewer",
+    "source_commit": "8b350f97950980c1c4824e9e605f2e7aa9039d80",
+    "result": "No blocking finding in canonical/raw-token separation, hash and text paths, or locked normalization dependency closure. No broad tests rerun."
+  },
+  "limits": [
+    "The scalar mixed bridge still complements noncanonical source spellings until projection and retained definition identity are separately qualified.",
+    "An include-defined macro before an out-of-line module retains an existing L0809 restriction; independent include and module controls pass.",
+    "The existing frontend corpus result is 184 completed matches and one reference-limit result, before the final assertion-text fix; nine targeted final comparisons are separate.",
+    "Unicode finite-domain checks cover named scalar operations; normalization over all strings and general Rust semantics are not proven.",
+    "Local x86_64 Linux only; no macOS qualification, timing claim, full integration claim or release-package admission.",
+    "Imported upstream license bytes retain original trailing blank lines. Source whitespace checks exclude only those notices."
+  ]
+}

@@ -1,0 +1,169 @@
+{
+  "schema": 1,
+  "prior_commit": "7f64bf2b1287dcfd0177a75f074ff055e9ccddd5",
+  "published_baseline": {
+    "commit": "ea26fe16636d390763257a19c19df3db992cdbcb",
+    "tree": "9151b9c3c8fac46e2afc76ef0f2b9fc51a6a803f"
+  },
+  "scope": "dead expanded-source package removal and reviewed construction-mode enforcement; no compiler source or public runtime semantic change",
+  "source_sha256": {
+    "tools/build-native-toolchain.rs": "b62369a4530322e516b2bb8e211d960b975119146ed7ab2f5148224aefe98ada",
+    "tools/check-exclusive-coverage.py": "980364e8b7e5de8d5919b80f0ebfbb64ae9ed6220d080732c521eb7bd20d1f94",
+    "tools/test-exclusive-coverage-guard.py": "bdad1f6bc43b4c0b6653d53309aa9a706d350fd1587ea86f505f1212b763cbeb",
+    "tools/test-native-build-policy.py": "fa9c7f2881b6efbb68cdfa70827f75114928bd8fd6ffe991dcd26e44e0cc05fb",
+    "tools/host-sdk.rs": "5cb7549649c94c66c1063bbb459bf283ff8d5d0a796009711190519712a1c7e5",
+    "tools/selection-toolchain-receipt.rs": "897d349fde0d4fb58e06c4f6b79f328f0bc3a3efaedf6842c836fc6fbd64545e",
+    "src/host_runtime.rs": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223",
+    "crates/lustr-native-core/build.rs": "5cb5bff02838333098650aeebc2703b32f2085279c601db67c7c67b591025cd4"
+  },
+  "removed_sources": [
+    {
+      "path": "library/lustr/std/src/env.rs",
+      "prior_sha256": "80e1f33c7c7ebb86f28a49233600651f55c2cf11d6aa09f8c2c9dfbeb70824a7",
+      "reason": "sole active caller was removed expanded-source packaging; public main and bounded research had no caller"
+    },
+    {
+      "path": "library/lustr/std/src/os_string.rs",
+      "prior_sha256": "34f827dc716bbbe33054a32b3598aa651f6ebc544373e1a32b81371a69fb69d0",
+      "reason": "sole active caller was removed expanded-source packaging; public main and bounded research had no caller"
+    },
+    {
+      "path": "library/lustr/std/src/path_capacity.rs",
+      "prior_sha256": "155d30fde03a10c61e3aa654222a630274a07f90f2e8a06a417e1c9ae6729760",
+      "reason": "sole active caller was removed expanded-source packaging; public main and bounded research had no caller"
+    },
+    {
+      "path": "library/lustr/std/src/path_from.rs",
+      "prior_sha256": "59cf0b6dd0c71134670459b44ca7d53db29601b4e492c13cac2801460cd59fdf",
+      "reason": "sole active caller was removed expanded-source packaging; public main and bounded research had no caller"
+    },
+    {
+      "path": "library/lustr/std/src/platform.rs",
+      "prior_sha256": "07f0144f974a30d6767b6687d689ca96eecd2ae2f3d39a21fc38ce2090b2562c",
+      "reason": "sole active caller was removed expanded-source packaging; public main and bounded research had no caller"
+    },
+    {
+      "path": "src/native_expansion.rs",
+      "prior_sha256": "e2487bb2db135193b52b5c58322c9de535cafd4a7eed7dbb97dd3de656ecf730",
+      "reason": "sole active caller was removed expanded-source packaging; public main and bounded research had no caller"
+    }
+  ],
+  "protected_lust_paths_changed": [],
+  "commands": [
+    {
+      "label": "final-exclusive-coverage",
+      "command": [
+        "python3",
+        "tools/check-exclusive-coverage.py"
+      ],
+      "status": 0,
+      "streams": {
+        "stdout": {
+          "file": "final-exclusive-coverage.stdout",
+          "original_sha256": "29e8b9779114dec7438f6aaf42b4fb57b351c9c122aeb0dcd5e1368f12b1c69e",
+          "published_sha256": "29e8b9779114dec7438f6aaf42b4fb57b351c9c122aeb0dcd5e1368f12b1c69e"
+        },
+        "stderr": {
+          "file": "final-exclusive-coverage.stderr",
+          "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "label": "final-exclusive-coverage-controls",
+      "command": [
+        "python3",
+        "tools/test-exclusive-coverage-guard.py"
+      ],
+      "status": 0,
+      "streams": {
+        "stdout": {
+          "file": "final-exclusive-coverage-controls.stdout",
+          "original_sha256": "1b1831240ebe19fe2624ef05d6c06a0051ab22e68b3cb481b6dd89faa3983725",
+          "published_sha256": "1b1831240ebe19fe2624ef05d6c06a0051ab22e68b3cb481b6dd89faa3983725"
+        },
+        "stderr": {
+          "file": "final-exclusive-coverage-controls.stderr",
+          "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "label": "final-rustfmt",
+      "command": [
+        "<PINNED_SDK>/bin/rustfmt",
+        "--check",
+        "--edition",
+        "2024",
+        "--config",
+        "skip_children=true",
+        "tools/build-native-toolchain.rs"
+      ],
+      "status": 0,
+      "streams": {
+        "stdout": {
+          "file": "final-rustfmt.stdout",
+          "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr": {
+          "file": "final-rustfmt.stderr",
+          "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "label": "final-native-build-policy",
+      "command": [
+        "python3",
+        "tools/test-native-build-policy.py",
+        "--rustc",
+        "<PINNED_SDK>/bin/rustc"
+      ],
+      "status": 0,
+      "streams": {
+        "stdout": {
+          "file": "final-native-build-policy.stdout",
+          "original_sha256": "00675844be8d9a611b17b29d6c214c6ff146b4e9e9579115bb407d36a9333838",
+          "published_sha256": "dd3decd775e661a7f0be15ebdc10f08c3ba27e432abfafaedfbb219b20a69de4"
+        },
+        "stderr": {
+          "file": "final-native-build-policy.stderr",
+          "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    }
+  ],
+  "before_after_manifest_modes": "before-after-manifest-modes.json",
+  "manifest_inventory": "manifest-disposition.json",
+  "failed_invocation": {
+    "command": [
+      "python3",
+      "tools/test-native-build-policy.py",
+      "--rustc",
+      "<INVALID_SDK_PATH>/bin/rustc",
+      "--output",
+      "<OUTPUT>/audit-packaging-policy.json"
+    ],
+    "status": 1,
+    "record": "failed-sdk-path-control.json",
+    "original_report_sha256": "0d3cceb14972145ff0a52971af523b2da5d2de55326899e02d537e0d20861b24",
+    "published_report_sha256": "56c53d45a8bebab59391f52f232588fcc282f2046bef4e3b7b503d90de82e374",
+    "diagnosis": "Mistyped SDK path; subprocess creation failed before compiling the test helper. The original failure remains recorded. The corrected command and source-bound result are separate above."
+  },
+  "remaining_portability_boundary": {
+    "compiler_core": "native Lust engine and lustr-native-core use std, allocator/native libraries and Unix host services",
+    "retained_transport": "compiler/native/src/protocol.rs uses UnixStream and compiler/native/src/daemon.rs uses UnixListener; source/retained work is preserved",
+    "no_std_scope": "only standalone metadata encoder research remains qualified as core-plus-alloc; neither compiler nor host adapter is claimed no_std",
+    "next_qualification": "A replacement transport/core-service adapter must preserve one retained compiler state and matched cold/warm edit correctness and timing before changing this working runtime."
+  },
+  "limitations": [
+    "The actual constructor test proves feature/config/source admission and stops at SDK sentinels; full package rebuild is delegated to existing required CI.",
+    "Generic source export, archive audit and independent Rust qualification tools are not release admission. Full replacement and release remain unavailable.",
+    "The prior verification record is preserved; its older constructor and guard hashes are historical, not relabelled as these changed bytes."
+  ]
+}

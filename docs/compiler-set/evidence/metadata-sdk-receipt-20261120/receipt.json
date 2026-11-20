@@ -1,0 +1,328 @@
+{
+  "cfg_version": "1.102.0-nightly (5b7b37aef 2026-11-08)",
+  "construction_only": true,
+  "construction_tool_sha256": "eac23167bfc612bdd0ba6becfe6ed50922145bf59690619cbd744597b4228f8b",
+  "dependencies": [
+    {
+      "artifact": {
+        "path": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcore-b13a99ac1c8a27b3.rmeta",
+        "sha256": "394c67398a935dc62bbd8e31df88ffa10e0fa00fdcd49526f2a577bd7e72c936",
+        "size": 54594630
+      },
+      "crate_num": 1,
+      "extra_filename": "-b13a99ac1c8a27b3",
+      "host_hash_le_hex": null,
+      "is_private": false,
+      "kind": "Unconditional",
+      "kind_ordinal": 2,
+      "link_artifact": {
+        "path": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcore-b13a99ac1c8a27b3.rlib",
+        "sha256": "6f862495cb024770784bc42a4322ddaeb746c6cbf87f46fbf91de28438e88649",
+        "size": 3039568
+      },
+      "metadata_header": {
+        "magic_hex": "727573740000000c",
+        "root_position": 54593942,
+        "rustc_version": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)",
+        "svh_le_hex": "3611d18169958ffa22f1ed1712df6206",
+        "unhashed_root_position": 54594595
+      },
+      "name": "core",
+      "original_root": {
+        "alloc_error_handler": "false",
+        "compiler_builtins": "false",
+        "default_lib_allocator": "false",
+        "dependencies": [],
+        "edition": "2024",
+        "extra_filename": "-b13a99ac1c8a27b3",
+        "global_allocator": "false",
+        "name": "core",
+        "needs_allocator": "false",
+        "needs_panic_runtime": "false",
+        "no_builtins": "false",
+        "panic_handler": "false",
+        "panic_in_drop": "Unwind",
+        "panic_runtime": "false",
+        "proc_macro": "false",
+        "profiler_runtime": "false",
+        "required_panic": "None",
+        "stable_crate_id_hex": "e323c6d5b6a89c14",
+        "svh": "0662df1217edf122fa8f956981d11136",
+        "svh_le_hex": "3611d18169958ffa22f1ed1712df6206",
+        "symbol_mangling": "V0",
+        "target": "x86_64-unknown-linux-gnu"
+      },
+      "stable_crate_id_hex": "e323c6d5b6a89c14",
+      "svh_le_hex": "3611d18169958ffa22f1ed1712df6206"
+    },
+    {
+      "artifact": {
+        "path": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcompiler_builtins-fb8df4e3730e7261.rmeta",
+        "sha256": "d92b960e5b30ce65a1e723559cdcd03675bf8aac247e69f23265eba900e7788d",
+        "size": 3454017
+      },
+      "crate_num": 2,
+      "extra_filename": "-fb8df4e3730e7261",
+      "host_hash_le_hex": null,
+      "is_private": true,
+      "kind": "Unconditional",
+      "kind_ordinal": 2,
+      "link_artifact": {
+        "path": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcompiler_builtins-fb8df4e3730e7261.rlib",
+        "sha256": "a6880b190d7503c6e1ebac86d7558aea5e2be6721099cf2a50b23ab1885123d8",
+        "size": 5089142
+      },
+      "metadata_header": {
+        "magic_hex": "727573740000000c",
+        "root_position": 3453463,
+        "rustc_version": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)",
+        "svh_le_hex": "e645f60e594802de4a0775e61599c208",
+        "unhashed_root_position": 3453963
+      },
+      "name": "compiler_builtins",
+      "original_root": {
+        "alloc_error_handler": "false",
+        "compiler_builtins": "true",
+        "default_lib_allocator": "false",
+        "dependencies": [
+          {
+            "crate_num": 1,
+            "extra_filename": "-b13a99ac1c8a27b3",
+            "host_hash_le_hex": null,
+            "is_private": false,
+            "kind": "Unconditional",
+            "kind_ordinal": 2,
+            "name": "core",
+            "svh_le_hex": "3611d18169958ffa22f1ed1712df6206"
+          }
+        ],
+        "edition": "2024",
+        "extra_filename": "-fb8df4e3730e7261",
+        "global_allocator": "false",
+        "name": "compiler_builtins",
+        "needs_allocator": "false",
+        "needs_panic_runtime": "false",
+        "no_builtins": "true",
+        "panic_handler": "false",
+        "panic_in_drop": "Unwind",
+        "panic_runtime": "false",
+        "proc_macro": "false",
+        "profiler_runtime": "false",
+        "required_panic": "None",
+        "stable_crate_id_hex": "c54c708a7154aa88",
+        "svh": "08c29915e675074ade0248590ef645e6",
+        "svh_le_hex": "e645f60e594802de4a0775e61599c208",
+        "symbol_mangling": "V0",
+        "target": "x86_64-unknown-linux-gnu"
+      },
+      "stable_crate_id_hex": "c54c708a7154aa88",
+      "svh_le_hex": "e645f60e594802de4a0775e61599c208"
+    }
+  ],
+  "full_compiler_qualification": false,
+  "metadata_version": 12,
+  "original_source_contract": {
+    "dependency_kinds": "compiler/rustc_crate_store/src/cstore.rs::CrateDepKind",
+    "header": "compiler/rustc_metadata/src/rmeta/mod.rs",
+    "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+    "root_reader": "compiler/rustc_metadata/src/rmeta/decoder.rs::list_crate_metadata",
+    "svh_bytes": "compiler/rustc_data_structures/src/fingerprint.rs::to_le_bytes",
+    "svh_display": "compiler/rustc_data_structures/src/svh.rs"
+  },
+  "profile_arguments": [
+    "--edition=2024",
+    "--crate-name",
+    "consumer",
+    "--crate-type=rlib",
+    "--emit=metadata,link",
+    "--target=x86_64-unknown-linux-gnu",
+    "-Cmetadata=native_consumer_v1",
+    "-Cpanic=abort",
+    "-Copt-level=0",
+    "-Cdebuginfo=0",
+    "-Coverflow-checks=on",
+    "-Cdebug-assertions=on"
+  ],
+  "reference": {
+    "metadata": {
+      "path": "libconsumer.rmeta",
+      "sha256": "0023c486c5adcc519a31b15fe3e556b7c6878c1e9b1dd4d656fde56d1ab70f9a",
+      "size": 1717
+    },
+    "metadata_header": {
+      "magic_hex": "727573740000000c",
+      "root_position": 1308,
+      "rustc_version": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)",
+      "svh_le_hex": "6b85dfd10df144e8b7ec61f590f479c9",
+      "unhashed_root_position": 1661
+    },
+    "original_root": {
+      "alloc_error_handler": "false",
+      "compiler_builtins": "false",
+      "default_lib_allocator": "false",
+      "dependencies": [
+        {
+          "artifact": {
+            "path": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcore-b13a99ac1c8a27b3.rmeta",
+            "sha256": "394c67398a935dc62bbd8e31df88ffa10e0fa00fdcd49526f2a577bd7e72c936",
+            "size": 54594630
+          },
+          "crate_num": 1,
+          "extra_filename": "-b13a99ac1c8a27b3",
+          "host_hash_le_hex": null,
+          "is_private": false,
+          "kind": "Unconditional",
+          "kind_ordinal": 2,
+          "link_artifact": {
+            "path": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcore-b13a99ac1c8a27b3.rlib",
+            "sha256": "6f862495cb024770784bc42a4322ddaeb746c6cbf87f46fbf91de28438e88649",
+            "size": 3039568
+          },
+          "metadata_header": {
+            "magic_hex": "727573740000000c",
+            "root_position": 54593942,
+            "rustc_version": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)",
+            "svh_le_hex": "3611d18169958ffa22f1ed1712df6206",
+            "unhashed_root_position": 54594595
+          },
+          "name": "core",
+          "original_root": {
+            "alloc_error_handler": "false",
+            "compiler_builtins": "false",
+            "default_lib_allocator": "false",
+            "dependencies": [],
+            "edition": "2024",
+            "extra_filename": "-b13a99ac1c8a27b3",
+            "global_allocator": "false",
+            "name": "core",
+            "needs_allocator": "false",
+            "needs_panic_runtime": "false",
+            "no_builtins": "false",
+            "panic_handler": "false",
+            "panic_in_drop": "Unwind",
+            "panic_runtime": "false",
+            "proc_macro": "false",
+            "profiler_runtime": "false",
+            "required_panic": "None",
+            "stable_crate_id_hex": "e323c6d5b6a89c14",
+            "svh": "0662df1217edf122fa8f956981d11136",
+            "svh_le_hex": "3611d18169958ffa22f1ed1712df6206",
+            "symbol_mangling": "V0",
+            "target": "x86_64-unknown-linux-gnu"
+          },
+          "stable_crate_id_hex": "e323c6d5b6a89c14",
+          "svh_le_hex": "3611d18169958ffa22f1ed1712df6206"
+        },
+        {
+          "artifact": {
+            "path": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcompiler_builtins-fb8df4e3730e7261.rmeta",
+            "sha256": "d92b960e5b30ce65a1e723559cdcd03675bf8aac247e69f23265eba900e7788d",
+            "size": 3454017
+          },
+          "crate_num": 2,
+          "extra_filename": "-fb8df4e3730e7261",
+          "host_hash_le_hex": null,
+          "is_private": true,
+          "kind": "Unconditional",
+          "kind_ordinal": 2,
+          "link_artifact": {
+            "path": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcompiler_builtins-fb8df4e3730e7261.rlib",
+            "sha256": "a6880b190d7503c6e1ebac86d7558aea5e2be6721099cf2a50b23ab1885123d8",
+            "size": 5089142
+          },
+          "metadata_header": {
+            "magic_hex": "727573740000000c",
+            "root_position": 3453463,
+            "rustc_version": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)",
+            "svh_le_hex": "e645f60e594802de4a0775e61599c208",
+            "unhashed_root_position": 3453963
+          },
+          "name": "compiler_builtins",
+          "original_root": {
+            "alloc_error_handler": "false",
+            "compiler_builtins": "true",
+            "default_lib_allocator": "false",
+            "dependencies": [
+              {
+                "crate_num": 1,
+                "extra_filename": "-b13a99ac1c8a27b3",
+                "host_hash_le_hex": null,
+                "is_private": false,
+                "kind": "Unconditional",
+                "kind_ordinal": 2,
+                "name": "core",
+                "svh_le_hex": "3611d18169958ffa22f1ed1712df6206"
+              }
+            ],
+            "edition": "2024",
+            "extra_filename": "-fb8df4e3730e7261",
+            "global_allocator": "false",
+            "name": "compiler_builtins",
+            "needs_allocator": "false",
+            "needs_panic_runtime": "false",
+            "no_builtins": "true",
+            "panic_handler": "false",
+            "panic_in_drop": "Unwind",
+            "panic_runtime": "false",
+            "proc_macro": "false",
+            "profiler_runtime": "false",
+            "required_panic": "None",
+            "stable_crate_id_hex": "c54c708a7154aa88",
+            "svh": "08c29915e675074ade0248590ef645e6",
+            "svh_le_hex": "e645f60e594802de4a0775e61599c208",
+            "symbol_mangling": "V0",
+            "target": "x86_64-unknown-linux-gnu"
+          },
+          "stable_crate_id_hex": "c54c708a7154aa88",
+          "svh_le_hex": "e645f60e594802de4a0775e61599c208"
+        }
+      ],
+      "edition": "2024",
+      "extra_filename": "",
+      "global_allocator": "false",
+      "name": "consumer",
+      "needs_allocator": "false",
+      "needs_panic_runtime": "false",
+      "no_builtins": "false",
+      "panic_handler": "false",
+      "panic_in_drop": "Unwind",
+      "panic_runtime": "false",
+      "proc_macro": "false",
+      "profiler_runtime": "false",
+      "required_panic": "Some(Abort)",
+      "stable_crate_id_hex": "4d850957defa2873",
+      "svh": "c979f490f561ecb7e844f10dd1df856b",
+      "svh_le_hex": "6b85dfd10df144e8b7ec61f590f479c9",
+      "symbol_mangling": "V0",
+      "target": "x86_64-unknown-linux-gnu"
+    },
+    "rlib": {
+      "path": "libconsumer.rlib",
+      "sha256": "700e4ecaeeffa7ea0faef34ed6099a7bbe350f44b06dcacefcf0ff5f5657728a",
+      "size": 8308
+    },
+    "source_sha256": "c88b4bbcdc31261137f1c98a7ed706202ffcd687fd6d60a5f73fc818cd5236ba"
+  },
+  "rust_revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "schema": "lustr-native-metadata-sdk-v1",
+  "sdk_tools": {
+    "driver": {
+      "path": "lib/librustc_driver-f21b5e769b80ce6a.so",
+      "sha256": "ace7e2aa6ae11ca4c9b1edaf70701fc9390de38dd86bcf16bb8f22d5e658bd72",
+      "size": 164782176
+    },
+    "llvm": {
+      "path": "lib/libLLVM.so.23.1-rust-1.102.0-nightly",
+      "sha256": "5b12901d3a06a2eca8eae8e0781f678a6b2213740e2754f90dc22aef3f23dc21",
+      "size": 208283952
+    },
+    "rustc": {
+      "path": "bin/rustc",
+      "sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+      "size": 646208
+    }
+  },
+  "source_pin_sha256": "ae93e7fb837097658ddda8881795aec4c6abe474b00f133806079a044c7dec2b",
+  "target": "x86_64-unknown-linux-gnu",
+  "user_source_read": false
+}

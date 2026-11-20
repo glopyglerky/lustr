@@ -77,6 +77,7 @@ pub fn digest(p: &Program) -> Vec<(&'static str, u64)> {
         main,                        // refuse: main is never patched
         krate: _,                    // same
         stable_crate: _,             // same
+        imported_crates: _,          // imported requests cannot enter delta reuse
         fn_defs,                     // same (the fn's hash stands)
         def_by_hash,                 // same
         std_fns: _,                  // same (std splice edits refuse)

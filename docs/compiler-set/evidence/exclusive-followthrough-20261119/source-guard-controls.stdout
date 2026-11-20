@@ -1,0 +1,12 @@
+
+running 7 tests
+test tests::candidate_identity_check_preserves_the_release_hold ... ok
+test tests::checks_a_staged_restoration_before_commit ... ok
+test tests::complete_patch_includes_gitlinks_despite_local_diff_configuration ... ok
+test tests::rejects_patch_record_reference_and_expected_result_tampering ... ok
+test tests::refuses_index_flags_that_hide_worktree_drift ... ok
+test tests::admits_exact_declared_diff_and_rejects_unexplained_drift ... ok
+test tests::detects_source_edits_and_additions_while_preserving_owned_work ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+

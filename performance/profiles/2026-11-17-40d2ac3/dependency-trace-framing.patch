@@ -1,0 +1,9 @@
+--- original/lustr-mixed-profile/qualification/dependency.trace
++++ derived/lustr-mixed-profile/qualification/dependency.trace
+@@ -1,4 +1,4 @@
+-request-key=a8635c96722e5567 retained=falserequest-key=27b2ad9f5eece79d retained=false
+-
++request-key=a8635c96722e5567 retained=false
++request-key=27b2ad9f5eece79d retained=false
+ frontend=1
+ frontend=1

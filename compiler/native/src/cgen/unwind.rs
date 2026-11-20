@@ -330,6 +330,36 @@ pub(super) fn dtry_calls(text: &str) -> (String, bool) {
     (out, !stmts.is_empty())
 }
 
+/// A partially moved value has inline, conditional drop paths instead of
+/// whole-value glue. Hold the first panic until every remaining path has run,
+/// using the same runtime continuation and double-panic rules as that glue.
+/// The caller supplies the complete projection tree, so nested fields share
+/// one exception record and cannot rethrow before later siblings are dropped.
+pub(super) fn partial_drop_body(text: &str, tables: bool) -> String {
+    let stmts = glue_drop_stmts(text, true);
+    if stmts.is_empty() {
+        return text.to_owned();
+    }
+    let mut out = String::with_capacity(text.len() + stmts.len() * 96);
+    out.push_str(if tables { " { void *ux = 0;" } else { " { lust_exc ex; int32_t u = 0;" });
+    let mut copied = 0;
+    for d in &stmts {
+        out.push_str(&text[copied..d.start]);
+        if tables {
+            out.push_str(&d.dtry);
+        } else {
+            // Expression form prevents the enclosing statement's generic
+            // call check from jumping past this value's remaining drops.
+            // Braces also keep the continuation inside an array-element loop.
+            let _ = write!(out, "{{ (void)({}, 0); lust_unw_dstep(&ex, &u); }}", &text[d.start..d.end - 1]);
+        }
+        copied = d.end;
+    }
+    out.push_str(&text[copied..]);
+    out.push_str(if tables { " if (ux) lust_unw_reraise(ux); }" } else { " if (u) lust_unw_resume(&ex); }" });
+    out
+}
+
 /// Unwind tables: drop glue that can panic as one frame, with no work on the normal path
 /// beyond a state store per drop. Before its k-th drop statement (`glue_drop_stmts`) the
 /// glue stores `st = k` in its frame `L` (and the index of the element loop it is in);
@@ -361,7 +391,7 @@ pub(super) fn frame_glue(m: &str, ct: &str, body: &str) -> Option<String> {
         && !has_loop
         && nothing_after(&body[d.end..])
     {
-        return Some(format!("void drop_{m}({ct} *p) {{\n{body}}}\n"));
+        return Some(format!("void drop_{m}(void *raw) {{\n  {ct} *p = raw;\n{body}}}\n"));
     }
     let (mut fast, mut rest) = (String::with_capacity(body.len() + 64), String::with_capacity(body.len() + 64));
     let mut copied = 0;
@@ -402,14 +432,14 @@ pub(super) fn frame_glue(m: &str, ct: &str, body: &str) -> Option<String> {
     let mut out = String::with_capacity(fast.len() + tail.len() + 512);
     // The prototype first: a unit that keeps this glue to itself puts `static ` before the
     // definition text (`fn_unit`), and the definition below then inherits that linkage.
-    let _ = writeln!(out, "void drop_{m}({ct} *p);");
+    let _ = writeln!(out, "void drop_{m}(void *raw);");
     let _ = writeln!(out, "struct dgf_{m} {{ int32_t st; {ct} *p;{i_field} }};");
     let _ = writeln!(out, "static void dgc_{m}(struct dgf_{m} *Lc);");
     let _ = writeln!(
         out,
         "static inline __attribute__((always_inline)) void dgw_{m}(struct dgf_{m} *Lc) {{ if (__builtin_expect(Lc->st != 0, 0)) dgc_{m}(Lc); }}"
     );
-    let _ = writeln!(out, "void drop_{m}({ct} *p) {{\n  struct dgf_{m} L __attribute__((cleanup(dgw_{m})));\n  L.st = 0; L.p = p;{i_init}");
+    let _ = writeln!(out, "void drop_{m}(void *raw) {{\n  {ct} *p = raw;\n  struct dgf_{m} L __attribute__((cleanup(dgw_{m})));\n  L.st = 0; L.p = p;{i_init}");
     out.push_str(&fast);
     out.push_str("  L.st = 0;\n}\n");
     let _ = writeln!(out, "static void dgc_{m}(struct dgf_{m} *Lc) {{\n  {ct} *p = Lc->p;\n{i_local}{decls}  switch (Lc->st) {{");
@@ -552,24 +582,28 @@ fn match_paren(b: &[u8], open: usize) -> Option<usize> {
     None
 }
 
-/// Whether the token at `at` starts a C statement: after `;`, `{`,
-/// `}`, `else`, the condition of `if`/`for`/`while`, or the start.
-/// True when `at` follows an enum glue's `case N:` label (and spaces).
+/// True when `at` follows an enum glue's `case N:` or `default:` label.
 fn after_case_label(b: &[u8], at: usize) -> bool {
     let mut j = at;
-    while j > 0 && b[j - 1] == b' ' {
+    while j > 0 && b[j - 1].is_ascii_whitespace() {
         j -= 1;
     }
     if j == 0 || b[j - 1] != b':' {
         return false;
     }
+    if j >= 8 && &b[j - 8..j - 1] == b"default" && (j == 8 || !is_ident(b[j - 9])) {
+        return true;
+    }
     let mut k = j - 1;
     while k > 0 && b[k - 1].is_ascii_digit() {
         k -= 1;
     }
-    k < j - 1 && k >= 5 && &b[k - 5..k] == b"case "
+    k < j - 1 && k >= 5 && &b[k - 5..k] == b"case " && (k == 5 || !is_ident(b[k - 6]))
 }
 
+/// Whether the token at `at` starts a C statement: after `;`, `{`,
+/// `}`, an enum case/default label, `else`, an `if`/`for`/`while`
+/// condition, or the start.
 fn stmt_start(b: &[u8], at: usize) -> bool {
     let mut j = at;
     while j > 0 && b[j - 1].is_ascii_whitespace() {
@@ -580,6 +614,7 @@ fn stmt_start(b: &[u8], at: usize) -> bool {
     }
     match b[j - 1] {
         b';' | b'{' | b'}' => true,
+        b':' => after_case_label(b, j),
         b'e' => j >= 4 && &b[j - 4..j] == b"else" && (j == 4 || !is_ident(b[j - 5])),
         b')' => {
             // Back to the matching `(`, then the keyword before it.
@@ -623,7 +658,7 @@ mod tests {
         let framed = |body: &str| frame_glue("T_", "T", body).expect("covered").contains("struct dgf_T_");
         // One drop and nothing after it: plain glue, which units can inline.
         let opt = "  if (disc_O_X_(p)) drop_X_(&(*p).u.v1.f0);\n";
-        assert_eq!(frame_glue("T_", "T", opt).as_deref(), Some(format!("void drop_T_(T *p) {{\n{opt}}}\n").as_str()));
+        assert_eq!(frame_glue("T_", "T", opt).as_deref(), Some(format!("void drop_T_(void *raw) {{\n  T *p = raw;\n{opt}}}\n").as_str()));
         assert!(!framed("  ((void (*)(T *))f_0123456789abcdef)(p);\n"));
         assert!(!framed("  switch (disc_E_(p)) {\n  case 0: drop_X_(&p->u.v0.f0); break;\n  case 1: break;\n  default: break;\n  }\n"));
         // A drop with more after it keeps the frame: the rest runs as cleanup.

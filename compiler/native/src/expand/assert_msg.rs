@@ -69,9 +69,6 @@ pub fn cond_text(flat: Vec<(String, Tok, Span)>) -> Option<String> {
         .map(|(i, (text, tok, span))| {
             // A gap before the next token is whitespace or a comment.
             let alone = spans.get(i + 1).is_none_or(|n| n.lo > span.hi || n.file != span.file);
-            // The parser's text of a raw identifier has no `r#`.
-            let raw = matches!(tok, Tok::Ident(_)) && (span.hi - span.lo) as usize == text.len() + 2;
-            let text = if raw { format!("r#{text}") } else { text };
             T { text, k: kind_of(tok), span, alone: Some(alone), subst: false }
         })
         .collect();
@@ -127,7 +124,7 @@ fn flatten(st: &Expander, trees: &[Tt], group: Option<CtxtId>, out: &mut Vec<T>)
                 // A token this file wrote keeps its source spacing; one a
                 // macro body wrote is `Alone` (rustc's transcriber).
                 let alone = if t.span.ctxt == CtxtId::ROOT { src_alone(&st.cur_src, t.span.hi) } else { true };
-                let subst = group.is_some_and(|c| c != t.span.ctxt) && (ident_like(t.tok) || matches!(t.tok, Tok::Lifetime(_)));
+                let subst = group.is_some_and(|c| c != t.span.ctxt) && (ident_like(t.tok) || matches!(t.tok, Tok::Lifetime(_, _)));
                 // `>>` and `>>=` are one tree here; the parser sees `>` first.
                 let second = match t.tok {
                     Tok::Shr => Some((">", Tok::Gt)),
@@ -178,7 +175,7 @@ fn ident_like(t: Tok) -> bool {
     use Tok::*;
     matches!(
         t,
-        Ident(_)
+        Ident(_, _)
             | Reserved(_)
             | As
             | Break
@@ -233,7 +230,7 @@ fn is_punct(t: Tok) -> bool {
                 | Tok::ByteStr(_)
                 | Tok::ByteChar(_)
                 | Tok::Char(..)
-                | Tok::Lifetime(_)
+                | Tok::Lifetime(_, _)
         )
 }
 
@@ -408,7 +405,11 @@ impl P {
     /// The current token's text, consumed.
     fn bump(&mut self) -> String {
         self.i += 1;
-        self.t[self.i - 1].text.clone()
+        let token = &self.t[self.i - 1];
+        match token.k {
+            K::Tok(kind) => crate::lexer::ast_name_text(kind, &token.text).into_owned(),
+            _ => token.text.clone(),
+        }
     }
     /// True when the token at `i` touches the one after it (`>` `>`).
     fn joint(&self, i: usize) -> bool {
@@ -558,14 +559,14 @@ impl P {
             Some(K::FragOpen(k)) => matches!(k, FragKind::Expr | FragKind::Expr2021 | FragKind::Literal | FragKind::Block | FragKind::Path),
             Some(K::Tok(t)) => matches!(
                 t,
-                Ident(_)
+                Ident(_, _)
                     | Int(..)
                     | Float(_)
                     | Str(..)
                     | ByteStr(_)
                     | ByteChar(_)
                     | Char(..)
-                    | Lifetime(_)
+                    | Lifetime(_, _)
                     | True
                     | False
                     | SelfLower
@@ -642,7 +643,7 @@ impl P {
     /// `&` of a `&&` token.
     fn addr_of(&mut self, r: R, outer: &str) -> Option<Ex> {
         self.i += 1;
-        let raw = matches!(self.peek(), Some(K::Tok(Tok::Ident(_))))
+        let raw = matches!(self.peek(), Some(K::Tok(Tok::Ident(_, _))))
             && self.t[self.i].text == "raw"
             && matches!(self.tok_at(self.i + 1), Some(Tok::Const | Tok::Mut));
         let m = if raw {
@@ -674,7 +675,7 @@ impl P {
                 let dot = if !p && e.kind == EK::DotLit { " ." } else { "." };
                 let base = wrap(e, p)?;
                 match self.tok()? {
-                    Tok::Ident(_) | Tok::Reserved(_) => {
+                    Tok::Ident(_, _) | Tok::Reserved(_) => {
                         if matches!(self.tok(), Some(Tok::Reserved(_))) {
                             return None;
                         }
@@ -786,7 +787,7 @@ impl P {
                     self.i += 1;
                     Some(Ex::new(format!("unsafe {}", self.block()?), Prec::Unambiguous, EK::BlockLike))
                 }
-                Lifetime(_) if self.tok_at(self.i + 1) == Some(Colon) => {
+                Lifetime(_, _) if self.tok_at(self.i + 1) == Some(Colon) => {
                     let label = self.bump();
                     self.i += 1;
                     let e = match self.peek()? {
@@ -833,13 +834,13 @@ impl P {
                 Break => {
                     self.i += 1;
                     let mut s = "break".to_string();
-                    if matches!(self.tok(), Some(Lifetime(_))) {
+                    if matches!(self.tok(), Some(Lifetime(_, _))) {
                         s.push(' ');
                         s.push_str(&self.bump());
                     }
                     if self.range_rhs(r) {
                         // `break 'a: loop {}` needs parens rustc would add.
-                        if !s.contains('\'') && matches!(self.tok(), Some(Lifetime(_))) {
+                        if !s.contains('\'') && matches!(self.tok(), Some(Lifetime(_, _))) {
                             return None;
                         }
                         let v = self.expr(R { stmt: false, ..r })?;
@@ -852,7 +853,7 @@ impl P {
                 Continue => {
                     self.i += 1;
                     let mut s = "continue".to_string();
-                    if matches!(self.tok(), Some(Lifetime(_))) {
+                    if matches!(self.tok(), Some(Lifetime(_, _))) {
                         s.push(' ');
                         s.push_str(&self.bump());
                     }
@@ -878,7 +879,7 @@ impl P {
                     self.i += 1;
                     Some(Ex::new("_".into(), Prec::Unambiguous, EK::Other))
                 }
-                Ident(_) | SelfLower | SelfUpper | Super | Crate | PathSep | Lt | Shl => self.path_like(r),
+                Ident(_, _) | SelfLower | SelfUpper | Super | Crate | PathSep | Lt | Shl => self.path_like(r),
                 _ => None,
             },
         }
@@ -909,7 +910,7 @@ impl P {
                 break;
             }
             let name = match self.tok()? {
-                Tok::Ident(_) | Tok::Int(..) => self.bump(),
+                Tok::Ident(_, _) | Tok::Int(..) => self.bump(),
                 _ => return None,
             };
             if self.eat(Tok::Colon) {
@@ -1038,7 +1039,7 @@ impl P {
         }
         // A macro call statement: `m! { .. }` and `m!(..);` stay statements.
         let start = self.i;
-        if matches!(self.tok(), Some(Ident(_) | SelfLower | Super | Crate | PathSep)) {
+        if matches!(self.tok(), Some(Ident(_, _) | SelfLower | Super | Crate | PathSep)) {
             let (path, generics) = self.path(true)?;
             if !generics && self.is(Bang) && matches!(self.kind(self.i + 1), Some(K::Open(_))) {
                 let brace = self.kind(self.i + 1) == Some(K::Open(Delim::Brace));
@@ -1107,7 +1108,7 @@ impl P {
     /// `X<T>` / `Fn(A) -> B` (types).
     fn segment(&mut self, colons: bool, s: &mut String) -> Option<bool> {
         match self.tok()? {
-            Tok::Ident(_) | Tok::SelfLower | Tok::SelfUpper | Tok::Super | Tok::Crate => s.push_str(&self.bump()),
+            Tok::Ident(_, _) | Tok::SelfLower | Tok::SelfUpper | Tok::Super | Tok::Crate => s.push_str(&self.bump()),
             _ => return None,
         }
         if s.ends_with("$crate") {
@@ -1154,13 +1155,13 @@ impl P {
         let mut args = Vec::new();
         while !self.is(Tok::Gt) {
             let arg = match self.tok() {
-                Some(Tok::Lifetime(_)) => self.bump(),
-                Some(Tok::Ident(_)) if self.tok_at(self.i + 1) == Some(Tok::Eq) => {
+                Some(Tok::Lifetime(_, _)) => self.bump(),
+                Some(Tok::Ident(_, _)) if self.tok_at(self.i + 1) == Some(Tok::Eq) => {
                     let name = self.bump();
                     self.i += 1;
                     format!("{name} = {}", self.ty()?)
                 }
-                Some(Tok::Ident(_)) if self.tok_at(self.i + 1) == Some(Tok::Colon) => return None,
+                Some(Tok::Ident(_, _)) if self.tok_at(self.i + 1) == Some(Tok::Colon) => return None,
                 Some(Tok::Int(..) | Tok::Minus | Tok::True | Tok::False | Tok::Char(..) | Tok::Str(..)) => self.unary(R::default())?.s,
                 _ if self.open(Delim::Brace) => self.block()?,
                 _ => self.ty()?,
@@ -1207,7 +1208,7 @@ impl P {
             K::Tok(Amp | AndAnd) => {
                 let outer = if self.is(AndAnd) { "&" } else { "" };
                 self.i += 1;
-                let lt = if matches!(self.tok(), Some(Lifetime(_))) { format!("{} ", self.bump()) } else { String::new() };
+                let lt = if matches!(self.tok(), Some(Lifetime(_, _))) { format!("{} ", self.bump()) } else { String::new() };
                 let m = if self.eat(Mut) { "mut " } else { "" };
                 Some(format!("{outer}&{lt}{m}{}", self.ty()?))
             }
@@ -1236,7 +1237,7 @@ impl P {
                 }
                 self.i += 1;
                 let (params, _) = self.list(Delim::Paren, |p| {
-                    let named = matches!(p.tok(), Some(Ident(_) | Underscore)) && p.tok_at(p.i + 1) == Some(Colon);
+                    let named = matches!(p.tok(), Some(Ident(_, _) | Underscore)) && p.tok_at(p.i + 1) == Some(Colon);
                     if named {
                         let name = p.bump();
                         p.i += 1;
@@ -1256,7 +1257,7 @@ impl P {
                 self.i += 1;
                 Some(format!("impl {}", self.bounds()?))
             }
-            K::Tok(Ident(_) | SelfUpper | SelfLower | Super | Crate | PathSep | Lt) => {
+            K::Tok(Ident(_, _) | SelfUpper | SelfLower | Super | Crate | PathSep | Lt) => {
                 let (p, generics) = self.path(false)?;
                 if self.is(Bang) && !generics && matches!(self.kind(self.i + 1), Some(K::Open(_))) {
                     self.i += 1;
@@ -1273,7 +1274,7 @@ impl P {
         let mut out = Vec::new();
         loop {
             let b = match self.tok()? {
-                Tok::Lifetime(_) => self.bump(),
+                Tok::Lifetime(_, _) => self.bump(),
                 Tok::Question => {
                     self.i += 1;
                     format!("?{}", self.path(false)?.0)
@@ -1360,12 +1361,12 @@ impl P {
                     return None;
                 }
                 match self.tok()? {
-                    Ident(_) => s.push_str(&self.bump()),
+                    Ident(_, _) => s.push_str(&self.bump()),
                     _ => return None,
                 }
                 return self.binding_tail(s);
             }
-            K::Tok(Ident(_))
+            K::Tok(Ident(_, _))
                 if !matches!(
                     self.kind(self.i + 1),
                     Some(K::Tok(PathSep | Bang | DotDot | DotDotEq | Ellipsis)) | Some(K::Open(Delim::Paren | Delim::Brace))
@@ -1379,7 +1380,7 @@ impl P {
                 self.i += 1;
                 format!("-{}", self.bump())
             }
-            K::Tok(Ident(_) | SelfLower | SelfUpper | Super | Crate | PathSep | Lt) => {
+            K::Tok(Ident(_, _) | SelfLower | SelfUpper | Super | Crate | PathSep | Lt) => {
                 let (path, generics) = self.path(true)?;
                 if self.is(Bang) && !generics && matches!(self.kind(self.i + 1), Some(K::Open(_))) {
                     self.i += 1;
@@ -1425,7 +1426,7 @@ impl P {
                     _ => None,
                 }
             }
-            Ident(_) | SelfUpper | PathSep | Lt | Crate | Super | SelfLower => Some(self.path(true)?.0),
+            Ident(_, _) | SelfUpper | PathSep | Lt | Crate | Super | SelfLower => Some(self.path(true)?.0),
             _ => None,
         }
     }
@@ -1449,12 +1450,12 @@ impl P {
                 break;
             }
             let field = match self.tok()? {
-                Tok::Ident(_) | Tok::Int(..) if self.tok_at(self.i + 1) == Some(Tok::Colon) => {
+                Tok::Ident(_, _) | Tok::Int(..) if self.tok_at(self.i + 1) == Some(Tok::Colon) => {
                     let name = self.bump();
                     self.i += 1;
                     format!("{name}: {}", self.pat(true)?)
                 }
-                Tok::Ref | Tok::Mut | Tok::Ident(_) => self.pat1()?,
+                Tok::Ref | Tok::Mut | Tok::Ident(_, _) => self.pat1()?,
                 _ => return None,
             };
             fields.push(field);
@@ -1592,7 +1593,7 @@ impl P {
         let punct = |t: Option<Tok>| t.is_some_and(is_punct);
         let raw = self.t[a].text.starts_with("r#");
         // A non-reserved identifier: a plain name or a raw one.
-        let plain_ident = !nt && matches!(first, Some(Tok::Ident(_))) || !nt && raw;
+        let plain_ident = !nt && matches!(first, Some(Tok::Ident(_, _))) || !nt && raw;
         match (first, next) {
             (Some(Tok::Dot), _) if !punct(next) => false,
             (Some(Tok::Dollar), Some(t)) if ident_like(t) && !next_nt => false,

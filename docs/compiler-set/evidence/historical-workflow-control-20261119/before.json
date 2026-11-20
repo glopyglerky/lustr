@@ -1,0 +1,17 @@
+{
+  "argv": [
+    "python3",
+    "tools/test-warm-applicability.py",
+    "WorkflowControls.test_native_selector_suites_keep_actual_package_and_raw_evidence"
+  ],
+  "cwd": "/tmp/lustr-historical-control-20261119",
+  "exit": 1,
+  "source_commit": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+  "source_tree": "2a6a51f099bdcdb74871fdc2e65a4df87aa0c867",
+  "native_tree": "bf933c382fd99e52dd2586ebc46f0d0aceaa71a8",
+  "inputs_sha256": {
+    "tools/test-warm-applicability.py": "2164dc0423851c2df94cf326025df7836c9817bb334ed9370296ac9950ed0205",
+    ".github/workflows/compiler-set.yml": "d8d3c4df1cb3cba45614ff4fa3f72ee7f0b11845027ce0071f6a8e7881bae7b6",
+    "upstream/lust-integration.patch": "d65207d8f988517ec2cd950e11fd9c77e58c81ff16c0aa46b647297548791c42"
+  }
+}

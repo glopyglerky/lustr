@@ -1,0 +1,17 @@
+960b1fa47efed2324388565f387fd9e7a00ca547
+799f97870b3514a144021850ed9d3a172fce0001
+rustc 1.99.1 (58cf8f9c3 2026-10-13)
+binary: rustc
+commit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67
+commit-date: 2026-10-13
+host: x86_64-unknown-linux-gnu
+release: 1.99.1
+LLVM version: 23.1.1
+cargo 1.99.1 (5f94df478 2026-08-27)
+c6fe0d9794fbe1081e4ee5b4a26050bb19b880a8c70cb623430415386b1345e2  .github/workflows/native-probe-tests.yml
+171da99f41dcbf6c51cbf9401ea885404d441b0873b18f23a51c5d726b56fbbc  crates/lustr-bench/Cargo.toml
+0a91bce153dfd86eace542bdf0dccabf2c7fc1035e1c332481d9a45f55a00970  crates/lustr-bench/Cargo.lock
+e4f8c32b267c45814e60753c75decc214c34b3e2cac24bc538a423333447dcb1  crates/lustr-bench/src/bin/lustr-bench-gate.rs
+e40c826b097d227616f4e439baf1b4879b2e582e73458d4946aa128d3231f476  crates/lustr-bench/src/main.rs
+c310a9f892ac6088560f90101703cfa984cf8c4525b792df84b5daf69a079bfc  crates/lustr-bench/tests/routed.rs
+controlled Cargo failure for log retention

@@ -1,0 +1,72 @@
+{
+  "archive_sha256": "de6e9fa011c979b04f4c0b64a7fa97783aa9fc7b19a946b0d0092546d122a64d",
+  "gates": {
+    "entry-contract": {
+      "failed": 0,
+      "log_sha256": "6901c771f1406f72b73acad6095593218158f5de81869589f9e73299dbcbb1ff",
+      "passed": 16
+    },
+    "lustr-warm-selection-contract": {
+      "assertions": 265,
+      "invocations": 140,
+      "status": "completed"
+    },
+    "lustr-warm-selection-seed-contract": {
+      "assertions": 85,
+      "invocations": 38,
+      "status": "completed"
+    }
+  },
+  "lustr-warm-comparison": {
+    "kinds": {
+      "build-identity": 517,
+      "cache-edit-completed": 1,
+      "cache-edit-proof": 8,
+      "cache-edit-source": 4,
+      "cache-edit-start": 1,
+      "cache-edit-step": 4,
+      "command": 1252,
+      "daemon-start": 157,
+      "daemon-stop": 157,
+      "entry-route": 12,
+      "excluded-prime": 576,
+      "group-end": 48,
+      "group-start": 48,
+      "identities": 1,
+      "qualification": 2,
+      "qualification-start": 2,
+      "retained-route": 12,
+      "runtime-identity": 212,
+      "runtime-oracle": 1,
+      "selection-cache": 4,
+      "timing": 384
+    },
+    "records": 3403
+  },
+  "lustr-warm-diagnostics": {
+    "kinds": {
+      "build-identity": 105,
+      "command": 347,
+      "daemon-start": 18,
+      "daemon-stop": 18,
+      "diagnostic-timing": 144,
+      "public-proof": 4,
+      "retained-proof": 12,
+      "runtime-identity": 78,
+      "selector-hit": 2,
+      "selector-timing": 48
+    },
+    "records": 776
+  },
+  "notes": [
+    "Primary and diagnostic exact executed runner replays passed independently after download.",
+    "Source-built constructor log/certificate archive bindings passed; no live binary restamping is claimed."
+  ],
+  "schema": "lustr-third-warm-campaign-replay-summary-v1",
+  "source": {
+    "revision": "f638b6cd9819f52b53b142bf688d7ef07e252906",
+    "tree": "07235def43af3ffbdc218353d40f3f9e22b8dfd9"
+  },
+  "status": "completed",
+  "warm_target_met": false
+}

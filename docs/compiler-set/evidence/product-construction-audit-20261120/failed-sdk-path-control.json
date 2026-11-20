@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "passed": false,
+  "build_script_sha256": "5cb5bff02838333098650aeebc2703b32f2085279c601db67c7c67b591025cd4",
+  "runner_sha256": "fa9c7f2881b6efbb68cdfa70827f75114928bd8fd6ffe991dcd26e44e0cc05fb",
+  "controls": [],
+  "scope": "actual build-script feature admission; child sentinel is not compiler qualification",
+  "error": "[Errno 2] No such file or directory: '<INVALID_SDK_PATH>/bin/rustc'"
+}

@@ -24,12 +24,37 @@ is the canonical direction.
 **The full replacement is unfinished. No current package is qualified as the
 compiler described above.**
 
+While [PR #33](https://github.com/glopyglerky/lustr/pull/33) remains unmerged,
+its correction is the current implementation lane. Its published audit baseline
+is [`ea26fe16`](https://github.com/glopyglerky/lustr/tree/ea26fe16636d390763257a19c19df3db992cdbcb);
+refresh the PR head before building or continuing work. At that baseline, `next`
+has received governing documentation separately and still contains earlier
+product code. After the correction merges, verify its inclusion in the current
+integration source and continue from that source. Closed predecessor PRs and
+preview tags remain historical sources, not alternative development lanes.
+
 | Snapshot | What is actually present |
 | --- | --- |
 | Pre-correction default `next`, [7cea76c9](https://github.com/glopyglerky/lustr/tree/7cea76c9d3adc587b54ccff168fe07efafd40309) | Earlier native-first entry, library retry and full-Rust compatibility paths. It predates the scalar mixed bridge. |
 | Reviewed [PR #32](https://github.com/glopyglerky/lustr/pull/32), [cb0721d4](https://github.com/glopyglerky/lustr/tree/cb0721d49be95ec3f34a113c2354bc9d2a38bbf3) | Retained native work, useful correctness repairs, partial shared semantic work, scalar composition and genuine Rust artifacts. Public retries and whole-consumer Rust analysis still conflict with the required design. |
 | Governing documentation, merged [PR #31](https://github.com/glopyglerky/lustr/pull/31), [2fbafe39](https://github.com/glopyglerky/lustr/tree/2fbafe391fdf3d0a59b8cc24e9b0f55be3570cbd) | One controlling direction, explicit selective-import and ownership rules, upstream source/history research, and reconciled active plans. This merge changed no product source. |
-| Current [implementation correction](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/exclusive-coverage-cleanup.md), [PR #33](https://github.com/glopyglerky/lustr/pull/33) | Removes public retries, the whole-program mixed launcher and whole-compiler packaging. Adds the partial import inventory and guarded native package boundaries; repairs Cargo discovery, selection caching and environment preservation. The full complement and speed qualification remain unfinished. |
+| Current [implementation correction](docs/compiler-set/exclusive-coverage-cleanup.md), [PR #33](https://github.com/glopyglerky/lustr/pull/33) | Removes public retries, the whole-program mixed launcher and whole-compiler packaging. Adds the partial import inventory and guarded native package boundaries; repairs Cargo discovery, selection caching and environment preservation. The full complement and speed qualification remain unfinished. |
+
+The current [public scalar-library candidate](docs/compiler-set/public-scalar-library.md)
+connects the installed `RUSTC` entry and retained native owner to genuine `.rlib`,
+`.rmeta` and dep-info output. It is authored and pending exact-source hosted
+qualification. The [declared profile and Cargo command](docs/compiler-set/native-cargo-continuation.md#authored-public-scalar-library-path)
+cover a dependency-free edition-2024, Linux x86-64, flat `no_std` scalar library.
+Metadata-only `cargo check`, under-Lustr `--extern` ingestion and wider Rust/Cargo
+coverage remain open. The [public qualifier](tools/test-public-native-library.py)
+requires real Cargo requests, retained state, genuine artifacts and independent
+result-checked consumers.
+
+The public host still uses `std` and Unix sockets. Its pinned archive/object tools
+require a 208,283,952-byte LLVM shared library, about 208 MB, which remains a
+package-size and portability limitation. This candidate has no matched speed
+result. The [passing predecessor evidence](docs/compiler-set/evidence/retained-metadata-correction-20261120/runtime-success-fab59023.json)
+remains tied to `fab59023` and does not qualify this new public source.
 
 A narrow bridge cannot redefine Lust's supported subset. Work Lust can compile
 but the bridge cannot represent is an integration gap. It must not quietly move
@@ -55,16 +80,19 @@ history and historical evidence remain intact.
 | [Architecture plan](docs/compiler-set/architecture-plan.md) | Implementation order and architecture acceptance. |
 | [Design checkpoint](docs/compiler-set/design.md) | Real source state, reusable interfaces and remaining defects. |
 | [Completion checklist](docs/compiler-set/completion-checklist.md) | One work list with observable completion conditions. |
-| [Implementation cleanup](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/exclusive-coverage-cleanup.md) | Removed routes, preserved components, focused validation and remaining gaps. |
-| [Ownership follow-through](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/exclusive-coverage-followthrough.md) | Remaining bridge, daemon and acceptance conflicts, native runtime repair and portability priority. |
-| [Sole-goal audit](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/sole-goal-audit.md) | Recorded route cleanup, ownership and release clarification, actual public-entry results and remaining gaps. |
-| [Capability result qualification](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/capability-result-qualification.md) | Compares real generated output and test outcomes through the public compiler; runs installed-package contracts in CI. |
-| [Retained-history result qualifier](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/tools/qualify-retained-results.py) | Uses pinned acceptance expectations, separate compile/runtime results and the same surviving daemon; unresolved histories remain visible. |
+| [Implementation cleanup](docs/compiler-set/exclusive-coverage-cleanup.md) | Removed routes, preserved components, focused validation and remaining gaps. |
+| [Ownership follow-through](docs/compiler-set/exclusive-coverage-followthrough.md) | Remaining bridge, daemon and acceptance conflicts, native runtime repair and portability priority. |
+| [Sole-goal audit](docs/compiler-set/sole-goal-audit.md) | Recorded route cleanup, ownership and release clarification, actual public-entry results and remaining gaps. |
+| [Documentation disposition](docs/compiler-set/documentation-disposition.json) | Complete baseline Markdown inventory, active authority, scoped checkpoints and untouched donor/evidence boundaries. |
+| [Capability result qualification](docs/compiler-set/capability-result-qualification.md) | Compares real generated output and test outcomes through the public compiler; runs installed-package contracts in CI. |
+| [Retained-history result qualifier](tools/qualify-retained-results.py) | Uses pinned acceptance expectations, separate compile/runtime results and the same surviving daemon; unresolved histories remain visible. |
+| [Native Cargo continuation](docs/compiler-set/native-cargo-continuation.md) | Authored public scalar-library profile and Cargo command; existing dependency/host-script integration, retained proofs and source-bound evidence. |
+| [Public scalar-library contract](docs/compiler-set/public-scalar-library.md) | Real request identity, artifact publication, retained history and current package/coverage limits. |
 | [Lust upstream review](docs/compiler-set/upstream-lust-review-2026-11-19.md) | Retention, precise invalidation, CI, performance history and reverts. |
 | [Rust upstream review](docs/compiler-set/upstream-rust-review-2026-11-19.md) | Existing selective reuse interfaces, dependency closure, CI and performance history. |
 | [Support and cost analysis](docs/compiler-set/exclusive-coverage-mathematics.md) | Known capability rules, CI coverage limits and the cost of extra dispatch or semantic work. |
 | [Performance policy](docs/compiler-set/practical-performance.md) | Overall speed threshold for the full replacement and separate near-stock optimization targets. |
-| [Current performance evaluator](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/current-performance-assessment.md) | Fixed-workload total-time statistics, declared evidence integrity and explicit limits; no current speed or release claim. |
+| [Current performance evaluator](docs/compiler-set/current-performance-assessment.md) | Fixed-workload total-time statistics, declared evidence integrity and explicit limits; no current speed or release claim. |
 | [Contributor instructions](AGENTS.md) | Rules for continuing without changing direction. |
 
 ## What the research changes
@@ -99,7 +127,7 @@ separate end-to-end comparison using workload frequencies fixed before sampling.
 Passing both subset targets does not prove that total compilation time improved.
 Each current near-stock claim also uses paired total elapsed costs. Geometric
 ratios and empirical p95 cannot hide expensive requests; means and maxima remain
-visible. See the [latest corrections](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/sole-goal-audit.md#follow-through-after-5cd40fd3).
+visible. See the [latest corrections](docs/compiler-set/sole-goal-audit.md#follow-through-after-5cd40fd3).
 The former 0.5 ms alternate rule remains historical; small absolute
 overhead cannot excuse a large relative slowdown. Cold builds, edits, rejection,
 memory and compile-plus-test remain separate. Large gains outside Lust's subset
@@ -118,3 +146,10 @@ The [prior default README](https://github.com/glopyglerky/lustr/blob/7cea76c9d3a
 retains preview commands and measurements in their original context. Earlier
 compatibility packages remain historical artifacts. They do not change Lustr's
 sole goal or authorize a hidden fallback in a future product.
+
+The `preview-2026.11.09-1`, `preview-2026.11.09-2` and
+`native-preview-2026.11.15-1` releases are historical coordinator or full-SDK
+packages. Their downloads and installation recipes are not recommendations for
+current Lustr. There is no qualified replacement release to install yet. Current
+source and unfinished acceptance remain in the
+[active correction record](docs/compiler-set/active-correction.md).

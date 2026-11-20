@@ -1,0 +1,74 @@
+{
+  "scope": "Reduced real component package for selector attribution only. No lust/lust-core/liblustr_native_core.so or whole-package qualification. Actual pinned Cargo/reference/rustdoc/SDK libraries; actual lustr-mixed source rebuilt from3c378a11d with native hash be64fca1236b2d1f. Constructor-shaped direct SDK symlinks and copied full wrapper.",
+  "source": "3c378a11d60149a3ec99fa49ea1b336e9406fca8",
+  "native_build_hash": "be64fca1236b2d1f",
+  "files": {
+    "bin/cargo": {
+      "symlink": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+      "canonical": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+      "sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+      "bytes": 36722856
+    },
+    "bin/rust-gdb": {
+      "symlink": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rust-gdb",
+      "canonical": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rust-gdb",
+      "sha256": "7054a508ece38b5bb81860e8ddbcd62021fab6432026789970ebbba8b84f6163",
+      "bytes": 1413
+    },
+    "bin/rust-gdbgui": {
+      "symlink": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rust-gdbgui",
+      "canonical": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rust-gdbgui",
+      "sha256": "bc60613775a098e59b49fa4584cea73631697fe1456c44284c337d6700340315",
+      "bytes": 2160
+    },
+    "bin/rust-lldb": {
+      "symlink": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rust-lldb",
+      "canonical": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rust-lldb",
+      "sha256": "f9c40edb1b5943ce8dc18d1d1e9fc62e49486a0229bf655affee52e968c19168",
+      "bytes": 1371
+    },
+    "bin/rustc-full": {
+      "symlink": null,
+      "canonical": "<DIAGNOSTIC_WORKSPACE>/warm-selector-package/bin/rustc-full",
+      "sha256": "72add85d62b0d4b4b6a22b1a3cc779f7eb445425ce6b42a2178b38462bcb5e78",
+      "bytes": 1630376
+    },
+    "bin/rustc-reference": {
+      "symlink": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc",
+      "canonical": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc",
+      "sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+      "bytes": 646208
+    },
+    "bin/rustdoc": {
+      "symlink": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustdoc",
+      "canonical": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustdoc",
+      "sha256": "631825ada1565bad37c9ccab5cc9a339dbfb4b132697cc8ebd7ad336be638644",
+      "bytes": 12626568
+    },
+    "lib/libLLVM-23-rust-1.102.0-nightly.so": {
+      "symlink": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/lib/libLLVM-23-rust-1.102.0-nightly.so",
+      "canonical": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/lib/libLLVM-23-rust-1.102.0-nightly.so",
+      "sha256": "c1473b5e610614991e7836a5221a271b0b899ac79ec1b758479907ccfbb8a7da",
+      "bytes": 44
+    },
+    "lib/libLLVM.so.23.1-rust-1.102.0-nightly": {
+      "symlink": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/lib/libLLVM.so.23.1-rust-1.102.0-nightly",
+      "canonical": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/lib/libLLVM.so.23.1-rust-1.102.0-nightly",
+      "sha256": "5b12901d3a06a2eca8eae8e0781f678a6b2213740e2754f90dc22aef3f23dc21",
+      "bytes": 208283952
+    },
+    "lib/librustc_driver-f21b5e769b80ce6a.so": {
+      "symlink": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/lib/librustc_driver-f21b5e769b80ce6a.so",
+      "canonical": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/lib/librustc_driver-f21b5e769b80ce6a.so",
+      "sha256": "ace7e2aa6ae11ca4c9b1edaf70701fc9390de38dd86bcf16bb8f22d5e658bd72",
+      "bytes": 164782176
+    },
+    "lib/lustr-selection-tools.txt": {
+      "symlink": null,
+      "canonical": "<DIAGNOSTIC_WORKSPACE>/warm-selector-package/lib/lustr-selection-tools.txt",
+      "sha256": "4a1273486a71d21d30fd475785b1a55fbc234c46249d3755d7a27aa17bc86c4c",
+      "bytes": 746
+    }
+  },
+  "selection_receipt_sha256": "4a1273486a71d21d30fd475785b1a55fbc234c46249d3755d7a27aa17bc86c4c"
+}

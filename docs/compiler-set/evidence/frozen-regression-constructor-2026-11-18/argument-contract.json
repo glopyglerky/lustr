@@ -1,0 +1,105 @@
+{
+  "schema": "frozen-baseline-argument-contract-v1",
+  "baseline": "2add988c6397ac5175fcdf89a3aac17d359bf283",
+  "scope": "Actual frozen std-only constructor compile and pre-build argument rejection only; no toolchain build or compiler correctness claim.",
+  "commands": [
+    {
+      "label": "compiler-version",
+      "argv": [
+        "/workspace/scratch/3ff9b6fc98dd/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc",
+        "-vV"
+      ],
+      "cwd": "/workspace/scratch/3ff9b6fc98dd/baseline-constructor-local-contract",
+      "exit": 0,
+      "streams": {
+        "stdout": {
+          "file": "compiler-version.stdout",
+          "bytes": 214,
+          "sha256": "bbc9b960fe50c84bca20f3109950bcb87c48b6d1ce61d2fc2fc1519aaba2daaa"
+        },
+        "stderr": {
+          "file": "compiler-version.stderr",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "label": "constructor-build",
+      "argv": [
+        "/workspace/scratch/3ff9b6fc98dd/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc",
+        "--edition=2024",
+        "constructor-source.rs",
+        "-o",
+        "constructor"
+      ],
+      "cwd": "/workspace/scratch/3ff9b6fc98dd/baseline-constructor-local-contract",
+      "exit": 0,
+      "streams": {
+        "stdout": {
+          "file": "constructor-build.stdout",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr": {
+          "file": "constructor-build.stderr",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "label": "reject-new-release-flag",
+      "argv": [
+        "/workspace/scratch/3ff9b6fc98dd/baseline-constructor-local-contract/constructor",
+        "/workspace/scratch/3ff9b6fc98dd/lustr-frozen-regression",
+        "/workspace/scratch/3ff9b6fc98dd/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu",
+        "/workspace/scratch/3ff9b6fc98dd/baseline-constructor-local-contract/tcc-directory",
+        "/workspace/scratch/3ff9b6fc98dd/baseline-constructor-local-contract/new-output",
+        "--release"
+      ],
+      "cwd": "/workspace/scratch/3ff9b6fc98dd/baseline-constructor-local-contract",
+      "exit": 101,
+      "streams": {
+        "stdout": {
+          "file": "reject-new-release-flag.stdout",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr": {
+          "file": "reject-new-release-flag.stderr",
+          "bytes": 202,
+          "sha256": "0d4a55f1ea103375a8d3b93c4e55981e5e89d39ed17c85ba314df0c6b48db6ed"
+        }
+      }
+    },
+    {
+      "label": "four-argument-contract",
+      "argv": [
+        "/workspace/scratch/3ff9b6fc98dd/baseline-constructor-local-contract/constructor",
+        "/workspace/scratch/3ff9b6fc98dd/lustr-frozen-regression",
+        "/workspace/scratch/3ff9b6fc98dd/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu",
+        "/workspace/scratch/3ff9b6fc98dd/baseline-constructor-local-contract/tcc-directory",
+        "/workspace/scratch/3ff9b6fc98dd/baseline-constructor-local-contract/existing-output"
+      ],
+      "cwd": "/workspace/scratch/3ff9b6fc98dd/baseline-constructor-local-contract",
+      "exit": 101,
+      "streams": {
+        "stdout": {
+          "file": "four-argument-contract.stdout",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr": {
+          "file": "four-argument-contract.stderr",
+          "bytes": 185,
+          "sha256": "d87bdcbf2d6d694924a35e0a835eb41fdd474b56d8e61436eb4bb8f5c79b3321"
+        }
+      }
+    }
+  ],
+  "status": "completed",
+  "constructor_source_sha256": "6a1bf11a94c68dafebca20a8be6283eb74c5f4c6b756fbfa0b664af2745a2e5f",
+  "constructor_binary_sha256": "6ecbdd7da469dcccb4e1def41dad9aff7955330be35a5afc628dc3bcd5bbb5f2",
+  "rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de"
+}

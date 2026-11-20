@@ -1,0 +1,1 @@
+{"passed": false, "functional_passed": false, "exec_trace_qualified": false, "socket_transport_qualified": false, "observed_history": ["cold", "no-op", "body-edit", "body-edit-no-op", "body-revert", "span-only", "reorder", "insert"], "checked_runtime_results": 1835064, "failure": "archive symbol names differ from their count"}

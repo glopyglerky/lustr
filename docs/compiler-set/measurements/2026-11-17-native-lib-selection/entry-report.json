@@ -1,0 +1,18 @@
+{
+  "command": [
+    "/workspace/scratch/6fe2645be9f1/build/lib-selection-entry-intermediates/debug/build/lustr-compiler/8eb837b70adcdea0/out/compiler_contract-8eb837b70adcdea0",
+    "--ignored",
+    "--exact",
+    "native_library_selection_survives_process_startup",
+    "--nocapture"
+  ],
+  "exit_code": 0,
+  "source_revision": "b4ae69f676eaf89ae3e4ab087aa5906307b9cb2a",
+  "native_tree": "cb797ce8ce82192b87b3835267fc223c295dba70",
+  "binaries_sha256": {
+    "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-complete-package/bin/lust": "38599e5e120ca4a2d9c7bcae7362939600b0665e065e19727b9f0c0d7cce5344",
+    "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-complete-package/bin/lust-core": "0eae0f9ff4872e96733cfaaf9b385116ef25d71b72347f03e62302dcc8129f2a",
+    "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-complete-package/bin/lustr": "9b5175d795ba80785afc541f1fb2558240328b81350d93f55aa9dddef0ec212f",
+    "/workspace/scratch/6fe2645be9f1/build/lib-selection-entry-intermediates/debug/build/lustr-compiler/8eb837b70adcdea0/out/compiler_contract-8eb837b70adcdea0": "2c89895328222ab040ed1cd290fe2b17ec07b610901730ef6c92ab76642dc5b1"
+  }
+}

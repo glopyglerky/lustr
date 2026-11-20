@@ -7,6 +7,10 @@
 # once alone at 6x the limit and is reported as "slow" when it finishes; a
 # second timeout raises, which fails the suite as a hang.
 import glob, os, re, shutil, subprocess, sys, tempfile, time
+from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from native_dependencies import base_dependency, library_suffix
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 LUST = os.path.join(ROOT, "target/release/lust")
@@ -84,10 +88,10 @@ def main():
         bases_dir = os.path.join(work, ".lust-cache", "bases")
 
         def base_of(binpath):
-            m = re.search(rb"libbase-\d+-[0-9a-f]+\.so", open(binpath, "rb").read())
-            return m.group(0).decode() if m else None
+            return base_dependency(Path(binpath), Path(bases_dir), daemon.pid).name
 
-        bases_before = set(glob.glob(os.path.join(bases_dir, "libbase-*.so")))
+        base_pattern = os.path.join(bases_dir, "libbase-*" + library_suffix())
+        bases_before = set(glob.glob(base_pattern))
         prog = os.path.join(work, "prog.rs")
         open(prog, "w").write('fn val() -> i64 { 1 }\nfn main() { println!("v{}", val()); }\n')
         rc, out, err = run_lust(["build", prog, "-o", os.path.join(work, "p1.bin")])
@@ -110,7 +114,7 @@ def main():
         check("new binary has new output", r.stdout == "v9\n", r.stdout)
         # This session's bases: the newest 4 generations plus any still referenced by a
         # live binary (here p1.bin's base). Unreferenced old generations must be gone.
-        new_bases = set(glob.glob(os.path.join(bases_dir, "libbase-*.so"))) - bases_before
+        new_bases = set(glob.glob(base_pattern)) - bases_before
         p1_base = base_of(os.path.join(work, "p1.bin"))
         check("base generations bounded per session",
               0 < len(new_bases) <= 5 and p1_base is not None

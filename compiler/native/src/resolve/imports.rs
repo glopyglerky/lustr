@@ -795,7 +795,7 @@ impl ResolvedTables {
 
     /// True when the region of `vis` (at `def_module`) is inside the
     /// region of `outer` (at `outer_module`).
-    pub(super) fn vis_within(&self, vis: &VisKind, def_module: ModuleId, outer: &VisKind, outer_module: ModuleId, interner: &Interner) -> bool {
+    pub fn vis_within(&self, vis: &VisKind, def_module: ModuleId, outer: &VisKind, outer_module: ModuleId, interner: &Interner) -> bool {
         let (ra, ma) = self.vis_region(vis, def_module, interner);
         let (rb, mb) = self.vis_region(outer, outer_module, interner);
         if rb == 2 {

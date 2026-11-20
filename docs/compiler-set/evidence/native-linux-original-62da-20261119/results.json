@@ -1,0 +1,150 @@
+{
+  "scope": "Original direct native Linux job at commit 62da, not the current implementation or public installed package. Counts are separate observations, not summed unique cases.",
+  "job_conclusion": "success",
+  "workflow_conclusion": "failure",
+  "workflow_failure_context": "Separate macOS job failed; the original Linux success does not establish an entirely passing matrix.",
+  "checks": [
+    {
+      "name": "failed native crate artifact retention",
+      "passed": 11
+    },
+    {
+      "name": "service dependency guard controls",
+      "passed": 8
+    },
+    {
+      "name": "native dependency metadata controls",
+      "passed": 2
+    },
+    {
+      "name": "sanitizer capability controls",
+      "passed": 4
+    },
+    {
+      "name": "host runtime tests",
+      "passed": 31,
+      "ignored": 1
+    },
+    {
+      "name": "host SDK tests",
+      "passed": 6
+    },
+    {
+      "name": "native entry unit tests",
+      "passed": 22
+    },
+    {
+      "name": "native core unit tests",
+      "passed": 417
+    },
+    {
+      "name": "range helper",
+      "cases": 2205,
+      "invalid_cases": 1505,
+      "failures": 0
+    },
+    {
+      "name": "build-script transition layouts",
+      "passed_layouts": 2
+    },
+    {
+      "name": "lust-port tests",
+      "passed": 13,
+      "components": [
+        8,
+        5
+      ]
+    },
+    {
+      "name": "ordinary differential",
+      "passed": 5547,
+      "failed": 0
+    },
+    {
+      "name": "macro corpus",
+      "passed": 58,
+      "failed": 0
+    },
+    {
+      "name": "macro dependency corpus",
+      "passed": 13,
+      "failed": 0
+    },
+    {
+      "name": "kernels and compatibility fixtures",
+      "passed": 43,
+      "failed": 0
+    },
+    {
+      "name": "client fixtures",
+      "passed": 89,
+      "failed": 0
+    },
+    {
+      "name": "crate fixtures",
+      "passed": 85,
+      "failed": 0
+    },
+    {
+      "name": "original donor daemon histories",
+      "reported_ok": 364,
+      "reported_total": 364,
+      "unsupported_versions": 29,
+      "strict_public_349_qualification": false
+    },
+    {
+      "name": "slot identity checks",
+      "reported": "all passed"
+    },
+    {
+      "name": "ASan and UBSan differential",
+      "passed": 5547,
+      "failed": 0
+    },
+    {
+      "name": "edit fuzzer",
+      "edits": 1200,
+      "failures": 0,
+      "guard_fired": 0,
+      "seed": 7
+    },
+    {
+      "name": "native panic-unwind differential",
+      "passed": 65,
+      "failed": 0,
+      "unsupported": 0
+    },
+    {
+      "name": "emitted-C panic-unwind differential",
+      "passed": 65,
+      "failed": 0,
+      "unsupported": 0
+    },
+    {
+      "name": "Unicode",
+      "scalar_values": 1112064,
+      "exact_output_comparisons": 8,
+      "commands": 39
+    },
+    {
+      "name": "erased callbacks",
+      "passed": 10
+    },
+    {
+      "name": "erased callbacks with unwind tables",
+      "passed": 10
+    },
+    {
+      "name": "base-image lifetime through a real daemon",
+      "passed": true
+    },
+    {
+      "name": "main-return edits",
+      "versions": 4,
+      "all_warm_cold_oracle_match": true
+    }
+  ],
+  "benchmark_context": "The upstream gate ran one-repetition smoke measurements. They are not a public Lustr speed or release qualification.",
+  "compiler_replacement_complete": false,
+  "release_admission": false
+}

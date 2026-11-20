@@ -1,0 +1,44 @@
+test_accept_reject_recovery_runs_through_original_fixture_loader (__main__.FixtureLifecycleControls.test_accept_reject_recovery_runs_through_original_fixture_loader) ... /tmp/tmp_h1rb6wd/source/compiler/native/scripts/test-daemon-scenarios.py:209: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/lust-scen-probe-4dqgpd90/daemon.log' mode='r' encoding='UTF-8'>
+  text = open(log_path).read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_stale_recovered_output_fails_original_fixture_lifecycle (__main__.FixtureLifecycleControls.test_stale_recovered_output_fails_original_fixture_lifecycle) ... /tmp/tmp4yst8do1/source/compiler/native/scripts/test-daemon-scenarios.py:209: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/lust-scen-probe-edec340m/daemon.log' mode='r' encoding='UTF-8'>
+  text = open(log_path).read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_changed_or_missing_fixtures_change_identity (__main__.InventoryControls.test_changed_or_missing_fixtures_change_identity) ... ok
+test_current_fixtures_match_pinned_donor_inventory (__main__.InventoryControls.test_current_fixtures_match_pinned_donor_inventory) ... ok
+test_git_tree_matches_git_on_real_fixture (__main__.InventoryControls.test_git_tree_matches_git_on_real_fixture) ... ok
+test_rust_and_cargo_require_source_bound_structured_errors (__main__.OracleDiagnosticControls.test_rust_and_cargo_require_source_bound_structured_errors) ... ok
+test_build_then_one_execution_and_bound_artifact (__main__.ProcessControls.test_build_then_one_execution_and_bound_artifact) ... ok
+test_compile_failure_never_executes_or_retries (__main__.ProcessControls.test_compile_failure_never_executes_or_retries) ... ok
+test_daemon_exit_during_request_invalidates_trace (__main__.ProcessControls.test_daemon_exit_during_request_invalidates_trace) ... ok
+test_stopped_original_daemon_cannot_be_replaced (__main__.ProcessControls.test_stopped_original_daemon_cannot_be_replaced) ... ok
+test_zero_exit_without_artifact_fails (__main__.ProcessControls.test_zero_exit_without_artifact_fails) ... ok
+test_both_checks_cannot_crash_as_a_reject (__main__.VerdictControls.test_both_checks_cannot_crash_as_a_reject) ... ok
+test_both_valid_rejections_are_a_regression (__main__.VerdictControls.test_both_valid_rejections_are_a_regression) ... ok
+test_check_failure_cannot_hide_behind_successful_build (__main__.VerdictControls.test_check_failure_cannot_hide_behind_successful_build) ... ok
+test_check_only_version_still_requires_cold_artifact (__main__.VerdictControls.test_check_only_version_still_requires_cold_artifact) ... ok
+test_exact_complete_result (__main__.VerdictControls.test_exact_complete_result) ... ok
+test_exit_is_compared (__main__.VerdictControls.test_exit_is_compared) ... ok
+test_expected_program_signal_does_not_allow_compiler_signal (__main__.VerdictControls.test_expected_program_signal_does_not_allow_compiler_signal) ... ok
+test_invalid_oracle_cannot_be_an_internal_error (__main__.VerdictControls.test_invalid_oracle_cannot_be_an_internal_error) ... ok
+test_invalid_program_requires_actual_native_rejections (__main__.VerdictControls.test_invalid_program_requires_actual_native_rejections) ... ok
+test_linker_failure_cannot_classify_valid_source_as_invalid (__main__.VerdictControls.test_linker_failure_cannot_classify_valid_source_as_invalid) ... ok
+test_missing_artifact (__main__.VerdictControls.test_missing_artifact) ... ok
+test_missing_build (__main__.VerdictControls.test_missing_build) ... ok
+test_missing_check (__main__.VerdictControls.test_missing_check) ... ok
+test_missing_oracle_runtime (__main__.VerdictControls.test_missing_oracle_runtime) ... ok
+test_missing_runtime (__main__.VerdictControls.test_missing_runtime) ... ok
+test_only_run_specific_thread_id_is_normalized (__main__.VerdictControls.test_only_run_specific_thread_id_is_normalized) ... ok
+test_ordinary_stderr_numbers_are_never_normalized (__main__.VerdictControls.test_ordinary_stderr_numbers_are_never_normalized) ... ok
+test_program_nonzero_exit_is_compared_as_execution (__main__.VerdictControls.test_program_nonzero_exit_is_compared_as_execution) ... ok
+test_stderr_is_compared (__main__.VerdictControls.test_stderr_is_compared) ... ok
+test_stdout_is_compared (__main__.VerdictControls.test_stdout_is_compared) ... ok
+test_timeout_cannot_be_a_reject (__main__.VerdictControls.test_timeout_cannot_be_a_reject) ... ok
+test_unexpected_signal_is_not_success (__main__.VerdictControls.test_unexpected_signal_is_not_success) ... ok
+
+----------------------------------------------------------------------
+Ran 33 tests in 1.513s
+
+OK

@@ -274,6 +274,10 @@ pub(crate) struct Caches {
     pub(crate) ok: Vec<bool>,
     pub(crate) out: Vec<FnOut>,
     pub(crate) has_out: Vec<bool>,
+    /// The one selected mixed body's checked IR boundary, retained separately
+    /// from generated C so metadata-only checks can reuse it honestly.
+    pub(super) mixed_checked: Option<super::mixed::CheckedTotal>,
+    pub(crate) library: Option<super::library::State>,
     /// The read set of the slot's last passing check (docs/ARCH.md
     /// section 8.2), stored with the result. On later edits the dirty
     /// walk (`Program::reads_dirty`) replays these reads against the
@@ -395,8 +399,11 @@ pub(crate) struct Caches {
     pub(crate) obj_dir: PathBuf,
     /// Units compiled into `obj_dir` with the current layout, and with which debug setting.
     pub(crate) objects: Option<bool>,
-    /// A daemon session builds against libbase.so; a one-shot session links statically.
+    /// Retain semantic read sets and incremental frontend state between requests.
     pub(crate) persistent: bool,
+    /// Link layout is independent of semantic persistence. The constructor
+    /// preserves the original daemon/one-shot defaults.
+    pub(crate) output: OutputKind,
     /// The process exits right after this session's request (`lust check` and `lust test`
     /// one-shots set it): compile leaks the program and IR instead of freeing them. A
     /// non-persistent session inside a daemon (the patch oracle's fresh compile) frees them.
@@ -420,6 +427,14 @@ pub(crate) struct Caches {
     pub(crate) overlays: std::collections::BTreeSet<usize>,
 }
 
+/// The native driver's final link layout. This does not change checking,
+/// target/profile policy, or permit object reuse without its input proof.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum OutputKind {
+    Standalone,
+    SessionImage,
+}
+
 pub struct Session {
     /// The one crate selection this session serves. A request whose key does
     /// not match is a routing bug; compile rejects it instead of mixing state.
@@ -437,6 +452,9 @@ pub struct Session {
     /// "not opened yet" from "cache is off".
     pub(crate) disk_cache: Option<crate::driver::cache::Cache>,
     pub(crate) cache_tried: bool,
+    /// The first imported-definition seam owns one fresh request only. No
+    /// ordinary or imported request may reuse its unkeyed retained state.
+    pub(crate) imported_request: bool,
 }
 
 impl Front {
@@ -465,6 +483,7 @@ impl Session {
     pub fn new(obj_dir: PathBuf, persistent: bool, key: SessionKey) -> Session {
         let interner = Interner::default();
         let known = Known::new(&interner);
+        let library_mode = key.library.is_some();
         Session {
             key,
             front: Front {
@@ -529,6 +548,8 @@ impl Session {
                 ok: Vec::new(),
                 out: Vec::new(),
                 has_out: Vec::new(),
+                mixed_checked: None,
+                library: library_mode.then(super::library::State::default),
                 slot_reads: Vec::new(),
                 read_keys: Default::default(),
                 unit_reads: Default::default(),
@@ -562,6 +583,7 @@ impl Session {
                 obj_dir,
                 objects: None,
                 persistent,
+                output: if persistent && !library_mode { OutputKind::SessionImage } else { OutputKind::Standalone },
                 leak_at_exit: false,
                 image_one_shot: false,
                 overlays: Default::default(),
@@ -570,11 +592,25 @@ impl Session {
             },
             std_cache: None,
             disk_cache: None,
-            cache_tried: false,
+            cache_tried: library_mode,
+            imported_request: false,
         }
     }
     pub fn obj_dir(&self) -> &Path {
         &self.caches.obj_dir
+    }
+
+    /// Select a link layout without discarding semantic state. Standalone
+    /// builds regenerate the complete base-form object set and link it once;
+    /// they never leave an executable dependent on this session's libbase.
+    /// A layout change invalidates compiled objects, not language checks.
+    pub fn set_output(&mut self, output: OutputKind) {
+        if self.caches.output != output {
+            self.caches.objects = None;
+            self.caches.overlays.clear();
+            self.caches.base_name.clear();
+            self.caches.output = output;
+        }
     }
 
     /// Before a front image save (src/image.rs): joins the session's side

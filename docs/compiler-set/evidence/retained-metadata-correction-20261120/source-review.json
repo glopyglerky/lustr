@@ -1,0 +1,24 @@
+{
+  "schema": "lustr-retained-metadata-source-review-v1",
+  "baseline": "cdec0f7a75cc2fe0d1dadbed689b5ae8e9d9e62e",
+  "native_tree": "d894bf7f69541285ea9a58a205b9e2df3323b099",
+  "scope": "Focused independent source review of the two nonexistent-field corrections and the publication error conversion. This is not a review of the entire compiler, all histories, or the forthcoming evaluator change.",
+  "files": {
+    "compiler/native/src/driver/compile.rs": "f1cc6308a3d21e361070b9a02536547dadaf44076c898374b9d75175fcd183a3",
+    "crates/lustr-native-core/src/native_library.rs": "7a74e87097379aeed7fe9b5adffe76d3cc423a4b801bf278518c67f83c8fe991",
+    "crates/lustr-native-metadata-qualification/src/retained.rs": "53272822a18723fb791a29bd9dca24e579732e7cce2cfaed63305dbb72d88be4"
+  },
+  "observations": [
+    "FnLoc derives Copy and AcceptedBody::local() is available at the required visibility.",
+    "Stored and current IR origins use the same helper. Only a real FnLoc::Item with ItemKind::Fn supplies the full enclosing source interval.",
+    "Absent non-item origins cannot admit IR reuse. Existing metadata completion still classifies unsupported declarations.",
+    "File, syntax context and interval length checks remain. Statement and terminator spans retain containment and checked translation, followed by the original native IR fingerprint comparison.",
+    "The span correction operates only in existing library state. It adds no parser, checker, compiler-selection probe, alternative emitter or complementary ownership.",
+    "The publication error converts into a contextual String without swallowing the I/O error. Existing terminal failure, durability-unknown and last-successful publication behavior remain."
+  ],
+  "verdict": "No blocker found in the inspected source changes.",
+  "compiled": false,
+  "tests_executed": false,
+  "performance_measured": false,
+  "qualification_status": "Uncompiled correction pending exact-source hosted construction and campaigns."
+}

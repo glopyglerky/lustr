@@ -1493,6 +1493,9 @@ pub struct ResolveCx<'x> {
     /// User Adt template def and declared type/const parameter
     /// count, by session-local index.
     pub adt_info: &'x [(DefId, usize)],
+    /// Already collected parameter kinds/types when a definition has no
+    /// written header in this crate (independent native semantic imports).
+    pub adt_generics: &'x [Generics],
     /// Lifetime param names of user Adt templates (W-BORROW).
     pub adt_lifetimes: &'x FxMap<DefId, Vec<Sym>>,
     /// User trait name to its def. Lang traits answer after it.
@@ -4537,7 +4540,10 @@ pub(crate) fn resolve_path_ty(
                             })
                             .collect()
                     })
-                    .unwrap_or_else(|| vec![false; n_params]);
+                    .unwrap_or_else(|| cx.adt_generics.get(adt.0 as usize)
+                        .filter(|g| g.params.len() == n_params)
+                        .map(|g| g.params.iter().map(|p| matches!(p.kind, ParamKind::Const(_))).collect())
+                        .unwrap_or_else(|| vec![false; n_params]));
                 let min = g_ast.map_or(n_params, crate::check::defaults::required);
                 resolve_generic_args(
                     ast,
@@ -4563,6 +4569,27 @@ pub(crate) fn resolve_path_ty(
                 _ => &[],
             };
             check_const_arg_types(ast, interner, known, cx, tys, scope, g, written, &gargs, span)?;
+        } else if let Some(g) = cx.adt_generics.get(adt.0 as usize) {
+            // Use the original const typer and value/range checks with the
+            // actual collected declaration type; no producer AST is needed.
+            let written = match &seg.args { GenericArgs::Angle(a) => a.as_slice(), _ => &[] };
+            let forms = written.iter().filter(|a| !matches!(a, AstArg::Lifetime(_)));
+            let values = gargs.iter().filter(|a| !matches!(a, GenericArg::Lifetime(_)));
+            for ((param, arg), form) in g.params.iter().zip(values).zip(forms) {
+                let (ParamKind::Const(t), GenericArg::Const(c)) = (param.kind, arg) else { continue };
+                let Some(want) = ConstScalar::of(tys, t) else { return Err(not_yet("L0203", span, "this const parameter type")); };
+                match form {
+                    AstArg::Const(e) => check_const_expr_ty(ast, interner, known, cx, tys, scope, *e, *c, want, span, "this const argument")?,
+                    AstArg::Type(t) => {
+                        let typed = match ast.ty(*t) {
+                            TyExpr::Path(segs) if segs.len() == 1 => const_name_ty(ast, interner, known, cx, tys, scope, segs[0].name).is_none_or(|s| s == want),
+                            _ => true,
+                        };
+                        if !typed || !want.holds(tys, *c) { return Err(const_mismatch(want, span, "this const argument")); }
+                    }
+                    _ => {}
+                }
+            }
         }
         // Omitted trailing params take their defaults.
         let n_written = gargs.iter().filter(|g| !matches!(g, GenericArg::Lifetime(_))).count();
@@ -5929,6 +5956,7 @@ impl GenTables {
         ResolveCx {
             type_names: &NO_ADTS,
             adt_info: &self.adt_info,
+            adt_generics: &self.adt_generics,
             adt_lifetimes: &self.adt_lifetimes,
             trait_names: &NO_DEFS,
             aliases: &NO_TYS,
@@ -5944,6 +5972,7 @@ impl GenTables {
         ResolveCx {
             type_names,
             adt_info: &self.adt_info,
+            adt_generics: &self.adt_generics,
             adt_lifetimes: &self.adt_lifetimes,
             trait_names: &self.trait_names,
             aliases,
@@ -11002,7 +11031,11 @@ fn instance_adt_id(p: &mut Program, def: DefId, args: ArgsId) -> AdtId {
     let mut key = p.instance_key_hash(&crate::driver::graph::InstanceKey { def, args }).0;
     let at = loop {
         let at = (p.gx.inst_order.base + p.gx.inst_order.place_of(key)) as usize;
-        if p.gx.adt_instance_of.get(at).is_none_or(|i| i.is_none()) {
+        // An imported template can be appended after existing sparse
+        // instances. Its registered definition is an occupied row too.
+        if p.gx.adt_instance_of.get(at).is_none_or(|i| i.is_none())
+            && p.defs.def_of_adt(AdtId(at as u32)).is_none()
+        {
             break at;
         }
         key = key.rotate_left(17) ^ 0x9e37_79b9_7f4a_7c15;
@@ -13176,6 +13209,12 @@ fn made_among(p: &Program, t: Ty, before: &[AdtId], depth: u32) -> bool {
 
 /// `ensure_adt_instances_in` for types already in the global
 /// store (signatures and fields at collect time).
+pub fn materialize_native_adt_types(p: &mut Program, types: &[Ty]) {
+    for &t in types {
+        ensure_global_adt_instances(p, t, 0);
+    }
+}
+
 fn ensure_global_adt_instances(p: &mut Program, t: Ty, depth: u32) {
     if depth > 32 {
         return;

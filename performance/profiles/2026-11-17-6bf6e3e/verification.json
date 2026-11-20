@@ -1,0 +1,732 @@
+{
+  "schema": "lustr-qualified-profile-replay-v1",
+  "kind": "Derived verification receipt; all original profile evidence remains in the retained qualification ZIP.",
+  "head": "6bf6e3e3384a99fbaeab2c66aa7c97bc73231996",
+  "checkout": "5a3c5666a16d46629a4787e37ca9b20e65720ccc",
+  "tree": "02652f033e84c0957dd2b99eb562db8171289e50",
+  "run": 44179667793,
+  "job": 134380277750,
+  "artifact": 14374511846,
+  "archive": "performance/archives/2026-11-17-6bf6e3e-qualification.zip",
+  "archive_sha256": "c2126b1dd44170adf52cd66c53059c2447f54ad8a2483dfaec1b97f1c60fcd01",
+  "profile_root_in_archive": "lustr-mixed-profile",
+  "profiler_source": {
+    "path": "tools/profile-mixed-compiler.py",
+    "revision": "5a3c5666a16d46629a4787e37ca9b20e65720ccc",
+    "git_blob": "74f579f40932ecaa2ccd3c764045857f686687aa",
+    "sha256": "297eb1a3fc4510a9f1506f2816d539139d7f78909c0d2de90f399232cd8ca7ad"
+  },
+  "original_run_completed": true,
+  "original_qualifier_exit": 0,
+  "original_run_sha256": "a9427222d893437cfb754f8809a8f1c51b637495a749595b01496ebc09e826de",
+  "original_summary_sha256": "8012343a8d27942e4fce1897918f72fafc799901b20c09e9f687b9532a650641",
+  "original_readme_sha256": "0c5be84d79167eb465fbc87cd9636407abc12ccb5aaa8813d7301ac76ce8ede6",
+  "replayed_summary_byte_identical": true,
+  "replayed_readme_byte_identical": true,
+  "compiler_profiles": 26,
+  "qualification_commands": 15,
+  "native_responses": 35,
+  "measured_native_responses": 35,
+  "unavailable_failed_native_responses": 0,
+  "symbol_check_elapsed_nanoseconds": {
+    "observations": 35,
+    "minimum": 7423,
+    "median": 8201,
+    "maximum": 14697
+  },
+  "matching_recorded_package_binary_identities": [
+    {
+      "role": "lustr",
+      "profile_path": "/home/runner/work/_temp/lustr-source-built/toolchain/bin/lustr",
+      "paired_path": "/home/runner/work/_temp/lustr-source-built/toolchain/bin/lustr",
+      "recorded_sha256": "a06ce10235fca396026402d915055dd710bdfb5ca6c2a9beb12351234d1461d1",
+      "path_relation": "same recorded path"
+    },
+    {
+      "role": "rustc-full",
+      "profile_path": "/home/runner/work/_temp/lustr-source-built/toolchain/bin/rustc-full",
+      "paired_path": "/home/runner/work/_temp/lustr-source-built/toolchain/bin/rustc-full",
+      "recorded_sha256": "5dc2b2aaaf7aecadd5d93aad485992be77f36ff23b2383fc2f881d1e5c65a243",
+      "path_relation": "same recorded path"
+    },
+    {
+      "role": "lust-core",
+      "profile_path": "/home/runner/work/_temp/lustr-source-built/toolchain/bin/lust-core",
+      "paired_path": "/home/runner/work/_temp/lustr-source-built/toolchain/bin/lust-core",
+      "recorded_sha256": "cffd3dc8068f97dbbffa3cb8b2b8d81ece27184f19c73eb641f7b14d0c084c7c",
+      "path_relation": "same recorded path"
+    },
+    {
+      "role": "cargo",
+      "profile_path": "/home/runner/.rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+      "paired_path": "/home/runner/work/_temp/lustr-source-built/toolchain/bin/cargo",
+      "recorded_sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+      "path_relation": "different recorded paths with equal hashes; the profiler resolves the supplied Cargo path before recording it"
+    }
+  ],
+  "binary_verification_limit": "These hashes are original CI receipts, checked for equality between the paired and profile runs. Compiler binaries are absent from this archive and were not freshly hashed during recovery.",
+  "timing_limit": "Instrumented diagnostic observations only; daemon durations are not aligned to the driver clock. No paired speed or causal optimization claim.",
+  "workflow_limit": "The profile and fixed paired campaign completed. The independent public-slice step later failed before timing; this receipt does not claim the enclosing job or broader platform qualification passed.",
+  "inputs": [
+    {
+      "path": "lustr-mixed-profile/README.md",
+      "bytes": 6199,
+      "sha256": "0c5be84d79167eb465fbc87cd9636407abc12ccb5aaa8813d7301ac76ce8ede6"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/16931-1794952584470114474.jsonl",
+      "bytes": 549,
+      "sha256": "f407e448dcc1f1e35980d9e560fd3bb4ebc1277367adcd42ed2f8ea9dd28cdda"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/16933-1794952584476048550.jsonl",
+      "bytes": 553,
+      "sha256": "3283c9aed1259643be2386577b7ebc0838e7f23fc0ebbb773a44ab18b93e29c3"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/16936-1794952584482853637.jsonl",
+      "bytes": 549,
+      "sha256": "69036ac9ed75d567dd36f22bf007f4561272b879ade5638e86ace1354c278477"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/16938-1794952584488214562.jsonl",
+      "bytes": 549,
+      "sha256": "c7e9c15d9ac39493b6c5f04d7a2eaaf212a2cdfb496dad437374c0f50a5886f0"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/16941-1794952584493273663.jsonl",
+      "bytes": 549,
+      "sha256": "982ea21545a44ff52ffec3ce2afdc569384122cc878bddf070bbabc0151c7faf"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/16946-1794952584499376762.jsonl",
+      "bytes": 898,
+      "sha256": "a7fe6352a0fc90b56a9e4153e02007213ae24848b46131b2918c2d4d554427fb"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/16947-1794952584499721491.jsonl",
+      "bytes": 989,
+      "sha256": "694ee127b579497833b5b275cf69884c4660e5da88daacbfb03af0d7908eb5e0"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/16967-1794952584546278049.jsonl",
+      "bytes": 7765,
+      "sha256": "3eac0a03bf3dfe07fa5f4535e8c791ae7f8e0112abb026889108b92f08c1fe82"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/16991-1794952584633868329.jsonl",
+      "bytes": 2777,
+      "sha256": "14ce1a181e815469d7271de52c9b49c10037cf85f5dc7f4cd36a0362a3655419"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/17007-1794952584675957974.jsonl",
+      "bytes": 2777,
+      "sha256": "4c415d69c10727e0132321524ecd77127c7a32085447a1ed846734615f4e869e"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/17023-1794952584717013380.jsonl",
+      "bytes": 899,
+      "sha256": "78f9b9ba5612c3845577488addb91d9bc8a13af30531fc2f3a14c732ca62cfcb"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/17031-1794952584751539075.jsonl",
+      "bytes": 2779,
+      "sha256": "4678f199008a017b9c749cb76fee5620973dafaf3c67f373e98c5fa78c4578f8"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/17047-1794952584792190489.jsonl",
+      "bytes": 2590,
+      "sha256": "0f44d52e4ebda4e9911ec5f25a14a74a822dbe916ad0c6e10def58a790a9a35f"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/17056-1794952584817674868.jsonl",
+      "bytes": 1430,
+      "sha256": "9493a70f93ad480335b696696532d894f5f6abc79dd42ce49933bedb0b9b443d"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/17072-1794952584854065351.jsonl",
+      "bytes": 2777,
+      "sha256": "29482a95586155043ade41ca178dce9fa1cc93f2f20cb90e3b170b89bfcd333f"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/17088-1794952584892771214.jsonl",
+      "bytes": 1430,
+      "sha256": "b491b498b7e1e8d52758a815162c731a021a8af47a532bb284ad346a28f574f7"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/17104-1794952584928870556.jsonl",
+      "bytes": 898,
+      "sha256": "980fcc31554c7bf6b211e2588d4cf38aafbdd99727a191dd5b21a393f0e82c82"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/17119-1794952584969291227.jsonl",
+      "bytes": 7760,
+      "sha256": "0873ee1840f802cead9fa51a3d84b19f81ef59a5ffc71164f0e6adfaa8702d80"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/17139-1794952585044012158.jsonl",
+      "bytes": 988,
+      "sha256": "8f701df538e5fb6e2350b6b9f29dd6b67647dc3738ab2b85f8dd678f44ecd004"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/17140-1794952585044355197.jsonl",
+      "bytes": 897,
+      "sha256": "9d96c56b156c243f74b438296df5871a05c42ae018ebbdcd74ff7e7d9415929f"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/17160-1794952585084178676.jsonl",
+      "bytes": 7761,
+      "sha256": "b699c5a1a6fe841770e0d97904ad27949e68d11200e42c8c04ff2b2c1b2c7496"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/17179-1794952585156908682.jsonl",
+      "bytes": 898,
+      "sha256": "3aa54dade3ea5cc5ae05acdf4308d64a8a6bc70a75a95eb1fbb8d7caf57634db"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/17195-1794952585196819496.jsonl",
+      "bytes": 7760,
+      "sha256": "f240b8507b90abd8b39696241d3c6968f6f8016b1385628883594fa1a51cc19e"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/17214-1794952585272516620.jsonl",
+      "bytes": 7670,
+      "sha256": "40fadfc337599b11753b9df515bd19b0a19fad52d5a82ad32fe06abb4eca033a"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/17233-1794952585348303868.jsonl",
+      "bytes": 7670,
+      "sha256": "62b67ce89f085e3bbca1930b451d5f1032249bbd34689e4e33ad38db733eb4ac"
+    },
+    {
+      "path": "lustr-mixed-profile/profiles/17252-1794952585424625865.jsonl",
+      "bytes": 901,
+      "sha256": "9eb6729198583f1f35b7a149e0e789111322899c6dc27013dcc18f5805112ee4"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-arithmetic-edit.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-arithmetic-edit.stdout",
+      "bytes": 5,
+      "sha256": "ffa1b8a487754a367b1df0b745bfa0852e733580d8aa3929455edec31395e4f2"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-body.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-body.stdout",
+      "bytes": 5,
+      "sha256": "ffa1b8a487754a367b1df0b745bfa0852e733580d8aa3929455edec31395e4f2"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-cold.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-cold.stdout",
+      "bytes": 5,
+      "sha256": "647ff6ec5da274eb17fd0900239575ee67245b926103525f96ac744048c8532d"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-dependency.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-dependency.stdout",
+      "bytes": 5,
+      "sha256": "dc61c5a5f72ffb3419beb32dedf2e0565111b8abd6fb17908406d9ea2406ac65"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-link-failure-recovery.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-link-failure-recovery.stdout",
+      "bytes": 5,
+      "sha256": "ffa1b8a487754a367b1df0b745bfa0852e733580d8aa3929455edec31395e4f2"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-macro.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-macro.stdout",
+      "bytes": 5,
+      "sha256": "7bf23df6fa9a17856ae483beb627d79348ac150f4fe395996d6bad4102b87e98"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-recovery.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-recovery.stdout",
+      "bytes": 5,
+      "sha256": "ffa1b8a487754a367b1df0b745bfa0852e733580d8aa3929455edec31395e4f2"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-signature.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-signature.stdout",
+      "bytes": 5,
+      "sha256": "ffa1b8a487754a367b1df0b745bfa0852e733580d8aa3929455edec31395e4f2"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-versioned-object-noop.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-versioned-object-noop.stdout",
+      "bytes": 5,
+      "sha256": "181d2608d80915d816b94a813c42b07610ede844ade7923402074921d4f04433"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-versioned-object.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-versioned-object.stdout",
+      "bytes": 5,
+      "sha256": "181d2608d80915d816b94a813c42b07610ede844ade7923402074921d4f04433"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-warning-cold.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-warning-cold.stdout",
+      "bytes": 5,
+      "sha256": "7bf23df6fa9a17856ae483beb627d79348ac150f4fe395996d6bad4102b87e98"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-warning-edit.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/app-warning-edit.stdout",
+      "bytes": 5,
+      "sha256": "dc61c5a5f72ffb3419beb32dedf2e0565111b8abd6fb17908406d9ea2406ac65"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/arithmetic-edit.profiles",
+      "bytes": 32,
+      "sha256": "298677b5bf728c509584d49c3538e510ead64685929cb5850b39d66e953ce842"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/arithmetic-edit.status",
+      "bytes": 35,
+      "sha256": "f5e3c84faf6114ba82f07a0385135f6d5e904bd03085e949628ee3cdaea95bf0"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/arithmetic-edit.stderr",
+      "bytes": 2436,
+      "sha256": "6e0c74fc50926d90436b98aa491a68e03a864df2934b5bcf03c09d17db95757a"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/arithmetic-edit.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/arithmetic-edit.trace",
+      "bytes": 818,
+      "sha256": "fa1622d6e10426baf0734591409e742f650e00cb3172472ff1687cb81ce50818"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/body.profiles",
+      "bytes": 32,
+      "sha256": "1c3161148885778fe7de94477abb9d65cef1fbe36d4256744fdf8d8786789d53"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/body.status",
+      "bytes": 35,
+      "sha256": "ef2cee8010faba0d138fc91ff0754b731e1aadc7e29c728fd8527597c8cf9672"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/body.stderr",
+      "bytes": 2436,
+      "sha256": "d5996c74a33506dd0d8d26358e233790dd80c3d5a9ecfe22dab72ccc53ea6520"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/body.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/body.trace",
+      "bytes": 818,
+      "sha256": "103346f257c4ab5a379dfd046903bdc3b91e1cbf0e0bc56224ba69faed620feb"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/cold.profiles",
+      "bytes": 256,
+      "sha256": "13716dedc5177d0663b31bc74df5239f0dc09e3e761709a936b373ffd9a4d877"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/cold.status",
+      "bytes": 36,
+      "sha256": "003e8a62e4361aacdd2c47824b9dd6ce1015422dd915ee13ba43b80b8591a64f"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/cold.stderr",
+      "bytes": 5029,
+      "sha256": "3284bdec2978331be982e8b927e1a52f11d68312cd8f135ffe8e41a95cb22add"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/cold.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/cold.trace",
+      "bytes": 4389,
+      "sha256": "6ba6ba04f26701667977fc725524a552aaae18719673dc53cd5c4a634ca7e323"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/dependency.profiles",
+      "bytes": 96,
+      "sha256": "f41100eb561aa41f834bdb1ca5e8712759271826aff9c8496053a6a81990d32d"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/dependency.status",
+      "bytes": 36,
+      "sha256": "90c0d98d90a58aaf88f41da5453975c8ad409ee6b7f98246929c5a59beae5283"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/dependency.stderr",
+      "bytes": 5599,
+      "sha256": "754e85d4556de889238abe1a3b745b3815de597d020f6dd04b89c228edce10e7"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/dependency.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/dependency.trace",
+      "bytes": 4192,
+      "sha256": "34e6158d889df4ab9a5e485a99aecf06b18a861f2f550ae6e70335ec055f088b"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/invalid.profiles",
+      "bytes": 32,
+      "sha256": "4cf12cc3871adf4a9ca385f480f99a5f14fefef293480da6342849db1028485e"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/invalid.status",
+      "bytes": 37,
+      "sha256": "e034137411b9f409340b84be5d0f6cedcf3369747ab035d4f8a6f2521b6c5212"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/invalid.stderr",
+      "bytes": 5666,
+      "sha256": "8f44f670ce2f0bd9a7f2bfa8e8a6e4cd397418fd7ec7426f106270deb608f115"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/invalid.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/invalid.trace",
+      "bytes": 82,
+      "sha256": "596c18146c21610dd643d2f2a4ddfb0291d9162c0836877c653af97e0df832c1"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/link-failure-recovery.profiles",
+      "bytes": 32,
+      "sha256": "1666ef26459cba45327f60bd58e12b3aaa0d33c94758e8bfa0b8129d149d814a"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/link-failure-recovery.status",
+      "bytes": 35,
+      "sha256": "840b1e3464375a179c28d0070898c33d701bb4ccab90d8926cc1320ce90061c0"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/link-failure-recovery.stderr",
+      "bytes": 2420,
+      "sha256": "56c104991b98c30a5745f9d4cc9f3381d84d7b4284e8bfc227bfde3c82c39222"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/link-failure-recovery.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/link-failure-recovery.trace",
+      "bytes": 92,
+      "sha256": "776f71bc23d8961e7bd7f945d8f95d74157b5bfa7101f9b136bb7c686300495f"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/link-failure.profiles",
+      "bytes": 32,
+      "sha256": "e8c6b9c765d553e80661724f17414de7bd7442c16c3844a231db23745db02f23"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/link-failure.status",
+      "bytes": 37,
+      "sha256": "6a1a52a908cb11407ece6294c837c49febf78a594824eaa7cac084a9141e5776"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/link-failure.stderr",
+      "bytes": 6757,
+      "sha256": "fb409d7425f0c489d4afacf85c95f5900308a8dbd61ccea3c39e7cbd3c2544c6"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/link-failure.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/link-failure.trace",
+      "bytes": 780,
+      "sha256": "86e7246486aed2d0ff29a2486d0bff4aa8a3bb0df45726ec7dc38cefb9b859b7"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/macro.profiles",
+      "bytes": 64,
+      "sha256": "99089a29eb8db8ee66f1e4fb312c24066df58e388c8254aae27fb9e57972035d"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/macro.status",
+      "bytes": 36,
+      "sha256": "79a4f99e2b34a875077be6af0a125912474dd9e248685b8bc4fc9c79119ea37d"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/macro.stderr",
+      "bytes": 4007,
+      "sha256": "d2907c45e274b8becc0d9597e5e437059675abeb5336daf2e358441e8aa31777"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/macro.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/macro.trace",
+      "bytes": 4115,
+      "sha256": "c09347162b2a418ab140f4eb6f832340b7175ce7b523d54228afc217b913f864"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/mixed.trace",
+      "bytes": 54,
+      "sha256": "bfb571021eab11bf6dd492114d91154a33cf7df1aa75810b8133602595654d91"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/owned-daemons.status",
+      "bytes": 69,
+      "sha256": "aa846a7d4824e1929bfc067dbcd5ae6d28025906a78c96270aff13e00450ef6b"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/recovery.profiles",
+      "bytes": 32,
+      "sha256": "35e5bd39b34723e0264046d1ebbc4c4d4b3ed9c2966572cf5d1c751e670ca0f4"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/recovery.status",
+      "bytes": 35,
+      "sha256": "f8d790902b898ac866c2370854878b8f8e3d8c5a906734c8147ef3658e50b0df"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/recovery.stderr",
+      "bytes": 2420,
+      "sha256": "2a370d49e915cd2f23c94b89dfb3f32a475fc8a3689010f0f70807c6317a0a86"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/recovery.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/recovery.trace",
+      "bytes": 820,
+      "sha256": "4230a0f73bc2e33c7306d4d06409bca29360b1851d1b7fa84b0f388adf71b24d"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/signature.profiles",
+      "bytes": 64,
+      "sha256": "c574138ded038cde6aa5a3ac68cea2e07326c8cecbfb17f14856a8d6f5f81068"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/signature.status",
+      "bytes": 36,
+      "sha256": "6aef272d41a2594b8885ef8119ca6705f89ff98c235ea5af77077cba5146775c"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/signature.stderr",
+      "bytes": 4007,
+      "sha256": "99cc4381773ae9dc6abbafae5aac8fc7e6072cbf85296e532b23840212776b8a"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/signature.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/signature.trace",
+      "bytes": 4115,
+      "sha256": "38f259ef80989e9020e0e9c7ec15a7e4600dec6c688717a4cc195feff9696d38"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/versioned-object-noop.profiles",
+      "bytes": 32,
+      "sha256": "26545fb786991d13db5cd51d071a543eb5de4cf793f51446f896c5df99c42976"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/versioned-object-noop.status",
+      "bytes": 35,
+      "sha256": "ced5bbd53c7f9dce5f2849dd1629b45374d4c03a37d6e729db495bb8fdc465ea"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/versioned-object-noop.stderr",
+      "bytes": 2436,
+      "sha256": "8c50fd13d0f0e91f65edf80960e585a3c2ad8d62e6ff2b7f7926443182fdeacd"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/versioned-object-noop.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/versioned-object-noop.trace",
+      "bytes": 92,
+      "sha256": "776f71bc23d8961e7bd7f945d8f95d74157b5bfa7101f9b136bb7c686300495f"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/versioned-object.profiles",
+      "bytes": 32,
+      "sha256": "36c1ef8710d61d50cebdf294b4f5917a59b3ebc5852e605f9fb78e82c71ed47d"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/versioned-object.status",
+      "bytes": 35,
+      "sha256": "988c2625346d8cecc7ace31870dfb2fb6b090b50377795c44a7cacf3e0c3067f"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/versioned-object.stderr",
+      "bytes": 2436,
+      "sha256": "07462a9565712ebfb19def5266001f6ccbd7c1d396b17286b74a87fb33831679"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/versioned-object.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/versioned-object.trace",
+      "bytes": 818,
+      "sha256": "86f64e504659ff73480b5923c12c055bf75fb1b01b6c623cd44bbe66c6b3b378"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/warning-cold.profiles",
+      "bytes": 32,
+      "sha256": "8269c407359b13966f9d2195270517e41c4abb84a5dfe0cbd74035917c10d0fe"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/warning-cold.status",
+      "bytes": 35,
+      "sha256": "ed095dc700a13bb467f23c77c36a604a13daef628ebdcd18ea2083770e1650b4"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/warning-cold.stderr",
+      "bytes": 2706,
+      "sha256": "9e9cda399c6481030ab2c2528580880664c8d6af3dbbb1f2cc25c4f1dfe5c993"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/warning-cold.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/warning-cold.trace",
+      "bytes": 4060,
+      "sha256": "2e2974f8229d9cc4afae83036b04a3db46ac307f5fd0bde73fc25b7d104b342a"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/warning-denied.profiles",
+      "bytes": 32,
+      "sha256": "752efa7380599ebcd7dc1be3eda023788b33be07d045850577772256f9b1d067"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/warning-denied.status",
+      "bytes": 37,
+      "sha256": "ee1046742d24285b078b01b0c73c5e43ff4a2080ea194f6f86e299f6e0441fef"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/warning-denied.stderr",
+      "bytes": 4624,
+      "sha256": "aebe7f6be6ecd5812fcfb4df53f1aed8a471c00e56c20622cd22969d3fda5d0d"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/warning-denied.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/warning-denied.trace",
+      "bytes": 54,
+      "sha256": "bfb571021eab11bf6dd492114d91154a33cf7df1aa75810b8133602595654d91"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/warning-edit.profiles",
+      "bytes": 32,
+      "sha256": "bdedf123960ad52797a1b3335741a22cdbcc64157cbd6178e5e4789a873e9a25"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/warning-edit.status",
+      "bytes": 35,
+      "sha256": "c3dcbd1208182902716e48709b16ed1d88a69bcff5a9c0f214f6bb56f14afe35"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/warning-edit.stderr",
+      "bytes": 2706,
+      "sha256": "0362dfaab47e9ab590d1e216a3a168667026bafa5b3e54a2013d8f3fa196dd5a"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/warning-edit.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualification/warning-edit.trace",
+      "bytes": 4060,
+      "sha256": "2e4763c3a0244e6c11e1f82e63439069173452028406a73556b5102dcaced8da"
+    },
+    {
+      "path": "lustr-mixed-profile/qualifier.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lustr-mixed-profile/qualifier.stdout",
+      "bytes": 254,
+      "sha256": "983322a2b2d4e34ee85f6096b414e40f6c0f92ac1e78fee504bcb7c7bf57e75a"
+    },
+    {
+      "path": "lustr-mixed-profile/run.json",
+      "bytes": 1190,
+      "sha256": "a9427222d893437cfb754f8809a8f1c51b637495a749595b01496ebc09e826de"
+    },
+    {
+      "path": "lustr-mixed-profile/summary.json",
+      "bytes": 140183,
+      "sha256": "8012343a8d27942e4fce1897918f72fafc799901b20c09e9f687b9532a650641"
+    }
+  ]
+}

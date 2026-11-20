@@ -757,7 +757,7 @@ pub(crate) fn read_to_end_default<R: Read + ?Sized>(r: &mut R, buf: &mut Vec<u8>
                     Ok(0) => return Ok(buf.len() - start),
                     Ok(n) => {
                         let cap_before = buf.capacity();
-                        buf.extend_from_slice(&probe[..n]); //@ alloc/src/io/read.rs:878:57
+                        buf.extend_from_slice(&probe[..n]); //@ alloc/src/io/read.rs:888:57
                         if buf.capacity() != cap_before {
                             probe_ok = false;
                         }
@@ -780,7 +780,7 @@ pub(crate) fn read_to_end_default<R: Read + ?Sized>(r: &mut R, buf: &mut Vec<u8>
                 // std reads into the spare capacity through a cursor,
                 // whose `advance_checked` asserts the count.
                 let init_unfilled = chunk.len();
-                assert!(n <= init_unfilled); //@ core/src/io/borrowed_buf.rs:287:9
+                assert!(n <= init_unfilled); //@ core/src/io/borrowed_buf.rs:380:9
                 buf.extend_from_slice(&chunk[..n]);
             }
             Err(e) => {
@@ -805,7 +805,7 @@ pub trait Read {
                 Ok(0) => return Err(Error::simple_message(ErrorKind::UnexpectedEof, "failed to fill whole buffer")),
                 Ok(n) => {
                     let rest = buf;
-                    buf = &mut rest[n..]; //@ alloc/src/io/read.rs:1031:31
+                    buf = &mut rest[n..]; //@ alloc/src/io/read.rs:1042:31
                 }
                 Err(e) => {
                     if !e.is_interrupted() {
@@ -1305,7 +1305,7 @@ impl<R: Read> BufRead for BufReader<R> {
             // std reads through a cursor, whose `advance_checked` asserts
             // the count.
             let init_unfilled = self.buf.len();
-            assert!(n <= init_unfilled); //@ core/src/io/borrowed_buf.rs:287:9
+            assert!(n <= init_unfilled); //@ core/src/io/borrowed_buf.rs:380:9
             self.filled = n;
             self.pos = 0;
         }
@@ -1375,7 +1375,7 @@ impl<W: Write> BufWriter<W> {
         }
         let len = self.buf.len();
         if n > len {
-            panic!("range start index {} out of range for slice of length {}", n, len); //@ core/src/slice/index.rs:1020:55
+            panic!("range start index {} out of range for slice of length {}", n, len); //@ alloc/src/io/buffered/bufwriter.rs:251:48
         }
         for i in n..len {
             self.buf[i - n] = self.buf[i];

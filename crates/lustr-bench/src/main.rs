@@ -90,6 +90,8 @@ struct Spec {
     schema: u32,
     #[serde(default)]
     resource_mode: resources::Mode,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    native_state: Option<Value>,
     source: PathBuf,
     repository: String,
     revision: String,
@@ -278,6 +280,12 @@ struct Runner {
     records: Vec<Record>,
 }
 impl Runner {
+    fn clear_target(&mut self, target: &Path, _reason: &str) -> R<()> {
+        fs::remove_dir_all(target)?;
+        fs::create_dir(target)?;
+        Ok(())
+    }
+
     fn run(&mut self, s: &Spec, l: &Lane, target: &Path, c: &Cmd, phase: &str, pair: Option<usize>) -> R<(f64, Vec<u8>, Vec<u8>)> {
         let args = c.argv.iter().map(Arg::os).collect::<R<Vec<_>>>()?;
         if args.is_empty() {
@@ -294,6 +302,7 @@ impl Runner {
         let ep = self.dir.join(&errname);
         let out = OpenOptions::new().write(true).create_new(true).open(&op)?;
         let err = OpenOptions::new().write(true).create_new(true).open(&ep)?;
+        let child_env = env(l, target)?;
         let host_before = host_context()?;
         let usage_path = self.dir.join(format!("{id:05}.usage.json"));
         let request_path = self.dir.join(format!("{id:05}.request.json"));
@@ -305,7 +314,7 @@ impl Runner {
             let encode = |v: OsString| Arg::Bytes { hex: hex(v.as_bytes()) };
             let request = resources::Request {
                 argv: c.argv.clone(),
-                env: env(l, target)?.into_iter().map(|(k, v)| (encode(k), encode(v))).collect(),
+                env: child_env.clone().into_iter().map(|(k, v)| (encode(k), encode(v))).collect(),
                 cwd: s.source.clone(),
                 collector_sha256: collector_hash.clone(),
                 report_path: usage_path.clone(),
@@ -325,7 +334,7 @@ impl Runner {
         let child = command
             .current_dir(&s.source)
             .env_clear()
-            .envs(if enabled { BTreeMap::new() } else { env(l, target)? })
+            .envs(if enabled { BTreeMap::new() } else { child_env })
             .stdin(if enabled { Stdio::piped() } else { Stdio::null() })
             .stdout(out)
             .stderr(err)
@@ -492,14 +501,13 @@ fn cargo_tail(c: &Cmd) -> R<Vec<OsString>> {
         if ["rustc", "build", "check", "test", "run", "metadata"].iter().any(|op| arg == op) {
             return Ok(args[i..].to_vec());
         }
-        if ["--bluefe-root", "--frontend-jobs", "--engine", "--color"].iter().any(|option| arg == option) {
+        if ["--color"].iter().any(|option| arg == option) {
             if args.get(i + 1).is_none() {
                 return fail("missing selector/global option value");
             }
             i += 2;
-        } else if arg.to_str().is_some_and(|a| {
-            a.starts_with("--frontend-jobs=") || a.starts_with("--engine=") || a.starts_with("--color=") || a.starts_with('+')
-        }) || ["-v", "-vv", "--verbose", "-q", "--quiet", "--locked", "--offline", "--frozen"].iter().any(|option| arg == option)
+        } else if arg.to_str().is_some_and(|a| a.starts_with("--color=") || a.starts_with('+'))
+            || ["-v", "-vv", "--verbose", "-q", "--quiet", "--locked", "--offline", "--frozen"].iter().any(|option| arg == option)
         {
             i += 1;
         } else {
@@ -553,6 +561,11 @@ fn validate_build_directories(metadata: &Value, target: &Path) -> R<()> {
     Ok(())
 }
 fn validate(s: &Spec, out: &Path) -> R<()> {
+    if s.native_state.is_some() {
+        return fail(
+            "Retired whole-rustc native-state acquisition is disabled; use current explicit compiler commands and independent evidence",
+        );
+    }
     if s.schema != 1
         || s.lanes.len() < 2
         || s.lanes.len() > 8
@@ -850,8 +863,7 @@ fn study(r: &mut Runner, s: &Spec, report: &mut Value) -> R<()> {
                 let l = &s.lanes[i];
                 let target = r.dir.join("targets").join(&l.name);
                 if s.scenario == "clean-dependency-build" {
-                    fs::remove_dir_all(&target)?;
-                    fs::create_dir(&target)?;
+                    r.clear_target(&target, if warm { "cold-warmup" } else { "cold-timed" })?;
                 }
                 touch(s)?;
                 let (elapsed, _, stderr) = r.run(s, l, &target, &l.command, if warm { "excluded-warmup" } else { "timed" }, Some(pair))?;
@@ -872,8 +884,7 @@ fn study(r: &mut Runner, s: &Spec, report: &mut Value) -> R<()> {
     for (i, l) in s.lanes.iter().enumerate() {
         let target = r.dir.join("targets").join(&l.name);
         if s.force_root.is_none() {
-            fs::remove_dir_all(&target)?;
-            fs::create_dir(&target)?;
+            r.clear_target(&target, "final-evidence")?;
         }
         evidence(r, s, l, &target, "compiler-evidence-after")?;
         for (j, g) in l.gates.iter().enumerate() {
@@ -995,7 +1006,10 @@ fn main() -> R<()> {
     } else {
         Ok(())
     };
-    let mut error = result.err().map(|e| e.to_string()).or_else(|| restored.err().map(|e| format!("metadata restoration failed: {e}")));
+    let mut error = result
+        .err()
+        .map(|e: Box<dyn std::error::Error>| e.to_string())
+        .or_else(|| restored.err().map(|e| format!("metadata restoration failed: {e}")));
     report["records"] = json!(r.records);
     report["final_source_observation"] = match source(&s) {
         Ok(v) => {
@@ -1102,41 +1116,19 @@ mod tests {
         );
     }
     #[test]
-    fn rustc_profile_values_do_not_hide_features_or_package_options() {
+    fn rustc_profile_values_do_not_hide_features_or_retired_selectors() {
         let command = |args: &[&str]| Cmd { argv: args.iter().map(|s| Arg::Text((*s).into())).collect(), expected_exit: 0 };
         let base = command(&["/toolchain/cargo", "rustc", "-p", "core", "--profile", "check", "--lib"]);
-        let changed = command(&[
-            "/toolchain/lustr",
-            "--bluefe-root",
-            "/toolchain",
-            "--frontend-jobs=4",
-            "rustc",
-            "--features",
-            "extra",
-            "-p",
-            "core",
-            "--profile",
-            "check",
-            "--lib",
-        ]);
+        let changed = command(&["/toolchain/lustr", "rustc", "--features", "extra", "-p", "core", "--profile", "check", "--lib"]);
         let tail = cargo_tail(&base).unwrap();
         assert_eq!(tail[0], "rustc");
         assert!(rustc_check(&tail));
         assert_ne!(tail, cargo_tail(&changed).unwrap());
-        let same = command(&[
-            "/toolchain/lustr",
-            "--bluefe-root",
-            "check",
-            "--frontend-jobs",
-            "4",
-            "rustc",
-            "-p",
-            "core",
-            "--profile",
-            "check",
-            "--lib",
-        ]);
+        let same = command(&["/toolchain/cargo", "+1.99.1", "--color", "never", "rustc", "-p", "core", "--profile", "check", "--lib"]);
         assert_eq!(tail, cargo_tail(&same).unwrap());
+        for selector in ["--bluefe-root", "--frontend-jobs", "--engine", "--engine=rustc", "--frontend-jobs=4"] {
+            assert!(cargo_tail(&command(&["/toolchain/lustr", selector, "rustc", "--lib"])).is_err());
+        }
         assert!(cargo_tail(&command(&["/toolchain/lustr", "plan", "check"])).is_err());
     }
     #[test]

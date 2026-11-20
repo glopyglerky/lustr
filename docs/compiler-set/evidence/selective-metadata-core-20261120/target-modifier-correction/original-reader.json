@@ -1,0 +1,13 @@
+{
+  "command": [
+    "/workspace/scratch/9d482ba2ab85/sdk/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc",
+    "-Zls=target_modifiers",
+    "/workspace/scratch/9d482ba2ab85/sdk-metadata-reader-review/libconsumer.rmeta"
+  ],
+  "returncode": 0,
+  "rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+  "reference_sha256": "325230f04cfe13ada7d3421e53e981d71ce656871a1a436dfa634b6058003f49",
+  "source_sha256": "c88b4bbcdc31261137f1c98a7ed706202ffcd687fd6d60a5f73fc818cd5236ba",
+  "stdout_sha256": "6a3749a1f3c04fe441f3260471eb4013dc077aad0a1e3577a60df7a2d091886c",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

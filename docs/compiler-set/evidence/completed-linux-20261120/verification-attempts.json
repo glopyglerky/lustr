@@ -1,0 +1,26 @@
+[
+  {
+    "attempt": 1,
+    "script_sha256": "d00e9526bef5da55a549603d5c215289ffd7f356ce300cedbf7f2d6be7571852",
+    "outcome": "stopped with KeyError: scenario",
+    "cause": "The initial verifier classified the aggregate retained-results/report.json as a per-history report. No archive mutation or compiler execution occurred.",
+    "output": "verified"
+  },
+  {
+    "attempt": 2,
+    "script_sha256": "07484df97d787b327b180aa10270d369439840133247bb5a7632a9f5b250d8c5",
+    "outcome": "c821 verification passed; 7c source verification stopped before archive reading",
+    "cause": "Restored repository did not yet contain historical 7c commit. git show exited 128. The original 7c object was subsequently fetched unchanged. No archive mutation or compiler execution occurred.",
+    "output": "verified-final",
+    "stdout_sha256": "9526632da924d2af74e15bce3e22368b60f19a496a115a52bc2f3f31f5953dca",
+    "stderr_sha256": "4dcf36225c4ff656afc46968a5509b8e0e600553b58662b5bd3d34b32d0e80de"
+  },
+  {
+    "attempt": 3,
+    "script_sha256": "07484df97d787b327b180aa10270d369439840133247bb5a7632a9f5b250d8c5",
+    "outcome": "all available 7c archive bytes verified; original capture failure preserved",
+    "cause": "Resumed only the historical verification after exact source object recovery; retained the completed c821 verification without repeating it.",
+    "output": "verified-historical",
+    "combined_report": "verification-complete.json"
+  }
+]

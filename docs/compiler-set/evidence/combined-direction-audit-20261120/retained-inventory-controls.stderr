@@ -1,0 +1,11 @@
+test_changed_or_missing_fixtures_change_identity (__main__.InventoryControls.test_changed_or_missing_fixtures_change_identity) ... ok
+test_current_fixtures_match_pinned_donor_inventory (__main__.InventoryControls.test_current_fixtures_match_pinned_donor_inventory) ... ok
+test_declared_upstream_tree_cannot_change_with_candidate (__main__.InventoryControls.test_declared_upstream_tree_cannot_change_with_candidate) ... ok
+test_git_tree_matches_git_on_real_fixture (__main__.InventoryControls.test_git_tree_matches_git_on_real_fixture) ... ok
+test_required_history_cannot_be_reclassified_as_unresolved (__main__.InventoryControls.test_required_history_cannot_be_reclassified_as_unresolved) ... ok
+test_upstream_history_cannot_be_excluded_as_integration (__main__.InventoryControls.test_upstream_history_cannot_be_excluded_as_integration) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.561s
+
+OK

@@ -108,8 +108,8 @@ struct Flat {
 /// macro body or a macro call's input, or a tree the scan cannot read.
 fn file_uses(toks: &[Token], interner: &Interner, builtin: &dyn Fn(Sym) -> bool, out: &mut Vec<Flat>) -> bool {
     let at = |i: usize| toks.get(i).map(|t| &t.tok);
-    let std_lib = |t: Option<&Tok>| matches!(t, Some(Tok::Ident(s)) if matches!(interner.get(*s), "std" | "core" | "alloc"));
-    let is_macro_rules = |t: Option<&Tok>| matches!(t, Some(Tok::Ident(s)) if interner.get(*s) == "macro_rules");
+    let std_lib = |t: Option<&Tok>| matches!(t, Some(Tok::Ident(s, _)) if matches!(interner.get(*s), "std" | "core" | "alloc"));
+    let is_macro_rules = |t: Option<&Tok>| matches!(t, Some(Tok::Ident(s, _)) if interner.get(*s) == "macro_rules");
     // Open groups, each true when it is a macro body (`macro_rules! m {`)
     // or a macro call's input (`m!(`, not `#![`).
     let mut groups: Vec<bool> = Vec::new();
@@ -118,15 +118,15 @@ fn file_uses(toks: &[Token], interner: &Interner, builtin: &dyn Fn(Sym) -> bool,
             Tok::LParen | Tok::LBracket | Tok::LBrace => {
                 let back = |k: usize| i.checked_sub(k).and_then(|j| toks.get(j)).map(|t| &t.tok);
                 let call = back(1) == Some(&Tok::Bang) && back(2) != Some(&Tok::Pound);
-                let body = matches!(back(1), Some(Tok::Ident(_))) && back(2) == Some(&Tok::Bang) && is_macro_rules(back(3));
+                let body = matches!(back(1), Some(Tok::Ident(_, _))) && back(2) == Some(&Tok::Bang) && is_macro_rules(back(3));
                 groups.push(call || body);
             }
             Tok::RParen | Tok::RBracket | Tok::RBrace => {
                 groups.pop();
             }
             Tok::Extern if at(i + 1) == Some(&Tok::Crate) && !std_lib(at(i + 2)) => return false,
-            Tok::Ident(m) if at(i + 1) == Some(&Tok::Bang) && interner.get(*m) == "macro_rules" => match at(i + 2) {
-                Some(Tok::Ident(name)) if !builtin(*name) && !groups.contains(&true) => {}
+            Tok::Ident(m, _) if at(i + 1) == Some(&Tok::Bang) && interner.get(*m) == "macro_rules" => match at(i + 2) {
+                Some(Tok::Ident(name, _)) if !builtin(*name) && !groups.contains(&true) => {}
                 _ => return false,
             },
             // `use<'a, T>` is precise capturing, not an import.
@@ -171,7 +171,7 @@ fn tree(toks: &[Token], mut i: usize, interner: &Interner, leading: bool, prefix
             }
             t => {
                 let seg = match t {
-                    Tok::Ident(s) => *s,
+                    Tok::Ident(s, _) => *s,
                     Tok::Crate => interner.intern("crate"),
                     Tok::Super => interner.intern("super"),
                     Tok::SelfLower => interner.intern("self"),
@@ -181,7 +181,7 @@ fn tree(toks: &[Token], mut i: usize, interner: &Interner, leading: bool, prefix
                         i += 1;
                         interner.intern("crate")
                     }
-                    Tok::Dollar if matches!(tok(i + 1), Some(Tok::Ident(_))) => {
+                    Tok::Dollar if matches!(tok(i + 1), Some(Tok::Ident(_, _))) => {
                         i += 1;
                         interner.intern("$")
                     }
@@ -196,7 +196,7 @@ fn tree(toks: &[Token], mut i: usize, interner: &Interner, leading: bool, prefix
                 let last = prefix.iter().rev().find(|&&s| interner.get(s) != "self").copied();
                 if tok(i) == Some(&Tok::As) {
                     match tok(i + 1)? {
-                        Tok::Ident(r) => out.push(flat(prefix, Some(*r), true, false)),
+                        Tok::Ident(r, _) => out.push(flat(prefix, Some(*r), true, false)),
                         Tok::Underscore => out.push(flat(prefix, None, false, false)),
                         _ => return None,
                     }

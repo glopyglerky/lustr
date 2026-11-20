@@ -1,0 +1,218 @@
+{
+  "linux": {
+    "7c": {
+      "all_members_read_with_crc_validation": true,
+      "members_verified": 646,
+      "original_zip_unchanged": true,
+      "uncompressed_member_bytes": 235437139,
+      "zip_bytes": 49963114,
+      "zip_sha256": "8eb7f1aee44fcd3a9f4ac5f50c128666f179f83d5a6399dc8e8050fe25b3d482"
+    },
+    "c821": {
+      "all_members_read_with_crc_validation": true,
+      "members_verified": 646,
+      "original_zip_unchanged": true,
+      "uncompressed_member_bytes": 235437050,
+      "zip_bytes": 49963047,
+      "zip_sha256": "4d163abc595a4e4f0c8c094bab4b8f2bc48a2aa901653e5eb9280b1806312cdc"
+    }
+  },
+  "new_compiler_execution": false,
+  "original_logs": {
+    "7c-linux.log": {
+      "bytes": 295898,
+      "sha256": "4ca86ee2b9bb7e81753c5c9c734b992bd5efdbb6b19303cf9ae4ae55c4e492e9"
+    },
+    "c821-linux.log": {
+      "bytes": 295778,
+      "sha256": "228ba09ffbfeda6fd7ca3b96d0afd5c0a6ac4ce7ea077a9e90f77991f6c4abda"
+    },
+    "c821-main.log": {
+      "bytes": 564891,
+      "sha256": "42ed89302a5538faec8d5bb16a69f16e86fa7feb13e541a9d54654d578bcb5e9"
+    }
+  },
+  "reviewed_fixture_source_sha256": {
+    "tools/test-native-selection-cache.py": "31c1316f42bd6d743c9ea8f8a9d1684700f32210406f60cb7ac3dfced13f16f5",
+    "tools/test-native-selection-seed.py": "3fd50ea6421249f153923674add201a1fc842b263834352e28b5cbd1761e3e14"
+  },
+  "reviewed_utc_date": "2026-11-20",
+  "schema": "lustr-completed-ci-recovery-v1",
+  "source": {
+    "7c": {
+      "checkout": "66963315e9736ce9f151ce8ccac248d35a01d048",
+      "native_tree": "bf933c382fd99e52dd2586ebc46f0d0aceaa71a8",
+      "published_head": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+      "tree": "2a6a51f099bdcdb74871fdc2e65a4df87aa0c867"
+    },
+    "c821": {
+      "checkout": "ec8f89f98e2701f7189d4310e54a1501cdd81f34",
+      "native_tree": "bf933c382fd99e52dd2586ebc46f0d0aceaa71a8",
+      "published_head": "c8218b7fc0f657314c9e9c59775091b53508c6b0",
+      "tree": "4c796fc9e34ddc09be79f6697125258da9c6c188"
+    }
+  },
+  "supplemental": {
+    "7c": {
+      "all_required_histories_passed": true,
+      "archive": {
+        "bytes": 13578272,
+        "maximum_bytes": 503316480,
+        "path": "records.tar.gz",
+        "sha256": "f0cc34aa65f0b24b6383a715b235d95f599209c358b4b50723866615ba1a0372"
+      },
+      "available_member_integrity_verified": true,
+      "capture_complete": false,
+      "capture_errors": [
+        {
+          "error": "ValueError: record is a symlink; referent was not read",
+          "path": "native-selection-cache/package/lib/lustr-selection-tools.txt"
+        },
+        {
+          "error": "ValueError: record is a symlink; referent was not read",
+          "path": "native-selection-seed/relocated-package/lib/lustr-selection-tools.txt"
+        }
+      ],
+      "complete_capture_verified": false,
+      "exact_required_inventory_names": true,
+      "inventory_bytes": 10581859,
+      "inventory_entries": 36647,
+      "inventory_sha256": "c3e678df374333af9cf13f172d233e9ec06c219bd03cc0c19f36de5326695942",
+      "omitted_compiled_bytes": 446530968,
+      "omitted_compiled_files": 28,
+      "omitted_payloads_verified": false,
+      "original_retained_report_stream_hashes_verified": 26126,
+      "original_zip_unchanged": true,
+      "receipt_entries": [
+        {
+          "error": "ValueError: record is a symlink; referent was not read",
+          "hash_domain": "link-target-bytes",
+          "included": true,
+          "kind": "symlink",
+          "mode": 511,
+          "path": "native-selection-cache/package/lib/lustr-selection-tools.txt",
+          "sha256": "9de9c590d86cb7d77a064d595ce2f394cbc6682ef84eafff8dd2b620765f0cf3",
+          "size": 82,
+          "target": "/home/runner/work/_temp/lustr-native-built/toolchain/lib/lustr-selection-tools.txt"
+        },
+        {
+          "hash_domain": "file-bytes",
+          "included": true,
+          "kind": "regular",
+          "mode": 420,
+          "path": "native-selection-seed/package/lib/lustr-selection-tools.txt",
+          "sha256": "856982325124108771a2315245588392d8978860014207e40065205a9c193049",
+          "size": 350
+        },
+        {
+          "error": "ValueError: record is a symlink; referent was not read",
+          "hash_domain": "link-target-bytes",
+          "included": true,
+          "kind": "symlink",
+          "mode": 511,
+          "path": "native-selection-seed/relocated-package/lib/lustr-selection-tools.txt",
+          "sha256": "9de9c590d86cb7d77a064d595ce2f394cbc6682ef84eafff8dd2b620765f0cf3",
+          "size": 82,
+          "target": "/home/runner/work/_temp/lustr-native-built/toolchain/lib/lustr-selection-tools.txt"
+        }
+      ],
+      "required_histories": 349,
+      "required_versions": 1744,
+      "retained_runner_and_inventory_match_published_source": true,
+      "unresolved_histories": [
+        "cargo03_build_rs_discovery",
+        "cargo05_path_dep_manifest",
+        "cargo06_edition_lints",
+        "cargo09_workspace_members",
+        "fm02_genmacro_modfile",
+        "gs02_bound_names_body_edit",
+        "ms01_dep_builtin_body",
+        "ms02_dep_macro_alias_glob",
+        "sd01_const_chain_where",
+        "sd02_const_fn_values",
+        "sd21_const_named_header_edits",
+        "sd23_std_impl_lowerhex",
+        "sig02_const_fn_closure"
+      ],
+      "verified_archive_members": 36619,
+      "verified_regular_bytes": 63031706,
+      "verified_regular_files": 35963,
+      "zip_bytes": 13603715,
+      "zip_sha256": "4d7965327d6466f092c704992abca9baf950b8548d5e115225d5d2b5c4b4988a"
+    },
+    "c821": {
+      "all_required_histories_passed": true,
+      "archive": {
+        "bytes": 13572090,
+        "maximum_bytes": 503316480,
+        "path": "records.tar.gz",
+        "sha256": "9b5221df85d8eb7fb5e85d5181e84c016c58046001ed6ff5044545f7bcf0c0fd"
+      },
+      "available_member_integrity_verified": true,
+      "capture_complete": true,
+      "capture_errors": [],
+      "complete_capture_verified": true,
+      "exact_required_inventory_names": true,
+      "inventory_bytes": 10581160,
+      "inventory_entries": 36647,
+      "inventory_sha256": "29770ebaa0e6a5fd4c1c3c407f8958ad8a7d38aeeffd94adb27f453f3674b63c",
+      "omitted_compiled_bytes": 446530968,
+      "omitted_compiled_files": 28,
+      "omitted_payloads_verified": false,
+      "original_retained_report_stream_hashes_verified": 26126,
+      "original_zip_unchanged": true,
+      "receipt_entries": [
+        {
+          "hash_domain": "file-bytes",
+          "included": true,
+          "kind": "regular",
+          "mode": 420,
+          "path": "native-selection-cache/package/lib/lustr-selection-tools.txt",
+          "sha256": "401c56f4ff06003f588e0d02725e7473bc5b6c4104bfc0f09d426956a9215609",
+          "size": 342
+        },
+        {
+          "hash_domain": "file-bytes",
+          "included": true,
+          "kind": "regular",
+          "mode": 420,
+          "path": "native-selection-seed/package/lib/lustr-selection-tools.txt",
+          "sha256": "856982325124108771a2315245588392d8978860014207e40065205a9c193049",
+          "size": 350
+        },
+        {
+          "hash_domain": "file-bytes",
+          "included": true,
+          "kind": "regular",
+          "mode": 420,
+          "path": "native-selection-seed/relocated-package/lib/lustr-selection-tools.txt",
+          "sha256": "401c56f4ff06003f588e0d02725e7473bc5b6c4104bfc0f09d426956a9215609",
+          "size": 342
+        }
+      ],
+      "required_histories": 349,
+      "required_versions": 1744,
+      "retained_runner_and_inventory_match_published_source": true,
+      "unresolved_histories": [
+        "cargo03_build_rs_discovery",
+        "cargo05_path_dep_manifest",
+        "cargo06_edition_lints",
+        "cargo09_workspace_members",
+        "fm02_genmacro_modfile",
+        "gs02_bound_names_body_edit",
+        "ms01_dep_builtin_body",
+        "ms02_dep_macro_alias_glob",
+        "sd01_const_chain_where",
+        "sd02_const_fn_values",
+        "sd21_const_named_header_edits",
+        "sd23_std_impl_lowerhex",
+        "sig02_const_fn_closure"
+      ],
+      "verified_archive_members": 36619,
+      "verified_regular_bytes": 63032243,
+      "verified_regular_files": 35965,
+      "zip_bytes": 13585105,
+      "zip_sha256": "93c83be3ef1ccef020f3330868aad7f7ab4d3415d550763ff18d24ac3a9cce36"
+    }
+  }
+}

@@ -1,0 +1,8869 @@
+{
+  "fixed": [
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "cold",
+      "sample": 0,
+      "seconds": 0.039612224,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "cold",
+      "sample": 0,
+      "seconds": 0.037403374,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "cold",
+      "sample": 0,
+      "seconds": 0.037657941,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "cold",
+      "sample": 0,
+      "seconds": 0.033068154,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "no-op",
+      "sample": 0,
+      "seconds": 0.002790849,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "no-op",
+      "sample": 0,
+      "seconds": 0.002925274,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "no-op",
+      "sample": 0,
+      "seconds": 0.002885052,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "no-op",
+      "sample": 0,
+      "seconds": 0.03183451,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "body-edit",
+      "sample": 0,
+      "seconds": 0.004782715,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "body-edit",
+      "sample": 0,
+      "seconds": 0.004882584,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "body-edit",
+      "sample": 0,
+      "seconds": 0.004361594,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "body-edit",
+      "sample": 0,
+      "seconds": 0.030484338,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "signature-edit",
+      "sample": 0,
+      "seconds": 0.004183858,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "signature-edit",
+      "sample": 0,
+      "seconds": 0.004204448,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "signature-edit",
+      "sample": 0,
+      "seconds": 0.004175003,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "signature-edit",
+      "sample": 0,
+      "seconds": 0.029479283,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check",
+      "sample": 0,
+      "seconds": 0.001619196,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check",
+      "sample": 0,
+      "seconds": 0.002057787,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check",
+      "sample": 0,
+      "seconds": 0.001629651,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check",
+      "sample": 0,
+      "seconds": 0.008680109,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-no-op",
+      "sample": 0,
+      "seconds": 0.001423635,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-no-op",
+      "sample": 0,
+      "seconds": 0.001448879,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-no-op",
+      "sample": 0,
+      "seconds": 0.001418444,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-no-op",
+      "sample": 0,
+      "seconds": 0.008726324,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-body-edit",
+      "sample": 0,
+      "seconds": 0.00161527,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-body-edit",
+      "sample": 0,
+      "seconds": 0.001580546,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-body-edit",
+      "sample": 0,
+      "seconds": 0.001442512,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-body-edit",
+      "sample": 0,
+      "seconds": 0.008338554,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "entry",
+      "phase": "rejection",
+      "sample": 0,
+      "seconds": 0.014245633,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "rejection",
+      "sample": 0,
+      "seconds": 0.00160878,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "rejection",
+      "sample": 0,
+      "seconds": 0.001698988,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "rejection",
+      "sample": 0,
+      "seconds": 0.013508831,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "compile-plus-test",
+      "sample": 0,
+      "seconds": 0.028619088,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "compile-plus-test",
+      "sample": 0,
+      "seconds": 0.026999509,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "compile-plus-test",
+      "sample": 0,
+      "seconds": 0.024178179,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "compile-plus-test",
+      "sample": 0,
+      "seconds": 0.048288684,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "cold",
+      "sample": 1,
+      "seconds": 0.038106176,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "cold",
+      "sample": 1,
+      "seconds": 0.042634407,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "cold",
+      "sample": 1,
+      "seconds": 0.032345683,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "cold",
+      "sample": 1,
+      "seconds": 0.035890346,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "no-op",
+      "sample": 1,
+      "seconds": 0.003033346,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "no-op",
+      "sample": 1,
+      "seconds": 0.00298217,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "no-op",
+      "sample": 1,
+      "seconds": 0.031018586,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "no-op",
+      "sample": 1,
+      "seconds": 0.002790831,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "body-edit",
+      "sample": 1,
+      "seconds": 0.005033512,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "body-edit",
+      "sample": 1,
+      "seconds": 0.004687589,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "body-edit",
+      "sample": 1,
+      "seconds": 0.03256163,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "body-edit",
+      "sample": 1,
+      "seconds": 0.004361015,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "signature-edit",
+      "sample": 1,
+      "seconds": 0.00424015,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "signature-edit",
+      "sample": 1,
+      "seconds": 0.004268504,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "signature-edit",
+      "sample": 1,
+      "seconds": 0.031153917,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "signature-edit",
+      "sample": 1,
+      "seconds": 0.00382801,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check",
+      "sample": 1,
+      "seconds": 0.00159523,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check",
+      "sample": 1,
+      "seconds": 0.001546037,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check",
+      "sample": 1,
+      "seconds": 0.008496041,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check",
+      "sample": 1,
+      "seconds": 0.001573432,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-no-op",
+      "sample": 1,
+      "seconds": 0.001483839,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-no-op",
+      "sample": 1,
+      "seconds": 0.001460869,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-no-op",
+      "sample": 1,
+      "seconds": 0.008359407,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-no-op",
+      "sample": 1,
+      "seconds": 0.001421057,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-body-edit",
+      "sample": 1,
+      "seconds": 0.001424806,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-body-edit",
+      "sample": 1,
+      "seconds": 0.001471813,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-body-edit",
+      "sample": 1,
+      "seconds": 0.008571754,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-body-edit",
+      "sample": 1,
+      "seconds": 0.00147856,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "rejection",
+      "sample": 1,
+      "seconds": 0.001588581,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "rejection",
+      "sample": 1,
+      "seconds": 0.001709392,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "rejection",
+      "sample": 1,
+      "seconds": 0.013484549,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "entry",
+      "phase": "rejection",
+      "sample": 1,
+      "seconds": 0.014589417,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "compile-plus-test",
+      "sample": 1,
+      "seconds": 0.027258556,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "compile-plus-test",
+      "sample": 1,
+      "seconds": 0.026188486,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "compile-plus-test",
+      "sample": 1,
+      "seconds": 0.048766108,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "compile-plus-test",
+      "sample": 1,
+      "seconds": 0.02629045,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "cold",
+      "sample": 2,
+      "seconds": 0.033579433,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "cold",
+      "sample": 2,
+      "seconds": 0.038724859,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "cold",
+      "sample": 2,
+      "seconds": 0.043795827,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "cold",
+      "sample": 2,
+      "seconds": 0.042712812,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "no-op",
+      "sample": 2,
+      "seconds": 0.030347129,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "no-op",
+      "sample": 2,
+      "seconds": 0.002939028,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "no-op",
+      "sample": 2,
+      "seconds": 0.002902854,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "no-op",
+      "sample": 2,
+      "seconds": 0.002877209,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "body-edit",
+      "sample": 2,
+      "seconds": 0.034476419,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "body-edit",
+      "sample": 2,
+      "seconds": 0.004939261,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "body-edit",
+      "sample": 2,
+      "seconds": 0.004797233,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "body-edit",
+      "sample": 2,
+      "seconds": 0.004292792,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "signature-edit",
+      "sample": 2,
+      "seconds": 0.032307624,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "signature-edit",
+      "sample": 2,
+      "seconds": 0.004036202,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "signature-edit",
+      "sample": 2,
+      "seconds": 0.004124237,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "signature-edit",
+      "sample": 2,
+      "seconds": 0.00411278,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check",
+      "sample": 2,
+      "seconds": 0.009199907,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check",
+      "sample": 2,
+      "seconds": 0.001743577,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check",
+      "sample": 2,
+      "seconds": 0.001586573,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check",
+      "sample": 2,
+      "seconds": 0.001611827,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-no-op",
+      "sample": 2,
+      "seconds": 0.008842516,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-no-op",
+      "sample": 2,
+      "seconds": 0.001414092,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-no-op",
+      "sample": 2,
+      "seconds": 0.001442592,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-no-op",
+      "sample": 2,
+      "seconds": 0.001414241,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-body-edit",
+      "sample": 2,
+      "seconds": 0.008797395,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-body-edit",
+      "sample": 2,
+      "seconds": 0.001593363,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-body-edit",
+      "sample": 2,
+      "seconds": 0.001410273,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-body-edit",
+      "sample": 2,
+      "seconds": 0.0014192,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "rejection",
+      "sample": 2,
+      "seconds": 0.013786044,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "entry",
+      "phase": "rejection",
+      "sample": 2,
+      "seconds": 0.014425797,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "rejection",
+      "sample": 2,
+      "seconds": 0.001613386,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "rejection",
+      "sample": 2,
+      "seconds": 0.001714846,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "compile-plus-test",
+      "sample": 2,
+      "seconds": 0.044495009,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "compile-plus-test",
+      "sample": 2,
+      "seconds": 0.029106718,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "compile-plus-test",
+      "sample": 2,
+      "seconds": 0.026203361,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "compile-plus-test",
+      "sample": 2,
+      "seconds": 0.025304215,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "cold",
+      "sample": 3,
+      "seconds": 0.037029023,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "cold",
+      "sample": 3,
+      "seconds": 0.034694968,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "cold",
+      "sample": 3,
+      "seconds": 0.043231382,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "cold",
+      "sample": 3,
+      "seconds": 0.037190976,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "no-op",
+      "sample": 3,
+      "seconds": 0.003032933,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "no-op",
+      "sample": 3,
+      "seconds": 0.030851751,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "no-op",
+      "sample": 3,
+      "seconds": 0.002715333,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "no-op",
+      "sample": 3,
+      "seconds": 0.002993013,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "body-edit",
+      "sample": 3,
+      "seconds": 0.004847798,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "body-edit",
+      "sample": 3,
+      "seconds": 0.034683895,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "body-edit",
+      "sample": 3,
+      "seconds": 0.004657673,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "body-edit",
+      "sample": 3,
+      "seconds": 0.004535401,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "signature-edit",
+      "sample": 3,
+      "seconds": 0.00438089,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "signature-edit",
+      "sample": 3,
+      "seconds": 0.032334672,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "signature-edit",
+      "sample": 3,
+      "seconds": 0.003875162,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "signature-edit",
+      "sample": 3,
+      "seconds": 0.004013974,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check",
+      "sample": 3,
+      "seconds": 0.001569278,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check",
+      "sample": 3,
+      "seconds": 0.00917691,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check",
+      "sample": 3,
+      "seconds": 0.001639474,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check",
+      "sample": 3,
+      "seconds": 0.001603215,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-no-op",
+      "sample": 3,
+      "seconds": 0.001400232,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-no-op",
+      "sample": 3,
+      "seconds": 0.008917146,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-no-op",
+      "sample": 3,
+      "seconds": 0.001433498,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-no-op",
+      "sample": 3,
+      "seconds": 0.001292236,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-body-edit",
+      "sample": 3,
+      "seconds": 0.001448823,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-body-edit",
+      "sample": 3,
+      "seconds": 0.008878598,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-body-edit",
+      "sample": 3,
+      "seconds": 0.001599751,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-body-edit",
+      "sample": 3,
+      "seconds": 0.001485305,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "rejection",
+      "sample": 3,
+      "seconds": 0.001592585,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "rejection",
+      "sample": 3,
+      "seconds": 0.014302,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "entry",
+      "phase": "rejection",
+      "sample": 3,
+      "seconds": 0.014907133,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "rejection",
+      "sample": 3,
+      "seconds": 0.001559441,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "compile-plus-test",
+      "sample": 3,
+      "seconds": 0.029588632,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "compile-plus-test",
+      "sample": 3,
+      "seconds": 0.04767007,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "compile-plus-test",
+      "sample": 3,
+      "seconds": 0.026968946,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "compile-plus-test",
+      "sample": 3,
+      "seconds": 0.026693706,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "cold",
+      "sample": 4,
+      "seconds": 0.037782597,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "cold",
+      "sample": 4,
+      "seconds": 0.037201941,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "cold",
+      "sample": 4,
+      "seconds": 0.033830437,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "cold",
+      "sample": 4,
+      "seconds": 0.038634028,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "no-op",
+      "sample": 4,
+      "seconds": 0.002937911,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "no-op",
+      "sample": 4,
+      "seconds": 0.002929637,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "no-op",
+      "sample": 4,
+      "seconds": 0.030525866,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "no-op",
+      "sample": 4,
+      "seconds": 0.002852504,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "body-edit",
+      "sample": 4,
+      "seconds": 0.00484077,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "body-edit",
+      "sample": 4,
+      "seconds": 0.004882197,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "body-edit",
+      "sample": 4,
+      "seconds": 0.031840691,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "body-edit",
+      "sample": 4,
+      "seconds": 0.004320829,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "signature-edit",
+      "sample": 4,
+      "seconds": 0.004325339,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "signature-edit",
+      "sample": 4,
+      "seconds": 0.00429748,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "signature-edit",
+      "sample": 4,
+      "seconds": 0.030693026,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "signature-edit",
+      "sample": 4,
+      "seconds": 0.003983637,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check",
+      "sample": 4,
+      "seconds": 0.001602837,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check",
+      "sample": 4,
+      "seconds": 0.001610335,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check",
+      "sample": 4,
+      "seconds": 0.008492001,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check",
+      "sample": 4,
+      "seconds": 0.00160378,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-no-op",
+      "sample": 4,
+      "seconds": 0.001487383,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-no-op",
+      "sample": 4,
+      "seconds": 0.001426141,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-no-op",
+      "sample": 4,
+      "seconds": 0.00843709,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-no-op",
+      "sample": 4,
+      "seconds": 0.001461892,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-body-edit",
+      "sample": 4,
+      "seconds": 0.001477918,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-body-edit",
+      "sample": 4,
+      "seconds": 0.001583226,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-body-edit",
+      "sample": 4,
+      "seconds": 0.008443928,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-body-edit",
+      "sample": 4,
+      "seconds": 0.001479353,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "rejection",
+      "sample": 4,
+      "seconds": 0.001621784,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "rejection",
+      "sample": 4,
+      "seconds": 0.002359941,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "rejection",
+      "sample": 4,
+      "seconds": 0.014743456,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "entry",
+      "phase": "rejection",
+      "sample": 4,
+      "seconds": 0.014402926,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "compile-plus-test",
+      "sample": 4,
+      "seconds": 0.028404117,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "compile-plus-test",
+      "sample": 4,
+      "seconds": 0.026566736,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "compile-plus-test",
+      "sample": 4,
+      "seconds": 0.048428283,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "compile-plus-test",
+      "sample": 4,
+      "seconds": 0.026061616,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "cold",
+      "sample": 5,
+      "seconds": 0.041071304,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "cold",
+      "sample": 5,
+      "seconds": 0.033727884,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "cold",
+      "sample": 5,
+      "seconds": 0.03731577,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "cold",
+      "sample": 5,
+      "seconds": 0.03881688,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "no-op",
+      "sample": 5,
+      "seconds": 0.002934009,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "no-op",
+      "sample": 5,
+      "seconds": 0.031099658,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "no-op",
+      "sample": 5,
+      "seconds": 0.002859298,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "no-op",
+      "sample": 5,
+      "seconds": 0.002997814,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "body-edit",
+      "sample": 5,
+      "seconds": 0.005059579,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "body-edit",
+      "sample": 5,
+      "seconds": 0.034321628,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "body-edit",
+      "sample": 5,
+      "seconds": 0.004835094,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "body-edit",
+      "sample": 5,
+      "seconds": 0.004387827,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "signature-edit",
+      "sample": 5,
+      "seconds": 0.004042382,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "signature-edit",
+      "sample": 5,
+      "seconds": 0.031711005,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "signature-edit",
+      "sample": 5,
+      "seconds": 0.003955433,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "signature-edit",
+      "sample": 5,
+      "seconds": 0.003934958,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check",
+      "sample": 5,
+      "seconds": 0.001916853,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check",
+      "sample": 5,
+      "seconds": 0.009004138,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check",
+      "sample": 5,
+      "seconds": 0.001591916,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check",
+      "sample": 5,
+      "seconds": 0.001588123,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-no-op",
+      "sample": 5,
+      "seconds": 0.001418639,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-no-op",
+      "sample": 5,
+      "seconds": 0.009195484,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-no-op",
+      "sample": 5,
+      "seconds": 0.001364223,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-no-op",
+      "sample": 5,
+      "seconds": 0.001434053,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-body-edit",
+      "sample": 5,
+      "seconds": 0.001427854,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-body-edit",
+      "sample": 5,
+      "seconds": 0.009001062,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-body-edit",
+      "sample": 5,
+      "seconds": 0.001421024,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-body-edit",
+      "sample": 5,
+      "seconds": 0.001448807,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "rejection",
+      "sample": 5,
+      "seconds": 0.001683,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "rejection",
+      "sample": 5,
+      "seconds": 0.013470366,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "entry",
+      "phase": "rejection",
+      "sample": 5,
+      "seconds": 0.013939381,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "rejection",
+      "sample": 5,
+      "seconds": 0.001422056,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "compile-plus-test",
+      "sample": 5,
+      "seconds": 0.02677639,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "compile-plus-test",
+      "sample": 5,
+      "seconds": 0.045254927,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "compile-plus-test",
+      "sample": 5,
+      "seconds": 0.028166293,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "compile-plus-test",
+      "sample": 5,
+      "seconds": 0.027310698,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "cold",
+      "sample": 6,
+      "seconds": 0.043925024,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "cold",
+      "sample": 6,
+      "seconds": 0.036071971,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "cold",
+      "sample": 6,
+      "seconds": 0.036439811,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "cold",
+      "sample": 6,
+      "seconds": 0.034243838,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "no-op",
+      "sample": 6,
+      "seconds": 0.002850213,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "no-op",
+      "sample": 6,
+      "seconds": 0.003030095,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "no-op",
+      "sample": 6,
+      "seconds": 0.003049555,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "no-op",
+      "sample": 6,
+      "seconds": 0.031142026,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "body-edit",
+      "sample": 6,
+      "seconds": 0.00508842,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "body-edit",
+      "sample": 6,
+      "seconds": 0.004966306,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "body-edit",
+      "sample": 6,
+      "seconds": 0.004453567,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "body-edit",
+      "sample": 6,
+      "seconds": 0.030510472,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "signature-edit",
+      "sample": 6,
+      "seconds": 0.004066808,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "signature-edit",
+      "sample": 6,
+      "seconds": 0.003988476,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "signature-edit",
+      "sample": 6,
+      "seconds": 0.004189841,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "signature-edit",
+      "sample": 6,
+      "seconds": 0.029460326,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check",
+      "sample": 6,
+      "seconds": 0.001532754,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check",
+      "sample": 6,
+      "seconds": 0.001634739,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check",
+      "sample": 6,
+      "seconds": 0.001724913,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check",
+      "sample": 6,
+      "seconds": 0.008666638,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-no-op",
+      "sample": 6,
+      "seconds": 0.001423922,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-no-op",
+      "sample": 6,
+      "seconds": 0.001290858,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-no-op",
+      "sample": 6,
+      "seconds": 0.001417214,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-no-op",
+      "sample": 6,
+      "seconds": 0.008544917,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-body-edit",
+      "sample": 6,
+      "seconds": 0.001441621,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-body-edit",
+      "sample": 6,
+      "seconds": 0.001490796,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-body-edit",
+      "sample": 6,
+      "seconds": 0.001451457,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-body-edit",
+      "sample": 6,
+      "seconds": 0.008132598,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "entry",
+      "phase": "rejection",
+      "sample": 6,
+      "seconds": 0.014984391,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "rejection",
+      "sample": 6,
+      "seconds": 0.001577039,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "rejection",
+      "sample": 6,
+      "seconds": 0.002080141,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "rejection",
+      "sample": 6,
+      "seconds": 0.013264953,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "compile-plus-test",
+      "sample": 6,
+      "seconds": 0.027667865,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "compile-plus-test",
+      "sample": 6,
+      "seconds": 0.025244688,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "compile-plus-test",
+      "sample": 6,
+      "seconds": 0.029563867,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "compile-plus-test",
+      "sample": 6,
+      "seconds": 0.049328879,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "cold",
+      "sample": 7,
+      "seconds": 0.033413086,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "cold",
+      "sample": 7,
+      "seconds": 0.038144842,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "cold",
+      "sample": 7,
+      "seconds": 0.03579667,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "cold",
+      "sample": 7,
+      "seconds": 0.036778606,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "no-op",
+      "sample": 7,
+      "seconds": 0.030103672,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "no-op",
+      "sample": 7,
+      "seconds": 0.002767966,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "no-op",
+      "sample": 7,
+      "seconds": 0.003006305,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "no-op",
+      "sample": 7,
+      "seconds": 0.002788144,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "body-edit",
+      "sample": 7,
+      "seconds": 0.034467521,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "body-edit",
+      "sample": 7,
+      "seconds": 0.004963479,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "body-edit",
+      "sample": 7,
+      "seconds": 0.004661298,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "body-edit",
+      "sample": 7,
+      "seconds": 0.004364095,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "signature-edit",
+      "sample": 7,
+      "seconds": 0.032533997,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "signature-edit",
+      "sample": 7,
+      "seconds": 0.004028848,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "signature-edit",
+      "sample": 7,
+      "seconds": 0.004002908,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "signature-edit",
+      "sample": 7,
+      "seconds": 0.003814982,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check",
+      "sample": 7,
+      "seconds": 0.008801921,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check",
+      "sample": 7,
+      "seconds": 0.001604397,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check",
+      "sample": 7,
+      "seconds": 0.001650568,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check",
+      "sample": 7,
+      "seconds": 0.001629694,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-no-op",
+      "sample": 7,
+      "seconds": 0.008290591,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-no-op",
+      "sample": 7,
+      "seconds": 0.001399281,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-no-op",
+      "sample": 7,
+      "seconds": 0.001425033,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-no-op",
+      "sample": 7,
+      "seconds": 0.001308321,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-body-edit",
+      "sample": 7,
+      "seconds": 0.008082768,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-body-edit",
+      "sample": 7,
+      "seconds": 0.001583312,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-body-edit",
+      "sample": 7,
+      "seconds": 0.001451111,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-body-edit",
+      "sample": 7,
+      "seconds": 0.001403171,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "rejection",
+      "sample": 7,
+      "seconds": 0.013651457,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "entry",
+      "phase": "rejection",
+      "sample": 7,
+      "seconds": 0.013688266,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "rejection",
+      "sample": 7,
+      "seconds": 0.001636386,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "rejection",
+      "sample": 7,
+      "seconds": 0.002106364,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "compile-plus-test",
+      "sample": 7,
+      "seconds": 0.044581462,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "compile-plus-test",
+      "sample": 7,
+      "seconds": 0.028969095,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "compile-plus-test",
+      "sample": 7,
+      "seconds": 0.024474645,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "compile-plus-test",
+      "sample": 7,
+      "seconds": 0.024855077,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "cold",
+      "sample": 8,
+      "seconds": 0.038135504,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "cold",
+      "sample": 8,
+      "seconds": 0.03745632,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "cold",
+      "sample": 8,
+      "seconds": 0.037415435,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "cold",
+      "sample": 8,
+      "seconds": 0.0344516,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "no-op",
+      "sample": 8,
+      "seconds": 0.003097758,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "no-op",
+      "sample": 8,
+      "seconds": 0.00287527,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "no-op",
+      "sample": 8,
+      "seconds": 0.003062404,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "no-op",
+      "sample": 8,
+      "seconds": 0.031105657,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "body-edit",
+      "sample": 8,
+      "seconds": 0.004973768,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "body-edit",
+      "sample": 8,
+      "seconds": 0.00484632,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "body-edit",
+      "sample": 8,
+      "seconds": 0.004817102,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "body-edit",
+      "sample": 8,
+      "seconds": 0.030798344,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "signature-edit",
+      "sample": 8,
+      "seconds": 0.004076589,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "signature-edit",
+      "sample": 8,
+      "seconds": 0.004025352,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "signature-edit",
+      "sample": 8,
+      "seconds": 0.003795923,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "signature-edit",
+      "sample": 8,
+      "seconds": 0.030045346,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check",
+      "sample": 8,
+      "seconds": 0.001583632,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check",
+      "sample": 8,
+      "seconds": 0.001613454,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check",
+      "sample": 8,
+      "seconds": 0.001629963,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check",
+      "sample": 8,
+      "seconds": 0.008255834,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-no-op",
+      "sample": 8,
+      "seconds": 0.001410465,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-no-op",
+      "sample": 8,
+      "seconds": 0.001472574,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-no-op",
+      "sample": 8,
+      "seconds": 0.001487427,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-no-op",
+      "sample": 8,
+      "seconds": 0.00803523,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-body-edit",
+      "sample": 8,
+      "seconds": 0.001443585,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-body-edit",
+      "sample": 8,
+      "seconds": 0.001560019,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-body-edit",
+      "sample": 8,
+      "seconds": 0.001420225,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-body-edit",
+      "sample": 8,
+      "seconds": 0.008504194,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "rejection",
+      "sample": 8,
+      "seconds": 0.00156292,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "entry",
+      "phase": "rejection",
+      "sample": 8,
+      "seconds": 0.014487245,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "rejection",
+      "sample": 8,
+      "seconds": 0.001615644,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "rejection",
+      "sample": 8,
+      "seconds": 0.013131974,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "compile-plus-test",
+      "sample": 8,
+      "seconds": 0.026854965,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "compile-plus-test",
+      "sample": 8,
+      "seconds": 0.026440541,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "compile-plus-test",
+      "sample": 8,
+      "seconds": 0.026042012,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "compile-plus-test",
+      "sample": 8,
+      "seconds": 0.048882297,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "cold",
+      "sample": 9,
+      "seconds": 0.039015867,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "cold",
+      "sample": 9,
+      "seconds": 0.037880724,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "cold",
+      "sample": 9,
+      "seconds": 0.033241828,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "cold",
+      "sample": 9,
+      "seconds": 0.03688773,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "no-op",
+      "sample": 9,
+      "seconds": 0.002718192,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "no-op",
+      "sample": 9,
+      "seconds": 0.002846888,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "no-op",
+      "sample": 9,
+      "seconds": 0.030753884,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "no-op",
+      "sample": 9,
+      "seconds": 0.002902999,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "body-edit",
+      "sample": 9,
+      "seconds": 0.004944788,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "body-edit",
+      "sample": 9,
+      "seconds": 0.00507637,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "body-edit",
+      "sample": 9,
+      "seconds": 0.033314656,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "body-edit",
+      "sample": 9,
+      "seconds": 0.004332202,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "signature-edit",
+      "sample": 9,
+      "seconds": 0.00416227,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "signature-edit",
+      "sample": 9,
+      "seconds": 0.004314964,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "signature-edit",
+      "sample": 9,
+      "seconds": 0.031552693,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "signature-edit",
+      "sample": 9,
+      "seconds": 0.003865116,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check",
+      "sample": 9,
+      "seconds": 0.00156962,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check",
+      "sample": 9,
+      "seconds": 0.001627304,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check",
+      "sample": 9,
+      "seconds": 0.009074945,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check",
+      "sample": 9,
+      "seconds": 0.001632658,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-no-op",
+      "sample": 9,
+      "seconds": 0.001423248,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-no-op",
+      "sample": 9,
+      "seconds": 0.001447802,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-no-op",
+      "sample": 9,
+      "seconds": 0.008905211,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-no-op",
+      "sample": 9,
+      "seconds": 0.001402277,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-body-edit",
+      "sample": 9,
+      "seconds": 0.001561109,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-body-edit",
+      "sample": 9,
+      "seconds": 0.001423312,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-body-edit",
+      "sample": 9,
+      "seconds": 0.008555819,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-body-edit",
+      "sample": 9,
+      "seconds": 0.001411524,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "entry",
+      "phase": "rejection",
+      "sample": 9,
+      "seconds": 0.014698823,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "rejection",
+      "sample": 9,
+      "seconds": 0.001632676,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "rejection",
+      "sample": 9,
+      "seconds": 0.013089327,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "rejection",
+      "sample": 9,
+      "seconds": 0.001748437,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "compile-plus-test",
+      "sample": 9,
+      "seconds": 0.02963472,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "compile-plus-test",
+      "sample": 9,
+      "seconds": 0.026188552,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "compile-plus-test",
+      "sample": 9,
+      "seconds": 0.048362611,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "compile-plus-test",
+      "sample": 9,
+      "seconds": 0.028348081,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "cold",
+      "sample": 10,
+      "seconds": 0.036623439,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "cold",
+      "sample": 10,
+      "seconds": 0.033271295,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "cold",
+      "sample": 10,
+      "seconds": 0.036523879,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "cold",
+      "sample": 10,
+      "seconds": 0.04288335,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "no-op",
+      "sample": 10,
+      "seconds": 0.00311907,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "no-op",
+      "sample": 10,
+      "seconds": 0.030876847,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "no-op",
+      "sample": 10,
+      "seconds": 0.002926418,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "no-op",
+      "sample": 10,
+      "seconds": 0.00284364,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "body-edit",
+      "sample": 10,
+      "seconds": 0.005279884,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "body-edit",
+      "sample": 10,
+      "seconds": 0.034597658,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "body-edit",
+      "sample": 10,
+      "seconds": 0.004484901,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "body-edit",
+      "sample": 10,
+      "seconds": 0.004518907,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "signature-edit",
+      "sample": 10,
+      "seconds": 0.00443156,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "signature-edit",
+      "sample": 10,
+      "seconds": 0.032699208,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "signature-edit",
+      "sample": 10,
+      "seconds": 0.004014317,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "signature-edit",
+      "sample": 10,
+      "seconds": 0.003873131,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check",
+      "sample": 10,
+      "seconds": 0.001771634,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check",
+      "sample": 10,
+      "seconds": 0.008898411,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check",
+      "sample": 10,
+      "seconds": 0.00159387,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check",
+      "sample": 10,
+      "seconds": 0.001490547,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-no-op",
+      "sample": 10,
+      "seconds": 0.001435951,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-no-op",
+      "sample": 10,
+      "seconds": 0.008434955,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-no-op",
+      "sample": 10,
+      "seconds": 0.001422526,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-no-op",
+      "sample": 10,
+      "seconds": 0.001273677,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-body-edit",
+      "sample": 10,
+      "seconds": 0.001437243,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-body-edit",
+      "sample": 10,
+      "seconds": 0.008089578,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-body-edit",
+      "sample": 10,
+      "seconds": 0.001417762,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-body-edit",
+      "sample": 10,
+      "seconds": 0.001461193,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "rejection",
+      "sample": 10,
+      "seconds": 0.001607421,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "rejection",
+      "sample": 10,
+      "seconds": 0.013418508,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "rejection",
+      "sample": 10,
+      "seconds": 0.001615341,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "entry",
+      "phase": "rejection",
+      "sample": 10,
+      "seconds": 0.014135031,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "compile-plus-test",
+      "sample": 10,
+      "seconds": 0.027538154,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "compile-plus-test",
+      "sample": 10,
+      "seconds": 0.045539309,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "compile-plus-test",
+      "sample": 10,
+      "seconds": 0.028218855,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "compile-plus-test",
+      "sample": 10,
+      "seconds": 0.025206162,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "cold",
+      "sample": 11,
+      "seconds": 0.03399167,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "cold",
+      "sample": 11,
+      "seconds": 0.036914201,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "cold",
+      "sample": 11,
+      "seconds": 0.042215888,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "cold",
+      "sample": 11,
+      "seconds": 0.044149793,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "no-op",
+      "sample": 11,
+      "seconds": 0.030107541,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "no-op",
+      "sample": 11,
+      "seconds": 0.003033522,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "no-op",
+      "sample": 11,
+      "seconds": 0.002803665,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "no-op",
+      "sample": 11,
+      "seconds": 0.002964152,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "body-edit",
+      "sample": 11,
+      "seconds": 0.035415428,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "body-edit",
+      "sample": 11,
+      "seconds": 0.004889383,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "body-edit",
+      "sample": 11,
+      "seconds": 0.004484545,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "body-edit",
+      "sample": 11,
+      "seconds": 0.0045376,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "signature-edit",
+      "sample": 11,
+      "seconds": 0.032116235,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "signature-edit",
+      "sample": 11,
+      "seconds": 0.004185473,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "signature-edit",
+      "sample": 11,
+      "seconds": 0.004316473,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "signature-edit",
+      "sample": 11,
+      "seconds": 0.004071847,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check",
+      "sample": 11,
+      "seconds": 0.008697961,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check",
+      "sample": 11,
+      "seconds": 0.001729225,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check",
+      "sample": 11,
+      "seconds": 0.001644235,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check",
+      "sample": 11,
+      "seconds": 0.001638684,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-no-op",
+      "sample": 11,
+      "seconds": 0.008916856,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-no-op",
+      "sample": 11,
+      "seconds": 0.001463638,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-no-op",
+      "sample": 11,
+      "seconds": 0.001449848,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-no-op",
+      "sample": 11,
+      "seconds": 0.001448815,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "check-body-edit",
+      "sample": 11,
+      "seconds": 0.009155386,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "check-body-edit",
+      "sample": 11,
+      "seconds": 0.001461765,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "check-body-edit",
+      "sample": 11,
+      "seconds": 0.001425401,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "check-body-edit",
+      "sample": 11,
+      "seconds": 0.001444808,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "rejection",
+      "sample": 11,
+      "seconds": 0.013444747,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "rejection",
+      "sample": 11,
+      "seconds": 0.001628548,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "entry",
+      "phase": "rejection",
+      "sample": 11,
+      "seconds": 0.014543385,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "expected_exit": 1,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "rejection",
+      "sample": 11,
+      "seconds": 0.001568928,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "rustc",
+      "phase": "compile-plus-test",
+      "sample": 11,
+      "seconds": 0.044670071,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "integrated",
+      "phase": "compile-plus-test",
+      "sample": 11,
+      "seconds": 0.028190975,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "entry",
+      "phase": "compile-plus-test",
+      "sample": 11,
+      "seconds": 0.027184329,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "native",
+      "lane": "pristine",
+      "phase": "compile-plus-test",
+      "sample": 11,
+      "seconds": 0.025898446,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "cold",
+      "sample": 0,
+      "seconds": 0.149079061,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "cold",
+      "sample": 0,
+      "seconds": 0.126206247,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "no-op",
+      "sample": 0,
+      "seconds": 0.009100677,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "no-op",
+      "sample": 0,
+      "seconds": 0.008048553,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "body-edit",
+      "sample": 0,
+      "seconds": 0.035618089,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "body-edit",
+      "sample": 0,
+      "seconds": 0.038583356,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "signature-edit",
+      "sample": 0,
+      "seconds": 0.046998337,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "signature-edit",
+      "sample": 0,
+      "seconds": 0.040529764,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check",
+      "sample": 0,
+      "seconds": 0.035667055,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check",
+      "sample": 0,
+      "seconds": 0.03194745,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-no-op",
+      "sample": 0,
+      "seconds": 0.008080957,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-no-op",
+      "sample": 0,
+      "seconds": 0.008227652,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-body-edit",
+      "sample": 0,
+      "seconds": 0.020593748,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-body-edit",
+      "sample": 0,
+      "seconds": 0.018969263,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "rejection",
+      "sample": 0,
+      "seconds": 0.025647413,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "rejection",
+      "sample": 0,
+      "seconds": 0.026821049,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "compile-plus-test",
+      "sample": 0,
+      "seconds": 0.06230802,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "compile-plus-test",
+      "sample": 0,
+      "seconds": 0.061680128,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "cold",
+      "sample": 1,
+      "seconds": 0.121424449,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "cold",
+      "sample": 1,
+      "seconds": 0.142435592,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "no-op",
+      "sample": 1,
+      "seconds": 0.008324252,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "no-op",
+      "sample": 1,
+      "seconds": 0.008408486,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "body-edit",
+      "sample": 1,
+      "seconds": 0.038893435,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "body-edit",
+      "sample": 1,
+      "seconds": 0.035377817,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "signature-edit",
+      "sample": 1,
+      "seconds": 0.041501152,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "signature-edit",
+      "sample": 1,
+      "seconds": 0.046781919,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check",
+      "sample": 1,
+      "seconds": 0.032497028,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check",
+      "sample": 1,
+      "seconds": 0.034582335,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-no-op",
+      "sample": 1,
+      "seconds": 0.007898533,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-no-op",
+      "sample": 1,
+      "seconds": 0.008311543,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-body-edit",
+      "sample": 1,
+      "seconds": 0.019578225,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-body-edit",
+      "sample": 1,
+      "seconds": 0.019787981,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "rejection",
+      "sample": 1,
+      "seconds": 0.026989969,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "rejection",
+      "sample": 1,
+      "seconds": 0.026528589,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "compile-plus-test",
+      "sample": 1,
+      "seconds": 0.061103884,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "compile-plus-test",
+      "sample": 1,
+      "seconds": 0.06247318,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "cold",
+      "sample": 2,
+      "seconds": 0.141797133,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "cold",
+      "sample": 2,
+      "seconds": 0.12918926,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "no-op",
+      "sample": 2,
+      "seconds": 0.008693945,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "no-op",
+      "sample": 2,
+      "seconds": 0.00789435,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "body-edit",
+      "sample": 2,
+      "seconds": 0.036371373,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "body-edit",
+      "sample": 2,
+      "seconds": 0.038599575,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "signature-edit",
+      "sample": 2,
+      "seconds": 0.046207093,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "signature-edit",
+      "sample": 2,
+      "seconds": 0.040340097,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check",
+      "sample": 2,
+      "seconds": 0.034674935,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check",
+      "sample": 2,
+      "seconds": 0.031183355,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-no-op",
+      "sample": 2,
+      "seconds": 0.008122457,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-no-op",
+      "sample": 2,
+      "seconds": 0.007821596,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-body-edit",
+      "sample": 2,
+      "seconds": 0.019830414,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-body-edit",
+      "sample": 2,
+      "seconds": 0.019633615,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "rejection",
+      "sample": 2,
+      "seconds": 0.026353766,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "rejection",
+      "sample": 2,
+      "seconds": 0.027329578,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "compile-plus-test",
+      "sample": 2,
+      "seconds": 0.061776692,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "compile-plus-test",
+      "sample": 2,
+      "seconds": 0.06121095,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "cold",
+      "sample": 3,
+      "seconds": 0.126049704,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "cold",
+      "sample": 3,
+      "seconds": 0.143130846,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "no-op",
+      "sample": 3,
+      "seconds": 0.00840464,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "no-op",
+      "sample": 3,
+      "seconds": 0.008394022,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "body-edit",
+      "sample": 3,
+      "seconds": 0.03969474,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "body-edit",
+      "sample": 3,
+      "seconds": 0.035504937,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "signature-edit",
+      "sample": 3,
+      "seconds": 0.041891296,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "signature-edit",
+      "sample": 3,
+      "seconds": 0.047538776,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check",
+      "sample": 3,
+      "seconds": 0.032734675,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check",
+      "sample": 3,
+      "seconds": 0.035652131,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-no-op",
+      "sample": 3,
+      "seconds": 0.00798568,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-no-op",
+      "sample": 3,
+      "seconds": 0.008462545,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-body-edit",
+      "sample": 3,
+      "seconds": 0.019905422,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-body-edit",
+      "sample": 3,
+      "seconds": 0.020243757,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "rejection",
+      "sample": 3,
+      "seconds": 0.027683815,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "rejection",
+      "sample": 3,
+      "seconds": 0.025722278,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "compile-plus-test",
+      "sample": 3,
+      "seconds": 0.060709629,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "compile-plus-test",
+      "sample": 3,
+      "seconds": 0.060660591,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "cold",
+      "sample": 4,
+      "seconds": 0.122758889,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "cold",
+      "sample": 4,
+      "seconds": 0.139777598,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "no-op",
+      "sample": 4,
+      "seconds": 0.008421217,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "no-op",
+      "sample": 4,
+      "seconds": 0.008356736,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "body-edit",
+      "sample": 4,
+      "seconds": 0.040390607,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "body-edit",
+      "sample": 4,
+      "seconds": 0.036226474,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "signature-edit",
+      "sample": 4,
+      "seconds": 0.040868519,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "signature-edit",
+      "sample": 4,
+      "seconds": 0.047327194,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check",
+      "sample": 4,
+      "seconds": 0.032245235,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check",
+      "sample": 4,
+      "seconds": 0.038372414,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-no-op",
+      "sample": 4,
+      "seconds": 0.00762206,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-no-op",
+      "sample": 4,
+      "seconds": 0.008101899,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-body-edit",
+      "sample": 4,
+      "seconds": 0.018793523,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-body-edit",
+      "sample": 4,
+      "seconds": 0.020016209,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "rejection",
+      "sample": 4,
+      "seconds": 0.027187596,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "rejection",
+      "sample": 4,
+      "seconds": 0.025253628,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "compile-plus-test",
+      "sample": 4,
+      "seconds": 0.059908228,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "compile-plus-test",
+      "sample": 4,
+      "seconds": 0.061514882,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "cold",
+      "sample": 5,
+      "seconds": 0.143655024,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "cold",
+      "sample": 5,
+      "seconds": 0.127409553,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "no-op",
+      "sample": 5,
+      "seconds": 0.008537533,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "no-op",
+      "sample": 5,
+      "seconds": 0.007893643,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "body-edit",
+      "sample": 5,
+      "seconds": 0.035354259,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "body-edit",
+      "sample": 5,
+      "seconds": 0.03832891,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "signature-edit",
+      "sample": 5,
+      "seconds": 0.047800413,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "signature-edit",
+      "sample": 5,
+      "seconds": 0.041517973,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check",
+      "sample": 5,
+      "seconds": 0.035518767,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check",
+      "sample": 5,
+      "seconds": 0.030854655,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-no-op",
+      "sample": 5,
+      "seconds": 0.008110197,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-no-op",
+      "sample": 5,
+      "seconds": 0.007778373,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-body-edit",
+      "sample": 5,
+      "seconds": 0.019837125,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-body-edit",
+      "sample": 5,
+      "seconds": 0.01896865,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "rejection",
+      "sample": 5,
+      "seconds": 0.02625006,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "rejection",
+      "sample": 5,
+      "seconds": 0.026241405,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "compile-plus-test",
+      "sample": 5,
+      "seconds": 0.061900115,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "compile-plus-test",
+      "sample": 5,
+      "seconds": 0.061006759,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "cold",
+      "sample": 6,
+      "seconds": 0.139873074,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "cold",
+      "sample": 6,
+      "seconds": 0.125166759,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "no-op",
+      "sample": 6,
+      "seconds": 0.008565008,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "no-op",
+      "sample": 6,
+      "seconds": 0.007878942,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "body-edit",
+      "sample": 6,
+      "seconds": 0.035575804,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "body-edit",
+      "sample": 6,
+      "seconds": 0.038550195,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "signature-edit",
+      "sample": 6,
+      "seconds": 0.047490761,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "signature-edit",
+      "sample": 6,
+      "seconds": 0.040310325,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check",
+      "sample": 6,
+      "seconds": 0.034415735,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check",
+      "sample": 6,
+      "seconds": 0.030905536,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-no-op",
+      "sample": 6,
+      "seconds": 0.00820735,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-no-op",
+      "sample": 6,
+      "seconds": 0.007799638,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-body-edit",
+      "sample": 6,
+      "seconds": 0.019407669,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-body-edit",
+      "sample": 6,
+      "seconds": 0.019264973,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "rejection",
+      "sample": 6,
+      "seconds": 0.025212628,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "rejection",
+      "sample": 6,
+      "seconds": 0.026368858,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "compile-plus-test",
+      "sample": 6,
+      "seconds": 0.06057203,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "compile-plus-test",
+      "sample": 6,
+      "seconds": 0.061391975,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "cold",
+      "sample": 7,
+      "seconds": 0.12435446,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "cold",
+      "sample": 7,
+      "seconds": 0.143035707,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "no-op",
+      "sample": 7,
+      "seconds": 0.008387155,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "no-op",
+      "sample": 7,
+      "seconds": 0.008749049,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "body-edit",
+      "sample": 7,
+      "seconds": 0.040259922,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "body-edit",
+      "sample": 7,
+      "seconds": 0.035392102,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "signature-edit",
+      "sample": 7,
+      "seconds": 0.040801593,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "signature-edit",
+      "sample": 7,
+      "seconds": 0.045617296,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check",
+      "sample": 7,
+      "seconds": 0.031800604,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check",
+      "sample": 7,
+      "seconds": 0.034521926,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-no-op",
+      "sample": 7,
+      "seconds": 0.007748556,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-no-op",
+      "sample": 7,
+      "seconds": 0.007935533,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-body-edit",
+      "sample": 7,
+      "seconds": 0.018913343,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-body-edit",
+      "sample": 7,
+      "seconds": 0.01988716,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "rejection",
+      "sample": 7,
+      "seconds": 0.027500205,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "rejection",
+      "sample": 7,
+      "seconds": 0.025086307,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "compile-plus-test",
+      "sample": 7,
+      "seconds": 0.060531417,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "compile-plus-test",
+      "sample": 7,
+      "seconds": 0.061803029,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "cold",
+      "sample": 8,
+      "seconds": 0.140715247,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "cold",
+      "sample": 8,
+      "seconds": 0.124335815,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "no-op",
+      "sample": 8,
+      "seconds": 0.008565504,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "no-op",
+      "sample": 8,
+      "seconds": 0.007912537,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "body-edit",
+      "sample": 8,
+      "seconds": 0.03633219,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "body-edit",
+      "sample": 8,
+      "seconds": 0.037911273,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "signature-edit",
+      "sample": 8,
+      "seconds": 0.046022207,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "signature-edit",
+      "sample": 8,
+      "seconds": 0.041048834,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check",
+      "sample": 8,
+      "seconds": 0.034715928,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check",
+      "sample": 8,
+      "seconds": 0.031088099,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-no-op",
+      "sample": 8,
+      "seconds": 0.008204272,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-no-op",
+      "sample": 8,
+      "seconds": 0.007746887,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-body-edit",
+      "sample": 8,
+      "seconds": 0.019671728,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-body-edit",
+      "sample": 8,
+      "seconds": 0.019340002,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "rejection",
+      "sample": 8,
+      "seconds": 0.025292408,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "rejection",
+      "sample": 8,
+      "seconds": 0.026917898,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "compile-plus-test",
+      "sample": 8,
+      "seconds": 0.061068379,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "compile-plus-test",
+      "sample": 8,
+      "seconds": 0.060171388,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "cold",
+      "sample": 9,
+      "seconds": 0.123126021,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "cold",
+      "sample": 9,
+      "seconds": 0.140580171,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "no-op",
+      "sample": 9,
+      "seconds": 0.008157284,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "no-op",
+      "sample": 9,
+      "seconds": 0.008264108,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "body-edit",
+      "sample": 9,
+      "seconds": 0.038776081,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "body-edit",
+      "sample": 9,
+      "seconds": 0.035193997,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "signature-edit",
+      "sample": 9,
+      "seconds": 0.041353078,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "signature-edit",
+      "sample": 9,
+      "seconds": 0.046762508,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check",
+      "sample": 9,
+      "seconds": 0.031190171,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check",
+      "sample": 9,
+      "seconds": 0.033766936,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-no-op",
+      "sample": 9,
+      "seconds": 0.00819754,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-no-op",
+      "sample": 9,
+      "seconds": 0.008211652,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-body-edit",
+      "sample": 9,
+      "seconds": 0.019436938,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-body-edit",
+      "sample": 9,
+      "seconds": 0.019796588,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "rejection",
+      "sample": 9,
+      "seconds": 0.027528043,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "rejection",
+      "sample": 9,
+      "seconds": 0.025241205,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "compile-plus-test",
+      "sample": 9,
+      "seconds": 0.060804234,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "compile-plus-test",
+      "sample": 9,
+      "seconds": 0.06131486,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "cold",
+      "sample": 10,
+      "seconds": 0.141770532,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "cold",
+      "sample": 10,
+      "seconds": 0.126540973,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "no-op",
+      "sample": 10,
+      "seconds": 0.008695919,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "no-op",
+      "sample": 10,
+      "seconds": 0.007903369,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "body-edit",
+      "sample": 10,
+      "seconds": 0.036219548,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "body-edit",
+      "sample": 10,
+      "seconds": 0.03919509,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "signature-edit",
+      "sample": 10,
+      "seconds": 0.04785893,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "signature-edit",
+      "sample": 10,
+      "seconds": 0.041144466,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check",
+      "sample": 10,
+      "seconds": 0.034739124,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check",
+      "sample": 10,
+      "seconds": 0.031144692,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-no-op",
+      "sample": 10,
+      "seconds": 0.008276079,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-no-op",
+      "sample": 10,
+      "seconds": 0.007793565,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-body-edit",
+      "sample": 10,
+      "seconds": 0.019823547,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-body-edit",
+      "sample": 10,
+      "seconds": 0.019302736,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "rejection",
+      "sample": 10,
+      "seconds": 0.026187911,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "rejection",
+      "sample": 10,
+      "seconds": 0.028201944,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "compile-plus-test",
+      "sample": 10,
+      "seconds": 0.062181045,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "compile-plus-test",
+      "sample": 10,
+      "seconds": 0.06128297,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "cold",
+      "sample": 11,
+      "seconds": 0.125730317,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "cold",
+      "sample": 11,
+      "seconds": 0.14154079,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "no-op",
+      "sample": 11,
+      "seconds": 0.008319193,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "no-op",
+      "sample": 11,
+      "seconds": 0.008273307,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "body-edit",
+      "sample": 11,
+      "seconds": 0.038777075,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "body-edit",
+      "sample": 11,
+      "seconds": 0.036053487,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "signature-edit",
+      "sample": 11,
+      "seconds": 0.040777386,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "signature-edit",
+      "sample": 11,
+      "seconds": 0.048516007,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check",
+      "sample": 11,
+      "seconds": 0.03191708,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check",
+      "sample": 11,
+      "seconds": 0.034773038,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-no-op",
+      "sample": 11,
+      "seconds": 0.007831108,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-no-op",
+      "sample": 11,
+      "seconds": 0.008116188,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "check-body-edit",
+      "sample": 11,
+      "seconds": 0.01907234,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "check-body-edit",
+      "sample": 11,
+      "seconds": 0.019827582,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "rejection",
+      "sample": 11,
+      "seconds": 0.027033131,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 101,
+      "expected_exit": 101,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "rejection",
+      "sample": 11,
+      "seconds": 0.025156404,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "reference",
+      "phase": "compile-plus-test",
+      "sample": 11,
+      "seconds": 0.061042904,
+      "signal": null,
+      "timed_out": false
+    },
+    {
+      "exit": 0,
+      "expected_exit": 0,
+      "family": "cargo",
+      "lane": "mixed",
+      "phase": "compile-plus-test",
+      "sample": 11,
+      "seconds": 0.060869393,
+      "signal": null,
+      "timed_out": false
+    }
+  ],
+  "fixed_original_raw_sha256": "4499c7b616d0013595deabb333f7bdcdff950c64d90c566a4c32a14eda248b8b",
+  "public_slice": [
+    {
+      "lane": "cargo",
+      "phase": "cold-check",
+      "sample": 0,
+      "seconds": 0.245395785
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-check",
+      "sample": 0,
+      "seconds": 0.127394826
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-check",
+      "sample": 0,
+      "seconds": 0.154228874
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-check",
+      "sample": 0,
+      "seconds": 0.131230404
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "sample": 0,
+      "seconds": 0.008435911
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "sample": 0,
+      "seconds": 0.001263906
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-check",
+      "sample": 0,
+      "seconds": 0.001409497
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "sample": 0,
+      "seconds": 0.001088586
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-build",
+      "sample": 0,
+      "seconds": 0.340373234
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-build",
+      "sample": 0,
+      "seconds": 0.259815661
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-build",
+      "sample": 0,
+      "seconds": 0.282911192
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-build",
+      "sample": 0,
+      "seconds": 0.255410829
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "sample": 0,
+      "seconds": 0.008851752
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "sample": 0,
+      "seconds": 0.00311861
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-build",
+      "sample": 0,
+      "seconds": 0.00328191
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "sample": 0,
+      "seconds": 0.00276324
+    },
+    {
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "sample": 0,
+      "seconds": 0.00921639
+    },
+    {
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "sample": 0,
+      "seconds": 0.0039373509999999995
+    },
+    {
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "sample": 0,
+      "seconds": 0.00416313
+    },
+    {
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "sample": 0,
+      "seconds": 0.0036260059999999998
+    },
+    {
+      "lane": "cargo",
+      "phase": "runtime",
+      "sample": 0,
+      "seconds": 0.000715318
+    },
+    {
+      "lane": "pristine",
+      "phase": "runtime",
+      "sample": 0,
+      "seconds": 0.000881974
+    },
+    {
+      "lane": "entry",
+      "phase": "runtime",
+      "sample": 0,
+      "seconds": 0.000868175
+    },
+    {
+      "lane": "integrated",
+      "phase": "runtime",
+      "sample": 0,
+      "seconds": 0.000818059
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-check",
+      "sample": 1,
+      "seconds": 0.127754459
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-check",
+      "sample": 1,
+      "seconds": 0.153781522
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-check",
+      "sample": 1,
+      "seconds": 0.124305844
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-check",
+      "sample": 1,
+      "seconds": 0.245745866
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "sample": 1,
+      "seconds": 0.001268885
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-check",
+      "sample": 1,
+      "seconds": 0.001400903
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "sample": 1,
+      "seconds": 0.001061096
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "sample": 1,
+      "seconds": 0.007862202
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-build",
+      "sample": 1,
+      "seconds": 0.257304943
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-build",
+      "sample": 1,
+      "seconds": 0.279070944
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-build",
+      "sample": 1,
+      "seconds": 0.258715295
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-build",
+      "sample": 1,
+      "seconds": 0.335553538
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "sample": 1,
+      "seconds": 0.003209523
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-build",
+      "sample": 1,
+      "seconds": 0.003557473
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "sample": 1,
+      "seconds": 0.00268077
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "sample": 1,
+      "seconds": 0.007959726
+    },
+    {
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "sample": 1,
+      "seconds": 0.0037619050000000003
+    },
+    {
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "sample": 1,
+      "seconds": 0.004038791999999999
+    },
+    {
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "sample": 1,
+      "seconds": 0.0035025229999999996
+    },
+    {
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "sample": 1,
+      "seconds": 0.008586336
+    },
+    {
+      "lane": "pristine",
+      "phase": "runtime",
+      "sample": 1,
+      "seconds": 0.000908096
+    },
+    {
+      "lane": "entry",
+      "phase": "runtime",
+      "sample": 1,
+      "seconds": 0.000927137
+    },
+    {
+      "lane": "integrated",
+      "phase": "runtime",
+      "sample": 1,
+      "seconds": 0.000886966
+    },
+    {
+      "lane": "cargo",
+      "phase": "runtime",
+      "sample": 1,
+      "seconds": 0.000709194
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-check",
+      "sample": 2,
+      "seconds": 0.129570354
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-check",
+      "sample": 2,
+      "seconds": 0.248114758
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-check",
+      "sample": 2,
+      "seconds": 0.125625862
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-check",
+      "sample": 2,
+      "seconds": 0.154191566
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "sample": 2,
+      "seconds": 0.001056802
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "sample": 2,
+      "seconds": 0.008467305
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "sample": 2,
+      "seconds": 0.001291095
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-check",
+      "sample": 2,
+      "seconds": 0.001428368
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-build",
+      "sample": 2,
+      "seconds": 0.261874175
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-build",
+      "sample": 2,
+      "seconds": 0.358406878
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-build",
+      "sample": 2,
+      "seconds": 0.253383319
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-build",
+      "sample": 2,
+      "seconds": 0.282175567
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "sample": 2,
+      "seconds": 0.003124392
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "sample": 2,
+      "seconds": 0.00866506
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "sample": 2,
+      "seconds": 0.003135931
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-build",
+      "sample": 2,
+      "seconds": 0.002960862
+    },
+    {
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "sample": 2,
+      "seconds": 0.003825233
+    },
+    {
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "sample": 2,
+      "seconds": 0.009053771
+    },
+    {
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "sample": 2,
+      "seconds": 0.0037712089999999998
+    },
+    {
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "sample": 2,
+      "seconds": 0.00381598
+    },
+    {
+      "lane": "integrated",
+      "phase": "runtime",
+      "sample": 2,
+      "seconds": 0.000869647
+    },
+    {
+      "lane": "cargo",
+      "phase": "runtime",
+      "sample": 2,
+      "seconds": 0.000737165
+    },
+    {
+      "lane": "pristine",
+      "phase": "runtime",
+      "sample": 2,
+      "seconds": 0.000882588
+    },
+    {
+      "lane": "entry",
+      "phase": "runtime",
+      "sample": 2,
+      "seconds": 0.000885637
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-check",
+      "sample": 3,
+      "seconds": 0.158256164
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-check",
+      "sample": 3,
+      "seconds": 0.125472707
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-check",
+      "sample": 3,
+      "seconds": 0.255492933
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-check",
+      "sample": 3,
+      "seconds": 0.126538238
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-check",
+      "sample": 3,
+      "seconds": 0.001415614
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "sample": 3,
+      "seconds": 0.001062453
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "sample": 3,
+      "seconds": 0.008563978
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "sample": 3,
+      "seconds": 0.001093699
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-build",
+      "sample": 3,
+      "seconds": 0.289437045
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-build",
+      "sample": 3,
+      "seconds": 0.257574669
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-build",
+      "sample": 3,
+      "seconds": 0.337189216
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-build",
+      "sample": 3,
+      "seconds": 0.25500964
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-build",
+      "sample": 3,
+      "seconds": 0.003643224
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "sample": 3,
+      "seconds": 0.003088015
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "sample": 3,
+      "seconds": 0.008539235
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "sample": 3,
+      "seconds": 0.002717148
+    },
+    {
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "sample": 3,
+      "seconds": 0.00411307
+    },
+    {
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "sample": 3,
+      "seconds": 0.003889191
+    },
+    {
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "sample": 3,
+      "seconds": 0.009116865
+    },
+    {
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "sample": 3,
+      "seconds": 0.0034291540000000002
+    },
+    {
+      "lane": "entry",
+      "phase": "runtime",
+      "sample": 3,
+      "seconds": 0.000873239
+    },
+    {
+      "lane": "integrated",
+      "phase": "runtime",
+      "sample": 3,
+      "seconds": 0.000865951
+    },
+    {
+      "lane": "cargo",
+      "phase": "runtime",
+      "sample": 3,
+      "seconds": 0.000706394
+    },
+    {
+      "lane": "pristine",
+      "phase": "runtime",
+      "sample": 3,
+      "seconds": 0.000858988
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-check",
+      "sample": 4,
+      "seconds": 0.25001272
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-check",
+      "sample": 4,
+      "seconds": 0.130916632
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-check",
+      "sample": 4,
+      "seconds": 0.152246967
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-check",
+      "sample": 4,
+      "seconds": 0.123435324
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "sample": 4,
+      "seconds": 0.008727552
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "sample": 4,
+      "seconds": 0.001109892
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-check",
+      "sample": 4,
+      "seconds": 0.001389271
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "sample": 4,
+      "seconds": 0.001039922
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-build",
+      "sample": 4,
+      "seconds": 0.365583748
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-build",
+      "sample": 4,
+      "seconds": 0.255805902
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-build",
+      "sample": 4,
+      "seconds": 0.28009673
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-build",
+      "sample": 4,
+      "seconds": 0.251083648
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "sample": 4,
+      "seconds": 0.008694422
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "sample": 4,
+      "seconds": 0.003098426
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-build",
+      "sample": 4,
+      "seconds": 0.00342106
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "sample": 4,
+      "seconds": 0.00272429
+    },
+    {
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "sample": 4,
+      "seconds": 0.009063985
+    },
+    {
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "sample": 4,
+      "seconds": 0.003735945
+    },
+    {
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "sample": 4,
+      "seconds": 0.004080375
+    },
+    {
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "sample": 4,
+      "seconds": 0.0035886670000000002
+    },
+    {
+      "lane": "cargo",
+      "phase": "runtime",
+      "sample": 4,
+      "seconds": 0.000725204
+    },
+    {
+      "lane": "integrated",
+      "phase": "runtime",
+      "sample": 4,
+      "seconds": 0.000864238
+    },
+    {
+      "lane": "entry",
+      "phase": "runtime",
+      "sample": 4,
+      "seconds": 0.000873651
+    },
+    {
+      "lane": "pristine",
+      "phase": "runtime",
+      "sample": 4,
+      "seconds": 0.000866415
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-check",
+      "sample": 5,
+      "seconds": 0.129455783
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-check",
+      "sample": 5,
+      "seconds": 0.246478588
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-check",
+      "sample": 5,
+      "seconds": 0.127515849
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-check",
+      "sample": 5,
+      "seconds": 0.148221793
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "sample": 5,
+      "seconds": 0.001114237
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "sample": 5,
+      "seconds": 0.008382572
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "sample": 5,
+      "seconds": 0.001098576
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-check",
+      "sample": 5,
+      "seconds": 0.00122593
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-build",
+      "sample": 5,
+      "seconds": 0.255143289
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-build",
+      "sample": 5,
+      "seconds": 0.337656111
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-build",
+      "sample": 5,
+      "seconds": 0.254951114
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-build",
+      "sample": 5,
+      "seconds": 0.282145824
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "sample": 5,
+      "seconds": 0.003237284
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "sample": 5,
+      "seconds": 0.008608463
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "sample": 5,
+      "seconds": 0.003062614
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-build",
+      "sample": 5,
+      "seconds": 0.003114126
+    },
+    {
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "sample": 5,
+      "seconds": 0.003830055
+    },
+    {
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "sample": 5,
+      "seconds": 0.009235774
+    },
+    {
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "sample": 5,
+      "seconds": 0.0038609229999999996
+    },
+    {
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "sample": 5,
+      "seconds": 0.0038098669999999998
+    },
+    {
+      "lane": "pristine",
+      "phase": "runtime",
+      "sample": 5,
+      "seconds": 0.000856021
+    },
+    {
+      "lane": "cargo",
+      "phase": "runtime",
+      "sample": 5,
+      "seconds": 0.000704448
+    },
+    {
+      "lane": "integrated",
+      "phase": "runtime",
+      "sample": 5,
+      "seconds": 0.000862607
+    },
+    {
+      "lane": "entry",
+      "phase": "runtime",
+      "sample": 5,
+      "seconds": 0.000860129
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-check",
+      "sample": 6,
+      "seconds": 0.157344414
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-check",
+      "sample": 6,
+      "seconds": 0.125012412
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-check",
+      "sample": 6,
+      "seconds": 0.251129811
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-check",
+      "sample": 6,
+      "seconds": 0.126276577
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-check",
+      "sample": 6,
+      "seconds": 0.001582478
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "sample": 6,
+      "seconds": 0.00111668
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "sample": 6,
+      "seconds": 0.008450044
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "sample": 6,
+      "seconds": 0.001075206
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-build",
+      "sample": 6,
+      "seconds": 0.287108875
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-build",
+      "sample": 6,
+      "seconds": 0.257830074
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-build",
+      "sample": 6,
+      "seconds": 0.337863942
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-build",
+      "sample": 6,
+      "seconds": 0.256745922
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-build",
+      "sample": 6,
+      "seconds": 0.003552048
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "sample": 6,
+      "seconds": 0.003181324
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "sample": 6,
+      "seconds": 0.008637639
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "sample": 6,
+      "seconds": 0.002632111
+    },
+    {
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "sample": 6,
+      "seconds": 0.004082042
+    },
+    {
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "sample": 6,
+      "seconds": 0.003920954
+    },
+    {
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "sample": 6,
+      "seconds": 0.008951561
+    },
+    {
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "sample": 6,
+      "seconds": 0.003689519
+    },
+    {
+      "lane": "entry",
+      "phase": "runtime",
+      "sample": 6,
+      "seconds": 0.000879632
+    },
+    {
+      "lane": "pristine",
+      "phase": "runtime",
+      "sample": 6,
+      "seconds": 0.000888512
+    },
+    {
+      "lane": "cargo",
+      "phase": "runtime",
+      "sample": 6,
+      "seconds": 0.000723365
+    },
+    {
+      "lane": "integrated",
+      "phase": "runtime",
+      "sample": 6,
+      "seconds": 0.0008661
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-check",
+      "sample": 7,
+      "seconds": 0.128313843
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-check",
+      "sample": 7,
+      "seconds": 0.148880501
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-check",
+      "sample": 7,
+      "seconds": 0.122798964
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-check",
+      "sample": 7,
+      "seconds": 0.258991196
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "sample": 7,
+      "seconds": 0.001124975
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-check",
+      "sample": 7,
+      "seconds": 0.00149911
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "sample": 7,
+      "seconds": 0.001067871
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "sample": 7,
+      "seconds": 0.008091578
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-build",
+      "sample": 7,
+      "seconds": 0.265218845
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-build",
+      "sample": 7,
+      "seconds": 0.282394152
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-build",
+      "sample": 7,
+      "seconds": 0.253904461
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-build",
+      "sample": 7,
+      "seconds": 0.337906728
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "sample": 7,
+      "seconds": 0.003393682
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-build",
+      "sample": 7,
+      "seconds": 0.003275892
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "sample": 7,
+      "seconds": 0.002789905
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "sample": 7,
+      "seconds": 0.00822791
+    },
+    {
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "sample": 7,
+      "seconds": 0.003853285
+    },
+    {
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "sample": 7,
+      "seconds": 0.004082893
+    },
+    {
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "sample": 7,
+      "seconds": 0.003479625
+    },
+    {
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "sample": 7,
+      "seconds": 0.009052958
+    },
+    {
+      "lane": "integrated",
+      "phase": "runtime",
+      "sample": 7,
+      "seconds": 0.000892198
+    },
+    {
+      "lane": "entry",
+      "phase": "runtime",
+      "sample": 7,
+      "seconds": 0.000905178
+    },
+    {
+      "lane": "pristine",
+      "phase": "runtime",
+      "sample": 7,
+      "seconds": 0.000872176
+    },
+    {
+      "lane": "cargo",
+      "phase": "runtime",
+      "sample": 7,
+      "seconds": 0.000711921
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-check",
+      "sample": 8,
+      "seconds": 0.130031285
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-check",
+      "sample": 8,
+      "seconds": 0.248405906
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-check",
+      "sample": 8,
+      "seconds": 0.128776543
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-check",
+      "sample": 8,
+      "seconds": 0.151880716
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "sample": 8,
+      "seconds": 0.001101374
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "sample": 8,
+      "seconds": 0.008524699
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "sample": 8,
+      "seconds": 0.001088869
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-check",
+      "sample": 8,
+      "seconds": 0.001234347
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-build",
+      "sample": 8,
+      "seconds": 0.258470655
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-build",
+      "sample": 8,
+      "seconds": 0.340236863
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-build",
+      "sample": 8,
+      "seconds": 0.255125772
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-build",
+      "sample": 8,
+      "seconds": 0.280311014
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "sample": 8,
+      "seconds": 0.003342354
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "sample": 8,
+      "seconds": 0.008769434
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "sample": 8,
+      "seconds": 0.003033287
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-build",
+      "sample": 8,
+      "seconds": 0.002918687
+    },
+    {
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "sample": 8,
+      "seconds": 0.003936513
+    },
+    {
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "sample": 8,
+      "seconds": 0.009101893
+    },
+    {
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "sample": 8,
+      "seconds": 0.0037996
+    },
+    {
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "sample": 8,
+      "seconds": 0.0037978129999999997
+    },
+    {
+      "lane": "pristine",
+      "phase": "runtime",
+      "sample": 8,
+      "seconds": 0.000872748
+    },
+    {
+      "lane": "cargo",
+      "phase": "runtime",
+      "sample": 8,
+      "seconds": 0.00071505
+    },
+    {
+      "lane": "integrated",
+      "phase": "runtime",
+      "sample": 8,
+      "seconds": 0.000863991
+    },
+    {
+      "lane": "entry",
+      "phase": "runtime",
+      "sample": 8,
+      "seconds": 0.000878801
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-check",
+      "sample": 9,
+      "seconds": 0.255410154
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-check",
+      "sample": 9,
+      "seconds": 0.128359256
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-check",
+      "sample": 9,
+      "seconds": 0.147852586
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-check",
+      "sample": 9,
+      "seconds": 0.123077496
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "sample": 9,
+      "seconds": 0.008637907
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "sample": 9,
+      "seconds": 0.00107373
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-check",
+      "sample": 9,
+      "seconds": 0.001379535
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "sample": 9,
+      "seconds": 0.001043428
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-build",
+      "sample": 9,
+      "seconds": 0.339915263
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-build",
+      "sample": 9,
+      "seconds": 0.255025616
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-build",
+      "sample": 9,
+      "seconds": 0.283159617
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-build",
+      "sample": 9,
+      "seconds": 0.254410422
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "sample": 9,
+      "seconds": 0.008794183
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "sample": 9,
+      "seconds": 0.003112105
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-build",
+      "sample": 9,
+      "seconds": 0.003262621
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "sample": 9,
+      "seconds": 0.002712169
+    },
+    {
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "sample": 9,
+      "seconds": 0.008779783
+    },
+    {
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "sample": 9,
+      "seconds": 0.003722006
+    },
+    {
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "sample": 9,
+      "seconds": 0.003948916
+    },
+    {
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "sample": 9,
+      "seconds": 0.003622605
+    },
+    {
+      "lane": "cargo",
+      "phase": "runtime",
+      "sample": 9,
+      "seconds": 0.000727919
+    },
+    {
+      "lane": "integrated",
+      "phase": "runtime",
+      "sample": 9,
+      "seconds": 0.000874169
+    },
+    {
+      "lane": "entry",
+      "phase": "runtime",
+      "sample": 9,
+      "seconds": 0.00086272
+    },
+    {
+      "lane": "pristine",
+      "phase": "runtime",
+      "sample": 9,
+      "seconds": 0.000870342
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-check",
+      "sample": 10,
+      "seconds": 0.158268318
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-check",
+      "sample": 10,
+      "seconds": 0.12620451
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-check",
+      "sample": 10,
+      "seconds": 0.242606632
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-check",
+      "sample": 10,
+      "seconds": 0.125624071
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-check",
+      "sample": 10,
+      "seconds": 0.001404704
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "sample": 10,
+      "seconds": 0.001047137
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "sample": 10,
+      "seconds": 0.008176302
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "sample": 10,
+      "seconds": 0.001076376
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-build",
+      "sample": 10,
+      "seconds": 0.281358881
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-build",
+      "sample": 10,
+      "seconds": 0.258073805
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-build",
+      "sample": 10,
+      "seconds": 0.334919613
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-build",
+      "sample": 10,
+      "seconds": 0.255174226
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-build",
+      "sample": 10,
+      "seconds": 0.003542852
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "sample": 10,
+      "seconds": 0.003310919
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "sample": 10,
+      "seconds": 0.008559639
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "sample": 10,
+      "seconds": 0.002612305
+    },
+    {
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "sample": 10,
+      "seconds": 0.004054861
+    },
+    {
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "sample": 10,
+      "seconds": 0.0037885700000000002
+    },
+    {
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "sample": 10,
+      "seconds": 0.008899288
+    },
+    {
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "sample": 10,
+      "seconds": 0.003511695
+    },
+    {
+      "lane": "entry",
+      "phase": "runtime",
+      "sample": 10,
+      "seconds": 0.000873684
+    },
+    {
+      "lane": "pristine",
+      "phase": "runtime",
+      "sample": 10,
+      "seconds": 0.000849611
+    },
+    {
+      "lane": "cargo",
+      "phase": "runtime",
+      "sample": 10,
+      "seconds": 0.000674766
+    },
+    {
+      "lane": "integrated",
+      "phase": "runtime",
+      "sample": 10,
+      "seconds": 0.000867717
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-check",
+      "sample": 11,
+      "seconds": 0.131294612
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-check",
+      "sample": 11,
+      "seconds": 0.150609785
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-check",
+      "sample": 11,
+      "seconds": 0.126341725
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-check",
+      "sample": 11,
+      "seconds": 0.244109577
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-check",
+      "sample": 11,
+      "seconds": 0.0012474
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-check",
+      "sample": 11,
+      "seconds": 0.001409105
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-check",
+      "sample": 11,
+      "seconds": 0.001066058
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-check",
+      "sample": 11,
+      "seconds": 0.008386018
+    },
+    {
+      "lane": "integrated",
+      "phase": "cold-build",
+      "sample": 11,
+      "seconds": 0.260972432
+    },
+    {
+      "lane": "entry",
+      "phase": "cold-build",
+      "sample": 11,
+      "seconds": 0.279660786
+    },
+    {
+      "lane": "pristine",
+      "phase": "cold-build",
+      "sample": 11,
+      "seconds": 0.253204342
+    },
+    {
+      "lane": "cargo",
+      "phase": "cold-build",
+      "sample": 11,
+      "seconds": 0.336423511
+    },
+    {
+      "lane": "integrated",
+      "phase": "no-op-build",
+      "sample": 11,
+      "seconds": 0.003271869
+    },
+    {
+      "lane": "entry",
+      "phase": "no-op-build",
+      "sample": 11,
+      "seconds": 0.003384528
+    },
+    {
+      "lane": "pristine",
+      "phase": "no-op-build",
+      "sample": 11,
+      "seconds": 0.002737012
+    },
+    {
+      "lane": "cargo",
+      "phase": "no-op-build",
+      "sample": 11,
+      "seconds": 0.008060402
+    },
+    {
+      "lane": "integrated",
+      "phase": "compile-plus-run",
+      "sample": 11,
+      "seconds": 0.003929843
+    },
+    {
+      "lane": "entry",
+      "phase": "compile-plus-run",
+      "sample": 11,
+      "seconds": 0.003975311
+    },
+    {
+      "lane": "pristine",
+      "phase": "compile-plus-run",
+      "sample": 11,
+      "seconds": 0.003441779
+    },
+    {
+      "lane": "cargo",
+      "phase": "compile-plus-run",
+      "sample": 11,
+      "seconds": 0.008790453
+    },
+    {
+      "lane": "integrated",
+      "phase": "runtime",
+      "sample": 11,
+      "seconds": 0.000895045
+    },
+    {
+      "lane": "entry",
+      "phase": "runtime",
+      "sample": 11,
+      "seconds": 0.000901216
+    },
+    {
+      "lane": "pristine",
+      "phase": "runtime",
+      "sample": 11,
+      "seconds": 0.000887609
+    },
+    {
+      "lane": "cargo",
+      "phase": "runtime",
+      "sample": 11,
+      "seconds": 0.000686487
+    }
+  ],
+  "schema": "lustr-public-timings-snapshot-v1",
+  "scope": "Allowlisted numerical projection only; not a replacement for original command/stream/source/retained-state evidence. Preserve source raw hashes and use original replay for qualification.",
+  "slice_original_raw_sha256": "872ef50d4e60f20a7e15110aa5a1fb430561c1a03c54aae2e92c76bc6db59850",
+  "source_revision": "8a7af2e1e2c21743d14dad45c83283232e2bc102",
+  "unchanged_project_samples": "project/samples.json",
+  "units": "seconds"
+}

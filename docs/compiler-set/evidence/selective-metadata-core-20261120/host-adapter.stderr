@@ -1,0 +1,6 @@
+    Checking crypto-common v0.1.7
+    Checking digest v0.10.7
+    Checking md-5 v0.10.6
+    Checking lustr-metadata-encoder v0.1.0 (/workspace/scratch/9d482ba2ab85/lustr-encoder/crates/lustr-metadata-encoder)
+    Checking lustr-metadata-sdk v0.1.0 (/workspace/scratch/9d482ba2ab85/lustr-encoder/crates/lustr-metadata-sdk)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.77s

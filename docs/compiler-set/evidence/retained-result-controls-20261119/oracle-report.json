@@ -1,0 +1,34 @@
+{
+  "schema": "retained-oracle-diagnostic-control-v1",
+  "fixture": "compiler/native/tests/daemon/cc01_const_chain_fn_reject_revert/v2.rs",
+  "fixture_sha256": "6ebbbee3e3c281dce152677571b6d890c93f73331dfdec0d9dbd4f027642b6fd",
+  "runner_sha256": "82d8a3272b5cb394aba73568195005ddf220bc873cfcc57ce7417835b0938abc",
+  "scope": "Pinned Rust/Cargo semantic-only diagnostic parser controls. No candidate compiler or retained compilation executed.",
+  "records": [
+    {
+      "tool": "rustc",
+      "argv": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "main.rs",
+        "--emit=metadata",
+        "--error-format=json",
+        "-o",
+        "$ORACLE_CHECKS/invalid.rmeta"
+      ],
+      "exit": 1,
+      "structured_source_rejection": true
+    },
+    {
+      "tool": "cargo",
+      "argv": [
+        "$SDK/bin/cargo",
+        "check",
+        "--offline",
+        "--message-format=json"
+      ],
+      "exit": 101,
+      "structured_source_rejection": true
+    }
+  ]
+}

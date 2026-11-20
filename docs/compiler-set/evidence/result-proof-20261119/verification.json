@@ -1,0 +1,97 @@
+{
+  "capability_report": {
+    "original_sha256": "f308e62bcfa47a15c4383970b5b66d63393497d9723713ff6c2a2b1d21af4f72",
+    "path": "capability-report.json",
+    "stored_sha256": "ba2ca9594c5c8c49646bd76f393f1dd2b7f9bde9a67f9a69b2ed32c961fcd780"
+  },
+  "checks": {
+    "evaluator_controls": {
+      "passed": 15,
+      "scope": "Actual child stream/exit/signal comparisons, supported-probe discovery, malformed and inconsistent result rejection. These are evaluator controls, not Rust compiler coverage."
+    },
+    "explicit_installed_package_controls": {
+      "exit": 101,
+      "failed": 1,
+      "failed_test": "public_entries_keep_ambiguous_daemon_failures_terminal",
+      "failure": "UnixListener::bind returned EPERM before exchange; original failure preserved. Hosted CI requires execution without a passing skip.",
+      "passed": 4,
+      "passed_names": [
+        "large_valid_native_argument_lists_use_the_original_process",
+        "native_file_tests_preserve_single_execution",
+        "native_library_selection_survives_process_startup",
+        "native_output_failure_does_not_become_success"
+      ]
+    },
+    "public_capability_results": {
+      "commands": 72,
+      "failed": 0,
+      "input_identities_unchanged": true,
+      "passed": 18,
+      "run_programs_with_exact_stdout_stderr_and_exit": 17,
+      "test_fixture": {
+        "intentional_ignored_tests": 1,
+        "name": "attributes-test.rs",
+        "passed_tests": 4,
+        "per_test_statuses_equal": true
+      }
+    },
+    "root_all_targets": {
+      "contract_and_protocol": 22,
+      "example": 29,
+      "exit": 0,
+      "ignored_child_fixtures": 2,
+      "ignored_installed_package_tests": 5,
+      "library": 3,
+      "main": 33,
+      "passed": 87
+    },
+    "workflow_yaml": "Both edited workflows parsed; git diff --check passed. Hosted execution is separate and was not claimed locally."
+  },
+  "compiled_inputs": {
+    "Cargo.lock": "30435d33da10dd7dc05561437340e0784628f3fa",
+    "Cargo.toml": "5808b694beb8243a4103fc388a7239f14f7b9958",
+    "build.rs": "bf1a32d7182b5cb53fa376bb8c925ce5d50840f8",
+    "compiler/native": "e0d5f908d528ec2048c717ae8ad89b6c52dd4dae",
+    "crates/lustr-native-core": "20b58214d69830d75cd4bd6e9acccde9c676e2ec",
+    "examples": "dfa105814924d3b4e1d551a0a76c10963643327c",
+    "src": "24896aa6d095909389491a39a253a767c0fb0362",
+    "tests": "5ba6d6e247d693c95f79cf4f07f2472b4b884b2e",
+    "tools/host-sdk.rs": "9e8e31eb3a9db67dd9e4c0a7e8ee958c623d944d",
+    "tools/profile-native-preflight.rs": "042667e76f3d509b5e8cef7fd83cf00e28411dfa",
+    "upstream/bluefe-core.pin": "3a3523a83c03958d9f242f6d9a905280c7a3e7a9",
+    "upstream/lust-integration.patch": "14ed7bb3cfa9c999ccefe745fd0b93d1b31e6005",
+    "upstream/lust.integration": "6a96c2ca23610af4dca6639a45e893561e06c5f4",
+    "upstream/lust.pin": "cce2d3a2a584a15bc2ab960eb0121c9afc484949"
+  },
+  "compiled_inputs_match_published_source": true,
+  "full_rust_coverage": false,
+  "observed_date": "2026-11-19",
+  "package_binary_sha256": {
+    "bin/lust": "ff73b283b29bad925a72474e4f124d5df4c72fd1756db6e9fba21f07ab909053",
+    "bin/lust-core": "1a21b58880bc88cbcf5e410da519ab6d9fdb8770a909aec2984c78cad8d222ae",
+    "bin/lustr": "53d6f49f9168eb8e936ea21bfa335e908b46b737f5426158e5c0644c53f33b25",
+    "lib/liblustr_native_core.so": "aa0ed5d2a844faeb231748d77d084fb527251607823e2f490abe7049d9323037"
+  },
+  "package_kind": "Previously assembled debug native package; exact unchanged product/helper inputs and four binary hashes verified before reuse; not a fresh constructor or optimized-package qualification.",
+  "performance_qualified": false,
+  "qualification_tools_sha256": {
+    "qualify-capability-results.py": "06c79c5fea365d4d8addf3d0c4fd5b747780c9ccbe8681b825fcff4f8d554e97",
+    "test-capability-results.py": "101d71c05d30526ea20efbdb5797b27a19215ed32d9bc24ce1d796295fb021f1"
+  },
+  "receipts": {
+    "entries": 259,
+    "path": "receipts.json.gz",
+    "sha256": "a6a0fedc6e9e6c791316a9ffd31da5c5e10ca0fbf817f58404fb18030f72f034",
+    "uncompressed_sha256": "a2fc7e94528e5be439e9d7d5e13206b581b5a168c20b930a87d5e5004bbfafe6"
+  },
+  "release_admission": false,
+  "schema": "lustr-result-proof-verification-v1",
+  "scope_limits": [
+    "The output differential establishes finite cold public-entry fixture agreement with the declared Rust oracle. It does not alone establish exclusive compiler ownership; separate product entry/source controls remain required.",
+    "The qualified source inputs are unchanged from the published predecessor. Test tooling and workflow changes do not implement the missing complement.",
+    "No full Rust coverage, optimized-package performance, retained speed, no_std conversion, socket-independent retained operation or other-host qualification is claimed.",
+    "The local installed-package suite failed its required socket case. Four other package controls passed; the failure was not converted to success."
+  ],
+  "source_commit": "a03b1e2d9787523c72efe628a72cb02afbfaa491",
+  "source_tree": "a27edade00c0098ded2564d1a60f4e333208c0cb"
+}

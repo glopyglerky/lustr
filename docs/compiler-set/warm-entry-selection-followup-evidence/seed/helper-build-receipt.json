@@ -1,0 +1,49 @@
+{
+  "schema": "lustr-warm-entry-comparison-v1",
+  "status": "completed",
+  "scope": "Production parser/selector/child owner component only; no compiler timing claim.",
+  "source": {
+    "revision": "a0f2b79ee70952e8227a18663cb0aae2e9e7aa11",
+    "tree": "bd08959de47e01064da5637c6932a9de85f2ee40"
+  },
+  "native_build_hash": "dc82dab611c87e7e",
+  "commands": [
+    {
+      "argv": [
+        "<SDK_WORKSPACE>/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "generate-lockfile",
+        "--offline",
+        "--manifest-path",
+        "<SEED_HELPER_BUILD>/Cargo.toml"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "<SDK_WORKSPACE>/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "build",
+        "--release",
+        "--locked",
+        "--offline",
+        "--manifest-path",
+        "<SEED_HELPER_BUILD>/Cargo.toml",
+        "--target-dir",
+        "<SEED_HELPER_BUILD>/target",
+        "--config",
+        "build.build-dir=\"<SEED_HELPER_BUILD>/intermediates\""
+      ],
+      "exit": 0
+    }
+  ],
+  "source_sha256": {
+    "<SEED_SOURCE>/tools/profile-native-preflight.rs": "70a406ab61f69da2710d0215bdcc8acb6c57f7aa20719530cebed9a6693628f7",
+    "<SEED_SOURCE>/src/full.rs": "04836e406a227fcf0f831bc0214c301eb2302973a1257fc82b8a0ef3dc32248d",
+    "<SEED_SOURCE>/src/selection_cache.rs": "3787b392d00c828ecb867211c4425bc6db2932ca8a60385d7ff988d037cc539c",
+    "<SEED_SOURCE>/src/owned_child.rs": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20",
+    "<SEED_SOURCE>/src/host_runtime.rs": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223",
+    "<SEED_SOURCE>/compiler/native/src/protocol.rs": "4da4c32fb16b62f3819a3d774ef63b76e201e2414c3b4540b4a6ccb27133fe1c"
+  },
+  "binary_sha256": "5a6356c6d50da4896906c9610d6175d2b5213b6f4efd2457297aa36c537a0b33",
+  "manifest_sha256": "415a92275dfccb1a66e01e62611862c2bd56fee93d21a0f83eaf7364f5e63975",
+  "lock_sha256": "f7760201a2d7a3e6781de074b4a425b40b35fc106f08bb80d522c2e9d68c7381"
+}

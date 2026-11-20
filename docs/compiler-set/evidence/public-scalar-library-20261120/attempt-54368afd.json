@@ -1,0 +1,97 @@
+{
+  "schema": "lustr-public-library-attempt-v1",
+  "observed_date": "2026-11-20",
+  "source": {
+    "head": "54368afd2eb606242dc6577c9c8fc0627ba5f3f5",
+    "tree": "a36e150cabb511fd24829a718a55b82940cd3a0c",
+    "native_tree": "3a73767d60f57fd1e2b8ebc6279a447da752d152",
+    "merge_checkout": "cf2c062c7b038e58c2145b94e8fb5f9840b6c8dc",
+    "merge_tree_equals_head_tree": true
+  },
+  "compiler_set": {
+    "run_id": 44711592428,
+    "url": "https://github.com/glopyglerky/lustr/actions/runs/44711592428",
+    "conclusion": "failure",
+    "successful_jobs": 9,
+    "failed_jobs": 1,
+    "failed_native_job": 136204366917,
+    "metadata_job": 136204367170,
+    "metadata_job_conclusion": "success"
+  },
+  "constructor_fixture_failure": {
+    "tool": "tools/test-native-build-policy.py",
+    "missing_input": "upstream/metadata-dependency-closure.json",
+    "cause": "The copied constructor fixture omitted newly declared source inputs required by its unchanged real admission path.",
+    "rejection_controls_completed_before_failure": 3,
+    "product_sentinel_exit": 72,
+    "original_assertions_weakened": false,
+    "public_package_constructed": false,
+    "new_public_controls_executed": 0,
+    "public_cargo_campaign_executed": false,
+    "correction_commit": "e26981f665d154d108cffa88ecbc7d63a5be16ce",
+    "correction_scope": "Eight fixture setup lines copy the original public-library inventory and its 38 declared source inputs. No original assertions, expected outcomes, or declared input source identities are altered.",
+    "correction_executed": false
+  },
+  "structural_controls": {
+    "inventory_provenance": 10,
+    "package": 41,
+    "metadata": 14,
+    "retired": 4,
+    "inspection": 3,
+    "conclusion": "passed on this exact source"
+  },
+  "qualified_metadata_research": {
+    "entry": "Separate metadata research callers, not the installed public Cargo library route",
+    "one_shot_runtime_campaign": "passed in the completed metadata job",
+    "retained_evaluator_methods": 30,
+    "history_transitions": 29,
+    "total_requests": 33,
+    "sessions": 3,
+    "ordinary_rust_consumers": 25,
+    "runtime_assertions": 6815952,
+    "successful_consumer_commands": 75,
+    "command_stream_pairs_hash_verified": 85,
+    "archive_object_metadata_joins_verified": 25,
+    "no_op_intervals": 5,
+    "child_calls_in_each_no_op": 0,
+    "candidate_socket_calls_observed": 0,
+    "original_negative_diagnostics": 5,
+    "sdk_setup_refusals": 2,
+    "fresh_final_archive_equality": true,
+    "failure_preservation_verified": true,
+    "source_after_check_files": 13094,
+    "source_after_check_gitlinks": 1,
+    "assertion_count_scope": "Checks in a fixed scalar corpus, not distinct Rust programs or language features"
+  },
+  "metadata_original_artifact": {
+    "id": 14617627718,
+    "bytes": 118845678,
+    "sha256": "4a04808b21bf79ff508aa21b5380b796724e9832c43b2f4affbad3416966ffa4",
+    "download_digest_verified": true
+  },
+  "metadata_candidate": {
+    "bytes": 361104696,
+    "sha256": "1c7582b7ed8691d61d6ca39d09f2dd633d9b9f75fad36b84b688889427d421a1"
+  },
+  "independent_original_record_audit": {
+    "bytes": 49645,
+    "sha256": "20aa1315eb9d34c80e9e64b75b00c8d031493cdfdf1a020d85346b27d3a21daf",
+    "candidate_or_tests_rerun": false,
+    "retained_report_sha256": "e56607a247eef598598fa3832fe073547815160e8c8a8579b42343308f338e3c"
+  },
+  "broader_ci": {
+    "run_id": 44711592345,
+    "state_at_observation": "in_progress",
+    "success_inferred": false
+  },
+  "qualification": {
+    "public_retained_library_integration": false,
+    "full_rust_replacement": false,
+    "full_lust_subset_coverage": false,
+    "compiler_wide_no_std": false,
+    "public_socket_independence": false,
+    "performance": false,
+    "release": false,
+    "qualifies_later_source": false
+  }
+}

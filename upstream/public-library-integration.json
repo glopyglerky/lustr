@@ -1,0 +1,152 @@
+{
+  "schema": "lustr-public-library-integration-v1",
+  "rust_revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "status": "authored-unqualified",
+  "full_rust_coverage": false,
+  "performance_qualified": false,
+  "metadata_dependency_closure": "upstream/metadata-dependency-closure.json",
+  "artifact_tool_closure": "upstream/metadata-artifact-tools.json",
+  "product_owner": "crates/lustr-native-core/src/public_library.rs",
+  "shared_artifact_service": "crates/lustr-native-core/src/library_artifact.rs",
+  "supported_context": "Linux x64, edition 2024, actual dependency-free Cargo leaf library; explicit panic=abort and embed-bitcode=no, opt-level=0, debuginfo=0; exact dep-info,metadata,link outputs; actual unstable -Z embed-metadata choice and forced unused_crate_dependencies response.",
+  "request_options": "LibraryOptions is per request, outside native SessionKey and Client. Unstable embedding None/true/false are distinct metadata/SVH variants; effective None/true use full archive metadata and false uses its matching header stub. Force-warn/JSON do not enter the metadata hash. Stable -C embed-metadata remains unrepresented.",
+  "artifact_variants": "At most three embedding choices for the current native snapshot, plus the last durable publication. Body/object facts stay shared; a new choice encodes metadata and builds its archive without native checking/code generation, while an exact retained choice reuses bytes.",
+  "semantic_owner": "One existing native prepare/emit continuation; only existing completed scalar declarations/bodies.",
+  "unimplemented": [
+    "stable -C embed-metadata and wider unstable options",
+    "metadata-only cargo check",
+    "public --extern ingestion",
+    "wider native completion",
+    "other targets/profiles",
+    "socket-free public retained host"
+  ],
+  "inactive_history": "Owner-start budget, default 128 entries and 16 MiB of known payload per native-object, native-definition and artifact cache; current/published/in-flight evidence protected. Lowering the real entry limit exercises the same LRU cut. Actual RSS includes live source, allocator overhead and original native caches.",
+  "publication": "All bytes staged/synced before replacements; complete files replace in metadata/dep-info/archive order. Partial multi-name effects and uncertain durability are terminal. No-op exact output bytes leave output inodes/mtimes unchanged.",
+  "runtime_limitation": "The pinned dynamic llvm-ar/llvm-objcopy dependency closure may require the exact 208,283,952-byte LLVM shared library. This is artifact-tool closure, not a proved minimal source cut or compiler speed qualification.",
+  "upstream_sources": [
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_session/src/options.rs",
+      "sha256": "9ac7d7de14cbef1624c9998593b081000dcd496413d2bb3643aac2bd1c9c7e69",
+      "role": "Separate tracked stable/unstable embedding options, excluded lint crate-hash state and untracked JSON response mode"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_session/src/session.rs",
+      "sha256": "cf93aa2f3af4a4be00930d9c1078c17a91add82ac6206e38e3fee74c724e93a8",
+      "role": "Exact effective embedding precedence and default; only unstable channel is admitted"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_metadata/src/rmeta/encoder.rs",
+      "sha256": "7f740fbaf9e81f4d518a95eeab485059c4f1a88c636df3104af03ec2817f5b73",
+      "role": "Original stub writer/header and full-SVH binding; tracked-option supplement"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_metadata/src/rmeta/mod.rs",
+      "sha256": "d6d5d627a4876ddd5d371c2260f0d68303f1e483a5209fcace3893765bfd5948",
+      "role": "Original CrateHeader target/name/proc-macro/stub field order"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_metadata/src/fs.rs",
+      "sha256": "793c4dae083a30b7073ec080ce24cc02eb1e2048938c6c48d9946fb51e14ecdf",
+      "role": "Split full metadata and header-only metadata preparation/publication"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_codegen_ssa/src/back/link.rs",
+      "sha256": "0cfbc38cf0c66133b3f7dc10bd558d1fb4773fc1c09054c48a32bc694902a191",
+      "role": "Original lib.rmeta wrapper uses stub_or_full while lib.rmeta-link and object inventory remain"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_metadata/src/locator.rs",
+      "sha256": "3e91bea232fdf8b8b01858bb55fb923f63f8c3ea66071cfc8eda9e9cebb9d758",
+      "role": "Full standalone metadata and matching stub archive association; no stub-only full-metadata acceptance"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_metadata/src/creader.rs",
+      "sha256": "5ad69fef2068ce2cff4a1ab21659359270770e4ee69fa840558a29a3fb706539",
+      "role": "Actual explicit-unused-extern inventory and forced empty result emission after required analyses"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_lint_defs/src/lib.rs",
+      "sha256": "5bb391853043b7216010b3fccdc09e81158f34c39232a1dc51eab9d816654084",
+      "role": "Exact ForceWarn as_str token for the typed response"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_interface/src/passes.rs",
+      "sha256": "8ee543fb7a03b80cbd95a58c57a134215d97218afa6551ecc0bd70f02fe75fbc",
+      "role": "Actual output/dep-info layout and filename escaping"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_errors/src/json.rs",
+      "sha256": "cb6bfcad442469b2bbdcc77ce28b22b3903c4fec489043a82f6dfd008ad12281",
+      "role": "Typed diagnostic, artifact and unused-extern JSON representation; semantic diagnostics remain native"
+    },
+    {
+      "repository": "rust-lang/cargo",
+      "revision": "c07ac2c4d12237effc4b94f4543769b421790045",
+      "path": "src/compiler/mod.rs",
+      "sha256": "06f232baf25ae3279fa92eaa96a2ff791dfa7dd0c200c8c9e4b58273245a9f44",
+      "role": "Actual leaf compiler arguments and explicit/default profile facts"
+    }
+  ],
+  "source_sha256": {
+    "src/lib.rs": "3fed93e365f2863905198b74ecda1dd3a6b41056b3ac8f9d442867ba92d86f97",
+    "src/main.rs": "4fb5ec2c0d2fdffab03f94ec3cd20dba559446e883885a1434f40a76e00fc565",
+    "src/native_queries.rs": "805c995a5c51a5af0e544a573cb2f3000b45e0b92baf6f98ff53871d1e4d4864",
+    "src/library_contract.rs": "3691c053df6d57637fa69d8da629be36f334602ba9cd0a695c634808b261333c",
+    "src/library_request.rs": "b8275ddaf517e0d53e929baf5711b9aad319a49815e8e45e3330856204a61483",
+    "compiler/native/Cargo.toml": "022fce40408d543c29550f7b03de3e622a5e01a08c82ea642d30537f61f93891",
+    "compiler/native/Cargo.lock": "d46a58d499b1cfa163f5e2a23f10c0e69e077638f7a84e38e13332875a52f181",
+    "compiler/native/build.rs": "044e0595531dd5468cf4df3dcfb21e1f43592fbada278c63b461d6dcb6a8b946",
+    "compiler/native/src/main.rs": "3665631752f66348d057f68e1ec904907f5fa41792218712236f150a3263f68a",
+    "compiler/native/src/protocol.rs": "de3a16f41a635b3944ad26af84ecd017319e7a589515b5a21fb73f46a9a5698c",
+    "compiler/native/src/daemon.rs": "d4ed6c39ac6dee354de7eb1596cf6804d665fc02e1ea159f548fe2b56832e2c3",
+    "compiler/native/src/diag.rs": "48e67f855a2c831161ded88ce52333626171ba2812b0f6fdc4d148e52069d439",
+    "compiler/native/src/driver/mod.rs": "26e67d079ee3918ed7e5f0369ab9048cbe01630cf6be3f950f549a07e50b99d8",
+    "compiler/native/src/driver/compile.rs": "cc7201cab5a29024a71c2743975c2a2b661ddc72bce5b20d852aa1a5d11a1c60",
+    "compiler/native/src/driver/session.rs": "2babc3bfd6bc13f1be0dae125cc77b6543757b87cec11925f3b643aa9b6797d1",
+    "crates/lustr-native-core/Cargo.toml": "e23e58bedd3f95a923bfa82f7004d9f44db90c1bccb8b125f620b39ef020a390",
+    "crates/lustr-native-core/Cargo.lock": "bc7c64836b4b04b12031fdeb3a3bb90b9a723a40208b39379f8cd54ba96b4372",
+    "crates/lustr-native-core/src/library_history.rs": "b9b5599d739bd221cfcdb59280f456c2556859d0dc400b8b1afe57407678354f",
+    "crates/lustr-native-core/src/native_library.rs": "1338e6946aa1c5374a6b2cc2b5c346124f58abdd7d3e76cc1f8a5bcb4faad80e",
+    "crates/lustr-native-core/src/native_completion.rs": "9f12636ba780b1ec8b94fb4c2eee01211445907f51643bd4bfce2920f1eabe46",
+    "crates/lustr-native-core/src/library_artifact.rs": "69a42c196c885afe549589628f79f5f226d65f149f63ee2994ec58fe3c757a0f",
+    "crates/lustr-native-core/src/metadata_archive.rs": "4906cce455716560344bdb329c3bcbc563da21e8c615c357583c038a90e11dfa",
+    "crates/lustr-native-core/src/public_library.rs": "0d22baf8a94049a53b86671dd60bbff744c2b48abfab04f74ee20e288393cc65",
+    "crates/lustr-native-core/src/unit_object.rs": "d43929971c980ec395913ce5f6cb13955e012e72ef2fcddcd14a24adaea1bd24",
+    "crates/lustr-native-core/src/unit_publication.rs": "035ee3f6a763a9562348f50476815bd24e7b6bc67a1a14a69edcd2fe8f44ae05",
+    "crates/lustr-native-core/LICENSE-LLVM": "8d85c1057d742e597985c7d4e6320b015a9139385cff4cbae06ffc0ebe89afee",
+    "crates/lustr-metadata-encoder/Cargo.toml": "0f63faa420b6c2e1ec91739f61f7ee77ee874233399ed8e744783325168493c2",
+    "crates/lustr-metadata-encoder/src/lib.rs": "0a4b3c27e550aa3259eff323509bb42a3ee3030552d460169e40b8c986e05af5",
+    "crates/lustr-metadata-encoder/src/encode.rs": "ee39ed07bda3d08ebf22f81e219a28b7c4808724dfd2248a7ed9273bdca37637",
+    "crates/lustr-metadata-sdk/Cargo.toml": "1251d90b032c4d77d9ef6768642ba959679a183a23f4c3d5e15748c4a02cac6a",
+    "crates/lustr-metadata-sdk/src/lib.rs": "9569e298ece5030e7e6f5a405119885bec2c76a4186a49acf33d6028f43edbde",
+    "tools/build-native-toolchain.rs": "6a30c0a2884f6df81812a53d658eea28d8f6233692dba7b4af72d196109c9579",
+    "tools/install-native-metadata-sdk.py": "c6be8a4c32e9f86274321b282c54a5c461c9672a27e6d54994455948bde496fb",
+    "tools/check-exclusive-coverage.py": "a6c24b3901d94daffb8c08aef335c64ea9c09ff7bda408c9c5e80041c2368d61",
+    "tools/update-public-library-source-manifest.py": "51934bdf41f73007b20ab25daaa90bf6a9f458d7e9346402ee071b2a0d3045f0",
+    "upstream/metadata-artifact-tools.json": "d1bd48f3b362645dce89172ce862f66189a1847c26e443f1861f9222021af9ff",
+    "upstream/metadata-dependency-closure.json": "a5b2d8cccb4594fa2bfe56c33d202c4e6a1f88a1e09105bac8c4f1ab1e0ca32e",
+    "docs/compiler-set/evidence/metadata-sdk-receipt-20261120/receipt.json": "4e400b263bf9923616dea44ead2d77213703177d3bfaf6becd6a19a4c5a657a7"
+  }
+}

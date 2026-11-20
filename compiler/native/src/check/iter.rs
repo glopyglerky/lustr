@@ -1446,7 +1446,7 @@ impl<'p> Ctx<'p> {
                 (B::IterUnzip, vec![], ret)
             }
             "min" | "max" => {
-                self.deferred_ord.push((item, span));
+                self.deferred_sort_ord.push((item, span));
                 let o = self.tys.mk_option(item);
                 (if n == "min" { B::IterMin } else { B::IterMax }, vec![], o)
             }
@@ -1454,7 +1454,7 @@ impl<'p> Ctx<'p> {
                 let key = self.new_var(false);
                 let ri = r(self, item);
                 let f = self.fn_mut_param_ref(&[ri], key, span);
-                self.deferred_ord.push((key, span));
+                self.deferred_sort_ord.push((key, span));
                 let o = self.tys.mk_option(item);
                 (if n == "min_by_key" { B::IterMinByKey } else { B::IterMaxByKey }, vec![f], o)
             }

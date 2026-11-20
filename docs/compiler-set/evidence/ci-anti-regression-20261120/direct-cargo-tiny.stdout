@@ -1,0 +1,20 @@
+
+running 2 tests
+test actual_cargo_tiny ... <OUTPUT>/ci-audit-tiny/passed/report.json
+FAILED
+test rejection_codes_cannot_be_spoofed_by_paths_or_source_text ... ok
+
+failures:
+
+---- actual_cargo_tiny stdout ----
+
+thread 'actual_cargo_tiny' (527) panicked at tests/tiny.rs:66:5:
+assertion failed: status.success()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    actual_cargo_tiny
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 1 filtered out; finished in 7.19s
+

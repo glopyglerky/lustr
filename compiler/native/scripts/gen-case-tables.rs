@@ -1,3 +1,5 @@
+// Historical upstream generator, retained for provenance. For the integrated
+// compiler use scripts/gen-unicode.sh and its pinned, shared semantic data set.
 // Prints src/runtime/case_tables.h: Rust's Unicode case maps and the
 // two properties str::to_lowercase's final-sigma rule reads, derived
 // from rustc's own behavior so the Unicode version matches the

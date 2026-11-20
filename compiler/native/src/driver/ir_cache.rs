@@ -265,6 +265,11 @@ fn hash_rvalue(h: &mut FxHasher, p: &Program, tys: &impl TyIntern, r: &Rvalue, s
             hash_def(h, p, p.def_id(*f));
             ty(h, *t, seen);
         }
+        Rvalue::NativeFnValue(def, t) => {
+            51u8.hash(h);
+            hash_def(h, p, *def);
+            ty(h, *t, seen);
+        }
         Rvalue::ItemShim(item, t) => {
             50u8.hash(h);
             ty(h, *item, seen);
@@ -417,6 +422,7 @@ pub(crate) fn ir_fingerprint(p: &Program, body: &Body, map: &SourceMap, base_lin
                     CallTarget::Intrinsic(i) => (2u8, i).hash(&mut h),
                     CallTarget::Indirect(l) => (3u8, l).hash(&mut h),
                     CallTarget::Dyn(k) => (4u8, k).hash(&mut h),
+                    CallTarget::NativeFn(def) => { 5u8.hash(&mut h); hash_def(&mut h, p, *def); }
                 }
                 (args.len() as u64).hash(&mut h);
                 for a in args {
@@ -584,6 +590,7 @@ enum CachedRvalue {
     StaticLoad(DefId),
     StaticRef(DefId),
     FnValue(DiskDefId, u32),
+    NativeUnsupported,
     ItemShim(u32, u32),
     MakeDyn(CachedOperand, u32, u32),
     DynUpcast(CachedOperand, Vec<u32>),
@@ -612,6 +619,8 @@ enum CachedTarget {
     Intrinsic(u32),
     Indirect(Local),
     Dyn(u32),
+    /// Independent native inputs do not yet have a retained-cache contract.
+    NativeUnsupported,
 }
 
 /// Builds `TyTree`s from one body's type store, memoized per `Ty`.
@@ -914,6 +923,7 @@ fn cache_rvalue(b: &mut TreeBuilder, p: &Program, r: &Rvalue) -> CachedRvalue {
         Rvalue::StaticLoad(i) => CachedRvalue::StaticLoad(p.static_defs[*i as usize]),
         Rvalue::StaticRef(i) => CachedRvalue::StaticRef(p.static_defs[*i as usize]),
         Rvalue::FnValue(f, t) => CachedRvalue::FnValue(p.disk_id(*f), b.ty(*t)),
+        Rvalue::NativeFnValue(..) => CachedRvalue::NativeUnsupported,
         Rvalue::ItemShim(item, t) => CachedRvalue::ItemShim(b.ty(*item), b.ty(*t)),
         Rvalue::MakeDyn { ptr, src, dyn_ty } => CachedRvalue::MakeDyn(cache_operand(b, p, ptr), b.ty(*src), b.ty(*dyn_ty)),
         Rvalue::DynUpcast { ptr, path } => CachedRvalue::DynUpcast(cache_operand(b, p, ptr), path.clone()),
@@ -960,6 +970,7 @@ pub(crate) fn cache_body(p: &Program, body: &Body, file_hash: u64, slot: u32, us
                         CallTarget::Intrinsic(i) => CachedTarget::Intrinsic(*i),
                         CallTarget::Indirect(l) => CachedTarget::Indirect(*l),
                         CallTarget::Dyn(k) => CachedTarget::Dyn(*k),
+                        CallTarget::NativeFn(_) => CachedTarget::NativeUnsupported,
                     },
                     args: args.iter().map(|a| cache_operand(&mut b, p, a)).collect(),
                     dest: dest.clone(),
@@ -1107,6 +1118,7 @@ pub(crate) fn rebuild<'p>(p: &'p Program, cached: &CachedBody, fn_id: LocalDefId
             CachedRvalue::StaticLoad(def) => Rvalue::StaticLoad(p.static_by_def(*def)?),
             CachedRvalue::StaticRef(def) => Rvalue::StaticRef(p.static_by_def(*def)?),
             CachedRvalue::FnValue(disk, t) => Rvalue::FnValue(local_of(disk)?, intern.ty(tys, *t)?),
+            CachedRvalue::NativeUnsupported => return None,
             CachedRvalue::ItemShim(item, t) => Rvalue::ItemShim(intern.ty(tys, *item)?, intern.ty(tys, *t)?),
             CachedRvalue::MakeDyn(o, src, dyn_ty) => {
                 Rvalue::MakeDyn { ptr: operand(intern, tys, strings, o)?, src: intern.ty(tys, *src)?, dyn_ty: intern.ty(tys, *dyn_ty)? }
@@ -1152,6 +1164,7 @@ pub(crate) fn rebuild<'p>(p: &'p Program, cached: &CachedBody, fn_id: LocalDefId
                     CachedTarget::Intrinsic(i) => CallTarget::Intrinsic(*i),
                     CachedTarget::Indirect(l) => CallTarget::Indirect(*l),
                     CachedTarget::Dyn(k) => CallTarget::Dyn(*k),
+                    CachedTarget::NativeUnsupported => return None,
                 },
                 args: args.iter().map(|a| operand(&mut intern, &mut tys, &strings, a)).collect::<Option<Vec<_>>>()?,
                 dest: dest.clone(),
@@ -1414,6 +1427,7 @@ fn main() {
             max_errors: 20,
             run_args: None,
             harness: false, cc: false,
+            library_options: Default::default(),
             client: Default::default(),
         };
         let mut s = Session::new(dir.join("obj"), false, key);

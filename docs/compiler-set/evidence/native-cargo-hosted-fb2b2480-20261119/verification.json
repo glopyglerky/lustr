@@ -1,0 +1,478 @@
+{
+  "head": "fb2b24802180321d3bbc534dee7083fb2a385d6b",
+  "run": 44546561681,
+  "job": 135638575172,
+  "decoded_log_sha256": "209c75b4d5fe1a5e40f727058eebe5df90bf16eebae693df73e21f590336306d",
+  "retained_histories": 349,
+  "retained_versions": 1744,
+  "native_process_proof": [
+    {
+      "passed": true,
+      "scope": "actual retained compiler and traced Cargo/tool-hash reuse",
+      "failure": null,
+      "query_count": 38,
+      "controls": [
+        {
+          "case": "query-spy-refuses-compilation-with-print",
+          "passed": true
+        },
+        {
+          "case": "explicit-package-fresh",
+          "passed": true,
+          "source_sha256": {
+            "Cargo.toml": "186850202c23dc57f768cf95745111d72b1ef4843fb481d1fbd7b4bbda7f85f5",
+            "util/Cargo.toml": "3827c65c545350793f3a3a5ebede9f6814ae8df3cc8805b4d45ad0706ef37ea1",
+            "unused/Cargo.toml": "1d2d0f85e11181610223006adc37f13a7cc1931ac6a6516d08b375cf260f73ed",
+            "src/main.rs": "2863cade7b0e92794d64623274fd385b21e8396159e01886ef8646e5d5a9107c",
+            "util/src/lib.rs": "29c63b1e300f3c3f2dcc34eb93963e4745a29d2632fb1faa5285726a003850f0",
+            "unused/src/lib.rs": "7158227decc9baae5af8bd9369ba0b12a4dca60c7d970bc30f479005518f4997"
+          },
+          "artifact_sha256": "a23d1b143080ded0a386b75eac4f784507d0f7eb215e8d19bba4f8221e8e6558",
+          "oracle_artifact_sha256": "869c9f22c754ea0a6b0134f9dc4ba9cd2d6c62e1e7213dad48c5b19b4e091e9d",
+          "stdout": "11\n",
+          "cargo_processes": 5,
+          "tool_hash_processes": 4
+        },
+        {
+          "case": "initial",
+          "passed": true,
+          "source_sha256": {
+            "Cargo.toml": "186850202c23dc57f768cf95745111d72b1ef4843fb481d1fbd7b4bbda7f85f5",
+            "util/Cargo.toml": "3827c65c545350793f3a3a5ebede9f6814ae8df3cc8805b4d45ad0706ef37ea1",
+            "unused/Cargo.toml": "1d2d0f85e11181610223006adc37f13a7cc1931ac6a6516d08b375cf260f73ed",
+            "src/main.rs": "2863cade7b0e92794d64623274fd385b21e8396159e01886ef8646e5d5a9107c",
+            "util/src/lib.rs": "29c63b1e300f3c3f2dcc34eb93963e4745a29d2632fb1faa5285726a003850f0",
+            "unused/src/lib.rs": "7158227decc9baae5af8bd9369ba0b12a4dca60c7d970bc30f479005518f4997"
+          },
+          "artifact_sha256": "e266a963b100a06a29be2d374bd7797f66208ed54ec87309fd4e45d752c2e916",
+          "oracle_artifact_sha256": "869c9f22c754ea0a6b0134f9dc4ba9cd2d6c62e1e7213dad48c5b19b4e091e9d",
+          "stdout": "11\n",
+          "cargo_processes": 0,
+          "tool_hash_processes": 0
+        },
+        {
+          "case": "unchanged",
+          "passed": true,
+          "source_sha256": {
+            "Cargo.toml": "186850202c23dc57f768cf95745111d72b1ef4843fb481d1fbd7b4bbda7f85f5",
+            "util/Cargo.toml": "3827c65c545350793f3a3a5ebede9f6814ae8df3cc8805b4d45ad0706ef37ea1",
+            "unused/Cargo.toml": "1d2d0f85e11181610223006adc37f13a7cc1931ac6a6516d08b375cf260f73ed",
+            "src/main.rs": "2863cade7b0e92794d64623274fd385b21e8396159e01886ef8646e5d5a9107c",
+            "util/src/lib.rs": "29c63b1e300f3c3f2dcc34eb93963e4745a29d2632fb1faa5285726a003850f0",
+            "unused/src/lib.rs": "7158227decc9baae5af8bd9369ba0b12a4dca60c7d970bc30f479005518f4997"
+          },
+          "artifact_sha256": "e266a963b100a06a29be2d374bd7797f66208ed54ec87309fd4e45d752c2e916",
+          "oracle_artifact_sha256": "869c9f22c754ea0a6b0134f9dc4ba9cd2d6c62e1e7213dad48c5b19b4e091e9d",
+          "stdout": "11\n",
+          "cargo_processes": 0,
+          "tool_hash_processes": 0
+        },
+        {
+          "case": "body-edit",
+          "passed": true,
+          "source_sha256": {
+            "Cargo.toml": "186850202c23dc57f768cf95745111d72b1ef4843fb481d1fbd7b4bbda7f85f5",
+            "util/Cargo.toml": "3827c65c545350793f3a3a5ebede9f6814ae8df3cc8805b4d45ad0706ef37ea1",
+            "unused/Cargo.toml": "1d2d0f85e11181610223006adc37f13a7cc1931ac6a6516d08b375cf260f73ed",
+            "src/main.rs": "dc2e2883aed8f84d49d8491723a411d018425df3990f1037df5af86452887cb6",
+            "util/src/lib.rs": "29c63b1e300f3c3f2dcc34eb93963e4745a29d2632fb1faa5285726a003850f0",
+            "unused/src/lib.rs": "7158227decc9baae5af8bd9369ba0b12a4dca60c7d970bc30f479005518f4997"
+          },
+          "artifact_sha256": "3a3d00677ab3bc7e1dd25385d957e9450134a20f755d1c41fb39cba1ce0abb0d",
+          "oracle_artifact_sha256": "aa383fa58f2d9f2f6fe39ad06555f6694cac1ae26a4ab1550c04d626b58306d6",
+          "stdout": "16\n",
+          "cargo_processes": 0,
+          "tool_hash_processes": 0
+        },
+        {
+          "case": "feature-selection",
+          "passed": true,
+          "source_sha256": {
+            "Cargo.toml": "186850202c23dc57f768cf95745111d72b1ef4843fb481d1fbd7b4bbda7f85f5",
+            "util/Cargo.toml": "3827c65c545350793f3a3a5ebede9f6814ae8df3cc8805b4d45ad0706ef37ea1",
+            "unused/Cargo.toml": "1d2d0f85e11181610223006adc37f13a7cc1931ac6a6516d08b375cf260f73ed",
+            "src/main.rs": "dc2e2883aed8f84d49d8491723a411d018425df3990f1037df5af86452887cb6",
+            "util/src/lib.rs": "29c63b1e300f3c3f2dcc34eb93963e4745a29d2632fb1faa5285726a003850f0",
+            "unused/src/lib.rs": "7158227decc9baae5af8bd9369ba0b12a4dca60c7d970bc30f479005518f4997"
+          },
+          "artifact_sha256": "8591faa0884ff7fe594237ad56f0d6eff15d77e56bf601d745f11c28f9d90486",
+          "oracle_artifact_sha256": "594c98eb411a151095a84395dab6ea16f2d6b40329146d28577464c9f21bc913",
+          "stdout": "27\n",
+          "cargo_processes": 3,
+          "tool_hash_processes": 0
+        },
+        {
+          "case": "feature-recovery",
+          "passed": true,
+          "source_sha256": {
+            "Cargo.toml": "186850202c23dc57f768cf95745111d72b1ef4843fb481d1fbd7b4bbda7f85f5",
+            "util/Cargo.toml": "3827c65c545350793f3a3a5ebede9f6814ae8df3cc8805b4d45ad0706ef37ea1",
+            "unused/Cargo.toml": "1d2d0f85e11181610223006adc37f13a7cc1931ac6a6516d08b375cf260f73ed",
+            "src/main.rs": "dc2e2883aed8f84d49d8491723a411d018425df3990f1037df5af86452887cb6",
+            "util/src/lib.rs": "29c63b1e300f3c3f2dcc34eb93963e4745a29d2632fb1faa5285726a003850f0",
+            "unused/src/lib.rs": "7158227decc9baae5af8bd9369ba0b12a4dca60c7d970bc30f479005518f4997"
+          },
+          "artifact_sha256": "3a3d00677ab3bc7e1dd25385d957e9450134a20f755d1c41fb39cba1ce0abb0d",
+          "oracle_artifact_sha256": "aa383fa58f2d9f2f6fe39ad06555f6694cac1ae26a4ab1550c04d626b58306d6",
+          "stdout": "16\n",
+          "cargo_processes": 0,
+          "tool_hash_processes": 0
+        },
+        {
+          "case": "explicit-package",
+          "passed": true,
+          "source_sha256": {
+            "Cargo.toml": "186850202c23dc57f768cf95745111d72b1ef4843fb481d1fbd7b4bbda7f85f5",
+            "util/Cargo.toml": "3827c65c545350793f3a3a5ebede9f6814ae8df3cc8805b4d45ad0706ef37ea1",
+            "unused/Cargo.toml": "1d2d0f85e11181610223006adc37f13a7cc1931ac6a6516d08b375cf260f73ed",
+            "src/main.rs": "dc2e2883aed8f84d49d8491723a411d018425df3990f1037df5af86452887cb6",
+            "util/src/lib.rs": "29c63b1e300f3c3f2dcc34eb93963e4745a29d2632fb1faa5285726a003850f0",
+            "unused/src/lib.rs": "7158227decc9baae5af8bd9369ba0b12a4dca60c7d970bc30f479005518f4997"
+          },
+          "artifact_sha256": "e24d4d169cf041ab258cbdea191b128d6b0f8460780f03732761ab80ed6ccee5",
+          "oracle_artifact_sha256": "aa383fa58f2d9f2f6fe39ad06555f6694cac1ae26a4ab1550c04d626b58306d6",
+          "stdout": "16\n",
+          "cargo_processes": 2,
+          "tool_hash_processes": 0
+        }
+      ]
+    }
+  ],
+  "retained_unit_control_lines": [
+    "test_accept_reject_recovery_runs_through_original_fixture_loader (__main__.FixtureLifecycleControls.test_accept_reject_recovery_runs_through_original_fixture_loader) ... /tmp/tmplodjwo9q/source/compiler/native/scripts/test-daemon-scenarios.py:209: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/lust-scen-probe-idih_eo2/daemon.log' mode='r' encoding='UTF-8'>",
+    "test_removed_target_and_recovery_use_unchanged_donor_overlay (__main__.FixtureLifecycleControls.test_removed_target_and_recovery_use_unchanged_donor_overlay) ... /tmp/tmptoi2aqmt/source/compiler/native/scripts/test-daemon-scenarios.py:129: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/tmptoi2aqmt/source/compiler/native/tests/daemon/cargo01_bin_discovery/cargo' mode='r' encoding='UTF-8'>",
+    "test_removed_target_cannot_hide_stale_recovery (__main__.FixtureLifecycleControls.test_removed_target_cannot_hide_stale_recovery) ... /tmp/tmpmufj30um/source/compiler/native/scripts/test-daemon-scenarios.py:129: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/tmpmufj30um/source/compiler/native/tests/daemon/cargo01_bin_discovery/cargo' mode='r' encoding='UTF-8'>",
+    "test_stale_recovered_output_fails_original_fixture_lifecycle (__main__.FixtureLifecycleControls.test_stale_recovered_output_fails_original_fixture_lifecycle) ... /tmp/tmpfxgai8ah/source/compiler/native/scripts/test-daemon-scenarios.py:209: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/lust-scen-probe-phtzgnbs/daemon.log' mode='r' encoding='UTF-8'>",
+    "test_changed_or_missing_fixtures_change_identity (__main__.InventoryControls.test_changed_or_missing_fixtures_change_identity) ... ok",
+    "test_current_fixtures_match_pinned_donor_inventory (__main__.InventoryControls.test_current_fixtures_match_pinned_donor_inventory) ... ok",
+    "test_git_tree_matches_git_on_real_fixture (__main__.InventoryControls.test_git_tree_matches_git_on_real_fixture) ... ok",
+    "test_cargo_source_errors_cannot_hide_compiler_or_build_crashes (__main__.OracleDiagnosticControls.test_cargo_source_errors_cannot_hide_compiler_or_build_crashes) ... ok",
+    "test_dependency_artifact_errors_cannot_use_the_imports_source_span (__main__.OracleDiagnosticControls.test_dependency_artifact_errors_cannot_use_the_imports_source_span) ... ok",
+    "test_external_missing_and_definition_only_call_sites_fail (__main__.OracleDiagnosticControls.test_external_missing_and_definition_only_call_sites_fail) ... ok",
+    "test_good_source_error_cannot_hide_unanchored_fatal_error (__main__.OracleDiagnosticControls.test_good_source_error_cannot_hide_unanchored_fatal_error) ... ok",
+    "test_malformed_diagnostics_and_internal_status_fail (__main__.OracleDiagnosticControls.test_malformed_diagnostics_and_internal_status_fail) ... ok",
+    "test_mismatched_and_ambiguous_dependency_artifacts_are_operational_errors (__main__.OracleDiagnosticControls.test_mismatched_and_ambiguous_dependency_artifacts_are_operational_errors) ... ok",
+    "test_missing_sdk_diagnostic_is_not_a_source_error_despite_its_span (__main__.OracleDiagnosticControls.test_missing_sdk_diagnostic_is_not_a_source_error_despite_its_span) ... ok",
+    "test_missing_target_is_not_a_generic_cargo_failure_allowance (__main__.OracleDiagnosticControls.test_missing_target_is_not_a_generic_cargo_failure_allowance) ... ok",
+    "test_notes_and_secondary_source_spans_cannot_anchor_errors (__main__.OracleDiagnosticControls.test_notes_and_secondary_source_spans_cannot_anchor_errors) ... ok",
+    "test_primary_macro_call_sites_can_anchor_nested_expansions (__main__.OracleDiagnosticControls.test_primary_macro_call_sites_can_anchor_nested_expansions) ... ok",
+    "test_rust_and_cargo_require_source_bound_structured_errors (__main__.OracleDiagnosticControls.test_rust_and_cargo_require_source_bound_structured_errors) ... ok",
+    "test_codegen_source_errors_are_not_lost_by_metadata_only_checks (__main__.PinnedOracleControls.test_codegen_source_errors_are_not_lost_by_metadata_only_checks) ... ok",
+    "test_linker_and_sdk_failures_remain_failures (__main__.PinnedOracleControls.test_linker_and_sdk_failures_remain_failures) ... ok",
+    "test_missing_and_invalid_dependency_artifacts_are_not_source_errors (__main__.PinnedOracleControls.test_missing_and_invalid_dependency_artifacts_are_not_source_errors) ... ok",
+    "test_real_cargo_rejects_removed_target_then_restores_it (__main__.PinnedOracleControls.test_real_cargo_rejects_removed_target_then_restores_it) ... /home/runner/work/lustr/lustr/compiler/native/scripts/test-daemon-scenarios.py:99: ResourceWarning: unclosed file <_io.TextIOWrapper name='/home/runner/work/lustr/lustr/compiler/native/tests/daemon/cargo01_bin_discovery/v2/.scen' mode='r' encoding='UTF-8'>",
+    "test_real_std_macro_errors_resolve_through_primary_call_sites (__main__.PinnedOracleControls.test_real_std_macro_errors_resolve_through_primary_call_sites) ... ok",
+    "test_build_then_one_execution_and_bound_artifact (__main__.ProcessControls.test_build_then_one_execution_and_bound_artifact) ... ok",
+    "test_compile_failure_never_executes_or_retries (__main__.ProcessControls.test_compile_failure_never_executes_or_retries) ... ok",
+    "test_daemon_exit_during_request_invalidates_trace (__main__.ProcessControls.test_daemon_exit_during_request_invalidates_trace) ... ok",
+    "test_removed_target_expectation_cannot_cover_a_present_source (__main__.ProcessControls.test_removed_target_expectation_cannot_cover_a_present_source) ... ok",
+    "test_stopped_original_daemon_cannot_be_replaced (__main__.ProcessControls.test_stopped_original_daemon_cannot_be_replaced) ... ok",
+    "test_success_without_owner_trace_fails (__main__.ProcessControls.test_success_without_owner_trace_fails) ... ok",
+    "test_unreviewed_precompilation_refusal_reports_actual_diagnostic (__main__.ProcessControls.test_unreviewed_precompilation_refusal_reports_actual_diagnostic) ... ok",
+    "test_zero_exit_without_artifact_fails (__main__.ProcessControls.test_zero_exit_without_artifact_fails) ... ok",
+    "test_both_checks_cannot_crash_as_a_reject (__main__.VerdictControls.test_both_checks_cannot_crash_as_a_reject) ... ok",
+    "test_both_valid_rejections_are_a_regression (__main__.VerdictControls.test_both_valid_rejections_are_a_regression) ... ok",
+    "test_check_failure_cannot_hide_behind_successful_build (__main__.VerdictControls.test_check_failure_cannot_hide_behind_successful_build) ... ok",
+    "test_check_only_version_still_requires_cold_artifact (__main__.VerdictControls.test_check_only_version_still_requires_cold_artifact) ... ok",
+    "test_exact_complete_result (__main__.VerdictControls.test_exact_complete_result) ... ok",
+    "test_exit_is_compared (__main__.VerdictControls.test_exit_is_compared) ... ok",
+    "test_expected_program_signal_does_not_allow_compiler_signal (__main__.VerdictControls.test_expected_program_signal_does_not_allow_compiler_signal) ... ok",
+    "test_invalid_oracle_cannot_be_an_internal_error (__main__.VerdictControls.test_invalid_oracle_cannot_be_an_internal_error) ... ok",
+    "test_invalid_program_requires_actual_native_rejections (__main__.VerdictControls.test_invalid_program_requires_actual_native_rejections) ... ok",
+    "test_linker_failure_cannot_classify_valid_source_as_invalid (__main__.VerdictControls.test_linker_failure_cannot_classify_valid_source_as_invalid) ... ok",
+    "test_missing_artifact (__main__.VerdictControls.test_missing_artifact) ... ok",
+    "test_missing_build (__main__.VerdictControls.test_missing_build) ... ok",
+    "test_missing_check (__main__.VerdictControls.test_missing_check) ... ok",
+    "test_missing_oracle_runtime (__main__.VerdictControls.test_missing_oracle_runtime) ... ok",
+    "test_missing_runtime (__main__.VerdictControls.test_missing_runtime) ... ok",
+    "test_only_run_specific_thread_id_is_normalized (__main__.VerdictControls.test_only_run_specific_thread_id_is_normalized) ... ok",
+    "test_ordinary_stderr_numbers_are_never_normalized (__main__.VerdictControls.test_ordinary_stderr_numbers_are_never_normalized) ... ok",
+    "test_program_nonzero_exit_is_compared_as_execution (__main__.VerdictControls.test_program_nonzero_exit_is_compared_as_execution) ... ok",
+    "test_removed_target_requires_both_pinned_cargo_rejections (__main__.VerdictControls.test_removed_target_requires_both_pinned_cargo_rejections) ... ok",
+    "test_reviewed_removed_target_has_a_distinct_verdict (__main__.VerdictControls.test_reviewed_removed_target_has_a_distinct_verdict) ... ok",
+    "test_stderr_is_compared (__main__.VerdictControls.test_stderr_is_compared) ... ok",
+    "test_stdout_is_compared (__main__.VerdictControls.test_stdout_is_compared) ... ok",
+    "test_timeout_cannot_be_a_reject (__main__.VerdictControls.test_timeout_cannot_be_a_reject) ... ok",
+    "test_unexpected_signal_is_not_success (__main__.VerdictControls.test_unexpected_signal_is_not_success) ... ok"
+  ],
+  "retained_unit_test_count": 55,
+  "retained_unit_skipped": 0,
+  "retained_unit_summary": [
+    "Ran 55 tests in 5.365s",
+    "",
+    "OK"
+  ],
+  "public_entry_process_controls": {
+    "passed": 71,
+    "unavailable": 0
+  },
+  "root_all_target_results_before_abort": [
+    {
+      "target": "src/lib.rs",
+      "passed": 3,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "target": "src/main.rs",
+      "passed": 35,
+      "failed": 0,
+      "ignored": 1
+    },
+    {
+      "target": "tests/compiler_contract.rs",
+      "passed": 23,
+      "failed": 1,
+      "ignored": 5
+    }
+  ],
+  "root_real_package_contracts": "Not executed: the first Cargo all-target command failed under set -euo pipefail.",
+  "root_failure": {
+    "name": "transport_peer_consumes_and_validates_the_actual_encoded_request",
+    "left": 260,
+    "right": 262,
+    "assertion": "peer must consume every environment and source field"
+  },
+  "inventory_sha256": "4f528b413b1e742eda662bea0bf29e84adc357214a8b2815548f7ae74f6100e8",
+  "exact_required_history_names_match": true,
+  "inventory_status_counts": {
+    "required": 349,
+    "unresolved": 13
+  },
+  "schema": "lustr-source-bound-hosted-cargo-outcome-v1",
+  "published_tree": "afcc2cc8a565a8058c91f428e81e465d82896f0f",
+  "checkout": {
+    "sha": "5c733f1468b576432f57d48b69590a6982032fc9",
+    "tree": "afcc2cc8a565a8058c91f428e81e465d82896f0f",
+    "parents": [
+      "d135be016fab5db2ba026f1229d4d77681d9b0a2",
+      "fb2b24802180321d3bbc534dee7083fb2a385d6b"
+    ]
+  },
+  "job_conclusion": "failure",
+  "source_job_url": "https://github.com/glopyglerky/lustr/actions/runs/44546561681/job/135638575172",
+  "guarded_constructor": "passed on the exact published tree",
+  "root_test_explanation": "The first all-target Cargo command failed in the independent transport fixture. set -euo pipefail prevented the second ignored installed-package-contract command. No pass for those five contracts is claimed.",
+  "fixture_followup": "f7ba9ca24dc86c56f00333809a1b4eaad9fecea8 fixes only the test peer; its separately preserved local reproduction fails before and passes after.",
+  "required_inventory_scope": "All 349 required entries passed; the pinned inventory also records 13 unresolved entries. The qualifier explicitly reports full_retained_coverage=false.",
+  "process_proof_scope": "Actual retained compiler and traced Cargo/tool-hash reuse, with seven exact native/Rust programs and one rejected compiler request. The qualifier required the original daemon PID/start/executable before and after every request. Its literal process identity and compiler executable hashes are in the remote report, not in the log excerpt; no values are inferred.",
+  "logged_identities": {
+    "hosted_package_root": "/home/runner/work/_temp/lustr-native-built/toolchain",
+    "native_tree": "bf933c382fd99e52dd2586ebc46f0d0aceaa71a8",
+    "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+    "rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "cargo_sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+    "rustc_identity": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08); host x86_64-unknown-linux-gnu; LLVM 23.1.5",
+    "identity_source_scope": "Native source and SDK identities printed by the later shared-service qualifications in this job. The full constructor COMPONENTS receipt remains in the remote artifact; product core/entry byte hashes are not printed in this log."
+  },
+  "capability_result_fixtures": [
+    {
+      "fixture": "attributes-path.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "accd84c5c2335c96f51ef189b92e08aa8b888c8370c29274a43d5afb2a37730f",
+        "rust": "fd418bbbec4cab4adfd711d967ddfa70f528ebeb1fd8d0dac62a86649f56f84d"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "attributes-test.rs",
+      "command": "test",
+      "passed": true,
+      "artifact_sha256": {
+        "rust": "636d2d9129ef21dd634b6ea06aa579451cd24f97312175eb67261d3b5bf2accd"
+      },
+      "comparison": "exact test names/statuses, complete nonempty summaries and zero harness exits",
+      "outcomes": {
+        "adds": "pass",
+        "slow": "ignored",
+        "panics": "pass",
+        "tests::in_module": "pass",
+        "tests::nested::deep": "pass"
+      }
+    },
+    {
+      "fixture": "attributes.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "02f83896392e36e0477ae0c781a08d743de0c2d002cc64484b0921271145d05a",
+        "rust": "d7d118ceff57be42d56b939062794c64b5a1a38c121b476b4422f0c1e4fd3df4"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "control-flow.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "c0679822543c3f0d713a4c3125e50bfeae21d30e0cc7434fd1ba81482b8913e4",
+        "rust": "8e4fb8c839e64fdf6c33a97700b31d8441a040fe07d75384157b909cc3dc8813"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "derives.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "3424717401738939c7e1ceedaff6049706fa5cb40f3ad9401788e0648d092d5e",
+        "rust": "c51b47257fabf511fe16eea254e29802b154ac7b215f3cb410057db8a9d8c264"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "expressions.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "4cf38d19cd630d59c5164e8f2a00257dfa55e93e28acfa8760a7f3a4985e41dc",
+        "rust": "f673bbd81312aad714bd0da0fa57ed1aebfcbfe92e5ff538663b4855f04c78f4"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "items.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "67fb56279599ee2f3cb1e75a8a8df131373dd528ba2d71205277954ccc9a6d7b",
+        "rust": "86fb56d30e755de8c71955c096a185730260d9e5eb77747b94ec8cb4b479e899"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "patterns.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "b1473fe85813b43584649c08329f53aaea48af0d86879d238cba16a417f1167b",
+        "rust": "20250be00f6b93904c43cc44d0ae8232544d33472ba90255c48e892e447dbebf"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "types-basic.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "157e2e10bc57f58c459b7304cc7ceb7613ce54b65ebb575032671257117b553a",
+        "rust": "f4a8b69a49d2e1eb509289daf6cc513ce231d28072d22ccbe127b1d5e59491d7"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "types-collections.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "80ba7e36bb9f03eb2c5f53e5c3cc10fa5638b509f71aa74d41134d31d243bcc7",
+        "rust": "df4f965215abb4fcb990d61dfd71e669b4513bc7ad7ed99ebc3df054c4f07a2f"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "types-dyn.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "9f782f8cff3107b1b27e5932028dde06c3db2e75a8f203ade41d9121d7a0466a",
+        "rust": "28b7052cc4a47ca6b4d2929db125e99745411f61d8dc4683ac6aea96c9170a83"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "types-fns.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "1c36e594cbb5548b771e7a4c8a6c354c652c2d59427725f0c363a75766c98438",
+        "rust": "cb9af68fa4a248b42fb3a146b86da7b256845b856feeacc45814909093279b1d"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "types-io-copy.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "da12156235c2ab94ba535da5aec13f197d640852d2696a8bb42b7ecb013012bc",
+        "rust": "36b63b00545ae19d74d4dce77a6e4be1aa8f4699e5da10c106399cb95d9cf7c3"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "types-lazy.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "3ad8d7331b767aa5b4acdcd80b764146a5b6e554b1238f4143f85430ca801657",
+        "rust": "4203a0dff82d5f884051e04559736666206caebcc5892163425d095a9e2a8923"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "types-pointers.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "1fb3d66b19233ba7e13a7996b52f0f32f920ea24881b1b78bd739c7ed476b499",
+        "rust": "c5444f62f4e79637e013e1b963cd9061a67be70ccd4988aa9f2975d079ea215b"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "types-rawptr.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "348fc6f785616c0b34408b9fe47487748afd8d5c7845a2b2196276b5fab8f8fb",
+        "rust": "39cb167eecf3fbeb332c878aa45fed14d67db755c3f68f4ea69640cca7685f07"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "types-std-misc.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "fb3f1357c0bea7e230417643a73f35f3d44ed5de2e8f940f71d307b9a897b916",
+        "rust": "90f236d47fb2f3da2596c365edc9182589a02f6e0c986c961a33338b7ec8c887"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    },
+    {
+      "fixture": "types-threads.rs",
+      "command": "run",
+      "passed": true,
+      "artifact_sha256": {
+        "native": "138b07ffb53d58abde9009b478bce6667cdf548af77275c6358f61438f015b59",
+        "rust": "575eb143742b42133e5307944c472a0f1d472f7ef50c70943426f85d8175aee0"
+      },
+      "comparison": "exact stdout, stderr and zero exit status"
+    }
+  ],
+  "artifact": {
+    "id": 14541962757,
+    "name": "exclusive-entry-and-shared-services",
+    "bytes": 584645008,
+    "server_reported_sha256": "114076578e1fecc2dae1c47fc14591bed14e0c973b1e8d0bebf552829a244402",
+    "zip_digest_locally_verified": false,
+    "download_tool_limit_bytes": 536870912,
+    "download_status": "Rejected before download because the artifact exceeds the tool size limit. No hidden URL, range workaround or authorization bypass used.",
+    "remote_url": "https://github.com/glopyglerky/lustr/actions/runs/44546561681/artifacts/14541962757",
+    "expires_at": "2027-02-17T14:41:52Z",
+    "preserved_locally": "Complete decoded original job log, API source/job and artifact metadata, exact download failure, parsed history rows and process result rows.",
+    "remote_only": "Original per-command stdout/stderr/trace files, complete package/tool receipts, literal original-daemon identity and remaining artifact members. The full ZIP and omitted-member hashes were not obtained locally."
+  },
+  "complete_decoded_job_log": {
+    "path": "job.log.gz",
+    "uncompressed_bytes": 553586,
+    "uncompressed_sha256": "209c75b4d5fe1a5e40f727058eebe5df90bf16eebae693df73e21f590336306d",
+    "gzip_sha256": "9df117c0833eb552f6a5e8f1b094f2b53d0d4dd2b61ad9ad136298956de4029c"
+  },
+  "performance_claim": false,
+  "full_rust_coverage": false,
+  "release_admission": false
+}

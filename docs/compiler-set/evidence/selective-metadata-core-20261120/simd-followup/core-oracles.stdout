@@ -1,0 +1,9 @@
+
+running 4 tests
+test encode::path_tests::posix_adapter_preserves_original_path_and_os_string_hashes ... ok
+test identity::tests::original_pinned_reference_crate_identity_is_preserved ... ok
+test identity::tests::original_stable_hash_matches_core_namespace_extraction ... ok
+test upstream::odht_writer::tests::original_odht_bytes_and_reader_agree_through_collisions_and_growth ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+

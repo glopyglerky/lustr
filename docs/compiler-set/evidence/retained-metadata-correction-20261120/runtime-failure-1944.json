@@ -1,0 +1,108 @@
+{
+  "schema": "lustr-retained-metadata-first-runtime-failure-v1",
+  "source_head": "1944f65fa7bee550da4343ddf86ea8325afee754",
+  "actual_ci_checkout": "2e9ff8a368c1033609863a3438a92c56224aa83c",
+  "tree": "fc5ef39f24c3d01186aae5f623aa5ce3e1b1ad53",
+  "run_id": 44695140045,
+  "job_id": 136149987563,
+  "job_url": "https://github.com/glopyglerky/lustr/actions/runs/44695140045/job/136149987563",
+  "job_conclusion": "failure",
+  "artifact": {
+    "id": 14610158535,
+    "sha256": "2033554843a88145c83e2c020aadee6237e928dab66908d8baff6b6fc7a64d71",
+    "bytes": 73057914,
+    "github_upload_digest_verified": true
+  },
+  "candidate": {
+    "archive_member": "native-metadata-target/debug/lustr-native-metadata-qualification",
+    "sha256": "c5750a9fd4e40eb50ce1ad879f1c151336c8c37d4d1875a017307d75300f3c92",
+    "bytes": 355602216,
+    "matches_both_reports": true
+  },
+  "evaluator_controls_passed": 27,
+  "source_capture": {
+    "files": 13090,
+    "gitlinks": 1,
+    "verified_after_original_one_shot": true,
+    "new_post_retained_full_source_or_tool_verification_completed": false
+  },
+  "one_shot_campaign": {
+    "passed": true,
+    "functional_passed": true,
+    "exec_trace_qualified": true,
+    "control_count": 36,
+    "runtime_assertions": 262152,
+    "scope": "Existing fixed scalar fixture through the separate one-shot Clang research emitter and original Rust consumers."
+  },
+  "retained_campaign": {
+    "passed": false,
+    "functional_passed": false,
+    "exec_trace_qualified": false,
+    "socket_transport_qualified": false,
+    "observed_history": [
+      "cold",
+      "no-op",
+      "body-edit",
+      "body-edit-no-op",
+      "body-revert",
+      "span-only",
+      "reorder",
+      "insert"
+    ],
+    "checked_runtime_results": 1835064,
+    "failure": "archive symbol names differ from their count"
+  },
+  "retained_first_failure": {
+    "case": "insert",
+    "boundary": "Independent archive symbol-index parsing, after candidate publication and before the inserted-function Rust consumer.",
+    "archive_sha256": "b23824994a5314db1867d8af76848cac3d6deaaca63836dc8098bd8722dabc86",
+    "archive_bytes": 8354,
+    "index_header_offset": 8,
+    "index_payload_bytes": 278,
+    "index_payload_sha256": "4e6b43a08c4e34e6fa69b5a1a30f6927dbbbac8f3f476a3a85b3861cd2a15f64",
+    "index_declared_symbols": 8,
+    "index_symbol_names": [
+      "_RNvCs6EDouJJfSTf_8consumer7combine",
+      "tramp_98357fc3aa7c6e2c",
+      "_RNvCs6EDouJJfSTf_8consumer9transform",
+      "tramp_eb735bf34b880f47",
+      "_RNvCs6EDouJJfSTf_8consumer10stack_args",
+      "tramp_f772f022fe64f514",
+      "_RNvCs6EDouJJfSTf_8consumer6helper",
+      "tramp_7752ffa8cf74a760"
+    ],
+    "index_name_start": 36,
+    "index_consumed_end": 277,
+    "index_remaining_hex": "00",
+    "index_payload_hex": "0000000800000e5a00000e5a0000127600001276000016e2000016e200001c9600001c965f524e7643733645446f754a4a665354665f38636f6e73756d657237636f6d62696e65007472616d705f39383335376663336161376336653263005f524e7643733645446f754a4a665354665f38636f6e73756d6572397472616e73666f726d007472616d705f65623733356266333462383830663437005f524e7643733645446f754a4a665354665f38636f6e73756d65723130737461636b5f61726773007472616d705f66373732663032326665363466353134005f524e7643733645446f754a4a665354665f38636f6e73756d65723668656c706572007472616d705f373735326666613863663734613736300000"
+  },
+  "partial_retained_evidence": {
+    "ordinary_consumers": 7,
+    "runtime_assertion_sum": 1835064,
+    "all_consumer_source_and_program_hashes_match": true,
+    "all_21_reader_compile_run_records_and_streams_verified": true,
+    "history_session_trace_qualified": true,
+    "history_session_socket_trace_qualified": true,
+    "history_trace_sha256": "cd7396238440fb07c36194ae23ee2cccaacc9bde880e2d6ddda35dcb3669ea51",
+    "all_observed_prefix_hashes_match": true,
+    "actual_tool_calls_on_noop_intervals": {
+      "no-op": 0,
+      "body-edit-no-op": 0
+    },
+    "limits": "These outcomes cover only the observed initial history. Insert ordinary consumption and the remaining histories, recovery, fresh-session and SDK controls did not run."
+  },
+  "published_original_logs": {
+    "original-1944-retained-campaign.log": {
+      "sha256": "8f2c5ebbd7da45e99a47a91164ea4c9541cecfdd003bb069a55fc4d37ce735d3",
+      "bytes": 329,
+      "original_archive_member": "native-metadata-join/retained-campaign.log"
+    },
+    "original-1944-retained-evaluator-controls.log": {
+      "sha256": "ce2d9cecb4f2ddaf31a5f21b20844fe4cbde9cfa49ce9c8213d66c9e2e4c3a09",
+      "bytes": 3567,
+      "original_archive_member": "native-metadata-join/retained-evaluator-controls.log"
+    }
+  },
+  "full_compiler_qualified": false,
+  "speed_qualified": false
+}

@@ -1,0 +1,195 @@
+{
+  "schema": "lustr-ownership-closure-controls-v1",
+  "base_commit": "b8fd1d1956045e26626f22f256b5cd5614f5ce3f",
+  "source_inputs": {
+    ".github/workflows/compiler-set.yml": "d2d271dfd4a23713a37b6fc3ea2631bdcf3d2b5cfb7e08e02ed8e33ca821fb82",
+    "crates/lustr-metadata-encoder/Cargo.lock": "906e28e2d1fd5f53b5118c7f49c34d124352b1e99d05720c5d9fb371705cb4ec",
+    "crates/lustr-metadata-encoder/Cargo.toml": "0f63faa420b6c2e1ec91739f61f7ee77ee874233399ed8e744783325168493c2",
+    "crates/lustr-metadata-encoder/source-slices.json": "394d90ef7a42928afa9b728ef56571a009f617dc63ee7919f9908e83ab0c8071",
+    "crates/lustr-metadata-encoder/src/encode.rs": "f891f6cd402a7bac605603c843983a8a0ffc54edb9c300709f9a416af7d996e6",
+    "crates/lustr-metadata-encoder/src/identity.rs": "995799a9938d78fd5c800a1d28af4039f4e5868cea71536d0f70b2fc3643724d",
+    "crates/lustr-metadata-encoder/src/lib.rs": "2ec5ab99934fa9aacd43935a7b6047886a8e1fd5c03f58aabc7525fe436659f1",
+    "crates/lustr-metadata-encoder/src/sdk.rs": "a088d99b04d3046c52830699b15c960e849d84d1a101c52df68b1aaeb64898b6",
+    "crates/lustr-metadata-encoder/src/table.rs": "5ad2fa46decc550bfd5f7d23cc051c7087d4ef1f5b361b154630c122097c92bb",
+    "crates/lustr-metadata-encoder/src/upstream/codec.rs": "916922c930d3dc46c7003d65d920b6c84efa780ac5b0c06eec1586ead0216a7a",
+    "crates/lustr-metadata-encoder/src/upstream/int_overflow.rs": "bf1667be8b077b770ecc1850c3bc141dc685f4b3f2470009dc2e062ef08ca0ae",
+    "crates/lustr-metadata-encoder/src/upstream/leb128.rs": "3a5bc031e24e6921459738a7ba7fa1fd5e7ba451cda266b0229030e19f278206",
+    "crates/lustr-metadata-encoder/src/upstream/mem_encoder.rs": "cb923af10331cd9276ee1fc53154e9143641d5cc33d52b7395294e10d3ee482c",
+    "crates/lustr-metadata-encoder/src/upstream/odht/LICENSE-APACHE": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
+    "crates/lustr-metadata-encoder/src/upstream/odht/LICENSE-MIT": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+    "crates/lustr-metadata-encoder/src/upstream/odht_groups/mod.rs": "bdf7febea06ccfce4b811ccfa2fb42a8c44dae4d026fd295e88914a7f650702c",
+    "crates/lustr-metadata-encoder/src/upstream/odht_groups/no_simd.rs": "33b762703b243ddfafb476a8d8dd9ed0b51f76a0064479c04281aa424a420fc8",
+    "crates/lustr-metadata-encoder/src/upstream/odht_groups/sse2.rs": "fefdd6206bf34baa386e96f266d2563b2f510ec5b19f7094bd15170c7dca58b4",
+    "crates/lustr-metadata-encoder/src/upstream/odht_writer.rs": "5c1576ded925774ed16ad941220b20bffc728a3317560802541ca1f352a285b9",
+    "crates/lustr-metadata-encoder/src/upstream/schema.rs": "f4fa9e98dd16ba8293115a96cc8b087e6bb4627add637a29b786241e5f055dcb",
+    "crates/lustr-metadata-encoder/src/upstream/stable_hash/LICENSE-APACHE": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
+    "crates/lustr-metadata-encoder/src/upstream/stable_hash/LICENSE-MIT": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+    "crates/lustr-metadata-encoder/src/upstream/stable_hash/int_overflow.rs": "51262ddb4bc75d68e9c5ed8410a6fd7e33aa01f1b38e7eeff2ae5ece429eac46",
+    "crates/lustr-metadata-encoder/src/upstream/stable_hash/mod.rs": "24ea97cebdc3ef18601f980bd636b37b26bc43fd23c0c1c0fb384a2fbddb927b",
+    "crates/lustr-metadata-encoder/src/upstream/stable_hash/sip128.rs": "b49461f4c6dc199916dc63b7ba5e79878cfef16010b6ba5db3c2fd33fdb9ffc6",
+    "crates/lustr-metadata-encoder/src/upstream/stable_hash/stable_hasher.rs": "7f4a8bdfa52ddc4dc943442cc9500db1577d81244dfc86f1637539d219dd0684",
+    "crates/lustr-metadata-sdk/Cargo.lock": "92d51f56365304856e084c0bdc432521a31242d8cac88ee84d5d29eef685df9c",
+    "crates/lustr-metadata-sdk/Cargo.toml": "1251d90b032c4d77d9ef6768642ba959679a183a23f4c3d5e15748c4a02cac6a",
+    "crates/lustr-metadata-sdk/src/lib.rs": "c2cce3421ad3e386d969e532421121dc55f6aa2469eb1511069613a6a48cb867",
+    "crates/lustr-semantic/src/main.rs": "caa7b667e0461e4a14bd089a09691e00ca80a84363c32b67b384a44344f6b868",
+    "crates/lustr-semantic/tests/test_probe.py": "a481665d6659fbf7b70d1512c8f6b8eabb2487d25a9176dfc0d240664681fe5c",
+    "tools/build-metadata-sdk-receipt.py": "eac23167bfc612bdd0ba6becfe6ed50922145bf59690619cbd744597b4228f8b",
+    "tools/check-exclusive-coverage.py": "21a28c4146404d16aeb93a4de1d3dae5f8f6d82fc2f7a3741b259c796e888528",
+    "tools/test-exclusive-coverage-guard.py": "333c01973711761ae05449ad24fce32ef77b8af315315e082ea46189cd96aaf1",
+    "tools/test-metadata-sdk-receipt.py": "d8d2c2b26347dfd30e392cae9322bc6d960cfba6de9ed1334c3a6c99b9a7dac6",
+    "upstream/complement-imports.json": "2deab92f6ae1d406c4418687ed412537c20a6ebca9e90565d0d196bd21a9ef4c"
+  },
+  "tools": {
+    "python": "fa67443527ed9647f760d807e2a38f26340757123e643c4639cf273ed15d5ea7",
+    "rustc": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "cargo": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+    "rustfmt": "e7f091a5143e8c4b581378cd7201bb24f2d7014b7e92e72e8a4cf04db40408aa"
+  },
+  "commands": [
+    {
+      "name": "guard",
+      "argv": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+        "tools/check-exclusive-coverage.py"
+      ],
+      "exit": 0,
+      "stdout_sha256": "29e8b9779114dec7438f6aaf42b4fb57b351c9c122aeb0dcd5e1368f12b1c69e",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_stdout_sha256": "29e8b9779114dec7438f6aaf42b4fb57b351c9c122aeb0dcd5e1368f12b1c69e",
+      "original_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "guard-negative-controls",
+      "argv": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+        "tools/test-exclusive-coverage-guard.py"
+      ],
+      "exit": 0,
+      "stdout_sha256": "81a8bf4d0e5d97e18a324f0055b301dcd1a8b205cf2fa8e628e5b6032c4f9d01",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_stdout_sha256": "81a8bf4d0e5d97e18a324f0055b301dcd1a8b205cf2fa8e628e5b6032c4f9d01",
+      "original_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "receipt-controls",
+      "argv": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+        "tools/test-metadata-sdk-receipt.py",
+        "-v"
+      ],
+      "exit": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "26d6b73c5a45f48169b6ca4fba510dddeb643290bddf71c0052ee1e4a05659cb",
+      "original_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_stderr_sha256": "26d6b73c5a45f48169b6ca4fba510dddeb643290bddf71c0052ee1e4a05659cb"
+    },
+    {
+      "name": "core-oracles",
+      "argv": [
+        "<PINNED_SDK>/bin/cargo",
+        "test",
+        "--manifest-path",
+        "crates/lustr-metadata-encoder/Cargo.toml",
+        "--package",
+        "lustr-metadata-encoder",
+        "--lib",
+        "--locked",
+        "--offline"
+      ],
+      "exit": 0,
+      "stdout_sha256": "dc5a42b2da7bf9464bc7e4d43d09a5ef344772b74febc79d62fdf93572f9e001",
+      "stderr_sha256": "4a5c80d962f2f34b20bb1a3a5faa0db95b922a75793139250de6b51aca411516",
+      "original_stdout_sha256": "dc5a42b2da7bf9464bc7e4d43d09a5ef344772b74febc79d62fdf93572f9e001",
+      "original_stderr_sha256": "7a30d2ec69c3ef5e863b37c06863b39e77e36c5a0859fba99fe916bcf7fa2820"
+    },
+    {
+      "name": "core-no-std",
+      "argv": [
+        "<PINNED_SDK>/bin/cargo",
+        "check",
+        "--manifest-path",
+        "crates/lustr-metadata-encoder/Cargo.toml",
+        "--package",
+        "lustr-metadata-encoder",
+        "--lib",
+        "--all-features",
+        "--target",
+        "x86_64-unknown-none",
+        "--locked",
+        "--offline"
+      ],
+      "exit": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "127324c8a319b81f39a29a8a7e9f3e5da61834a1870fec499784e596576f3d57",
+      "original_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_stderr_sha256": "87f1e44fc699ef14d1bdc4a0d9ca8667785d6b09f4fd821ed46a86f6aa2897b5"
+    },
+    {
+      "name": "host-adapter",
+      "argv": [
+        "<PINNED_SDK>/bin/cargo",
+        "check",
+        "--manifest-path",
+        "crates/lustr-metadata-sdk/Cargo.toml",
+        "--package",
+        "lustr-metadata-sdk",
+        "--lib",
+        "--locked",
+        "--offline"
+      ],
+      "exit": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e34da90b4cbb971e32894f534a054806db297d1a3546dab49f51176bf22dbfd7",
+      "original_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_stderr_sha256": "5fe5dafefd5d163a0c59c99f2043c03e2827c58626166738258e892924445add"
+    },
+    {
+      "name": "semantic-format",
+      "argv": [
+        "<PINNED_SDK>/bin/rustfmt",
+        "--edition",
+        "2024",
+        "--check",
+        "crates/lustr-semantic/src/main.rs"
+      ],
+      "exit": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "compiler-identity",
+      "argv": [
+        "<PINNED_SDK>/bin/rustc",
+        "-vV"
+      ],
+      "exit": 0,
+      "stdout_sha256": "bbc9b960fe50c84bca20f3109950bcb87c48b6d1ce61d2fc2fc1519aaba2daaa",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_stdout_sha256": "bbc9b960fe50c84bca20f3109950bcb87c48b6d1ce61d2fc2fc1519aaba2daaa",
+      "original_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "scope": "structural ownership/source-selection controls, original serializer byte/hash controls, bare-metal serializer dependency check and host adapter check only; no compiler speed or joined metadata claim",
+  "semantic_probe_runtime_test": {
+    "executed": false,
+    "reason": "required nightly-2026-11-05 SDK is unavailable locally; actual sentinel/refusal controls remain required in the existing pinned hosted semantic job"
+  },
+  "source_unchanged": true,
+  "passed": true,
+  "cargo_environment": {
+    "CARGO_HOME": "<CARGO_CACHE>",
+    "CARGO_TARGET_DIR": "<TARGET_DIR>",
+    "CARGO_BUILD_BUILD_DIR": "<BUILD_DIR>",
+    "CARGO_BUILD_JOBS": "2",
+    "CARGO_INCREMENTAL": "0",
+    "RUSTC": "<PINNED_SDK>/bin/rustc"
+  },
+  "path_normalization": {
+    "kind": "machine-specific scratch, SDK, Cargo cache and output prefixes replaced with named placeholders only",
+    "original_record_sha256": "e5ad7d1b3820d2a2bb269052637fd1fe04fd091152cf817578ff86e1fa3163df",
+    "original_and_published_stream_hashes_retained": true,
+    "source_and_tool_hashes_unchanged": true
+  }
+}

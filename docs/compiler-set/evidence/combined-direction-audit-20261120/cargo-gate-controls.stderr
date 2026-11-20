@@ -1,0 +1,28 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.27
+   Compiling typenum v1.20.1
+   Compiling quote v1.0.47
+   Compiling hybrid-array v0.4.15
+   Compiling serde_core v1.0.229
+   Compiling zmij v1.0.23
+   Compiling cfg_aliases v0.2.2
+   Compiling libc v0.2.191
+   Compiling nix v0.31.3
+   Compiling block-buffer v0.12.1
+   Compiling crypto-common v0.2.2
+   Compiling syn v3.0.10
+   Compiling serde v1.0.229
+   Compiling cfg-if v1.0.5
+   Compiling const-oid v0.10.2
+   Compiling serde_json v1.0.154
+   Compiling digest v0.11.3
+   Compiling serde_derive v1.0.229
+   Compiling cpufeatures v0.3.1
+   Compiling bitflags v2.10.0
+   Compiling itoa v1.0.19
+   Compiling memchr v2.8.3
+   Compiling sha2 v0.11.1
+   Compiling lustr-bench v0.1.0 (<CHECKOUT>/crates/lustr-bench)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.94s
+     Running unittests src/bin/lustr-bench-gate.rs (<BENCH_BUILD>/debug/build/lustr-bench/94f68666e877474b/out/lustr_bench_gate-94f68666e877474b)
+     Running tests/routed.rs (<BENCH_BUILD>/debug/build/lustr-bench/cf04b6cba03b3ada/out/routed-cf04b6cba03b3ada)

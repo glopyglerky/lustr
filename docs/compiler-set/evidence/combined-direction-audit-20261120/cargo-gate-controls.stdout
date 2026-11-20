@@ -1,0 +1,17 @@
+
+running 4 tests
+test tests::success_label_cannot_hide_missing_filtered_failed_or_duplicate_tests ... ok
+test tests::durations_are_ignored_but_counts_and_test_names_are_preserved ... ok
+test tests::ignored_names_and_every_harness_remain_visible ... ok
+test tests::names_cannot_move_between_differently_sized_harnesses ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 3 tests
+test retired_mixed_campaign_cannot_create_output_or_query_a_tool ... ok
+test retired_state_policy_cannot_be_acquired_through_the_general_runner ... ok
+test retired_routed_engines_never_invoke_the_supplied_compiler ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+

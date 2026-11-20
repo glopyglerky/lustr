@@ -494,15 +494,19 @@ impl Reads {
 
 /// The stable crate half a def hashes under in a fingerprint. Local-crate
 /// defs use the program's stable crate hash and builtin defs use theirs, so
-/// fingerprints match across sessions. A foreign session crate cannot occur
-/// today (one crate per session); when W-RESOLVE loads more crates it gives
-/// `Program` a crate table and this fallback goes away.
+/// fingerprints match across sessions. Imported definitions use the upstream
+/// stable crate identity installed before native checking, including nominal
+/// types with no function linkage of their own.
 pub(crate) fn def_crate_hash(p: &Program, def: DefId) -> u64 {
     if def.krate == p.krate {
         p.stable_crate.0
     } else if def.krate == BUILTIN_CRATE {
         static BUILTIN: std::sync::OnceLock<u64> = std::sync::OnceLock::new();
         *BUILTIN.get_or_init(|| crate::def::stable_crate_hash("lust-builtin-v1", "lib", "builtin", false).0)
+    } else if let Some(stable) = p.imported_crates.get(&def.krate) {
+        stable.0
+    } else if let Some((_, _, link)) = p.native_fn(def) {
+        link.id.krate.0
     } else {
         def.krate.0 as u64
     }
@@ -2344,7 +2348,14 @@ fn sig_fingerprint(p: &Program, def: DefId) -> Fingerprint {
         2u8.hash(&mut h);
         // Const and static payloads are found by def; aliases by flat
         // name, which the def record carries.
-        if let Some(item) = p.const_by_def(def).map(|i| &p.consts[i as usize]) {
+        if let Some((params, ret, link)) = p.native_fn(def) {
+            3u8.hash(&mut h);
+            link.id.krate.0.hash(&mut h);
+            link.symbol.hash(&mut h);
+            (params.len() as u64).hash(&mut h);
+            for &t in params { hash_ty(&mut h, p, &p.tys, t); }
+            hash_ty(&mut h, p, &p.tys, ret);
+        } else if let Some(item) = p.const_by_def(def).map(|i| &p.consts[i as usize]) {
             0u8.hash(&mut h);
             hash_ty_deep(&mut h, p, &p.tys, item.ty, &mut seen);
             value_fp(p, &item.value, &item.value_fp).hash(&mut h);
@@ -4187,7 +4198,7 @@ fn main() {}
                 if let Terminator::Call { target, unwind, .. } = &b.term {
                     assert!(unwind.is_some(), "every call carries a cleanup edge (W-CORELANG)");
                     match target {
-                        CallTarget::Fn(_) | CallTarget::Indirect(_) | CallTarget::Dyn(_) => fn_calls += 1,
+                        CallTarget::Fn(_) | CallTarget::NativeFn(_) | CallTarget::Indirect(_) | CallTarget::Dyn(_) => fn_calls += 1,
                         CallTarget::Builtin(_) | CallTarget::Intrinsic(_) => builtin_calls += 1,
                     }
                 }

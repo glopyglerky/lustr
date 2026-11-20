@@ -1,0 +1,8 @@
+{
+  "schema": "lustr-exclusive-coverage-guard-v1",
+  "structural_checks_passed": true,
+  "full_rust_coverage": false,
+  "release_status": "unavailable",
+  "scope": "structural source and public entry constraints only; source inventories do not prove minimal dependency closure or semantic exclusivity",
+  "failures": []
+}

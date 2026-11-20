@@ -81,6 +81,14 @@ pub enum SigData {
     Fn { params: Vec<Ty>, ret: Ty },
 }
 
+/// Linkage supplied by an independently checked native definition provider.
+/// The provider owns format, ABI, generation and code-closure qualification.
+#[derive(Clone, Debug)]
+pub struct NativeLinkage {
+    pub id: crate::def::DiskDefId,
+    pub symbol: String,
+}
+
 /// One definition record (ARCH 2.2 `DefData`).
 #[allow(dead_code)] // Name, module, vis, and span are read by resolution and diagnostics in later waves.
 #[derive(Clone, Debug)]
@@ -93,13 +101,14 @@ pub struct DefData {
     pub generics: Generics,
     pub span: Span,
     pub sig: SigData,
+    pub native_linkage: Option<Box<NativeLinkage>>,
 }
 
 impl DefData {
     /// A record with empty generics and no payload, in the root module. Collect
     /// fills the payload compat tables separately today.
     pub fn skeleton(kind: DefKind, parent: Option<DefId>, name: Sym, vis: Vis, span: Span) -> DefData {
-        DefData { kind, parent, name, module: ROOT_MODULE, vis, generics: Generics::default(), span, sig: SigData::Empty }
+        DefData { kind, parent, name, module: ROOT_MODULE, vis, generics: Generics::default(), span, sig: SigData::Empty, native_linkage: None }
     }
 }
 
@@ -131,7 +140,7 @@ impl Defs {
     /// generic parameters' spans (check/prog_shift.rs moves them).
     pub fn for_each_span(&mut self, f: &mut dyn FnMut(&mut Span)) {
         for (_, d) in &mut self.data {
-            let DefData { kind: _, parent: _, name: _, module: _, vis: _, generics, span, sig: _ } = d;
+            let DefData { generics, span, .. } = d;
             f(span);
             generics.params.iter_mut().for_each(|p| f(&mut p.span));
         }
@@ -168,6 +177,14 @@ impl Defs {
 
     /// Records one user Adt def and its session-local index, in both directions.
     pub fn insert_adt(&mut self, def: DefId, local: AdtId, data: DefData) {
+        self.register_adt_shape(def, local);
+        self.insert(def, data);
+    }
+
+    /// Registers only the session-local shape bridge. Independent native
+    /// providers validate all pending shapes before publishing any definition
+    /// payload with `insert`; this method does not create `DefData`.
+    pub fn register_adt_shape(&mut self, def: DefId, local: AdtId) {
         spec::wrote(spec::tab::DEF_ADT_LOCALS, &def);
         self.adt_locals.insert(def, local);
         let i = local.0 as usize;
@@ -176,7 +193,6 @@ impl Defs {
         }
         spec::wrote(spec::tab::DEF_ADT_DEFS, &i);
         self.adt_defs[i] = def;
-        self.insert(def, data);
     }
 
     /// The record of a def, if this crate defines it.

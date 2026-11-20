@@ -1,0 +1,31 @@
+2026-11-18T13:40:06.6553321Z ##[group]Run "$RUNNER_TEMP/build-mixed-toolchain" "$RUNNER_TEMP/lustr-regression-source" --current-sdk "$RUNNER_TEMP/lustr-tinycc/install" "$RUNNER_TEMP/lustr-regression-baseline" --release
+2026-11-18T13:40:06.6554706Z [36;1m"$RUNNER_TEMP/build-mixed-toolchain" "$RUNNER_TEMP/lustr-regression-source" --current-sdk "$RUNNER_TEMP/lustr-tinycc/install" "$RUNNER_TEMP/lustr-regression-baseline" --release[0m
+2026-11-18T13:40:06.6574814Z shell: /usr/bin/bash -e {0}
+2026-11-18T13:40:06.6575077Z env:
+2026-11-18T13:40:06.6575292Z   RUSTUP_TOOLCHAIN: nightly-2026-11-09
+2026-11-18T13:40:06.6575576Z   CARGO_BUILD_JOBS: 2
+2026-11-18T13:40:06.6575987Z   GIT_ALTERNATE_OBJECT_DIRECTORIES: /home/runner/work/_temp/lustr-pristine-source/.git/objects
+2026-11-18T13:40:06.6576447Z ##[endgroup]
+2026-11-18T13:40:06.6810534Z source-revision: exit status: 0
+2026-11-18T13:40:06.6901290Z sdk-version: exit status: 0
+2026-11-18T13:40:07.1604999Z guard-build: exit status: 0
+2026-11-18T13:40:08.1751724Z source-identity: exit status: 0
+2026-11-18T13:47:00.5147675Z native-build: exit status: 0
+2026-11-18T13:47:09.2973877Z entry-build: exit status: 0
+2026-11-18T13:47:10.1914133Z cargo-entry-build: exit status: 0
+2026-11-18T13:54:11.0225706Z native-library-build: exit status: 0
+2026-11-18T13:54:11.1824794Z hash-native-library: exit status: 0
+2026-11-18T13:54:11.1902818Z seal-native-sources: exit status: 0
+2026-11-18T13:54:25.8377739Z mixed-build: exit status: 0
+2026-11-18T13:54:25.8432206Z hash-lustr: exit status: 0
+2026-11-18T13:54:25.8491841Z hash-rustc-full: exit status: 0
+2026-11-18T13:54:25.8544324Z hash-lust: exit status: 0
+2026-11-18T13:54:25.9433724Z hash-lust-core: exit status: 0
+2026-11-18T13:54:25.9469294Z hash-cargo-lustr: exit status: 0
+2026-11-18T13:54:26.3581331Z 
+2026-11-18T13:54:26.3582253Z thread 'main' (5072) panicked at tools/build-mixed-toolchain.rs:55:5:
+2026-11-18T13:54:26.3583875Z preverify-selection-tools: error: Unrecognized option: 'lustr-prime-selection-tools'
+2026-11-18T13:54:26.3584450Z 
+2026-11-18T13:54:26.3584474Z 
+2026-11-18T13:54:26.3584851Z note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+2026-11-18T13:54:26.3600570Z ##[error]Process completed with exit code 101.

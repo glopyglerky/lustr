@@ -88,5 +88,5 @@ possible Rust program. No current artifact is qualified as the full replacement.
 
 Current source conflicts and retained fixes are listed in the
 [design checkpoint](design.md) and [disposition record](retained-work-disposition.md).
-The [implementation cleanup](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/exclusive-coverage-cleanup.md) records removed
+The [implementation cleanup](exclusive-coverage-cleanup.md) records removed
 routes and verification separately from the unfinished full-compiler work.

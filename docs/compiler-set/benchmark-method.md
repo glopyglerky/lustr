@@ -5,11 +5,22 @@
 neither selects a compiler automatically nor installs or changes defaults.
 Wrapping unchanged Cargo does not itself accelerate compilation.
 
-Build with the campaign's explicitly selected coordinator and produced compiler:
+This guide describes independent measurement machinery, not an alternative
+Lustr compiler entry. Use the [current performance assessment](current-performance-assessment.md)
+for new speed claims: both near-stock and overall claims use paired total elapsed
+costs. The geometric summaries described below remain diagnostic or historical
+fields, never a replacement for that assessment. Stock Rust commands are
+independent baselines or bootstrap tools; they cannot supply missing product
+coverage. Retired coordinator/full-SDK routes are not current benchmark lanes.
+
+Build this independent measurement tool with the campaign's pinned bootstrap
+SDK. The specification supplies the compiler lanes; building the measurement
+tool does not select them:
 
 ```text
-<toolchain>/bin/lustr --bluefe-root <toolchain> build --locked \
-  --manifest-path crates/lustr-bench/Cargo.toml --target-dir <build-output> -j 2
+RUSTC=<sdk>/bin/rustc <sdk>/bin/cargo build --locked \
+  --manifest-path crates/lustr-bench/Cargo.toml --bin lustr-bench \
+  --target-dir <build-output> -j 2
 <build-output>/debug/lustr-bench <spec.json> <new-absolute-report-directory>
 ```
 
@@ -36,6 +47,7 @@ interpolation, or lossy decoding is involved. File path fields use UTF-8 paths.
 | Spec field | Type and meaning |
 | --- | --- |
 | `schema` | Integer `1`. |
+| `native_state` | Historical `owned-lustr-mixed-v1` report field. Preserve it when replaying original reports. The generic runner rejects it for new acquisition because it requires the retired mixed package. The [historical coordinator campaign](coordinator-performance.md) retains its source-bound state and receipt semantics. |
 | `source` | Absolute canonical frozen source directory outside canonical repositories. |
 | `repository`, `revision` | Public upstream URL and pinned revision or complete fixture identity; declarations retained with content hashes. The runner does not fetch or authenticate revisions. |
 | `package`, `root_crate` | Package label and actual rustc `--crate-name` root name. |
@@ -57,7 +69,7 @@ interpolation, or lossy decoding is involved. File path fields use UTF-8 paths.
 | --- | --- |
 | `name` | Unique nonempty ASCII alphanumeric/hyphen label. |
 | `env` | Explicit allowlisted environment map. `CARGO`, `RUSTC`, `RUSTDOC` must name hash-pinned tools. Set a positive `CARGO_BUILD_JOBS` within the runner's available CPU affinity. `CARGO_TARGET_DIR` is runner-owned. |
-| `tools` | Array of `{path, sha256, version_args}`; absolute executable path, expected SHA256, array of OS arguments for its version probe. Include coordinator, Cargo, rustc, rustdoc, wrappers and any direct gate executable. |
+| `tools` | Array of `{path, sha256, version_args}`; absolute executable path, expected SHA256, array of OS arguments for its version probe. Include each executed compiler entry, Cargo, rustc, rustdoc, wrapper and direct gate executable. |
 | `command` | Timed `{argv, expected_exit:0}`. Full argv includes absolute executable. |
 | `selection` | Untimed command returning full `cargo metadata --format-version 1 --locked` JSON with a non-null resolve graph. Use identical feature selection. |
 | `evidence` | Untimed verbose Cargo command forcing the root compiler to run; stdout/stderr retained. |
@@ -77,14 +89,16 @@ semantic environment must agree across lanes. Compiler/tool paths and scheduler
 choices may differ. Cargo operation and all arguments after its subcommand must
 match exactly between lanes for measurement, metadata and evidence. Thus package,
 features, target and profile CLI differences are rejected rather than hidden.
-An option like coordinator `--frontend-jobs N` belongs before the Cargo subcommand.
+Historical coordinator options remain part of their recorded argv. They are not
+current Lustr compilation settings or permission to restore that coordinator.
 
-The operation parser recognizes `rustc` explicitly and skips selector option
-values. `rustc --profile check` is a metadata-checking operation; the word
+The operation parser recognizes `rustc` explicitly and skips admitted Cargo
+global-option values. `rustc --profile check` is a metadata-checking operation; the word
 `check` in that profile value never hides preceding package or feature flags
 from lane comparison. Primed checking requires observed metadata-only emission.
-When a lane requests frontend jobs, its actual root compiler command must show
-that same count. Planning commands and unsupported prefixes are rejected.
+Planning commands and retired coordinator prefixes are rejected. Historical
+frontend-job selectors do not become current compiler options by appearing in
+an old benchmark specification.
 
 Before any build/evidence command, resolved Cargo metadata must report both
 `target_directory` and `build_directory` inside the newly owned lane directory.
@@ -108,18 +122,14 @@ unexpected success or wrong failure cannot satisfy a rejection gate. Include
 this helper's binary hash among the recorded tools. These gates are bounded
 conformance checks, not proofs of arbitrary program equivalence.
 
-For an explicit coordinator/backend route, use
-`tests-via <absolute-lustr> --bluefe-root <absolute-root> --engine <auto|rustc|cranelift> test <Cargo arguments>`.
-All three `CARGO`, `RUSTC` and `RUSTDOC` selectors must exactly match that root's
-`bin` paths. The helper refuses a mismatch before execution and forwards the
-remaining Cargo argument vector unchanged. It records the child status and raw
-streams, then emits the same test comparison JSON as the direct-Cargo mode.
-Include the coordinator's executable hash and the matching backend as a hashed
-external input. The [route-binding statement and native checks](proofs/routed-test-gates.md)
-describe the scope. A requested engine still needs actual compiler-command and
-backend-load evidence; caller profiles/configuration retain their normal effect.
-This permits scoped Cranelift test gates without granting the runner arbitrary
-CLI `--config` overrides or adding Cargo profile backend environment overrides.
+The former coordinator/backend test route is historical and `tests-via` is
+refused before launching its child. The generic runner also refuses retired
+engine selectors. Its
+[route-binding record](proofs/routed-test-gates.md) preserves the original
+invocation proof and bounded tests. New product qualification must invoke the
+current exclusive native entry and verify its actual outputs and ownership.
+Direct Cargo is appropriate only for explicitly identified independent oracle,
+bootstrap or measurement-tool checks; its success is not Lustr coverage.
 
 | Scenario | What it measures |
 | --- | --- |
@@ -261,8 +271,8 @@ portable placeholders rather than private host paths.
 ## Small-fixture validation and campaign handoff
 
 The opt-in integration test copies the public in-tree `fixtures/tiny` to its own
-output snapshot, runs eight paired root checks with the same produced BlueFe in
-both lanes, executes tests, validates runtime/unwind with one destructor call and
+output snapshot, runs eight paired root checks with the same explicit SDK in
+both independent Cargo lanes, executes tests, validates runtime/unwind with one destructor call and
 expected E0502 rejection, and checks no-overwrite and retained failure behavior.
 It also refuses unequal features hidden before `--profile check`, refuses shared
 intermediates before compilation, and refuses an unrelated compiler diagnostic,
@@ -271,17 +281,30 @@ diagnostic qualification retains a report with null summaries and no timed sampl
 These timings validate the runner;
 they provide no claim about compiler acceleration. Unit tests cover numerical
 known cases, ties/nulls, symmetry, bounded intervals, deterministic bootstrap and
-invalid inputs. Run only with the parent-supplied produced toolchain:
+invalid inputs. The original invocation used the retired coordinator package;
+its [exact recipe](https://github.com/glopyglerky/lustr/blob/ea26fe16636d390763257a19c19df3db992cdbcb/docs/compiler-set/benchmark-method.md#small-fixture-validation-and-campaign-handoff)
+remains historical. It must not be used to restore a product compiler route.
+Use the explicitly pinned bootstrap Cargo/SDK for independent measurement-tool
+controls and bind their actual source and tool identities. Such controls execute
+no candidate Lustr compiler unless that candidate is separately specified.
+
+The current tiny controls are explicitly ignored in an ordinary test run.
+Select them deliberately with the new SDK input; a selected control with missing
+inputs fails instead of returning a successful skip:
 
 ```text
-LUSTR_BENCH_TEST_BLUEFE_ROOT=<toolchain> \
-LUSTR_BENCH_TEST_OUTPUT=<new-test-output> \
-<toolchain>/bin/lustr --bluefe-root <toolchain> test --locked \
-  --manifest-path crates/lustr-bench/Cargo.toml --target-dir <build-output> -j 2
+LUSTR_BENCH_TEST_SDK=<absolute-pinned-sdk> \
+LUSTR_BENCH_TEST_OUTPUT=<new-absolute-output> \
+RUSTC=<absolute-pinned-sdk>/bin/rustc \
+<absolute-pinned-sdk>/bin/cargo test --locked --offline \
+  --manifest-path crates/lustr-bench/Cargo.toml --test tiny \
+  --target-dir <build-output> -- --ignored --test-threads=1
 ```
 
-Set `LUSTR_BENCH_TEST_STOCK_CARGO` to an absolute second Cargo executable to
-run the additional real-version metadata regression. Both lanes use the same
+For the additional real-version metadata regression, explicitly select the
+ignored `metadata` test target and supply `LUSTR_BENCH_TEST_SDK`,
+`LUSTR_BENCH_TEST_OUTPUT` and `LUSTR_BENCH_TEST_STOCK_CARGO`, an absolute second
+Cargo executable. Both lanes use the same
 explicit produced Rust compiler. The test accepts the observed unset optional
 hint, then adds a real non-null hint and requires a failed report with null
 summaries and no timed samples. Its fixture timings validate machinery only.

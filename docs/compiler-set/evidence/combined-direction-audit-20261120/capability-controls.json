@@ -1,0 +1,23 @@
+{
+  "command": [
+    "python3",
+    "tools/test-capability-results.py",
+    "-v"
+  ],
+  "cwd": "<CHECKOUT>",
+  "explicit_environment": {},
+  "expected_exit": 0,
+  "exit_code": 0,
+  "duration_seconds": 0.5066893100738525,
+  "expected_result_observed": true,
+  "stdout": {
+    "path": "capability-controls.stdout",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stderr": {
+    "path": "capability-controls.stderr",
+    "bytes": 3481,
+    "sha256": "08cf6eae4ae3f90bd21d2fed98c4bf3089bfc0a59b9f3d1e3d47452b0c0f7833"
+  }
+}

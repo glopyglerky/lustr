@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "standard_library_unicode": [
+    18,
+    0,
+    0
+  ],
+  "compiler_identifier_unicode": [
+    17,
+    0,
+    0
+  ],
+  "compiler_normalization_unicode": [
+    17,
+    0,
+    0
+  ],
+  "compiler_dependencies": {
+    "unicode-ident": {
+      "version": "1.0.24",
+      "crate_sha256": "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
+    },
+    "unicode-normalization": {
+      "version": "0.1.25",
+      "crate_sha256": "5fd4f6878c9cb28d874b009da9e8d183b5abc80117c40bbd187a1fde336be6e8",
+      "upstream_vcs_commit": "5a69b3bafb625caccdec7871a42bed0d9a6604d1"
+    },
+    "tinyvec": {
+      "version": "1.10.0",
+      "crate_sha256": "bfa5fdc3bce6191a1dbc8c02d5c8bffcf557bafa17c124c5264a458f1b0613fa",
+      "upstream_vcs_commit": "3c613ad020738e6fb49e207ff51d38e403bb98ed"
+    },
+    "tinyvec_macros": {
+      "version": "0.1.1",
+      "crate_sha256": "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20",
+      "upstream_vcs_commit": "860c23a09d91c8b9203134a81de7888b7191d5f2"
+    }
+  },
+  "upstream_cargo_lock_sha256": "080fd4f801bd66eac0f2e1ec5de21ccd845ec75063922d35efe7a0203e46fcca",
+  "generator": "compiler/native/tools/gen_unicode_semantics.rs",
+  "generation_entry": "compiler/native/scripts/gen-unicode.sh",
+  "independent_data_verifier": "compiler/native/tools/verify_unicode_semantics.rs",
+  "native_runtime_verifier": "tools/qualify-native-unicode.py",
+  "license": "compiler/native/LICENSE-UNICODE",
+  "generated_and_retained_data": {
+    "compiler/native/src/unicode_data.rs": "19692251b2b66785911239bb96896a1fea64f5e1643b6e850896b6eb1fa05df3",
+    "compiler/native/src/runtime/unicode_table.h": "3ed00af6ecc047de68b800ded7006ae8eef3fd68364101cfa61a7574b51bf6e5",
+    "compiler/native/src/runtime/case_tables.h": "8388d8bf830301c51b814b450ab2018f58a2c10f7831069ceb1efc4beb22282a",
+    "compiler/native/src/runtime/escape_table.h": "243c2081962b704de8779e80339795765aabbff89508392a91ee359c79a7aa54",
+    "compiler/native/src/xid_table.rs": "77ab11c1239e3c6d66abb629baad403ed48ca95a7ea1e99c3407ab95d83fceda",
+    "compiler/native/LICENSE-UNICODE": "f5062c9a188d81dfe66b56db4182dcf9e4b17c0d9b0d311a8e20b3a1b075c443"
+  },
+  "notes": [
+    "The standard library and compiler dependencies deliberately use different Unicode versions, matching the declared Rust source.",
+    "XID/NFC table entries are unchanged; their header now names the exact compiler dependencies.",
+    "Generation requires the pinned SDK. Compiler builds use checked-in standard-library data and exact locked upstream normalization source; they do not read host Unicode semantics."
+  ],
+  "native_identifier_normalization": {
+    "implementation": "The declared Rust compiler dependency unicode-normalization; is_nfc_quick and UnicodeNormalization::nfc",
+    "upstream_entry": "https://github.com/rust-lang/rust/blob/5b7b37aefcb5b2fba3c2392bc9065b9e4602d494/compiler/rustc_parse/src/lexer/mod.rs",
+    "dependencies": [
+      "unicode-normalization",
+      "tinyvec",
+      "tinyvec_macros"
+    ],
+    "lockfiles": [
+      "compiler/native/Cargo.lock",
+      "crates/lustr-native-core/Cargo.lock"
+    ],
+    "licenses": "compiler/native/licenses/identifier-normalization",
+    "source_spans": "Original byte positions are retained. Ident and Lifetime tokens carry canonical names and an explicit raw marker.",
+    "literal_bytes": "String, raw string, character and macro literal contents do not undergo identifier normalization.",
+    "upstream_sources": {
+      "compiler/rustc_parse/src/lexer/mod.rs": "a4544945c1beae414bc684e017bdcb0eb817cc2318316adddc72920a02a18421",
+      "compiler/rustc_ast_pretty/src/pprust/state.rs": "5dec2aac97fcf576138e6b8c3579bd4e5b91fb1e9323a469166b566789041076",
+      "compiler/rustc_span/src/symbol.rs": "d570a196be56ba01b1ac141fc5a9ab581b044ae6960dafff9ffb394a47ba640f"
+    }
+  }
+}

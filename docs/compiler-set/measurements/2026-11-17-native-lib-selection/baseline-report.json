@@ -1,0 +1,1095 @@
+{
+  "schema": "lustr.native-library-selection.v1",
+  "identities": {
+    "lust-version": "lust 0.2.0 (build 183aa0dd)\n",
+    "rustc-version": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+    "cargo-version": "cargo 1.102.0-nightly (c07ac2c4d 2026-11-06)\n",
+    "lust_sha256": "803740ec4f16cde99c1890de0900c4765ec073ebb3cc6696212cf6fd799a388e",
+    "lust_core_sha256": "dec8514e8383b6bac15db1ad310ae50bc004340c5b3fb32fd4f8746c867c9d12",
+    "rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "cargo_sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+    "source_revision": "dec0ce2e3a68b82cac16eae238fc51b16e534e5e",
+    "native_source_tree": "0c196f3b8f0803cbf3985cc2f4be687129831e26",
+    "runner_sha256": "1f4da031f1dab2af90439592bff0507b5aa5f982833b5af04cc9ee2e37185b1f"
+  },
+  "environment": {
+    "LUST_NO_DAEMON": "1",
+    "LUST_NO_CACHE": "1",
+    "RUSTC": "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc",
+    "CARGO": "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+    "PATH": "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin:/opt/codex/runtimes/codex-primary-runtime/dependencies/bin/override:/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin:/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin:/opt/codex/runtimes/codex-primary-runtime/dependencies/bin:/opt/codex/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/agent/.local/bin:/opt/codex/runtimes/codex-primary-runtime/dependencies/bin/fallback"
+  },
+  "cases": [
+    {
+      "case": "hyphen-valid",
+      "expect_success": true,
+      "inputs_sha256": {
+        "Cargo.toml": "6d2532fd93b78207dd887208d75c81003cb2bfc50b9c50e8ef5ec840fec49616",
+        "src/lib.rs": "1959139a9a62c58cf4dcd48c60756bf3670f5e879bf781305b85e137bdd9afb7"
+      },
+      "source": "pub fn answer()->u32{42}\n",
+      "bin_source": null,
+      "cargo_exit_code": 0,
+      "native_exit_code": 2
+    },
+    {
+      "case": "hyphen-invalid",
+      "expect_success": false,
+      "inputs_sha256": {
+        "Cargo.lock": "286a6f3c9ce46523862bca234c434323f9c80b74fd8bab2f25b465ca73c11330",
+        "Cargo.toml": "6d2532fd93b78207dd887208d75c81003cb2bfc50b9c50e8ef5ec840fec49616",
+        "src/lib.rs": "62c3314c05539769590f45308cb4c0a775bb2ccdd3de73e63c9e2fa4289d7c05"
+      },
+      "source": "pub fn answer()->u32{\"wrong library\"}\n",
+      "bin_source": null,
+      "cargo_exit_code": 101,
+      "native_exit_code": 2
+    },
+    {
+      "case": "hyphen-recovered",
+      "expect_success": true,
+      "inputs_sha256": {
+        "Cargo.lock": "286a6f3c9ce46523862bca234c434323f9c80b74fd8bab2f25b465ca73c11330",
+        "Cargo.toml": "6d2532fd93b78207dd887208d75c81003cb2bfc50b9c50e8ef5ec840fec49616",
+        "src/lib.rs": "1959139a9a62c58cf4dcd48c60756bf3670f5e879bf781305b85e137bdd9afb7"
+      },
+      "source": "pub fn answer()->u32{42}\n",
+      "bin_source": null,
+      "cargo_exit_code": 0,
+      "native_exit_code": 2
+    },
+    {
+      "case": "renamed-valid",
+      "expect_success": true,
+      "inputs_sha256": {
+        "Cargo.toml": "526967df2fc41d87d3bb8cba04dfed18fc727b926d9979932440f330e3a5500e",
+        "src/lib.rs": "1959139a9a62c58cf4dcd48c60756bf3670f5e879bf781305b85e137bdd9afb7",
+        "src/main.rs": "81969c0d24148e8a32b257e52b80b9aa9a80ec4db8ec45a8d63b29cf55e33952"
+      },
+      "source": "pub fn answer()->u32{42}\n",
+      "bin_source": "fn main(){let _:u32=\"wrong bin\";}\n",
+      "cargo_exit_code": 0,
+      "native_exit_code": 1
+    },
+    {
+      "case": "renamed-invalid",
+      "expect_success": false,
+      "inputs_sha256": {
+        "Cargo.lock": "6a790c6f9a689a409de6a0ba97736841629ae6bd509c59faa9f2db4aca91bcfc",
+        "Cargo.toml": "526967df2fc41d87d3bb8cba04dfed18fc727b926d9979932440f330e3a5500e",
+        "src/lib.rs": "62c3314c05539769590f45308cb4c0a775bb2ccdd3de73e63c9e2fa4289d7c05",
+        "src/main.rs": "8c72b9bc757c23481081603700cbf2095db1f8807450a1f0ba315ad967859ac8"
+      },
+      "source": "pub fn answer()->u32{\"wrong library\"}\n",
+      "bin_source": "fn main(){}\n",
+      "cargo_exit_code": 101,
+      "native_exit_code": 1
+    },
+    {
+      "case": "renamed-recovered",
+      "expect_success": true,
+      "inputs_sha256": {
+        "Cargo.lock": "6a790c6f9a689a409de6a0ba97736841629ae6bd509c59faa9f2db4aca91bcfc",
+        "Cargo.toml": "526967df2fc41d87d3bb8cba04dfed18fc727b926d9979932440f330e3a5500e",
+        "src/lib.rs": "1959139a9a62c58cf4dcd48c60756bf3670f5e879bf781305b85e137bdd9afb7",
+        "src/main.rs": "81969c0d24148e8a32b257e52b80b9aa9a80ec4db8ec45a8d63b29cf55e33952"
+      },
+      "source": "pub fn answer()->u32{42}\n",
+      "bin_source": "fn main(){let _:u32=\"wrong bin\";}\n",
+      "cargo_exit_code": 0,
+      "native_exit_code": 1
+    },
+    {
+      "case": "rlib-valid",
+      "expect_success": true,
+      "inputs_sha256": {
+        "Cargo.toml": "d96d16fe025e4e5ee87707a9040f14fdbcd2a50a5c574a2e4545fe399744a0b1",
+        "src/lib.rs": "1959139a9a62c58cf4dcd48c60756bf3670f5e879bf781305b85e137bdd9afb7"
+      },
+      "source": "pub fn answer()->u32{42}\n",
+      "bin_source": null,
+      "cargo_exit_code": 0,
+      "native_exit_code": 0
+    },
+    {
+      "case": "rlib-invalid",
+      "expect_success": false,
+      "inputs_sha256": {
+        "Cargo.lock": "4848251e4ba6a1a14be99f3ba7abb754b6e7fb16b237fa6c712420fbcec5edbb",
+        "Cargo.toml": "d96d16fe025e4e5ee87707a9040f14fdbcd2a50a5c574a2e4545fe399744a0b1",
+        "src/lib.rs": "62c3314c05539769590f45308cb4c0a775bb2ccdd3de73e63c9e2fa4289d7c05"
+      },
+      "source": "pub fn answer()->u32{\"wrong library\"}\n",
+      "bin_source": null,
+      "cargo_exit_code": 101,
+      "native_exit_code": 1
+    },
+    {
+      "case": "rlib-recovered",
+      "expect_success": true,
+      "inputs_sha256": {
+        "Cargo.lock": "4848251e4ba6a1a14be99f3ba7abb754b6e7fb16b237fa6c712420fbcec5edbb",
+        "Cargo.toml": "d96d16fe025e4e5ee87707a9040f14fdbcd2a50a5c574a2e4545fe399744a0b1",
+        "src/lib.rs": "1959139a9a62c58cf4dcd48c60756bf3670f5e879bf781305b85e137bdd9afb7"
+      },
+      "source": "pub fn answer()->u32{42}\n",
+      "bin_source": null,
+      "cargo_exit_code": 0,
+      "native_exit_code": 0
+    },
+    {
+      "case": "staticlib-valid",
+      "expect_success": true,
+      "inputs_sha256": {
+        "Cargo.toml": "706a559a390b7ebd196a478ad02599dc841d10b05c74b624792839aa60d4310f",
+        "src/lib.rs": "1959139a9a62c58cf4dcd48c60756bf3670f5e879bf781305b85e137bdd9afb7"
+      },
+      "source": "pub fn answer()->u32{42}\n",
+      "bin_source": null,
+      "cargo_exit_code": 0,
+      "native_exit_code": 0
+    },
+    {
+      "case": "staticlib-invalid",
+      "expect_success": false,
+      "inputs_sha256": {
+        "Cargo.lock": "85bb4394189b516de5b852e269f3066ceebcc711e591661575e3b1bda932c273",
+        "Cargo.toml": "706a559a390b7ebd196a478ad02599dc841d10b05c74b624792839aa60d4310f",
+        "src/lib.rs": "62c3314c05539769590f45308cb4c0a775bb2ccdd3de73e63c9e2fa4289d7c05"
+      },
+      "source": "pub fn answer()->u32{\"wrong library\"}\n",
+      "bin_source": null,
+      "cargo_exit_code": 101,
+      "native_exit_code": 1
+    },
+    {
+      "case": "staticlib-recovered",
+      "expect_success": true,
+      "inputs_sha256": {
+        "Cargo.lock": "85bb4394189b516de5b852e269f3066ceebcc711e591661575e3b1bda932c273",
+        "Cargo.toml": "706a559a390b7ebd196a478ad02599dc841d10b05c74b624792839aa60d4310f",
+        "src/lib.rs": "1959139a9a62c58cf4dcd48c60756bf3670f5e879bf781305b85e137bdd9afb7"
+      },
+      "source": "pub fn answer()->u32{42}\n",
+      "bin_source": null,
+      "cargo_exit_code": 0,
+      "native_exit_code": 0
+    },
+    {
+      "case": "cdylib-valid",
+      "expect_success": true,
+      "inputs_sha256": {
+        "Cargo.toml": "db73ebb1672ac427e2b5000022f88b6aa785d2fdf374775b0e43f2b5127f3e02",
+        "src/lib.rs": "1959139a9a62c58cf4dcd48c60756bf3670f5e879bf781305b85e137bdd9afb7"
+      },
+      "source": "pub fn answer()->u32{42}\n",
+      "bin_source": null,
+      "cargo_exit_code": 0,
+      "native_exit_code": 0
+    },
+    {
+      "case": "cdylib-invalid",
+      "expect_success": false,
+      "inputs_sha256": {
+        "Cargo.lock": "b6b32af7add85060ae78d34967a14c08455fbb5f01c66e957ba2ca74afbaed22",
+        "Cargo.toml": "db73ebb1672ac427e2b5000022f88b6aa785d2fdf374775b0e43f2b5127f3e02",
+        "src/lib.rs": "62c3314c05539769590f45308cb4c0a775bb2ccdd3de73e63c9e2fa4289d7c05"
+      },
+      "source": "pub fn answer()->u32{\"wrong library\"}\n",
+      "bin_source": null,
+      "cargo_exit_code": 101,
+      "native_exit_code": 1
+    },
+    {
+      "case": "cdylib-recovered",
+      "expect_success": true,
+      "inputs_sha256": {
+        "Cargo.lock": "b6b32af7add85060ae78d34967a14c08455fbb5f01c66e957ba2ca74afbaed22",
+        "Cargo.toml": "db73ebb1672ac427e2b5000022f88b6aa785d2fdf374775b0e43f2b5127f3e02",
+        "src/lib.rs": "1959139a9a62c58cf4dcd48c60756bf3670f5e879bf781305b85e137bdd9afb7"
+      },
+      "source": "pub fn answer()->u32{42}\n",
+      "bin_source": null,
+      "cargo_exit_code": 0,
+      "native_exit_code": 0
+    },
+    {
+      "case": "dylib-valid",
+      "expect_success": true,
+      "inputs_sha256": {
+        "Cargo.toml": "956a2e57d3dd11551b51856292146c1b6884edb90ae5bfb2dd09fde0c0a45704",
+        "src/lib.rs": "1959139a9a62c58cf4dcd48c60756bf3670f5e879bf781305b85e137bdd9afb7"
+      },
+      "source": "pub fn answer()->u32{42}\n",
+      "bin_source": null,
+      "cargo_exit_code": 0,
+      "native_exit_code": 0
+    },
+    {
+      "case": "dylib-invalid",
+      "expect_success": false,
+      "inputs_sha256": {
+        "Cargo.lock": "159038f0efb7f3a88f53a276b5112daf7ed7a463345ed9299f3074d2d2bcf4ff",
+        "Cargo.toml": "956a2e57d3dd11551b51856292146c1b6884edb90ae5bfb2dd09fde0c0a45704",
+        "src/lib.rs": "62c3314c05539769590f45308cb4c0a775bb2ccdd3de73e63c9e2fa4289d7c05"
+      },
+      "source": "pub fn answer()->u32{\"wrong library\"}\n",
+      "bin_source": null,
+      "cargo_exit_code": 101,
+      "native_exit_code": 1
+    },
+    {
+      "case": "dylib-recovered",
+      "expect_success": true,
+      "inputs_sha256": {
+        "Cargo.lock": "159038f0efb7f3a88f53a276b5112daf7ed7a463345ed9299f3074d2d2bcf4ff",
+        "Cargo.toml": "956a2e57d3dd11551b51856292146c1b6884edb90ae5bfb2dd09fde0c0a45704",
+        "src/lib.rs": "1959139a9a62c58cf4dcd48c60756bf3670f5e879bf781305b85e137bdd9afb7"
+      },
+      "source": "pub fn answer()->u32{42}\n",
+      "bin_source": null,
+      "cargo_exit_code": 0,
+      "native_exit_code": 0
+    },
+    {
+      "case": "proc-macro-valid",
+      "expect_success": true,
+      "inputs_sha256": {
+        "Cargo.toml": "25eeb0f02527aa5b3a992d4a5626ff96e3b16741d833672d3a948c32ae7e83ee",
+        "src/lib.rs": "be52d75f99cb52a7bb5950c78a3eecb8cf6035a385b5a4483101789a59a7c6d8"
+      },
+      "source": "fn answer()->u32{42}\n",
+      "bin_source": null,
+      "cargo_exit_code": 0,
+      "native_exit_code": 0
+    },
+    {
+      "case": "proc-macro-invalid",
+      "expect_success": false,
+      "inputs_sha256": {
+        "Cargo.lock": "8c85240fefb56ea81e123a38692e9ff1d8990af1ccae509d6016ff97dd09f4b8",
+        "Cargo.toml": "25eeb0f02527aa5b3a992d4a5626ff96e3b16741d833672d3a948c32ae7e83ee",
+        "src/lib.rs": "18ecf945ba816387331d44ac4031369815960100a8bb82682330c3bc0dbc7ac9"
+      },
+      "source": "fn answer()->u32{\"wrong library\"}\n",
+      "bin_source": null,
+      "cargo_exit_code": 101,
+      "native_exit_code": 1
+    },
+    {
+      "case": "proc-macro-recovered",
+      "expect_success": true,
+      "inputs_sha256": {
+        "Cargo.lock": "8c85240fefb56ea81e123a38692e9ff1d8990af1ccae509d6016ff97dd09f4b8",
+        "Cargo.toml": "25eeb0f02527aa5b3a992d4a5626ff96e3b16741d833672d3a948c32ae7e83ee",
+        "src/lib.rs": "be52d75f99cb52a7bb5950c78a3eecb8cf6035a385b5a4483101789a59a7c6d8"
+      },
+      "source": "fn answer()->u32{42}\n",
+      "bin_source": null,
+      "cargo_exit_code": 0,
+      "native_exit_code": 0
+    },
+    {
+      "case": "bin-only",
+      "expect_success": false,
+      "inputs_sha256": {
+        "Cargo.toml": "a2d24fda80d7b6a7d6d6074a4dfc2b71b6cd66dca736dbacf4417047f65a208e",
+        "src/main.rs": "8c72b9bc757c23481081603700cbf2095db1f8807450a1f0ba315ad967859ac8"
+      },
+      "source": "fn main(){}\n",
+      "cargo_exit_code": 101,
+      "native_exit_code": 0
+    }
+  ],
+  "commands": [
+    {
+      "label": "lust-version",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "--version"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "59fad3872563227260eb5603d3184b408855f0460da39b547f3ad6fc46d0a3f4",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "rustc-version",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc",
+        "-vV"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "bbc9b960fe50c84bca20f3109950bcb87c48b6d1ce61d2fc2fc1519aaba2daaa",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "cargo-version",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "--version"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "9d5d03890ac5a271a2e04f2c45096fcee6ee530c39acbbf0c3812bba3fe29212",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "hyphen-metadata",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "metadata",
+        "--offline",
+        "--no-deps",
+        "--format-version",
+        "1",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/hyphen/Cargo.toml"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "37d62608b51e438e75a5228be89da8f3e82cee768febeff7fe7d3e39ac23e8fe",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "hyphen-valid-cargo",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--offline",
+        "--lib",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/hyphen/Cargo.toml"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "9e9005967b4240468fcbee9a1dd29f35878fa1d5c5d83b0668670e00a90b41f6"
+    },
+    {
+      "label": "hyphen-valid-native",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "check",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/hyphen/src/lib.rs",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/hyphen/Cargo.toml",
+        "--lib",
+        "--offline"
+      ],
+      "exit_code": 2,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "8f5359f579c0f3a93bac35e427073dc181ffe8c7edaaa67d015dc38ab2243234"
+    },
+    {
+      "label": "hyphen-invalid-cargo",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--offline",
+        "--lib",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/hyphen/Cargo.toml"
+      ],
+      "exit_code": 101,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "898ab98763c69972929d015672b6b71bf023e0d53e26512989a5ed6ef38327a0"
+    },
+    {
+      "label": "hyphen-invalid-native",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "check",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/hyphen/src/lib.rs",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/hyphen/Cargo.toml",
+        "--lib",
+        "--offline"
+      ],
+      "exit_code": 2,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "8f5359f579c0f3a93bac35e427073dc181ffe8c7edaaa67d015dc38ab2243234"
+    },
+    {
+      "label": "hyphen-recovered-cargo",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--offline",
+        "--lib",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/hyphen/Cargo.toml"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "f5f9910c2eac9bc9803ef58bb78ad43681da2b8ea7bbb73e16579870ce600736"
+    },
+    {
+      "label": "hyphen-recovered-native",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "check",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/hyphen/src/lib.rs",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/hyphen/Cargo.toml",
+        "--lib",
+        "--offline"
+      ],
+      "exit_code": 2,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "8f5359f579c0f3a93bac35e427073dc181ffe8c7edaaa67d015dc38ab2243234"
+    },
+    {
+      "label": "renamed-metadata",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "metadata",
+        "--offline",
+        "--no-deps",
+        "--format-version",
+        "1",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/renamed/Cargo.toml"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "3ebba447c0fb867d21d2ca15bc586a54e4dee3a5c5be022e7caef4ea892bbf01",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "renamed-valid-cargo",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--offline",
+        "--lib",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/renamed/Cargo.toml"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "1e46a3ff79803348236d0573f08187d253e46c89027dcc09af95724a1e3ab222"
+    },
+    {
+      "label": "renamed-valid-native",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "check",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/renamed/src/lib.rs",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/renamed/Cargo.toml",
+        "--lib",
+        "--offline"
+      ],
+      "exit_code": 1,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "8cb5a778732c55cb631f0d04734161bf01fc61d27bf9f8cd2f9ff4f73cdb3cc7"
+    },
+    {
+      "label": "renamed-invalid-cargo",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--offline",
+        "--lib",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/renamed/Cargo.toml"
+      ],
+      "exit_code": 101,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "eceb8c4c8f2104daa1340a614cf44936c9f618ca2119cdb34cfdf1c7f6ff5919"
+    },
+    {
+      "label": "renamed-invalid-native",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "check",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/renamed/src/lib.rs",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/renamed/Cargo.toml",
+        "--lib",
+        "--offline"
+      ],
+      "exit_code": 1,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "f2dc9f96ec7301b8113e5eea7d4ff5991ad808bfd98d7b831e5a7ce8b5e4b631"
+    },
+    {
+      "label": "renamed-recovered-cargo",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--offline",
+        "--lib",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/renamed/Cargo.toml"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "1fd24f99da6a9bef032a0915f4fa3a6a0bce59accc82176b615ed3c4c93e4389"
+    },
+    {
+      "label": "renamed-recovered-native",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "check",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/renamed/src/lib.rs",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/renamed/Cargo.toml",
+        "--lib",
+        "--offline"
+      ],
+      "exit_code": 1,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "8cb5a778732c55cb631f0d04734161bf01fc61d27bf9f8cd2f9ff4f73cdb3cc7"
+    },
+    {
+      "label": "rlib-metadata",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "metadata",
+        "--offline",
+        "--no-deps",
+        "--format-version",
+        "1",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/rlib/Cargo.toml"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "80a52677fc01ca8b7db4f2339cf2aedb40379b3034fc9591ce29f0320dd845d3",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "rlib-valid-cargo",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--offline",
+        "--lib",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/rlib/Cargo.toml"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "367aa86a0e61dfea7ac8bab7b0eddc09a9cc9e98c6a2e6561d3082969a4236e1"
+    },
+    {
+      "label": "rlib-valid-native",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "check",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/rlib/src/lib.rs",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/rlib/Cargo.toml",
+        "--lib",
+        "--offline"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "rlib-invalid-cargo",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--offline",
+        "--lib",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/rlib/Cargo.toml"
+      ],
+      "exit_code": 101,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "da45eea05e764fe58b4f08ac98ff54a9f00e7df31dcf637da9155741ab34b9ef"
+    },
+    {
+      "label": "rlib-invalid-native",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "check",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/rlib/src/lib.rs",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/rlib/Cargo.toml",
+        "--lib",
+        "--offline"
+      ],
+      "exit_code": 1,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "71c4d0bf9b562994ff3faaeb7590f2fd91f30f05ea981f1ee548f5d9adcad4b5"
+    },
+    {
+      "label": "rlib-recovered-cargo",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--offline",
+        "--lib",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/rlib/Cargo.toml"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "367aa86a0e61dfea7ac8bab7b0eddc09a9cc9e98c6a2e6561d3082969a4236e1"
+    },
+    {
+      "label": "rlib-recovered-native",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "check",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/rlib/src/lib.rs",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/rlib/Cargo.toml",
+        "--lib",
+        "--offline"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "staticlib-metadata",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "metadata",
+        "--offline",
+        "--no-deps",
+        "--format-version",
+        "1",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/staticlib/Cargo.toml"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "109354a19ac44e150723128de68095ef20c25376e6196fa82ff363904b76f4d0",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "staticlib-valid-cargo",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--offline",
+        "--lib",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/staticlib/Cargo.toml"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "c94892bcc2dd2a49dc82d04a09fb56ca1f6e71c867fc78116ea284df85bbee7f"
+    },
+    {
+      "label": "staticlib-valid-native",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "check",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/staticlib/src/lib.rs",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/staticlib/Cargo.toml",
+        "--lib",
+        "--offline"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "staticlib-invalid-cargo",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--offline",
+        "--lib",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/staticlib/Cargo.toml"
+      ],
+      "exit_code": 101,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "2d3a5f55772bc00f5da1e9d6f6649524ce1de417b2924306e12e7f28fa8d6844"
+    },
+    {
+      "label": "staticlib-invalid-native",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "check",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/staticlib/src/lib.rs",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/staticlib/Cargo.toml",
+        "--lib",
+        "--offline"
+      ],
+      "exit_code": 1,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "b7178b27e9099a0ff968345c87406a4a4f6116e4304756a2f18fdb748b9a49a4"
+    },
+    {
+      "label": "staticlib-recovered-cargo",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--offline",
+        "--lib",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/staticlib/Cargo.toml"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "5b41b7460a01024d235202a74b682f00e8355d28e01340e5d7a1f639bd8811b8"
+    },
+    {
+      "label": "staticlib-recovered-native",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "check",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/staticlib/src/lib.rs",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/staticlib/Cargo.toml",
+        "--lib",
+        "--offline"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "cdylib-metadata",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "metadata",
+        "--offline",
+        "--no-deps",
+        "--format-version",
+        "1",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/cdylib/Cargo.toml"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "b2e25c56a6d8e62b2f03fd2fdcc2fd3a49d61f6989079ddfb36033cb132caae4",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "cdylib-valid-cargo",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--offline",
+        "--lib",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/cdylib/Cargo.toml"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "88812e40aff1b00a02d070144a88d3b618971d4c5bcb3bba19218ac321853102"
+    },
+    {
+      "label": "cdylib-valid-native",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "check",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/cdylib/src/lib.rs",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/cdylib/Cargo.toml",
+        "--lib",
+        "--offline"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "cdylib-invalid-cargo",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--offline",
+        "--lib",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/cdylib/Cargo.toml"
+      ],
+      "exit_code": 101,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "6ea633cdeb92674ae4493fee4aa3683311b02f0af80de4929eb53fd2d6a00826"
+    },
+    {
+      "label": "cdylib-invalid-native",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "check",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/cdylib/src/lib.rs",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/cdylib/Cargo.toml",
+        "--lib",
+        "--offline"
+      ],
+      "exit_code": 1,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "717ee6c79e2cd12b7395fda6e33ac8fb24e60537139947e5a914b82fd4f5dd8f"
+    },
+    {
+      "label": "cdylib-recovered-cargo",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--offline",
+        "--lib",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/cdylib/Cargo.toml"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "88812e40aff1b00a02d070144a88d3b618971d4c5bcb3bba19218ac321853102"
+    },
+    {
+      "label": "cdylib-recovered-native",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "check",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/cdylib/src/lib.rs",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/cdylib/Cargo.toml",
+        "--lib",
+        "--offline"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "dylib-metadata",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "metadata",
+        "--offline",
+        "--no-deps",
+        "--format-version",
+        "1",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/dylib/Cargo.toml"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "811744f6d79082bb38a35115927db49e81fdcc879c0c20a560ee78e2364eff6d",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "dylib-valid-cargo",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--offline",
+        "--lib",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/dylib/Cargo.toml"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "f86cde085a146fd7640b6190b41e56605e0480057ad457659bd6895227c64d91"
+    },
+    {
+      "label": "dylib-valid-native",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "check",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/dylib/src/lib.rs",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/dylib/Cargo.toml",
+        "--lib",
+        "--offline"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "dylib-invalid-cargo",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--offline",
+        "--lib",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/dylib/Cargo.toml"
+      ],
+      "exit_code": 101,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "adb0ebf06790a42d9c41c3d24ca0abac688d37ce96dbaf0c1ec73954d1494ad8"
+    },
+    {
+      "label": "dylib-invalid-native",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "check",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/dylib/src/lib.rs",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/dylib/Cargo.toml",
+        "--lib",
+        "--offline"
+      ],
+      "exit_code": 1,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "253dc562a29fd5677c3eca334c6c86d91066cadedd874cb96605084552a8b22a"
+    },
+    {
+      "label": "dylib-recovered-cargo",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--offline",
+        "--lib",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/dylib/Cargo.toml"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "05eb3b0ac1147d83c8ca6ba52ba6d213a847e9eba2c1c2017bc0533b5ebe4dc8"
+    },
+    {
+      "label": "dylib-recovered-native",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "check",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/dylib/src/lib.rs",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/dylib/Cargo.toml",
+        "--lib",
+        "--offline"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "proc-macro-metadata",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "metadata",
+        "--offline",
+        "--no-deps",
+        "--format-version",
+        "1",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/proc-macro/Cargo.toml"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "d91370719c3c8e7d54eb04c3b98252877fd709f87de0f5b93947bcfa2fc25b7a",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "proc-macro-valid-cargo",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--offline",
+        "--lib",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/proc-macro/Cargo.toml"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "3af2e05679f2b750a2a099ae045b86628114488cf3b4a0dbb3b51fbb902f2d3f"
+    },
+    {
+      "label": "proc-macro-valid-native",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "check",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/proc-macro/src/lib.rs",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/proc-macro/Cargo.toml",
+        "--lib",
+        "--offline"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "proc-macro-invalid-cargo",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--offline",
+        "--lib",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/proc-macro/Cargo.toml"
+      ],
+      "exit_code": 101,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "f3e8cbb2e5f0722a135e7ca7135f56d4373e13176aa39055bb6fc43288362be3"
+    },
+    {
+      "label": "proc-macro-invalid-native",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "check",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/proc-macro/src/lib.rs",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/proc-macro/Cargo.toml",
+        "--lib",
+        "--offline"
+      ],
+      "exit_code": 1,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "ed94c16d4f2c376200242f725f939b38da1f3556c80e3d162f41722c3ebee6e9"
+    },
+    {
+      "label": "proc-macro-recovered-cargo",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--offline",
+        "--lib",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/proc-macro/Cargo.toml"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "93920d833294d041abdb62bfc7ea67763b95e918fb34d22b65dbff895e0c2a7b"
+    },
+    {
+      "label": "proc-macro-recovered-native",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "check",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/proc-macro/src/lib.rs",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/proc-macro/Cargo.toml",
+        "--lib",
+        "--offline"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "bin-only-cargo",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--offline",
+        "--lib",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/bin-only/Cargo.toml"
+      ],
+      "exit_code": 101,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "8b189dda734c3aeb010d0aae982224f74237e10f27bf0b944afcb7fae6c6a757"
+    },
+    {
+      "label": "bin-only-native",
+      "command": [
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-package/bin/lust",
+        "check",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/bin-only/src/main.rs",
+        "--manifest-path",
+        "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-baseline-all-kinds/bin-only/Cargo.toml",
+        "--lib",
+        "--offline"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "failures": [
+    "hyphen-valid: native selected the wrong target or failed outside semantic checking",
+    "hyphen-invalid: native selected the wrong target or failed outside semantic checking",
+    "hyphen-recovered: native selected the wrong target or failed outside semantic checking",
+    "renamed-valid: native selected the wrong target or failed outside semantic checking",
+    "renamed-recovered: native selected the wrong target or failed outside semantic checking",
+    "bin-only: --lib must fail target selection instead of substituting a binary"
+  ],
+  "passed": false
+}

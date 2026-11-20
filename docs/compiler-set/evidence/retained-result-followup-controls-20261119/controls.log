@@ -1,0 +1,132 @@
+test_accept_reject_recovery_runs_through_original_fixture_loader (__main__.FixtureLifecycleControls.test_accept_reject_recovery_runs_through_original_fixture_loader) ... <control-work>/source/compiler/native/scripts/test-daemon-scenarios.py:209: ResourceWarning: unclosed file <_io.TextIOWrapper name='<donor-work>/daemon.log' mode='r' encoding='UTF-8'>
+  text = open(log_path).read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_removed_target_and_recovery_use_unchanged_donor_overlay (__main__.FixtureLifecycleControls.test_removed_target_and_recovery_use_unchanged_donor_overlay) ... <control-work>/source/compiler/native/scripts/test-daemon-scenarios.py:129: ResourceWarning: unclosed file <_io.TextIOWrapper name='<control-work>/source/compiler/native/tests/daemon/cargo01_bin_discovery/cargo' mode='r' encoding='UTF-8'>
+  cmd = open(os.path.join(srcdir, "cargo")).read().split()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<control-work>/source/compiler/native/scripts/test-daemon-scenarios.py:99: ResourceWarning: unclosed file <_io.TextIOWrapper name='<control-work>/source/compiler/native/tests/daemon/cargo01_bin_discovery/v2/.scen' mode='r' encoding='UTF-8'>
+  directives = open(src).read().splitlines()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<control-work>/source/compiler/native/scripts/test-daemon-scenarios.py:99: ResourceWarning: unclosed file <_io.TextIOWrapper name='<control-work>/source/compiler/native/tests/daemon/cargo01_bin_discovery/v3/.scen' mode='r' encoding='UTF-8'>
+  directives = open(src).read().splitlines()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<control-work>/source/compiler/native/scripts/test-daemon-scenarios.py:99: ResourceWarning: unclosed file <_io.TextIOWrapper name='<control-work>/source/compiler/native/tests/daemon/cargo01_bin_discovery/v4/.scen' mode='r' encoding='UTF-8'>
+  directives = open(src).read().splitlines()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<control-work>/source/compiler/native/scripts/test-daemon-scenarios.py:99: ResourceWarning: unclosed file <_io.TextIOWrapper name='<control-work>/source/compiler/native/tests/daemon/cargo01_bin_discovery/v5/.scen' mode='r' encoding='UTF-8'>
+  directives = open(src).read().splitlines()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<control-work>/source/compiler/native/scripts/test-daemon-scenarios.py:99: ResourceWarning: unclosed file <_io.TextIOWrapper name='<control-work>/source/compiler/native/tests/daemon/cargo01_bin_discovery/v6/.scen' mode='r' encoding='UTF-8'>
+  directives = open(src).read().splitlines()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<control-work>/source/compiler/native/scripts/test-daemon-scenarios.py:99: ResourceWarning: unclosed file <_io.TextIOWrapper name='<control-work>/source/compiler/native/tests/daemon/cargo01_bin_discovery/v7/.scen' mode='r' encoding='UTF-8'>
+  directives = open(src).read().splitlines()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<control-work>/source/compiler/native/scripts/test-daemon-scenarios.py:209: ResourceWarning: unclosed file <_io.TextIOWrapper name='<donor-work>/daemon.log' mode='r' encoding='UTF-8'>
+  text = open(log_path).read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_removed_target_cannot_hide_stale_recovery (__main__.FixtureLifecycleControls.test_removed_target_cannot_hide_stale_recovery) ... <control-work>/source/compiler/native/scripts/test-daemon-scenarios.py:129: ResourceWarning: unclosed file <_io.TextIOWrapper name='<control-work>/source/compiler/native/tests/daemon/cargo01_bin_discovery/cargo' mode='r' encoding='UTF-8'>
+  cmd = open(os.path.join(srcdir, "cargo")).read().split()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<control-work>/source/compiler/native/scripts/test-daemon-scenarios.py:99: ResourceWarning: unclosed file <_io.TextIOWrapper name='<control-work>/source/compiler/native/tests/daemon/cargo01_bin_discovery/v2/.scen' mode='r' encoding='UTF-8'>
+  directives = open(src).read().splitlines()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<control-work>/source/compiler/native/scripts/test-daemon-scenarios.py:99: ResourceWarning: unclosed file <_io.TextIOWrapper name='<control-work>/source/compiler/native/tests/daemon/cargo01_bin_discovery/v3/.scen' mode='r' encoding='UTF-8'>
+  directives = open(src).read().splitlines()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<control-work>/source/compiler/native/scripts/test-daemon-scenarios.py:99: ResourceWarning: unclosed file <_io.TextIOWrapper name='<control-work>/source/compiler/native/tests/daemon/cargo01_bin_discovery/v4/.scen' mode='r' encoding='UTF-8'>
+  directives = open(src).read().splitlines()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<control-work>/source/compiler/native/scripts/test-daemon-scenarios.py:99: ResourceWarning: unclosed file <_io.TextIOWrapper name='<control-work>/source/compiler/native/tests/daemon/cargo01_bin_discovery/v5/.scen' mode='r' encoding='UTF-8'>
+  directives = open(src).read().splitlines()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<control-work>/source/compiler/native/scripts/test-daemon-scenarios.py:99: ResourceWarning: unclosed file <_io.TextIOWrapper name='<control-work>/source/compiler/native/tests/daemon/cargo01_bin_discovery/v6/.scen' mode='r' encoding='UTF-8'>
+  directives = open(src).read().splitlines()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<control-work>/source/compiler/native/scripts/test-daemon-scenarios.py:99: ResourceWarning: unclosed file <_io.TextIOWrapper name='<control-work>/source/compiler/native/tests/daemon/cargo01_bin_discovery/v7/.scen' mode='r' encoding='UTF-8'>
+  directives = open(src).read().splitlines()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<control-work>/source/compiler/native/scripts/test-daemon-scenarios.py:209: ResourceWarning: unclosed file <_io.TextIOWrapper name='<donor-work>/daemon.log' mode='r' encoding='UTF-8'>
+  text = open(log_path).read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_stale_recovered_output_fails_original_fixture_lifecycle (__main__.FixtureLifecycleControls.test_stale_recovered_output_fails_original_fixture_lifecycle) ... <control-work>/source/compiler/native/scripts/test-daemon-scenarios.py:209: ResourceWarning: unclosed file <_io.TextIOWrapper name='<donor-work>/daemon.log' mode='r' encoding='UTF-8'>
+  text = open(log_path).read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_changed_or_missing_fixtures_change_identity (__main__.InventoryControls.test_changed_or_missing_fixtures_change_identity) ... ok
+test_current_fixtures_match_pinned_donor_inventory (__main__.InventoryControls.test_current_fixtures_match_pinned_donor_inventory) ... ok
+test_git_tree_matches_git_on_real_fixture (__main__.InventoryControls.test_git_tree_matches_git_on_real_fixture) ... ok
+test_cargo_source_errors_cannot_hide_compiler_or_build_crashes (__main__.OracleDiagnosticControls.test_cargo_source_errors_cannot_hide_compiler_or_build_crashes) ... ok
+test_dependency_artifact_errors_cannot_use_the_imports_source_span (__main__.OracleDiagnosticControls.test_dependency_artifact_errors_cannot_use_the_imports_source_span) ... ok
+test_external_missing_and_definition_only_call_sites_fail (__main__.OracleDiagnosticControls.test_external_missing_and_definition_only_call_sites_fail) ... ok
+test_good_source_error_cannot_hide_unanchored_fatal_error (__main__.OracleDiagnosticControls.test_good_source_error_cannot_hide_unanchored_fatal_error) ... ok
+test_malformed_diagnostics_and_internal_status_fail (__main__.OracleDiagnosticControls.test_malformed_diagnostics_and_internal_status_fail) ... ok
+test_mismatched_and_ambiguous_dependency_artifacts_are_operational_errors (__main__.OracleDiagnosticControls.test_mismatched_and_ambiguous_dependency_artifacts_are_operational_errors) ... ok
+test_missing_sdk_diagnostic_is_not_a_source_error_despite_its_span (__main__.OracleDiagnosticControls.test_missing_sdk_diagnostic_is_not_a_source_error_despite_its_span) ... ok
+test_missing_target_is_not_a_generic_cargo_failure_allowance (__main__.OracleDiagnosticControls.test_missing_target_is_not_a_generic_cargo_failure_allowance) ... ok
+test_notes_and_secondary_source_spans_cannot_anchor_errors (__main__.OracleDiagnosticControls.test_notes_and_secondary_source_spans_cannot_anchor_errors) ... ok
+test_primary_macro_call_sites_can_anchor_nested_expansions (__main__.OracleDiagnosticControls.test_primary_macro_call_sites_can_anchor_nested_expansions) ... ok
+test_rust_and_cargo_require_source_bound_structured_errors (__main__.OracleDiagnosticControls.test_rust_and_cargo_require_source_bound_structured_errors) ... ok
+test_codegen_source_errors_are_not_lost_by_metadata_only_checks (__main__.PinnedOracleControls.test_codegen_source_errors_are_not_lost_by_metadata_only_checks) ... ok
+test_linker_and_sdk_failures_remain_failures (__main__.PinnedOracleControls.test_linker_and_sdk_failures_remain_failures) ... ok
+test_missing_and_invalid_dependency_artifacts_are_not_source_errors (__main__.PinnedOracleControls.test_missing_and_invalid_dependency_artifacts_are_not_source_errors) ... ok
+test_real_cargo_rejects_removed_target_then_restores_it (__main__.PinnedOracleControls.test_real_cargo_rejects_removed_target_then_restores_it) ... <review-source>/compiler/native/scripts/test-daemon-scenarios.py:99: ResourceWarning: unclosed file <_io.TextIOWrapper name='<review-source>/compiler/native/tests/daemon/cargo01_bin_discovery/v2/.scen' mode='r' encoding='UTF-8'>
+  directives = open(src).read().splitlines()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<review-source>/compiler/native/scripts/test-daemon-scenarios.py:99: ResourceWarning: unclosed file <_io.TextIOWrapper name='<review-source>/compiler/native/tests/daemon/cargo01_bin_discovery/v3/.scen' mode='r' encoding='UTF-8'>
+  directives = open(src).read().splitlines()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<review-source>/compiler/native/scripts/test-daemon-scenarios.py:99: ResourceWarning: unclosed file <_io.TextIOWrapper name='<review-source>/compiler/native/tests/daemon/cargo01_bin_discovery/v4/.scen' mode='r' encoding='UTF-8'>
+  directives = open(src).read().splitlines()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<review-source>/compiler/native/scripts/test-daemon-scenarios.py:99: ResourceWarning: unclosed file <_io.TextIOWrapper name='<review-source>/compiler/native/tests/daemon/cargo01_bin_discovery/v5/.scen' mode='r' encoding='UTF-8'>
+  directives = open(src).read().splitlines()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<review-source>/compiler/native/scripts/test-daemon-scenarios.py:99: ResourceWarning: unclosed file <_io.TextIOWrapper name='<review-source>/compiler/native/tests/daemon/cargo01_bin_discovery/v6/.scen' mode='r' encoding='UTF-8'>
+  directives = open(src).read().splitlines()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<review-source>/compiler/native/scripts/test-daemon-scenarios.py:99: ResourceWarning: unclosed file <_io.TextIOWrapper name='<review-source>/compiler/native/tests/daemon/cargo01_bin_discovery/v7/.scen' mode='r' encoding='UTF-8'>
+  directives = open(src).read().splitlines()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_real_std_macro_errors_resolve_through_primary_call_sites (__main__.PinnedOracleControls.test_real_std_macro_errors_resolve_through_primary_call_sites) ... ok
+test_build_then_one_execution_and_bound_artifact (__main__.ProcessControls.test_build_then_one_execution_and_bound_artifact) ... ok
+test_compile_failure_never_executes_or_retries (__main__.ProcessControls.test_compile_failure_never_executes_or_retries) ... ok
+test_daemon_exit_during_request_invalidates_trace (__main__.ProcessControls.test_daemon_exit_during_request_invalidates_trace) ... ok
+test_removed_target_expectation_cannot_cover_a_present_source (__main__.ProcessControls.test_removed_target_expectation_cannot_cover_a_present_source) ... ok
+test_stopped_original_daemon_cannot_be_replaced (__main__.ProcessControls.test_stopped_original_daemon_cannot_be_replaced) ... ok
+test_success_without_owner_trace_fails (__main__.ProcessControls.test_success_without_owner_trace_fails) ... ok
+test_unreviewed_precompilation_refusal_reports_actual_diagnostic (__main__.ProcessControls.test_unreviewed_precompilation_refusal_reports_actual_diagnostic) ... ok
+test_zero_exit_without_artifact_fails (__main__.ProcessControls.test_zero_exit_without_artifact_fails) ... ok
+test_both_checks_cannot_crash_as_a_reject (__main__.VerdictControls.test_both_checks_cannot_crash_as_a_reject) ... ok
+test_both_valid_rejections_are_a_regression (__main__.VerdictControls.test_both_valid_rejections_are_a_regression) ... ok
+test_check_failure_cannot_hide_behind_successful_build (__main__.VerdictControls.test_check_failure_cannot_hide_behind_successful_build) ... ok
+test_check_only_version_still_requires_cold_artifact (__main__.VerdictControls.test_check_only_version_still_requires_cold_artifact) ... ok
+test_exact_complete_result (__main__.VerdictControls.test_exact_complete_result) ... ok
+test_exit_is_compared (__main__.VerdictControls.test_exit_is_compared) ... ok
+test_expected_program_signal_does_not_allow_compiler_signal (__main__.VerdictControls.test_expected_program_signal_does_not_allow_compiler_signal) ... ok
+test_invalid_oracle_cannot_be_an_internal_error (__main__.VerdictControls.test_invalid_oracle_cannot_be_an_internal_error) ... ok
+test_invalid_program_requires_actual_native_rejections (__main__.VerdictControls.test_invalid_program_requires_actual_native_rejections) ... ok
+test_linker_failure_cannot_classify_valid_source_as_invalid (__main__.VerdictControls.test_linker_failure_cannot_classify_valid_source_as_invalid) ... ok
+test_missing_artifact (__main__.VerdictControls.test_missing_artifact) ... ok
+test_missing_build (__main__.VerdictControls.test_missing_build) ... ok
+test_missing_check (__main__.VerdictControls.test_missing_check) ... ok
+test_missing_oracle_runtime (__main__.VerdictControls.test_missing_oracle_runtime) ... ok
+test_missing_runtime (__main__.VerdictControls.test_missing_runtime) ... ok
+test_only_run_specific_thread_id_is_normalized (__main__.VerdictControls.test_only_run_specific_thread_id_is_normalized) ... ok
+test_ordinary_stderr_numbers_are_never_normalized (__main__.VerdictControls.test_ordinary_stderr_numbers_are_never_normalized) ... ok
+test_program_nonzero_exit_is_compared_as_execution (__main__.VerdictControls.test_program_nonzero_exit_is_compared_as_execution) ... ok
+test_removed_target_requires_both_pinned_cargo_rejections (__main__.VerdictControls.test_removed_target_requires_both_pinned_cargo_rejections) ... ok
+test_reviewed_removed_target_has_a_distinct_verdict (__main__.VerdictControls.test_reviewed_removed_target_has_a_distinct_verdict) ... ok
+test_stderr_is_compared (__main__.VerdictControls.test_stderr_is_compared) ... ok
+test_stdout_is_compared (__main__.VerdictControls.test_stdout_is_compared) ... ok
+test_timeout_cannot_be_a_reject (__main__.VerdictControls.test_timeout_cannot_be_a_reject) ... ok
+test_unexpected_signal_is_not_success (__main__.VerdictControls.test_unexpected_signal_is_not_success) ... ok
+
+----------------------------------------------------------------------
+Ran 55 tests in 5.906s
+
+OK

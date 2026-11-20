@@ -398,6 +398,9 @@ pub struct Program {
     /// The crate this program was collected as: session-local id and stable hash.
     pub krate: CrateId,
     pub stable_crate: StableCrateHash,
+    /// Imported metadata's actual stable identities, indexed by this shared
+    /// request's crate handles. Nominal reads must not hash a session index.
+    pub imported_crates: HashMap<CrateId, StableCrateHash>,
     /// Each function's stable identity, in `fns` order (the `Vec<DefId>` side
     /// table of docs/ARCH.md section 1.7). User Adts carry their `DefId` in
     /// `defs` and in the type store, where `TyKind::Adt(DefId, ArgsId)` reads it.
@@ -552,6 +555,25 @@ impl Program {
     #[allow(dead_code)] // See `def_id`.
     pub fn local_def(&self, hash: DefPathHash) -> Option<LocalDefId> {
         self.def_by_hash.get(&hash).copied()
+    }
+    /// An installed independent native signature, never a local FnInfo.
+    pub fn native_fn(&self, def: DefId) -> Option<(&[Ty], Ty, &crate::ty::defs::NativeLinkage)> {
+        if def.krate == self.krate { return None; }
+        let data = self.defs.get(def)?;
+        let link = data.native_linkage.as_deref()?;
+        if data.kind != DefsKind::ForeignFn || link.id.hash != def.hash { return None; }
+        match &data.sig {
+            SigData::Fn { params, ret } => Some((params, *ret, link)),
+            _ => None,
+        }
+    }
+    /// A genuine independent function binding before signature installation.
+    /// No cross-crate const body is represented by the provider interface.
+    pub fn native_import(&self, name: Sym) -> Option<DefId> {
+        let tables = self.resolved.as_ref()?;
+        let def = *tables.flat[crate::resolve::imports::ns_index(crate::driver::graph::Namespace::Value)].get(&name)?;
+        (def.krate != self.krate && def.krate != BUILTIN_CRATE
+            && tables.def_info.get(&def)?.kind == crate::resolve::imports::ResKind::Fn).then_some(def)
     }
     /// A user Adt's stable identity, as carried by `TyKind::Adt(DefId, ArgsId)`.
     #[allow(dead_code)] // First production readers are generic collect and mono; the store form is used now.
@@ -2113,7 +2135,7 @@ pub(crate) fn disc_want_ty(interner: &Interner, attrs: &[ast::Attr]) -> IntTy {
         let ast::AttrInput::List(_, trees) = &attr.input else { continue };
         for t in trees {
             let TokenTree::Token(t) = t else { continue };
-            let Tok::Ident(name) = t.tok else { continue };
+            let Tok::Ident(name, _) = t.tok else { continue };
             let it = match interner.get(name) {
                 "u8" => IntTy::U8,
                 "u16" => IntTy::U16,
@@ -3190,7 +3212,7 @@ fn parse_repr(interner: &Interner, attrs: &[ast::Attr]) -> Result<crate::ty::lay
             match &trees[i] {
                 TokenTree::Token(t) if t.tok == Tok::Comma => i += 1,
                 TokenTree::Token(t) => {
-                    let Tok::Ident(name) = t.tok else {
+                    let Tok::Ident(name, _) = t.tok else {
                         return Err(bad(".."));
                     };
                     let text = interner.get(name);
@@ -3450,11 +3472,59 @@ pub fn collect_reuse(
     reuse: &mut crate::driver::gen_reuse::GenReuse,
     std_routes: &[&'static crate::ty::lang::StdFnDef],
 ) -> Result<Program, Vec<Diag>> {
+    collect_with_definitions_inner(ast, interner, known, crate_ids, walk_instances, def_order, resolved, reuse, std_routes, None)
+}
+
+/// Fresh collection with independent definitions installed before any
+/// initializer or body check. Imported state never shares an unkeyed reuse
+/// cache. The provider owns the external signature and generation contract.
+#[allow(clippy::too_many_arguments)]
+pub fn collect_with_definitions(
+    ast: Arc<Ast>, interner: Arc<Interner>, known: Arc<Known>, crate_ids: CrateIds,
+    walk_instances: bool, def_order: &mut DefOrder,
+    resolved: Option<Arc<crate::resolve::imports::ResolvedTables>>,
+    definitions: &mut dyn FnMut(&mut Program) -> Result<(), Vec<Diag>>,
+) -> Result<Program, Vec<Diag>> {
+    collect_with_definitions_inner(ast, interner, known, crate_ids, walk_instances, def_order, resolved, &mut Default::default(), &[], Some(definitions))
+}
+
+/// The ordinary driver collection with authoritative imported definitions.
+/// The caller owns the import generation and excludes unkeyed retained reuse.
+#[allow(clippy::too_many_arguments)]
+pub fn collect_reuse_with_definitions(
+    ast: Arc<Ast>, interner: Arc<Interner>, known: Arc<Known>, crate_ids: CrateIds,
+    walk_instances: bool, def_order: &mut DefOrder,
+    resolved: Option<Arc<crate::resolve::imports::ResolvedTables>>,
+    reuse: &mut crate::driver::gen_reuse::GenReuse,
+    std_routes: &[&'static crate::ty::lang::StdFnDef],
+    definitions: &mut dyn FnMut(&mut Program) -> Result<(), Vec<Diag>>,
+) -> Result<Program, Vec<Diag>> {
+    collect_with_definitions_inner(ast, interner, known, crate_ids, walk_instances, def_order, resolved, reuse, std_routes, Some(definitions))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn collect_with_definitions_inner(
+    ast: Arc<Ast>, interner: Arc<Interner>, known: Arc<Known>, crate_ids: CrateIds,
+    walk_instances: bool, def_order: &mut DefOrder,
+    resolved: Option<Arc<crate::resolve::imports::ResolvedTables>>,
+    reuse: &mut crate::driver::gen_reuse::GenReuse,
+    std_routes: &[&'static crate::ty::lang::StdFnDef],
+    definitions: Option<&mut dyn FnMut(&mut Program) -> Result<(), Vec<Diag>>>,
+) -> Result<Program, Vec<Diag>> {
+    let sync_layout = resolved.as_ref()
+        .and_then(|tables| tables.crate_cfgs.get(&crate::ty::defs::ROOT_MODULE))
+        .and_then(|(env, _)| env.pairs.iter().find(|(name, _)| name == "target_os"))
+        .map(|(_, os)| crate::ty::layout::SyncLayout::for_os(os))
+        .unwrap_or_else(crate::ty::layout::SyncLayout::host);
+    let mut tys = reuse.type_pool.take()
+        .and_then(|pool| pool.take(crate_ids.local, crate_ids.stable, &interner, sync_layout))
+        .unwrap_or_else(GlobalTys::new);
+    tys.sync_layout = sync_layout;
     let mut p = Program {
         ast: ast.clone(),
         interner: interner.clone(),
         known: known.clone(),
-        tys: reuse.type_pool.take().and_then(|pool| pool.take(crate_ids.local, crate_ids.stable, &interner)).unwrap_or_else(GlobalTys::new),
+        tys,
         defs: Defs::new(),
         adts: Vec::new(),
         fns: Vec::new(),
@@ -3484,6 +3554,7 @@ pub fn collect_reuse(
         main: None,
         krate: crate_ids.local,
         stable_crate: crate_ids.stable,
+        imported_crates: HashMap::default(),
         fn_defs: Vec::new(),
         def_by_hash: Default::default(),
         std_fns: Vec::new(),
@@ -3571,6 +3642,7 @@ pub fn collect_reuse(
     }
     let mut errs = Vec::new();
     let dup = |span: Span, n: &str| Diag::new("L0106", span, format!("`{n}` is defined more than once"), "Rename one of the definitions.");
+    if let Some(definitions) = definitions { definitions(&mut p)?; }
     // Without resolver tables the file has no `use` at all (any `use`
     // routes to the resolver), so a non-prelude std type lust knows by
     // name cannot be in scope (W-STD-A; the resolver checks its paths).
@@ -5266,8 +5338,11 @@ pub fn collect_reuse(
                 // Rustc E0116: no inherent impl on a std type (W-STD-C).
                 if trait_ref.is_none()
                     && let Some(a) = owner
-                    && p.is_std_adt(a)
-                    && !p.std_source_span(imp.span)
+                    && ((p.is_std_adt(a) && !p.std_source_span(imp.span))
+                        // Imported definitions have no local source span.
+                        // Their actual crate identity owns the type; a dummy
+                        // span must never make them local to this impl.
+                        || (p.def_of_adt(a).krate != p.krate && p.def_of_adt(a).krate != BUILTIN_CRATE))
                 {
                     errs.push(Diag::new(
                         "L0616",
@@ -8394,7 +8469,10 @@ impl<'a> crate::ty::consteval::ConstCx<'a> for CollectCx<'a> {
                 // A body const or static of this name shadows any
                 // module fn: the call names no fn here.
                 Some(_) => return CallTarget::Unknown,
-                None => self.p.fn_names.get(&last).copied(),
+                None => {
+                    if self.p.native_import(last).is_some() { return CallTarget::NonConst; }
+                    self.p.fn_names.get(&last).copied()
+                }
             }
         } else if segs.len() == 2 {
             // `Self::f(..)` names the impl type `Self` means here.
@@ -10514,13 +10592,13 @@ impl crate::ty::layout::AdtShapes for UserLayout<'_> {
         // `OnceCell<T>` is std's `UnsafeCell<Option<T>>`: its source
         // fields (the `Option<T>` and a `PhantomData`) with the niche
         // hidden.
-        // `ManuallyDrop<T>` is core's repr(transparent) wrapper over its
-        // `MaybeDangling<T>`, itself repr(transparent) over `T`: the
-        // source form is exact, and `T`'s niche stays visible.
+        // `ManuallyDrop<T>` is the pinned core's repr(transparent) wrapper
+        // directly over `T`: the source form is exact, and `T`'s niche
+        // stays visible.
         if p.std_source_span(adt.span) && !p.is_phantom_adt(id) && !p.is_known_allocator_adt(id) {
             match p.display_path(adt.name).as_str() {
                 "core::cell::OnceCell" => return p.adt_shape(id).map(|s| crate::ty::layout::AdtShape { hide_niche: true, ..s }),
-                "core::mem::ManuallyDrop" | "core::mem::MaybeDangling" => return p.adt_shape(id),
+                "core::mem::ManuallyDrop" => return p.adt_shape(id),
                 _ => return None,
             }
         }

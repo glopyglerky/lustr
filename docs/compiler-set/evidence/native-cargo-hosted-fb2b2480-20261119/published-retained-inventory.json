@@ -1,0 +1,2246 @@
+{
+  "schema": "lustr-retained-scenario-inventory-v1",
+  "upstream_repository": "https://github.com/t3dotgg/lust-lang",
+  "upstream_revision": "240e08d91d4aed0299639f6f11fd522912b248f9",
+  "upstream_scenario_tree": "99c9d290cf722d9d984a6543b2e90dacaf5444b3",
+  "evidence": {
+    "url": "https://github.com/t3dotgg/lust-lang/actions/runs/39780031006/job/119828625752",
+    "run_id": 39780031006,
+    "job_id": 119828625752,
+    "attempt": 1,
+    "target": "x86_64-unknown-linux-gnu",
+    "rust_version": "rustc 1.99.0 (b940084d7 2026-09-28)",
+    "summary": "daemon scenarios: 363/363 ok, 27 unsupported version(s)",
+    "overall_job_conclusion": "failure",
+    "overall_job_failure": "unicode_props_hash sanitized execution timeout after scenario phase",
+    "retrieved_log_sha256": "304b7f9eb364c3c8e50787df2906fda271720e82e57a3421f2f06a07a03fff9b",
+    "log_encoding": "UTF-8 text returned by GitHub log connector, preserved with a final newline"
+  },
+  "interpretation": "Zero-note upstream histories require acceptance whenever the independently pinned Rust oracle accepts. This is a retained-history regression boundary, not complete contextual coverage, runtime-output proof from the old harness, or a production routing table. Counts on unresolved histories are observations, never allowed regression budgets.",
+  "scenario_loader_sha256": "384add9654105496403f15cdd2bf8ad7ff3692a8c47ffa840c3c5229c809b9f4",
+  "scenario_loader_source": "https://github.com/glopyglerky/lustr/blob/5cd40fd313503d4a4fc935ee47ca7c05fce1471a/compiler/native/scripts/test-daemon-scenarios.py",
+  "scenarios": [
+    {
+      "name": "alias01_written_self_edits",
+      "upstream_tree": "6e227a4c4488bcefdc9e4c669e60f6f80c3a8103",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "any01_type_id_edits",
+      "upstream_tree": "c465d84f18b30267cff8c0ef435a5ea68f394046",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "ap01_apit_header_edits",
+      "upstream_tree": "357d1b0ead668ca7e66d43bf20785dfece12a3c3",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "bb01_block_items_body_edits",
+      "upstream_tree": "6d8b08e3df1f597660c2a87e2236b46d202988a5",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "bb02_body_impl_method_edits",
+      "upstream_tree": "9d2bb455dede4be64806857fda02c54be7d84dea",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "bb03_block_item_shape_edits",
+      "upstream_tree": "c9f49944ecc2d984fe2c32d8e56ef4baeffc5aea",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "bb04_block_struct_shadows_module_type",
+      "upstream_tree": "f8f201a858695784020f8921416fb0621a119c13",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "bb05_line_before_nested_items",
+      "upstream_tree": "e7d20ae214488e4cb1319d70482025a5ed71cfb2",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "bb06_nested_fns_not_plain",
+      "upstream_tree": "79c37a2338dbec40fc66607ff4615fb40f90c106",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "bc01_body_const_moves_owner",
+      "upstream_tree": "420286b6550fcd7d3807f4a9cbd4d2ef2291efb6",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "bi01_block_enum_variant_edits",
+      "upstream_tree": "414309ae3b16ee7c184d74949867deff10afdd5e",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "bi02_block_struct_shadows_module",
+      "upstream_tree": "b4e448486bef8b7d0641a279964a4080a30b27cc",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "bi03_body_use_variant_closure",
+      "upstream_tree": "997343ac156c5dffd725814300c498f3d49fc344",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "bi04_block_ctor_edits",
+      "upstream_tree": "a34f27703b3af44172045548a927a750816617a0",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "bi05_block_dup_items",
+      "upstream_tree": "46d53d5fbf423665a2f658a3aa8151582032dc56",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "bi06_block_struct_field_glue",
+      "upstream_tree": "35298853471f7d82ed952a2fd99d5c7d71aabea0",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "bi07_block_alias_edits",
+      "upstream_tree": "e59ad2961c1fd368d6d8e39fb3340fe4f2581759",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "bi08_block_pattern_edits",
+      "upstream_tree": "edea0af2e23c62b75fd9be88aa157a0d76adf4b8",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "bm01_bodies_swap_equal_length",
+      "upstream_tree": "f3d61af080c940ba2c1dc201a35084c14d4de9cc",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cargo01_bin_discovery",
+      "upstream_tree": "bf1f1d13249c737875263fce5a6663e4391d8c4a",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cargo02_lib_discovery",
+      "upstream_tree": "22bac12b55d9c985f316a2c62e5c6bf47cc0accf",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cargo03_build_rs_discovery",
+      "upstream_tree": "59b340bead13ae97c5ff6930b555672af768112f",
+      "status": "unresolved",
+      "historical_unsupported_versions": 2
+    },
+    {
+      "name": "cargo04_features_default",
+      "upstream_tree": "06851ee7980eb055eaa048e1b287ef2fd8c62354",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cargo05_path_dep_manifest",
+      "upstream_tree": "b813be8fd43b2d7140b241625d97d39b83335140",
+      "status": "unresolved",
+      "historical_unsupported_versions": 1
+    },
+    {
+      "name": "cargo06_edition_lints",
+      "upstream_tree": "033b3f80fc4106f4e1add438fa1677b253430454",
+      "status": "unresolved",
+      "historical_unsupported_versions": 3
+    },
+    {
+      "name": "cargo07_profile_dev",
+      "upstream_tree": "c8f23af754c394f96649759d0c70520034d2ffd1",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cargo08_config_env",
+      "upstream_tree": "b28feb6a098ca62815a7ca85d6e64e3ec6dfe852",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cargo09_workspace_members",
+      "upstream_tree": "87f02ca40220a8df65e8ec509b1d9d1b0825b78b",
+      "status": "unresolved",
+      "historical_unsupported_versions": 1
+    },
+    {
+      "name": "cargo10_bs_env_rerun",
+      "upstream_tree": "d119606c6fa9068fed5b3232bf2b03e2b36b939e",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cargo11_env_macro",
+      "upstream_tree": "571fa3ccb366933dcf5bab132a69da4a441f5bf1",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cargo12_dep_bs_env",
+      "upstream_tree": "46f8f3fb74b74faffa9192f59b61bb7783416173",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cb01_const_init_derive_copy",
+      "upstream_tree": "d7900d0d049f30c465446778a885b9b8d365ab5d",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cb02_const_init_header_move",
+      "upstream_tree": "5e9a58ce1995da068656644cc1d85a5a50c6bc51",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cb03_anon_const_header_edit",
+      "upstream_tree": "cba69a322101c745e19334c8ffd66a4f6506dee9",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cb03_const_init_keyed",
+      "upstream_tree": "e6e5db6d116777e7ea5af377b17c872e0fb89b9c",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cb04_anon_const_derive_copy",
+      "upstream_tree": "43857d33cd66d43045810ad2bcdc9d7a630e2817",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cc01_const_chain_fn_reject_revert",
+      "upstream_tree": "ea1ff3f620b42295c7340cf9903febfc2cda7083",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cc02_const_chain4_fn_reject_revert",
+      "upstream_tree": "ba6558be1b836f74c4499f95dd1f5eb2dd974ab4",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cc03_const_chain4_run_only",
+      "upstream_tree": "55b1a207afb0e9ab6a700de1d2097cb0922f9c12",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cc04_const_chain4_checks_then_run",
+      "upstream_tree": "7941060b49f3e7319f0956860cacc442df6b3bf5",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cc05_const_chain_static",
+      "upstream_tree": "882f7ec128ce02ace9814efafbff8c231eed3f54",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cc06_const_chain_assoc",
+      "upstream_tree": "5976ee97e976030dccfb1bc57833d1b4b8f6bfe9",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cc07_const_chain_array_len",
+      "upstream_tree": "5ab250bbc0fcad4f03086466ee2a9d52d8d3303d",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cc08_const_chain_generic",
+      "upstream_tree": "57723f6e7cb162af03ea5c2e0b431775d5799d91",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cc09_const_chain_inner_fn",
+      "upstream_tree": "8d27547a15801d143f89090221aded4a67e989de",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cc10_const_chain_mixed_rejects",
+      "upstream_tree": "c7c66efd0a4853eb1433d7236b7526fced8b7150",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cc11_const_chain_body_uses",
+      "upstream_tree": "c90465388911978b0af1f1284e78f5014a12b754",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cc12_const_chain_fn_body_error",
+      "upstream_tree": "f76270ca2efdfe42f100591008a1bfdf6ea93e08",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cc13_const_chain_reject_same_value",
+      "upstream_tree": "0349978ec16fddd4782418c17076ad99e5e0be37",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cf01_const_fn_generic_reuse",
+      "upstream_tree": "e7a0cdffd32046fa2e37c583a287614e5773acd6",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cg01_glue_display_edit",
+      "upstream_tree": "6836ebae48c4160740b21c872bf752cfe10b8e31",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cg02_glue_display_first_request",
+      "upstream_tree": "f273a4816389773a8b3b620bc11deb66bad7fb74",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "chunk01_body_delete_moves_std_impls",
+      "upstream_tree": "3115ac935d44ed7d9354adc61fe3c68c1b329934",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cr01_const_fn_array_len",
+      "upstream_tree": "698a998c0dbad76baed915c4c3a1793483d8e67c",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cv01_const_fn_value_in_closure",
+      "upstream_tree": "35bf5de752f6d7f22a345bc94557584dab70f41f",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cv02_const_fn_value_in_discovery",
+      "upstream_tree": "280cdf86c05640ba94b26f72e7c9c4c0401832cd",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cyc01_sig_chunk",
+      "upstream_tree": "b5d088f21ee16f0b1e868bdaf5744c7ab74e7e44",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cyc02_sig_resolver",
+      "upstream_tree": "73ae41cd105c14c6b90e66c8de2bdf34913266f2",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cyc03_where_chunk",
+      "upstream_tree": "0463c2d5627cfef0d8d58a2518ba3368ecf21fd5",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cyc04_where_resolver",
+      "upstream_tree": "26b6aa407a77a99ea13a0529c62560606626b428",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cyc05_derive_chunk",
+      "upstream_tree": "7b283e8a69e5bb07d174143676bdd36790552d1c",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cyc06_derive_resolver",
+      "upstream_tree": "51ad252bb631e0593ec67f5a4df2f9745dbd08be",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cyc07_rpit_chunk",
+      "upstream_tree": "4048cf0c71581f7492e2557a4319a93836e4d403",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cyc08_rpit_resolver",
+      "upstream_tree": "03131c3e82a75ce1d60f4552e98b8ef6aa3d83b9",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cyc09_allow_nested_chunk",
+      "upstream_tree": "278d1e760e541bee1d64b55dad4527f6382850fc",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cyc10_trait_chunk",
+      "upstream_tree": "e8d7dd8690da373eacb9c9166b4995a58d72a310",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cyc11_trait_resolver",
+      "upstream_tree": "0c1041f9d3c936c8bd188aca29612a7c41936016",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cyc12_constfn_chunk",
+      "upstream_tree": "a8f3d650bfb08270d478dcecd7e620da788ac6e4",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cyc13_constfn_resolver",
+      "upstream_tree": "e7fd009973f956408422541e722928b0c9fe9f26",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "cyc14_macro_body_resolver",
+      "upstream_tree": "10e37965e1bc1d9b289223c2cb0c3614a512e177",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "deref01_user_deref_edits",
+      "upstream_tree": "6057e419308e6eb695d439c4e0df49dd9cee6faa",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dh01_trait_default_nested_edits",
+      "upstream_tree": "5c5896c986659f7c549c2b1c8adc951e93b8b2bc",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dh02_body_types_removed",
+      "upstream_tree": "9f9e7e7b2bc46ca0d37be9891e680966ab4fa925",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dt01_deep_type_edits",
+      "upstream_tree": "28971c273770687f15fe016bb09214fadfebb33b",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv01_codegen_derive_reads",
+      "upstream_tree": "a68cc614773b74b3392ff391c8b03a8dff955699",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv01_copy_through_tuple_option",
+      "upstream_tree": "7d105bd838b9e2dda8936bf7054943d823381ac9",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv02_clone_through_option_generic",
+      "upstream_tree": "74342e473a8161623e16b3158cbf3179df0fc702",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv03_blanket_debug_partial_eq",
+      "upstream_tree": "9e75f1ca201e0305afabba0f92eea0153e034e6d",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv04_hash_eq_map_key",
+      "upstream_tree": "8fa31558a0cd4f33294911655ffdad94f679498d",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv05_ord_default_generic",
+      "upstream_tree": "d3643ddd747d730814c1488495ba2bea0846913c",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv06_const_pattern_structural",
+      "upstream_tree": "b64b9714b07038f4c97bb7405e237e415e943a0b",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv07_add_derives",
+      "upstream_tree": "07027d3be7b0b9455a52e110e7aff23faa9439a3",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv08_derive_delta_field_users",
+      "upstream_tree": "15c8961ca423bdfb2a3ebcd3d53627f1688a01ac",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv09_derive_delta_written_impl",
+      "upstream_tree": "f81e49a10fbb5f7e34ca4a94d1c7c680bdb704c1",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv10_derive_delta_pending_discovery",
+      "upstream_tree": "37df7efc7e98a363eef8510ce514d8da664627ae",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv11_derive_undo_first_ever",
+      "upstream_tree": "98f90e1a285224cccce65617ca7c6aba1517f942",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv12_derive_template_bodies",
+      "upstream_tree": "cdbf4ee981c9d3252186d7755e47ff8b5ac32efb",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv13_tdefault_derive_default_path",
+      "upstream_tree": "9958ab11fcc0baf775a19a1858dead3b548948db",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv14_tdefault_derive_copy",
+      "upstream_tree": "49ac21eca3df9128885c8c9d198679d776c62ba5",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv15_tdefault_derive_debug",
+      "upstream_tree": "d2cb0139921a6d9821d4454a384b739602089eb3",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv16_tdefault_derive_default_infer",
+      "upstream_tree": "0f0cde425740ddb28e8017476bad1c21df6ac864",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv17_tdefault_header_ret",
+      "upstream_tree": "0ab1d32fd44d69dea85f9f7a316528613a034306",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv18_tdefault_header_param",
+      "upstream_tree": "1d0fb0922f0e4ab93af1884e67ddcf76fc0c64b7",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv19_derive_alias_closure_template",
+      "upstream_tree": "b47332d7e7837186b2fe0c385163fb33822b7ab7",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv20_derive_closure_template_reads",
+      "upstream_tree": "b56842f6f8ebb52f7b91a3bcc4d9d983c0a50c66",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv21_derive_written_projections",
+      "upstream_tree": "7e95693e72f4394533f1ea3006ec3e684dd32ed2",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv21_generic_derive_field_impl_toggle",
+      "upstream_tree": "9e9ce791f5272156f96593e99c1fd83539f4a5bd",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv22_derive_template_reject_keeps",
+      "upstream_tree": "ac1a18460757c683f6aca74770dff957c247b727",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv22_generic_derive_bounds_projection",
+      "upstream_tree": "f239fa6566d9b5e05291aedd9e01e5d82b42967f",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dv23_derive_pending_discovery_reads",
+      "upstream_tree": "fe1988e27dff07ea2100b9bbdf36326eee52dd2e",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dyn01_vtable_edits",
+      "upstream_tree": "ec1ac5f0af411157bee6a422fc7dd4d264b1c992",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dyn02_static_and_supers",
+      "upstream_tree": "a15de5fe0ade4c54d5a389895a334f48d8e11a89",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dyn03_static_bounds",
+      "upstream_tree": "a1c46a7c9a4112de8ad2a7a5a26fbbe901ef0102",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dyn04_body_edit_reuse",
+      "upstream_tree": "b15ba2bf9a14e7c427e516465c304f325f3c00a2",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dyn05_item_edits",
+      "upstream_tree": "3463658b9c8adf2c203ea9ba8398b6d87d0e5dd3",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dyn06_static_supertrait",
+      "upstream_tree": "def0d94f4eed82dc2a687cc777bb506e71dd2e26",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dyn07_method_visibility",
+      "upstream_tree": "9e12f1a559eff1e1f3ca006864daeb28e6622782",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dyn08_fn_vtable_edits",
+      "upstream_tree": "faa3ac95e54ba82d61357aaa3fb3dbc8a665ddaa",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dyn09_box_rc_dyn_edits",
+      "upstream_tree": "365cde7391e279d93395b2a6b9612547e74838ec",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "dyn10_fn_item_vtable_edits",
+      "upstream_tree": "73867c7f40f72824d8364e5296f6bac59f46eae0",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "env01_client_env_macros",
+      "upstream_tree": "308907ce829fa1464544a21d358d63d15d65cd65",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "es01_empty_struct_shape_edits",
+      "upstream_tree": "4573323d6424802f2df7b01519ee105916b57cfc",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "fi01_body_impl_edits",
+      "upstream_tree": "ffa85aa927d94c9db0820e66ebe0d272191a4554",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "fi02_body_impl_outer_trait",
+      "upstream_tree": "05687ebd9fef4ca44a05e89ab77910fe2b536b6b",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "fi03_body_impl_shadow",
+      "upstream_tree": "2974ed93045b9cc60e9f0bbaff04750d361d0706",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "fi04_body_impl_block_type_edit",
+      "upstream_tree": "685265e9c14bc7a66da0fde14e4088fdbc38b1b8",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "fm01_genmacro_shadow",
+      "upstream_tree": "ad6b2098db35adfb96b9be9803a902425f1f4a56",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "fm02_genmacro_modfile",
+      "upstream_tree": "6020e70f30441e2b6b16ac29ec5443ffc17186f0",
+      "status": "unresolved",
+      "historical_unsupported_versions": 1
+    },
+    {
+      "name": "gd01_param_default_edit",
+      "upstream_tree": "e526638ab1ee08dcfb0a724eea8c0282c938d925",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "gd02_generic_alias_edit",
+      "upstream_tree": "fba9113e979158e7bff107c381c5c824adb6959a",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "gd03_trait_default_edit",
+      "upstream_tree": "05068e7284e8d503d5132d5cd44e3b3d3f329745",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "gd04_recursive_param_edit",
+      "upstream_tree": "9450c72fdf43ec922a266c56fa7f6209784e55ea",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "glue01_reorder_partial_move",
+      "upstream_tree": "73721cf6aafbc15768e2fae8d119e7bd8f221930",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "glue02_reorder_closure_capture",
+      "upstream_tree": "d56b1a6ea8e3b1baaf8a1c39616c77ae91553f45",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "glue03_derive_debug_gap",
+      "upstream_tree": "dd5e57decd8aac9d535246ca365c00400b4eacdd",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "glue04_derive_clone_gap",
+      "upstream_tree": "673eff390666e63f9fdad2fb44bdd26eba7ce315",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "glue05_drop_impl_gap",
+      "upstream_tree": "ca592397f0c06b11718e9e5131a66bd0703dacae",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "glue06_enum_reorder_gap",
+      "upstream_tree": "ad1cf27ecca7171f9e6d452d9d316a7e424c723e",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "glue07_shared_glue_gap",
+      "upstream_tree": "aac25baee37203a210967340577070babdfab80e",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "gs01_nonzero_names_body_edit",
+      "upstream_tree": "a770d3f1ae54183c8feb83885f36cda49531aeb4",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "gs02_bound_names_body_edit",
+      "upstream_tree": "189bc93bb7bb4e296eaf52fe867b81418075e22b",
+      "status": "unresolved",
+      "historical_unsupported_versions": 1
+    },
+    {
+      "name": "gs03_std_method_names_body_edit",
+      "upstream_tree": "3b801f428b6583e6a01802ee6a0255eeebbe4643",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "gs04_dyn_and_cow_names_body_edit",
+      "upstream_tree": "86ffe0d11048c13a915b391d1d7489631c8300ce",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "guard01_module_edit_during_check",
+      "upstream_tree": "fa13f840986e75afa1538ec654724d0da5a2d779",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "guard02_derive_reject_edits",
+      "upstream_tree": "482039d4eb7a4f20a53870a4f50141f63668f5a0",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h01_const_array_len_local",
+      "upstream_tree": "7a414647e3989950e2ecab297292b0858f0f925d",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h02_const_fn_array_len_body",
+      "upstream_tree": "bf2b9668983504a2b88e352637d114ea43ec9e18",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h03_sizeof_array_len_body",
+      "upstream_tree": "7d1adeaa15d22dad4c20063351d88468b0efcdfa",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h04_static_from_const",
+      "upstream_tree": "1ecdf22070e73256ec81a6afe8f78d2243c65c93",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h05_static_transitive_const_fns",
+      "upstream_tree": "6fac014e3a6aaa1f1a00a7a87507cf42b1cf2af0",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h06_sizeof_in_const",
+      "upstream_tree": "5378d9564687a4b567776910da0e8aed0c13ccfa",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h07_sizeof_compound_body",
+      "upstream_tree": "5d744937a0ef5568bacb2b5a5b625e41c5527170",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h08_disc_from_const_edit",
+      "upstream_tree": "d4a704e2b23962a836a44a7774ae09fdd8dcdbb6",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h09_disc_from_const_fn",
+      "upstream_tree": "28c39e9cb0d0eec100ad08568b4ce706ddd20e74",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h10_alias_target_local",
+      "upstream_tree": "752e4f4addfbbfb6e361d05bb20faae36c534783",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h11_alias_array_field",
+      "upstream_tree": "1fd337e3e33b3375a41dc62798f984daef60bcba",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h12_range_const_bounds",
+      "upstream_tree": "f4db75b4faf8d6e4b36cba05e18eaf48b78f51ff",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h13_assoc_const_pattern",
+      "upstream_tree": "3b2e2d03a14e619f46ee1fa81740964bbf84e5c6",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h14_const_or_tuple_pattern",
+      "upstream_tree": "fa605c655eda5e8861553e2d7008efd189a8a523",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h15_const_if_let",
+      "upstream_tree": "62c9c314601ae374c3a6c042f8f4eb2c659c3413",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h16_const_aggregate",
+      "upstream_tree": "32e7afe1d3936ce0926029b2ea0431dc494023b8",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h17_const_str",
+      "upstream_tree": "5d8ac1bdd5ca76c9a4861a79b75ec1121ed929a0",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h18_static_array_const_len",
+      "upstream_tree": "d5a1fc98cea2b62ed869b3cbbeca5b48673d92ee",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h19_sizeof_const_assert_breaks",
+      "upstream_tree": "3b9a6c53dc051c0d3b3e398a02d9dd39d6fe51b7",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h20_const_block_body",
+      "upstream_tree": "3e4d960c6a9555e63be3a3629ab4ff7a3ecd7b84",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h21_const_fn_sig_edit",
+      "upstream_tree": "32be5a16f68679bac370c865ec76a4803e55e150",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h22_derive_field_struct_type",
+      "upstream_tree": "20363b3f7cfde358dc6e16b34e58cb2975340176",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h23_derive_enum_reorder",
+      "upstream_tree": "1deb0020dc303e6e44b12717a1b343619360250a",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h24_derive_eq_payload_type",
+      "upstream_tree": "adec9f8ff7ae46896d2faa26463807aa15b048a5",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h25_macro_generated_const",
+      "upstream_tree": "061ff22be6a37841cf514964ddc5b1981691d0af",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h26_macro_match_const_pattern",
+      "upstream_tree": "692331812730bedbf2cac46902312ede5e046eb3",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h28_const_in_guard",
+      "upstream_tree": "4b252ba218204d01313fd0d83cfb1b4e2312d5d7",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h29_offset_of_nested",
+      "upstream_tree": "0f5c09f0a390374f09933740ccff426257280629",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h30_align_of_const_repr",
+      "upstream_tree": "96a77b7e55a538254431e7cd4d908ed4fc9c9648",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h31_const_array_typed_len",
+      "upstream_tree": "d5f26c04dc4a4e45c3ce382f36c7e68241b37494",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h32_const_fn_edit_back",
+      "upstream_tree": "0d7997a9b4c269fac5a3896aa03de7d181646755",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h33_static_slice_values",
+      "upstream_tree": "3366e7893bae3c3875ff6325cfca364e715f6dd7",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h35_local_struct_field_type",
+      "upstream_tree": "14a583afddce58bdc5e40a96a3e6ec7c3e52d936",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h36_cfg_const_fn_body",
+      "upstream_tree": "1d3a9f1c8bcda50c16087519d9d3a37526167247",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h37_disc_variant_insert_debug",
+      "upstream_tree": "ab0330eae72fd77601743b8bd739df40301f801e",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h38_const_fn_runtime_only",
+      "upstream_tree": "c1680ba842dc6c906a89b05c535413feefbd2160",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h39_const_fn_const_pattern",
+      "upstream_tree": "2a9cef7ad483ca69518d31396410bcfce8f2a11b",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h40_static_ref_static_const_fn",
+      "upstream_tree": "0fed07911e9c973d6bbed1b75053f9ccd216d33d",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h41_enum_array_const_len_debug",
+      "upstream_tree": "2f909fcd898c3b97194f3f79136cf09f0b88d882",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h42_derive_field_other_struct_debug",
+      "upstream_tree": "bb3d31d7332bda9f4b3bbe167c7807829ce6c4a5",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h43_sizeof_option_niche",
+      "upstream_tree": "02bac5f3c1d36fc7afc988c70a12435bf3104514",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h44_sizeof_self_method",
+      "upstream_tree": "c1d14f11b812d92bdfa2870864c26a03f85476fc",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h45_const_in_const_fn_in_const_block",
+      "upstream_tree": "13d01a0afa8c62108eae6f8ff46bff69358c488c",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h46_const_fn_len_mismatch_reject",
+      "upstream_tree": "0acfa13d4c4427f057d7b16fd43b3f09d25f7c8e",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h47_const_struct_update",
+      "upstream_tree": "2b5874c205e4647186e94bd52b74fd3982365780",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h48_static_after_failed_compile",
+      "upstream_tree": "03bb48b8a3f452fd0a09fe559ca2d17bc5325d1b",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h49_static_insert_shifts_index",
+      "upstream_tree": "2235d5029773634cf0c6191a7dfe397fc8c6726c",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h9ms_depsig",
+      "upstream_tree": "88b5cb5c47fa332f1ed013e08975ade54bafa044",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h9ms_genmacro",
+      "upstream_tree": "8619445f69f78e85b0019ca332720bb28166a450",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h9ms_glob",
+      "upstream_tree": "79c0f462bebacf237c41beca5a6ea8cab7506c5e",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h9ms_late_shadow",
+      "upstream_tree": "894e121a6b42a87e38534c19a6913abdf6410c51",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h9ms_late_vec",
+      "upstream_tree": "fabd5ee88ed284b9f33510d4908c386c9ddb3847",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h9ms_late_vec2",
+      "upstream_tree": "50e0465e18e85c4b0c0b8a1f6fc8d9994b94e8e1",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h9ms_late_vec3",
+      "upstream_tree": "75e800673866007b19eea586bb77a90d7979ca24",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h9ms_rename",
+      "upstream_tree": "e25a1f198f82dcecb2009c512cbdb83be7f193f1",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h9ms_shadow",
+      "upstream_tree": "027d5e8cff1655f1156bf9f89bb8f6e2601b67d9",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h9ms_subglob",
+      "upstream_tree": "86de9229a5ba9cabe4c23018b1794aa100c33ad8",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "h9ms_xcrate_names",
+      "upstream_tree": "d985a340e3591c0d5fae088fe0eba559c33bebff",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "incbytes01_file_edits",
+      "upstream_tree": "589b5cc096d9335abab08ad2b0c47a50c6b112a7",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "incl01_module_outside_reads",
+      "upstream_tree": "480d9180e5494684e85b94811ff6f2cf315b7e3a",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "ka01_consts_aliases_out_of_trait_key",
+      "upstream_tree": "8dcb672e799987b850d45b6437b807f340339032",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "ky01_keyed_header_walk",
+      "upstream_tree": "fff0433e5ed18cd20bdcbc47483409c0e6c85a4e",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "ky02_keyed_after_reject",
+      "upstream_tree": "39acdfa3f8bc42f54abc4e14f1ce03c4ed00a3f4",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "ky03_keyed_rpit_body",
+      "upstream_tree": "27649ec0b043943c65855e3d1d82466594ce58d3",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "li01_lang_impl_edits_plain",
+      "upstream_tree": "0d32b26e86d3c40eb2202ccb56dfeaa243b2a089",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "li02_lang_impl_edits_generic",
+      "upstream_tree": "51aac157198d22462ae68015ac3fa453d44552d2",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "li03_lang_impl_field_glue",
+      "upstream_tree": "516c4149def2637867fd0cd26e565436bd6f2260",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "li04_lang_impl_std_types",
+      "upstream_tree": "8d841bc9c38ebce92643175efb9e52eb254067e4",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "lt01_param_static_edit",
+      "upstream_tree": "ec31fe46a26121994e12ca36166d5046990ede2b",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "lt02_named_return_edit",
+      "upstream_tree": "6f16d6cd75c7402a6cdf708717b4b1a698a9e3f9",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "lt03_adt_field_regions_edit",
+      "upstream_tree": "e39a2bdb056c8a2f096efc2d676c20496ea765c4",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "lt04_trait_method_return_edit",
+      "upstream_tree": "c691fcf73d962a11c2c6272cfd12a60cae94c72c",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "lt05_drop_impl_dropck_edit",
+      "upstream_tree": "c4446617556bd5d98a9507b8dc1bd77226605b74",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "lt06_impl_method_return_edit",
+      "upstream_tree": "ba9f7844ec75752c883e02b4349ba90d40d0c2f7",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "lt07_trait_only_param_edit",
+      "upstream_tree": "12898066885e53c4ffff42088ba10b0d48afa322",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "lt08_dyn_call_static_param_edit",
+      "upstream_tree": "8ac4f19d3f64feb707e39004cdaf775419a24828",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "lt09_lifetime_alias_body_edit",
+      "upstream_tree": "cff6b8cf010ee7d65cd2b42350d67f3a800fd01f",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "lt10_fn_bound_lifetime_edit",
+      "upstream_tree": "7b039824768211e0e0318a71e7583884fd41b9da",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "lt11_trait_lifetime_impl_head_edit",
+      "upstream_tree": "1e787d798d13a173b155a2d3cc37ad99e19864f0",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "lt12_trait_bound_lifetime_edit",
+      "upstream_tree": "5e389019c1a5c2872ee4554afd046e5a6f7f7889",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "lt13_fn_bound_output_edit",
+      "upstream_tree": "3d2ee0c3aa405dd5063dae06edd0b39728f4fd2a",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "m02_const_fn_in_submod",
+      "upstream_tree": "b8baf13aae5ab1b0bbf42cd2d4ca91855cb31e1e",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "m03_derive_type_in_submod",
+      "upstream_tree": "7d6a3cc739fc96102226c9389d3e62831f92cbb2",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "m04_static_in_submod_from_const_fn",
+      "upstream_tree": "374fdb7247c7d14e83a1d43a907b7af2fd953afe",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "mainret01_exitcode_edits",
+      "upstream_tree": "d1a82f0127aaee45840f83ae449f412861ef63bb",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "mainret02_result_fn_deleted",
+      "upstream_tree": "ce6914a5834b56d40c0213b5d8733b271a33cfb9",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "mainret03_unit_to_result",
+      "upstream_tree": "fc8e6f347d073b3aad661947d2d8fe650cc7de89",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "mb01_dep_macro_body_edits",
+      "upstream_tree": "407445bef97c072da7b425028f34118dc76a114c",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "mb02_main_macro_body_edits",
+      "upstream_tree": "1bb0966e6947ab1c6085cbe07f623b421ed53180",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "mono01_error_capture_instance",
+      "upstream_tree": "74964ef108bf74064e9e12f682598b5e72be2be8",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "ms01_dep_builtin_body",
+      "upstream_tree": "6bbb021f9f2c7feea5a2b81798eadc6d8f3853c8",
+      "status": "unresolved",
+      "historical_unsupported_versions": 2
+    },
+    {
+      "name": "ms02_dep_macro_alias_glob",
+      "upstream_tree": "0eba52ff007f101a98d17b40c5f9e35e1d52f4a3",
+      "status": "unresolved",
+      "historical_unsupported_versions": 2
+    },
+    {
+      "name": "ns01_body_statics_growth",
+      "upstream_tree": "f08eb3d6d5251c75542d93fe8f6abc6dcfb9224b",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "pr01_promoted_reemit_iter",
+      "upstream_tree": "e39f2fc0f628bf757d541a048dabbe18c99df861",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "pr02_promoted_reemit_plain",
+      "upstream_tree": "18d9723cfae29f86e249b031769f7a150be55e07",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "pr03_promoted_reemit_twice",
+      "upstream_tree": "282d41cdf4b2ec69e847f6bc85f6671e50dda3d0",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "pr04_promoted_reemit_callee",
+      "upstream_tree": "ea454d8906b7c6acad69b0ccd08848bc6af6c3dc",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "r3a01_glob_ambiguity_retraction",
+      "upstream_tree": "5a469b532ea30a6c381bfabf678299213ea2844f",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "r3a02_mutual_glob_reexport",
+      "upstream_tree": "96b083550fb03f4c7366a6e35dfbec646d795dc3",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "r3a03_enum_variant_glob_ambiguity",
+      "upstream_tree": "e01e5319558ef776e36e89ce005fa248944f16f9",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "r3a04_method_privacy",
+      "upstream_tree": "e98ec12971e554f393432a3a887fde43a3c1ad8b",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "r3a05_tuple_field_vis",
+      "upstream_tree": "c8f00290b79bf8fe6c53d2c27d94f44b4658fa25",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "r3a06_body_impl",
+      "upstream_tree": "cc757303d6138ffffd922080475f5cbb31219baa",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "r3a07_fn_body_globs",
+      "upstream_tree": "a9b6d979cad549fa20af821c87c6f96082f78619",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "r3a08_macro_reexport_switch",
+      "upstream_tree": "b63a3445cee918cf1803b9fce8ef14628946c843",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "r3a09_macro_scope_mod_order",
+      "upstream_tree": "af98ff49da717e93127082040de8dd4a5345e3d2",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "r3a10_macro_scope_file_mods",
+      "upstream_tree": "3f52fe02d28ed1228418244fa06f46ff623bc6d1",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "r3a11_extern_crate_alloc",
+      "upstream_tree": "5b901695903cf0751e67b7d78f82e08b92c8d779",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "r3a12_patch_then_privacy",
+      "upstream_tree": "a0f199cc49b0ec942106f9c412c5c66713635cf3",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "r3a13_duplicate_then_valid",
+      "upstream_tree": "91a40ad54b4e3d90feb73dd9f03ad77fc14468ca",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "r3a14_reexport_retarget",
+      "upstream_tree": "ac9f887ef06a7b54a2f0b14ab97c755c4e1a7801",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "r3a15_module_insert",
+      "upstream_tree": "29dbf2b2574e5f159f6ed13e56f8c3747938b2f0",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "r3a16_mod_rs_candidate",
+      "upstream_tree": "aee5db78513c8453779ba28e2d8d2b4db80b0c24",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "r3a17_glob_std_alias_switch",
+      "upstream_tree": "a2a1f5d76de69148fd807db03b74f9b7fe2c21f3",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "rc05_user_item_shadows_prelude_trait_call",
+      "upstream_tree": "c1426e6fd3ee25c2dc8fb6a17d9b4e367572c49d",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "rc06_user_item_shadows_prelude_trait_fn_value",
+      "upstream_tree": "1be1c873e1d7fe7c1b0dd3dbcfa21a3dba05ed63",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "rc07_opaque_body_trait_leaves_scope",
+      "upstream_tree": "3955e7a84c80d8aa37ed759fca75fd098de9414a",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "rc08_opaque_body_trait_import_swaps",
+      "upstream_tree": "576cb7cda885dd5d256ee9c3f92d4a482dddb376",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "rc09_turbofish_const_gets_type_twin",
+      "upstream_tree": "17a4844e0078f79c30d94bd284fc595f69aef014",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "rc10_turbofish_const_value",
+      "upstream_tree": "40e97ac0dde7050188575b1cf6259c221fea8441",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "rej01_collect_reject_walk",
+      "upstream_tree": "2c9e8f101609f8d03d4a27844180abe69f59a630",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "rej02_reject_generic_statics",
+      "upstream_tree": "308f1490692cca990fee3c3f7c4c33763eb2b287",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "rej03_template_error_unwalked",
+      "upstream_tree": "8629315a7a43a2c52949bf0a1f9800b3446f9d96",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "rej04_patch_reject_unwalked",
+      "upstream_tree": "602c4378019ac1507b22c042bc7cce9c9fe95298",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "review_d03_enum_payload_niche",
+      "upstream_tree": "3b83766c724b68bb58058328750de313a0a2c521",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "review_d08_const_fn_body",
+      "upstream_tree": "7e33da013094dc3910ee2bbd02738e4d8289b80f",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "review_d17_const_in_pattern",
+      "upstream_tree": "612025732015a3cfb01c2be88cfb34a3f42b5ad6",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "review_d36_static_from_const_fn",
+      "upstream_tree": "c581741c7a5c35059deaad6ee0744712b9a551a9",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "review_d39_field_u8_to_bool_debug",
+      "upstream_tree": "b52c0abbd5546ba7ed33ce10d9b47f5e626385f8",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "review_d43_const_pattern_other_fn_edit_only_const",
+      "upstream_tree": "460d93f19445d926ab70dfba52be255fb3e05038",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "review_d44_const_fn_used_in_const_used_in_fn",
+      "upstream_tree": "7b2f2388b359a481adb1509a0cd1346edbbfe12a",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "rm01_removed_defs_keep_indices",
+      "upstream_tree": "a9be1b4e76083ec1b73b11fe41d9f898186252ec",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "rpit01_hidden_type_edits",
+      "upstream_tree": "c1c3b2cc379753203f21d304ad7c6b60f7e8a399",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "rpit02_hidden_type_with_use",
+      "upstream_tree": "925a01824a40da5d1b98638ae92596f11f88121c",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "rpit03_bound_edits",
+      "upstream_tree": "55bc6cd87a943adf8d0e9d044a2bf4474b68ec23",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "rs01_block_item_scopes",
+      "upstream_tree": "45c4b084d60002a7fa5432e680ee1a7826fe09e2",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "rs02_nested_fn_in_module",
+      "upstream_tree": "5a4a5babffa4b27eb10ae605dfe86425e8e8d269",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sc01_instance_slots_derive_edits",
+      "upstream_tree": "f4398dc52aa4e12a63ef607e634d67dd9ff7b4fb",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sc02_assoc_const_request_edits",
+      "upstream_tree": "cfa5ed63b6718400a05201e79d3a08b070cc12e6",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sc03_assoc_const_plain_header_template",
+      "upstream_tree": "d7d3eacc3fbb33b52a626988154b2db7b61fc60e",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sc04_assoc_const_template_body",
+      "upstream_tree": "53d2341031418b7431b7fed6343dbae76fa9c94e",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sc05_anon_const_header_edits",
+      "upstream_tree": "7d50e344e2693c4161a50e1e7b6b431732651ba9",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sc06_template_header_instances",
+      "upstream_tree": "47f2b9f0dca28baec33a20368df064ce1300d924",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sc07_header_body_items",
+      "upstream_tree": "4ca3d468ccd7b16fb1bfff033e0bcd54259bd848",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sc08_fnptr_derive",
+      "upstream_tree": "668662a145b2ba2aa491960d361447fba023e6db",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sc09_header_statics",
+      "upstream_tree": "527627e2ae6dc36849e13a6f9182255712c25526",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sc10_rpit_template_header",
+      "upstream_tree": "0498ac561c9f207c3ab99e2ae7795cddf2a03dd6",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd01_const_chain_where",
+      "upstream_tree": "ff43053289e56b3bc190b42334fd5ae06e0b1802",
+      "status": "unresolved",
+      "historical_unsupported_versions": 2
+    },
+    {
+      "name": "sd02_const_fn_values",
+      "upstream_tree": "7085b7ee276b53c1b40972742de613444167fea6",
+      "status": "unresolved",
+      "historical_unsupported_versions": 2
+    },
+    {
+      "name": "sd03_rpit_chain_deep",
+      "upstream_tree": "c11bc16c8ec9b3db83aa38ba91ccd446622ca92b",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd04_rpit_chain_method",
+      "upstream_tree": "8df41669fad6779a07cdb4c55aeb3a9d577dce40",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd05_where_flip",
+      "upstream_tree": "ced5ea97e96c8bdba5d2d991183aa8c008955473",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd06_fresh_env_seq",
+      "upstream_tree": "0992a3699ec9c4bfe401cc3cca5b9c3860e3bdb5",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd07_method_headers",
+      "upstream_tree": "4a5e8b2ad9e9557c93836d3f6f9e06c2dfe11a15",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd08_new_instance",
+      "upstream_tree": "09d824a005b92b585ac68ace10ef4328a026317b",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd09_rpit_namer_stands",
+      "upstream_tree": "76500b26aa83cab816a24a421394c33389f6617f",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd10_template_callers",
+      "upstream_tree": "b5000128adf7a0d3f0c25e207f34cccdf3ba8a72",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd11_caller_errors_revert",
+      "upstream_tree": "2425ee0a0a0a726923bbb2836af087316851bdc8",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd12_rpit_own_bounds",
+      "upstream_tree": "0e8a938f3ec39bf24353eff25bd5e6acb7d165a7",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd13_reject_revert_kept",
+      "upstream_tree": "e151a6890267509ae24017596194f7ca926c276b",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd14_assoc_const_impl_heads",
+      "upstream_tree": "f9b02b6aa7d2bf6057514de60d725e144f705e06",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd15_trait_impl_heads",
+      "upstream_tree": "974c23301a70732b2f036d0583d2c31212a9d807",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd16_trait_impl_refine",
+      "upstream_tree": "a40c8fc9d80428e4e99ab9d6b9c9f9472b3ae6a0",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd17_pending_closure_callers",
+      "upstream_tree": "18676f5a6e0adcea8c8c719f7bb2b65d92411a3a",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd18_same_name_method_keys",
+      "upstream_tree": "c80384c492071adcb27ca461cda51c2f88890a0a",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd19_dyn_header_edits",
+      "upstream_tree": "04451a5b1e30fc93a5472cbae8afea10944c252e",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd20_error_note_replay",
+      "upstream_tree": "34cfa9309b13741b715d317472aea9e962a0feb4",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd21_const_named_header_edits",
+      "upstream_tree": "8202195582c3ac0192fddc7897ca4e353fb820f8",
+      "status": "unresolved",
+      "historical_unsupported_versions": 6
+    },
+    {
+      "name": "sd22_impl_method_concrete_bounds",
+      "upstream_tree": "563232454321944e9ddc2514731f91df9f992ec6",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd23_std_impl_clone",
+      "upstream_tree": "25313a5957121a05a9f947d8576cff87bf37877e",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd23_std_impl_debug",
+      "upstream_tree": "8ccfa652b1d5bb748f4f7c87de16a5abcf7288a9",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd23_std_impl_default",
+      "upstream_tree": "ab3fa5c3039c1d2d4ebd56b54ecc17ca1e5a906f",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd23_std_impl_deref",
+      "upstream_tree": "a3cb766daf492fb0cdf7cf9902624eebf5609d3f",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd23_std_impl_display",
+      "upstream_tree": "141fa44da748b2a09ce0bae2874715062a326b97",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd23_std_impl_display_modfile",
+      "upstream_tree": "e505b7f8189eef7b3c4b3f6b3c989d88a5b55633",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd23_std_impl_drop",
+      "upstream_tree": "9270b00c1f8ae24dc6d33b42a633773bf4a4471c",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd23_std_impl_error",
+      "upstream_tree": "31608e8250d894d823368142cd8971f023217733",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd23_std_impl_from",
+      "upstream_tree": "2b8541a29053eea3b735091d5e217cc2524b56bc",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd23_std_impl_hash",
+      "upstream_tree": "4ecc5dc49acaef6783da9629bcc1f8670f7ed167",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd23_std_impl_iterator",
+      "upstream_tree": "bd842975f418f63a2ac1f96c4b4039802f8b801d",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd23_std_impl_lowerhex",
+      "upstream_tree": "c565710726cb453a4cf761e4778006bec67d28b4",
+      "status": "unresolved",
+      "historical_unsupported_versions": 3
+    },
+    {
+      "name": "sd23_std_impl_partialeq",
+      "upstream_tree": "2cf0c66e5b6e43f60bd3c474a421b5e25cf5412e",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd23_std_impl_partialord",
+      "upstream_tree": "622cc0f22c43196eb187ea4c80c133295235e438",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd24_const_method_call_header_edits",
+      "upstream_tree": "0e7f2e32fbfb514dcea650df6ba084859ca3a096",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd25_const_bare_name_header_edits",
+      "upstream_tree": "77bb1f10ba1cefa852082c8acc96f3601f979e24",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd26_body_known_instance_types",
+      "upstream_tree": "f5b610a599053170b7c40912d82acc1b73822801",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd27_rpit_body_reject_then_revert",
+      "upstream_tree": "a29a1fa632f211f74db63df8ad355d9847a452c1",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd28_body_error_then_rpit_edits",
+      "upstream_tree": "23978c6ec63f3bac349b9412b7b009b8391b239b",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd29_derive_drop_then_header_edit",
+      "upstream_tree": "559a251813622bdf48fff23de375044472f2634b",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd30_template_error_then_other_edit",
+      "upstream_tree": "159f28be1f748588a09fb4101aec12f84fefb1e7",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sd31_template_error_then_derive_edit",
+      "upstream_tree": "f1c3ef00e539ebf3f321ba4afaf14acfed2d2bdc",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sig01_rpit_chain",
+      "upstream_tree": "504bc9ed71b2fd6aa9ea387233f6fedd894e9d48",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sig02_const_fn_closure",
+      "upstream_tree": "40a95c368dfdd025b87bb5bfd3bd6b24e5a96c95",
+      "status": "unresolved",
+      "historical_unsupported_versions": 1
+    },
+    {
+      "name": "sig03_fn_sigs",
+      "upstream_tree": "cb026a76b69bdc3d0f3744b27b68d7bb04752072",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sig04_derive_toggle",
+      "upstream_tree": "eafa337fdba54e9061e85e61a249370490c59297",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sig05_alias_glob",
+      "upstream_tree": "0fb525c2668d46a058e2b6d08ee9489d62a5c958",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sig06_attr_fn_headers",
+      "upstream_tree": "74ff2f1bc62dedb864c13e983fb03f4b72c94d9c",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sp01_platform_drop",
+      "upstream_tree": "ddef1ba68e22122f8bc379fc743b1aa560554ee5",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "sp02_same_line_neighbor",
+      "upstream_tree": "693ef0fdd29b7c2fc0ac312580b2449760cb1cc7",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "static06_template_bound",
+      "upstream_tree": "b189f18021e690594c57b39fc75047031a68c4ce",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "std01_plan_edits",
+      "upstream_tree": "1ebbf56aea55b6094b6fc172ffb0c9cff6e160da",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "std02_module_edits",
+      "upstream_tree": "d5b9112a1a1a20f4ca64a9a44e06bc9c7a7c9007",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "stdcoll01_glue_slots",
+      "upstream_tree": "75ca6f772e99ef241e581e4cf444cdb6f411f010",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "syn01_unclosed_after_macro",
+      "upstream_tree": "783d7935de0156f6defffb7d569562865c9a9229",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "syn02_shebang_moved",
+      "upstream_tree": "aeb5fdf992b81add1cb92222834aa3946ecec22b",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "tc01_const_method_body_edit",
+      "upstream_tree": "bda152dabcf9e77707a0058126aec5139add6ed7",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "tc01_track_caller_edits",
+      "upstream_tree": "40c795edee2419a5b0d524b6fb67f242fc139e2b",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "tc02_const_fn_bound_edit",
+      "upstream_tree": "9f616d878b892c1e0a4a44ebb88f2f2f81aebed5",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "tc03_const_fn_ptr_table_edit",
+      "upstream_tree": "2a1edb3ca9c74c4eee509128a2543ebd2057c6e6",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "tc04_const_method_value_only",
+      "upstream_tree": "802643784bdf0b79027de51437223f9fe32f2ab2",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "tc05_const_method_array_len",
+      "upstream_tree": "0de37e947d03848ee7e8064c9850cffdf9696fad",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "tls01_form_flip",
+      "upstream_tree": "de862ceddb2a6736bd99406eec2a223e61e53fa5",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "tls02_init_edit",
+      "upstream_tree": "c16a25d140109ac02c3b943d7f814af381edbffa",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "tls03_add_key",
+      "upstream_tree": "6792b85ff732910964d57b17eda0cbb096aaf940",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "tls04_nested_shift",
+      "upstream_tree": "d917ce3b120725dd64d7041753061142a570c46b",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "tls05_value_type",
+      "upstream_tree": "36b6969d43372ee3e849a8d617e00d48f0db6d7e",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "tls06_nested_static_init_edit",
+      "upstream_tree": "6ffe9ccbf47a06af72308eabf7c92b2cfe9ea2fd",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "tls07_static_remove_link",
+      "upstream_tree": "b11bbdb7be3582651e161e8122e2d6788a7295e2",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "tr01_std_trait_leaves_scope",
+      "upstream_tree": "a376fec5f5874aa3a8d1d6b20adaaf0f4427e979",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "tr02_std_trait_leaves_scope_value",
+      "upstream_tree": "3ce30d38e1af95261abb312d532e4363c77f3c5a",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "uc01_use_capture_macro_edits",
+      "upstream_tree": "996dccac78c1266679f9c9e77d1de5704fb449e0",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "um01_user_macro_header_edits",
+      "upstream_tree": "371f5bbcf3a73f6313868083cc1eab36c777ac49",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "vt01_replayed_closure_vtable",
+      "upstream_tree": "6596a91936e947ec8a90257da95c7fcc564d85f1",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "wc01_nested_alias_value",
+      "upstream_tree": "7430f093e9829f2fe92f0cb03aeed647ef589a72",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "wc01_where_concrete_method_edits",
+      "upstream_tree": "dc1698fedd9541e3c2323146d4019d0ef4a11c58",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "wc02_const_length_value",
+      "upstream_tree": "5e8932b2f46ad0766c57cf0f2366d725ad1a3259",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    },
+    {
+      "name": "wc03_hygiene_value",
+      "upstream_tree": "a242681445e91f3485ddb97b213546c7fe9c5fc8",
+      "status": "required",
+      "historical_unsupported_versions": 0
+    }
+  ],
+  "excluded_controls": [
+    {
+      "name": "binary01_rebuilt_daemon",
+      "reason": "The donor rebuild protocol control is not a fixture history and remains in the unchanged original gate."
+    }
+  ],
+  "integration_histories": [
+    {
+      "name": "mainret04_typed_entry_transition",
+      "qualifier": "tools/test-native-main-transitions.py",
+      "reason": "Additional integration fixture outside the pristine donor inventory; its existing dedicated gate remains required."
+    }
+  ],
+  "runtime_signals": {
+    "cargo07_profile_dev": {
+      "v5": [
+        "SIGABRT"
+      ]
+    }
+  },
+  "runtime_signal_rationale": "cargo07_profile_dev/v5 sets panic=abort and leaves overflow checks enabled; the unchanged program overflows u8 255+1. Only a matching oracle and candidate SIGABRT is allowed for that version. Compiler signals always fail.",
+  "panic_thread_id_versions": {
+    "cargo07_profile_dev": [
+      "v1",
+      "v2",
+      "v4",
+      "v5",
+      "v6"
+    ],
+    "cargo08_config_env": [
+      "v1",
+      "v3",
+      "v6"
+    ]
+  },
+  "panic_thread_id_rationale": "These pinned Cargo overlays intentionally trigger debug_assert or u8 overflow with checks enabled. Compare the full stderr except the numeric runtime identifier in exactly one canonical main-thread panic header. Every other version compares stderr bytes without normalization.",
+  "selection_rejections": {
+    "cargo01_bin_discovery": {
+      "v7": {
+        "kind": "removed-bin-target",
+        "manifest": "Cargo.toml",
+        "source": "src/bin/e.rs",
+        "bin": "e",
+        "recovery_version": "v8",
+        "cargo_stderr": "error: no bin target named `e` in default-run packages\n\nhelp: a target with a similar name exists: `c`\n",
+        "reason": "The pinned v7 overlay deletes the selected e source while retaining v6's --bin e request; v8 restores that source. Pinned independent Cargo build and check both reject the absent target. Require all four public requests to reject before compilation, then compile and compare v8 normally. This is invalid target selection, not unsupported Rust or a coverage exclusion.",
+        "source_evidence": "https://github.com/t3dotgg/lust-lang/tree/240e08d91d4aed0299639f6f11fd522912b248f9/tests/daemon/cargo01_bin_discovery"
+      }
+    }
+  }
+}

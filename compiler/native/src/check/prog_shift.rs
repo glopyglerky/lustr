@@ -56,6 +56,7 @@ pub fn shift_program(p: &mut Program, f: &mut dyn FnMut(Span) -> Span) -> usize 
         main: _,
         krate: _,
         stable_crate: _,
+        imported_crates: _,
         fn_defs: _,
         def_by_hash: _,
         std_fns: _,

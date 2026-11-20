@@ -30,5 +30,5 @@ inside normal compilation, without a trial compiler or duplicate frontend.
 
 The [design checkpoint](design.md) separates pre-correction default `7cea76c9`,
 historical candidate evidence, audited PR #32 `cb0721d4` and the documentation
-merged through PR #31. The [implementation cleanup](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/exclusive-coverage-cleanup.md)
+merged through PR #31. The [implementation cleanup](exclusive-coverage-cleanup.md)
 records removal of the conflicting routes and the remaining compiler work.

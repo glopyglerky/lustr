@@ -1,0 +1,1617 @@
+{
+  "schema": 1,
+  "passed": true,
+  "cases": [
+    {
+      "name": "peer-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-type=rlib",
+        "--crate-name=peer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "-Cembed-bitcode=no",
+        "$QUALIFICATION/campaign/peer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/libpeer.rlib"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "good",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/good.native",
+        "$QUALIFICATION/campaign/good-state"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "good-run",
+      "command": [
+        "$QUALIFICATION/campaign/good.native"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "good-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libpeer.rlib",
+        "$SOURCE/tests/shared-imports/consumer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/good.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "good-reference-run",
+      "command": [
+        "$QUALIFICATION/campaign/good.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "malformed",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/malformed.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/good.native",
+        "$QUALIFICATION/campaign/malformed-state"
+      ],
+      "status": 3,
+      "expected": 3
+    },
+    {
+      "name": "malformed-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/malformed.rs",
+        "-o",
+        "$QUALIFICATION/campaign/malformed.rust"
+      ],
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "invalid-archive",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/consumer.rs",
+        "$QUALIFICATION/campaign/libinvalid.rlib",
+        "$QUALIFICATION/campaign/good.native",
+        "$QUALIFICATION/campaign/invalid-archive-state"
+      ],
+      "status": 3,
+      "expected": 3
+    },
+    {
+      "name": "move-rejected",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/move-rejected.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/good.native",
+        "$QUALIFICATION/campaign/move-rejected-state"
+      ],
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "move-rejected-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libpeer.rlib",
+        "$SOURCE/tests/shared-imports/move-rejected.rs",
+        "-o",
+        "$QUALIFICATION/campaign/move-rejected.rust"
+      ],
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "type-rejected",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/type-rejected.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/good.native",
+        "$QUALIFICATION/campaign/type-rejected-state"
+      ],
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "type-rejected-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libpeer.rlib",
+        "$SOURCE/tests/shared-imports/type-rejected.rs",
+        "-o",
+        "$QUALIFICATION/campaign/type-rejected.rust"
+      ],
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "inherent-rejected",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/inherent-rejected.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/good.native",
+        "$QUALIFICATION/campaign/inherent-rejected-state"
+      ],
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "inherent-rejected-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libpeer.rlib",
+        "$SOURCE/tests/shared-imports/inherent-rejected.rs",
+        "-o",
+        "$QUALIFICATION/campaign/inherent-rejected.rust"
+      ],
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "orphan-rejected",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/orphan-rejected.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/good.native",
+        "$QUALIFICATION/campaign/orphan-rejected-state"
+      ],
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "orphan-rejected-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libpeer.rlib",
+        "$SOURCE/tests/shared-imports/orphan-rejected.rs",
+        "-o",
+        "$QUALIFICATION/campaign/orphan-rejected.rust"
+      ],
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "local-trait",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/local-trait.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/local-trait.native",
+        "$QUALIFICATION/campaign/local-trait-state"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "local-trait-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libpeer.rlib",
+        "$SOURCE/tests/shared-imports/local-trait.rs",
+        "-o",
+        "$QUALIFICATION/campaign/local-trait.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "local-trait-run",
+      "command": [
+        "$QUALIFICATION/campaign/local-trait.native"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "local-trait-reference-run",
+      "command": [
+        "$QUALIFICATION/campaign/local-trait.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "function-pointer",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/function-pointer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/function-pointer.native",
+        "$QUALIFICATION/campaign/function-pointer-state"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "function-pointer-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libpeer.rlib",
+        "$SOURCE/tests/shared-imports/function-pointer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/function-pointer.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "function-pointer-run",
+      "command": [
+        "$QUALIFICATION/campaign/function-pointer.native"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "function-pointer-reference-run",
+      "command": [
+        "$QUALIFICATION/campaign/function-pointer.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "integer-peer-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-type=rlib",
+        "--crate-name=peer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "-Cembed-bitcode=no",
+        "$QUALIFICATION/campaign/integer-peer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/libinteger-peer.rlib"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "integer-signatures",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/integer-consumer.rs",
+        "$QUALIFICATION/campaign/libinteger-peer.rlib",
+        "$QUALIFICATION/campaign/integer-signatures.native",
+        "$QUALIFICATION/campaign/integer-signatures-state"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "integer-signatures-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libinteger-peer.rlib",
+        "$SOURCE/tests/shared-imports/integer-consumer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/integer-signatures.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "integer-signatures-run",
+      "command": [
+        "$QUALIFICATION/campaign/integer-signatures.native"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "integer-signatures-reference-run",
+      "command": [
+        "$QUALIFICATION/campaign/integer-signatures.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "integer-signedness",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/integer-signedness.rs",
+        "$QUALIFICATION/campaign/libinteger-peer.rlib",
+        "$QUALIFICATION/campaign/integer-signatures.native",
+        "$QUALIFICATION/campaign/integer-signedness-state"
+      ],
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "integer-signedness-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libinteger-peer.rlib",
+        "$QUALIFICATION/campaign/integer-signedness.rs",
+        "-o",
+        "$QUALIFICATION/campaign/integer-signedness.rust"
+      ],
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "integer-arity",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/integer-arity.rs",
+        "$QUALIFICATION/campaign/libinteger-peer.rlib",
+        "$QUALIFICATION/campaign/integer-signatures.native",
+        "$QUALIFICATION/campaign/integer-arity-state"
+      ],
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "integer-arity-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libinteger-peer.rlib",
+        "$QUALIFICATION/campaign/integer-arity.rs",
+        "-o",
+        "$QUALIFICATION/campaign/integer-arity.rust"
+      ],
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "integer-move",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/integer-move.rs",
+        "$QUALIFICATION/campaign/libinteger-peer.rlib",
+        "$QUALIFICATION/campaign/integer-signatures.native",
+        "$QUALIFICATION/campaign/integer-move-state"
+      ],
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "integer-move-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libinteger-peer.rlib",
+        "$QUALIFICATION/campaign/integer-move.rs",
+        "-o",
+        "$QUALIFICATION/campaign/integer-move.rust"
+      ],
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "integer-pointer",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/integer-pointer.rs",
+        "$QUALIFICATION/campaign/libinteger-peer.rlib",
+        "$QUALIFICATION/campaign/integer-signatures.native",
+        "$QUALIFICATION/campaign/integer-pointer-state"
+      ],
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "integer-pointer-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libinteger-peer.rlib",
+        "$QUALIFICATION/campaign/integer-pointer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/integer-pointer.rust"
+      ],
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "adapter-missing",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/integer-consumer.rs",
+        "$QUALIFICATION/campaign/libinteger-peer.rlib",
+        "$QUALIFICATION/campaign/integer-signatures.native",
+        "$QUALIFICATION/campaign/adapter-missing-state"
+      ],
+      "status": 3,
+      "expected": 3
+    },
+    {
+      "name": "adapter-failed",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/integer-consumer.rs",
+        "$QUALIFICATION/campaign/libinteger-peer.rlib",
+        "$QUALIFICATION/campaign/integer-signatures.native",
+        "$QUALIFICATION/campaign/adapter-failed-state"
+      ],
+      "status": 3,
+      "expected": 3
+    },
+    {
+      "name": "adapter-malformed",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/integer-consumer.rs",
+        "$QUALIFICATION/campaign/libinteger-peer.rlib",
+        "$QUALIFICATION/campaign/integer-signatures.native",
+        "$QUALIFICATION/campaign/adapter-malformed-state"
+      ],
+      "status": 3,
+      "expected": 3
+    },
+    {
+      "name": "adapter-empty",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/integer-consumer.rs",
+        "$QUALIFICATION/campaign/libinteger-peer.rlib",
+        "$QUALIFICATION/campaign/integer-signatures.native",
+        "$QUALIFICATION/campaign/adapter-empty-state"
+      ],
+      "status": 3,
+      "expected": 3
+    },
+    {
+      "name": "adapter-invalid-before-emission",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/integer-move.rs",
+        "$QUALIFICATION/campaign/libinteger-peer.rlib",
+        "$QUALIFICATION/campaign/integer-signatures.native",
+        "$QUALIFICATION/campaign/adapter-invalid-before-emission-state"
+      ],
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "adapter-recovered",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/integer-consumer.rs",
+        "$QUALIFICATION/campaign/libinteger-peer.rlib",
+        "$QUALIFICATION/campaign/integer-signatures.native",
+        "$QUALIFICATION/campaign/adapter-recovered-state"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "adapter-recovered-run",
+      "command": [
+        "$QUALIFICATION/campaign/integer-signatures.native"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "scalars-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-type=rlib",
+        "--crate-name=peer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "-Cembed-bitcode=no",
+        "$QUALIFICATION/campaign/scalars.rs",
+        "-o",
+        "$QUALIFICATION/campaign/libscalars.rlib"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "scalars",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/scalar-consumer.rs",
+        "$QUALIFICATION/campaign/libscalars.rlib",
+        "$QUALIFICATION/campaign/scalars.native",
+        "$QUALIFICATION/campaign/scalars-state"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "scalars-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libscalars.rlib",
+        "$QUALIFICATION/campaign/scalar-consumer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/scalars.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "scalars-run",
+      "command": [
+        "$QUALIFICATION/campaign/scalars.native"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "scalars-reference-run",
+      "command": [
+        "$QUALIFICATION/campaign/scalars.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "inline-body-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-type=rlib",
+        "--crate-name=peer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "-Cembed-bitcode=no",
+        "$QUALIFICATION/campaign/inline-body.rs",
+        "-o",
+        "$QUALIFICATION/campaign/libinline-body.rlib"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "inline-body",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/scalar-consumer.rs",
+        "$QUALIFICATION/campaign/libinline-body.rlib",
+        "$QUALIFICATION/campaign/good.native",
+        "$QUALIFICATION/campaign/inline-body-state"
+      ],
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "inline-body-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libinline-body.rlib",
+        "$QUALIFICATION/campaign/scalar-consumer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/inline-body.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "inline-body-reference-run",
+      "command": [
+        "$QUALIFICATION/campaign/inline-body.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "inline-body-original-run",
+      "command": [
+        "$QUALIFICATION/campaign/scalars.native"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "checked-add-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-type=rlib",
+        "--crate-name=peer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "-Cembed-bitcode=no",
+        "$QUALIFICATION/campaign/checked-add.rs",
+        "-o",
+        "$QUALIFICATION/campaign/libchecked-add.rlib"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "checked-add",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/scalar-consumer.rs",
+        "$QUALIFICATION/campaign/libchecked-add.rlib",
+        "$QUALIFICATION/campaign/good.native",
+        "$QUALIFICATION/campaign/checked-add-state"
+      ],
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "checked-add-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libchecked-add.rlib",
+        "$QUALIFICATION/campaign/scalar-consumer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/checked-add.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "checked-add-reference-run",
+      "command": [
+        "$QUALIFICATION/campaign/checked-add.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "checked-add-original-run",
+      "command": [
+        "$QUALIFICATION/campaign/scalars.native"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "stack-nominal-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-type=rlib",
+        "--crate-name=peer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "-Cembed-bitcode=no",
+        "$QUALIFICATION/campaign/stack-nominal.rs",
+        "-o",
+        "$QUALIFICATION/campaign/libstack-nominal.rlib"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "stack-nominal",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/stack-nominal-consumer.rs",
+        "$QUALIFICATION/campaign/libstack-nominal.rlib",
+        "$QUALIFICATION/campaign/good.native",
+        "$QUALIFICATION/campaign/stack-nominal-state"
+      ],
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "stack-nominal-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libstack-nominal.rlib",
+        "$QUALIFICATION/campaign/stack-nominal-consumer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/stack-nominal.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "stack-nominal-reference-run",
+      "command": [
+        "$QUALIFICATION/campaign/stack-nominal.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "negative-send-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-type=rlib",
+        "--crate-name=peer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "-Cembed-bitcode=no",
+        "$QUALIFICATION/campaign/negative-send.rs",
+        "-o",
+        "$QUALIFICATION/campaign/libnegative-send.rlib"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "negative-send",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/consumer.rs",
+        "$QUALIFICATION/campaign/libnegative-send.rlib",
+        "$QUALIFICATION/campaign/good.native",
+        "$QUALIFICATION/campaign/negative-send-state"
+      ],
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "negative-send-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libnegative-send.rlib",
+        "$SOURCE/tests/shared-imports/consumer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/negative-send.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "negative-send-bound",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/negative-send-bound.rs",
+        "$QUALIFICATION/campaign/libnegative-send.rlib",
+        "$QUALIFICATION/campaign/negative-send-bound.native",
+        "$QUALIFICATION/campaign/negative-send-bound-state"
+      ],
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "negative-send-bound-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libnegative-send.rlib",
+        "$QUALIFICATION/campaign/negative-send-bound.rs",
+        "-o",
+        "$QUALIFICATION/campaign/negative-send-bound.rust"
+      ],
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "negative-sync-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-type=rlib",
+        "--crate-name=peer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "-Cembed-bitcode=no",
+        "$QUALIFICATION/campaign/negative-sync.rs",
+        "-o",
+        "$QUALIFICATION/campaign/libnegative-sync.rlib"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "negative-sync",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/consumer.rs",
+        "$QUALIFICATION/campaign/libnegative-sync.rlib",
+        "$QUALIFICATION/campaign/good.native",
+        "$QUALIFICATION/campaign/negative-sync-state"
+      ],
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "negative-sync-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libnegative-sync.rlib",
+        "$SOURCE/tests/shared-imports/consumer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/negative-sync.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "negative-sync-bound",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/negative-sync-bound.rs",
+        "$QUALIFICATION/campaign/libnegative-sync.rlib",
+        "$QUALIFICATION/campaign/negative-sync-bound.native",
+        "$QUALIFICATION/campaign/negative-sync-bound-state"
+      ],
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "negative-sync-bound-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libnegative-sync.rlib",
+        "$QUALIFICATION/campaign/negative-sync-bound.rs",
+        "-o",
+        "$QUALIFICATION/campaign/negative-sync-bound.rust"
+      ],
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "negative-unpin-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-type=rlib",
+        "--crate-name=peer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "-Cembed-bitcode=no",
+        "$QUALIFICATION/campaign/negative-unpin.rs",
+        "-o",
+        "$QUALIFICATION/campaign/libnegative-unpin.rlib"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "negative-unpin",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/consumer.rs",
+        "$QUALIFICATION/campaign/libnegative-unpin.rlib",
+        "$QUALIFICATION/campaign/good.native",
+        "$QUALIFICATION/campaign/negative-unpin-state"
+      ],
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "negative-unpin-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libnegative-unpin.rlib",
+        "$SOURCE/tests/shared-imports/consumer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/negative-unpin.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "negative-unpin-bound",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/negative-unpin-bound.rs",
+        "$QUALIFICATION/campaign/libnegative-unpin.rlib",
+        "$QUALIFICATION/campaign/negative-unpin-bound.native",
+        "$QUALIFICATION/campaign/negative-unpin-bound-state"
+      ],
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "negative-unpin-bound-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libnegative-unpin.rlib",
+        "$QUALIFICATION/campaign/negative-unpin-bound.rs",
+        "-o",
+        "$QUALIFICATION/campaign/negative-unpin-bound.rust"
+      ],
+      "status": 1,
+      "expected": 1
+    },
+    {
+      "name": "unwind",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/unwind.native",
+        "$QUALIFICATION/campaign/unwind-state"
+      ],
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "copy-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-type=rlib",
+        "--crate-name=peer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "-Cembed-bitcode=no",
+        "$QUALIFICATION/campaign/copy.rs",
+        "-o",
+        "$QUALIFICATION/campaign/libcopy.rlib"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "copy",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/consumer.rs",
+        "$QUALIFICATION/campaign/libcopy.rlib",
+        "$QUALIFICATION/campaign/copy.native",
+        "$QUALIFICATION/campaign/copy-state"
+      ],
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "copy-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libcopy.rlib",
+        "$SOURCE/tests/shared-imports/consumer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/copy.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "narrow-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-type=rlib",
+        "--crate-name=peer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "-Cembed-bitcode=no",
+        "$QUALIFICATION/campaign/narrow.rs",
+        "-o",
+        "$QUALIFICATION/campaign/libnarrow.rlib"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "narrow",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/narrow-consumer.rs",
+        "$QUALIFICATION/campaign/libnarrow.rlib",
+        "$QUALIFICATION/campaign/narrow.native",
+        "$QUALIFICATION/campaign/narrow-state"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "narrow-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libnarrow.rlib",
+        "$QUALIFICATION/campaign/narrow-consumer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/narrow.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "narrow-run",
+      "command": [
+        "$QUALIFICATION/campaign/narrow.native"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "narrow-reference-run",
+      "command": [
+        "$QUALIFICATION/campaign/narrow.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "wide-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-type=rlib",
+        "--crate-name=peer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "-Cembed-bitcode=no",
+        "$QUALIFICATION/campaign/wide.rs",
+        "-o",
+        "$QUALIFICATION/campaign/libwide.rlib"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "wide",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/narrow-consumer.rs",
+        "$QUALIFICATION/campaign/libwide.rlib",
+        "$QUALIFICATION/campaign/wide.native",
+        "$QUALIFICATION/campaign/wide-state"
+      ],
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "wide-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libwide.rlib",
+        "$QUALIFICATION/campaign/narrow-consumer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/wide.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "external-method-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-type=rlib",
+        "--crate-name=peer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "-Cembed-bitcode=no",
+        "$QUALIFICATION/campaign/external-method.rs",
+        "-o",
+        "$QUALIFICATION/campaign/libexternal-method.rlib"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "external-method",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/consumer.rs",
+        "$QUALIFICATION/campaign/libexternal-method.rlib",
+        "$QUALIFICATION/campaign/external-method.native",
+        "$QUALIFICATION/campaign/external-method-state"
+      ],
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "external-method-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libexternal-method.rlib",
+        "$SOURCE/tests/shared-imports/consumer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/external-method.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "external-clone-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-type=rlib",
+        "--crate-name=peer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "-Cembed-bitcode=no",
+        "$QUALIFICATION/campaign/external-clone.rs",
+        "-o",
+        "$QUALIFICATION/campaign/libexternal-clone.rlib"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "external-clone",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/consumer.rs",
+        "$QUALIFICATION/campaign/libexternal-clone.rlib",
+        "$QUALIFICATION/campaign/external-clone.native",
+        "$QUALIFICATION/campaign/external-clone-state"
+      ],
+      "status": 2,
+      "expected": 2
+    },
+    {
+      "name": "external-clone-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libexternal-clone.rlib",
+        "$SOURCE/tests/shared-imports/consumer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/external-clone.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "image-guard-lust_front_state",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "--front-image-control"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "image-guard-lust_front_arena",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "--front-image-control"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "image-client-guards",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "--front-client-control"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "removed-snapshot",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/removed-snapshot.native",
+        "$QUALIFICATION/campaign/removed-snapshot-state"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "removed-snapshot-run",
+      "command": [
+        "$QUALIFICATION/campaign/removed-snapshot.native"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "edited-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-type=rlib",
+        "--crate-name=peer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "-Cembed-bitcode=no",
+        "$QUALIFICATION/campaign/edited.rs",
+        "-o",
+        "$QUALIFICATION/campaign/libedited.rlib"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-old",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/edit-consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/dependency-old.native",
+        "$QUALIFICATION/campaign/dependency-old-state"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-old-run",
+      "command": [
+        "$QUALIFICATION/campaign/dependency-old.native"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-old-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/edit-consumer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/dependency-old.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-old-reference-run",
+      "command": [
+        "$QUALIFICATION/campaign/dependency-old.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-new",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/edit-consumer.rs",
+        "$QUALIFICATION/campaign/libedited.rlib",
+        "$QUALIFICATION/campaign/dependency-new.native",
+        "$QUALIFICATION/campaign/dependency-new-state"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-new-run",
+      "command": [
+        "$QUALIFICATION/campaign/dependency-new.native"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-new-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libedited.rlib",
+        "$QUALIFICATION/campaign/edit-consumer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/dependency-new.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-new-reference-run",
+      "command": [
+        "$QUALIFICATION/campaign/dependency-new.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-revert",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$QUALIFICATION/campaign/edit-consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/dependency-revert.native",
+        "$QUALIFICATION/campaign/dependency-revert-state"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-revert-run",
+      "command": [
+        "$QUALIFICATION/campaign/dependency-revert.native"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-revert-reference-compile",
+      "command": [
+        "$SDK/bin/rustc",
+        "--edition=2024",
+        "--crate-name=consumer",
+        "-Cpanic=abort",
+        "-Copt-level=0",
+        "-Cdebuginfo=0",
+        "--extern",
+        "peer=$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/edit-consumer.rs",
+        "-o",
+        "$QUALIFICATION/campaign/dependency-revert.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "dependency-revert-reference-run",
+      "command": [
+        "$QUALIFICATION/campaign/dependency-revert.rust"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "link-failed",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/link-output/program",
+        "$QUALIFICATION/campaign/link-failed-state"
+      ],
+      "status": 3,
+      "expected": 3
+    },
+    {
+      "name": "link-recovered",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/link-output/program",
+        "$QUALIFICATION/campaign/link-recovered-state"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "link-recovered-run",
+      "command": [
+        "$QUALIFICATION/campaign/link-output/program"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "object-failed",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/link-output/program",
+        "$QUALIFICATION/campaign/object-failed-state"
+      ],
+      "status": 3,
+      "expected": 3
+    },
+    {
+      "name": "object-recovered",
+      "command": [
+        "$QUALIFICATION/target/debug/examples/native-upstream-qualification",
+        "$SOURCE/tests/shared-imports/consumer.rs",
+        "$QUALIFICATION/campaign/libpeer.rlib",
+        "$QUALIFICATION/campaign/link-output/program",
+        "$QUALIFICATION/campaign/object-recovered-state"
+      ],
+      "status": 0,
+      "expected": 0
+    },
+    {
+      "name": "object-recovered-run",
+      "command": [
+        "$QUALIFICATION/campaign/link-output/program"
+      ],
+      "status": 0,
+      "expected": 0
+    }
+  ],
+  "qualifier_sha256": "3e91ac3442a62c6faec7b6332f473373385cb9f999d65e4f941c63505c6a65c0",
+  "reference_identity": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+  "limitations": [
+    "fresh imported sessions only",
+    "transparent 8/16/32/64-bit and pointer-width non-Copy integer aggregates",
+    "Linux x86_64 abort profile",
+    "no consumer Rust metadata output",
+    "normal public routing is unchanged",
+    "no performance claim"
+  ],
+  "original_record_sha256": "9ed5bd6cf4c09a9a6d5bcb547311f5d69fa52ba143a9778e864a677e059faf5d",
+  "path_rendering": "Absolute execution paths are represented by role variables; original records retain exact commands."
+}

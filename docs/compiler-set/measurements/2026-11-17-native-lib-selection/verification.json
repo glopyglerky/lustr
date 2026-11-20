@@ -1,0 +1,11 @@
+{
+  "archive_members": 975,
+  "baseline_cases": 22,
+  "candidate_cases": 22,
+  "candidate_passed": true,
+  "direct_command_records_per_run": 54,
+  "entry_stdout_records": 52,
+  "entry_stderr_records": 52,
+  "entry_test_exit_code": 0,
+  "archive_sha256": "80b1f376b3c3b2421250ac82151946ea0e81498fbeb91ffe1bc5f8894e33d272"
+}

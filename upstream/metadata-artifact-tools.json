@@ -1,0 +1,57 @@
+{
+  "schema": "lustr-metadata-artifact-tools-v1",
+  "rust_revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "target": "x86_64-unknown-linux-gnu",
+  "original_evidence": {
+    "head": "fab59023b9635f2c5e5d03d29b44865839dc3eba",
+    "artifact_id": 14611648584,
+    "record": "native-metadata-join/retained-campaign/report.json",
+    "field": "tool_identities"
+  },
+  "tools": [
+    {
+      "path": "lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-objcopy",
+      "sha256": "a8afaf147c812f54faaa9d47a59be44361dd086a125f25685519ac79f6695cc5",
+      "size": 296072
+    },
+    {
+      "path": "lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-ar",
+      "sha256": "c43dcd1bf79f4df283e4599a1c9ef6c0d71d68d74b1a276fd748a7c4f98eb96b",
+      "size": 136504
+    }
+  ],
+  "allowed_sdk_libraries": [
+    {
+      "path": "lib/libLLVM.so.23.1-rust-1.102.0-nightly",
+      "sha256": "5b12901d3a06a2eca8eae8e0781f678a6b2213740e2754f90dc22aef3f23dc21",
+      "size": 208283952
+    }
+  ],
+  "qualification": "Exact original tool bytes. Installed dependency closure and public request use require separate hosted qualification.",
+  "static_tool_availability_review": {
+    "url": "https://static.rust-lang.org/dist/2026-11-09/channel-rust-nightly.toml",
+    "manifest_sha256": "61ad7ceb52dafd0ef49bfe0a379259d2587039e840986021c49df008640e0d23",
+    "date": "2026-11-09",
+    "llvm_component_names": [
+      "llvm-bitcode-linker-preview",
+      "llvm-tools-preview"
+    ],
+    "llvm_tools_x86_64_linux": {
+      "available": true,
+      "url": "https://static.rust-lang.org/dist/2026-11-09/llvm-tools-nightly-x86_64-unknown-linux-gnu.tar.gz",
+      "hash": "4e9a6d1a4b3df79d13096e94daf43dad0f9e66d28b2e20a8df9632365d7dd75c",
+      "xz_url": "https://static.rust-lang.org/dist/2026-11-09/llvm-tools-nightly-x86_64-unknown-linux-gnu.tar.xz",
+      "xz_hash": "359241a9b267d84ff6bf945f905378b902bf19f17f48f7dddea09955ee816222"
+    },
+    "llvm_tools_version": "1.102.0-nightly (5b7b37aef 2026-11-08)",
+    "llvm_tools_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+    "finding": "The pinned official distribution advertises one llvm-tools-preview component for x86_64 Linux; no separate static llvm-ar/llvm-objcopy component is listed. This does not prove absence outside this distribution."
+  },
+  "licenses": [
+    {
+      "path": "crates/lustr-native-core/LICENSE-LLVM",
+      "source": "https://github.com/rust-lang/llvm-project/blob/0a5579eb649d3634a9c30ac873300cc2944fa070/llvm/LICENSE.TXT",
+      "sha256": "8d85c1057d742e597985c7d4e6320b015a9139385cff4cbae06ffc0ebe89afee"
+    }
+  ]
+}

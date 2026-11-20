@@ -1,0 +1,133 @@
+{
+  "schema": "lustr-sole-goal-audit-v1",
+  "observed_date": "2026-11-19",
+  "scope": "Current source cleanup, product/qualification isolation, actual bounded compiler operation and evidence. Not full Rust replacement or performance qualification.",
+  "baseline": {
+    "github_commit": "d1328bc2df289835b7a48d72575a103154b3c9e3",
+    "tree": "6713a608d50bc589232fecbabb498693af768103"
+  },
+  "assembled_code_commit_local": "c174c5686074f788ffdeff212f3b112a86de24c9",
+  "assembled_code_tree": "f40771f5b383863b7fb8d403bff6cf1036b61e3e",
+  "compiled_inputs": {
+    "Cargo.toml": "5808b694beb8243a4103fc388a7239f14f7b9958",
+    "Cargo.lock": "30435d33da10dd7dc05561437340e0784628f3fa",
+    "build.rs": "bf1a32d7182b5cb53fa376bb8c925ce5d50840f8",
+    "src": "24896aa6d095909389491a39a253a767c0fb0362",
+    "crates/lustr-native-core": "20b58214d69830d75cd4bd6e9acccde9c676e2ec",
+    "compiler/native": "e0d5f908d528ec2048c717ae8ad89b6c52dd4dae",
+    "upstream/lust.pin": "cce2d3a2a584a15bc2ab960eb0121c9afc484949",
+    "upstream/bluefe-core.pin": "3a3523a83c03958d9f242f6d9a905280c7a3e7a9",
+    "upstream/lust.integration": "6a96c2ca23610af4dca6639a45e893561e06c5f4",
+    "upstream/lust-integration.patch": "14ed7bb3cfa9c999ccefe745fd0b93d1b31e6005",
+    "tools/host-sdk.rs": "9e8e31eb3a9db67dd9e4c0a7e8ee958c623d944d"
+  },
+  "compiled_inputs_equal_focused_package_source": true,
+  "package": {
+    "source_commit": "6deba41c87323303a9eeabfbcfc75bc1bb89d847",
+    "package_kind": "focused assembled native compiler; donor helpers reused unchanged; not a fresh full constructor",
+    "native_source_subtree": "e0d5f908d528ec2048c717ae8ad89b6c52dd4dae",
+    "native_input_delta_from_prior": "",
+    "binaries": {
+      "bin/lustr": "53d6f49f9168eb8e936ea21bfa335e908b46b737f5426158e5c0644c53f33b25",
+      "bin/lust": "ff73b283b29bad925a72474e4f124d5df4c72fd1756db6e9fba21f07ab909053",
+      "bin/lust-core": "1a21b58880bc88cbcf5e410da519ab6d9fdb8770a909aec2984c78cad8d222ae",
+      "lib/liblustr_native_core.so": "aa0ed5d2a844faeb231748d77d084fb527251607823e2f490abe7049d9323037"
+    },
+    "native_core_policy": "lustr-exclusive-native-v1\nbuild=4fbb2e5c41854f34\n",
+    "exports": [
+      "0000000002332f60 T lustr_native_v2"
+    ]
+  },
+  "checks": {
+    "final_native_library_build": "passed",
+    "final_public_entry_build": "passed",
+    "root_library_tests": {
+      "passed": 3,
+      "failed": 0
+    },
+    "root_main_tests": {
+      "passed": 33,
+      "failed": 0,
+      "ignored_child_fixture": 1
+    },
+    "contract_and_protocol_tests": {
+      "passed": 22,
+      "failed": 0,
+      "ignored_package_tests": 5
+    },
+    "all_root_test_targets_compile": "passed",
+    "current_package_tests": {
+      "passed": 3,
+      "names": [
+        "native_file_tests_preserve_single_execution",
+        "large_valid_native_argument_lists_use_the_original_process",
+        "native_library_selection_survives_process_startup"
+      ]
+    },
+    "public_entry_controls": {
+      "passed": 56,
+      "unavailable": 1,
+      "unavailable_reason": "Real daemon socket control requires Unix socket bind; local host returns EPERM"
+    },
+    "bounded_qualification_all_targets_check": "passed",
+    "upstream_semantic_qualifier_check": "passed",
+    "build_script_denied_modes": {
+      "passed": 3,
+      "scope": "Actual native-core build.rs compiled and executed directly with explicit feature environments and a RUSTC sentinel. These are not full Cargo builds."
+    },
+    "removed_root_feature_cargo_build": "rejected with exit 101",
+    "removed_root_worker_cargo_build": "rejected with exit 101",
+    "structural_source_import": "passed",
+    "forged_inventory_rejections": 6,
+    "package_manifest_lockfile_rejections": 18,
+    "benign_manifest_changes": "accepted",
+    "complete_replacement_release": "correctly refused",
+    "capability_probes": {
+      "probes": 73,
+      "declared_lines": 149,
+      "failures": 0,
+      "scope": "Eight checked upstream sections and four declared exceptions. Exact reused donor helpers; finite fixtures, not all capability combinations."
+    },
+    "build_policy_runner": {
+      "denied_modes": 3,
+      "compiler_children_for_denied_modes": 0,
+      "allowed_product": "reaches controlled bootstrap sentinel; not a full native construction"
+    }
+  },
+  "bluefe_source_equality": {
+    "bluefe_commit": "d3c5da6f3d9d097600c9b461064c76cbb345d4ef",
+    "rust_commit": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+    "equal_subtrees": {
+      "compiler": "9bb98adca40010656ac057f2c4103cf72f5cdc6f",
+      "library": "f48d6700750a1dc11b2f8f1df91a26dee3ef13fb",
+      "src": "8042d9063cce1688a1f0e2f945c6da48f9568645"
+    }
+  },
+  "preserved_false_start": {
+    "record": "removed-root-feature.json",
+    "observation": "cargo metadata --no-deps --features native-inference returned 0 although the feature was removed; the expected rejection assumption was invalid",
+    "disposition": "Original result and stdout retained. Replaced by actual Cargo build negatives; no test result was edited into a pass."
+  },
+  "archive": {
+    "path": "receipts.json.gz",
+    "sha256": "7143747b16532dff6e627ede7c9e825f15b28039d3018bcf5c218673ff39e467",
+    "entries": 172,
+    "format": "gzip-compressed JSON; each entry has path, stored text and hash. Compiler manifest also retains original hashes."
+  },
+  "review": {
+    "research_math_and_current_docs": "independent read-only review; two precision corrections applied",
+    "compiler_and_build_boundaries": "independent review caught no-feature ABI export and obsolete examples; corrected",
+    "dependency_admission": "independent review caught unguarded dependency feature/default/optional fields; corrected"
+  },
+  "limits": [
+    "No full-complement compiler implementation or complete Rust replacement qualification.",
+    "No new speed/performance measurements; wall durations are verification timings only.",
+    "No native compiler donor rebuild; exact relevant donor input equality justified reuse of earlier constructed helpers.",
+    "The socket-specific ambiguous-daemon and output-failure ignored Rust tests were compiled but not executed here.",
+    "Source feature rejection does not itself establish a minimal complement; the product remains incomplete.",
+    "The no_std and socket-removal preferences remain conditional on completion and retained speed. No migration performed.",
+    "Historical performance assessor and original samples remain unchanged; absolute-only passes do not establish a new near-stock claim.",
+    "Hosted current-source construction and full native CI require their own observed run receipts; no full hosted or optimized-package pass is asserted here."
+  ],
+  "compiled_input_scope": "Complete repository source inputs to the rebuilt public entry and native product library, grouped by subtrees where applicable. Exact SDK, native receipt and reused helper identities remain in the build receipts. Bounded qualifier/test commands and source scopes are recorded separately."
+}

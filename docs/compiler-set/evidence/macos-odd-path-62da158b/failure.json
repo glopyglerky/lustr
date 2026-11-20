@@ -1,0 +1,8 @@
+{
+  "schema": "lustr-crate-failure-v1",
+  "fixture": "odd-path",
+  "failure": "daemon warm build failed (exit 3): error: daemon returned a truncated or oversized response header",
+  "capture_complete": true,
+  "skipped_special_files": [],
+  "limits": "A best-effort snapshot of the failed fixture. A live daemon may still append logs; this is not a coordinated final snapshot."
+}

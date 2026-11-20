@@ -1,0 +1,118 @@
+{
+  "scope": "Bounded native host-script repair. Partial source-built Linux package; cold-only runtime witnesses. No full Rust, daemon-retention, near-stock performance or release qualification.",
+  "source_base": "62da158b33740279947c85f3fc425df6d1623c9f",
+  "initial_frozen_controls": {
+    "passed": 12,
+    "failed": 2,
+    "cause": "native record envelope omitted original rerun directive lists; preserved initial-controls logs"
+  },
+  "package_v2": {
+    "build": "a5d84827d9e89e28",
+    "host_controls": 15,
+    "cfg_controls": 5,
+    "planner_controls": 8,
+    "selector_wire_controls": 1,
+    "histories": [
+      {
+        "name": "cargo10_bs_env_rerun",
+        "passed": true,
+        "versions": 7,
+        "outputs": [
+          "[unset] false\n",
+          "[a] true\n",
+          "[b] false\n",
+          "[unset] false\n",
+          "[a] true\n",
+          "[] false\n",
+          "[daemon] false\n"
+        ],
+        "compiled_host_reused": true,
+        "daemon_only_environment_not_exercised": {
+          "LUST_SCEN_BS": "daemon"
+        }
+      },
+      {
+        "name": "cargo12_dep_bs_env",
+        "passed": true,
+        "versions": 6,
+        "outputs": [
+          "[unset]\n",
+          "[a]\n",
+          "[b]\n",
+          "[unset]\n",
+          "[a]\n",
+          "[daemon]\n"
+        ],
+        "compiled_host_reused": true,
+        "daemon_only_environment_not_exercised": {
+          "LUST_SCEN_DEP": "daemon"
+        }
+      }
+    ],
+    "counter_cases": [
+      {
+        "name": "same_package",
+        "passed": true
+      },
+      {
+        "name": "diamond",
+        "passed": true
+      },
+      {
+        "name": "failed_script",
+        "passed": true
+      }
+    ],
+    "module_absence_control_passed": true,
+    "directive_after_cases": [
+      {
+        "name": "malformed",
+        "observed_expected_boundary": true
+      },
+      {
+        "name": "unquoted",
+        "observed_expected_boundary": true
+      },
+      {
+        "name": "escaped",
+        "observed_expected_boundary": true
+      },
+      {
+        "name": "builtin",
+        "observed_expected_boundary": true
+      },
+      {
+        "name": "plain",
+        "observed_expected_boundary": true
+      }
+    ]
+  },
+  "package_v3": {
+    "build": "0390b1143f2d2e93",
+    "host_controls": 17,
+    "source_inputs_unchanged_during_build": 514,
+    "timestamp_controls_passed": true,
+    "package_unchanged": true,
+    "timestamp_review_sha256": "643dcbf767040edbf3a6858e911ff996b7e8b24124e946872fca9d95910497ab",
+    "timestamp_cases": [
+      {
+        "input": "watched",
+        "compiled_host_reused": true,
+        "outputs": [
+          "1795098487\n",
+          "1795098617\n"
+        ]
+      },
+      {
+        "input": "build.rs",
+        "compiled_host_reused": true,
+        "outputs": [
+          "1795098488\n",
+          "1795098618\n"
+        ]
+      }
+    ],
+    "other_final_regressions": "../native-host-review-20261119 records independent empty-directory and missing-marker native/oracle controls"
+  },
+  "release_admission": false
+}

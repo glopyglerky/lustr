@@ -1,0 +1,99 @@
+{
+  "schema": 1,
+  "scope": "Candidate repairs to test directory ownership and macOS sanitizer setup; production compiler source is unchanged.",
+  "failed_hosted_head": "0b89794c60a90b2a7d4a1db5e8e78abb6ecdf281",
+  "failed_hosted_merge": "f0d7ac791b3814268111ca58c18525ff295ee6b5",
+  "failed_hosted_tree": "0c131afe40f98599474e61ce5d319a727fcc06db",
+  "native_macos": {
+    "job_url": "https://github.com/glopyglerky/lustr/actions/runs/44418360296/job/135204490513",
+    "observed_clang": "23.1.6",
+    "old_required_clang": "23.1.5",
+    "selection_exit_code": 1,
+    "native_build_ran": false,
+    "sanitizer_capability_probes_ran": false,
+    "strict_main_setup_exit_code": 2,
+    "strict_main_runtime_cases": 0,
+    "original_log_sha256": "3dbb897aaa646d9366426399ef21b0cb018d2024c1e0923f8b9d73510c9c60c9",
+    "repair": "Require exactly the observed 23.1.6 candidate, with explicit expected/acquired mismatch diagnostics; preserve all existing capability and compiler gates.",
+    "limit": "Homebrew acquisition still follows its catalog. The new candidate has not received local macOS runtime qualification."
+  },
+  "cargo_macos": {
+    "job_url": "https://github.com/glopyglerky/lustr/actions/runs/44418360328/job/135204489920",
+    "failed_test": "cargo_alias_can_select_release_without_enabling_cranelift",
+    "actual_rustc_opt_level": 3,
+    "cranelift_backend_argument_present": false,
+    "observed_failure": "Cargo could not create its fingerprint output file and reported failed parsing of the rustc process output.",
+    "original_log_sha256": "5702cd6862564998b8bed5dbbd1e92caf861c7a01f76a42389d3d858839b3288",
+    "causal_limit": "The log lacks both original scratch clock samples. The independently reproduced ownership bug is a plausible cause, not a proven causal attribution of this hosted failure."
+  },
+  "ownership_regression": {
+    "test": "scratch_owners_remain_independent_when_clock_samples_match",
+    "controlled_input": "The same current wall-clock sample is supplied to two actual Scratch allocators.",
+    "before_source_sha256": "09a14648a8e76a4e039c29d60c8771d7b40a9b6f0b92ed66f3cf240a98e75564",
+    "before_exit_code": 101,
+    "before_failure": "equal clock samples must not share an owned directory",
+    "before_records": {
+      "command.json": {
+        "private_record": "macos-harness-followup/before.command.json",
+        "sha256": "3986432a2bef25724e29a3935383e751f8b5ce51ccfb48e47c6ea7fc4af530c8"
+      },
+      "status.json": {
+        "private_record": "macos-harness-followup/before.status.json",
+        "sha256": "931a4bbf4bb82e790952c37ff8ce91e472e565ba705fad3619167cb1f73caa5e"
+      },
+      "patch": {
+        "private_record": "macos-harness-followup/before.patch",
+        "sha256": "89ec359671e80b110cb4da7020352aeaf480786cba6cfc0678aced19c80f5d11"
+      },
+      "stdout": {
+        "private_record": "macos-harness-followup/before.stdout",
+        "sha256": "34345039da34399b3c46fb2ca73b288214eaee0836559b9c7cc71c9dc6494053"
+      },
+      "stderr": {
+        "private_record": "macos-harness-followup/before.stderr",
+        "sha256": "f6be674e4e02d9f38fc78c5c51f08a7254a5eb9d9bd87b0d0e43f45fe76d9c69"
+      }
+    },
+    "after_source_sha256": "bfe5b1342555e8f7ebc97ab99588f370cd3304d0cc718af22da536ac76526b2b",
+    "after_exit_code": 0,
+    "after_passed": 3,
+    "after_failed": 0,
+    "test_threads": 2,
+    "after_records": {
+      "command.json": {
+        "private_record": "macos-harness-followup/after.command.json",
+        "sha256": "a9f64ca3261643ee4460b218e53b45245cd3303418ff5fa0779c35827c3887c5"
+      },
+      "status.json": {
+        "private_record": "macos-harness-followup/after.status.json",
+        "sha256": "81868a6e94ffc0178bf833deb1c9013d9fab4ee95ddb876a5e8ec4f1d26376d2"
+      },
+      "patch": {
+        "private_record": "macos-harness-followup/after.patch",
+        "sha256": "484ecb3969f835cc697d8f66b6cb2928686505d123cbf71b22cede3033a36f83"
+      },
+      "stdout": {
+        "private_record": "macos-harness-followup/after.stdout",
+        "sha256": "70e61fe7d45c0339a6afcdd56d144f2018dce5667e630b9e63c3d7d3acfef974"
+      },
+      "stderr": {
+        "private_record": "macos-harness-followup/after.stderr",
+        "sha256": "e6c4b1346418e4449dbcedcdc40c632ef2acc48a99b4e803b57f0a6937a6082a"
+      }
+    },
+    "platform": "x86_64 Linux",
+    "rust_sdk": "nightly-2026-11-09-x86_64-unknown-linux-gnu",
+    "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+    "real_compiler_scope": "Existing alias test builds its Rust fixture through actual Cargo and executes it with exact debug=false output. The separate process-contract test uses an explicit recorder child and is not compiler qualification.",
+    "repair": "Atomic process-local sequence and exclusive directory creation prevent two successful owners from sharing a directory. Existing-name collision retries do not retry compilation."
+  },
+  "current_source_sha256": {
+    ".github/workflows/ci.yml": "32dbe686071c54adb555a76b23fe0d0b6c8dd2f7630208b7dcf518d4891e9a20",
+    "crates/lustr/tests/process.rs": "bfe5b1342555e8f7ebc97ab99588f370cd3304d0cc718af22da536ac76526b2b"
+  },
+  "limits": [
+    "The earlier hosted failures remain failed.",
+    "These local controls do not qualify macOS, native sanitizer behavior, the integrated compiler architecture, package correctness or speed.",
+    "Native compiler and integration identities remain those of the admission candidate; this follow-up changes only the test harness, sanitizer selection and documentation."
+  ]
+}

@@ -1,0 +1,808 @@
+{
+  "files": [
+    {
+      "path": "controls-and-identities/entry-build-v2-command.json",
+      "sha256": "71f384cd45c174683a0346f4f86be4753d44b87d29abbeb034fdf9e00807f56a",
+      "bytes": 1142,
+      "original_path": "/tmp/lustr-cargo-plan-build/entry-build-v2-command.json"
+    },
+    {
+      "path": "controls-and-identities/entry-build-v3-command.json",
+      "sha256": "6ffbfd89d8da0d31283f70fbcb3304617f588ea09489d16d3be633c3a4709d3a",
+      "bytes": 2738,
+      "original_path": "/tmp/lustr-cargo-plan-build/entry-build-v3-command.json"
+    },
+    {
+      "path": "controls-and-identities/native-build-command.json",
+      "sha256": "d4f33551558e28bec4c764d6a459c24cc52e6b7b6d0c44f0687f6cddb3725942",
+      "bytes": 993,
+      "original_path": "/tmp/lustr-cargo-plan-build/native-build-command.json"
+    },
+    {
+      "path": "controls-and-identities/native-build-v2.log",
+      "sha256": "dc3b031a2d7c4a961b452730cb72b6c85caed9ee186b4f41220ea6fca3ed57ad",
+      "bytes": 34129,
+      "original_path": "/tmp/lustr-cargo-plan-build/native-build-v2.log"
+    },
+    {
+      "path": "controls-and-identities/native-build-v3-approved.log",
+      "sha256": "df0e1687dd3b5bf35d3e85d68ad70fa94bfe470f2ed29256580857d7c1011482",
+      "bytes": 34129,
+      "original_path": "/tmp/lustr-cargo-plan-build/native-build-v3-approved.log"
+    },
+    {
+      "path": "controls-and-identities/package-v2-identity.json",
+      "sha256": "47351c7651615a027dacb06b3064d8da0d907c146fb304b5290220348aa34e5a",
+      "bytes": 1807,
+      "original_path": "/tmp/lustr-cargo-plan-build/package-v2-identity.json"
+    },
+    {
+      "path": "controls-and-identities/package-v3-identity.json",
+      "sha256": "98d4fd6fab09e726dadf6147056fa3e452bea8efc675f81fbf4a95c385482e19",
+      "bytes": 22191,
+      "original_path": "/tmp/lustr-cargo-plan-build/package-v3-identity.json"
+    },
+    {
+      "path": "controls-and-identities/test-build-approved-host.log",
+      "sha256": "7dfb55761f576bc4ef171fafb91b25f77e7c957a48d2e1d391427412dc7356b7",
+      "bytes": 31541,
+      "original_path": "/tmp/lustr-cargo-plan-build/test-build-approved-host.log"
+    },
+    {
+      "path": "controls-and-identities/test-build-envelope-directives.log",
+      "sha256": "3541e251ecc529358fd6c0d9c68a6bc87149a4d0d25c79e88494c13636c1c200",
+      "bytes": 31541,
+      "original_path": "/tmp/lustr-cargo-plan-build/test-build-envelope-directives.log"
+    },
+    {
+      "path": "controls-and-identities/v2-cfg-controls.log",
+      "sha256": "3bedeca8ba60af374e328abcdf0e2da7434d8ad2da5428489ad43202d0e7991c",
+      "bytes": 463,
+      "original_path": "/tmp/lustr-cargo-plan-build/v2-cfg-controls.log"
+    },
+    {
+      "path": "controls-and-identities/v2-host-controls.log",
+      "sha256": "00e6a797c54944d8a63b0a785e353bc36651cd6000f357e57e5e8bc0b2b74cee",
+      "bytes": 1913,
+      "original_path": "/tmp/lustr-cargo-plan-build/v2-host-controls.log"
+    },
+    {
+      "path": "controls-and-identities/v2-plan-controls.log",
+      "sha256": "276dc9c46762d780fe0602c0ba0b4507a905baf2deb4f6d7832af27e6ab9ac1d",
+      "bytes": 1012,
+      "original_path": "/tmp/lustr-cargo-plan-build/v2-plan-controls.log"
+    },
+    {
+      "path": "controls-and-identities/v2-selector-wire.log",
+      "sha256": "fa559a322c9abcea3ce3949bda9a82c511d8e0930dfa941ccd3ac27433535272",
+      "bytes": 197,
+      "original_path": "/tmp/lustr-cargo-plan-build/v2-selector-wire.log"
+    },
+    {
+      "path": "controls-and-identities/v2-source-inputs-before-build.json",
+      "sha256": "e633cbc01a871a57f568206f4c0e603ab0be6208f44bf4c663162df817bb3df2",
+      "bytes": 1186,
+      "original_path": "/tmp/lustr-cargo-plan-build/v2-source-inputs-before-build.json"
+    },
+    {
+      "path": "controls-and-identities/v2-test-commands.json",
+      "sha256": "2a4cd8fc7fab6a47ae5c7acbe2ae28e5b20877d20d09d333b0eeba3094395eeb",
+      "bytes": 1063,
+      "original_path": "/tmp/lustr-cargo-plan-build/v2-test-commands.json"
+    },
+    {
+      "path": "controls-and-identities/v3-all-repository-inputs-before-build.json",
+      "sha256": "7b5df2b2aec57f93500eccd7111cfc8470e8331eec04002ba0cdccf0d65e5dbb",
+      "bytes": 59434,
+      "original_path": "/tmp/lustr-cargo-plan-build/v3-all-repository-inputs-before-build.json"
+    },
+    {
+      "path": "controls-and-identities/v3-approved-host-controls-command.json",
+      "sha256": "9212f9653c16da6fca1d8fbc0fbb24890a437f064cde39ab7ffd18d332405453",
+      "bytes": 1453,
+      "original_path": "/tmp/lustr-cargo-plan-build/v3-approved-host-controls-command.json"
+    },
+    {
+      "path": "controls-and-identities/v3-approved-host-controls.log",
+      "sha256": "3345f5eff86776d824c6d62df85f7e22494fc49f988a4ff5d5f80e033bac8766",
+      "bytes": 2152,
+      "original_path": "/tmp/lustr-cargo-plan-build/v3-approved-host-controls.log"
+    },
+    {
+      "path": "controls-and-identities/v3-approved-source-inputs-before-build.json",
+      "sha256": "4dc36ce3795ebc8123625eadc8c08e6c85ef79e76a75a6c0f0fe43a57a21be6c",
+      "bytes": 1186,
+      "original_path": "/tmp/lustr-cargo-plan-build/v3-approved-source-inputs-before-build.json"
+    },
+    {
+      "path": "initial-controls/frozen-cfg-controls.log",
+      "sha256": "cbe5ffdf0044eb5951b7d4acf3a8aa9a8f39f278bbfc51a7322b47a001b90936",
+      "bytes": 463,
+      "original_path": null
+    },
+    {
+      "path": "initial-controls/frozen-host-controls.log",
+      "sha256": "33bb79ae7ced265735f125a24a5ca656b458ac5de0ec8c72619da060175222be",
+      "bytes": 2652,
+      "original_path": null
+    },
+    {
+      "path": "initial-controls/frozen-plan-controls.log",
+      "sha256": "80688cc3dd8ba2a7ee3cb8b817dbfabdb41e4601c2db3190b32a0e3055f98b35",
+      "bytes": 1012,
+      "original_path": null
+    },
+    {
+      "path": "initial-controls/frozen-selector-wire.log",
+      "sha256": "21199c01ad7a16b18dc5a6f2ce898efb1ac8ebe1b182f0e291fd081f251c433d",
+      "bytes": 197,
+      "original_path": null
+    },
+    {
+      "path": "initial-controls/frozen-test-commands.json",
+      "sha256": "f9009b10fc877933e827c544dc0922765184b76bb639a7c8f271add8b976d04c",
+      "bytes": 1081,
+      "original_path": null
+    },
+    {
+      "path": "initial-controls/host-frozen-source-inputs.json",
+      "sha256": "e1e02635383a301292078a58b71637a10a8833f2fadd0836ed9386546e91f197",
+      "bytes": 562,
+      "original_path": null
+    },
+    {
+      "path": "initial-controls/index.json",
+      "sha256": "e4b815b27a247626167bd4e465b43c71d304ad5bf2aed57bdc9570935894e408",
+      "bytes": 1052,
+      "original_path": null
+    },
+    {
+      "path": "initial-controls/test-build-frozen-host.log",
+      "sha256": "9d6d4391a6b69a7732d78d9bc156ea7ef1ab23964d925d6cb8240c9d15e90e61",
+      "bytes": 31541,
+      "original_path": null
+    },
+    {
+      "path": "raw-evidence-index.json",
+      "sha256": "34ab050588cd5b0b6f745d19cd681a5f29a8848c707db4b058f544199039bd4b",
+      "bytes": 160031,
+      "original_path": null
+    },
+    {
+      "path": "raw-evidence.tar.gz",
+      "sha256": "ee8bf86f72094de9192052ca9790b7d6a904976d45a2cd00c951cba40dc17934",
+      "bytes": 58349,
+      "original_path": null
+    },
+    {
+      "path": "results.json",
+      "sha256": "5158d933b03e54adf198952f07adb944575c4b0ca9e647f40c99ba7ce8397027",
+      "bytes": 3067,
+      "original_path": null
+    },
+    {
+      "path": "source-inputs.json",
+      "sha256": "39b6c5853629d3f3ec5525f80ec661d1bc801346f5ecf82307f8aa91684e550a",
+      "bytes": 747,
+      "original_path": null
+    },
+    {
+      "path": "timestamps/explicit-v2/00.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/00.stderr"
+    },
+    {
+      "path": "timestamps/explicit-v2/00.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/00.stdout"
+    },
+    {
+      "path": "timestamps/explicit-v2/01.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/01.stderr"
+    },
+    {
+      "path": "timestamps/explicit-v2/01.stdout",
+      "sha256": "390e721f32b5deccf969139e877d8cbbb6e25446dbab2c0a3733b495551d4917",
+      "bytes": 11,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/01.stdout"
+    },
+    {
+      "path": "timestamps/explicit-v2/02.stderr",
+      "sha256": "07d472656e11795447aea38e170858e620bfe0a53aeba09cb62de73376cf37ac",
+      "bytes": 144,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/02.stderr"
+    },
+    {
+      "path": "timestamps/explicit-v2/02.stdout",
+      "sha256": "2bde0ce365ab67ecb2449c6daa30895b3ec3c4ef2cd517765c1098f0088ac6e3",
+      "bytes": 1670,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/02.stdout"
+    },
+    {
+      "path": "timestamps/explicit-v2/03.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/03.stderr"
+    },
+    {
+      "path": "timestamps/explicit-v2/03.stdout",
+      "sha256": "390e721f32b5deccf969139e877d8cbbb6e25446dbab2c0a3733b495551d4917",
+      "bytes": 11,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/03.stdout"
+    },
+    {
+      "path": "timestamps/explicit-v2/04.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/04.stderr"
+    },
+    {
+      "path": "timestamps/explicit-v2/04.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/04.stdout"
+    },
+    {
+      "path": "timestamps/explicit-v2/05.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/05.stderr"
+    },
+    {
+      "path": "timestamps/explicit-v2/05.stdout",
+      "sha256": "390e721f32b5deccf969139e877d8cbbb6e25446dbab2c0a3733b495551d4917",
+      "bytes": 11,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/05.stdout"
+    },
+    {
+      "path": "timestamps/explicit-v2/06.stderr",
+      "sha256": "4d53d0f848484d9d85d81de93b2a1262365d497223830d1ffeafbd31b1739522",
+      "bytes": 144,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/06.stderr"
+    },
+    {
+      "path": "timestamps/explicit-v2/06.stdout",
+      "sha256": "7306c95d5307cdd04174b4be8b9548d5cf4f649962c0303873f07704d4bdd909",
+      "bytes": 1669,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/06.stdout"
+    },
+    {
+      "path": "timestamps/explicit-v2/07.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/07.stderr"
+    },
+    {
+      "path": "timestamps/explicit-v2/07.stdout",
+      "sha256": "75282186825d6d866a6cd2c64ecccb10f58abf335507d427f7f3332fad475e76",
+      "bytes": 11,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/07.stdout"
+    },
+    {
+      "path": "timestamps/explicit-v2/comparison.json",
+      "sha256": "52ed970318c4cabfb4396cbee6a19192cdff2c5bd90eee5287da5939eee40058",
+      "bytes": 230,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/comparison.json"
+    },
+    {
+      "path": "timestamps/explicit-v2/record-snapshots/cache/buildscript-native-ebe6e726a48feac6.txt",
+      "sha256": "5dbd2ce63f05b9e1affa11d74fe0244ca4c3a0df71ab6472e1289a2c80b02b03",
+      "bytes": 3141,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/cache/buildscript-native-ebe6e726a48feac6.txt"
+    },
+    {
+      "path": "timestamps/explicit-v2/report.json",
+      "sha256": "e6401b33dd0604fd33a5c508a1a7bcd108d277a52e0f26e89469b47b504a39a2",
+      "bytes": 6703,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/report.json"
+    },
+    {
+      "path": "timestamps/explicit-v2/work/Cargo.lock",
+      "sha256": "3f5b853de2ffd0e36591e521397eb4bddef7ac93145e888a2dff4b585b0d892c",
+      "bytes": 156,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/work/Cargo.lock"
+    },
+    {
+      "path": "timestamps/explicit-v2/work/Cargo.toml",
+      "sha256": "ecceab475b10ededf77c82c694534db17523438ad751caa710aaf319d44f8beb",
+      "bytes": 61,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/work/Cargo.toml"
+    },
+    {
+      "path": "timestamps/explicit-v2/work/build.rs",
+      "sha256": "36ea25feb60168794a48b10142da426378b9c3f4cae863867e23e601873147c4",
+      "bytes": 222,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/work/build.rs"
+    },
+    {
+      "path": "timestamps/explicit-v2/work/src/main.rs",
+      "sha256": "03dbccd41d64c938d2aa6fe38f365cb1f9e3a1075a3a6bc632e6752a2e146add",
+      "bytes": 44,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/work/src/main.rs"
+    },
+    {
+      "path": "timestamps/explicit-v2/work/watched",
+      "sha256": "e35b2252583cefc6c764da00830c86b8d929c925703a88ebcb622c8f0caf24f9",
+      "bytes": 15,
+      "original_path": "/tmp/lustr-host-mtime-review-v2/work/watched"
+    },
+    {
+      "path": "timestamps/implicit-v2/after-native-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/after-native-build.stderr"
+    },
+    {
+      "path": "timestamps/implicit-v2/after-native-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/after-native-build.stdout"
+    },
+    {
+      "path": "timestamps/implicit-v2/after-native-run.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/after-native-run.stderr"
+    },
+    {
+      "path": "timestamps/implicit-v2/after-native-run.stdout",
+      "sha256": "4ebdf59af2dfeabedba89e5355045fc6bff8df9daad6bc05529d8506b85e63a8",
+      "bytes": 11,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/after-native-run.stdout"
+    },
+    {
+      "path": "timestamps/implicit-v2/after-oracle-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/after-oracle-build.stderr"
+    },
+    {
+      "path": "timestamps/implicit-v2/after-oracle-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/after-oracle-build.stdout"
+    },
+    {
+      "path": "timestamps/implicit-v2/after-oracle-run.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/after-oracle-run.stderr"
+    },
+    {
+      "path": "timestamps/implicit-v2/after-oracle-run.stdout",
+      "sha256": "344538628806a10eb611201d51f4fed473db599f603110f364e0c2d4f75f4c25",
+      "bytes": 11,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/after-oracle-run.stdout"
+    },
+    {
+      "path": "timestamps/implicit-v2/before-native-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/before-native-build.stderr"
+    },
+    {
+      "path": "timestamps/implicit-v2/before-native-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/before-native-build.stdout"
+    },
+    {
+      "path": "timestamps/implicit-v2/before-native-run.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/before-native-run.stderr"
+    },
+    {
+      "path": "timestamps/implicit-v2/before-native-run.stdout",
+      "sha256": "4ebdf59af2dfeabedba89e5355045fc6bff8df9daad6bc05529d8506b85e63a8",
+      "bytes": 11,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/before-native-run.stdout"
+    },
+    {
+      "path": "timestamps/implicit-v2/before-oracle-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/before-oracle-build.stderr"
+    },
+    {
+      "path": "timestamps/implicit-v2/before-oracle-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/before-oracle-build.stdout"
+    },
+    {
+      "path": "timestamps/implicit-v2/before-oracle-run.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/before-oracle-run.stderr"
+    },
+    {
+      "path": "timestamps/implicit-v2/before-oracle-run.stdout",
+      "sha256": "4ebdf59af2dfeabedba89e5355045fc6bff8df9daad6bc05529d8506b85e63a8",
+      "bytes": 11,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/before-oracle-run.stdout"
+    },
+    {
+      "path": "timestamps/implicit-v2/commands.json",
+      "sha256": "0267cbd8348eb5b068acc9112822ab27815c0fbca1bfc67f9725280011422463",
+      "bytes": 2471,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/commands.json"
+    },
+    {
+      "path": "timestamps/implicit-v2/project/Cargo.lock",
+      "sha256": "c21704893ac0ef2e0c6f59276e06cb111375df28c581891d86376ebe548791fa",
+      "bytes": 164,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/project/Cargo.lock"
+    },
+    {
+      "path": "timestamps/implicit-v2/project/Cargo.toml",
+      "sha256": "fbbfcd03176f295242bc707ef953fd24ab6dafaf4082b08c80dbb781fc36d432",
+      "bytes": 69,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/project/Cargo.toml"
+    },
+    {
+      "path": "timestamps/implicit-v2/project/build.rs",
+      "sha256": "95a101d3d256ec80490beb49c6951e9a8b3d868ee1c934ea7091bca657b215eb",
+      "bytes": 240,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/project/build.rs"
+    },
+    {
+      "path": "timestamps/implicit-v2/project/src/main.rs",
+      "sha256": "4eaa30bbe86e224aa921789ceee9eb4838301a8d3d3ca438c8821b590d51e8b9",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/project/src/main.rs"
+    },
+    {
+      "path": "timestamps/implicit-v2/record-snapshots/cache/buildscript-native-c3a6b2fe3cf47468.txt",
+      "sha256": "1e86e41a2cc15bfcf7038b97c2f784e859fc74c2d19061e1a7118aec13752636",
+      "bytes": 3252,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/cache/buildscript-native-c3a6b2fe3cf47468.txt"
+    },
+    {
+      "path": "timestamps/implicit-v2/verification.json",
+      "sha256": "8fbef31f5a66e53a0926d4ee2edd1084809e474124da89843525020b773477b4",
+      "bytes": 432,
+      "original_path": "/tmp/lustr-host-source-mtime-review-v2/verification.json"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/after-buildscript-native-aff21c48c82c47ad.txt",
+      "sha256": "c16b0b007b6e8dc22ba20a27eedceeef0d73bc2e3cb67c21d9125b267135190e",
+      "bytes": 4864,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/after-buildscript-native-aff21c48c82c47ad.txt"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/after-native-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/after-native-build.stderr"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/after-native-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/after-native-build.stdout"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/after-native-run.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/after-native-run.stderr"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/after-native-run.stdout",
+      "sha256": "552d81315eb4afd209e9ce6d63503f649e6e7a353279e091d58c0424754da67a",
+      "bytes": 11,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/after-native-run.stdout"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/after-oracle-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/after-oracle-build.stderr"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/after-oracle-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/after-oracle-build.stdout"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/after-oracle-run.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/after-oracle-run.stderr"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/after-oracle-run.stdout",
+      "sha256": "552d81315eb4afd209e9ce6d63503f649e6e7a353279e091d58c0424754da67a",
+      "bytes": 11,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/after-oracle-run.stdout"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/after.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/after.trace.jsonl"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/before-buildscript-native-aff21c48c82c47ad.txt",
+      "sha256": "6a50eebf076e14a3451242d994620ae02436c3007f88d09c8159bf7f12a9dd26",
+      "bytes": 4861,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/before-buildscript-native-aff21c48c82c47ad.txt"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/before-native-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/before-native-build.stderr"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/before-native-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/before-native-build.stdout"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/before-native-run.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/before-native-run.stderr"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/before-native-run.stdout",
+      "sha256": "34858c03008ae37989335555f650a2964a65a32bc6fe440d41e06f068761e329",
+      "bytes": 11,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/before-native-run.stdout"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/before-oracle-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/before-oracle-build.stderr"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/before-oracle-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/before-oracle-build.stdout"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/before-oracle-run.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/before-oracle-run.stderr"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/before-oracle-run.stdout",
+      "sha256": "34858c03008ae37989335555f650a2964a65a32bc6fe440d41e06f068761e329",
+      "bytes": 11,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/before-oracle-run.stdout"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/before.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/before.trace.jsonl"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/commands.json",
+      "sha256": "6d8b6345038e9c0588ca3184969186d345a954bab0e859bbb430c60c0b9fd824",
+      "bytes": 9203,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/commands.json"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/project/Cargo.lock",
+      "sha256": "3f5b853de2ffd0e36591e521397eb4bddef7ac93145e888a2dff4b585b0d892c",
+      "bytes": 156,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/project/Cargo.lock"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/project/Cargo.toml",
+      "sha256": "ecceab475b10ededf77c82c694534db17523438ad751caa710aaf319d44f8beb",
+      "bytes": 61,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/project/Cargo.toml"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/project/build.rs",
+      "sha256": "36ea25feb60168794a48b10142da426378b9c3f4cae863867e23e601873147c4",
+      "bytes": 222,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/project/build.rs"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/project/src/main.rs",
+      "sha256": "03dbccd41d64c938d2aa6fe38f365cb1f9e3a1075a3a6bc632e6752a2e146add",
+      "bytes": 44,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/project/src/main.rs"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/project/watched",
+      "sha256": "e35b2252583cefc6c764da00830c86b8d929c925703a88ebcb622c8f0caf24f9",
+      "bytes": 15,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/project/watched"
+    },
+    {
+      "path": "timestamps/v3/explicit-input/report.json",
+      "sha256": "9e6b0f5258e18960de60f941b40e2cea52cf459a10fb2304c47e3f039fa3444d",
+      "bytes": 2246,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/report.json"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/after-buildscript-native-0a9347da4ced76d5.txt",
+      "sha256": "fcb6a092a91feb5e442677f24963eb4585a76b0e9e835f9774f2db8ea9ee31ff",
+      "bytes": 4823,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/after-buildscript-native-0a9347da4ced76d5.txt"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/after-native-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/after-native-build.stderr"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/after-native-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/after-native-build.stdout"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/after-native-run.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/after-native-run.stderr"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/after-native-run.stdout",
+      "sha256": "663c05fb1ca746f046c17365d7fce304b2a59d59e033770b0ce487cfa04ddaff",
+      "bytes": 11,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/after-native-run.stdout"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/after-oracle-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/after-oracle-build.stderr"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/after-oracle-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/after-oracle-build.stdout"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/after-oracle-run.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/after-oracle-run.stderr"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/after-oracle-run.stdout",
+      "sha256": "663c05fb1ca746f046c17365d7fce304b2a59d59e033770b0ce487cfa04ddaff",
+      "bytes": 11,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/after-oracle-run.stdout"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/after.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/after.trace.jsonl"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/before-buildscript-native-0a9347da4ced76d5.txt",
+      "sha256": "191f287889f5c771952d17d807e3455337cb0b649492c2f9ed1eec31d954acc9",
+      "bytes": 4824,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/before-buildscript-native-0a9347da4ced76d5.txt"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/before-native-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/before-native-build.stderr"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/before-native-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/before-native-build.stdout"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/before-native-run.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/before-native-run.stderr"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/before-native-run.stdout",
+      "sha256": "7a29effa2736b031e99169da62f7cf7b428c0f39ec5a971a369dad67d9a5c876",
+      "bytes": 11,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/before-native-run.stdout"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/before-oracle-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/before-oracle-build.stderr"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/before-oracle-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/before-oracle-build.stdout"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/before-oracle-run.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/before-oracle-run.stderr"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/before-oracle-run.stdout",
+      "sha256": "7a29effa2736b031e99169da62f7cf7b428c0f39ec5a971a369dad67d9a5c876",
+      "bytes": 11,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/before-oracle-run.stdout"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/before.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/before.trace.jsonl"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/commands.json",
+      "sha256": "3d7962195e2ba4fb52293b7501979e7a547f41b3655c45344d33b9b9674aa9b8",
+      "bytes": 9277,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/commands.json"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/project/Cargo.lock",
+      "sha256": "c21704893ac0ef2e0c6f59276e06cb111375df28c581891d86376ebe548791fa",
+      "bytes": 164,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/project/Cargo.lock"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/project/Cargo.toml",
+      "sha256": "fbbfcd03176f295242bc707ef953fd24ab6dafaf4082b08c80dbb781fc36d432",
+      "bytes": 69,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/project/Cargo.toml"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/project/build.rs",
+      "sha256": "95a101d3d256ec80490beb49c6951e9a8b3d868ee1c934ea7091bca657b215eb",
+      "bytes": 240,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/project/build.rs"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/project/src/main.rs",
+      "sha256": "4eaa30bbe86e224aa921789ceee9eb4838301a8d3d3ca438c8821b590d51e8b9",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/project/src/main.rs"
+    },
+    {
+      "path": "timestamps/v3/implicit-source/report.json",
+      "sha256": "00043480a643190bc2e19db46f0a4b16deec0e09f856828839aeef4a603710cf",
+      "bytes": 2176,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/report.json"
+    },
+    {
+      "path": "timestamps/v3/record-snapshots/explicit-input/native-cache/buildscript-native-aff21c48c82c47ad.txt",
+      "sha256": "c16b0b007b6e8dc22ba20a27eedceeef0d73bc2e3cb67c21d9125b267135190e",
+      "bytes": 4864,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/explicit-input/native-cache/buildscript-native-aff21c48c82c47ad.txt"
+    },
+    {
+      "path": "timestamps/v3/record-snapshots/implicit-source/native-cache/buildscript-native-0a9347da4ced76d5.txt",
+      "sha256": "fcb6a092a91feb5e442677f24963eb4585a76b0e9e835f9774f2db8ea9ee31ff",
+      "bytes": 4823,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/native-cache/buildscript-native-0a9347da4ced76d5.txt"
+    },
+    {
+      "path": "timestamps/v3/review.json",
+      "sha256": "643dcbf767040edbf3a6858e911ff996b7e8b24124e946872fca9d95910497ab",
+      "bytes": 5683,
+      "original_path": "/tmp/lustr-host-timestamp-review-v3/review.json"
+    }
+  ]
+}

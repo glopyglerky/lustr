@@ -1,0 +1,137 @@
+{
+  "cases": [
+    {
+      "exact_stderr_match": true,
+      "exact_stdout_match": true,
+      "id": "unit",
+      "public_build_route": [
+        {
+          "engine": "lust",
+          "entry": "native-library"
+        }
+      ],
+      "public_exit": 0,
+      "public_stderr_bytes": 0,
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_bytes": 10,
+      "public_stdout_sha256": "908d927e9f8b23e963f59933cb78fd34880c77ec6f0dd8421c0b8ae99d3dc4f6",
+      "reference_exit": 0,
+      "source_sha256": "65ad9cc9d38baa18e89b7a22cf3d2a6f9fb2fc6fc1bf98e840d48d9193638d75",
+      "status": "passed"
+    },
+    {
+      "exact_stderr_match": true,
+      "exact_stdout_match": true,
+      "id": "result-ok",
+      "public_build_route": [
+        {
+          "engine": "lust",
+          "entry": "native-library"
+        }
+      ],
+      "public_exit": 0,
+      "public_stderr_bytes": 0,
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_bytes": 10,
+      "public_stdout_sha256": "de7cf795ff724548185d7ff9459d72706ea5731d68e18df988f30963b063ba6a",
+      "reference_exit": 0,
+      "source_sha256": "6b9f4b8c4a1f3eea50ecc6368f85970834ae35427cbe4efc7b054998f6199c53",
+      "status": "passed"
+    },
+    {
+      "exact_stderr_match": true,
+      "exact_stdout_match": true,
+      "id": "result-err",
+      "public_build_route": [
+        {
+          "engine": "lust",
+          "entry": "native-library"
+        }
+      ],
+      "public_exit": 1,
+      "public_stderr_bytes": 34,
+      "public_stderr_sha256": "d59bedd95dcb343bfce70718ef5c58fc27ec3d050fc103a2af1d78bf1c749703",
+      "public_stdout_bytes": 11,
+      "public_stdout_sha256": "9b0c757c4a9417243f093d48a1aacfb96009ce1ddbc8a3c26337d41e4afd7d24",
+      "reference_exit": 1,
+      "source_sha256": "2c6d53b3703d108d5bbfec9ed06818d770d1776bd9b9c033dfb4d68b9f70d95a",
+      "status": "passed"
+    },
+    {
+      "exact_stderr_match": true,
+      "exact_stdout_match": true,
+      "id": "exitcode-success",
+      "public_build_route": [
+        {
+          "engine": "lust",
+          "entry": "native-library"
+        }
+      ],
+      "public_exit": 0,
+      "public_stderr_bytes": 0,
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_bytes": 17,
+      "public_stdout_sha256": "e1d7443f411ecddd651be5a370afd397dcba3fe6af412a4f79c4d0f151493880",
+      "reference_exit": 0,
+      "source_sha256": "d90a07f2f8c7aaa54c9debd96c1960b702527030e301797dd0858200f2093101",
+      "status": "passed"
+    },
+    {
+      "exact_stderr_match": true,
+      "exact_stdout_match": true,
+      "id": "exitcode-failure",
+      "public_build_route": [
+        {
+          "engine": "lust",
+          "entry": "native-library"
+        }
+      ],
+      "public_exit": 1,
+      "public_stderr_bytes": 0,
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_bytes": 17,
+      "public_stdout_sha256": "e9c3179fcc8445fe2b005a045fb184cfa907a83c225e17da507563e386e6acc0",
+      "reference_exit": 1,
+      "source_sha256": "59b27e201b818d38cc3014a6831a6f89ab08033911b4b3d8dddae5828a9b357c",
+      "status": "passed"
+    }
+  ],
+  "child_timeout_seconds": 10,
+  "commands": 20,
+  "compiler_invocations": 10,
+  "component_sha256": {
+    "bin/lust": "6c6a5fe97fb5cb1bb0fd5d773ece973a05ff4a807b2b6ad4eea7e39ebcac12bd",
+    "bin/lust-core": "f54fa87997237160a0071cb9035cdbf5f4b9325e58eeb490d99d432dd4d5abcc",
+    "bin/lustr": "7c4028ad4ed6a92e533b0227dd7772166ba9a041a6450a025a0f2891a90a9a2e",
+    "bin/rustc-full": "279a6189bb6e6782a6659ee8c8c9c5ff096c976227d56318bfc2ca8277d24c8c",
+    "bin/rustc-reference": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "lib/liblustr_native_core.so": "8036febf5ce65cff52b0e79920ef541f4738bd189e94b409e7223516bbf5597f"
+  },
+  "composition": "Original source-built PR26 package without launcher or compiler substitution",
+  "date": "2026-11-18",
+  "environment_controls": {
+    "LUST_NO_CACHE": "1",
+    "LUST_NO_DAEMON": "1"
+  },
+  "evidence_sha256": {
+    "records.jsonl": "fa69430208da082fbe17bc03e449f4e10bc8528eb230d425a886f366dd260d26",
+    "report.json": "aafd94d5942e16bdcfc66f88f535c24f5a86200cb169ef3d2d7263196a97f647",
+    "runner.py": "805260282cfdfb7b66dd04689854941776ed26b63dab9fb382691597bf8e73f6"
+  },
+  "full_rust_fallbacks": 0,
+  "limits": [
+    "No daemon or persistent native-state coverage.",
+    "No performance claim.",
+    "Five concrete return cases do not establish custom Termination behavior, all Result payloads, or other target ABIs.",
+    "Runtime success on this host does not resolve a source-level C function-type concern on other platforms."
+  ],
+  "mode": "cold-only",
+  "platform_scope": "Current Linux x86_64 host, standalone cold public build",
+  "retries": 0,
+  "runtime_comparisons": 5,
+  "runtime_executions": 10,
+  "schema": "lustr-main-return-smoke-summary-v1",
+  "source_revision": "43a7e07d32929309fc6e402d7bca6b5673e186a2",
+  "status": "passed",
+  "timeouts": 0
+}

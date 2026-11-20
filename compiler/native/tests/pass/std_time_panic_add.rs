@@ -1,4 +1,4 @@
-// panic: overflow when adding durations
+// panic: adding durations should not exceed u64::MAX
 // `Duration + Duration` panics with std's message on overflow
 // (library/core/src/time.rs, W-STD-C).
 use std::time::Duration;

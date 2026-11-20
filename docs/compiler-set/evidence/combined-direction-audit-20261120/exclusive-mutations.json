@@ -1,0 +1,22 @@
+{
+  "command": [
+    "python3",
+    "tools/test-exclusive-coverage-guard.py"
+  ],
+  "cwd": "<CHECKOUT>",
+  "explicit_environment": {},
+  "expected_exit": 0,
+  "exit_code": 0,
+  "duration_seconds": 0.6990101337432861,
+  "expected_result_observed": true,
+  "stdout": {
+    "path": "exclusive-mutations.stdout",
+    "bytes": 315,
+    "sha256": "d3b928adb1cf2a8e4e3c16a295adc5fe13ea2e6fa7158a7f810f1faa74b03e83"
+  },
+  "stderr": {
+    "path": "exclusive-mutations.stderr",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

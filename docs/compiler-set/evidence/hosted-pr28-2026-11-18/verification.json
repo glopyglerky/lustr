@@ -1,0 +1,657 @@
+{
+  "schema": "lustr-hosted-qualification-audit-v1",
+  "date": "2026-11-18",
+  "repository": "glopyglerky/lustr",
+  "pull_request": 28,
+  "source": {
+    "head": "429fe6054e6119221e598b95c2661665ecdd7be2",
+    "base": "43a7e07d32929309fc6e402d7bca6b5673e186a2",
+    "tested_merge": "84257ab1e63469a3162f1ebd3b9177b3fd4a371e",
+    "tree": "7caaeb641eba6dda5b26b9d3d6761ca3a5a79581",
+    "native_tree": "d9ca06dc18dde19bf5bd2af688adf75a041b12a5",
+    "head_and_merge_trees_match": true,
+    "receipts": [
+      {
+        "run_id": 44363351365,
+        "sha256": "a22cc51139c4de5d46709ec52ac583846cef8ab46a3b93a01af4f06d14c4bcac"
+      },
+      {
+        "run_id": 44363351391,
+        "sha256": "6367dd5b9ff8ce79031c24c5ece50919d87e4dfea462a042f27cd3cf69c441bc"
+      }
+    ]
+  },
+  "runs": [
+    {
+      "id": 44363351365,
+      "name": "CI",
+      "attempt": 1,
+      "conclusion": "failure",
+      "jobs": [
+        {
+          "id": 135010408702,
+          "name": "Runner source provenance",
+          "conclusion": "success",
+          "steps_recorded": 4,
+          "url": "https://github.com/glopyglerky/lustr/actions/runs/44363351365/job/135010408702"
+        },
+        {
+          "id": 135010409182,
+          "name": "macos-arm64",
+          "conclusion": "cancelled",
+          "steps_recorded": null,
+          "url": "https://github.com/glopyglerky/lustr/actions/runs/44363351365/job/135010409182"
+        },
+        {
+          "id": 135010409278,
+          "name": "linux-x86_64",
+          "conclusion": "success",
+          "steps_recorded": 19,
+          "url": "https://github.com/glopyglerky/lustr/actions/runs/44363351365/job/135010409278"
+        }
+      ],
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44363351365"
+    },
+    {
+      "id": 44363351391,
+      "name": "Compiler set",
+      "attempt": 1,
+      "conclusion": "failure",
+      "jobs": [
+        {
+          "id": 135010409987,
+          "name": "Source-built mixed Rust and Lust",
+          "conclusion": "success",
+          "steps_recorded": 49,
+          "url": "https://github.com/glopyglerky/lustr/actions/runs/44363351391/job/135010409987"
+        },
+        {
+          "id": 135010410201,
+          "name": "Cargo compatibility (ubuntu-24.04)",
+          "conclusion": "success",
+          "steps_recorded": 8,
+          "url": "https://github.com/glopyglerky/lustr/actions/runs/44363351391/job/135010410201"
+        },
+        {
+          "id": 135010410229,
+          "name": "Coordinator minimum Rust",
+          "conclusion": "success",
+          "steps_recorded": 6,
+          "url": "https://github.com/glopyglerky/lustr/actions/runs/44363351391/job/135010410229"
+        },
+        {
+          "id": 135010410324,
+          "name": "Actual Lust subset qualification",
+          "conclusion": "success",
+          "steps_recorded": 8,
+          "url": "https://github.com/glopyglerky/lustr/actions/runs/44363351391/job/135010410324"
+        },
+        {
+          "id": 135010410433,
+          "name": "Cargo compatibility (windows-latest)",
+          "conclusion": "success",
+          "steps_recorded": 8,
+          "url": "https://github.com/glopyglerky/lustr/actions/runs/44363351391/job/135010410433"
+        },
+        {
+          "id": 135010410465,
+          "name": "Cargo compatibility (macos-26)",
+          "conclusion": "cancelled",
+          "steps_recorded": null,
+          "url": "https://github.com/glopyglerky/lustr/actions/runs/44363351391/job/135010410465"
+        },
+        {
+          "id": 135010410545,
+          "name": "Cranelift with unwinding qualification",
+          "conclusion": "success",
+          "steps_recorded": 13,
+          "url": "https://github.com/glopyglerky/lustr/actions/runs/44363351391/job/135010410545"
+        },
+        {
+          "id": 135010410555,
+          "name": "Runner source provenance",
+          "conclusion": "success",
+          "steps_recorded": 4,
+          "url": "https://github.com/glopyglerky/lustr/actions/runs/44363351391/job/135010410555"
+        },
+        {
+          "id": 135010410620,
+          "name": "Pinned Lust reference and declared integration",
+          "conclusion": "success",
+          "steps_recorded": 9,
+          "url": "https://github.com/glopyglerky/lustr/actions/runs/44363351391/job/135010410620"
+        },
+        {
+          "id": 135010410666,
+          "name": "Checked rustc semantic inspection",
+          "conclusion": "success",
+          "steps_recorded": 8,
+          "url": "https://github.com/glopyglerky/lustr/actions/runs/44363351391/job/135010410666"
+        }
+      ],
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44363351391"
+    }
+  ],
+  "artifacts": [
+    {
+      "run_id": 44363351365,
+      "id": 14462711425,
+      "name": "native-gate-Linux-X64-84257ab1e63469a3162f1ebd3b9177b3fd4a371e-1",
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44363351365/artifacts/14462711425",
+      "bytes": 36485,
+      "sha256": "8709ef8ce41d09472e6059fe9ce4ff4beb227cc5c038e7136df864e3dffcf94d"
+    },
+    {
+      "run_id": 44363351365,
+      "id": 14454857392,
+      "name": "runner-source-44363351365-1",
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44363351365/artifacts/14454857392",
+      "bytes": 449,
+      "sha256": "3ccae4cb6ab683369875130a9ab8e735ed786c085823c5958ea41012e5689d12"
+    },
+    {
+      "run_id": 44363351391,
+      "id": 14458797002,
+      "name": "source-built-mixed-qualification-1",
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44363351391/artifacts/14458797002",
+      "bytes": 1358884,
+      "sha256": "1daad6355908d546ca7a272c824ccb77f725171dcfe27735daee541c5f5fc158"
+    },
+    {
+      "run_id": 44363351391,
+      "id": 14456651799,
+      "name": "runner-source-44363351391-1",
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44363351391/artifacts/14456651799",
+      "bytes": 456,
+      "sha256": "c48743fe7a3ef9d899fee4a9eed5f554d2bf6c37c3405703c9dcf3ae0b0f02e6"
+    }
+  ],
+  "audit": {
+    "kind": "read-only receipt and retained-stream verification; no new compiler run",
+    "archive_digests_verified": 4,
+    "command_stream_digests_verified": 66,
+    "fixture_digests_verified": 4,
+    "source_file_digests_verified": 2,
+    "all_recorded_executed_job_steps_succeeded": true,
+    "macos_cancellation_cause": "not established; no steps and log retrieval returned HTTP 404 BlobNotFound"
+  },
+  "native_linux": {
+    "run_id": 44363351365,
+    "job_id": 135010409278,
+    "host": {
+      "os": "Linux",
+      "machine": "x86_64",
+      "kernel": "7.0.0-1017-azure",
+      "image": "ubuntu24",
+      "image_version": "20261111.370.1",
+      "cpu": "AMD EPYC 9V74 80-Core Processor",
+      "visible_logical_cpus": 4
+    },
+    "oracle": {
+      "release": "1.99.0",
+      "source": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "host": "x86_64-unknown-linux-gnu",
+      "binary_sha256": "f3834d26669b03f6855fa54bd2381443123e860167bc0c7a8dd137e5cf6e5e4f"
+    },
+    "sanitizer_compiler": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+    "recorded_binary_sha256": {
+      "lust": "837569840e2d593185c63da2f181cd554c9ad5e18596ed8407b87ff03424bc73",
+      "lust-core": "487f5ac4b2f9b1de89c4b75a82ebc4df87d23657b38d29ee5be6aa537e256739"
+    },
+    "reported_suites": {
+      "ordinary_differential": {
+        "passed": 5528,
+        "failed": 0
+      },
+      "sanitizer_differential": {
+        "passed": 5528,
+        "failed": 0
+      },
+      "daemon_scenarios": {
+        "passed": 364,
+        "total": 364,
+        "unsupported_versions": 29
+      },
+      "lust_port": {
+        "passed": 13,
+        "failed": 0
+      },
+      "macro_corpus": {
+        "passed": 58,
+        "failed": 0
+      },
+      "macro_dependencies": {
+        "passed": 13,
+        "failed": 0
+      },
+      "kernels": {
+        "passed": 43,
+        "failed": 0
+      },
+      "client": {
+        "passed": 89,
+        "failed": 0
+      },
+      "crate_fixtures": {
+        "passed": 85,
+        "failed": 0
+      }
+    },
+    "base_image_lifetime": "passed",
+    "strict_main_transitions": {
+      "status": "passed",
+      "command_count": 33,
+      "cgen_sha256": "1cbce6afffc8f3df96032b5588736cbd861033feba8111bec5047889472c12b1",
+      "runner_sha256": "1f391308d2bb4671b211408282ef0ab7a446ccfc38a1450e78a477d9ff56879e",
+      "report_sha256": "a334e545a747696ac5b75f79c09fb409cb960b4a4cf0a6709435ced469071fa9",
+      "results": [
+        {
+          "version": "v1.rs",
+          "fixture_sha256": "170241a9b42c373be4d94ff2fe90936017f213b6d296567c423b9a7056857e74",
+          "expected_exit": 1,
+          "passed": true,
+          "retained_recheck": true,
+          "retained_build": true,
+          "compile_accepted": true,
+          "oracle_exit": 1,
+          "warm_exit": 1,
+          "cold_exit": 1,
+          "warm_timed_out": false,
+          "cold_timed_out": false,
+          "warm_matches": true,
+          "cold_matches": true
+        },
+        {
+          "version": "v2.rs",
+          "fixture_sha256": "4c08057755a47ecc88caf07361a6aca6f74f7024404473b82ab9af30ec7e7d9c",
+          "expected_exit": 0,
+          "passed": true,
+          "retained_recheck": true,
+          "retained_build": true,
+          "compile_accepted": true,
+          "oracle_exit": 0,
+          "warm_exit": 0,
+          "cold_exit": 0,
+          "warm_timed_out": false,
+          "cold_timed_out": false,
+          "warm_matches": true,
+          "cold_matches": true
+        },
+        {
+          "version": "v3.rs",
+          "fixture_sha256": "8b451fc0f186e4a24fc6bf7e4d46632c650662e1a14db83526935271b3365558",
+          "expected_exit": 7,
+          "passed": true,
+          "retained_recheck": true,
+          "retained_build": true,
+          "compile_accepted": true,
+          "oracle_exit": 7,
+          "warm_exit": 7,
+          "cold_exit": 7,
+          "warm_timed_out": false,
+          "cold_timed_out": false,
+          "warm_matches": true,
+          "cold_matches": true
+        },
+        {
+          "version": "v4.rs",
+          "fixture_sha256": "3f37ba79dda6ae52941d2633e998edc83701d69d8411c284b4fdcba2f6b327a1",
+          "expected_exit": 0,
+          "passed": true,
+          "retained_recheck": true,
+          "retained_build": true,
+          "compile_accepted": true,
+          "oracle_exit": 0,
+          "warm_exit": 0,
+          "cold_exit": 0,
+          "warm_timed_out": false,
+          "cold_timed_out": false,
+          "warm_matches": true,
+          "cold_matches": true
+        }
+      ],
+      "commands": [
+        {
+          "label": "rustc-version",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "b569b0c98ea3133c7252b4b8ea6b39b7b353813df0dd5f5c412c355691424112",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "label": "v1-rustc-build",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "label": "v1-warm-check",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "c41935fe15d13b686cfe174e253fcf62340a5b7fb23169f0dea220517b43d888"
+        },
+        {
+          "label": "v1-warm-recheck",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "ca47ad7a7490e54fae7401ec3871680343c9c41c3409f6b4e94c9d58d03116d2"
+        },
+        {
+          "label": "v1-warm-build",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "a6f2523247f12fd58d6ab287f6de1b2a90bd7761663668e88f4462bbbd2a1f21"
+        },
+        {
+          "label": "v1-cold-build",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "3361dd8cdb887b074146630f92071cfbf19c393228b0f7dff78d7f678ab9f08c"
+        },
+        {
+          "label": "v1-rustc-run",
+          "exit": 1,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "f86687606f8ec45aacd2c10940b70faae4fd2545fd8441d4208522d178fd8ba0",
+          "stderr_sha256": "3366fa451374333d12c2a1223a80a0ad3801d2c0a3ab394276db538fef449020"
+        },
+        {
+          "label": "v1-warm-run",
+          "exit": 1,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "f86687606f8ec45aacd2c10940b70faae4fd2545fd8441d4208522d178fd8ba0",
+          "stderr_sha256": "3366fa451374333d12c2a1223a80a0ad3801d2c0a3ab394276db538fef449020"
+        },
+        {
+          "label": "v1-cold-run",
+          "exit": 1,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "f86687606f8ec45aacd2c10940b70faae4fd2545fd8441d4208522d178fd8ba0",
+          "stderr_sha256": "3366fa451374333d12c2a1223a80a0ad3801d2c0a3ab394276db538fef449020"
+        },
+        {
+          "label": "v2-rustc-build",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "label": "v2-warm-check",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "cb68d008be47bf7d6f0882f6d1c923e5912ca781b66debefcd942b88ff101467"
+        },
+        {
+          "label": "v2-warm-recheck",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "0d2dd0b5780c101accdc3d7c1ff74c19f446eb2e70f76053a9def5f6ae387a2d"
+        },
+        {
+          "label": "v2-warm-build",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "206b3c60ef2c2075092e54f7698979c542df7ddbe3e5ca781630167861456789"
+        },
+        {
+          "label": "v2-cold-build",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "5ab20c3e10b149ac508ff7416cb6973b21fb12dfb383e4549f5a89ebc2ba188a"
+        },
+        {
+          "label": "v2-rustc-run",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "60f59a97433681138c489341c0b71dedc18862c25c2e67e6ca0297336cccf785",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "label": "v2-warm-run",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "60f59a97433681138c489341c0b71dedc18862c25c2e67e6ca0297336cccf785",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "label": "v2-cold-run",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "60f59a97433681138c489341c0b71dedc18862c25c2e67e6ca0297336cccf785",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "label": "v3-rustc-build",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "label": "v3-warm-check",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "158cd70512675a4ca1517e4383b4da07f819d2133fe04b125444a9588ba59cd7"
+        },
+        {
+          "label": "v3-warm-recheck",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "ca47ad7a7490e54fae7401ec3871680343c9c41c3409f6b4e94c9d58d03116d2"
+        },
+        {
+          "label": "v3-warm-build",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "f4f6bb299604ad323bd9d18c1737640a87d11c47cc603d077c9c279c4fd87edc"
+        },
+        {
+          "label": "v3-cold-build",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "86663ad9edec916c999fdfb484277223024855b5a78f92ef04f0b84ca5750bae"
+        },
+        {
+          "label": "v3-rustc-run",
+          "exit": 7,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "90cf25d88fdf25fde209669a8a417d5e1e17d2464da855644ecb5ce1ab9dfd60",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "label": "v3-warm-run",
+          "exit": 7,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "90cf25d88fdf25fde209669a8a417d5e1e17d2464da855644ecb5ce1ab9dfd60",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "label": "v3-cold-run",
+          "exit": 7,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "90cf25d88fdf25fde209669a8a417d5e1e17d2464da855644ecb5ce1ab9dfd60",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "label": "v4-rustc-build",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "label": "v4-warm-check",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "cb68d008be47bf7d6f0882f6d1c923e5912ca781b66debefcd942b88ff101467"
+        },
+        {
+          "label": "v4-warm-recheck",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "0d2dd0b5780c101accdc3d7c1ff74c19f446eb2e70f76053a9def5f6ae387a2d"
+        },
+        {
+          "label": "v4-warm-build",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "382bed4acdac8cc3760511cbcbfff10247356601cf582145b12c57a98b47da7f"
+        },
+        {
+          "label": "v4-cold-build",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "6cf76b29679039465c7477bbfd95cd21f2423452929d7ca65de1b84fc1beed52"
+        },
+        {
+          "label": "v4-rustc-run",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "5da3e143e99f64c9db8e96fb3b8e4ae47d40981c1cfe3ec22fede00b81088292",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "label": "v4-warm-run",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "5da3e143e99f64c9db8e96fb3b8e4ae47d40981c1cfe3ec22fede00b81088292",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "label": "v4-cold-run",
+          "exit": 0,
+          "timed_out": false,
+          "status": "completed",
+          "stdout_sha256": "5da3e143e99f64c9db8e96fb3b8e4ae47d40981c1cfe3ec22fede00b81088292",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "runtime_bytes_match_oracle": true,
+      "retained_recheck_and_build_stats_verified": true
+    }
+  },
+  "source_built_linux": {
+    "run_id": 44363351391,
+    "job_id": 135010409987,
+    "profile": "release",
+    "construction": "complete source-built candidate; no diagnostic launcher replacement",
+    "host": {
+      "os": "Linux",
+      "machine": "x86_64",
+      "kernel": "7.0.0-1014-aws",
+      "image": "ubuntu24",
+      "image_version": "20261111.127.1",
+      "cpu": "Intel(R) Xeon(R) 6975P-C",
+      "visible_logical_cpus": 4
+    },
+    "sdk": {
+      "release": "1.102.0-nightly",
+      "toolchain": "nightly-2026-11-09",
+      "source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "llvm": "23.1.5"
+    },
+    "native_build_hash": "7bc1713fd1a7e578",
+    "recorded_binary_sha256": {
+      "lustr": "37c805c00d58cf5d78966a0eb1c33b4d70a897178ba04722f47e02be84b2b99c",
+      "rustc-full": "c8ad7ffb98133a57a354ab8d3b1f9d4e0917b4b3d173fd4513abd158f390e6c8",
+      "lust": "301a3695b6ecfdc28caaac544695a4f4f9f8296a2c2d328b3c46eea76dfe4b88",
+      "lust-core": "5e66dc51dcba75ca0e2832c22697f3d1c18ad4464ab3cb49eaa842bfd8acd412",
+      "cargo-lustr": "8674bc8324bf815e35b5dc19e0f4dbf3320137d0a71b85292281fcc44ba57745",
+      "liblustr_native_core.so": "caf14fdba589c8b44e80597272e25c3e59756fe62849dd263b1488ca623ec9aa"
+    },
+    "entry_contract": {
+      "passed": 17,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 0,
+      "tests": [
+        "cancellation_terminates_owned_cargo_and_build_script_descendants",
+        "cargo_entry_runs_without_a_separate_coordinator_executable",
+        "cargo_native_first_build_preserves_build_script_environment",
+        "cargo_selection_preserves_explicit_package_target_and_source",
+        "large_valid_native_argument_lists_use_the_original_process",
+        "native_and_full_compiler_contract",
+        "native_borrowed_path_conversions_match_rust",
+        "native_file_tests_preserve_single_execution",
+        "native_library_expansion_keeps_program_checks_and_runtime",
+        "native_library_identity_controls_retained_source_state",
+        "native_library_selection_survives_process_startup",
+        "native_os_string_reserve_preserves_unwind_and_buffer",
+        "native_output_failure_does_not_become_success",
+        "native_path_reserve_preserves_unwind_and_buffer",
+        "native_rejection_preserves_full_core_resource_context",
+        "official_sdk_clippy_and_rustfmt_execute_from_the_package",
+        "single_file_full_check_preserves_metadata_cleanup_and_errors"
+      ],
+      "log_sha256": "0f0f509735046e6a34b18569c508f4725806ca4c1a6d126fcbcec2ff186f4194"
+    },
+    "expected_historical_baseline_failure": {
+      "exit": 101,
+      "witness": "link-failure-recovery: old application printed 1080, expected 1081",
+      "candidate_step_succeeded": true
+    }
+  },
+  "private_original_log_sha256": {
+    "native_linux_job": "082f1b0ad2aa004d8ee3ce6d7684818515155c93c7383d32f140e81e7cc5ab77",
+    "source_built_job": "166d435c761706bcdc002f7f3bee3800f89de04800e1ba7cef3fc9df2aba5d5d"
+  },
+  "limits": [
+    "The two aggregate workflow conclusions remain failure; the only non-success jobs are macOS cancellations with no steps.",
+    "Linux native and transitional source-built package correctness evidence applies only to the recorded source tree.",
+    "The Linux GCC sanitizer run is not a macOS Clang qualification or a universal ABI proof.",
+    "The legacy daemon suite retained 29 unsupported versions; the independent strict four-version main gate accepted every compilation and compared exact runtime outcomes.",
+    "Binary hashes come from hosted build receipts. Compiler binaries are not in these downloaded artifacts.",
+    "This audit does not reassess timings, declare performance acceptance, establish all-Rust coverage, complete the integrated architecture, or admit a package release.",
+    "Subsequent capability-boundary changes require their own source-bound qualification."
+  ]
+}

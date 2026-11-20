@@ -1,0 +1,10 @@
+warning: function `check` is never used
+   --> tools/lust-upstream-check.rs:126:4
+    |
+126 | fn check(repo: &Path, pin: &Pin, integration: &Integration, index: bool) -> Result<(), String> {
+    |    ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: 1 warning emitted
+

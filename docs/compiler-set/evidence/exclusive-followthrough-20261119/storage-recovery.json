@@ -1,0 +1,17 @@
+{
+  "reason": "Local filesystem exhausted after completed fresh construction and entry controls. Test-binary compilation failed before execution; range witness failed before directory setup.",
+  "removed": [
+    "earlier scoped native target debug/incremental",
+    "completed final native-library debug/incremental",
+    "completed final native client/core and failed test-build debug/incremental"
+  ],
+  "preserved": "installed packages, binaries, source, all original logs, receipts, dependency caches and other worktrees",
+  "original_test_build_label": "mixed-admission-product-tests",
+  "original_test_build_status": 101,
+  "original_range_setup_label": "final-range-fixture",
+  "original_range_setup_status": 1,
+  "constructor_repeated": false,
+  "source_changed": false,
+  "timestamp_utc": "2026-11-19T11:05:17.275607+00:00",
+  "free_bytes_after_cleanup": 3285446656
+}

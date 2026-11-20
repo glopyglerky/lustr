@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "cargo_source": "c07ac2c4d12237effc4b94f4543769b421790045",
+  "declared_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "reader_source_sha256": "cc39fec2ee64dabf85f813e1bd537a60652e1c49d00705a4b92e97349132f28e",
+  "contract": "docs/compiler-set/native-driver.md",
+  "prior_exact_setup_failure": "docs/compiler-set/complete-native-warm-comparison.md",
+  "current_controls": {
+    "without_compatibility_setting": {
+      "passed": 132,
+      "failed": 1,
+      "failed_test": "driver::buildscript::tests::script_reruns_when_what_it_read_changes",
+      "observed": "Empty cfg/environment lists instead of bs_a and BS_DATA=v1"
+    },
+    "with_explicit_compatibility_setting": {
+      "passed": 133,
+      "failed": 0
+    },
+    "setting": "__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT=1",
+    "raw_sha256": {
+      "prepare-driver-qualified.stdout": "faf2775c3f906777682c50ed012bda436f14738d575e767ed41090147df7d1ca",
+      "prepare-driver-qualified.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "prepare-driver-compatible.stdout": "5d9dd5d5b33c63d4fdb61279ca7806d7b9b8ccb75e716e3f6bd42f82fca490fc",
+      "prepare-driver-compatible.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "prepare-buildscript-compat.stdout": "ed3da949b59548319ddeae58daa89645454fc2b58c6cb021f13c8918b703e5a9",
+      "prepare-buildscript-compat.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "workflow_change": {
+    "default_if_unset": "1",
+    "preserve_explicit_inherited_value": true,
+    "require_exact_cargo_commit": true,
+    "record_cargo_identity_and_selection": true,
+    "all_existing_test_steps_preserved": true
+  },
+  "limits": [
+    "This configures the documented native Cargo compatibility mode. It does not add support for the new build-directory layout.",
+    "The control results remain attached to the checked-request qualification source that produced them; hosted CI must run the complete suite for its own source."
+  ]
+}

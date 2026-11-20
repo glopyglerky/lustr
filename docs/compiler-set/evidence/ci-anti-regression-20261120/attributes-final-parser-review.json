@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "scope": "Final parser only; original archived candidate and fresh oracle executions remain recorded separately.",
+  "current_compiler_qualification": false,
+  "evaluator_sha256": "32a04132df7e34e7cf858230a799a186809a92579fbadba8a483f6403ac97fd0",
+  "original_spot_check_sha256": "d0082a4e8ca433a9035ec67b808bf62ed10b3f9ad7efbf97ce4f42da2eb6a337",
+  "native_stdout_sha256": "c9288bce2f24fcdaa304079f2472c42244546fd5541ec7f1b6dd78e22b31e8a7",
+  "oracle_stdout_sha256": "d9fb60b950bd0cc11934bf08e2b7983b316735bbdcf85fc01b1b64453729d793"
+}

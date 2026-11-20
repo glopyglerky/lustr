@@ -1,0 +1,71 @@
+{
+  "repository": "glopyglerky/lustr",
+  "run_id": 44553094553,
+  "job_id": 135661773915,
+  "url": "https://github.com/glopyglerky/lustr/actions/runs/44553094553/job/135661773915",
+  "published_head": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+  "checkout": {
+    "sha": "66963315e9736ce9f151ce8ccac248d35a01d048",
+    "tree": "2a6a51f099bdcdb74871fdc2e65a4df87aa0c867",
+    "parents": [
+      "d135be016fab5db2ba026f1229d4d77681d9b0a2",
+      "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a"
+    ],
+    "url": "https://github.com/glopyglerky/lustr/commit/66963315e9736ce9f151ce8ccac248d35a01d048"
+  },
+  "jobs": [
+    {
+      "id": 135661773915,
+      "name": "Frozen evidence replay (no current compiler qualification)",
+      "status": "completed",
+      "conclusion": "failure",
+      "run_id": 44553094553,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Exercise reporting and evidence refusal controls",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 3
+        },
+        {
+          "name": "Replay immutable historical source and results",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 4
+        },
+        {
+          "name": "State applicability",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 5
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        }
+      ]
+    }
+  ],
+  "scope": "Original failed historical reporting-control job; compiler and benchmark construction were not attempted."
+}

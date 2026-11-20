@@ -1,0 +1,154 @@
+{
+  "7c-linux/native-cargo-layout-qualification/verification.json": {
+    "bytes": 2570,
+    "sha256": "7944a4b17bb51cb2664acd805fcdd7318062bb73829c7970bc1abfc68cb9d0d1"
+  },
+  "7c-linux/native-cargo-layout.txt": {
+    "bytes": 430,
+    "sha256": "b0e929a4b8288374d2911818ebd122509726aef08429e9cfafe1f9cc2f66e2ab"
+  },
+  "7c-linux/native-erased-callbacks-eh/report.json": {
+    "bytes": 52855,
+    "sha256": "1ba6594af2386bdb2da3627b5e473641302bdcfef5a5efa55eb3aa25a82d5087"
+  },
+  "7c-linux/native-erased-callbacks/report.json": {
+    "bytes": 48668,
+    "sha256": "6bc4ec270ab504f50da8daf4cc596ccf94188e9a3c10061dde6acd2ff968e36d"
+  },
+  "7c-linux/native-gate-identity.txt": {
+    "bytes": 679,
+    "sha256": "b993df7b80345306b365aec606c566b0216785cd619b21026605c8082a4d7c3d"
+  },
+  "7c-linux/native-main-transitions/report.json": {
+    "bytes": 17061,
+    "sha256": "a807f1a5f2f5c30840e330846f19f1b9c167afc172fb0d93d70b62282a9c3fd9"
+  },
+  "7c-linux/native-unwind-eh-identity.txt": {
+    "bytes": 1155,
+    "sha256": "f2011aead59ddec9638a74ed2e3a7efcb0240d84ecaa79d0392c4aa6dbf2ea41"
+  },
+  "7c-linux/native-unwind-identity.txt": {
+    "bytes": 658,
+    "sha256": "cbd4af49562e97f9b3859b4178610949f4d7bc60c86b56b4df01e006fe52ccd3"
+  },
+  "7c-linux/tinycc-signing-qualification/report.json": {
+    "bytes": 22943,
+    "sha256": "3f9943152cac272d5c4ac80324edae29377ad2c95367884d4e378725c41c2240"
+  },
+  "7c-supplemental/capability-results/report.json": {
+    "bytes": 52829,
+    "sha256": "1400a152b200d067b44aa56bb6c212ab8a2448dcfb0360e5afc165f831449bb2"
+  },
+  "7c-supplemental/lustr-native-built/COMPONENTS.txt": {
+    "bytes": 999,
+    "sha256": "305d1e4a69b91926d05baca3ef38e23f728a3e04605ab345f11691074b3d1f3c"
+  },
+  "7c-supplemental/native-cargo-plan/report.json": {
+    "bytes": 27969,
+    "sha256": "8bd75ec722eb8ab73e64aa7d6b2f08181ba8bb283119492ef57ec5fe37cee24f"
+  },
+  "7c-supplemental/native-compact-selection/results.json": {
+    "bytes": 429714,
+    "sha256": "2177b06173b0b9aa6f3b0e62a2197cbc32d68820ba5021c00bae776de534c67a"
+  },
+  "7c-supplemental/native-selection-cache/results.json": {
+    "bytes": 571580,
+    "sha256": "c413e38112716bec3fa856be08494cb23af71b8e228e4a0fdc78b032dfaddf5e"
+  },
+  "7c-supplemental/native-selection-seed/package/lib/lustr-selection-tools.txt": {
+    "bytes": 350,
+    "sha256": "856982325124108771a2315245588392d8978860014207e40065205a9c193049"
+  },
+  "7c-supplemental/native-selection-seed/results.json": {
+    "bytes": 46945,
+    "sha256": "e968349fc786a5966191a4e912fd8b63cde28e6f4edc3dcb91cc883ee2c39c5b"
+  },
+  "7c-supplemental/retained-results/report.json": {
+    "bytes": 76208,
+    "sha256": "ca8a94c6f2afe002829205710d8d9e1d879febc764421d01a9e263fe06bea638"
+  },
+  "7c-supplemental/tinycc-signing-qualification/report.json": {
+    "bytes": 22871,
+    "sha256": "899c7876904fe1e7ebefdeb53a80375b29f0e4a3ff4e6d1038f242fefc783ffa"
+  },
+  "c821-linux/native-cargo-layout-qualification/verification.json": {
+    "bytes": 2570,
+    "sha256": "a9e58463dbdc716e2e27e3aea909f2e1d2dc6ef8df8f3277c2bd56702849b66f"
+  },
+  "c821-linux/native-cargo-layout.txt": {
+    "bytes": 430,
+    "sha256": "b0e929a4b8288374d2911818ebd122509726aef08429e9cfafe1f9cc2f66e2ab"
+  },
+  "c821-linux/native-erased-callbacks-eh/report.json": {
+    "bytes": 52855,
+    "sha256": "f0db01cc64016e277c1786e37c21136d312fac7f4b47054c08e75dbd210173f8"
+  },
+  "c821-linux/native-erased-callbacks/report.json": {
+    "bytes": 48668,
+    "sha256": "359db5b9fa5a68397e29f154b626ee9574c8e223b6e1a51c0f48bf1c9bfba92f"
+  },
+  "c821-linux/native-gate-identity.txt": {
+    "bytes": 681,
+    "sha256": "e6493f011e6543bf1210a50c72a85ecdbbc42ffc6032b008c8a1e5af0f269b0f"
+  },
+  "c821-linux/native-main-transitions/report.json": {
+    "bytes": 17061,
+    "sha256": "81a6d2aaa4e96c8bf7c37ab0b4f03c160dff4340c470b9e7b3072ba72a9718d2"
+  },
+  "c821-linux/native-unwind-eh-identity.txt": {
+    "bytes": 1155,
+    "sha256": "821f7575aecd4def28fe6404bd52e82b381a4f11aede124d237b31082afe1e6a"
+  },
+  "c821-linux/native-unwind-identity.txt": {
+    "bytes": 658,
+    "sha256": "3b1540eb887b1f94a4c7ca9f5e851760635cab906000d54d1f50cc4ab5a2cb63"
+  },
+  "c821-linux/tinycc-signing-qualification/report.json": {
+    "bytes": 22943,
+    "sha256": "024cafb9124f0443b236569a20bad1851816655f2446ff68a5dacb59908a0e33"
+  },
+  "c821-supplemental/capability-results/report.json": {
+    "bytes": 52829,
+    "sha256": "3e94f31f664c99eaeb9a439169834ed01629df14f23bb82c16deaa79bb30115d"
+  },
+  "c821-supplemental/lustr-native-built/COMPONENTS.txt": {
+    "bytes": 999,
+    "sha256": "beb0ed8442b0e0fa9bae06623d33dd0f31ef81dfb023b11a66858ebcd2e28932"
+  },
+  "c821-supplemental/native-cargo-plan/report.json": {
+    "bytes": 27969,
+    "sha256": "9c2d5bceb96f16d21ad9b1f36642963bdba309262b12be0355ed0761e235b4d2"
+  },
+  "c821-supplemental/native-compact-selection/results.json": {
+    "bytes": 429714,
+    "sha256": "122c369c470f6a17371cf5ec001218caa61085e0b2bc733cc2836ace73e39f23"
+  },
+  "c821-supplemental/native-selection-cache/package/lib/lustr-selection-tools.txt": {
+    "bytes": 342,
+    "sha256": "401c56f4ff06003f588e0d02725e7473bc5b6c4104bfc0f09d426956a9215609"
+  },
+  "c821-supplemental/native-selection-cache/results.json": {
+    "bytes": 571905,
+    "sha256": "62dd29f66f2ae25380c49ad1c98b6c5321ae09c9fec1e0bc40968dc421941823"
+  },
+  "c821-supplemental/native-selection-seed/package/lib/lustr-selection-tools.txt": {
+    "bytes": 350,
+    "sha256": "856982325124108771a2315245588392d8978860014207e40065205a9c193049"
+  },
+  "c821-supplemental/native-selection-seed/relocated-package/lib/lustr-selection-tools.txt": {
+    "bytes": 342,
+    "sha256": "401c56f4ff06003f588e0d02725e7473bc5b6c4104bfc0f09d426956a9215609"
+  },
+  "c821-supplemental/native-selection-seed/results.json": {
+    "bytes": 47211,
+    "sha256": "603fd98da0a405f4688be275b77aec3194a69bb8d725320152a9f5f627514472"
+  },
+  "c821-supplemental/retained-results/report.json": {
+    "bytes": 76208,
+    "sha256": "d0ffe28d77b605d86dd8ee057fdf45373aa24b8eb9276fd265589762c30f147d"
+  },
+  "c821-supplemental/tinycc-signing-qualification/report.json": {
+    "bytes": 22871,
+    "sha256": "5cac42b03024e550cbde4ecde7027841723b6eec93b53484bf87ec3775c73764"
+  }
+}

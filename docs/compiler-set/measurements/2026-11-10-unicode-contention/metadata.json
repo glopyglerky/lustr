@@ -1,0 +1,60 @@
+{
+  "cpu_affinity": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "effective_environment": {
+    "CASE_TIMEOUT": "30",
+    "CC_DRIVER": null,
+    "CC_TARGET": null,
+    "DIFFTEST_JOBS": null,
+    "DIFFTEST_RUSTC_CACHE": "off",
+    "DIFFTEST_SHARD": null,
+    "EH": null,
+    "LL": null,
+    "LUST_NO_DAEMON": "1",
+    "LUST_RELEASE_BACKEND": null,
+    "LUST_RELEASE_C": null,
+    "LUST_STRICT": null,
+    "LUST_UNWIND_TABLES": null,
+    "PANIC": null,
+    "RELEASE": null,
+    "RUN_TIMEOUT": "10",
+    "SAN_CC_LIMIT": "20"
+  },
+  "fixture_sha256": "f68662c528f0a470b30856def6fade326b2154b4ebda5a0e5b83c8f70da28b7d",
+  "limits": {
+    "/proc/meminfo": "MemTotal:       16367524 kB\nMemFree:        13076588 kB\nMemAvailable:   14853576 kB\nBuffers:           69276 kB\nCached:          1980144 kB\nSwapCached:            0 kB\nActive:          1046088 kB\nInactive:        1245892 kB\nActive(anon):     299132 kB\nInactive(anon):        0 kB\nActive(file):     746956 kB\nInactive(file):  1245892 kB\nUnevictable:       46760 kB\nMlocked:           43688 kB\nSwapTotal:       3145724 kB\nSwapFree:        3145724 kB\nZswap:                 0 kB\nZswapped:              0 kB\nDirty:            117996 kB\nWriteback:             4 kB\nAnonPages:        289592 kB\nMapped:           332360 kB\nShmem:             47640 kB\nKReclaimable:      90940 kB\nSlab:             171708 kB\nSReclaimable:      90940 kB\nSUnreclaim:        80768 kB\nKernelStack:        4152 kB\nPageTables:         6656 kB\nSecPageTables:         0 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:    11329484 kB\nCommitted_AS:    2045544 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:       42548 kB\nVmallocChunk:          0 kB\nPercpu:             2336 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:    559104 kB\nFilePmdMapped:         0 kB\nCmaTotal:              0 kB\nCmaFree:         1478656 kB\nUnaccepted:            0 kB\nBalloon:               0 kB\nGPUActive:             0 kB\nGPUReclaim:            0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:      140416 kB\nDirectMap2M:     4048896 kB\nDirectMap1G:    14680064 kB\n",
+    "/sys/fs/cgroup/cpuset.cpus.effective": "0-3\n"
+  },
+  "lust_sha256": "399608ae6b49341261c7a8eb0bf3fd8308800acab5a03bce4ed406ec71407799",
+  "scope": "Linux-only diagnostic; not full CI or a qualification of full Rust",
+  "selected_cases": {
+    "unicode_": [
+      "tests/fail/lex_unicode_escape_overlong.rs",
+      "tests/fail/lex_unicode_escape_underscore_first.rs",
+      "tests/fail/pattern_byte_unicode_esc.rs",
+      "tests/pass/str_unicode_case.rs",
+      "tests/pass/unicode_idents.rs",
+      "tests/pass/unicode_props.rs",
+      "tests/pass/unicode_props_hash.rs"
+    ],
+    "unicode_props_hash": [
+      "tests/pass/unicode_props_hash.rs"
+    ]
+  },
+  "versions": {
+    "cargo": "cargo 1.99.0 (5f94df478 2026-08-27)",
+    "commit": "ddc633295fbc0eca012087d1c48932224810077a",
+    "cpu": "Architecture:                            x86_64\nCPU op-mode(s):                          32-bit, 64-bit\nAddress sizes:                           48 bits physical, 48 bits virtual\nByte Order:                              Little Endian\nCPU(s):                                  4\nOn-line CPU(s) list:                     0-3\nVendor ID:                               AuthenticAMD\nModel name:                              AMD EPYC 7763 64-Core Processor\nCPU family:                              25\nModel:                                   1\nThread(s) per core:                      2\nCore(s) per socket:                      2\nSocket(s):                               1\nStepping:                                1\nBogoMIPS:                                4890.85\nFlags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl tsc_reliable nonstop_tsc cpuid extd_apicid aperfmperf tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy svm cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves user_shstk clzero xsaveerptr rdpru arat npt nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold v_vmsave_vmload umip vaes vpclmulqdq rdpid fsrm\nVirtualization:                          AMD-V\nHypervisor vendor:                       Microsoft\nVirtualization type:                     full\nL1d cache:                               64 KiB (2 instances)\nL1i cache:                               64 KiB (2 instances)\nL2 cache:                                1 MiB (2 instances)\nL3 cache:                                32 MiB (1 instance)\nNUMA node(s):                            1\nNUMA node0 CPU(s):                       0-3\nVulnerability Gather data sampling:      Not affected\nVulnerability Ghostwrite:                Not affected\nVulnerability Indirect target selection: Not affected\nVulnerability Itlb multihit:             Not affected\nVulnerability L1tf:                      Not affected\nVulnerability Mds:                       Not affected\nVulnerability Meltdown:                  Not affected\nVulnerability Mmio stale data:           Not affected\nVulnerability Old microcode:             Not affected\nVulnerability Reg file data sampling:    Not affected\nVulnerability Retbleed:                  Not affected\nVulnerability Spec rstack overflow:      Vulnerable: Safe RET, no microcode\nVulnerability Spec store bypass:         Vulnerable\nVulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:                Mitigation; Retpolines; STIBP disabled; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected\nVulnerability Srbds:                     Not affected\nVulnerability Tsa:                       Vulnerable: No microcode\nVulnerability Tsx async abort:           Not affected\nVulnerability Vmscape:                   Not affected",
+    "gcc": "",
+    "kernel": "Linux runnervm7aw5e 7.0.0-1017-azure #17~24.04.1-Ubuntu SMP PREEMPT Thu Sep 24 18:46:57 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux",
+    "memory": "total        used        free      shared  buff/cache   available\nMem:     16760344576  1550282752 13390426112    48783360  2191728640 15210061824\nSwap:     3221221376           0  3221221376",
+    "nproc": "4",
+    "rustc": "rustc 1.99.0 (b940084d7 2026-09-28)\nbinary: rustc\ncommit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4\ncommit-date: 2026-09-28\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.0\nLLVM version: 23.1.1",
+    "timeout": "timeout (GNU coreutils) 9.4\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Padraig Brady.",
+    "upstream-tree": "0ab1b09815802894e6078de0af59273cbdf46cb0"
+  }
+}

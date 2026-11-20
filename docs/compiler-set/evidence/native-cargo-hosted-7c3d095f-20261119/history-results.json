@@ -1,0 +1,2459 @@
+{
+  "schema": "lustr-log-derived-retained-results-v1",
+  "published_head": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+  "runner_merge": "66963315e9736ce9f151ce8ccac248d35a01d048",
+  "tree": "2a6a51f099bdcdb74871fdc2e65a4df87aa0c867",
+  "job_id": 135661771824,
+  "job_log_sha256": "8574acbf5a9bcc8a9da5d68870c543adeeb1cad033f78ef1f0abf789066dc3da",
+  "required_histories": 349,
+  "versions": 1744,
+  "full_retained_coverage": false,
+  "unresolved_histories": 13,
+  "unresolved_versions": 105,
+  "scope": "Exact per-history result rows parsed from the complete original job log. Original command streams remain in artifact14546870100; this file is not a replacement for those bytes.",
+  "histories": [
+    {
+      "name": "alias01_written_self_edits",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "alias01_written_self_edits/report.json"
+    },
+    {
+      "name": "any01_type_id_edits",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "any01_type_id_edits/report.json"
+    },
+    {
+      "name": "ap01_apit_header_edits",
+      "passed": true,
+      "versions": 14,
+      "failure": null,
+      "report": "ap01_apit_header_edits/report.json"
+    },
+    {
+      "name": "bb01_block_items_body_edits",
+      "passed": true,
+      "versions": 9,
+      "failure": null,
+      "report": "bb01_block_items_body_edits/report.json"
+    },
+    {
+      "name": "bb02_body_impl_method_edits",
+      "passed": true,
+      "versions": 11,
+      "failure": null,
+      "report": "bb02_body_impl_method_edits/report.json"
+    },
+    {
+      "name": "bb03_block_item_shape_edits",
+      "passed": true,
+      "versions": 15,
+      "failure": null,
+      "report": "bb03_block_item_shape_edits/report.json"
+    },
+    {
+      "name": "bb04_block_struct_shadows_module_type",
+      "passed": true,
+      "versions": 9,
+      "failure": null,
+      "report": "bb04_block_struct_shadows_module_type/report.json"
+    },
+    {
+      "name": "bb05_line_before_nested_items",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "bb05_line_before_nested_items/report.json"
+    },
+    {
+      "name": "bb06_nested_fns_not_plain",
+      "passed": true,
+      "versions": 13,
+      "failure": null,
+      "report": "bb06_nested_fns_not_plain/report.json"
+    },
+    {
+      "name": "bc01_body_const_moves_owner",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "bc01_body_const_moves_owner/report.json"
+    },
+    {
+      "name": "bi01_block_enum_variant_edits",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "bi01_block_enum_variant_edits/report.json"
+    },
+    {
+      "name": "bi02_block_struct_shadows_module",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "bi02_block_struct_shadows_module/report.json"
+    },
+    {
+      "name": "bi03_body_use_variant_closure",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "bi03_body_use_variant_closure/report.json"
+    },
+    {
+      "name": "bi04_block_ctor_edits",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "bi04_block_ctor_edits/report.json"
+    },
+    {
+      "name": "bi05_block_dup_items",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "bi05_block_dup_items/report.json"
+    },
+    {
+      "name": "bi06_block_struct_field_glue",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "bi06_block_struct_field_glue/report.json"
+    },
+    {
+      "name": "bi07_block_alias_edits",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "bi07_block_alias_edits/report.json"
+    },
+    {
+      "name": "bi08_block_pattern_edits",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "bi08_block_pattern_edits/report.json"
+    },
+    {
+      "name": "bm01_bodies_swap_equal_length",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "bm01_bodies_swap_equal_length/report.json"
+    },
+    {
+      "name": "cargo01_bin_discovery",
+      "passed": true,
+      "versions": 8,
+      "failure": null,
+      "report": "cargo01_bin_discovery/report.json"
+    },
+    {
+      "name": "cargo02_lib_discovery",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "cargo02_lib_discovery/report.json"
+    },
+    {
+      "name": "cargo04_features_default",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "cargo04_features_default/report.json"
+    },
+    {
+      "name": "cargo07_profile_dev",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "cargo07_profile_dev/report.json"
+    },
+    {
+      "name": "cargo08_config_env",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "cargo08_config_env/report.json"
+    },
+    {
+      "name": "cargo10_bs_env_rerun",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "cargo10_bs_env_rerun/report.json"
+    },
+    {
+      "name": "cargo11_env_macro",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "cargo11_env_macro/report.json"
+    },
+    {
+      "name": "cargo12_dep_bs_env",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "cargo12_dep_bs_env/report.json"
+    },
+    {
+      "name": "cb01_const_init_derive_copy",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "cb01_const_init_derive_copy/report.json"
+    },
+    {
+      "name": "cb02_const_init_header_move",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "cb02_const_init_header_move/report.json"
+    },
+    {
+      "name": "cb03_anon_const_header_edit",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "cb03_anon_const_header_edit/report.json"
+    },
+    {
+      "name": "cb03_const_init_keyed",
+      "passed": true,
+      "versions": 8,
+      "failure": null,
+      "report": "cb03_const_init_keyed/report.json"
+    },
+    {
+      "name": "cb04_anon_const_derive_copy",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "cb04_anon_const_derive_copy/report.json"
+    },
+    {
+      "name": "cc01_const_chain_fn_reject_revert",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "cc01_const_chain_fn_reject_revert/report.json"
+    },
+    {
+      "name": "cc02_const_chain4_fn_reject_revert",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "cc02_const_chain4_fn_reject_revert/report.json"
+    },
+    {
+      "name": "cc03_const_chain4_run_only",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "cc03_const_chain4_run_only/report.json"
+    },
+    {
+      "name": "cc04_const_chain4_checks_then_run",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "cc04_const_chain4_checks_then_run/report.json"
+    },
+    {
+      "name": "cc05_const_chain_static",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "cc05_const_chain_static/report.json"
+    },
+    {
+      "name": "cc06_const_chain_assoc",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "cc06_const_chain_assoc/report.json"
+    },
+    {
+      "name": "cc07_const_chain_array_len",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "cc07_const_chain_array_len/report.json"
+    },
+    {
+      "name": "cc08_const_chain_generic",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "cc08_const_chain_generic/report.json"
+    },
+    {
+      "name": "cc09_const_chain_inner_fn",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "cc09_const_chain_inner_fn/report.json"
+    },
+    {
+      "name": "cc10_const_chain_mixed_rejects",
+      "passed": true,
+      "versions": 8,
+      "failure": null,
+      "report": "cc10_const_chain_mixed_rejects/report.json"
+    },
+    {
+      "name": "cc11_const_chain_body_uses",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "cc11_const_chain_body_uses/report.json"
+    },
+    {
+      "name": "cc12_const_chain_fn_body_error",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "cc12_const_chain_fn_body_error/report.json"
+    },
+    {
+      "name": "cc13_const_chain_reject_same_value",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "cc13_const_chain_reject_same_value/report.json"
+    },
+    {
+      "name": "cf01_const_fn_generic_reuse",
+      "passed": true,
+      "versions": 8,
+      "failure": null,
+      "report": "cf01_const_fn_generic_reuse/report.json"
+    },
+    {
+      "name": "cg01_glue_display_edit",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "cg01_glue_display_edit/report.json"
+    },
+    {
+      "name": "cg02_glue_display_first_request",
+      "passed": true,
+      "versions": 1,
+      "failure": null,
+      "report": "cg02_glue_display_first_request/report.json"
+    },
+    {
+      "name": "chunk01_body_delete_moves_std_impls",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "chunk01_body_delete_moves_std_impls/report.json"
+    },
+    {
+      "name": "cr01_const_fn_array_len",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "cr01_const_fn_array_len/report.json"
+    },
+    {
+      "name": "cv01_const_fn_value_in_closure",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "cv01_const_fn_value_in_closure/report.json"
+    },
+    {
+      "name": "cv02_const_fn_value_in_discovery",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "cv02_const_fn_value_in_discovery/report.json"
+    },
+    {
+      "name": "cyc01_sig_chunk",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "cyc01_sig_chunk/report.json"
+    },
+    {
+      "name": "cyc02_sig_resolver",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "cyc02_sig_resolver/report.json"
+    },
+    {
+      "name": "cyc03_where_chunk",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "cyc03_where_chunk/report.json"
+    },
+    {
+      "name": "cyc04_where_resolver",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "cyc04_where_resolver/report.json"
+    },
+    {
+      "name": "cyc05_derive_chunk",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "cyc05_derive_chunk/report.json"
+    },
+    {
+      "name": "cyc06_derive_resolver",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "cyc06_derive_resolver/report.json"
+    },
+    {
+      "name": "cyc07_rpit_chunk",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "cyc07_rpit_chunk/report.json"
+    },
+    {
+      "name": "cyc08_rpit_resolver",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "cyc08_rpit_resolver/report.json"
+    },
+    {
+      "name": "cyc09_allow_nested_chunk",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "cyc09_allow_nested_chunk/report.json"
+    },
+    {
+      "name": "cyc10_trait_chunk",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "cyc10_trait_chunk/report.json"
+    },
+    {
+      "name": "cyc11_trait_resolver",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "cyc11_trait_resolver/report.json"
+    },
+    {
+      "name": "cyc12_constfn_chunk",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "cyc12_constfn_chunk/report.json"
+    },
+    {
+      "name": "cyc13_constfn_resolver",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "cyc13_constfn_resolver/report.json"
+    },
+    {
+      "name": "cyc14_macro_body_resolver",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "cyc14_macro_body_resolver/report.json"
+    },
+    {
+      "name": "deref01_user_deref_edits",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "deref01_user_deref_edits/report.json"
+    },
+    {
+      "name": "dh01_trait_default_nested_edits",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "dh01_trait_default_nested_edits/report.json"
+    },
+    {
+      "name": "dh02_body_types_removed",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "dh02_body_types_removed/report.json"
+    },
+    {
+      "name": "dt01_deep_type_edits",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "dt01_deep_type_edits/report.json"
+    },
+    {
+      "name": "dv01_codegen_derive_reads",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "dv01_codegen_derive_reads/report.json"
+    },
+    {
+      "name": "dv01_copy_through_tuple_option",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "dv01_copy_through_tuple_option/report.json"
+    },
+    {
+      "name": "dv02_clone_through_option_generic",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "dv02_clone_through_option_generic/report.json"
+    },
+    {
+      "name": "dv03_blanket_debug_partial_eq",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "dv03_blanket_debug_partial_eq/report.json"
+    },
+    {
+      "name": "dv04_hash_eq_map_key",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "dv04_hash_eq_map_key/report.json"
+    },
+    {
+      "name": "dv05_ord_default_generic",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "dv05_ord_default_generic/report.json"
+    },
+    {
+      "name": "dv06_const_pattern_structural",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "dv06_const_pattern_structural/report.json"
+    },
+    {
+      "name": "dv07_add_derives",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "dv07_add_derives/report.json"
+    },
+    {
+      "name": "dv08_derive_delta_field_users",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "dv08_derive_delta_field_users/report.json"
+    },
+    {
+      "name": "dv09_derive_delta_written_impl",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "dv09_derive_delta_written_impl/report.json"
+    },
+    {
+      "name": "dv10_derive_delta_pending_discovery",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "dv10_derive_delta_pending_discovery/report.json"
+    },
+    {
+      "name": "dv11_derive_undo_first_ever",
+      "passed": true,
+      "versions": 10,
+      "failure": null,
+      "report": "dv11_derive_undo_first_ever/report.json"
+    },
+    {
+      "name": "dv12_derive_template_bodies",
+      "passed": true,
+      "versions": 12,
+      "failure": null,
+      "report": "dv12_derive_template_bodies/report.json"
+    },
+    {
+      "name": "dv13_tdefault_derive_default_path",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "dv13_tdefault_derive_default_path/report.json"
+    },
+    {
+      "name": "dv14_tdefault_derive_copy",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "dv14_tdefault_derive_copy/report.json"
+    },
+    {
+      "name": "dv15_tdefault_derive_debug",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "dv15_tdefault_derive_debug/report.json"
+    },
+    {
+      "name": "dv16_tdefault_derive_default_infer",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "dv16_tdefault_derive_default_infer/report.json"
+    },
+    {
+      "name": "dv17_tdefault_header_ret",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "dv17_tdefault_header_ret/report.json"
+    },
+    {
+      "name": "dv18_tdefault_header_param",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "dv18_tdefault_header_param/report.json"
+    },
+    {
+      "name": "dv19_derive_alias_closure_template",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "dv19_derive_alias_closure_template/report.json"
+    },
+    {
+      "name": "dv20_derive_closure_template_reads",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "dv20_derive_closure_template_reads/report.json"
+    },
+    {
+      "name": "dv21_derive_written_projections",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "dv21_derive_written_projections/report.json"
+    },
+    {
+      "name": "dv21_generic_derive_field_impl_toggle",
+      "passed": true,
+      "versions": 9,
+      "failure": null,
+      "report": "dv21_generic_derive_field_impl_toggle/report.json"
+    },
+    {
+      "name": "dv22_derive_template_reject_keeps",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "dv22_derive_template_reject_keeps/report.json"
+    },
+    {
+      "name": "dv22_generic_derive_bounds_projection",
+      "passed": true,
+      "versions": 9,
+      "failure": null,
+      "report": "dv22_generic_derive_bounds_projection/report.json"
+    },
+    {
+      "name": "dv23_derive_pending_discovery_reads",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "dv23_derive_pending_discovery_reads/report.json"
+    },
+    {
+      "name": "dyn01_vtable_edits",
+      "passed": true,
+      "versions": 8,
+      "failure": null,
+      "report": "dyn01_vtable_edits/report.json"
+    },
+    {
+      "name": "dyn02_static_and_supers",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "dyn02_static_and_supers/report.json"
+    },
+    {
+      "name": "dyn03_static_bounds",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "dyn03_static_bounds/report.json"
+    },
+    {
+      "name": "dyn04_body_edit_reuse",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "dyn04_body_edit_reuse/report.json"
+    },
+    {
+      "name": "dyn05_item_edits",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "dyn05_item_edits/report.json"
+    },
+    {
+      "name": "dyn06_static_supertrait",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "dyn06_static_supertrait/report.json"
+    },
+    {
+      "name": "dyn07_method_visibility",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "dyn07_method_visibility/report.json"
+    },
+    {
+      "name": "dyn08_fn_vtable_edits",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "dyn08_fn_vtable_edits/report.json"
+    },
+    {
+      "name": "dyn09_box_rc_dyn_edits",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "dyn09_box_rc_dyn_edits/report.json"
+    },
+    {
+      "name": "dyn10_fn_item_vtable_edits",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "dyn10_fn_item_vtable_edits/report.json"
+    },
+    {
+      "name": "env01_client_env_macros",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "env01_client_env_macros/report.json"
+    },
+    {
+      "name": "es01_empty_struct_shape_edits",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "es01_empty_struct_shape_edits/report.json"
+    },
+    {
+      "name": "fi01_body_impl_edits",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "fi01_body_impl_edits/report.json"
+    },
+    {
+      "name": "fi02_body_impl_outer_trait",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "fi02_body_impl_outer_trait/report.json"
+    },
+    {
+      "name": "fi03_body_impl_shadow",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "fi03_body_impl_shadow/report.json"
+    },
+    {
+      "name": "fi04_body_impl_block_type_edit",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "fi04_body_impl_block_type_edit/report.json"
+    },
+    {
+      "name": "fm01_genmacro_shadow",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "fm01_genmacro_shadow/report.json"
+    },
+    {
+      "name": "gd01_param_default_edit",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "gd01_param_default_edit/report.json"
+    },
+    {
+      "name": "gd02_generic_alias_edit",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "gd02_generic_alias_edit/report.json"
+    },
+    {
+      "name": "gd03_trait_default_edit",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "gd03_trait_default_edit/report.json"
+    },
+    {
+      "name": "gd04_recursive_param_edit",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "gd04_recursive_param_edit/report.json"
+    },
+    {
+      "name": "glue01_reorder_partial_move",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "glue01_reorder_partial_move/report.json"
+    },
+    {
+      "name": "glue02_reorder_closure_capture",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "glue02_reorder_closure_capture/report.json"
+    },
+    {
+      "name": "glue03_derive_debug_gap",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "glue03_derive_debug_gap/report.json"
+    },
+    {
+      "name": "glue04_derive_clone_gap",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "glue04_derive_clone_gap/report.json"
+    },
+    {
+      "name": "glue05_drop_impl_gap",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "glue05_drop_impl_gap/report.json"
+    },
+    {
+      "name": "glue06_enum_reorder_gap",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "glue06_enum_reorder_gap/report.json"
+    },
+    {
+      "name": "glue07_shared_glue_gap",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "glue07_shared_glue_gap/report.json"
+    },
+    {
+      "name": "gs01_nonzero_names_body_edit",
+      "passed": true,
+      "versions": 39,
+      "failure": null,
+      "report": "gs01_nonzero_names_body_edit/report.json"
+    },
+    {
+      "name": "gs03_std_method_names_body_edit",
+      "passed": true,
+      "versions": 21,
+      "failure": null,
+      "report": "gs03_std_method_names_body_edit/report.json"
+    },
+    {
+      "name": "gs04_dyn_and_cow_names_body_edit",
+      "passed": true,
+      "versions": 9,
+      "failure": null,
+      "report": "gs04_dyn_and_cow_names_body_edit/report.json"
+    },
+    {
+      "name": "guard01_module_edit_during_check",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "guard01_module_edit_during_check/report.json"
+    },
+    {
+      "name": "guard02_derive_reject_edits",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "guard02_derive_reject_edits/report.json"
+    },
+    {
+      "name": "h01_const_array_len_local",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h01_const_array_len_local/report.json"
+    },
+    {
+      "name": "h02_const_fn_array_len_body",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h02_const_fn_array_len_body/report.json"
+    },
+    {
+      "name": "h03_sizeof_array_len_body",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h03_sizeof_array_len_body/report.json"
+    },
+    {
+      "name": "h04_static_from_const",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h04_static_from_const/report.json"
+    },
+    {
+      "name": "h05_static_transitive_const_fns",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h05_static_transitive_const_fns/report.json"
+    },
+    {
+      "name": "h06_sizeof_in_const",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h06_sizeof_in_const/report.json"
+    },
+    {
+      "name": "h07_sizeof_compound_body",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h07_sizeof_compound_body/report.json"
+    },
+    {
+      "name": "h08_disc_from_const_edit",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h08_disc_from_const_edit/report.json"
+    },
+    {
+      "name": "h09_disc_from_const_fn",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h09_disc_from_const_fn/report.json"
+    },
+    {
+      "name": "h10_alias_target_local",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h10_alias_target_local/report.json"
+    },
+    {
+      "name": "h11_alias_array_field",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h11_alias_array_field/report.json"
+    },
+    {
+      "name": "h12_range_const_bounds",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h12_range_const_bounds/report.json"
+    },
+    {
+      "name": "h13_assoc_const_pattern",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h13_assoc_const_pattern/report.json"
+    },
+    {
+      "name": "h14_const_or_tuple_pattern",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h14_const_or_tuple_pattern/report.json"
+    },
+    {
+      "name": "h15_const_if_let",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h15_const_if_let/report.json"
+    },
+    {
+      "name": "h16_const_aggregate",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h16_const_aggregate/report.json"
+    },
+    {
+      "name": "h17_const_str",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h17_const_str/report.json"
+    },
+    {
+      "name": "h18_static_array_const_len",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h18_static_array_const_len/report.json"
+    },
+    {
+      "name": "h19_sizeof_const_assert_breaks",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h19_sizeof_const_assert_breaks/report.json"
+    },
+    {
+      "name": "h20_const_block_body",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h20_const_block_body/report.json"
+    },
+    {
+      "name": "h21_const_fn_sig_edit",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h21_const_fn_sig_edit/report.json"
+    },
+    {
+      "name": "h22_derive_field_struct_type",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h22_derive_field_struct_type/report.json"
+    },
+    {
+      "name": "h23_derive_enum_reorder",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h23_derive_enum_reorder/report.json"
+    },
+    {
+      "name": "h24_derive_eq_payload_type",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h24_derive_eq_payload_type/report.json"
+    },
+    {
+      "name": "h25_macro_generated_const",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h25_macro_generated_const/report.json"
+    },
+    {
+      "name": "h26_macro_match_const_pattern",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h26_macro_match_const_pattern/report.json"
+    },
+    {
+      "name": "h28_const_in_guard",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h28_const_in_guard/report.json"
+    },
+    {
+      "name": "h29_offset_of_nested",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h29_offset_of_nested/report.json"
+    },
+    {
+      "name": "h30_align_of_const_repr",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h30_align_of_const_repr/report.json"
+    },
+    {
+      "name": "h31_const_array_typed_len",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h31_const_array_typed_len/report.json"
+    },
+    {
+      "name": "h32_const_fn_edit_back",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "h32_const_fn_edit_back/report.json"
+    },
+    {
+      "name": "h33_static_slice_values",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h33_static_slice_values/report.json"
+    },
+    {
+      "name": "h35_local_struct_field_type",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h35_local_struct_field_type/report.json"
+    },
+    {
+      "name": "h36_cfg_const_fn_body",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h36_cfg_const_fn_body/report.json"
+    },
+    {
+      "name": "h37_disc_variant_insert_debug",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h37_disc_variant_insert_debug/report.json"
+    },
+    {
+      "name": "h38_const_fn_runtime_only",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h38_const_fn_runtime_only/report.json"
+    },
+    {
+      "name": "h39_const_fn_const_pattern",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h39_const_fn_const_pattern/report.json"
+    },
+    {
+      "name": "h40_static_ref_static_const_fn",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h40_static_ref_static_const_fn/report.json"
+    },
+    {
+      "name": "h41_enum_array_const_len_debug",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h41_enum_array_const_len_debug/report.json"
+    },
+    {
+      "name": "h42_derive_field_other_struct_debug",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h42_derive_field_other_struct_debug/report.json"
+    },
+    {
+      "name": "h43_sizeof_option_niche",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h43_sizeof_option_niche/report.json"
+    },
+    {
+      "name": "h44_sizeof_self_method",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h44_sizeof_self_method/report.json"
+    },
+    {
+      "name": "h45_const_in_const_fn_in_const_block",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "h45_const_in_const_fn_in_const_block/report.json"
+    },
+    {
+      "name": "h46_const_fn_len_mismatch_reject",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h46_const_fn_len_mismatch_reject/report.json"
+    },
+    {
+      "name": "h47_const_struct_update",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h47_const_struct_update/report.json"
+    },
+    {
+      "name": "h48_static_after_failed_compile",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "h48_static_after_failed_compile/report.json"
+    },
+    {
+      "name": "h49_static_insert_shifts_index",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "h49_static_insert_shifts_index/report.json"
+    },
+    {
+      "name": "h9ms_depsig",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "h9ms_depsig/report.json"
+    },
+    {
+      "name": "h9ms_genmacro",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "h9ms_genmacro/report.json"
+    },
+    {
+      "name": "h9ms_glob",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "h9ms_glob/report.json"
+    },
+    {
+      "name": "h9ms_late_shadow",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "h9ms_late_shadow/report.json"
+    },
+    {
+      "name": "h9ms_late_vec",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "h9ms_late_vec/report.json"
+    },
+    {
+      "name": "h9ms_late_vec2",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "h9ms_late_vec2/report.json"
+    },
+    {
+      "name": "h9ms_late_vec3",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "h9ms_late_vec3/report.json"
+    },
+    {
+      "name": "h9ms_rename",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "h9ms_rename/report.json"
+    },
+    {
+      "name": "h9ms_shadow",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "h9ms_shadow/report.json"
+    },
+    {
+      "name": "h9ms_subglob",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "h9ms_subglob/report.json"
+    },
+    {
+      "name": "h9ms_xcrate_names",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "h9ms_xcrate_names/report.json"
+    },
+    {
+      "name": "incbytes01_file_edits",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "incbytes01_file_edits/report.json"
+    },
+    {
+      "name": "incl01_module_outside_reads",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "incl01_module_outside_reads/report.json"
+    },
+    {
+      "name": "ka01_consts_aliases_out_of_trait_key",
+      "passed": true,
+      "versions": 8,
+      "failure": null,
+      "report": "ka01_consts_aliases_out_of_trait_key/report.json"
+    },
+    {
+      "name": "ky01_keyed_header_walk",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "ky01_keyed_header_walk/report.json"
+    },
+    {
+      "name": "ky02_keyed_after_reject",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "ky02_keyed_after_reject/report.json"
+    },
+    {
+      "name": "ky03_keyed_rpit_body",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "ky03_keyed_rpit_body/report.json"
+    },
+    {
+      "name": "li01_lang_impl_edits_plain",
+      "passed": true,
+      "versions": 11,
+      "failure": null,
+      "report": "li01_lang_impl_edits_plain/report.json"
+    },
+    {
+      "name": "li02_lang_impl_edits_generic",
+      "passed": true,
+      "versions": 13,
+      "failure": null,
+      "report": "li02_lang_impl_edits_generic/report.json"
+    },
+    {
+      "name": "li03_lang_impl_field_glue",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "li03_lang_impl_field_glue/report.json"
+    },
+    {
+      "name": "li04_lang_impl_std_types",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "li04_lang_impl_std_types/report.json"
+    },
+    {
+      "name": "lt01_param_static_edit",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "lt01_param_static_edit/report.json"
+    },
+    {
+      "name": "lt02_named_return_edit",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "lt02_named_return_edit/report.json"
+    },
+    {
+      "name": "lt03_adt_field_regions_edit",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "lt03_adt_field_regions_edit/report.json"
+    },
+    {
+      "name": "lt04_trait_method_return_edit",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "lt04_trait_method_return_edit/report.json"
+    },
+    {
+      "name": "lt05_drop_impl_dropck_edit",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "lt05_drop_impl_dropck_edit/report.json"
+    },
+    {
+      "name": "lt06_impl_method_return_edit",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "lt06_impl_method_return_edit/report.json"
+    },
+    {
+      "name": "lt07_trait_only_param_edit",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "lt07_trait_only_param_edit/report.json"
+    },
+    {
+      "name": "lt08_dyn_call_static_param_edit",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "lt08_dyn_call_static_param_edit/report.json"
+    },
+    {
+      "name": "lt09_lifetime_alias_body_edit",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "lt09_lifetime_alias_body_edit/report.json"
+    },
+    {
+      "name": "lt10_fn_bound_lifetime_edit",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "lt10_fn_bound_lifetime_edit/report.json"
+    },
+    {
+      "name": "lt11_trait_lifetime_impl_head_edit",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "lt11_trait_lifetime_impl_head_edit/report.json"
+    },
+    {
+      "name": "lt12_trait_bound_lifetime_edit",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "lt12_trait_bound_lifetime_edit/report.json"
+    },
+    {
+      "name": "lt13_fn_bound_output_edit",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "lt13_fn_bound_output_edit/report.json"
+    },
+    {
+      "name": "m02_const_fn_in_submod",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "m02_const_fn_in_submod/report.json"
+    },
+    {
+      "name": "m03_derive_type_in_submod",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "m03_derive_type_in_submod/report.json"
+    },
+    {
+      "name": "m04_static_in_submod_from_const_fn",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "m04_static_in_submod_from_const_fn/report.json"
+    },
+    {
+      "name": "mainret01_exitcode_edits",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "mainret01_exitcode_edits/report.json"
+    },
+    {
+      "name": "mainret02_result_fn_deleted",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "mainret02_result_fn_deleted/report.json"
+    },
+    {
+      "name": "mainret03_unit_to_result",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "mainret03_unit_to_result/report.json"
+    },
+    {
+      "name": "mb01_dep_macro_body_edits",
+      "passed": true,
+      "versions": 9,
+      "failure": null,
+      "report": "mb01_dep_macro_body_edits/report.json"
+    },
+    {
+      "name": "mb02_main_macro_body_edits",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "mb02_main_macro_body_edits/report.json"
+    },
+    {
+      "name": "mono01_error_capture_instance",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "mono01_error_capture_instance/report.json"
+    },
+    {
+      "name": "ns01_body_statics_growth",
+      "passed": true,
+      "versions": 9,
+      "failure": null,
+      "report": "ns01_body_statics_growth/report.json"
+    },
+    {
+      "name": "pr01_promoted_reemit_iter",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "pr01_promoted_reemit_iter/report.json"
+    },
+    {
+      "name": "pr02_promoted_reemit_plain",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "pr02_promoted_reemit_plain/report.json"
+    },
+    {
+      "name": "pr03_promoted_reemit_twice",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "pr03_promoted_reemit_twice/report.json"
+    },
+    {
+      "name": "pr04_promoted_reemit_callee",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "pr04_promoted_reemit_callee/report.json"
+    },
+    {
+      "name": "r3a01_glob_ambiguity_retraction",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "r3a01_glob_ambiguity_retraction/report.json"
+    },
+    {
+      "name": "r3a02_mutual_glob_reexport",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "r3a02_mutual_glob_reexport/report.json"
+    },
+    {
+      "name": "r3a03_enum_variant_glob_ambiguity",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "r3a03_enum_variant_glob_ambiguity/report.json"
+    },
+    {
+      "name": "r3a04_method_privacy",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "r3a04_method_privacy/report.json"
+    },
+    {
+      "name": "r3a05_tuple_field_vis",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "r3a05_tuple_field_vis/report.json"
+    },
+    {
+      "name": "r3a06_body_impl",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "r3a06_body_impl/report.json"
+    },
+    {
+      "name": "r3a07_fn_body_globs",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "r3a07_fn_body_globs/report.json"
+    },
+    {
+      "name": "r3a08_macro_reexport_switch",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "r3a08_macro_reexport_switch/report.json"
+    },
+    {
+      "name": "r3a09_macro_scope_mod_order",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "r3a09_macro_scope_mod_order/report.json"
+    },
+    {
+      "name": "r3a10_macro_scope_file_mods",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "r3a10_macro_scope_file_mods/report.json"
+    },
+    {
+      "name": "r3a11_extern_crate_alloc",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "r3a11_extern_crate_alloc/report.json"
+    },
+    {
+      "name": "r3a12_patch_then_privacy",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "r3a12_patch_then_privacy/report.json"
+    },
+    {
+      "name": "r3a13_duplicate_then_valid",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "r3a13_duplicate_then_valid/report.json"
+    },
+    {
+      "name": "r3a14_reexport_retarget",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "r3a14_reexport_retarget/report.json"
+    },
+    {
+      "name": "r3a15_module_insert",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "r3a15_module_insert/report.json"
+    },
+    {
+      "name": "r3a16_mod_rs_candidate",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "r3a16_mod_rs_candidate/report.json"
+    },
+    {
+      "name": "r3a17_glob_std_alias_switch",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "r3a17_glob_std_alias_switch/report.json"
+    },
+    {
+      "name": "rc05_user_item_shadows_prelude_trait_call",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "rc05_user_item_shadows_prelude_trait_call/report.json"
+    },
+    {
+      "name": "rc06_user_item_shadows_prelude_trait_fn_value",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "rc06_user_item_shadows_prelude_trait_fn_value/report.json"
+    },
+    {
+      "name": "rc07_opaque_body_trait_leaves_scope",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "rc07_opaque_body_trait_leaves_scope/report.json"
+    },
+    {
+      "name": "rc08_opaque_body_trait_import_swaps",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "rc08_opaque_body_trait_import_swaps/report.json"
+    },
+    {
+      "name": "rc09_turbofish_const_gets_type_twin",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "rc09_turbofish_const_gets_type_twin/report.json"
+    },
+    {
+      "name": "rc10_turbofish_const_value",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "rc10_turbofish_const_value/report.json"
+    },
+    {
+      "name": "rej01_collect_reject_walk",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "rej01_collect_reject_walk/report.json"
+    },
+    {
+      "name": "rej02_reject_generic_statics",
+      "passed": true,
+      "versions": 8,
+      "failure": null,
+      "report": "rej02_reject_generic_statics/report.json"
+    },
+    {
+      "name": "rej03_template_error_unwalked",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "rej03_template_error_unwalked/report.json"
+    },
+    {
+      "name": "rej04_patch_reject_unwalked",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "rej04_patch_reject_unwalked/report.json"
+    },
+    {
+      "name": "review_d03_enum_payload_niche",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "review_d03_enum_payload_niche/report.json"
+    },
+    {
+      "name": "review_d08_const_fn_body",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "review_d08_const_fn_body/report.json"
+    },
+    {
+      "name": "review_d17_const_in_pattern",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "review_d17_const_in_pattern/report.json"
+    },
+    {
+      "name": "review_d36_static_from_const_fn",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "review_d36_static_from_const_fn/report.json"
+    },
+    {
+      "name": "review_d39_field_u8_to_bool_debug",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "review_d39_field_u8_to_bool_debug/report.json"
+    },
+    {
+      "name": "review_d43_const_pattern_other_fn_edit_only_const",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "review_d43_const_pattern_other_fn_edit_only_const/report.json"
+    },
+    {
+      "name": "review_d44_const_fn_used_in_const_used_in_fn",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "review_d44_const_fn_used_in_const_used_in_fn/report.json"
+    },
+    {
+      "name": "rm01_removed_defs_keep_indices",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "rm01_removed_defs_keep_indices/report.json"
+    },
+    {
+      "name": "rpit01_hidden_type_edits",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "rpit01_hidden_type_edits/report.json"
+    },
+    {
+      "name": "rpit02_hidden_type_with_use",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "rpit02_hidden_type_with_use/report.json"
+    },
+    {
+      "name": "rpit03_bound_edits",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "rpit03_bound_edits/report.json"
+    },
+    {
+      "name": "rs01_block_item_scopes",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "rs01_block_item_scopes/report.json"
+    },
+    {
+      "name": "rs02_nested_fn_in_module",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "rs02_nested_fn_in_module/report.json"
+    },
+    {
+      "name": "sc01_instance_slots_derive_edits",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "sc01_instance_slots_derive_edits/report.json"
+    },
+    {
+      "name": "sc02_assoc_const_request_edits",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "sc02_assoc_const_request_edits/report.json"
+    },
+    {
+      "name": "sc03_assoc_const_plain_header_template",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "sc03_assoc_const_plain_header_template/report.json"
+    },
+    {
+      "name": "sc04_assoc_const_template_body",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "sc04_assoc_const_template_body/report.json"
+    },
+    {
+      "name": "sc05_anon_const_header_edits",
+      "passed": true,
+      "versions": 8,
+      "failure": null,
+      "report": "sc05_anon_const_header_edits/report.json"
+    },
+    {
+      "name": "sc06_template_header_instances",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "sc06_template_header_instances/report.json"
+    },
+    {
+      "name": "sc07_header_body_items",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "sc07_header_body_items/report.json"
+    },
+    {
+      "name": "sc08_fnptr_derive",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "sc08_fnptr_derive/report.json"
+    },
+    {
+      "name": "sc09_header_statics",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "sc09_header_statics/report.json"
+    },
+    {
+      "name": "sc10_rpit_template_header",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "sc10_rpit_template_header/report.json"
+    },
+    {
+      "name": "sd03_rpit_chain_deep",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "sd03_rpit_chain_deep/report.json"
+    },
+    {
+      "name": "sd04_rpit_chain_method",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "sd04_rpit_chain_method/report.json"
+    },
+    {
+      "name": "sd05_where_flip",
+      "passed": true,
+      "versions": 9,
+      "failure": null,
+      "report": "sd05_where_flip/report.json"
+    },
+    {
+      "name": "sd06_fresh_env_seq",
+      "passed": true,
+      "versions": 9,
+      "failure": null,
+      "report": "sd06_fresh_env_seq/report.json"
+    },
+    {
+      "name": "sd07_method_headers",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "sd07_method_headers/report.json"
+    },
+    {
+      "name": "sd08_new_instance",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "sd08_new_instance/report.json"
+    },
+    {
+      "name": "sd09_rpit_namer_stands",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "sd09_rpit_namer_stands/report.json"
+    },
+    {
+      "name": "sd10_template_callers",
+      "passed": true,
+      "versions": 8,
+      "failure": null,
+      "report": "sd10_template_callers/report.json"
+    },
+    {
+      "name": "sd11_caller_errors_revert",
+      "passed": true,
+      "versions": 8,
+      "failure": null,
+      "report": "sd11_caller_errors_revert/report.json"
+    },
+    {
+      "name": "sd12_rpit_own_bounds",
+      "passed": true,
+      "versions": 9,
+      "failure": null,
+      "report": "sd12_rpit_own_bounds/report.json"
+    },
+    {
+      "name": "sd13_reject_revert_kept",
+      "passed": true,
+      "versions": 13,
+      "failure": null,
+      "report": "sd13_reject_revert_kept/report.json"
+    },
+    {
+      "name": "sd14_assoc_const_impl_heads",
+      "passed": true,
+      "versions": 11,
+      "failure": null,
+      "report": "sd14_assoc_const_impl_heads/report.json"
+    },
+    {
+      "name": "sd15_trait_impl_heads",
+      "passed": true,
+      "versions": 15,
+      "failure": null,
+      "report": "sd15_trait_impl_heads/report.json"
+    },
+    {
+      "name": "sd16_trait_impl_refine",
+      "passed": true,
+      "versions": 8,
+      "failure": null,
+      "report": "sd16_trait_impl_refine/report.json"
+    },
+    {
+      "name": "sd17_pending_closure_callers",
+      "passed": true,
+      "versions": 8,
+      "failure": null,
+      "report": "sd17_pending_closure_callers/report.json"
+    },
+    {
+      "name": "sd18_same_name_method_keys",
+      "passed": true,
+      "versions": 10,
+      "failure": null,
+      "report": "sd18_same_name_method_keys/report.json"
+    },
+    {
+      "name": "sd19_dyn_header_edits",
+      "passed": true,
+      "versions": 9,
+      "failure": null,
+      "report": "sd19_dyn_header_edits/report.json"
+    },
+    {
+      "name": "sd20_error_note_replay",
+      "passed": true,
+      "versions": 8,
+      "failure": null,
+      "report": "sd20_error_note_replay/report.json"
+    },
+    {
+      "name": "sd22_impl_method_concrete_bounds",
+      "passed": true,
+      "versions": 11,
+      "failure": null,
+      "report": "sd22_impl_method_concrete_bounds/report.json"
+    },
+    {
+      "name": "sd23_std_impl_clone",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "sd23_std_impl_clone/report.json"
+    },
+    {
+      "name": "sd23_std_impl_debug",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "sd23_std_impl_debug/report.json"
+    },
+    {
+      "name": "sd23_std_impl_default",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "sd23_std_impl_default/report.json"
+    },
+    {
+      "name": "sd23_std_impl_deref",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "sd23_std_impl_deref/report.json"
+    },
+    {
+      "name": "sd23_std_impl_display",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "sd23_std_impl_display/report.json"
+    },
+    {
+      "name": "sd23_std_impl_display_modfile",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "sd23_std_impl_display_modfile/report.json"
+    },
+    {
+      "name": "sd23_std_impl_drop",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "sd23_std_impl_drop/report.json"
+    },
+    {
+      "name": "sd23_std_impl_error",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "sd23_std_impl_error/report.json"
+    },
+    {
+      "name": "sd23_std_impl_from",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "sd23_std_impl_from/report.json"
+    },
+    {
+      "name": "sd23_std_impl_hash",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "sd23_std_impl_hash/report.json"
+    },
+    {
+      "name": "sd23_std_impl_iterator",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "sd23_std_impl_iterator/report.json"
+    },
+    {
+      "name": "sd23_std_impl_partialeq",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "sd23_std_impl_partialeq/report.json"
+    },
+    {
+      "name": "sd23_std_impl_partialord",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "sd23_std_impl_partialord/report.json"
+    },
+    {
+      "name": "sd24_const_method_call_header_edits",
+      "passed": true,
+      "versions": 11,
+      "failure": null,
+      "report": "sd24_const_method_call_header_edits/report.json"
+    },
+    {
+      "name": "sd25_const_bare_name_header_edits",
+      "passed": true,
+      "versions": 8,
+      "failure": null,
+      "report": "sd25_const_bare_name_header_edits/report.json"
+    },
+    {
+      "name": "sd26_body_known_instance_types",
+      "passed": true,
+      "versions": 22,
+      "failure": null,
+      "report": "sd26_body_known_instance_types/report.json"
+    },
+    {
+      "name": "sd27_rpit_body_reject_then_revert",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "sd27_rpit_body_reject_then_revert/report.json"
+    },
+    {
+      "name": "sd28_body_error_then_rpit_edits",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "sd28_body_error_then_rpit_edits/report.json"
+    },
+    {
+      "name": "sd29_derive_drop_then_header_edit",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "sd29_derive_drop_then_header_edit/report.json"
+    },
+    {
+      "name": "sd30_template_error_then_other_edit",
+      "passed": true,
+      "versions": 10,
+      "failure": null,
+      "report": "sd30_template_error_then_other_edit/report.json"
+    },
+    {
+      "name": "sd31_template_error_then_derive_edit",
+      "passed": true,
+      "versions": 10,
+      "failure": null,
+      "report": "sd31_template_error_then_derive_edit/report.json"
+    },
+    {
+      "name": "sig01_rpit_chain",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "sig01_rpit_chain/report.json"
+    },
+    {
+      "name": "sig03_fn_sigs",
+      "passed": true,
+      "versions": 9,
+      "failure": null,
+      "report": "sig03_fn_sigs/report.json"
+    },
+    {
+      "name": "sig04_derive_toggle",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "sig04_derive_toggle/report.json"
+    },
+    {
+      "name": "sig05_alias_glob",
+      "passed": true,
+      "versions": 6,
+      "failure": null,
+      "report": "sig05_alias_glob/report.json"
+    },
+    {
+      "name": "sig06_attr_fn_headers",
+      "passed": true,
+      "versions": 7,
+      "failure": null,
+      "report": "sig06_attr_fn_headers/report.json"
+    },
+    {
+      "name": "sp01_platform_drop",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "sp01_platform_drop/report.json"
+    },
+    {
+      "name": "sp02_same_line_neighbor",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "sp02_same_line_neighbor/report.json"
+    },
+    {
+      "name": "static06_template_bound",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "static06_template_bound/report.json"
+    },
+    {
+      "name": "std01_plan_edits",
+      "passed": true,
+      "versions": 8,
+      "failure": null,
+      "report": "std01_plan_edits/report.json"
+    },
+    {
+      "name": "std02_module_edits",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "std02_module_edits/report.json"
+    },
+    {
+      "name": "stdcoll01_glue_slots",
+      "passed": true,
+      "versions": 24,
+      "failure": null,
+      "report": "stdcoll01_glue_slots/report.json"
+    },
+    {
+      "name": "syn01_unclosed_after_macro",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "syn01_unclosed_after_macro/report.json"
+    },
+    {
+      "name": "syn02_shebang_moved",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "syn02_shebang_moved/report.json"
+    },
+    {
+      "name": "tc01_const_method_body_edit",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "tc01_const_method_body_edit/report.json"
+    },
+    {
+      "name": "tc01_track_caller_edits",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "tc01_track_caller_edits/report.json"
+    },
+    {
+      "name": "tc02_const_fn_bound_edit",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "tc02_const_fn_bound_edit/report.json"
+    },
+    {
+      "name": "tc03_const_fn_ptr_table_edit",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "tc03_const_fn_ptr_table_edit/report.json"
+    },
+    {
+      "name": "tc04_const_method_value_only",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "tc04_const_method_value_only/report.json"
+    },
+    {
+      "name": "tc05_const_method_array_len",
+      "passed": true,
+      "versions": 2,
+      "failure": null,
+      "report": "tc05_const_method_array_len/report.json"
+    },
+    {
+      "name": "tls01_form_flip",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "tls01_form_flip/report.json"
+    },
+    {
+      "name": "tls02_init_edit",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "tls02_init_edit/report.json"
+    },
+    {
+      "name": "tls03_add_key",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "tls03_add_key/report.json"
+    },
+    {
+      "name": "tls04_nested_shift",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "tls04_nested_shift/report.json"
+    },
+    {
+      "name": "tls05_value_type",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "tls05_value_type/report.json"
+    },
+    {
+      "name": "tls06_nested_static_init_edit",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "tls06_nested_static_init_edit/report.json"
+    },
+    {
+      "name": "tls07_static_remove_link",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "tls07_static_remove_link/report.json"
+    },
+    {
+      "name": "tr01_std_trait_leaves_scope",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "tr01_std_trait_leaves_scope/report.json"
+    },
+    {
+      "name": "tr02_std_trait_leaves_scope_value",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "tr02_std_trait_leaves_scope_value/report.json"
+    },
+    {
+      "name": "uc01_use_capture_macro_edits",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "uc01_use_capture_macro_edits/report.json"
+    },
+    {
+      "name": "um01_user_macro_header_edits",
+      "passed": true,
+      "versions": 14,
+      "failure": null,
+      "report": "um01_user_macro_header_edits/report.json"
+    },
+    {
+      "name": "vt01_replayed_closure_vtable",
+      "passed": true,
+      "versions": 4,
+      "failure": null,
+      "report": "vt01_replayed_closure_vtable/report.json"
+    },
+    {
+      "name": "wc01_nested_alias_value",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "wc01_nested_alias_value/report.json"
+    },
+    {
+      "name": "wc01_where_concrete_method_edits",
+      "passed": true,
+      "versions": 5,
+      "failure": null,
+      "report": "wc01_where_concrete_method_edits/report.json"
+    },
+    {
+      "name": "wc02_const_length_value",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "wc02_const_length_value/report.json"
+    },
+    {
+      "name": "wc03_hygiene_value",
+      "passed": true,
+      "versions": 3,
+      "failure": null,
+      "report": "wc03_hygiene_value/report.json"
+    }
+  ]
+}

@@ -1,0 +1,3750 @@
+{
+  "schema": "lustr.mixed-phase-attribution",
+  "version": 2,
+  "instrumented": true,
+  "paired_speed_evidence": false,
+  "modes": {
+    "cold": {
+      "profiles": [
+        "16931-1794952584470114474.jsonl",
+        "16933-1794952584476048550.jsonl",
+        "16936-1794952584482853637.jsonl",
+        "16938-1794952584488214562.jsonl",
+        "16941-1794952584493273663.jsonl",
+        "16946-1794952584499376762.jsonl",
+        "16947-1794952584499721491.jsonl",
+        "16967-1794952584546278049.jsonl"
+      ],
+      "expected_success": true,
+      "observed_command_status": "exit status: 0 elapsed_ns=162043309",
+      "summed_phase_nanoseconds": {
+        "request-setup": 1528268,
+        "rustc-driver": 127950865,
+        "driver": 129986928,
+        "parse-candidates": 61100,
+        "retained-attempt": 1440,
+        "after-expansion": 2618,
+        "select-native-after-analysis": 30425256,
+        "retain-link-recipe": 761383,
+        "native-request-setup": 378400,
+        "native-daemon-roundtrip": 18771060,
+        "native-compile": 21435049,
+        "native-symbol-rename": 272956,
+        "context-fingerprint": 236201,
+        "retained-object-sync": 441693,
+        "publish-certificate": 477055
+      },
+      "native_emitter": {
+        "response_count": 5,
+        "measured_count": 5,
+        "unavailable_failed_count": 0,
+        "elapsed_ns": 3093725,
+        "phase_nanoseconds": {
+          "c-prepare": 19025,
+          "output-prepare": 83607,
+          "c-write": 132679,
+          "libtcc": 1186527,
+          "symbol-check": 53871,
+          "rename": 42024,
+          "file-sync": 1546312,
+          "directory-sync": 29680
+        },
+        "phase_observations": {
+          "c-prepare": 5,
+          "output-prepare": 5,
+          "c-write": 5,
+          "libtcc": 5,
+          "symbol-check": 5,
+          "rename": 5,
+          "file-sync": 5,
+          "directory-sync": 5
+        },
+        "protocol_unattributed_ns": 15660463
+      }
+    },
+    "body": {
+      "profiles": [
+        "16991-1794952584633868329.jsonl"
+      ],
+      "expected_success": true,
+      "observed_command_status": "exit status: 0 elapsed_ns=41237241",
+      "summed_phase_nanoseconds": {
+        "request-setup": 206880,
+        "parse-candidates": 23635,
+        "context-fingerprint": 430383,
+        "changed-body-queries": 607289,
+        "native-request-setup": 77685,
+        "native-daemon-roundtrip": 1735398,
+        "native-compile": 1821397,
+        "native-symbol-rename": 43122,
+        "edited-native-object-sync": 179804,
+        "temporary-link-copies": 144071,
+        "original-linker": 15320153,
+        "relink": 15531342,
+        "retained-attempt": 18812932,
+        "after-expansion": 18813345,
+        "select-native-after-analysis": 34,
+        "rustc-driver": 24575712,
+        "publish-certificate": 413434,
+        "driver": 25207611
+      },
+      "native_emitter": {
+        "response_count": 1,
+        "measured_count": 1,
+        "unavailable_failed_count": 0,
+        "elapsed_ns": 464901,
+        "phase_nanoseconds": {
+          "c-prepare": 3704,
+          "output-prepare": 15541,
+          "c-write": 27658,
+          "libtcc": 163614,
+          "symbol-check": 8261,
+          "rename": 6734,
+          "file-sync": 233937,
+          "directory-sync": 5452
+        },
+        "phase_observations": {
+          "c-prepare": 1,
+          "output-prepare": 1,
+          "c-write": 1,
+          "libtcc": 1,
+          "symbol-check": 1,
+          "rename": 1,
+          "file-sync": 1,
+          "directory-sync": 1
+        },
+        "protocol_unattributed_ns": 1270497
+      }
+    },
+    "arithmetic-edit": {
+      "profiles": [
+        "17007-1794952584675957974.jsonl"
+      ],
+      "expected_success": true,
+      "observed_command_status": "exit status: 0 elapsed_ns=40514247",
+      "summed_phase_nanoseconds": {
+        "request-setup": 208351,
+        "parse-candidates": 23742,
+        "context-fingerprint": 450317,
+        "changed-body-queries": 727060,
+        "native-request-setup": 75362,
+        "native-daemon-roundtrip": 1838195,
+        "native-compile": 1919410,
+        "native-symbol-rename": 38093,
+        "edited-native-object-sync": 132672,
+        "temporary-link-copies": 126388,
+        "original-linker": 14774927,
+        "relink": 14955891,
+        "retained-attempt": 18400760,
+        "after-expansion": 18401325,
+        "select-native-after-analysis": 34,
+        "rustc-driver": 23948507,
+        "publish-certificate": 456331,
+        "driver": 24623859
+      },
+      "native_emitter": {
+        "response_count": 1,
+        "measured_count": 1,
+        "unavailable_failed_count": 0,
+        "elapsed_ns": 468750,
+        "phase_nanoseconds": {
+          "c-prepare": 3236,
+          "output-prepare": 15093,
+          "c-write": 27286,
+          "libtcc": 162492,
+          "symbol-check": 8220,
+          "rename": 6757,
+          "file-sync": 242044,
+          "directory-sync": 3622
+        },
+        "phase_observations": {
+          "c-prepare": 1,
+          "output-prepare": 1,
+          "c-write": 1,
+          "libtcc": 1,
+          "symbol-check": 1,
+          "rename": 1,
+          "file-sync": 1,
+          "directory-sync": 1
+        },
+        "protocol_unattributed_ns": 1369445
+      }
+    },
+    "invalid": {
+      "profiles": [
+        "17023-1794952584717013380.jsonl"
+      ],
+      "expected_success": false,
+      "observed_command_status": "exit status: 101 elapsed_ns=34360372",
+      "summed_phase_nanoseconds": {
+        "request-setup": 202351,
+        "parse-candidates": 27710,
+        "context-fingerprint": 421279,
+        "retained-attempt": 461901,
+        "after-expansion": 462322,
+        "rustc-driver": 18882992,
+        "driver": 19085870
+      },
+      "native_emitter": {
+        "response_count": 0,
+        "measured_count": 0,
+        "unavailable_failed_count": 0,
+        "elapsed_ns": null,
+        "phase_nanoseconds": {},
+        "phase_observations": {},
+        "protocol_unattributed_ns": null
+      }
+    },
+    "recovery": {
+      "profiles": [
+        "17031-1794952584751539075.jsonl"
+      ],
+      "expected_success": true,
+      "observed_command_status": "exit status: 0 elapsed_ns=39867232",
+      "summed_phase_nanoseconds": {
+        "request-setup": 198950,
+        "parse-candidates": 25442,
+        "context-fingerprint": 368657,
+        "changed-body-queries": 548332,
+        "native-request-setup": 81050,
+        "native-daemon-roundtrip": 1926938,
+        "native-compile": 2017750,
+        "native-symbol-rename": 43670,
+        "edited-native-object-sync": 185197,
+        "temporary-link-copies": 147606,
+        "original-linker": 14839570,
+        "relink": 15051141,
+        "retained-attempt": 18405409,
+        "after-expansion": 18405618,
+        "select-native-after-analysis": 34,
+        "rustc-driver": 23778224,
+        "publish-certificate": 366679,
+        "driver": 24353260
+      },
+      "native_emitter": {
+        "response_count": 1,
+        "measured_count": 1,
+        "unavailable_failed_count": 0,
+        "elapsed_ns": 557133,
+        "phase_nanoseconds": {
+          "c-prepare": 10469,
+          "output-prepare": 23125,
+          "c-write": 28803,
+          "libtcc": 173493,
+          "symbol-check": 9232,
+          "rename": 22673,
+          "file-sync": 284101,
+          "directory-sync": 5237
+        },
+        "phase_observations": {
+          "c-prepare": 1,
+          "output-prepare": 1,
+          "c-write": 1,
+          "libtcc": 1,
+          "symbol-check": 1,
+          "rename": 1,
+          "file-sync": 1,
+          "directory-sync": 1
+        },
+        "protocol_unattributed_ns": 1369805
+      }
+    },
+    "link-failure": {
+      "profiles": [
+        "17047-1794952584792190489.jsonl"
+      ],
+      "expected_success": false,
+      "observed_command_status": "exit status: 101 elapsed_ns=25671925",
+      "summed_phase_nanoseconds": {
+        "request-setup": 219794,
+        "parse-candidates": 22291,
+        "context-fingerprint": 395307,
+        "changed-body-queries": 459095,
+        "native-request-setup": 86862,
+        "native-daemon-roundtrip": 1850501,
+        "native-compile": 1945591,
+        "native-symbol-rename": 36993,
+        "edited-native-object-sync": 163837,
+        "temporary-link-copies": 154360,
+        "original-linker": 1908354,
+        "relink": 2128213,
+        "retained-attempt": 5304013,
+        "after-expansion": 5306702,
+        "rustc-driver": 10473635,
+        "driver": 10694209
+      },
+      "native_emitter": {
+        "response_count": 1,
+        "measured_count": 1,
+        "unavailable_failed_count": 0,
+        "elapsed_ns": 538976,
+        "phase_nanoseconds": {
+          "c-prepare": 3112,
+          "output-prepare": 34890,
+          "c-write": 34267,
+          "libtcc": 172359,
+          "symbol-check": 8997,
+          "rename": 7454,
+          "file-sync": 273308,
+          "directory-sync": 4589
+        },
+        "phase_observations": {
+          "c-prepare": 1,
+          "output-prepare": 1,
+          "c-write": 1,
+          "libtcc": 1,
+          "symbol-check": 1,
+          "rename": 1,
+          "file-sync": 1,
+          "directory-sync": 1
+        },
+        "protocol_unattributed_ns": 1311525
+      }
+    },
+    "link-failure-recovery": {
+      "profiles": [
+        "17056-1794952584817674868.jsonl"
+      ],
+      "expected_success": true,
+      "observed_command_status": "exit status: 0 elapsed_ns=35486022",
+      "summed_phase_nanoseconds": {
+        "request-setup": 195446,
+        "parse-candidates": 23543,
+        "context-fingerprint": 362301,
+        "changed-body-queries": 3504,
+        "temporary-link-copies": 161300,
+        "original-linker": 14338046,
+        "relink": 14569983,
+        "retained-attempt": 15024193,
+        "after-expansion": 15024575,
+        "select-native-after-analysis": 32,
+        "rustc-driver": 20195003,
+        "publish-certificate": 373630,
+        "driver": 20772728
+      },
+      "native_emitter": {
+        "response_count": 0,
+        "measured_count": 0,
+        "unavailable_failed_count": 0,
+        "elapsed_ns": null,
+        "phase_nanoseconds": {},
+        "phase_observations": {},
+        "protocol_unattributed_ns": null
+      }
+    },
+    "versioned-object": {
+      "profiles": [
+        "17072-1794952584854065351.jsonl"
+      ],
+      "expected_success": true,
+      "observed_command_status": "exit status: 0 elapsed_ns=38064819",
+      "summed_phase_nanoseconds": {
+        "request-setup": 194239,
+        "parse-candidates": 22172,
+        "context-fingerprint": 350357,
+        "changed-body-queries": 575011,
+        "native-request-setup": 78307,
+        "native-daemon-roundtrip": 1567090,
+        "native-compile": 1653183,
+        "native-symbol-rename": 37972,
+        "edited-native-object-sync": 160088,
+        "temporary-link-copies": 141657,
+        "original-linker": 14414635,
+        "relink": 14622137,
+        "retained-attempt": 17581437,
+        "after-expansion": 17581796,
+        "select-native-after-analysis": 43,
+        "rustc-driver": 22606650,
+        "publish-certificate": 412745,
+        "driver": 23224242
+      },
+      "native_emitter": {
+        "response_count": 1,
+        "measured_count": 1,
+        "unavailable_failed_count": 0,
+        "elapsed_ns": 495277,
+        "phase_nanoseconds": {
+          "c-prepare": 6589,
+          "output-prepare": 14984,
+          "c-write": 28216,
+          "libtcc": 172159,
+          "symbol-check": 9117,
+          "rename": 8005,
+          "file-sync": 251796,
+          "directory-sync": 4411
+        },
+        "phase_observations": {
+          "c-prepare": 1,
+          "output-prepare": 1,
+          "c-write": 1,
+          "libtcc": 1,
+          "symbol-check": 1,
+          "rename": 1,
+          "file-sync": 1,
+          "directory-sync": 1
+        },
+        "protocol_unattributed_ns": 1071813
+      }
+    },
+    "versioned-object-noop": {
+      "profiles": [
+        "17088-1794952584892771214.jsonl"
+      ],
+      "expected_success": true,
+      "observed_command_status": "exit status: 0 elapsed_ns=35017114",
+      "summed_phase_nanoseconds": {
+        "request-setup": 189855,
+        "parse-candidates": 22524,
+        "context-fingerprint": 342815,
+        "changed-body-queries": 3506,
+        "temporary-link-copies": 146929,
+        "original-linker": 14163702,
+        "relink": 14381509,
+        "retained-attempt": 14813470,
+        "after-expansion": 14813830,
+        "select-native-after-analysis": 47,
+        "rustc-driver": 19857178,
+        "publish-certificate": 449350,
+        "driver": 20506570
+      },
+      "native_emitter": {
+        "response_count": 0,
+        "measured_count": 0,
+        "unavailable_failed_count": 0,
+        "elapsed_ns": null,
+        "phase_nanoseconds": {},
+        "phase_observations": {},
+        "protocol_unattributed_ns": null
+      }
+    },
+    "signature": {
+      "profiles": [
+        "17104-1794952584928870556.jsonl",
+        "17119-1794952584969291227.jsonl"
+      ],
+      "expected_success": true,
+      "observed_command_status": "exit status: 0 elapsed_ns=113366605",
+      "summed_phase_nanoseconds": {
+        "request-setup": 380271,
+        "parse-candidates": 37027,
+        "retained-attempt": 433959,
+        "after-expansion": 434591,
+        "select-native-after-analysis": 18137832,
+        "rustc-driver": 91098726,
+        "driver": 91945858,
+        "context-fingerprint": 527495,
+        "native-request-setup": 214898,
+        "native-daemon-roundtrip": 12205301,
+        "native-compile": 12434288,
+        "native-symbol-rename": 158176,
+        "retained-object-sync": 457203,
+        "retain-link-recipe": 751157,
+        "publish-certificate": 450483
+      },
+      "native_emitter": {
+        "response_count": 5,
+        "measured_count": 5,
+        "unavailable_failed_count": 0,
+        "elapsed_ns": 2302988,
+        "phase_nanoseconds": {
+          "c-prepare": 14628,
+          "output-prepare": 55892,
+          "c-write": 97039,
+          "libtcc": 1102235,
+          "symbol-check": 40997,
+          "rename": 32417,
+          "file-sync": 943382,
+          "directory-sync": 16398
+        },
+        "phase_observations": {
+          "c-prepare": 5,
+          "output-prepare": 5,
+          "c-write": 5,
+          "libtcc": 5,
+          "symbol-check": 5,
+          "rename": 5,
+          "file-sync": 5,
+          "directory-sync": 5
+        },
+        "protocol_unattributed_ns": 9902313
+      }
+    },
+    "dependency": {
+      "profiles": [
+        "17139-1794952585044012158.jsonl",
+        "17140-1794952585044355197.jsonl",
+        "17160-1794952585084178676.jsonl"
+      ],
+      "expected_success": true,
+      "observed_command_status": "exit status: 0 elapsed_ns=112224062",
+      "summed_phase_nanoseconds": {
+        "request-setup": 516586,
+        "parse-candidates": 47513,
+        "retained-attempt": 401975,
+        "after-expansion": 402812,
+        "select-native-after-analysis": 20276824,
+        "retain-link-recipe": 714658,
+        "rustc-driver": 101276549,
+        "driver": 102246495,
+        "context-fingerprint": 496874,
+        "native-request-setup": 293626,
+        "native-daemon-roundtrip": 11699047,
+        "native-compile": 12024158,
+        "native-symbol-rename": 202685,
+        "retained-object-sync": 442743,
+        "publish-certificate": 440264
+      },
+      "native_emitter": {
+        "response_count": 5,
+        "measured_count": 5,
+        "unavailable_failed_count": 0,
+        "elapsed_ns": 2028692,
+        "phase_nanoseconds": {
+          "c-prepare": 13639,
+          "output-prepare": 56171,
+          "c-write": 86879,
+          "libtcc": 844256,
+          "symbol-check": 40209,
+          "rename": 48352,
+          "file-sync": 923259,
+          "directory-sync": 15927
+        },
+        "phase_observations": {
+          "c-prepare": 5,
+          "output-prepare": 5,
+          "c-write": 5,
+          "libtcc": 5,
+          "symbol-check": 5,
+          "rename": 5,
+          "file-sync": 5,
+          "directory-sync": 5
+        },
+        "protocol_unattributed_ns": 9670355
+      }
+    },
+    "macro": {
+      "profiles": [
+        "17179-1794952585156908682.jsonl",
+        "17195-1794952585196819496.jsonl"
+      ],
+      "expected_success": true,
+      "observed_command_status": "exit status: 0 elapsed_ns=114168089",
+      "summed_phase_nanoseconds": {
+        "request-setup": 347849,
+        "parse-candidates": 36067,
+        "retained-attempt": 432320,
+        "after-expansion": 432839,
+        "select-native-after-analysis": 18393867,
+        "rustc-driver": 91738556,
+        "driver": 92536966,
+        "context-fingerprint": 534073,
+        "native-request-setup": 235010,
+        "native-daemon-roundtrip": 12353231,
+        "native-compile": 12607881,
+        "native-symbol-rename": 147836,
+        "retained-object-sync": 439046,
+        "retain-link-recipe": 786375,
+        "publish-certificate": 436220
+      },
+      "native_emitter": {
+        "response_count": 5,
+        "measured_count": 5,
+        "unavailable_failed_count": 0,
+        "elapsed_ns": 2420527,
+        "phase_nanoseconds": {
+          "c-prepare": 31788,
+          "output-prepare": 54538,
+          "c-write": 98811,
+          "libtcc": 1072441,
+          "symbol-check": 40978,
+          "rename": 32481,
+          "file-sync": 1070079,
+          "directory-sync": 19411
+        },
+        "phase_observations": {
+          "c-prepare": 5,
+          "output-prepare": 5,
+          "c-write": 5,
+          "libtcc": 5,
+          "symbol-check": 5,
+          "rename": 5,
+          "file-sync": 5,
+          "directory-sync": 5
+        },
+        "protocol_unattributed_ns": 9932704
+      }
+    },
+    "warning-cold": {
+      "profiles": [
+        "17214-1794952585272516620.jsonl"
+      ],
+      "expected_success": true,
+      "observed_command_status": "exit status: 0 elapsed_ns=74784087",
+      "summed_phase_nanoseconds": {
+        "request-setup": 199132,
+        "parse-candidates": 26957,
+        "context-fingerprint": 531775,
+        "retained-attempt": 431883,
+        "after-expansion": 432262,
+        "native-request-setup": 220926,
+        "native-daemon-roundtrip": 12529395,
+        "native-compile": 12765461,
+        "native-symbol-rename": 169103,
+        "select-native-after-analysis": 18503474,
+        "retained-object-sync": 504382,
+        "retain-link-recipe": 852808,
+        "rustc-driver": 58215166,
+        "driver": 58414804
+      },
+      "native_emitter": {
+        "response_count": 5,
+        "measured_count": 5,
+        "unavailable_failed_count": 0,
+        "elapsed_ns": 2675693,
+        "phase_nanoseconds": {
+          "c-prepare": 14069,
+          "output-prepare": 57056,
+          "c-write": 91019,
+          "libtcc": 1314042,
+          "symbol-check": 40795,
+          "rename": 31532,
+          "file-sync": 1110242,
+          "directory-sync": 16938
+        },
+        "phase_observations": {
+          "c-prepare": 5,
+          "output-prepare": 5,
+          "c-write": 5,
+          "libtcc": 5,
+          "symbol-check": 5,
+          "rename": 5,
+          "file-sync": 5,
+          "directory-sync": 5
+        },
+        "protocol_unattributed_ns": 9853702
+      }
+    },
+    "warning-edit": {
+      "profiles": [
+        "17233-1794952585348303868.jsonl"
+      ],
+      "expected_success": true,
+      "observed_command_status": "exit status: 0 elapsed_ns=75326239",
+      "summed_phase_nanoseconds": {
+        "request-setup": 228439,
+        "parse-candidates": 25598,
+        "context-fingerprint": 537113,
+        "retained-attempt": 445323,
+        "after-expansion": 445634,
+        "native-request-setup": 227832,
+        "native-daemon-roundtrip": 11562213,
+        "native-compile": 11805150,
+        "native-symbol-rename": 174097,
+        "select-native-after-analysis": 18333181,
+        "retained-object-sync": 447051,
+        "retain-link-recipe": 779659,
+        "rustc-driver": 58694829,
+        "driver": 58924003
+      },
+      "native_emitter": {
+        "response_count": 5,
+        "measured_count": 5,
+        "unavailable_failed_count": 0,
+        "elapsed_ns": 2187676,
+        "phase_nanoseconds": {
+          "c-prepare": 13922,
+          "output-prepare": 55646,
+          "c-write": 89407,
+          "libtcc": 818469,
+          "symbol-check": 40782,
+          "rename": 30862,
+          "file-sync": 1121227,
+          "directory-sync": 17361
+        },
+        "phase_observations": {
+          "c-prepare": 5,
+          "output-prepare": 5,
+          "c-write": 5,
+          "libtcc": 5,
+          "symbol-check": 5,
+          "rename": 5,
+          "file-sync": 5,
+          "directory-sync": 5
+        },
+        "protocol_unattributed_ns": 9374537
+      }
+    },
+    "warning-denied": {
+      "profiles": [
+        "17252-1794952585424625865.jsonl"
+      ],
+      "expected_success": false,
+      "observed_command_status": "exit status: 101 elapsed_ns=30381873",
+      "summed_phase_nanoseconds": {
+        "request-setup": 203182,
+        "parse-candidates": 24425,
+        "retained-attempt": 531,
+        "after-expansion": 881,
+        "select-native-after-analysis": 428,
+        "rustc-driver": 14736775,
+        "driver": 14940349
+      },
+      "native_emitter": {
+        "response_count": 0,
+        "measured_count": 0,
+        "unavailable_failed_count": 0,
+        "elapsed_ns": null,
+        "phase_nanoseconds": {},
+        "phase_observations": {},
+        "protocol_unattributed_ns": null
+      }
+    }
+  },
+  "invocations": {
+    "16931-1794952584470114474.jsonl": {
+      "file": "16931-1794952584470114474.jsonl",
+      "sha256": "f407e448dcc1f1e35980d9e560fd3bb4ebc1277367adcd42ed2f8ea9dd28cdda",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 16931,
+        "request_key": "0db18c793d4806b9",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952584470114474,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": false,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 226563,
+        "rustc-driver": 225066,
+        "driver": 454694
+      },
+      "native_requests": []
+    },
+    "16933-1794952584476048550.jsonl": {
+      "file": "16933-1794952584476048550.jsonl",
+      "sha256": "3283c9aed1259643be2386577b7ebc0838e7f23fc0ebbb773a44ab18b93e29c3",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 16933,
+        "request_key": "491531ac559d90ea",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952584476048550,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": false,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 190786,
+        "rustc-driver": 1522981,
+        "driver": 1714329
+      },
+      "native_requests": []
+    },
+    "16936-1794952584482853637.jsonl": {
+      "file": "16936-1794952584482853637.jsonl",
+      "sha256": "69036ac9ed75d567dd36f22bf007f4561272b879ade5638e86ace1354c278477",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 16936,
+        "request_key": "0db18c793d4806b9",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952584482853637,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": false,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 149344,
+        "rustc-driver": 185490,
+        "driver": 336686
+      },
+      "native_requests": []
+    },
+    "16938-1794952584488214562.jsonl": {
+      "file": "16938-1794952584488214562.jsonl",
+      "sha256": "c7e9c15d9ac39493b6c5f04d7a2eaaf212a2cdfb496dad437374c0f50a5886f0",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 16938,
+        "request_key": "0db18c793d4806b9",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952584488214562,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": false,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 146791,
+        "rustc-driver": 210280,
+        "driver": 358945
+      },
+      "native_requests": []
+    },
+    "16941-1794952584493273663.jsonl": {
+      "file": "16941-1794952584493273663.jsonl",
+      "sha256": "982ea21545a44ff52ffec3ce2afdc569384122cc878bddf070bbabc0151c7faf",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 16941,
+        "request_key": "0db18c793d4806b9",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952584493273663,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": false,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 176842,
+        "rustc-driver": 177442,
+        "driver": 356019
+      },
+      "native_requests": []
+    },
+    "16946-1794952584499376762.jsonl": {
+      "file": "16946-1794952584499376762.jsonl",
+      "sha256": "a7fe6352a0fc90b56a9e4153e02007213ae24848b46131b2918c2d4d554427fb",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 16946,
+        "request_key": "3c207ed4148b2677",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952584499376762,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": false,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 228225,
+        "parse-candidates": 15260,
+        "retained-attempt": 416,
+        "after-expansion": 717,
+        "select-native-after-analysis": 235,
+        "rustc-driver": 41087515,
+        "driver": 41323008
+      },
+      "native_requests": []
+    },
+    "16947-1794952584499721491.jsonl": {
+      "file": "16947-1794952584499721491.jsonl",
+      "sha256": "694ee127b579497833b5b275cf69884c4660e5da88daacbfb03af0d7908eb5e0",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 16947,
+        "request_key": "7437de5279d842cc",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952584499721491,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": false,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 193782,
+        "parse-candidates": 21669,
+        "retained-attempt": 630,
+        "after-expansion": 1062,
+        "select-native-after-analysis": 2797419,
+        "retain-link-recipe": 150,
+        "rustc-driver": 15453435,
+        "driver": 15647646
+      },
+      "native_requests": []
+    },
+    "16967-1794952584546278049.jsonl": {
+      "file": "16967-1794952584546278049.jsonl",
+      "sha256": "3eac0a03bf3dfe07fa5f4535e8c791ae7f8e0112abb026889108b92f08c1fe82",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 16967,
+        "request_key": "c645db7d1666315d",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952584546278049,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": false,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 215935,
+        "parse-candidates": 24171,
+        "retained-attempt": 394,
+        "after-expansion": 839,
+        "native-request-setup": 378400,
+        "native-daemon-roundtrip": 18771060,
+        "native-compile": 21435049,
+        "native-symbol-rename": 272956,
+        "context-fingerprint": 236201,
+        "select-native-after-analysis": 27627602,
+        "retained-object-sync": 441693,
+        "retain-link-recipe": 761233,
+        "rustc-driver": 69088656,
+        "publish-certificate": 477055,
+        "driver": 69795601
+      },
+      "native_requests": [
+        {
+          "parent_start_ns": 19307984,
+          "unit_identity": "6e24ccdce80c46dd",
+          "response_code": 0,
+          "client_request_elapsed_ns": 9546235,
+          "roundtrip_start_ns": 21632280,
+          "roundtrip_elapsed_ns": 7191075,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "6e24ccdce80c46dd",
+            "success": true,
+            "elapsed_ns": 1227453,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 8194,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 30235,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 31947,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 359813,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 14697,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 10807,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 762177,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 9583,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"6e24ccdce80c46dd\",\"success\":true,\"elapsed_ns\":1227453,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":8194,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":30235,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":31947,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":359813,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":14697,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":10807,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":762177,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":9583,\"completed\":true}]}",
+          "protocol_unattributed_ns": 5963622
+        },
+        {
+          "parent_start_ns": 29062981,
+          "unit_identity": "ae2f509a8a4c0328",
+          "response_code": 0,
+          "client_request_elapsed_ns": 3389614,
+          "roundtrip_start_ns": 29175984,
+          "roundtrip_elapsed_ns": 3272005,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "ae2f509a8a4c0328",
+            "success": true,
+            "elapsed_ns": 532696,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 3411,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 12471,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 23136,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 270486,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 12551,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 9549,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 197317,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3775,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"ae2f509a8a4c0328\",\"success\":true,\"elapsed_ns\":532696,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":3411,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":12471,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":23136,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":270486,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":12551,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":9549,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":197317,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3775,\"completed\":true}]}",
+          "protocol_unattributed_ns": 2739309
+        },
+        {
+          "parent_start_ns": 32583770,
+          "unit_identity": "874880b4b02ab34c",
+          "response_code": 0,
+          "client_request_elapsed_ns": 3235043,
+          "roundtrip_start_ns": 32647544,
+          "roundtrip_elapsed_ns": 3162755,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "874880b4b02ab34c",
+            "success": true,
+            "elapsed_ns": 548062,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 2734,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 13919,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 25132,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 215530,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 10348,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 8947,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 261690,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 9762,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"874880b4b02ab34c\",\"success\":true,\"elapsed_ns\":548062,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":2734,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":13919,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":25132,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":215530,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":10348,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":8947,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":261690,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":9762,\"completed\":true}]}",
+          "protocol_unattributed_ns": 2614693
+        },
+        {
+          "parent_start_ns": 35924745,
+          "unit_identity": "3e4d4cfe1ae2d730",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2698422,
+          "roundtrip_start_ns": 35990097,
+          "roundtrip_elapsed_ns": 2629313,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "3e4d4cfe1ae2d730",
+            "success": true,
+            "elapsed_ns": 365876,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 2083,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 12613,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 29043,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 158255,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 8201,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6177,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 146262,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3242,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"3e4d4cfe1ae2d730\",\"success\":true,\"elapsed_ns\":365876,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":2083,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":12613,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":29043,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":158255,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":8201,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6177,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":146262,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3242,\"completed\":true}]}",
+          "protocol_unattributed_ns": 2263437
+        },
+        {
+          "parent_start_ns": 38743031,
+          "unit_identity": "f38c2a58947d2a33",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2565735,
+          "roundtrip_start_ns": 38806635,
+          "roundtrip_elapsed_ns": 2499040,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "f38c2a58947d2a33",
+            "success": true,
+            "elapsed_ns": 419638,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 2603,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 14369,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 23421,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 182443,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 8074,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6544,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 178866,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3318,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"f38c2a58947d2a33\",\"success\":true,\"elapsed_ns\":419638,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":2603,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":14369,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":23421,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":182443,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":8074,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6544,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":178866,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3318,\"completed\":true}]}",
+          "protocol_unattributed_ns": 2079402
+        }
+      ]
+    },
+    "16991-1794952584633868329.jsonl": {
+      "file": "16991-1794952584633868329.jsonl",
+      "sha256": "14ce1a181e815469d7271de52c9b49c10037cf85f5dc7f4cd36a0362a3655419",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 16991,
+        "request_key": "c645db7d1666315d",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952584633868329,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": true,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 206880,
+        "parse-candidates": 23635,
+        "context-fingerprint": 430383,
+        "changed-body-queries": 607289,
+        "native-request-setup": 77685,
+        "native-daemon-roundtrip": 1735398,
+        "native-compile": 1821397,
+        "native-symbol-rename": 43122,
+        "edited-native-object-sync": 179804,
+        "temporary-link-copies": 144071,
+        "original-linker": 15320153,
+        "relink": 15531342,
+        "retained-attempt": 18812932,
+        "after-expansion": 18813345,
+        "select-native-after-analysis": 34,
+        "rustc-driver": 24575712,
+        "publish-certificate": 413434,
+        "driver": 25207611
+      },
+      "native_requests": [
+        {
+          "parent_start_ns": 6596800,
+          "unit_identity": "3e4d4cfe1ae2d730",
+          "response_code": 0,
+          "client_request_elapsed_ns": 1821397,
+          "roundtrip_start_ns": 6676842,
+          "roundtrip_elapsed_ns": 1735398,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "3e4d4cfe1ae2d730",
+            "success": true,
+            "elapsed_ns": 464901,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 3704,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 15541,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 27658,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 163614,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 8261,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6734,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 233937,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 5452,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"3e4d4cfe1ae2d730\",\"success\":true,\"elapsed_ns\":464901,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":3704,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":15541,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":27658,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":163614,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":8261,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6734,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":233937,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":5452,\"completed\":true}]}",
+          "protocol_unattributed_ns": 1270497
+        }
+      ]
+    },
+    "17007-1794952584675957974.jsonl": {
+      "file": "17007-1794952584675957974.jsonl",
+      "sha256": "4c415d69c10727e0132321524ecd77127c7a32085447a1ed846734615f4e869e",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 17007,
+        "request_key": "c645db7d1666315d",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952584675957974,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": true,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 208351,
+        "parse-candidates": 23742,
+        "context-fingerprint": 450317,
+        "changed-body-queries": 727060,
+        "native-request-setup": 75362,
+        "native-daemon-roundtrip": 1838195,
+        "native-compile": 1919410,
+        "native-symbol-rename": 38093,
+        "edited-native-object-sync": 132672,
+        "temporary-link-copies": 126388,
+        "original-linker": 14774927,
+        "relink": 14955891,
+        "retained-attempt": 18400760,
+        "after-expansion": 18401325,
+        "select-native-after-analysis": 34,
+        "rustc-driver": 23948507,
+        "publish-certificate": 456331,
+        "driver": 24623859
+      },
+      "native_requests": [
+        {
+          "parent_start_ns": 6527862,
+          "unit_identity": "874880b4b02ab34c",
+          "response_code": 0,
+          "client_request_elapsed_ns": 1919410,
+          "roundtrip_start_ns": 6605151,
+          "roundtrip_elapsed_ns": 1838195,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "874880b4b02ab34c",
+            "success": true,
+            "elapsed_ns": 468750,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 3236,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 15093,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 27286,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 162492,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 8220,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6757,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 242044,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3622,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"874880b4b02ab34c\",\"success\":true,\"elapsed_ns\":468750,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":3236,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":15093,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":27286,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":162492,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":8220,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6757,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":242044,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3622,\"completed\":true}]}",
+          "protocol_unattributed_ns": 1369445
+        }
+      ]
+    },
+    "17023-1794952584717013380.jsonl": {
+      "file": "17023-1794952584717013380.jsonl",
+      "sha256": "78f9b9ba5612c3845577488addb91d9bc8a13af30531fc2f3a14c732ca62cfcb",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 17023,
+        "request_key": "c645db7d1666315d",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952584717013380,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": false,
+        "success": false
+      },
+      "phase_nanoseconds": {
+        "request-setup": 202351,
+        "parse-candidates": 27710,
+        "context-fingerprint": 421279,
+        "retained-attempt": 461901,
+        "after-expansion": 462322,
+        "rustc-driver": 18882992,
+        "driver": 19085870
+      },
+      "native_requests": []
+    },
+    "17031-1794952584751539075.jsonl": {
+      "file": "17031-1794952584751539075.jsonl",
+      "sha256": "4678f199008a017b9c749cb76fee5620973dafaf3c67f373e98c5fa78c4578f8",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 17031,
+        "request_key": "c645db7d1666315d",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952584751539075,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": true,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 198950,
+        "parse-candidates": 25442,
+        "context-fingerprint": 368657,
+        "changed-body-queries": 548332,
+        "native-request-setup": 81050,
+        "native-daemon-roundtrip": 1926938,
+        "native-compile": 2017750,
+        "native-symbol-rename": 43670,
+        "edited-native-object-sync": 185197,
+        "temporary-link-copies": 147606,
+        "original-linker": 14839570,
+        "relink": 15051141,
+        "retained-attempt": 18405409,
+        "after-expansion": 18405618,
+        "select-native-after-analysis": 34,
+        "rustc-driver": 23778224,
+        "publish-certificate": 366679,
+        "driver": 24353260
+      },
+      "native_requests": [
+        {
+          "parent_start_ns": 6047698,
+          "unit_identity": "874880b4b02ab34c",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2017750,
+          "roundtrip_start_ns": 6130841,
+          "roundtrip_elapsed_ns": 1926938,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "874880b4b02ab34c",
+            "success": true,
+            "elapsed_ns": 557133,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 10469,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 23125,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 28803,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 173493,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 9232,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 22673,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 284101,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 5237,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"874880b4b02ab34c\",\"success\":true,\"elapsed_ns\":557133,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":10469,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":23125,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":28803,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":173493,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":9232,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":22673,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":284101,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":5237,\"completed\":true}]}",
+          "protocol_unattributed_ns": 1369805
+        }
+      ]
+    },
+    "17047-1794952584792190489.jsonl": {
+      "file": "17047-1794952584792190489.jsonl",
+      "sha256": "0f44d52e4ebda4e9911ec5f25a14a74a822dbe916ad0c6e10def58a790a9a35f",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 17047,
+        "request_key": "c645db7d1666315d",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952584792190489,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": false,
+        "success": false
+      },
+      "phase_nanoseconds": {
+        "request-setup": 219794,
+        "parse-candidates": 22291,
+        "context-fingerprint": 395307,
+        "changed-body-queries": 459095,
+        "native-request-setup": 86862,
+        "native-daemon-roundtrip": 1850501,
+        "native-compile": 1945591,
+        "native-symbol-rename": 36993,
+        "edited-native-object-sync": 163837,
+        "temporary-link-copies": 154360,
+        "original-linker": 1908354,
+        "relink": 2128213,
+        "retained-attempt": 5304013,
+        "after-expansion": 5306702,
+        "rustc-driver": 10473635,
+        "driver": 10694209
+      },
+      "native_requests": [
+        {
+          "parent_start_ns": 5825243,
+          "unit_identity": "3e4d4cfe1ae2d730",
+          "response_code": 0,
+          "client_request_elapsed_ns": 1945591,
+          "roundtrip_start_ns": 5913856,
+          "roundtrip_elapsed_ns": 1850501,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "3e4d4cfe1ae2d730",
+            "success": true,
+            "elapsed_ns": 538976,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 3112,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 34890,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 34267,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 172359,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 8997,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 7454,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 273308,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 4589,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"3e4d4cfe1ae2d730\",\"success\":true,\"elapsed_ns\":538976,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":3112,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":34890,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":34267,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":172359,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":8997,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":7454,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":273308,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":4589,\"completed\":true}]}",
+          "protocol_unattributed_ns": 1311525
+        }
+      ]
+    },
+    "17056-1794952584817674868.jsonl": {
+      "file": "17056-1794952584817674868.jsonl",
+      "sha256": "9493a70f93ad480335b696696532d894f5f6abc79dd42ce49933bedb0b9b443d",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 17056,
+        "request_key": "c645db7d1666315d",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952584817674868,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": true,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 195446,
+        "parse-candidates": 23543,
+        "context-fingerprint": 362301,
+        "changed-body-queries": 3504,
+        "temporary-link-copies": 161300,
+        "original-linker": 14338046,
+        "relink": 14569983,
+        "retained-attempt": 15024193,
+        "after-expansion": 15024575,
+        "select-native-after-analysis": 32,
+        "rustc-driver": 20195003,
+        "publish-certificate": 373630,
+        "driver": 20772728
+      },
+      "native_requests": []
+    },
+    "17072-1794952584854065351.jsonl": {
+      "file": "17072-1794952584854065351.jsonl",
+      "sha256": "29482a95586155043ade41ca178dce9fa1cc93f2f20cb90e3b170b89bfcd333f",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 17072,
+        "request_key": "c645db7d1666315d",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952584854065351,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": true,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 194239,
+        "parse-candidates": 22172,
+        "context-fingerprint": 350357,
+        "changed-body-queries": 575011,
+        "native-request-setup": 78307,
+        "native-daemon-roundtrip": 1567090,
+        "native-compile": 1653183,
+        "native-symbol-rename": 37972,
+        "edited-native-object-sync": 160088,
+        "temporary-link-copies": 141657,
+        "original-linker": 14414635,
+        "relink": 14622137,
+        "retained-attempt": 17581437,
+        "after-expansion": 17581796,
+        "select-native-after-analysis": 43,
+        "rustc-driver": 22606650,
+        "publish-certificate": 412745,
+        "driver": 23224242
+      },
+      "native_requests": [
+        {
+          "parent_start_ns": 5749688,
+          "unit_identity": "3e4d4cfe1ae2d730",
+          "response_code": 0,
+          "client_request_elapsed_ns": 1653183,
+          "roundtrip_start_ns": 5830057,
+          "roundtrip_elapsed_ns": 1567090,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "3e4d4cfe1ae2d730",
+            "success": true,
+            "elapsed_ns": 495277,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 6589,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 14984,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 28216,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 172159,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 9117,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 8005,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 251796,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 4411,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"3e4d4cfe1ae2d730\",\"success\":true,\"elapsed_ns\":495277,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":6589,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":14984,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":28216,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":172159,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":9117,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":8005,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":251796,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":4411,\"completed\":true}]}",
+          "protocol_unattributed_ns": 1071813
+        }
+      ]
+    },
+    "17088-1794952584892771214.jsonl": {
+      "file": "17088-1794952584892771214.jsonl",
+      "sha256": "b491b498b7e1e8d52758a815162c731a021a8af47a532bb284ad346a28f574f7",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 17088,
+        "request_key": "c645db7d1666315d",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952584892771214,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": true,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 189855,
+        "parse-candidates": 22524,
+        "context-fingerprint": 342815,
+        "changed-body-queries": 3506,
+        "temporary-link-copies": 146929,
+        "original-linker": 14163702,
+        "relink": 14381509,
+        "retained-attempt": 14813470,
+        "after-expansion": 14813830,
+        "select-native-after-analysis": 47,
+        "rustc-driver": 19857178,
+        "publish-certificate": 449350,
+        "driver": 20506570
+      },
+      "native_requests": []
+    },
+    "17104-1794952584928870556.jsonl": {
+      "file": "17104-1794952584928870556.jsonl",
+      "sha256": "980fcc31554c7bf6b211e2588d4cf38aafbdd99727a191dd5b21a393f0e82c82",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 17104,
+        "request_key": "3c207ed4148b2677",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952584928870556,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": false,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 153771,
+        "parse-candidates": 12725,
+        "retained-attempt": 297,
+        "after-expansion": 610,
+        "select-native-after-analysis": 200,
+        "rustc-driver": 34450870,
+        "driver": 34611127
+      },
+      "native_requests": []
+    },
+    "17119-1794952584969291227.jsonl": {
+      "file": "17119-1794952584969291227.jsonl",
+      "sha256": "0873ee1840f802cead9fa51a3d84b19f81ef59a5ffc71164f0e6adfaa8702d80",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 17119,
+        "request_key": "c645db7d1666315d",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952584969291227,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": false,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 226500,
+        "parse-candidates": 24302,
+        "context-fingerprint": 527495,
+        "retained-attempt": 433662,
+        "after-expansion": 433981,
+        "native-request-setup": 214898,
+        "native-daemon-roundtrip": 12205301,
+        "native-compile": 12434288,
+        "native-symbol-rename": 158176,
+        "select-native-after-analysis": 18137632,
+        "retained-object-sync": 457203,
+        "retain-link-recipe": 751157,
+        "rustc-driver": 56647856,
+        "publish-certificate": 450483,
+        "driver": 57334731
+      },
+      "native_requests": [
+        {
+          "parent_start_ns": 18679347,
+          "unit_identity": "6e24ccdce80c46dd",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2731644,
+          "roundtrip_start_ns": 18748125,
+          "roundtrip_elapsed_ns": 2659434,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "6e24ccdce80c46dd",
+            "success": true,
+            "elapsed_ns": 515715,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 3948,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 11418,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 19134,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 188637,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 8893,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6174,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 274068,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3443,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"6e24ccdce80c46dd\",\"success\":true,\"elapsed_ns\":515715,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":3948,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":11418,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":19134,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":188637,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":8893,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6174,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":274068,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3443,\"completed\":true}]}",
+          "protocol_unattributed_ns": 2143719
+        },
+        {
+          "parent_start_ns": 21506233,
+          "unit_identity": "ae2f509a8a4c0328",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2369722,
+          "roundtrip_start_ns": 21550298,
+          "roundtrip_elapsed_ns": 2323572,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "ae2f509a8a4c0328",
+            "success": true,
+            "elapsed_ns": 400979,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 3033,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 11349,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 20232,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 170479,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 7796,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6276,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 178258,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3556,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"ae2f509a8a4c0328\",\"success\":true,\"elapsed_ns\":400979,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":3033,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":11349,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":20232,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":170479,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":7796,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6276,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":178258,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3556,\"completed\":true}]}",
+          "protocol_unattributed_ns": 1922593
+        },
+        {
+          "parent_start_ns": 23941298,
+          "unit_identity": "874880b4b02ab34c",
+          "response_code": 0,
+          "client_request_elapsed_ns": 1952496,
+          "roundtrip_start_ns": 23977679,
+          "roundtrip_elapsed_ns": 1913592,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "874880b4b02ab34c",
+            "success": true,
+            "elapsed_ns": 354177,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 2283,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 10537,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 18709,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 152714,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 8089,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6145,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 152355,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3345,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"874880b4b02ab34c\",\"success\":true,\"elapsed_ns\":354177,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":2283,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":10537,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":18709,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":152714,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":8089,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6145,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":152355,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3345,\"completed\":true}]}",
+          "protocol_unattributed_ns": 1559415
+        },
+        {
+          "parent_start_ns": 25974753,
+          "unit_identity": "3e4d4cfe1ae2d730",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2436285,
+          "roundtrip_start_ns": 26009568,
+          "roundtrip_elapsed_ns": 2399566,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "3e4d4cfe1ae2d730",
+            "success": true,
+            "elapsed_ns": 404175,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 2441,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 10661,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 18239,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 182885,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 7987,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6648,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 172368,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 2946,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"3e4d4cfe1ae2d730\",\"success\":true,\"elapsed_ns\":404175,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":2441,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":10661,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":18239,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":182885,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":7987,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6648,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":172368,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":2946,\"completed\":true}]}",
+          "protocol_unattributed_ns": 1995391
+        },
+        {
+          "parent_start_ns": 28470570,
+          "unit_identity": "f38c2a58947d2a33",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2944141,
+          "roundtrip_start_ns": 28503662,
+          "roundtrip_elapsed_ns": 2909137,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "f38c2a58947d2a33",
+            "success": true,
+            "elapsed_ns": 627942,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 2923,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 11927,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 20725,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 407520,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 8232,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 7174,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 166333,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3108,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"f38c2a58947d2a33\",\"success\":true,\"elapsed_ns\":627942,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":2923,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":11927,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":20725,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":407520,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":8232,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":7174,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":166333,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3108,\"completed\":true}]}",
+          "protocol_unattributed_ns": 2281195
+        }
+      ]
+    },
+    "17139-1794952585044012158.jsonl": {
+      "file": "17139-1794952585044012158.jsonl",
+      "sha256": "8f701df538e5fb6e2350b6b9f29dd6b67647dc3738ab2b85f8dd678f44ecd004",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 17139,
+        "request_key": "7437de5279d842cc",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952585044012158,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": false,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 155012,
+        "parse-candidates": 14419,
+        "retained-attempt": 432,
+        "after-expansion": 767,
+        "select-native-after-analysis": 2414741,
+        "retain-link-recipe": 104,
+        "rustc-driver": 11992491,
+        "driver": 12147968
+      },
+      "native_requests": []
+    },
+    "17140-1794952585044355197.jsonl": {
+      "file": "17140-1794952585044355197.jsonl",
+      "sha256": "9d96c56b156c243f74b438296df5871a05c42ae018ebbdcd74ff7e7d9415929f",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 17140,
+        "request_key": "3c207ed4148b2677",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952585044355197,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": false,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 174816,
+        "parse-candidates": 8760,
+        "retained-attempt": 416,
+        "after-expansion": 657,
+        "select-native-after-analysis": 323,
+        "rustc-driver": 34205667,
+        "driver": 34384224
+      },
+      "native_requests": []
+    },
+    "17160-1794952585084178676.jsonl": {
+      "file": "17160-1794952585084178676.jsonl",
+      "sha256": "b699c5a1a6fe841770e0d97904ad27949e68d11200e42c8c04ff2b2c1b2c7496",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 17160,
+        "request_key": "c645db7d1666315d",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952585084178676,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": false,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 186758,
+        "parse-candidates": 24334,
+        "context-fingerprint": 496874,
+        "retained-attempt": 401127,
+        "after-expansion": 401388,
+        "native-request-setup": 293626,
+        "native-daemon-roundtrip": 11699047,
+        "native-compile": 12024158,
+        "native-symbol-rename": 202685,
+        "select-native-after-analysis": 17861760,
+        "retained-object-sync": 442743,
+        "retain-link-recipe": 714554,
+        "rustc-driver": 55078391,
+        "publish-certificate": 440264,
+        "driver": 55714303
+      },
+      "native_requests": [
+        {
+          "parent_start_ns": 18142684,
+          "unit_identity": "6e24ccdce80c46dd",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2976251,
+          "roundtrip_start_ns": 18231027,
+          "roundtrip_elapsed_ns": 2881848,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "6e24ccdce80c46dd",
+            "success": true,
+            "elapsed_ns": 500210,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 3285,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 11032,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 18121,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 176496,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 8498,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6139,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 273524,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3115,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"6e24ccdce80c46dd\",\"success\":true,\"elapsed_ns\":500210,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":3285,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":11032,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":18121,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":176496,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":8498,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6139,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":273524,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3115,\"completed\":true}]}",
+          "protocol_unattributed_ns": 2381638
+        },
+        {
+          "parent_start_ns": 21242808,
+          "unit_identity": "ae2f509a8a4c0328",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2058926,
+          "roundtrip_start_ns": 21295036,
+          "roundtrip_elapsed_ns": 2002429,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "ae2f509a8a4c0328",
+            "success": true,
+            "elapsed_ns": 425058,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 2640,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 11032,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 18208,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 169895,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 8023,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 23450,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 188873,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 2937,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"ae2f509a8a4c0328\",\"success\":true,\"elapsed_ns\":425058,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":2640,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":11032,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":18208,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":169895,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":8023,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":23450,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":188873,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":2937,\"completed\":true}]}",
+          "protocol_unattributed_ns": 1577371
+        },
+        {
+          "parent_start_ns": 23391090,
+          "unit_identity": "874880b4b02ab34c",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2516212,
+          "roundtrip_start_ns": 23443105,
+          "roundtrip_elapsed_ns": 2459191,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "874880b4b02ab34c",
+            "success": true,
+            "elapsed_ns": 353517,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 2672,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 10913,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 16265,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 152803,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 7913,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6113,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 153638,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3200,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"874880b4b02ab34c\",\"success\":true,\"elapsed_ns\":353517,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":2672,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":10913,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":16265,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":152803,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":7913,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6113,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":153638,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3200,\"completed\":true}]}",
+          "protocol_unattributed_ns": 2105674
+        },
+        {
+          "parent_start_ns": 25994609,
+          "unit_identity": "3e4d4cfe1ae2d730",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2191947,
+          "roundtrip_start_ns": 26047543,
+          "roundtrip_elapsed_ns": 2132961,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "3e4d4cfe1ae2d730",
+            "success": true,
+            "elapsed_ns": 336871,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 2249,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 11180,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 16467,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 151350,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 7784,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6178,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 138455,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3208,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"3e4d4cfe1ae2d730\",\"success\":true,\"elapsed_ns\":336871,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":2249,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":11180,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":16467,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":151350,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":7784,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6178,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":138455,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3208,\"completed\":true}]}",
+          "protocol_unattributed_ns": 1796090
+        },
+        {
+          "parent_start_ns": 28297465,
+          "unit_identity": "f38c2a58947d2a33",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2280822,
+          "roundtrip_start_ns": 28348392,
+          "roundtrip_elapsed_ns": 2222618,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "f38c2a58947d2a33",
+            "success": true,
+            "elapsed_ns": 413036,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 2793,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 12014,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 17818,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 193712,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 7991,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6472,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 168769,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3467,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"f38c2a58947d2a33\",\"success\":true,\"elapsed_ns\":413036,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":2793,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":12014,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":17818,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":193712,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":7991,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6472,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":168769,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3467,\"completed\":true}]}",
+          "protocol_unattributed_ns": 1809582
+        }
+      ]
+    },
+    "17179-1794952585156908682.jsonl": {
+      "file": "17179-1794952585156908682.jsonl",
+      "sha256": "3aa54dade3ea5cc5ae05acdf4308d64a8a6bc70a75a95eb1fbb8d7caf57634db",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 17179,
+        "request_key": "3c207ed4148b2677",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952585156908682,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": false,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 158019,
+        "parse-candidates": 11176,
+        "retained-attempt": 426,
+        "after-expansion": 658,
+        "select-native-after-analysis": 178,
+        "rustc-driver": 34186921,
+        "driver": 34349144
+      },
+      "native_requests": []
+    },
+    "17195-1794952585196819496.jsonl": {
+      "file": "17195-1794952585196819496.jsonl",
+      "sha256": "f240b8507b90abd8b39696241d3c6968f6f8016b1385628883594fa1a51cc19e",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 17195,
+        "request_key": "c645db7d1666315d",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952585196819496,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": false,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 189830,
+        "parse-candidates": 24891,
+        "context-fingerprint": 534073,
+        "retained-attempt": 431894,
+        "after-expansion": 432181,
+        "native-request-setup": 235010,
+        "native-daemon-roundtrip": 12353231,
+        "native-compile": 12607881,
+        "native-symbol-rename": 147836,
+        "select-native-after-analysis": 18393689,
+        "retained-object-sync": 439046,
+        "retain-link-recipe": 786375,
+        "rustc-driver": 57551635,
+        "publish-certificate": 436220,
+        "driver": 58187822
+      },
+      "native_requests": [
+        {
+          "parent_start_ns": 19113198,
+          "unit_identity": "6e24ccdce80c46dd",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2655838,
+          "roundtrip_start_ns": 19190614,
+          "roundtrip_elapsed_ns": 2573169,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "6e24ccdce80c46dd",
+            "success": true,
+            "elapsed_ns": 572489,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 4145,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 10970,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 16798,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 204566,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 8736,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6332,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 314977,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 5965,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"6e24ccdce80c46dd\",\"success\":true,\"elapsed_ns\":572489,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":4145,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":10970,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":16798,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":204566,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":8736,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6332,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":314977,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":5965,\"completed\":true}]}",
+          "protocol_unattributed_ns": 2000680
+        },
+        {
+          "parent_start_ns": 21872496,
+          "unit_identity": "ae2f509a8a4c0328",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2719026,
+          "roundtrip_start_ns": 21928139,
+          "roundtrip_elapsed_ns": 2661237,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "ae2f509a8a4c0328",
+            "success": true,
+            "elapsed_ns": 419406,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 2652,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 11196,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 18975,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 185597,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 8061,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6511,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 183285,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3129,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"ae2f509a8a4c0328\",\"success\":true,\"elapsed_ns\":419406,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":2652,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":11196,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":18975,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":185597,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":8061,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6511,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":183285,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3129,\"completed\":true}]}",
+          "protocol_unattributed_ns": 2241831
+        },
+        {
+          "parent_start_ns": 24662256,
+          "unit_identity": "874880b4b02ab34c",
+          "response_code": 0,
+          "client_request_elapsed_ns": 1986627,
+          "roundtrip_start_ns": 24701464,
+          "roundtrip_elapsed_ns": 1945437,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "874880b4b02ab34c",
+            "success": true,
+            "elapsed_ns": 402500,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 2730,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 10975,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 17890,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 151052,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 7716,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6206,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 202579,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3352,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"874880b4b02ab34c\",\"success\":true,\"elapsed_ns\":402500,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":2730,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":10975,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":17890,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":151052,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":7716,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6206,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":202579,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3352,\"completed\":true}]}",
+          "protocol_unattributed_ns": 1542937
+        },
+        {
+          "parent_start_ns": 26711035,
+          "unit_identity": "3e4d4cfe1ae2d730",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2956121,
+          "roundtrip_start_ns": 26744730,
+          "roundtrip_elapsed_ns": 2919347,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "3e4d4cfe1ae2d730",
+            "success": true,
+            "elapsed_ns": 610272,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 2257,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 9940,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 16261,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 369448,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 8643,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6757,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 193251,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3715,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"3e4d4cfe1ae2d730\",\"success\":true,\"elapsed_ns\":610272,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":2257,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":9940,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":16261,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":369448,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":8643,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6757,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":193251,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3715,\"completed\":true}]}",
+          "protocol_unattributed_ns": 2309075
+        },
+        {
+          "parent_start_ns": 29726730,
+          "unit_identity": "f38c2a58947d2a33",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2290269,
+          "roundtrip_start_ns": 29758227,
+          "roundtrip_elapsed_ns": 2254041,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "f38c2a58947d2a33",
+            "success": true,
+            "elapsed_ns": 415860,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 20004,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 11457,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 28887,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 161778,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 7822,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6675,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 175987,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3250,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"f38c2a58947d2a33\",\"success\":true,\"elapsed_ns\":415860,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":20004,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":11457,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":28887,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":161778,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":7822,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6675,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":175987,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3250,\"completed\":true}]}",
+          "protocol_unattributed_ns": 1838181
+        }
+      ]
+    },
+    "17214-1794952585272516620.jsonl": {
+      "file": "17214-1794952585272516620.jsonl",
+      "sha256": "40fadfc337599b11753b9df515bd19b0a19fad52d5a82ad32fe06abb4eca033a",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 17214,
+        "request_key": "c645db7d1666315d",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952585272516620,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": false,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 199132,
+        "parse-candidates": 26957,
+        "context-fingerprint": 531775,
+        "retained-attempt": 431883,
+        "after-expansion": 432262,
+        "native-request-setup": 220926,
+        "native-daemon-roundtrip": 12529395,
+        "native-compile": 12765461,
+        "native-symbol-rename": 169103,
+        "select-native-after-analysis": 18503474,
+        "retained-object-sync": 504382,
+        "retain-link-recipe": 852808,
+        "rustc-driver": 58215166,
+        "driver": 58414804
+      },
+      "native_requests": [
+        {
+          "parent_start_ns": 19365088,
+          "unit_identity": "6e24ccdce80c46dd",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2956336,
+          "roundtrip_start_ns": 19430219,
+          "roundtrip_elapsed_ns": 2887957,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "6e24ccdce80c46dd",
+            "success": true,
+            "elapsed_ns": 514752,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 3306,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 10988,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 17882,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 197293,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 8420,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6111,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 267398,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3354,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"6e24ccdce80c46dd\",\"success\":true,\"elapsed_ns\":514752,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":3306,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":10988,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":17882,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":197293,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":8420,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6111,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":267398,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3354,\"completed\":true}]}",
+          "protocol_unattributed_ns": 2373205
+        },
+        {
+          "parent_start_ns": 22411292,
+          "unit_identity": "ae2f509a8a4c0328",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2840803,
+          "roundtrip_start_ns": 22454920,
+          "roundtrip_elapsed_ns": 2794534,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "ae2f509a8a4c0328",
+            "success": true,
+            "elapsed_ns": 680058,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 2642,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 10565,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 17934,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 415325,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 8378,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6776,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 215119,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3319,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"ae2f509a8a4c0328\",\"success\":true,\"elapsed_ns\":680058,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":2642,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":10565,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":17934,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":415325,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":8378,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6776,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":215119,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3319,\"completed\":true}]}",
+          "protocol_unattributed_ns": 2114476
+        },
+        {
+          "parent_start_ns": 25331814,
+          "unit_identity": "874880b4b02ab34c",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2002785,
+          "roundtrip_start_ns": 25371469,
+          "roundtrip_elapsed_ns": 1960662,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "874880b4b02ab34c",
+            "success": true,
+            "elapsed_ns": 409269,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 2652,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 13177,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 20418,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 148011,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 7569,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6062,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 207987,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3393,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"874880b4b02ab34c\",\"success\":true,\"elapsed_ns\":409269,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":2652,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":13177,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":20418,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":148011,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":7569,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6062,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":207987,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3393,\"completed\":true}]}",
+          "protocol_unattributed_ns": 1551393
+        },
+        {
+          "parent_start_ns": 27404519,
+          "unit_identity": "3e4d4cfe1ae2d730",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2209932,
+          "roundtrip_start_ns": 27442049,
+          "roundtrip_elapsed_ns": 2170272,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "3e4d4cfe1ae2d730",
+            "success": true,
+            "elapsed_ns": 406799,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 2632,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 11517,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 16590,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 147882,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 7423,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6092,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 210913,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3750,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"3e4d4cfe1ae2d730\",\"success\":true,\"elapsed_ns\":406799,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":2632,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":11517,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":16590,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":147882,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":7423,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6092,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":210913,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3750,\"completed\":true}]}",
+          "protocol_unattributed_ns": 1763473
+        },
+        {
+          "parent_start_ns": 29689601,
+          "unit_identity": "f38c2a58947d2a33",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2755605,
+          "roundtrip_start_ns": 29727132,
+          "roundtrip_elapsed_ns": 2715970,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "f38c2a58947d2a33",
+            "success": true,
+            "elapsed_ns": 664815,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 2837,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 10809,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 18195,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 405531,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 9005,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6491,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 208825,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3122,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"f38c2a58947d2a33\",\"success\":true,\"elapsed_ns\":664815,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":2837,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":10809,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":18195,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":405531,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":9005,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6491,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":208825,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3122,\"completed\":true}]}",
+          "protocol_unattributed_ns": 2051155
+        }
+      ]
+    },
+    "17233-1794952585348303868.jsonl": {
+      "file": "17233-1794952585348303868.jsonl",
+      "sha256": "62b67ce89f085e3bbca1930b451d5f1032249bbd34689e4e33ad38db733eb4ac",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 17233,
+        "request_key": "c645db7d1666315d",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952585348303868,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": false,
+        "success": true
+      },
+      "phase_nanoseconds": {
+        "request-setup": 228439,
+        "parse-candidates": 25598,
+        "context-fingerprint": 537113,
+        "retained-attempt": 445323,
+        "after-expansion": 445634,
+        "native-request-setup": 227832,
+        "native-daemon-roundtrip": 11562213,
+        "native-compile": 11805150,
+        "native-symbol-rename": 174097,
+        "select-native-after-analysis": 18333181,
+        "retained-object-sync": 447051,
+        "retain-link-recipe": 779659,
+        "rustc-driver": 58694829,
+        "driver": 58924003
+      },
+      "native_requests": [
+        {
+          "parent_start_ns": 20978010,
+          "unit_identity": "6e24ccdce80c46dd",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2641705,
+          "roundtrip_start_ns": 21046160,
+          "roundtrip_elapsed_ns": 2570910,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "6e24ccdce80c46dd",
+            "success": true,
+            "elapsed_ns": 535174,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 3153,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 11429,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 19865,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 195312,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 9134,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6637,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 286340,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3304,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"6e24ccdce80c46dd\",\"success\":true,\"elapsed_ns\":535174,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":3153,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":11429,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":19865,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":195312,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":9134,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6637,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":286340,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3304,\"completed\":true}]}",
+          "protocol_unattributed_ns": 2035736
+        },
+        {
+          "parent_start_ns": 23705468,
+          "unit_identity": "ae2f509a8a4c0328",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2365993,
+          "roundtrip_start_ns": 23746558,
+          "roundtrip_elapsed_ns": 2322100,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "ae2f509a8a4c0328",
+            "success": true,
+            "elapsed_ns": 428732,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 2860,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 11806,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 18693,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 165784,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 7940,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6255,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 212096,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3298,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"ae2f509a8a4c0328\",\"success\":true,\"elapsed_ns\":428732,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":2860,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":11806,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":18693,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":165784,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":7940,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6255,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":212096,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3298,\"completed\":true}]}",
+          "protocol_unattributed_ns": 1893368
+        },
+        {
+          "parent_start_ns": 26174357,
+          "unit_identity": "874880b4b02ab34c",
+          "response_code": 0,
+          "client_request_elapsed_ns": 1992799,
+          "roundtrip_start_ns": 26215608,
+          "roundtrip_elapsed_ns": 1949161,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "874880b4b02ab34c",
+            "success": true,
+            "elapsed_ns": 411014,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 2397,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 10641,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 15716,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 147067,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 7744,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 5771,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 217878,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3800,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"874880b4b02ab34c\",\"success\":true,\"elapsed_ns\":411014,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":2397,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":10641,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":15716,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":147067,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":7744,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":5771,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":217878,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3800,\"completed\":true}]}",
+          "protocol_unattributed_ns": 1538147
+        },
+        {
+          "parent_start_ns": 28239594,
+          "unit_identity": "3e4d4cfe1ae2d730",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2530557,
+          "roundtrip_start_ns": 28278282,
+          "roundtrip_elapsed_ns": 2489499,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "3e4d4cfe1ae2d730",
+            "success": true,
+            "elapsed_ns": 404214,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 2318,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 10518,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 16324,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 150555,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 8069,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 5970,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 207203,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3257,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"3e4d4cfe1ae2d730\",\"success\":true,\"elapsed_ns\":404214,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":2318,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":10518,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":16324,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":150555,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":8069,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":5970,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":207203,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3257,\"completed\":true}]}",
+          "protocol_unattributed_ns": 2085285
+        },
+        {
+          "parent_start_ns": 30841887,
+          "unit_identity": "f38c2a58947d2a33",
+          "response_code": 0,
+          "client_request_elapsed_ns": 2274096,
+          "roundtrip_start_ns": 30883186,
+          "roundtrip_elapsed_ns": 2230543,
+          "emitter_status": "reported",
+          "emitter": {
+            "schema": "lustr.mixed-native-emitter",
+            "version": 2,
+            "native": "9aac9b19223eeef9",
+            "unit_identity": "f38c2a58947d2a33",
+            "success": true,
+            "elapsed_ns": 408542,
+            "phases": [
+              {
+                "phase": "c-prepare",
+                "elapsed_ns": 3194,
+                "completed": true
+              },
+              {
+                "phase": "output-prepare",
+                "elapsed_ns": 11252,
+                "completed": true
+              },
+              {
+                "phase": "c-write",
+                "elapsed_ns": 18809,
+                "completed": true
+              },
+              {
+                "phase": "libtcc",
+                "elapsed_ns": 159751,
+                "completed": true
+              },
+              {
+                "phase": "symbol-check",
+                "elapsed_ns": 7895,
+                "completed": true
+              },
+              {
+                "phase": "rename",
+                "elapsed_ns": 6229,
+                "completed": true
+              },
+              {
+                "phase": "file-sync",
+                "elapsed_ns": 197710,
+                "completed": true
+              },
+              {
+                "phase": "directory-sync",
+                "elapsed_ns": 3702,
+                "completed": true
+              }
+            ]
+          },
+          "emitter_record": "{\"schema\":\"lustr.mixed-native-emitter\",\"version\":2,\"native\":\"9aac9b19223eeef9\",\"unit_identity\":\"f38c2a58947d2a33\",\"success\":true,\"elapsed_ns\":408542,\"phases\":[{\"phase\":\"c-prepare\",\"elapsed_ns\":3194,\"completed\":true},{\"phase\":\"output-prepare\",\"elapsed_ns\":11252,\"completed\":true},{\"phase\":\"c-write\",\"elapsed_ns\":18809,\"completed\":true},{\"phase\":\"libtcc\",\"elapsed_ns\":159751,\"completed\":true},{\"phase\":\"symbol-check\",\"elapsed_ns\":7895,\"completed\":true},{\"phase\":\"rename\",\"elapsed_ns\":6229,\"completed\":true},{\"phase\":\"file-sync\",\"elapsed_ns\":197710,\"completed\":true},{\"phase\":\"directory-sync\",\"elapsed_ns\":3702,\"completed\":true}]}",
+          "protocol_unattributed_ns": 1822001
+        }
+      ]
+    },
+    "17252-1794952585424625865.jsonl": {
+      "file": "17252-1794952585424625865.jsonl",
+      "sha256": "9eb6729198583f1f35b7a149e0e789111322899c6dc27013dcc18f5805112ee4",
+      "identity": {
+        "instrumented": true,
+        "native": "9aac9b19223eeef9",
+        "nested_spans": true,
+        "pid": 17252,
+        "request_key": "c645db7d1666315d",
+        "rustc": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+        "schema": "lustr.mixed-phase-profile",
+        "started_unix_ns": 1794952585424625865,
+        "version": 2
+      },
+      "result": {
+        "check_only": false,
+        "completed": true,
+        "reused": false,
+        "success": false
+      },
+      "phase_nanoseconds": {
+        "request-setup": 203182,
+        "parse-candidates": 24425,
+        "retained-attempt": 531,
+        "after-expansion": 881,
+        "select-native-after-analysis": 428,
+        "rustc-driver": 14736775,
+        "driver": 14940349
+      },
+      "native_requests": []
+    }
+  }
+}

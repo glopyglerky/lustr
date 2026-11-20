@@ -1,5 +1,11 @@
 # Frontend scheduling contracts
 
+> Historical source-bound record. This proof concerns the retired coordinator, not the current compiler ownership boundary.
+> Follow the [active correction](../active-correction.md) and
+> [exclusive coverage contract](../exclusive-coverage-contract.md).
+> Earlier results and proposals below do not qualify current source or authorize
+> a fallback, duplicate Rust frontend, runtime ownership probe or new install route.
+
 These arguments concern Lustr's command transformation. They are not a proof of
 Rust's type system, the parallel compiler implementation, or general speedup.
 
