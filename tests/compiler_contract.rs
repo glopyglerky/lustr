@@ -81,12 +81,33 @@ fn native_package_wire_identity(package: &Path) -> String {
             core.dev(), core.ino(), core.size(), core.mtime(), core.mtime_nsec())
 }
 
+fn read_public_transport_field(reader: &mut impl std::io::BufRead) -> Result<Vec<u8>, String> {
+    use std::io::{BufRead, Read};
+    let mut size = String::new();
+    reader.take(32).read_line(&mut size).map_err(|error| error.to_string())?;
+    if !size.ends_with('\n') { return Err("truncated request field size".into()); }
+    let length: usize = size.trim().parse().map_err(|_| "invalid request field size")?;
+    if length > 1 << 20 { return Err("fixture request field exceeds bound".into()); }
+    let mut bytes = vec![0; length];
+    reader.read_exact(&mut bytes).map_err(|error| error.to_string())?;
+    Ok(bytes)
+}
+
+fn read_public_transport_count(reader: &mut impl std::io::BufRead, name: &str, limit: usize) -> Result<usize, String> {
+    let bytes = read_public_transport_field(reader)?;
+    let count = std::str::from_utf8(&bytes).ok().and_then(|value| value.parse::<usize>().ok())
+        .ok_or_else(|| format!("invalid {name} count"))?;
+    if count > limit { return Err(format!("{name} count exceeds bound")); }
+    Ok(count)
+}
+
 fn read_public_transport_request(
     reader: &mut impl std::io::BufRead,
     identity: &str,
     source: &Path,
     output: &Path,
     target_explicit: bool,
+    expected_library: Option<&transport_protocol::LibraryKey>,
 ) -> Result<(), String> {
     use std::io::{BufRead, Read};
     use std::os::unix::ffi::OsStrExt;
@@ -99,25 +120,64 @@ fn read_public_transport_request(
     let features: usize = words[11].parse().map_err(|_| "invalid feature count")?;
     let environment: usize = if words[12] == "-" { 0 } else { words[12].parse().map_err(|_| "invalid environment count")? };
     if features > 4096 || environment > 65536 { return Err("request field count exceeds bound".into()); }
-    // Consume the actual complete frame: ten fixed fields, feature names,
-    // the displayed source path, then environment key/value pairs. Validate
-    // identity and paths without rewriting the incoming header or overriding
-    // the product's build identity.
-    for index in 0..11 + features + 2 * environment {
-        let mut size = String::new();
-        reader.take(32).read_line(&mut size).map_err(|error| error.to_string())?;
-        if !size.ends_with('\n') { return Err("truncated request field size".into()); }
-        let length: usize = size.trim().parse().map_err(|_| "invalid request field size")?;
-        if length > 1 << 20 { return Err("fixture request field exceeds bound".into()); }
-        let mut bytes = vec![0; length];
-        reader.read_exact(&mut bytes).map_err(|error| error.to_string())?;
-        if index == 0 && bytes != source.as_os_str().as_bytes()
-            || index == 1 && bytes != output.as_os_str().as_bytes() {
-            return Err("public request names a different source or output".into());
+    // Ten common fields precede the library discriminator. A library frame
+    // carries six values/paths and two counted vectors before the ordinary
+    // features, displayed source and environment. Decode that actual schema;
+    // neither trailing fields nor a substituted compiler identity are ignored.
+    let mut fixed = Vec::with_capacity(10);
+    for _ in 0..10 { fixed.push(read_public_transport_field(reader)?); }
+    if fixed[0].as_slice() != source.as_os_str().as_bytes()
+        || fixed[1].as_slice() != output.as_os_str().as_bytes() {
+        return Err("public request names a different source or output".into());
+    }
+    if fixed[7].as_slice() != if target_explicit { b"1" } else { b"0" } {
+        return Err("public request has a different explicit-target selection".into());
+    }
+    let present = read_public_transport_field(reader)?;
+    match (present.as_slice(), expected_library) {
+        (b"0", None) => {}
+        (b"1", Some(library)) => {
+            if !fixed[2].is_empty() || fixed[5].as_slice() != b"lib" || fixed[6].as_slice() != library.crate_name.as_bytes()
+                || fixed[8].as_slice() != source.as_os_str().as_bytes()
+                || fixed[9].as_slice() != transport_protocol::library_contract::TARGET.as_bytes()
+                || words[8] != "1" {
+                return Err("public library request changed its crate, target or profile".into());
+            }
+            for (name, expected) in [
+                ("crate name", library.crate_name.as_bytes()),
+                ("metadata", library.metadata.as_bytes()),
+                ("extra filename", library.extra_filename.as_bytes()),
+                ("SDK receipt", library.sdk_receipt.as_bytes()),
+                ("source path", library.source_path.as_os_str().as_bytes()),
+                ("working directory", library.working_directory.as_os_str().as_bytes()),
+            ] {
+                if read_public_transport_field(reader)?.as_slice() != expected {
+                    return Err(format!("public library request changed {name}"));
+                }
+            }
+            let cfg_count = read_public_transport_count(reader, "check-cfg", 2)?;
+            if cfg_count != library.check_cfg.len() { return Err("public library check-cfg inventory changed".into()); }
+            for expected in &library.check_cfg {
+                if read_public_transport_field(reader)?.as_slice() != expected.as_bytes() {
+                    return Err("public library check-cfg value changed".into());
+                }
+            }
+            let search_count = read_public_transport_count(reader, "search path", 4096)?;
+            if search_count != library.search_paths.len() { return Err("public library search-path inventory changed".into()); }
+            for expected in &library.search_paths {
+                if read_public_transport_field(reader)?.as_slice() != expected.as_os_str().as_bytes() {
+                    return Err("public library search path changed".into());
+                }
+            }
         }
-        if index == 7 && bytes.as_slice() != if target_explicit { b"1" } else { b"0" } {
-            return Err("public request has a different explicit-target selection".into());
-        }
+        (b"0" | b"1", _) => return Err("public request changed its library presence".into()),
+        _ => return Err("invalid public library discriminator".into()),
+    }
+    for _ in 0..features { read_public_transport_field(reader)?; }
+    read_public_transport_field(reader)?; // displayed source
+    for _ in 0..environment {
+        read_public_transport_field(reader)?; // environment name
+        read_public_transport_field(reader)?; // environment value
     }
     Ok(())
 }
@@ -135,13 +195,85 @@ fn transport_peer_consumes_and_validates_the_actual_encoded_request() {
         req.session.krate.target_explicit = target_explicit;
         let encoded = transport_protocol::encode(&req);
         let mut reader = Cursor::new(&encoded);
-        read_public_transport_request(&mut reader, identity, &req.file, &req.out, target_explicit).unwrap();
+        read_public_transport_request(&mut reader, identity, &req.file, &req.out, target_explicit, None).unwrap();
         assert_eq!(reader.position() as usize, encoded.len(), "peer must consume every environment and source field");
-        assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, &req.file, &req.out, !target_explicit).is_err());
-        assert!(read_public_transport_request(&mut Cursor::new(&encoded), "another-build", &req.file, &req.out, target_explicit).is_err());
-        assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, Path::new("/wrong-source.rs"), &req.out, target_explicit).is_err());
-        assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, &req.file, Path::new("/wrong-output"), target_explicit).is_err());
-        assert!(read_public_transport_request(&mut Cursor::new(&encoded[..encoded.len() - 1]), identity, &req.file, &req.out, target_explicit).is_err());
+        assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, &req.file, &req.out, !target_explicit, None).is_err());
+        assert!(read_public_transport_request(&mut Cursor::new(&encoded), "another-build", &req.file, &req.out, target_explicit, None).is_err());
+        assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, Path::new("/wrong-source.rs"), &req.out, target_explicit, None).is_err());
+        assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, &req.file, Path::new("/wrong-output"), target_explicit, None).is_err());
+        assert!(read_public_transport_request(&mut Cursor::new(&encoded[..encoded.len() - 1]), identity, &req.file, &req.out, target_explicit, None).is_err());
+    }
+}
+
+#[test]
+fn transport_peer_validates_library_values_and_counted_vectors() {
+    use std::io::{BufRead, Cursor};
+    let args: Vec<String> = ["build", "/native-transport/source.rs", "-o", "/native-transport/libtransport_peer-transport.rlib"]
+        .into_iter().map(str::to_owned).collect();
+    let Some(transport_protocol::Invocation::Compile { mut req, .. }) = transport_protocol::parse_args(&args) else { panic!("build request"); };
+    let library = transport_protocol::LibraryKey {
+        crate_name: "transport_peer".into(),
+        metadata: "wire_identity".into(),
+        extra_filename: "-transport".into(),
+        sdk_receipt: transport_protocol::library_contract::SDK_RECEIPT.into(),
+        source_path: req.file.clone(),
+        working_directory: PathBuf::from("/native-transport"),
+        check_cfg: vec!["cfg(docsrs,test)".into(), "cfg(feature, values())".into()],
+        search_paths: vec![PathBuf::from("/native-transport/deps-one"), PathBuf::from("/native-transport/deps-two")],
+    };
+    req.session.krate.target_kind = "lib".into();
+    req.session.krate.target_name = library.crate_name.clone();
+    req.session.krate.target_explicit = true;
+    req.session.target_triple = transport_protocol::library_contract::TARGET.into();
+    req.session.profile = transport_protocol::ProfileFlags::DEV;
+    req.session.library = Some(library.clone());
+    req.session.features = vec!["one".into(), "two".into()];
+    req.client.env = Some(vec![("KEY".into(), "value λ".into()), ("EMPTY".into(), String::new())]);
+    let encoded = transport_protocol::encode(&req);
+    let identity = transport_protocol::build_id();
+    let mut reader = Cursor::new(&encoded);
+    read_public_transport_request(&mut reader, identity, &req.file, &req.out, true, Some(&library)).unwrap();
+    assert_eq!(reader.position() as usize, encoded.len(), "library peer must consume every vector and environment field");
+    assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, &req.file, &req.out, true, None).is_err());
+    assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, &req.file, &req.out, false, Some(&library)).is_err());
+
+    // Keep mutations bound to actual length-prefixed fields from the real
+    // encoder. This changes one field, without dropping the remaining frame.
+    let mut fields = Vec::new();
+    let mut cursor = Cursor::new(&encoded);
+    cursor.read_line(&mut String::new()).unwrap();
+    while (cursor.position() as usize) < encoded.len() {
+        let start = cursor.position() as usize;
+        read_public_transport_field(&mut cursor).unwrap();
+        fields.push((start, cursor.position() as usize));
+    }
+    assert_eq!(fields.len(), 30, "library schema plus two features and two environment pairs");
+    let replace_field = |index: usize, bytes: &[u8]| {
+        let (start, end) = fields[index];
+        let mut changed = encoded[..start].to_vec();
+        changed.extend_from_slice(format!("{}\n", bytes.len()).as_bytes());
+        changed.extend_from_slice(bytes);
+        changed.extend_from_slice(&encoded[end..]);
+        changed
+    };
+    let wrong_fields: &[(usize, &[u8])] = &[
+        (10, b"2"), (10, b"0"), // invalid discriminator and lost library context
+        (11, b"wrong_crate"), (12, b"wrong_metadata"), (13, b"-wrong_suffix"),
+        (14, b"wrong_sdk"), (15, b"/wrong/source.rs"), (16, b"/wrong/cwd"),
+        (17, b"invalid"), (17, b"3"), (17, b"1"), // malformed, oversized or incomplete cfg inventory
+        (19, b"cfg(wrong)"),
+        (20, b"4097"), (20, b"1"), // oversized or incomplete search inventory
+        (22, b"/wrong/dependency"),
+    ];
+    for &(index, bytes) in wrong_fields {
+        let changed = replace_field(index, bytes);
+        assert!(read_public_transport_request(&mut Cursor::new(&changed), identity, &req.file, &req.out, true, Some(&library)).is_err(),
+                "changed library field {index} was accepted");
+    }
+    for index in [19, 22, 29] {
+        let truncated = &encoded[..fields[index].1 - 1];
+        assert!(read_public_transport_request(&mut Cursor::new(truncated), identity, &req.file, &req.out, true, Some(&library)).is_err(),
+                "truncated vector or final environment field {index} was accepted");
     }
 }
 
@@ -188,7 +320,7 @@ fn public_entries_keep_ambiguous_daemon_failures_terminal() {
                     }
                 };
                 stream.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
-                read_public_transport_request(&mut BufReader::new(&stream), &identity, &expected_source, &expected_output, false)
+                read_public_transport_request(&mut BufReader::new(&stream), &identity, &expected_source, &expected_output, false, None)
                     .expect("peer received the complete request for this installed compiler, source and output");
                 stream.write_all(&reply).unwrap();
             });

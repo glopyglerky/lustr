@@ -222,6 +222,28 @@ class MixedSymbolTests(unittest.TestCase):
         host = repository / "src/host_runtime.rs"
         host.parent.mkdir()
         shutil.copyfile(ROOT / "src/host_runtime.rs", host)
+        # The production helper hashes these external completion/artifact inputs
+        # as well as the original host and symbol-validator sources.
+        library_inputs = (
+            Path("src/library_contract.rs"), Path("src/library_request.rs"),
+            Path("crates/lustr-native-core/src/native_library.rs"),
+            Path("crates/lustr-native-core/src/library_history.rs"),
+            Path("crates/lustr-native-core/src/native_completion.rs"),
+            Path("crates/lustr-native-core/src/library_artifact.rs"),
+            Path("crates/lustr-native-core/src/metadata_archive.rs"),
+            Path("crates/lustr-native-core/src/public_library.rs"),
+            Path("crates/lustr-native-core/src/unit_object.rs"),
+            Path("crates/lustr-native-core/src/unit_publication.rs"),
+            Path("upstream/metadata-artifact-tools.json"),
+            Path("docs/compiler-set/evidence/metadata-sdk-receipt-20261120/receipt.json"),
+        )
+        library_trees = (Path("crates/lustr-metadata-encoder/src"), Path("crates/lustr-metadata-sdk/src"))
+        for relative in library_inputs:
+            destination = repository / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(ROOT / relative, destination)
+        for relative in library_trees:
+            shutil.copytree(ROOT / relative, repository / relative)
         output.mkdir()
         helper = self.root / "native-build-helper"
         build = command([RUSTC, "--edition=2024", ROOT / "compiler/native/build.rs", "-o", helper])
@@ -242,8 +264,32 @@ class MixedSymbolTests(unittest.TestCase):
             self.assertIn(f"cargo:rerun-if-changed={native}/../../src/host_runtime.rs", lines)
             self.assertIn(f"cargo:rerun-if-changed={native}/Cargo.lock", lines)
             self.assertIn(f"cargo:rerun-if-changed={native}/../../crates/lustr-native-core/Cargo.lock", lines)
+            for relative in (*library_inputs, *library_trees):
+                self.assertIn(f"cargo:rerun-if-changed={native}/../../{relative}", lines)
             return next(line for line in lines if line.startswith("cargo:rustc-env=LUST_BUILD_HASH="))
         original = identity()
+        for relative in library_inputs:
+            with self.subTest(library_input=relative):
+                path = repository / relative
+                original_bytes = path.read_bytes()
+                path.write_bytes(original_bytes + b"\n// public library identity mutation probe\n")
+                self.assertNotEqual(identity(), original)
+                path.write_bytes(original_bytes)
+                self.assertEqual(identity(), original)
+                path.unlink()
+                missing_input = command([helper], env=environment)
+                self.assertNotEqual(missing_input.returncode, 0)
+                self.assertIn(b"public library source input is required", missing_input.stderr)
+                path.write_bytes(original_bytes)
+                self.assertEqual(identity(), original)
+        for relative in library_trees:
+            with self.subTest(library_tree=relative):
+                path = repository / relative / "lib.rs"
+                original_bytes = path.read_bytes()
+                path.write_bytes(original_bytes + b"\n// metadata dependency identity mutation probe\n")
+                self.assertNotEqual(identity(), original)
+                path.write_bytes(original_bytes)
+                self.assertEqual(identity(), original)
         for lock in lockfiles:
             with self.subTest(lock=lock.relative_to(repository)):
                 lock_bytes = lock.read_bytes()
