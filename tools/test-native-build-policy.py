@@ -55,7 +55,7 @@ def construction_controls(root, rustc, work):
             paths.add(target["lib"][0])
         for relative in (Path(manifest), base / "Cargo.lock", *(base / path for path in paths)):
             copy(relative)
-    for crate in ("lustr-metadata-encoder", "lustr-metadata-sdk"):
+    for crate in ("lustr-metadata-encoder", "lustr-metadata-sdk", "lustr-native-metadata-qualification"):
         shutil.copytree(root / "crates" / crate, fixture / "crates" / crate,
                         ignore=shutil.ignore_patterns("target"))
     for relative in ("upstream/complement-imports.json", "upstream/bluefe-core.pin",

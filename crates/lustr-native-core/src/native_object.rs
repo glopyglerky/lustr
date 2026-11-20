@@ -163,7 +163,7 @@ pub(crate) struct EmittedUnit {
     bytes: Vec<u8>,
     functions: Vec<EmittedFunction>,
     helpers: BTreeSet<Vec<u8>>,
-    runtime: crate::native_crate::runtime::Requirements,
+    runtime: Option<crate::native_crate::runtime::Requirements>,
 }
 
 impl EmittedUnit {
@@ -352,12 +352,18 @@ fn emit_with_backend(prepared: PreparedUnit, artifact: Option<(&crate::native_cr
     if !result.status.success(){return Err(format!("native object C backend {}: {}",result.status,String::from_utf8_lossy(&result.stderr)));}
     if prepared.capture && (!result.stdout.is_empty() || !result.stderr.is_empty()) {return Err("native metadata object backend produced unexpected output; exact streams retained".into());}
     if let Some((generation,backend))=artifact {backend.verify(generation)?;}
-    let mut runtime=crate::native_crate::runtime::Requirements::capture(&p,&map)?;
-    let object=if let Some((generation,backend))=artifact{crate::native_crate::runtime::prepare(&object,&scratch,&mut runtime,generation,backend)?}else{object};
+    // Only a native semantic artifact consumes the runtime source/location
+    // record. A freestanding object must have no undefined symbols below;
+    // it neither uses this runtime nor needs to hash its unused source.
+    let (object,runtime)=if let Some((generation,backend))=artifact {
+        let mut runtime=crate::native_crate::runtime::Requirements::capture(&p,&map)?;
+        let object=crate::native_crate::runtime::prepare(&object,&scratch,&mut runtime,generation,backend)?;
+        (object,Some(runtime))
+    } else {(object,None)};
     let bytes = fs::read(&object).map_err(|e|format!("cannot read native object: {e}"))?;
     let symbols = super::unit_object::symbols(&bytes)?;
     if artifact.is_none()&&!symbols.undefined.is_empty() { return Err(format!("native freestanding object has unprovided runtime symbols: {:?}",symbols.undefined)); }
-    if artifact.is_some()&&symbols.undefined!=runtime.imports{return Err("native artifact runtime edge proof changed".into());}
+    if runtime.as_ref().is_some_and(|runtime|symbols.undefined!=runtime.imports){return Err("native artifact runtime edge proof changed".into());}
     let mut helpers = symbols.functions;
     let mut functions = Vec::new();
     for (index, name) in names.fns.iter().enumerate().filter_map(|(index, name)| name.as_ref().map(|name| (index, name))) {
@@ -381,6 +387,7 @@ fn compile(r: Request, artifact: Option<(&crate::native_crate::Generation,&crate
     let mut message=format!("native freestanding object: {} checked functions, {} bytes, no undefined symbols; core/alloc/metadata/Cargo completion remains open\n",p.fns.len(),bytes.len());
     for (n,f) in p.fns.iter().enumerate(){message.push_str(&format!("native object export: {} f_{}\n",p.interner.get(f.name),names.fns[n].as_ref().unwrap()));}
     let published = if let Some((generation,_)) = artifact {
+        let runtime=runtime.ok_or("native artifact lacks its runtime requirements")?;
         let image=crate::native_crate::Artifact::produce(&p,&r.name,&r.metadata,&source,bytes,generation.clone(),runtime)?.encode()?;
         let path=scratch.join("unit.lustr-native");fs::write(&path,&image).map_err(|e|e.to_string())?;
         message=format!("native semantic artifact: {} actual checked structural function signatures and explicit proven native runtime dependencies; full-image/Cargo/full-language gates remain open\n",p.fns.len());
