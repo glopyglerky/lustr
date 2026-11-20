@@ -4733,7 +4733,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
             let body=results[k].0.as_ref().expect("passing library check retains its native body");
             let fp=super::ir_cache::ir_fingerprint(&program,body,&map,fn_lines_all[i]);
             caches.slot_ir[slot(i)]=Some(super::ir_cache::cache_body(&program,body,0,slot(i) as u32,Vec::new(),fp));
-            super::library::store(library, facts, front.slot_hash[slot(i)], front.slot_head[slot(i)],program.fn_def(LocalDefId(i as u32)).span);
+            super::library::store(&program, library, facts, front.slot_hash[slot(i)], front.slot_head[slot(i)]);
         }
         diags.extend(results[k].1.iter().cloned());
     }

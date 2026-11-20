@@ -217,7 +217,8 @@ impl Host {
             record["reused"]=json!(snapshot.objects.iter().find(|(o,_)|o.serial==serial).ok_or("artifact/native object generations differ")?.1);
         }
         report["artifact_reused"]=json!(reused);report["phase"]=json!("publication");
-        match unit_publication::publish(&stage.join("libconsumer.rlib"),&step.join("libconsumer.rlib"))? {
+        match unit_publication::publish(&stage.join("libconsumer.rlib"),&step.join("libconsumer.rlib"))
+            .map_err(|error| format!("publish retained native archive: {error}"))? {
             unit_publication::Publication::Durable=>{self.last_published=self.artifact.clone();},
             unit_publication::Publication::DurabilityUnknown(error)=>return Err(format!("published archive durability unconfirmed: {error}")),
         }

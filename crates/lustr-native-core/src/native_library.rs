@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use completion::{AcceptedBody, ExpressionResolution as Resolution, Function};
 
-struct StoredBody { body_hash: u64, head_hash: u64, origin: diag::Span, facts: AcceptedBody }
+struct StoredBody { body_hash: u64, head_hash: u64, origin: Option<diag::Span>, facts: AcceptedBody }
 #[derive(Clone)]
 pub(crate) struct Object {
     pub definition: def::DiskDefId,
@@ -121,7 +121,17 @@ pub(super) fn lowered(p: &check::collect::Program, facts: &mut AcceptedBody, bod
     }
     facts.lowered_calls=calls;
 }
-pub(super) fn store(state: &mut State, facts: AcceptedBody, body_hash: u64, head_hash: u64, origin:diag::Span) {
+// FnDef has only a name span. IR rebinding needs the complete function item
+// interval, including its body. Other declaration locations stay unrepresented
+// here and remain subject to the existing metadata completion refusal.
+fn function_span(p: &check::collect::Program, id: def::LocalDefId) -> Option<diag::Span> {
+    let check::collect::FnLoc::Item(index) = p.fns.get(id.0 as usize)?.loc else { return None; };
+    let item = p.ast.items.get(index as usize)?;
+    matches!(&item.kind, ast::ItemKind::Fn(_)).then_some(item.span)
+}
+
+pub(super) fn store(p: &check::collect::Program, state: &mut State, facts: AcceptedBody, body_hash: u64, head_hash: u64) {
+    let origin = function_span(p, facts.local());
     state.bodies.insert(facts.definition(),StoredBody {body_hash,head_hash,origin,facts});
 }
 
@@ -135,14 +145,15 @@ pub(super) fn rebuild<'p>(p:&'p check::collect::Program, id:def::LocalDefId, fro
     if caches.ok.get(slot)!=Some(&true) || stored.body_hash!=front.slot_hash[slot] || stored.head_hash!=front.slot_head[slot] {return None;}
     let cached=caches.slot_ir.get(slot)?.as_ref()?;
     let mut body=super::ir_cache::rebuild(p,cached,id)?;
-    let current=p.fn_def(id).span;
-    if current.file!=stored.origin.file || current.ctxt!=stored.origin.ctxt
-        || current.hi.checked_sub(current.lo)?!=stored.origin.hi.checked_sub(stored.origin.lo)? {return None;}
+    let origin = stored.origin?;
+    let current = function_span(p, id)?;
+    if current.file!=origin.file || current.ctxt!=origin.ctxt
+        || current.hi.checked_sub(current.lo)?!=origin.hi.checked_sub(origin.lo)? {return None;}
     let shift=|span:&mut diag::Span|->Option<()> {
         if *span==diag::Span::default(){return Some(());}
-        if span.file!=stored.origin.file || span.ctxt!=stored.origin.ctxt || span.lo<stored.origin.lo || span.hi>stored.origin.hi {return None;}
-        span.lo=current.lo.checked_add(span.lo.checked_sub(stored.origin.lo)?)?;
-        span.hi=current.lo.checked_add(span.hi.checked_sub(stored.origin.lo)?)?;
+        if span.file!=origin.file || span.ctxt!=origin.ctxt || span.lo<origin.lo || span.hi>origin.hi {return None;}
+        span.lo=current.lo.checked_add(span.lo.checked_sub(origin.lo)?)?;
+        span.hi=current.lo.checked_add(span.hi.checked_sub(origin.lo)?)?;
         Some(())
     };
     for block in &mut body.blocks {

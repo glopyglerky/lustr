@@ -6883,7 +6883,7 @@ index da28835400f894866adb85f436e2cbdf109797d7..6cf91ad37bd9d2192a7f1d876a0c7b47
          assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
          assert!(decode_response(b"short").is_none());
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..e313a3881c4c638cd7d40b1fccfb44b68219e583 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..21d550e585eba9a801cf24c3c663f8fa14540b2e 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
 @@ -59,6 +59,7 @@ fn expand_tokens(
@@ -7811,7 +7811,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..e313a3881c4c638cd7d40b1fccfb44b6
 +            let body=results[k].0.as_ref().expect("passing library check retains its native body");
 +            let fp=super::ir_cache::ir_fingerprint(&program,body,&map,fn_lines_all[i]);
 +            caches.slot_ir[slot(i)]=Some(super::ir_cache::cache_body(&program,body,0,slot(i) as u32,Vec::new(),fp));
-+            super::library::store(library, facts, front.slot_hash[slot(i)], front.slot_head[slot(i)],program.fn_def(LocalDefId(i as u32)).span);
++            super::library::store(&program, library, facts, front.slot_hash[slot(i)], front.slot_head[slot(i)]);
 +        }
          diags.extend(results[k].1.iter().cloned());
      }
