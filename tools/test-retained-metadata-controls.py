@@ -250,5 +250,129 @@ class ArtifactControls(unittest.TestCase):
                 campaign.original.traced_executables(trace, {candidate}, candidate)
 
 
+class TraceControls(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="retained-command-trace-")
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name).resolve()
+        self.candidate, self.ar, self.objcopy = [self.root / name for name in ("candidate", "llvm-ar", "llvm-objcopy")]
+        for path in (self.candidate, self.ar, self.objcopy):
+            path.write_bytes(b"nonexecutable trace fixture")
+        self.stage = self.root / "build" / "staging"
+        self.stage.mkdir(parents=True)
+        self.argv = [str(self.candidate), "--retained", "source", "root", "receipt", "sdk"]
+        self.tool_argv = [str(self.ar), "crsD", "--format=gnu", "libconsumer.rlib", "lib.rmeta"]
+        self.command = {"name": "archive", "argv": self.tool_argv, "cwd": str(self.stage), "status": 0}
+        self.initial = self.execution(100, self.candidate, self.argv)
+        self.body = self.child(101)
+        self.tail = "100 +++ exited with 0 +++\n"
+
+    @staticmethod
+    def execution(pid, path, argv, result="0"):
+        return f'{pid} execve({json.dumps(str(path))}, {json.dumps(argv)}, 0x1 /* 1 var */) = {result}\n'
+
+    def child(self, pid, *, argv=None, cwd=None, result="0", exit_status=0):
+        return (f'{pid} chdir({json.dumps(str(cwd or self.stage))}) = 0\n'
+                + self.execution(pid, self.ar, argv or self.tool_argv, result)
+                + f'{pid} +++ exited with {exit_status} +++\n')
+
+    def evaluate(self, body=None, noop="", tail=None, commands=None, prefixes=None):
+        body = self.body if body is None else body
+        data = (self.initial + body + noop + (self.tail if tail is None else tail)).encode()
+        if prefixes is None:
+            prefixes = [{"name": "ready", "data": self.initial.encode(), "commands": []},
+                        {"name": "build", "data": (self.initial + body).encode(),
+                         "commands": [self.command] if commands is None else commands},
+                        {"name": "no-op", "data": (self.initial + body + noop).encode(), "commands": []}]
+        return campaign.retained_trace(data, prefixes, self.candidate, self.argv,
+                                       {self.candidate, self.ar, self.objcopy}, root_pid=100)
+
+    def test_observed_request_and_noop_are_accounted(self):
+        result = self.evaluate()
+        self.assertEqual(len(result["attempts"]), 2)
+        self.assertEqual(result["intervals"][2]["commands"], [])
+
+    def test_extra_allowlisted_execution_on_noop_fails(self):
+        with self.assertRaises(AssertionError):
+            self.evaluate(noop=self.child(102))
+
+    def test_missing_or_duplicate_allowed_execution_fails(self):
+        for body in ("", self.body + self.child(102)):
+            with self.subTest(body=body), self.assertRaises(AssertionError):
+                self.evaluate(body=body)
+
+    def test_actual_arguments_directory_and_status_are_required(self):
+        cases = [self.child(101, argv=self.tool_argv + ["extra.o"]),
+                 self.child(101, cwd=self.root),
+                 self.child(101, result='-1 EACCES (Permission denied)'),
+                 self.child(101, exit_status=1),
+                 self.body.removesuffix("101 +++ exited with 0 +++\n"),
+                 self.body.replace(str(self.ar), str(self.objcopy))]
+        for body in cases:
+            with self.subTest(body=body), self.assertRaises(AssertionError):
+                self.evaluate(body=body)
+
+    def test_split_calls_within_a_response_are_complete(self):
+        body = (f'101 chdir({json.dumps(str(self.stage))} <unfinished ...>\n'
+                '101 <... chdir resumed>) = 0\n'
+                f'101 execve({json.dumps(str(self.ar))}, {json.dumps(self.tool_argv)}, 0x1 /* 1 var */ <unfinished ...>\n'
+                '101 <... execve resumed>) = 0\n101 +++ exited with 0 +++\n')
+        self.evaluate(body=body)
+        split = self.initial + body.split("101 <... execve resumed>", 1)[0]
+        prefixes = [{"name": "ready", "data": self.initial.encode(), "commands": []},
+                    {"name": "build", "data": split.encode(), "commands": [self.command]},
+                    {"name": "no-op", "data": (self.initial + body).encode(), "commands": []}]
+        with self.assertRaisesRegex(AssertionError, "crosses"):
+            self.evaluate(body=body, prefixes=prefixes)
+        with self.assertRaises(AssertionError):
+            self.evaluate(body=body.replace("101 <... execve resumed>) = 0\n", ""))
+
+    def test_prefix_rewrite_and_post_response_work_fail(self):
+        prefixes = [{"name": "ready", "data": self.initial.replace("100 ", "999 ", 1).encode(), "commands": []}]
+        with self.assertRaisesRegex(AssertionError, "changed"):
+            self.evaluate(prefixes=prefixes)
+        with self.assertRaisesRegex(AssertionError, "after the final"):
+            self.evaluate(tail=self.child(102) + self.tail)
+        # Exit notifications can arrive after the response, without new work.
+        self.evaluate(body=self.body.removesuffix("101 +++ exited with 0 +++\n"),
+                      tail="101 +++ exited with 0 +++\n" + self.tail)
+
+    def test_socket_and_unrepresented_directory_calls_fail(self):
+        for record in ("101 socket(AF_UNIX, SOCK_STREAM, 0) = 3\n",
+                       "101 fchdir(3) = 0\n"):
+            with self.subTest(record=record), self.assertRaisesRegex(AssertionError, "unparsed"):
+                self.evaluate(body=record + self.body)
+
+    def test_setup_refusal_requires_actual_exit_without_tools(self):
+        data = (self.initial + "100 +++ exited with 3 +++\n").encode()
+        campaign.retained_trace(data, [{"name": "setup", "data": data, "commands": []}],
+                                self.candidate, self.argv, {self.candidate}, root_exit=3)
+        with self.assertRaisesRegex(AssertionError, "expected exit"):
+            campaign.retained_trace(data, [{"name": "setup", "data": data, "commands": []}],
+                                    self.candidate, self.argv, {self.candidate}, root_exit=0)
+
+    def test_command_records_bind_exact_artifact_work(self):
+        output = self.stage.parent
+        members = ["lib.rmeta", "lib.rmeta-link", "consumer_0000000000000001.o"]
+        argv = [str(self.ar), "crsD", "--format=gnu", "libconsumer.rlib", *members]
+        rendered = "cd " + json.dumps(str(self.stage)) + " && " + " ".join(map(json.dumps, argv))
+        for stream in ("stdout", "stderr"):
+            (output / ("archive." + stream)).write_bytes(b"")
+        report = {"objects": [{"name": "helper", "native_id": [7, 1], "member": members[-1]}],
+                  "archive_members": members, "counts": {"archive_builds": 1},
+                  "commands": [{"name": "archive", "command": rendered, "status": 0,
+                                "stdout_sha256": campaign.sha(b""), "stderr_sha256": campaign.sha(b"")}]}
+        expected = campaign.case("build")
+        self.assertEqual(campaign.command_expectations(output, report, expected, self.root)[0]["argv"], argv)
+        for field, value in (("status", 1), ("command", rendered + ' "extra.o"'),
+                             ("stderr_sha256", "unobserved")):
+            changed = copy.deepcopy(report)
+            changed["commands"][0][field] = value
+            with self.subTest(field=field), self.assertRaises(AssertionError):
+                campaign.command_expectations(output, changed, expected, self.root)
+        with self.assertRaisesRegex(AssertionError, "no-op"):
+            campaign.command_expectations(output, report, campaign.case("no-op", noop=True), self.root)
+
+
 if __name__ == "__main__":
     unittest.main()

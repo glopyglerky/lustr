@@ -486,6 +486,158 @@ def inspect_artifact(output, report, expected, previous):
     return {"objects": objects, "rlib": data, "output": output, "source": expected["source"]}
 
 
+def command_expectations(output, report, expected, llvm):
+    """Bind each reported tool call to this request's actual artifact inventory."""
+    commands = report.get("commands")
+    require(isinstance(commands, list), "artifact command inventory is missing")
+    if expected["noop"] or expected["action"] != "build" or expected["status"] in (1, 4):
+        require(not commands, "non-emitting or no-op request recorded artifact tool work")
+    objects = definition_rows(report.get("objects"), "artifact command object")
+    by_suffix = {f'{row["native_id"][1]:016x}': row for row in objects.values()}
+    result, labels = [], set()
+    for row in commands:
+        require(isinstance(row, dict) and isinstance(row.get("name"), str)
+                and row["name"] not in labels and type(row.get("status")) is int and row["status"] == 0,
+                "artifact command is duplicated, malformed or unsuccessful")
+        label = row["name"]
+        labels.add(label)
+        if label == "archive":
+            members = ["lib.rmeta", "lib.rmeta-link"] + sorted(item["member"] for item in objects.values())
+            require(report.get("archive_members") == members, "archive command lacks its actual member inventory")
+            argv = [str(llvm / "llvm-ar"), "crsD", "--format=gnu", "libconsumer.rlib", *members]
+        else:
+            match = re.fullmatch(r"objcopy-([0-9a-f]{16})", label)
+            require(match is not None and match.group(1) in by_suffix, "object command has no emitted owner")
+            suffix = match.group(1)
+            require(by_suffix[suffix].get("member") == f"consumer_{suffix}.o", "object command member changed")
+            argv = [str(llvm / "llvm-objcopy"), "--redefine-syms=symbols.map",
+                    f"native_{suffix}.o", f"consumer_{suffix}.o"]
+        # Rust Command's debug form is a sequence of quoted strings in this
+        # fixed caller, with one explicit current_dir and no environment edits.
+        rendered = row.get("command")
+        match = re.fullmatch(r'cd ("(?:[^"\\]|\\.)*") && (.*)', rendered) if isinstance(rendered, str) else None
+        require(match is not None, "artifact command omitted its exact working directory")
+        cwd, rest, actual_argv = json.loads(match.group(1)), match.group(2), []
+        while rest:
+            value, end = json.JSONDecoder().raw_decode(rest)
+            require(isinstance(value, str), "artifact command argument is not a complete string")
+            actual_argv.append(value)
+            require(end == len(rest) or rest[end] == " ", "artifact command argument separator changed")
+            rest = rest[end:].lstrip(" ")
+        require(cwd == str(output / "staging") and actual_argv == argv,
+                "artifact command changed its request, executable, arguments or working directory")
+        for stream in ("stdout", "stderr"):
+            contents = bounded_file(output, label + "." + stream).read_bytes()
+            require(sha(contents) == row.get(stream + "_sha256"), "artifact command stream differs from actual bytes")
+            require(not contents, "artifact utility emitted unexpected output")
+        result.append({"name": label, "argv": argv, "cwd": cwd, "status": 0})
+    require(sum(row["name"] == "archive" for row in result) == report["counts"]["archive_builds"],
+            "archive command inventory differs from the claimed construction count")
+    return result
+
+
+def retained_trace(data, prefixes, candidate, candidate_argv, allowed, root_pid=None, root_exit=0):
+    """Account for complete calls within evaluator-observed response prefixes.
+
+    A prefix is captured only after reading readiness or a request response.
+    No later trace rewrite, split syscall across a response boundary, extra
+    allowed child, or candidate-authored counter can hide repeated tool work.
+    Delayed exit/signal notifications are retained without permitting later work.
+    """
+    require(prefixes, "retained trace lacks externally observed response boundaries")
+    ends, previous = [], 0
+    for boundary in prefixes:
+        prefix = boundary["data"]
+        require(isinstance(prefix, bytes) and len(prefix) >= previous and data.startswith(prefix),
+                "retained trace changed an already observed response prefix")
+        require(not prefix or prefix.endswith(b"\n"), "retained trace response prefix ends inside a record")
+        ends.append((boundary["name"], len(prefix), boundary["commands"]))
+        previous = len(prefix)
+    ends.append(("after-final-response", len(data), []))
+    require(not data or data.endswith(b"\n"), "retained trace ends inside a record")
+    pending, directories, statuses, tool_pids = {}, {}, {}, set()
+    candidate_pid, initial_count, offset = None, 0, 0
+    attempts, intervals = [], []
+    for interval, end, wanted in ends:
+        observed, changed_dirs = [], set()
+        for raw_line in data[offset:end].decode("utf-8", errors="strict").splitlines():
+            if not raw_line.strip():
+                continue
+            prefix = re.fullmatch(r'\s*(?:(?:\[pid\s+(\d+)\]|(\d+))\s+)?(.*)', raw_line)
+            require(prefix is not None, "unparsed retained trace prefix")
+            pid, record = prefix.group(1) or prefix.group(2) or "entry", prefix.group(3)
+            resumed = re.fullmatch(r'<\.\.\. (execve|chdir) resumed>(.*)', record)
+            if resumed:
+                require(pid in pending and pending[pid][0] == resumed.group(1), "unmatched retained syscall resume")
+                record = pending.pop(pid)[1] + resumed.group(2)
+            elif (record.startswith("execve(") or record.startswith("chdir(")) and record.endswith(" <unfinished ...>"):
+                require(pid not in pending, "retained trace overwrote an unfinished syscall")
+                pending[pid] = (record.split("(", 1)[0], record.removesuffix(" <unfinished ...>"))
+                continue
+            elif record.startswith("--- SIG"):
+                require(re.fullmatch(r'--- SIG[A-Z0-9]+ .* ---', record) is not None, "malformed retained signal record")
+                continue
+            elif record.startswith("+++"):
+                require(pid not in pending, "retained process exited with an unfinished syscall")
+                exited = re.fullmatch(r'\+\+\+ exited with ([0-9]+) \+\+\+', record)
+                killed = re.fullmatch(r'\+\+\+ killed by (SIG[A-Z0-9]+)(?: \(core dumped\))? \+\+\+', record)
+                require((exited is not None or killed is not None) and pid not in statuses,
+                        "unparsed or duplicated retained process exit")
+                statuses[pid] = int(exited.group(1)) if exited else killed.group(1)
+                continue
+            else:
+                require(pid not in pending, "retained syscall started before its pending call resumed")
+            require(interval != "after-final-response", "artifact work occurred after the final response")
+            if record.startswith("chdir("):
+                change = re.fullmatch(r'chdir\(("(?:[^"\\]|\\.)*")\)\s+=\s+(0|-1 [A-Z][A-Z0-9_]* \([^\n]*\))', record)
+                require(change is not None and change.group(2) == "0", "failed or unparsed artifact working-directory change")
+                directory = json.loads(change.group(1))
+                require(pid != candidate_pid and pid not in directories and pid not in tool_pids
+                        and directory in {row["cwd"] for row in wanted}, "unowned artifact working-directory change")
+                directories[pid] = directory
+                changed_dirs.add(pid)
+                continue
+            require(record.startswith("execve("), "unparsed retained trace record: " + record)
+            complete = re.fullmatch(r'execve\((.*)\)\s+=\s+(0|-1 [A-Z][A-Z0-9_]* \([^\n]*\))', record)
+            require(complete is not None, "incomplete retained execve record")
+            filename, consumed = json.JSONDecoder().raw_decode(complete.group(1))
+            rest = complete.group(1)[consumed:]
+            require(isinstance(filename, str) and rest.startswith(", "), "retained executable path is incomplete")
+            argv, consumed = json.JSONDecoder().raw_decode(rest[2:])
+            require(isinstance(argv, list) and all(isinstance(arg, str) for arg in argv)
+                    and rest[2 + consumed:].startswith(", "), "retained executable arguments are incomplete")
+            raw = Path(filename)
+            require(raw.is_absolute(), "retained executable is not absolute")
+            actual = raw.resolve(strict=True)
+            require(actual in allowed, "retained candidate attempted an undeclared process: " + str(actual))
+            status = 0 if complete.group(2) == "0" else -1
+            attempt = {"request": interval, "pid": pid, "path": str(actual), "argv": argv, "exec_status": status}
+            attempts.append(attempt)
+            if actual == candidate:
+                require(initial_count == 0 and interval == ends[0][0] and status == 0
+                        and argv == candidate_argv and filename == str(candidate)
+                        and (root_pid is None or pid == str(root_pid)), "retained trace changed its single initial candidate")
+                initial_count += 1
+                candidate_pid = pid
+            else:
+                require(initial_count == 1 and pid != candidate_pid and pid not in tool_pids and pid in changed_dirs,
+                        "artifact execution lacks a unique observed request-owned child")
+                require(status == 0, "artifact executable attempt failed")
+                tool_pids.add(pid)
+                attempt["cwd"] = directories[pid]
+                observed.append({"argv": argv, "cwd": directories[pid], "status": 0})
+                require(argv and argv[0] == filename, "artifact executable differs from argv zero")
+        require(not pending, "retained syscall crosses an observed response boundary")
+        require(changed_dirs <= tool_pids, "working-directory change lacks an accounted artifact execution")
+        require(observed == [{key: row[key] for key in ("argv", "cwd", "status")} for row in wanted],
+                "actual artifact executions differ from the request's exact command inventory")
+        intervals.append({"name": interval, "start": offset, "end": end, "commands": observed})
+        offset = end
+    require(initial_count == 1 and statuses.get(candidate_pid) == root_exit, "candidate trace lacks its actual expected exit")
+    require(all(statuses.get(pid) == 0 for pid in tool_pids), "artifact child exit was absent or unsuccessful")
+    return {"complete": True, "attempts": attempts, "intervals": intervals, "exit_statuses": statuses}
+
+
 class Session:
     def __init__(self, name, candidate, source, root, receipt, sdk, env, allowed, campaign):
         self.root, self.source, self.campaign = root, source, campaign
@@ -499,11 +651,14 @@ class Session:
         campaign["sessions"].append(self.record)
         root.mkdir()
         self.trace = root / "candidate.trace"
+        self.trace_prefixes = []
+        self.llvm = sdk / "lib/rustlib/x86_64-unknown-linux-gnu/bin"
+        self.candidate_argv = [str(candidate), "--retained", str(source), str(root), str(receipt), str(sdk)]
         self.stdout_log = (root / "candidate.stdout").open("xb")
         self.stderr_log = (root / "candidate.stderr").open("xb")
         strace = shutil.which("strace")
         require(strace is not None, "real retained qualification requires strace")
-        argv = [strace, "-f", "-s", "65535", "-e", "trace=execve,execveat,socket,socketpair", "-o", str(self.trace),
+        argv = [strace, "-f", "-s", "65535", "-e", "trace=execve,execveat,chdir,fchdir,socket,socketpair", "-o", str(self.trace),
                 str(candidate), "--retained", str(source), str(root), str(receipt), str(sdk)]
         self.record["argv"] = argv
         self.process = subprocess.Popen(argv, cwd=campaign["working_directory"], env=env,
@@ -516,10 +671,17 @@ class Session:
             require(self.ready.get("event") == "ready" and self.ready.get("schema") == SCHEMA
                     and type(self.ready.get("session_id")) is int and self.ready["session_id"] >= 0
                     and self.ready.get("sdk_receipt_sha256") == SDK_RECEIPT, "candidate did not establish its real retained session")
+            self.record["ready"] = self.ready
+            self.capture_trace("ready", [])
         except BaseException:
             self.abort()
             raise
-        self.record["ready"] = self.ready
+
+    def capture_trace(self, name, commands):
+        prefix = self.trace.read_bytes()
+        self.trace_prefixes.append({"name": name, "data": prefix, "commands": commands})
+        self.record.setdefault("trace_boundaries", []).append(
+            {"name": name, "bytes": len(prefix), "sha256": sha(prefix), "commands": commands})
 
     def __enter__(self):
         return self
@@ -651,6 +813,7 @@ class Session:
         if previous:
             require((previous["output"] / "libconsumer.rlib").read_bytes() == previous["rlib"], "request changed the earlier durable artifact")
         validate_work(result, expected)
+        self.capture_trace(expected["name"], command_expectations(output, result, expected, self.llvm))
         if expected["action"] == "prepare-drop":
             require(result.get("phase") == "prepared-dropped", "prepare/drop control did not drop an actual prepared continuation")
         for row in result.get("objects", []):
@@ -705,9 +868,9 @@ class Session:
                 "retained candidate did not provide bounded EOF and clean exit")
         require(not self.buffer and not self.extra_bytes, "retained candidate emitted unaccounted protocol output")
         require(not (self.root / "candidate.stderr").read_bytes(), "retained candidate emitted unexpected stderr")
-        execution = original.traced_executables(self.trace, self.allowed, self.candidate)
-        # socket/socketpair are included in the syscall filter and are not
-        # accepted by the complete trace parser. A socket call fails this gate.
+        execution = retained_trace(self.trace.read_bytes(), self.trace_prefixes, self.candidate,
+                                   self.candidate_argv, self.allowed, root_pid=self.ready["session_id"])
+        # Socket calls and unknown syscall formats fail complete trace accounting.
         self.record.update(execution=execution, exec_trace_qualified=True, socket_transport_qualified=True,
                            trace_sha256=sha(self.trace.read_bytes()),
                            stdout_sha256=sha((self.root / "candidate.stdout").read_bytes()),
@@ -818,12 +981,15 @@ def setup_refusal(name, candidate, source, root, receipt, sdk, env, allowed, com
     output = root / name
     output.mkdir()
     trace = output / "candidate.trace"
-    argv = [shutil.which("strace"), "-f", "-s", "65535", "-e", "trace=execve,execveat,socket,socketpair", "-o", trace,
+    argv = [shutil.which("strace"), "-f", "-s", "65535", "-e", "trace=execve,execveat,chdir,fchdir,socket,socketpair", "-o", trace,
             candidate, "--retained", source, output, receipt, sdk]
     stdout, stderr = commands.run(name, argv, env, expected=3)
     require(not stdout and message in stderr.decode(), "unbound SDK setup did not fail before session readiness")
     require(not list(output.rglob("*.rlib")), "rejected SDK setup produced a compiler artifact")
-    execution = original.traced_executables(trace, allowed, candidate)
+    data = trace.read_bytes()
+    execution = retained_trace(data, [{"name": "setup", "data": data, "commands": []}], candidate,
+                               [str(candidate), "--retained", str(source), str(output), str(receipt), str(sdk)],
+                               allowed, root_exit=3)
     report["setup_refusals"].append({"name": name, "execution": execution, "trace_sha256": sha(trace.read_bytes())})
 
 
