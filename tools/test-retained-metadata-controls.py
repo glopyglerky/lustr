@@ -156,6 +156,13 @@ def ar_header(name, payload):
     return header + payload + (b"\n" if len(payload) & 1 else b"")
 
 
+def indexed_archive(count, names):
+    placeholder = struct.pack(">I", count) + bytes(4 * count) + names
+    offset = 8 + len(ar_header("/", placeholder))
+    payload = struct.pack(">I", count) + struct.pack(">" + "I" * count, *([offset] * count)) + names
+    return b"!<arch>\n" + ar_header("/", payload) + ar_header("native.o/", b"object fixture")
+
+
 def link_wrapper(payload):
     names = b"\0.rmeta-link\0.shstrtab\0"
     blob = bytearray(64)
@@ -223,6 +230,25 @@ class ArtifactControls(unittest.TestCase):
         malformed = b"!<arch>\n" + ar_header("/", struct.pack(">II", 1, offset + 1) + symbol) + ar_header("native.o/", b"object fixture")
         with self.assertRaisesRegex(AssertionError, "real member"):
             campaign.archive_members(malformed)
+
+    def test_archive_symbol_index_accepts_only_real_names_and_alignment(self):
+        # Both GNU's external newline alignment and LLVM's internal zero
+        # alignment describe the same one-symbol inventory.
+        for names, symbol in ((b"x\0", "x"), (b"xy\0", "xy"), (b"xy\0\0", "xy")):
+            with self.subTest(names=names):
+                members, offsets, symbols = campaign.archive_members(indexed_archive(1, names))
+                self.assertEqual(members, {"native.o": b"object fixture"})
+                self.assertEqual(symbols, {symbol: offsets["native.o"]})
+
+    def test_archive_symbol_index_rejects_extra_or_wrong_padding(self):
+        for names in (b"x\0\0", b"x\0\0\0", b"xy\0X", b"xy\0\0\0", b"xy\0hidden\0"):
+            with self.subTest(names=names), self.assertRaisesRegex(AssertionError, "alignment padding"):
+                campaign.archive_members(indexed_archive(1, names))
+
+    def test_archive_symbol_index_rejects_missing_empty_and_duplicate_names(self):
+        for count, names in ((1, b"unterminated"), (1, b"\0"), (2, b"x\0"), (2, b"x\0x\0"), (0, b"x\0")):
+            with self.subTest(count=count, names=names), self.assertRaises(AssertionError):
+                campaign.archive_members(indexed_archive(count, names))
 
     def test_duplicate_archive_members_fail(self):
         archive = b"!<arch>\n" + ar_header("/", struct.pack(">I", 0)) + ar_header("native.o/", b"a") + ar_header("native.o/", b"b")

@@ -348,10 +348,21 @@ def archive_members(data):
     number = struct.unpack_from(">I", symbol_index)[0]
     require(4 + number * 4 <= len(symbol_index), "truncated archive symbol offsets")
     locations = struct.unpack_from(">" + "I" * number, symbol_index, 4)
-    names = symbol_index[4 + number * 4:].split(b"\0")
-    require(len(names) == number + 1 and names[-1] == b"", "archive symbol names differ from their count")
+    # GNU indexes contain exactly `number` terminated names. The pinned LLVM
+    # ArchiveWriter also includes a zero byte in the member size when those
+    # records need two-byte alignment; it is not another empty symbol name.
+    # rust-lang/llvm-project 0a5579eb649d3634a9c30ac873300cc2944fa070,
+    # llvm/lib/Object/ArchiveWriter.cpp: computeSymbolTableSize/writeSymbolTable.
+    names, cursor = [], 4 + number * 4
+    for _ in range(number):
+        end = symbol_index.find(b"\0", cursor)
+        require(end >= cursor, "archive symbol names differ from their count")
+        names.append(symbol_index[cursor:end])
+        cursor = end + 1
+    padding = symbol_index[cursor:]
+    require(padding == b"" or (cursor & 1 and padding == b"\0"), "archive symbol index has invalid alignment padding")
     index = {}
-    for name, location in zip(names[:-1], locations):
+    for name, location in zip(names, locations):
         name = name.decode("utf-8")
         require(name and name not in index and location in offsets.values(), "archive symbol has no unique real member")
         index[name] = location
