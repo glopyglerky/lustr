@@ -111,11 +111,16 @@ class WorkControls(unittest.TestCase):
         column = line.index("true") + 1
         diagnostic = ("error[L0110]: mismatched types: expected `u64`, found `bool`\n"
                       f"  --> {path}:{number}:{column}\n   | {line}\n   | {' ' * (column - 1)}^^^^\n"
-                      "   = fix: Change the value to type `u64`, or change the expected type.\n\n")
+                      "   = fix: Change the value to type `u64`, or change the expected type.\n\n"
+                      f"error: could not compile `{path}` due to 1 previous error(s)\n")
         campaign.native_type_rejection({"phase": "native-prepare", "error": diagnostic}, path, expected)
         for error, phase in (("cannot find source", "native-prepare"), (diagnostic, "publication"),
                              (diagnostic.replace("L0110", "L9999"), "native-prepare"),
-                             (diagnostic.replace(f":{number}:{column}", f":{number}:1"), "native-prepare")):
+                             (diagnostic.replace(f":{number}:{column}", f":{number}:1"), "native-prepare"),
+                             (diagnostic.split("error: could not compile", 1)[0], "native-prepare"),
+                             (diagnostic.replace("due to 1 previous", "due to 2 previous"), "native-prepare"),
+                             (diagnostic.replace(f"compile `{path}`", "compile `another.rs`"), "native-prepare"),
+                             (diagnostic + "unexpected diagnostic\n", "native-prepare")):
             with self.subTest(error=error, phase=phase), self.assertRaises(AssertionError):
                 campaign.native_type_rejection({"phase": phase, "error": error}, path, expected)
 

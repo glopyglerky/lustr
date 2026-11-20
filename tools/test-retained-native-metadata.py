@@ -964,7 +964,10 @@ def native_type_rejection(report, source, expected):
     diagnostic = ("error[L0110]: mismatched types: expected `u64`, found `bool`\n"
                   f"  --> {source}:{line_number}:{column}\n"
                   f"   | {line}\n   | {' ' * (column - 1)}^^^^\n"
-                  "   = fix: Change the value to type `u64`, or change the expected type.\n\n")
+                  "   = fix: Change the value to type `u64`, or change the expected type.\n\n"
+                  f"error: could not compile `{source}` due to 1 previous error(s)\n")
+    # The pinned Lust driver's errors() appends this exact summary after render;
+    # it is unchanged in the candidate. Keep the full diagnostic equality check.
     require(report.get("phase") == "native-prepare" and report.get("error") == diagnostic,
             "private-body failure did not preserve the exact native type diagnostic and source span")
 
