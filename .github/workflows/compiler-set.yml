@@ -208,9 +208,10 @@ jobs:
     env:
       RUSTUP_TOOLCHAIN: nightly-2026-11-09
       CARGO_BUILD_JOBS: '2'
-      CARGO_TARGET_DIR: ${{ runner.temp }}/metadata-research-target
     steps:
       - uses: actions/checkout@v4
+      - name: Set the output directory on the assigned runner
+        run: printf 'CARGO_TARGET_DIR=%s\n' "$RUNNER_TEMP/metadata-research-target" >> "$GITHUB_ENV"
       - name: Record source and enforce the research-only import boundary
         run: |
           mkdir -p "$RUNNER_TEMP/metadata-research-evidence"

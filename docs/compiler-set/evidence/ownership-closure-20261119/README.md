@@ -79,3 +79,23 @@ structural refusal check does not establish its runtime result.
 The serializer checks qualify only this bounded dependency and encoding work.
 They do not establish a joined native Rust artifact, compiler-wide `no_std`,
 socket independence, full Rust coverage or a performance result.
+
+## First hosted validation failure and repair
+
+[Run 44663067508](https://github.com/glopyglerky/lustr/actions/runs/44663067508)
+failed validation on published `770c6d6481d92f4b38a399e067adfa1b1dc4a58d`, tree
+`4e2dba6147853bd1eb1f837b6e03a9fdc59f617c`, with zero jobs. Its annotation reports
+an unrecognized `runner` name at line 211 in the `runner.temp` expression.
+The job-level `CARGO_TARGET_DIR` used that context before a runner existed.
+The earlier YAML and shell syntax checks did not check this GitHub-specific
+expression rule.
+
+The [context repair record](runner-context-repair.json) retains the failed run,
+exact annotation, empty jobs response and GitHub's documented context boundary.
+The output directory now enters `GITHUB_ENV` from an assigned-runner step using
+`RUNNER_TEMP`, before any Cargo invocation. All 21 existing and added workflow
+controls pass, including restoration of the original invalid job environment.
+The actual setup statement also produced the exact expected environment entry
+with a runner path containing spaces. No compiler source or test workload was
+changed or rerun. A new hosted job start is still required; the original failed
+run is not relabeled as passing.

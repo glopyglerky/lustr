@@ -248,6 +248,24 @@ def steps(text):
 
 
 class WorkflowControls(unittest.TestCase):
+    def assert_job_env_has_no_runner_context(self, text):
+        # GitHub evaluates job env before assigning the runner. This narrowly
+        # checks the scalar job env maps used here; YAML and shell syntax alone
+        # do not validate GitHub's expression-context availability.
+        for environment in re.findall(r"(?m)^    env:\n((?:^      .*\n)+)", text):
+            self.assertNotRegex(environment, r"\$\{\{[^}]*\brunner\s*[.\[]")
+
+    def test_job_environment_does_not_use_an_unassigned_runner(self):
+        self.assert_job_env_has_no_runner_context(self.native_selector_workflow())
+
+    def test_original_runner_context_validation_failure_is_rejected(self):
+        text = self.native_selector_workflow()
+        original = "      CARGO_BUILD_JOBS: '2'\n"
+        restored = original + "      CARGO_TARGET_DIR: ${{ runner.temp }}/metadata-research-target\n"
+        self.assertIn(original, text)
+        with self.assertRaises(AssertionError):
+            self.assert_job_env_has_no_runner_context(text.replace(original, restored, 1))
+
     def test_active_historical_jobs_replay_without_constructing_compilers(self):
         for filename in ("warm-entry-performance.yml", "warm-native-performance.yml"):
             with self.subTest(workflow=filename):
