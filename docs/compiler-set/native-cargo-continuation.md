@@ -346,8 +346,9 @@ Both [fresh macOS jobs](evidence/macos-capacity-7c3d095f/README.md) again failed
 to acquire hosted runners. Their own annotation panels report acquisition and
 arm64 capacity failures, with no executed step or assigned runner. There is no
 Darwin signature or warm odd-path result from this attempt. The broader Linux
-gate remains a separate source-bound campaign; its unfinished steps are not
-inferred from these package results.
+gate subsequently completed successfully. Its independent source-bound result
+is recorded in the 20 November completion review below, separately from these
+package results.
 
 The separate historical-performance job exposed a workflow-control assumption
 that the native job had exactly one artifact upload. Its
@@ -363,6 +364,50 @@ policy](dead-entry-policy-cleanup.md). Its only historical caller was the
 already removed mixed launcher. The existing structural guard now rejects
 restoring that file. No additional live compiler retry was found, and the
 useful metadata, object, ABI and retained-state mechanisms remain preserved.
+
+## Completed follow-up and recovered evidence, 20 November
+
+The [completed-job and recovery record](evidence/completed-linux-20261120/README.md)
+binds published `c8218b7fc0f657314c9e9c59775091b53508c6b0` and actual checkout
+`ec8f89f98e2701f7189d4310e54a1501cdd81f34` to tree
+`4c796fc9e34ddc09be79f6697125258da9c6c188`. Every step in its constructed-package
+job passed. The 93 ordinary root tests, all five explicitly invoked package
+contracts, 18 exact capability cases, 55 retained qualifier controls and all
+349 required histories / 1,744 versions passed on that source. The real retained
+process control again observed seven exact native/oracle results and zero
+Cargo or external hashing processes for unchanged, body-edit and feature-recovery
+requests in the original daemon. These are not latency measurements.
+
+The repaired receipt fixtures passed their full existing controls. The hosted
+supplemental capture reports `capture_complete=true`, 36,647 entries and no
+errors. The original archive has now been recovered and independently checked:
+all 36,619 included members, 35,965 regular payloads and 26,126 original retained
+stdout/stderr references match their recorded hashes. It is retained unchanged
+with its source identities and content review. Small generated artifacts are
+included; omitted large compiled payloads remain separately unverified.
+
+The preceding `7c3d095f` archive was recovered and independently verified again
+without changing its original failed capture verdict. Its exact inventory and
+focused original records remain available. The unpublished local receipt-repair
+archive lost with the prior workspace has not been reconstructed or represented
+as an original. This dated recovery extends the earlier preservation record;
+it does not rewrite what was available at publication time.
+
+Both previously running broad Linux jobs, at `7c3d095f` and `c8218b7f`, completed
+successfully. Each passed 5,547 ordinary and 5,547 sanitizer differential cases,
+1,200 fuzz edits, both 65-case unwind campaigns and the remaining native gates.
+Their donor daemon gate still reports 29 tolerated unsupported versions within
+its 364 `ok` histories; those allowances do not establish complete coverage or
+replace the stricter public qualifier. The prior log also preserves a directory
+removal warning after its 85 crate fixtures passed. The fixture's private
+daemon cleanup ownership is a recorded open issue, not a demonstrated program
+result failure or a silent compiler retry.
+
+Both current macOS jobs were cancelled with no executed step or assigned
+runner. No cancellation cause is inferred from earlier attempts. Actual Darwin
+signing, publication-failure and warm odd-path qualification remains open, so
+the complete platform matrix is not passing. This recovery reran no compiler
+or generated program and does not qualify subsequent metadata work.
 
 ## Remaining compiler boundary
 

@@ -1,0 +1,1328 @@
+{
+  "counts": {
+    "members": 36619,
+    "regular_files": 35965
+  },
+  "extensions": {
+    "(none)": 73,
+    ".TAG": 3,
+    ".bin": 28,
+    ".c": 118,
+    ".command": 23,
+    ".d": 11,
+    ".exe": 2,
+    ".json": 434,
+    ".jsonl": 6899,
+    ".ll": 37,
+    ".lock": 16,
+    ".log": 13,
+    ".native": 11,
+    ".o": 200,
+    ".rlib": 83,
+    ".rmeta": 10,
+    ".rs": 51,
+    ".sample": 28,
+    ".sha256": 1,
+    ".so": 1,
+    ".status": 23,
+    ".stderr": 14085,
+    ".stdout": 13738,
+    ".timestamp": 10,
+    ".toml": 13,
+    ".trace": 8,
+    ".txt": 46
+  },
+  "native_binary_magic": [
+    {
+      "bytes": 16096,
+      "path": "native-selection-cache/package/bin/cargo"
+    },
+    {
+      "bytes": 4250,
+      "path": "native-cargo-plan/cargo-build/debug/build/util/8919795ec0957c65/out/libutil-8919795ec0957c65.rlib"
+    },
+    {
+      "bytes": 4250,
+      "path": "native-cargo-plan/cargo-build/debug/build/util/8d8e1afa8f0abcbc/out/libutil-8d8e1afa8f0abcbc.rlib"
+    },
+    {
+      "bytes": 5984,
+      "path": "native-cargo-plan/cargo-build/debug/incremental/plan_control-0qy4ht9hivgt1/s-hob7nmtv3d-0rhkmsv-el8xif5vts3y8goqks5d7osui/1s17cqge1nqmusr9xa0os5m3w.o"
+    },
+    {
+      "bytes": 7496,
+      "path": "native-cargo-plan/cargo-build/debug/incremental/plan_control-0qy4ht9hivgt1/s-hob7nmtv3d-0rhkmsv-el8xif5vts3y8goqks5d7osui/2rcdb3005ka0vdyeqggfcl0em.o"
+    },
+    {
+      "bytes": 3296,
+      "path": "native-cargo-plan/cargo-build/debug/incremental/plan_control-0qy4ht9hivgt1/s-hob7nmtv3d-0rhkmsv-el8xif5vts3y8goqks5d7osui/5kpzwkmf5af8umq1dmygnmzpl.o"
+    },
+    {
+      "bytes": 7464,
+      "path": "native-cargo-plan/cargo-build/debug/incremental/plan_control-0qy4ht9hivgt1/s-hob7nmtv3d-0rhkmsv-el8xif5vts3y8goqks5d7osui/7xe8sizb478d23mb7z9niyn0q.o"
+    },
+    {
+      "bytes": 3960,
+      "path": "native-cargo-plan/cargo-build/debug/incremental/plan_control-0qy4ht9hivgt1/s-hob7nmtv3d-0rhkmsv-el8xif5vts3y8goqks5d7osui/7z0mr4bm4evqroj1d3719laav.o"
+    },
+    {
+      "bytes": 6288,
+      "path": "native-cargo-plan/cargo-build/debug/incremental/plan_control-0qy4ht9hivgt1/s-hob7nmtv3d-0rhkmsv-el8xif5vts3y8goqks5d7osui/83h74yvasqz0242c3tscko7zi.o"
+    },
+    {
+      "bytes": 5776,
+      "path": "native-cargo-plan/cargo-build/debug/incremental/plan_control-0qy4ht9hivgt1/s-hob7nmtv3d-0rhkmsv-el8xif5vts3y8goqks5d7osui/dhws8wir9fe065mfilye6897x.o"
+    },
+    {
+      "bytes": 5776,
+      "path": "native-cargo-plan/cargo-build/debug/incremental/plan_control-2qabzqj1tjwbx/s-hob7nmgcbm-1xuuln5-1c4pb6lyzti4kqneidz7p8b7j/2dd0ynnpc8ukj708997vnl8im.o"
+    },
+    {
+      "bytes": 6288,
+      "path": "native-cargo-plan/cargo-build/debug/incremental/plan_control-2qabzqj1tjwbx/s-hob7nmgcbm-1xuuln5-1c4pb6lyzti4kqneidz7p8b7j/2h3tcwf3omlubi9973vsbsal2.o"
+    },
+    {
+      "bytes": 5984,
+      "path": "native-cargo-plan/cargo-build/debug/incremental/plan_control-2qabzqj1tjwbx/s-hob7nmgcbm-1xuuln5-1c4pb6lyzti4kqneidz7p8b7j/9k7jcxvzypg14yevvhvkz4u4y.o"
+    },
+    {
+      "bytes": 3296,
+      "path": "native-cargo-plan/cargo-build/debug/incremental/plan_control-2qabzqj1tjwbx/s-hob7nmgcbm-1xuuln5-1c4pb6lyzti4kqneidz7p8b7j/aqz7g9avqdro0d3retw5wf5o4.o"
+    },
+    {
+      "bytes": 3960,
+      "path": "native-cargo-plan/cargo-build/debug/incremental/plan_control-2qabzqj1tjwbx/s-hob7nmgcbm-1xuuln5-1c4pb6lyzti4kqneidz7p8b7j/atql2yiq0270tzitflt3j70g0.o"
+    },
+    {
+      "bytes": 7496,
+      "path": "native-cargo-plan/cargo-build/debug/incremental/plan_control-2qabzqj1tjwbx/s-hob7nmgcbm-1xuuln5-1c4pb6lyzti4kqneidz7p8b7j/cgqzajnakgghjp03u0cgaidv1.o"
+    },
+    {
+      "bytes": 7464,
+      "path": "native-cargo-plan/cargo-build/debug/incremental/plan_control-2qabzqj1tjwbx/s-hob7nmgcbm-1xuuln5-1c4pb6lyzti4kqneidz7p8b7j/e7flr3mgjqd2annz50981fx6k.o"
+    },
+    {
+      "bytes": 2496,
+      "path": "native-cargo-plan/cargo-build/debug/incremental/util-0y1xndubmsxgm/s-hob7nmbwo2-1wbh2ck-bw03yteftdg65x0jxnh7nczd3/1lbmwuq243jocpyq66vq322oz.o"
+    },
+    {
+      "bytes": 2496,
+      "path": "native-cargo-plan/cargo-build/debug/incremental/util-2ivxokpe814r1/s-hob7nmtkxa-17qkjdz-5pjoz1iw0z9pubo9s5ags3gt6/3r8z2q6gee4z0g6nbo95r3f7a.o"
+    },
+    {
+      "bytes": 488336,
+      "path": "native-cargo-plan/native-cache/bases/libbase-5598-b277af46a00ec3713c1ff5c12b1facd4.so"
+    },
+    {
+      "bytes": 4832,
+      "path": "native-cargo-plan/native-cache/unit-1c5d32c4879d870d96396f3b54bd507a.o"
+    },
+    {
+      "bytes": 1694,
+      "path": "native-cargo-plan/native-cache/unit-21ac76bf98f1b73d67a483270187600b.o"
+    },
+    {
+      "bytes": 4848,
+      "path": "native-cargo-plan/native-cache/unit-2b7410915c83f2ce19ab6a28054581b3.o"
+    },
+    {
+      "bytes": 3216,
+      "path": "native-cargo-plan/native-cache/unit-30e6260105335c1f5e152051a92cb119.o"
+    },
+    {
+      "bytes": 3232,
+      "path": "native-cargo-plan/native-cache/unit-60c8a6c29577334d564d9d1f4d88b49f.o"
+    },
+    {
+      "bytes": 2144,
+      "path": "native-cargo-plan/native-cache/unit-6278dffa4d2ce2860409f991f556cf32.o"
+    },
+    {
+      "bytes": 540553,
+      "path": "native-cargo-plan/native-cache/unit-b4d7636466abbf5efb05b1e5b82c64f7.o"
+    },
+    {
+      "bytes": 1630,
+      "path": "native-cargo-plan/native-cache/unit-cabbb74b64d9fc8846c6a2a85d61d54d.o"
+    },
+    {
+      "bytes": 2336,
+      "path": "native-cargo-plan/native-cache/unit-e8165371cabf340adb158a01270c8337.o"
+    },
+    {
+      "bytes": 4736,
+      "path": "native-cargo-plan/native-cache/unit-fda67138fde3f9bd43b16574e26ac2c7.o"
+    },
+    {
+      "bytes": 11364,
+      "path": "native-cargo-plan/project/native-out"
+    },
+    {
+      "bytes": 16688,
+      "path": "tinycc-signing-qualification/helper-0"
+    },
+    {
+      "bytes": 16688,
+      "path": "tinycc-signing-qualification/helper-1"
+    },
+    {
+      "bytes": 16688,
+      "path": "tinycc-signing-qualification/helper-2"
+    },
+    {
+      "bytes": 40192,
+      "path": "tinycc-signing-qualification/macho-context.o"
+    },
+    {
+      "bytes": 976,
+      "path": "tinycc-signing-qualification/sp ace#\u00e9 'quoted' $literal;name/main.o"
+    },
+    {
+      "bytes": 3594,
+      "path": "tinycc-signing-qualification/sp ace#\u00e9 'quoted' $literal;name/program"
+    },
+    {
+      "bytes": 402228,
+      "path": "lustr-root-package-controls/large-native-arguments/application"
+    },
+    {
+      "bytes": 402228,
+      "path": "lustr-root-package-controls/large-native-arguments/native-cache/req-40e3fad601ad1ef73ee90c9444c7b6bb.exe"
+    },
+    {
+      "bytes": 2288,
+      "path": "lustr-root-package-controls/large-native-arguments/native-cache/unit-1d13a8874095663fb004117ccb914e93.o"
+    },
+    {
+      "bytes": 3152,
+      "path": "lustr-root-package-controls/large-native-arguments/native-cache/unit-4449830f02b4c2b958da7b2c22d0d444.o"
+    },
+    {
+      "bytes": 2096,
+      "path": "lustr-root-package-controls/large-native-arguments/native-cache/unit-52349232e912f6fe77c7d1ea16dc62a3.o"
+    },
+    {
+      "bytes": 2816,
+      "path": "lustr-root-package-controls/large-native-arguments/native-cache/unit-7cf0d1880c1cc0f2a8792973fc9d894a.o"
+    },
+    {
+      "bytes": 540505,
+      "path": "lustr-root-package-controls/large-native-arguments/native-cache/unit-886a0ef6be240e485f4b9eb4fa2f6455.o"
+    },
+    {
+      "bytes": 1344,
+      "path": "lustr-root-package-controls/large-native-arguments/native-cache/unit-b1707391ccec76a90a52c989f47e793d.o"
+    },
+    {
+      "bytes": 8560,
+      "path": "lustr-root-package-controls/native-file-tests/native-cache/unit-01f195d14146bc1b5f199b1a90c5d6ee.o"
+    },
+    {
+      "bytes": 229566,
+      "path": "lustr-root-package-controls/native-file-tests/native-cache/unit-09405d4ab143dad1cf538a415fb32309.o"
+    },
+    {
+      "bytes": 224560,
+      "path": "lustr-root-package-controls/native-file-tests/native-cache/unit-133c4839698b496ed3888cd3dbf2990f.o"
+    },
+    {
+      "bytes": 250336,
+      "path": "lustr-root-package-controls/native-file-tests/native-cache/unit-16f90692a1c2788a5303ab688acb8803.o"
+    },
+    {
+      "bytes": 1312,
+      "path": "lustr-root-package-controls/native-file-tests/native-cache/unit-26829e336c4c3198ec9e3b6e7fdbbd36.o"
+    },
+    {
+      "bytes": 2848,
+      "path": "lustr-root-package-controls/native-file-tests/native-cache/unit-36d4c9865c5112496e18c2cad5121807.o"
+    },
+    {
+      "bytes": 3184,
+      "path": "lustr-root-package-controls/native-file-tests/native-cache/unit-3d7374e61bc797520c087657a2ab787b.o"
+    },
+    {
+      "bytes": 2304,
+      "path": "lustr-root-package-controls/native-file-tests/native-cache/unit-3f9163ec413c7bc824ab5a9df9b9024a.o"
+    },
+    {
+      "bytes": 11726,
+      "path": "lustr-root-package-controls/native-file-tests/native-cache/unit-415da6647b3434cf715e2a12040b3894.o"
+    },
+    {
+      "bytes": 2112,
+      "path": "lustr-root-package-controls/native-file-tests/native-cache/unit-52349232e912f6fe77c7d1ea16dc62a3.o"
+    },
+    {
+      "bytes": 237296,
+      "path": "lustr-root-package-controls/native-file-tests/native-cache/unit-7cfad7381cc64948763b8ad509f3b593.o"
+    },
+    {
+      "bytes": 3184,
+      "path": "lustr-root-package-controls/native-file-tests/native-cache/unit-84c846bfec1cebc2b192fb0e2a5b85ba.o"
+    },
+    {
+      "bytes": 540521,
+      "path": "lustr-root-package-controls/native-file-tests/native-cache/unit-886a0ef6be240e485f4b9eb4fa2f6455.o"
+    },
+    {
+      "bytes": 260448,
+      "path": "lustr-root-package-controls/native-file-tests/native-cache/unit-8da9ee1e3742169f87d05e60a163437f.o"
+    },
+    {
+      "bytes": 243840,
+      "path": "lustr-root-package-controls/native-file-tests/native-cache/unit-955d01126842e0aa080e0cc0bb7f29cd.o"
+    },
+    {
+      "bytes": 17760,
+      "path": "lustr-root-package-controls/native-file-tests/native-cache/unit-aad29cc4d03fe5ce1844d19ff56cc230.o"
+    },
+    {
+      "bytes": 263936,
+      "path": "lustr-root-package-controls/native-file-tests/native-cache/unit-cad20d5225751e85e2152539824f1990.o"
+    },
+    {
+      "bytes": 243936,
+      "path": "lustr-root-package-controls/native-file-tests/native-cache/unit-d0494337e1f65a04ce15012af303c565.o"
+    },
+    {
+      "bytes": 12384,
+      "path": "lustr-root-package-controls/native-file-tests/native-cache/unit-dc316c4dde3ad084511330b24fb72769.o"
+    },
+    {
+      "bytes": 402228,
+      "path": "lustr-root-package-controls/native-output-failure/application"
+    },
+    {
+      "bytes": 402228,
+      "path": "lustr-root-package-controls/native-output-failure/native-cache/req-d52d67f0176ef1bc4838223473b1339e.exe"
+    },
+    {
+      "bytes": 2288,
+      "path": "lustr-root-package-controls/native-output-failure/native-cache/unit-1d13a8874095663fb004117ccb914e93.o"
+    },
+    {
+      "bytes": 3152,
+      "path": "lustr-root-package-controls/native-output-failure/native-cache/unit-4449830f02b4c2b958da7b2c22d0d444.o"
+    },
+    {
+      "bytes": 2096,
+      "path": "lustr-root-package-controls/native-output-failure/native-cache/unit-52349232e912f6fe77c7d1ea16dc62a3.o"
+    },
+    {
+      "bytes": 1344,
+      "path": "lustr-root-package-controls/native-output-failure/native-cache/unit-77a24a3976eff51d514043ddfb6f5f42.o"
+    },
+    {
+      "bytes": 2816,
+      "path": "lustr-root-package-controls/native-output-failure/native-cache/unit-7cf0d1880c1cc0f2a8792973fc9d894a.o"
+    },
+    {
+      "bytes": 540505,
+      "path": "lustr-root-package-controls/native-output-failure/native-cache/unit-886a0ef6be240e485f4b9eb4fa2f6455.o"
+    },
+    {
+      "bytes": 25376,
+      "path": "lustr-shared-upstream/campaign/adapter-empty-state/libpeer.rlib"
+    },
+    {
+      "bytes": 25376,
+      "path": "lustr-shared-upstream/campaign/adapter-failed-state/libpeer.rlib"
+    },
+    {
+      "bytes": 25376,
+      "path": "lustr-shared-upstream/campaign/adapter-invalid-before-emission-state/libpeer.rlib"
+    },
+    {
+      "bytes": 25376,
+      "path": "lustr-shared-upstream/campaign/adapter-malformed-state/libpeer.rlib"
+    },
+    {
+      "bytes": 25376,
+      "path": "lustr-shared-upstream/campaign/adapter-missing-state/libpeer.rlib"
+    },
+    {
+      "bytes": 9624,
+      "path": "lustr-shared-upstream/campaign/adapter-recovered-state/native-state/imported-0.o"
+    },
+    {
+      "bytes": 6048,
+      "path": "lustr-shared-upstream/campaign/adapter-recovered-state/native-state/imported-1.o"
+    },
+    {
+      "bytes": 3120,
+      "path": "lustr-shared-upstream/campaign/adapter-recovered-state/native-state/u0.o"
+    },
+    {
+      "bytes": 2176,
+      "path": "lustr-shared-upstream/campaign/adapter-recovered-state/native-state/u1.o"
+    },
+    {
+      "bytes": 540585,
+      "path": "lustr-shared-upstream/campaign/adapter-recovered-state/native-state/u2.o"
+    },
+    {
+      "bytes": 2416,
+      "path": "lustr-shared-upstream/campaign/adapter-recovered-state/native-state/u3.o"
+    },
+    {
+      "bytes": 1456,
+      "path": "lustr-shared-upstream/campaign/adapter-recovered-state/native-state/u4.o"
+    },
+    {
+      "bytes": 59760,
+      "path": "lustr-shared-upstream/campaign/adapter-recovered-state/native-state/u5.o"
+    },
+    {
+      "bytes": 20864,
+      "path": "lustr-shared-upstream/campaign/adapter-recovered-state/native-state/u6.o"
+    },
+    {
+      "bytes": 5038,
+      "path": "lustr-shared-upstream/campaign/checked-add-state/libpeer.rlib"
+    },
+    {
+      "bytes": 5374,
+      "path": "lustr-shared-upstream/campaign/copy-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4496,
+      "path": "lustr-shared-upstream/campaign/dependency-new-state/libpeer.rlib"
+    },
+    {
+      "bytes": 1024,
+      "path": "lustr-shared-upstream/campaign/dependency-new-state/native-state/imported-0.o"
+    },
+    {
+      "bytes": 712,
+      "path": "lustr-shared-upstream/campaign/dependency-new-state/native-state/imported-1.o"
+    },
+    {
+      "bytes": 3120,
+      "path": "lustr-shared-upstream/campaign/dependency-new-state/native-state/u0.o"
+    },
+    {
+      "bytes": 2176,
+      "path": "lustr-shared-upstream/campaign/dependency-new-state/native-state/u1.o"
+    },
+    {
+      "bytes": 540585,
+      "path": "lustr-shared-upstream/campaign/dependency-new-state/native-state/u2.o"
+    },
+    {
+      "bytes": 2352,
+      "path": "lustr-shared-upstream/campaign/dependency-new-state/native-state/u3.o"
+    },
+    {
+      "bytes": 1408,
+      "path": "lustr-shared-upstream/campaign/dependency-new-state/native-state/u4.o"
+    },
+    {
+      "bytes": 3552,
+      "path": "lustr-shared-upstream/campaign/dependency-new-state/native-state/u5.o"
+    },
+    {
+      "bytes": 402551,
+      "path": "lustr-shared-upstream/campaign/dependency-new.native"
+    },
+    {
+      "bytes": 4486,
+      "path": "lustr-shared-upstream/campaign/dependency-old-state/libpeer.rlib"
+    },
+    {
+      "bytes": 1024,
+      "path": "lustr-shared-upstream/campaign/dependency-old-state/native-state/imported-0.o"
+    },
+    {
+      "bytes": 712,
+      "path": "lustr-shared-upstream/campaign/dependency-old-state/native-state/imported-1.o"
+    },
+    {
+      "bytes": 3120,
+      "path": "lustr-shared-upstream/campaign/dependency-old-state/native-state/u0.o"
+    },
+    {
+      "bytes": 2176,
+      "path": "lustr-shared-upstream/campaign/dependency-old-state/native-state/u1.o"
+    },
+    {
+      "bytes": 540585,
+      "path": "lustr-shared-upstream/campaign/dependency-old-state/native-state/u2.o"
+    },
+    {
+      "bytes": 2352,
+      "path": "lustr-shared-upstream/campaign/dependency-old-state/native-state/u3.o"
+    },
+    {
+      "bytes": 1408,
+      "path": "lustr-shared-upstream/campaign/dependency-old-state/native-state/u4.o"
+    },
+    {
+      "bytes": 3552,
+      "path": "lustr-shared-upstream/campaign/dependency-old-state/native-state/u5.o"
+    },
+    {
+      "bytes": 402551,
+      "path": "lustr-shared-upstream/campaign/dependency-old.native"
+    },
+    {
+      "bytes": 4486,
+      "path": "lustr-shared-upstream/campaign/dependency-revert-state/libpeer.rlib"
+    },
+    {
+      "bytes": 1024,
+      "path": "lustr-shared-upstream/campaign/dependency-revert-state/native-state/imported-0.o"
+    },
+    {
+      "bytes": 712,
+      "path": "lustr-shared-upstream/campaign/dependency-revert-state/native-state/imported-1.o"
+    },
+    {
+      "bytes": 3120,
+      "path": "lustr-shared-upstream/campaign/dependency-revert-state/native-state/u0.o"
+    },
+    {
+      "bytes": 2176,
+      "path": "lustr-shared-upstream/campaign/dependency-revert-state/native-state/u1.o"
+    },
+    {
+      "bytes": 540585,
+      "path": "lustr-shared-upstream/campaign/dependency-revert-state/native-state/u2.o"
+    },
+    {
+      "bytes": 2352,
+      "path": "lustr-shared-upstream/campaign/dependency-revert-state/native-state/u3.o"
+    },
+    {
+      "bytes": 1408,
+      "path": "lustr-shared-upstream/campaign/dependency-revert-state/native-state/u4.o"
+    },
+    {
+      "bytes": 3552,
+      "path": "lustr-shared-upstream/campaign/dependency-revert-state/native-state/u5.o"
+    },
+    {
+      "bytes": 402551,
+      "path": "lustr-shared-upstream/campaign/dependency-revert.native"
+    },
+    {
+      "bytes": 5152,
+      "path": "lustr-shared-upstream/campaign/external-clone-state/libpeer.rlib"
+    },
+    {
+      "bytes": 5006,
+      "path": "lustr-shared-upstream/campaign/external-method-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4486,
+      "path": "lustr-shared-upstream/campaign/function-pointer-state/libpeer.rlib"
+    },
+    {
+      "bytes": 1024,
+      "path": "lustr-shared-upstream/campaign/function-pointer-state/native-state/imported-0.o"
+    },
+    {
+      "bytes": 712,
+      "path": "lustr-shared-upstream/campaign/function-pointer-state/native-state/imported-1.o"
+    },
+    {
+      "bytes": 3120,
+      "path": "lustr-shared-upstream/campaign/function-pointer-state/native-state/u0.o"
+    },
+    {
+      "bytes": 2176,
+      "path": "lustr-shared-upstream/campaign/function-pointer-state/native-state/u1.o"
+    },
+    {
+      "bytes": 540585,
+      "path": "lustr-shared-upstream/campaign/function-pointer-state/native-state/u2.o"
+    },
+    {
+      "bytes": 2352,
+      "path": "lustr-shared-upstream/campaign/function-pointer-state/native-state/u3.o"
+    },
+    {
+      "bytes": 1424,
+      "path": "lustr-shared-upstream/campaign/function-pointer-state/native-state/u4.o"
+    },
+    {
+      "bytes": 8000,
+      "path": "lustr-shared-upstream/campaign/function-pointer-state/native-state/u5.o"
+    },
+    {
+      "bytes": 405255,
+      "path": "lustr-shared-upstream/campaign/function-pointer.native"
+    },
+    {
+      "bytes": 4486,
+      "path": "lustr-shared-upstream/campaign/good-state/libpeer.rlib"
+    },
+    {
+      "bytes": 1024,
+      "path": "lustr-shared-upstream/campaign/good-state/native-state/imported-0.o"
+    },
+    {
+      "bytes": 712,
+      "path": "lustr-shared-upstream/campaign/good-state/native-state/imported-1.o"
+    },
+    {
+      "bytes": 3120,
+      "path": "lustr-shared-upstream/campaign/good-state/native-state/u0.o"
+    },
+    {
+      "bytes": 2160,
+      "path": "lustr-shared-upstream/campaign/good-state/native-state/u1.o"
+    },
+    {
+      "bytes": 540569,
+      "path": "lustr-shared-upstream/campaign/good-state/native-state/u2.o"
+    },
+    {
+      "bytes": 2352,
+      "path": "lustr-shared-upstream/campaign/good-state/native-state/u3.o"
+    },
+    {
+      "bytes": 1392,
+      "path": "lustr-shared-upstream/campaign/good-state/native-state/u4.o"
+    },
+    {
+      "bytes": 7696,
+      "path": "lustr-shared-upstream/campaign/good-state/native-state/u5.o"
+    },
+    {
+      "bytes": 404951,
+      "path": "lustr-shared-upstream/campaign/good.native"
+    },
+    {
+      "bytes": 4486,
+      "path": "lustr-shared-upstream/campaign/inherent-rejected-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4286,
+      "path": "lustr-shared-upstream/campaign/inline-body-state/libpeer.rlib"
+    },
+    {
+      "bytes": 25376,
+      "path": "lustr-shared-upstream/campaign/integer-arity-state/libpeer.rlib"
+    },
+    {
+      "bytes": 25376,
+      "path": "lustr-shared-upstream/campaign/integer-move-state/libpeer.rlib"
+    },
+    {
+      "bytes": 25376,
+      "path": "lustr-shared-upstream/campaign/integer-pointer-state/libpeer.rlib"
+    },
+    {
+      "bytes": 25376,
+      "path": "lustr-shared-upstream/campaign/integer-signatures-state/libpeer.rlib"
+    },
+    {
+      "bytes": 9624,
+      "path": "lustr-shared-upstream/campaign/integer-signatures-state/native-state/imported-0.o"
+    },
+    {
+      "bytes": 6048,
+      "path": "lustr-shared-upstream/campaign/integer-signatures-state/native-state/imported-1.o"
+    },
+    {
+      "bytes": 3136,
+      "path": "lustr-shared-upstream/campaign/integer-signatures-state/native-state/u0.o"
+    },
+    {
+      "bytes": 2176,
+      "path": "lustr-shared-upstream/campaign/integer-signatures-state/native-state/u1.o"
+    },
+    {
+      "bytes": 540585,
+      "path": "lustr-shared-upstream/campaign/integer-signatures-state/native-state/u2.o"
+    },
+    {
+      "bytes": 2432,
+      "path": "lustr-shared-upstream/campaign/integer-signatures-state/native-state/u3.o"
+    },
+    {
+      "bytes": 1456,
+      "path": "lustr-shared-upstream/campaign/integer-signatures-state/native-state/u4.o"
+    },
+    {
+      "bytes": 59760,
+      "path": "lustr-shared-upstream/campaign/integer-signatures-state/native-state/u5.o"
+    },
+    {
+      "bytes": 20880,
+      "path": "lustr-shared-upstream/campaign/integer-signatures-state/native-state/u6.o"
+    },
+    {
+      "bytes": 460248,
+      "path": "lustr-shared-upstream/campaign/integer-signatures.native"
+    },
+    {
+      "bytes": 25376,
+      "path": "lustr-shared-upstream/campaign/integer-signedness-state/libpeer.rlib"
+    },
+    {
+      "bytes": 5038,
+      "path": "lustr-shared-upstream/campaign/libchecked-add.rlib"
+    },
+    {
+      "bytes": 5374,
+      "path": "lustr-shared-upstream/campaign/libcopy.rlib"
+    },
+    {
+      "bytes": 4496,
+      "path": "lustr-shared-upstream/campaign/libedited.rlib"
+    },
+    {
+      "bytes": 5152,
+      "path": "lustr-shared-upstream/campaign/libexternal-clone.rlib"
+    },
+    {
+      "bytes": 5006,
+      "path": "lustr-shared-upstream/campaign/libexternal-method.rlib"
+    },
+    {
+      "bytes": 4286,
+      "path": "lustr-shared-upstream/campaign/libinline-body.rlib"
+    },
+    {
+      "bytes": 25376,
+      "path": "lustr-shared-upstream/campaign/libinteger-peer.rlib"
+    },
+    {
+      "bytes": 4480,
+      "path": "lustr-shared-upstream/campaign/libnarrow.rlib"
+    },
+    {
+      "bytes": 4632,
+      "path": "lustr-shared-upstream/campaign/libnegative-send.rlib"
+    },
+    {
+      "bytes": 4632,
+      "path": "lustr-shared-upstream/campaign/libnegative-sync.rlib"
+    },
+    {
+      "bytes": 4640,
+      "path": "lustr-shared-upstream/campaign/libnegative-unpin.rlib"
+    },
+    {
+      "bytes": 4486,
+      "path": "lustr-shared-upstream/campaign/libpeer.rlib"
+    },
+    {
+      "bytes": 4330,
+      "path": "lustr-shared-upstream/campaign/libscalars.rlib"
+    },
+    {
+      "bytes": 4592,
+      "path": "lustr-shared-upstream/campaign/libstack-nominal.rlib"
+    },
+    {
+      "bytes": 4494,
+      "path": "lustr-shared-upstream/campaign/libwide.rlib"
+    },
+    {
+      "bytes": 4486,
+      "path": "lustr-shared-upstream/campaign/link-failed-state/libpeer.rlib"
+    },
+    {
+      "bytes": 1024,
+      "path": "lustr-shared-upstream/campaign/link-failed-state/native-state/imported-0.o"
+    },
+    {
+      "bytes": 712,
+      "path": "lustr-shared-upstream/campaign/link-failed-state/native-state/imported-1.o"
+    },
+    {
+      "bytes": 3120,
+      "path": "lustr-shared-upstream/campaign/link-failed-state/native-state/u0.o"
+    },
+    {
+      "bytes": 2176,
+      "path": "lustr-shared-upstream/campaign/link-failed-state/native-state/u1.o"
+    },
+    {
+      "bytes": 540585,
+      "path": "lustr-shared-upstream/campaign/link-failed-state/native-state/u2.o"
+    },
+    {
+      "bytes": 2352,
+      "path": "lustr-shared-upstream/campaign/link-failed-state/native-state/u3.o"
+    },
+    {
+      "bytes": 1408,
+      "path": "lustr-shared-upstream/campaign/link-failed-state/native-state/u4.o"
+    },
+    {
+      "bytes": 7712,
+      "path": "lustr-shared-upstream/campaign/link-failed-state/native-state/u5.o"
+    },
+    {
+      "bytes": 404951,
+      "path": "lustr-shared-upstream/campaign/link-output/program"
+    },
+    {
+      "bytes": 4486,
+      "path": "lustr-shared-upstream/campaign/link-recovered-state/libpeer.rlib"
+    },
+    {
+      "bytes": 1024,
+      "path": "lustr-shared-upstream/campaign/link-recovered-state/native-state/imported-0.o"
+    },
+    {
+      "bytes": 712,
+      "path": "lustr-shared-upstream/campaign/link-recovered-state/native-state/imported-1.o"
+    },
+    {
+      "bytes": 3120,
+      "path": "lustr-shared-upstream/campaign/link-recovered-state/native-state/u0.o"
+    },
+    {
+      "bytes": 2176,
+      "path": "lustr-shared-upstream/campaign/link-recovered-state/native-state/u1.o"
+    },
+    {
+      "bytes": 540585,
+      "path": "lustr-shared-upstream/campaign/link-recovered-state/native-state/u2.o"
+    },
+    {
+      "bytes": 2352,
+      "path": "lustr-shared-upstream/campaign/link-recovered-state/native-state/u3.o"
+    },
+    {
+      "bytes": 1408,
+      "path": "lustr-shared-upstream/campaign/link-recovered-state/native-state/u4.o"
+    },
+    {
+      "bytes": 7712,
+      "path": "lustr-shared-upstream/campaign/link-recovered-state/native-state/u5.o"
+    },
+    {
+      "bytes": 4486,
+      "path": "lustr-shared-upstream/campaign/local-trait-state/libpeer.rlib"
+    },
+    {
+      "bytes": 1024,
+      "path": "lustr-shared-upstream/campaign/local-trait-state/native-state/imported-0.o"
+    },
+    {
+      "bytes": 712,
+      "path": "lustr-shared-upstream/campaign/local-trait-state/native-state/imported-1.o"
+    },
+    {
+      "bytes": 3120,
+      "path": "lustr-shared-upstream/campaign/local-trait-state/native-state/u0.o"
+    },
+    {
+      "bytes": 2176,
+      "path": "lustr-shared-upstream/campaign/local-trait-state/native-state/u1.o"
+    },
+    {
+      "bytes": 540585,
+      "path": "lustr-shared-upstream/campaign/local-trait-state/native-state/u2.o"
+    },
+    {
+      "bytes": 2352,
+      "path": "lustr-shared-upstream/campaign/local-trait-state/native-state/u3.o"
+    },
+    {
+      "bytes": 1424,
+      "path": "lustr-shared-upstream/campaign/local-trait-state/native-state/u4.o"
+    },
+    {
+      "bytes": 4288,
+      "path": "lustr-shared-upstream/campaign/local-trait-state/native-state/u5.o"
+    },
+    {
+      "bytes": 402871,
+      "path": "lustr-shared-upstream/campaign/local-trait.native"
+    },
+    {
+      "bytes": 4486,
+      "path": "lustr-shared-upstream/campaign/malformed-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4486,
+      "path": "lustr-shared-upstream/campaign/move-rejected-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4480,
+      "path": "lustr-shared-upstream/campaign/narrow-state/libpeer.rlib"
+    },
+    {
+      "bytes": 1008,
+      "path": "lustr-shared-upstream/campaign/narrow-state/native-state/imported-0.o"
+    },
+    {
+      "bytes": 712,
+      "path": "lustr-shared-upstream/campaign/narrow-state/native-state/imported-1.o"
+    },
+    {
+      "bytes": 3120,
+      "path": "lustr-shared-upstream/campaign/narrow-state/native-state/u0.o"
+    },
+    {
+      "bytes": 2160,
+      "path": "lustr-shared-upstream/campaign/narrow-state/native-state/u1.o"
+    },
+    {
+      "bytes": 540569,
+      "path": "lustr-shared-upstream/campaign/narrow-state/native-state/u2.o"
+    },
+    {
+      "bytes": 2352,
+      "path": "lustr-shared-upstream/campaign/narrow-state/native-state/u3.o"
+    },
+    {
+      "bytes": 1392,
+      "path": "lustr-shared-upstream/campaign/narrow-state/native-state/u4.o"
+    },
+    {
+      "bytes": 3536,
+      "path": "lustr-shared-upstream/campaign/narrow-state/native-state/u5.o"
+    },
+    {
+      "bytes": 402519,
+      "path": "lustr-shared-upstream/campaign/narrow.native"
+    },
+    {
+      "bytes": 4632,
+      "path": "lustr-shared-upstream/campaign/negative-send-bound-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4632,
+      "path": "lustr-shared-upstream/campaign/negative-send-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4632,
+      "path": "lustr-shared-upstream/campaign/negative-sync-bound-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4632,
+      "path": "lustr-shared-upstream/campaign/negative-sync-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4640,
+      "path": "lustr-shared-upstream/campaign/negative-unpin-bound-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4640,
+      "path": "lustr-shared-upstream/campaign/negative-unpin-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4486,
+      "path": "lustr-shared-upstream/campaign/object-failed-state/libpeer.rlib"
+    },
+    {
+      "bytes": 3120,
+      "path": "lustr-shared-upstream/campaign/object-failed-state/native-state/u0.o"
+    },
+    {
+      "bytes": 2176,
+      "path": "lustr-shared-upstream/campaign/object-failed-state/native-state/u1.o"
+    },
+    {
+      "bytes": 540585,
+      "path": "lustr-shared-upstream/campaign/object-failed-state/native-state/u2.o"
+    },
+    {
+      "bytes": 2352,
+      "path": "lustr-shared-upstream/campaign/object-failed-state/native-state/u3.o"
+    },
+    {
+      "bytes": 1408,
+      "path": "lustr-shared-upstream/campaign/object-failed-state/native-state/u4.o"
+    },
+    {
+      "bytes": 7712,
+      "path": "lustr-shared-upstream/campaign/object-failed-state/native-state/u5.o"
+    },
+    {
+      "bytes": 4486,
+      "path": "lustr-shared-upstream/campaign/object-recovered-state/libpeer.rlib"
+    },
+    {
+      "bytes": 1024,
+      "path": "lustr-shared-upstream/campaign/object-recovered-state/native-state/imported-0.o"
+    },
+    {
+      "bytes": 712,
+      "path": "lustr-shared-upstream/campaign/object-recovered-state/native-state/imported-1.o"
+    },
+    {
+      "bytes": 3120,
+      "path": "lustr-shared-upstream/campaign/object-recovered-state/native-state/u0.o"
+    },
+    {
+      "bytes": 2176,
+      "path": "lustr-shared-upstream/campaign/object-recovered-state/native-state/u1.o"
+    },
+    {
+      "bytes": 540585,
+      "path": "lustr-shared-upstream/campaign/object-recovered-state/native-state/u2.o"
+    },
+    {
+      "bytes": 2352,
+      "path": "lustr-shared-upstream/campaign/object-recovered-state/native-state/u3.o"
+    },
+    {
+      "bytes": 1408,
+      "path": "lustr-shared-upstream/campaign/object-recovered-state/native-state/u4.o"
+    },
+    {
+      "bytes": 7712,
+      "path": "lustr-shared-upstream/campaign/object-recovered-state/native-state/u5.o"
+    },
+    {
+      "bytes": 4486,
+      "path": "lustr-shared-upstream/campaign/orphan-rejected-state/libpeer.rlib"
+    },
+    {
+      "bytes": 1024,
+      "path": "lustr-shared-upstream/campaign/removed-snapshot-state/native-state/imported-0.o"
+    },
+    {
+      "bytes": 712,
+      "path": "lustr-shared-upstream/campaign/removed-snapshot-state/native-state/imported-1.o"
+    },
+    {
+      "bytes": 3120,
+      "path": "lustr-shared-upstream/campaign/removed-snapshot-state/native-state/u0.o"
+    },
+    {
+      "bytes": 2176,
+      "path": "lustr-shared-upstream/campaign/removed-snapshot-state/native-state/u1.o"
+    },
+    {
+      "bytes": 540585,
+      "path": "lustr-shared-upstream/campaign/removed-snapshot-state/native-state/u2.o"
+    },
+    {
+      "bytes": 2352,
+      "path": "lustr-shared-upstream/campaign/removed-snapshot-state/native-state/u3.o"
+    },
+    {
+      "bytes": 1408,
+      "path": "lustr-shared-upstream/campaign/removed-snapshot-state/native-state/u4.o"
+    },
+    {
+      "bytes": 7712,
+      "path": "lustr-shared-upstream/campaign/removed-snapshot-state/native-state/u5.o"
+    },
+    {
+      "bytes": 404951,
+      "path": "lustr-shared-upstream/campaign/removed-snapshot.native"
+    },
+    {
+      "bytes": 4330,
+      "path": "lustr-shared-upstream/campaign/scalars-state/libpeer.rlib"
+    },
+    {
+      "bytes": 1192,
+      "path": "lustr-shared-upstream/campaign/scalars-state/native-state/imported-0.o"
+    },
+    {
+      "bytes": 3120,
+      "path": "lustr-shared-upstream/campaign/scalars-state/native-state/u0.o"
+    },
+    {
+      "bytes": 2176,
+      "path": "lustr-shared-upstream/campaign/scalars-state/native-state/u1.o"
+    },
+    {
+      "bytes": 540585,
+      "path": "lustr-shared-upstream/campaign/scalars-state/native-state/u2.o"
+    },
+    {
+      "bytes": 2352,
+      "path": "lustr-shared-upstream/campaign/scalars-state/native-state/u3.o"
+    },
+    {
+      "bytes": 1408,
+      "path": "lustr-shared-upstream/campaign/scalars-state/native-state/u4.o"
+    },
+    {
+      "bytes": 5376,
+      "path": "lustr-shared-upstream/campaign/scalars-state/native-state/u5.o"
+    },
+    {
+      "bytes": 403497,
+      "path": "lustr-shared-upstream/campaign/scalars.native"
+    },
+    {
+      "bytes": 4592,
+      "path": "lustr-shared-upstream/campaign/stack-nominal-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4486,
+      "path": "lustr-shared-upstream/campaign/type-rejected-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4486,
+      "path": "lustr-shared-upstream/campaign/unwind-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4494,
+      "path": "lustr-shared-upstream/campaign/wide-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/abandon-empty-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/abandon-failed-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/abandon-malformed-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/abandon-missing-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/abandon-no-output-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/abandon-normal-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/already-transferred-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/build-empty-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/build-failed-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/build-malformed-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/build-missing-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/build-state/libpeer.rlib"
+    },
+    {
+      "bytes": 1000,
+      "path": "lustr-import-emission/campaign/build-state/native-state/imported-0.o"
+    },
+    {
+      "bytes": 728,
+      "path": "lustr-import-emission/campaign/build-state/native-state/imported-1.o"
+    },
+    {
+      "bytes": 3120,
+      "path": "lustr-import-emission/campaign/build-state/native-state/u0.o"
+    },
+    {
+      "bytes": 2160,
+      "path": "lustr-import-emission/campaign/build-state/native-state/u1.o"
+    },
+    {
+      "bytes": 540569,
+      "path": "lustr-import-emission/campaign/build-state/native-state/u2.o"
+    },
+    {
+      "bytes": 2352,
+      "path": "lustr-import-emission/campaign/build-state/native-state/u3.o"
+    },
+    {
+      "bytes": 1392,
+      "path": "lustr-import-emission/campaign/build-state/native-state/u4.o"
+    },
+    {
+      "bytes": 5712,
+      "path": "lustr-import-emission/campaign/build-state/native-state/u5.o"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/check-empty-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/check-failed-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/check-malformed-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/check-missing-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/check-no-output-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/check-normal-state/libpeer.rlib"
+    },
+    {
+      "bytes": 403734,
+      "path": "lustr-import-emission/campaign/consumer.native"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/invalid-abandon-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/invalid-build-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/invalid-check-state/libpeer.rlib"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/libpeer.rlib"
+    },
+    {
+      "bytes": 4452,
+      "path": "lustr-import-emission/campaign/object-publication-failed-state/libpeer.rlib"
+    },
+    {
+      "bytes": 3136,
+      "path": "lustr-import-emission/campaign/object-publication-failed-state/native-state/u0.o"
+    },
+    {
+      "bytes": 2192,
+      "path": "lustr-import-emission/campaign/object-publication-failed-state/native-state/u1.o"
+    },
+    {
+      "bytes": 540601,
+      "path": "lustr-import-emission/campaign/object-publication-failed-state/native-state/u2.o"
+    },
+    {
+      "bytes": 2368,
+      "path": "lustr-import-emission/campaign/object-publication-failed-state/native-state/u3.o"
+    },
+    {
+      "bytes": 1424,
+      "path": "lustr-import-emission/campaign/object-publication-failed-state/native-state/u4.o"
+    },
+    {
+      "bytes": 5744,
+      "path": "lustr-import-emission/campaign/object-publication-failed-state/native-state/u5.o"
+    },
+    {
+      "bytes": 1000,
+      "path": "lustr-import-emission/campaign/recovered-state/native-state/imported-0.o"
+    },
+    {
+      "bytes": 728,
+      "path": "lustr-import-emission/campaign/recovered-state/native-state/imported-1.o"
+    },
+    {
+      "bytes": 3120,
+      "path": "lustr-import-emission/campaign/recovered-state/native-state/u0.o"
+    },
+    {
+      "bytes": 2176,
+      "path": "lustr-import-emission/campaign/recovered-state/native-state/u1.o"
+    },
+    {
+      "bytes": 540585,
+      "path": "lustr-import-emission/campaign/recovered-state/native-state/u2.o"
+    },
+    {
+      "bytes": 2352,
+      "path": "lustr-import-emission/campaign/recovered-state/native-state/u3.o"
+    },
+    {
+      "bytes": 1408,
+      "path": "lustr-import-emission/campaign/recovered-state/native-state/u4.o"
+    },
+    {
+      "bytes": 5728,
+      "path": "lustr-import-emission/campaign/recovered-state/native-state/u5.o"
+    }
+  ],
+  "omitted_files": [
+    "lustr-import-emission/campaign/consumer.rust",
+    "lustr-shared-upstream/campaign/checked-add.rust",
+    "lustr-shared-upstream/campaign/copy.rust",
+    "lustr-shared-upstream/campaign/dependency-new.rust",
+    "lustr-shared-upstream/campaign/dependency-old.rust",
+    "lustr-shared-upstream/campaign/dependency-revert.rust",
+    "lustr-shared-upstream/campaign/external-clone.rust",
+    "lustr-shared-upstream/campaign/external-method.rust",
+    "lustr-shared-upstream/campaign/function-pointer.rust",
+    "lustr-shared-upstream/campaign/good.rust",
+    "lustr-shared-upstream/campaign/inline-body.rust",
+    "lustr-shared-upstream/campaign/integer-signatures.rust",
+    "lustr-shared-upstream/campaign/local-trait.rust",
+    "lustr-shared-upstream/campaign/narrow.rust",
+    "lustr-shared-upstream/campaign/negative-send.rust",
+    "lustr-shared-upstream/campaign/negative-sync.rust",
+    "lustr-shared-upstream/campaign/negative-unpin.rust",
+    "lustr-shared-upstream/campaign/scalars.rust",
+    "lustr-shared-upstream/campaign/stack-nominal.rust",
+    "lustr-shared-upstream/campaign/wide.rust",
+    "native-cargo-plan/cargo-build/debug/build/plan-control/0183b1718c510eb7/out/plan_control",
+    "native-cargo-plan/cargo-build/debug/build/plan-control/aff4d40b05cd6edd/out/plan_control",
+    "native-cargo-plan/cargo-target/debug/plan-control",
+    "native-cargo-plan/query-spy-package/bin/lust",
+    "native-cargo-plan/query-spy-package/bin/lust-core",
+    "native-cargo-plan/query-spy-package/bin/lustr-entry",
+    "native-selection-cache/package/bin/lustr",
+    "tinycc-signing-qualification/native-publication"
+  ],
+  "pattern_matches": {
+    "credential": [],
+    "email": [
+      {
+        "matches": [
+          "closure@main.rs"
+        ],
+        "path": "retained-results/ky02_keyed_after_reject/0028.stderr"
+      },
+      {
+        "matches": [
+          "closure@main.rs"
+        ],
+        "path": "retained-results/ky02_keyed_after_reject/0029.stderr"
+      },
+      {
+        "matches": [
+          "closure@main.rs"
+        ],
+        "path": "retained-results/sd12_rpit_own_bounds/0042.stderr"
+      },
+      {
+        "matches": [
+          "closure@main.rs"
+        ],
+        "path": "retained-results/sd12_rpit_own_bounds/0043.stderr"
+      },
+      {
+        "matches": [
+          "closure@main.rs"
+        ],
+        "path": "retained-results/sd17_pending_closure_callers/0020.stderr"
+      },
+      {
+        "matches": [
+          "closure@main.rs"
+        ],
+        "path": "retained-results/sd17_pending_closure_callers/0021.stderr"
+      }
+    ],
+    "private_workspace": []
+  },
+  "regular_bytes": 63032243,
+  "scope": "all original current supplemental regular payloads; no execution",
+  "zip_sha256": "93c83be3ef1ccef020f3330868aad7f7ab4d3415d550763ff18d24ac3a9cce36"
+}

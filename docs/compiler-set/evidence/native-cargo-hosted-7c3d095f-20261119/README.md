@@ -61,3 +61,15 @@ The [full original artifact, 14546231385](https://github.com/glopyglerky/lustr/a
 The workspace became unavailable before the local evidence bundle was committed. This directory was reconstructed from preserved original GitHub logs and metadata, exact source at the published revision, and previously recorded verification results.
 
 Neither ZIP is copied into this directory. Original per-command records remain in the GitHub artifacts. The local extraction, independent verifier script/report and uncommitted local bundle were not recovered; the summary does not present them as published originals. Later source or fixture repairs cannot change this run's recorded failure or inherit its qualification.
+
+### Subsequent recovery, 20 November
+
+The [completed Linux and recovery review](../completed-linux-20261120/README.md)
+downloaded this original supplemental again and independently verified every
+available member and all 26,126 retained stream references. Its exact inventory
+and focused original records are now preserved there. The two missing receipt
+referents and `capture_complete=false` remain unchanged. The older local
+receipt-repair archive is still unavailable; this is a fresh recovery of hosted
+originals, not a reconstruction of that lost local archive. The separately
+running broad Linux job has also completed successfully, with its original
+cleanup warning retained.

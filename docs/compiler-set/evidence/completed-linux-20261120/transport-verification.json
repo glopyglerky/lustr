@@ -1,0 +1,49 @@
+{
+  "archive_recompressed": false,
+  "complete_capture_verified": true,
+  "full_current_verification_report_sha256": "bed0021b877da7149f1cf593900c4d4599ff0f7718ce79a646e50a0cf5cef201",
+  "historical_linux_archives_reread": false,
+  "new_compiler_execution": false,
+  "original_reader_sha256": "07484df97d787b327b180aa10270d369439840133247bb5a7632a9f5b250d8c5",
+  "original_whole_zip_preserved_outside_checkout": true,
+  "original_zip_bytes": 13585105,
+  "original_zip_sha256": "93c83be3ef1ccef020f3330868aad7f7ab4d3415d550763ff18d24ac3a9cce36",
+  "part_reader_sha256": "f39fc86b8613ab549690eaf79b00f12fd8473b662d86233f21b1c62b32254432",
+  "refusal_controls": [
+    {
+      "case": "missing",
+      "exception": "FileNotFoundError",
+      "rejected": true
+    },
+    {
+      "case": "truncated",
+      "exception": "AssertionError",
+      "rejected": true
+    },
+    {
+      "case": "corrupted",
+      "exception": "AssertionError",
+      "rejected": true
+    },
+    {
+      "case": "reordered",
+      "exception": "AssertionError",
+      "rejected": true
+    },
+    {
+      "case": "duplicated",
+      "exception": "AssertionError",
+      "rejected": true
+    }
+  ],
+  "required_histories": 349,
+  "required_versions": 1744,
+  "retained_stream_hashes_verified": 26126,
+  "schema": "lustr-exact-archive-transport-verification-v1",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_sha256": "bc946269c131248b0092ff70cdb15e68ca7ac76a012a57e9098e262fc2e329ef",
+  "verified_archive_members": 36619,
+  "verified_regular_bytes": 63032243,
+  "verified_regular_files": 35965,
+  "verified_storage": "ordered-exact-byte-parts"
+}

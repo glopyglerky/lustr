@@ -64,7 +64,9 @@ pub(crate) fn symbols(bytes: &[u8]) -> Result<Symbols, String> {
             if kind==SymbolKind::ThreadLocal&&section!=0&&(section>=count||word(bytes,base+section*stride+8,8)?&0x400==0){return Err("ELF TLS definition is outside a TLS section".into());}
             if section == 0 { out.undefined.insert(tail[..end].to_vec()); }
             else {
-                out.defined.insert(tail[..end].to_vec());
+                if !out.defined.insert(tail[..end].to_vec()) {
+                    return Err("duplicate nonlocal ELF symbol definition".into());
+                }
                 if info & 15 == 2 {
                     if section>=count || word(bytes,base+section*stride+8,8)? & 4 == 0 {
                         return Err("ELF function is outside an executable section".into());

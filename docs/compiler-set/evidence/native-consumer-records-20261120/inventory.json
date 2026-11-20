@@ -1,0 +1,749 @@
+{
+  "schema": "native-consumer-record-evidence-v1",
+  "original_root": "/workspace/scratch/9d482ba2ab85/metadata-verification-20261120",
+  "compiled_executables_omitted": true,
+  "records": [
+    {
+      "path": "controls-v2/.lustr-object-6-0/unit.c",
+      "bytes": 102807,
+      "sha256": "af3d8d8ccadff7370a04cd0ac32d116bb2c306c88b0956b888849c1059fdf535",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/.lustr-object-6-0/unit.o",
+      "bytes": 1448,
+      "sha256": "98ed39ab3c2c2726e3defbdcf84c50fbcd12ef463eac2041886139198a911220",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/abandoned.rs",
+      "bytes": 183,
+      "sha256": "c88b4bbcdc31261137f1c98a7ed706202ffcd687fd6d60a5f73fc818cd5236ba",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/caller",
+      "bytes": 4611288,
+      "sha256": "816c4c4166b63370442b338c5257e31b0a9a8058e5ac2d4992f926db3b2e11e0",
+      "captured": false,
+      "reason": "compiled executable omitted; exact bytes and identity recorded"
+    },
+    {
+      "path": "controls-v2/caller-compile.command",
+      "bytes": 419,
+      "sha256": "c825a8442f75a9b31346c760fdae9c74104f6dc7e01e4e4cf09f0a3cd23018c6",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/caller-compile.status",
+      "bytes": 15,
+      "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/caller-compile.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/caller-compile.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/caller-run.command",
+      "bytes": 84,
+      "sha256": "328c85ef8a9eabda66f764663c1d9f1879436c15c5d633350ad6ff6a7608ab50",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/caller-run.status",
+      "bytes": 15,
+      "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/caller-run.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/caller-run.stdout",
+      "bytes": 27,
+      "sha256": "b057243758c5751f5a7239037befa9afc6d8ef90e72e01653fa808984db3ed86",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/caller.rs",
+      "bytes": 382,
+      "sha256": "553abae70928f91bc9dc87270c4a218d56aac5412deae32b67cfc3a58276c585",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/const-definition.rs",
+      "bytes": 70,
+      "sha256": "12f2b381cadbc0d7a1ed971f9094e035eccbc79252939320aa7ffb004098abb5",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/duplicate-declaration.native-error",
+      "bytes": 262,
+      "sha256": "52c17744b76369f60f8cb75cb7f272690bfd0ac140d66f74826b56488708995b",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/duplicate-declaration.rs",
+      "bytes": 89,
+      "sha256": "c2ba68b6ee694ad281dda8a90d083f53c63aaa824b5a106eade515ce06755298",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/duplicate-symbol.error",
+      "bytes": 40,
+      "sha256": "732a265d891e211ad3874f72eca7619cca8144fc43226080e15c055bfe8211fe",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/duplicate-symbol.o",
+      "bytes": 1448,
+      "sha256": "1382f065dcf7d324713d58c18d635f610d4282c5a945c686003a567cc923b9ca",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/invalid-private.native-error",
+      "bytes": 316,
+      "sha256": "e9eebcfe922c99d99b5f458b9b3c775a43651b4a314bed12f8c3da5e1ba1fa83",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/invalid-private.rs",
+      "bytes": 87,
+      "sha256": "658c395efc7247d8e14e25975fc63a126767849c2de3a31d168f10b9c0d53c1a",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/naming-lint.integration-error",
+      "bytes": 49,
+      "sha256": "e791d0beff762a5a6cce4fa2561b16990dd414b0b7a02427ea33e07ee4f9260b",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/naming-lint.rs",
+      "bytes": 52,
+      "sha256": "4e712b05d393c6ec6566483bd10c6683f882c3230708e6f6b99006722210710d",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/native.o",
+      "bytes": 1448,
+      "sha256": "98ed39ab3c2c2726e3defbdcf84c50fbcd12ef463eac2041886139198a911220",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/non-u64-signature.integration-error",
+      "bytes": 74,
+      "sha256": "cbbc9541f9fc2325f69a67b2fd30a37d4962636df23f794481db4094aee86e06",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/non-u64-signature.rs",
+      "bytes": 50,
+      "sha256": "a0d59cab14136ada127fb22363ed3492d1205d827c27b758be819ad31022ad3f",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/oracle-identity.command",
+      "bytes": 116,
+      "sha256": "464a4948586c3c9a7e3bab8b855855f364b1c9c8568bfff8f1b9151978fe1370",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/oracle-identity.status",
+      "bytes": 15,
+      "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/oracle-identity.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/oracle-identity.stdout",
+      "bytes": 214,
+      "sha256": "bbc9b960fe50c84bca20f3109950bcb87c48b6d1ce61d2fc2fc1519aaba2daaa",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/original.rs",
+      "bytes": 28,
+      "sha256": "0da6013379273163d00c41d6757a8e4b8041e3e9e7f79f313a5914f3cd86cbfa",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/recursive-call.integration-error",
+      "bytes": 71,
+      "sha256": "dbaf0bce7446a321db0a72e88fda6716e136380e2245eb13933f9476b0d83793",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/recursive-call.rs",
+      "bytes": 57,
+      "sha256": "0be49d1617fea54e355d39abc7e0c7e3d698aded09c97e1b7ef227b1c0da5be9",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/unknown-type.native-error",
+      "bytes": 266,
+      "sha256": "2297c6ea5c9f525027c724523877dcf6a4cfdd618c38403d7cac99e74853df17",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/unknown-type.rs",
+      "bytes": 50,
+      "sha256": "12e0dce3e1dd58727bdabf252172582e124b793d5494383dbfff66aa194ce8da",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/unused-parameter.integration-error",
+      "bytes": 50,
+      "sha256": "077e3fbf751896771b6e3d692c41a3f7673640ffc56adc4293c2e3dd1938c541",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/unused-parameter.rs",
+      "bytes": 50,
+      "sha256": "bfc076e6dfeb60e995f96cbb5aa6eab89a78b26d6f4a00d4841b8220a8a8a286",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/unused-private.integration-error",
+      "bytes": 83,
+      "sha256": "641347bb8736e57d1a8b54159242091d829c83c91ab71ea8d6c3b79ba28f22c2",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v2/unused-private.rs",
+      "bytes": 88,
+      "sha256": "b836201b18562e3a0537e472bcaf1446da580a170f88bff0f5f95a6ea924ee14",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/.lustr-object-6-0/unit.c",
+      "bytes": 102807,
+      "sha256": "af3d8d8ccadff7370a04cd0ac32d116bb2c306c88b0956b888849c1059fdf535",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/.lustr-object-6-0/unit.o",
+      "bytes": 1448,
+      "sha256": "98ed39ab3c2c2726e3defbdcf84c50fbcd12ef463eac2041886139198a911220",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/.lustr-object-6-1/unit.c",
+      "bytes": 102807,
+      "sha256": "af3d8d8ccadff7370a04cd0ac32d116bb2c306c88b0956b888849c1059fdf535",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/.lustr-object-6-1/unit.o",
+      "bytes": 1448,
+      "sha256": "98ed39ab3c2c2726e3defbdcf84c50fbcd12ef463eac2041886139198a911220",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/abandoned.rs",
+      "bytes": 183,
+      "sha256": "c88b4bbcdc31261137f1c98a7ed706202ffcd687fd6d60a5f73fc818cd5236ba",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/caller",
+      "bytes": 4611288,
+      "sha256": "85c420d79c00acba0a65aab190f12a3fdc3dc73b011101525a44f9b7fafc134e",
+      "captured": false,
+      "reason": "compiled executable omitted; exact bytes and identity recorded"
+    },
+    {
+      "path": "controls-v3/caller-compile.command",
+      "bytes": 419,
+      "sha256": "84fc5d3cb1b2639f0be1e20c0afb6272703453d0204acaa17222640e1e40fa0b",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/caller-compile.status",
+      "bytes": 15,
+      "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/caller-compile.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/caller-compile.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/caller-run.command",
+      "bytes": 84,
+      "sha256": "5d72e19a05c0f4dfc083fe30eb2b0782608889a157fafbedbcd53e5d5cba4c12",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/caller-run.status",
+      "bytes": 15,
+      "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/caller-run.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/caller-run.stdout",
+      "bytes": 27,
+      "sha256": "b057243758c5751f5a7239037befa9afc6d8ef90e72e01653fa808984db3ed86",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/caller.rs",
+      "bytes": 382,
+      "sha256": "553abae70928f91bc9dc87270c4a218d56aac5412deae32b67cfc3a58276c585",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/const-definition.integration-error",
+      "bytes": 87,
+      "sha256": "93902b1eff91a1de1c474c47c0af074682d35bf13c688a182ea8c2ba1ce712e4",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/const-definition.rs",
+      "bytes": 69,
+      "sha256": "bef77faab2fc4e16f8c5c8db7da9703444dfb789f951bf5ab97b7186845143a2",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/duplicate-declaration.native-error",
+      "bytes": 262,
+      "sha256": "1acd919b528b7107717144148a56cb34ec37bc1cf988a7caf19314379c5debee",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/duplicate-declaration.rs",
+      "bytes": 89,
+      "sha256": "c2ba68b6ee694ad281dda8a90d083f53c63aaa824b5a106eade515ce06755298",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/duplicate-symbol.error",
+      "bytes": 40,
+      "sha256": "732a265d891e211ad3874f72eca7619cca8144fc43226080e15c055bfe8211fe",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/duplicate-symbol.o",
+      "bytes": 1448,
+      "sha256": "1382f065dcf7d324713d58c18d635f610d4282c5a945c686003a567cc923b9ca",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/invalid-private.native-error",
+      "bytes": 316,
+      "sha256": "50f5a0a107a51165058b1c5511e67f2734a1458d6be34aa79298400b8e834357",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/invalid-private.rs",
+      "bytes": 87,
+      "sha256": "658c395efc7247d8e14e25975fc63a126767849c2de3a31d168f10b9c0d53c1a",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/naming-lint.integration-error",
+      "bytes": 49,
+      "sha256": "e791d0beff762a5a6cce4fa2561b16990dd414b0b7a02427ea33e07ee4f9260b",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/naming-lint.rs",
+      "bytes": 52,
+      "sha256": "4e712b05d393c6ec6566483bd10c6683f882c3230708e6f6b99006722210710d",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/native.o",
+      "bytes": 1448,
+      "sha256": "98ed39ab3c2c2726e3defbdcf84c50fbcd12ef463eac2041886139198a911220",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/non-u64-signature.integration-error",
+      "bytes": 74,
+      "sha256": "cbbc9541f9fc2325f69a67b2fd30a37d4962636df23f794481db4094aee86e06",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/non-u64-signature.rs",
+      "bytes": 50,
+      "sha256": "a0d59cab14136ada127fb22363ed3492d1205d827c27b758be819ad31022ad3f",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/oracle-identity.command",
+      "bytes": 116,
+      "sha256": "464a4948586c3c9a7e3bab8b855855f364b1c9c8568bfff8f1b9151978fe1370",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/oracle-identity.status",
+      "bytes": 15,
+      "sha256": "96016bb51faaaa0201c61daa8663868b16309cdae8a1e11c88a2334b97dff0dd",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/oracle-identity.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/oracle-identity.stdout",
+      "bytes": 214,
+      "sha256": "bbc9b960fe50c84bca20f3109950bcb87c48b6d1ce61d2fc2fc1519aaba2daaa",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/original.rs",
+      "bytes": 183,
+      "sha256": "c88b4bbcdc31261137f1c98a7ed706202ffcd687fd6d60a5f73fc818cd5236ba",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/parenthesis-lint.integration-error",
+      "bytes": 87,
+      "sha256": "93902b1eff91a1de1c474c47c0af074682d35bf13c688a182ea8c2ba1ce712e4",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/parenthesis-lint.rs",
+      "bytes": 52,
+      "sha256": "e3ddabcc9b90b41034ca818be1153265f149527d54081b5a07203ac9d7929983",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/recursive-call.integration-error",
+      "bytes": 71,
+      "sha256": "dbaf0bce7446a321db0a72e88fda6716e136380e2245eb13933f9476b0d83793",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/recursive-call.rs",
+      "bytes": 57,
+      "sha256": "0be49d1617fea54e355d39abc7e0c7e3d698aded09c97e1b7ef227b1c0da5be9",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/statement-lints.integration-error",
+      "bytes": 59,
+      "sha256": "caa38918f70092c6755b96cf8129f13c9da48a0cdd455162c2167e18eedfc4d6",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/statement-lints.rs",
+      "bytes": 67,
+      "sha256": "c2120edac0aed27b2853493ec3191c6a60d07c1ed9cbb2dadc53b631ea916c87",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/summary.json",
+      "bytes": 198,
+      "sha256": "cf59652b78d96464eb0ec9b4b78fa55a4f57f6647ddce8bce8e638d5af8ae760",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/unknown-type.native-error",
+      "bytes": 266,
+      "sha256": "a6d45cb215ca615e92f4b06b3e4337ff807fa0f659f768d1b512ae5357598acb",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/unknown-type.rs",
+      "bytes": 50,
+      "sha256": "12e0dce3e1dd58727bdabf252172582e124b793d5494383dbfff66aa194ce8da",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/unused-parameter.integration-error",
+      "bytes": 50,
+      "sha256": "077e3fbf751896771b6e3d692c41a3f7673640ffc56adc4293c2e3dd1938c541",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/unused-parameter.rs",
+      "bytes": 50,
+      "sha256": "bfc076e6dfeb60e995f96cbb5aa6eab89a78b26d6f4a00d4841b8220a8a8a286",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/unused-private.integration-error",
+      "bytes": 83,
+      "sha256": "641347bb8736e57d1a8b54159242091d829c83c91ab71ea8d6c3b79ba28f22c2",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "controls-v3/unused-private.rs",
+      "bytes": 88,
+      "sha256": "b836201b18562e3a0537e472bcaf1446da580a170f88bff0f5f95a6ea924ee14",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "native-consumer-build-v1.json",
+      "bytes": 1600254,
+      "sha256": "ef15eca7b9b8c3d3495388cd32e52bc88e5d01ac0ba65b4c39299d100e301c40",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "native-consumer-build-v1.stderr",
+      "bytes": 25156,
+      "sha256": "90deda008544d3a9111f8c6828d35ffdbfff04f579b1292ad506cc16eafd6438",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "native-consumer-build-v1.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "native-consumer-build-v2.json",
+      "bytes": 1600134,
+      "sha256": "23286d25f5b785287c1e056c146a1e488f313670753de49054086ba60e85beaf",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "native-consumer-build-v2.stderr",
+      "bytes": 24982,
+      "sha256": "47e0ffb5333b672332eeca7d381e167f3b6d1f97b58b91d38dc9c7c68885ad50",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "native-consumer-build-v2.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "native-consumer-build-v3.json",
+      "bytes": 1600134,
+      "sha256": "9eeb8e59369b79093e18170815ff67698d51f020280e670ed9537c0bbe5d4e56",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "native-consumer-build-v3.stderr",
+      "bytes": 24982,
+      "sha256": "027008e53dd4a75f040bd9c92adab9589f7db490c3d5611da6f7cf0484ea6112",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "native-consumer-build-v3.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "native-consumer-controls-v2.json",
+      "bytes": 588,
+      "sha256": "80b06dabe9f9d8817ed9420aeeb992fd1eff739a5694792364a63bc5769613ba",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "native-consumer-controls-v2.stderr",
+      "bytes": 527,
+      "sha256": "a98c9769d627180d5609cfd97324e5d62c5c56800016603a7c504ce6e2594d75",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "native-consumer-controls-v2.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "native-consumer-controls-v3.json",
+      "bytes": 585,
+      "sha256": "89cf212e2209267e3a0fe1a8a39f6b5f22a984aafba3e04d9ef19f48a1138173",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "native-consumer-controls-v3.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "native-consumer-controls-v3.stdout",
+      "bytes": 934,
+      "sha256": "4c814063c395b94ec4c4e80f0cfe5a76abed8e1cf79ecc9813752aa1c8f530d5",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "native-consumer-owned-source-v2.tar.gz",
+      "bytes": 20449,
+      "sha256": "1e756bec0da54d74e0172cd64f2b023e4570d64373549b1934f03f112ac8a73e",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "native-consumer-owned-source-v3.tar.gz",
+      "bytes": 21295,
+      "sha256": "f4cc74bf8f0cad26e5dbc60fb286cba75c9d9470d664f3b300c9c5f56fc303e8",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "native-consumer-qualifier-v2",
+      "bytes": 61472488,
+      "sha256": "3eefbca147f7b6582d0e38c4774e198b4ef6216d62012d1ea31d10685662ccdf",
+      "captured": false,
+      "reason": "compiled executable omitted; exact bytes and identity recorded"
+    },
+    {
+      "path": "native-consumer-qualifier-v3",
+      "bytes": 61511928,
+      "sha256": "80e35e1e4b1ba34b2c699c26ff8f82f3f4eea0f6a8f135b217f2931c51305a54",
+      "captured": false,
+      "reason": "compiled executable omitted; exact bytes and identity recorded"
+    },
+    {
+      "path": "prepare-check-command.json",
+      "bytes": 1219,
+      "sha256": "056ad6adb172ef5307cdfa8e03186838082b1b4b4286e8d25dc70d581e86fcd8",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "prepare-check.stderr",
+      "bytes": 26380,
+      "sha256": "9404b87f6cbd99ef8e1955e1a0bf8e482191dc6bd65d6baa3e6fa56f24d25038",
+      "captured": true,
+      "reason": "original evidence bytes"
+    },
+    {
+      "path": "prepare-check.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "captured": true,
+      "reason": "original evidence bytes"
+    }
+  ]
+}

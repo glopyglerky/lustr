@@ -25,6 +25,8 @@ mod unit_object;
 mod unit_publication;
 #[cfg(feature = "native-qualification")]
 mod native_crate;
+#[cfg(feature = "native-qualification")]
+mod native_consumer;
 
 use std::ffi::{CStr, c_char, c_void};
 type Sink = unsafe extern "C" fn(*mut c_void, i32, *const u8, usize);

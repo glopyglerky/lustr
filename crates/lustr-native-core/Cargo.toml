@@ -36,6 +36,11 @@ name = "native-crate-qualification"
 path = "../../tools/native-crate-qualification.rs"
 required-features = ["native-qualification"]
 
+[[example]]
+name = "native-consumer-qualification"
+path = "../../tools/native-consumer-qualification.rs"
+required-features = ["native-qualification"]
+
 [dependencies]
 mimalloc = { version = "=0.1.52", default-features = false }
 libmimalloc-sys = { version = "=0.1.49", default-features = false }
