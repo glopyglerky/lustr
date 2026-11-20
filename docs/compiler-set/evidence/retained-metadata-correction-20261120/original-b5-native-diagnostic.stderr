@@ -1,0 +1,7 @@
+error[L0110]: mismatched types: expected `u64`, found `bool`
+  --> /home/runner/work/_temp/native-metadata-join/retained-campaign/consumer.rs:3:32
+   | fn helper(value: u64) -> u64 { true }
+   |                                ^^^^
+   = fix: Change the value to type `u64`, or change the expected type.
+
+error: could not compile `/home/runner/work/_temp/native-metadata-join/retained-campaign/consumer.rs` due to 1 previous error(s)

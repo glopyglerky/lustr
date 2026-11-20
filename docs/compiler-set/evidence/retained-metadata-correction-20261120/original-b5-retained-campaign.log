@@ -1,0 +1,54 @@
+2026-11-20T07:46:47.2477898Z ##[group]Run set -euo pipefail
+2026-11-20T07:46:47.2478165Z [36;1mset -euo pipefail[0m
+2026-11-20T07:46:47.2478420Z [36;1mrecords="$RUNNER_TEMP/native-metadata-join"[0m
+2026-11-20T07:46:47.2478847Z [36;1mpython3 tools/test-retained-metadata-controls.py -v 2>&1 | tee "$records/retained-evaluator-controls.log"[0m
+2026-11-20T07:46:47.2479316Z [36;1mpython3 tools/test-retained-native-metadata.py \[0m
+2026-11-20T07:46:47.2479716Z [36;1m  --candidate "$RUNNER_TEMP/native-metadata-target/debug/lustr-native-metadata-qualification" \[0m
+2026-11-20T07:46:47.2480128Z [36;1m  --sdk "$(rustc --print sysroot)" \[0m
+2026-11-20T07:46:47.2480444Z [36;1m  --output "$records/retained-campaign" 2>&1 | tee "$records/retained-campaign.log"[0m
+2026-11-20T07:46:47.2482015Z [36;1mpython3 -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["passed"] is True and r["functional_passed"] is True and r["exec_trace_qualified"] is True and r["socket_transport_qualified"] is True and len(r["observed_history"]) == 29 and len(r["sessions"]) == 3 and len(r["setup_refusals"]) == 2 and len(r["original_consumers"]) == 25 and r["checked_runtime_results"] == 6815952 and not r["full_compiler_qualification"] and not r["retained_public_integration"] and not r["performance_qualified"]' "$records/retained-campaign/report.json"[0m
+2026-11-20T07:46:47.2483577Z [36;1mpython3 tools/native-metadata-source-manifest.py verify "$records/source-inputs.json" 2>&1 | tee "$records/retained-source-verify.log"[0m
+2026-11-20T07:46:47.2484093Z [36;1msha256sum --check "$records/built-tools.sha256"[0m
+2026-11-20T07:46:47.2510547Z shell: /usr/bin/bash -e {0}
+2026-11-20T07:46:47.2510778Z env:
+2026-11-20T07:46:47.2510947Z   RUSTUP_TOOLCHAIN: nightly-2026-11-09
+2026-11-20T07:46:47.2511145Z   CARGO_BUILD_JOBS: 2
+2026-11-20T07:46:47.2511319Z   RUST_MIN_STACK: 268435456
+2026-11-20T07:46:47.2511485Z ##[endgroup]
+2026-11-20T07:46:47.3107847Z test_archive_index_must_name_a_real_member (__main__.ArtifactControls.test_archive_index_must_name_a_real_member) ... ok
+2026-11-20T07:46:47.3108837Z test_archive_symbol_index_accepts_only_real_names_and_alignment (__main__.ArtifactControls.test_archive_symbol_index_accepts_only_real_names_and_alignment) ... ok
+2026-11-20T07:46:47.3110392Z test_archive_symbol_index_rejects_extra_or_wrong_padding (__main__.ArtifactControls.test_archive_symbol_index_rejects_extra_or_wrong_padding) ... ok
+2026-11-20T07:46:47.3111487Z test_archive_symbol_index_rejects_missing_empty_and_duplicate_names (__main__.ArtifactControls.test_archive_symbol_index_rejects_missing_empty_and_duplicate_names) ... ok
+2026-11-20T07:46:47.3116879Z test_artifact_path_cannot_escape_or_be_a_symlink (__main__.ArtifactControls.test_artifact_path_cannot_escape_or_be_a_symlink) ... ok
+2026-11-20T07:46:47.3118346Z test_changed_machine_bytes_cannot_hide_behind_symbol_rename (__main__.ArtifactControls.test_changed_machine_bytes_cannot_hide_behind_symbol_rename) ... ok
+2026-11-20T07:46:47.3120173Z test_changed_relocation_destination_is_visible (__main__.ArtifactControls.test_changed_relocation_destination_is_visible) ... ok
+2026-11-20T07:46:47.3121099Z test_direct_local_call_identity_and_rename (__main__.ArtifactControls.test_direct_local_call_identity_and_rename) ... ok
+2026-11-20T07:46:47.3121777Z test_duplicate_archive_members_fail (__main__.ArtifactControls.test_duplicate_archive_members_fail) ... ok
+2026-11-20T07:46:47.3122984Z test_original_rlib_link_framing_and_complete_inventory (__main__.ArtifactControls.test_original_rlib_link_framing_and_complete_inventory) ... ok
+2026-11-20T07:46:47.3123654Z test_truncated_and_wrong_machine_objects_fail (__main__.ArtifactControls.test_truncated_and_wrong_machine_objects_fail) ... ok
+2026-11-20T07:46:47.3131055Z test_unix_socket_call_cannot_be_hidden_in_a_passing_trace (__main__.ArtifactControls.test_unix_socket_call_cannot_be_hidden_in_a_passing_trace) ... ok
+2026-11-20T07:46:47.3143700Z test_actual_arguments_directory_and_status_are_required (__main__.TraceControls.test_actual_arguments_directory_and_status_are_required) ... ok
+2026-11-20T07:46:47.3153346Z test_command_records_bind_exact_artifact_work (__main__.TraceControls.test_command_records_bind_exact_artifact_work) ... ok
+2026-11-20T07:46:47.3157493Z test_extra_allowlisted_execution_on_noop_fails (__main__.TraceControls.test_extra_allowlisted_execution_on_noop_fails) ... ok
+2026-11-20T07:46:47.3162052Z test_missing_or_duplicate_allowed_execution_fails (__main__.TraceControls.test_missing_or_duplicate_allowed_execution_fails) ... ok
+2026-11-20T07:46:47.3165678Z test_observed_request_and_noop_are_accounted (__main__.TraceControls.test_observed_request_and_noop_are_accounted) ... ok
+2026-11-20T07:46:47.3171035Z test_prefix_rewrite_and_post_response_work_fail (__main__.TraceControls.test_prefix_rewrite_and_post_response_work_fail) ... ok
+2026-11-20T07:46:47.3176413Z test_setup_refusal_requires_actual_exit_without_tools (__main__.TraceControls.test_setup_refusal_requires_actual_exit_without_tools) ... ok
+2026-11-20T07:46:47.3180795Z test_socket_and_unrepresented_directory_calls_fail (__main__.TraceControls.test_socket_and_unrepresented_directory_calls_fail) ... ok
+2026-11-20T07:46:47.3186186Z test_split_calls_within_a_response_are_complete (__main__.TraceControls.test_split_calls_within_a_response_are_complete) ... ok
+2026-11-20T07:46:47.3187655Z test_boolean_counter_and_sdk_reload_fail (__main__.WorkControls.test_boolean_counter_and_sdk_reload_fail) ... ok
+2026-11-20T07:46:47.3188653Z test_check_and_rejection_cannot_emit_metadata (__main__.WorkControls.test_check_and_rejection_cannot_emit_metadata) ... ok
+2026-11-20T07:46:47.3201694Z test_complete_noop (__main__.WorkControls.test_complete_noop) ... ok
+2026-11-20T07:46:47.3202384Z test_duplicate_and_foreign_identity_inventories_fail (__main__.WorkControls.test_duplicate_and_foreign_identity_inventories_fail) ... ok
+2026-11-20T07:46:47.3203377Z test_noop_cannot_repeat_any_work (__main__.WorkControls.test_noop_cannot_repeat_any_work) ... ok
+2026-11-20T07:46:47.3204513Z test_original_type_diagnostic_cannot_be_replaced_by_operational_error (__main__.WorkControls.test_original_type_diagnostic_cannot_be_replaced_by_operational_error) ... ok
+2026-11-20T07:46:47.3205777Z test_partial_failure_recovery_requires_one_remaining_object (__main__.WorkControls.test_partial_failure_recovery_requires_one_remaining_object) ... ok
+2026-11-20T07:46:47.3206477Z test_required_native_work_cannot_disappear (__main__.WorkControls.test_required_native_work_cannot_disappear) ... ok
+2026-11-20T07:46:47.3207291Z test_unchanged_body_check_and_generation_fail (__main__.WorkControls.test_unchanged_body_check_and_generation_fail) ... ok
+2026-11-20T07:46:47.3217386Z 
+2026-11-20T07:46:47.3217592Z ----------------------------------------------------------------------
+2026-11-20T07:46:47.3217909Z Ran 30 tests in 0.010s
+2026-11-20T07:46:47.3218046Z 
+2026-11-20T07:46:47.3218137Z OK
+2026-11-20T07:46:49.6619447Z {"passed": false, "functional_passed": false, "exec_trace_qualified": false, "socket_transport_qualified": false, "observed_history": ["cold", "no-op", "body-edit", "body-edit-no-op", "body-revert", "span-only", "reorder", "insert", "insert-no-op", "remove", "signature", "signature-no-op", "signature-revert", "invalid-private"], "checked_runtime_results": 3670128, "failure": "private-body failure did not preserve the exact native type diagnostic and source span"}
+2026-11-20T07:46:49.6708553Z ##[error]Process completed with exit code 1.

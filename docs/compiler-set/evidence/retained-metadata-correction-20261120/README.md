@@ -66,3 +66,33 @@ nonempty and unique names, real member offsets and invalid-tail rejection. Three
 new control methods accompany the parser change. Compiler source and the complete
 required history and consumer outcomes remain unchanged. The corrected evaluator
 and complete retained campaign still require exact-source hosted execution.
+
+## Native diagnostic expectation correction
+
+Source `b5b55b7813843956062fc40180a759c1b4569541` passed all 30 evaluator
+methods and advanced through 13 successful consumers, totaling 3,670,128 actual
+runtime assertions. Its retained campaign failed at the fourteenth observed
+transition, `invalid-private`. The native type error, source path, line, column
+and span were correct. The authored exact-text expectation omitted the driver's
+normal final summary, including the attempted source path and diagnostic count.
+
+[runtime-failure-b5b55b78.json](runtime-failure-b5b55b78.json) records the failed
+metadata job, original artifact and candidate identities, observed histories,
+consumer checks and actual trace boundaries. All four observed no-op intervals
+and the invalid request contained zero artifact-tool calls. Later recovery,
+fresh-session and SDK refusal histories had not run. No whole workflow conclusion
+is inferred from this one completed job.
+
+[native-diagnostic-review.json](native-diagnostic-review.json) verifies that the
+candidate's `errors` function is byte-identical to pinned upstream Lust. The
+preserved source and stderr show the exact expected native behavior. Correction
+[`3fa48e5a`](https://github.com/glopyglerky/lustr/commit/3fa48e5a936f990531d92e9168923964f532e72b)
+requires the complete original diagnostic, retaining exact equality and the
+existing error-code, source-span and phase checks. Four negative subcases reject
+a missing summary, wrong count, wrong path and extra text; these are additions to
+an existing method, so the suite still has 30 methods.
+
+Compiler source, the 29-request history and the 25-consumer inventory are
+unchanged. The corrected evaluator and complete campaign require their own
+hosted execution. Partial passes from the failed source are not qualification of
+the new source.
