@@ -28,7 +28,9 @@ CFG_VERSION = "1.102.0-nightly (5b7b37aef 2026-11-08)"
 ENCODING_CONTROLS = [
     "missing-emitted-instance", "duplicate-emitted-instance", "foreign-emitted-instance",
     "malformed-emitted-symbol", "duplicate-emitted-symbol", "duplicate-definition",
-    "duplicate-call-edge", "foreign-call-edge", "empty-rlib-link-members",
+    "duplicate-call-edge", "foreign-call-edge",
+    "empty-producer-objects", "missing-producer-definition", "duplicate-producer-definition",
+    "foreign-producer-definition", "malformed-producer-member", "empty-rlib-link-members",
     "duplicate-rlib-link-member", "malformed-rlib-link-member",
 ]
 SOURCE = b"""#![no_std]

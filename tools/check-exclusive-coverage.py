@@ -277,6 +277,7 @@ def metadata_research_checks(root, inventory, require):
         require(component.get("production_admitted") is False
                 and component.get("native_caller_committed") is True
                 and component.get("native_caller_path") == qualifier
+                and component.get("retained_native_caller_authored") is True
                 and component.get("public_retained_integration") is False,
                 path + ": metadata caller must remain the separate reviewed research executable")
 
@@ -289,6 +290,7 @@ def metadata_research_checks(root, inventory, require):
     require(status.get("production_admitted") is False
             and status.get("native_caller_committed") is True
             and status.get("native_caller_path") == qualifier
+            and status.get("retained_native_caller_authored") is True
             and status.get("public_retained_integration") is False,
             "metadata source inventory misstates integration")
     actual = {str(path.relative_to(source_root)): hashlib.sha256(path.read_bytes()).hexdigest()
@@ -340,6 +342,7 @@ def metadata_research_checks(root, inventory, require):
 
     component = components.get(qualifier, {})
     require(component.get("production_admitted") is False
+            and component.get("retained_native_caller_authored") is True
             and component.get("public_retained_integration") is False
             and component.get("source_inventory") == qualifier + "/source-slices.json",
             "native metadata qualifier must be an indexed research component")
@@ -368,7 +371,8 @@ def metadata_research_checks(root, inventory, require):
             "native metadata qualifier dependency or target closure changed without review")
     record = json.loads((root / qualifier / "source-slices.json").read_text())
     require(record.get("revision") == inventory["rust_source"]
-            and record.get("production_admitted") is False,
+            and record.get("production_admitted") is False
+            and record.get("retained_native_caller_authored") is True,
             "native metadata qualifier source identity or product boundary changed")
     files = ["Cargo.toml", "Cargo.lock", "build.rs"] + sorted(
         str(path.relative_to(root / qualifier)) for path in (root / qualifier / "src").rglob("*.rs"))

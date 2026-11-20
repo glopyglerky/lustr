@@ -2661,7 +2661,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..5dbdf6c033155477089e366530256df5
      }
  
 diff --git a/src/cgen.rs b/src/cgen.rs
-index ac6965592d3f4cc6ea1969df299fe33c974056b0..09c218c2ff394f32abd6fb342539d2ca00e9d48c 100644
+index ac6965592d3f4cc6ea1969df299fe33c974056b0..e4f60047d41b2522da053ef561462fde887b2372 100644
 --- a/src/cgen.rs
 +++ b/src/cgen.rs
 @@ -178,6 +178,9 @@ enum Step {
@@ -3385,7 +3385,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..09c218c2ff394f32abd6fb342539d2ca
              let _ = writeln!(self.out, "    if ({rc} < 0) lust_panic_cstr(\"{div0msg}\", {at});");
              if matches!(b, B::SaturatingAdd | B::SaturatingSub | B::SaturatingMul | B::SaturatingDiv) {
                  // Clamp to the endpoint the true result passes.
-@@ -10355,6 +10482,14 @@ fn strip_impl_blocks(src: &str) -> String {
+@@ -10355,6 +10482,26 @@ fn strip_impl_blocks(src: &str) -> String {
  /// (`runtime_decls`), from the compiler's predefined types.
  const INT_TYPEDEFS: &str = "typedef signed char int8_t; typedef unsigned char uint8_t; typedef short int16_t; typedef unsigned short uint16_t;\ntypedef int int32_t; typedef unsigned int uint32_t;\n#ifdef __INT64_TYPE__\ntypedef __INT64_TYPE__ int64_t; typedef unsigned __INT64_TYPE__ uint64_t;\n#else\ntypedef long long int64_t; typedef unsigned long long uint64_t;\n#endif\n#ifdef __SIZE_TYPE__\ntypedef __SIZE_TYPE__ size_t; typedef __PTRDIFF_TYPE__ ptrdiff_t; typedef __UINTPTR_TYPE__ uintptr_t; typedef __INTPTR_TYPE__ intptr_t;\n#else\ntypedef unsigned long size_t; typedef long ptrdiff_t; typedef unsigned long uintptr_t; typedef long intptr_t;\n#endif\n#define INT64_MIN (-9223372036854775807LL-1)\n#ifndef NULL\n#define NULL ((void*)0)\n#endif\n";
  
@@ -3397,10 +3397,22 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..09c218c2ff394f32abd6fb342539d2ca
 +    Some(format!("{INT_TYPEDEFS}\n{}", output.code_text()))
 +}
 +
++/// A completed total scalar body with its exact native direct-call prototypes.
++/// The library completion proof, not this text operation, owns totality.
++pub fn native_scalar_unit(output: &FnOut) -> Option<String> {
++    if !output.mixed_total || !output.glue.is_empty() || !output.ll.is_empty() || !output.ll_c.is_empty() || !output.types.is_empty() || !output.named.is_empty() {
++        return None;
++    }
++    let mut unit = String::from(INT_TYPEDEFS);
++    for declaration in &output.externs { unit.push_str(declaration); unit.push('\n'); }
++    unit.push_str(&output.code_text());
++    Some(unit)
++}
++
  fn runtime_decls() -> &'static str {
      static DECLS: std::sync::OnceLock<String> = std::sync::OnceLock::new();
      DECLS.get_or_init(|| {
-@@ -10444,6 +10579,8 @@ pub struct UnwindInit {
+@@ -10444,6 +10591,8 @@ pub struct UnwindInit {
      pub tables: bool,
      pub ids: [u64; 4],
      pub hook_runner: Option<u32>,
@@ -3409,7 +3421,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..09c218c2ff394f32abd6fb342539d2ca
  }
  
  /// The `main_unit` argument for `p` (`slot_of` maps a fn to its slot).
-@@ -10461,7 +10598,11 @@ pub fn unwind_init(p: &Program, slot_of: impl Fn(LocalDefId) -> u32) -> Option<U
+@@ -10461,7 +10610,11 @@ pub fn unwind_init(p: &Program, slot_of: impl Fn(LocalDefId) -> u32) -> Option<U
          .map(|i| slot_of(LocalDefId(i as u32)));
      let (a, b) = crate::check::any::type_id_words(p, &p.tys, REF_STR);
      let (c, d) = crate::check::any::type_id_words(p, &p.tys, STRING);
@@ -3422,7 +3434,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..09c218c2ff394f32abd6fb342539d2ca
  }
  
  /// The location unit: the per-slot line and file tables and
-@@ -10506,8 +10647,9 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
+@@ -10506,8 +10659,9 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
      let unwind = init.as_ref().is_some_and(|i| i.unwind);
      let tables = init.as_ref().is_some_and(|i| i.unwind && i.tables);
      let runner_slot = init.as_ref().and_then(|i| i.hook_runner);
@@ -3433,7 +3445,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..09c218c2ff394f32abd6fb342539d2ca
              format!("\n  lust_unw_init({}, {a}ull, {b}ull, {c}ull, {d}ull);", if unwind && tables { 2 } else { unwind as u8 }),
              hook_runner.map_or(String::new(), |s| {
                  // Release C names the runner directly (only its address is taken here).
-@@ -10518,15 +10660,24 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
+@@ -10518,15 +10672,24 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
      };
      let mut c = unit_header();
      c.push_str("void lust_loc_init(void);\nvoid lust_kstatics_init(void);\n");
@@ -3463,7 +3475,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..09c218c2ff394f32abd6fb342539d2ca
      };
      for u in overlays {
          let _ = writeln!(c, "void lust_overlay_u{u}(void);");
-@@ -12044,7 +12195,7 @@ pub fn fn_unit_parts(
+@@ -12044,7 +12207,7 @@ pub fn fn_unit_parts(
      // table; on Err print `Error: {err:?}` to stderr and exit 1, as
      // Rust does; an `ExitCode` is the exit status. Registered below
      // in `lust_main_entry_p`, which the main unit prefers over the
@@ -3472,7 +3484,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..09c218c2ff394f32abd6fb342539d2ca
      // by main's own FnOut (see `gen_fn`).
      let entry_at = c.len();
      if let Some((m, idx)) = term_main {
-@@ -13126,7 +13277,7 @@ fn glue_def_value(
+@@ -13126,7 +13289,7 @@ fn glue_def_value(
      match g {
          Glue::CloneFrom => unreachable!("clonefrom glue returns above"),
          Glue::Drop => {
@@ -3481,7 +3493,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..09c218c2ff394f32abd6fb342539d2ca
              match t {
                  CTy::String => body.push_str("  lust_string_drop(p);\n"),
                  CTy::Hash(k, _) if hash::is_table(*k) => body.push_str(&hash::drop_body(p, t, &mut need)),
-@@ -13364,7 +13515,7 @@ fn glue_def_value(
+@@ -13364,7 +13527,7 @@ fn glue_def_value(
              } else {
                  body = body.replace(UNW_DSTEP, "").replace("UNW_DSTEP ", "");
              }
@@ -3490,7 +3502,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..09c218c2ff394f32abd6fb342539d2ca
          }
          Glue::Clone => {
              let _ = writeln!(protos, "{ct} clone_{m}({ct} *p);");
-@@ -14781,9 +14932,9 @@ mod tests {
+@@ -14781,9 +14944,9 @@ mod tests {
              let shards = names::glue_shards(&program, &glue, &outs, 1);
              let drop_hooks = format!("void drop_{}_(", ctype(&CTy::Adt(hooks)));
              let shard = shards.iter().find(|s| s.lines().any(|l| l.starts_with(&drop_hooks) && l.ends_with('{'))).expect("a shard defines the struct's drop glue");
@@ -6871,7 +6883,7 @@ index da28835400f894866adb85f436e2cbdf109797d7..6cf91ad37bd9d2192a7f1d876a0c7b47
          assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
          assert!(decode_response(b"short").is_none());
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b136b408b 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..e313a3881c4c638cd7d40b1fccfb44b68219e583 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
 @@ -59,6 +59,7 @@ fn expand_tokens(
@@ -7161,13 +7173,13 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
          let env = CfgEnv::new(&key.target_triple, &key.features, key.krate.test, key.profile);
          (key.krate.root.clone(), user_src.to_string(), crate_ids_default, env, Vec::new(), stem, Vec::new())
      };
-@@ -2153,8 +2263,19 @@ fn resolved_setup(
+@@ -2153,8 +2263,22 @@ fn resolved_setup(
      // PatchBase below asks `macro_scope::dep_macros_shut`).
      let patch_expand = (env.clone(), crate_name.clone());
      let has_deps = !externs.is_empty();
 -    let patched =
 -        if ast_bloated(front) { Err("ast compaction") } else { super::patch::try_patch(front, caches, inputs, &root_text, request_start) };
-+    let reuse_check = reusable.is_some() && !super::resolve_oracle::on();
++    let reuse_check = reusable.is_some() && caches.library.is_none() && !super::resolve_oracle::on();
 +    let patched = if ast_bloated(front) {
 +        Err("ast compaction")
 +    } else {
@@ -7177,16 +7189,20 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
 +        Ok(super::patch::PatchOutcome::ReuseCheck { fn_count }) => {
 +            return Err(reused_check_response(req, front, t, fn_count, reusable.unwrap()));
 +        }
-+        Ok(super::patch::PatchOutcome::Materialized(p)) => Ok(p),
++        Ok(super::patch::PatchOutcome::Materialized(p)) => {
++            if p.files != 0 && let Some(library) = &mut caches.library { library.changed(); }
++            Ok(p)
++        },
 +        Err(why) => Err(why),
 +    };
      if super::resolve_oracle::on()
          && let Ok(p) = &patched
      {
-@@ -2166,21 +2287,7 @@ fn resolved_setup(
+@@ -2165,22 +2289,8 @@ fn resolved_setup(
+     match patched {
          // Nothing changed since the last check of this same request:
          // its answer stands (`check_fingerprint`).
-         Ok(p) if p.files == 0 && reusable.is_some() => {
+-        Ok(p) if p.files == 0 && reusable.is_some() => {
 -            let (fp, mut resp) = reusable.unwrap();
 -            front.last_check = Some((fp, resp.clone()));
 -            front.last_visits.clear();
@@ -7202,16 +7218,19 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
 -                t.render(&mut resp.stderr);
 -            }
 -            return Err(resp);
++        Ok(p) if p.files == 0 && reusable.is_some() && caches.library.is_none() => {
 +            return Err(reused_check_response(req, front, t, p.fn_count, reusable.unwrap()));
          }
          // An item patch (sigedit P1.3): the new item scans take the
          // resolve path's slot update, in signatures mode with the edited
-@@ -2321,7 +2428,12 @@ fn resolved_setup(
+@@ -2321,7 +2431,14 @@ fn resolved_setup(
          // The cache's final chunks are parts of the session's merged Ast: the resolve takes
          // its hits out of it, and lets go of it before any patch writes it.
          front.resolve_cache.set_merged(front.ast.clone(), front.ast_gen);
 -        let out = worklist::resolve_crate_with(&input, &front.interner, &front.known, &mut front.resolve_cache, plan.platform);
-+        let out = if let Some(imports) = imports {
++        let out = if caches.library.is_some() {
++            worklist::resolve_native_library(&input, &front.interner, &front.known, &mut front.resolve_cache, &super::library::parse_root)
++        } else if let Some(imports) = imports {
 +            let mut mount = |tables: &mut crate::resolve::imports::ResolvedTables| imports.mount(tables, &front.interner);
 +            worklist::resolve_crate_with_imports(&input, &front.interner, &front.known, plan.platform, &mut mount)
 +        } else {
@@ -7220,7 +7239,15 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
          front.resolve_cache.clear_merged();
          if super::item_oracle::on() || super::resolve_oracle::on() {
              oracle_input = Some(super::item_oracle::ColdInput { input: input.clone(), platform: plan.platform });
-@@ -2552,10 +2664,222 @@ fn location_path(p: &str, library: &Path, display_root: Option<&Path>, client: &
+@@ -2379,6 +2496,7 @@ fn resolved_setup(
+     let old_kept = std::mem::take(&mut front.kept);
+     let old_ast = std::mem::replace(&mut front.ast, Arc::new(ast));
+     front.ast_gen = generation;
++    if let Some(library) = &mut caches.library { library.changed(); }
+     front.fresh_exprs = front.ast.exprs.len();
+     if (old_ast.exprs.len() > 20_000 || old_kept.iter().any(Option::is_some)) && caches.persistent {
+         // Nested token trees in the Ast drop recursively; use the
+@@ -2552,10 +2670,222 @@ fn location_path(p: &str, library: &Path, display_root: Option<&Path>, client: &
  }
  
  pub fn compile(req: &Request, session: &mut Session) -> Response {
@@ -7444,17 +7471,21 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
              stderr: format!(
                  "error: internal: request routed to the wrong session\n  request: {}\n  session: {}\n",
                  req.session.describe(),
-@@ -2563,16 +2887,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2563,16 +2893,19 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              ),
              code: 3,
              ..Default::default()
 -        };
 +        });
++    }
++    if session.caches.library.is_some() && (req.cc || req.debug || req.emit_c.is_some() || req.harness || req.run_args.is_some()) {
++        return Preparation::Failed(Response {code:3, stderr:"native library output context changed\n".into(), ..Default::default()});
      }
      // A lib target has no `main` to link and lust has no rlib format: `check --lib` works,
      // `build`/`run --lib` is a clear error (Cargo release builds still build libs).
-     if req.session.krate.target_kind == "lib" && !req.harness && !matches!(req.cmd, crate::protocol::Cmd::Check) {
+-    if req.session.krate.target_kind == "lib" && !req.harness && !matches!(req.cmd, crate::protocol::Cmd::Check) {
 -        return Response {
++    if req.session.krate.target_kind == "lib" && session.caches.library.is_none() && !req.harness && !matches!(req.cmd, crate::protocol::Cmd::Check) {
 +        return Preparation::finished(Response {
              stderr: "error: lust builds bin targets only: use `lust check --lib` for a lib target\n".into(),
              code: 1,
@@ -7464,7 +7495,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
      }
      // Lust links for the host target only (tcc). A named non-host triple
      // is a clear error for a link, not a host binary under a foreign
-@@ -2591,19 +2915,19 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2591,23 +2924,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // product; no link runs).
      let cc_build = req.cc && (triple.is_empty() || crate::resolve::cfg::CfgEnv::is_release_target(triple));
      if foreign && !foreign_check && !cc_build && req.emit_c.is_none() {
@@ -7487,16 +7518,21 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
      };
      // The crate identity for stable defs comes from the session's key (its
      // package and target identity, `Session::crate_ids`). For a single-file
-@@ -2670,7 +2994,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+     // program that is the synthetic one-file bin crate, as before.
++    if let Some(library) = &mut session.caches.library { library.begin(&src); }
+     let crate_ids = session.crate_ids();
+     // Open the disk cache once per session and seed slot assignment from
+     // the stored manifest, so a restarted daemon gives every fn the slot
+@@ -2670,7 +3004,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      } else {
          crate::resolve::worklist::route_root_std(&src, &front.interner, true)
      };
 -    let wants_resolver = wants_resolver || std_mods != 0;
-+    let wants_resolver = imports.is_some() || wants_resolver || std_mods != 0;
++    let wants_resolver = caches.library.is_some() || imports.is_some() || wants_resolver || std_mods != 0;
      let route_std_mods = req.session.krate.manifest_path.is_none().then_some(std_mods);
      if front.resolved_crate && !wants_resolver {
          front.ast = Arc::default();
-@@ -2719,16 +3043,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2719,16 +3053,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      if needs.any() {
          match splice_std(&mut src, std_cache, needs) {
              Ok(sp) => (std_ranges, std_routes, std_methods) = (sp.ranges, sp.routes, sp.methods),
@@ -7518,7 +7554,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
          }
      } else {
      // Lex and scan in chunks of whole items, in parallel. Only the region an edit touched is
-@@ -2873,7 +3199,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2873,7 +3209,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // A macro error in a chunk is the answer, not a lexing fallback.
      if let Some(Err(d)) = fresh.iter().find(|l| matches!(l, Err(d) if d.code.starts_with("L08"))) {
          let mut d = d.clone();
@@ -7527,7 +7563,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
      }
      let split_inner_attr = ranges.len() > 1
          && (reused.iter().flatten().any(|c| c.inner_attr) || fresh.iter().flatten().any(|&(_, _, _, inner_attr)| inner_attr));
-@@ -2889,7 +3215,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2889,7 +3225,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          // file has an inner attribute (`has_inner_attr`): lex the whole file. Its error is the
          // answer; if it lexes, compile as one chunk. Never panic.
          match lexer::lex(&src, ROOT_FILE, 0, &front.interner).and_then(|l| expand_tokens(front, l, &req.file, &src, test_mode, req.session.profile, &req.session)) {
@@ -7536,7 +7572,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
              Ok((whole, deps)) => {
                  let mut sc = scan::scan(&whole);
                  fold_fn_text(&mut sc, &whole, &src);
-@@ -3072,7 +3398,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3072,7 +3408,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                      front.chunks[fn_at[i].0].items = None;
                  }
                  front.chunks_blanked = true;
@@ -7545,7 +7581,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
              }
              for (&i, (body_ast, body, exprs, pats)) in changed.iter().zip(parsed) {
                  let before = (front.ast.exprs.len() as u32, front.ast.pats.len() as u32, front.ast.blocks.len() as u32);
-@@ -3145,7 +3471,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3145,7 +3481,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          if let Some(Err(d)) = parsed.iter().find(|p| p.is_err()) {
              let d = d.clone();
              front.chunks_blanked = old_len > 0;
@@ -7554,7 +7590,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
          }
          let mut new_asts: FxMap<usize, Ast> = todo.iter().copied().zip(parsed.into_iter().map(|p| p.unwrap())).collect();
          // Splice every per-chunk list in chunk order: a re-parsed chunk
-@@ -3221,7 +3547,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3221,7 +3557,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              Ok(c) => c,
              Err(e) => {
                  front.env_hash = None;
@@ -7563,7 +7599,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
              }
          }
      } else {
-@@ -3255,14 +3581,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3255,14 +3591,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                      Ok((w, _deps)) => w,
                      Err(mut d) => {
                          front.env_hash = None;
@@ -7580,7 +7616,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
                  }
              }
          };
-@@ -3273,7 +3599,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3273,7 +3609,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              Ok(c) => c,
              Err(e) => {
                  front.env_hash = None;
@@ -7589,7 +7625,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
              }
          }
      };
-@@ -3567,6 +3893,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3567,6 +3903,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // Template check errors from the kept program are collect's errors
      // (`gen_reuse.template_errors` counts them).
      let collect = |front: &mut Front, caches: &mut Caches| {
@@ -7604,7 +7640,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
          collect::collect_reuse(
              front.ast.clone(),
              front.interner.clone(),
-@@ -3666,7 +4000,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3666,7 +4010,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              front.last_visits.clear();
              visits.render(&mut front.last_visits);
              log_visits(&front.last_visits);
@@ -7613,7 +7649,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
          }
      };
      // Every body of a generic program rechecks when the trait system
-@@ -3757,11 +4091,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3757,11 +4101,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
                  None => {
                      front.env_hash = None;
@@ -7627,7 +7663,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
                  }
              }
          }
-@@ -3772,7 +4106,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3772,7 +4116,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      if program.fns.len() < fn_count {
          // The scanner and the parser disagree (only possible with unusual syntax). Start over.
          front.env_hash = None;
@@ -7636,7 +7672,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
      }
      // Mono instance slots (docs/ARCH.md section 4.2; W-TRAITS-CORE
      // through W-DRIVER): collect appends materialized instances
-@@ -3790,7 +4124,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3790,7 +4134,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              let disk = program.disk_id(LocalDefId(i as u32));
              if let Err(c) = def::insert_path(&mut front.slot_paths, disk, &format!("instance#{}", disk.hash.0)) {
                  front.env_hash = None;
@@ -7645,17 +7681,75 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
              }
              let slot = match front.slot_of.get(&disk) {
                  Some(&slot) => slot,
-@@ -4081,7 +4415,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4040,7 +4384,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+                 continue;
+             }
+             let s = slot(i);
+-            if !caches.has_out[s] {
++            if !caches.has_out[s] && caches.library.is_none() {
+                 continue;
+             }
+             let Some(Some(cached)) = caches.slot_ir.get(s) else {
+@@ -4054,12 +4398,15 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+             };
+             let moved = cached.slot_at_gen != s as u32
+                 || cached.used_at_gen.iter().any(|(disk, at_gen)| front.slot_of.get(disk) != Some(at_gen));
+-            if !moved {
++            if !moved && (caches.library.is_none() || caches.has_out[s]) {
+                 continue;
+             }
+             let file = program.fn_def(LocalDefId(i as u32)).name_span.file;
+-            let fh = *file_hashes.entry(file).or_insert_with(|| file_text_hash(&map, file));
+-            let rebuilt = if fh == cached.file_hash {
++            let library_ir = caches.library.is_some() && !caches.has_out[s];
++            let fh = if library_ir {0} else {*file_hashes.entry(file).or_insert_with(|| file_text_hash(&map, file))};
++            let rebuilt = if library_ir {
++                super::library::rebuild(&program,LocalDefId(i as u32),front,caches,&map,scan_of(front,i).1)
++            } else if fh == cached.file_hash {
+                 super::ir_cache::rebuild(&program, cached, LocalDefId(i as u32))
+             } else {
+                 None
+@@ -4068,6 +4415,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+                 Some(body) if super::ir_cache::ir_fingerprint(&program, &body, &map, scan_of(front, i).1) == cached.ir_fp => {
+                     reemit.push((i, body))
+                 }
++                _ if caches.library.is_some() && !caches.has_out[s] => {
++                    return Preparation::Failed(Response {code:3,
++                        stderr:"native retained library IR could not be rebound to its current checked generation\n".into(),..Default::default()});
++                }
+                 _ => reemit_failed.push(i),
+             }
+         }
+@@ -4081,9 +4432,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // switches, debug info, unwind tables) makes every slot's C again, as a one-shot build
      // does: its slot cache holds C of the other form (a front image saved by a tcc build,
      // then a release driver build). A check makes no C and keeps the key.
 -    let release = super::release_c::on(caches.persistent, req.cc);
 +    let mixed = req.session.krate.target_kind == "lustr-mixed-native";
-+    let release = mixed || super::release_c::on(caches.persistent, req.cc);
++    let library = caches.library.is_some();
++    let release = library || mixed || super::release_c::on(caches.persistent, req.cc);
      if req.cmd == Cmd::Build {
-         let key = super::release_c::codegen_key(release, req.debug, program.unwind_tables);
+-        let key = super::release_c::codegen_key(release, req.debug, program.unwind_tables);
++        let key = super::release_c::codegen_key(release, req.debug, program.unwind_tables)
++            ^ if library { 0x6c69_622d_746f_7461 } else { 0 };
          if caches.codegen_key != key {
-@@ -4285,7 +4620,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+             caches.codegen_key = key;
+             caches.has_out.iter_mut().for_each(|h| *h = false);
+@@ -4096,7 +4450,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+     let mut work = changed.clone();
+     work.extend(reemit_failed.iter().copied());
+     if req.cmd == Cmd::Build {
+-        work.extend((0..program.fns.len()).filter(|&i| !caches.has_out[slot(i)] && !in_changed[i]));
++        if library {
++            let rebuilt: std::collections::BTreeSet<_> = reemit.iter().map(|(i,_)|*i).collect();
++            work.extend((0..program.fns.len()).filter(|&i| !caches.has_out[slot(i)] && !in_changed[i] && !rebuilt.contains(&i)));
++        } else {
++            work.extend((0..program.fns.len()).filter(|&i| !caches.has_out[slot(i)] && !in_changed[i]));
++        }
+     }
+     // The instance Adt ids this build generates C under, and whether one
+     // names another instance than in the C made since the last full
+@@ -4285,7 +4644,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // A one-shot check needs no IR after borrowck: dropping each body on
      // its worker lets the allocator reuse the memory for the next body,
      // instead of touching fresh pages for every function.
@@ -7664,12 +7758,17 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
      // `lust check` skips std platform bodies (`Program::check_skips`).
      // A skipped slot keeps its last marks; one that needed a check lost
      // its C above, so the next build checks it.
-@@ -4296,17 +4631,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4296,17 +4655,35 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          super::item_oracle::check(front, caches, Ok(&program), &work, fn_count, hashes, lines, visits.path, crate_ids, build, tables);
          t.lap("item oracle");
      }
 +    let phase = phase_id.map(|id| super::Prepared { id, request: req, input: &front.ast, program: &program, map: &map, source: &src, work: &work });
 +    if let (Some(observer), Some(phase)) = (observer, phase) { observer.prepared(phase); }
++    if let Some(library)=&mut caches.library {
++        library.checked=work.iter().map(|&i|program.disk_id(LocalDefId(i as u32))).collect();
++        library.checked_names=work.iter().map(|&i|{let id=LocalDefId(i as u32);(program.disk_id(id),program.interner.get(program.fns[i].name).to_owned())}).collect();
++    }
++    let library_facts=library.then(||std::sync::Mutex::new(std::collections::BTreeMap::new()));
      let results = par_map(&work, |&i| {
          let f = LocalDefId(i as u32);
          // Lowering and borrowck read derive lists too (Copy operands,
@@ -7682,15 +7781,42 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
              if !errs.is_empty() {
                  return (None, errs);
              }
++            let mut facts = library.then(|| super::library::capture(&program, f, &checked));
              let body = lower::lower(&program, f, checked);
++            if let Some(facts) = &mut facts { super::library::lowered(&program, facts, &body); }
              errs.extend(borrowck::borrowck(&program, &body));
 +            if let (Some(observer), Some(phase)) = (observer, phase) {
 +                check::derive_delta::unlogged(|| observer.lowered(phase, f, &body, &errs));
 +            }
++            if errs.is_empty() && let Some(facts)=facts && let Some(stored)=&library_facts {
++                stored.lock().unwrap_or_else(|e|e.into_inner()).insert(i,facts);
++            }
              (Some(body), errs)
          });
          let body = body.filter(|_| keep_bodies).map(|mut b| {
-@@ -4370,6 +4713,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4315,6 +4692,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+         });
+         (body, errs)
+     });
++    let mut library_facts=library_facts.map(|facts|facts.into_inner().unwrap_or_else(|e|e.into_inner()));
+     let mut diags: Vec<Diag> = Vec::new();
+     for (k, &i) in work.iter().enumerate() {
+         caches.ok[slot(i)] = results[k].1.is_empty();
+@@ -4350,6 +4728,13 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+             stored.verified[mode_at] = verified;
+             caches.slot_reads[slot(i)] = Some(stored);
+         }
++        if results[k].1.is_empty() && let Some(facts) = library_facts.as_mut().and_then(|facts|facts.remove(&i))
++            && let Some(library) = &mut caches.library {
++            let body=results[k].0.as_ref().expect("passing library check retains its native body");
++            let fp=super::ir_cache::ir_fingerprint(&program,body,&map,fn_lines_all[i]);
++            caches.slot_ir[slot(i)]=Some(super::ir_cache::cache_body(&program,body,0,slot(i) as u32,Vec::new(),fp));
++            super::library::store(library, facts, front.slot_hash[slot(i)], front.slot_head[slot(i)],program.fn_def(LocalDefId(i as u32)).span);
++        }
+         diags.extend(results[k].1.iter().cloned());
+     }
+     // rustc stops before monomorphization once a pre-mono check fails, so an
+@@ -4370,6 +4755,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          diags.push(Diag::new("L0130", diag::Span::default(), "no `main` function", "Add `fn main() { ... }`."));
      }
      t.lap(if mode == "full" { "check+borrowck (par)" } else { "check changed fns (par)" });
@@ -7698,7 +7824,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
      // A one-shot process (`leak_at_exit`) exits right after this call. Freeing the IR and
      // program arenas, mostly built on worker threads, costs about 10 ms on a 31k-line crate,
      // so leak them on every return below and let the OS reclaim the memory at exit. A
-@@ -4396,10 +4740,94 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4396,10 +4782,105 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
              }
          }
@@ -7786,6 +7912,17 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
 +                stderr: format!("lustr mixed preparation failed: {error}\n"), ..Default::default() },
 +        }
 +    } else { None };
++    let library_functions = if caches.library.is_some() {
++        match super::library::complete(&program, &map, &src, front, caches, verified) {
++            Ok(functions) => { super::library::remember(caches, functions.clone()); Some(functions) }
++            Err(error) => {
++                let code = match error { super::library::completion::Error::Unintegrated(_) => 4, _ => 3 };
++                drop(results); drop(reemit);
++                program.verified = verified; super::patch::keep(front, program);
++                return Response {code, stderr:format!("native library completion: {error:?}\n"), ..Default::default()};
++            }
++        }
++    } else { None };
      let mut resp = Response::default();
      if req.cmd == Cmd::Check {
 +        if prepared_mixed.is_some() {
@@ -7795,7 +7932,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
          // The answer, before the timing and stats lines, for a no-op
          // check of the same request to reuse.
          if let Some(fp) = check_fp {
-@@ -4446,10 +4874,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4446,10 +4927,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          return resp;
      }
  
@@ -7820,7 +7957,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
      // Each fn's base line: cgen stores its line numbers relative to it
      // and the main unit adds each slot's base back, so a reused body's
      // C stays right when its source text moves. An instance's base is
-@@ -4471,7 +4913,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4471,7 +4966,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let line_base_of = |_: &Front, i: usize| -> u32 { line_bases.get(i).copied().unwrap_or(0) };
      // Release C (driver/release_c.rs): content-addressed names, set as cgen's naming
      // context around every step that prints C.
@@ -7829,13 +7966,13 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
      let rn = rnames.as_ref();
      // A release C build to the release driver streams its cc step (`cc::Stream`): each unit the
      // assembly makes compiles from the time its text exists. Not with --emit-c nor LLVM units.
-@@ -4498,7 +4940,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4498,7 +4993,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let (outs, cg_noted): (Vec<_>, Vec<_>) = par_map(&bodies, |(i, b)| {
          check::derive_delta::scoped(program.record_reads, || {
              cgen::in_layout_phase(layout_tag, || {
 -                cgen::names::with(rn, || cgen::gen_fn(&program, b, &map, line_base_of(front, *i), &front.fn_slot))
 +                cgen::names::with(rn, || {
-+                    let total = mixed && super::mixed::total(b);
++                    let total = library_functions.is_some() || mixed && super::mixed::total(b);
 +                    let mut output = if total {
 +                        cgen::gen_fn_total(&program, b, &map, line_base_of(front, *i), &front.fn_slot)
 +                    } else {
@@ -7847,7 +7984,40 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
              })
          })
      })
-@@ -4681,6 +5132,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4519,7 +5023,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+     // Cached IR serves only the slot-moved re-emit, which runs only in a
+     // program with no generics: a generic program caches none (on tsgo it
+     // was 1.5 GB of a daemon session, made serially per generated body).
+-    let keep_ir = !program.gx.has_generics;
++    let keep_ir = !program.gx.has_generics && library_functions.is_none();
+     // The stable id of each fn whose slot the new C prints (`FnOut::used`),
+     // by slot: the pairs below are the next renumber's re-emit trigger.
+     let mut wanted = vec![false; if keep_ir { front.slot_of.len() } else { 0 }];
+@@ -4552,10 +5056,22 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+         caches.out[s] = out;
+         caches.has_out[s] = true;
+         dirty_slots.push(s);
+-        if let Some(slot_ir) = caches.slot_ir.get_mut(s) {
++        if caches.library.is_none() && let Some(slot_ir) = caches.slot_ir.get_mut(s) {
+             *slot_ir = cached;
+         }
+     }
++    // Consume the same generated slots before executable-only glue/table/link
++    // work. Each function object is independently retained; metadata belongs to
++    // the caller and cannot cause native functions to be recompiled as a unit.
++    if let Some(functions) = library_functions {
++        let generated: Vec<_> = bodies.iter().map(|(i, _)| *i).collect();
++        let response = super::library::finish(req, &program, front, caches, functions,
++            rn.expect("native libraries use stable names"), &generated);
++        drop(bodies);
++        program.verified = verified; super::patch::keep(front, program);
++        cgen::clear_extern_pool();
++        return response;
++    }
+     // LUST_CHECK_GENREUSE=1 (genreuse_oracle.rs): every concrete body a release C build keeps
+     // is checked, lowered and generated again without reuse (nothing stored), and its C must
+     // equal the kept C. Release C names are content-addressed; dev C names a vtable by a
+@@ -4681,6 +5197,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      }
      let glue_changed = shared_changed || regenerated || statics_changed;
      t.lap("codegen (par)");
@@ -7862,7 +8032,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
      // Nothing reads the IR after codegen. A one-shot build leaks it at exit
      // (`leak_at_exit`), but on a large program it is the largest block
      // alive at the peak (ts-rust's bins: about 2.4 GB of 9.4 GB, through
-@@ -4751,7 +5210,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4751,7 +5275,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // rebuilds and the base
      // relinks over the existing unit objects. Unrelated units keep
      // their objects, in the session and in the disk unit cache.
@@ -7872,7 +8042,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
      let cap_grown = n_slots > caches.table_cap;
      if fresh_base || cap_grown {
          caches.table_cap = n_slots * 2 + 64;
-@@ -5807,6 +6267,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5807,6 +6332,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // this check keeps that a pin, not a hope.
      if let Some(run_args) = &req.run_args
          && !caches.persistent
@@ -7880,7 +8050,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
          && fresh_base
          && groups.len() == 1
          && !req.debug
-@@ -5883,9 +6344,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5883,9 +6409,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      caches.objects = Some(req.debug);
      t.lap("tcc compile");
      let all_base: Vec<PathBuf> = [1, 2, 3, LOC_UNIT].into_iter().chain(link_fn_units.iter().copied()).map(base_obj).collect();
@@ -7900,7 +8070,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
          crate::tcc::link(&objs, &req.out, req.debug)
      } else {
          // The base library lives in a persistent dir under a content name
-@@ -5901,18 +6371,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5901,18 +6436,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
          let base = if rebuild_base {
              caches.base_gen += 1;
@@ -7941,7 +8111,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
                      install_base(&tmp, &base_dir.join(&soname))?;
                      if !caches.base_files.contains(&soname) {
                          caches.base_files.push_back(soname);
-@@ -5922,24 +6405,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5922,24 +6470,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              if built.is_err() {
                  let _ = std::fs::remove_file(&tmp);
              }
@@ -7973,7 +8143,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
              built
          } else {
              Ok(())
-@@ -5958,8 +6442,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5958,8 +6507,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // a small grace count while no known output file still references them. A binary the user
      // kept keeps its base; one that was overwritten or deleted does not. A running program
      // keeps its mapped copy after unlink.
@@ -7984,7 +8154,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
          if let Some(base_dir) = caches.base_dir.clone() {
              record_base_user(&base_dir, &soname, &req.out);
          }
-@@ -6058,6 +6542,66 @@ mod tests {
+@@ -6058,6 +6607,66 @@ mod tests {
          panic!("{}: still busy", bin.display())
      }
  
@@ -8051,7 +8221,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7af2b874df105348328e5696cf9a167b
      /// The base sweep never deletes a live owner's base (it may be a live
      /// session's current base, found by fuzz seed 7 multi when a guard
      /// session's first-build sweep deleted the warm session's base), but
-@@ -6421,6 +6965,542 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
+@@ -6421,6 +7030,542 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
          }
      }
  
@@ -8865,7 +9035,7 @@ index bab64be43909404e5ceb7b7fc52b70869ed0bf4b..d29476f42ba539f0a9f67484dd5c0641
                          _ => return None,
                      }
 diff --git a/src/driver/mod.rs b/src/driver/mod.rs
-index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..ee2a882e7dcf126c94d1706cfdf8e88cf2d22289 100644
+index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..a2b13ca48d13c618d7a996d005eaf3456a5562c0 100644
 --- a/src/driver/mod.rs
 +++ b/src/driver/mod.rs
 @@ -7,6 +7,7 @@ mod ir_cache;
@@ -8876,16 +9046,18 @@ index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..ee2a882e7dcf126c94d1706cfdf8e88c
  mod const_reach;
  pub(crate) mod kept_delta;
  mod kept_derive;
-@@ -22,6 +23,8 @@ mod patch;
+@@ -22,6 +23,10 @@ mod patch;
  pub(crate) mod sig_nodes;
  mod span_shift;
  mod session;
 +#[path = "../../../../crates/lustr-native-core/src/mixed_unit.rs"]
 +mod mixed;
++#[path = "../../../../crates/lustr-native-core/src/native_library.rs"]
++pub(crate) mod library;
  pub(crate) mod release_c;
  pub mod read_cover;
  
-@@ -34,7 +37,43 @@ pub(crate) use patch::drop_unkept;
+@@ -34,7 +39,43 @@ pub(crate) use patch::drop_unkept;
  /// patch oracle (`item_oracle.rs`) a daemon check request then compares
  /// its answer with a fresh session's.
  pub fn compile(req: &Request, session: &mut Session) -> Response {
@@ -8930,7 +9102,7 @@ index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..ee2a882e7dcf126c94d1706cfdf8e88c
      if item_oracle::on() {
          item_oracle::compare_response(req, session, &resp);
      }
-@@ -45,10 +84,79 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -45,10 +86,79 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
  /// background guard checks: their file can change while they run, so a
  /// second read of it may see other bytes.
  pub fn compile_background(req: &Request, session: &mut Session) -> Response {
@@ -9287,20 +9459,21 @@ index a42971cf10bbbdd13511f51c07aef68556044221..73be0cff151a36eec76fe6527b906e90
      /// parameter to `dyn` checks the template again on the kept program
      /// as collect does (before mono, so no concrete vtable is asked for).
 diff --git a/src/driver/session.rs b/src/driver/session.rs
-index 8eabf97640455036f5f7c895cd034b98f4c5b9d3..b1294a5bec3860337f0a789050637f727ab0ffc0 100644
+index 8eabf97640455036f5f7c895cd034b98f4c5b9d3..6cf45027e2d996c7b900314b686b1ed28b14b590 100644
 --- a/src/driver/session.rs
 +++ b/src/driver/session.rs
-@@ -274,6 +274,9 @@ pub(crate) struct Caches {
+@@ -274,6 +274,10 @@ pub(crate) struct Caches {
      pub(crate) ok: Vec<bool>,
      pub(crate) out: Vec<FnOut>,
      pub(crate) has_out: Vec<bool>,
 +    /// The one selected mixed body's checked IR boundary, retained separately
 +    /// from generated C so metadata-only checks can reuse it honestly.
 +    pub(super) mixed_checked: Option<super::mixed::CheckedTotal>,
++    pub(crate) library: Option<super::library::State>,
      /// The read set of the slot's last passing check (docs/ARCH.md
      /// section 8.2), stored with the result. On later edits the dirty
      /// walk (`Program::reads_dirty`) replays these reads against the
-@@ -395,8 +398,11 @@ pub(crate) struct Caches {
+@@ -395,8 +399,11 @@ pub(crate) struct Caches {
      pub(crate) obj_dir: PathBuf,
      /// Units compiled into `obj_dir` with the current layout, and with which debug setting.
      pub(crate) objects: Option<bool>,
@@ -9313,7 +9486,7 @@ index 8eabf97640455036f5f7c895cd034b98f4c5b9d3..b1294a5bec3860337f0a789050637f72
      /// The process exits right after this session's request (`lust check` and `lust test`
      /// one-shots set it): compile leaks the program and IR instead of freeing them. A
      /// non-persistent session inside a daemon (the patch oracle's fresh compile) frees them.
-@@ -420,6 +426,14 @@ pub(crate) struct Caches {
+@@ -420,6 +427,14 @@ pub(crate) struct Caches {
      pub(crate) overlays: std::collections::BTreeSet<usize>,
  }
  
@@ -9328,7 +9501,7 @@ index 8eabf97640455036f5f7c895cd034b98f4c5b9d3..b1294a5bec3860337f0a789050637f72
  pub struct Session {
      /// The one crate selection this session serves. A request whose key does
      /// not match is a routing bug; compile rejects it instead of mixing state.
-@@ -437,6 +451,9 @@ pub struct Session {
+@@ -437,6 +452,9 @@ pub struct Session {
      /// "not opened yet" from "cache is off".
      pub(crate) disk_cache: Option<crate::driver::cache::Cache>,
      pub(crate) cache_tried: bool,
@@ -9338,15 +9511,16 @@ index 8eabf97640455036f5f7c895cd034b98f4c5b9d3..b1294a5bec3860337f0a789050637f72
  }
  
  impl Front {
-@@ -529,6 +546,7 @@ impl Session {
+@@ -529,6 +547,8 @@ impl Session {
                  ok: Vec::new(),
                  out: Vec::new(),
                  has_out: Vec::new(),
 +                mixed_checked: None,
++                library: None,
                  slot_reads: Vec::new(),
                  read_keys: Default::default(),
                  unit_reads: Default::default(),
-@@ -562,6 +580,7 @@ impl Session {
+@@ -562,6 +582,7 @@ impl Session {
                  obj_dir,
                  objects: None,
                  persistent,
@@ -9354,7 +9528,7 @@ index 8eabf97640455036f5f7c895cd034b98f4c5b9d3..b1294a5bec3860337f0a789050637f72
                  leak_at_exit: false,
                  image_one_shot: false,
                  overlays: Default::default(),
-@@ -571,12 +590,26 @@ impl Session {
+@@ -571,12 +592,26 @@ impl Session {
              std_cache: None,
              disk_cache: None,
              cache_tried: false,
@@ -14236,7 +14410,7 @@ index fc01334135114510c734e64d61334ecbfc3ce108..247c3b8dcf032bdc1f57382d0112f4a6
  pub mod stdpaths;
  pub mod worklist;
 diff --git a/src/resolve/worklist.rs b/src/resolve/worklist.rs
-index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9b3665d8094b87274a418c97e38f0d0091dc448 100644
+index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9ffd3943cfe4f68ba70258f6f97b1451d130500 100644
 --- a/src/resolve/worklist.rs
 +++ b/src/resolve/worklist.rs
 @@ -353,7 +353,7 @@ fn starts_item(toks: &[lexer::Token], i: usize, union: Sym) -> bool {
@@ -14385,7 +14559,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9b3665d8094b87274a418c97e38f0d0
              Tok::Int(v, suffix, _) => {
                  h.write_u128(v);
                  std::mem::discriminant(&suffix).hash(&mut h);
-@@ -1784,6 +1784,47 @@ pub fn resolve_crate_with(
+@@ -1784,6 +1784,56 @@ pub fn resolve_crate_with(
      cache: &mut ResolveCache,
      with_platform: bool,
  ) -> Result<ResolvedCrate, ResolveError> {
@@ -14421,6 +14595,15 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9b3665d8094b87274a418c97e38f0d0
 +    resolve_crate_seeded(input, interner, known, &mut ResolveCache::new(true), false, None, Some(parse))
 +}
 +
++/// The retained native-library Session fixes its root parser before any cache
++/// entry exists. All subsequent updates retain this same source policy.
++pub(crate) fn resolve_native_library(
++    input: &CrateInput, interner: &Interner, known: &Known, cache: &mut ResolveCache,
++    parse: &RootParser<'_>,
++) -> Result<ResolvedCrate, ResolveError> {
++    resolve_crate_seeded(input, interner, known, cache, false, None, Some(parse))
++}
++
 +fn resolve_crate_seeded(
 +    input: &CrateInput,
 +    interner: &Interner,
@@ -14433,7 +14616,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9b3665d8094b87274a418c97e38f0d0
      cache.begin(input);
      let mut tables = ResolvedTables::new(interner.intern(&input.crate_name));
      tables.std_splice_lo = input.std_splice_lo;
-@@ -1859,6 +1900,9 @@ pub fn resolve_crate_with(
+@@ -1859,6 +1909,9 @@ pub fn resolve_crate_with(
              }
          }
      }
@@ -14443,7 +14626,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9b3665d8094b87274a418c97e38f0d0
      // After the extern preludes: the splice job's root module has the
      // selected crate's prelude already.
      let std_job = input.std_splice_lo.map(|lo| add_std_splice_job(input, lo, &mut jobs));
-@@ -1959,7 +2003,7 @@ pub fn resolve_crate_with(
+@@ -1959,7 +2012,7 @@ pub fn resolve_crate_with(
                  dep_exports.push((interner.get(jobs[d].magic).to_string(), sources.clone()));
              }
          }
@@ -14452,7 +14635,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9b3665d8094b87274a418c97e38f0d0
              Ok(out) => {
                  if let Some(exact_layout) = &jobs[j].adapter {
                      tables.adapters.push(super::imports::AdapterCrate {
-@@ -2479,7 +2523,7 @@ struct UseSite {
+@@ -2479,7 +2532,7 @@ struct UseSite {
  fn use_seg_sym(tok: crate::lexer::Tok, interner: &Interner) -> Option<Sym> {
      use crate::lexer::Tok;
      Some(match tok {
@@ -14461,7 +14644,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9b3665d8094b87274a418c97e38f0d0
          Tok::SelfLower => interner.intern("self"),
          Tok::Super => interner.intern("super"),
          Tok::Crate => interner.intern("crate"),
-@@ -2562,7 +2606,7 @@ fn parse_use_trees(
+@@ -2562,7 +2615,7 @@ fn parse_use_trees(
              }
              Some(Tok::As) => {
                  match tok(i + 1) {
@@ -14470,7 +14653,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9b3665d8094b87274a418c97e38f0d0
                      Some(Tok::Underscore) => underscore = true,
                      _ => return,
                  }
-@@ -2663,7 +2707,7 @@ fn restricted_vis(inner: &[crate::lexer::TokenTree], module: &[Sym]) -> Option<V
+@@ -2663,7 +2716,7 @@ fn restricted_vis(inner: &[crate::lexer::TokenTree], module: &[Sym]) -> Option<V
              Tok::Super => {
                  out.pop();
              }
@@ -14479,7 +14662,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9b3665d8094b87274a418c97e38f0d0
              _ => return Some(module.to_vec()),
          }
      }
-@@ -2687,7 +2731,7 @@ fn rewrite_dollar_crate(tokens: &[crate::lexer::Token], magic: Sym) -> Vec<crate
+@@ -2687,7 +2740,7 @@ fn rewrite_dollar_crate(tokens: &[crate::lexer::Token], magic: Sym) -> Vec<crate
                      TokenTree::Token(t) => t.span,
                      _ => unreachable!(),
                  };
@@ -14488,7 +14671,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9b3665d8094b87274a418c97e38f0d0
                  i += 2;
                  continue;
              }
-@@ -2740,10 +2784,10 @@ fn rewrite_dollar_crate(tokens: &[crate::lexer::Token], magic: Sym) -> Vec<crate
+@@ -2740,10 +2793,10 @@ fn rewrite_dollar_crate(tokens: &[crate::lexer::Token], magic: Sym) -> Vec<crate
  fn rename_macro_token(tokens: &mut [crate::lexer::Token], alias: Sym) {
      use crate::lexer::Tok;
      if let Some(t) = tokens.get_mut(2)
@@ -14501,7 +14684,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9b3665d8094b87274a418c97e38f0d0
      }
  }
  
-@@ -2900,7 +2944,7 @@ impl MacroEnv {
+@@ -2900,7 +2953,7 @@ impl MacroEnv {
                  collect(&disc.outline, orig, &mut owned);
              }
              if let Some(Some(exp)) = expanded.get(di)
@@ -14510,7 +14693,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9b3665d8094b87274a418c97e38f0d0
              {
                  // Only `outline.macros` feeds this collect, and a
                  // macro definition needs a `macro_rules`
-@@ -3488,6 +3532,7 @@ fn resolve_one(
+@@ -3488,6 +3541,7 @@ fn resolve_one(
      client: &crate::expand::ClientView,
      interner: &Interner,
      known: &Known,
@@ -14518,7 +14701,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9b3665d8094b87274a418c97e38f0d0
  ) -> Result<CrateOut, OneError> {
      let input = &job.input;
      let mut timings: Vec<(&'static str, f64)> = Vec::new();
-@@ -3691,7 +3736,7 @@ fn resolve_one(
+@@ -3691,7 +3745,7 @@ fn resolve_one(
          let macro_rules = interner.intern("macro_rules");
          let outlines = par_map(&indices, |&di| {
              let exp = expanded[di].as_ref()?;
@@ -14527,7 +14710,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9b3665d8094b87274a418c97e38f0d0
                  true => scan::outline(exp, interner),
                  false => scan::Outline::default(),
              })
-@@ -3792,7 +3837,9 @@ fn resolve_one(
+@@ -3792,7 +3846,9 @@ fn resolve_one(
          // its missing `;` ends at the cut), and the answer must be the
          // one-piece answer.
          let segments = if keep { vec![0..lexed.tokens.len()] } else { item_segments(&lexed.tokens, interner) };
@@ -14538,7 +14721,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9b3665d8094b87274a418c97e38f0d0
              vec![parser::parse(&lexed, interner, known)?]
          } else {
              // Later segments start under the file's inner allows, as
-@@ -4428,7 +4475,7 @@ fn extern_macro_use_events(lexed: &lexer::Lexed, interner: &Interner) -> Vec<(u3
+@@ -4428,7 +4484,7 @@ fn extern_macro_use_events(lexed: &lexer::Lexed, interner: &Interner) -> Vec<(u3
                      j += 1;
                  }
                  if toks.get(j).map(|t| t.tok) == Some(Tok::LBracket) {
@@ -14547,7 +14730,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9b3665d8094b87274a418c97e38f0d0
                          && interner.get(s) == "macro_use"
                      {
                          pending = true;
-@@ -4455,7 +4502,7 @@ fn extern_macro_use_events(lexed: &lexer::Lexed, interner: &Interner) -> Vec<(u3
+@@ -4455,7 +4511,7 @@ fn extern_macro_use_events(lexed: &lexer::Lexed, interner: &Interner) -> Vec<(u3
              Tok::Extern if depth == 0 => {
                  if pending
                      && toks.get(i + 1).map(|t| t.tok) == Some(Tok::Crate)
@@ -14556,7 +14739,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9b3665d8094b87274a418c97e38f0d0
                  {
                      out.push((toks[i].span.lo, interner.get(name).to_string()));
                  }
-@@ -8802,7 +8849,7 @@ mod tests {
+@@ -8802,7 +8858,7 @@ mod tests {
          let interner = Interner::default();
          let src = "fn a() { \"x\"; 1.5; }\nmacro_rules! m { () => { (\"y\", 2.5, 'c') } }\nfn b() { \"z\"; }";
          let lexed = lexer::lex(src, FileId(0), 0, &interner).unwrap();
@@ -14565,7 +14748,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9b3665d8094b87274a418c97e38f0d0
          let (lo, hi) = macro_tok_range(&lexed.tokens, at);
          let (toks, strings) = own_def_strings(&lexed.tokens[lo..hi], &lexed.strings);
          assert!(strings.len() < lexed.strings.len(), "{strings:?} vs {:?}", lexed.strings);
-@@ -9382,6 +9429,8 @@ mod tests {
+@@ -9382,6 +9438,8 @@ mod tests {
              build_check_cfgs: Vec::new(),
              features: Vec::new(),
              deps: Vec::new(),

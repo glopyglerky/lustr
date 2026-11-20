@@ -14,6 +14,7 @@ INPUTS = [
     "compiler/native", "crates/lustr-native-core", "crates/lustr-metadata-encoder",
     "crates/lustr-metadata-sdk", "crates/lustr-native-metadata-qualification",
     "tools/test-native-consumer-metadata.py", "tools/test-native-metadata-trace.py",
+    "tools/test-retained-native-metadata.py", "tools/test-retained-metadata-controls.py",
     "tools/native-metadata-source-manifest.py", "tools/build-tinycc-pic.rs",
     "tools/check-exclusive-coverage.py", "tools/build-metadata-sdk-receipt.py",
     "upstream/bluefe-core.pin", ".github/workflows/compiler-set.yml",

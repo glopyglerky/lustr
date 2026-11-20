@@ -486,10 +486,16 @@ fn semantic_fingerprint(input: &Input<'_>, sdk: &Sdk) -> [u8; 16] {
         fn from(SipHasher128Hash(parts): Self::Hash) -> Self { Self(parts) }
     }
     let mut digest = StableSipHasher128::new();
-    for part in [b"lustr-completed-scalar-metadata-v1".as_slice(), input.source.as_bytes(),
+    for part in [b"lustr-completed-scalar-metadata-v2".as_slice(), input.source.as_bytes(),
         input.crate_name.as_bytes(), input.metadata.as_bytes(), crate::TARGET.as_bytes(),
-        sdk.receipt_hash.as_slice(), input.object_sha256.as_slice()] {
+        sdk.receipt_hash.as_slice()] {
         digest.write_u64(part.len() as u64); digest.write(part);
+    }
+    digest.write_u64(input.objects.len() as u64);
+    for object in input.objects {
+        digest.write_u64(object.member.len() as u64); digest.write(object.member.as_bytes());
+        digest.write(&object.producer_object_sha256); digest.write_u64(object.definitions.len() as u64);
+        for definition in &object.definitions { digest.write_u64(definition.krate); digest.write_u64(definition.path); }
     }
     digest.write(&[input.profile.overflow_checks as u8, input.profile.debug_assertions as u8]);
     let Fingerprint([a, b]) = digest.finish::<Fingerprint>();

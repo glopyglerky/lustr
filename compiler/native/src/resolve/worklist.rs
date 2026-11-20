@@ -1816,6 +1816,15 @@ pub fn resolve_crate_with_root_parser(
     resolve_crate_seeded(input, interner, known, &mut ResolveCache::new(true), false, None, Some(parse))
 }
 
+/// The retained native-library Session fixes its root parser before any cache
+/// entry exists. All subsequent updates retain this same source policy.
+pub(crate) fn resolve_native_library(
+    input: &CrateInput, interner: &Interner, known: &Known, cache: &mut ResolveCache,
+    parse: &RootParser<'_>,
+) -> Result<ResolvedCrate, ResolveError> {
+    resolve_crate_seeded(input, interner, known, cache, false, None, Some(parse))
+}
+
 fn resolve_crate_seeded(
     input: &CrateInput,
     interner: &Interner,

@@ -28,6 +28,9 @@
     "Cargo.lock": "09697cd80e7e931f04618b99b8e4a801fbfc4644cec4056c5edf036254de80d2",
     "build.rs": "cc4b2c326c5ade8942c432c5b8fcdad38f74ff7a960cb76a46ca6dc7fdc0b7f3",
     "src/archive.rs": "4906cce455716560344bdb329c3bcbc563da21e8c615c357583c038a90e11dfa",
-    "src/main.rs": "7e6ccbebc71fd497f161e4422d6eeeab823f123fca314ef6f87a55bcd5218b24"
-  }
+    "src/main.rs": "a2ddcb86f37c11aa4e92ffc12a47a626d4b019a0b7f31dc92cb2e9b7bba41948",
+    "src/retained.rs": "44aa3dd4ed3e402882a215944975c2c6dfaa0c7127fa4b6e15cb2e40321e1a11"
+  },
+  "retained_native_caller_authored": true,
+  "retained_native_qualification": "pending exact-source hosted compilation and campaign; no public compiler or performance admission"
 }

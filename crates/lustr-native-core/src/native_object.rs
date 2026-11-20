@@ -63,44 +63,7 @@ pub(crate) fn core_type(tys: &impl TyIntern, t: ty::Ty, depth: usize) -> bool {
 
 enum Completion { Durable(String), PublishedUncertain(String) }
 
-/// One complete body accepted by the native checker, lowerer and borrow checker.
-/// These records are created only while consuming that body's actual IR. They
-/// are an inventory of native work, not a claim that Rust metadata obligations
-/// (including declaration lints) have been completed.
-pub(crate) struct AcceptedBody {
-    local: def::LocalDefId,
-    definition: def::DiskDefId,
-    body: ast::BlockId,
-    expr_base: u32,
-    expressions: Vec<ExpressionResolution>,
-    lowered_calls: Option<BTreeSet<def::DiskDefId>>,
-    generated_uses: Option<BTreeSet<def::DiskDefId>>,
-}
-
-/// Arena-independent facts observed in the native body's actual checked table.
-/// `Other` does not grant a metadata completion proof for the expression.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum ExpressionResolution {
-    None,
-    Parameter(usize),
-    Function(def::DiskDefId),
-    PrimitiveOperands,
-    Other,
-}
-
-impl AcceptedBody {
-    pub(crate) fn local(&self) -> def::LocalDefId { self.local }
-    pub(crate) fn definition(&self) -> def::DiskDefId { self.definition }
-    pub(crate) fn body(&self) -> ast::BlockId { self.body }
-    pub(crate) fn expression(&self, id: ast::ExprId) -> Option<ExpressionResolution> {
-        self.expressions.get(id.0.checked_sub(self.expr_base)? as usize).copied()
-    }
-    pub(crate) fn lowered_calls(&self) -> Option<&BTreeSet<def::DiskDefId>> { self.lowered_calls.as_ref() }
-    /// Actual source-function slots printed by the generator, including this
-    /// function's own definition. Backend helper symbols are recorded on the
-    /// emitted object separately.
-    pub(crate) fn generated_uses(&self) -> Option<&BTreeSet<def::DiskDefId>> { self.generated_uses.as_ref() }
-}
+pub(crate) use crate::driver::library::completion::{AcceptedBody, ExpressionResolution};
 
 /// Owns the original source, declaration tables and generated native bodies.
 /// There is no public constructor, Clone, or mutable view. A metadata adapter
@@ -306,7 +269,7 @@ fn prepare_request(r: Request, artifact: bool, capture: bool) -> Result<Prepared
             let generated_uses = generated.used.iter().map(|&slot| {
                 ((slot as usize) < p.fns.len()).then(|| p.disk_id(def::LocalDefId(slot)))
             }).collect();
-            accepted.push(AcceptedBody { local: body.fn_id, definition: p.disk_id(body.fn_id), body: f.def(&p.ast).body.unwrap(), expr_base, expressions, lowered_calls, generated_uses });
+            accepted.push(AcceptedBody { local: body.fn_id, definition: p.disk_id(body.fn_id), body: f.def(&p.ast).body.unwrap(), expr_base, expressions: std::sync::Arc::new(expressions), lowered_calls, generated_uses });
         }
         out.push(generated);
     }

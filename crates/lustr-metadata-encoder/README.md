@@ -137,3 +137,16 @@ their source records, core dependency cut, original byte/hash controls and SDK
 receipt refusals. The separate joined campaign qualifies only its declared
 scalar-library scope when it actually passes on the exact source. Neither
 campaign establishes a full Rust compiler, retained integration or a release.
+
+
+## Retained caller source
+
+A new retained candidate in the separate qualifier consumes the actual native
+Session/PreparedRequest path and original per-function TinyCC objects. The
+encoder now binds a canonical producer-object inventory instead of assuming
+one object. Each entry records its planned archive member, original producer
+object digest and exact source definitions. The host verifies symbol renaming
+and separately records final member bytes, avoiding a metadata/symbol/hash
+cycle. No upstream source, dependency or pin was broadened by this interface
+change. The [retained caller description](../lustr-native-metadata-qualification/README.md#retained-native-candidate)
+records its implementation and pending exact-source hosted qualification.

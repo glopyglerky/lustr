@@ -121,10 +121,12 @@
       "production_admitted": false,
       "native_caller_committed": true,
       "required_for": "intended serialization of genuine native completed definitions and actual emitted instances without whole-consumer Rust analysis",
-      "blocking_reason": "The separate bounded native metadata research caller is present; its exact-source qualification is separate from production retained integration, wider declarations/artifacts and measured compiler speed, which remain unfinished.",
+      "blocking_reason": "The actual retained native/TinyCC caller is authored but unqualified; public entry, wider Rust obligations and compiler speed remain unfinished. Earlier passing evidence stays scoped to its original one-shot source.",
       "native_caller_path": "crates/lustr-native-metadata-qualification",
       "public_retained_integration": false,
-      "qualification_record": "docs/compiler-set/evidence/native-metadata-join-20261120/README.md"
+      "qualification_record": "docs/compiler-set/evidence/native-metadata-join-20261120/README.md",
+      "retained_native_caller_authored": true,
+      "retained_native_qualification": "pending exact-source hosted compilation and campaign"
     },
     {
       "path": "crates/lustr-metadata-sdk",
@@ -134,21 +136,25 @@
       "production_admitted": false,
       "native_caller_committed": true,
       "required_for": "immutable ordered core/compiler_builtins context intended to be loaded once outside repeated consumer compilation",
-      "blocking_reason": "The separate bounded native metadata research caller is present; its exact-source qualification is separate from production retained integration, wider declarations/artifacts and measured compiler speed, which remain unfinished.",
+      "blocking_reason": "The actual retained native/TinyCC caller is authored but unqualified; public entry, wider Rust obligations and compiler speed remain unfinished. Earlier passing evidence stays scoped to its original one-shot source.",
       "native_caller_path": "crates/lustr-native-metadata-qualification",
       "public_retained_integration": false,
-      "qualification_record": "docs/compiler-set/evidence/native-metadata-join-20261120/README.md"
+      "qualification_record": "docs/compiler-set/evidence/native-metadata-join-20261120/README.md",
+      "retained_native_caller_authored": true,
+      "retained_native_qualification": "pending exact-source hosted compilation and campaign"
     },
     {
       "path": "crates/lustr-native-metadata-qualification",
-      "scope": "separate one-shot native completed-record/object to original metadata/archive qualification; no public retained compiler integration",
+      "scope": "Separate original one-shot qualifier and actual retained native Session/TinyCC to selective metadata/archive candidate; no public compiler route",
       "dependency": "existing native qualifier sources, selective metadata encoder/SDK loader, object writer and pinned LLVM object/archive utilities; no rustc_private dependency or compiler invocation",
       "source_inventory": "crates/lustr-native-metadata-qualification/source-slices.json",
       "production_admitted": false,
       "public_retained_integration": false,
       "required_for": "actual ordinary Rust-consumer acceptance, runtime results, privacy/signature refusal and independent exec trace for the bounded native metadata join",
-      "blocking_reason": "Finite flat scalar-library qualification cannot establish wider Rust metadata, public retained compilation or full replacement performance.",
-      "qualification_record": "docs/compiler-set/evidence/native-metadata-join-20261120/README.md"
+      "blocking_reason": "The actual retained native/TinyCC caller is authored but unqualified; public entry, wider Rust obligations and compiler speed remain unfinished. Earlier passing evidence stays scoped to its original one-shot source.",
+      "qualification_record": "docs/compiler-set/evidence/native-metadata-join-20261120/README.md",
+      "retained_native_caller_authored": true,
+      "retained_native_qualification": "pending exact-source hosted compilation and campaign"
     }
   ],
   "not_imported": [

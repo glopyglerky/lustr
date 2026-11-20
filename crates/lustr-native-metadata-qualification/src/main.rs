@@ -3,6 +3,7 @@
 #![allow(dead_code, unused_imports, unexpected_cfgs)]
 include!("../../lustr-native-core/src/lib.rs");
 mod archive;
+mod retained;
 
 #[link(name = "tcc", kind = "static")]
 unsafe extern "C" {}
@@ -190,6 +191,15 @@ fn encoding_controls(input: &metadata::Input<'_>, sdk: &metadata::Sdk) -> Result
     let mut functions = input.functions.to_vec();
     functions[index].calls[0] = foreign;
     reject("foreign-call-edge", metadata::encode(&metadata::Input { functions: &functions, ..*input }, sdk))?;
+    reject("empty-producer-objects", metadata::encode(&metadata::Input {objects:&[], ..*input},sdk))?;
+    let mut objects=input.objects.to_vec(); objects[0].definitions.pop();
+    reject("missing-producer-definition", metadata::encode(&metadata::Input {objects:&objects, ..*input},sdk))?;
+    let mut objects=input.objects.to_vec(); let duplicate=objects[0].definitions[0]; objects[0].definitions.push(duplicate);
+    reject("duplicate-producer-definition", metadata::encode(&metadata::Input {objects:&objects, ..*input},sdk))?;
+    let mut objects=input.objects.to_vec(); objects[0].definitions[0]=foreign;
+    reject("foreign-producer-definition", metadata::encode(&metadata::Input {objects:&objects, ..*input},sdk))?;
+    let mut objects=input.objects.to_vec(); objects[0].member="../consumer.o".into();
+    reject("malformed-producer-member", metadata::encode(&metadata::Input {objects:&objects, ..*input},sdk))?;
     for (name, members) in [
         ("empty-rlib-link-members", &[][..]),
         ("duplicate-rlib-link-member", &["consumer.o", "consumer.o"][..]),
@@ -280,6 +290,8 @@ fn compile(source: &Path, root: &Path, receipt: &Path, sysroot: &Path, report: &
     let original = native.object();
     put(&stage.join("native.o"), original)?;
     report["phase"] = json!("source-owned-encode");
+    let mut definitions: Vec<_> = instances.iter().map(|f|f.definition).collect(); definitions.sort();
+    let objects = [metadata::ObjectMember { member:"consumer.o".into(), producer_object_sha256:Sha256::digest(original).into(), definitions }];
     let input = metadata::Input {
             crate_name: prepared.crate_name(),
             metadata: prepared.metadata(),
@@ -295,7 +307,7 @@ fn compile(source: &Path, root: &Path, receipt: &Path, sysroot: &Path, report: &
             functions: &functions,
             emitted: &instances,
             backend_helpers: &helpers,
-            object_sha256: Sha256::digest(original).into(),
+            objects: &objects,
         };
     report["encoding_controls"] = json!(encoding_controls(&input, &sdk)?);
     let encoded = metadata::encode(&input, &sdk)?;
@@ -392,6 +404,10 @@ fn compile(source: &Path, root: &Path, receipt: &Path, sysroot: &Path, report: &
 fn main() {
     raise_stack_limit();
     let arguments: Vec<_> = std::env::args_os().skip(1).collect();
+    if arguments.first().is_some_and(|argument|argument=="--retained") {
+        if let Err(error)=retained::run(&arguments[1..]) {eprintln!("{error}");std::process::exit(3);}
+        return;
+    }
     if arguments.len() != 4 {
         eprintln!("SOURCE EXISTING_OUTPUT_DIRECTORY EXACT_SDK_RECEIPT PINNED_SDK");
         std::process::exit(2);

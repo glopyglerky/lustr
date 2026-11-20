@@ -742,12 +742,14 @@
     "native_caller_committed": true,
     "native_caller_path": "crates/lustr-native-metadata-qualification",
     "public_retained_integration": false,
-    "qualification": "The fixed native scalar-library campaign passed on source 974eb097ea9fc84a18c716fe0c2d469fdfcfab6c, tree 948074da4b3b23ed25fa789b17a924555f24e4ca, with 31 named controls, 262152 runtime assertions and 8 actual candidate traces. Original failures and exact evidence are retained in docs/compiler-set/evidence/native-metadata-join-20261120. No public compiler, retained-session, general metadata, full Rust or speed qualification follows."
+    "qualification": "The fixed native scalar-library campaign passed on source 974eb097ea9fc84a18c716fe0c2d469fdfcfab6c, tree 948074da4b3b23ed25fa789b17a924555f24e4ca, with 31 named controls, 262152 runtime assertions and 8 actual candidate traces. Original failures and exact evidence are retained in docs/compiler-set/evidence/native-metadata-join-20261120. No public compiler, retained-session, general metadata, full Rust or speed qualification follows.",
+    "retained_native_caller_authored": true,
+    "retained_native_qualification": "pending exact-source hosted compilation and campaign; public integration remains false"
   },
   "adapted_sources_sha256": {
-    "src/encode.rs": "96c41345a408c04f89a9c54a06152141eb17b6b5a7172287e95ab77c63d0d779",
+    "src/encode.rs": "380f57a3605a2be20c54f65e304e4eb064b6b4cdb031dacb0a9e2441d57e9d1c",
     "src/identity.rs": "995799a9938d78fd5c800a1d28af4039f4e5868cea71536d0f70b2fc3643724d",
-    "src/lib.rs": "d2b78a17eb7a359db73e24110fe341fe5a466f456cc9d6a97675e47579b587fe",
+    "src/lib.rs": "b5088c5c9f7572a8428989bbab393565a110e3119914b131daf59bd23e1479e1",
     "src/sdk.rs": "a088d99b04d3046c52830699b15c960e849d84d1a101c52df68b1aaeb64898b6",
     "src/table.rs": "5ad2fa46decc550bfd5f7d23cc051c7087d4ef1f5b361b154630c122097c92bb",
     "src/upstream/codec.rs": "916922c930d3dc46c7003d65d920b6c84efa780ac5b0c06eec1586ead0216a7a",

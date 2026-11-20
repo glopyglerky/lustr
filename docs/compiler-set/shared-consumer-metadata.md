@@ -70,3 +70,21 @@ run a separately compiled matching-Rust caller. Retain traps proving no consumer
 Rust body checking or MIR generation, plus invalid native source, uncovered
 definition/body, symbol ownership, output failure, artifact preservation and
 recovery controls. This experiment does not complete checklist steps 2 or 3.
+
+
+## Retained native candidate, 20 November 2026
+
+The separate [native metadata qualifier](../../crates/lustr-native-metadata-qualification/README.md#retained-native-candidate)
+now has an authored retained mode using the real native Session, unchanged
+source, existing semantic read validation and original per-function TinyCC
+emission. Common completed facts feed the selective serializer without a second
+consumer frontend. SDK facts, native and renamed objects, metadata and archive
+bytes are retained at their appropriate generations. Prepared IR survives Check
+and dropped continuations, and failed emission/publication cannot authorize old
+machine code as the new source's result.
+
+This is a pending source checkpoint, not a passing test or product admission.
+The earlier source-bound Clang campaign remains unchanged. Exact new-source
+hosted compilation, independent Rust-consumer results, narrow retained histories
+and original traces are required. Public Cargo/library routing, general metadata
+obligations, complete Rust coverage and speed qualification remain unfinished.

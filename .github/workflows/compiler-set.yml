@@ -231,6 +231,18 @@ jobs:
           python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["passed"] is True and r["functional_passed"] is True and r["exec_trace_qualified"] is True and r["checked_runtime_results"] == 262152 and not r["full_compiler_qualification"] and not r["retained_public_integration"]' "$records/campaign/report.json"
           python3 tools/native-metadata-source-manifest.py verify "$records/source-inputs.json" 2>&1 | tee "$records/source-verify.log"
           sha256sum --check "$records/built-tools.sha256"
+      - name: Require retained native edits, narrow objects and independent Rust consumers
+        run: |
+          set -euo pipefail
+          records="$RUNNER_TEMP/native-metadata-join"
+          python3 tools/test-retained-metadata-controls.py -v 2>&1 | tee "$records/retained-evaluator-controls.log"
+          python3 tools/test-retained-native-metadata.py \
+            --candidate "$RUNNER_TEMP/native-metadata-target/debug/lustr-native-metadata-qualification" \
+            --sdk "$(rustc --print sysroot)" \
+            --output "$records/retained-campaign" 2>&1 | tee "$records/retained-campaign.log"
+          python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["passed"] is True and r["functional_passed"] is True and r["exec_trace_qualified"] is True and r["socket_transport_qualified"] is True and len(r["observed_history"]) == 29 and len(r["sessions"]) == 3 and len(r["setup_refusals"]) == 2 and len(r["original_consumers"]) == 25 and r["checked_runtime_results"] == 6815952 and not r["full_compiler_qualification"] and not r["retained_public_integration"] and not r["performance_qualified"]' "$records/retained-campaign/report.json"
+          python3 tools/native-metadata-source-manifest.py verify "$records/source-inputs.json" 2>&1 | tee "$records/retained-source-verify.log"
+          sha256sum --check "$records/built-tools.sha256"
       - name: Retain exact joined evidence and every failed attempt
         if: ${{ always() }}
         uses: actions/upload-artifact@v4

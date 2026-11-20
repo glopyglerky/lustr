@@ -25,6 +25,8 @@ mod span_shift;
 mod session;
 #[path = "../../../../crates/lustr-native-core/src/mixed_unit.rs"]
 mod mixed;
+#[path = "../../../../crates/lustr-native-core/src/native_library.rs"]
+pub(crate) mod library;
 pub(crate) mod release_c;
 pub mod read_cover;
 

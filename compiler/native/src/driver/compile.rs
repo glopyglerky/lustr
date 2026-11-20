@@ -2263,7 +2263,7 @@ fn resolved_setup(
     // PatchBase below asks `macro_scope::dep_macros_shut`).
     let patch_expand = (env.clone(), crate_name.clone());
     let has_deps = !externs.is_empty();
-    let reuse_check = reusable.is_some() && !super::resolve_oracle::on();
+    let reuse_check = reusable.is_some() && caches.library.is_none() && !super::resolve_oracle::on();
     let patched = if ast_bloated(front) {
         Err("ast compaction")
     } else {
@@ -2273,7 +2273,10 @@ fn resolved_setup(
         Ok(super::patch::PatchOutcome::ReuseCheck { fn_count }) => {
             return Err(reused_check_response(req, front, t, fn_count, reusable.unwrap()));
         }
-        Ok(super::patch::PatchOutcome::Materialized(p)) => Ok(p),
+        Ok(super::patch::PatchOutcome::Materialized(p)) => {
+            if p.files != 0 && let Some(library) = &mut caches.library { library.changed(); }
+            Ok(p)
+        },
         Err(why) => Err(why),
     };
     if super::resolve_oracle::on()
@@ -2286,7 +2289,7 @@ fn resolved_setup(
     match patched {
         // Nothing changed since the last check of this same request:
         // its answer stands (`check_fingerprint`).
-        Ok(p) if p.files == 0 && reusable.is_some() => {
+        Ok(p) if p.files == 0 && reusable.is_some() && caches.library.is_none() => {
             return Err(reused_check_response(req, front, t, p.fn_count, reusable.unwrap()));
         }
         // An item patch (sigedit P1.3): the new item scans take the
@@ -2428,7 +2431,9 @@ fn resolved_setup(
         // The cache's final chunks are parts of the session's merged Ast: the resolve takes
         // its hits out of it, and lets go of it before any patch writes it.
         front.resolve_cache.set_merged(front.ast.clone(), front.ast_gen);
-        let out = if let Some(imports) = imports {
+        let out = if caches.library.is_some() {
+            worklist::resolve_native_library(&input, &front.interner, &front.known, &mut front.resolve_cache, &super::library::parse_root)
+        } else if let Some(imports) = imports {
             let mut mount = |tables: &mut crate::resolve::imports::ResolvedTables| imports.mount(tables, &front.interner);
             worklist::resolve_crate_with_imports(&input, &front.interner, &front.known, plan.platform, &mut mount)
         } else {
@@ -2491,6 +2496,7 @@ fn resolved_setup(
     let old_kept = std::mem::take(&mut front.kept);
     let old_ast = std::mem::replace(&mut front.ast, Arc::new(ast));
     front.ast_gen = generation;
+    if let Some(library) = &mut caches.library { library.changed(); }
     front.fresh_exprs = front.ast.exprs.len();
     if (old_ast.exprs.len() > 20_000 || old_kept.iter().any(Option::is_some)) && caches.persistent {
         // Nested token trees in the Ast drop recursively; use the
@@ -2889,9 +2895,12 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
             ..Default::default()
         });
     }
+    if session.caches.library.is_some() && (req.cc || req.debug || req.emit_c.is_some() || req.harness || req.run_args.is_some()) {
+        return Preparation::Failed(Response {code:3, stderr:"native library output context changed\n".into(), ..Default::default()});
+    }
     // A lib target has no `main` to link and lust has no rlib format: `check --lib` works,
     // `build`/`run --lib` is a clear error (Cargo release builds still build libs).
-    if req.session.krate.target_kind == "lib" && !req.harness && !matches!(req.cmd, crate::protocol::Cmd::Check) {
+    if req.session.krate.target_kind == "lib" && session.caches.library.is_none() && !req.harness && !matches!(req.cmd, crate::protocol::Cmd::Check) {
         return Preparation::finished(Response {
             stderr: "error: lust builds bin targets only: use `lust check --lib` for a lib target\n".into(),
             code: 1,
@@ -2932,6 +2941,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
     // The crate identity for stable defs comes from the session's key (its
     // package and target identity, `Session::crate_ids`). For a single-file
     // program that is the synthetic one-file bin crate, as before.
+    if let Some(library) = &mut session.caches.library { library.begin(&src); }
     let crate_ids = session.crate_ids();
     // Open the disk cache once per session and seed slot assignment from
     // the stored manifest, so a restarted daemon gives every fn the slot
@@ -2994,7 +3004,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
     } else {
         crate::resolve::worklist::route_root_std(&src, &front.interner, true)
     };
-    let wants_resolver = imports.is_some() || wants_resolver || std_mods != 0;
+    let wants_resolver = caches.library.is_some() || imports.is_some() || wants_resolver || std_mods != 0;
     let route_std_mods = req.session.krate.manifest_path.is_none().then_some(std_mods);
     if front.resolved_crate && !wants_resolver {
         front.ast = Arc::default();
@@ -4374,7 +4384,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
                 continue;
             }
             let s = slot(i);
-            if !caches.has_out[s] {
+            if !caches.has_out[s] && caches.library.is_none() {
                 continue;
             }
             let Some(Some(cached)) = caches.slot_ir.get(s) else {
@@ -4388,12 +4398,15 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
             };
             let moved = cached.slot_at_gen != s as u32
                 || cached.used_at_gen.iter().any(|(disk, at_gen)| front.slot_of.get(disk) != Some(at_gen));
-            if !moved {
+            if !moved && (caches.library.is_none() || caches.has_out[s]) {
                 continue;
             }
             let file = program.fn_def(LocalDefId(i as u32)).name_span.file;
-            let fh = *file_hashes.entry(file).or_insert_with(|| file_text_hash(&map, file));
-            let rebuilt = if fh == cached.file_hash {
+            let library_ir = caches.library.is_some() && !caches.has_out[s];
+            let fh = if library_ir {0} else {*file_hashes.entry(file).or_insert_with(|| file_text_hash(&map, file))};
+            let rebuilt = if library_ir {
+                super::library::rebuild(&program,LocalDefId(i as u32),front,caches,&map,scan_of(front,i).1)
+            } else if fh == cached.file_hash {
                 super::ir_cache::rebuild(&program, cached, LocalDefId(i as u32))
             } else {
                 None
@@ -4401,6 +4414,10 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
             match rebuilt {
                 Some(body) if super::ir_cache::ir_fingerprint(&program, &body, &map, scan_of(front, i).1) == cached.ir_fp => {
                     reemit.push((i, body))
+                }
+                _ if caches.library.is_some() && !caches.has_out[s] => {
+                    return Preparation::Failed(Response {code:3,
+                        stderr:"native retained library IR could not be rebound to its current checked generation\n".into(),..Default::default()});
                 }
                 _ => reemit_failed.push(i),
             }
@@ -4416,9 +4433,11 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
     // does: its slot cache holds C of the other form (a front image saved by a tcc build,
     // then a release driver build). A check makes no C and keeps the key.
     let mixed = req.session.krate.target_kind == "lustr-mixed-native";
-    let release = mixed || super::release_c::on(caches.persistent, req.cc);
+    let library = caches.library.is_some();
+    let release = library || mixed || super::release_c::on(caches.persistent, req.cc);
     if req.cmd == Cmd::Build {
-        let key = super::release_c::codegen_key(release, req.debug, program.unwind_tables);
+        let key = super::release_c::codegen_key(release, req.debug, program.unwind_tables)
+            ^ if library { 0x6c69_622d_746f_7461 } else { 0 };
         if caches.codegen_key != key {
             caches.codegen_key = key;
             caches.has_out.iter_mut().for_each(|h| *h = false);
@@ -4431,7 +4450,12 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
     let mut work = changed.clone();
     work.extend(reemit_failed.iter().copied());
     if req.cmd == Cmd::Build {
-        work.extend((0..program.fns.len()).filter(|&i| !caches.has_out[slot(i)] && !in_changed[i]));
+        if library {
+            let rebuilt: std::collections::BTreeSet<_> = reemit.iter().map(|(i,_)|*i).collect();
+            work.extend((0..program.fns.len()).filter(|&i| !caches.has_out[slot(i)] && !in_changed[i] && !rebuilt.contains(&i)));
+        } else {
+            work.extend((0..program.fns.len()).filter(|&i| !caches.has_out[slot(i)] && !in_changed[i]));
+        }
     }
     // The instance Adt ids this build generates C under, and whether one
     // names another instance than in the C made since the last full
@@ -4633,6 +4657,11 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
     }
     let phase = phase_id.map(|id| super::Prepared { id, request: req, input: &front.ast, program: &program, map: &map, source: &src, work: &work });
     if let (Some(observer), Some(phase)) = (observer, phase) { observer.prepared(phase); }
+    if let Some(library)=&mut caches.library {
+        library.checked=work.iter().map(|&i|program.disk_id(LocalDefId(i as u32))).collect();
+        library.checked_names=work.iter().map(|&i|{let id=LocalDefId(i as u32);(program.disk_id(id),program.interner.get(program.fns[i].name).to_owned())}).collect();
+    }
+    let library_facts=library.then(||std::sync::Mutex::new(std::collections::BTreeMap::new()));
     let results = par_map(&work, |&i| {
         let f = LocalDefId(i as u32);
         // Lowering and borrowck read derive lists too (Copy operands,
@@ -4645,10 +4674,15 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
             if !errs.is_empty() {
                 return (None, errs);
             }
+            let mut facts = library.then(|| super::library::capture(&program, f, &checked));
             let body = lower::lower(&program, f, checked);
+            if let Some(facts) = &mut facts { super::library::lowered(&program, facts, &body); }
             errs.extend(borrowck::borrowck(&program, &body));
             if let (Some(observer), Some(phase)) = (observer, phase) {
                 check::derive_delta::unlogged(|| observer.lowered(phase, f, &body, &errs));
+            }
+            if errs.is_empty() && let Some(facts)=facts && let Some(stored)=&library_facts {
+                stored.lock().unwrap_or_else(|e|e.into_inner()).insert(i,facts);
             }
             (Some(body), errs)
         });
@@ -4658,6 +4692,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
         });
         (body, errs)
     });
+    let mut library_facts=library_facts.map(|facts|facts.into_inner().unwrap_or_else(|e|e.into_inner()));
     let mut diags: Vec<Diag> = Vec::new();
     for (k, &i) in work.iter().enumerate() {
         caches.ok[slot(i)] = results[k].1.is_empty();
@@ -4692,6 +4727,13 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
             stored.freeze(&mut caches.read_keys);
             stored.verified[mode_at] = verified;
             caches.slot_reads[slot(i)] = Some(stored);
+        }
+        if results[k].1.is_empty() && let Some(facts) = library_facts.as_mut().and_then(|facts|facts.remove(&i))
+            && let Some(library) = &mut caches.library {
+            let body=results[k].0.as_ref().expect("passing library check retains its native body");
+            let fp=super::ir_cache::ir_fingerprint(&program,body,&map,fn_lines_all[i]);
+            caches.slot_ir[slot(i)]=Some(super::ir_cache::cache_body(&program,body,0,slot(i) as u32,Vec::new(),fp));
+            super::library::store(library, facts, front.slot_hash[slot(i)], front.slot_head[slot(i)],program.fn_def(LocalDefId(i as u32)).span);
         }
         diags.extend(results[k].1.iter().cloned());
     }
@@ -4822,6 +4864,17 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
                 stderr: format!("lustr mixed preparation failed: {error}\n"), ..Default::default() },
         }
     } else { None };
+    let library_functions = if caches.library.is_some() {
+        match super::library::complete(&program, &map, &src, front, caches, verified) {
+            Ok(functions) => { super::library::remember(caches, functions.clone()); Some(functions) }
+            Err(error) => {
+                let code = match error { super::library::completion::Error::Unintegrated(_) => 4, _ => 3 };
+                drop(results); drop(reemit);
+                program.verified = verified; super::patch::keep(front, program);
+                return Response {code, stderr:format!("native library completion: {error:?}\n"), ..Default::default()};
+            }
+        }
+    } else { None };
     let mut resp = Response::default();
     if req.cmd == Cmd::Check {
         if prepared_mixed.is_some() {
@@ -4941,7 +4994,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
         check::derive_delta::scoped(program.record_reads, || {
             cgen::in_layout_phase(layout_tag, || {
                 cgen::names::with(rn, || {
-                    let total = mixed && super::mixed::total(b);
+                    let total = library_functions.is_some() || mixed && super::mixed::total(b);
                     let mut output = if total {
                         cgen::gen_fn_total(&program, b, &map, line_base_of(front, *i), &front.fn_slot)
                     } else {
@@ -4970,7 +5023,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
     // Cached IR serves only the slot-moved re-emit, which runs only in a
     // program with no generics: a generic program caches none (on tsgo it
     // was 1.5 GB of a daemon session, made serially per generated body).
-    let keep_ir = !program.gx.has_generics;
+    let keep_ir = !program.gx.has_generics && library_functions.is_none();
     // The stable id of each fn whose slot the new C prints (`FnOut::used`),
     // by slot: the pairs below are the next renumber's re-emit trigger.
     let mut wanted = vec![false; if keep_ir { front.slot_of.len() } else { 0 }];
@@ -5003,9 +5056,21 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
         caches.out[s] = out;
         caches.has_out[s] = true;
         dirty_slots.push(s);
-        if let Some(slot_ir) = caches.slot_ir.get_mut(s) {
+        if caches.library.is_none() && let Some(slot_ir) = caches.slot_ir.get_mut(s) {
             *slot_ir = cached;
         }
+    }
+    // Consume the same generated slots before executable-only glue/table/link
+    // work. Each function object is independently retained; metadata belongs to
+    // the caller and cannot cause native functions to be recompiled as a unit.
+    if let Some(functions) = library_functions {
+        let generated: Vec<_> = bodies.iter().map(|(i, _)| *i).collect();
+        let response = super::library::finish(req, &program, front, caches, functions,
+            rn.expect("native libraries use stable names"), &generated);
+        drop(bodies);
+        program.verified = verified; super::patch::keep(front, program);
+        cgen::clear_extern_pool();
+        return response;
     }
     // LUST_CHECK_GENREUSE=1 (genreuse_oracle.rs): every concrete body a release C build keeps
     // is checked, lowered and generated again without reuse (nothing stored), and its C must

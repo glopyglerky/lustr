@@ -94,7 +94,11 @@ serializer. Its [exact-source hosted campaign](evidence/native-metadata-join-202
 passed on tree `948074da4b3b23ed25fa789b17a924555f24e4ca`, with 31 named controls,
 262,152 runtime assertions and eight complete candidate traces. This fixed
 scalar-library evidence remains separate from this item's general completion
-and from the still-unintegrated public retained path.
+and from the still-unintegrated public retained path. A subsequent
+[retained native candidate](../../crates/lustr-native-metadata-qualification/README.md#retained-native-candidate)
+now connects actual Session/PreparedRequest state and narrow TinyCC objects to
+this serializer. It is authored and pending exact-source hosted qualification;
+the earlier passing campaign does not qualify the new implementation.
 
 Done when unchanged mixed programs and real downstream Cargo crates consume
 valid artifacts. Every obligation has one owner and every required instance is

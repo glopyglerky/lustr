@@ -10490,6 +10490,18 @@ pub fn mixed_scalar_unit(output: &FnOut) -> Option<String> {
     Some(format!("{INT_TYPEDEFS}\n{}", output.code_text()))
 }
 
+/// A completed total scalar body with its exact native direct-call prototypes.
+/// The library completion proof, not this text operation, owns totality.
+pub fn native_scalar_unit(output: &FnOut) -> Option<String> {
+    if !output.mixed_total || !output.glue.is_empty() || !output.ll.is_empty() || !output.ll_c.is_empty() || !output.types.is_empty() || !output.named.is_empty() {
+        return None;
+    }
+    let mut unit = String::from(INT_TYPEDEFS);
+    for declaration in &output.externs { unit.push_str(declaration); unit.push('\n'); }
+    unit.push_str(&output.code_text());
+    Some(unit)
+}
+
 fn runtime_decls() -> &'static str {
     static DECLS: std::sync::OnceLock<String> = std::sync::OnceLock::new();
     DECLS.get_or_init(|| {

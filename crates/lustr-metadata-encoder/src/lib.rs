@@ -85,6 +85,16 @@ pub struct Profile {
     pub debug_assertions: bool,
 }
 
+/// An actual native producer object, its planned archive member name, and the
+/// source definitions its symbol table owns. The digest precedes verified Rust
+/// symbol renaming; the host separately binds final renamed member bytes.
+#[derive(Clone, Debug)]
+pub struct ObjectMember {
+    pub member: String,
+    pub producer_object_sha256: [u8; 32],
+    pub definitions: Vec<NativeId>,
+}
+
 pub struct Input<'a> {
     pub crate_name: &'a str,
     pub metadata: &'a str,
@@ -96,8 +106,8 @@ pub struct Input<'a> {
     pub functions: &'a [Function],
     pub emitted: &'a [EmittedFunction],
     pub backend_helpers: &'a [String],
-    /// Hash of the exact object whose symbol table produced `emitted`.
-    pub object_sha256: [u8; 32],
+    /// Canonically ordered producer objects; definitions partition `emitted`.
+    pub objects: &'a [ObjectMember],
 }
 
 #[derive(Clone, Debug)]
@@ -224,6 +234,23 @@ fn validate(input: &Input<'_>) -> Result<(), String> {
     if emitted.len() != definitions.len() {
         return Err(failure("an accepted definition has no actual emitted instance"));
     }
+    let member_names: Vec<_> = input.objects.iter().map(|object| object.member.as_str()).collect();
+    encode_rlib_link(&member_names)?;
+    let mut object_definitions = BTreeSet::new();
+    let mut previous = None;
+    for object in input.objects {
+        if object.definitions.is_empty() || object.definitions.windows(2).any(|pair|pair[0]>=pair[1])
+            || previous.is_some_and(|name: &str| name>=object.member.as_str()) {
+            return Err(failure("object member/definition inventory is not canonical"));
+        }
+        previous=Some(object.member.as_str());
+        for definition in &object.definitions {
+            if !emitted.contains(definition) || !object_definitions.insert(*definition) {
+                return Err(failure("object definition is duplicated or has no emitted instance"));
+            }
+        }
+    }
+    if object_definitions!=emitted { return Err(failure("emitted instance has no exact object owner")); }
     for helper in input.backend_helpers {
         if !identifier(helper) || !symbols.insert(helper) {
             return Err(failure("backend helper overlaps a source definition"));
