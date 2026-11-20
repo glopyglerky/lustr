@@ -462,3 +462,11 @@ The first release remains a correct, complete replacement that beats matched
 stock rustc overall. The provisional subset budgets are optimization targets,
 not extra release prerequisites. Matching stock Lust remains the continuing
 goal after that release.
+
+The subsequent [repository-wide follow-through](sole-goal-audit.md#construction-and-evaluator-follow-through)
+binds compiler construction to reviewed source/target modes, removes unused
+expanded-source packaging and retires the remaining whole-compiler measurement
+routes. It also tightens independent test-result admission. Those changes
+preserve this continuation's actual native work and failed evidence; they do
+not complete the metadata caller, general complement, portability migration or
+matched speed qualification.

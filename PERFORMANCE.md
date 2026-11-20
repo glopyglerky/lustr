@@ -1,5 +1,13 @@
 # Lustr performance: complete work and retained evidence
 
+> Historical performance evidence index. Every number and result below belongs
+> to its recorded source, package and workload. References to a current candidate,
+> compiler route or estimator inside those records retain that historical scope.
+> New claims use the [current total-time assessment](docs/compiler-set/current-performance-assessment.md)
+> and [exclusive coverage contract](docs/compiler-set/exclusive-coverage-contract.md).
+> These results neither recommend an old package nor qualify the unfinished
+> full replacement.
+
 The [governing architecture](docs/compiler-set/architecture-plan.md) requires
 one integrated compiler, with Lust for supported work and imported Rust for its
 complement. These measurements describe their recorded implementations, including
@@ -208,7 +216,7 @@ its `unwinding` feature, while the reference used LLVM.
 
 There were only two measured pairs per scenario. The cold result represents
 33.8% less median build time for that configuration; no-op builds were slower.
-These descriptive ratios do not use the current paired geometric estimator and
+These descriptive ratios do not use the later historical paired geometric estimator and
 have no confidence interval. The full build timings exclude runtime probes,
 unit tests, verification and setup. Both lanes passed the same 391 unit tests
 and runtime/rejection probes; the recorded compiler commands verify the backend.
@@ -222,7 +230,7 @@ retain the original evidence. This is an opt-in compatibility-coordinator path,
 not the current mixed native compiler or an automatically selected backend.
 Its rustc source `2d20b42b883dcfc014f3c2c56081eeb6091c2179` differs from the
 current campaign SDK. The stock rustup Cranelift preview failed panic recovery;
-the [matching custom backend requirement](crates/lustr/README.md#try-the-complementary-development-backend)
+the [matching custom backend requirement](crates/lustr/backends/README.md)
 cannot be replaced by a panic flag or an arbitrary installed backend. Requalify
 the complete current package and measure it before claiming a present Cargo gain.
 

@@ -178,97 +178,16 @@ class Recorder:
         return value
 
     def run(self, argv, env, cwd, lane, phase, expected=0):
-        serial = len(self.records)
-        paths = [self.output / "commands" / f"{serial:05}.{name}" for name in ("stdout", "stderr")]
-        entry = {"kind": "command", "id": serial, "lane": lane, "phase": phase,
-                 "argv": [str(x) for x in argv], "cwd": str(cwd), "environment": dict(env), "expected_exit": expected}
-        started = time.perf_counter_ns()
-        with paths[0].open("xb") as out, paths[1].open("xb") as err:
-            try:
-                child = subprocess.Popen(entry["argv"], cwd=cwd, env=env, stdin=subprocess.DEVNULL,
-                                         stdout=out, stderr=err, start_new_session=True)
-                expired = oversized = False
-                while child.poll() is None:
-                    expired = (time.perf_counter_ns() - started) / 1e9 > self.timeout
-                    oversized = sum(path.stat().st_size for path in paths) > LIMIT
-                    if expired or oversized:
-                        os.killpg(child.pid, signal.SIGKILL)
-                        break
-                    time.sleep(.0001)
-                status = child.wait()
-                entry.update(exit=status if status >= 0 else None, signal=-status if status < 0 else None,
-                             timed_out=expired, output_limit=oversized)
-            except OSError as error:
-                entry.update(exit=None, signal=None, timed_out=False, output_limit=False, launch_error=str(error))
-        entry["seconds"] = (time.perf_counter_ns() - started) / 1e9
-        entry["output_limit"] |= sum(path.stat().st_size for path in paths) > LIMIT
-        for name, path in zip(("stdout", "stderr"), paths):
-            entry[name] = {"file": str(path.relative_to(self.output)), "bytes": path.stat().st_size, "sha256": digest(path)}
-        self.event(entry)
-        require(entry["exit"] == expected and not entry["timed_out"] and not entry["output_limit"],
-                f"{lane}/{phase} failed; command {serial} and original streams retained")
-        return entry, paths[0].read_bytes(), paths[1].read_bytes()
+        raise ValueError("Retired whole-rustc acquisition is disabled; historical record models accept synthetic test outcomes only")
 
 
 class Daemon:
-    def __init__(self, recorder, executable, env, cwd, lane, scope):
-        self.recorder, self.executable, self.env, self.cwd, self.lane = recorder, executable, env, cwd, lane
-        self.socket = Path(env["LUST_DAEMON_SOCKET"])
-        self.scope = scope
-        self.child, self.files, self.paths = None, [], []
-
-    def __enter__(self):
-        serial = len(self.recorder.records)
-        self.paths = [self.recorder.output / "commands" / f"{serial:05}.daemon.{name}" for name in ("stdout", "stderr")]
-        self.files = [path.open("xb") for path in self.paths]
-        try:
-            self.child = subprocess.Popen([str(self.executable), "daemon"], cwd=self.cwd, env=self.env,
-                                          stdin=subprocess.DEVNULL, stdout=self.files[0], stderr=self.files[1], start_new_session=True)
-            started = time.monotonic()
-            while self.child.poll() is None and not self.socket.exists() and time.monotonic() - started < 10:
-                time.sleep(.01)
-            self.alive()
-            self.recorder.event({"kind": "daemon-start", "lane": self.lane, "scope": self.scope,
-                                 "executable": str(self.executable), "pid": self.child.pid, "socket": str(self.socket),
-                                 "environment": self.env, "cwd": str(self.cwd)})
-            return self
-        except BaseException:
-            self.close(False)
-            raise
-
-    def alive(self):
-        require(self.child is not None and self.child.poll() is None and self.socket.exists()
-                and stat.S_ISSOCK(self.socket.stat().st_mode), f"{self.lane} daemon/socket unavailable")
-
-    def close(self, success):
-        error = None
-        if self.child is not None:
-            if self.socket.exists():
-                self.socket.unlink()
-            try:
-                status = self.child.wait(timeout=35)
-            except subprocess.TimeoutExpired:
-                os.killpg(self.child.pid, signal.SIGKILL)
-                status = self.child.wait()
-                error = "owned daemon did not stop within 35 seconds"
-            if status != 0:
-                error = f"owned daemon exited {status}"
-            for stream in self.files:
-                stream.close()
-            self.recorder.event({"kind": "daemon-stop", "lane": self.lane, "scope": self.scope, "pid": self.child.pid,
-                                 "exit": status, "error": error,
-                                 "streams": [{"file": str(path.relative_to(self.recorder.output)), "sha256": digest(path)} for path in self.paths]})
-        else:
-            for stream in self.files:
-                stream.close()
-        if success:
-            require(error is None, error)
-
-    def __exit__(self, kind, value, traceback):
-        self.close(kind is None)
+    def __init__(self, *args, **kwargs):
+        raise ValueError("Retired whole-rustc acquisition is disabled; historical record models cannot start daemons")
 
 
 class Campaign:
+    """Historical record model for replay controls; compiler/process sinks are disabled."""
     def __init__(self, args):
         self.args = args
         self.output = args.output
@@ -446,75 +365,6 @@ class Campaign:
         self.samples.append(value)
         self.recorder.event({"kind": "timing", **value})
 
-    def execute(self):
-        require(platform.system() == "Linux" and platform.machine() == "x86_64", "campaign requires Linux x86-64")
-        require("Cargo artifact profile: release\n" in (self.args.built / "BUILD-PROFILE.txt").read_text(), "a release source-built composition is required")
-        require(b"Finished `release` profile" in self.args.pristine_build_log.read_bytes(), "pristine release build log is required")
-        clean_env = {"PATH": "/usr/local/bin:/usr/bin:/bin", "LANG": "C", "LC_ALL": "C", "GIT_NO_REPLACE_OBJECTS": "1"}
-        for expression, expected in (("HEAD", PIN), ("HEAD^{tree}", TREE)):
-            _, out, _ = self.recorder.run(["git", "-C", self.args.pristine_source, "rev-parse", expression], clean_env, self.output, "source", "pristine-identity")
-            require(out.decode().strip() == expected, "pristine reference identity differs")
-        _, out, _ = self.recorder.run(["git", "-C", self.args.pristine_source, "status", "--porcelain", "--untracked-files=no"], clean_env, self.output, "source", "pristine-clean")
-        require(not out, "pristine tracked source is modified")
-        _, out, _ = self.recorder.run(["git", "-C", self.args.repository, "rev-parse", "HEAD", "HEAD^{tree}"], clean_env, self.output, "source", "candidate-identity")
-        self.report["candidate_revision_and_tree"] = out.decode().splitlines()
-        _, out, _ = self.recorder.run(["git", "-C", self.args.repository, "status", "--porcelain", "--untracked-files=no"], clean_env, self.output, "source", "candidate-clean")
-        require(not out, "candidate tracked source is modified")
-        _, out, _ = self.recorder.run([self.reference, "-vV"], clean_env, self.output, "cargo", "rust-identity")
-        require(f"commit-hash: {RUST}" in out.decode().splitlines(), "Rust SDK pin differs")
-        self.report["rustc_version"] = out.decode()
-        self.report["fixture_preparation"] = prepare_fixture(self.args.repository, self.args.pristine_source, self.fixture)
-        files = list(self.tools.values()) + [self.reference, self.args.pristine_lust.with_name("lust-core"),
-                  self.args.built / "toolchain/bin/lust-core", self.args.built / "toolchain/bin/rustc-full",
-                  self.args.pristine_build_log, Path(__file__).resolve(), HERE / "report-mixed-performance.py", HERE / "capture-benchmark-host.py"]
-        receipts = self.output / "build-receipts"
-        receipts.mkdir()
-        receipt_bindings = {}
-        for name in ("BUILD-PROFILE.txt", "COMPONENTS.txt", "NATIVE-BUILD-RECEIPT.txt"):
-            path = self.args.built / name
-            files.append(path)
-            shutil.copyfile(path, receipts / name)
-            receipt_bindings[name] = {"source_path": str(path), "sha256": digest(path)}
-        shutil.copyfile(self.args.pristine_build_log, receipts / "pristine-build.log")
-        receipt_bindings["pristine-build.log"] = {"source_path": str(self.args.pristine_build_log), "sha256": digest(self.args.pristine_build_log)}
-        identities = {str(path): digest(path) for path in files}
-        self.report["compiler_and_runner_sha256"] = identities
-        self.report["tool_paths"] = {key: str(value) for key, value in self.tools.items()}
-        self.report["build_receipts"] = receipt_bindings
-        self.report["host"] = HOST.collect()
-        with tempfile.TemporaryDirectory(prefix="lustr-slice-") as temporary:
-            sockets = Path(temporary)
-            require(len(str(sockets)) < 65, "temporary socket parent is too long")
-            state = self.output / "work/lockfile"
-            env = self.environment(state, sockets / "unused.sock", True)
-            self.recorder.run([self.tools["cargo"], "generate-lockfile", "--offline", "--manifest-path", self.fixture / "Cargo.toml"], env, self.fixture, "cargo", "lockfile")
-            source_identity = inventory(self.fixture)
-            self.report["fixture_files"] = source_identity
-            reject = self.output / "rejected.rs"
-            reject.write_text(REJECTION)
-            self.report["rejection_input"] = {"file": "rejected.rs", "sha256": digest(reject)}
-            self.recorder.event({"kind": "identities", "compiler_and_runner_sha256": identities,
-                                 "fixture_files": source_identity, "tool_paths": self.report["tool_paths"],
-                                 "rejection_input": self.report["rejection_input"], "reference_rustc": str(self.reference),
-                                 "build_receipts": receipt_bindings, "pristine_source": str(self.args.pristine_source),
-                                 "candidate_source": str(self.args.repository), "candidate_revision_and_tree": self.report["candidate_revision_and_tree"],
-                                 "rustc_version": self.report["rustc_version"]})
-            self.qualification(sockets, "initial")
-            schedule = orders(self.args.pairs)
-            self.report["orders"] = schedule
-            for sample, order in enumerate(schedule):
-                self.recorder.event({"kind": "sample-start", "sample": sample, "order": order})
-                for operation in ("check", "build"):
-                    self.measure_group(sample, order, operation, sockets)
-                    require(inventory(self.fixture) == source_identity, "compiler changed the recorded fixture")
-                self.recorder.event({"kind": "sample-end", "sample": sample})
-            self.qualification(sockets, "final")
-            require(inventory(self.fixture) == source_identity, "final qualification changed fixture bytes")
-            require(digest(reject) == self.report["rejection_input"]["sha256"], "final rejection input changed")
-        require(all(digest(path) == value for path, value in identities.items()), "compiler/source identity changed during campaign")
-        self.report["samples"] = self.samples
-        self.report["summaries"] = summaries(self.samples, self.args.pairs)
-        self.report["status"] = "completed"
 
 
 def summaries(samples, pairs):
@@ -783,58 +633,12 @@ def replay(output):
 
 
 def main():
-    if sys.argv[1:2] == ["--replay"]:
-        require(len(sys.argv) == 3, "replay requires one retained campaign directory")
-        result = replay(Path(sys.argv[2]))
-        print(f"Verified {len(result['samples'])} timings and {len(result['summaries'])} comparisons; no compiler execution.")
-        return 0
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--repository", type=Path, default=HERE.parent)
-    parser.add_argument("--pristine-source", type=Path, required=True)
-    parser.add_argument("--pristine-lust", type=Path, required=True)
-    parser.add_argument("--pristine-build-log", type=Path, required=True)
-    parser.add_argument("--built", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--pairs", type=int, default=12)
-    parser.add_argument("--timeout", type=int, default=180)
-    args = parser.parse_args()
-    orders(args.pairs)
-    require(1 <= args.timeout <= 1800, "timeout outside 1..1800 seconds")
-    for name in ("repository", "pristine_source", "pristine_lust", "pristine_build_log", "built"):
-        setattr(args, name, getattr(args, name).resolve(strict=True))
-    require(args.output.is_absolute() and not args.output.exists(), "output must be a new absolute directory")
-    require(not any(args.output.resolve().is_relative_to(path) for path in
-                    (args.repository, args.pristine_source, args.built)), "output must be outside source and toolchain directories")
-    args.output.mkdir(mode=0o700)
-    args.output = args.output.resolve()
-    campaign = Campaign(args)
-    failure = None
-    try:
-        campaign.execute()
-    except BaseException as error:
-        failure = error
-        campaign.report.update(status="failed", error=f"{type(error).__name__}: {error}", summaries=None, samples=campaign.samples)
-    finally:
-        campaign.recorder.raw.close()
-        campaign.report["raw_sha256"] = digest(args.output / "raw.jsonl")
-        write_json(args.output / "report.json", campaign.report)
-        (args.output / "README.md").write_text(render(campaign.report))
-        with (args.output / "samples.csv").open("w", newline="") as output:
-            writer = csv.DictWriter(output, fieldnames=("sample", "lane", "phase", "seconds", "commands"))
-            writer.writeheader()
-            writer.writerows(campaign.samples)
-    if failure is not None:
-        print(f"Slice campaign failed: {failure}. Evidence: {args.output}", file=sys.stderr)
-        return 1
-    try:
-        replay(args.output)
-    except BaseException as error:
-        campaign.report.update(status="failed", error=f"Original evidence replay failed: {error}", summaries=None)
-        write_json(args.output / "report.json", campaign.report)
-        (args.output / "README.md").write_text(render(campaign.report))
-        print(f"Slice evidence replay failed: {error}. Evidence: {args.output}", file=sys.stderr)
-        return 1
-    print(f"Completed public slice campaign: {args.output}")
+    if sys.argv[1:2] != ["--replay"]:
+        print("Retired whole-rustc acquisition is disabled. Use --replay DIRECTORY for immutable historical evidence.", file=sys.stderr)
+        return 2
+    require(len(sys.argv) == 3, "replay requires one retained campaign directory")
+    result = replay(Path(sys.argv[2]))
+    print(f"Verified {len(result['samples'])} historical timings and {len(result['summaries'])} comparisons; no compiler execution or current qualification.")
     return 0
 
 

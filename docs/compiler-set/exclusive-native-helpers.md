@@ -1,5 +1,17 @@
 # Product native helpers without compiler delegation
 
+> Source-bound checkpoint. Statements about the current candidate, required
+> follow-up and measured speed below refer to the named source and date. The
+> [active correction](active-correction.md) identifies present implementation
+> work; the [current performance policy](practical-performance.md) controls new
+> claims. Historical successes, incomplete paths and failed results remain scoped
+> to their original implementation.
+
+The later [native Cargo continuation](native-cargo-continuation.md) replaces
+some integration-incomplete boundaries recorded here with pinned no-compilation
+Cargo unit planning and bounded native host-script compilation. The earlier
+refusals below never defined the complement or removed work from Lust's set.
+
 The `exclusive-native` Cargo feature makes the shipped `lust` and `lust-core`
 helpers obey Lustr's exclusive compilation ownership. The feature also exists in
 `lustr-native-core`, whose included native implementation and build helper use the

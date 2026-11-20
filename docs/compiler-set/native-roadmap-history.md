@@ -8,7 +8,7 @@ and [compiler contract](native-contract.md) for new work.
 # Native compiler implementation roadmap
 
 The active delivery is complete native replacement of rustc under the
-[native-only contract](native-contract.md#active-objective-complete-native-rust-through-cargo).
+[native-only contract](native-contract.md).
 Upstream Lust with an explicit reviewed integration diff and the native Lustr
 complement form the complete implementation;
 Cargo's existing unit graph and parallelism compose compatible native artifacts.

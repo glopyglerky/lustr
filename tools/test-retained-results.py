@@ -195,6 +195,35 @@ class InventoryControls(unittest.TestCase):
         self.assertEqual(sum(row["status"] == "required" for row in inventory["scenarios"]), 349)
         self.assertEqual(sum(row["status"] == "unresolved" for row in inventory["scenarios"]), 13)
 
+    def test_required_history_cannot_be_reclassified_as_unresolved(self):
+        inventory = json.loads((ROOT / "upstream/retained-scenario-results.json").read_text())
+        required = next(row for row in inventory["scenarios"] if row["status"] == "required")
+        required.update(status="unresolved", historical_unsupported_versions=1)
+        with tempfile.TemporaryDirectory() as temporary:
+            manifest = Path(temporary) / "inventory.json"
+            manifest.write_text(json.dumps(inventory))
+            with self.assertRaisesRegex(ValueError, "classification differs"):
+                runner.load_inventory(ROOT, manifest)
+
+    def test_upstream_history_cannot_be_excluded_as_integration(self):
+        inventory = json.loads((ROOT / "upstream/retained-scenario-results.json").read_text())
+        removed = inventory["scenarios"].pop(0)
+        inventory["integration_histories"].append({"name": removed["name"]})
+        with tempfile.TemporaryDirectory() as temporary:
+            manifest = Path(temporary) / "inventory.json"
+            manifest.write_text(json.dumps(inventory))
+            with self.assertRaisesRegex(ValueError, "reclassified"):
+                runner.load_inventory(ROOT, manifest)
+
+    def test_declared_upstream_tree_cannot_change_with_candidate(self):
+        inventory = json.loads((ROOT / "upstream/retained-scenario-results.json").read_text())
+        inventory["upstream_scenario_tree"] = "0" * 40
+        with tempfile.TemporaryDirectory() as temporary:
+            manifest = Path(temporary) / "inventory.json"
+            manifest.write_text(json.dumps(inventory))
+            with self.assertRaisesRegex(ValueError, "upstream revision/tree"):
+                runner.load_inventory(ROOT, manifest)
+
     def test_git_tree_matches_git_on_real_fixture(self):
         path = "compiler/native/tests/daemon/mainret01_exitcode_edits"
         expected = subprocess.check_output(["git", "-C", str(ROOT), "rev-parse", "HEAD:" + path], text=True).strip()

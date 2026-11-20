@@ -1,5 +1,11 @@
 # Compare independently built complete native packages
 
+> Historical complete-package campaign. The current comparison CLI accepts
+> only read-only verification of retained evidence; package construction,
+> qualification and measurement acquisition through this retired route are
+> disabled. The source-bound methods and results below remain historical.
+> Follow the [active correction](active-correction.md) for current compiler work.
+
 Current execution policy: the [historical applicability checks](historical-warm-applicability.md)
 retain these failures and reject the unchanged inapplicable configurations
 before another package construction. The records below describe their original

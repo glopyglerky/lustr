@@ -130,7 +130,7 @@ observation above is retained as the earlier state of this same run.
 This later success qualifies the executed mixed boundary on that initial PR #30
 source. It does not repair the separate native-unit failures or qualify the
 newer Unicode, standard-library, cleanup, socket or owned-request changes in the
-[19 November candidate continuation](design.md#candidate-continuation--19-november-2026).
+[19 November candidate continuation](design.md).
 The new job's timing artifacts have not been substituted for the independently
 replayed PR #29 performance checkpoint, and no new numerical speed claim follows
 from observing job completion.

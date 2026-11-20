@@ -1,0 +1,34 @@
+test_a_single_failing_warm_mode_fails_the_target (__main__.ComparisonControls.test_a_single_failing_warm_mode_fails_the_target) ... ok
+test_baseline_gap_is_red (__main__.ComparisonControls.test_baseline_gap_is_red) ... ok
+test_duplicate_sample_rejected (__main__.ComparisonControls.test_duplicate_sample_rejected) ... ok
+test_faster_candidate_can_pass_the_exact_target (__main__.ComparisonControls.test_faster_candidate_can_pass_the_exact_target) ... ok
+test_incomplete_measurement_cannot_replay (__main__.ComparisonControls.test_incomplete_measurement_cannot_replay) ... ok
+test_missing_sample_rejected (__main__.ComparisonControls.test_missing_sample_rejected) ... ok
+test_nonfinite_sample_rejected (__main__.ComparisonControls.test_nonfinite_sample_rejected) ... ok
+test_order_counterbalances_all_four_lanes (__main__.ComparisonControls.test_order_counterbalances_all_four_lanes) ... ok
+test_baseline_reuse_cannot_be_claimed_by_candidate (__main__.ReplayControls.test_baseline_reuse_cannot_be_claimed_by_candidate) ... ok
+test_cached_edit_source_cannot_be_skipped (__main__.ReplayControls.test_cached_edit_source_cannot_be_skipped) ... ok
+test_changed_timed_executable_is_rejected (__main__.ReplayControls.test_changed_timed_executable_is_rejected) ... ok
+test_complete_orchestration_replays (__main__.ReplayControls.test_complete_orchestration_replays) ... ok
+test_edited_runtime_cannot_use_the_initial_result (__main__.ReplayControls.test_edited_runtime_cannot_use_the_initial_result) ... ok
+test_freshly_restarted_warm_command_is_rejected (__main__.ReplayControls.test_freshly_restarted_warm_command_is_rejected) ... ok
+test_instrumented_timed_command_is_rejected (__main__.ReplayControls.test_instrumented_timed_command_is_rejected) ... ok
+test_invalid_edit_cannot_be_reported_as_success (__main__.ReplayControls.test_invalid_edit_cannot_be_reported_as_success) ... ok
+test_misbound_group_end_is_rejected (__main__.ReplayControls.test_misbound_group_end_is_rejected) ... ok
+test_missing_actual_cached_edit_proof_is_rejected (__main__.ReplayControls.test_missing_actual_cached_edit_proof_is_rejected) ... ok
+test_missing_retained_build_proof_is_rejected (__main__.ReplayControls.test_missing_retained_build_proof_is_rejected) ... ok
+test_missing_selection_reuse_proof_is_rejected (__main__.ReplayControls.test_missing_selection_reuse_proof_is_rejected) ... ok
+test_omitted_runtime_identity_is_rejected (__main__.ReplayControls.test_omitted_runtime_identity_is_rejected) ... ok
+test_restored_runtime_cannot_reuse_the_initial_execution (__main__.ReplayControls.test_restored_runtime_cannot_reuse_the_initial_execution) ... ok
+test_body_or_new_object_work_remains_rejected (__main__.RetainedBuildControls.test_body_or_new_object_work_remains_rejected) ... ok
+test_full_frontend_route_is_rejected (__main__.RetainedBuildControls.test_full_frontend_route_is_rejected) ... ok
+test_generated_c_without_object_hit_is_rejected (__main__.RetainedBuildControls.test_generated_c_without_object_hit_is_rejected) ... ok
+test_malformed_build_counters_are_rejected (__main__.RetainedBuildControls.test_malformed_build_counters_are_rejected) ... ok
+test_real_pristine_build_still_fails_check_only_contract (__main__.RetainedBuildControls.test_real_pristine_build_still_fails_check_only_contract) ... ok
+test_real_pristine_cached_launcher_is_accepted_as_build (__main__.RetainedBuildControls.test_real_pristine_cached_launcher_is_accepted_as_build) ... ok
+test_retained_check_rejects_template_and_table_work (__main__.RetainedBuildControls.test_retained_check_rejects_template_and_table_work) ... ok
+
+----------------------------------------------------------------------
+Ran 29 tests in 13.574s
+
+OK

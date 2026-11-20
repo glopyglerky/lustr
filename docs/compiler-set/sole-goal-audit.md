@@ -12,7 +12,122 @@ Keep supported work near matched stock Lust speed and complementary work near
 matched stock rustc speed. Prefer no_std throughout and no required Unix sockets
 when those changes preserve speed and do not delay compiler completion.
 
+## Repository documentation and entry-point audit
+
+The repository-wide review on 20 November 2026 UTC starts from published PR #33
+source `ea26fe16636d390763257a19c19df3db992cdbcb`. It continues this audit and the
+existing checklist. The [documentation disposition](documentation-disposition.json)
+accounts for all 396 tracked Markdown files at that baseline with exact Git
+blob identities, reviewed content hashes, authority, action and review scope.
+Any audit Markdown added after the baseline is classified separately. It is a
+documentation inventory, not another implementation plan.
+
+The review found executable-direction conflicts outside the canonical plans:
+
+| Live conflict | Documentation correction |
+| --- | --- |
+| Default-branch governing docs could be mistaken for merged compiler code | Startup instructions resolve PR #33 independently from `next`; closed PRs, old worktrees and preview tags are historical sources. |
+| Mixed-symbol and scalar-integration notes described successful full-compiler fallback or public retry in present tense | Their source-bound bodies remain preserved under explicit historical scope. Current bridge gaps remain Lust-owned incomplete integration. |
+| Benchmark and fixture guides still recommended coordinator engine selection, full-compiler package construction or new acquisition through removed lanes | Removed those live recipes and linked their immutable originals. Independent measurement and read-only replay remain distinct from product compilation. |
+| Preview download/install instructions and a Windows coordinator recommendation looked current | Marked preview assets as historical and removed the active installation recipes. No complete replacement release is qualified. |
+| Old proofs and performance tables used geometric summaries, an earlier patch state or an earlier candidate as current authority | Bound them to their original source and date; new claims follow paired total elapsed costs and the current declared integration patch. Original numbers, failures and archived decisions remain unchanged. |
+| Broad compiler-private shared-service experiments could read as admitted complementary implementation | Marked their research scope and linked the real import inventory. No full-driver dependency is admitted by a passing fixture or metadata serializer. |
+| Socket semantics and a `no_std` metadata interface could be confused with a portable compiler | Kept generated-program Unix APIs separate from compiler transport; the current compiler still uses `std` and Unix sockets. |
+| Historical links targeted removed paths or headings | Corrected the live navigation while preserving original source/history links. |
+
+Current product Cargo planning also needs an exact scope statement.
+[`resolve/cargo.rs`](../../compiler/native/src/resolve/cargo.rs) excludes
+`unit_features_via_check` from `exclusive-native`. Non-simple graphs and
+custom-build targets use
+[`cargo_plan::select`](../../compiler/native/src/resolve/cargo_plan.rs), whose
+pinned Cargo unit-graph request performs no compilation and uses the sibling
+Lustr information-query service. This is dependency planning, not a trial
+compilation to choose an owner. The older donor probe description remains
+reference text, not an admitted product route. Legacy whole-Rust build-script
+output acquisition/replay refuses product use; the
+[native host-script continuation](native-cargo-continuation.md) uses ordinary
+Lust preparation and emission for its admitted host scripts. Procedural macros,
+registry/git graphs and build-std remain explicit integration gaps; refusal
+does not reclassify any of them as complementary coverage.
+
+The disposition separates 117 repository guidance/checkpoint pages from 173
+protected native/donor Markdown files, one upstream runtime README and 105
+immutable evidence/measurement pages. Active contracts, entry guidance and
+changed instructions received content review; the other repository checkpoints
+received authority, navigation and conflict-pattern review. Protected donor
+manuals and archived evidence received inventory/boundary verification, not a
+fresh semantic audit of every historical sentence. They are unchanged.
+
+Verification for this documentation change checked all 396 inventory content
+hashes and all relative file and heading links in repository guidance.
+All 279 protected donor/runtime/evidence Markdown files are byte-identical to
+the baseline, and whitespace checks pass. The explicit review methods remain
+recorded per document. It runs no compiler, generated program, benchmark
+or hosted CI. It neither repairs all remaining compiler gaps nor transfers an
+older test pass to new source. CI is required evidence, not a claim that current
+repository settings enforce merge or release admission. BlueFe's moving head is
+also distinct from Lustr's recorded Rust pin; the [source register](sources.md)
+records that boundary without updating protected pins.
+
+### Construction and evaluator follow-through
+
+The [construction admission record](evidence/product-construction-audit-20261120/verification.json)
+and [payload-retirement record](evidence/product-construction-audit-20261120/packaging-retirement-verification.json)
+bind the subsequent source changes and actual controls. The constructor selects
+the reviewed package/bin/lib targets and checks the effective source graph
+before building compiler components. The checks reject unreviewed compiler-package
+environment and Cargo configuration, manifest target overrides, generated
+build-script modes and profile flag/backend injection. These checks
+govern compiler construction, not a user's Rust request or its semantic flags.
+The existing `--current-sdk` discovery query remains distinct from compilation.
+
+Independent review found that the first draft still admitted Cargo's per-package
+default/forced target keys. The
+[before-and-after control](evidence/product-construction-audit-20261120/before-after-manifest-modes.json)
+records the gap and correction, with separate product and metadata research
+mutation controls. The later
+[feature-closure correction](evidence/product-construction-audit-20261120/feature-closure-correction.json)
+derives product ownership from the constructor's actual `source-native-runtime`
+selection and rejects removal of its required `exclusive-native` edge. It does
+not assume that product mode was separately selected. Ordinary reviewed
+version/profile changes remain admissible. Actual constructor controls stop at explicit SDK
+sentinels; they do not claim a rebuilt compiler package. The
+[280-manifest disposition](evidence/product-construction-audit-20261120/manifest-disposition.json)
+records source roles without calling every donor fixture a production import.
+
+The retired Cranelift setup helpers, dead semantic full-core build branches and
+unused expanded-source payload are removed. The latter's only active caller
+was package construction: `src/native_expansion.rs`, five owned standard-library
+adapter files and their expanded package layout had no public compiler or
+bounded research caller. Original bytes remain in Git with recorded hashes.
+The Lust subtree, both protected compiler pins and ordinary public compilation
+semantics are unchanged by that removal.
+
+The [CI/evaluator follow-through](evidence/ci-anti-regression-20261120/index.json) fixes a
+different acceptance gap: an ordinary test
+could panic with exit 101 yet retain a native `pass` label. The
+[capability result guide](capability-result-qualification.md) now requires the
+independent oracle's panic expectation, exact message/location and complete
+pinned fixture inventory. Missing inputs in explicitly selected optional
+measurement controls fail; ignored controls are not passing compiler evidence.
+Retired mixed acquisition and qualifier entry points are removed or refuse
+execution, while original evidence and read-only replay remain available.
+Independent measurement-tool controls use explicitly identified Cargo/SDK tools
+under the [measurement guide](benchmark-method.md). The index preserves initial
+dependency/setup failures, an unqualified tiny study blocked by absent Linux
+pressure observations, separately executed real Cargo functional checks and
+unselected optional integrations. Comparing an archived native test record with
+a fresh pinned oracle does not become a new candidate run. These cleanup and
+evaluator results supply no full Rust coverage or new compiler-speed claim.
+
 ## Follow-through after 5cd40fd3
+
+> Historical scope for this and the remaining sections: each record describes
+> its own named source and execution date. References to a "current" native
+> tree, admitted patch, blueFe/Rust equality or branch head apply only within
+> that record. They are not assertions about the later repository-wide audit,
+> a moving upstream branch or today's compiler. Use the verified integration
+> source, [source register](sources.md) and declared pins for present work.
 
 The next review starts from published
 `5cd40fd313503d4a4fc935ee47ca7c05fce1471a`, tree

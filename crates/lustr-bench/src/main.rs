@@ -1,7 +1,5 @@
 //! Linux-only qualification runner. No shell, unsafe code, inherited environment or fallback.
 #![forbid(unsafe_code)]
-mod daemons;
-mod native_state;
 mod order;
 mod resources;
 mod stats;
@@ -93,7 +91,7 @@ struct Spec {
     #[serde(default)]
     resource_mode: resources::Mode,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    native_state: Option<native_state::Policy>,
+    native_state: Option<Value>,
     source: PathBuf,
     repository: String,
     revision: String,
@@ -280,17 +278,12 @@ struct Record {
 struct Runner {
     dir: PathBuf,
     records: Vec<Record>,
-    native_state: Option<native_state::Runtime>,
 }
 impl Runner {
-    fn clear_target(&mut self, target: &Path, reason: &str) -> R<()> {
-        if let Some(state) = &mut self.native_state {
-            state.reset(target, reason)
-        } else {
-            fs::remove_dir_all(target)?;
-            fs::create_dir(target)?;
-            Ok(())
-        }
+    fn clear_target(&mut self, target: &Path, _reason: &str) -> R<()> {
+        fs::remove_dir_all(target)?;
+        fs::create_dir(target)?;
+        Ok(())
     }
 
     fn run(&mut self, s: &Spec, l: &Lane, target: &Path, c: &Cmd, phase: &str, pair: Option<usize>) -> R<(f64, Vec<u8>, Vec<u8>)> {
@@ -309,13 +302,7 @@ impl Runner {
         let ep = self.dir.join(&errname);
         let out = OpenOptions::new().write(true).create_new(true).open(&op)?;
         let err = OpenOptions::new().write(true).create_new(true).open(&ep)?;
-        let child_env = if let Some(state) = &mut self.native_state {
-            let mut child_env = env(l, target)?;
-            child_env.extend(state.prepare(&l.name, target, id)?);
-            Some(child_env)
-        } else {
-            None
-        };
+        let child_env = env(l, target)?;
         let host_before = host_context()?;
         let usage_path = self.dir.join(format!("{id:05}.usage.json"));
         let request_path = self.dir.join(format!("{id:05}.request.json"));
@@ -327,13 +314,7 @@ impl Runner {
             let encode = |v: OsString| Arg::Bytes { hex: hex(v.as_bytes()) };
             let request = resources::Request {
                 argv: c.argv.clone(),
-                env: match &child_env {
-                    Some(env) => env.clone(),
-                    None => env(l, target)?,
-                }
-                .into_iter()
-                .map(|(k, v)| (encode(k), encode(v)))
-                .collect(),
+                env: child_env.clone().into_iter().map(|(k, v)| (encode(k), encode(v))).collect(),
                 cwd: s.source.clone(),
                 collector_sha256: collector_hash.clone(),
                 report_path: usage_path.clone(),
@@ -353,14 +334,7 @@ impl Runner {
         let child = command
             .current_dir(&s.source)
             .env_clear()
-            .envs(if enabled {
-                BTreeMap::new()
-            } else {
-                match child_env {
-                    Some(env) => env,
-                    None => env(l, target)?,
-                }
-            })
+            .envs(if enabled { BTreeMap::new() } else { child_env })
             .stdin(if enabled { Stdio::piped() } else { Stdio::null() })
             .stdout(out)
             .stderr(err)
@@ -527,14 +501,13 @@ fn cargo_tail(c: &Cmd) -> R<Vec<OsString>> {
         if ["rustc", "build", "check", "test", "run", "metadata"].iter().any(|op| arg == op) {
             return Ok(args[i..].to_vec());
         }
-        if ["--bluefe-root", "--frontend-jobs", "--engine", "--color"].iter().any(|option| arg == option) {
+        if ["--color"].iter().any(|option| arg == option) {
             if args.get(i + 1).is_none() {
                 return fail("missing selector/global option value");
             }
             i += 2;
-        } else if arg.to_str().is_some_and(|a| {
-            a.starts_with("--frontend-jobs=") || a.starts_with("--engine=") || a.starts_with("--color=") || a.starts_with('+')
-        }) || ["-v", "-vv", "--verbose", "-q", "--quiet", "--locked", "--offline", "--frozen"].iter().any(|option| arg == option)
+        } else if arg.to_str().is_some_and(|a| a.starts_with("--color=") || a.starts_with('+'))
+            || ["-v", "-vv", "--verbose", "-q", "--quiet", "--locked", "--offline", "--frozen"].iter().any(|option| arg == option)
         {
             i += 1;
         } else {
@@ -588,14 +561,10 @@ fn validate_build_directories(metadata: &Value, target: &Path) -> R<()> {
     Ok(())
 }
 fn validate(s: &Spec, out: &Path) -> R<()> {
-    if let Some(policy) = &s.native_state {
-        policy.validate(&s.external_inputs)?;
-        if s.resource_mode != resources::Mode::Disabled {
-            return fail("owned detached native processes require resource measurement to stay disabled");
-        }
-        if s.lanes.iter().any(|l| native_state::OWNED_KEYS.iter().any(|key| l.env.contains_key(*key))) {
-            return fail("native-state directories and daemon controls are owned by the runner, not lane overrides");
-        }
+    if s.native_state.is_some() {
+        return fail(
+            "Retired whole-rustc native-state acquisition is disabled; use current explicit compiler commands and independent evidence",
+        );
     }
     if s.schema != 1
         || s.lanes.len() < 2
@@ -1019,7 +988,7 @@ fn main() -> R<()> {
     validate(&s, &out)?;
     fs::create_dir(&out)?;
     publish(&out.join("spec.original.json"), &bytes)?;
-    let mut r = Runner { dir: out.clone(), records: Vec::new(), native_state: None };
+    let mut r = Runner { dir: out.clone(), records: Vec::new() };
     let mut report = json!({"schema":1,"runner_version":env!("CARGO_PKG_VERSION"),"runner_sha256":hash(&std::env::current_exe()?)?,"spec_sha256":hex(&Sha256::digest(&bytes)),"spec":s,"status":"failed","summaries":null,"order_method":order::METHOD,"metadata_comparison_rule":"cargo-optional-min-opt-level-none-v1","metadata_comparison_projections":[],"memory_energy":"not measured","inference_assumptions":"equivalent work; independent pairs for bootstrap; sign exchangeability under null; exploratory unadjusted comparisons"});
     report["resource_measurement"] = resources::metadata(s.resource_mode);
     if s.resource_mode != resources::Mode::Disabled {
@@ -1028,15 +997,7 @@ fn main() -> R<()> {
         );
     }
     let metadata = s.force_root.as_ref().map(|p| fs::metadata(s.source.join(p))).transpose()?;
-    let result = (|| {
-        if s.native_state.is_some() {
-            r.native_state = Some(native_state::Runtime::new(&out.join("targets"))?);
-        }
-        study(&mut r, &s, &mut report)
-    })();
-    // A timed success is not a valid campaign until every owned daemon has
-    // finished successfully. Preserve shutdown failure alongside raw records.
-    let shutdown = r.native_state.as_mut().map(native_state::Runtime::finish).transpose();
+    let result = study(&mut r, &s, &mut report);
     let restored = if let (Some(p), Some(m)) = (&s.force_root, metadata) {
         File::options()
             .write(true)
@@ -1048,18 +1009,7 @@ fn main() -> R<()> {
     let mut error = result
         .err()
         .map(|e: Box<dyn std::error::Error>| e.to_string())
-        .or_else(|| shutdown.as_ref().err().map(|e| format!("native shutdown failed: {e}")))
         .or_else(|| restored.err().map(|e| format!("metadata restoration failed: {e}")));
-    if s.native_state.is_some() {
-        report["native_state"] = json!({
-            "kind":"owned-lustr-mixed-v1",
-            "status":if shutdown.is_ok() && r.native_state.is_some() {"passed"} else {"failed"},
-            "method":"private sockets; Linux child subreaper; observed successful exit before clearing complete owned state",
-            "scope":"Cargo artifacts, mixed/native caches, TMPDIR and XDG_CACHE_HOME; OS page cache and source caches are not cleared",
-            "receipts":r.native_state.as_ref().map(|state| &state.receipts),
-            "error":shutdown.err().map(|e| e.to_string())
-        });
-    }
     report["records"] = json!(r.records);
     report["final_source_observation"] = match source(&s) {
         Ok(v) => {
@@ -1166,41 +1116,19 @@ mod tests {
         );
     }
     #[test]
-    fn rustc_profile_values_do_not_hide_features_or_package_options() {
+    fn rustc_profile_values_do_not_hide_features_or_retired_selectors() {
         let command = |args: &[&str]| Cmd { argv: args.iter().map(|s| Arg::Text((*s).into())).collect(), expected_exit: 0 };
         let base = command(&["/toolchain/cargo", "rustc", "-p", "core", "--profile", "check", "--lib"]);
-        let changed = command(&[
-            "/toolchain/lustr",
-            "--bluefe-root",
-            "/toolchain",
-            "--frontend-jobs=4",
-            "rustc",
-            "--features",
-            "extra",
-            "-p",
-            "core",
-            "--profile",
-            "check",
-            "--lib",
-        ]);
+        let changed = command(&["/toolchain/lustr", "rustc", "--features", "extra", "-p", "core", "--profile", "check", "--lib"]);
         let tail = cargo_tail(&base).unwrap();
         assert_eq!(tail[0], "rustc");
         assert!(rustc_check(&tail));
         assert_ne!(tail, cargo_tail(&changed).unwrap());
-        let same = command(&[
-            "/toolchain/lustr",
-            "--bluefe-root",
-            "check",
-            "--frontend-jobs",
-            "4",
-            "rustc",
-            "-p",
-            "core",
-            "--profile",
-            "check",
-            "--lib",
-        ]);
+        let same = command(&["/toolchain/cargo", "+1.99.1", "--color", "never", "rustc", "-p", "core", "--profile", "check", "--lib"]);
         assert_eq!(tail, cargo_tail(&same).unwrap());
+        for selector in ["--bluefe-root", "--frontend-jobs", "--engine", "--engine=rustc", "--frontend-jobs=4"] {
+            assert!(cargo_tail(&command(&["/toolchain/lustr", selector, "rustc", "--lib"])).is_err());
+        }
         assert!(cargo_tail(&command(&["/toolchain/lustr", "plan", "check"])).is_err());
     }
     #[test]

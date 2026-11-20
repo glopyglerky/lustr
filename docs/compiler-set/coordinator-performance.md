@@ -6,6 +6,11 @@
 > runner, source identities and results for replay; they do not qualify the
 > current native package or the unfinished full replacement.
 
+The acquisition CLI now refuses execution. Historical archive checking uses
+[`tools/check-coordinator-performance-archives.py`](../../tools/check-coordinator-performance-archives.py)
+and the existing replay readers. No command in this record restores the retired
+coordinator as a current compiler.
+
 [`tools/measure-coordinator-project.py`](../../tools/measure-coordinator-project.py)
 prepares and runs the real `crates/lustr` package through the existing
 [`lustr-bench`](benchmark-method.md) paired runner. It adds no measured fixture
@@ -112,38 +117,14 @@ are captured before the campaign for the public export.
 
 ## Run and replay
 
-After constructing and qualifying the source-built package, build the existing
-runner, gate and replay example. Use a new output directory outside the repository.
-The output parent must already exist. The default budget is two Cargo jobs; an
-explicit `--jobs` value must fit the process's observed CPU affinity.
-
-```bash
-cargo build --manifest-path crates/lustr-bench/Cargo.toml --release --locked \
-  --bin lustr-bench --bin lustr-bench-gate --example replay \
-  --target-dir "$RUNNER_TEMP/lustr-bench-target"
-
-cargo test --manifest-path crates/lustr-bench/Cargo.toml --locked \
-  --test native_state --bin lustr-bench --bin lustr-mixed-bench \
-  --target-dir "$RUNNER_TEMP/lustr-bench-tests"
-python3 tools/test-coordinator-campaign.py \
-  --replay "$RUNNER_TEMP/lustr-bench-target/release/examples/replay"
-
-python3 tools/measure-coordinator-project.py \
-  --repository "$GITHUB_WORKSPACE" \
-  --toolchain "$RUNNER_TEMP/lustr-source-built/toolchain" \
-  --runner "$RUNNER_TEMP/lustr-bench-target/release/lustr-bench" \
-  --gate "$RUNNER_TEMP/lustr-bench-target/release/lustr-bench-gate" \
-  --replay "$RUNNER_TEMP/lustr-bench-target/release/examples/replay" \
-  --output "$RUNNER_TEMP/lustr-coordinator-campaign"
-
-"$RUNNER_TEMP/lustr-bench-target/release/examples/replay" \
-  "$RUNNER_TEMP/lustr-coordinator-campaign/public/samples.json"
-```
-
-`--prepare-only` performs identity checks and writes the exact frozen source and
-five specifications. It reports `prepared-only` and creates no measured result.
-The paired campaign requires normal Unix-socket and child-process permissions;
-an environment that denies native daemon sockets cannot qualify that behavior.
+The recorded campaign used the retired mixed package. There is no current
+construction or acquisition recipe for that compiler lane. Its
+[original commands](https://github.com/glopyglerky/lustr/blob/ea26fe16636d390763257a19c19df3db992cdbcb/docs/compiler-set/coordinator-performance.md#run-and-replay)
+remain tied to the original source; do not adapt them into current product CI.
+Read-only replay, evidence recovery and reconciliation below remain useful for
+the existing records. New measurements follow the
+[current policy](practical-performance.md) and must bind the actual exclusive
+compiler rather than the old package schema.
 
 ### CI execution
 

@@ -1,5 +1,12 @@
 # Native daemon failures at public entries
 
+> Source-bound checkpoint. Statements about the current candidate, required
+> follow-up and measured speed below refer to the named source and date. The
+> [active correction](active-correction.md) identifies present implementation
+> work; the [current performance policy](practical-performance.md) controls new
+> claims. Historical successes, incomplete paths and failed results remain scoped
+> to their original implementation.
+
 The native client and the primary Lustr entry now keep ambiguous daemon
 exchanges terminal. A partially written request, a disconnected peer, a lost
 reply, a malformed frame, an old unclassified response or an unexpected

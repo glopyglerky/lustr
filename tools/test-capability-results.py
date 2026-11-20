@@ -8,6 +8,7 @@ compile and run the actual public compiler and independent Rust oracle.
 import importlib.util
 import json
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -31,11 +32,18 @@ test slow ... ignored
 
 test result: ok. 1 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
 """
+PANIC_OUTPUT = "\nthread 'adds' (123) panicked at /fixture/tests.rs:5:7:\nboom\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+
+
+def rust_panics():
+    oracle = RUST_TESTS.replace(b"test adds ... ok", b"test adds - should panic ... ok")
+    shown = "successes:\n\n---- adds stdout ----\n" + PANIC_OUTPUT + "\nsuccesses:\n    adds\n\n"
+    return oracle.replace(b"test result:", shown.encode() + b"test result:")
 
 
 def native_records():
-    return [{"schema": 1, "kind": "test", "name": "adds", "status": "pass", "exit_code": 0},
-            {"schema": 1, "kind": "test", "name": "slow", "status": "ignored", "exit_code": None},
+    return [{"schema": 1, "kind": "test", "name": "adds", "status": "pass", "exit_code": 0, "stdout": "", "stderr": ""},
+            {"schema": 1, "kind": "test", "name": "slow", "status": "ignored", "exit_code": None, "stdout": "", "stderr": ""},
             {"schema": 1, "kind": "summary", "build": "ok", "total": 2, "passed": 1,
              "failed": 0, "timed_out": 0, "ignored": 1, "filtered_out": 0}]
 
@@ -71,8 +79,57 @@ class ResultControls(unittest.TestCase):
         self.assertEqual(Q.native_test_outcomes(encoded(native_records())), Q.rust_test_outcomes(RUST_TESTS))
 
     def test_should_panic_name_is_not_changed(self):
+        records = native_records()
+        records[0]["exit_code"] = 101
+        records[0]["stderr"] = PANIC_OUTPUT.replace("'adds' (123)", "'main' (987)")
+        self.assertEqual(Q.rust_test_outcomes(rust_panics()), Q.native_test_outcomes(encoded(records)))
+
+    def test_ordinary_test_panic_cannot_pass_by_label(self):
+        records = native_records()
+        records[0]["exit_code"] = 101
+        records[0]["stderr"] = PANIC_OUTPUT
+        self.assertNotEqual(Q.native_test_outcomes(encoded(records)), Q.rust_test_outcomes(RUST_TESTS))
+
+    def test_should_panic_test_must_actually_panic(self):
+        self.assertNotEqual(Q.native_test_outcomes(encoded(native_records())), Q.rust_test_outcomes(rust_panics()))
+
+    def test_should_panic_wrong_payload_or_location_cannot_pass_by_label(self):
+        for output in (PANIC_OUTPUT.replace("boom", "different panic"), PANIC_OUTPUT.replace(":5:7:", ":8:9:")):
+            records = native_records()
+            records[0].update(exit_code=101, stderr=output)
+            self.assertNotEqual(Q.native_test_outcomes(encoded(records)), Q.rust_test_outcomes(rust_panics()))
+
+    def test_stdout_substring_and_ignored_output_cannot_hide_a_wrong_panic(self):
+        records = native_records()
+        records[0].update(exit_code=101, stdout="boom", stderr=PANIC_OUTPUT.replace("boom", "different panic"))
+        with self.assertRaisesRegex(ValueError, "unexpected captured output"):
+            Q.native_test_outcomes(encoded(records))
+        for index in (0, 1):
+            for stream in ("stdout", "stderr"):
+                records = native_records()
+                records[index][stream] = "unmatched output"
+                with self.subTest(index=index, stream=stream), self.assertRaisesRegex(ValueError, "unexpected captured output"):
+                    Q.native_test_outcomes(encoded(records))
+
+    def test_expected_panic_requires_observed_output_in_both_formats(self):
         oracle = RUST_TESTS.replace(b"test adds ... ok", b"test adds - should panic ... ok")
-        self.assertEqual(Q.rust_test_outcomes(oracle), {"adds": "pass", "slow": "ignored"})
+        with self.assertRaisesRegex(ValueError, "panic output"):
+            Q.rust_test_outcomes(oracle)
+        records = native_records()
+        records[0]["exit_code"] = 101
+        with self.assertRaisesRegex(ValueError, "panic output"):
+            Q.native_test_outcomes(encoded(records))
+
+    def test_only_thread_and_first_panic_note_are_normalized(self):
+        second_panic = PANIC_OUTPUT.split("note:")[0].replace("'adds' (123)", "'main' (987)")
+        self.assertEqual(Q.panic_signature(PANIC_OUTPUT), Q.panic_signature(second_panic))
+        for invalid in ("", "boom", PANIC_OUTPUT + "another message\n", PANIC_OUTPUT + PANIC_OUTPUT):
+            with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                Q.panic_signature(invalid)
+
+    def test_ignored_test_panic_contract_does_not_claim_execution(self):
+        oracle = RUST_TESTS.replace(b"test slow ... ignored", b"test slow - should panic ... ignored")
+        self.assertEqual(Q.native_test_outcomes(encoded(native_records())), Q.rust_test_outcomes(oracle))
 
     def test_empty_duplicate_and_incomplete_rust_results_are_rejected(self):
         for text in (b"", RUST_TESTS.replace(b"test adds ... ok\n", b""),
@@ -111,6 +168,14 @@ class ResultControls(unittest.TestCase):
             with self.subTest(record=record), self.assertRaises(ValueError):
                 Q.native_test_outcomes(encoded([record, *native_records()]))
 
+    def test_duplicate_json_fields_cannot_overwrite_a_failure(self):
+        original = encoded(native_records())
+        for before, after in ((b'"status": "pass"', b'"status": "fail", "status": "pass"'),
+                              (b'"exit_code": 0', b'"exit_code": 101, "exit_code": 0'),
+                              (b'"failed": 0', b'"failed": 1, "failed": 0')):
+            with self.subTest(field=before), self.assertRaisesRegex(ValueError, "duplicate"):
+                Q.native_test_outcomes(original.replace(before, after))
+
     def test_passing_label_cannot_hide_a_signal_or_invalid_exit(self):
         for value in (None, False, True, -15, 1, 101.0, "0"):
             records = native_records()
@@ -132,6 +197,32 @@ class ResultControls(unittest.TestCase):
     def test_empty_inventory_cannot_pass(self):
         with tempfile.TemporaryDirectory() as temporary, self.assertRaisesRegex(ValueError, "no supported"):
             Q.supported_probes(Path(temporary))
+
+    def test_pinned_inventory_cannot_shrink_or_reclassify_a_supported_case(self):
+        source = Path(__file__).resolve().parents[1]
+        self.assertEqual(len(Q.pinned_probes(source)), 18)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "upstream").mkdir()
+            shutil.copy2(source / "upstream/lust.pin", root / "upstream/lust.pin")
+            native = root / "compiler/native"
+            shutil.copytree(source / "compiler/native/tests/capabilities", native / "tests/capabilities")
+            (native / "scripts").mkdir()
+            shutil.copy2(source / "compiler/native/scripts/test-capabilities.py", native / "scripts/test-capabilities.py")
+            fixture = native / "tests/capabilities/attributes-test.rs"
+            original = fixture.read_bytes()
+            for mutation in (None, original.replace(b"// expect: ok", b"// expect: L1234"), original + b"\n"):
+                if mutation is None:
+                    fixture.unlink()
+                else:
+                    fixture.write_bytes(mutation)
+                with self.subTest(mutation=mutation is None), self.assertRaisesRegex(ValueError, "fixtures differ"):
+                    Q.pinned_probes(root)
+                fixture.write_bytes(original)
+            loader = native / "scripts/test-capabilities.py"
+            loader.write_text("# empty declaration probe\n")
+            with self.assertRaisesRegex(ValueError, "declaration probe differs"):
+                Q.pinned_probes(root)
 
 
 if __name__ == "__main__":

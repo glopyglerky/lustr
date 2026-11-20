@@ -1,5 +1,10 @@
 # Optional native-client startup diagnostic
 
+> Historical diagnostic. Its current CLI accepts only read-only `verify` of
+> retained evidence. The acquisition procedure and proposed next experiment
+> below describe the original source and are not a current package route.
+> Follow the [active correction](active-correction.md).
+
 Status: infrastructure with synthetic local controls. No real startup
 measurement, compiler speedup or causal attribution has been established.
 

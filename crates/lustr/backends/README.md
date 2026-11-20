@@ -1,7 +1,7 @@
 # Historical Cranelift qualification fixtures
 
-The Cranelift pin and setup helper preserve an independent Rust-backend
-experiment. They do not implement Lustr's missing Rust capabilities, and the
+The Cranelift pin and immutable setup history preserve an independent
+Rust-backend experiment. They do not implement Lustr's missing Rust capabilities, and the
 retired coordinator no longer executes `--engine cranelift` commands.
 
 The experiment found that the selected preview backend did not preserve the

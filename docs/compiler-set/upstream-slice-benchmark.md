@@ -1,5 +1,10 @@
 # Larger public slice and incremental Cargo comparison
 
+> Historical campaign. The package layout and whole-compiler lane described
+> below are retired. This source-bound record and its replay semantics do not
+> qualify current Lustr. Follow the [active correction](active-correction.md)
+> and [exclusive coverage contract](exclusive-coverage-contract.md).
+
 `tools/run-upstream-slice-benchmark.py` adds a separate campaign on the pinned
 upstream `goport-util-small` source. It compares pristine Lust, integrated
 Lust, the packaged Lustr entry, and matching Cargo/rustc with incremental
@@ -147,28 +152,11 @@ Replay does not freshly build the compiler or restore omitted executable
 binaries. The original campaign must also pass its own replay before the
 runner returns success.
 
-## Execute in the source-built workflow
+## Historical acquisition
 
-Run after the existing source-toolchain and pristine release-build steps:
-
-```bash
-python3 tools/test-upstream-slice-benchmark.py
-python3 tools/run-upstream-slice-benchmark.py \
-  --repository "$GITHUB_WORKSPACE" \
-  --pristine-source "$RUNNER_TEMP/lustr-pristine-source" \
-  --pristine-lust "$RUNNER_TEMP/lustr-pristine-target/release/lust" \
-  --pristine-build-log "$RUNNER_TEMP/lustr-pristine-build.log" \
-  --built "$RUNNER_TEMP/lustr-source-built" \
-  --output "$RUNNER_TEMP/lustr-public-slice" --pairs 12
-```
-
-The output directory must be new, absolute, and outside the source/toolchain
-trees. Each child has an explicit timeout and bounded recorded output. Preserve
-the output on success and failure. Keep this campaign separate from the
-schema-1/2 scalar and mixed-Cargo archives.
-
-Local feasibility checks can use development binaries, but their timings
-cannot satisfy the release-composition contract. Environments that refuse
-Unix socket binding cannot qualify the retained native path; the actual
-failure must be kept and the complete campaign executed elsewhere. No speed
-result is implied by adding this runner.
+The original acquisition depended on the retired whole-compiler package. Its
+[exact source and recipe](https://github.com/glopyglerky/lustr/blob/ea26fe16636d390763257a19c19df3db992cdbcb/docs/compiler-set/upstream-slice-benchmark.md#execute-in-the-source-built-workflow)
+remain historical evidence. This page recommends only read-only replay of
+existing reports, not constructing that package or running a new campaign
+through it. New speed evidence requires the current exclusive compiler and the
+[current total-time assessment](current-performance-assessment.md).

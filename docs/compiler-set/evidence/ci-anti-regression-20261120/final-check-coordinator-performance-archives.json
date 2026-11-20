@@ -1,0 +1,39 @@
+{
+  "argv": [
+    "python3",
+    "tools/check-coordinator-performance-archives.py",
+    "--replay",
+    "<OUTPUT>/ci-audit-target/debug/examples/replay"
+  ],
+  "cwd": "<CHECKOUT>",
+  "exit_code": 0,
+  "source_before": {
+    "tools/measure-coordinator-project.py": "e47afd18ac3dd8bfaeea0ce19d6af78a00a1ea2c0d198a4005766a77b20bc61d",
+    "tools/test-coordinator-campaign.py": "739f5cfd48c2509c2eba7b9cc5726d27b8651faea7cc683a3b6fc3af162f00e8",
+    "tools/test-reconciled-evidence.py": "26253a379af9c7f0b2148cc1717ddacea3e4e93339fca9bec4a42f3cbe171166",
+    "tools/check-coordinator-performance-archives.py": "533fbd0c8577da1606bda3408527ed49db0a7c1894e0d1a49b9e563bc2c17f43",
+    "crates/lustr-bench/examples/replay.rs": "61697cefbec9fcbfa17e74ca9b7c5e213d531ca8a9572db05ea8de69cdbc2df8",
+    "crates/lustr-bench/src/stats.rs": "429acb54af97958159dac5e3b628ac7b216f6f18246a9c296c7cbc9c61de2c13"
+  },
+  "source_after": {
+    "tools/measure-coordinator-project.py": "e47afd18ac3dd8bfaeea0ce19d6af78a00a1ea2c0d198a4005766a77b20bc61d",
+    "tools/test-coordinator-campaign.py": "739f5cfd48c2509c2eba7b9cc5726d27b8651faea7cc683a3b6fc3af162f00e8",
+    "tools/test-reconciled-evidence.py": "26253a379af9c7f0b2148cc1717ddacea3e4e93339fca9bec4a42f3cbe171166",
+    "tools/check-coordinator-performance-archives.py": "533fbd0c8577da1606bda3408527ed49db0a7c1894e0d1a49b9e563bc2c17f43",
+    "crates/lustr-bench/examples/replay.rs": "61697cefbec9fcbfa17e74ca9b7c5e213d531ca8a9572db05ea8de69cdbc2df8",
+    "crates/lustr-bench/src/stats.rs": "429acb54af97958159dac5e3b628ac7b216f6f18246a9c296c7cbc9c61de2c13"
+  },
+  "replay_binary_sha256": "a54f3a91179b98a18c6f616a7262fa114c19eab838c08c947625a153b2fd061c",
+  "current_compiler_qualification": false,
+  "historical_replay_only": true,
+  "streams": {
+    "stdout": {
+      "path": "final-check-coordinator-performance-archives.stdout",
+      "sha256": "b399a325121750bc7d8d361c173a8cc36529ea8258e6be094f71755837ddc5e3"
+    },
+    "stderr": {
+      "path": "final-check-coordinator-performance-archives.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  }
+}

@@ -1,0 +1,1 @@
+{"groups":[{"counts":"1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out","ignored_test_names":[],"passed_test_names":["test runtime_and_cleanup ... ok"]}],"ignored_test_names":[],"kind":"tests","passed_test_names":["test runtime_and_cleanup ... ok"]}

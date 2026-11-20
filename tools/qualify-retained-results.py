@@ -22,6 +22,21 @@ import types
 
 
 ROOT = Path(__file__).resolve().parents[1]
+PRISTINE_REVISION = "240e08d91d4aed0299639f6f11fd522912b248f9"
+PRISTINE_SCENARIO_TREE = "99c9d290cf722d9d984a6543b2e90dacaf5444b3"
+# Observed in the pinned upstream job recorded by the inventory. These
+# observations keep unresolved histories visible; they are never allowances
+# for a candidate to reject more valid Rust or silently skip required work.
+UPSTREAM_UNRESOLVED = {
+    "cargo03_build_rs_discovery": 2, "cargo05_path_dep_manifest": 1,
+    "cargo06_edition_lints": 3, "cargo09_workspace_members": 1,
+    "fm02_genmacro_modfile": 1, "gs02_bound_names_body_edit": 1,
+    "ms01_dep_builtin_body": 2, "ms02_dep_macro_alias_glob": 2,
+    "sd01_const_chain_where": 2, "sd02_const_fn_values": 2,
+    "sd21_const_named_header_edits": 6, "sd23_std_impl_lowerhex": 3,
+    "sig02_const_fn_closure": 1,
+}
+INTEGRATION_HISTORIES = {"mainret04_typed_entry_transition"}
 
 
 def require(condition, message):
@@ -33,10 +48,12 @@ def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def tree_id(directory):
+def tree_id(directory, exclude=()):
     """Compute Git's tree identity from actual fixture bytes, modes and links."""
     entries = []
     for path in directory.iterdir():
+        if path.name in exclude:
+            continue
         info = path.lstat()
         if stat.S_ISDIR(info.st_mode):
             mode, value, key = b"40000", tree_id(path), os.fsencode(path.name) + b"/"
@@ -55,16 +72,25 @@ def load_inventory(source, manifest):
     inventory = json.loads(manifest.read_text())
     require(inventory["schema"] == "lustr-retained-scenario-inventory-v1", "unknown inventory schema")
     pin = re.search(r'^revision = "([0-9a-f]{40})"$', (source / "upstream/lust.pin").read_text(), re.M)
-    require(pin is not None and inventory["upstream_revision"] == pin[1], "scenario inventory differs from the Lust pin")
+    require(pin is not None and inventory["upstream_revision"] == pin[1] == PRISTINE_REVISION
+            and inventory["upstream_scenario_tree"] == PRISTINE_SCENARIO_TREE,
+            "scenario inventory differs from the pinned upstream revision/tree")
     rows = inventory["scenarios"]
     require(rows and len({row["name"] for row in rows}) == len(rows), "empty or duplicated scenario inventory")
     require(all(re.fullmatch(r"[A-Za-z0-9_]+", row["name"]) and row["status"] in ("required", "unresolved") for row in rows), "invalid scenario identity or status")
-    expected = {row["name"] for row in rows} | {row["name"] for row in inventory["integration_histories"]}
+    integration = [row["name"] for row in inventory["integration_histories"]]
+    require(len(integration) == len(set(integration)) and set(integration) == INTEGRATION_HISTORIES,
+            "upstream histories cannot be reclassified as separate integration work")
+    expected = {row["name"] for row in rows} | set(integration)
     directory = source / "compiler/native/tests/daemon"
     require({p.name for p in directory.iterdir() if p.is_dir()} == expected, "scenario directories changed without inventory review")
+    require(tree_id(directory, INTEGRATION_HISTORIES) == PRISTINE_SCENARIO_TREE,
+            "complete upstream scenario inventory changed; candidate inputs cannot shrink it")
     for row in rows:
         require(tree_id(directory / row["name"]) == row["upstream_tree"], row["name"] + ": fixture differs from pinned upstream")
         require(type(row["historical_unsupported_versions"]) is int and row["historical_unsupported_versions"] >= 0, "invalid historical count")
+        require(row["historical_unsupported_versions"] == UPSTREAM_UNRESOLVED.get(row["name"], 0),
+                "required/unresolved classification differs from pinned upstream observations")
         require((row["status"] == "required") == (row["historical_unsupported_versions"] == 0), "historical unresolved coverage was silently admitted")
     require(digest(source / "compiler/native/scripts/test-daemon-scenarios.py") == inventory["scenario_loader_sha256"], "scenario loader changed without review")
     for name, versions in inventory["runtime_signals"].items():

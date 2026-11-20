@@ -1,5 +1,12 @@
 # Genuine consumer metadata: required completion service
 
+> Source-bound dependency investigation. The later
+> [native Cargo continuation](native-cargo-continuation.md) and
+> [selective metadata serializer](../../crates/lustr-metadata-encoder/README.md)
+> record bounded follow-through. The serializer and native consumer qualifier
+> are not yet connected into a product metadata path. The original full-SDK
+> encoder probe below is research evidence, not the complementary implementation.
+
 The shared definition service does not yet produce Rust metadata for native-owned
 consumer bodies. Inspection at repository commit
 `bd1d2d0067decc1771eed98884e64ff1fd12b3d4` and a direct experiment against the

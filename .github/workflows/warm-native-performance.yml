@@ -3,12 +3,12 @@ name: Historical native performance evidence
 on:
   pull_request:
     paths:
-      - 'tools/run-warm-native-comparison.py'
-      - 'tools/test-warm-native-comparison.py'
-      - 'tools/run-warm-native-startup.py'
-      - 'tools/test-warm-native-startup.py'
-      - 'tools/assess-warm-performance.py'
-      - 'tools/test-assess-warm-performance.py'
+      - 'tools/*warm*'
+      - 'tools/*upstream-slice*'
+      - 'tools/*mixed-performance*'
+      - 'tools/*benchmark-host*'
+      - 'tools/test-retired-acquisition.py'
+      - 'tools/test-workflow-inputs.py'
       - 'docs/compiler-set/evidence/native-nochange-2026-11-18/**'
       - 'docs/compiler-set/evidence/hosted-warm-failures-20261118/**'
       - '.github/workflows/warm-native-performance.yml'

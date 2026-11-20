@@ -1,0 +1,16 @@
+test_changed_selector_duration_is_rejected (__main__.Controls.test_changed_selector_duration_is_rejected) ... ok
+test_complete_synthetic_orchestration_replays (__main__.Controls.test_complete_synthetic_orchestration_replays) ... ok
+test_component_rejects_another_selected_target (__main__.Controls.test_component_rejects_another_selected_target) ... ok
+test_corrupt_real_shape_daemon_stream_is_rejected (__main__.Controls.test_corrupt_real_shape_daemon_stream_is_rejected) ... ok
+test_missing_retained_build_is_rejected (__main__.Controls.test_missing_retained_build_is_rejected) ... ok
+test_native_schedule_balances_orders_and_predecessors (__main__.Controls.test_native_schedule_balances_orders_and_predecessors) ... ok
+test_omitted_runtime_is_rejected (__main__.Controls.test_omitted_runtime_is_rejected) ... ok
+test_timed_trace_is_rejected (__main__.Controls.test_timed_trace_is_rejected) ... ok
+test_unmatched_public_environment_is_rejected (__main__.Controls.test_unmatched_public_environment_is_rejected) ... ok
+test_wrong_daemon_executable_is_rejected (__main__.Controls.test_wrong_daemon_executable_is_rejected) ... ok
+test_wrong_integrated_executable_is_rejected (__main__.Controls.test_wrong_integrated_executable_is_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 2.250s
+
+OK

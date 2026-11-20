@@ -32,7 +32,7 @@ fn temporary() -> PathBuf {
 fn owned_lifecycle_rejects_failed_shutdown_and_escaping_paths() {
     for case in ["warm-cold", "failed-shutdown", "escaping-state", "escaping-target"] {
         let output = Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", "native_state_child", "--nocapture"])
+            .args(["--ignored", "--exact", "native_state_child", "--nocapture"])
             .env("LUSTR_NATIVE_STATE_TEST_CASE", case)
             .output()
             .unwrap();
@@ -46,8 +46,9 @@ fn owned_lifecycle_rejects_failed_shutdown_and_escaping_paths() {
 }
 
 #[test]
+#[ignore = "isolated child helper; the parent test supplies an owned case"]
 fn native_state_child() {
-    let Ok(case) = std::env::var("LUSTR_NATIVE_STATE_TEST_CASE") else { return };
+    let case = std::env::var("LUSTR_NATIVE_STATE_TEST_CASE").expect("parent must select the isolated case");
     let root = temporary();
     let targets = root.join("targets");
     let mut state = native_state::Runtime::new(&targets).unwrap();

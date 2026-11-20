@@ -1,5 +1,12 @@
 # Avoid unused setup materialization on a retained check
 
+> Source-bound checkpoint. Statements about the current candidate, required
+> follow-up and measured speed below refer to the named source and date. The
+> [active correction](active-correction.md) identifies present implementation
+> work; the [current performance policy](practical-performance.md) controls new
+> claims. Historical successes, incomplete paths and failed results remain scoped
+> to their original implementation.
+
 Status: isolated source candidate. Both focused tests pass on x86_64 Linux in
 ordinary mode and in a fresh process with the resolve oracle enabled. The first
 test setup failure remains preserved in the [focused evidence](evidence/native-nochange-2026-11-18/README.md).

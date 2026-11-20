@@ -1,12 +1,19 @@
 # Native preview 2026.11.15-1
 
+> Historical release record. This preview packages a full Rust compatibility
+> SDK and a retired compiler route. It is not the current Lustr implementation
+> or a recommended installation. Its original assets, notices, source and
+> qualification evidence remain preserved. Current work is in
+> [PR #33](https://github.com/glopyglerky/lustr/pull/33); the full replacement is
+> unfinished. See the [exclusive coverage contract](exclusive-coverage-contract.md).
+
 This pre-alpha preview packages unchanged upstream Lust, bounded native Lustr
 library additions and the official unmodified Rust nightly compatibility SDK.
 The [Lustr release](https://github.com/glopyglerky/lustr/releases/tag/native-preview-2026.11.15-1)
 and [blueFe release](https://github.com/glopyglerky/blueFe/releases/tag/native-preview-2026.11.15-1)
 carry identical assets. Independent native Rust and metadata expansion remain
-incomplete research. Current delivery combines this Rust implementation with
-Lust's fast supported path; the [current contract](native-contract.md) applies.
+incomplete research at that release. Its compatibility route does not satisfy
+the [current contract](native-contract.md).
 
 ## Source and delivery
 
@@ -26,19 +33,10 @@ It is not a fork-produced Rust compiler. The root native entry bytes match the
 qualified v26/v28 runtime; preview assembly adds source, notices and evidence.
 Experimental rustc-dev metadata and withdrawn TLS/prefork paths are excluded.
 
-Download all release assets, verify `SHA256SUMS`, and extract the archive into
-a new versioned directory. Preserve hardlinks and the complete directory tree.
-Use its absolute root; no global installation or default-toolchain change is
-required:
-
-```sh
-BLUEFE_ROOT=/absolute/bluefe-lustr-native-preview-2026.11.15-1
-"$BLUEFE_ROOT/bin/lustr" build program.rs -o application
-"$BLUEFE_ROOT/bin/lustr" check program.rs
-"$BLUEFE_ROOT/bin/lustr" --bluefe-root "$BLUEFE_ROOT" doctor
-CARGO="$BLUEFE_ROOT/bin/cargo" RUSTC="$BLUEFE_ROOT/bin/rustc" \
-  RUSTDOC="$BLUEFE_ROOT/bin/rustdoc" "$BLUEFE_ROOT/bin/lustr" test --locked
-```
+The [original installation recipe](https://github.com/glopyglerky/lustr/blob/ea26fe16636d390763257a19c19df3db992cdbcb/docs/compiler-set/native-preview-2026.11.15-1.md#source-and-delivery)
+is preserved with that release's source. It is not a current installation
+recommendation. Do not use this archive, or either November 9 coordinator
+preview, as the corrected implementation.
 
 The archive's README describes routing, host dependencies and relinking.
 `source-components.json`, `payload-manifest.json`, `platform.json`,

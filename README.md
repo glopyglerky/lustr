@@ -24,6 +24,15 @@ is the canonical direction.
 **The full replacement is unfinished. No current package is qualified as the
 compiler described above.**
 
+While [PR #33](https://github.com/glopyglerky/lustr/pull/33) remains unmerged,
+its correction is the current implementation lane. Its published audit baseline
+is [`ea26fe16`](https://github.com/glopyglerky/lustr/tree/ea26fe16636d390763257a19c19df3db992cdbcb);
+refresh the PR head before building or continuing work. At that baseline, `next`
+has received governing documentation separately and still contains earlier
+product code. After the correction merges, verify its inclusion in the current
+integration source and continue from that source. Closed predecessor PRs and
+preview tags remain historical sources, not alternative development lanes.
+
 | Snapshot | What is actually present |
 | --- | --- |
 | Pre-correction default `next`, [7cea76c9](https://github.com/glopyglerky/lustr/tree/7cea76c9d3adc587b54ccff168fe07efafd40309) | Earlier native-first entry, library retry and full-Rust compatibility paths. It predates the scalar mixed bridge. |
@@ -58,6 +67,7 @@ history and historical evidence remain intact.
 | [Implementation cleanup](docs/compiler-set/exclusive-coverage-cleanup.md) | Removed routes, preserved components, focused validation and remaining gaps. |
 | [Ownership follow-through](docs/compiler-set/exclusive-coverage-followthrough.md) | Remaining bridge, daemon and acceptance conflicts, native runtime repair and portability priority. |
 | [Sole-goal audit](docs/compiler-set/sole-goal-audit.md) | Recorded route cleanup, ownership and release clarification, actual public-entry results and remaining gaps. |
+| [Documentation disposition](docs/compiler-set/documentation-disposition.json) | Complete baseline Markdown inventory, active authority, scoped checkpoints and untouched donor/evidence boundaries. |
 | [Capability result qualification](docs/compiler-set/capability-result-qualification.md) | Compares real generated output and test outcomes through the public compiler; runs installed-package contracts in CI. |
 | [Retained-history result qualifier](tools/qualify-retained-results.py) | Uses pinned acceptance expectations, separate compile/runtime results and the same surviving daemon; unresolved histories remain visible. |
 | [Native Cargo continuation](docs/compiler-set/native-cargo-continuation.md) | Required dependency/host-script integration, exact unit planning, retained input proofs, original failures and Darwin signing repair. |
@@ -119,3 +129,10 @@ The [prior default README](https://github.com/glopyglerky/lustr/blob/7cea76c9d3a
 retains preview commands and measurements in their original context. Earlier
 compatibility packages remain historical artifacts. They do not change Lustr's
 sole goal or authorize a hidden fallback in a future product.
+
+The `preview-2026.11.09-1`, `preview-2026.11.09-2` and
+`native-preview-2026.11.15-1` releases are historical coordinator or full-SDK
+packages. Their downloads and installation recipes are not recommendations for
+current Lustr. There is no qualified replacement release to install yet. Current
+source and unfinished acceptance remain in the
+[active correction record](docs/compiler-set/active-correction.md).

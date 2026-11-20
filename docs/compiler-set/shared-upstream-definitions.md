@@ -1,5 +1,13 @@
 # Shared upstream definitions in a native checked request
 
+> Bounded research and source-bound evidence. The broad compiler-private SDK
+> dependency used by this experiment is not an admitted selective complement.
+> Native ownership and useful ABI/emission mechanisms remain subject to the
+> [exclusive coverage contract](exclusive-coverage-contract.md), the
+> [import inventory](../../upstream/complement-imports.json) and the current
+> [native Cargo continuation](native-cargo-continuation.md). Successful fixtures
+> do not establish full coverage, minimal imports or product feature reachability.
+
 The [integer-signature continuation](shared-integer-abi.md) extends this original
 u64-only slice with actual field types, mixed signatures and explicit LLVM ABI
 adapters. The original qualification results below retain their source scope.

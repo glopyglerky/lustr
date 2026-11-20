@@ -1,5 +1,12 @@
 # Native main C type repair
 
+> Source-bound checkpoint. Statements about the current candidate, required
+> follow-up and measured speed below refer to the named source and date. The
+> [active correction](active-correction.md) identifies present implementation
+> work; the [current performance policy](practical-performance.md) controls new
+> claims. Historical successes, incomplete paths and failed results remain scoped
+> to their original implementation.
+
 This candidate ports the narrow, already investigated type correction from
 [PR #24](https://github.com/glopyglerky/lustr/pull/24) onto the current PR #26
 native tree. It does not import that branch's older integration identities or

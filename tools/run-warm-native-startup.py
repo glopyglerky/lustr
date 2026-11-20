@@ -237,18 +237,17 @@ def verify(output):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    commands = parser.add_subparsers(dest="command", required=True)
-    live = commands.add_parser("run")
-    for name in ("campaign", "pristine-intermediates", "output"): live.add_argument("--" + name, type=Path, required=True)
-    replay = commands.add_parser("verify")
-    replay.add_argument("output", type=Path)
+    if sys.argv[1:2] != ["verify"]:
+        print("Retired whole-rustc acquisition is disabled. Use verify DIRECTORY for immutable historical evidence.", file=sys.stderr)
+        return 2
+    parser = argparse.ArgumentParser(description="Verify frozen historical evidence without compiler execution or current qualification.")
+    parser.add_argument("command", choices=("verify",))
+    parser.add_argument("output", type=Path)
     args = parser.parse_args()
-    for key, value in vars(args).items():
-        if isinstance(value, Path): setattr(args, key, value.resolve())
-    if args.command == "run": run(args)
-    else: verify(args.output); print("Verified 192 startup observations and six excluded primes; no performance admission")
+    verify(args.output.resolve())
+    print("Verified historical evidence; no compiler execution or current qualification.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

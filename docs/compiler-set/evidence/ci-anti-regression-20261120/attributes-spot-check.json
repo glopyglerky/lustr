@@ -1,0 +1,107 @@
+{
+  "schema": "lustr-capability-panic-parser-spot-check-v1",
+  "passed": true,
+  "scope": "Captured unchanged native fixture output versus a freshly executed pinned Rust oracle. This is a parser compatibility check, not a new current compiler campaign.",
+  "native_compiler_newly_executed": false,
+  "current_compiler_qualification": false,
+  "captured_artifact": {
+    "id": 14596324350,
+    "run": 44663331772,
+    "attempt": 1,
+    "sha256": "11c1ad6fb151b479a1cf53a84547dabc7a6431b9a0eb337155949ba862cde40c",
+    "source_head": "e93785ba9fa149ba10cd260c4f2735349aab988f",
+    "member": "capability-results/attributes-test-native-test.stdout",
+    "member_sha256": "c9288bce2f24fcdaa304079f2472c42244546fd5541ec7f1b6dd78e22b31e8a7"
+  },
+  "fixture_sha256": "bf8d1973af9de11278f515d97559aecc1b3912c786729c49c647e1e8eefa0a0b",
+  "oracle_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+  "oracle_binary_sha256": "7c3872c6abbf7a638d19f9eed3a52bb91fc677823a6bf8f1267757c580e026bf",
+  "evaluator_sha256": "5a4b39319fa9a9a9e7a884283d48942ed8697d133a650d0625d77119b9e39795",
+  "path_mapping": {
+    "local_source_prefix": "<OUTPUT>/ci-audit-panic-oracle",
+    "captured_source_prefix": "/home/runner/work/_temp/capability-results/work/sources",
+    "reason": "Explicit rustc path remapping aligns this local spot check with the original captured fixture path; the CI qualifier uses one shared source path without remapping."
+  },
+  "commands": [
+    {
+      "label": "version",
+      "argv": [
+        "<PINNED_SDK>/bin/rustc",
+        "-vV"
+      ],
+      "cwd": "<CHECKOUT>",
+      "exit": 0,
+      "stdout_sha256": "bbc9b960fe50c84bca20f3109950bcb87c48b6d1ce61d2fc2fc1519aaba2daaa",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "build",
+      "argv": [
+        "<PINNED_SDK>/bin/rustc",
+        "--edition=2024",
+        "--crate-name",
+        "capability_probe",
+        "-A",
+        "warnings",
+        "-C",
+        "overflow-checks=on",
+        "--test",
+        "<OUTPUT>/ci-audit-panic-oracle/attributes-test.rs",
+        "--remap-path-prefix",
+        "<OUTPUT>/ci-audit-panic-oracle=/home/runner/work/_temp/capability-results/work/sources",
+        "-o",
+        "<OUTPUT>/ci-audit-panic-oracle/attributes-test"
+      ],
+      "cwd": "<CHECKOUT>",
+      "exit": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "run",
+      "argv": [
+        "<OUTPUT>/ci-audit-panic-oracle/attributes-test",
+        "--test-threads=1",
+        "--format=pretty",
+        "--show-output"
+      ],
+      "cwd": "<CHECKOUT>",
+      "exit": 0,
+      "stdout_sha256": "d9fb60b950bd0cc11934bf08e2b7983b316735bbdcf85fc01b1b64453729d793",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "outcomes": {
+    "adds": {
+      "status": "pass",
+      "exit_code": 0,
+      "panic": null
+    },
+    "slow": {
+      "status": "ignored",
+      "exit_code": null,
+      "panic": null
+    },
+    "panics": {
+      "status": "pass",
+      "exit_code": 101,
+      "panic": {
+        "location": "/home/runner/work/_temp/capability-results/work/sources/attributes-test.rs:19:5",
+        "message": "boom"
+      }
+    },
+    "tests::in_module": {
+      "status": "pass",
+      "exit_code": 0,
+      "panic": null
+    },
+    "tests::nested::deep": {
+      "status": "pass",
+      "exit_code": 101,
+      "panic": {
+        "location": "/home/runner/work/_temp/capability-results/work/sources/attributes-test.rs:33:13",
+        "message": "nested"
+      }
+    }
+  }
+}

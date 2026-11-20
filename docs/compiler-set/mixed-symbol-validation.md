@@ -1,5 +1,11 @@
 # Mixed scalar object validation without a symbol-tool process
 
+> Historical source-bound record. The object-validation mechanism remains useful; the compiler selection and retry route below is retired.
+> Follow the [active correction](active-correction.md) and
+> [exclusive coverage contract](exclusive-coverage-contract.md).
+> Earlier results and proposals below do not qualify current source or authorize
+> a fallback, duplicate Rust frontend, runtime ownership probe or new install route.
+
 The mixed scalar emitter now reads its TinyCC object in process before the
 existing rename and file/directory synchronization. It checks every symbol for
 unrepresented imports and requires the exact expected function export. The

@@ -1,0 +1,96 @@
+
+running 13 tests
+test resources::tests::missing_malformed_mismatched_and_status_inconsistent_reports_fail_closed ... ok
+test order::tests::reproducible_and_no_fixed_middle_lane ... ok
+test stats::tests::invalid ... ok
+test tests::cargo_build_outputs_must_stay_in_the_owned_lane ... ok
+test tests::rustc_profile_values_do_not_hide_features_or_retired_selectors ... ok
+test tests::actual_evidence_required ... ok
+test stats::tests::ties_and_known_p ... ok
+test tests::old_and_new_cargo_fingerprint_layouts_are_observed ... ok
+test tests::os_bytes_and_normalization ... ok
+test stats::tests::constant_and_null ... ok
+test order::tests::every_prefix_balances_each_lane_position ... ok
+test tests::only_the_known_unset_metadata_hint_is_projected ... ok
+test stats::tests::symmetry_seed_bounds ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 3 tests
+test tests::ignored_names_and_every_harness_remain_visible ... ok
+test tests::durations_are_ignored_but_counts_and_test_names_are_preserved ... ok
+test tests::success_label_cannot_hide_missing_filtered_failed_or_duplicate_tests ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 20 tests
+test native_evidence::tests::duplicate_record_rejects ... ok
+test native_evidence::tests::contradictory_reuse_route_rejects ... ok
+test native_evidence::tests::duplicate_counter_rejects_even_when_equal ... ok
+test native_evidence::tests::all_nonzero_work_counters_reject ... ok
+test native_evidence::tests::empty_fixture_rejects ... ok
+test native_evidence::tests::full_route_is_not_accepted_with_zero_counters ... ok
+test native_evidence::tests::malformed_counter_rejects ... ok
+test native_evidence::tests::explicit_reuse_remains_distinct ... ok
+test native_evidence::tests::observed_pristine_zero_body_route_is_retained_not_zero_total_work ... ok
+test native_evidence::tests::unrelated_text_cannot_supply_evidence ... ok
+test native_evidence::tests::missing_work_counter_rejects ... ok
+test native_evidence::tests::nonzero_checked_is_not_confused_with_rechecked ... ok
+test order::tests::reproducible_and_no_fixed_middle_lane ... ok
+test stats::tests::invalid ... ok
+test stats::tests::ties_and_known_p ... ok
+test stats::tests::constant_and_null ... ok
+test order::tests::every_prefix_balances_each_lane_position ... ok
+test stats::tests::symmetry_seed_bounds ... ok
+
+running 1 test
+test scalar_contract ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+test scalar_contract ... FAILED
+
+failures:
+
+---- scalar_contract stdout ----
+
+thread 'scalar_contract' (1711) panicked at /tmp/lustr-rustc-reference-1606-1795144328315360672/tests.rs:1:223:
+assertion failed: false
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    scalar_contract
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+test reference_tests::reference_test_adapter_executes_once_and_preserves_failure ... ok
+test reference_tests::reference_build_check_edits_and_rejection_execute_real_rustc ... ok
+
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.36s
+
+
+running 3 tests
+test native_state_child ... ignored, isolated child helper; the parent test supplies an owned case
+test component_receipts_bind_actual_optimized_binaries ... ok
+test owned_lifecycle_rejects_failed_shutdown_and_escaping_paths ... ok
+
+test result: ok. 2 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+
+running 3 tests
+test retired_mixed_campaign_cannot_create_output_or_query_a_tool ... ok
+test retired_state_policy_cannot_be_acquired_through_the_general_runner ... ok
+test retired_routed_engines_never_invoke_the_supplied_compiler ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+

@@ -976,70 +976,19 @@ def verify(output):
     return report
 
 
-def measure(args):
-    orders(args.pairs)
-    require(args.output.is_absolute() and not args.output.exists(), "new absolute output required")
-    args.output.mkdir(mode=0o700, parents=True)
-    campaign = Campaign(args)
-    failure = None
-    try:
-        campaign.execute()
-    except BaseException as error:
-        failure = error
-        campaign.report.update(status="failed", error=f"{type(error).__name__}: {error}", summaries=None, samples=campaign.samples)
-    finally:
-        campaign.recorder.raw.close()
-        campaign.report["raw_sha256"] = S.digest(args.output / "raw.jsonl")
-        S.write_json(args.output / "report.json", campaign.report)
-        (args.output / "README.md").write_text(render(campaign.report))
-        with (args.output / "samples.csv").open("w", newline="") as stream:
-            writer = csv.DictWriter(stream, fieldnames=("sample", "lane", "phase", "seconds", "commands"))
-            writer.writeheader(); writer.writerows(campaign.samples)
-    if failure:
-        raise failure
-    try:
-        report = verify(args.output)
-    except BaseException as error:
-        campaign.report.update(status="failed", error=f"portable replay: {type(error).__name__}: {error}")
-        S.write_json(args.output / "report.json", campaign.report)
-        (args.output / "README.md").write_text(render(campaign.report))
-        raise
-    print(render(report))
-    return 0 if report["warm_target"]["meets_target"] else 2
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    commands = parser.add_subparsers(dest="command", required=True)
-    build = commands.add_parser("build-package")
-    build.add_argument("--lane", choices=PUBLIC, required=True)
-    for name in ("source", "sdk", "tcc", "built", "pristine-source", "cargo-home", "output"):
-        build.add_argument("--" + name, type=Path, required=True)
-    build.add_argument("--timeout", type=int, default=5400)
-    qualify = commands.add_parser("qualify-package")
-    qualify.add_argument("--lane", choices=PUBLIC, required=True)
-    for name in ("build-receipt", "native-oracle-sdk", "output"):
-        qualify.add_argument("--" + name, type=Path, required=True)
-    qualify.add_argument("--timeout", type=int, default=5400)
-    run = commands.add_parser("measure")
-    for name in ("repository", "baseline-source", "built", "baseline-built", "baseline-receipt", "candidate-receipt",
-                 "baseline-gates", "candidate-gates", "pristine-source", "pristine-lust", "pristine-build-log", "output"):
-        run.add_argument("--" + name, type=Path, required=True)
-    run.add_argument("--pairs", type=int, choices=(24,), default=24)
-    run.add_argument("--timeout", type=int, default=180)
-    replay = commands.add_parser("verify")
-    replay.add_argument("output", type=Path)
+    if sys.argv[1:2] != ["verify"]:
+        print("Retired whole-rustc acquisition is disabled. Use verify DIRECTORY for immutable historical evidence.", file=sys.stderr)
+        return 2
+    parser = argparse.ArgumentParser(description="Verify frozen historical evidence without compiler execution or current qualification.")
+    parser.add_argument("command", choices=("verify",))
+    parser.add_argument("output", type=Path)
     args = parser.parse_args()
-    for key, value in vars(args).items():
-        if isinstance(value, Path): setattr(args, key, value.resolve())
-    if args.command == "verify":
-        report = verify(args.output)
-        print(f"Verified {len(report['samples'])} complete-package timings; warm target met: {report['warm_target']['meets_target']}")
-        return 0
-    require(1 <= args.timeout <= 7200, "timeout out of range")
-    if args.command == "build-package": build_package(args); return 0
-    if args.command == "qualify-package": qualify_package(args); return 0
-    return measure(args)
+    verify(args.output.resolve())
+    print("Verified historical evidence; no compiler execution or current qualification.")
+    return 0
 
 
 if __name__ == "__main__":

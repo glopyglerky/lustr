@@ -8,6 +8,7 @@ fallback. This finite cold campaign does not qualify retained speed or all Rust.
 """
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -19,6 +20,12 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
+# These are objects of the declared pristine Lust commit, not observations of
+# whichever candidate happens to be under test. Updating the pin requires an
+# explicit review of this finite qualification inventory too.
+PRISTINE_REVISION = "240e08d91d4aed0299639f6f11fd522912b248f9"
+PRISTINE_CAPABILITY_TREE = "8ab09ce870ed08a5c8bde879565437673f4f6fb1"
+PRISTINE_PROBE_SHA256 = "6c1b038396abc5a2b2084067a6e176fa2d2418a3ba8a1c45cc6e14c3a0755a2a"
 
 
 def require(condition, message):
@@ -52,6 +59,23 @@ def supported_probes(directory):
     return probes
 
 
+def pinned_probes(source):
+    pin = re.search(r'^revision = "([0-9a-f]{40})"$', (source / "upstream/lust.pin").read_text(), re.M)
+    require(pin is not None and pin[1] == PRISTINE_REVISION, "capability inventory differs from the Lust pin")
+    # Reuse the retained-history evaluator's byte/mode/link Git-tree reader.
+    # No compilation, working-tree mutation or candidate-derived expectation
+    # participates in identifying the original upstream fixture inventory.
+    spec = importlib.util.spec_from_file_location("retained_result_inventory", Path(__file__).with_name("qualify-retained-results.py"))
+    retained = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(retained)
+    directory = source / "compiler/native/tests/capabilities"
+    require(retained.tree_id(directory) == PRISTINE_CAPABILITY_TREE,
+            "capability fixtures differ from pinned upstream; missing or reclassified cases cannot qualify")
+    require(digest(source / "compiler/native/scripts/test-capabilities.py") == PRISTINE_PROBE_SHA256,
+            "capability declaration probe differs from pinned upstream")
+    return supported_probes(directory)
+
+
 def compare_program(candidate, oracle):
     require(candidate.returncode == 0, f"candidate program exited {candidate.returncode}")
     require(oracle.returncode == 0, f"oracle program exited {oracle.returncode}")
@@ -59,21 +83,52 @@ def compare_program(candidate, oracle):
     require(candidate.stderr == oracle.stderr, "program stderr differs from Rust")
 
 
+def panic_signature(output):
+    # The pinned tests use the default hook with one-line messages. Only the
+    # harness thread identity and the process-wide first-panic note differ.
+    # Keep the source location and complete message; reject unfamiliar output
+    # instead of broadening a normalization until a failing test passes.
+    note = "\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace"
+    text = output.strip("\n").removesuffix(note)
+    match = re.fullmatch(r"thread '[^\n]+'(?: \([0-9]+\))? panicked at ([^\n]+:[0-9]+:[0-9]+):\n([^\n]*)", text)
+    require(match is not None, "missing or unrecognized default-hook panic output")
+    return {"location": match[1], "message": match[2]}
+
+
 def rust_test_outcomes(stdout):
     text = stdout.decode("utf-8")
-    matches = re.findall(r"^test (\S+?)(?: - should panic)? \.\.\. (ok|FAILED|ignored)$", text, re.M)
-    outcomes = {name: {"ok": "pass", "FAILED": "fail", "ignored": "ignored"}[status] for name, status in matches}
+    matches = re.findall(r"^test (\S+?)( - should panic)? \.\.\. (ok|FAILED|ignored)$", text, re.M)
+    shown = re.findall(r"^---- (\S+) stdout ----\n(.*?)(?=^---- \S+ stdout ----\n|^successes:\n|\Z)", text, re.M | re.S)
+    outputs = dict(shown)
+    require(len(outputs) == len(shown), "duplicated Rust test output sections")
+    # The oracle's harness knows the attributes independently of the native
+    # harness. Native tests execute in children: an expected panic must exit
+    # 101; a normal passing test must exit 0. Never accept the candidate's
+    # "pass" label as proof that either expectation actually held.
+    outcomes = {name: {"status": {"ok": "pass", "FAILED": "fail", "ignored": "ignored"}[status],
+                       "exit_code": None if status == "ignored" else 101 if panic else 0,
+                       "panic": panic_signature(outputs.get(name, "")) if panic and status == "ok" else None}
+                for name, panic, status in matches}
+    require(set(outputs) == {name for name, panic, status in matches if panic and status == "ok"},
+            "pinned Rust test fixture has unexpected captured output")
     summary = re.findall(r"^test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;", text, re.M)
     require(len(summary) == 1 and matches and len(outcomes) == len(matches), "Rust test outcomes are missing or duplicated")
     passed, failed, ignored, measured, filtered = map(int, summary[0])
     require(failed == measured == filtered == 0 and passed > 0, "Rust test oracle did not execute all selected tests")
-    require(passed == sum(value == "pass" for value in outcomes.values()) and ignored == sum(value == "ignored" for value in outcomes.values()), "Rust test summary differs from its individual outcomes")
+    require(passed == sum(value["status"] == "pass" for value in outcomes.values()) and ignored == sum(value["status"] == "ignored" for value in outcomes.values()), "Rust test summary differs from its individual outcomes")
     require(passed + ignored == len(outcomes), "Rust test outcome count differs")
     return outcomes
 
 
 def native_test_outcomes(stdout):
-    records = [json.loads(line) for line in stdout.splitlines() if line.strip()]
+    def unique_fields(pairs):
+        record = {}
+        for key, value in pairs:
+            require(key not in record, "duplicate native test JSON field: " + key)
+            record[key] = value
+        return record
+
+    records = [json.loads(line, object_pairs_hook=unique_fields) for line in stdout.splitlines() if line.strip()]
     require(all(isinstance(item, dict) for item in records), "native test records must be objects")
     require(all(type(item.get("schema")) is int and item["schema"] == 1
                 and item.get("kind") in ("test", "summary") for item in records),
@@ -86,17 +141,25 @@ def native_test_outcomes(stdout):
     require(all(item.get("exit_code") is None if item["status"] == "ignored"
                 else type(item.get("exit_code")) is int and item["exit_code"] in (0, 101)
                 for item in tests), "native test has an invalid or signalled exit")
-    outcomes = {item["name"]: item["status"] for item in tests}
+    require(all(isinstance(item.get("stdout"), str) and isinstance(item.get("stderr"), str) for item in tests),
+            "native test streams are missing or malformed")
+    # The pinned attributes fixture prints nothing; its only captured output
+    # is the expected panic hook on stderr. A new fixture shape needs explicit
+    # comparison rules, rather than silently ignoring successful-test output.
+    require(all(item["stdout"] == "" and (item["exit_code"] == 101 or item["stderr"] == "") for item in tests),
+            "pinned native test fixture has unexpected captured output")
+    outcomes = {item["name"]: {"status": item["status"], "exit_code": item["exit_code"],
+                               "panic": panic_signature(item["stderr"]) if item["exit_code"] == 101 else None} for item in tests}
     require(len(summaries) == 1 and tests and len(outcomes) == len(tests), "native test outcomes are missing or duplicated")
-    require(all(value in ("pass", "ignored") for value in outcomes.values()), "native test failed or timed out")
+    require(all(value["status"] in ("pass", "ignored") for value in outcomes.values()), "native test failed or timed out")
     summary = summaries[0]
     require(all(type(summary.get(field)) is int and summary[field] >= 0
                 for field in ("total", "passed", "failed", "timed_out", "ignored", "filtered_out")),
             "native test counts must be nonnegative integers")
     require(summary["build"] == "ok" and summary["failed"] == summary["timed_out"] == summary["filtered_out"] == 0, "native test summary reports an incomplete or failed run")
     require(summary["total"] == len(outcomes) and summary["passed"] > 0
-            and summary["passed"] == sum(value == "pass" for value in outcomes.values())
-            and summary["ignored"] == sum(value == "ignored" for value in outcomes.values()),
+            and summary["passed"] == sum(value["status"] == "pass" for value in outcomes.values())
+            and summary["ignored"] == sum(value["status"] == "ignored" for value in outcomes.values()),
             "native test summary differs from its individual outcomes")
     return outcomes
 
@@ -161,7 +224,9 @@ def main(argv=None):
 
     try:
         source_probes = args.source / "compiler/native/tests/capabilities"
-        probes = supported_probes(source_probes)
+        probes = pinned_probes(args.source)
+        report["upstream_inventory"] = {"revision": PRISTINE_REVISION, "fixture_tree": PRISTINE_CAPABILITY_TREE,
+                                        "declaration_probe_sha256": PRISTINE_PROBE_SHA256}
         report["expected_cases"] = [path.name for path, _ in probes]
         report["fixture_sha256"] = {str(path.relative_to(source_probes)): digest(path) for path in sorted(source_probes.rglob("*")) if path.is_file()}
         runtime = args.entry.parent.parent
@@ -198,11 +263,11 @@ def main(argv=None):
                 else:
                     accepted(label + "-rust-build", [args.rustc, *flags, "--test", source, "-o", oracle])
                     case["artifact_sha256"] = {"rust": digest(oracle)}
-                    expected = accepted(label + "-rust-test", [oracle, "--test-threads=1", "--format=pretty"])
+                    expected = accepted(label + "-rust-test", [oracle, "--test-threads=1", "--format=pretty", "--show-output"])
                     actual = accepted(label + "-native-test", [args.entry, "test", source, "--json"])
                     expected_tests, actual_tests = rust_test_outcomes(expected.stdout), native_test_outcomes(actual.stdout)
-                    require(actual_tests == expected_tests, "native test names/statuses differ from Rust")
-                    case.update(comparison="exact test names/statuses, complete nonempty summaries and zero harness exits", outcomes=actual_tests)
+                    require(actual_tests == expected_tests, "native test names/statuses, panic exits or messages differ from Rust")
+                    case.update(comparison="exact test names/statuses and oracle panic exits/messages/locations; only thread identities and first-panic notes normalized; complete nonempty summaries and zero harness exits", outcomes=actual_tests)
                 case["passed"] = True
             except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
                 case["failure"] = str(error)

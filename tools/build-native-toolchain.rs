@@ -13,12 +13,6 @@ use std::{
 mod host_runtime;
 #[path = "host-sdk.rs"]
 mod host_sdk;
-#[allow(dead_code)]
-#[path = "../src/native_expansion.rs"]
-mod native_expansion;
-#[allow(dead_code)]
-#[path = "../src/owned_child.rs"]
-mod owned_child;
 #[path = "selection-toolchain-receipt.rs"]
 mod selection_toolchain;
 
@@ -60,47 +54,6 @@ fn copy(source: &Path, target: &Path) {
     fs::copy(source, target).unwrap();
     fs::File::open(target).unwrap().sync_all().unwrap();
 }
-fn copy_sources(source: &Path, target: &Path) {
-    fs::create_dir(target).unwrap();
-    for entry in fs::read_dir(source).unwrap() {
-        let entry = entry.unwrap();
-        let kind = entry.file_type().unwrap();
-        let destination = target.join(entry.file_name());
-        if kind.is_dir() {
-            copy_sources(&entry.path(), &destination);
-        } else {
-            assert!(kind.is_file(), "installed adapter source must be regular: {}", entry.path().display());
-            copy(&entry.path(), &destination);
-        }
-    }
-    fs::File::open(target).unwrap().sync_all().unwrap();
-}
-fn source_library(repo: &Path, package: &Path) {
-    let library = package.join("lib/lustr");
-    fs::create_dir(&library).unwrap();
-    copy_sources(&repo.join("library/lustr/std"), &library.join("std"));
-    symlink("../lust/library/deps", library.join("deps")).unwrap();
-    let expanded = package.join("lib/lustr-expanded");
-    fs::create_dir_all(expanded.join("bin")).unwrap();
-    fs::create_dir_all(expanded.join("lib/lust")).unwrap();
-    symlink("../../../lustr", expanded.join("lib/lust/library")).unwrap();
-    symlink("../../../lust/tcc", expanded.join("lib/lust/tcc")).unwrap();
-    // The executable path selects the expanded support prefix, while its inode
-    // must retain the original core's wire identity.
-    fs::hard_link(package.join("bin/lust-core"), expanded.join("bin/lust-core")).unwrap();
-    for name in ["lustr", "cargo"] {
-        symlink(format!("../../../bin/{name}"), expanded.join("bin").join(name)).unwrap();
-    }
-}
-fn seal_source_library(package: &Path, logs: &Path) -> String {
-    let library = package.join("lib/lustr");
-    let inputs = native_expansion::inputs(&library).unwrap();
-    let manifest = checked("seal-native-sources", host_runtime::sha256_command().current_dir(&library).arg("--").args(&inputs), logs);
-    record(&library.join("sources.sha256"), &manifest);
-    native_expansion::sealed(&package.join("bin"), &package.join("source-library-identity.sock"))
-        .expect("installed source library must satisfy the runtime's seal and core identity checks")
-        .identity
-}
 fn native_receipts(directory: &Path, receipts: &mut Vec<PathBuf>) {
     for entry in fs::read_dir(directory).unwrap() {
         let path = entry.unwrap().path();
@@ -115,12 +68,64 @@ fn native_receipts(directory: &Path, receipts: &mut Vec<PathBuf>) {
         }
     }
 }
-fn cargo(sdk: &Path, repo: &Path, manifest: &str, work: &Path, name: &str, profile: BuildProfile) -> Command {
+// This governs construction of the compiler package, never a user's Rust
+// project. The source manifest and selected SDK must determine compiler inputs;
+// implicit Cargo settings cannot replace them with an unrecorded compiler,
+// target, source tree, feature cfg or optimization profile.
+fn construction_inputs(repo: &Path) -> Result<(), String> {
+    for (name, value) in std::env::vars_os() {
+        let Some(name) = name.to_str() else { continue };
+        let changes_build = matches!(
+            name,
+            "RUSTFLAGS"
+                | "CARGO_ENCODED_RUSTFLAGS"
+                | "RUSTC_BOOTSTRAP"
+                | "RUSTC_WRAPPER"
+                | "RUSTC_WORKSPACE_WRAPPER"
+                | "CARGO_BUILD_RUSTC"
+                | "CARGO_BUILD_RUSTC_WRAPPER"
+                | "CARGO_BUILD_RUSTC_WORKSPACE_WRAPPER"
+                | "CARGO_BUILD_RUSTFLAGS"
+                | "CARGO_BUILD_TARGET"
+        ) || name.starts_with("CARGO_PROFILE_")
+            || name.starts_with("CARGO_TARGET_") && name != "CARGO_TARGET_DIR"
+            || name.starts_with("CARGO_SOURCE_")
+            || name.starts_with("CARGO_REGISTRIES_") && name.ends_with("_INDEX")
+            || name == "CARGO_REGISTRY_INDEX"
+            || name.starts_with("CARGO_UNSTABLE_");
+        if changes_build && !value.is_empty() {
+            return Err(format!("unreviewed compiler-construction override {name}; use the reviewed source manifests and selected SDK"));
+        }
+    }
+    let mut directories: Vec<_> = repo.ancestors().map(|directory| directory.join(".cargo")).collect();
+    let home = std::env::var_os("CARGO_HOME")
+        .filter(|path| !path.is_empty())
+        .map(PathBuf::from)
+        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".cargo")));
+    if let Some(home) = home {
+        // Every Cargo child below runs from the repository. A relative
+        // CARGO_HOME is resolved there, not in this constructor's caller cwd.
+        directories.push(if home.is_absolute() { home } else { repo.join(home) });
+    }
+    for directory in directories {
+        for name in ["config", "config.toml"] {
+            let path = directory.join(name);
+            match fs::symlink_metadata(&path) {
+                Ok(_) => return Err(format!("unreviewed compiler-construction Cargo configuration: {}", path.display())),
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                Err(error) => return Err(format!("cannot inspect compiler-construction Cargo configuration {}: {error}", path.display())),
+            }
+        }
+    }
+    Ok(())
+}
+fn cargo(sdk: &Path, repo: &Path, manifest: &str, package: &str, work: &Path, name: &str, profile: BuildProfile) -> Command {
     let mut command = Command::new(sdk.join("bin/cargo"));
     command
         .current_dir(repo)
         .args(["build", "--manifest-path"])
         .arg(repo.join(manifest))
+        .args(["--package", package])
         .args(["--locked", "--offline", "--jobs", "2", "--target-dir"])
         .arg(work.join(format!("{name}-target")))
         .arg("--config")
@@ -132,6 +137,7 @@ fn cargo(sdk: &Path, repo: &Path, manifest: &str, work: &Path, name: &str, profi
 fn main() {
     let mut args = std::env::args_os().skip(1);
     let repo = PathBuf::from(args.next().expect("REPOSITORY RUST_SDK TINYCC NEW_OUTPUT [--release|--debug]")).canonicalize().unwrap();
+    construction_inputs(&repo).unwrap_or_else(|error| panic!("{error}"));
     let sdk = args.next().unwrap();
     let sdk = if sdk == "--current-sdk" {
         let query = Command::new("rustc").args(["--print", "sysroot"]).env_remove("LD_LIBRARY_PATH").output().unwrap();
@@ -181,16 +187,21 @@ fn main() {
             "src",
             "compiler/native",
             "crates/lustr-native-core",
-            "library",
             "upstream",
             "tools/build-native-toolchain.rs",
             "tools/selection-toolchain-receipt.rs",
             "tools/host-sdk.rs",
             "tools/lust-upstream-check.rs",
+            "tools/check-exclusive-coverage.py",
         ]),
         &logs,
     );
     assert!(source_status.is_empty(), "commit the exact compiler/build inputs before constructing a source-identified package");
+    checked(
+        "exclusive-coverage-admission",
+        Command::new("python3").arg(repo.join("tools/check-exclusive-coverage.py")).arg("--repository").arg(&repo),
+        &logs,
+    );
     let version = checked("sdk-version", Command::new(sdk.join("bin/rustc")).arg("-vV"), &logs);
     let pin = fs::read_to_string(repo.join("upstream/bluefe-core.pin")).unwrap();
     let source = pin.lines().find_map(|line| line.strip_prefix("source = \"").and_then(|line| line.strip_suffix('"'))).unwrap();
@@ -220,7 +231,7 @@ fn main() {
         check.arg("--index");
     }
     checked("source-identity", &mut check, &logs);
-    let mut native = cargo(&sdk, &repo, "compiler/native/Cargo.toml", &work, "native", profile);
+    let mut native = cargo(&sdk, &repo, "compiler/native/Cargo.toml", "lust", &work, "native", profile);
     native.args(["--bin", "lust", "--bin", "lust-core", "--features", "exclusive-native"]).env("LUST_TCC_HOME", &tcc);
     checked("native-build", &mut native, &logs);
     let mut receipts = Vec::new();
@@ -250,8 +261,7 @@ fn main() {
     for name in ["lust", "lust-core"] {
         copy(&work.join("native-target").join(profile.directory()).join(name), &package.join("bin").join(name));
     }
-    source_library(&repo, &package);
-    let mut entry = cargo(&sdk, &repo, "Cargo.toml", &work, "entry", profile);
+    let mut entry = cargo(&sdk, &repo, "Cargo.toml", "lustr-compiler", &work, "entry", profile);
     entry
         .args(["--bin", "lustr", "--features", "source-native-runtime"])
         .env("LUSTR_CORE_ROOT", &sdk)
@@ -261,8 +271,8 @@ fn main() {
     checked("entry-build", &mut entry, &logs);
     copy(&work.join("entry-target").join(profile.directory()).join("lustr"), &package.join("bin/lustr"));
     symlink("lustr", package.join("bin/rustc")).unwrap();
-    let mut library = cargo(&sdk, &repo, "crates/lustr-native-core/Cargo.toml", &work, "native-library", profile);
-    library.args(["--features", "exclusive-native"]).env("LUST_TCC_HOME", &tcc);
+    let mut library = cargo(&sdk, &repo, "crates/lustr-native-core/Cargo.toml", "lustr-native-core", &work, "native-library", profile);
+    library.args(["--lib", "--features", "exclusive-native"]).env("LUST_TCC_HOME", &tcc);
     checked("native-library-build", &mut library, &logs);
     let library = package.join("lib").join(host_runtime::NATIVE_LIBRARY);
     copy(&work.join("native-library-target").join(profile.directory()).join(host_runtime::NATIVE_LIBRARY), &library);
@@ -273,17 +283,15 @@ fn main() {
     if host == "x86_64-unknown-linux-gnu" {
         checked("prime-selection-tools", Command::new(package.join("bin/lustr")).arg("--lustr-prime-selection-tools"), &logs);
     }
-    let source_identity = seal_source_library(&package, &logs);
     let mixed_route = "exclusive native Lust; complementary compilation unavailable";
     record(&output.join("NATIVE-BUILD-RECEIPT.txt"), native_output.as_bytes());
     let mut manifest = format!(
-        "Partial native development build; complementary compilation and full-replacement release are unavailable.\nReferenced source={}, SDK={}, TinyCC={}\nNative build={}\nCargo artifact profile={}\nSource library identity={}\nHost={}\nRoute={}\nSDK receipt={}\n",
+        "Partial native development build; complementary compilation and full-replacement release are unavailable.\nReferenced source={}, SDK={}, TinyCC={}\nNative build={}\nCargo artifact profile={}\nHost={}\nRoute={}\nSDK receipt={}\n",
         repo.display(),
         sdk.display(),
         tcc.display(),
         hash,
         profile.directory(),
-        source_identity,
         host,
         mixed_route,
         host_receipt.display()

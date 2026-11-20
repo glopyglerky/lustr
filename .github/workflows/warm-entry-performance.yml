@@ -3,10 +3,12 @@ name: Historical warm entry evidence
 on:
   pull_request:
     paths:
-      - 'tools/run-warm-entry-comparison.py'
-      - 'tools/test-warm-entry-comparison.py'
-      - 'tools/run-warm-entry-diagnostics.py'
-      - 'tools/test-warm-entry-diagnostics.py'
+      - 'tools/*warm*'
+      - 'tools/*upstream-slice*'
+      - 'tools/*mixed-performance*'
+      - 'tools/*benchmark-host*'
+      - 'tools/test-retired-acquisition.py'
+      - 'tools/test-workflow-inputs.py'
       - 'docs/compiler-set/evidence/warm-entry-2026-11-18/**'
       - '.github/workflows/warm-entry-performance.yml'
   workflow_dispatch:

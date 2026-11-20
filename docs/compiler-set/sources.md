@@ -4,6 +4,26 @@ Reviewed 19 November 2026. This register distinguishes reference source,
 partial imports, research dependencies and required product behavior. Follow
 the [exclusive coverage contract](exclusive-coverage-contract.md).
 
+While [PR #33](https://github.com/glopyglerky/lustr/pull/33) remains unmerged,
+resolve its live head for implementation work, recorded for this audit at
+`ea26fe16636d390763257a19c19df3db992cdbcb`. Governing documentation on `next`
+does not transfer that compiler source into the default branch. After merge,
+verify that the current integration source contains the correction and use its
+live source/evidence rather than resuming the closed PR. The older
+candidate identities below remain research inputs, not alternative current heads.
+The [documentation disposition](documentation-disposition.json) separates active
+guidance from source-bound records and untouched donor/evidence files.
+
+The branch observations in the table are dated research. A 20 November 2026 UTC refresh
+found blueFe at
+[`9267fd0d`](https://github.com/glopyglerky/blueFe/tree/9267fd0d348dc591af85efe96597c6ea774be5c0),
+declaring Rust
+[`4b5350e8`](https://github.com/rust-lang/rust/tree/4b5350e87e487aed08ab2f9f0160a4b2616438bc).
+That moving head is no longer the declared Lustr Rust source. Lustr remains
+pinned to `5b7b37aefcb5b2fba3c2392bc9065b9e4602d494`; extract and compare against
+that identity. This audit does not upgrade the pin or transfer earlier tree
+equality, artifact qualification or semantics to a later blueFe/Rust head.
+
 | Source | Exact observed identity | Role and limit |
 | --- | --- | --- |
 | Pristine Lust | `t3dotgg/lust-lang`, `240e08d91d4aed0299639f6f11fd522912b248f9`, tree `0ab1b09815802894e6078de0af59273cbdf46cb0` | Reference compiler and speed mechanisms preserved by `upstream/lust.pin`; integration patches need separate identities. |

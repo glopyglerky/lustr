@@ -31,13 +31,12 @@ fn replace_paths(value: &mut Value, root: &str, out: &str, gate: &str) {
 }
 
 #[test]
+#[ignore = "requires two explicit Cargo tools and a new output directory; run with --ignored"]
 fn real_cargo_unset_hint_matches_but_numeric_hint_does_not() {
-    let Some(root) = std::env::var_os("LUSTR_BENCH_TEST_BLUEFE_ROOT").map(PathBuf::from) else {
-        return;
-    };
-    let Some(stock) = std::env::var_os("LUSTR_BENCH_TEST_STOCK_CARGO").map(PathBuf::from) else {
-        return;
-    };
+    let root = PathBuf::from(std::env::var_os("LUSTR_BENCH_TEST_SDK").expect("explicit test input LUSTR_BENCH_TEST_SDK is required"));
+    let stock = PathBuf::from(
+        std::env::var_os("LUSTR_BENCH_TEST_STOCK_CARGO").expect("explicit test input LUSTR_BENCH_TEST_STOCK_CARGO is required"),
+    );
     let out = PathBuf::from(std::env::var_os("LUSTR_BENCH_TEST_OUTPUT").expect("explicit output")).with_extension("metadata-cases");
     fs::create_dir(&out).unwrap();
     let fixture = out.join("snapshot");
@@ -52,7 +51,7 @@ fn real_cargo_unset_hint_matches_but_numeric_hint_does_not() {
     let gate = PathBuf::from(env!("CARGO_BIN_EXE_lustr-bench-gate"));
     let mut spec: Value = serde_json::from_str(include_str!("../sample-spec.json")).unwrap();
     replace_paths(&mut spec, root.to_str().unwrap(), out.to_str().unwrap(), gate.to_str().unwrap());
-    let mut tools: Vec<_> = ["cargo", "rustc", "rustdoc", "lustr"]
+    let mut tools: Vec<_> = ["cargo", "rustc", "rustdoc"]
         .into_iter()
         .map(|name| root.join("bin").join(name))
         .chain([gate, stock.clone()])
@@ -62,6 +61,7 @@ fn real_cargo_unset_hint_matches_but_numeric_hint_does_not() {
     for (i, lane) in spec["lanes"].as_array_mut().unwrap().iter_mut().enumerate() {
         let cargo = if i == 0 { stock.clone() } else { root.join("bin/cargo") };
         lane["env"]["CARGO"] = json!(cargo);
+        lane["gates"][0]["command"]["argv"][0] = json!(cargo);
         lane["tools"] = json!(tools);
         for key in ["command", "evidence"] {
             lane[key]["argv"] = json!([cargo, "check", "--locked", "--offline", "-vv"]);

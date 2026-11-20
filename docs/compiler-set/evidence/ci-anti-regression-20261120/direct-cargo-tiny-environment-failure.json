@@ -1,0 +1,49 @@
+{
+  "qualification": false,
+  "observed_report": {
+    "status": "failed",
+    "error": "No such file or directory (os error 2)",
+    "records": []
+  },
+  "test_result": {
+    "passed": 1,
+    "failed": 1,
+    "ignored": 0,
+    "filtered_out": 1
+  },
+  "cause": "Runner host_context requires Linux pressure observations before spawning its first identity child. This local environment does not expose either pressure file. No observation or output contract was weakened.",
+  "observations_after_run": [
+    {
+      "path": "/proc/loadavg",
+      "exists": true
+    },
+    {
+      "path": "/proc/stat",
+      "exists": true
+    },
+    {
+      "path": "/proc/self/status",
+      "exists": true
+    },
+    {
+      "path": "/proc/pressure/cpu",
+      "exists": false,
+      "errno": 2,
+      "error": "[Errno 2] No such file or directory: '/proc/pressure/cpu'"
+    },
+    {
+      "path": "/proc/pressure/io",
+      "exists": false,
+      "errno": 2,
+      "error": "[Errno 2] No such file or directory: '/proc/pressure/io'"
+    },
+    {
+      "path": "/bin/kill",
+      "exists": true
+    }
+  ],
+  "raw_record_directory": "direct-cargo-tiny-failed-records",
+  "functional_followup": "direct-cargo-gate.json",
+  "performance_claim": false,
+  "source_before_run_receipt_available": false
+}

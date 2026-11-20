@@ -4,6 +4,16 @@ on:
   pull_request:
     paths:
       - 'crates/lustr-bench/**'
+      - '.cargo/**'
+      - '.gitmodules'
+      - 'rust-toolchain'
+      - 'rust-toolchain.toml'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'tools/test-retired-acquisition.py'
+      - 'tools/test-workflow-inputs.py'
+      - 'tools/*warm*'
+      - 'tools/*upstream-slice*'
       - 'tools/*coordinator*'
       - 'tools/*evidence*'
       - 'tools/assess-current-performance.py'
@@ -78,11 +88,19 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install the pinned focused-test compiler
         run: rustup toolchain install 1.99.1 --profile minimal
+      - name: Reject retired compiler acquisition and missing workflow triggers
+        run: |
+          python3 tools/test-retired-acquisition.py -v
+          python3 tools/test-workflow-inputs.py -v
+      - name: Reject false Cargo test summaries and retired engine selectors
+        run: cargo +1.99.1 test --manifest-path crates/lustr-bench/Cargo.toml --locked --bin lustr-bench-gate --test routed
       - name: Reject invalid current performance and release assessments
         run: python3 tools/test-assess-current-performance.py -v
       - name: Reject false success in retained-history results
         run: python3 tools/test-retained-results.py -v
       - name: Reject missing, conflicting and nonzero-work retention evidence
+        env:
+          RUSTUP_TOOLCHAIN: '1.99.1'
         run: cargo +1.99.1 test --manifest-path crates/lustr-bench/Cargo.toml --locked --bin lustr-mixed-bench
       - name: Verify owned daemon exit and cold-state lifecycle
         run: cargo +1.99.1 test --manifest-path crates/lustr-bench/Cargo.toml --locked --bin lustr-bench --test native_state -- --test-threads=1

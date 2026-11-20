@@ -1,8 +1,15 @@
 # Lustr, Lust, and rustc performance tracker
 
+> Source-bound checkpoint. Statements about the current candidate, required
+> follow-up and measured speed below refer to the named source and date. The
+> [active correction](active-correction.md) identifies present implementation
+> work; the [current performance policy](practical-performance.md) controls new
+> claims. Historical successes, incomplete paths and failed results remain scoped
+> to their original implementation.
+
 This is a documentation-only starting snapshot, not a newly executed campaign or a three-way Cargo claim. The prior "Rust / Lustr" speed ratios compare **matched standard Rust/Cargo time to Lustr time**, never upstream Lust to Lustr. A ratio above 1 means Lustr was faster than standard Rust/Cargo for that specific workload.
 
-The three requested lanes are:
+The three lanes in this historical snapshot were:
 
 - **Lustr:** the packaged primary entry for native workloads, or the routed mixed compiler under Cargo.
 - **Lust:** pristine, pinned upstream Lust with its original native compiler. Do not silently replace this with the integrated Lust lane.
@@ -83,7 +90,7 @@ This campaign uses the actual `crates/lustr` project with normal dev/test defaul
 
 None of these five paired intervals established a Lustr speedup. The clean dependency build and no-op intervals were below one; the other three crossed one. Do not interpret the latter as proven equivalence.
 
-## Future campaign and report requirements
+## Historical campaign and report requirements
 
 1. Emit a source-bound **three-column table in every new benchmark report**. For fixed native and public slice, populate all three from the same qualified campaign, using pristine Lust. For mixed Cargo and full-Rust projects, publish Lust NT until a matched measurement is qualified or a specific unsupported feature/operation is proven. If an otherwise supported lane was not measured or failed an execution/qualification gate, report NT with the observed reason. If the source itself uses proven unsupported Lust features, report N/A with the evidence instead.
 2. Print both median and p95 **milliseconds per lane** and keep all raw timing samples, pairing/order, source/tool hashes, host, compiler/version flags, cache policy, oracle/correctness and coverage results. Separately retain paired ratios and confidence intervals; do not calculate them as ratios of displayed medians.
@@ -94,7 +101,7 @@ None of these five paired intervals established a Lustr speedup. The clean depen
 
 This first snapshot is fully sourced from the completed [PR #18 Compiler set run](https://github.com/glopyglerky/lustr/actions/runs/44245528716), checked-out merge `df8f55aa0430ef81f27e7f403d102256b7fc298b`, tree `fdb6af7d1ea50c4b63fd8b6a217633979deedf22`, compiled full-Rust SDK `5b7b37aefcb5b2fba3c2392bc9065b9e4602d494`. Existing source heads and archived artifacts were not changed for this report. See the [PR #16 tracking acceptance contract](https://github.com/glopyglerky/lustr/pull/16#issuecomment-6972172800) for implementation and CI requirements.
 
-## New automatic CI projection
+## Historical automatic CI projection
 
 The source-built Compiler set job now runs `tools/report-three-way-performance.py` after the fixed, slice, and unchanged-project campaigns. It uploads `three-compiler-performance-<attempt>` with only `README.md`, `report.json`, and `SHA256SUMS`. This report is an additional derived view; the existing original benchmark artifacts and encrypted private evidence remain separate and unchanged.
 

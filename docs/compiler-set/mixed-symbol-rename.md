@@ -1,5 +1,11 @@
 # Mixed Cargo object renaming in process
 
+> Historical source-bound record. The object-renaming mechanism remains useful; the compiler fallback described below is retired.
+> Follow the [active correction](active-correction.md) and
+> [exclusive coverage contract](exclusive-coverage-contract.md).
+> Earlier results and proposals below do not qualify current source or authorize
+> a fallback, duplicate Rust frontend, runtime ownership probe or new install route.
+
 The mixed Cargo driver renames its validated TinyCC export to the actual Rust
 symbol without launching `objcopy`. Cold selection and retained body edits use
 the same safe Rust helper. The original compiler analysis, ABI checks, metadata,

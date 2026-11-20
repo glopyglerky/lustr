@@ -1,5 +1,11 @@
 # Native semantic persistence and standalone output
 
+> Historical source-bound record. This was an unadmitted experimental boundary; its empty-patch statements describe that source only.
+> Follow the [active correction](../active-correction.md) and
+> [exclusive coverage contract](../exclusive-coverage-contract.md).
+> Earlier results and proposals below do not qualify current source or authorize
+> a fallback, duplicate Rust frontend, runtime ownership probe or new install route.
+
 Status: explicit integration candidate, unadmitted. The canonical integration
 declaration still describes the empty admitted patch. The normal source guard
 must reject this candidate's worktree changes until exact correctness, review,

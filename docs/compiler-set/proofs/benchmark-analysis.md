@@ -1,5 +1,11 @@
 # Conditional analysis: definitions and proofs
 
+Scope: the geometric estimator proved below remains useful for diagnostic
+summary and replay of original reports. It is not the current near-stock or
+overall speed admission rule. Those claims use paired total elapsed costs under
+the [current assessment](../current-performance-assessment.md), which keeps
+expensive requests and fixed workload frequencies visible.
+
 This document proves properties of the estimator, finite randomization test and
 idealized scheduling bounds. It does not prove compiler semantics, workload
 equivalence, empirical confidence coverage, or a measured performance gain.

@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "source_commit": "f87647d66c4c95b8d51a6baa7dc000f4c888e6e9",
+  "source_tree": "91d1d5a8e56cc93b490f53b41c65f21a3cbbe1c4",
+  "protected_native_tree": "bf933c382fd99e52dd2586ebc46f0d0aceaa71a8",
+  "protected_native_tree_equals_baseline": true,
+  "pins": {
+    "upstream/lust.pin": {
+      "git_blob": "cce2d3a2a584a15bc2ab960eb0121c9afc484949",
+      "sha256": "a2f2937ceb269149ad52ddf3a6b60f6034bfa54867d5987eb272c2230e85d204"
+    },
+    "upstream/bluefe-core.pin": {
+      "git_blob": "3a3523a83c03958d9f242f6d9a905280c7a3e7a9",
+      "sha256": "ae93e7fb837097658ddda8881795aec4c6abe474b00f133806079a044c7dec2b"
+    }
+  },
+  "all_preexisting_evidence_unchanged": true,
+  "preexisting_evidence_files": 647,
+  "ci_artifacts_verified": 133,
+  "ci_projection_records_verified_against_public_and_original_bytes": 132,
+  "ci_original_index_hash_verified": true,
+  "ci_original_source_map_matches": 33,
+  "ci_superseded_source_map_entry": {
+    "tools/test-workflow-inputs.py": {
+      "index_creation_sha256": "187b14be61a40b3e58c0d5bb8005903e0a32abe6e821c096adcc9cfa79ee8768",
+      "final_sha256": "b5a79a6a1de61fa66d0d7301ed776416c953585780459bedc1141577a7870f58"
+    }
+  },
+  "ci_superseding_receipt": "docs/compiler-set/evidence/ci-anti-regression-20261120/workflow-parser-self-controls.json",
+  "prior_actual_pinned_oracle_58_controls": {
+    "source_and_tool_identities_match_combined_tree": true,
+    "identity_record": "docs/compiler-set/evidence/ci-anti-regression-20261120/retained-pinned-oracle-records/identities.json",
+    "rerun_in_combined_tree": false,
+    "new_local_controls": "retained-inventory-controls.json"
+  },
+  "whitespace": {
+    "source_and_documentation_diff_check_exit": 0,
+    "full_diff_check_exit": 2,
+    "preserved_raw_evidence_warnings": [
+      "docs/compiler-set/evidence/ci-anti-regression-20261120/attributes-oracle-run.stdout:30: new blank line at EOF.",
+      "docs/compiler-set/evidence/ci-anti-regression-20261120/bench-controls-locked.stdout:96: new blank line at EOF.",
+      "docs/compiler-set/evidence/ci-anti-regression-20261120/direct-cargo-tiny.stdout:20: new blank line at EOF.",
+      "docs/compiler-set/evidence/ci-anti-regression-20261120/final-gate-controls.stdout:17: new blank line at EOF."
+    ],
+    "new_raw_execution_streams_are_also_retained_byte_exact_apart_from_declared_path_projection": true
+  },
+  "tracked_cargo_manifests": 281,
+  "manifest_disposition_scope": "The earlier 280-entry construction audit remains its original source snapshot. The combined tree additionally includes the CI evidence Cargo fixture; no new product manifest was admitted."
+}

@@ -1,13 +1,21 @@
 # Mixed LLVM / Cranelift ABI contract
 
+> Independent Rust-backend research fixture. Both compiler lanes use rustc;
+> neither implements the exclusive Lust owner or the selective complement.
+> The retired coordinator/backend package must not be rebuilt as Lustr from
+> this guide. The [current contract](../../../../docs/compiler-set/exclusive-coverage-contract.md)
+> governs product work.
+
 This path-only workspace checks calls between separately compiled Rust crates.
 `mixed-abi-contract` defines shared types; `mixed-abi-provider` implements the
 provider; `mixed-abi-app` implements callbacks and runs assertions. Boundary
 functions use `#[inline(never)]`. Both backends use the same pinned rustc
 frontend and its ordinary LLVM-built standard library.
 
-The integration test builds a fresh ordinary Cargo baseline, then two fresh
-mixed configurations:
+The current integration test runs only an explicitly identified stock Rust
+reference and validates fresh compiler evidence. It does not execute a Lustr
+compiler or the retired optional Cranelift route. The original experiment built
+a fresh ordinary Cargo baseline and these two mixed configurations:
 
 | Configuration | Contract | Provider | App and callbacks |
 | --- | --- | --- | --- |
@@ -15,7 +23,7 @@ mixed configurations:
 | Cranelift consumer | LLVM | LLVM | Cranelift |
 | Cranelift provider | LLVM | Cranelift | LLVM |
 
-Callbacks cross back into the caller, so each mixed configuration executes
+Callbacks cross back into the caller, so each historical mixed configuration executes
 calls in both directions. The reverse configuration also tests each crate's
 implementation with the other code generator. The gate reads actual `cargo -vv`
 compiler commands, checks every crate's selected backend, rejects absent fresh
@@ -23,7 +31,8 @@ compilations and requires the pinned rustc commit. A failed backend load,
 compiler invocation, link, execution or assertion fails the gate. No retry
 through another backend occurs.
 
-The executable and Cargo test harness verify:
+The executable and Cargo test harness assert the following behaviors. Which
+compiler configuration actually ran must come from its source-bound evidence:
 
 - Rust-layout aggregates passed and returned by value, including a `u128`,
   fixed arrays, `String`, `Vec` and an optional nonzero integer;
@@ -48,21 +57,19 @@ cargo run --manifest-path crates/lustr/fixtures/mixed-abi/Cargo.toml --offline -
 cargo test --manifest-path crates/lustr/Cargo.toml --offline --locked --test mixed_abi
 ```
 
-After building the pinned unwind-capable backend with the repository setup
-helper, run the actual mixed gate:
-
-```sh
-source crates/lustr/target/complement/env.sh
-cargo test --manifest-path crates/lustr/Cargo.toml --offline --locked   --test mixed_abi actual_cranelift -- --ignored --nocapture
-```
+The [original backend setup and optional invocation](https://github.com/glopyglerky/lustr/blob/ea26fe16636d390763257a19c19df3db992cdbcb/crates/lustr/fixtures/mixed-abi/README.md)
+remain historical. A future independent backend comparison must supply its own
+explicitly pinned SDK/backend and source-bound evidence; it must not reconstruct
+the retired Lustr coordinator package or count rustc fixture success as product
+coverage.
 
 `LUST_TEST_ABI_EVIDENCE=/absolute/directory` retains raw stdout, stderr and exit
 status for each compilation, direct execution, test command and compiler identity
 probe. Each run gets a unique directory. A `passed.txt` receipt is written only
 after every assertion succeeds; failed runs retain their failing command output.
 
-`LUST_TEST_CARGO` may select an explicit Cargo binary. The backend comes from
-`LUST_CRANELIFT_BACKEND`; it is required, never auto-installed. Ignoring the
-optional gate is not backend qualification. This is a bounded regression
-contract for the pinned Linux x86_64 LLVM/Cranelift pair, not native Lust rlib
-interoperability or proof of compatibility for every Rust program or platform.
+`LUST_TEST_CARGO` may select an explicit Cargo binary for the retained independent
+reference. The original optional backend gate required an explicit backend; its
+environment and setup remain in the immutable historical recipe. The existing
+source does not qualify a new LLVM/Cranelift pair, native Lust rlib interoperability
+or compatibility for every Rust program or platform.

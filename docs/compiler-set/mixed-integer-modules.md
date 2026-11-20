@@ -1,5 +1,11 @@
 # Checked integer and module boundaries
 
+> Historical source-bound record. The scalar bridge and public retry described below belong to the retired mixed route.
+> Follow the [active correction](active-correction.md) and
+> [exclusive coverage contract](exclusive-coverage-contract.md).
+> Earlier results and proposals below do not qualify current source or authorize
+> a fallback, duplicate Rust frontend, runtime ownership probe or new install route.
+
 This increment expands the existing mixed scalar boundary. It keeps Lust's
 prepared checked state, real Rust symbols and metadata, and fatal native errors.
 It does not complete the [integrated compiler architecture](architecture-plan.md).

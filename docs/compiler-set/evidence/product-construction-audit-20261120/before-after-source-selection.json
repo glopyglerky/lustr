@@ -1,0 +1,77 @@
+{
+  "schema": 1,
+  "scope": "negative before/after source-selection controls and actual Cargo metadata target selection; no compiler build",
+  "baseline_commit": "f8fa2dee04e1c02f110ed9d725cda21c0b750e22",
+  "baseline_guard_sha256": "21a28c4146404d16aeb93a4de1d3dae5f8f6d82fc2f7a3741b259c796e888528",
+  "current_guard_sha256": "2e8c319d100f4ef31d6fd637b7fffbee236e97b9f85df424f7aa3b5012bd9236",
+  "controls": [
+    {
+      "case": "entry-source-redirection",
+      "old_guard_admitted": true,
+      "new_guard_rejected": true,
+      "new_failures": [
+        "Cargo.toml: bin target sources or admission features changed without review"
+      ],
+      "actual_cargo_metadata": {
+        "command": [
+          "<PINNED_SDK>/bin/cargo",
+          "metadata",
+          "--manifest-path",
+          "<FIXTURE>/Cargo.toml",
+          "--format-version",
+          "1",
+          "--no-deps",
+          "--locked",
+          "--offline"
+        ],
+        "cargo_sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+        "status": 0,
+        "target": {
+          "kind": [
+            "bin"
+          ],
+          "crate_types": [
+            "bin"
+          ],
+          "name": "lustr",
+          "src_path": "<FIXTURE>/replacement.rs",
+          "edition": "2024",
+          "doc": true,
+          "doctest": false,
+          "test": true
+        },
+        "stdout_sha256": "b7284f604cae0964bd1d7cb2d4dbd9545c7384db41142c38b1e7255ae15aa7ba",
+        "stderr": ""
+      }
+    },
+    {
+      "case": "library-source-redirection",
+      "old_guard_admitted": true,
+      "new_guard_rejected": true,
+      "new_failures": [
+        "Cargo.toml: product library selection changed without review"
+      ]
+    },
+    {
+      "case": "build-script-redirection",
+      "old_guard_admitted": true,
+      "new_guard_rejected": true,
+      "new_failures": [
+        "Cargo.toml: product build-script source changed without review"
+      ]
+    },
+    {
+      "case": "native-library-redirection",
+      "old_guard_admitted": true,
+      "new_guard_rejected": true,
+      "new_failures": [
+        "crates/lustr-native-core/Cargo.toml: product library selection changed without review"
+      ]
+    }
+  ],
+  "published_baseline": {
+    "commit": "ea26fe16636d390763257a19c19df3db992cdbcb",
+    "tree": "9151b9c3c8fac46e2afc76ef0f2b9fc51a6a803f",
+    "relation": "identical tree to local baseline f8fa2dee04e1c02f110ed9d725cda21c0b750e22; Git Data API publication has a different commit identity"
+  }
+}

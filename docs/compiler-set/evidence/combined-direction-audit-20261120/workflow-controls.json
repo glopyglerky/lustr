@@ -1,0 +1,23 @@
+{
+  "command": [
+    "python3",
+    "tools/test-workflow-inputs.py",
+    "-v"
+  ],
+  "cwd": "<CHECKOUT>",
+  "explicit_environment": {},
+  "expected_exit": 0,
+  "exit_code": 0,
+  "duration_seconds": 0.08675861358642578,
+  "expected_result_observed": true,
+  "stdout": {
+    "path": "workflow-controls.stdout",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stderr": {
+    "path": "workflow-controls.stderr",
+    "bytes": 904,
+    "sha256": "b8056118d88bc7003c5b5cccd9f216fc73033738da5c6576867522fe611b77b4"
+  }
+}

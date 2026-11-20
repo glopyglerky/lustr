@@ -1,5 +1,13 @@
 # Shared integer signatures and explicit ABI adapters
 
+> Bounded research and source-bound evidence. The broad compiler-private SDK
+> dependency used by this experiment is not an admitted selective complement.
+> Native ownership and useful ABI/emission mechanisms remain subject to the
+> [exclusive coverage contract](exclusive-coverage-contract.md), the
+> [import inventory](../../upstream/complement-imports.json) and the current
+> [native Cargo continuation](native-cargo-continuation.md). Successful fixtures
+> do not establish full coverage, minimal imports or product feature reachability.
+
 This extends the [shared definition service](shared-upstream-definitions.md)
 through actual imported integer signatures. Lust still owns the unchanged
 consumer's checked bodies. Imported Rust owns external definitions, nominal

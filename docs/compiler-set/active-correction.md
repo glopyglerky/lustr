@@ -4,8 +4,35 @@ Recorded 19 November 2026. The sole corrective implementation lane is
 [PR #33](https://github.com/glopyglerky/lustr/pull/33), targeting `next`.
 The [exclusive coverage contract](exclusive-coverage-contract.md) is the
 controlling direction, merged through [PR #31](https://github.com/glopyglerky/lustr/pull/31).
-Refresh the current PR head and checks before continuing. Earlier PRs are
-preserved sources and evidence, not competing product directions.
+While PR #33 remains unmerged, refresh its current head and checks before
+continuing. After merge, verify that the current integration source contains
+the correction and continue from that verified source. Earlier PRs are
+preserved sources and evidence, not competing product directions or heads to
+resume after closure.
+
+## Start from the implementation source
+
+The repository-wide documentation audit uses published PR #33 head
+[`ea26fe16`](https://github.com/glopyglerky/lustr/tree/ea26fe16636d390763257a19c19df3db992cdbcb).
+Refresh the live head and its evidence before continuing. The default branch
+contains governing documentation merged separately from compiler code; it still
+contains the older product implementation at this checkpoint. A documentation
+merge, closed predecessor PR or preview release must not be taken as the current
+implementation source. Preserve unique work, then continue on the same corrective
+PR while it remains unmerged. After merge, use the verified integration source
+that contains it. No second compiler direction or plan is opened by this audit.
+
+The [documentation disposition](documentation-disposition.json) inventories all
+396 baseline Markdown files. The
+[audit findings](sole-goal-audit.md#repository-documentation-and-entry-point-audit)
+record the corrected live instructions and explicit review limits. Historical
+coordinator/full-SDK install and benchmark acquisition recipes are removed from
+active guidance; their exact originals and failed results remain in Git and
+the immutable evidence collections. No preview package is a current replacement
+recommendation. Required CI evidence is not a claim of server-enforced merge or
+release protection.
+
+## Existing implementation and evidence
 
 The [native Cargo continuation](native-cargo-continuation.md) is the latest
 implementation and failure record. The earlier
@@ -30,7 +57,7 @@ No new compiler speed result or full complementary implementation is claimed.
 The follow-through after `5cd40fd3` fixes malformed daemon statuses that could
 wrap to process success, replaces per-case geometric near-stock admission with
 paired total elapsed costs, and adds independent pinned retained-history result
-checks. The [latest audit section](sole-goal-audit.md#follow-through-after-5cd40fd3)
+checks. The [5cd40fd3 follow-through](sole-goal-audit.md#follow-through-after-5cd40fd3)
 binds these changes and their limits. Default-branch governance is synchronized
 separately from the implementation PR. No complete compiler or portability
 migration is inferred from this correction.

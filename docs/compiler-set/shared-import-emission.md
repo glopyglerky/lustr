@@ -1,5 +1,13 @@
 # Imported code emission belongs to the build continuation
 
+> Bounded research and source-bound evidence. The broad compiler-private SDK
+> dependency used by this experiment is not an admitted selective complement.
+> Native ownership and useful ABI/emission mechanisms remain subject to the
+> [exclusive coverage contract](exclusive-coverage-contract.md), the
+> [import inventory](../../upstream/complement-imports.json) and the current
+> [native Cargo continuation](native-cargo-continuation.md). Successful fixtures
+> do not establish full coverage, minimal imports or product feature reachability.
+
 The shared integer service previously invoked `llc` from
 `Provider::validate_checked`. That violated the native preparation boundary:
 both a `Check` request and a build that would be abandoned after preparation

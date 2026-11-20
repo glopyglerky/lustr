@@ -125,15 +125,18 @@ class SourceControls(unittest.TestCase):
                 target.write_bytes(original)
                 commit(self.candidate)
 
-    def test_original_build_guard_still_rejects_before_using_package(self):
+    def test_retired_build_entry_refuses_before_using_package(self):
         path = self.candidate / "compiler/native/fixture.txt"
         path.write_text("different native runtime\n")
         commit(self.candidate)
         output = self.root / "original-build-guard"
-        with self.assertRaisesRegex(ValueError, "shared runtime source differs: compiler/native"):
-            A.B.build_baseline(SimpleNamespace(repository=self.candidate, baseline_source=self.baseline,
-                                              built=self.root / "absent-package", output=output))
-        self.assertEqual(json.loads((output / "receipt.json").read_text())["status"], "failed")
+        result = subprocess.run([sys.executable, str(HERE / "run-warm-entry-comparison.py"), "build-baseline",
+                                 "--repository", str(self.candidate), "--baseline-source", str(self.baseline),
+                                 "--built", str(self.root / "absent-package"), "--output", str(output)],
+                                capture_output=True, timeout=10)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn(b"acquisition is disabled", result.stderr)
+        self.assertFalse(output.exists())
 
     def test_dirty_candidate_blocks_without_transferring_head_identity(self):
         (self.candidate / "library/fixture.txt").write_text("uncommitted\n")

@@ -1,5 +1,11 @@
 # Hosted mixed qualification harness repair
 
+> Historical source-bound record. The qualification repair belongs to the retired whole-consumer mixed route.
+> Follow the [active correction](active-correction.md) and
+> [exclusive coverage contract](exclusive-coverage-contract.md).
+> Earlier results and proposals below do not qualify current source or authorize
+> a fallback, duplicate Rust frontend, runtime ownership probe or new install route.
+
 The first hosted run of the expanded scalar admission source exposed two
 qualification assumptions. Neither failing assertion demonstrated incorrect
 generated program output on that source.

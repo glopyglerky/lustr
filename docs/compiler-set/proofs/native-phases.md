@@ -1,5 +1,11 @@
 # Borrowed native semantic phases
 
+> Historical source-bound record. This was an unadmitted experimental boundary; its empty-patch and retry statements describe that source only.
+> Follow the [active correction](../active-correction.md) and
+> [exclusive coverage contract](../exclusive-coverage-contract.md).
+> Earlier results and proposals below do not qualify current source or authorize
+> a fallback, duplicate Rust frontend, runtime ownership probe or new install route.
+
 Status: explicit, unadmitted integration candidate. The canonical admitted Lust
 diff remains empty. Normal source-guard refusal is required for this worktree
 proposal; exact source checks do not admit it or establish performance.

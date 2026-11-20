@@ -7,6 +7,7 @@ Its executable identity differs from the public entry; components are not an
 additive decomposition of independently measured whole-command durations.
 """
 import argparse
+import sys
 from contextlib import ExitStack
 import importlib.util
 import itertools
@@ -294,29 +295,17 @@ def verify(output):
 
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__)
-    commands=parser.add_subparsers(dest='command',required=True)
-    run=commands.add_parser('run')
-    for name in ('campaign','selector','selector-receipt','output'): run.add_argument('--'+name,type=Path,required=True)
-    replay=commands.add_parser('verify'); replay.add_argument('output',type=Path)
-    args=parser.parse_args()
-    if args.command=='verify':
-        report=verify(args.output); print(render(report)); return
-    args.campaign,args.selector,args.selector_receipt,args.output=(path.resolve() for path in (args.campaign,args.selector,args.selector_receipt,args.output))
-    primary=B.verify(args.campaign)
-    receipt=json.loads(args.selector_receipt.read_text())
-    require(receipt['status']=='completed' and receipt['source']==primary['candidate_identity'] and receipt['binary_sha256']==S.digest(args.selector),'selector source/binary differs')
-    args.output.mkdir(mode=0o700,parents=True,exist_ok=False)
-    shutil.copyfile(args.campaign/'report.json',args.output/'source-report.json')
-    shutil.copyfile(args.selector_receipt,args.output/'selector-receipt.json')
-    campaign=Diagnostic(args,primary,receipt)
-    try: campaign.execute()
-    except BaseException as error:
-        campaign.report['error']=f'{type(error).__name__}: {error}'; raise
-    finally:
-        campaign.recorder.raw.close(); campaign.report['raw_sha256']=S.digest(args.output/'raw.jsonl')
-        S.write_json(args.output/'report.json',campaign.report); (args.output/'README.md').write_text(render(campaign.report))
-    print(render(verify(args.output)))
+    if sys.argv[1:2] != ["verify"]:
+        print("Retired whole-rustc acquisition is disabled. Use verify DIRECTORY for immutable historical evidence.", file=sys.stderr)
+        return 2
+    parser = argparse.ArgumentParser(description="Verify frozen historical evidence without compiler execution or current qualification.")
+    parser.add_argument("command", choices=("verify",))
+    parser.add_argument("output", type=Path)
+    args = parser.parse_args()
+    verify(args.output.resolve())
+    print("Verified historical evidence; no compiler execution or current qualification.")
+    return 0
 
 
-if __name__=='__main__': main()
+if __name__ == "__main__":
+    raise SystemExit(main())

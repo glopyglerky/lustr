@@ -1,5 +1,12 @@
 # Remaining native entry cost
 
+> Source-bound checkpoint. Statements about the current candidate, required
+> follow-up and measured speed below refer to the named source and date. The
+> [active correction](active-correction.md) identifies present implementation
+> work; the [current performance policy](practical-performance.md) controls new
+> claims. Historical successes, incomplete paths and failed results remain scoped
+> to their original implementation.
+
 The remaining selector cost is roughly three tenths of a millisecond on the
 measured fixture. This review found no proven, low-risk change that removes all
 of it while preserving the existing validation. This diagnostic made no

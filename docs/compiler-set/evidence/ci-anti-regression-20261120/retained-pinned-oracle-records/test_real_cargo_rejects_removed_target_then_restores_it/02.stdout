@@ -1,0 +1,2 @@
+{"reason":"compiler-artifact","package_id":"path+file:///tmp/tmp2j_6ycdc#scen@0.1.0","manifest_path":"/tmp/tmp2j_6ycdc/Cargo.toml","target":{"kind":["bin"],"crate_types":["bin"],"name":"e","src_path":"/tmp/tmp2j_6ycdc/src/bin/e.rs","edition":"2024","doc":true,"doctest":false,"test":true},"profile":{"opt_level":"0","debuginfo":2,"debug_assertions":true,"overflow_checks":true,"test":false},"features":[],"filenames":["/tmp/tmp2j_6ycdc/target/debug/e"],"executable":"/tmp/tmp2j_6ycdc/target/debug/e","fresh":false}
+{"reason":"build-finished","success":true}

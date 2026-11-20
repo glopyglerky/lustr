@@ -1,5 +1,11 @@
 # Native qualification repair, 17 November 2026
 
+> Historical source-bound record. This repair qualified the recorded predecessor, including its now-retired complete-compiler route.
+> Follow the [active correction](active-correction.md) and
+> [exclusive coverage contract](exclusive-coverage-contract.md).
+> Earlier results and proposals below do not qualify current source or authorize
+> a fallback, duplicate Rust frontend, runtime ownership probe or new install route.
+
 This additive candidate follows PR9 at `baf8b35700b158bdf7fd2752e32d3b3b8ebf4aa9`.
 It does not change the imported complete compiler, language coverage, timing
 thresholds, benchmark corpus, requested application profiles or default branch.

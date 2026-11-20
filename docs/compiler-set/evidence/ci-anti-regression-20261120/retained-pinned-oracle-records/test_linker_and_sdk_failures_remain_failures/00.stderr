@@ -1,0 +1,2 @@
+{"$message_type":"diagnostic","message":"linker `./absent-linker` not found","code":null,"level":"error","spans":[],"children":[{"message":"No such file or directory (os error 2)","code":null,"level":"note","spans":[],"children":[],"rendered":null}],"rendered":"error: linker `./absent-linker` not found\n  |\n  = note: No such file or directory (os error 2)\n\n"}
+{"$message_type":"diagnostic","message":"aborting due to 1 previous error","code":null,"level":"error","spans":[],"children":[],"rendered":"error: aborting due to 1 previous error\n\n"}

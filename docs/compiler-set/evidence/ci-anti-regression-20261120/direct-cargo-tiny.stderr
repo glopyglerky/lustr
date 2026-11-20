@@ -1,0 +1,5 @@
+   Compiling lustr-bench v0.1.0 (<CHECKOUT>/crates/lustr-bench)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.47s
+     Running tests/tiny.rs (<OUTPUT>/ci-audit-intermediates/debug/build/lustr-bench/ef1196aeb98b83da/out/tiny-ef1196aeb98b83da)
+Error: "qualification failed; report retained without conclusions"
+error: test failed, to rerun pass `--test tiny`

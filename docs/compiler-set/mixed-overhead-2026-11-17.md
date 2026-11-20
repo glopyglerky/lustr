@@ -1,5 +1,11 @@
 # Mixed compilation overhead: source diagnosis and first bounded correction
 
+> Historical source-bound record. The measured whole-consumer mixed route is retired; its measured costs and fixes remain evidence.
+> Follow the [active correction](active-correction.md) and
+> [exclusive coverage contract](exclusive-coverage-contract.md).
+> Earlier results and proposals below do not qualify current source or authorize
+> a fallback, duplicate Rust frontend, runtime ownership probe or new install route.
+
 Status: candidate correction, not compiler speed admission. This note does not
 claim that a component experiment closes the full-work performance requirement.
 

@@ -1,0 +1,13 @@
+raw status: exit status: 0
+raw stdout: 144 bytes
+
+running 1 test
+test runtime_and_cleanup ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+raw stderr: 342 bytes
+   Compiling bench-tiny v0.1.0 (<OUTPUT>/ci-audit-direct-gate/source)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.61s
+     Running unittests src/main.rs (<OUTPUT>/ci-audit-direct-gate/intermediates/debug/build/bench-tiny/3c05d4a86a345772/out/bench_tiny-3c05d4a86a345772)

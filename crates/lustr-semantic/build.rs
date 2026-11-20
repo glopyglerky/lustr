@@ -1,10 +1,7 @@
 use std::path::PathBuf;
 use std::process::Command;
 
-#[cfg(not(feature = "full-core"))]
 const COMMIT: &str = "2d20b42b883dcfc014f3c2c56081eeb6091c2179";
-#[cfg(feature = "full-core")]
-const COMMIT: &str = "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494";
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
@@ -20,24 +17,15 @@ fn main() {
     let version = query(&["-vV"]);
     assert!(
         version.lines().any(|line| line == format!("commit-hash: {COMMIT}")),
-        "lustr compiler component requires rustc commit {COMMIT}; got {version}"
+        "independent Rust inspection oracle requires rustc commit {COMMIT}; got {version}"
     );
     let host = version.lines().find_map(|line| line.strip_prefix("host: ")).expect("compiler host");
     let release = version.lines().find_map(|line| line.strip_prefix("release: ")).expect("compiler release");
     println!("cargo:rustc-env=LUSTR_BUILD_RUSTC_HOST={host}");
     println!("cargo:rustc-env=LUSTR_BUILD_RUSTC_RELEASE={release}");
     println!("cargo:rustc-env=LUSTR_BUILD_RUSTC_COMMIT={COMMIT}");
-    if cfg!(feature = "full-core") {
-        let native = std::env::var("LUSTR_NATIVE_BUILD_HASH").expect("select the built native compiler identity");
-        assert!(native.len() == 16 && native.bytes().all(|b| b.is_ascii_hexdigit()));
-        println!("cargo:rustc-env=LUST_BUILD_HASH={native}");
-        println!("cargo:rerun-if-env-changed=LUSTR_NATIVE_BUILD_HASH");
-    }
     let sysroot = PathBuf::from(query(&["--print", "sysroot"]).trim_end_matches('\n'));
     let sysroot = sysroot.canonicalize().expect("compiler sysroot must exist");
-    if cfg!(feature = "full-core") {
-        println!("cargo:rustc-link-search=native={}", sysroot.join("lib").display());
-    }
     println!("cargo:rustc-env=LUSTR_BUILD_SYSROOT={}", sysroot.to_str().expect("toolchain location must be UTF-8"));
     // rustc-dev supplies rustc_driver as a dynamic library. The probe is an
     // installed host tool, so it must also find that compiler's shared runtime.

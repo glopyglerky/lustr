@@ -1,5 +1,11 @@
 # Owned native unsafe-block frontend candidate
 
+> Historical source-bound record. This was a bounded frontend experiment, not a destination for independently rewriting the Rust complement.
+> Follow the [active correction](../active-correction.md) and
+> [exclusive coverage contract](../exclusive-coverage-contract.md).
+> Earlier results and proposals below do not qualify current source or authorize
+> a fallback, duplicate Rust frontend, runtime ownership probe or new install route.
+
 This opt-in implementation is under qualification. It does not establish full
 unsafe Rust support, full native language coverage, or a performance gain.
 The default native entry still includes the pristine Lust executable source.

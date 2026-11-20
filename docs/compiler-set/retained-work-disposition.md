@@ -12,6 +12,12 @@ actual removed paths, remaining components, source identities and focused
 verification. The table below remains the rule for future work; removal alone
 does not implement the missing Rust complement.
 
+The [documentation disposition](documentation-disposition.json) applies this
+same rule to all baseline Markdown. Current entry links lead to PR #33 and the
+canonical contract. Retired commands remain accessible only as source-bound
+history; original evidence, donor instructions and licenses are preserved.
+This inventory records scope and review, not another implementation plan.
+
 | Work or direction | Disposition | Reason |
 | --- | --- | --- |
 | Pristine Lust, its history, differential tests and speed mechanisms | Preserve reference and qualified integration patches | Supplies the actual covered subset and comparison baseline. |

@@ -1,5 +1,12 @@
 # Performance review: PR #29 source
 
+> Source-bound checkpoint. Statements about the current candidate, required
+> follow-up and measured speed below refer to the named source and date. The
+> [active correction](active-correction.md) identifies present implementation
+> work; the [current performance policy](practical-performance.md) controls new
+> claims. Historical successes, incomplete paths and failed results remain scoped
+> to their original implementation.
+
 This review records the existing evidence for **PR #29**, not the latest branch
 in general. Useful supported-work gains are established; complete practical
 performance acceptance and release readiness are not. Follow the

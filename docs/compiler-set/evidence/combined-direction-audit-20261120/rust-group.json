@@ -1,0 +1,103 @@
+{
+  "group": "rust",
+  "commands": [
+    {
+      "command": [
+        "<PINNED_SDK>/bin/cargo",
+        "test",
+        "--manifest-path",
+        "crates/lustr-bench/Cargo.toml",
+        "--locked",
+        "--offline",
+        "--bin",
+        "lustr-bench-gate",
+        "--test",
+        "routed"
+      ],
+      "cwd": "<CHECKOUT>",
+      "explicit_environment": {
+        "CARGO_HOME": "<CARGO_CACHE>",
+        "RUSTC": "<PINNED_SDK>/bin/rustc",
+        "CARGO_TARGET_DIR": "<BENCH_TARGET>",
+        "CARGO_BUILD_BUILD_DIR": "<BENCH_BUILD>",
+        "CARGO_BUILD_JOBS": "2",
+        "CARGO_INCREMENTAL": "0"
+      },
+      "expected_exit": 0,
+      "exit_code": 0,
+      "duration_seconds": 12.971312284469604,
+      "expected_result_observed": true,
+      "stdout": {
+        "path": "cargo-gate-controls.stdout",
+        "bytes": 755,
+        "sha256": "d9bb536390234b40552bf05d0466fd5532a18bdd13f352162f053b2fb01f0068"
+      },
+      "stderr": {
+        "path": "cargo-gate-controls.stderr",
+        "bytes": 1257,
+        "sha256": "6f56eef242d4ec54d1d5ae05f3ff18a3755d6b0e325ce22ce66e1938bdccd9a6"
+      }
+    },
+    {
+      "command": [
+        "<PINNED_SDK>/bin/cargo",
+        "build",
+        "--manifest-path",
+        "crates/lustr-bench/Cargo.toml",
+        "--locked",
+        "--offline",
+        "--example",
+        "replay"
+      ],
+      "cwd": "<CHECKOUT>",
+      "explicit_environment": {
+        "CARGO_HOME": "<CARGO_CACHE>",
+        "RUSTC": "<PINNED_SDK>/bin/rustc",
+        "CARGO_TARGET_DIR": "<BENCH_TARGET>",
+        "CARGO_BUILD_BUILD_DIR": "<BENCH_BUILD>",
+        "CARGO_BUILD_JOBS": "2",
+        "CARGO_INCREMENTAL": "0"
+      },
+      "expected_exit": 0,
+      "exit_code": 0,
+      "duration_seconds": 0.8936505317687988,
+      "expected_result_observed": true,
+      "stdout": {
+        "path": "historical-replay-build.stdout",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "historical-replay-build.stderr",
+        "bytes": 181,
+        "sha256": "eb3deb8d587d235c6c8d4872ee26566f803470d99888fb97a160ce745c8a084d"
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "tools/check-coordinator-performance-archives.py",
+        "--replay",
+        "<BENCH_TARGET>/debug/examples/replay"
+      ],
+      "cwd": "<CHECKOUT>",
+      "explicit_environment": {},
+      "expected_exit": 0,
+      "exit_code": 0,
+      "duration_seconds": 0.3700108528137207,
+      "expected_result_observed": true,
+      "stdout": {
+        "path": "historical-archive-replay.stdout",
+        "bytes": 430,
+        "sha256": "b399a325121750bc7d8d361c173a8cc36529ea8258e6be094f71755837ddc5e3"
+      },
+      "stderr": {
+        "path": "historical-archive-replay.stderr",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "all_expected_results_observed": true,
+  "source_unchanged": true
+}

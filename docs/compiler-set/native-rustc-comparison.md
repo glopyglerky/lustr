@@ -138,11 +138,7 @@ The [source-built workflow](../../.github/workflows/compiler-set.yml) invokes th
 existing runner after its complete compiler gates. For a separately built and
 qualified toolchain, the command shape remains:
 
-```bash
-/absolute/lustr-mixed-bench \
-  /absolute/pristine-lust-source /absolute/pristine-build/lust \
-  /absolute/source-built-package /absolute/new-measurement-directory 12
-```
+The [original source-bound invocation](https://github.com/glopyglerky/lustr/blob/ea26fe16636d390763257a19c19df3db992cdbcb/docs/compiler-set/native-rustc-comparison.md) is historical. It is not a current construction, test or benchmark acquisition command.
 
 The output must be a new absolute directory. Use the exact source, matched
 release components and pinned TinyCC construction described in the

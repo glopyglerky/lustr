@@ -1,0 +1,158 @@
+{
+  "schema": 1,
+  "passed": true,
+  "build_script_sha256": "5cb5bff02838333098650aeebc2703b32f2085279c601db67c7c67b591025cd4",
+  "runner_sha256": "fa9c7f2881b6efbb68cdfa70827f75114928bd8fd6ffe991dcd26e44e0cc05fb",
+  "controls": [
+    {
+      "case": "no-explicit-mode",
+      "status": 101,
+      "stdout": "",
+      "stderr": "\nthread 'main' (28) panicked at <CHECKOUT>/crates/lustr-native-core/build.rs:5:5:\nselect exclusive-native for the product or native-qualification for bounded research\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+      "compiler_invoked": false
+    },
+    {
+      "case": "product-plus-native-qualification",
+      "status": 101,
+      "stdout": "",
+      "stderr": "\nthread 'main' (29) panicked at <CHECKOUT>/crates/lustr-native-core/build.rs:13:5:\nexclusive-native cannot be combined with native-qualification or upstream-semantic\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+      "compiler_invoked": false
+    },
+    {
+      "case": "product-plus-upstream-sdk",
+      "status": 101,
+      "stdout": "",
+      "stderr": "\nthread 'main' (30) panicked at <CHECKOUT>/crates/lustr-native-core/build.rs:13:5:\nexclusive-native cannot be combined with native-qualification or upstream-semantic\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+      "compiler_invoked": false
+    },
+    {
+      "case": "product-reaches-native-build",
+      "status": 101,
+      "stdout": "",
+      "stderr": "\nthread 'main' (31) panicked at <CHECKOUT>/crates/lustr-native-core/build.rs:45:5:\nassertion failed: status.success()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+      "compiler_invoked": true,
+      "expected_child_failure": 72
+    }
+  ],
+  "scope": "actual build-script feature admission; child sentinel is not compiler qualification",
+  "build": {
+    "status": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "build_script_executable_sha256": "51cbccddf438d11a057352454a589f896f22152f8e48a2c241fb38f90c94fab3",
+  "constructor": {
+    "source_sha256": "b62369a4530322e516b2bb8e211d960b975119146ed7ab2f5148224aefe98ada",
+    "build_status": 0,
+    "build_stdout": "",
+    "build_stderr": "",
+    "controls": [
+      {
+        "case": "compiler-wrapper",
+        "status": 101,
+        "stdout": "",
+        "stderr": "\nthread 'main' (59) panicked at <CHECKOUT>/tools/build-native-toolchain.rs:140:55:\nunreviewed compiler-construction override RUSTC_WRAPPER; use the reviewed source manifests and selected SDK\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+        "compiler_invoked": false,
+        "output_created": false
+      },
+      {
+        "case": "compiler-cfg-flags",
+        "status": 101,
+        "stdout": "",
+        "stderr": "\nthread 'main' (60) panicked at <CHECKOUT>/tools/build-native-toolchain.rs:140:55:\nunreviewed compiler-construction override CARGO_ENCODED_RUSTFLAGS; use the reviewed source manifests and selected SDK\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+        "compiler_invoked": false,
+        "output_created": false
+      },
+      {
+        "case": "construction-profile",
+        "status": 101,
+        "stdout": "",
+        "stderr": "\nthread 'main' (61) panicked at <CHECKOUT>/tools/build-native-toolchain.rs:140:55:\nunreviewed compiler-construction override CARGO_PROFILE_DEV_OPT_LEVEL; use the reviewed source manifests and selected SDK\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+        "compiler_invoked": false,
+        "output_created": false
+      },
+      {
+        "case": "construction-target",
+        "status": 101,
+        "stdout": "",
+        "stderr": "\nthread 'main' (62) panicked at <CHECKOUT>/tools/build-native-toolchain.rs:140:55:\nunreviewed compiler-construction override CARGO_BUILD_TARGET; use the reviewed source manifests and selected SDK\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+        "compiler_invoked": false,
+        "output_created": false
+      },
+      {
+        "case": "ancestor-config",
+        "status": 101,
+        "stdout": "",
+        "stderr": "\nthread 'main' (63) panicked at <CHECKOUT>/tools/build-native-toolchain.rs:140:55:\nunreviewed compiler-construction Cargo configuration: <CONTROL_TMP>/.cargo/config.toml\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+        "compiler_invoked": false,
+        "output_created": false
+      },
+      {
+        "case": "source-config",
+        "status": 101,
+        "stdout": "",
+        "stderr": "\nthread 'main' (64) panicked at <CHECKOUT>/tools/build-native-toolchain.rs:140:55:\nunreviewed compiler-construction Cargo configuration: <CONTROL_TMP>/construction-source/.cargo/config\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+        "compiler_invoked": false,
+        "output_created": false
+      },
+      {
+        "case": "cargo-home-config",
+        "status": 101,
+        "stdout": "",
+        "stderr": "\nthread 'main' (65) panicked at <CHECKOUT>/tools/build-native-toolchain.rs:140:55:\nunreviewed compiler-construction Cargo configuration: <CONTROL_TMP>/constructor-cargo-home/config.toml\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+        "compiler_invoked": false,
+        "output_created": false
+      },
+      {
+        "case": "relative-cargo-home-config",
+        "status": 101,
+        "stdout": "",
+        "stderr": "\nthread 'main' (66) panicked at <CHECKOUT>/tools/build-native-toolchain.rs:140:55:\nunreviewed compiler-construction Cargo configuration: <CONTROL_TMP>/construction-source/construction-cargo-home/config.toml\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+        "compiler_invoked": false,
+        "output_created": false
+      },
+      {
+        "case": "uninspectable-cargo-config",
+        "status": 101,
+        "stdout": "",
+        "stderr": "\nthread 'main' (67) panicked at <CHECKOUT>/tools/build-native-toolchain.rs:140:55:\ncannot inspect compiler-construction Cargo configuration <CONTROL_TMP>/construction-source/.cargo/config: Not a directory (os error 20)\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+        "compiler_invoked": false,
+        "output_created": false
+      },
+      {
+        "case": "entry-source-redirection",
+        "status": 101,
+        "stdout": "source-revision: exit status: 0\nsource-status: exit status: 0\n",
+        "stderr": "\nthread 'main' (72) panicked at <CHECKOUT>/tools/build-native-toolchain.rs:49:5:\nexclusive-coverage-admission: \nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+        "compiler_invoked": false,
+        "output_created": true,
+        "admission_stdout": "{\n  \"schema\": \"lustr-exclusive-coverage-guard-v1\",\n  \"structural_checks_passed\": false,\n  \"full_rust_coverage\": false,\n  \"release_status\": \"unavailable\",\n  \"scope\": \"structural source and public entry constraints only; source inventories do not prove minimal dependency closure or semantic exclusivity\",\n  \"failures\": [\n    \"Cargo.toml: bin target sources or admission features changed without review\"\n  ]\n}\n",
+        "admission_stderr": ""
+      },
+      {
+        "case": "admitted-selected-sdk",
+        "status": 101,
+        "stdout": "source-revision: exit status: 0\nsource-status: exit status: 0\nexclusive-coverage-admission: exit status: 0\n",
+        "stderr": "\nthread 'main' (80) panicked at <CHECKOUT>/tools/build-native-toolchain.rs:49:5:\nsdk-version: \nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+        "compiler_invoked": true,
+        "output_created": true,
+        "admission_stdout": "",
+        "admission_stderr": "",
+        "expected_child_failure": 72
+      },
+      {
+        "case": "moving-sdk-source",
+        "status": 101,
+        "stdout": "source-revision: exit status: 0\nsource-status: exit status: 0\nexclusive-coverage-admission: exit status: 0\nsdk-version: exit status: 0\n",
+        "stderr": "\nthread 'main' (85) panicked at <CHECKOUT>/tools/build-native-toolchain.rs:208:5:\nselect the matching pinned Rust SDK before building native components\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+        "compiler_invoked": true,
+        "output_created": true,
+        "admission_stdout": "rustc moved-donor-control\ncommit-hash: 4b5350e87e487aed08ab2f9f0160a4b2616438bc\n",
+        "admission_stderr": ""
+      }
+    ],
+    "scope": "actual constructor admission only; the admitted control stops at a failing SDK sentinel",
+    "executable_sha256": "3665785bc16b1d820926281752e36f88c34a4c6371c46def34d516e7ce8666f9",
+    "passed": true
+  }
+}

@@ -1,5 +1,12 @@
 # Current candidate main-return smoke
 
+> Source-bound checkpoint. Statements about the current candidate, required
+> follow-up and measured speed below refer to the named source and date. The
+> [active correction](active-correction.md) identifies present implementation
+> work; the [current performance policy](practical-performance.md) controls new
+> claims. Historical successes, incomplete paths and failed results remain scoped
+> to their original implementation.
+
 Five bounded `main` return cases passed on the original source-built PR #26
 package (`43a7e07d32929309fc6e402d7bca6b5673e186a2`) on the current Linux
 x86_64 host. Every public build used `lust / native-library`; none fell back

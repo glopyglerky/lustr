@@ -7,6 +7,7 @@ Actual process controls and source-bound compiler qualification remain required.
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import sys
@@ -20,9 +21,37 @@ import tomllib
 # review. Cargo.lock is an over-approximation across targets and features, not a
 # proof of the feature-specific minimum or of semantic ownership.
 PRODUCT_PACKAGES = {
-    "Cargo.toml": ("lustr-compiler", {"serde_json", "sha2"}, {"exclusive-native", "source-native-runtime"}),
+    "Cargo.toml": ("lustr-compiler", {"serde_json", "sha2"}, {"source-native-runtime"}),
     "compiler/native/Cargo.toml": ("lust", {"mimalloc", "libmimalloc-sys", "unicode-normalization"}, {"exclusive-native"}),
     "crates/lustr-native-core/Cargo.toml": ("lustr-native-core", {"mimalloc", "libmimalloc-sys", "unicode-normalization"}, {"exclusive-native"}),
+}
+# Bind the files Cargo actually compiles, including its implicit library and
+# binary discovery. Dependency checks alone cannot establish this: a manifest
+# can keep the same dependency graph while replacing its executable or build
+# script with a different compiler entry.
+PRODUCT_TARGETS = {
+    "Cargo.toml": {
+        "workspace": {"resolver": "3", "exclude": ["compiler/native", "crates/lustr", "crates/lustr-semantic", "crates/lustr-native-core"]},
+        "lib": ("src/lib.rs", ["lib"]),
+        "bin": {"lustr": "src/main.rs"},
+        "example": {"profile-native-preflight": ("tools/profile-native-preflight.rs", ["source-native-runtime"]),
+                    "native_package": ("examples/native_package.rs", []),
+                    "native_notices": ("examples/native_notices.rs", [])},
+    },
+    "compiler/native/Cargo.toml": {
+        "workspace": {}, "lib": None,
+        "bin": {"lust": "src/client.rs", "lust-core": "src/main.rs"}, "example": {},
+    },
+    "crates/lustr-native-core/Cargo.toml": {
+        "workspace": {"resolver": "3"}, "lib": ("src/lib.rs", ["cdylib"]), "bin": {},
+        "example": {name: (f"../../tools/{name}.rs", [feature]) for name, feature in [
+            ("native-upstream-qualification", "upstream-semantic"),
+            ("native-output-layout-qualification", "native-qualification"),
+            ("native-phase-qualification", "native-qualification"),
+            ("native-crate-qualification", "native-qualification"),
+            ("native-consumer-qualification", "native-qualification"),
+        ]},
+    },
 }
 REVIEWED_DEPENDENCY_EDGES = {
     "serde_json": {"itoa", "memchr", "serde", "serde_core", "zmij"},
@@ -50,7 +79,10 @@ NO_DEFAULT_FEATURES = {"mimalloc", "libmimalloc-sys"}
 def retired_path_checks(root, require):
     for path in ["src/full.rs", "tools/assemble-mixed-toolchain.rs", "tools/build-mixed-toolchain.rs",
                  "tools/native-relink.rs", "crates/lustr-semantic/src/mixed_main.rs",
-                 "crates/lustr-semantic/src/mixed_entry.rs"]:
+                 "crates/lustr-semantic/src/mixed_entry.rs",
+                 "crates/lustr/scripts/build-cranelift.py", "crates/lustr/scripts/build-cranelift.sh",
+                 "src/native_expansion.rs", "library/lustr/std/src/env.rs", "library/lustr/std/src/os_string.rs",
+                 "library/lustr/std/src/path_capacity.rs", "library/lustr/std/src/path_from.rs", "library/lustr/std/src/platform.rs"]:
         require(not (root / path).exists(), "retired whole-compiler route reappeared: " + path)
 
 
@@ -58,12 +90,104 @@ def inspection_passthrough_checks(root, require):
     inspection = (root / "crates/lustr-semantic/src/main.rs").read_text()
     require("fn delegate(" not in inspection and ".exec()" not in inspection,
             "independent semantic inspection regained an unchecked compiler passthrough")
+    build = (root / "crates/lustr-semantic/build.rs").read_text()
+    require('feature = "full-core"' not in build,
+            "independent semantic inspection regained the retired full-core build mode")
+
+
+def product_target_checks(root, manifest, data, require):
+    directory = (root / manifest).parent
+    package = data["package"]
+    expected = PRODUCT_TARGETS[manifest]
+    require(data.get("workspace", {}) == expected["workspace"]
+            and "workspace" not in package,
+            f"{manifest}: product workspace selection changed without review")
+    require(package.get("build", "build.rs") in (True, "build.rs"),
+            f"{manifest}: product build-script source changed without review")
+    require("links" not in package,
+            f"{manifest}: unreviewed native linkage override")
+
+    def source(relative):
+        path = directory / relative
+        require(path.is_file() and not path.is_symlink()
+                and path.resolve() == Path(os.path.abspath(path))
+                and path.resolve().is_relative_to(root.resolve()),
+                f"{manifest}: reviewed Cargo source is missing or redirected: {relative}")
+
+    source("build.rs")
+    for name in ("config", "config.toml"):
+        path = directory / ".cargo" / name
+        require(not path.exists() and not path.is_symlink(),
+                f"{manifest}: unreviewed package Cargo configuration")
+    library = data.get("lib")
+    actual_library = library is not None or (package.get("autolib", True) and (directory / "src/lib.rs").is_file())
+    if expected["lib"] is None:
+        require(not actual_library, f"{manifest}: unreviewed product library target")
+    else:
+        path, types = expected["lib"]
+        library = library or {}
+        require(actual_library and library.get("path", "src/lib.rs") == path
+                and library.get("name", package["name"].replace("-", "_")) == package["name"].replace("-", "_")
+                and library.get("crate-type", ["lib"]) == types
+                and not library.get("proc-macro", False)
+                and not library.get("required-features"),
+                f"{manifest}: product library selection changed without review")
+        source(path)
+
+    def discovered(folder):
+        base = directory / folder
+        return {path.stem: str(path.relative_to(directory)) for path in base.glob("*.rs")} | {
+            path.parent.name: str(path.relative_to(directory)) for path in base.glob("*/main.rs")}
+
+    for kind, folder, automatic in (("bin", "src/bin", "autobins"), ("example", "examples", "autoexamples")):
+        records = data.get(kind, [])
+        actual = {}
+        paths = set()
+        for record in records:
+            name = record.get("name")
+            path = record.get("path")
+            require(name not in actual and isinstance(name, str) and isinstance(path, str),
+                    f"{manifest}: ambiguous or implicit {kind} target declaration")
+            actual[name] = (path, record.get("required-features", []))
+            paths.add(path)
+        if package.get(automatic, True):
+            implicit = discovered(folder)
+            if kind == "bin" and (directory / "src/main.rs").is_file():
+                implicit.setdefault(package["name"], "src/main.rs")
+            for name, path in implicit.items():
+                if name not in actual and path not in paths:
+                    actual[name] = (path, [])
+        targets = {name: (path, []) for name, path in expected[kind].items()} if kind == "bin" else expected[kind]
+        require(actual == targets, f"{manifest}: {kind} target sources or admission features changed without review")
+        for path, _ in targets.values():
+            source(path)
+    require(package.get("default-run") in (None, *expected["bin"]),
+            f"{manifest}: unreviewed default executable selection")
+
+
+def construction_mode_checks(manifest, data, require):
+    require(not data.get("cargo-features"), f"{manifest}: unreviewed Cargo feature gates")
+    require(not any(key in data["package"] for key in ("default-target", "forced-target", "metabuild")),
+            f"{manifest}: unreviewed manifest target or build-generation override")
+
+    def profiles(table, name="profile"):
+        for key, value in table.items():
+            require(key not in ("rustflags", "codegen-backend"),
+                    f"{manifest}: unreviewed compiler flags or backend in {name}.{key}")
+            if isinstance(value, dict):
+                profiles(value, name + "." + key)
+
+    # Profile cfg injection can activate a different source composition without
+    # setting Cargo's CARGO_FEATURE_* build-script admission variables.
+    profiles(data.get("profile", {}))
 
 
 def product_package_checks(root, require):
     for manifest, (package_name, direct, selected) in PRODUCT_PACKAGES.items():
         data = tomllib.loads((root / manifest).read_text())
         require(data["package"]["name"] == package_name, f"{manifest}: unreviewed product package identity")
+        product_target_checks(root, manifest, data, require)
+        construction_mode_checks(manifest, data, require)
         require(not data.get("patch") and not data.get("replace"), f"{manifest}: unreviewed dependency source override")
         workspace = data.get("workspace", {})
         require(not workspace.get("dependencies") and not workspace.get("members")
@@ -108,6 +232,8 @@ def product_package_checks(root, require):
                 if not edge.startswith("dep:") and "/" not in edge:
                     require(edge in features, f"{manifest}: product feature references unreviewed implicit dependency {edge}")
                     pending.append(edge)
+        require("exclusive-native" in enabled,
+                f"{manifest}: constructor feature closure omits exclusive-native")
 
         locked = tomllib.loads((root / manifest).with_name("Cargo.lock").read_text())["package"]
         packages = {item["name"]: item for item in locked}
@@ -192,6 +318,7 @@ def metadata_research_checks(root, inventory, require):
     }
     for relative, (dependencies, dev_dependencies) in expected.items():
         manifest = tomllib.loads((root / relative / "Cargo.toml").read_text())
+        construction_mode_checks(relative + "/Cargo.toml", manifest, require)
         require(manifest["package"].get("name") == Path(relative).name
                 and manifest.get("lib", {}) in ({}, {"path": "src/lib.rs"})
                 and manifest.get("workspace", {}) == {"resolver": "3"},
@@ -218,6 +345,9 @@ def check(root):
     require(inventory["schema"] == "lustr-complement-imports-v1", "unknown complement inventory schema")
     require(inventory["full_rust_coverage"] is False, "full Rust coverage needs an independent admission change")
     require(inventory["release_status"] == "unavailable", "full-replacement release remains unavailable")
+    sdk = tomllib.loads((root / "upstream/bluefe-core.pin").read_text())
+    require(inventory["rust_source"] == sdk["source"],
+            "selective imports and declared SDK source disagree; moving donor branches cannot change Lustr semantics")
     unicode = json.loads((root / "compiler/native/unicode-semantics.json").read_text())
     require(inventory["rust_source"] == unicode["rust_source"], "import inventory and native Unicode contract disagree")
     imports = {item["id"]: item for item in inventory["imports"]}
@@ -270,9 +400,12 @@ def check(root):
     coordinator = (root / "crates/lustr/src/lib.rs").read_text()
     require("fn execute(" not in coordinator and ".exec()" not in coordinator, "retired coordinator must not execute compiler plans")
     builder = (root / "tools/build-native-toolchain.rs").read_text()
-    for token in ["rustc-full", "rustc-reference", "lustr-mixed", "cargo-lustr", 'read_dir(sdk.join("lib"))']:
+    for token in ["rustc-full", "rustc-reference", "lustr-mixed", "cargo-lustr", 'read_dir(sdk.join("lib"))',
+                  "library/lustr/std", "lib/lustr-expanded", "source-library-identity.sock"]:
         require(token not in builder, "native builder packages whole-compiler dependencies: " + token)
     require("PARTIAL-NATIVE-COMPILER" in builder, "native build must state incomplete complementary coverage")
+    require('"exclusive-coverage-admission"' in builder and 'repo.join("tools/check-exclusive-coverage.py")' in builder,
+            "native constructor must admit the effective product graph before building compiler components")
     require(builder.count('"--features", "exclusive-native"') >= 2, "both native executables and the library require the no-delegation feature")
     root_build = (root / "build.rs").read_text()
     require("cargo:rustc-env=LUST_EXCLUSIVE_NATIVE=1" in root_build, "entry must require guarded-runtime receipt")

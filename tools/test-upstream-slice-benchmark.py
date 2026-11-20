@@ -394,65 +394,18 @@ class EvidenceTests(unittest.TestCase):
         self.assertNotIn("Ratio [95%", text)
 
 
-class ActualProcessTests(unittest.TestCase):
-    def setUp(self):
-        self.temp = tempfile.TemporaryDirectory()
-        self.root = Path(self.temp.name)
-        self.recorder = bench.Recorder(self.root, .15)
-        self.env = {"PATH": "/usr/bin:/bin", "LANG": "C"}
-
-    def tearDown(self):
-        self.recorder.raw.close()
-        self.temp.cleanup()
-
-    def run_child(self, program, expected=0):
-        return self.recorder.run([sys.executable, "-c", program], self.env, self.root, "test", "actual-child", expected)
-
-    def test_success_records_the_actual_original_stream(self):
-        row, out, err = self.run_child('print("actual output")')
-        self.assertEqual(out, b"actual output\n")
-        self.assertEqual(err, b"")
-        self.assertEqual(row["stdout"]["sha256"], bench.digest(self.root / row["stdout"]["file"]))
-        self.assertGreater(row["seconds"], 0)
-
-    def test_nonzero_exit_is_not_a_fast_success(self):
-        with self.assertRaises(ValueError):
-            self.run_child('import sys; print("original failure", file=sys.stderr); sys.exit(7)')
-        row = self.recorder.records[-1]
-        self.assertEqual(row["exit"], 7)
-        self.assertEqual((self.root / row["stderr"]["file"]).read_bytes(), b"original failure\n")
-
-    def test_timeout_is_preserved_and_never_reclassified_as_rejection(self):
-        with self.assertRaises(ValueError):
-            self.run_child('import time; print("started", flush=True); time.sleep(5)', expected=1)
-        row = self.recorder.records[-1]
-        self.assertTrue(row["timed_out"])
-        self.assertEqual(row["signal"], 9)
-        self.assertIsNone(row["exit"])
-        self.assertEqual((self.root / row["stdout"]["file"]).read_bytes(), b"started\n")
-
-    def test_output_limit_applies_even_if_the_child_already_exited(self):
-        self.recorder.timeout = 5
-        with self.assertRaises(ValueError):
-            self.run_child('import sys; sys.stdout.buffer.write(b"x" * (9 * 1024 * 1024))')
-        self.assertTrue(self.recorder.records[-1]["output_limit"])
-
-    def test_missing_tool_retains_launch_failure(self):
-        with self.assertRaises(ValueError):
-            self.recorder.run([self.root / "absent"], self.env, self.root, "test", "missing")
-        self.assertIn("launch_error", self.recorder.records[-1])
-
-    def test_daemon_start_failure_keeps_its_original_diagnostic(self):
-        executable = self.root / "failed-daemon"
-        executable.write_text(f'#!{sys.executable}\nimport sys\nprint("socket denied", file=sys.stderr)\nsys.exit(2)\n')
-        executable.chmod(0o700)
-        env = dict(self.env, LUST_DAEMON_SOCKET=str(self.root / "never.sock"))
-        with self.assertRaises(ValueError):
-            with bench.Daemon(self.recorder, executable, env, self.root, "test", "failure-test"):
-                self.fail("failed daemon was admitted")
-        row = self.recorder.records[-1]
-        self.assertEqual(row["exit"], 2)
-        self.assertEqual((self.root / row["streams"][1]["file"]).read_bytes(), b"socket denied\n")
+class RetiredProcessControls(unittest.TestCase):
+    def test_record_models_cannot_execute_a_child_or_start_a_daemon(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            recorder = bench.Recorder(root, .15)
+            with recorder.raw:
+                with self.assertRaisesRegex(ValueError, "acquisition is disabled"):
+                    recorder.run([sys.executable, "-c", "raise SystemExit(0)"], {}, root, "test", "retired")
+                with self.assertRaisesRegex(ValueError, "acquisition is disabled"):
+                    bench.Daemon(recorder, root / "compiler", {}, root, "test")
+                self.assertEqual(recorder.records, [])
+                self.assertEqual(list((root / "commands").iterdir()), [])
 
 
 if __name__ == "__main__":

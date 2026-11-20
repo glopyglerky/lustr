@@ -59,123 +59,10 @@ def selection_seed(data, executable, receipt):
     return "tools-" + hashlib.sha256(encoded(tools)).hexdigest() + ".json"
 
 
-def seed_baseline(package, output, environment, receipt):
-    """Run the baseline's own installation step without changing the candidate seed."""
-    target = package / "bin/lustr-warm-baseline"
-    directory = package / "lib/lustr-selection-verified"
-    tools = (package / "lib/lustr-selection-tools.txt").read_bytes()
-    existing = list(directory.glob("tools-*.json"))
-    require(len(existing) == 1 and existing[0].is_file() and not existing[0].is_symlink(), "candidate constructor seed is missing or ambiguous")
-    candidate = existing[0]
-    original = candidate.read_bytes()
-    require(candidate.name == selection_seed(original, package / "bin/lustr", tools), "candidate seed filename differs")
-    command = [str(target), "--lustr-prime-selection-tools"]
-    receipt["baseline_seed"] = {"argv": command, "cwd": str(package)}
-    with (output / "seed.stdout").open("xb") as out, (output / "seed.stderr").open("xb") as err:
-        result = subprocess.run(command, cwd=package, env=environment, stdin=subprocess.DEVNULL, stdout=out, stderr=err)
-    seed = receipt["baseline_seed"]
-    seed["exit"] = result.returncode
-    seed["streams"] = {name:{"file":"seed." + name, "sha256":S.digest(output / ("seed." + name))}
-                       for name in ("stdout", "stderr")}
-    require(result.returncode == 0, "baseline constructor initialization failed; original streams retained")
-    require(candidate.read_bytes() == original, "baseline initialization changed the candidate seed")
-    added = [path for path in directory.glob("tools-*.json") if path != candidate]
-    require(len(added) == 1 and added[0].is_file() and not added[0].is_symlink(), "baseline constructor seed is missing or ambiguous")
-    baseline = added[0]
-    data = baseline.read_bytes()
-    require(baseline.name == selection_seed(data, target, tools), "baseline seed filename differs")
-    for label, path, contents in (("baseline", baseline, data), ("candidate", candidate, original)):
-        archived = output / (label + "-selection-seed.json")
-        archived.write_bytes(contents)
-        seed[label + "_certificate"] = {"path":str(path), "file":archived.name, "sha256":S.digest(archived)}
-    return [candidate, baseline]
 
 
-def build_baseline(args):
-    require(not args.output.exists(), "baseline build output must be new")
-    args.output.mkdir(mode=0o700, parents=True)
-    receipt = {"schema": SCHEMA, "status": "failed", "scope": "Pinned baseline entry plus identical candidate-built native runtime and SDK; not a complete baseline package build."}
-    try:
-        baseline, candidate = source_identity(args.baseline_source), source_identity(args.repository)
-        require(baseline["revision"] == BASELINE, "baseline revision differs")
-        shared = {}
-        for path in SHARED_SOURCE_PATHS:
-            before = git(args.baseline_source, "rev-parse", f"HEAD:{path}")
-            after = git(args.repository, "rev-parse", f"HEAD:{path}")
-            require(before == after, f"shared runtime source differs: {path}")
-            shared[path] = before
-        package = args.built / "toolchain"
-        sdk = (package / "bin/rustc-reference").resolve().parent.parent
-        command = [str(sdk / "bin/cargo"), "build", "--manifest-path", str(args.baseline_source / "Cargo.toml"),
-                   "--release", "--locked", "--offline", "--jobs", "2", "--bin", "lustr", "--features", "source-native-runtime",
-                   "--target-dir", str(args.output / "target"), "--config", f'build.build-dir="{args.output / "intermediates"}"']
-        env = dict(os.environ, RUSTC=str(sdk / "bin/rustc"), LUSTR_CORE_ROOT=str(sdk), LUSTR_LUST_ROOT=str(package),
-                   LUSTR_NATIVE_BUILD_OUTPUT=str(args.built / "NATIVE-BUILD-RECEIPT.txt"),
-                   LUSTR_HOST_SDK_RECEIPT=str(args.built / "HOST-SDK-RECEIPT.txt"))
-        env.pop("LD_LIBRARY_PATH", None)
-        receipt.update(baseline=baseline, candidate=candidate, shared_source_objects=shared, command=command,
-                       build_environment={key:env[key] for key in ("RUSTC", "LUSTR_CORE_ROOT", "LUSTR_LUST_ROOT", "LUSTR_NATIVE_BUILD_OUTPUT", "LUSTR_HOST_SDK_RECEIPT")})
-        with (args.output / "build.stdout").open("xb") as out, (args.output / "build.stderr").open("xb") as err:
-            result = subprocess.run(command, cwd=args.baseline_source, env=env, stdin=subprocess.DEVNULL, stdout=out, stderr=err)
-        receipt["exit"] = result.returncode
-        require(result.returncode == 0, "baseline entry build failed; original streams retained")
-        target = package / "bin/lustr-warm-baseline"
-        require(not target.exists(), "baseline entry already exists")
-        shutil.copy2(args.output / "target/release/lustr", target)
-        receipt["baseline_binary"] = {"path": str(target), "sha256": S.digest(target)}
-        seeds = seed_baseline(package, args.output, env, receipt)
-        files = [package / "bin/lustr", package / "bin/lust", package / "bin/lust-core", package / "bin/rustc-full",
-                 package / "bin/rustc-reference", package / "bin/cargo", package / "lib/liblustr_native_core.so",
-                 package / "lib/lustr-selection-tools.txt",
-                 args.built / "NATIVE-BUILD-RECEIPT.txt", args.built / "HOST-SDK-RECEIPT.txt", args.built / "COMPONENTS.txt"]
-        receipt["shared_package_sha256"] = {str(p):S.digest(p) for p in files + seeds}
-        receipt["build_streams"] = {name:S.digest(args.output / name) for name in ("build.stdout", "build.stderr")}
-        receipt["status"] = "completed"
-    except BaseException as error:
-        receipt["error"] = f"{type(error).__name__}: {error}"
-        raise
-    finally:
-        S.write_json(args.output / "receipt.json", receipt)
-    print(f"Built baseline entry: {target}")
 
 
-def build_selector_gate(args):
-    require(not args.output.exists(), "selector build output must be new")
-    args.output.mkdir(mode=0o700, parents=True)
-    source = args.repository / "tools/profile-native-preflight.rs"
-    package = args.built / "toolchain"
-    sdk = (package / "bin/rustc-reference").resolve().parent.parent
-    native_receipt = (args.built / "NATIVE-BUILD-RECEIPT.txt").read_text()
-    build_hash, = [line.split("=", 2)[2] for line in native_receipt.splitlines() if line.startswith("cargo:rustc-env=LUST_BUILD_HASH=")]
-    require(len(build_hash) == 16 and all(char in "0123456789abcdef" for char in build_hash), "native build identity differs")
-    manifest = args.output / "Cargo.toml"
-    manifest.write_text('[package]\nname="lustr-selection-gate"\nversion="0.0.0"\nedition="2024"\n'
-                        '[workspace]\n[dependencies]\nserde_json="=1.0.154"\nsha2="=0.11.1"\n'
-                        '[[bin]]\nname="profile-native-preflight"\npath=' + json.dumps(str(source)) + '\n'
-                        '[profile.release]\nopt-level=3\n')
-    env = dict(os.environ, RUSTC=str(sdk / "bin/rustc"), LUST_BUILD_HASH=build_hash)
-    env.pop("LD_LIBRARY_PATH", None)
-    receipt = {"schema":SCHEMA, "status":"failed", "scope":"Production parser/selector/child owner component only; no compiler timing claim.",
-               "source":source_identity(args.repository), "native_build_hash":build_hash, "commands":[],
-               "source_sha256":{str(args.repository / path):S.digest(args.repository / path) for path in
-                                ("tools/profile-native-preflight.rs", "src/cargo_selection.rs", "src/selection_cache.rs", "src/owned_child.rs", "src/host_runtime.rs", "compiler/native/src/protocol.rs")}}
-    commands = [[str(sdk / "bin/cargo"), "generate-lockfile", "--offline", "--manifest-path", str(manifest)],
-                [str(sdk / "bin/cargo"), "build", "--release", "--locked", "--offline", "--manifest-path", str(manifest),
-                 "--target-dir", str(args.output / "target"), "--config", f'build.build-dir="{args.output / "intermediates"}"']]
-    try:
-        for index, command in enumerate(commands):
-            with (args.output / f"build-{index}.stdout").open("xb") as out, (args.output / f"build-{index}.stderr").open("xb") as err:
-                result = subprocess.run(command, cwd=args.output, env=env, stdin=subprocess.DEVNULL, stdout=out, stderr=err)
-            receipt["commands"].append({"argv":command, "exit":result.returncode})
-            require(result.returncode == 0, "selector component build failed; original streams retained")
-        binary = args.output / "target/release/profile-native-preflight"
-        receipt.update(status="completed", binary_sha256=S.digest(binary), manifest_sha256=S.digest(manifest), lock_sha256=S.digest(args.output / "Cargo.lock"))
-    except BaseException as error:
-        receipt["error"] = f"{type(error).__name__}: {error}"
-        raise
-    finally:
-        S.write_json(args.output / "receipt.json", receipt)
-    print(f"Built production selector gate: {binary}")
 
 
 def orders(pairs):
@@ -472,66 +359,6 @@ class Campaign(S.Campaign):
                     daemons[lane].alive()
         self.recorder.event({"kind":"group-end", "sample":sample, "operation":operation})
 
-    def execute(self):
-        require(platform.system() == "Linux" and platform.machine() == "x86_64", "Linux x86-64 campaign required")
-        require("Cargo artifact profile: release\n" in (self.args.built / "BUILD-PROFILE.txt").read_text(), "release candidate required")
-        require(b"Finished `release` profile" in self.args.pristine_build_log.read_bytes(), "release pristine build required")
-        require(source_identity(self.args.pristine_source) == {"revision":S.PIN, "tree":S.TREE}, "pristine source differs")
-        self.report["candidate_identity"] = source_identity(self.args.repository)
-        before = json.loads(self.args.baseline_receipt.read_text())
-        require(before["status"] == "completed" and before["baseline"]["revision"] == BASELINE, "baseline build not completed")
-        require(before["candidate"] == self.report["candidate_identity"], "baseline composition uses another candidate")
-        require(before["baseline_binary"]["sha256"] == S.digest(self.tools["baseline"]), "baseline binary differs")
-        require(all(S.digest(path) == value for path, value in before["shared_package_sha256"].items()), "shared package differs")
-        self.report["baseline_composition"] = before
-        self.report["host"] = S.HOST.collect()
-        self.report["fixture_preparation"] = S.prepare_fixture(self.args.repository, self.args.pristine_source, self.fixture)
-        self.report["tool_paths"] = {key:str(value) for key,value in self.tools.items()}
-        files = list(self.tools.values()) + [Path(path) for path in before["shared_package_sha256"]] + [self.reference, self.args.pristine_lust.with_name("lust-core"),
-                 self.args.baseline_receipt, self.args.pristine_build_log, Path(__file__), HERE / "run-upstream-slice-benchmark.py",
-                 HERE / "report-mixed-performance.py", HERE / "capture-benchmark-host.py"]
-        identities = {str(path):S.digest(path) for path in files}
-        self.report["compiler_and_runner_sha256"] = identities
-        receipts = self.output / "build-receipts"
-        receipts.mkdir()
-        self.report["build_receipts"] = {}
-        for path in (self.args.baseline_receipt, self.args.pristine_build_log, self.args.built / "COMPONENTS.txt",
-                     self.args.built / "NATIVE-BUILD-RECEIPT.txt", self.args.built / "BUILD-PROFILE.txt",
-                     self.args.built / "toolchain/lib/lustr-selection-tools.txt",
-                     *(self.args.baseline_receipt.parent / name for name in
-                       ("seed.stdout", "seed.stderr", "baseline-selection-seed.json", "candidate-selection-seed.json"))):
-            shutil.copyfile(path, receipts / path.name)
-            self.report["build_receipts"][path.name] = {"file":str(Path("build-receipts") / path.name), "sha256":S.digest(path)}
-        with tempfile.TemporaryDirectory(prefix="lustr-warm-") as temporary:
-            sockets = Path(temporary)
-            env = self.environment(self.output / "work/lockfile", sockets / "unused.sock", True)
-            _, out, _ = self.recorder.run([self.reference, "-vV"], env, self.output, "cargo", "rust-identity")
-            require(f"commit-hash: {S.RUST}" in out.decode().splitlines(), "Rust pin differs")
-            self.report["rustc_version"] = out.decode()
-            self.recorder.run([self.tools["cargo"], "generate-lockfile", "--offline", "--manifest-path", self.fixture / "Cargo.toml"],
-                              env, self.fixture, "cargo", "lockfile")
-            source = S.inventory(self.fixture)
-            self.report["fixture_files"] = source
-            reject = self.output / "rejected.rs"
-            reject.write_text(S.REJECTION)
-            self.report["rejection_input"] = {"file":"rejected.rs", "sha256":S.digest(reject)}
-            self.recorder.event({"kind":"identities", **{key:self.report[key] for key in
-                                 ("tool_paths", "compiler_and_runner_sha256", "fixture_files", "candidate_identity", "baseline_composition", "build_receipts", "rustc_version")}})
-            self.qualification(sockets, "initial")
-            self.cache_edit_qualification(sockets)
-            self.report["orders"] = orders(self.args.pairs)
-            for sample, order in enumerate(self.report["orders"]):
-                for operation in ("check", "build"):
-                    self.measure_group(sample, order, operation, sockets)
-                    require(S.inventory(self.fixture) == source, "fixture changed during measurement")
-            self.qualification(sockets, "final")
-            require(S.inventory(self.fixture) == source and reject.read_text() == S.REJECTION, "input changed")
-        require(all(S.digest(path) == value for path,value in identities.items()), "compiler/runner changed")
-        require(source_identity(self.args.repository) == self.report["candidate_identity"]
-                and source_identity(self.args.pristine_source) == {"revision":S.PIN, "tree":S.TREE}, "source changed during comparison")
-        self.report.update(samples=self.samples, summaries=summaries(self.samples, self.args.pairs), status="completed")
-        self.report["warm_target"] = parity(self.report["summaries"])
-        self.report["priming_summary"] = priming_summary(self.recorder.records, self.args.pairs)
 
 
 def render(report):
@@ -771,64 +598,19 @@ def verify(output):
     return report
 
 
-def measure(args):
-    orders(args.pairs)
-    require(args.output.is_absolute() and not args.output.exists(), "new absolute output required")
-    args.output.mkdir(mode=0o700, parents=True)
-    campaign = Campaign(args)
-    failure = None
-    try:
-        campaign.execute()
-    except BaseException as error:
-        failure = error
-        campaign.report.update(status="failed", error=f"{type(error).__name__}: {error}", summaries=None, samples=campaign.samples)
-    finally:
-        campaign.recorder.raw.close()
-        campaign.report["raw_sha256"] = S.digest(args.output / "raw.jsonl")
-        S.write_json(args.output / "report.json", campaign.report)
-        (args.output / "README.md").write_text(render(campaign.report))
-        with (args.output / "samples.csv").open("w", newline="") as stream:
-            writer = csv.DictWriter(stream, fieldnames=("sample", "lane", "phase", "seconds", "commands"))
-            writer.writeheader(); writer.writerows(campaign.samples)
-    if failure:
-        raise failure
-    report = verify(args.output)
-    print(render(report))
-    return 0 if report["warm_target"]["meets_target"] else 2
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    commands = parser.add_subparsers(dest="command", required=True)
-    build = commands.add_parser("build-baseline")
-    for name in ("repository", "baseline-source", "built", "output"):
-        build.add_argument("--" + name, type=Path, required=True)
-    selector = commands.add_parser("build-selector-gate")
-    for name in ("repository", "built", "output"):
-        selector.add_argument("--" + name, type=Path, required=True)
-    run = commands.add_parser("measure")
-    for name in ("repository", "built", "baseline-receipt", "pristine-source", "pristine-lust", "pristine-build-log", "output"):
-        run.add_argument("--" + name, type=Path, required=True)
-    run.add_argument("--pairs", type=int, default=24)
-    run.add_argument("--timeout", type=int, default=180)
-    replay = commands.add_parser("verify")
-    replay.add_argument("output", type=Path)
+    if sys.argv[1:2] != ["verify"]:
+        print("Retired whole-rustc acquisition is disabled. Use verify DIRECTORY for immutable historical evidence.", file=sys.stderr)
+        return 2
+    parser = argparse.ArgumentParser(description="Verify frozen historical evidence without compiler execution or current qualification.")
+    parser.add_argument("command", choices=("verify",))
+    parser.add_argument("output", type=Path)
     args = parser.parse_args()
-    for key, value in vars(args).items():
-        if isinstance(value, Path):
-            setattr(args, key, value.resolve())
-    if args.command == "build-baseline":
-        build_baseline(args)
-        return 0
-    if args.command == "build-selector-gate":
-        build_selector_gate(args)
-        return 0
-    if args.command == "verify":
-        result = verify(args.output)
-        print(f"Verified {len(result['samples'])} timings; warm target met: {result['warm_target']['meets_target']}")
-        return 0
-    require(1 <= args.timeout <= 1800, "timeout out of range")
-    return measure(args)
+    verify(args.output.resolve())
+    print("Verified historical evidence; no compiler execution or current qualification.")
+    return 0
 
 
 if __name__ == "__main__":

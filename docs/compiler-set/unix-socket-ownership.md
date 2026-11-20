@@ -1,5 +1,12 @@
 # Unix socket creation, pathname evaluation and ownership
 
+This is a generated-program standard-library semantics repair. It does not
+require the compiler itself to use Unix sockets and does not qualify a
+socket-independent retained compiler. The implementation preference for
+`no_std` and socket-independent transport preserves support for Rust programs
+using `std` and target-provided Unix APIs; see the
+[portability contract](exclusive-coverage-contract.md).
+
 The declared Rust source creates and owns a Unix socket before evaluating a
 caller's `AsRef<Path>` or validating pathname bytes. Native `UnixStream::connect`
 and `UnixListener::bind` previously evaluated and validated the path first. When

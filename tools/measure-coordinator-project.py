@@ -52,9 +52,6 @@ def write_json(path, value):
         stream.write("\n")
 
 
-def command(argv, cwd=None):
-    result = subprocess.run([str(arg) for arg in argv], cwd=cwd, check=True, capture_output=True)
-    return result.stdout.decode("utf-8").strip()
 
 
 def files_below(path, ancestors=()):
@@ -70,23 +67,6 @@ def files_below(path, ancestors=()):
     return files
 
 
-def snapshot(repo, revision, destination):
-    data = subprocess.run(["git", "-C", str(repo), "archive", "--format=tar", f"{revision}:crates/lustr"],
-                          check=True, capture_output=True).stdout
-    destination.mkdir()
-    with tarfile.open(fileobj=io.BytesIO(data)) as archive:
-        for entry in archive:
-            relative = Path(entry.name)
-            require(not relative.is_absolute() and ".." not in relative.parts and (entry.isdir() or entry.isfile()),
-                    "project snapshot must contain only ordinary files/directories")
-            target = destination / relative
-            if entry.isdir():
-                target.mkdir(exist_ok=True)
-            else:
-                target.parent.mkdir(parents=True, exist_ok=True)
-                with target.open("xb") as output:
-                    output.write(archive.extractfile(entry).read())
-                target.chmod(entry.mode & 0o777)
 
 
 def make_spec(scenario, *, source, private, package, sdk, gate, external_inputs, revision, host, jobs):
@@ -377,67 +357,6 @@ def project_report(report_path):
             }}
 
 
-def prepare(args, private):
-    repo, package = args.repository, args.toolchain
-    require(command(["git", "-C", repo, "status", "--porcelain", "--", "crates/lustr"]) == "",
-            "coordinator source has uncommitted changes; freeze the intended Git revision first")
-    revision = command(["git", "-C", repo, "rev-parse", "HEAD"])
-    tree = command(["git", "-C", repo, "rev-parse", f"{revision}:crates/lustr"])
-    reference = package / "bin/rustc-reference"
-    require(reference.is_symlink(), "source-built package must identify its original Rust SDK")
-    direct = package / "bin/lustr-cargo/rustc"
-    require(direct.is_symlink() and direct.resolve(strict=True) == (package / "bin/rustc-full").resolve(strict=True),
-            "source-built Cargo compiler must be the existing mixed rustc-full binary")
-    sdk = reference.resolve(strict=True).parent.parent
-    for name in ("cargo", "rustdoc"):
-        require((package / "bin" / name).resolve(strict=True) == (sdk / "bin" / name).resolve(strict=True), "unmatched SDK component")
-    pin = re.findall(r'^source = "([0-9a-f]{40})"$', (repo / "upstream/bluefe-core.pin").read_text(), re.MULTILINE)
-    require(len(pin) == 1, "missing pinned full-Rust identity")
-    version = command([sdk / "bin/rustc", "-vV"])
-    require(command([package / "bin/rustc", "-vV"]) == version, "candidate and reference compiler identities differ")
-    fields = dict(line.split(": ", 1) for line in version.splitlines() if ": " in line)
-    require(fields.get("commit-hash") == pin[0] and fields.get("host") == "x86_64-unknown-linux-gnu", "unmatched full-Rust source/host")
-    require(pin[0] in command([package / "bin/lustr", "--lustr-version"]), "primary entry has a different full-Rust identity")
-    require(digest(package / "bin/cargo") == digest(sdk / "bin/cargo"), "Cargo binary differs")
-    for filename in ("COMPONENTS.txt", "NATIVE-BUILD-RECEIPT.txt", "BUILD-PROFILE.txt"):
-        require((package.parent / filename).is_file(), "missing source constructor receipt")
-    require("Cargo artifact profile=release" in (package.parent / "COMPONENTS.txt").read_text(), "optimized compiler components required")
-    require("Cargo artifact profile: release" in (package.parent / "BUILD-PROFILE.txt").read_text(), "constructor profile receipt differs")
-    source = private / "snapshot"
-    snapshot(repo, revision, source)
-    for name in ("home", "cargo-home", "specs"):
-        (private / name).mkdir()
-    rejection = subprocess.run(["git", "-C", str(repo), "show", f"{revision}:crates/lustr-bench/fixtures/tiny/reject.rs"],
-                               capture_output=True, check=True).stdout
-    (private / "reject.rs").write_bytes(rejection)
-    inputs = [package.parent / name for name in ("COMPONENTS.txt", "NATIVE-BUILD-RECEIPT.txt", "BUILD-PROFILE.txt")]
-    inputs += [package / "bin" / name for name in ("lustr", "rustc-full", "lust", "lust-core", "cargo-lustr", "rustc-reference")]
-    inputs.append(direct)
-    inputs += [repo / "upstream/bluefe-core.pin", private / "reject.rs"]
-    # Include the host runtime/sysroot, sealed native library and TinyCC inputs.
-    # Other installed cross targets are irrelevant to this fixed host campaign.
-    for path in sorted((package / "lib").iterdir()):
-        if path.name != "rustlib":
-            inputs += files_below(path)
-    inputs += files_below(package / "lib/rustlib" / fields["host"])
-    inputs = sorted(set(inputs))
-    specs = {}
-    for scenario in SCENARIOS:
-        spec = make_spec(scenario, source=source, private=private, package=package, sdk=sdk, gate=args.gate,
-                         external_inputs=inputs, revision=revision, host=fields["host"], jobs=args.jobs)
-        path = private / "specs" / f"{scenario}.json"
-        write_json(path, spec)
-        specs[scenario] = path
-    identity = {"repository": "https://github.com/glopyglerky/lustr", "revision": revision, "coordinator_git_tree": tree,
-                "rust_source": pin[0], "rust_version": version, "host": fields["host"], "compiler_component_profile": "release",
-                "compiler_components_sha256": {name: digest(package / "bin" / name) for name in
-                                               ("lustr", "rustc-full", "lust", "lust-core", "cargo-lustr")},
-                "constructor_receipts_sha256": {name: digest(package.parent / name) for name in
-                                                ("COMPONENTS.txt", "NATIVE-BUILD-RECEIPT.txt", "BUILD-PROFILE.txt")},
-                "runner_sha256": digest(args.runner), "gate_sha256": digest(args.gate), "replay_sha256": digest(args.replay),
-                "cargo_sha256": digest(sdk / "bin/cargo"), "reference_rustc_sha256": digest(sdk / "bin/rustc"),
-                "native_participation": "not asserted; unchanged dev debug=2 is outside current mixed-object eligibility"}
-    return specs, identity
 
 
 def public_readme(data, identity, host):
@@ -478,78 +397,9 @@ def public_readme(data, identity, host):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    for name in ("repository", "toolchain", "runner", "gate", "replay", "output"):
-        parser.add_argument(f"--{name}", required=True, type=Path)
-    parser.add_argument("--jobs", type=int, default=2)
-    parser.add_argument("--prepare-only", action="store_true", help="write frozen source/specs/identity without claiming any measurements")
-    args = parser.parse_args()
-    for name in ("repository", "toolchain", "runner", "gate", "replay"):
-        setattr(args, name, getattr(args, name).resolve(strict=True))
-    require(args.output.is_absolute() and not args.output.exists(), "campaign output must be a new absolute directory")
-    args.output = args.output.parent.resolve(strict=True) / args.output.name
-    require(not args.output.is_relative_to(args.repository), "campaign must be outside the canonical repository")
-    require(1 <= args.jobs <= len(os.sched_getaffinity(0)), "job budget must fit process affinity")
-    args.output.mkdir(mode=0o700)
-    private = args.output / "private"
-    private.mkdir(mode=0o700)
-    result = {"schema": "lustr-coordinator-campaign-v1", "status": "failed", "scenarios": list(SCENARIOS)}
-    try:
-        specs, identity = prepare(args, private)
-        write_json(private / "identity.json", identity)
-        if args.prepare_only:
-            result["status"] = "prepared-only"
-            return
-        module = importlib.util.spec_from_file_location("benchmark_host", args.repository / "tools/capture-benchmark-host.py")
-        host = importlib.util.module_from_spec(module)
-        module.loader.exec_module(host)
-        host_record = host.collect()
-        write_json(private / "host.json", host_record)
-        cases = []
-        for name, spec in specs.items():
-            with (private / f"{name}.runner.stdout").open("xb") as stdout, (private / f"{name}.runner.stderr").open("xb") as stderr:
-                try:
-                    subprocess.run([str(args.runner), str(spec), str(private / name)], check=True, stdout=stdout, stderr=stderr)
-                except subprocess.CalledProcessError:
-                    receipt = runner_failure_receipt(private / name / "report.json")
-                    print(f"project runner diagnosis (no private output): {json.dumps(receipt, sort_keys=True)}", file=sys.stderr)
-                    raise
-            case = project_report(private / name / "report.json")
-            require(case["compiler_components_sha256"] == identity["compiler_components_sha256"], "compiler components changed between scenarios")
-            cases.append(case)
-        data = {"schema": 1, "pairs": PAIRS, "warmup_pairs": WARMUPS, "seed": SEED, "bootstrap_resamples": RESAMPLES,
-                "runner_sha256": identity["runner_sha256"], "cases": cases}
-        # Validate before copying any conclusions into the publication directory.
-        projection = private / "sanitized-samples.json"
-        write_json(projection, data)
-        replay = subprocess.run([str(args.replay), str(projection)], check=True, capture_output=True)
-        replay_json = json.loads(replay.stdout)
-        require(replay_json["verified_comparisons"] == len(SCENARIOS), "not every project comparison replayed")
-        public = args.output / "public"
-        public.mkdir()
-        write_json(public / "samples.json", data)
-        write_json(public / "replay.json", replay_json)
-        write_json(public / "campaign.json", {**identity, **result, "status": "passed", "project_profiles": "unchanged dev and test defaults",
-                                             "jobs": args.jobs, "pairs": PAIRS, "warmup_pairs": WARMUPS,
-                                             "measurement": "wall time only; detached daemon CPU, memory and energy are not measured",
-                                             "privacy": "Allowlist projection. Original report/spec/output SHA256 values identify private originals, not these rewritten bytes."})
-        write_json(public / "host.json", host_record)
-        with (public / "README.md").open("x", encoding="utf-8") as readme:
-            readme.write(public_readme(data, identity, host_record))
-        with (public / "SHA256SUMS").open("x") as manifest:
-            for path in sorted(public.iterdir()):
-                if path.name != "SHA256SUMS":
-                    manifest.write(f"{digest(path)}  {path.name}\n")
-        result["status"] = "passed"
-        result["public_samples_sha256"] = digest(public / "samples.json")
-        result["original_report_sha256"] = {case["name"]: case["full_private_report_sha256"] for case in cases}
-        print(public)
-    except Exception as error:
-        result["error"] = str(error)
-        raise
-    finally:
-        write_json(private / "campaign-result.json", result)
+    print("Retired whole-rustc coordinator acquisition is disabled. Use check-coordinator-performance-archives.py for immutable historical evidence.", file=sys.stderr)
+    return 2
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

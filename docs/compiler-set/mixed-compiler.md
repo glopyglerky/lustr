@@ -150,26 +150,15 @@ of the pinned Cranelift build in CI remains separate from these LLVM SDK builds.
 
 ## Build and qualify
 
-For a fresh local build, compile `tools/build-mixed-toolchain.rs` with Rust and
-run it with the repository, matching upstream Rust SDK, built TinyCC directory
-and a new output directory outside the source checkout. It checks the declared
-native source identities, builds Lust, the lustr entry, Cargo integration and
-mixed driver and native C ABI library, and assembles `toolchain/bin/lustr`.
-The supplied TinyCC static archive must support shared linking.
-`tools/build-tinycc-pic.rs` builds the pinned upstream source into a new
-directory with its normal optimization and position-independent code, then
-checks the complete archive through an actual shared link. Its arguments are
-the TinyCC source checkout and new output directory; use the resulting
-`install` directory as the toolchain constructor's TinyCC input.
-Dependencies must already be
-available for locked offline Cargo builds. No historical lustr package is
-required. The `source-native-runtime` feature binds the entry to Cargo's actual
-native build receipt; the complete Rust SDK keeps its existing exact pin.
-The ordinary feature set retains the older package's binary checks.
-`--current-sdk` can replace the SDK directory when `rustc` already selects the
-matching pinned toolchain. The constructor checks its source identity before
-building native components. CI builds this complete composition and runs the
-real mixed-project qualifier through its lustr entry.
+The original constructor built a complete mixed package with the matching
+Rust SDK, native compiler and TinyCC. That constructor, driver and package route
+are retired. The [exact original recipe](https://github.com/glopyglerky/lustr/blob/ea26fe16636d390763257a19c19df3db992cdbcb/docs/compiler-set/mixed-compiler.md#build-and-qualify)
+is historical source, not a current build or installation instruction. Current
+product construction follows [PR #33](active-correction.md) and cannot restore
+whole-compiler analysis or retry under an old constructor name.
+
+The source-bound package identities and qualification details below describe
+that original construction. They are not instructions to recreate it as Lustr.
 
 The assembled toolchain owns its expanded standard-library source copy. Its
 dependency and support links retain the expected package layout, and the
@@ -185,11 +174,7 @@ artifacts and native build receipt; the imported Rust SDK remains unchanged.
 The original four-argument command still uses development builds, and an
 explicit final `--debug` selects the same behavior. For example:
 
-```sh
-rustc --edition=2024 tools/build-mixed-toolchain.rs -o /absolute/build-mixed-toolchain
-/absolute/build-mixed-toolchain /absolute/lustr /absolute/rust-sdk \
-  /absolute/tinycc/install /absolute/new-output --release
-```
+The [original source-bound invocation](https://github.com/glopyglerky/lustr/blob/ea26fe16636d390763257a19c19df3db992cdbcb/docs/compiler-set/mixed-compiler.md) is historical. It is not a current construction, test or benchmark acquisition command.
 
 `BUILD-PROFILE.txt` records the selection before compilation starts. Each build
 command and its output/status remain in `logs`, and `COMPONENTS.txt` binds the
@@ -213,16 +198,11 @@ unmeasured projects or general mixed coverage.
 
 ### Paired integration measurements
 
-`crates/lustr-bench` supplies a separate `lustr-mixed-bench` executable for the
-current composition. Build it with the pinned SDK and run:
+The historical `lustr-mixed-bench` campaign used that mixed composition.
+Its acquisition recipe is retired; its source, schema and retained evidence
+remain available for read-only review:
 
-```sh
-cargo build --manifest-path crates/lustr-bench/Cargo.toml --release --locked \
-  --bin lustr-mixed-bench --target-dir /absolute/benchmark-build
-/absolute/benchmark-build/release/lustr-mixed-bench \
-  /absolute/pristine-lust-source /absolute/pristine-lust-build/release/lust \
-  /absolute/source-built-output /absolute/new-measurement-output 12
-```
+The [original source-bound invocation](https://github.com/glopyglerky/lustr/blob/ea26fe16636d390763257a19c19df3db992cdbcb/docs/compiler-set/mixed-compiler.md) is historical. It is not a current construction, test or benchmark acquisition command.
 
 The pristine checkout must be the exact pinned Lust commit and tree with no
 tracked modifications. Build its `lust` and `lust-core` binaries with the same
@@ -287,25 +267,11 @@ installation. It is not a standalone release archive or a change to the host's
 default compiler. Retain its toolchain and logs, then remove its disposable
 `work` directory after qualification.
 
-Build the native compiler with the existing TinyCC setup. Take its actual
-`LUST_BUILD_HASH` from Cargo's build-script output, then build the matching
-driver with the pinned complete Rust toolchain:
+The [original local assembly and qualification instructions](https://github.com/glopyglerky/lustr/blob/ea26fe16636d390763257a19c19df3db992cdbcb/docs/compiler-set/mixed-compiler.md)
+used the removed full-core driver and mixed-toolchain assembler. They are not
+current compiler entry points. The original native object qualifier bound the
+core's actual file identity in its wire protocol.
 
-```text
-LUSTR_NATIVE_BUILD_HASH=<actual-native-build-hash> cargo build \
-  --manifest-path crates/lustr-semantic/Cargo.toml \
-  --features full-core --bin lustr-mixed --locked --offline
-```
-
-Compile `tools/assemble-mixed-toolchain.rs` with Rust. Its arguments are the
-existing pinned complete lustr package, built mixed driver, matching native
-core and a new destination directory. It composes an explicit local development
-toolchain using symlinks; keep the referenced baseline installed. It does not
-modify that baseline or claim to create a standalone release archive. The
-destination's `bin/lustr` provides normal Cargo commands automatically.
-
-Compile `tools/native-mixed-qualification.rs` beside the selected `lust-core`;
-the original wire protocol also binds the core's actual file identity.
 The qualifier tests cold and retained native object
 generation with an independent Rust caller. `tools/mixed-compiler-qualification.rs`
 tests the real Cargo graph, proc macro, async caller, real `core`/`alloc`

@@ -1,0 +1,4 @@
+   Compiling lustr-bench v0.1.0 (<CHECKOUT>/crates/lustr-bench)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.19s
+     Running unittests src/bin/lustr-bench-gate.rs (<OUTPUT>/ci-audit-intermediates/debug/build/lustr-bench/0d317bf79800e762/out/lustr_bench_gate-0d317bf79800e762)
+     Running tests/routed.rs (<OUTPUT>/ci-audit-intermediates/debug/build/lustr-bench/fe02930a51fc5516/out/routed-fe02930a51fc5516)

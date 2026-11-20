@@ -194,19 +194,12 @@ SHA256 utility, and installs the matching upstream compiler as `rustc-full`.
 It records that there is no mixed Mach-O bridge. Linux keeps the existing mixed
 driver and its qualification requirements.
 
-Build on the destination host, using the SDK whose source commit matches
-`upstream/bluefe-core.pin` and the pinned native TinyCC build:
-
-```sh
-rustc --edition=2024 tools/build-mixed-toolchain.rs -o /absolute/work/build-toolchain
-/absolute/work/build-toolchain /absolute/lustr /absolute/rust-sdk /absolute/tcc /absolute/new-output --release
-```
-
-Keep `HOST-SDK-RECEIPT.txt`, `NATIVE-BUILD-RECEIPT.txt`, `COMPONENTS.txt`, logs and
-actual native test results with that candidate. Windows users can build the
-independently installable coordinator under `crates/lustr`; the primary native
-daemon still requires a Windows process/IPC/loader adapter and backend
-qualification.
+That constructor and its coordinator/Windows installation instructions are
+retired. The [original source-bound recipe](https://github.com/glopyglerky/lustr/blob/ea26fe16636d390763257a19c19df3db992cdbcb/docs/compiler-set/host-portability.md) remains
+available for historical review. Current product construction follows the
+[active correction](active-correction.md) and cannot install a full Rust
+compiler as its complement. Historical host receipts and test results below
+retain their original scope.
 
 ## Focused qualification
 

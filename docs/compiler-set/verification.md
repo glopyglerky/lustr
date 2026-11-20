@@ -1,12 +1,17 @@
 # Compiler-set verification
 
+> Historical source-bound record. The November 8 coordinator and complete-compiler experiments are retired product routes.
+> Follow the [active correction](active-correction.md) and
+> [exclusive coverage contract](exclusive-coverage-contract.md).
+> Earlier results and proposals below do not qualify current source or authorize
+> a fallback, duplicate Rust frontend, runtime ownership probe or new install route.
+
 Verification date: 2026-11-08.
 
-Current source policy: `compiler/native` has since been restored to the complete
-[pinned upstream tree](upstream-lust.md). Earlier fork overrides and experimental
-coverage changes are excluded from that baseline. The results below retain their
-original source/configuration scope; they do not qualify the restoration or the
-required full Lustr replacement. The rustc-based preview does not include Lust.
+The [current source policy](upstream-lust.md) preserves a pristine Lust reference
+and an explicitly declared integration patch. Neither source identity transfers
+the November 8 results below to today's compiler. The rustc-based preview in this
+record does not include Lust or qualify the required full Lustr replacement.
 
 ## What this establishes
 
@@ -67,13 +72,7 @@ The real Lust test used an existing build of the unchanged upstream source at th
 
 ## Executed tests
 
-```sh
-cargo test --manifest-path tools/cargo-lust/Cargo.toml --locked --offline
-
-LUST_TEST_LUST=/path/to/lust \
-  cargo test --manifest-path tools/cargo-lust/Cargo.toml --locked --offline \
-  --test qualification actual_lust -- --ignored --nocapture
-```
+The [original source-bound invocation](https://github.com/glopyglerky/lustr/blob/ea26fe16636d390763257a19c19df3db992cdbcb/docs/compiler-set/verification.md) is historical. It is not a current construction, test or benchmark acquisition command.
 
 The local run used normal Cargo development settings. Baseline and candidate source trees were copies of the same fixture and had separate target directories. Tests did not change project panic settings, features, optimization, debug information, or incremental compilation settings.
 
@@ -226,7 +225,7 @@ native startup change confines Linux's `personality` call and arena allocation
 to Linux. Native macOS's full gate remains separate from coordinator portability;
 its remaining native support is not established by this Linux run.
 
-A new dependency-free [mixed ABI fixture](../../tools/cargo-lust/fixtures/mixed-abi)
+A new dependency-free [mixed ABI fixture](../../crates/lustr/fixtures/mixed-abi)
 passed the ordinary Cargo path and the real complementary backend on Linux
 x86_64 with rustc commit `2d20b42b883dcfc014f3c2c56081eeb6091c2179`, the
 `nightly-2026-11-05` pair. The backend was built from the existing pinned source
@@ -265,7 +264,7 @@ claim native Lust rlib interoperability or general Rust/backend equivalence.
 
 ## Checked semantic inspection
 
-The new [`lustr-semantic`](../../tools/lustr-semantic) package builds offline
+The new [`lustr-semantic`](../../crates/lustr-semantic) package builds offline
 against the pinned `nightly-2026-11-05` compiler's development libraries. Its
 12 real-compiler integration tests pass on Linux x86_64. The
 [qualification summary](evidence/semantic-inspection-2026-11-08-summary.json)
@@ -327,7 +326,7 @@ now match the C interface; production call sites and their values are unchanged.
 A minimal real-compiler reproducer fails with the old declaration and passes
 after changing only that declaration. Both LLVM and Cranelift were exercised,
 including the compiler's default codegen settings. The new
-[`fcntl` fixture](../../tools/cargo-lust/fixtures/fcntl-variadic) checks both
+[`fcntl` fixture](../../crates/lustr/fixtures/fcntl-variadic) checks both
 argument counts, descriptor flag restoration, file cloning, reads and standard
 library drops. The actual backend gate verifies fresh compiler commands for
 the program and test harness. No panic, debug-assertion or codegen-unit change

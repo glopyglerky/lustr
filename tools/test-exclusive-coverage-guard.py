@@ -27,6 +27,14 @@ def product_package_controls():
                 path.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(ROOT / name, path)
                 originals[name] = path.read_text()
+            target = GUARD.PRODUCT_TARGETS[manifest]
+            sources = {"build.rs", *target["bin"].values(), *(path for path, _ in target["example"].values())}
+            if target["lib"]:
+                sources.add(target["lib"][0])
+            for relative in sources:
+                path = root / Path(manifest).parent / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(ROOT / Path(manifest).parent / relative, path)
 
         def checked():
             failures = []
@@ -42,6 +50,8 @@ def product_package_controls():
         # change the package source graph and must remain admissible.
         rewrite("compiler/native/Cargo.toml", lambda text: text.replace("exclusive-native = []", 'exclusive-native = ["selected"]\nselected = ["cycle"]\ncycle = ["selected"]'))
         rewrite("Cargo.toml", lambda text: text.replace('version = "0.1.0"', 'version = "0.1.1"').replace('opt-level = 3', 'opt-level = 2'))
+        rewrite("Cargo.toml", lambda text: text.replace('source-native-runtime = ["exclusive-native"]',
+                'source-native-runtime = ["selected-policy"]\nselected-policy = ["exclusive-native"]'))
         assert not checked(), checked()
 
         cases = [
@@ -51,6 +61,8 @@ def product_package_controls():
              lambda text: text.replace("exclusive-native = []", 'exclusive-native = ["ordinary"]\nordinary = ["upstream-semantic"]'), "product features enable research"),
             ("source-runtime-research", "Cargo.toml",
              lambda text: text.replace('source-native-runtime = ["exclusive-native"]', 'source-native-runtime = ["exclusive-native", "hidden"]\nhidden = ["native-qualification"]\nnative-qualification = []'), "product features enable research"),
+            ("source-runtime-loses-product-policy", "Cargo.toml",
+             lambda text: text.replace('source-native-runtime = ["exclusive-native"]', 'source-native-runtime = []'), "constructor feature closure omits exclusive-native"),
             ("renamed-compiler-dependency", "Cargo.toml",
              lambda text: text.replace("[dependencies]", '[dependencies]\nhelper = { package = "rustc_driver", version = "0.1" }'), "unreviewed product dependency helper -> rustc_driver"),
             ("renamed-path-override", "Cargo.toml",
@@ -81,6 +93,40 @@ def product_package_controls():
              lambda text: text.replace(' "itoa",', ' "itoa",\n "rustc_driver",'), "unreviewed lockfile dependency edges from serde_json"),
             ("transitive-source-override", "Cargo.lock",
              lambda text: text.replace('source = "registry+https://github.com/rust-lang/crates.io-index"', 'source = "git+https://example.invalid/compiler"', 1), "unreviewed locked package source"),
+            ("entry-source-redirection", "Cargo.toml",
+             lambda text: text.replace('path = "src/main.rs"', 'path = "crates/lustr-semantic/src/main.rs"'), "bin target sources"),
+            ("implicit-library-redirection", "Cargo.toml",
+             lambda text: text + '\n[lib]\npath = "unreviewed.rs"\n', "product library selection"),
+            ("native-library-redirection", "crates/lustr-native-core/Cargo.toml",
+             lambda text: text.replace('[lib]', '[lib]\npath = "../lustr-semantic/src/main.rs"'), "product library selection"),
+            ("build-script-redirection", "Cargo.toml",
+             lambda text: text.replace('[package]', '[package]\nbuild = "crates/lustr-semantic/build.rs"'), "build-script source"),
+            ("build-script-disabled", "Cargo.toml",
+             lambda text: text.replace('[package]', '[package]\nbuild = false'), "build-script source"),
+            ("foreign-workspace", "crates/lustr-native-core/Cargo.toml",
+             lambda text: text.replace('[package]', '[package]\nworkspace = "../lustr-semantic"'), "product workspace selection"),
+            ("removed-workspace-exclusions", "Cargo.toml",
+             lambda text: text.replace('exclude = ["compiler/native", "crates/lustr", "crates/lustr-semantic", "crates/lustr-native-core"]', 'exclude = []'), "product workspace selection"),
+            ("implicit-library-disabled", "Cargo.toml",
+             lambda text: text.replace('[package]', '[package]\nautolib = false'), "product library selection"),
+            ("extra-native-entry", "crates/lustr-native-core/Cargo.toml",
+             lambda text: text + '\n[[bin]]\nname = "compiler"\npath = "../lustr-semantic/src/main.rs"\n', "bin target sources"),
+            ("library-procedural-macro", "Cargo.toml",
+             lambda text: text + '\n[lib]\nproc-macro = true\n', "product library selection"),
+            ("qualification-gate-removed", "crates/lustr-native-core/Cargo.toml",
+             lambda text: text.replace('required-features = ["upstream-semantic"]', 'required-features = []'), "example target sources or admission features"),
+            ("default-package-target", "Cargo.toml",
+             lambda text: 'cargo-features = ["per-package-target"]\n' + text.replace('[package]', '[package]\ndefault-target = "wasm32-unknown-unknown"'), "manifest target or build-generation override"),
+            ("forced-package-target", "Cargo.toml",
+             lambda text: 'cargo-features = ["per-package-target"]\n' + text.replace('[package]', '[package]\nforced-target = "wasm32-unknown-unknown"'), "manifest target or build-generation override"),
+            ("manifest-feature-activation", "Cargo.toml",
+             lambda text: 'cargo-features = ["profile-rustflags"]\n' + text, "unreviewed Cargo feature gates"),
+            ("profile-compiler-cfg", "crates/lustr-native-core/Cargo.toml",
+             lambda text: 'cargo-features = ["profile-rustflags"]\n' + text + '\n[profile.dev]\nrustflags = [\'--cfg=feature="upstream-semantic"\']\n', "unreviewed compiler flags or backend"),
+            ("profile-build-script-cfg", "Cargo.toml",
+             lambda text: text + '\n[profile.dev.build-override]\nrustflags = [\'--cfg=feature="source-native-runtime"\']\n', "unreviewed compiler flags or backend"),
+            ("profile-package-backend", "Cargo.toml",
+             lambda text: text + '\n[profile.dev.package.lustr-compiler]\ncodegen-backend = "unreviewed"\n', "unreviewed compiler flags or backend"),
         ]
         for label, name, transform, diagnostic in cases:
             for original, text in originals.items():
@@ -88,7 +134,29 @@ def product_package_controls():
             rewrite(name, transform)
             failures = checked()
             assert any(diagnostic in failure for failure in failures), (label, failures)
-        return len(cases)
+        for original, text in originals.items():
+            (root / original).write_text(text)
+        extra_sources = [
+            ("compiler/native/src/lib.rs", "unreviewed product library target"),
+            ("crates/lustr-native-core/src/bin/compiler.rs", "bin target sources"),
+            ("src/bin/hidden/main.rs", "bin target sources"),
+            (".cargo/config.toml", "unreviewed package Cargo configuration"),
+        ]
+        for relative, diagnostic in extra_sources:
+            path = root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("// unreviewed Cargo input\n")
+            assert any(diagnostic in failure for failure in checked()), (relative, checked())
+            path.unlink()
+        build = root / "build.rs"
+        original_build = build.read_bytes()
+        build.unlink()
+        build.symlink_to(root / "crates/lustr-native-core/build.rs")
+        assert any("source is missing or redirected" in failure for failure in checked()), checked()
+        build.unlink()
+        build.write_bytes(original_build)
+        assert not checked(), checked()
+        return len(cases) + len(extra_sources) + 1
 
 
 def retired_policy_control():
@@ -103,14 +171,15 @@ def retired_policy_control():
             return failures
 
         assert not checked()
-        relative = "crates/lustr-semantic/src/mixed_entry.rs"
-        restored = root / relative
-        restored.parent.mkdir(parents=True)
-        restored.write_text("pub fn full_rust_only(_: &[String], _: &str) -> bool { true }\n")
-        assert checked() == ["retired whole-compiler route reappeared: " + relative]
-        restored.unlink()
-        assert not checked()
-    return 1
+        for relative in ("crates/lustr-semantic/src/mixed_entry.rs", "crates/lustr/scripts/build-cranelift.py",
+                         "src/native_expansion.rs", "library/lustr/std/src/platform.rs"):
+            restored = root / relative
+            restored.parent.mkdir(parents=True, exist_ok=True)
+            restored.write_text("// restored retired route\n")
+            assert checked() == ["retired whole-compiler route reappeared: " + relative]
+            restored.unlink()
+            assert not checked()
+    return 4
 
 
 def metadata_research_controls():
@@ -136,6 +205,8 @@ def metadata_research_controls():
             ("crates/lustr-metadata-encoder/Cargo.toml", lambda text: text + '\n[lib]\npath = "unreviewed.rs"\n', "library source or workspace selection changed"),
             ("crates/lustr-metadata-encoder/Cargo.toml", lambda text: text.replace('[workspace]', '[workspace]\ndefault-members = ["other"]'), "library source or workspace selection changed"),
             ("crates/lustr-metadata-sdk/Cargo.toml", lambda text: text.replace('name = "lustr-metadata-sdk"', 'name = "other"'), "library source or workspace selection changed"),
+            ("crates/lustr-metadata-encoder/Cargo.toml", lambda text: 'cargo-features = ["per-package-target"]\n' + text.replace('[package]', '[package]\nforced-target = "wasm32-unknown-unknown"'), "manifest target or build-generation override"),
+            ("crates/lustr-metadata-sdk/Cargo.toml", lambda text: text + '\n[profile.dev]\nrustflags = [\'--cfg=feature="unreviewed"\']\n', "unreviewed compiler flags or backend"),
         ]
         for name, change, diagnostic in cases:
             path = root / name
@@ -166,11 +237,16 @@ def inspection_passthrough_controls():
             return failures
 
         source.write_text(original)
+        shutil.copyfile(ROOT / "crates/lustr-semantic/build.rs", source.parent.parent / "build.rs")
         assert not checked()
         for restored in ("\nfn delegate() {}\n", "\nfn launch() { command.exec(); }\n"):
             source.write_text(original + restored)
             assert checked() == ["independent semantic inspection regained an unchecked compiler passthrough"]
-        return 2
+        source.write_text(original)
+        build = source.parent.parent / "build.rs"
+        build.write_text(build.read_text() + '\n#[cfg(feature = "full-core")] fn other_compiler() {}\n')
+        assert checked() == ["independent semantic inspection regained the retired full-core build mode"]
+        return 3
 
 
 def main():
@@ -199,6 +275,15 @@ def main():
         with patch.object(Path, "read_text", read):
             _, failures = GUARD.check(ROOT)
             assert failures, "forged import provenance was admitted"
+    pin_path = ROOT / "upstream/bluefe-core.pin"
+
+    def moved_pin(path, *args, **kwargs):
+        text = original_read(path, *args, **kwargs)
+        return text.replace(original["rust_source"], "4b5350e87e487aed08ab2f9f0160a4b2616438bc") if path == pin_path else text
+
+    with patch.object(Path, "read_text", moved_pin):
+        _, failures = GUARD.check(ROOT)
+        assert any("selective imports and declared SDK source disagree" in failure for failure in failures), failures
     packages = product_package_controls()
     retired = retired_policy_control()
     metadata = metadata_research_controls()
@@ -207,7 +292,8 @@ def main():
                       "product_package_mutations_rejected": packages, "unrelated_manifest_changes_admitted": True,
                       "restored_retired_policy_rejected": retired,
                       "metadata_research_mutations_rejected": metadata,
-                      "inspection_passthrough_mutations_rejected": inspection}))
+                      "inspection_passthrough_mutations_rejected": inspection,
+                      "moving_donor_pin_rejected": True}))
 
 
 if __name__ == "__main__":

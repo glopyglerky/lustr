@@ -21,6 +21,24 @@ Its intentionally ignored test must have the same status in both harnesses.
 This is a result comparison, not a raw formatting comparison or a replacement
 for the production runner's failure controls.
 
+The native harness's own `pass` label is insufficient. The independent Rust
+harness supplies each test's ordinary or expected-panic outcome. An ordinary
+test must exit zero; an expected panic must exit 101 and match the oracle's
+complete one-line panic message and source location. Only the harness thread
+identity and first-panic backtrace note are normalized. Wrong, missing or
+unrecognized panic output and duplicate native JSON fields fail qualification.
+
+Before executing the candidate, the qualifier binds the complete capability
+fixture tree and declaration-probe script to the recorded pristine Lust
+revision. Deleting, relabeling or changing a fixture cannot shrink the expected
+inventory while retaining a passing qualification. These checks run only in
+development/CI; they add no production ownership probe.
+
+The [evaluator audit record](evidence/ci-anti-regression-20261120/index.json)
+separates planted failure controls, the fresh pinned oracle and compatibility
+with previously captured native test output. That archived native comparison
+does not qualify a newly built or newly executed compiler candidate.
+
 The report retains source, fixture, runner, compiler and generated-artifact
 hashes, every command, exit status and output stream. The oracle's source must
 equal `upstream/bluefe-core.pin`. Compiler and fixture identities must remain

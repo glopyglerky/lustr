@@ -1,0 +1,98 @@
+{
+  "schema": 1,
+  "base_commit": "f8fa2dee04e1c02f110ed9d725cda21c0b750e22",
+  "scope": "compiler-package source and construction admission; no full Rust coverage, product compilation, source-semantic change, new no_std/transport claim or speed result",
+  "normalization": "Published records replace only checkout, selected SDK, and ephemeral control-directory prefixes; raw report SHA256 is retained. Existing historical evidence is unchanged.",
+  "source_sha256": {
+    "crates/lustr-native-core/build.rs": "5cb5bff02838333098650aeebc2703b32f2085279c601db67c7c67b591025cd4",
+    "crates/lustr-semantic/Cargo.toml": "fa34d853463e26f13ba4319bb0aa72ee148a0f608b57a49e8178726099e287a5",
+    "crates/lustr-semantic/build.rs": "bde014aef834b80f955350f945b399ed7029539317615f05a8d7c965bccb9e97",
+    "src/host_runtime.rs": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223",
+    "src/native_expansion.rs": "e2487bb2db135193b52b5c58322c9de535cafd4a7eed7dbb97dd3de656ecf730",
+    "src/owned_child.rs": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20",
+    "tools/build-native-toolchain.rs": "465fbbf21122d2f307a01fcfaa260a748881809e8408cd0608d5d868abd60446",
+    "tools/check-exclusive-coverage.py": "2e8c319d100f4ef31d6fd637b7fffbee236e97b9f85df424f7aa3b5012bd9236",
+    "tools/host-sdk.rs": "5cb7549649c94c66c1063bbb459bf283ff8d5d0a796009711190519712a1c7e5",
+    "tools/selection-toolchain-receipt.rs": "897d349fde0d4fb58e06c4f6b79f328f0bc3a3efaedf6842c836fc6fbd64545e",
+    "tools/test-exclusive-coverage-guard.py": "d6485c8d5bd979a6838aeb65d5ce7eba330a98d3e0eff66b224fc8a60bc36e8a",
+    "tools/test-native-build-policy.py": "fa9c7f2881b6efbb68cdfa70827f75114928bd8fd6ffe991dcd26e44e0cc05fb",
+    "upstream/bluefe-core.pin": "ae93e7fb837097658ddda8881795aec4c6abe474b00f133806079a044c7dec2b"
+  },
+  "deleted_paths": [
+    "crates/lustr/scripts/build-cranelift.py",
+    "crates/lustr/scripts/build-cranelift.sh"
+  ],
+  "toolchain": {
+    "rustc_verbose": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+    "rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "cargo_sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+    "rustfmt_sha256": "e7f091a5143e8c4b581378cd7201bb24f2d7014b7e92e72e8a4cf04db40408aa"
+  },
+  "commands": [
+    {
+      "label": "exclusive-coverage",
+      "command": [
+        "python3",
+        "tools/check-exclusive-coverage.py"
+      ],
+      "status": 0,
+      "stdout_sha256": "29e8b9779114dec7438f6aaf42b4fb57b351c9c122aeb0dcd5e1368f12b1c69e",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "exclusive-coverage-controls",
+      "command": [
+        "python3",
+        "tools/test-exclusive-coverage-guard.py"
+      ],
+      "status": 0,
+      "stdout_sha256": "02c123a8ec799132f44b4c3c043afc70bcda0233865ac4230e637dc67785cefe",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "rustfmt",
+      "command": [
+        "<PINNED_SDK>/bin/rustfmt",
+        "--check",
+        "--edition",
+        "2024",
+        "--config",
+        "skip_children=true",
+        "tools/build-native-toolchain.rs",
+        "crates/lustr-semantic/build.rs"
+      ],
+      "status": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "native-build-policy",
+      "command": [
+        "python3",
+        "tools/test-native-build-policy.py",
+        "--rustc",
+        "<PINNED_SDK>/bin/rustc",
+        "--output",
+        "<OUTPUT>/audit-native-build-policy-final.json"
+      ],
+      "status": 0,
+      "report": "native-build-policy.json",
+      "original_report_sha256": "f061a72c729c01304e97b8c00013ea1491ef4d0be89861a16df35b3422f8d854",
+      "published_report_sha256": "cf96a367b110314b0d478ff8debaa8ee93ca82a397cdf6384d4bb4849aeac0ed",
+      "actual_feature_controls": 4,
+      "actual_constructor_controls": 12
+    }
+  ],
+  "before_after": "before-after-source-selection.json",
+  "limitations": [
+    "The semantic oracle full runtime suite uses a different November 5 SDK and was not executed; its unchanged independent oracle remains available in CI.",
+    "The constructor positive control intentionally terminates at a failing selected-SDK sentinel. It proves admission order and selected compiler identity, not native compiler construction.",
+    "Manifest/source closure checks are structural review gates, not proof of imported semantic minimality or full Rust correctness.",
+    "Original Lust source, retained worker and socket/std implementation remain unchanged. No performance claim is made."
+  ],
+  "published_baseline": {
+    "commit": "ea26fe16636d390763257a19c19df3db992cdbcb",
+    "tree": "9151b9c3c8fac46e2afc76ef0f2b9fc51a6a803f",
+    "relation": "identical tree to local baseline f8fa2dee04e1c02f110ed9d725cda21c0b750e22; Git Data API publication has a different commit identity"
+  }
+}

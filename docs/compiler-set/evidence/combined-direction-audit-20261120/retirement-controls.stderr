@@ -1,0 +1,8 @@
+test_historical_record_models_have_no_process_acquisition_sink (__main__.RetiredAcquisitionControls.test_historical_record_models_have_no_process_acquisition_sink) ... ok
+test_retired_commands_refuse_before_creating_output_or_invoking_a_tool (__main__.RetiredAcquisitionControls.test_retired_commands_refuse_before_creating_output_or_invoking_a_tool) ... ok
+test_retired_standalone_mixed_driver_launchers_are_absent (__main__.RetiredAcquisitionControls.test_retired_standalone_mixed_driver_launchers_are_absent) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 1.109s
+
+OK
