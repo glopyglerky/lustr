@@ -39,3 +39,30 @@ Full Rust coverage, public compiler integration, compiler-wide `no_std`,
 transport independence of the installed compiler and matched speed remain
 separate obligations. This bounded research campaign cannot establish those
 claims.
+
+## First runtime attempt after construction repair
+
+Source `1944f65fa7bee550da4343ddf86ea8325afee754` built the corrected
+metadata caller and passed the existing one-shot scalar campaign. All 27 retained
+evaluator controls passed. The new retained campaign then failed at the `insert`
+archive check, before that inserted function reached its ordinary Rust consumer.
+The seven preceding consumers completed 1,835,064 actual assertions. These are
+partial results from an overall failed campaign, not its full expected count.
+
+The actual history-session trace accounted for the observed request intervals,
+including zero artifact-tool calls in both observed no-op requests. Later histories,
+recovery, fresh sessions, SDK refusals and final complete verification had not run.
+[runtime-failure-1944.json](runtime-failure-1944.json) records this exact boundary,
+the verified upload digest, candidate binary identity, original logs and independent
+checks of original consumer results and trace bytes.
+
+The failure exposed an evaluator format error. The actual GNU archive index has
+eight complete symbols followed by the one alignment NUL emitted by the pinned
+LLVM writer. [archive-format-review.json](archive-format-review.json) binds that
+source and the original index bytes. Correction
+[`1573da06`](https://github.com/glopyglerky/lustr/commit/1573da06d44b6ed20483a0735ba12f10e2c17cd9)
+reads the declared name count, then admits only the specified alignment. It keeps
+nonempty and unique names, real member offsets and invalid-tail rejection. Three
+new control methods accompany the parser change. Compiler source and the complete
+required history and consumer outcomes remain unchanged. The corrected evaluator
+and complete retained campaign still require exact-source hosted execution.

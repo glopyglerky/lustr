@@ -1,0 +1,19 @@
+{
+  "schema": "lustr-gnu-archive-alignment-review-v1",
+  "scope": "Focused independent format and source review; no corrected evaluator or candidate execution by this reviewer.",
+  "source": "https://github.com/rust-lang/llvm-project/blob/0a5579eb649d3634a9c30ac873300cc2944fa070/llvm/lib/Object/ArchiveWriter.cpp",
+  "source_binding": "Pinned Rust 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494 src/llvm-project submodule.",
+  "upstream_behavior": "computeSymbolTableSize aligns GNU symbol-index payload to two bytes. writeSymbolTable includes padding in its member header size and emits zero padding after the symbol strings.",
+  "observed_original": "The inserted-function archive contains eight complete symbol names. Count/offset table plus names consume 277 bytes; one zero byte makes the declared index payload 278 bytes. All offsets name actual object headers.",
+  "correction": "Read exactly the declared number of terminated names. Accept only an empty remainder or one zero byte when the consumed payload cursor is odd. Keep nonempty/unique names, actual member offsets and outer archive padding checks.",
+  "reviewed_hashes": {
+    "tools/test-retained-native-metadata.py": "171f5980842d8fd12487537d3fa1738fc378492f852b90b1de4d3380cbb78b49",
+    "tools/test-retained-metadata-controls.py": "9f4c27a7c04d08ee8503a5b244b2b049b15689daceb1396a0f8ee40c517fd3db"
+  },
+  "new_control_methods_authored": 3,
+  "old_control_methods_preserved": 27,
+  "candidate_source_changed": false,
+  "history_or_expected_outcomes_reduced": false,
+  "verdict": "No source blocker found. Real corrected campaign remains required.",
+  "corrected_tests_executed_by_reviewer": false
+}
