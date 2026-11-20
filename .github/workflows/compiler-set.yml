@@ -444,12 +444,17 @@ jobs:
           export RUSTC="$(rustup which rustc)"
           "$RUSTC" -vV > "$records/compiler.txt"
           sha256sum "$RUSTC" "$LUST_TCC_HOME/lib/libtcc.a" > "$records/tools.sha256"
+          clang_path="$(readlink -f "$(command -v clang)")"
+          printf '%s\n' "$clang_path" > "$records/clang-path.txt"
+          "$clang_path" --version > "$records/clang-version.txt"
+          sha256sum "$clang_path" >> "$records/tools.sha256"
           cargo build --manifest-path crates/lustr-native-core/Cargo.toml --package lustr-native-core --example native-consumer-qualification --features native-qualification --locked --offline --jobs 2 --target-dir "$RUNNER_TEMP/native-consumer-target" --config "build.build-dir=\"$RUNNER_TEMP/native-consumer-intermediates\"" 2>&1 | tee "$records/build.log"
           qualifier="$RUNNER_TEMP/native-consumer-target/debug/examples/native-consumer-qualification"
           sha256sum "$qualifier" > "$records/qualifier.sha256"
           "$qualifier" "$records/campaign" "$RUSTC" 2>&1 | tee "$records/qualification.log"
           python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["passed"] is True and r["controls"] == 17 and r["native_functions"] == 3 and r["checked_runtime_results"] == 131076' "$records/campaign/summary.json"
           sha256sum --check "$records/source-inputs.sha256"
+          sha256sum --check "$records/tools.sha256"
       - name: Retain native consumer records including failed attempts
         if: ${{ always() }}
         uses: actions/upload-artifact@v4

@@ -65,6 +65,12 @@ and central research description changed after the first executions; all tested
 compiler/component inputs retain their earlier hashes. Workflow review is not
 hosted execution.
 
+[emitter-provenance-review.json](emitter-provenance-review.json) binds the final
+addition of Clang's resolved path, version and executable hash to that same
+native consumer job. The qualifier uses this native C emitter. Its workflow
+also rechecks recorded tool bytes after execution. The earlier workflow hashes
+remain unchanged, and no hosted run is attributed to this wiring review.
+
 The required 5 November SDK is unavailable locally. The changed complete
 semantic inspector was not rebuilt here, and its new real sentinel test was
 not executed locally. Its existing pinned hosted job must run that test; a
