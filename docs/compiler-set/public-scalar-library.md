@@ -1,6 +1,7 @@
 # Public retained scalar-library integration
 
-Status: authored, awaiting exact-source hosted construction and qualification.
+Status: authored; the latest published public campaign failed. The corrected
+source requires its own hosted construction and qualification.
 This is a bounded public library path. It does not establish full Rust coverage,
 release admission, or speed relative to stock Lust or Rust.
 
@@ -54,6 +55,49 @@ the old output set.
 
 Metadata-only cargo check, public --extern ingestion, other crate types,
 unrepresented options/profiles and wider completion remain integration work.
+
+## Metadata options and retained native state
+
+Pinned Cargo requests `-Z embed-metadata=no` for this library and supplies both
+the resulting `.rlib` and `.rmeta` when another crate consumes it. The archive
+still has a real `lib.rmeta` member: a small Rust metadata stub whose crate hash
+matches the separately emitted full metadata. It also retains the original
+`lib.rmeta-link` and actual native object members. Omitting metadata from the
+archive entirely would not implement the upstream contract.
+
+The represented unstable option has three states: absent/default,
+`Some(true)`, and `Some(false)`. These remain distinct tracked metadata
+identities. The stable `-C embed-metadata` channel is a separate upstream option
+and remains unrepresented by this bounded adapter; it is not silently treated
+as an alias. With the stable channel absent, default and explicit true embed
+the full metadata, while explicit false embeds the matching stub.
+
+Metadata options travel with each request, outside the retained native
+`SessionKey`. The artifact identity includes the actual native snapshot and
+embedding option. A changed embedding identity requires the corresponding
+metadata and archive, while unchanged native definitions, checked facts,
+symbols and TinyCC objects remain reusable. At most three embedding variants are retained for the current native generation,
+with the last durable publication also protected. An exact unchanged request or
+a return to a still-retained option must reproduce the earlier artifact bytes
+with zero encoder, transformer and archive-builder work. Changing the embedding
+option cannot duplicate native checking or TinyCC emission.
+
+Cargo's `--force-warn=unused_crate_dependencies` is represented only after the
+actual dependency-free context is admitted. With the requested JSON mode, the
+response includes the original empty `unused_extern` result at `force-warn`
+level, including the represented typed-error path. This is per-request
+diagnostic behavior. The upstream lint option does not enter the crate hash,
+and it must not invalidate metadata or native objects.
+
+These distinctions follow pinned [Cargo invocation and dependency-path
+construction](https://github.com/rust-lang/cargo/blob/c07ac2c4d12237effc4b94f4543769b421790045/src/compiler/mod.rs),
+Rust's [effective embedding
+option](https://github.com/rust-lang/rust/blob/5b7b37aefcb5b2fba3c2392bc9065b9e4602d494/compiler/rustc_session/src/session.rs),
+[tracked option definitions](https://github.com/rust-lang/rust/blob/5b7b37aefcb5b2fba3c2392bc9065b9e4602d494/compiler/rustc_session/src/options.rs)
+and [metadata hash/stub
+encoding](https://github.com/rust-lang/rust/blob/5b7b37aefcb5b2fba3c2392bc9065b9e4602d494/compiler/rustc_metadata/src/rmeta/encoder.rs).
+They are authored implementation requirements until qualified on their exact
+source.
 
 ## Retention and resource accounting
 
@@ -117,3 +161,18 @@ requests, reject Cargo Fresh as compiler reuse evidence, verify native type-erro
 spans and recovery, inspect real archives and metadata, and execute an independent
 original-Rust consumer after product tracing. Passing earlier research campaigns
 does not qualify this new public source.
+
+The existing campaign retains nine real Cargo histories, four direct eviction
+replays, three direct no-op/invalid/repair requests, one warm version refusal and
+two unintegrated-request refusals. Its twelve original-Rust consumers and
+3,145,824 expected assertions remain required. An additional direct-request
+group changes only the embedding option through explicit false, default,
+explicit true and explicit false. Four additional original producers/readers
+and consumers must verify format, identity, native-object reuse and 1,048,608
+result assertions. A malformed embedding request between the last two states
+must preserve outputs and leave the owner untouched. This group is not counted
+as additional Cargo histories. The combined authored expectation is sixteen
+consumers and 4,194,432 assertions; it is not a passing result.
+
+The [source-bound attempt records](evidence/public-scalar-library-20261120/README.md)
+preserve the failed real Cargo requests and separate research qualifications.
