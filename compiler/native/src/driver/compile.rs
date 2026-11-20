@@ -2186,7 +2186,10 @@ fn resolved_setup(
         if let Some(library) = &key.library {
             if !unit.target.kind.iter().any(|kind| matches!(kind.as_str(),"lib"|"rlib"))
                 || unit.target.name != library.crate_name || !unit.deps.is_empty()
-                || unit.build_script.is_some() || !unit.features.is_empty() || key.krate.test {
+                // Cargo metadata names the actual script target in every
+                // build mode; UnitInfo's planned script is product-only.
+                || unit.package.targets.iter().any(|target|target.kind.iter().any(|kind|kind=="custom-build"))
+                || !unit.features.is_empty() || key.krate.test {
                 return Err(code2("public scalar-library integration requires the actual dependency-free, script-free library unit".into()));
             }
         }
@@ -2895,6 +2898,14 @@ pub(super) fn prepare_imported<'a>(req: &'a Request, session: &'a mut Session, d
 }
 
 fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, observer: Option<&dyn super::PhaseObserver>, imports: Option<&dyn super::imports::Definitions>) -> Preparation<'a> {
+    // A public library key belongs only to the product owner. Refuse it before
+    // entering research graph selection, which retains its original probe.
+    // The separate retained research library uses no public LibraryKey.
+    #[cfg(not(feature = "exclusive-native"))]
+    if req.session.library.is_some() {
+        return Preparation::IntegrationIncomplete(Response {code:4,
+            stderr:"public library requests require the exclusive-native retained owner\n".into(),..Default::default()});
+    }
     let phase_id = observer.map(|_| super::PhaseId::next());
     let mut t = Timer::new();
     crate::driver::cache::begin_build(&req.file);

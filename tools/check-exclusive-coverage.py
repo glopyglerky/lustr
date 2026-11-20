@@ -78,6 +78,44 @@ NO_DEFAULT_FEATURES = {"mimalloc", "libmimalloc-sys"}
 
 METADATA_PRODUCT_ROOTS = {"compiler/native/Cargo.toml", "crates/lustr-native-core/Cargo.toml"}
 
+# Component paths are schema identities, not list positions. Keep research and
+# selective product disclosures separate and reject undeclared provenance fields
+# instead of silently treating contradictory claims as harmless annotations.
+COMPONENT_BASE_FIELDS = {"path", "scope", "dependency", "production_admitted", "required_for", "blocking_reason"}
+SELECTIVE_METADATA_FIELDS = COMPONENT_BASE_FIELDS | {
+    "source_inventory", "native_caller_committed", "native_caller_path", "public_retained_integration",
+    "qualification_record", "retained_native_caller_authored", "retained_native_qualification",
+    "public_native_caller_path", "production_source_authored",
+}
+COMPONENT_SCHEMAS = {
+    "research_components": {
+        "crates/lustr-native-core/src/upstream_definitions.rs": COMPONENT_BASE_FIELDS,
+        "crates/lustr-semantic": COMPONENT_BASE_FIELDS,
+        "crates/lustr-native-metadata-qualification": COMPONENT_BASE_FIELDS | {
+            "source_inventory", "public_retained_integration", "qualification_record",
+            "retained_native_caller_authored", "retained_native_qualification",
+        },
+    },
+    "selective_components": {
+        "crates/lustr-metadata-encoder": SELECTIVE_METADATA_FIELDS,
+        "crates/lustr-metadata-sdk": SELECTIVE_METADATA_FIELDS,
+    },
+}
+
+
+def component_schema_checks(inventory, require):
+    for collection, schema in COMPONENT_SCHEMAS.items():
+        records = inventory.get(collection, [])
+        paths = [record.get("path") for record in records if isinstance(record, dict)]
+        valid_paths = len(paths) == len(records) and all(isinstance(path, str) for path in paths)
+        require(valid_paths and len(paths) == len(set(paths)) and set(paths) == set(schema),
+                collection + ": component identities changed or repeat a path")
+        for record in records:
+            path = record.get("path") if isinstance(record, dict) else None
+            require(isinstance(path, str) and path in schema and set(record) == schema[path],
+                    str(path) + ": undeclared or missing component provenance fields")
+
+
 def metadata_product_dependencies(manifest):
     prefix = "../../crates" if manifest.startswith("compiler/") else ".."
     return {
@@ -238,6 +276,7 @@ def product_package_checks(root, require):
         require(selected <= set(features), f"{manifest}: constructor product features are not declared")
         pending = list(selected | {"default"})
         enabled = set()
+        activated_dependencies = set()
         while pending:
             feature = pending.pop()
             if feature in enabled:
@@ -247,6 +286,8 @@ def product_package_checks(root, require):
             for edge in features.get(feature, []):
                 admitted_metadata_edge = (manifest in METADATA_PRODUCT_ROOTS and feature == "exclusive-native"
                                           and edge.startswith("dep:") and edge[4:] in metadata_product_dependencies(manifest))
+                if admitted_metadata_edge:
+                    activated_dependencies.add(edge)
                 require(admitted_metadata_edge or (not edge.startswith("dep:") and "/" not in edge),
                         f"{manifest}: product feature has an unreviewed dependency activation {edge}")
                 if not edge.startswith("dep:") and "/" not in edge:
@@ -266,7 +307,10 @@ def product_package_checks(root, require):
             roots = [item for item in locked if item["name"] == package_name]
             require(len(roots) == 1 and set(roots[0].get("dependencies", [])) == direct and "source" not in roots[0],
                     f"{manifest}: selected product root dependency cut changed")
-            require(set(features.get("exclusive-native", [])) == {"dep:" + name for name in metadata_product_dependencies(manifest)},
+            # Local feature aliases, including empty cycles, do not change the
+            # selected dependency cut. Required activations still belong only
+            # to exclusive-native; the traversal rejects every other edge.
+            require(activated_dependencies == {"dep:" + name for name in metadata_product_dependencies(manifest)},
                     f"{manifest}: selective product feature closure changed")
             continue
         packages = {item["name"]: item for item in locked}
@@ -299,6 +343,7 @@ def metadata_research_checks(root, inventory, require):
     The separate caller remains a research executable; these source checks do
     not establish its actual metadata compatibility or product integration.
     """
+    component_schema_checks(inventory, require)
     encoder = "crates/lustr-metadata-encoder"
     sdk = "crates/lustr-metadata-sdk"
     qualifier = "crates/lustr-native-metadata-qualification"
@@ -309,6 +354,7 @@ def metadata_research_checks(root, inventory, require):
                 path + ": selective research source inventory is missing")
         require(component.get("production_admitted") is False
                 and component.get("native_caller_committed") is True
+                and component.get("production_source_authored") is True
                 and component.get("native_caller_path") == qualifier
                 and component.get("retained_native_caller_authored") is True
                 and component.get("public_retained_integration") is True
