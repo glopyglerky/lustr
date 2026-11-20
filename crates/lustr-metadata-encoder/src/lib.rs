@@ -1,8 +1,9 @@
 //! Source-owned metadata serialization for a completed native scalar library.
 //!
-//! This crate does not parse or accept Rust programs. Its eventual caller must
-//! own a private native completion token and an emitted object and convert their
-//! immutable facts into `Input`. That native caller is not yet committed here.
+//! This crate does not parse or accept Rust programs. Its separate research
+//! caller owns a private native completion token and emitted object, and
+//! converts their immutable facts into `Input`. The public compiler does not
+//! yet invoke this seam.
 //! The encoder checks the supplied inventory and
 //! preserves the pinned Rust metadata schema. It does not contain a Rust
 //! frontend, type checker, MIR builder, compiler driver, or fallback route.

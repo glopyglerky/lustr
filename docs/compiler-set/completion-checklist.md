@@ -88,6 +88,12 @@ query. Unconditional analysis success, fabricated typed results or empty
 instance graphs are forbidden. The generic solver seam in the upstream report
 is researched future reuse, not a replacement task for this established boundary.
 
+The [bounded native metadata caller](../../crates/lustr-native-metadata-qualification/README.md)
+joins actual completed scalar declarations and emitted objects to the selective
+serializer. Its original-consumer qualification is separate from this item's
+general completion and from the still-unintegrated public retained path. Check
+its actual source-bound CI outcome before attributing a compatibility result.
+
 Done when unchanged mixed programs and real downstream Cargo crates consume
 valid artifacts. Every obligation has one owner and every required instance is
 emitted exactly once. Unsupported interfaces remain visible as integration gaps.

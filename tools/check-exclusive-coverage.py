@@ -263,18 +263,22 @@ def metadata_research_checks(root, inventory, require):
     The donor hashes are provenance records, not re-fetched donor verification.
     Adapted file hashes bind those records to the actual local source. The
     separate bare-metal CI compile verifies the core's effective dependency cut.
-    None of these checks supplies the still-missing native-to-encoder caller.
+    The separate caller remains a research executable; these source checks do
+    not establish its actual metadata compatibility or product integration.
     """
     encoder = "crates/lustr-metadata-encoder"
     sdk = "crates/lustr-metadata-sdk"
+    qualifier = "crates/lustr-native-metadata-qualification"
     components = {item["path"]: item for item in inventory["research_components"]}
     for path in (encoder, sdk):
         component = components.get(path, {})
         require(component.get("source_inventory") == encoder + "/source-slices.json",
                 path + ": selective research source inventory is missing")
         require(component.get("production_admitted") is False
-                and component.get("native_caller_committed") is False,
-                path + ": unjoined metadata research cannot claim a product caller")
+                and component.get("native_caller_committed") is True
+                and component.get("native_caller_path") == qualifier
+                and component.get("public_retained_integration") is False,
+                path + ": metadata caller must remain the separate reviewed research executable")
 
     source_root = root / encoder
     slices = json.loads((source_root / "source-slices.json").read_text())
@@ -283,8 +287,10 @@ def metadata_research_checks(root, inventory, require):
             "metadata source inventory differs from the declared Rust identity")
     status = slices.get("integration_status", {})
     require(status.get("production_admitted") is False
-            and status.get("native_caller_committed") is False,
-            "metadata source inventory overstates integration")
+            and status.get("native_caller_committed") is True
+            and status.get("native_caller_path") == qualifier
+            and status.get("public_retained_integration") is False,
+            "metadata source inventory misstates integration")
     actual = {str(path.relative_to(source_root)): hashlib.sha256(path.read_bytes()).hexdigest()
               for path in (source_root / "src").rglob("*.rs")}
     require(slices.get("adapted_sources_sha256") == actual,
@@ -331,6 +337,50 @@ def metadata_research_checks(root, inventory, require):
                 and "build" not in manifest["package"]
                 and not (root / relative / "build.rs").exists(),
                 relative + ": unreviewed metadata feature, target or construction dependency")
+
+    component = components.get(qualifier, {})
+    require(component.get("production_admitted") is False
+            and component.get("public_retained_integration") is False
+            and component.get("source_inventory") == qualifier + "/source-slices.json",
+            "native metadata qualifier must be an indexed research component")
+    manifest_path = root / qualifier / "Cargo.toml"
+    manifest = tomllib.loads(manifest_path.read_text())
+    construction_mode_checks(str(manifest_path), manifest, require)
+    require(manifest.get("package", {}).get("name") == "lustr-native-metadata-qualification"
+            and manifest["package"].get("autobins") is False
+            and manifest.get("workspace") == {"resolver": "3"}
+            and manifest.get("bin") == [{"name": "lustr-native-metadata-qualification", "path": "src/main.rs", "required-features": ["native-qualification"]}]
+            and manifest.get("features") == {"default": ["native-qualification"], "native-qualification": []},
+            "native metadata qualifier source or research mode changed without review")
+    dependencies = {
+        "lustr-metadata-encoder": {"path": "../lustr-metadata-encoder"},
+        "lustr-metadata-sdk": {"path": "../lustr-metadata-sdk"},
+        "mimalloc": {"version": "=0.1.52", "default-features": False},
+        "libmimalloc-sys": {"version": "=0.1.49", "default-features": False},
+        "unicode-normalization": "=0.1.25",
+        "object": {"version": "=0.39.1", "default-features": False, "features": ["write_std", "read_core", "elf", "archive"]},
+        "serde_json": "=1.0.154", "sha2": "=0.11.1",
+    }
+    require(manifest.get("dependencies") == dependencies
+            and not any(manifest.get(key) for key in
+                        ("lib", "example", "test", "bench", "target", "build-dependencies", "dev-dependencies", "patch", "replace"))
+            and manifest["package"].get("build", "build.rs") == "build.rs",
+            "native metadata qualifier dependency or target closure changed without review")
+    record = json.loads((root / qualifier / "source-slices.json").read_text())
+    require(record.get("revision") == inventory["rust_source"]
+            and record.get("production_admitted") is False,
+            "native metadata qualifier source identity or product boundary changed")
+    files = ["Cargo.toml", "Cargo.lock", "build.rs"] + sorted(
+        str(path.relative_to(root / qualifier)) for path in (root / qualifier / "src").rglob("*.rs"))
+    actual = {path: hashlib.sha256((root / qualifier / path).read_bytes()).hexdigest() for path in files}
+    require(record.get("adapted_sources_sha256") == actual,
+            "native metadata qualifier adapted sources differ from reviewed identities")
+    for source in record.get("sources", []):
+        require(source.get("destination") in actual
+                and all(source.get(field) for field in ("source", "source_sha256", "adaptation", "necessity", "semantic_owner")),
+                "native metadata qualifier lacks original source provenance")
+    require(bool(record.get("sources")) and all((root / qualifier / name).is_file() for name in ["LICENSE-MIT", "LICENSE-APACHE"]),
+            "native metadata qualifier original source/license records are absent")
 
 
 def check(root):

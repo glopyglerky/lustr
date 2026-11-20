@@ -295,6 +295,21 @@ pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk) -> Result<Encoded, String> {
         cx.opaque.emit_u8(2); // OptionsTargetModifiers::TargetFeatures
         cx.opaque.emit_str("");
     });
+    // Original gather_enabled_denied_partial_mitigations includes disabled
+    // mitigations too, sorted by the original kind. In this closed request,
+    // StackProtector is None and control-flow guard is not enabled. Omitting
+    // StackProtector is different: creader substitutes Enabled(false), whose
+    // enum order is lower than StackProtector(None), and warns on a real caller.
+    let denied_partial_mitigations = cx.array(&[0u8, 1u8], |cx, &kind| {
+        cx.opaque.emit_u8(kind); // StackProtector, then ControlFlowGuard.
+        if kind == 0 {
+            cx.opaque.emit_u8(1); // DeniedPartialMitigationLevel::StackProtector
+            cx.opaque.emit_u8(0); // StackProtector::None
+        } else {
+            cx.opaque.emit_u8(0); // DeniedPartialMitigationLevel::Enabled
+            cx.opaque.emit_bool(false);
+        }
+    });
 
     let root = cx.node(|cx| {
         let mut field_index = 0;
@@ -332,7 +347,7 @@ pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk) -> Result<Encoded, String> {
         field("def_path_hash_map", &mut |cx| cx.distance(path_hash_map));
         field("source_map", &mut |cx| cx.table_ref(source_map));
         field("target_modifiers", &mut |cx| cx.array_ref(target_modifiers));
-        field("denied_partial_mitigations", &mut |cx| cx.array_ref(Array::EMPTY));
+        field("denied_partial_mitigations", &mut |cx| cx.array_ref(denied_partial_mitigations));
         for name in ["compiler_builtins", "needs_allocator", "needs_panic_runtime", "no_builtins", "panic_runtime", "profiler_runtime"] {
             field(name, &mut |cx| cx.opaque.emit_bool(false));
         }

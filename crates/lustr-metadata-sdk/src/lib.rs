@@ -10,7 +10,22 @@ use std::path::{Component, Path};
 
 pub fn open(receipt: &Path, sysroot: &Path) -> Result<Sdk, String> {
     let bytes = fs::read(receipt).map_err(|e| format!("read metadata SDK receipt: {e}"))?;
-    let value: Value = serde_json::from_slice(&bytes).map_err(|e| format!("decode metadata SDK receipt: {e}"))?;
+    open_bytes(&bytes, sysroot)
+}
+
+/// Bind the same receipt bytes that supply the immutable SDK facts. A caller
+/// must not verify a path and then let the loader read a different generation.
+pub fn open_bound(receipt: &Path, sysroot: &Path, expected_sha256: &str) -> Result<Sdk, String> {
+    let expected = hex::<32>(expected_sha256)?;
+    let bytes = fs::read(receipt).map_err(|e| format!("read metadata SDK receipt: {e}"))?;
+    if <[u8; 32]>::from(Sha256::digest(&bytes)) != expected {
+        return Err("SDK construction receipt differs from its reviewed exact identity".into());
+    }
+    open_bytes(&bytes, sysroot)
+}
+
+fn open_bytes(bytes: &[u8], sysroot: &Path) -> Result<Sdk, String> {
+    let value: Value = serde_json::from_slice(bytes).map_err(|e| format!("decode metadata SDK receipt: {e}"))?;
     if string(&value, "schema")? != "lustr-native-metadata-sdk-v1"
         || string(&value, "rust_revision")? != lustr_metadata_encoder::RUST_REVISION
         || string(&value, "target")? != lustr_metadata_encoder::TARGET
@@ -78,7 +93,7 @@ pub fn open(receipt: &Path, sysroot: &Path) -> Result<Sdk, String> {
         }
         dependencies.push(SdkDependency { name, hash, host_hash, kind: kind as u8, is_private, extra_filename });
     }
-    Sdk::from_facts(cfg_version, dependencies, Sha256::digest(&bytes).into())
+    Sdk::from_facts(cfg_version, dependencies, Sha256::digest(bytes).into())
 }
 fn read_artifact(dep: &Value, field: &str, sysroot: &Path, name: &str, suffix: &str, extension: &str) -> Result<Vec<u8>, String> {
     let artifact = dep.get(field).ok_or_else(|| format!("metadata SDK dependency {field} is absent"))?;

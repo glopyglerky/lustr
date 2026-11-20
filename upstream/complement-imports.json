@@ -119,9 +119,11 @@
       "dependency": "selective pinned Rust encoding/identity/schema operations and source-owned stable-hash/ODHT writer slices; md-5 and twox-hash with std disabled",
       "source_inventory": "crates/lustr-metadata-encoder/source-slices.json",
       "production_admitted": false,
-      "native_caller_committed": false,
+      "native_caller_committed": true,
       "required_for": "intended serialization of genuine native completed definitions and actual emitted instances without whole-consumer Rust analysis",
-      "blocking_reason": "the committed native qualifier does not invoke this encoder; joined original Rust metadata/artifact compatibility, broader obligations and retained performance remain unqualified"
+      "blocking_reason": "The separate bounded native metadata research caller is present; its exact-source qualification is separate from production retained integration, wider declarations/artifacts and measured compiler speed, which remain unfinished.",
+      "native_caller_path": "crates/lustr-native-metadata-qualification",
+      "public_retained_integration": false
     },
     {
       "path": "crates/lustr-metadata-sdk",
@@ -129,9 +131,21 @@
       "dependency": "lustr-metadata-encoder, std filesystem/path services, serde_json and sha2; excluded from the encoder core dependency graph",
       "source_inventory": "crates/lustr-metadata-encoder/source-slices.json",
       "production_admitted": false,
-      "native_caller_committed": false,
+      "native_caller_committed": true,
       "required_for": "immutable ordered core/compiler_builtins context intended to be loaded once outside repeated consumer compilation",
-      "blocking_reason": "no committed native-to-encoder caller binds the construction receipt; host adapter and complete compiler remain std-dependent"
+      "blocking_reason": "The separate bounded native metadata research caller is present; its exact-source qualification is separate from production retained integration, wider declarations/artifacts and measured compiler speed, which remain unfinished.",
+      "native_caller_path": "crates/lustr-native-metadata-qualification",
+      "public_retained_integration": false
+    },
+    {
+      "path": "crates/lustr-native-metadata-qualification",
+      "scope": "separate one-shot native completed-record/object to original metadata/archive qualification; no public retained compiler integration",
+      "dependency": "existing native qualifier sources, selective metadata encoder/SDK loader, object writer and pinned LLVM object/archive utilities; no rustc_private dependency or compiler invocation",
+      "source_inventory": "crates/lustr-native-metadata-qualification/source-slices.json",
+      "production_admitted": false,
+      "public_retained_integration": false,
+      "required_for": "actual ordinary Rust-consumer acceptance, runtime results, privacy/signature refusal and independent exec trace for the bounded native metadata join",
+      "blocking_reason": "Finite flat scalar-library qualification cannot establish wider Rust metadata, public retained compilation or full replacement performance."
     }
   ],
   "not_imported": [

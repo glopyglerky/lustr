@@ -5,6 +5,28 @@ This continues [PR #33](https://github.com/glopyglerky/lustr/pull/33) under the
 Lust-owned integration uncovered by independent retained-result qualification.
 It is not a complete Rust compiler, a new complementary owner, or a release.
 
+## Bounded native metadata join
+
+The separate [metadata research caller](../../crates/lustr-native-metadata-qualification/README.md)
+now consumes native completed declarations and actual emitted instances, invokes
+the selective encoder and constructs original metadata/archive members. It uses
+the checked native generation once. The installed compiler and retained Cargo
+path do not yet invoke it.
+
+Its new required Compiler set job uses an ordinary pinned Rust consumer and
+actual process traces, with runtime, privacy, signature, record/member mutation
+and publication-failure controls. The source fixes missing disabled-mitigation
+records from the original metadata schema and binds receipt verification to the
+same read used to construct immutable SDK facts. Clang's research capture
+disables implicit configuration and explicitly retains the represented
+no-stack-protector mode. Original consumer warnings remain failures.
+
+These are authored source and qualification changes. Their exact-source run,
+including any failed attempt, is required before reporting joined compatibility.
+The earlier checkpoints below retain their original unjoined scope. Wider Rust
+coverage, public retained integration, portability and matched speed remain
+unfinished.
+
 ## What the first independent campaign established
 
 The exact published tree at `62da158b33740279947c85f3fc425df6d1623c9f` passed
@@ -411,12 +433,14 @@ or generated program and does not qualify subsequent metadata work.
 
 ## Selective metadata research and ownership follow-through
 
-The preserved continuation adds native completed-record/object qualification,
+The earlier checkpoint at `e2709cb3` adds native completed-record/object qualification,
 a standalone selective metadata serializer and a separate SDK receipt adapter.
 The serializer uses `core` and `alloc` and retains original upstream encoding,
 hashing and map operations. Its source-slice inventory is now indexed by the
 central [import inventory](../../upstream/complement-imports.json). The committed
-native qualifier does not yet call the encoder or its rlib-link writer.
+native qualifier did not yet call the encoder or its rlib-link writer. The
+bounded caller described at the top of this document is the subsequent change;
+its actual CI outcome must qualify that different source.
 
 The [ownership verification record](evidence/ownership-closure-20261119/README.md)
 records the new required metadata CI paths, source/package/workspace guards,

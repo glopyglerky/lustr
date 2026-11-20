@@ -1,0 +1,33 @@
+{
+  "schema": "lustr-native-metadata-qualification-sources-v1",
+  "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "production_admitted": false,
+  "sources": [
+    {
+      "destination": "src/archive.rs",
+      "source": "compiler/rustc_codegen_ssa/src/back/metadata.rs",
+      "source_sha256": "cb11be9978528bdd6950b7c07c61a9ad914569cc0a20281cb7a564a7bae1881b",
+      "sections": [
+        "add_gnu_property_note",
+        "create_object_file",
+        "elf_os_abi",
+        "elf_e_flags",
+        "create_wrapper_file"
+      ],
+      "adaptation": "Only the bound ELF x86-64 little-endian Linux branches with no extra target flags, original GNU property note, excluded metadata section and original object serialization. Other target branches and compiler session dependencies are excluded.",
+      "semantic_owner": "required original Rust metadata object wrapper",
+      "necessity": "Original Rust archive consumers require metadata/link-record object members around the actual source-owned encoded bytes.",
+      "license_files": [
+        "LICENSE-MIT",
+        "LICENSE-APACHE"
+      ]
+    }
+  ],
+  "adapted_sources_sha256": {
+    "Cargo.toml": "87f7c20309227c01fc37fb39c6432a9c34419982dcfd3ab0daa8ae62240c6dc2",
+    "Cargo.lock": "09697cd80e7e931f04618b99b8e4a801fbfc4644cec4056c5edf036254de80d2",
+    "build.rs": "cc4b2c326c5ade8942c432c5b8fcdad38f74ff7a960cb76a46ca6dc7fdc0b7f3",
+    "src/archive.rs": "4906cce455716560344bdb329c3bcbc563da21e8c615c357583c038a90e11dfa",
+    "src/main.rs": "7e6ccbebc71fd497f161e4422d6eeeab823f123fca314ef6f87a55bcd5218b24"
+  }
+}

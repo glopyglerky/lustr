@@ -149,6 +149,12 @@ instance graph must feed the encoder. Do not substitute unconditional analysis
 success, fabricated metadata, whole-consumer Rust reanalysis or an arbitrary
 blanket solver import. A bridge gap remains Lust-owned integration work.
 
+The separate [bounded metadata caller](../../crates/lustr-native-metadata-qualification/README.md)
+now connects those records to the selective serializer in a research executable.
+Its required original-consumer CI has its own exact-source evidence. Source
+publication alone does not establish a passing join, public retained compilation
+or full Rust replacement; continue from the observed campaign result.
+
 This documentation publication directs ongoing work to the reviewed correction.
 It does not merge product code, publish a compiler package or turn an incomplete
 implementation into the completed product.

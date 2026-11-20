@@ -5,12 +5,13 @@ already completed native library and its actual emitted function inventory.
 It is not reachable through a product Cargo feature. It does not parse a Rust
 consumer, run Rust analysis, synthesize HIR or typed bodies, or retry compilation.
 
-The intended first caller is the separate native consumer qualifier. Its private
+The first caller is the separate native metadata qualification executable. Its private
 `CompletedUnit` establishes the admitted declaration, body, privacy and lint
 facts using the unchanged source and the existing native checked program. It
 joins checked calls to lowered/generated calls and actual emitted ELF symbols.
-The committed qualifier stops at that completed-record and C ABI object boundary;
-it does not yet convert those facts to `Input` or call this encoder. The public record
+The research caller converts those actual facts to `Input`, invokes this encoder,
+and constructs metadata and object members for an original Rust consumer. It is
+separate from the installed compiler and has its own required CI campaign. The public record
 types in this serialization crate do not themselves certify source correctness.
 The encoder checks that the definition, call and emitted-instance inventories
 are complete, unique and mutually consistent before writing any metadata.
@@ -96,12 +97,12 @@ subprocess access.
 
 ## Checkpoint status and required qualification
 
-This checkpoint builds as a standalone library with the exact pinned SDK. No
-committed native caller invokes its metadata or rlib-link writer. It
-does not yet establish that an ordinary Rust caller accepts the produced
-metadata or executes the renamed native object correctly. That joined gate,
-including private-access rejection and malformed/missing/duplicate mapping
-controls, is required before a compatibility claim. Source completion and
+The standalone research caller now joins the native generation to the metadata
+and rlib-link writers. Its exact-source CI campaign must establish that an
+ordinary Rust caller accepts the produced metadata and executes the renamed
+native object correctly. The campaign includes private-access rejection,
+malformed/missing/duplicate mappings and actual archive-member controls.
+Authored controls are not execution evidence. Source completion and
 serialization costs must be reported separately from native body compilation;
 no compiler speed claim follows from this build.
 
@@ -124,10 +125,12 @@ the serializer for a target without `std` proves this library's dependency cut,
 not new output-target coverage, a `no_std` compiler or socket-independent retained
 compilation.
 
-The seam is currently separate research components, not integration into the public
+The seam remains separate research components, not integration into the public
 retained compiler. Full Rust consumer metadata, wider declaration/lint/privacy
 obligations, the justified complementary implementation and overall speedup
 remain incomplete. The central import inventory and structural guard track
 these research components without admitting them to the product. The CI checks
 their source records, core dependency cut, original byte/hash controls and SDK
-receipt refusals. Those checks do not qualify joined Rust metadata or a release.
+receipt refusals. The separate joined campaign qualifies only its declared
+scalar-library scope when it actually passes on the exact source. Neither
+campaign establishes a full Rust compiler, retained integration or a release.

@@ -339,8 +339,18 @@ fn emit_with_backend(prepared: PreparedUnit, artifact: Option<(&crate::native_cr
     let input=scratch.join("unit.c");fs::write(&input,text).map_err(|e|e.to_string())?;
     if let Some((generation,backend))=artifact {backend.verify(generation)?;}
     let backend=artifact.map_or_else(||std::path::Path::new("clang"),|(_,backend)|backend.executable());
-    let result=Command::new(backend).args(["--target=x86_64-unknown-linux-gnu","-x","c","-std=gnu11","-ffreestanding","-fno-builtin","-fno-strict-aliasing","-fwrapv","-fno-asynchronous-unwind-tables","-O0","-c"]).arg(&input).arg("-o").arg(&object).output().map_err(|e|format!("cannot start explicit native object C backend: {e}"))?;
+    let mut command=Command::new(backend);
+    if prepared.capture {command.args(["--no-default-config","-fno-stack-protector"]);}
+    command.args(["--target=x86_64-unknown-linux-gnu","-x","c","-std=gnu11","-ffreestanding","-fno-builtin","-fno-strict-aliasing","-fwrapv","-fno-asynchronous-unwind-tables","-O0","-c"]).arg(&input).arg("-o").arg(&object);
+    if prepared.capture {fs::write(scratch.join("backend.command"),format!("{command:?}\n")).map_err(|e|e.to_string())?;}
+    let result=command.output().map_err(|e|format!("cannot start explicit native object C backend: {e}"))?;
+    if prepared.capture {
+        fs::write(scratch.join("backend.stdout"),&result.stdout).map_err(|e|e.to_string())?;
+        fs::write(scratch.join("backend.stderr"),&result.stderr).map_err(|e|e.to_string())?;
+        fs::write(scratch.join("backend.status"),format!("{}\n",result.status)).map_err(|e|e.to_string())?;
+    }
     if !result.status.success(){return Err(format!("native object C backend {}: {}",result.status,String::from_utf8_lossy(&result.stderr)));}
+    if prepared.capture && (!result.stdout.is_empty() || !result.stderr.is_empty()) {return Err("native metadata object backend produced unexpected output; exact streams retained".into());}
     if let Some((generation,backend))=artifact {backend.verify(generation)?;}
     let mut runtime=crate::native_crate::runtime::Requirements::capture(&p,&map)?;
     let object=if let Some((generation,backend))=artifact{crate::native_crate::runtime::prepare(&object,&scratch,&mut runtime,generation,backend)?}else{object};

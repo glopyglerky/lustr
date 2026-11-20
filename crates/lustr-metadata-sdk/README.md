@@ -8,7 +8,9 @@ metadata header/version/hash. It returns immutable facts to the separate
 `core`/`alloc` metadata serializer.
 
 The caller must bind the receipt to the reviewed output of
-`tools/build-metadata-sdk-receipt.py`. Arbitrary supplied JSON is not an SDK
+`tools/build-metadata-sdk-receipt.py`. `open_bound` verifies the expected digest
+on the same single read that supplies its parsed facts. It does not verify a
+path and then reread a potentially different receipt. Arbitrary supplied JSON is not an SDK
 certificate, and matching artifact digests do not establish a full Rust compiler.
 The constructor uses the pinned original reader and a fixed reference at
 construction time. This loader invokes no compiler and reads no user source.

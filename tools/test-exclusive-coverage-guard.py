@@ -186,7 +186,7 @@ def metadata_research_controls():
     with tempfile.TemporaryDirectory(prefix="lustr-metadata-admission-") as directory:
         root = Path(directory)
         inventory = json.loads((ROOT / "upstream/complement-imports.json").read_text())
-        for crate in ("lustr-metadata-encoder", "lustr-metadata-sdk"):
+        for crate in ("lustr-metadata-encoder", "lustr-metadata-sdk", "lustr-native-metadata-qualification"):
             shutil.copytree(ROOT / "crates" / crate, root / "crates" / crate,
                             ignore=shutil.ignore_patterns("target"))
 
@@ -201,12 +201,15 @@ def metadata_research_controls():
             ("crates/lustr-metadata-encoder/Cargo.toml", lambda text: text.replace("default-features = false", "default-features = true", 1), "dependency or oracle boundary changed"),
             ("crates/lustr-metadata-encoder/Cargo.toml", lambda text: text.replace("[dev-dependencies]", 'odht = "=0.3.1"\n\n[dev-dependencies]'), "dependency or oracle boundary changed"),
             ("crates/lustr-metadata-sdk/Cargo.toml", lambda text: text + '\n[features]\nhidden = []\n', "unreviewed metadata feature"),
-            ("crates/lustr-metadata-encoder/source-slices.json", lambda text: text.replace('"native_caller_committed": false', '"native_caller_committed": true'), "overstates integration"),
+            ("crates/lustr-metadata-encoder/source-slices.json", lambda text: text.replace('"native_caller_committed": true', '"native_caller_committed": false'), "misstates integration"),
             ("crates/lustr-metadata-encoder/Cargo.toml", lambda text: text + '\n[lib]\npath = "unreviewed.rs"\n', "library source or workspace selection changed"),
             ("crates/lustr-metadata-encoder/Cargo.toml", lambda text: text.replace('[workspace]', '[workspace]\ndefault-members = ["other"]'), "library source or workspace selection changed"),
             ("crates/lustr-metadata-sdk/Cargo.toml", lambda text: text.replace('name = "lustr-metadata-sdk"', 'name = "other"'), "library source or workspace selection changed"),
             ("crates/lustr-metadata-encoder/Cargo.toml", lambda text: 'cargo-features = ["per-package-target"]\n' + text.replace('[package]', '[package]\nforced-target = "wasm32-unknown-unknown"'), "manifest target or build-generation override"),
             ("crates/lustr-metadata-sdk/Cargo.toml", lambda text: text + '\n[profile.dev]\nrustflags = [\'--cfg=feature="unreviewed"\']\n', "unreviewed compiler flags or backend"),
+            ("crates/lustr-native-metadata-qualification/Cargo.toml", lambda text: text.replace('native-qualification = []', 'native-qualification = ["upstream-semantic"]\nupstream-semantic = []'), "research mode changed"),
+            ("crates/lustr-native-metadata-qualification/Cargo.toml", lambda text: text + '\nlustr-semantic = { path = "../lustr-semantic", optional = true }\n', "dependency or target closure changed"),
+            ("crates/lustr-native-metadata-qualification/src/archive.rs", lambda text: text + '\n// changed object wrapper\n', "qualifier adapted sources differ"),
         ]
         for name, change, diagnostic in cases:
             path = root / name
@@ -263,7 +266,7 @@ def main():
         lambda data: data["research_components"][0].update(production_admitted=True),
         lambda data: data.update(full_rust_coverage=True),
         lambda data: data["research_components"].pop(),
-        lambda data: data["research_components"][2].update(native_caller_committed=True),
+        lambda data: data["research_components"][2].update(native_caller_committed=False),
     ]
     for mutate in mutations:
         candidate = copy.deepcopy(original)

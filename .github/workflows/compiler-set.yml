@@ -165,6 +165,84 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  native-metadata-join:
+    name: Native metadata join and original Rust consumers
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
+    timeout-minutes: 35
+    env:
+      RUSTUP_TOOLCHAIN: nightly-2026-11-09
+      CARGO_BUILD_JOBS: '2'
+      RUST_MIN_STACK: '268435456'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record exact source and research admission
+        run: |
+          set -euo pipefail
+          records="$RUNNER_TEMP/native-metadata-join"
+          mkdir -p "$records"
+          git rev-parse HEAD HEAD^{tree} HEAD:compiler/native > "$records/source.txt"
+          python3 tools/native-metadata-source-manifest.py record "$records/source-inputs.json" 2>&1 | tee "$records/source-capture.log"
+          python3 tools/check-exclusive-coverage.py 2>&1 | tee "$records/source-admission.log"
+          python3 tools/test-native-metadata-trace.py -v 2>&1 | tee "$records/evaluator-controls.log"
+      - name: Install the pinned construction compiler and independent consumer
+        run: rustup toolchain install nightly-2026-11-09 --profile minimal --component llvm-tools
+      - name: Require actual native process tracing and emitter
+        run: |
+          set -euo pipefail
+          if ! command -v strace >/dev/null || ! command -v clang >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y strace clang
+          fi
+          command -v strace
+          command -v clang
+      - name: Obtain the pinned TinyCC native dependency
+        uses: actions/checkout@v4
+        with:
+          repository: TinyCC/tinycc
+          ref: 43c7708b85681a2fd4451c8a541af4494a8919b2
+          path: .metadata-tinycc-reference
+          persist-credentials: false
+      - name: Construct the native dependency
+        run: |
+          set -euo pipefail
+          records="$RUNNER_TEMP/native-metadata-join"
+          rustc -vV > "$records/compiler.txt"
+          rustc --edition=2024 tools/build-tinycc-pic.rs -o "$RUNNER_TEMP/build-metadata-tinycc" 2>&1 | tee "$records/dependency-constructor.log"
+          "$RUNNER_TEMP/build-metadata-tinycc" "$GITHUB_WORKSPACE/.metadata-tinycc-reference" "$RUNNER_TEMP/metadata-tinycc" 2>&1 | tee "$records/dependency-build.log"
+      - name: Build the separate native metadata research caller
+        env:
+          LUST_TCC_HOME: ${{ runner.temp }}/metadata-tinycc/install
+        run: |
+          set -euo pipefail
+          records="$RUNNER_TEMP/native-metadata-join"
+          export RUSTC="$(rustup which rustc)"
+          cargo fetch --manifest-path crates/lustr-native-metadata-qualification/Cargo.toml --locked 2>&1 | tee "$records/dependency-fetch.log"
+          cargo build --manifest-path crates/lustr-native-metadata-qualification/Cargo.toml --package lustr-native-metadata-qualification --bin lustr-native-metadata-qualification --features native-qualification --locked --offline --jobs 2 --target-dir "$RUNNER_TEMP/native-metadata-target" --config "build.build-dir=\"$RUNNER_TEMP/native-metadata-intermediates\"" 2>&1 | tee "$records/build.log"
+          sha256sum "$RUNNER_TEMP/native-metadata-target/debug/lustr-native-metadata-qualification" "$RUSTC" "$LUST_TCC_HOME/lib/libtcc.a" > "$records/built-tools.sha256"
+      - name: Require joined metadata, ordinary Rust results and terminal failures
+        run: |
+          set -euo pipefail
+          records="$RUNNER_TEMP/native-metadata-join"
+          python3 tools/test-native-consumer-metadata.py \
+            --candidate "$RUNNER_TEMP/native-metadata-target/debug/lustr-native-metadata-qualification" \
+            --sdk "$(rustc --print sysroot)" \
+            --clang "$(readlink -f "$(command -v clang)")" \
+            --output "$records/campaign" 2>&1 | tee "$records/campaign.log"
+          python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["passed"] is True and r["functional_passed"] is True and r["exec_trace_qualified"] is True and r["checked_runtime_results"] == 262152 and not r["full_compiler_qualification"] and not r["retained_public_integration"]' "$records/campaign/report.json"
+          python3 tools/native-metadata-source-manifest.py verify "$records/source-inputs.json" 2>&1 | tee "$records/source-verify.log"
+          sha256sum --check "$records/built-tools.sha256"
+      - name: Retain exact joined evidence and every failed attempt
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-metadata-join-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/native-metadata-join
+            ${{ runner.temp }}/native-metadata-target/debug/lustr-native-metadata-qualification
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 14
+
   semantic:
     name: Checked rustc semantic inspection
     runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
