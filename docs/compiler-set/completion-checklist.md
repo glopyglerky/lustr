@@ -117,7 +117,9 @@ also passes on the Linux x64 scalar project, including the unmodified cold
 build, an unchanged request, body edit, type error, repair and provider edit.
 The body edit visits one body and changes two of six native object
 generations. The unchanged request reuses the executable with zero body
-checks. Wider Rust and Cargo coverage remain open.
+checks. The matching `cargo check --bin` passes the same six cases with
+no object, archive, link or execution work. Wider Rust and Cargo coverage
+remain open.
 
 Done when unchanged mixed programs and real downstream Cargo crates consume
 valid artifacts. Every obligation has one owner and every required instance is

@@ -183,9 +183,10 @@ fn read_public_transport_request(
                     return Err("executable dependency inventory changed".into());
                 }
                 for input in dependencies {
+                    let archive = input.archive.as_deref().unwrap_or_else(|| Path::new(""));
                     if read_public_transport_field(reader)?.as_slice() != input.metadata.alias.as_bytes()
                         || read_public_transport_field(reader)?.as_slice() != input.metadata.artifact.as_os_str().as_bytes()
-                        || read_public_transport_field(reader)?.as_slice() != input.archive.as_os_str().as_bytes() {
+                        || read_public_transport_field(reader)?.as_slice() != archive.as_os_str().as_bytes() {
                         return Err("executable dependency pair changed".into());
                     }
                 }
@@ -336,12 +337,12 @@ fn transport_peer_validates_library_values_and_counted_vectors() {
     assert!(read_public_transport_request(&mut Cursor::new(&frame), identity, &req.file, &req.out, true, Some((&dependency_library, req.library_options))).is_err());
 
     let mut executable = library;
-    executable.executable_dependencies = Some(vec![transport_protocol::LinkExtern {
+    executable.executable_dependencies = Some(vec![transport_protocol::ExecutableExtern {
         metadata: transport_protocol::ExternMetadata {
             alias: "wire_dep".into(),
             artifact: PathBuf::from("/native-transport/deps-one/libwire_dep.rmeta"),
         },
-        archive: PathBuf::from("/native-transport/deps-one/libwire_dep.rlib"),
+        archive: Some(PathBuf::from("/native-transport/deps-one/libwire_dep.rlib")),
     }]);
     req.session.krate.target_kind = "bin".into();
     req.session.library = Some(executable.clone());
@@ -350,7 +351,7 @@ fn transport_peer_validates_library_values_and_counted_vectors() {
     let mut reader = Cursor::new(&frame);
     read_public_transport_request(&mut reader, identity, &req.file, &req.out, true, Some((&executable, req.library_options))).unwrap();
     assert_eq!(reader.position() as usize, frame.len());
-    executable.executable_dependencies.as_mut().unwrap()[0].archive.set_file_name("another.rlib");
+    executable.executable_dependencies.as_mut().unwrap()[0].archive.as_mut().unwrap().set_file_name("another.rlib");
     assert!(read_public_transport_request(&mut Cursor::new(&frame), identity, &req.file, &req.out, true, Some((&executable, req.library_options))).is_err());
 }
 

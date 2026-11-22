@@ -12,25 +12,24 @@ use crate::{
     driver::imports::{Definitions, Dependency, Emission},
     intern::Interner,
     library_artifact::unit_object,
-    protocol::LinkExtern,
+    protocol::ExecutableExtern,
     resolve::imports::ResolvedTables,
 };
 
 use super::{Stamp, imports::Import, stamp};
 
-struct LinkedCrate {
+struct ExecutableCrate {
     definitions: Import,
-    archive_stamp: Stamp,
-    archive: Dependency,
+    archive: Option<(Stamp, Dependency)>,
 }
 
 pub(super) struct ExecutableImports {
-    crates: Vec<LinkedCrate>,
+    crates: Vec<ExecutableCrate>,
     objects: Vec<Arc<[u8]>>,
 }
 
 impl ExecutableImports {
-    pub(super) fn open(inputs: &[LinkExtern], sdk: &Sdk) -> Result<Self, String> {
+    pub(super) fn open(inputs: &[ExecutableExtern], sdk: &Sdk) -> Result<Self, String> {
         let mut crates = Vec::new();
         let mut objects = Vec::new();
         let mut defined = BTreeSet::new();
@@ -38,29 +37,34 @@ impl ExecutableImports {
         for (index, input) in inputs.iter().enumerate() {
             let index = def::CrateId(u32::try_from(index + 1).map_err(|_| "too many Cargo crate identities")?);
             let definitions = Import::read(&input.metadata, sdk, index, true)?;
-            let before = stamp(&input.archive)?;
-            let bytes: Arc<[u8]> =
-                std::fs::read(&input.archive).map_err(|e| format!("read Cargo archive {}: {e}", input.archive.display()))?.into();
-            if before != stamp(&input.archive)? || !definitions.unchanged(&input.metadata.artifact) {
-                return Err("Cargo metadata/archive pair changed while loading".into());
-            }
-            let mut available = BTreeSet::new();
-            for code in archive_objects(&bytes, &definitions)? {
-                let observed = unit_object::symbols(code)?;
-                for symbol in observed.defined {
-                    if !defined.insert(symbol) {
-                        return Err("Cargo archive definitions collide".into());
-                    }
+            let archive = if let Some(path) = &input.archive {
+                let before = stamp(path)?;
+                let bytes: Arc<[u8]> =
+                    std::fs::read(path).map_err(|e| format!("read Cargo archive {}: {e}", path.display()))?.into();
+                if before != stamp(path)? || !definitions.unchanged(&input.metadata.artifact) {
+                    return Err("Cargo metadata/archive pair changed while loading".into());
                 }
-                available.extend(observed.functions);
-                required.extend(observed.undefined);
-                objects.push(Arc::from(code));
-            }
-            if !definitions.exported_symbols().all(|symbol| available.contains(symbol.as_bytes())) {
-                return Err("Cargo archive lacks the actual public metadata symbol".into());
-            }
-            let identity = input.archive.to_str().ok_or("Cargo archive path is not Unicode")?.into();
-            crates.push(LinkedCrate { definitions, archive_stamp: before, archive: Dependency { identity, contents: bytes } });
+                let mut available = BTreeSet::new();
+                for code in archive_objects(&bytes, &definitions)? {
+                    let observed = unit_object::symbols(code)?;
+                    for symbol in observed.defined {
+                        if !defined.insert(symbol) {
+                            return Err("Cargo archive definitions collide".into());
+                        }
+                    }
+                    available.extend(observed.functions);
+                    required.extend(observed.undefined);
+                    objects.push(Arc::from(code));
+                }
+                if !definitions.exported_symbols().all(|symbol| available.contains(symbol.as_bytes())) {
+                    return Err("Cargo archive lacks the actual public metadata symbol".into());
+                }
+                let identity = path.to_str().ok_or("Cargo archive path is not Unicode")?.into();
+                Some((before, Dependency { identity, contents: bytes }))
+            } else {
+                None
+            };
+            crates.push(ExecutableCrate { definitions, archive });
         }
         let identities: BTreeSet<_> = crates.iter().map(|item| &item.definitions.identity).collect();
         if identities.len() != crates.len()
@@ -71,7 +75,7 @@ impl ExecutableImports {
                     .any(|dependency| dependency == &item.definitions.identity || !identities.contains(dependency))
             })
         {
-            return Err("the supplied Cargo archives do not close the metadata dependency graph".into());
+            return Err("the supplied Cargo artifacts do not close the metadata dependency graph".into());
         }
         if !required.is_subset(&defined) {
             return Err("the supplied Cargo archives do not close the imported object references".into());
@@ -79,11 +83,15 @@ impl ExecutableImports {
         Ok(Self { crates, objects })
     }
 
-    pub(super) fn unchanged(&self, inputs: &[LinkExtern]) -> bool {
+    pub(super) fn unchanged(&self, inputs: &[ExecutableExtern]) -> bool {
         self.crates.len() == inputs.len()
             && self.crates.iter().zip(inputs).all(|(item, input)| {
                 item.definitions.unchanged(&input.metadata.artifact)
-                    && stamp(&input.archive).is_ok_and(|observed| observed == item.archive_stamp)
+                    && match (&item.archive, &input.archive) {
+                        (Some((before, _)), Some(path)) => stamp(path).is_ok_and(|observed| &observed == before),
+                        (None, None) => true,
+                        _ => false,
+                    }
             })
     }
 
@@ -155,7 +163,9 @@ impl Definitions for ExecutableImports {
             .iter()
             .flat_map(|item| {
                 let mut deps = item.definitions.dependencies();
-                deps.push(Dependency { identity: item.archive.identity.clone(), contents: item.archive.contents.clone() });
+                if let Some((_, archive)) = &item.archive {
+                    deps.push(Dependency { identity: archive.identity.clone(), contents: archive.contents.clone() });
+                }
                 deps
             })
             .collect()

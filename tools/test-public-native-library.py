@@ -1124,18 +1124,20 @@ def qualify_dependency_links(root, package, sdk, commands, environment, oracle_e
 
 
 def qualify_executable(root, package, sdk, commands, environment, oracle_env, projects, owner,
-                       daemon_trace, daemon_argv, prefixes, report):
+                       daemon_trace, daemon_argv, prefixes, report, *, check=False):
     consumer, provider = projects["consumer"], projects["provider"]
     consumer["binary_target"] = "consumer"
     source = consumer["root"] / "src/main.rs"
-    target = consumer["root"] / "binary-target"
-    build = consumer["root"] / "binary-build"
+    mode, emit = ("check", "metadata") if check else ("run", "link")
+    group = "cargo-executable-check" if check else "cargo-executable"
+    target = consumer["root"] / f"binary-{mode}-target"
+    build = consumer["root"] / f"binary-{mode}-build"
     application = target / "debug/consumer"
     env = dict(environment, CARGO_TARGET_DIR=str(target), CARGO_BUILD_BUILD_DIR=str(build))
     independent = dict(oracle_env, CARGO_HOME=environment["CARGO_HOME"],
-                       CARGO_TARGET_DIR=str(consumer["root"] / "binary-oracle-target"),
-                       CARGO_BUILD_BUILD_DIR=str(consumer["root"] / "binary-oracle-build"), RUSTC=str(sdk / "bin/rustc"))
-    flags = ["run", "--bin", "consumer", "--offline", "--message-format=json"]
+                       CARGO_TARGET_DIR=str(consumer["root"] / f"binary-{mode}-oracle-target"),
+                       CARGO_BUILD_BUILD_DIR=str(consumer["root"] / f"binary-{mode}-oracle-build"), RUSTC=str(sdk / "bin/rustc"))
+    flags = [mode, "--bin", "consumer", "--offline", "--message-format=json"]
     argv = [package / "bin/cargo", *flags]
     cases = [
         ("cold", b"255", 31, 31, 3, False),
@@ -1146,7 +1148,7 @@ def qualify_executable(root, package, sdk, commands, environment, oracle_env, pr
         ("provider-edit", None, 63, 49, 3, False),
     ]
     result = {"passed": False, "history": []}
-    report["cargo_executable"] = result
+    report[group.replace("-", "_")] = result
     unit_directory, previous_units = None, {}
     for label, arg, mask, value, request_count, reused in cases:
         if arg is not None:
@@ -1154,20 +1156,22 @@ def qualify_executable(root, package, sdk, commands, environment, oracle_env, pr
         if mask is not None:
             provider["source"].write_text(f"#![no_std]\npub fn mask(x: u64) -> u64 {{ x & {mask} }}\n")
         status = 0 if value is not None else 101
+        reused = False if check and not status else reused
         before = set((root / "observations").glob("*/report.json"))
-        stdout, stderr, trace = commands.run("cargo-executable-" + label, argv, consumer["root"], env, expected=status, traced=True)
+        stdout, stderr, trace = commands.run(group + "-" + label, argv, consumer["root"], env, expected=status, traced=True)
         records = sorted(
             (json.loads(path.read_text()) for path in set((root / "observations").glob("*/report.json")) - before
              if path.parent.name.startswith("request-")), key=lambda row: row["request_index"])
         executable_reports = [json.loads(path.read_text()) for path in set((root / "observations").glob("*/report.json")) - before
                               if path.parent.name.startswith("executable-")]
-        events = trace_events(trace.read_bytes(), consumer["root"], application=application)
-        observed = inspect_processes(events, package, argv[0], argv, projects, application=application)
+        expected_application = None if check else application
+        events = trace_events(trace.read_bytes(), consumer["root"], application=expected_application)
+        observed = inspect_processes(events, package, argv[0], argv, projects, application=expected_application)
         require(len(observed["compiles"]) == request_count and len(records) == request_count - 1,
                 "Cargo invoked a different native executable compilation graph")
         actual = parse_compile(observed["compiles"][-1], executable=True)
-        require(actual["--crate-type"] == "bin" and actual["--emit"] == "dep-info,link"
-                and actual["source"] == str(source) and len(actual["--extern"]) == 4,
+        require(actual["--crate-type"] == "bin" and actual["--emit"] == f"dep-info,{emit}"
+                and actual["source"] == str(source) and len(actual["--extern"]) == (2 if check else 4),
                 "normal Cargo executable request changed its artifact/source boundary")
         inputs = {row.split("=", 1)[0]: set() for row in actual["--extern"]}
         for row in actual["--extern"]:
@@ -1175,8 +1179,8 @@ def qualify_executable(root, package, sdk, commands, environment, oracle_env, pr
             require(Path(artifact).is_relative_to(build) and Path(artifact).is_file(),
                     "executable request lost a real archive or metadata file")
             inputs[alias].add(Path(artifact).suffix)
-        require(inputs == {"consumer": {".rlib", ".rmeta"}, "provider": {".rlib", ".rmeta"}},
-                "actual Cargo executable dependency pairs differ")
+        expected_inputs = {".rmeta"} if check else {".rlib", ".rmeta"}
+        require(inputs == dict.fromkeys(("consumer", "provider"), expected_inputs), "actual Cargo executable dependencies differ")
         prefix = daemon_trace.read_bytes()
         frozen_prefix(prefixes[-1]["bytes"], prefix)
         owners = inspect_processes(trace_events(prefix, root), package, Path(daemon_argv[0]), daemon_argv, projects, daemon=True)
@@ -1186,44 +1190,59 @@ def qualify_executable(root, package, sdk, commands, environment, oracle_env, pr
         require(not native_tools or (status == 0 and not reused and
                 len({tool["argv"][-2] for tool in native_tools}) == len(native_tools)),
                 "native object work ran for reused or rejected executable work, or repeated a unit")
-        require(label != "cold" or native_tools, "cold executable did not compile native object units")
+        if check:
+            require(not actual_tools and not wanted and not observed["runs"] and not list(build.rglob("*.o"))
+                    and not list(build.rglob("*.rlib")) and not application.exists(),
+                    "metadata-only executable check performed native emission or execution")
+        else:
+            require(label != "cold" or native_tools, "cold executable did not compile native object units")
         if native_tools:
             directories = {Path(tool["argv"][-2]).parent for tool in native_tools}
             require(len(directories) == 1, "executable objects came from several native sessions")
             unit_directory = next(iter(directories))
-        require(unit_directory is not None, "no executable object directory was bound by the cold trace")
         units = {}
-        for path in sorted(unit_directory.glob("u*.o")):
-            observed_file = path.stat()
-            units[path.name] = (observed_file.st_ino, observed_file.st_ctime_ns, sha(path.read_bytes()))
+        if not check:
+            require(unit_directory is not None, "no executable object directory was bound by the cold trace")
+            for path in sorted(unit_directory.glob("u*.o")):
+                observed_file = path.stat()
+                units[path.name] = (observed_file.st_ino, observed_file.st_ctime_ns, sha(path.read_bytes()))
         changed_units = [name for name, generation in units.items() if previous_units.get(name) != generation]
-        require(units and (not ((reused or status) and changed_units)),
+        require(check or (units and not ((reused or status) and changed_units)),
                 "reused or rejected executable changed native object generations")
-        if label == "edit":
+        if not check and label == "edit":
             require(units.keys() == previous_units.keys() and 0 < len(changed_units) < len(units),
                     "executable body edit did not reuse unchanged native object generations")
         previous_units = units
         reconcile_artifact_calls([tool for tool in actual_tools if tool not in native_tools], wanted)
-        prefixes.append({"name": "cargo-executable-" + label, "bytes": prefix, "artifact_count": len(owners["artifacts"])})
-        original_stdout, _, _ = commands.run("cargo-executable-" + label + "-original",
+        prefixes.append({"name": group + "-" + label, "bytes": prefix, "artifact_count": len(owners["artifacts"])})
+        original_stdout, _, _ = commands.run(group + "-" + label + "-original",
                                               [sdk / "bin/cargo", *flags], consumer["root"], independent, expected=status)
         if status:
             require(not executable_reports and not observed["runs"] and b"L0110" in stdout + stderr,
                     "an invalid executable ran or escaped the native checker")
         else:
-            require(len(executable_reports) == len(observed["runs"]) == 1 and stdout.splitlines()[-1] == original_stdout.splitlines()[-1] == str(value).encode(),
-                    "native and original executables did not run exactly the matching computation")
+            require(len(executable_reports) == 1, "missing unique retained executable observation")
+            if not check:
+                require(len(observed["runs"]) == 1 and stdout.splitlines()[-1] == original_stdout.splitlines()[-1] == str(value).encode(),
+                        "native and original executables did not run exactly the matching computation")
             record = executable_reports[0]
             require(record["schema"] == "lustr-public-executable-v1" and record["owner_pid"] == owner[0]
-                    and record["artifact_reused"] is reused and record["unused_extern_names"] == ["provider"],
+                    and record["emit"] == emit and record["artifact_reused"] is reused and record["unused_extern_names"] == ["provider"],
                     "retained executable artifact state or actual unused-extern result changed")
-            if label == "noop":
-                require(record["checked_bodies"] == 0, "unchanged executable rechecked a native body")
-            outputs = {kind: Path(filename) for kind, filename in zip(("dep-info","link"), record["outputs"])}
+            require(record["checked_bodies"] == (0 if label == "noop" else 1),
+                    "executable did not retain the expected native check work")
+            outputs = {kind: Path(filename) for kind, filename in zip(("dep-info", emit), record["outputs"])}
             dep_info(outputs["dep-info"].read_bytes(), outputs, source, consumer["root"])
-            require(outputs["link"].read_bytes() == application.read_bytes(),
-                    "Cargo ran another executable than the native published artifact")
-        result["history"].append({"case": label, "status": status, "runtime_value": value,
+            if check:
+                original_files = [Path(filename) for row in map(json.loads, original_stdout.splitlines())
+                    if row["reason"] == "compiler-artifact" and row["target"]["kind"] == ["bin"]
+                    for filename in row["filenames"]]
+                require(len(original_files) == 1 and original_files[0].read_bytes() == outputs[emit].read_bytes() == b"",
+                        "metadata-only binary output differs from the pinned compiler contract")
+            else:
+                require(outputs[emit].read_bytes() == application.read_bytes(),
+                        "Cargo ran another executable than the native published artifact")
+        result["history"].append({"case": label, "status": status, "runtime_value": None if check else value,
                                   "artifact_reused": reused, "tinycc_processes": len(native_tools),
                                   "changed_native_objects": changed_units})
     result["passed"] = True
@@ -2002,6 +2021,8 @@ def main():
         save()
         qualify_executable(root, package, sdk, commands, environment, oracle_env, projects, owner,
                            daemon_trace, daemon_argv, prefixes, report)
+        qualify_executable(root, package, sdk, commands, environment, oracle_env, projects, owner,
+                           daemon_trace, daemon_argv, prefixes, report, check=True)
         seal_reports()
         save()
         # A direct archive passed where Cargo normally passes full metadata is refused.

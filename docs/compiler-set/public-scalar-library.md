@@ -92,8 +92,15 @@ with the retained objects. The executable gate compares cold, unchanged,
 edited, invalid, repaired and dependency-edited requests with pinned Cargo
 and Rust, including the runtime output.
 
-General Cargo dependency graphs, executable metadata-only checks, additional
-crate types and profiles, and wider semantic completion remain open.
+The matching `cargo check --bin` uses the actual scalar `.rmeta` inputs
+and publishes dep-info and the requested zero-byte binary `.rmeta`. The
+pinned Rust compiler produces that empty output for executable crate types.
+The two library dependencies still carry genuine encoded crate metadata.
+The binary check does no object generation, archive construction or program
+execution.
+
+General Cargo dependency graphs, additional crate types and profiles, and
+wider semantic completion remain open.
 
 ## Metadata options and retained native state
 

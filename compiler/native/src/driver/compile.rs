@@ -420,7 +420,7 @@ fn log_visits(line: &str) {
 /// reused answer makes fresh). None for requests that must run:
 /// anything but a check, and a check that asks for C output.
 fn check_fingerprint(req: &Request) -> Option<u64> {
-    if req.cmd != Cmd::Check || req.emit_c.is_some() {
+    if req.cmd != Cmd::Check || req.emit_c.is_some() || req.session.library.as_ref().is_some_and(|key| key.is_executable()) {
         return None;
     }
     let key =
@@ -4910,7 +4910,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
         }),
     };
     let imported_dependencies = imports.map_or_else(Vec::new, |i| i.dependencies());
-    let imported_emission = match imports.filter(|_| req.session.library.as_ref().is_none_or(|key| key.is_executable()))
+    let imported_emission = match imports.filter(|_| req.session.library.as_ref().is_none_or(|key| key.is_executable() && req.cmd == Cmd::Build))
         .map(|i| i.take_emission()).transpose() {
         Ok(emission) => emission,
         Err(error) => return Preparation::Failed(Response {

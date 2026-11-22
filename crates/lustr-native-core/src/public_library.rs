@@ -346,13 +346,17 @@ impl Owner {
             self.installed.unchanged()?;
             if !version_supported(req) { return Err("executable SDK version differs from the pinned context".into()); }
             let key = req.session.library.as_ref().ok_or("executable context absent")?;
-            let [dependencies, output] = key.executable_outputs(&req.out).ok_or("executable output plan changed")?;
+            let check = req.cmd == driver::Cmd::Check;
+            let emit = if check { "metadata" } else { "link" };
+            let [dependencies, output] = key.executable_outputs(&req.out, check).ok_or("executable output plan changed")?;
+            let filename = output.file_name().ok_or("executable output filename absent")?;
             let parent = output.parent().ok_or("executable output parent absent")?;
             let stage = parent.join(format!(".lustr-executable-{}-{serial}", std::process::id()));
+            let staged_output = stage.join(filename);
             fs::create_dir(&stage).map_err(|error| format!("stage native executable: {error}"))?;
             let result = (|| -> Result<driver::Response, String> {
                 let mut staged = req.clone();
-                staged.out = stage.join(key.binary_name());
+                staged.out = staged_output;
                 let mut checked = 0;
                 let mut reused = false;
                 let mut source = None;
@@ -367,7 +371,9 @@ impl Owner {
                             unused = executable.unused_externs(&used);
                         }
                         checked = prepared.checked_functions().len();
-                        if let Some(cached) = &self.binary_output
+                        if check {
+                            prepared.emit()
+                        } else if let Some(cached) = &self.binary_output
                             && cached.source.as_ref() == prepared.source() && cached.shown == req.client.shown {
                             write_new(&staged.out, &cached.bytes)?;
                             fs::set_permissions(&staged.out, fs::Permissions::from_mode(cached.mode)).map_err(|error|error.to_string())?;
@@ -384,6 +390,11 @@ impl Owner {
                 if response.code != 0 { return Ok(response); }
                 if !key.executable_dependencies.as_ref().is_some_and(|inputs| executable.unchanged(inputs)) {
                     return Err("Cargo executable dependency changed during checking or linking".into());
+                }
+                // rustc emits a zero-byte metadata output for an executable.
+                // Its dependencies carry the genuine library metadata.
+                if check {
+                    write_new(&staged.out, &[])?;
                 }
                 let completed = if let Some(source) = source {
                     let mode = fs::metadata(&staged.out).map_err(|error|error.to_string())?.mode() & 0o777;
@@ -406,7 +417,7 @@ impl Owner {
                         response.stderr.push_str(&format!("{}\n", json!({"$message_type":"unused_extern",
                             "lint_level":"force-warn", "unused_extern_names":unused})));
                     }
-                    for (artifact, emit) in paths.iter().zip(["dep-info", "link"]) {
+                    for (artifact, emit) in paths.iter().zip(["dep-info", emit]) {
                         response.stderr.push_str(&format!("{}\n", json!({"$message_type":"artifact","artifact":artifact,"emit":emit})));
                     }
                 }
@@ -418,7 +429,7 @@ impl Owner {
                     write_new(&report.join("report.json"), &serde_json::to_vec_pretty(&json!({
                         "schema":"lustr-public-executable-v1", "owner_pid":std::process::id(), "status":0,
                         "source_path":req.file, "checked_bodies":checked, "artifact_reused":reused,
-                        "outputs":paths, "unused_extern_names":unused,
+                        "outputs":paths, "emit":emit, "unused_extern_names":unused,
                     })).map_err(|error| error.to_string())?)?;
                 }
                 Ok(response)

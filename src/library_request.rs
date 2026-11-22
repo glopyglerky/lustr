@@ -1,6 +1,6 @@
 //! Parse the actual Rust compiler request used by the pinned Cargo leaf unit.
 //! Unsupported options remain refusals; this adapter never reads Rust source.
-use crate::{Native, library_contract::{ExternMetadata, LibraryKey, LibraryOptions, LinkExtern, SDK_RECEIPT, TARGET}};
+use crate::{Native, library_contract::{ExecutableExtern, ExternMetadata, LibraryKey, LibraryOptions, SDK_RECEIPT, TARGET}};
 use std::{collections::{BTreeMap,BTreeSet}, ffi::OsString, path::PathBuf};
 
 pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
@@ -71,7 +71,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     let fields = emit.split(',').collect::<Vec<_>>();
     let check = match (fields.len(), fields.into_iter().collect::<BTreeSet<_>>()) {
         (2, fields) if binary && fields == BTreeSet::from(["dep-info", "link"]) => false,
-        (2, fields) if !binary && fields == BTreeSet::from(["dep-info", "metadata"]) => true,
+        (2, fields) if fields == BTreeSet::from(["dep-info", "metadata"]) => true,
         (3, fields) if !binary && fields == BTreeSet::from(["dep-info", "metadata", "link"]) => false,
         _ => return None,
     };
@@ -104,7 +104,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     let source = source?;
     let source_path = std::path::absolute(&source).ok()?;
     let (external, executable_dependencies) = if binary {
-        (None, Some(link_externs(externs)?))
+        (None, Some(executable_externs(externs, check)?))
     } else {
         match externs.as_slice() {
             [] => (None, None),
@@ -118,7 +118,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     if !context.valid() { return None; }
     if std::env::var("CARGO_CRATE_NAME").is_ok_and(|v|v != context.crate_name) { return None; }
     let out_dir = std::path::absolute(out_dir?).ok()?;
-    let output = out_dir.join(if binary { context.binary_name() } else if check { context.metadata_name() } else { context.archive_name() });
+    let output = out_dir.join(if check { context.metadata_name() } else if binary { context.binary_name() } else { context.archive_name() });
     let mut native = vec![(if check { "check" } else { "build" }).into(),source,"-o".into(),output.to_str()?.into(),
         "--target".into(),TARGET.into(),"-C".into(),"panic=abort".into()];
     if binary { native.extend(["--bin".into(), context.crate_name.clone()]); }
@@ -151,24 +151,28 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     }
     if let Some(dependencies) = context.executable_dependencies {
         native.push("--lustr-executable-artifacts".into());
-        for link in dependencies {
+        for input in dependencies {
+            let archive = match &input.archive { Some(path) => path.to_str()?, None => "" };
             native.extend(["--lustr-executable-extern".into(),
-                format!("{}={}", link.metadata.alias, link.metadata.artifact.to_str()?), link.archive.to_str()?.into()]);
+                format!("{}={}", input.metadata.alias, input.metadata.artifact.to_str()?),
+                archive.into()]);
         }
     }
     Some(Native {args:native,output})
 }
 
-fn link_externs(arguments: Vec<&str>) -> Option<Vec<LinkExtern>> {
+fn executable_externs(arguments: Vec<&str>, check: bool) -> Option<Vec<ExecutableExtern>> {
     let mut pairs = BTreeMap::<&str, (Option<ExternMetadata>, Option<PathBuf>)>::new();
     for argument in arguments {
         let (alias, path) = argument.split_once('=')?;
         let (metadata, archive) = pairs.entry(alias).or_default();
         match PathBuf::from(path).extension()?.to_str()? {
             "rmeta" if metadata.is_none() => *metadata = Some(ExternMetadata::parse(argument)?),
-            "rlib" if archive.is_none() => *archive = Some(std::path::absolute(path).ok()?),
+            "rlib" if !check && archive.is_none() => *archive = Some(std::path::absolute(path).ok()?),
             _ => return None,
         }
     }
-    pairs.into_values().map(|(metadata, archive)| Some(LinkExtern { metadata: metadata?, archive: archive? })).collect()
+    pairs.into_values().map(|(metadata, archive)| {
+        (archive.is_none() == check).then_some(ExecutableExtern { metadata: metadata?, archive })
+    }).collect()
 }

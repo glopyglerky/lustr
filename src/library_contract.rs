@@ -29,17 +29,18 @@ pub struct ExternMetadata {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct LinkExtern {
+pub struct ExecutableExtern {
     pub metadata: ExternMetadata,
-    pub archive: PathBuf,
+    pub archive: Option<PathBuf>,
 }
 
-impl LinkExtern {
+impl ExecutableExtern {
     fn valid(&self) -> bool {
-        self.metadata.valid() && self.archive.is_absolute()
-            && self.archive.extension().is_some_and(|ext| ext == "rlib")
-            && self.archive.file_stem() == self.metadata.artifact.file_stem()
-            && self.archive.to_str().is_some_and(|s| !s.contains(['\0', '\n', '\r']))
+        self.metadata.valid() && self.archive.as_ref().is_none_or(|archive| {
+            archive.is_absolute() && archive.extension().is_some_and(|ext| ext == "rlib")
+                && archive.file_stem() == self.metadata.artifact.file_stem()
+                && archive.to_str().is_some_and(|s| !s.contains(['\0', '\n', '\r']))
+        })
     }
 }
 
@@ -73,7 +74,7 @@ pub struct LibraryKey {
     pub check_cfg: Vec<String>,
     pub search_paths: Vec<PathBuf>,
     pub external: Option<ExternMetadata>,
-    pub executable_dependencies: Option<Vec<LinkExtern>>,
+    pub executable_dependencies: Option<Vec<ExecutableExtern>>,
     pub sdk_receipt: String,
 }
 impl LibraryKey {
@@ -92,7 +93,7 @@ impl LibraryKey {
             && self.search_paths.iter().all(|p| p.is_absolute())
             && self.external.as_ref().is_none_or(ExternMetadata::valid)
             && self.executable_dependencies.as_ref().is_none_or(|dependencies| {
-                self.external.is_none() && dependencies.iter().all(LinkExtern::valid)
+                self.external.is_none() && dependencies.iter().all(ExecutableExtern::valid)
                     && dependencies.windows(2).all(|pair| pair[0].metadata.alias < pair[1].metadata.alias)
             })
             && self.sdk_receipt == SDK_RECEIPT
@@ -104,9 +105,10 @@ impl LibraryKey {
     pub fn is_executable(&self) -> bool { self.executable_dependencies.is_some() }
     pub fn target_kind(&self) -> &'static str { if self.is_executable() { "bin" } else { "lib" } }
 
-    pub fn executable_outputs(&self, binary: &Path) -> Option<[PathBuf; 2]> {
-        let parent = output_parent(binary, &self.binary_name())?;
-        Some([parent.join(self.dep_info_name()), binary.to_owned()])
+    pub fn executable_outputs(&self, output: &Path, check: bool) -> Option<[PathBuf; 2]> {
+        let name = if check { self.metadata_name() } else { self.binary_name() };
+        let parent = output_parent(output, &name)?;
+        Some([parent.join(self.dep_info_name()), output.to_owned()])
     }
     pub fn outputs(&self, archive: &Path) -> Option<[PathBuf;3]> {
         let parent = output_parent(archive, &self.archive_name())?;
@@ -119,8 +121,9 @@ impl LibraryKey {
     }
 
     pub fn valid_output(&self, path: &Path, check: bool, options: LibraryOptions) -> bool {
-        if self.is_executable() {
-            !check && options.embed_metadata.is_none() && self.executable_outputs(path).is_some()
+        if let Some(dependencies) = &self.executable_dependencies {
+            options.embed_metadata.is_none() && self.executable_outputs(path, check).is_some()
+                && dependencies.iter().all(|dependency| dependency.archive.is_none() == check)
         } else if check {
             options.embed_metadata.is_none() && output_parent(path, &self.metadata_name()).is_some()
         } else {

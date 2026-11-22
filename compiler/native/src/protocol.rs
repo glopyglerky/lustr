@@ -33,7 +33,7 @@ use std::path::{Path, PathBuf};
 pub mod host_runtime;
 #[path = "../../../src/library_contract.rs"]
 pub mod library_contract;
-pub use library_contract::{ExternMetadata, LibraryKey, LibraryOptions, LinkExtern};
+pub use library_contract::{ExecutableExtern, ExternMetadata, LibraryKey, LibraryOptions};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Cmd {
@@ -722,8 +722,9 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
             "--lustr-library-search" => library_search.push(PathBuf::from(it.next()?)),
             "--lustr-library-extern-metadata" if library_external.is_none() => library_external = Some(ExternMetadata::parse(it.next()?)?),
             "--lustr-executable-artifacts" if !executable_artifacts => executable_artifacts = true,
-            "--lustr-executable-extern" => executable_dependencies.push(LinkExtern {
-                metadata: ExternMetadata::parse(it.next()?)?, archive: PathBuf::from(it.next()?),
+            "--lustr-executable-extern" => executable_dependencies.push(ExecutableExtern {
+                metadata: ExternMetadata::parse(it.next()?)?,
+                archive: Some(it.next()?).filter(|path| !path.is_empty()).map(PathBuf::from),
             }),
             "--lustr-library-embed-metadata" if library_options.embed_metadata.is_none() => library_options.embed_metadata = Some(rustc_bool(it.next()?)?),
             "--lustr-library-force-warn-unused-crate-dependencies" if !library_options.force_warn_unused_crate_dependencies => library_options.force_warn_unused_crate_dependencies = true,
@@ -1032,7 +1033,7 @@ pub fn encode(r: &Request) -> Vec<u8> {
             for dependency in dependencies {
                 put_field(&mut out, dependency.metadata.alias.as_bytes());
                 path_field(&mut out, Some(&dependency.metadata.artifact));
-                path_field(&mut out, Some(&dependency.archive));
+                path_field(&mut out, dependency.archive.as_deref());
             }
         }
         put_field(&mut out,match r.library_options.embed_metadata {None=>b"-",Some(true)=>b"1",Some(false)=>b"0"});
@@ -1102,9 +1103,9 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
             let executable_dependencies = if mode == b"3" {
                 let count:usize = text(get_field(r)?)?.parse().ok()?;
                 if count > 4096 { return None; }
-                Some((0..count).map(|_| Some(LinkExtern {
+                Some((0..count).map(|_| Some(ExecutableExtern {
                     metadata: ExternMetadata { alias: text(get_field(r)?)?, artifact: path(get_field(r)?) },
-                    archive: path(get_field(r)?),
+                    archive: Some(get_field(r)?).filter(|bytes| !bytes.is_empty()).map(path),
                 })).collect::<Option<Vec<_>>>()?)
             } else { None };
             library_options.embed_metadata=match get_field(r)?.as_slice() {b"-"=>None,b"1"=>Some(true),b"0"=>Some(false),_=>return None};
