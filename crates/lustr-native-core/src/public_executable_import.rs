@@ -138,6 +138,7 @@ impl Definitions for ExecutableImports {
     }
 
     fn mount(&self, tables: &mut ResolvedTables, interner: &Interner) -> Result<(), Diag> {
+        tables.executable_import_uses = Some(BTreeSet::new());
         for item in &self.crates {
             item.definitions.mount(tables, interner)?;
         }

@@ -2873,15 +2873,14 @@ impl PreparedRequest<'_> {
         Ok(inputs)
     }
 
-    /// Imported declarations in this executable slice are functions. For a
-    /// root without import declarations, their actual signature reads carry
-    /// every explicit extern reference, including reused bodies.
+    /// Combine resolved module imports with actual signature reads from
+    /// checked and reused bodies.
     pub(crate) fn executable_extern_uses(&self) -> Option<std::collections::BTreeSet<crate::def::CrateId>> {
         let program = self.program();
         if program.ast.items.iter().chain(&program.ast.stmt_items).any(|item| {
             matches!(item.kind, crate::ast::ItemKind::Use(_) | crate::ast::ItemKind::ExternCrate(_))
         }) { return None; }
-        let mut used = std::collections::BTreeSet::new();
+        let mut used = program.resolved.as_ref()?.executable_import_uses.clone()?;
         let caches = &self.session.caches;
         for &slot in &self.session.front.fn_slot {
             if let Some(Some(reads)) = caches.slot_reads.get(slot as usize) {

@@ -1344,6 +1344,60 @@ def qualify_expansion_inputs(root, package, sdk, commands, environment, oracle_e
     result["passed"] = True
 
 
+def qualify_executable_extern_uses(root, package, sdk, commands, environment, oracle_env, projects,
+                                   owner, daemon_trace, daemon_argv, prefixes, report):
+    project = projects["consumer"]
+    source = project["root"] / "src/main.rs"
+    target = project["root"] / "extern-use-target"
+    build = project["root"] / "extern-use-build"
+    application = target / "debug/consumer"
+    env = dict(environment, CARGO_TARGET_DIR=str(target), CARGO_BUILD_BUILD_DIR=str(build))
+    argv = [package / "bin/cargo", "run", "--bin", "consumer", "--offline", "--message-format=json"]
+    result = {"passed": False, "history": []}
+    report["cargo_executable_extern_uses"] = result
+    for label, declaration, unused in [
+        ("direct-import", b"use provider::mask;", []),
+        ("remove-import", b"", ["provider"]),
+        ("glob-import", b"use provider::*;", []),
+        ("absolute-import", b"use ::provider::mask;", []),
+        ("extern-item", b"extern crate provider as retained_provider;", []),
+        ("local-shadow", b"mod provider { pub fn mask(x: u64) -> u64 { x } } use provider::mask;", ["provider"]),
+    ]:
+        source.write_bytes(declaration + b'\nuse consumer::call;\nfn main() { println!("{}", call(255)); }\n')
+        before = set((root / "observations").glob("*/report.json"))
+        stdout, _, trace = commands.run("extern-use-" + label, argv, project["root"], env, traced=True)
+        writes = [json.loads(path.read_bytes()) for path in set((root / "observations").glob("*/report.json")) - before]
+        observed = inspect_processes(trace_events(trace.read_bytes(), project["root"], application=application),
+            package, argv[0], argv, projects, application=application)
+        require(len(observed["compiles"]) == (3 if label == "direct-import" else 1)
+                and len(observed["runs"]) == 1 and stdout.splitlines()[-1] == b"63",
+                "module import fixture changed its normal Cargo graph or runtime value")
+        reports = [record for record in writes if record["schema"] == "lustr-public-executable-v1"]
+        require(len(reports) == 1 and reports[0]["owner_pid"] == owner[0]
+                and reports[0]["unused_extern_names"] == unused, "resolved module import did not update the extern-use lint")
+        prefix = daemon_trace.read_bytes()
+        frozen_prefix(prefixes[-1]["bytes"], prefix)
+        owned = inspect_processes(trace_events(prefix, root), package, Path(daemon_argv[0]), daemon_argv, projects, daemon=True)
+        library_reports = sorted((record for record in writes if record["schema"] == "lustr-public-scalar-library-v1"),
+                                 key=lambda record: record["request_index"])
+        wanted = [{"argv": item["argv"], "cwd": item["cwd"]} for record in library_reports for item in record["commands"]]
+        reconcile_artifact_calls([item for item in owned["artifacts"][prefixes[-1]["artifact_count"]:]
+                                  if Path(item["filename"]).name != "tcc"], wanted)
+        prefixes.append({"name": "extern-use-" + label, "bytes": prefix, "artifact_count": len(owned["artifacts"])})
+        oracle_out = root / "cases" / ("extern-use-oracle-" + label)
+        oracle_out.mkdir()
+        actual = observed["compiles"][-1]["argv"]
+        args = list(actual[1:])
+        args[args.index("--emit=dep-info,link")] = "--emit=dep-info,metadata"
+        args[args.index("--out-dir") + 1] = str(oracle_out)
+        _, stderr, _ = commands.run("extern-use-" + label + "-original", [sdk / "bin/rustc", *args], project["root"], oracle_env)
+        unused_records = [row["unused_extern_names"] for row in map(json.loads, stderr.splitlines())
+                          if row.get("$message_type") == "unused_extern"]
+        require(unused_records == [unused], "native extern uses differ from the pinned Rust resolver")
+        result["history"].append({"case": label, "unused_extern_names": unused})
+    result["passed"] = True
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--package", type=Path, required=True)
@@ -2127,6 +2181,8 @@ def main():
                                  daemon_trace, daemon_argv, prefixes, report)
         qualify_expansion_inputs(root, package, sdk, commands, environment, oracle_env, projects, owner,
                                  daemon_trace, daemon_argv, prefixes, report, check=True)
+        qualify_executable_extern_uses(root, package, sdk, commands, environment, oracle_env, projects, owner,
+                                      daemon_trace, daemon_argv, prefixes, report)
         seal_reports()
         save()
         # A direct archive passed where Cargo normally passes full metadata is refused.

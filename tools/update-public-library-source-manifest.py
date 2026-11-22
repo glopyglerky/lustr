@@ -8,7 +8,7 @@ FILES=[
  "compiler/native/Cargo.toml","compiler/native/Cargo.lock","compiler/native/build.rs",
  "compiler/native/src/main.rs","compiler/native/src/protocol.rs","compiler/native/src/daemon.rs","compiler/native/src/diag.rs",
  "compiler/native/src/driver/mod.rs","compiler/native/src/driver/compile.rs","compiler/native/src/driver/session.rs",
- "compiler/native/src/driver/imports.rs","compiler/native/src/resolve/worklist.rs",
+ "compiler/native/src/driver/imports.rs","compiler/native/src/resolve/worklist.rs","compiler/native/src/resolve/imports.rs",
  "crates/lustr-native-core/Cargo.toml","crates/lustr-native-core/Cargo.lock",
  "crates/lustr-native-core/src/library_history.rs","crates/lustr-native-core/src/native_library.rs","crates/lustr-native-core/src/native_completion.rs",
  "crates/lustr-native-core/src/library_artifact.rs","crates/lustr-native-core/src/metadata_archive.rs",

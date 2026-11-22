@@ -99,6 +99,12 @@ The two library dependencies still carry genuine encoded crate metadata.
 The binary check does no object generation, archive construction or program
 execution.
 
+For executable crate dependency lints, Lustr counts resolved module imports
+and extern items as well as the function signature reads of checked and
+retained bodies. A Rust crate can be used by an import even when the imported
+name is unused. A local module that shadows a crate name does not use the
+external crate.
+
 The retained executable also tracks out-of-line modules using the file
 inventory and source snapshots from the native resolver. Cargo observes the
 actual module paths in dep-info. Editing a module with an unchanged root

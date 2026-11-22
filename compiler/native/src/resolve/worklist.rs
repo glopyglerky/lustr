@@ -5353,6 +5353,9 @@ fn register_items(
                 } else {
                     tables.extern_by_name(module, interner.get(e.name)).map(|i| tables.extern_target(i))
                 };
+                if let Some(target) = target {
+                    tables.record_executable_import(target);
+                }
                 if e.name == interner.intern("self") && e.rename.is_none() {
                     diags.push(Diag::new(
                         "L0001",

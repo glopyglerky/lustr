@@ -22,7 +22,7 @@ use crate::diag::{Diag, Span};
 use crate::driver::graph::{BindingRes, Namespace};
 use crate::intern::{FxMap, Interner, Sym};
 use crate::ty::defs::ModuleId;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// `ResolvedTables::glob_src`, keyed by (module, namespace, name): one map
 /// per module, so the writes of a glob copy stay in its importer's map. One
@@ -265,6 +265,8 @@ pub struct ResolvedTables {
     /// part of any answer.
     pub ambiguous_keys: FxMap<(ModuleId, u8, Sym), ()>,
     pub externs: Vec<ExternInfo>,
+    /// Resolved extern reads of module-level imports for public Cargo executables.
+    pub(crate) executable_import_uses: Option<BTreeSet<crate::def::CrateId>>,
     /// Adt def -> associated fn name -> (vis, defining module).
     pub assoc_vis: FxMap<DefId, FxMap<Sym, (VisKind, ModuleId)>>,
     /// Adt def -> (field name -> vis) plus the defining module, for the
@@ -495,6 +497,7 @@ impl ResolvedTables {
             glob_log: Vec::new(),
             ambiguous_keys: FxMap::default(),
             externs: Vec::new(),
+            executable_import_uses: None,
             assoc_vis: FxMap::default(),
             field_vis: FxMap::default(),
             tuple_field_vis: FxMap::default(),
@@ -1993,6 +1996,18 @@ impl ResolvedTables {
         }
     }
 
+    pub(crate) fn record_executable_import(&mut self, target: Target) {
+        if self.executable_import_uses.is_none() {
+            return;
+        }
+        let krate = match target {
+            Target::Def(def) | Target::Variant(def, _) => def.krate,
+            Target::Module(module) => self.module_def(module).krate,
+            Target::Extern(index) => self.externs[index as usize].def.krate,
+        };
+        self.executable_import_uses.as_mut().unwrap().insert(krate);
+    }
+
     /// Looks up one first segment and checks visibility from `from`.
     /// Checks `from` itself, then the extern prelude, then the std
     /// prelude. Both modes read only `from`: as in rustc, items of a
@@ -2529,14 +2544,18 @@ pub fn run_imports(tables: &mut ResolvedTables, imports: &[Import], interner: &I
     {
         let mut seen: FxMap<(crate::diag::Span, Sym), ()> = FxMap::default();
         for imp in imports {
-            if imp.leading_colon {
-                continue;
-            }
             let path = match &imp.kind {
                 ImportKind::Single { path, .. } | ImportKind::CheckPath { path } | ImportKind::Glob { path } => path,
                 ImportKind::BadLeading { .. } => continue,
             };
             let Some(&first) = path.first() else { continue };
+            if imp.leading_colon {
+                if tables.executable_import_uses.is_some()
+                    && let Some(index) = tables.extern_in_scope(imp.module, interner.get(first)) {
+                    tables.record_executable_import(Target::Extern(index));
+                }
+                continue;
+            }
             if matches!(interner.get(first), "crate" | "self" | "super" | "Self") || tables.crate_magic.contains_key(&first) {
                 continue;
             }
@@ -2552,6 +2571,13 @@ pub fn run_imports(tables: &mut ResolvedTables, imports: &[Import], interner: &I
                 // the import binds or stays unresolved.
                 if info.glob && matches!(info.bind, SegBind::Ambiguous) && seen.insert((imp.span, first), ()).is_none() {
                     diags.push(ambiguous_diag(interner.get(first), imp.span));
+                }
+                if tables.executable_import_uses.is_some() {
+                    match info.bind {
+                        SegBind::Extern(index) => tables.record_executable_import(Target::Extern(index)),
+                        SegBind::Target(target) => tables.record_executable_import(target),
+                        _ => {}
+                    }
                 }
             }
         }
