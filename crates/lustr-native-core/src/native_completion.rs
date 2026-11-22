@@ -103,6 +103,7 @@ pub(crate) enum ExpressionResolution {
     None,
     Parameter(usize),
     Function(def::DiskDefId),
+    ImportedFunction(def::DiskDefId),
     PrimitiveOperands,
     Other,
 }
@@ -159,7 +160,7 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool) -> Result<Vec<Functi
         || !p.body_type_items.is_empty()
         || !p.std_fns.is_empty()
         || !p.shipped_ranges.is_empty()
-        || !p.imported_crates.is_empty()
+        || generated && !p.imported_crates.is_empty()
     {
         return Err(Error::Unintegrated("non-function definitions, nested syntax or additional lint obligations"));
     }
@@ -280,9 +281,11 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool) -> Result<Vec<Functi
     // local resolved call edges can name private functions without crossing a
     // visibility boundary. There are no nominal types to leak in a public API.
     let by_identity: BTreeMap<_, _> = functions.iter().enumerate().map(|(index, function)| (function.definition, index)).collect();
+    let imported = |id: &def::DiskDefId| p.imported_crates.values().any(|stable| *stable == id.krate);
     let mut incoming = vec![0usize; functions.len()];
     for function in &functions {
         for call in &function.calls {
+            if imported(call) { continue; }
             let target = *by_identity.get(call).ok_or(Error::Unintegrated("external call metadata or emitted dependency"))?;
             incoming[target] += 1;
         }
@@ -292,6 +295,7 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool) -> Result<Vec<Functi
     while let Some(index) = ready.pop() {
         acyclic += 1;
         for call in &functions[index].calls {
+            if imported(call) { continue; }
             let target = by_identity[call];
             incoming[target] -= 1;
             if incoming[target] == 0 {
@@ -307,7 +311,7 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool) -> Result<Vec<Functi
         functions.iter().enumerate().filter_map(|(i, function)| (function.visibility == Visibility::Public).then_some(i)).collect();
     while let Some(index) = pending.pop() {
         if reachable.insert(index) {
-            pending.extend(functions[index].calls.iter().map(|call| by_identity[call]));
+            pending.extend(functions[index].calls.iter().filter_map(|call| by_identity.get(call).copied()));
         }
     }
     if reachable.len() != functions.len() || functions.is_empty() {
@@ -358,8 +362,12 @@ fn expression(
             if !matches!(p.ast.exprs.get(callee.0 as usize), Some(ast::Expr::Path(path)) if path.len() == 1 && !path[0].has_args()) {
                 return Err(Error::Unintegrated("indirect, generic or qualified call metadata"));
             }
-            let Some(Resolution::Function(function)) = body.expression(*callee) else {
-                return Err(Error::Unintegrated("call lacks an actual local native function resolution"));
+            let function = match (body.expression(*callee), actual) {
+                (Some(Resolution::Function(function)), _) => function,
+                // The native checker's direct imported call records the
+                // binding on the call node, with the original callee path.
+                (_, Resolution::ImportedFunction(function)) => function,
+                _ => return Err(Error::Unintegrated("call lacks an actual native function resolution")),
             };
             calls.insert(function);
             for argument in args {

@@ -32,6 +32,8 @@ pub trait Emission: Send {
 /// The provider must finish semantic/ABI admission before publishing a def.
 /// A provider error is a compiler failure, never a complementary fallback.
 pub trait Definitions {
+    /// Name decoded from an artifact supplied for an actual Cargo unit.
+    fn cargo_crate_name(&self) -> Option<&str> { None }
     fn mount(&self, tables: &mut ResolvedTables, interner: &Interner) -> Result<(), Diag>;
     fn install(&self, program: &mut Program) -> Result<(), Vec<Diag>>;
     /// Validate the installed semantic facts without executing an emitter.

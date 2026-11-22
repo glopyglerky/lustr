@@ -1821,8 +1821,9 @@ pub fn resolve_crate_with_root_parser(
 pub(crate) fn resolve_native_library(
     input: &CrateInput, interner: &Interner, known: &Known, cache: &mut ResolveCache,
     parse: &RootParser<'_>,
+    imports: Option<&mut dyn FnMut(&mut ResolvedTables) -> Result<(), Diag>>,
 ) -> Result<ResolvedCrate, ResolveError> {
-    resolve_crate_seeded(input, interner, known, cache, false, None, Some(parse))
+    resolve_crate_seeded(input, interner, known, cache, false, imports, Some(parse))
 }
 
 fn resolve_crate_seeded(

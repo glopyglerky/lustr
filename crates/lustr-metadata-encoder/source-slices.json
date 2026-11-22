@@ -553,6 +553,67 @@
       "adaptation": "Specialize the original effective default to the admitted unstable-only channel: absent and explicit true embed full metadata, false uses the matching stub. Preserve tracked request distinctions outside native semantic state.",
       "semantic_owner": "required metadata artifact and hash identity",
       "necessity": "Represent the actual pinned Cargo split-metadata request without changing native body ownership or invoking another compiler."
+    },
+    {
+      "source": "compiler/rustc_metadata/src/rmeta/decoder.rs",
+      "source_sha256": "40d024ce058a7e363e192ac11f783c9d91e182ce0d7e3147e1e926f2073db0e2",
+      "destination": "src/extern_metadata.rs",
+      "sections": [
+        "MetadataBlob root and unhashed root",
+        "LazyDecoder",
+        "decode_symbol_or_byte_symbol",
+        "get_module_children"
+      ],
+      "adaptation": "Read the original root, ordered lazy offsets, symbol forms and module children within validated slice bounds.",
+      "semantic_owner": "Pinned scalar metadata reader",
+      "necessity": "Required to resolve actual Cargo check dependencies in the existing native checker without a source replay or compiler subprocess."
+    },
+    {
+      "source": "compiler/rustc_metadata/src/rmeta/table.rs",
+      "source_sha256": "5573eb11e1141d3c5c6cb54ed1e8908b2e6d4d5ed871d525691ba09b50951039",
+      "destination": "src/extern_metadata.rs",
+      "sections": [
+        "LazyTable::get",
+        "FixedSizeEncoding for LazyArray"
+      ],
+      "adaptation": "Read original dense and sparse fixed entries with bounds checks and interleaved lazy array fields.",
+      "semantic_owner": "Pinned scalar metadata reader",
+      "necessity": "Required to resolve actual Cargo check dependencies in the existing native checker without a source replay or compiler subprocess."
+    },
+    {
+      "source": "compiler/rustc_middle/src/ty/codec.rs",
+      "source_sha256": "710365af0e2b74fef24e4daaca45fab6899251f785598e085a8d61c76a20ce3c",
+      "destination": "src/extern_metadata.rs",
+      "sections": [
+        "TYPE_SHORTHAND_OFFSET",
+        "TyKind decoder"
+      ],
+      "adaptation": "Recognize a direct pinned u64 tag and the original backwards shorthand for that same scalar type.",
+      "semantic_owner": "Pinned scalar metadata reader",
+      "necessity": "Required to resolve actual Cargo check dependencies in the existing native checker without a source replay or compiler subprocess."
+    },
+    {
+      "source": "compiler/rustc_middle/src/middle/resolve.rs",
+      "source_sha256": "8a2df16bb3b5dcc113f4534ff5582595bc8dd50a741d6e59ddb0555378f1760f",
+      "destination": "src/extern_metadata.rs",
+      "sections": [
+        "ModChild",
+        "Reexport"
+      ],
+      "adaptation": "Decode the single restricted implicit core binding when present. Other unrepresented reexports are refused.",
+      "semantic_owner": "Pinned scalar metadata reader",
+      "necessity": "Required to resolve actual Cargo check dependencies in the existing native checker without a source replay or compiler subprocess."
+    },
+    {
+      "source": "compiler/rustc_span/src/symbol.rs",
+      "source_sha256": "d570a196be56ba01b1ac141fc5a9ab581b044ae6960dafff9ffb394a47ba640f",
+      "destination": "src/extern_metadata.rs",
+      "sections": [
+        "predefined core and compiler_builtins symbols"
+      ],
+      "adaptation": "Recognize the exact pinned symbol indices used by the admitted original SDK dependency array.",
+      "semantic_owner": "Pinned scalar metadata reader",
+      "necessity": "Required to resolve actual Cargo check dependencies in the existing native checker without a source replay or compiler subprocess."
     }
   ],
   "dependencies": [
@@ -823,9 +884,10 @@
   },
   "adapted_sources_sha256": {
     "src/encode.rs": "b3040a4900b1f448ee94555fe3d5a520ec0304acbdca459ef0929d5a58620b24",
+    "src/extern_metadata.rs": "94635950929698679d69cc7d499dc5103ef38647f772c080a197af23b29dd0b0",
     "src/identity.rs": "995799a9938d78fd5c800a1d28af4039f4e5868cea71536d0f70b2fc3643724d",
-    "src/lib.rs": "136a53710a690b23d49020b3dcce8260eeea213d7bdf6c73adbddeff832cab77",
-    "src/sdk.rs": "a088d99b04d3046c52830699b15c960e849d84d1a101c52df68b1aaeb64898b6",
+    "src/lib.rs": "ad677845b5e5cae95814d5d4cc15776d44971477becf584975ea46cdc2cd9091",
+    "src/sdk.rs": "b5933699937a32ad32c15fdd0e00dfccd937b45e427a3c918693977cd14b8d67",
     "src/table.rs": "5ad2fa46decc550bfd5f7d23cc051c7087d4ef1f5b361b154630c122097c92bb",
     "src/upstream/codec.rs": "916922c930d3dc46c7003d65d920b6c84efa780ac5b0c06eec1586ead0216a7a",
     "src/upstream/int_overflow.rs": "bf1667be8b077b770ecc1850c3bc141dc685f4b3f2470009dc2e062ef08ca0ae",

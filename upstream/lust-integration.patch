@@ -5093,7 +5093,7 @@ index 136b1f4aa7efc99f8e5bd2b23446fad2578f1851..5a9cfb3f385dc3bbd827935e7afddde2
              // No daemon answered: start one for the next command, answer this one cold.
              maybe_autostart(&sock, &req.file, &core);
 diff --git a/src/daemon.rs b/src/daemon.rs
-index db807083aa56d24a804b47f7ffd31e33c563ad52..dee104fdf88bc851e5eeead8202368e9fb6f4a3c 100644
+index db807083aa56d24a804b47f7ffd31e33c563ad52..4126852c775e7028096e3a84f3ec3b060f31cace 100644
 --- a/src/daemon.rs
 +++ b/src/daemon.rs
 @@ -23,6 +23,10 @@
@@ -5256,7 +5256,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..dee104fdf88bc851e5eeead8202368e9
      let dir = entry.fresh_dir();
      let old = std::mem::replace(&mut entry.session, Session::new(dir, true, key.clone()));
      let _ = std::fs::remove_dir_all(old.obj_dir());
-@@ -864,13 +908,44 @@ fn compile_fresh(entry: &mut Entry, req: &Request) -> (Response, bool) {
+@@ -864,13 +908,48 @@ fn compile_fresh(entry: &mut Entry, req: &Request) -> (Response, bool) {
      }
  }
  
@@ -5271,6 +5271,10 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..dee104fdf88bc851e5eeead8202368e9
 +    if req.session.library.is_some() {
 +        entry.served+=1;
 +        if entry.recompute_next {entry.recompute_next=false;replace_session(entry,&req.session);}
++        if req.session.library.as_ref().is_some_and(|key| key.external.is_some())
++            && entry.library.as_ref().is_some_and(|owner| owner.as_ref().ok().is_none_or(|owner| !owner.import_is_current(req))) {
++            replace_session(entry, &req.session);
++        }
 +        let result=std::panic::catch_unwind(std::panic::AssertUnwindSafe(||{
 +            if entry.library.is_none(){entry.library=Some(crate::public_library::Owner::new(req));}
 +            match entry.library.as_mut().unwrap() {
@@ -5305,7 +5309,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..dee104fdf88bc851e5eeead8202368e9
      if entry.recompute_next {
          entry.recompute_next = false;
          eprintln!("guard-check: recomputing {} in a fresh session (marked by a background mismatch)", req.file.display());
-@@ -879,7 +954,7 @@ fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Re
+@@ -879,7 +958,7 @@ fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Re
          return compile_fresh(entry, req).0;
      }
      let start = std::time::SystemTime::now();
@@ -5314,7 +5318,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..dee104fdf88bc851e5eeead8202368e9
          Ok(r) if r.code == 0 || r.code == 2 => r,
          Ok(r) if r.code == 3 && r.stderr.contains("function count mismatch") => {
              // The warm session's scan and Ast disagree on the fn list
-@@ -918,6 +993,28 @@ fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Re
+@@ -918,6 +997,28 @@ fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Re
      }
  }
  
@@ -5343,7 +5347,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..dee104fdf88bc851e5eeead8202368e9
  /// How many warm sessions the daemon keeps (`LUST_DAEMON_SESSIONS`,
  /// default 32, at least 1). Each distinct file or crate selection is one
  /// session, so a long run over many small programs (a probe sweep) made
-@@ -985,6 +1082,19 @@ fn log_stats(served: u64, sessions: usize) {
+@@ -985,6 +1086,19 @@ fn log_stats(served: u64, sessions: usize) {
  
  /// Serves requests until idle. Each crate selection (`SessionKey`) has its own session.
  pub fn serve(sock: &Path) -> ! {
@@ -5363,7 +5367,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..dee104fdf88bc851e5eeead8202368e9
      // Sessions load std once; a std or adapter source override must be
      // read fresh by every compile (see `protocol::source_override`).
      if let Some(var) = protocol::source_override() {
-@@ -1095,6 +1205,7 @@ pub fn serve(sock: &Path) -> ! {
+@@ -1095,6 +1209,7 @@ pub fn serve(sock: &Path) -> ! {
              max_errors: 20,
              run_args: None,
              harness: false, cc: false,
@@ -5371,7 +5375,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..dee104fdf88bc851e5eeead8202368e9
              client: protocol::Client::default(),
              file: file.clone(),
          };
-@@ -1190,8 +1301,142 @@ pub fn serve(sock: &Path) -> ! {
+@@ -1190,8 +1305,142 @@ pub fn serve(sock: &Path) -> ! {
  mod tests {
      use super::*;
  
@@ -5515,7 +5519,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..dee104fdf88bc851e5eeead8202368e9
      }
  
      fn done(key: &SessionKey, seq: u64, served: u64, warm: Response, fresh: Response, dir: PathBuf) -> GuardDone {
-@@ -1255,6 +1500,7 @@ mod tests {
+@@ -1255,6 +1504,7 @@ mod tests {
              max_errors: 20,
              run_args: None,
              harness: false, cc: false,
@@ -5523,7 +5527,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..dee104fdf88bc851e5eeead8202368e9
              client: protocol::Client::default(),
              file: file.to_path_buf(),
          }
-@@ -1610,6 +1856,12 @@ mod tests {
+@@ -1610,6 +1860,12 @@ mod tests {
      fn client_gone_sees_a_closed_peer_only() {
          let (ours, theirs) = std::os::unix::net::UnixStream::pair().unwrap();
          assert!(!client_gone(ours.as_raw_fd()));
@@ -7376,7 +7380,7 @@ index da28835400f894866adb85f436e2cbdf109797d7..7bf7b80e9fef80d6bff312bdc572dbf4
          assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
          assert!(decode_response(b"short").is_none());
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2e6239342 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..ab1604452771c017c646f23f26dab63022e6a2c1 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
 @@ -59,6 +59,7 @@ fn expand_tokens(
@@ -7601,7 +7605,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
  ) -> Result<(SourceMap, Vec<usize>, Vec<usize>, bool, usize, &'static str, Vec<u32>, Vec<u64>, Option<std::sync::Arc<crate::resolve::imports::ResolvedTables>>), Response> {
      use crate::resolve::cargo::{self, GraphRequest};
      use crate::resolve::cfg::CfgEnv;
-@@ -2081,8 +2176,28 @@ fn resolved_setup(
+@@ -2081,8 +2176,41 @@ fn resolved_setup(
          front.display_root = Some(graph.workspace_root.clone());
          let pre_env = CfgEnv::new(&key.target_triple, &key.features, key.krate.test, key.profile);
          let unit =
@@ -7614,14 +7618,27 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
 +            return Err(code2("Lustr integration is incomplete for the requested Rust library artifact; no stock compiler was invoked".into()));
 +        }
 +        if let Some(library) = &key.library {
++            let matched_dependencies = match (&library.external, unit.deps.as_slice()) {
++                (None, []) => imports.is_none(),
++                (Some(request), [dep]) => imports.and_then(|i| i.cargo_crate_name()).is_some_and(|name| {
++                    #[cfg(feature = "exclusive-native")]
++                    if dep.build_script.is_some() { return false; }
++                    dep.extern_name == request.alias && dep.lib_name.replace('-', "_") == name
++                        && dep.edition == "2024"
++                        && dep.features.is_empty() && dep.deps.is_empty()
++                }),
++                _ => false,
++            };
 +            if !unit.target.kind.iter().any(|kind| matches!(kind.as_str(),"lib"|"rlib"))
-+                || unit.target.name != library.crate_name || !unit.deps.is_empty()
++                || unit.target.name != library.crate_name || !matched_dependencies
 +                // Cargo metadata names the actual script target in every
 +                // build mode; UnitInfo's planned script is product-only.
 +                || unit.package.targets.iter().any(|target|target.kind.iter().any(|kind|kind=="custom-build"))
 +                || !unit.features.is_empty() || key.krate.test {
-+                return Err(code2("public scalar-library integration requires the actual dependency-free, script-free library unit".into()));
++                return Err(code2("public scalar-library integration requires the matching Cargo dependency and script-free unit".into()));
 +            }
++        } else if imports.is_some() {
++            return Err(code2("Cargo artifact import requires a public library context".into()));
 +        }
 +        let selected_source = std::fs::canonicalize(&unit.target.src_path).map_err(|e| code2(format!("cannot bind selected Cargo source: {e}")))?;
 +        let requested_source = std::fs::canonicalize(&req.file).map_err(|e| code2(format!("cannot bind requested Cargo source: {e}")))?;
@@ -7631,7 +7648,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
          let root_text = std::fs::read_to_string(&unit.target.src_path)
              .map_err(|e| code2(format!("cannot read {}: {e}", unit.target.src_path.display())))?;
          // Edition and lint gates for the selected unit (section 1.1),
-@@ -2095,21 +2210,29 @@ fn resolved_setup(
+@@ -2095,21 +2223,29 @@ fn resolved_setup(
              }
          }
          let mut env = CfgEnv::new(&key.target_triple, &unit.features, key.krate.test, key.profile);
@@ -7667,11 +7684,13 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
              for c in &out.rustc_cfg {
                  env.add_rustc_cfg(c);
              }
-@@ -2118,9 +2241,12 @@ fn resolved_setup(
+@@ -2117,10 +2253,13 @@ fn resolved_setup(
+                 env.add_check_cfg(c);
              }
          }
-         let mut deps = unit.deps.clone();
+-        let mut deps = unit.deps.clone();
 -        let mut memo: FxMap<PathBuf, Option<super::buildscript::Outputs>> = FxMap::default();
++        let mut deps = if key.library.is_some() { Vec::new() } else { unit.deps.clone() };
 +        let mut memo: FxMap<BuildOutputKey, Option<super::buildscript::Outputs>> = FxMap::default();
 +        #[cfg(not(feature = "exclusive-native"))]
          memo.insert(manifest_dir, selected_out);
@@ -7682,7 +7701,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
          t.lap("build script outputs");
          // Cargo runs rustc from the workspace root, so `file!` shows member paths relative to it.
          front.client.shown_root = Some((graph.workspace_root.clone(), PathBuf::new()));
-@@ -2131,8 +2257,9 @@ fn resolved_setup(
+@@ -2131,8 +2270,9 @@ fn resolved_setup(
          (unit.target.src_path.clone(), root_text, ids, env, deps, unit.package.name.replace('-', "_"), cargo_env)
      } else {
          front.display_root = None;
@@ -7694,7 +7713,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
          (key.krate.root.clone(), user_src.to_string(), crate_ids_default, env, Vec::new(), stem, Vec::new())
      };
      // Body patch (driver/patch.rs): when every edit since the last full
-@@ -2153,8 +2280,22 @@ fn resolved_setup(
+@@ -2153,8 +2293,22 @@ fn resolved_setup(
      // PatchBase below asks `macro_scope::dep_macros_shut`).
      let patch_expand = (env.clone(), crate_name.clone());
      let has_deps = !externs.is_empty();
@@ -7719,7 +7738,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
      if super::resolve_oracle::on()
          && let Ok(p) = &patched
      {
-@@ -2165,22 +2306,8 @@ fn resolved_setup(
+@@ -2165,22 +2319,8 @@ fn resolved_setup(
      match patched {
          // Nothing changed since the last check of this same request:
          // its answer stands (`check_fingerprint`).
@@ -7744,13 +7763,15 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
          }
          // An item patch (sigedit P1.3): the new item scans take the
          // resolve path's slot update, in signatures mode with the edited
-@@ -2321,7 +2448,14 @@ fn resolved_setup(
+@@ -2321,7 +2461,16 @@ fn resolved_setup(
          // The cache's final chunks are parts of the session's merged Ast: the resolve takes
          // its hits out of it, and lets go of it before any patch writes it.
          front.resolve_cache.set_merged(front.ast.clone(), front.ast_gen);
 -        let out = worklist::resolve_crate_with(&input, &front.interner, &front.known, &mut front.resolve_cache, plan.platform);
 +        let out = if caches.library.is_some() {
-+            worklist::resolve_native_library(&input, &front.interner, &front.known, &mut front.resolve_cache, &super::library::parse_root)
++            let mut mount = |tables: &mut crate::resolve::imports::ResolvedTables| imports.unwrap().mount(tables, &front.interner);
++            worklist::resolve_native_library(&input, &front.interner, &front.known, &mut front.resolve_cache,
++                &super::library::parse_root, imports.map(|_| &mut mount as _))
 +        } else if let Some(imports) = imports {
 +            let mut mount = |tables: &mut crate::resolve::imports::ResolvedTables| imports.mount(tables, &front.interner);
 +            worklist::resolve_crate_with_imports(&input, &front.interner, &front.known, plan.platform, &mut mount)
@@ -7760,7 +7781,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
          front.resolve_cache.clear_merged();
          if super::item_oracle::on() || super::resolve_oracle::on() {
              oracle_input = Some(super::item_oracle::ColdInput { input: input.clone(), platform: plan.platform });
-@@ -2379,6 +2513,7 @@ fn resolved_setup(
+@@ -2379,6 +2528,7 @@ fn resolved_setup(
      let old_kept = std::mem::take(&mut front.kept);
      let old_ast = std::mem::replace(&mut front.ast, Arc::new(ast));
      front.ast_gen = generation;
@@ -7768,7 +7789,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
      front.fresh_exprs = front.ast.exprs.len();
      if (old_ast.exprs.len() > 20_000 || old_kept.iter().any(Option::is_some)) && caches.persistent {
          // Nested token trees in the Ast drop recursively; use the
-@@ -2552,10 +2687,230 @@ fn location_path(p: &str, library: &Path, display_root: Option<&Path>, client: &
+@@ -2552,10 +2702,239 @@ fn location_path(p: &str, library: &Path, display_root: Option<&Path>, client: &
  }
  
  pub fn compile(req: &Request, session: &mut Session) -> Response {
@@ -7982,6 +8003,15 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
 +    })
 +}
 +
++#[cfg(feature = "exclusive-native")]
++pub(crate) fn prepare_library_import<'a>(req: &'a Request, session: &'a mut Session, definitions: &dyn super::imports::Definitions) -> Preparation<'a> {
++    // The public owner resets this retained session if the exact input artifact
++    // changes. The general disk cache does not encode this input generation.
++    session.cache_tried = true;
++    session.disk_cache = None;
++    prepare_with_definitions(req, session, None, Some(definitions))
++}
++
 +fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, observer: Option<&dyn super::PhaseObserver>, imports: Option<&dyn super::imports::Definitions>) -> Preparation<'a> {
 +    // A public library key belongs only to the product owner. Refuse it before
 +    // entering research graph selection, which retains its original probe.
@@ -8000,7 +8030,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
              stderr: format!(
                  "error: internal: request routed to the wrong session\n  request: {}\n  session: {}\n",
                  req.session.describe(),
-@@ -2563,16 +2918,22 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2563,16 +2942,22 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              ),
              code: 3,
              ..Default::default()
@@ -8027,7 +8057,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
      }
      // Lust links for the host target only (tcc). A named non-host triple
      // is a clear error for a link, not a host binary under a foreign
-@@ -2591,23 +2952,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2591,23 +2976,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // product; no link runs).
      let cc_build = req.cc && (triple.is_empty() || crate::resolve::cfg::CfgEnv::is_release_target(triple));
      if foreign && !foreign_check && !cc_build && req.emit_c.is_none() {
@@ -8055,7 +8085,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
      let crate_ids = session.crate_ids();
      // Open the disk cache once per session and seed slot assignment from
      // the stored manifest, so a restarted daemon gives every fn the slot
-@@ -2670,7 +3032,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2670,7 +3056,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      } else {
          crate::resolve::worklist::route_root_std(&src, &front.interner, true)
      };
@@ -8064,7 +8094,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
      let route_std_mods = req.session.krate.manifest_path.is_none().then_some(std_mods);
      if front.resolved_crate && !wants_resolver {
          front.ast = Arc::default();
-@@ -2719,16 +3081,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2719,16 +3105,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      if needs.any() {
          match splice_std(&mut src, std_cache, needs) {
              Ok(sp) => (std_ranges, std_routes, std_methods) = (sp.ranges, sp.routes, sp.methods),
@@ -8086,7 +8116,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
          }
      } else {
      // Lex and scan in chunks of whole items, in parallel. Only the region an edit touched is
-@@ -2873,7 +3237,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2873,7 +3261,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // A macro error in a chunk is the answer, not a lexing fallback.
      if let Some(Err(d)) = fresh.iter().find(|l| matches!(l, Err(d) if d.code.starts_with("L08"))) {
          let mut d = d.clone();
@@ -8095,7 +8125,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
      }
      let split_inner_attr = ranges.len() > 1
          && (reused.iter().flatten().any(|c| c.inner_attr) || fresh.iter().flatten().any(|&(_, _, _, inner_attr)| inner_attr));
-@@ -2889,7 +3253,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2889,7 +3277,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          // file has an inner attribute (`has_inner_attr`): lex the whole file. Its error is the
          // answer; if it lexes, compile as one chunk. Never panic.
          match lexer::lex(&src, ROOT_FILE, 0, &front.interner).and_then(|l| expand_tokens(front, l, &req.file, &src, test_mode, req.session.profile, &req.session)) {
@@ -8104,7 +8134,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
              Ok((whole, deps)) => {
                  let mut sc = scan::scan(&whole);
                  fold_fn_text(&mut sc, &whole, &src);
-@@ -3072,7 +3436,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3072,7 +3460,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                      front.chunks[fn_at[i].0].items = None;
                  }
                  front.chunks_blanked = true;
@@ -8113,7 +8143,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
              }
              for (&i, (body_ast, body, exprs, pats)) in changed.iter().zip(parsed) {
                  let before = (front.ast.exprs.len() as u32, front.ast.pats.len() as u32, front.ast.blocks.len() as u32);
-@@ -3145,7 +3509,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3145,7 +3533,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          if let Some(Err(d)) = parsed.iter().find(|p| p.is_err()) {
              let d = d.clone();
              front.chunks_blanked = old_len > 0;
@@ -8122,7 +8152,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
          }
          let mut new_asts: FxMap<usize, Ast> = todo.iter().copied().zip(parsed.into_iter().map(|p| p.unwrap())).collect();
          // Splice every per-chunk list in chunk order: a re-parsed chunk
-@@ -3221,7 +3585,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3221,7 +3609,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              Ok(c) => c,
              Err(e) => {
                  front.env_hash = None;
@@ -8131,7 +8161,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
              }
          }
      } else {
-@@ -3255,14 +3619,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3255,14 +3643,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                      Ok((w, _deps)) => w,
                      Err(mut d) => {
                          front.env_hash = None;
@@ -8148,7 +8178,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
                  }
              }
          };
-@@ -3273,7 +3637,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3273,7 +3661,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              Ok(c) => c,
              Err(e) => {
                  front.env_hash = None;
@@ -8157,7 +8187,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
              }
          }
      };
-@@ -3567,6 +3931,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3567,6 +3955,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // Template check errors from the kept program are collect's errors
      // (`gen_reuse.template_errors` counts them).
      let collect = |front: &mut Front, caches: &mut Caches| {
@@ -8172,7 +8202,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
          collect::collect_reuse(
              front.ast.clone(),
              front.interner.clone(),
-@@ -3666,7 +4038,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3666,7 +4062,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              front.last_visits.clear();
              visits.render(&mut front.last_visits);
              log_visits(&front.last_visits);
@@ -8181,7 +8211,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
          }
      };
      // Every body of a generic program rechecks when the trait system
-@@ -3757,11 +4129,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3757,11 +4153,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
                  None => {
                      front.env_hash = None;
@@ -8195,7 +8225,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
                  }
              }
          }
-@@ -3772,7 +4144,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3772,7 +4168,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      if program.fns.len() < fn_count {
          // The scanner and the parser disagree (only possible with unusual syntax). Start over.
          front.env_hash = None;
@@ -8204,7 +8234,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
      }
      // Mono instance slots (docs/ARCH.md section 4.2; W-TRAITS-CORE
      // through W-DRIVER): collect appends materialized instances
-@@ -3790,7 +4162,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3790,7 +4186,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              let disk = program.disk_id(LocalDefId(i as u32));
              if let Err(c) = def::insert_path(&mut front.slot_paths, disk, &format!("instance#{}", disk.hash.0)) {
                  front.env_hash = None;
@@ -8213,7 +8243,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
              }
              let slot = match front.slot_of.get(&disk) {
                  Some(&slot) => slot,
-@@ -4040,7 +4412,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4040,7 +4436,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  continue;
              }
              let s = slot(i);
@@ -8222,7 +8252,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
                  continue;
              }
              let Some(Some(cached)) = caches.slot_ir.get(s) else {
-@@ -4054,12 +4426,15 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4054,12 +4450,15 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              };
              let moved = cached.slot_at_gen != s as u32
                  || cached.used_at_gen.iter().any(|(disk, at_gen)| front.slot_of.get(disk) != Some(at_gen));
@@ -8241,7 +8271,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
                  super::ir_cache::rebuild(&program, cached, LocalDefId(i as u32))
              } else {
                  None
-@@ -4068,6 +4443,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4068,6 +4467,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  Some(body) if super::ir_cache::ir_fingerprint(&program, &body, &map, scan_of(front, i).1) == cached.ir_fp => {
                      reemit.push((i, body))
                  }
@@ -8252,7 +8282,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
                  _ => reemit_failed.push(i),
              }
          }
-@@ -4081,9 +4460,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4081,9 +4484,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // switches, debug info, unwind tables) makes every slot's C again, as a one-shot build
      // does: its slot cache holds C of the other form (a front image saved by a tcc build,
      // then a release driver build). A check makes no C and keeps the key.
@@ -8267,7 +8297,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
          if caches.codegen_key != key {
              caches.codegen_key = key;
              caches.has_out.iter_mut().for_each(|h| *h = false);
-@@ -4096,7 +4478,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4096,7 +4502,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let mut work = changed.clone();
      work.extend(reemit_failed.iter().copied());
      if req.cmd == Cmd::Build {
@@ -8281,7 +8311,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
      }
      // The instance Adt ids this build generates C under, and whether one
      // names another instance than in the C made since the last full
-@@ -4285,7 +4672,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4285,7 +4696,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // A one-shot check needs no IR after borrowck: dropping each body on
      // its worker lets the allocator reuse the memory for the next body,
      // instead of touching fresh pages for every function.
@@ -8290,7 +8320,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
      // `lust check` skips std platform bodies (`Program::check_skips`).
      // A skipped slot keeps its last marks; one that needed a check lost
      // its C above, so the next build checks it.
-@@ -4296,17 +4683,40 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4296,17 +4707,45 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          super::item_oracle::check(front, caches, Ok(&program), &work, fn_count, hashes, lines, visits.path, crate_ids, build, tables);
          t.lap("item oracle");
      }
@@ -8306,6 +8336,8 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
 +        library.checked_names=work.iter().map(|&i|{let id=LocalDefId(i as u32);(program.disk_id(id),program.interner.get(program.fns[i].name).to_owned())}).collect();
 +    }
 +    let library_facts=library.then(||std::sync::Mutex::new(std::collections::BTreeMap::new()));
++    let imported_library = library && imports.is_some();
++    let extern_used_on_error = std::sync::atomic::AtomicBool::new(false);
      let results = par_map(&work, |&i| {
          let f = LocalDefId(i as u32);
          // Lowering and borrowck read derive lists too (Copy operands,
@@ -8316,6 +8348,9 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
 +                check::derive_delta::unlogged(|| observer.checked(phase, f, &checked, &errs));
 +            }
              if !errs.is_empty() {
++                if imported_library && checked.expr_res.iter().any(|resolution| matches!(resolution, check::Res::NativeFn(_))) {
++                    extern_used_on_error.store(true, std::sync::atomic::Ordering::Relaxed);
++                }
                  return (None, errs);
              }
 +            let mut facts = library.then(|| super::library::capture(&program, f, &checked));
@@ -8331,15 +8366,18 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
              (Some(body), errs)
          });
          let body = body.filter(|_| keep_bodies).map(|mut b| {
-@@ -4315,6 +4725,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4315,6 +4754,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          });
          (body, errs)
      });
++    if let Some(library) = &mut caches.library {
++        library.extern_used_on_error = extern_used_on_error.into_inner();
++    }
 +    let mut library_facts=library_facts.map(|facts|facts.into_inner().unwrap_or_else(|e|e.into_inner()));
      let mut diags: Vec<Diag> = Vec::new();
      for (k, &i) in work.iter().enumerate() {
          caches.ok[slot(i)] = results[k].1.is_empty();
-@@ -4350,6 +4761,13 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4350,6 +4793,13 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              stored.verified[mode_at] = verified;
              caches.slot_reads[slot(i)] = Some(stored);
          }
@@ -8353,7 +8391,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
          diags.extend(results[k].1.iter().cloned());
      }
      // rustc stops before monomorphization once a pre-mono check fails, so an
-@@ -4370,6 +4788,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4370,6 +4820,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          diags.push(Diag::new("L0130", diag::Span::default(), "no `main` function", "Add `fn main() { ... }`."));
      }
      t.lap(if mode == "full" { "check+borrowck (par)" } else { "check changed fns (par)" });
@@ -8361,7 +8399,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
      // A one-shot process (`leak_at_exit`) exits right after this call. Freeing the IR and
      // program arenas, mostly built on worker threads, costs about 10 ms on a 31k-line crate,
      // so leak them on every return below and let the OS reclaim the memory at exit. A
-@@ -4396,10 +4815,105 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4396,10 +4847,105 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
              }
          }
@@ -8388,7 +8426,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
 +        }),
 +    };
 +    let imported_dependencies = imports.map_or_else(Vec::new, |i| i.dependencies());
-+    let imported_emission = match imports.map(|i| i.take_emission()).transpose() {
++    let imported_emission = match imports.filter(|_| req.session.library.is_none()).map(|i| i.take_emission()).transpose() {
 +        Ok(emission) => emission,
 +        Err(error) => return Preparation::Failed(Response {
 +            code: 3, stderr: format!("error: imported emission ownership failed: {error}\n"), ..Default::default()
@@ -8469,7 +8507,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
          // The answer, before the timing and stats lines, for a no-op
          // check of the same request to reuse.
          if let Some(fp) = check_fp {
-@@ -4446,10 +4960,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4446,10 +4992,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          return resp;
      }
  
@@ -8494,7 +8532,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
      // Each fn's base line: cgen stores its line numbers relative to it
      // and the main unit adds each slot's base back, so a reused body's
      // C stays right when its source text moves. An instance's base is
-@@ -4471,7 +4999,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4471,7 +5031,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let line_base_of = |_: &Front, i: usize| -> u32 { line_bases.get(i).copied().unwrap_or(0) };
      // Release C (driver/release_c.rs): content-addressed names, set as cgen's naming
      // context around every step that prints C.
@@ -8503,7 +8541,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
      let rn = rnames.as_ref();
      // A release C build to the release driver streams its cc step (`cc::Stream`): each unit the
      // assembly makes compiles from the time its text exists. Not with --emit-c nor LLVM units.
-@@ -4498,7 +5026,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4498,7 +5058,16 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let (outs, cg_noted): (Vec<_>, Vec<_>) = par_map(&bodies, |(i, b)| {
          check::derive_delta::scoped(program.record_reads, || {
              cgen::in_layout_phase(layout_tag, || {
@@ -8521,7 +8559,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
              })
          })
      })
-@@ -4519,7 +5056,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4519,7 +5088,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // Cached IR serves only the slot-moved re-emit, which runs only in a
      // program with no generics: a generic program caches none (on tsgo it
      // was 1.5 GB of a daemon session, made serially per generated body).
@@ -8530,7 +8568,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
      // The stable id of each fn whose slot the new C prints (`FnOut::used`),
      // by slot: the pairs below are the next renumber's re-emit trigger.
      let mut wanted = vec![false; if keep_ir { front.slot_of.len() } else { 0 }];
-@@ -4552,10 +5089,22 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4552,10 +5121,22 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          caches.out[s] = out;
          caches.has_out[s] = true;
          dirty_slots.push(s);
@@ -8554,7 +8592,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
      // LUST_CHECK_GENREUSE=1 (genreuse_oracle.rs): every concrete body a release C build keeps
      // is checked, lowered and generated again without reuse (nothing stored), and its C must
      // equal the kept C. Release C names are content-addressed; dev C names a vtable by a
-@@ -4681,6 +5230,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4681,6 +5262,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      }
      let glue_changed = shared_changed || regenerated || statics_changed;
      t.lap("codegen (par)");
@@ -8569,7 +8607,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
      // Nothing reads the IR after codegen. A one-shot build leaks it at exit
      // (`leak_at_exit`), but on a large program it is the largest block
      // alive at the peak (ts-rust's bins: about 2.4 GB of 9.4 GB, through
-@@ -4751,7 +5308,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4751,7 +5340,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // rebuilds and the base
      // relinks over the existing unit objects. Unrelated units keep
      // their objects, in the session and in the disk unit cache.
@@ -8579,7 +8617,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
      let cap_grown = n_slots > caches.table_cap;
      if fresh_base || cap_grown {
          caches.table_cap = n_slots * 2 + 64;
-@@ -5807,6 +6365,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5807,6 +6397,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // this check keeps that a pin, not a hope.
      if let Some(run_args) = &req.run_args
          && !caches.persistent
@@ -8587,7 +8625,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
          && fresh_base
          && groups.len() == 1
          && !req.debug
-@@ -5883,9 +6442,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5883,9 +6474,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      caches.objects = Some(req.debug);
      t.lap("tcc compile");
      let all_base: Vec<PathBuf> = [1, 2, 3, LOC_UNIT].into_iter().chain(link_fn_units.iter().copied()).map(base_obj).collect();
@@ -8607,7 +8645,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
          crate::tcc::link(&objs, &req.out, req.debug)
      } else {
          // The base library lives in a persistent dir under a content name
-@@ -5901,18 +6469,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5901,18 +6501,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
          let base = if rebuild_base {
              caches.base_gen += 1;
@@ -8648,7 +8686,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
                      install_base(&tmp, &base_dir.join(&soname))?;
                      if !caches.base_files.contains(&soname) {
                          caches.base_files.push_back(soname);
-@@ -5922,24 +6503,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5922,24 +6535,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              if built.is_err() {
                  let _ = std::fs::remove_file(&tmp);
              }
@@ -8680,7 +8718,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
              built
          } else {
              Ok(())
-@@ -5958,8 +6540,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5958,8 +6572,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // a small grace count while no known output file still references them. A binary the user
      // kept keeps its base; one that was overwritten or deleted does not. A running program
      // keeps its mapped copy after unlink.
@@ -8691,7 +8729,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
          if let Some(base_dir) = caches.base_dir.clone() {
              record_base_user(&base_dir, &soname, &req.out);
          }
-@@ -6058,6 +6640,66 @@ mod tests {
+@@ -6058,6 +6672,66 @@ mod tests {
          panic!("{}: still busy", bin.display())
      }
  
@@ -8758,7 +8796,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..45e4b346c1d557ebe489f6fc918960e2
      /// The base sweep never deletes a live owner's base (it may be a live
      /// session's current base, found by fuzz seed 7 multi when a guard
      /// session's first-build sweep deleted the warm session's base), but
-@@ -6417,10 +7059,547 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
+@@ -6417,10 +7091,547 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
              max_errors: 20,
              run_args: None,
              harness: false, cc: false,
@@ -9373,10 +9411,10 @@ index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..49c2c2b74f0f78f21579eb5971a032b4
                  }
 diff --git a/src/driver/imports.rs b/src/driver/imports.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..bc14f747b9ff323d663d14683993546ebd6a2105
+index 0000000000000000000000000000000000000000..c42a2b61e42bb77ef8c4e80aeb1be205ea749876
 --- /dev/null
 +++ b/src/driver/imports.rs
-@@ -0,0 +1,43 @@
+@@ -0,0 +1,45 @@
 +//! Imported semantic definitions for one owned native request.
 +//!
 +//! The provider installs resolved definitions before collection checks any
@@ -9411,6 +9449,8 @@ index 0000000000000000000000000000000000000000..bc14f747b9ff323d663d14683993546e
 +/// The provider must finish semantic/ABI admission before publishing a def.
 +/// A provider error is a compiler failure, never a complementary fallback.
 +pub trait Definitions {
++    /// Name decoded from an artifact supplied for an actual Cargo unit.
++    fn cargo_crate_name(&self) -> Option<&str> { None }
 +    fn mount(&self, tables: &mut ResolvedTables, interner: &Interner) -> Result<(), Diag>;
 +    fn install(&self, program: &mut Program) -> Result<(), Vec<Diag>>;
 +    /// Validate the installed semantic facts without executing an emitter.
@@ -9585,18 +9625,20 @@ index bab64be43909404e5ceb7b7fc52b70869ed0bf4b..d29476f42ba539f0a9f67484dd5c0641
                          _ => return None,
                      }
 diff --git a/src/driver/mod.rs b/src/driver/mod.rs
-index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..8d921133c7f85b95d116070942dd6721d9ae756c 100644
+index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..e7807160c08b76196b3b9537d53d034a81160115 100644
 --- a/src/driver/mod.rs
 +++ b/src/driver/mod.rs
-@@ -7,6 +7,7 @@ mod ir_cache;
+@@ -7,6 +7,9 @@ mod ir_cache;
  pub mod buildscript;
  pub mod cache;
  mod compile;
++#[cfg(feature = "exclusive-native")]
++pub(crate) use compile::prepare_library_import;
 +pub mod imports;
  mod const_reach;
  pub(crate) mod kept_delta;
  mod kept_derive;
-@@ -22,6 +23,10 @@ mod patch;
+@@ -22,6 +25,10 @@ mod patch;
  pub(crate) mod sig_nodes;
  mod span_shift;
  mod session;
@@ -9607,7 +9649,7 @@ index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..8d921133c7f85b95d116070942dd6721
  pub(crate) mod release_c;
  pub mod read_cover;
  
-@@ -34,7 +39,47 @@ pub(crate) use patch::drop_unkept;
+@@ -34,7 +41,47 @@ pub(crate) use patch::drop_unkept;
  /// patch oracle (`item_oracle.rs`) a daemon check request then compares
  /// its answer with a fresh session's.
  pub fn compile(req: &Request, session: &mut Session) -> Response {
@@ -9656,7 +9698,7 @@ index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..8d921133c7f85b95d116070942dd6721
      if item_oracle::on() {
          item_oracle::compare_response(req, session, &resp);
      }
-@@ -45,10 +90,79 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -45,10 +92,79 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
  /// background guard checks: their file can change while they run, so a
  /// second read of it may see other bytes.
  pub fn compile_background(req: &Request, session: &mut Session) -> Response {
@@ -13154,7 +13196,7 @@ index c4b23e007d746b984e392919dcf1bc9bc87a265e..47bb8992d04e52e8ba9774e3e865ddf1
              _ => return None,
          }
 diff --git a/src/protocol.rs b/src/protocol.rs
-index 504b467a9d240272c85f999b59f57a5d52b3cd4e..6d7eb59e9cc057bf28ade4ea24442db644dbb873 100644
+index 504b467a9d240272c85f999b59f57a5d52b3cd4e..acced45257a2534aa46d045df9573b04b0a32917 100644
 --- a/src/protocol.rs
 +++ b/src/protocol.rs
 @@ -6,7 +6,7 @@
@@ -13191,7 +13233,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..6d7eb59e9cc057bf28ade4ea24442db6
 +pub mod host_runtime;
 +#[path = "../../../src/library_contract.rs"]
 +pub mod library_contract;
-+pub use library_contract::{LibraryKey, LibraryOptions};
++pub use library_contract::{ExternMetadata, LibraryKey, LibraryOptions};
 +
  #[derive(Clone, Copy, PartialEq, Eq)]
  pub enum Cmd {
@@ -13312,17 +13354,18 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..6d7eb59e9cc057bf28ade4ea24442db6
      let mut features = flags.features;
      sort_features(&mut features);
      key.features = features;
-@@ -625,6 +681,9 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -625,6 +681,10 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
      let (mut release, mut profile, mut rustc) = (false, None, false);
      let mut max_errors = 20usize;
      let mut crate_flags = CrateFlags::default();
 +    let (mut library_name, mut library_metadata, mut library_extra, mut library_cwd) = (None,None,None,None);
 +    let (mut library_cfg, mut library_search) = (Vec::new(),Vec::new());
++    let mut library_external = None;
 +    let mut library_options = LibraryOptions::default();
      // Every --target named, in order. One builds a session; several are
      // the release driver's list and build one session each.
      let mut targets: Vec<String> = Vec::new();
-@@ -652,6 +711,14 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -652,6 +712,15 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
      }
      while let Some(a) = it.next() {
          match a.as_str() {
@@ -13332,22 +13375,23 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..6d7eb59e9cc057bf28ade4ea24442db6
 +            "--lustr-library-cwd" if library_cwd.is_none() => library_cwd = Some(PathBuf::from(it.next()?)),
 +            "--lustr-library-check-cfg" => library_cfg.push(it.next()?.clone()),
 +            "--lustr-library-search" => library_search.push(PathBuf::from(it.next()?)),
++            "--lustr-library-extern-metadata" if library_external.is_none() => library_external = Some(ExternMetadata::parse(it.next()?)?),
 +            "--lustr-library-embed-metadata" if library_options.embed_metadata.is_none() => library_options.embed_metadata = Some(rustc_bool(it.next()?)?),
 +            "--lustr-library-force-warn-unused-crate-dependencies" if !library_options.force_warn_unused_crate_dependencies => library_options.force_warn_unused_crate_dependencies = true,
              "--json" => json = true,
              "--timings" => timings = true,
              "-g" => debug = true,
-@@ -696,6 +763,9 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -696,6 +765,9 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
      if file.as_os_str().is_empty() {
          return None;
      }
 +    let library_supplied = library_name.is_some() || library_metadata.is_some() || library_extra.is_some() || library_cwd.is_some()
-+        || !library_cfg.is_empty() || !library_search.is_empty() || library_options != LibraryOptions::default();
++        || !library_cfg.is_empty() || !library_search.is_empty() || library_external.is_some() || library_options != LibraryOptions::default();
 +    if library_supplied && (rustc || release || profile.is_some()) { return None; }
      let abs = |p: &Path| std::path::absolute(p).unwrap_or_else(|_| p.to_path_buf());
      // Release and the rustc oracle are build/check-only, with no extra lust flags.
      // Crate-selection flags are lust dev flags today: reject them there rather
-@@ -756,6 +826,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -756,6 +828,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
                  run_args: None,
                  harness: false,
                  cc: true,
@@ -13355,13 +13399,13 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..6d7eb59e9cc057bf28ade4ea24442db6
                  client: Client::current(&typed),
              });
          }
-@@ -791,6 +862,18 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -791,6 +864,18 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
      if let Some(on) = debug_assertions {
          session.profile.debug_assertions = on;
      }
 +    if library_supplied {
 +        let key = LibraryKey {crate_name:library_name?, metadata:library_metadata?, extra_filename:library_extra?,
-+            source_path:file.clone(), working_directory:library_cwd?, check_cfg:library_cfg, search_paths:library_search,
++            source_path:file.clone(), working_directory:library_cwd?, check_cfg:library_cfg, search_paths:library_search, external:library_external,
 +            sdk_receipt:library_contract::SDK_RECEIPT.into()};
 +        if !key.valid() || !matches!(cmd.as_str(), "build" | "check") || session.krate.target_kind != "lib"
 +            || !session.profile.panic_abort || session.target_triple != library_contract::TARGET
@@ -13374,7 +13418,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..6d7eb59e9cc057bf28ade4ea24442db6
      let req = Request {
          cmd: if cmd == "check" { Cmd::Check } else { Cmd::Build },
          session,
-@@ -803,6 +886,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -803,6 +888,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
          max_errors,
          run_args: if run { Some(run_args.clone()) } else { None },
          harness: false, cc: false,
@@ -13382,14 +13426,18 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..6d7eb59e9cc057bf28ade4ea24442db6
          client: Client::current(&typed),
      };
      Some(Invocation::Compile { req, run, args: run_args })
-@@ -909,8 +993,23 @@ pub fn encode(r: &Request) -> Vec<u8> {
+@@ -909,8 +995,31 @@ pub fn encode(r: &Request) -> Vec<u8> {
      path_field(&mut out, s.krate.manifest_path.as_deref());
      put_field(&mut out, s.krate.target_kind.as_bytes());
      put_field(&mut out, s.krate.target_name.as_bytes());
 +    put_field(&mut out, if s.krate.target_explicit { b"1" } else { b"0" });
      path_field(&mut out, Some(&s.krate.root));
      put_field(&mut out, s.target_triple.as_bytes());
-+    put_field(&mut out, if s.library.is_some() {b"1"} else {b"0"});
++    put_field(&mut out, match &s.library {
++        Some(library) if library.external.is_some() => b"2",
++        Some(_) => b"1",
++        None => b"0",
++    });
 +    if let Some(library) = &s.library {
 +        for value in [&library.crate_name,&library.metadata,&library.extra_filename,&library.sdk_receipt] {
 +            put_field(&mut out,value.as_bytes());
@@ -13400,13 +13448,17 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..6d7eb59e9cc057bf28ade4ea24442db6
 +        for value in &library.check_cfg { put_field(&mut out,value.as_bytes()); }
 +        put_field(&mut out,library.search_paths.len().to_string().as_bytes());
 +        for path in &library.search_paths { path_field(&mut out,Some(path)); }
++        if let Some(dependency) = &library.external {
++            put_field(&mut out, dependency.alias.as_bytes());
++            path_field(&mut out, Some(&dependency.artifact));
++        }
 +        put_field(&mut out,match r.library_options.embed_metadata {None=>b"-",Some(true)=>b"1",Some(false)=>b"0"});
 +        put_field(&mut out,if r.library_options.force_warn_unused_crate_dependencies {b"1"} else {b"0"});
 +    }
      for f in &s.features {
          put_field(&mut out, f.as_bytes());
      }
-@@ -951,8 +1050,33 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -951,8 +1060,36 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
      let manifest = get_field(r)?;
      let target_kind = text(get_field(r)?)?;
      let target_name = text(get_field(r)?)?;
@@ -13420,7 +13472,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..6d7eb59e9cc057bf28ade4ea24442db6
 +    let mut library_options = LibraryOptions::default();
 +    let library = match get_field(r)?.as_slice() {
 +        b"0" => None,
-+        b"1" => {
++        mode @ (b"1" | b"2") => {
 +            let crate_name=text(get_field(r)?)?; let metadata=text(get_field(r)?)?;
 +            let extra_filename=text(get_field(r)?)?; let sdk_receipt=text(get_field(r)?)?;
 +            let source_path=path(get_field(r)?); let working_directory=path(get_field(r)?);
@@ -13428,9 +13480,12 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..6d7eb59e9cc057bf28ade4ea24442db6
 +            let check_cfg=(0..count).map(|_|text(get_field(r)?)).collect::<Option<Vec<_>>>()?;
 +            let count:usize=text(get_field(r)?)?.parse().ok()?; if count>4096{return None;}
 +            let search_paths=(0..count).map(|_|Some(path(get_field(r)?))).collect::<Option<Vec<_>>>()?;
++            let external = if mode == b"2" {
++                Some(ExternMetadata { alias: text(get_field(r)?)?, artifact: path(get_field(r)?) })
++            } else { None };
 +            library_options.embed_metadata=match get_field(r)?.as_slice() {b"-"=>None,b"1"=>Some(true),b"0"=>Some(false),_=>return None};
 +            library_options.force_warn_unused_crate_dependencies=match get_field(r)?.as_slice() {b"0"=>false,b"1"=>true,_=>return None};
-+            let library=LibraryKey{crate_name,metadata,extra_filename,source_path,working_directory,check_cfg,search_paths,sdk_receipt};
++            let library=LibraryKey{crate_name,metadata,extra_filename,source_path,working_directory,check_cfg,search_paths,external,sdk_receipt};
 +            if !library.valid() || !library.valid_output(&out, f[0] == "check", library_options) || library.source_path!=file
 +                || target_triple!=library_contract::TARGET || target_kind!="lib" || !matches!(f[0], "build" | "check") {return None;}
 +            Some(library)
@@ -13440,7 +13495,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..6d7eb59e9cc057bf28ade4ea24442db6
      // A feature count this large is a bad request, not a loop to run.
      let n_features: usize = f[11].parse().ok()?;
      if n_features > 4096 {
-@@ -982,11 +1106,13 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -982,11 +1119,13 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
      Some(Request {
          cmd: if f[0] == "check" { Cmd::Check } else { Cmd::Build },
          session: SessionKey {
@@ -13454,7 +13509,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..6d7eb59e9cc057bf28ade4ea24442db6
                  root,
                  test: f[5] == "1",
              },
-@@ -1006,12 +1132,17 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -1006,12 +1145,17 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
          max_errors: f[4].parse().ok()?,
          run_args: None,
          harness: false, cc: false,
@@ -13473,7 +13528,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..6d7eb59e9cc057bf28ade4ea24442db6
  }
  
  /// The whole answer to a request of another build: a head no client takes
-@@ -1020,37 +1151,78 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
+@@ -1020,37 +1164,78 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
      write!(w, "- - - {}\n", build_id())
  }
  
@@ -13529,15 +13584,15 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..6d7eb59e9cc057bf28ade4ea24442db6
 -        // A daemon from before the build field: stop it.
 -        let _ = std::fs::remove_file(sock);
 -        return None;
+-    }
+-    if nums.len() != 3 || words.len() != 4 || words[3] != build_id() {
+-        return None;
 +    // A valid header contains only fixed labels, build identity, and three
 +    // machine-sized numbers. Bound it before allocating from an untrusted peer.
 +    reader.take(256).read_line(&mut head).map_err(|e| format!("daemon response header: {e}"))?;
 +    if !head.ends_with('\n') {
 +        return Err("daemon returned a truncated or oversized response header".into());
      }
--    if nums.len() != 3 || words.len() != 4 || words[3] != build_id() {
--        return None;
--    }
 -    let mut out = vec![0; nums[1]];
 -    let mut err = vec![0; nums[2]];
 -    reader.read_exact(&mut out).ok()?;
@@ -13581,7 +13636,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..6d7eb59e9cc057bf28ade4ea24442db6
  }
  
  /// Prints a response. For `run`, runs the program after a successful build. Never returns.
-@@ -1331,9 +1503,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
+@@ -1331,9 +1516,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
      Some(PathBuf::from(text[at..end].replace("\\\\", "\\")))
  }
  
@@ -13631,7 +13686,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..6d7eb59e9cc057bf28ade4ea24442db6
  pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug: bool, net: CargoNet) -> ! {
      let profile = profile.unwrap_or("release");
      let dev = profile == "dev";
-@@ -1408,12 +1620,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
+@@ -1408,12 +1633,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
      exit_with(status);
  }
  
@@ -13650,7 +13705,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..6d7eb59e9cc057bf28ade4ea24442db6
  pub fn run_rustc_check(file: &Path) -> ! {
      let obj = std::env::temp_dir().join(format!("lust-rustc-check-{}.o", std::process::id()));
      eprintln!("lust: checking with rustc (oracle): rustc --edition 2024 --emit=obj {}", file.display());
-@@ -1461,6 +1679,150 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
+@@ -1461,6 +1692,150 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
  mod tests {
      use super::*;
  
@@ -13801,7 +13856,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..6d7eb59e9cc057bf28ade4ea24442db6
      fn args(list: &[&str]) -> Vec<String> {
          list.iter().map(|s| s.to_string()).collect()
      }
-@@ -1486,6 +1848,23 @@ mod tests {
+@@ -1486,6 +1861,23 @@ mod tests {
          assert_ne!(k, SessionKey::synthetic(Path::new("/tmp/x/other.rs"), false), "file differs");
      }
  
@@ -15153,7 +15208,7 @@ index fc01334135114510c734e64d61334ecbfc3ce108..247c3b8dcf032bdc1f57382d0112f4a6
  pub mod stdpaths;
  pub mod worklist;
 diff --git a/src/resolve/worklist.rs b/src/resolve/worklist.rs
-index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9ffd3943cfe4f68ba70258f6f97b1451d130500 100644
+index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..c2bfd02be50d2851a1a6c631ff64d8687ee8a8c4 100644
 --- a/src/resolve/worklist.rs
 +++ b/src/resolve/worklist.rs
 @@ -353,7 +353,7 @@ fn starts_item(toks: &[lexer::Token], i: usize, union: Sym) -> bool {
@@ -15302,7 +15357,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9ffd3943cfe4f68ba70258f6f97b145
              Tok::Int(v, suffix, _) => {
                  h.write_u128(v);
                  std::mem::discriminant(&suffix).hash(&mut h);
-@@ -1784,6 +1784,56 @@ pub fn resolve_crate_with(
+@@ -1784,6 +1784,57 @@ pub fn resolve_crate_with(
      cache: &mut ResolveCache,
      with_platform: bool,
  ) -> Result<ResolvedCrate, ResolveError> {
@@ -15343,8 +15398,9 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9ffd3943cfe4f68ba70258f6f97b145
 +pub(crate) fn resolve_native_library(
 +    input: &CrateInput, interner: &Interner, known: &Known, cache: &mut ResolveCache,
 +    parse: &RootParser<'_>,
++    imports: Option<&mut dyn FnMut(&mut ResolvedTables) -> Result<(), Diag>>,
 +) -> Result<ResolvedCrate, ResolveError> {
-+    resolve_crate_seeded(input, interner, known, cache, false, None, Some(parse))
++    resolve_crate_seeded(input, interner, known, cache, false, imports, Some(parse))
 +}
 +
 +fn resolve_crate_seeded(
@@ -15359,7 +15415,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9ffd3943cfe4f68ba70258f6f97b145
      cache.begin(input);
      let mut tables = ResolvedTables::new(interner.intern(&input.crate_name));
      tables.std_splice_lo = input.std_splice_lo;
-@@ -1859,6 +1909,9 @@ pub fn resolve_crate_with(
+@@ -1859,6 +1910,9 @@ pub fn resolve_crate_with(
              }
          }
      }
@@ -15369,7 +15425,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9ffd3943cfe4f68ba70258f6f97b145
      // After the extern preludes: the splice job's root module has the
      // selected crate's prelude already.
      let std_job = input.std_splice_lo.map(|lo| add_std_splice_job(input, lo, &mut jobs));
-@@ -1959,7 +2012,7 @@ pub fn resolve_crate_with(
+@@ -1959,7 +2013,7 @@ pub fn resolve_crate_with(
                  dep_exports.push((interner.get(jobs[d].magic).to_string(), sources.clone()));
              }
          }
@@ -15378,7 +15434,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9ffd3943cfe4f68ba70258f6f97b145
              Ok(out) => {
                  if let Some(exact_layout) = &jobs[j].adapter {
                      tables.adapters.push(super::imports::AdapterCrate {
-@@ -2479,7 +2532,7 @@ struct UseSite {
+@@ -2479,7 +2533,7 @@ struct UseSite {
  fn use_seg_sym(tok: crate::lexer::Tok, interner: &Interner) -> Option<Sym> {
      use crate::lexer::Tok;
      Some(match tok {
@@ -15387,7 +15443,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9ffd3943cfe4f68ba70258f6f97b145
          Tok::SelfLower => interner.intern("self"),
          Tok::Super => interner.intern("super"),
          Tok::Crate => interner.intern("crate"),
-@@ -2562,7 +2615,7 @@ fn parse_use_trees(
+@@ -2562,7 +2616,7 @@ fn parse_use_trees(
              }
              Some(Tok::As) => {
                  match tok(i + 1) {
@@ -15396,7 +15452,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9ffd3943cfe4f68ba70258f6f97b145
                      Some(Tok::Underscore) => underscore = true,
                      _ => return,
                  }
-@@ -2663,7 +2716,7 @@ fn restricted_vis(inner: &[crate::lexer::TokenTree], module: &[Sym]) -> Option<V
+@@ -2663,7 +2717,7 @@ fn restricted_vis(inner: &[crate::lexer::TokenTree], module: &[Sym]) -> Option<V
              Tok::Super => {
                  out.pop();
              }
@@ -15405,7 +15461,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9ffd3943cfe4f68ba70258f6f97b145
              _ => return Some(module.to_vec()),
          }
      }
-@@ -2687,7 +2740,7 @@ fn rewrite_dollar_crate(tokens: &[crate::lexer::Token], magic: Sym) -> Vec<crate
+@@ -2687,7 +2741,7 @@ fn rewrite_dollar_crate(tokens: &[crate::lexer::Token], magic: Sym) -> Vec<crate
                      TokenTree::Token(t) => t.span,
                      _ => unreachable!(),
                  };
@@ -15414,7 +15470,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9ffd3943cfe4f68ba70258f6f97b145
                  i += 2;
                  continue;
              }
-@@ -2740,10 +2793,10 @@ fn rewrite_dollar_crate(tokens: &[crate::lexer::Token], magic: Sym) -> Vec<crate
+@@ -2740,10 +2794,10 @@ fn rewrite_dollar_crate(tokens: &[crate::lexer::Token], magic: Sym) -> Vec<crate
  fn rename_macro_token(tokens: &mut [crate::lexer::Token], alias: Sym) {
      use crate::lexer::Tok;
      if let Some(t) = tokens.get_mut(2)
@@ -15427,7 +15483,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9ffd3943cfe4f68ba70258f6f97b145
      }
  }
  
-@@ -2900,7 +2953,7 @@ impl MacroEnv {
+@@ -2900,7 +2954,7 @@ impl MacroEnv {
                  collect(&disc.outline, orig, &mut owned);
              }
              if let Some(Some(exp)) = expanded.get(di)
@@ -15436,7 +15492,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9ffd3943cfe4f68ba70258f6f97b145
              {
                  // Only `outline.macros` feeds this collect, and a
                  // macro definition needs a `macro_rules`
-@@ -3488,6 +3541,7 @@ fn resolve_one(
+@@ -3488,6 +3542,7 @@ fn resolve_one(
      client: &crate::expand::ClientView,
      interner: &Interner,
      known: &Known,
@@ -15444,7 +15500,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9ffd3943cfe4f68ba70258f6f97b145
  ) -> Result<CrateOut, OneError> {
      let input = &job.input;
      let mut timings: Vec<(&'static str, f64)> = Vec::new();
-@@ -3691,7 +3745,7 @@ fn resolve_one(
+@@ -3691,7 +3746,7 @@ fn resolve_one(
          let macro_rules = interner.intern("macro_rules");
          let outlines = par_map(&indices, |&di| {
              let exp = expanded[di].as_ref()?;
@@ -15453,7 +15509,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9ffd3943cfe4f68ba70258f6f97b145
                  true => scan::outline(exp, interner),
                  false => scan::Outline::default(),
              })
-@@ -3792,7 +3846,9 @@ fn resolve_one(
+@@ -3792,7 +3847,9 @@ fn resolve_one(
          // its missing `;` ends at the cut), and the answer must be the
          // one-piece answer.
          let segments = if keep { vec![0..lexed.tokens.len()] } else { item_segments(&lexed.tokens, interner) };
@@ -15464,7 +15520,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9ffd3943cfe4f68ba70258f6f97b145
              vec![parser::parse(&lexed, interner, known)?]
          } else {
              // Later segments start under the file's inner allows, as
-@@ -4428,7 +4484,7 @@ fn extern_macro_use_events(lexed: &lexer::Lexed, interner: &Interner) -> Vec<(u3
+@@ -4428,7 +4485,7 @@ fn extern_macro_use_events(lexed: &lexer::Lexed, interner: &Interner) -> Vec<(u3
                      j += 1;
                  }
                  if toks.get(j).map(|t| t.tok) == Some(Tok::LBracket) {
@@ -15473,7 +15529,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9ffd3943cfe4f68ba70258f6f97b145
                          && interner.get(s) == "macro_use"
                      {
                          pending = true;
-@@ -4455,7 +4511,7 @@ fn extern_macro_use_events(lexed: &lexer::Lexed, interner: &Interner) -> Vec<(u3
+@@ -4455,7 +4512,7 @@ fn extern_macro_use_events(lexed: &lexer::Lexed, interner: &Interner) -> Vec<(u3
              Tok::Extern if depth == 0 => {
                  if pending
                      && toks.get(i + 1).map(|t| t.tok) == Some(Tok::Crate)
@@ -15482,7 +15538,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9ffd3943cfe4f68ba70258f6f97b145
                  {
                      out.push((toks[i].span.lo, interner.get(name).to_string()));
                  }
-@@ -8802,7 +8858,7 @@ mod tests {
+@@ -8802,7 +8859,7 @@ mod tests {
          let interner = Interner::default();
          let src = "fn a() { \"x\"; 1.5; }\nmacro_rules! m { () => { (\"y\", 2.5, 'c') } }\nfn b() { \"z\"; }";
          let lexed = lexer::lex(src, FileId(0), 0, &interner).unwrap();
@@ -15491,7 +15547,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..e9ffd3943cfe4f68ba70258f6f97b145
          let (lo, hi) = macro_tok_range(&lexed.tokens, at);
          let (toks, strings) = own_def_strings(&lexed.tokens[lo..hi], &lexed.strings);
          assert!(strings.len() < lexed.strings.len(), "{strings:?} vs {:?}", lexed.strings);
-@@ -9382,6 +9438,8 @@ mod tests {
+@@ -9382,6 +9439,8 @@ mod tests {
              build_check_cfgs: Vec::new(),
              features: Vec::new(),
              deps: Vec::new(),

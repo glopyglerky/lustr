@@ -7,6 +7,8 @@ mod ir_cache;
 pub mod buildscript;
 pub mod cache;
 mod compile;
+#[cfg(feature = "exclusive-native")]
+pub(crate) use compile::prepare_library_import;
 pub mod imports;
 mod const_reach;
 pub(crate) mod kept_delta;

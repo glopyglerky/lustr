@@ -1,6 +1,6 @@
 //! Parse the actual Rust compiler request used by the pinned Cargo leaf unit.
 //! Unsupported options remain refusals; this adapter never reads Rust source.
-use crate::{Native, library_contract::{LibraryKey, LibraryOptions, SDK_RECEIPT, TARGET}};
+use crate::{Native, library_contract::{ExternMetadata, LibraryKey, LibraryOptions, SDK_RECEIPT, TARGET}};
 use std::{collections::{BTreeMap,BTreeSet}, ffi::OsString, path::PathBuf};
 
 pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
@@ -16,6 +16,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     let mut json = None;
     let mut check_cfg = Vec::new();
     let mut search_paths = Vec::new();
+    let mut external = None;
     let mut codegen = BTreeMap::new();
     let mut options = LibraryOptions::default();
     let mut i = 0;
@@ -38,6 +39,10 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
         else if arg == "--error-format" || arg.starts_with("--error-format=") { unique(&mut error_format,"--error-format")?; }
         else if arg == "--json" || arg.starts_with("--json=") { unique(&mut json,"--json")?; }
         else if arg == "--check-cfg" || arg.starts_with("--check-cfg=") { check_cfg.push(value("--check-cfg")?.to_owned()); }
+        else if arg == "--extern" || arg.starts_with("--extern=") {
+            if external.is_some() { return None; }
+            external = Some(ExternMetadata::parse(value("--extern")?)?);
+        }
         else if arg == "-L" || arg.starts_with("-L") {
             let value = if arg == "-L" { i += 1; args.get(i)?.to_str()? } else { &arg[2..] };
             search_paths.push(std::path::absolute(value.strip_prefix("dependency=")?).ok()?);
@@ -69,7 +74,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
         (3, fields) if fields == BTreeSet::from(["dep-info", "metadata", "link"]) => false,
         _ => return None,
     };
-    if check && options.embed_metadata.is_some() { return None; }
+    if check && options.embed_metadata.is_some() || !check && external.is_some() { return None; }
     let cargo_json = match error_format.as_deref() {
         None | Some("human") if json.is_none() => false,
         Some("json") => {
@@ -98,7 +103,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     let source = source?;
     let source_path = std::path::absolute(&source).ok()?;
     let context = LibraryKey { crate_name:name?, metadata, extra_filename, source_path,
-        working_directory: std::env::current_dir().ok()?, check_cfg, search_paths, sdk_receipt:SDK_RECEIPT.into() };
+        working_directory: std::env::current_dir().ok()?, check_cfg, search_paths, external, sdk_receipt:SDK_RECEIPT.into() };
     if !context.valid() { return None; }
     if std::env::var("CARGO_CRATE_NAME").is_ok_and(|v|v != context.crate_name) { return None; }
     let out_dir = std::path::absolute(out_dir?).ok()?;
@@ -128,5 +133,8 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     }
     for cfg in context.check_cfg { native.extend(["--lustr-library-check-cfg".into(),cfg]); }
     for path in context.search_paths { native.extend(["--lustr-library-search".into(),path.to_str()?.into()]); }
+    if let Some(dependency) = context.external {
+        native.extend(["--lustr-library-extern-metadata".into(), format!("{}={}", dependency.alias, dependency.artifact.to_str()?)]);
+    }
     Some(Native {args:native,output})
 }

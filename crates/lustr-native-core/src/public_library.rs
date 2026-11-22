@@ -9,6 +9,8 @@ use std::{fs,io::Write,path::{Path,PathBuf},sync::{Arc,OnceLock,atomic::{AtomicU
 use std::os::unix::fs::MetadataExt;
 #[path="unit_publication.rs"]
 mod publication;
+#[path="public_library_import.rs"]
+mod imports;
 static REQUESTS:AtomicU64=AtomicU64::new(0);
 static SDK_LOADS:AtomicU64=AtomicU64::new(0);
 static OWNER_START:OnceLock<Option<String>>=OnceLock::new();
@@ -83,6 +85,7 @@ impl Installed {
 }
 pub(crate) struct Owner {
     installed:Arc<Installed>, artifacts:Service, identity:String,
+    imported: Option<imports::Import>,
 }
 impl Owner {
     pub(crate) fn new(req:&driver::Request)->Result<Self,String>{
@@ -90,11 +93,23 @@ impl Owner {
         if !driver::library::request_supported(req){return Err("public library request context is not represented".into());}
         let installed=INSTALLED.get_or_init(Installed::load).clone()?;
         installed.unchanged()?;
+        let imported = if let Some(external) = &key.external {
+            if req.session.krate.manifest_path.is_none() { return Err("extern metadata requires the actual Cargo unit".into()); }
+            Some(imports::Import::open(external, &installed.sdk)?)
+        } else { None };
         let context=Context{crate_name:key.crate_name.clone(),metadata:key.metadata.clone(),extra_filename:key.extra_filename.clone(),
             source:key.source_path.clone(),cwd:key.working_directory.to_str().ok_or("library cwd is not Unicode")?.into(),
             profile:metadata::Profile{overflow_checks:req.session.profile.overflow_checks,debug_assertions:req.session.profile.debug_assertions}};
         let artifacts=Service::new(installed.sdk.clone(),installed.root.clone(),context)?;
-        Ok(Self{installed,artifacts,identity:hash(req.session.describe().as_bytes())})
+        Ok(Self{installed,artifacts,identity:hash(req.session.describe().as_bytes()),imported})
+    }
+
+    pub(crate) fn import_is_current(&self, req: &driver::Request) -> bool {
+        match (&self.imported, req.session.library.as_ref().and_then(|key| key.external.as_ref())) {
+            (Some(imported), Some(external)) => imported.unchanged(&external.artifact),
+            (None, None) => true,
+            _ => false,
+        }
     }
     pub(crate) fn compile(&mut self,req:&driver::Request,session:&mut driver::Session)->driver::Response {
         let serial=REQUESTS.fetch_add(1,Ordering::Relaxed)+1;
@@ -126,6 +141,7 @@ impl Owner {
             else {json!({"phase":"native-prepare","commands":[],"objects":[],"counts":{"metadata_encodes":0,"archive_builds":0}})};
         let mut response=driver::Response::default();
         let mut dependency_lint_ready=false;
+        let mut import_used = false;
         let outcome=(||->Result<(),String>{
             if let Some(root)=&report_root {
                 if !root.is_absolute() || !root.is_dir(){return Err("library report directory must be an existing absolute directory".into());}
@@ -141,14 +157,21 @@ impl Owner {
             self.installed.unchanged()?;
             // Exactly one continuation; metadata consumes its completed snapshot.
             let native_start=observed.then(std::time::Instant::now);
-            response=match driver::prepare(req,session) {
-                driver::Preparation::Ready(prepared)=>prepared.emit(),
-                driver::Preparation::Complete(r)|driver::Preparation::Rejected(r)|driver::Preparation::Failed(r)|driver::Preparation::IntegrationIncomplete(r)=>r,
+            response = {
+                let prepared = if let Some(imported) = &self.imported {
+                    driver::prepare_library_import(req, session, imported)
+                } else { driver::prepare(req, session) };
+                match prepared {
+                    driver::Preparation::Ready(prepared)=>prepared.emit(),
+                    driver::Preparation::Complete(r)|driver::Preparation::Rejected(r)|driver::Preparation::Failed(r)|driver::Preparation::IntegrationIncomplete(r)=>r,
+                }
             };
             if let Some(start)=native_start{report["timings_ns"]["native"]=json!(start.elapsed().as_nanos().min(u64::MAX as u128) as u64);}
             session.prune_library_history();
             let state=session.library_state().ok_or("library native state disappeared")?;
             dependency_lint_ready=state.dependency_lint_ready;
+            import_used = state.extern_used_on_error;
+            if !self.import_is_current(req) { return Err("extern metadata changed during library checking".into()); }
             if observed {
             report["generation"]=json!(state.generation);
             report["source_sha256"]=json!(hash(state.source.as_bytes()));
@@ -166,9 +189,12 @@ impl Owner {
             }
             let artifact_start=observed.then(std::time::Instant::now);
             let (linked, checked_metadata) = if check {
+                let functions = state.completed_functions().ok_or("native library returned no completed check")?;
+                let used = self.imported.as_ref().filter(|imported| functions.iter().flat_map(|function| function.calls())
+                    .any(|id| imported.owns(*id)));
+                import_used = used.is_some();
                 (None, Some(self.artifacts.check_metadata(
-                    state.generation, &state.source,
-                    state.completed_functions().ok_or("native library returned no completed check")?,
+                    state.generation, &state.source, functions, used.map(|imported| &imported.sdk),
                     &mut report,
                 )?))
             } else {
@@ -255,11 +281,13 @@ impl Owner {
             report["error"]=json!(error);
         }
         normalize_failure(req,&mut response);
-        // The admitted request has no explicit extern dependencies. Rust emits
-        // this empty structured forced-lint result before body diagnostics and
-        // artifacts, including a type-invalid body after required analyses.
-        if dependency_lint_ready && req.json && req.library_options.force_warn_unused_crate_dependencies {
-            let lint=json!({"$message_type":"unused_extern","lint_level":"force-warn","unused_extern_names":[]});
+        if dependency_lint_ready && req.json && req.library_options.force_warn_unused_crate_dependencies
+            && (self.imported.is_none() || response.code == 0 || import_used) {
+            // Completed scalar bodies expose every reference to an admitted
+            // dependency as an actual checked call edge.
+            let unused = self.imported.as_ref().filter(|_| !import_used)
+                .map(|imported| imported.alias.as_str()).into_iter().collect::<Vec<_>>();
+            let lint=json!({"$message_type":"unused_extern","lint_level":"force-warn","unused_extern_names":unused});
             response.stderr.insert_str(0,&format!("{lint}\n"));
         }
         if observed {

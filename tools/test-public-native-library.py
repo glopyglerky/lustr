@@ -848,7 +848,7 @@ def compare_lang_items(commands, rustc, env, case, native, original):
             "native metadata lost the original missing language item record")
 
 
-def project_fixture(root, name, package, source_name):
+def project_fixture(root, name, package, source_name, crate_name=CRATE):
     path = root / name
     source = path / source_name
     source.parent.mkdir(parents=True)
@@ -859,7 +859,7 @@ version = "0.1.0"
 edition = "2024"
 
 [lib]
-name = "{CRATE}"
+name = "{crate_name}"
 path = "{source_name}"
 
 [profile.dev]
@@ -873,6 +873,105 @@ strip = "none"
 ''')
     return {"root": path, "manifest": manifest, "source": source, "target": path / "target",
             "build": path / "intermediates", "package": package}
+
+
+def qualify_dependency_checks(root, package, sdk, commands, environment, oracle_env, projects, owner, report):
+    consumer, provider = projects["consumer"], projects["provider"]
+    base = b"#![no_std]\npub fn call(x: u64) -> u64 { provider::mask(x) }\n"
+    edit = b"#![no_std]\npub fn call(x: u64) -> u64 { provider::mask(x & 7) }\n"
+    leaf = b"#![no_std]\npub fn mask(x: u64) -> u64 { x & 31 }\n"
+    repair = b"#![no_std]\npub fn call(x: u64) -> u64 { provider::mask(x & 7, 63) }\n"
+    cases = [
+        ("cold", base, leaf, 0, 2),
+        ("noop", base, None, 0, 1),
+        ("consumer-edit", edit, None, 0, 1),
+        ("provider-body", None, leaf.replace(b"31", b"63"), 0, 2),
+        ("provider-signature", None, b"#![no_std]\npub fn mask(x: u64, bits: u64) -> u64 { x & bits }\n", 101, 2),
+        ("repair", repair, None, 0, 1),
+        ("unused", b"#![no_std]\npub fn call(x: u64) -> u64 { x }\n", None, 0, 1),
+    ]
+    env = dict(environment, CARGO_TARGET_DIR=str(consumer["target"]), CARGO_BUILD_BUILD_DIR=str(consumer["build"]))
+    independent = dict(oracle_env, CARGO_HOME=environment["CARGO_HOME"], CARGO_TARGET_DIR=str(consumer["root"] / "oracle-target"),
+                       CARGO_BUILD_BUILD_DIR=str(consumer["root"] / "oracle-build"), RUSTC=str(sdk / "bin/rustc"))
+    flags = ["check", "--lib", "--offline", "--message-format=json"]
+    argv = [package / "bin/cargo", *flags]
+    previous = None
+    provider_svh = None
+    result = {"passed": False, "history": []}
+    report["dependency_checks"] = result
+    for label, consumer_source, provider_source, status, request_count in cases:
+        if consumer_source is not None:
+            consumer["source"].write_bytes(consumer_source)
+        if provider_source is not None:
+            provider["source"].write_bytes(provider_source)
+        before = set((root / "observations").glob("*/report.json"))
+        _, _, trace = commands.run("dependency-" + label, argv, consumer["root"], env, expected=status, traced=True)
+        events = trace_events(trace.read_bytes(), consumer["root"])
+        compiled = inspect_processes(events, package, argv[0], argv, projects)["compiles"]
+        require(len(compiled) == request_count, "dependency check did not issue the expected actual compiler requests")
+        facts = [parse_compile(event) for event in compiled]
+        by_name = {fact["--crate-name"]: fact for fact in facts}
+        consumer_facts = by_name["consumer"]
+        provider_path = Path(consumer_facts["--extern"].removeprefix("provider="))
+        out = Path(consumer_facts["--out-dir"])
+        suffix = consumer_facts["codegen"]["extra-filename"]
+        metadata = out / f"libconsumer{suffix}.rmeta"
+        require(consumer_facts["--extern"] == f"provider={provider_path}"
+                and provider_path.is_relative_to(consumer["build"]) and provider_path.is_file()
+                and out.is_relative_to(consumer["build"]), "consumer did not receive the actual provider metadata")
+        records = [json.loads(path.read_text()) for path in set((root / "observations").glob("*/report.json")) - before]
+        require(len(records) == request_count and set(by_name) == {r["context"]["crate_name"] for r in records},
+                "Cargo metadata work did not reach the one native owner")
+        for record in records:
+            name = record["context"]["crate_name"]
+            validate_context(record, by_name[name], projects[name]["source"].read_bytes(), owner)
+            require(all(record["counts"][key] == 0 for key in ("compiled_objects", "generated_bodies", "archive_builds"))
+                    and not record["commands"] and not record["objects"], "dependency check performed codegen")
+        native = next(record for record in records if record["context"]["crate_name"] == "consumer")
+        counts = native["counts"]
+        require(counts["checked_bodies"] == (0 if label == "noop" else 1)
+                and counts["metadata_encodes"] == (0 if label == "noop" or status else 1),
+                "retained dependency check reused stale state or repeated unchanged work")
+        commands.run("dependency-" + label + "-original", [sdk / "bin/cargo", *flags],
+                     consumer["root"], independent, expected=status)
+        if status:
+            require(native["status"] == 1 and not native["outputs"]
+                    and "L0105" in native["native_diagnostics"], "changed provider signature escaped native checking")
+        else:
+            require(native["status"] == 0, "successful dependency request did not publish metadata")
+            original = next((consumer["root"] / "oracle-build").rglob(f"libconsumer{suffix}.rmeta"))
+            roots = []
+            for engine, artifact in (("native", metadata), ("original", original)):
+                data, _, _ = commands.run("dependency-" + label + "-" + engine + "-reader",
+                                            [sdk / "bin/rustc", "-Zls=root", artifact], consumer["root"], oracle_env)
+                roots.append(construction.parse_root(data))
+            expected = roots[1]["dependencies"]
+            actual = roots[0]["dependencies"]
+            require([dict(row, svh_le_hex=None) for row in actual] == [dict(row, svh_le_hex=None) for row in expected],
+                    "consumer metadata changed the pinned dependency closure")
+            if label == "unused":
+                require([row["name"] for row in actual] == ["core", "compiler_builtins"], "unused provider entered consumer metadata")
+            else:
+                svh = next(row["svh_le_hex"] for row in actual if row["name"] == "provider")
+                require(svh == provider_path.read_bytes()[24:40].hex(), "consumer metadata names a stale provider")
+                if label == "provider-body":
+                    require(svh != provider_svh, "provider body change did not invalidate consumer metadata")
+                provider_svh = svh
+            if label == "noop":
+                require(metadata.read_bytes() == previous and native["artifact_reused"],
+                        "warm check regenerated unchanged metadata bytes")
+            previous = metadata.read_bytes()
+            if label == "repair":
+                caller = root / "cases" / "dependency-third.rs"
+                write_new(caller, b"#![no_std]\npub fn third(x: u64) -> u64 { consumer::call(x) }\n")
+                commands.run("dependency-original-third", [sdk / "bin/rustc", "--edition=2024", "--crate-type=lib",
+                             "--emit=metadata", "-Cpanic=abort", "--extern", f"consumer={metadata}",
+                             "-L", f"dependency={provider_path.parent}", caller, "-o", caller.with_suffix(".rmeta")],
+                             consumer["root"], oracle_env)
+        result["history"].append({"case": label, "status": status, "consumer_counts": counts})
+    require(not list(consumer["build"].rglob("*.rlib")) and not list(consumer["build"].rglob("*.o")),
+            "dependency metadata checks emitted link artifacts")
+    result["passed"] = True
 
 
 def main():
@@ -933,6 +1032,10 @@ def main():
             "second": project_fixture(projects_root, "second", "another-leaf-package", "sources/different_entry.rs"),
             "check": project_fixture(projects_root, "check", "public-leaf-check", "src/lib.rs"),
         }
+        projects["consumer"] = project_fixture(projects_root, "consumer", "consumer", "src/lib.rs", "consumer")
+        projects["provider"] = project_fixture(projects["consumer"]["root"], "provider", "provider", "src/lib.rs", "provider")
+        with projects["consumer"]["manifest"].open("a") as manifest:
+            manifest.write('\n[dependencies]\nprovider = { path = "provider" }\n')
         for project in projects.values():
             project["source"].write_bytes(BASE)
         for name in ("home", "cargo-home", "tmp", "native-cache", "observations", "traps", "cases"):
@@ -1634,8 +1737,10 @@ def main():
             save()
         checks["passed"] = True
 
-        # These valid request classes remain explicitly outside the bounded
-        # slice. A refusal is recorded as unqualified coverage, never success.
+        qualify_dependency_checks(root, package, sdk, commands, environment, oracle_env, projects, owner, report)
+        seal_reports()
+        save()
+        # Linking with an extern artifact remains outside the represented slice.
         for label, extra in (
             ("external-crate", ["rustc", "--lib", "--", "--extern", "unused_external=" + str(saved_outputs["second"]["link"])]),
         ):

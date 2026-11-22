@@ -15,6 +15,7 @@ extern crate alloc;
 extern crate std;
 
 mod encode;
+mod extern_metadata;
 mod identity;
 mod sdk;
 mod table;
@@ -32,6 +33,7 @@ mod upstream {
 
 use alloc::{collections::{BTreeMap, BTreeSet}, string::String, vec::Vec};
 
+pub use extern_metadata::{ScalarCrate, read_scalar_crate};
 pub use sdk::{Sdk, SdkDependency};
 
 pub const RUST_REVISION: &str = "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494";
@@ -133,14 +135,14 @@ pub struct Encoded {
 }
 
 pub fn encode(input: &Input<'_>, sdk: &Sdk) -> Result<Encoded, String> {
-    validate(input, true)?;
+    validate(input, sdk, true)?;
     encode::encode(input, sdk, true)
 }
 
 /// Encode metadata for a checked library. Checked definitions and signatures
 /// remain visible, while the pinned Rust export providers return no symbols.
 pub fn encode_check(input: &Input<'_>, sdk: &Sdk) -> Result<Vec<u8>, String> {
-    validate(input, false)?;
+    validate(input, sdk, false)?;
     Ok(encode::encode(input, sdk, false)?.metadata)
 }
 
@@ -177,7 +179,7 @@ fn identifier(name: &str) -> bool {
         })
 }
 
-fn validate(input: &Input<'_>, link: bool) -> Result<(), String> {
+fn validate(input: &Input<'_>, sdk: &Sdk, link: bool) -> Result<(), String> {
     let failure = |reason: &str| format!("native metadata completion: {reason}");
     if !identifier(input.crate_name)
         || input.metadata.is_empty()
@@ -248,7 +250,7 @@ fn validate(input: &Input<'_>, link: bool) -> Result<(), String> {
     for function in input.functions {
         let mut calls = BTreeSet::new();
         for called in &function.calls {
-            if !definitions.contains_key(called) || !calls.insert(called) {
+            if (!definitions.contains_key(called) && (link || !sdk.dependency_functions.contains(called))) || !calls.insert(called) {
                 return Err(failure("call edge is foreign or duplicated"));
             }
         }

@@ -57,6 +57,7 @@ pub(crate) struct State {
     pub(crate) checked_names: BTreeMap<def::DiskDefId,String>,
     pub snapshot: Option<Snapshot>,
     pub(crate) dependency_lint_ready: bool,
+    pub(crate) extern_used_on_error: bool,
 }
 
 #[derive(Default)]
@@ -94,6 +95,7 @@ impl Session {
         if let Some(state)=&mut self.caches.library {
             state.history_policy=policy;state.history.evicted_object_serials.clear();state.history.retired_definition_ids.clear();
             state.dependency_lint_ready=false;
+            state.extern_used_on_error=false;
         }
     }
     pub(crate) fn prune_library_history(&mut self) {prune(&self.front,&mut self.caches);}
@@ -136,6 +138,7 @@ impl State {
         self.checked.clear(); self.checked_names.clear(); self.generated.clear(); self.compiled_objects=0; self.reused_objects=0;
         self.snapshot = None;
         self.dependency_lint_ready = false;
+        self.extern_used_on_error = false;
         self.history.evicted_object_serials.clear();self.history.retired_definition_ids.clear();
     }
     pub(super) fn changed(&mut self) { self.generation += 1; self.history_dirty=true; }
@@ -235,6 +238,8 @@ pub(super) fn capture(p: &check::collect::Program, id: def::LocalDefId, checked:
         check::Res::None => Resolution::None,
         check::Res::Local(local) => checked.param_locals.iter().position(|param|param==local).map_or(Resolution::Other,Resolution::Parameter),
         check::Res::Fn(function) if (function.0 as usize)<p.fns.len() => Resolution::Function(p.disk_id(*function)),
+        check::Res::NativeFn(definition) => p.native_fn(*definition)
+            .map_or(Resolution::Other, |(_, _, linkage)| Resolution::ImportedFunction(linkage.id)),
         check::Res::Bin { ld:0,rd:0 } => Resolution::PrimitiveOperands,
         _ => Resolution::Other,
     }).collect();
@@ -247,6 +252,11 @@ pub(super) fn lowered(p: &check::collect::Program, facts: &mut AcceptedBody, bod
         if let ir::Terminator::Call { target, .. } = block.term {
             match target {
                 ir::CallTarget::Fn(id) if (id.0 as usize)<p.fns.len() => { if let Some(c)=&mut calls { c.insert(p.disk_id(id)); } }
+                ir::CallTarget::NativeFn(definition) => {
+                    if let Some((_, _, linkage)) = p.native_fn(definition) {
+                        if let Some(edges) = &mut calls { edges.insert(linkage.id); }
+                    } else { calls = None; }
+                }
                 _ => calls = None,
             }
         }

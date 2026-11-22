@@ -69,8 +69,17 @@ dependencies. Qualification compares their language item lists with the
 original Rust artifacts. The record informs downstream checks and leaves the
 request's panic strategy unchanged.
 
-Public `--extern` ingestion, other crate types, unrepresented options and
-profiles, and wider completion remain integration work.
+For metadata-only checks, the same retained owner can import a single flat
+scalar library through the `--extern` artifact supplied by Cargo. It reads
+the pinned metadata's public definitions, signatures, crate identity and
+dependency hashes, then installs them into Lust's resolver. A new provider
+artifact invalidates the consumer's retained state before checking. The
+consumer's metadata records the provider if a checked call uses it, in the
+original dependency order. The authored scope covers the pinned SDK closure
+and an edition 2024 leaf dependency with no build script or features.
+
+Cross-crate linking, multi-dependency and transitive import resolution, other
+crate types, additional profiles and wider semantic completion remain open.
 
 ## Metadata options and retained native state
 

@@ -271,7 +271,8 @@ fn verify_members(bytes:&[u8],files:&BTreeMap<String,Arc<Vec<u8>>>,members:&[Str
 }
 impl Service {
     pub(crate) fn check_metadata(
-        &mut self, generation: u64, source: &str, functions: &[Function], report: &mut Value,
+        &mut self, generation: u64, source: &str, functions: &[Function],
+        dependency_context: Option<&metadata::Sdk>, report: &mut Value,
     ) -> Result<Arc<Vec<u8>>, String> {
         if let Some((cached, bytes)) = &self.check_metadata
             && *cached == generation
@@ -295,7 +296,7 @@ impl Service {
             emitted: &[],
             backend_helpers: &[],
             objects: &[],
-        }, &self.sdk)?);
+        }, dependency_context.unwrap_or(&self.sdk))?);
         self.check_metadata = Some((generation, bytes.clone()));
         Ok(bytes)
     }

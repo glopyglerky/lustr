@@ -23,6 +23,32 @@ pub struct LibraryOptions {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct ExternMetadata {
+    pub alias: String,
+    pub artifact: PathBuf,
+}
+
+impl ExternMetadata {
+    pub fn parse(argument: &str) -> Option<Self> {
+        let (alias, artifact) = argument.split_once('=')?;
+        let value = Self { alias: alias.into(), artifact: std::path::absolute(artifact).ok()? };
+        value.valid().then_some(value)
+    }
+
+    fn valid(&self) -> bool {
+        let alias = self.alias.as_str();
+        identifier(alias) && !matches!(alias, "core" | "alloc" | "std" | "compiler_builtins")
+            && self.artifact.is_absolute() && self.artifact.extension().is_some_and(|ext| ext == "rmeta")
+            && self.artifact.to_str().is_some_and(|s| !s.contains(['\0', '\n', '\r']))
+    }
+}
+
+fn identifier(s: &str) -> bool {
+    !s.is_empty() && s.bytes().enumerate().all(|(i, c)|
+        c == b'_' || c.is_ascii_alphabetic() || i != 0 && c.is_ascii_digit())
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct LibraryKey {
     pub crate_name: String,
     pub metadata: String,
@@ -31,12 +57,11 @@ pub struct LibraryKey {
     pub working_directory: PathBuf,
     pub check_cfg: Vec<String>,
     pub search_paths: Vec<PathBuf>,
+    pub external: Option<ExternMetadata>,
     pub sdk_receipt: String,
 }
 impl LibraryKey {
     pub fn valid(&self) -> bool {
-        let identifier = |s: &str| !s.is_empty() && s.bytes().enumerate().all(|(i,c)|
-            c == b'_' || c.is_ascii_alphabetic() || i != 0 && c.is_ascii_digit());
         supported_host() && identifier(&self.crate_name)
             && !self.metadata.is_empty() && self.metadata.len() <= 128
             && self.metadata.bytes().all(|c| c.is_ascii_alphanumeric() || c == b'_')
@@ -49,6 +74,7 @@ impl LibraryKey {
             && self.check_cfg.len() <= 2
             && self.check_cfg.iter().all(|s| matches!(s.as_str(), "cfg(docsrs,test)" | "cfg(feature, values())"))
             && self.search_paths.iter().all(|p| p.is_absolute())
+            && self.external.as_ref().is_none_or(ExternMetadata::valid)
             && self.sdk_receipt == SDK_RECEIPT
     }
     pub fn archive_name(&self) -> String { format!("lib{}{}.rlib", self.crate_name, self.extra_filename) }
@@ -68,7 +94,7 @@ impl LibraryKey {
         if check {
             options.embed_metadata.is_none() && output_parent(path, &self.metadata_name()).is_some()
         } else {
-            output_parent(path, &self.archive_name()).is_some()
+            self.external.is_none() && output_parent(path, &self.archive_name()).is_some()
         }
     }
 }

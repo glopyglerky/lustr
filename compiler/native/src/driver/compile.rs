@@ -2184,14 +2184,27 @@ fn resolved_setup(
             return Err(code2("Lustr integration is incomplete for the requested Rust library artifact; no stock compiler was invoked".into()));
         }
         if let Some(library) = &key.library {
+            let matched_dependencies = match (&library.external, unit.deps.as_slice()) {
+                (None, []) => imports.is_none(),
+                (Some(request), [dep]) => imports.and_then(|i| i.cargo_crate_name()).is_some_and(|name| {
+                    #[cfg(feature = "exclusive-native")]
+                    if dep.build_script.is_some() { return false; }
+                    dep.extern_name == request.alias && dep.lib_name.replace('-', "_") == name
+                        && dep.edition == "2024"
+                        && dep.features.is_empty() && dep.deps.is_empty()
+                }),
+                _ => false,
+            };
             if !unit.target.kind.iter().any(|kind| matches!(kind.as_str(),"lib"|"rlib"))
-                || unit.target.name != library.crate_name || !unit.deps.is_empty()
+                || unit.target.name != library.crate_name || !matched_dependencies
                 // Cargo metadata names the actual script target in every
                 // build mode; UnitInfo's planned script is product-only.
                 || unit.package.targets.iter().any(|target|target.kind.iter().any(|kind|kind=="custom-build"))
                 || !unit.features.is_empty() || key.krate.test {
-                return Err(code2("public scalar-library integration requires the actual dependency-free, script-free library unit".into()));
+                return Err(code2("public scalar-library integration requires the matching Cargo dependency and script-free unit".into()));
             }
+        } else if imports.is_some() {
+            return Err(code2("Cargo artifact import requires a public library context".into()));
         }
         let selected_source = std::fs::canonicalize(&unit.target.src_path).map_err(|e| code2(format!("cannot bind selected Cargo source: {e}")))?;
         let requested_source = std::fs::canonicalize(&req.file).map_err(|e| code2(format!("cannot bind requested Cargo source: {e}")))?;
@@ -2240,7 +2253,7 @@ fn resolved_setup(
                 env.add_check_cfg(c);
             }
         }
-        let mut deps = unit.deps.clone();
+        let mut deps = if key.library.is_some() { Vec::new() } else { unit.deps.clone() };
         let mut memo: FxMap<BuildOutputKey, Option<super::buildscript::Outputs>> = FxMap::default();
         #[cfg(not(feature = "exclusive-native"))]
         memo.insert(manifest_dir, selected_out);
@@ -2449,7 +2462,9 @@ fn resolved_setup(
         // its hits out of it, and lets go of it before any patch writes it.
         front.resolve_cache.set_merged(front.ast.clone(), front.ast_gen);
         let out = if caches.library.is_some() {
-            worklist::resolve_native_library(&input, &front.interner, &front.known, &mut front.resolve_cache, &super::library::parse_root)
+            let mut mount = |tables: &mut crate::resolve::imports::ResolvedTables| imports.unwrap().mount(tables, &front.interner);
+            worklist::resolve_native_library(&input, &front.interner, &front.known, &mut front.resolve_cache,
+                &super::library::parse_root, imports.map(|_| &mut mount as _))
         } else if let Some(imports) = imports {
             let mut mount = |tables: &mut crate::resolve::imports::ResolvedTables| imports.mount(tables, &front.interner);
             worklist::resolve_crate_with_imports(&input, &front.interner, &front.known, plan.platform, &mut mount)
@@ -2895,6 +2910,15 @@ pub(super) fn prepare_imported<'a>(req: &'a Request, session: &'a mut Session, d
         }
         outcome => outcome,
     })
+}
+
+#[cfg(feature = "exclusive-native")]
+pub(crate) fn prepare_library_import<'a>(req: &'a Request, session: &'a mut Session, definitions: &dyn super::imports::Definitions) -> Preparation<'a> {
+    // The public owner resets this retained session if the exact input artifact
+    // changes. The general disk cache does not encode this input generation.
+    session.cache_tried = true;
+    session.disk_cache = None;
+    prepare_with_definitions(req, session, None, Some(definitions))
 }
 
 fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, observer: Option<&dyn super::PhaseObserver>, imports: Option<&dyn super::imports::Definitions>) -> Preparation<'a> {
@@ -4695,6 +4719,8 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
         library.checked_names=work.iter().map(|&i|{let id=LocalDefId(i as u32);(program.disk_id(id),program.interner.get(program.fns[i].name).to_owned())}).collect();
     }
     let library_facts=library.then(||std::sync::Mutex::new(std::collections::BTreeMap::new()));
+    let imported_library = library && imports.is_some();
+    let extern_used_on_error = std::sync::atomic::AtomicBool::new(false);
     let results = par_map(&work, |&i| {
         let f = LocalDefId(i as u32);
         // Lowering and borrowck read derive lists too (Copy operands,
@@ -4705,6 +4731,9 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
                 check::derive_delta::unlogged(|| observer.checked(phase, f, &checked, &errs));
             }
             if !errs.is_empty() {
+                if imported_library && checked.expr_res.iter().any(|resolution| matches!(resolution, check::Res::NativeFn(_))) {
+                    extern_used_on_error.store(true, std::sync::atomic::Ordering::Relaxed);
+                }
                 return (None, errs);
             }
             let mut facts = library.then(|| super::library::capture(&program, f, &checked));
@@ -4725,6 +4754,9 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
         });
         (body, errs)
     });
+    if let Some(library) = &mut caches.library {
+        library.extern_used_on_error = extern_used_on_error.into_inner();
+    }
     let mut library_facts=library_facts.map(|facts|facts.into_inner().unwrap_or_else(|e|e.into_inner()));
     let mut diags: Vec<Diag> = Vec::new();
     for (k, &i) in work.iter().enumerate() {
@@ -4836,7 +4868,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
         }),
     };
     let imported_dependencies = imports.map_or_else(Vec::new, |i| i.dependencies());
-    let imported_emission = match imports.map(|i| i.take_emission()).transpose() {
+    let imported_emission = match imports.filter(|_| req.session.library.is_none()).map(|i| i.take_emission()).transpose() {
         Ok(emission) => emission,
         Err(error) => return Preparation::Failed(Response {
             code: 3, stderr: format!("error: imported emission ownership failed: {error}\n"), ..Default::default()
