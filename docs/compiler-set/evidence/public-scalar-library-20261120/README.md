@@ -39,3 +39,19 @@ Two independent fixture defects also failed this job. The public contract peer c
 The separate [metadata research job](https://github.com/glopyglerky/lustr/actions/runs/44713154124/job/136209702918) passed on this exact head. Independent review of its original artifact confirms 29 transitions, 33 requests across three sessions, 25 original-Rust consumers, 6,815,952 actual result assertions, 85 command-stream pairs, 25 archive joins, two SDK refusals and five no-op intervals with zero actual artifact-tool calls. That result qualifies only its research caller and fixed corpus.
 
 [attempt-ca383e18.json](attempt-ca383e18.json) records all six original artifact digests, the failed Cargo streams and trace, component byte identities, source identities and both independent audits. The eight public component identities match bytes retained in original qualification package copies; the original installation directory itself is not an archived prefix. Review used the original records without rerunning the candidate. The separate broad workflow was still running at this observation. The public integration, full Rust replacement, compiler-wide `no_std`, public socket independence and performance remain unqualified.
+
+## Actual Cargo build succeeded; artifact-path evaluator failed
+
+Head `dae72eddb614a7b855212fd9656013f5d0fc82c6`, tree
+`e470676112c43d5ebfc79aa3f62a5b0602df640b`, failed its
+[Compiler set run](https://github.com/glopyglerky/lustr/actions/runs/44720879498)
+in the public-library campaign. The constructor and all 16 evaluator controls
+passed. The first real Cargo/native build succeeded and reported both library
+artifacts in its intermediate directory. The evaluator incorrectly required
+the archive below `target`, then stopped before any independent consumer:
+zero completed public histories, consumers and runtime assertions.
+
+The [source-backed correction](cargo-artifact-path-correction.md) records the
+original artifact digest, pinned Cargo implementation and independent unchanged
+SDK witness. It changes evaluator path and prior-publication observation only;
+the complete public campaign remains required on the corrected source.

@@ -2,6 +2,7 @@
 """Mutation controls for the public library evaluator, executed only in CI."""
 import importlib.util
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -204,6 +205,69 @@ class ArtifactAndDiagnosticEvidence(unittest.TestCase):
             with self.subTest(messages=messages):
                 with self.assertRaisesRegex(AssertionError, "exactly one original empty"):
                     campaign.unused_dependencies(messages)
+
+    def cargo_artifact(self):
+        for emit, path in self.outputs.items():
+            path.write_bytes((emit + " original bytes").encode())
+        return {"target": {"name": campaign.CRATE}, "executable": None,
+                "filenames": [str(self.outputs["link"]), str(self.outputs["metadata"])]}
+
+    def test_nightly_cargo_reports_actual_unlifted_library_pair(self):
+        artifact = self.cargo_artifact()
+        self.assertEqual(campaign.delivered_artifacts(artifact, self.outputs),
+                         {"link": self.outputs["link"], "metadata": self.outputs["metadata"]})
+
+    def test_identical_copied_archive_is_not_the_reported_compiler_output(self):
+        artifact = self.cargo_artifact()
+        target = self.root / "target/debug"
+        target.mkdir(parents=True)
+        copied = target / "libnative_leaf.rlib"
+        copied.write_bytes(self.outputs["link"].read_bytes())
+        artifact["filenames"][0] = str(copied)
+        with self.assertRaisesRegex(AssertionError, "delivered filename"):
+            campaign.delivered_artifacts(artifact, self.outputs)
+
+    def test_missing_duplicate_extra_or_wrong_target_delivery_is_refused(self):
+        artifact = self.cargo_artifact()
+        for filenames in ([artifact["filenames"][0]], [artifact["filenames"][0]] * 2,
+                          artifact["filenames"] + [str(self.outputs["dep-info"])]):
+            with self.subTest(filenames=filenames):
+                with self.assertRaises(AssertionError):
+                    campaign.delivered_artifacts(dict(artifact, filenames=filenames), self.outputs)
+        for changed in (dict(artifact, target={"name": "other"}), dict(artifact, executable="program")):
+            with self.assertRaisesRegex(AssertionError, "wrong library target"):
+                campaign.delivered_artifacts(changed, self.outputs)
+
+    def test_delivered_descriptor_retains_old_inode_across_cargo_unlink(self):
+        self.cargo_artifact()
+        path = self.outputs["link"]
+        with path.open("rb") as held:
+            before = campaign.file_snapshot({"link": held})
+            path.unlink()
+            self.assertEqual(campaign.file_snapshot({"link": held}), before)
+            path.write_bytes(b"new publication")
+            self.assertEqual(campaign.file_snapshot({"link": held}), before)
+            self.assertNotEqual(campaign.file_snapshot({"link": path}), before)
+
+    def test_delivered_descriptor_detects_in_place_mutation(self):
+        self.cargo_artifact()
+        path = self.outputs["link"]
+        with path.open("rb") as held:
+            before = campaign.file_snapshot({"link": held})
+            path.write_bytes(b"mutated old publication")
+            self.assertNotEqual(campaign.file_snapshot({"link": held}), before)
+
+    def test_delivered_descriptor_does_not_reuse_buffered_old_bytes(self):
+        self.cargo_artifact()
+        path = self.outputs["link"]
+        with path.open("rb") as held:
+            held.read(4)
+            before = campaign.file_snapshot({"link": held})
+            stamp = path.stat()
+            path.write_bytes(b"x" * stamp.st_size)
+            os.utime(path, ns=(stamp.st_atime_ns, stamp.st_mtime_ns))
+            self.assertNotEqual(campaign.file_snapshot({"link": held}), before)
+            self.assertEqual(held.tell(), 4)
 
 
 if __name__ == "__main__":

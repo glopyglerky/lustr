@@ -686,10 +686,39 @@ def trace_command(path):
 def file_snapshot(outputs):
     result = {}
     for emit, path in outputs.items():
-        stat = path.stat()
-        result[emit] = {"path": str(path), "sha256": sha(path.read_bytes()), "size": stat.st_size,
+        if hasattr(path, "fileno"):
+            # Cargo may unlink an intermediate before the next compiler call.
+            # The open descriptor still observes the actual published inode,
+            # so its old bytes remain independently checked after unlinking.
+            stat = os.fstat(path.fileno())
+            position = path.tell()
+            path.seek(0)
+            data = path.read()
+            path.seek(position)
+            name = str(path.name)
+        else:
+            stat, data, name = path.stat(), path.read_bytes(), str(path)
+        result[emit] = {"path": name, "sha256": sha(data), "size": stat.st_size,
                         "inode": stat.st_ino, "mtime_ns": stat.st_mtime_ns}
     return result
+
+
+def delivered_artifacts(artifact, outputs):
+    require(artifact.get("target", {}).get("name") == CRATE and not artifact.get("executable"),
+            "Cargo reported the wrong library target")
+    paths = [Path(path) for path in artifact.get("filenames", [])]
+    require(len(paths) == 2, "Cargo omitted or added a delivered library artifact")
+    delivered = {}
+    # Pinned nightly Cargo's uplift_to leaves rlibs in the intermediate output
+    # directory unless its temporary test opt-out is set; this campaign's
+    # explicit environment does not set it. Rmeta is never uplifted either.
+    for emit, extension in (("link", ".rlib"), ("metadata", ".rmeta")):
+        matches = [path for path in paths if path.suffix == extension]
+        require(len(matches) == 1 and matches[0].resolve() == outputs[emit].resolve()
+                and matches[0].read_bytes() == outputs[emit].read_bytes(),
+                "Cargo's delivered filename differs from compiler output")
+        delivered[emit] = matches[0]
+    return delivered
 
 
 def command_inventory(record, outputs, llvm):
@@ -850,6 +879,7 @@ def main():
     commands = Commands(root / "commands", report, save)
     daemon = None
     daemon_handles = []
+    delivered_handles = []
     owner = None
     prefixes = []
     sealed = {}
@@ -975,6 +1005,9 @@ def main():
             cargo_argv = [package / "bin/cargo", "build", "--lib", "--offline", "--message-format=json"]
             stdout, stderr, client_trace = commands.run(label, cargo_argv, project["root"], env,
                                                        expected=101 if kind == "invalid" else 0, traced=True)
+            if old_delivered is not None:
+                require(file_snapshot(saved_delivered[unit]) == old_delivered,
+                        "public request mutated a prior delivered artifact inode")
             require(process_identity(owner[0], package / "bin/lust-core") == owner, "public request replaced/lost retained owner")
             require(project["source"].read_bytes() == source_bytes and project["manifest"].read_bytes() == (case / "Cargo.toml").read_bytes(),
                     "product rewrote the selected source or manifest")
@@ -1032,8 +1065,7 @@ def main():
                     if path.exists():
                         require(emit in old_files and sha(path.read_bytes()) == old_files[emit]["sha256"],
                                 "typed failure changed an existing successful artifact")
-                require(old_delivered is not None and file_snapshot(saved_delivered[unit]) == old_delivered,
-                        "typed failure changed Cargo's last delivered target archive")
+                require(old_delivered is not None, "typed failure lacks its prior delivered artifact witness")
                 forwarded = [row["message"] for row in messages if row.get("reason") == "compiler-message"]
                 forwarded_error = diagnostic(forwarded, project["source"], source_bytes, "L0110", tagged=False)
                 raw_error = diagnostic(native_messages, project["source"], source_bytes, "L0110")
@@ -1068,16 +1100,9 @@ def main():
                             "public artifact receipt differs from actual named bytes")
                 artifact_messages = {row.get("emit"): Path(row.get("artifact", "")) for row in native_messages if row.get("$message_type") == "artifact"}
                 require(artifact_messages == outputs, "accepted JSON artifact options did not emit the actual output notifications")
-                cargo_paths = [Path(path) for path in cargo_artifacts[0].get("filenames", [])]
-                require(cargo_artifacts[0].get("target", {}).get("name") == CRATE and not cargo_artifacts[0].get("executable"),
-                        "Cargo reported the wrong library target")
-                for emit, extension in (("link", ".rlib"), ("metadata", ".rmeta")):
-                    matches = [path for path in cargo_paths if path.suffix == extension]
-                    require(len(matches) == 1 and
-                            (matches[0].resolve().is_relative_to(project["target"]) if emit == "link" else matches[0].resolve() == outputs[emit])
-                            and matches[0].read_bytes() == outputs[emit].read_bytes(), "Cargo's delivered filename differs from compiler output")
-                    if emit == "link":
-                        saved_delivered[unit] = {"link": matches[0]}
+                delivered = delivered_artifacts(cargo_artifacts[0], outputs)
+                saved_delivered[unit] = {emit: path.open("rb") for emit, path in delivered.items()}
+                delivered_handles.extend(saved_delivered[unit].values())
                 frozen = case / "artifacts"
                 frozen.mkdir()
                 frozen_outputs = {}
@@ -1575,6 +1600,8 @@ def main():
                     pass
                 report["cleanup_failure"] = "owned traced daemon failed bounded termination"
         for handle in daemon_handles:
+            handle.close()
+        for handle in delivered_handles:
             handle.close()
         # A broken entry could have autostarted a replacement owner in a new
         # session. Stop only exact traced core daemons bound to our endpoint.
