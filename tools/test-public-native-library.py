@@ -483,11 +483,15 @@ def diagnostic(messages, source, text, code, *, tagged=True):
     return error
 
 
-def dep_info(data, outputs, source, cwd, *, modules=()):
+def dep_info(data, outputs, source, cwd, *, modules=(), environment=()):
     require(b"\r" not in data and data.endswith(b"\n"), "dep-info has malformed record endings")
     rules = {}
+    observed_environment = []
     for line in data.decode().splitlines():
         if not line:
+            continue
+        if line.startswith("# env-dep:"):
+            observed_environment.append(line.removeprefix("# env-dep:"))
             continue
         require(not line.startswith("#"), "scalar leaf emitted unobserved environment/checksum dependencies")
         target, separator, prerequisites = line.partition(":")
@@ -501,6 +505,7 @@ def dep_info(data, outputs, source, cwd, *, modules=()):
     expected = {str(path): inputs for path in outputs.values()}
     expected.update(dict.fromkeys(inputs, []))
     require(rules == expected, "dep-info targets or actual source prerequisites differ from requested artifacts")
+    require(observed_environment == list(environment), "dep-info environment reads differ from the actual request")
     return rules
 
 
@@ -1259,6 +1264,83 @@ def qualify_executable(root, package, sdk, commands, environment, oracle_env, pr
         result["history"].append({"case": label, "status": status, "runtime_value": None if check else value,
                                   "artifact_reused": reused, "tinycc_processes": len(native_tools),
                                   "changed_native_objects": changed_units})
+    result["passed"] = True
+
+
+def qualify_expansion_inputs(root, package, sdk, commands, environment, oracle_env, projects, owner,
+                             daemon_trace, daemon_argv, prefixes, report, *, check=False):
+    project = projects["consumer"]
+    source = project["root"] / "src/main.rs"
+    included = source.with_name("answer.txt")
+    source.write_bytes(b'fn main() { println!("{}:{}:{}", consumer::call(255), include_str!("answer.txt"),'
+                       b' env!("LUSTR_TEST_COMPILE_VALUE")); }\n')
+    source_bytes = source.read_bytes()
+    mode, emit = ("check", "metadata") if check else ("run", "link")
+    name = "expansion-" + mode
+    target, build = (project["root"] / f"{name}-{suffix}" for suffix in ("target", "build"))
+    application = target / "debug/consumer"
+    env = dict(environment, CARGO_TARGET_DIR=str(target), CARGO_BUILD_BUILD_DIR=str(build))
+    independent = dict(oracle_env, CARGO_HOME=environment["CARGO_HOME"], RUSTC=str(sdk / "bin/rustc"),
+                       CARGO_TARGET_DIR=str(project["root"] / f"{name}-oracle-target"),
+                       CARGO_BUILD_BUILD_DIR=str(project["root"] / f"{name}-oracle-build"))
+    flags = [mode, "--bin", "consumer", "--offline", "--message-format=json"]
+    argv = [package / "bin/cargo", *flags]
+    baseline_mask = projects["provider"]["source"].read_bytes()
+    require(b"x & 63" in baseline_mask, "expansion fixture did not retain the preceding provider generation")
+    result = {"passed": False, "history": []}
+    report["cargo_executable_expansion_inputs" + ("_check" if check else "")] = result
+    cases = [
+        ("cold", b"blue", "first", b"63:blue:first"),
+        ("include-edit", b"red", "first", b"63:red:first"),
+        ("env-edit", b"red", "second=value", b"63:red:second=value"),
+        ("missing-include", None, "second=value", None),
+        ("repair", b"blue", "third", b"63:blue:third"),
+    ]
+    for label, content, setting, wanted_output in cases:
+        key = "LUSTR_TEST_COMPILE_VALUE"
+        if content is None:
+            included.unlink()
+        elif not included.exists() or included.read_bytes() != content:
+            included.write_bytes(content)
+        status = 0 if wanted_output is not None else 101
+        before = set((root / "observations").glob("*/report.json"))
+        stdout, stderr, trace = commands.run(name + "-" + label, argv, project["root"],
+            dict(env, **{key: setting}), expected=status, traced=True)
+        original, _, _ = commands.run(name + "-" + label + "-original", [sdk / "bin/cargo", *flags],
+            project["root"], dict(independent, **{key: setting}), expected=status)
+        records = [json.loads(path.read_text()) for path in sorted(set((root / "observations").glob("*/report.json")) - before)]
+        libraries = sorted((item for item in records if item["schema"] == "lustr-public-scalar-library-v1"), key=lambda item: item["request_index"])
+        binaries = [item for item in records if item["schema"] == "lustr-public-executable-v1"]
+        expected_application = None if check else application
+        events = trace_events(trace.read_bytes(), project["root"], application=expected_application)
+        observed = inspect_processes(events, package, argv[0], argv, projects, application=expected_application)
+        require(len(observed["compiles"]) == (3 if label == "cold" else 1)
+                and source.read_bytes() == source_bytes, "an expansion input did not invalidate the unchanged root")
+        prefix = daemon_trace.read_bytes()
+        frozen_prefix(prefixes[-1]["bytes"], prefix)
+        owned = inspect_processes(trace_events(prefix, root), package, Path(daemon_argv[0]), daemon_argv, projects, daemon=True)
+        calls = owned["artifacts"][prefixes[-1]["artifact_count"]:]
+        wanted = [{"argv": command["argv"], "cwd": command["cwd"]} for item in libraries for command in item["commands"]]
+        reconcile_artifact_calls([call for call in calls if Path(call["filename"]).name != "tcc"], wanted)
+        prefixes.append({"name": name + "-" + label, "bytes": prefix, "artifact_count": len(owned["artifacts"])})
+        if check:
+            require(not calls and not observed["runs"] and not application.exists(), "checking expansion inputs emitted code")
+        if status:
+            require(not binaries and not observed["runs"] and not calls and b"answer.txt" in stdout + stderr,
+                    "missing include emitted or ran code")
+        else:
+            require(len(binaries) == 1, "missing retained expansion input observation")
+            if not check:
+                require(len(observed["runs"]) == 1 and stdout.splitlines()[-1] == original.splitlines()[-1] == wanted_output,
+                        "compiled expansion values did not match pinned Rust")
+            record = binaries[0]
+            require(record["owner_pid"] == owner[0] and record["emit"] == emit and not record["artifact_reused"],
+                    "included file escaped retained checking")
+            outputs = {kind: Path(filename) for kind, filename in zip(("dep-info", emit), record["outputs"])}
+            dep_info(outputs["dep-info"].read_bytes(), outputs, source, project["root"],
+                     modules=[included], environment=[f"{key}={setting}"])
+        result["history"].append({"case": label, "status": status,
+                                  "runtime_value": wanted_output.decode() if wanted_output is not None and not check else None})
     result["passed"] = True
 
 
@@ -2041,6 +2123,10 @@ def main():
                            daemon_trace, daemon_argv, prefixes, report, module=True)
         qualify_executable(root, package, sdk, commands, environment, oracle_env, projects, owner,
                            daemon_trace, daemon_argv, prefixes, report, check=True, module=True)
+        qualify_expansion_inputs(root, package, sdk, commands, environment, oracle_env, projects, owner,
+                                 daemon_trace, daemon_argv, prefixes, report)
+        qualify_expansion_inputs(root, package, sdk, commands, environment, oracle_env, projects, owner,
+                                 daemon_trace, daemon_argv, prefixes, report, check=True)
         seal_reports()
         save()
         # A direct archive passed where Cargo normally passes full metadata is refused.

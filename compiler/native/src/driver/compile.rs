@@ -2841,24 +2841,36 @@ impl PreparedRequest<'_> {
         &self.state.as_ref().expect("checked request is consumed").source
     }
 
-    /// The original resolver's file inventory supplies module dependencies.
-    /// Include files and environment reads need their own dep-info representation.
-    pub(crate) fn executable_source_modules(&self) -> Option<Vec<std::path::PathBuf>> {
-        if self.session.front.chunks.iter().flat_map(|chunk| &chunk.expand_deps)
-            .any(|dep| matches!(dep, expand::Dep::File { .. } | expand::Dep::Env { .. })) {
-            return None;
-        }
+    /// Collect the original resolver's file inventory and actual expansion reads.
+    pub(crate) fn executable_source_inputs(&self) -> Result<ExecutableSourceInputs, &'static str> {
         let map = self.source_map();
-        let cwd = &self.request.session.library.as_ref()?.working_directory;
-        let mut modules = Vec::new();
+        let cwd = &self.request.session.library.as_ref().ok_or("missing executable context")?.working_directory;
+        let mut inputs = ExecutableSourceInputs::default();
         for index in 1..map.file_count() {
             let file = FileId(index as u32);
             let path = std::path::Path::new(map.path(file));
             if path.as_os_str().is_empty() { continue; } // A retired source-map slot.
-            if !path.is_absolute() || map.text(file).is_none() { return None; }
-            modules.push(path.strip_prefix(cwd).unwrap_or(path).to_path_buf());
+            if !path.is_absolute() || map.text(file).is_none() {
+                return Err("unrepresented executable source file");
+            }
+            inputs.files.push(path.strip_prefix(cwd).unwrap_or(path).to_path_buf());
         }
-        Some(modules)
+        for dep in self.session.front.chunks.iter().flat_map(|chunk| &chunk.expand_deps) {
+            match dep {
+                expand::Dep::File { path, .. } => {
+                    if !path.is_absolute() { return Err("unbound executable include file"); }
+                    inputs.files.push(path.strip_prefix(cwd).unwrap_or(path).to_path_buf());
+                    inputs.has_include = true;
+                }
+                expand::Dep::Env { name, value } => {
+                    if inputs.environment.insert(name.clone(), value.clone()).is_some_and(|old| old != *value) {
+                        return Err("conflicting executable environment reads");
+                    }
+                }
+                _ => {}
+            }
+        }
+        Ok(inputs)
     }
 
     /// Imported declarations in this executable slice are functions. For a
@@ -2904,6 +2916,13 @@ impl PreparedRequest<'_> {
         let state = self.state.take().expect("checked request is consumed");
         emit_checked(self.request, self.session, state)
     }
+}
+
+#[derive(Default)]
+pub(crate) struct ExecutableSourceInputs {
+    pub files: Vec<std::path::PathBuf>,
+    pub environment: std::collections::BTreeMap<String, Option<String>>,
+    pub has_include: bool,
 }
 
 impl Drop for PreparedRequest<'_> {

@@ -5,7 +5,7 @@ use crate::library_artifact::{Context,Service};
 use lustr_metadata_encoder as metadata;
 use serde_json::{Value,json};
 use sha2::{Digest,Sha256};
-use std::{fs,io::Write,path::{Path,PathBuf},sync::{Arc,OnceLock,atomic::{AtomicU64,Ordering}}};
+use std::{collections::BTreeMap,fs,io::Write,path::{Path,PathBuf},sync::{Arc,OnceLock,atomic::{AtomicU64,Ordering}}};
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
 #[path="unit_publication.rs"]
 mod publication;
@@ -116,6 +116,7 @@ pub(crate) struct Owner {
 struct BinaryArtifact {
     source: Arc<str>,
     module_sources: diag::SourceMap,
+    environment: BTreeMap<String, Option<String>>,
     shown: Option<PathBuf>,
     mode: u32,
     bytes: Arc<[u8]>,
@@ -266,7 +267,7 @@ impl Owner {
             // The admitted completion proves exactly one original source file,
             // no imported source and no env!/include! reads.
             let input=req.client.shown.as_deref().unwrap_or(&req.file);
-            let dep=dep_info(paths,&[input.to_path_buf()])?;
+            let dep=dep_info(paths,&[input.to_path_buf()],&BTreeMap::new())?;
             let check_bytes;
             let build_bytes;
             let expected: &[&[u8]] = if let Some(metadata) = &checked_metadata {
@@ -386,12 +387,13 @@ impl Owner {
                 let mut reused = false;
                 let mut source = None;
                 let mut inputs = vec![req.client.shown.as_deref().unwrap_or(&req.file).to_owned()];
+                let mut environment = BTreeMap::new();
                 let mut unused = Vec::new();
                 let mut response = match driver::prepare_library_import(&staged, session, executable) {
                     driver::Preparation::Ready(prepared) => {
-                        let modules = prepared.executable_source_modules()
-                            .ok_or("Cargo executable expansion inputs are outside the represented dependencies")?;
-                        inputs.extend(modules);
+                        let observed = prepared.executable_source_inputs()?;
+                        inputs.extend(observed.files);
+                        environment = observed.environment;
                         if req.json && req.library_options.force_warn_unused_crate_dependencies {
                             let used = prepared.executable_extern_uses().ok_or("executable extern lint form is not represented")?;
                             unused = executable.unused_externs(&used);
@@ -399,15 +401,19 @@ impl Owner {
                         checked = prepared.checked_functions().len();
                         if check {
                             prepared.emit()
-                        } else if let Some(cached) = &self.binary_output
+                        } else if !observed.has_include
+                            && let Some(cached) = &self.binary_output
                             && cached.source.as_ref() == prepared.source() && cached.shown == req.client.shown
-                            && cached.module_sources.same_sources(prepared.source_map()) {
+                            && cached.module_sources.same_sources(prepared.source_map())
+                            && cached.environment == environment {
                             write_new(&staged.out, &cached.bytes)?;
                             fs::set_permissions(&staged.out, fs::Permissions::from_mode(cached.mode)).map_err(|error|error.to_string())?;
                             reused = true;
                             driver::Response::default()
                         } else {
-                            source = Some((Arc::<str>::from(prepared.source()), prepared.source_map().clone()));
+                            if !observed.has_include {
+                                source = Some((Arc::<str>::from(prepared.source()), prepared.source_map().clone()));
+                            }
                             prepared.emit()
                         }
                     }
@@ -426,11 +432,11 @@ impl Owner {
                 let completed = if let Some((source, module_sources)) = source {
                     let mode = fs::metadata(&staged.out).map_err(|error|error.to_string())?.mode() & 0o777;
                     let bytes = fs::read(&staged.out).map_err(|error|error.to_string())?.into();
-                    Some(BinaryArtifact { source, module_sources, shown:req.client.shown.clone(), mode, bytes })
+                    Some(BinaryArtifact { source, module_sources, environment: environment.clone(), shown:req.client.shown.clone(), mode, bytes })
                 } else { None };
                 let paths = [dependencies, output];
                 let dep = stage.join(key.dep_info_name());
-                write_new(&dep, &dep_info(&paths, &inputs)?)?;
+                write_new(&dep, &dep_info(&paths, &inputs, &environment)?)?;
                 match publication::replace_set(&[(&dep, &paths[0]), (&staged.out, &paths[1])])
                     .map_err(|error| format!("replace Cargo executable: {error}"))? {
                     publication::Replacement::Durable => {}
@@ -483,7 +489,7 @@ fn output_records(paths:&[PathBuf],expected:&[&[u8]],emits:&[&str])->Value{
 }
 /// Original Rust 5b7b37 rustc_interface::passes::escape_dep_filename and
 /// write_out_deps layout, applied to the actual completed source/output list.
-fn dep_info(outputs: &[PathBuf], sources: &[PathBuf]) -> Result<Vec<u8>, String> {
+fn dep_info(outputs: &[PathBuf], sources: &[PathBuf], environment: &BTreeMap<String, Option<String>>) -> Result<Vec<u8>, String> {
     let escape = |path: &Path| {
         let path = path.to_str().ok_or("dep-info path is not Unicode")?;
         if path.contains(['\n', '\r', '\0']) {
@@ -505,6 +511,25 @@ fn dep_info(outputs: &[PathBuf], sources: &[PathBuf]) -> Result<Vec<u8>, String>
     }
     for source in sources {
         text.push_str(&format!("{source}:\n"));
+    }
+    if !environment.is_empty() {
+        let escape_env = |value: &str| value.replace('\\', "\\\\").replace('\n', "\\n").replace('\r', "\\r");
+        let mut escaped = Vec::with_capacity(environment.len());
+        for (name, value) in environment {
+            if name.contains(['=', '\0']) { return Err("unrepresented dep-info environment name".into()); }
+            escaped.push((escape_env(name), value.as_deref().map(escape_env)));
+        }
+        escaped.sort_unstable();
+        text.push('\n');
+        for (name, value) in escaped {
+            text.push_str("# env-dep:");
+            text.push_str(&name);
+            if let Some(value) = value {
+                text.push('=');
+                text.push_str(&value);
+            }
+            text.push('\n');
+        }
     }
     Ok(text.into_bytes())
 }

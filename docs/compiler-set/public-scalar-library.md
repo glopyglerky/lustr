@@ -102,8 +102,11 @@ execution.
 The retained executable also tracks out-of-line modules using the file
 inventory and source snapshots from the native resolver. Cargo observes the
 actual module paths in dep-info. Editing a module with an unchanged root
-rechecks the changed body and invalidates the linked artifact. Expansion
-inputs from include and environment macros still need dep-info support.
+rechecks the changed body and invalidates the linked artifact. Dep-info
+also tracks files read by include macros and values read by environment
+macros. The native checker handles edits and refusals using those existing
+expansion dependencies. Executables with include reads use the retained
+native object pipeline and relink when Cargo requests a build.
 
 General Cargo dependency graphs, additional crate types and profiles, and
 wider semantic completion remain open.

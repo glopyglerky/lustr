@@ -8,14 +8,13 @@
   "artifact_tool_closure": "upstream/metadata-artifact-tools.json",
   "product_owner": "crates/lustr-native-core/src/public_library.rs",
   "shared_artifact_service": "crates/lustr-native-core/src/library_artifact.rs",
-  "supported_context": "Linux x64, edition 2024, panic=abort and embed-bitcode=no, opt-level=0, debuginfo=0. Cargo library checks and builds may use one direct scalar leaf dependency supplied as metadata. Cargo executable checks use a closed scalar metadata graph. Executable builds additionally use the matching archives. Executable dep-info covers the root and files actually loaded by the native module resolver. The admitted extern lint uses native checked reads.",
+  "supported_context": "Linux x64, edition 2024, panic=abort and embed-bitcode=no, opt-level=0, debuginfo=0. Cargo library checks and builds may use one direct scalar leaf dependency supplied as metadata. Cargo executable checks use a closed scalar metadata graph. Executable builds additionally use the matching archives. Executable dep-info covers source files and actual include and environment reads from the native resolver and expander. The admitted extern lint uses native checked reads.",
   "request_options": "LibraryOptions is per request, outside native SessionKey and Client. Unstable embedding None/true/false are distinct metadata/SVH variants; effective None/true use full archive metadata and false uses its matching header stub. Force-warn/JSON do not enter the metadata hash. Stable -C embed-metadata remains unrepresented.",
   "artifact_variants": "At most three embedding choices for the current native link snapshot, plus the last durable link publication. The metadata-only cache holds a single checked generation and requires no native object, export, or archive work.",
   "semantic_owner": "One existing native prepare/emit continuation; only existing completed scalar declarations/bodies.",
   "unimplemented": [
     "stable -C embed-metadata and wider unstable options",
     "general native library and executable dependency graphs",
-    "executable include and environment expansion dependencies",
     "wider native completion",
     "other targets/profiles",
     "socket-free public retained host"
@@ -113,7 +112,7 @@
       "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
       "path": "compiler/rustc_interface/src/passes.rs",
       "sha256": "8ee543fb7a03b80cbd95a58c57a134215d97218afa6551ecc0bd70f02fe75fbc",
-      "role": "Actual output/dep-info layout and filename escaping"
+      "role": "Exact output/dep-info layout, filename escaping, and sorted escaped env-dep records for actual expansion reads"
     },
     {
       "repository": "rust-lang/rust",
@@ -144,7 +143,7 @@
     "compiler/native/src/daemon.rs": "32e17ce050e1ee38617f2b3e9aadbf9950775cbb43ae4a426c9ab761c8f4d66d",
     "compiler/native/src/diag.rs": "2f519633459c37edc99de60331cd4c03f5e29337df088c7f67980cb40006d7e2",
     "compiler/native/src/driver/mod.rs": "28b4fa9374172372191d5e379a4d92abd5498745b5d9f83c2dc0d2fb28662154",
-    "compiler/native/src/driver/compile.rs": "46db29d9f6adbebef9185f37b91f14efaf552bea8b37ce900cc4e417d3ab2ba6",
+    "compiler/native/src/driver/compile.rs": "e19b85098d768433f01a2f085d533c3fb6eba14b5dd3d1e4e63dd0e4863329f8",
     "compiler/native/src/driver/session.rs": "34f37d1998d150d4674c6f44fd9b0d2f6f377ef66c85d8668019e702e466b027",
     "compiler/native/src/driver/imports.rs": "54f6dcc78dfe9a37975580d31be8683a3d59b3699890a7f8e28ab1e61a33f2ec",
     "compiler/native/src/resolve/worklist.rs": "7542a2ddd66cca1ab38b8386a26af9295094b66d28d17b9fe6d3a48c75cae91c",
@@ -155,7 +154,7 @@
     "crates/lustr-native-core/src/native_completion.rs": "54095c63c2d0f6789420df2a97ea82781e219e55dd885afd457cc55eef91a2cb",
     "crates/lustr-native-core/src/library_artifact.rs": "b3b57a9b9bd2abd6792660894099b42e1375dd51f6dd6a5072c5efba6c8a472b",
     "crates/lustr-native-core/src/metadata_archive.rs": "4906cce455716560344bdb329c3bcbc563da21e8c615c357583c038a90e11dfa",
-    "crates/lustr-native-core/src/public_library.rs": "a565e08fbc1bf2502a1c0c75691d5d16f5a12b5e67771a618e750a115171a929",
+    "crates/lustr-native-core/src/public_library.rs": "757776db916930d7b0b9803e55e99a3000ef11cfccf2c764400a39d67a339ee2",
     "crates/lustr-native-core/src/public_library_import.rs": "dfdb1332d7be3ead5a64b6362578c9c1e024ec43b5a5fc981ae567167623aed6",
     "crates/lustr-native-core/src/public_executable_import.rs": "1f22ffdbbc50fbb6a16c676cad0ad8ef30d41dd4c36fa5cc325ba8c1209ab1af",
     "crates/lustr-native-core/src/unit_object.rs": "d43929971c980ec395913ce5f6cb13955e012e72ef2fcddcd14a24adaea1bd24",
@@ -172,7 +171,7 @@
     "tools/build-native-toolchain.rs": "6a30c0a2884f6df81812a53d658eea28d8f6233692dba7b4af72d196109c9579",
     "tools/install-native-metadata-sdk.py": "c6be8a4c32e9f86274321b282c54a5c461c9672a27e6d54994455948bde496fb",
     "tools/check-exclusive-coverage.py": "a6c24b3901d94daffb8c08aef335c64ea9c09ff7bda408c9c5e80041c2368d61",
-    "tools/update-public-library-source-manifest.py": "30b430a8fd5804185a04c2e75c2ea37cbb4ebf602204f40a905f66a937680fa3",
+    "tools/update-public-library-source-manifest.py": "d5e883ba0cd5696ad54f18948467567532dcd15d7c3a9768d5b82429dab2fe03",
     "upstream/metadata-artifact-tools.json": "d1bd48f3b362645dce89172ce862f66189a1847c26e443f1861f9222021af9ff",
     "upstream/metadata-dependency-closure.json": "a5b2d8cccb4594fa2bfe56c33d202c4e6a1f88a1e09105bac8c4f1ab1e0ca32e",
     "docs/compiler-set/evidence/metadata-sdk-receipt-20261120/receipt.json": "4e400b263bf9923616dea44ead2d77213703177d3bfaf6becd6a19a4c5a657a7"
