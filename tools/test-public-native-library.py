@@ -332,6 +332,12 @@ def inspect_processes(parsed, package, expected_root, root_argv, projects, *, da
                     "undeclared or failed product executable attempt: " + str(path))
             continue
         if index == 0:
+            # A direct replay starts at the compiler itself; Cargo normally
+            # starts above it. Count that already validated root invocation,
+            # without requiring it to have a parent or treating Cargo/daemon
+            # startup and read-only compiler queries as body compilations.
+            if not daemon and resolved == entry and not information_query(argv):
+                compiles.append(attempt)
             continue
         require(argv and (argv[0] == str(path) or (resolved in hashes and argv[0] == "sha256sum")),
                 "executable and argv[0] differ")

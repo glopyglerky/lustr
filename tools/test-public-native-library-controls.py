@@ -18,6 +18,55 @@ def exec_line(pid, path, argv, env=("PATH=/usr/bin:/bin",), result="0"):
 
 
 class ProcessEvidence(unittest.TestCase):
+    def package_fixture(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        package = Path(directory.name)
+        (package / "bin").mkdir()
+        (package / "bin/lustr").write_bytes(b"passive compiler identity fixture")
+        (package / "bin/rustc").symlink_to("lustr")
+        return package
+
+    def test_direct_compiler_root_is_counted_once_with_actual_exit(self):
+        package = self.package_fixture()
+        compiler = str(package / "bin/rustc")
+        argv = [compiler, "--crate-name", "native_leaf", "input.rs"]
+        for status in (0, 2):
+            with self.subTest(status=status):
+                data = exec_line(10, compiler, argv) + f"10 +++ exited with {status} +++\n"
+                parsed = campaign.trace_events(data.encode(), package)
+                inspected = campaign.inspect_processes(parsed, package, Path(compiler), argv, {})
+                self.assertEqual(len(inspected["compiles"]), 1)
+                self.assertEqual(inspected["compiles"][0]["pid"], "10")
+                self.assertEqual(parsed["exits"]["10"], status)
+
+    def test_direct_information_root_is_not_a_compile(self):
+        package = self.package_fixture()
+        compiler = str(package / "bin/rustc")
+        argv = [compiler, "-vV"]
+        parsed = campaign.trace_events((exec_line(10, compiler, argv) + "10 +++ exited with 0 +++\n").encode(), package)
+        self.assertEqual(campaign.inspect_processes(parsed, package, Path(compiler), argv, {})["compiles"], [])
+
+    def test_cargo_root_counts_its_compiler_child_once(self):
+        package = self.package_fixture()
+        cargo, compiler = str(package / "bin/cargo"), str(package / "bin/rustc")
+        argv = [cargo, "build"]
+        data = exec_line(10, cargo, argv) + "10 clone(child_stack=NULL, flags=SIGCHLD) = 11\n"
+        data += exec_line(11, compiler, [compiler, "input.rs"]) + "11 +++ exited with 0 +++\n10 +++ exited with 0 +++\n"
+        parsed = campaign.trace_events(data.encode(), package)
+        inspected = campaign.inspect_processes(parsed, package, Path(cargo), argv, {})
+        self.assertEqual([row["pid"] for row in inspected["compiles"]], ["11"])
+
+    def test_direct_root_does_not_hide_an_extra_compiler(self):
+        package = self.package_fixture()
+        compiler = str(package / "bin/rustc")
+        argv = [compiler, "input.rs"]
+        data = exec_line(10, compiler, argv) + "10 clone(child_stack=NULL, flags=SIGCHLD) = 11\n"
+        data += exec_line(11, compiler, argv) + "11 +++ exited with 0 +++\n10 +++ exited with 0 +++\n"
+        parsed = campaign.trace_events(data.encode(), package)
+        inspected = campaign.inspect_processes(parsed, package, Path(compiler), argv, {})
+        self.assertEqual([row["pid"] for row in inspected["compiles"]], ["10", "11"])
+
     def test_split_creation_binds_child_to_actual_parent(self):
         data = exec_line(10, "/owned/cargo", ["/owned/cargo", "build"])
         data += "10 clone(child_stack=NULL, flags=CLONE_VM|CLONE_VFORK|SIGCHLD <unfinished ...>\n"

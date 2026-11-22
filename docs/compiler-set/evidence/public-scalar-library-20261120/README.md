@@ -55,3 +55,24 @@ The [source-backed correction](cargo-artifact-path-correction.md) records the
 original artifact digest, pinned Cargo implementation and independent unchanged
 SDK witness. It changes evaluator path and prior-publication observation only;
 the complete public campaign remains required on the corrected source.
+
+## Delivered-path repair passed; direct-root trace classification failed
+
+Head `9e5f01ef8d5e12b67e3800b78e2c2bc8a2eab368` completed all nine real Cargo
+histories and four eviction replays: twelve independent original-Rust consumers
+executed 3,145,824 result assertions. The three raw-public requests and version
+refusal also passed. The campaign then failed before completing its first
+metadata-option transition. Its actual compiler root exited 0 and the native
+record reports complete, reused artifacts and zero checking/emission/artifact
+work. The trace classifier unconditionally skipped the first process, so the
+new direct-request assertion saw zero compiler invocations instead of one.
+
+[attempt-9e5f01ef.json](attempt-9e5f01ef.json) binds the original upload digest,
+source and finite results. The source correction counts an already validated
+non-query public compiler root once, preserving Cargo/daemon root exclusions,
+child ancestry, actual exits and detection of extra compiler requests. Four
+new controls bring the passing local evaluator suite to 26. This changes no
+compiler code. The four metadata transitions, their four additional consumers
+and later refusals still require a fresh complete campaign. The original
+overall campaign remains failed; full Rust, performance and release remain
+unqualified.
