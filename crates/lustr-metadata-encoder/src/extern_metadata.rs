@@ -86,16 +86,17 @@ impl<'a> Read<'a> {
         Some((self.lazy()?, len))
     }
 
-    fn u64_type(&mut self) -> Option<()> {
+    fn integer_type(&mut self) -> Option<crate::IntegerType> {
         // rustc_middle::ty::codec reserves high-bit tags for abbreviations.
-        // Probe only a direct reference to the same scalar tag pair.
+        // An abbreviation must point to a prior direct primitive tag pair.
         let start = self.at;
         if *self.bytes.get(start)? < 128 {
-            return (self.take(2)? == [3, 4]).then_some(());
+            return crate::IntegerType::from_metadata_tags(self.take(2)?);
         }
         let target = self.leb()?.checked_sub(128)?;
         let end = target.checked_add(2)?;
-        (end <= start && self.bytes.get(target..end)? == [3, 4]).then_some(())
+        (end <= start).then_some(())?;
+        crate::IntegerType::from_metadata_tags(self.bytes.get(target..end)?)
     }
 }
 
@@ -141,7 +142,8 @@ impl Table {
 #[derive(Debug, PartialEq, Eq)]
 pub struct ScalarFunction<'a> {
     pub name: &'a str,
-    pub arity: usize,
+    pub parameters: Vec<crate::IntegerType>,
+    pub result: crate::IntegerType,
     pub path_hash: u64,
 }
 
@@ -295,13 +297,12 @@ fn read_crate<'a>(bytes: &'a [u8], sdk: &Sdk, link: bool) -> Option<ScalarCrate<
         (signature.leb()? == 0).then_some(())?;
         let count = signature.leb()?;
         (0 < count && count <= 65).then_some(())?;
-        for _ in 0..count {
-            signature.u64_type()?;
-        }
+        let parameters = (1..count).map(|_| signature.integer_type()).collect::<Option<Vec<_>>>()?;
+        let result = signature.integer_type()?;
         (signature.take(2)? == [66, 255]).then_some(())?;
         let path_hash = u64::from_le_bytes(table("def_path_hashes")?.value(data, index)?);
         (path_hash == crate::identity::function_path_hash(stable_id, function_name)).then_some(())?;
-        functions.push(ScalarFunction { name: function_name, arity: count - 1, path_hash });
+        functions.push(ScalarFunction { name: function_name, parameters, result, path_hash });
     }
     Some(ScalarCrate { name, stable_id, svh, filename_suffix, functions, dependencies })
 }

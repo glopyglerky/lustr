@@ -906,11 +906,12 @@ def compare_lang_items(commands, rustc, env, case, native, original):
             "native metadata lost the original missing language item record")
 
 
-def project_fixture(root, name, package, source_name, crate_name=CRATE):
+def project_fixture(root, name, package, source_name, crate_name=CRATE, *, explicit_strip=True):
     path = root / name
     source = path / source_name
     source.parent.mkdir(parents=True)
     manifest = path / "Cargo.toml"
+    strip = 'strip = "none"\n' if explicit_strip else ""
     write_new(manifest, f'''[package]
 name = "{package}"
 version = "0.1.0"
@@ -927,8 +928,7 @@ opt-level = 0
 debug-assertions = true
 overflow-checks = true
 incremental = false
-strip = "none"
-''')
+{strip}''')
     return {"root": path, "manifest": manifest, "source": source, "target": path / "target",
             "build": path / "intermediates", "package": package}
 
@@ -1396,6 +1396,72 @@ def qualify_executable_extern_uses(root, package, sdk, commands, environment, or
         require(unused_records == [unused], "native extern uses differ from the pinned Rust resolver")
         result["history"].append({"case": label, "unused_extern_names": unused})
     result["passed"] = True
+
+
+def qualify_integer_signatures(root, package, sdk, commands, environment, oracle_env, projects,
+                               daemon_argv, daemon_trace, prefixes, owner, report):
+    crate = "typed_leaves"
+    project = project_fixture(root / "projects", "integers", crate, "src/lib.rs", crate, explicit_strip=False)
+    projects["integers"] = project
+    project["binary_target"] = crate
+    producer = b"""#![no_std]
+pub fn signed_narrow(x: i32) -> i32 { x ^ -7 }
+pub fn signed_wide(x: i64) -> i64 { x ^ -7 }
+pub fn signed_word(x: isize) -> isize { x ^ -7 }
+pub fn unsigned_narrow(x: u32) -> u32 { x ^ 7 }
+pub fn unsigned_wide(x: u64) -> u64 { x ^ 7 }
+pub fn unsigned_word(x: usize) -> usize { x ^ 7 }
+"""
+    write_new(project["source"], producer)
+    source = project["root"] / "src/main.rs"
+    write_new(source, b"""fn main() {
+    assert_eq!(typed_leaves::signed_narrow(0), -7);
+    assert_eq!(typed_leaves::signed_wide(0), -7);
+    assert_eq!(typed_leaves::signed_word(0), -7);
+    println!("{}:{}:{}:{}:{}:{}",
+        typed_leaves::signed_narrow(i32::MIN),
+        typed_leaves::signed_wide(i64::MIN),
+        typed_leaves::signed_word(isize::MIN),
+        typed_leaves::unsigned_narrow(u32::MAX),
+        typed_leaves::unsigned_wide(u64::MAX),
+        typed_leaves::unsigned_word(usize::MAX));
+}
+""")
+    build, target = project["build"], project["target"]
+    application = target / "debug" / crate
+    env = dict(environment, CARGO_BUILD_BUILD_DIR=str(build), CARGO_TARGET_DIR=str(target))
+    before = set((root / "observations").glob("*/report.json"))
+    argv = [package / "bin/cargo", "run", "--bin", crate, "--offline", "--message-format=json"]
+    stdout, _, trace = commands.run("integer-signatures-native", argv, project["root"], env, traced=True)
+    observed = inspect_processes(trace_events(trace.read_bytes(), project["root"], application=application),
+        package, argv[0], argv, projects, application=application)
+    require(len(observed["compiles"]) == 2 and len(observed["runs"]) == 1, "integer executable did not use one library and one binary")
+    library = parse_compile(observed["compiles"][0])
+    require(library["codegen"].get("strip") == "debuginfo", "ordinary Cargo debug-strip request was not exercised")
+    records = [json.loads(path.read_bytes()) for path in set((root / "observations").glob("*/report.json")) - before]
+    libraries = [record for record in records if record["schema"] == "lustr-public-scalar-library-v1"]
+    require(len(libraries) == 1 and libraries[0]["owner_pid"] == owner[0], "integer library escaped native retention")
+    record = libraries[0]
+    outputs = {row["emit"]: Path(row["path"]) for row in record["outputs"]}
+    prefix = daemon_trace.read_bytes()
+    frozen_prefix(prefixes[-1]["bytes"], prefix)
+    owned = inspect_processes(trace_events(prefix, root), package, Path(daemon_argv[0]), daemon_argv, projects, daemon=True)
+    wanted = [{"argv": item["argv"], "cwd": item["cwd"]} for item in record["commands"]]
+    reconcile_artifact_calls([item for item in owned["artifacts"][prefixes[-1]["artifact_count"]:]
+                              if Path(item["filename"]).name != "tcc"], wanted)
+    prefixes.append({"name": "integer-signatures-native", "bytes": prefix, "artifact_count": len(owned["artifacts"])})
+    independent = root / "cases" / "integer-rust-consumer"
+    independent.mkdir()
+    proof = independent / "program"
+    commands.run("integer-original-reader-link", [sdk / "bin/rustc", "--edition=2024", "-Cpanic=abort", source, "-o", proof,
+        "--extern", f"{crate}={outputs['link']}", "--extern", f"{crate}={outputs['metadata']}"], project["root"], oracle_env)
+    original, _, _ = commands.run("integer-original-reader-run", [proof], independent, oracle_env)
+    expected = b"2147483641:9223372036854775801:9223372036854775801:4294967288:18446744073709551608:18446744073709551608"
+    require(stdout.splitlines()[-1] == original.rstrip() == expected, "integer signedness/width was not preserved across the Rust ABI")
+    sections, _, _ = commands.run("integer-strip-sections", [Path(shutil.which("readelf")), "-SW", application, outputs["link"]],
+                                 independent, oracle_env)
+    require(b".debug_" not in sections and b".zdebug_" not in sections, "stripped profile left debug sections in an artifact")
+    report["cargo_integer_signatures"] = {"passed": True, "runtime_value": expected.decode(), "type_count": 6}
 
 
 def main():
@@ -2183,6 +2249,8 @@ def main():
                                  daemon_trace, daemon_argv, prefixes, report, check=True)
         qualify_executable_extern_uses(root, package, sdk, commands, environment, oracle_env, projects, owner,
                                       daemon_trace, daemon_argv, prefixes, report)
+        qualify_integer_signatures(root, package, sdk, commands, environment, oracle_env, projects,
+                                   daemon_argv, daemon_trace, prefixes, owner, report)
         seal_reports()
         save()
         # A direct archive passed where Cargo normally passes full metadata is refused.

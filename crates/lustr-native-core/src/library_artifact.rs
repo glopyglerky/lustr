@@ -216,7 +216,9 @@ fn definition_name(snapshot:&Snapshot,id:def::DiskDefId)->Value {
 fn mapped_functions(functions:&[Function])->Vec<metadata::Function> {
     functions.iter().map(|f|metadata::Function {definition:native_id(f.definition()),name:f.name().into(),
         name_span:span(f.name_span()),span:span(f.span()),public:f.visibility()==crate::driver::library::completion::Visibility::Public,
-        parameters:f.parameters().iter().map(|p|metadata::Parameter{name:p.name().into(),span:span(p.span())}).collect(),
+        parameters:f.parameters().iter().map(|p|metadata::Parameter{name:p.name().into(),span:span(p.span()),
+            ty:metadata::IntegerType::from_rust_name(p.ty().name()).expect("completed parameter type")}).collect(),
+        result:metadata::IntegerType::from_rust_name(f.result().name()).expect("completed result type"),
         calls:f.calls().iter().copied().map(native_id).collect() }).collect()
 }
 fn check_object(object:&NativeObject, snapshot:&Snapshot)->Result<Original,String> {

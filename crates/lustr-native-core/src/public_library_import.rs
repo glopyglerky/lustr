@@ -13,15 +13,27 @@ use crate::{
     resolve::imports::{Bind, DefInfo, ExternInfo, InsertOut, ResKind, ResolvedTables, Target, VisKind},
     ty::{self, TyIntern},
 };
-use lustr_metadata_encoder::{Sdk, read_link_crate, read_scalar_crate};
+use lustr_metadata_encoder::{IntegerType, Sdk, read_link_crate, read_scalar_crate};
 
 use super::{Stamp, stamp};
 
 struct Function {
     name: String,
     hash: def::DefPathHash,
-    arity: usize,
+    parameters: Vec<ty::IntTy>,
+    result: ty::IntTy,
     symbol: String,
+}
+
+fn native_integer_type(ty: IntegerType) -> ty::IntTy {
+    match ty {
+        IntegerType::Isize => ty::IntTy::Isize,
+        IntegerType::I32 => ty::IntTy::I32,
+        IntegerType::I64 => ty::IntTy::I64,
+        IntegerType::Usize => ty::IntTy::Usize,
+        IntegerType::U32 => ty::IntTy::U32,
+        IntegerType::U64 => ty::IntTy::U64,
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -68,7 +80,8 @@ impl Import {
             .map(|function| Function {
                 name: function.name.into(),
                 hash: def::DefPathHash(function.path_hash),
-                arity: function.arity,
+                parameters: function.parameters.iter().copied().map(native_integer_type).collect(),
+                result: native_integer_type(function.result),
                 symbol: leaf.symbol(function.name),
             })
             .collect();
@@ -154,7 +167,6 @@ impl driver::imports::Definitions for Import {
             || program.imported_crates.insert(self.index, self.stable).is_some() {
             return Err(vec![Self::failure("extern crate identity is already occupied")]);
         }
-        let word = program.tys.intern(ty::TyKind::Int(ty::IntTy::U64));
         for function in &self.functions {
             let id = def::DefId { krate: self.index, hash: function.hash };
             let info = program
@@ -164,8 +176,9 @@ impl driver::imports::Definitions for Import {
                 .ok_or_else(|| vec![Self::failure("extern signature has no original binding")])?;
             let mut data = ty::defs::DefData::skeleton(ty::defs::DefKind::ForeignFn, None, info.flat, ty::defs::Vis::Pub, Span::default());
             data.module = info.module;
-            let params = vec![word; function.arity];
-            data.sig = ty::SigData::Fn { params: params.clone(), ret: word };
+            let params: Vec<_> = function.parameters.iter().map(|&kind| program.tys.intern(ty::TyKind::Int(kind))).collect();
+            let ret = program.tys.intern(ty::TyKind::Int(function.result));
+            data.sig = ty::SigData::Fn { params: params.clone(), ret };
             data.native_linkage = Some(Box::new(ty::defs::NativeLinkage {
                 id: def::DiskDefId { krate: self.stable, hash: function.hash },
                 symbol: function.symbol.clone(),
@@ -176,7 +189,7 @@ impl driver::imports::Definitions for Import {
                 RegionSig {
                     n_univ: 0,
                     params,
-                    ret: word,
+                    ret,
                     facts: Vec::new(),
                     names: Vec::new(),
                     early: Vec::new(),
@@ -199,8 +212,9 @@ impl driver::imports::Definitions for Import {
         for function in &self.functions {
             let id = def::DefId { krate: self.index, hash: function.hash };
             let (params, ret, linkage) = program.native_fn(id).ok_or("checked extern signature is absent")?;
-            if params.len() != function.arity
-                || params.iter().chain([&ret]).any(|&id| program.tys.kind(id) != ty::TyKind::Int(ty::IntTy::U64))
+            if params.len() != function.parameters.len()
+                || params.iter().zip(&function.parameters).any(|(&id, &kind)| program.tys.kind(id) != ty::TyKind::Int(kind))
+                || program.tys.kind(ret) != ty::TyKind::Int(function.result)
                 || linkage.id.krate != self.stable
                 || linkage.id.hash != function.hash
                 || linkage.symbol != function.symbol

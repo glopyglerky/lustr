@@ -201,8 +201,13 @@ fn compile(source: &Path, root: &Path, receipt: &Path, sysroot: &Path, report: &
             parameters: function
                 .parameters()
                 .iter()
-                .map(|parameter| metadata::Parameter { name: parameter.name().to_owned(), span: span(parameter.span()) })
+                .map(|parameter| metadata::Parameter {
+                    name: parameter.name().to_owned(),
+                    span: span(parameter.span()),
+                    ty: metadata::IntegerType::from_rust_name(parameter.ty().name()).expect("completed parameter type"),
+                })
                 .collect(),
+            result: metadata::IntegerType::from_rust_name(function.result().name()).expect("completed result type"),
             calls: function.calls().iter().copied().map(native_id).collect(),
         })
         .collect();

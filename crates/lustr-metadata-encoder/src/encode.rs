@@ -219,7 +219,9 @@ pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk, link: bool) -> Result<Encoded
         cx.fact("fn_sig", index, |cx| {
             cx.opaque.emit_usize(0); // Binder bound vars, original order.
             cx.opaque.emit_usize(function.parameters.len() + 1);
-            for _ in 0..=function.parameters.len() { encode_u64_type(cx); }
+            for ty in function.parameters.iter().map(|param| param.ty).chain([function.result]) {
+                cx.opaque.emit_raw_bytes(&ty.metadata_tags());
+            }
             cx.opaque.emit_u8(2 | (1 << 6)); // Rust packed ABI + safe.
             cx.opaque.emit_u8(u8::MAX); // No splatted argument.
         });
@@ -410,11 +412,6 @@ pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk, link: bool) -> Result<Encoded
         bytes
     });
     Ok(Encoded { metadata, metadata_stub, stable_crate_id: stable_id, crate_hash, symbols: mappings })
-}
-
-fn encode_u64_type(cx: &mut Context) {
-    cx.opaque.emit_u8(3); // Original TyKind::Uint.
-    cx.opaque.emit_u8(4); // Original UintTy::U64.
 }
 
 fn codegen_attrs(cx: &mut Context) {

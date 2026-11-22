@@ -26,6 +26,7 @@ pub(crate) enum Visibility {
 pub(crate) struct Parameter {
     name: String,
     span: diag::Span,
+    ty: ty::IntTy,
 }
 
 impl Parameter {
@@ -34,6 +35,9 @@ impl Parameter {
     }
     pub(crate) fn span(&self) -> diag::Span {
         self.span
+    }
+    pub(crate) fn ty(&self) -> ty::IntTy {
+        self.ty
     }
 }
 
@@ -49,6 +53,7 @@ pub(crate) struct Function {
     span: diag::Span,
     visibility: Visibility,
     parameters: Vec<Parameter>,
+    result: ty::IntTy,
     calls: BTreeSet<def::DiskDefId>,
 }
 
@@ -71,10 +76,11 @@ impl Function {
     pub(crate) fn visibility(&self) -> Visibility {
         self.visibility
     }
-    /// The current completed signature is `(u64, ...) -> u64`; no erased
-    /// generic, lifetime, predicate, ABI or aggregate facts are implied.
     pub(crate) fn parameters(&self) -> &[Parameter] {
         &self.parameters
+    }
+    pub(crate) fn result(&self) -> ty::IntTy {
+        self.result
     }
     pub(crate) fn calls(&self) -> &BTreeSet<def::DiskDefId> {
         &self.calls
@@ -214,19 +220,19 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool) -> Result<Vec<Functi
             ast::Vis::Private => Visibility::Private,
             ast::Vis::Restricted { .. } => return Err(Error::Unintegrated("restricted visibility metadata")),
         };
-        if !info.params.iter().chain([&info.ret]).all(|&t| p.tys.kind(t) == ty::TyKind::Int(ty::IntTy::U64))
-            || info.params.len() != function.params.len()
+        if info.params.len() != function.params.len()
             || function.params.len() > 64
             || function.ret.is_none()
         {
-            return Err(Error::Unintegrated("non-u64 function signature or inferred return declaration"));
+            return Err(Error::Unintegrated("unrepresented parameter inventory or inferred return declaration"));
         }
+        let result = integer_type(p.tys.kind(info.ret))?;
         let name = p.interner.get(function.name);
         if !snake_case(name) {
             return Err(Error::Unintegrated("function naming lint diagnostics"));
         }
         let mut parameters = Vec::new();
-        for parameter in &function.params {
+        for (parameter, &checked_type) in function.params.iter().zip(&info.params) {
             if parameter.mutable || parameter.pat.is_some() || !parameter.attrs.is_empty() {
                 return Err(Error::Unintegrated("parameter pattern, attribute or mutation lint obligations"));
             }
@@ -237,7 +243,7 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool) -> Result<Vec<Functi
             let span = prepared
                 .identifier_span(parameter.name, parameter.span)
                 .ok_or(Error::Failed("parameter name is not bound to its original token"))?;
-            parameters.push(Parameter { name: name.into(), span });
+            parameters.push(Parameter { name: name.into(), span, ty: integer_type(p.tys.kind(checked_type))? });
         }
         let block = syntax.block(body.body());
         if !block.stmts.is_empty() || !block.inner_attrs.is_empty() || !block.tail_attrs.is_empty() {
@@ -273,6 +279,7 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool) -> Result<Vec<Functi
             span: item.span,
             visibility,
             parameters,
+            result,
             calls,
         });
     }
@@ -324,6 +331,13 @@ fn snake_case(name: &str) -> bool {
     !name.is_empty() && name.bytes().enumerate().all(|(n, c)| c == b'_' || c.is_ascii_lowercase() || (n != 0 && c.is_ascii_digit()))
 }
 
+fn integer_type(kind: ty::TyKind) -> Result<ty::IntTy, Error> {
+    match kind {
+        ty::TyKind::Int(ty) if matches!(ty.bits(), 32 | 64) => Ok(ty),
+        _ => Err(Error::Unintegrated("unrepresented integer ABI or non-integer signature")),
+    }
+}
+
 fn expression(
     p: &check::collect::Program,
     body: &AcceptedBody,
@@ -342,7 +356,12 @@ fn expression(
     }
     let actual = body.expression(id).ok_or(Error::Failed("accepted expression has no native checked result"))?;
     match p.ast.exprs.get(id.0 as usize).ok_or(Error::Failed("accepted expression is absent"))? {
-        ast::Expr::Int(value, None | Some(crate::lexer::IntSuffix::U64)) if *value <= u64::MAX as u128 => {}
+        ast::Expr::Int(value, _) if *value <= u64::MAX as u128 => {}
+        ast::Expr::Unary { op: ast::UnOp::Neg, expr }
+            if matches!(p.ast.exprs.get(expr.0 as usize), Some(ast::Expr::Int(_, _))) =>
+        {
+            expression(p, body, *expr, depth + 1, seen, parameters, calls)?;
+        }
         ast::Expr::Path(path) if path.len() == 1 && !path[0].has_args() => match actual {
             Resolution::Parameter(parameter) => {
                 parameters.insert(parameter);

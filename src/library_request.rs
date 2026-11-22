@@ -96,7 +96,10 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
         let represented = match key.as_str() {
             "opt-level" | "debuginfo" => value == "0",
             "overflow-checks" | "debug-assertions" => matches!(value.as_str(),"yes"|"no"|"on"|"off"|"true"|"false"|"y"|"n"),
-            "strip" => value == "none" || check && value == "debuginfo",
+            // This artifact path emits no debug sections (nonzero debuginfo
+            // is refused above). Cargo's standard debug stripping has no
+            // additional work for this request.
+            "strip" => matches!(value.as_str(), "none" | "debuginfo"),
             _ => false,
         };
         if !represented { return None; }

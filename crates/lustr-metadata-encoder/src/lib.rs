@@ -57,9 +57,43 @@ pub struct Span {
 pub struct Parameter {
     pub name: String,
     pub span: Span,
+    pub ty: IntegerType,
 }
 
-/// A completed ordinary, safe, nongeneric `(u64, ...) -> u64` declaration.
+/// Primitive integer signatures with represented direct x86_64 argument and
+/// result passing. Tags follow the pinned Rust TyKind and IntTy/UintTy orders.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum IntegerType { Isize, I32, I64, Usize, U32, U64 }
+
+impl IntegerType {
+    const TYPES: [(Self, &str, [u8; 2]); 6] = [
+        (Self::Isize, "isize", [2, 0]),
+        (Self::I32, "i32", [2, 3]),
+        (Self::I64, "i64", [2, 4]),
+        (Self::Usize, "usize", [3, 0]),
+        (Self::U32, "u32", [3, 3]),
+        (Self::U64, "u64", [3, 4]),
+    ];
+
+    pub fn from_rust_name(name: &str) -> Option<Self> {
+        Self::TYPES.iter().find(|row| row.1 == name).map(|row| row.0)
+    }
+
+    pub fn rust_name(self) -> &'static str {
+        Self::TYPES[self as usize].1
+    }
+
+    fn metadata_tags(self) -> [u8; 2] {
+        Self::TYPES[self as usize].2
+    }
+
+    fn from_metadata_tags(tags: &[u8]) -> Option<Self> {
+        Self::TYPES.iter().find(|row| row.2 == tags).map(|row| row.0)
+    }
+}
+
+/// A completed ordinary, safe, nongeneric primitive-integer declaration.
 /// Absence of other declarations, attributes and body obligations is proved by
 /// the native completion producer; a success exit code cannot create that proof.
 #[derive(Clone, Debug)]
@@ -70,6 +104,7 @@ pub struct Function {
     pub span: Span,
     pub public: bool,
     pub parameters: Vec<Parameter>,
+    pub result: IntegerType,
     pub calls: Vec<NativeId>,
 }
 

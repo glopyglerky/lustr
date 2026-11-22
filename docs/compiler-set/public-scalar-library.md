@@ -24,7 +24,7 @@ an empty or different override is refused before native preparation.
 The native Cargo graph binds the real package, library target and source.
 Dependencies, build scripts and selected features are refused by this first
 library context. No manifest is erased. The existing native completion remains
-restricted to one ASCII no_std source with flat, ordinary u64 functions, the
+restricted to one ASCII no_std source with flat, ordinary integer functions, the
 represented bitwise/direct-call expression graph, complete liveness and all
 existing declaration/lint/IR ownership checks.
 
@@ -116,6 +116,13 @@ native object pipeline and relink when Cargo requests a build.
 
 General Cargo dependency graphs, additional crate types and profiles, and
 wider semantic completion remain open.
+
+On Linux x86_64 the current primitive signature path carries actual
+`i32`, `u32`, `i64`, `u64`, `isize`, and `usize` parameter and result
+types. Native code links and runs with signed and unsigned boundary values.
+The pinned Rust compiler also consumes the same library metadata and
+objects and produces matching results. The ordinary Cargo debug-strip
+request is supported when code generation emits no debug sections.
 
 ## Metadata options and retained native state
 
