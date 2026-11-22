@@ -221,11 +221,45 @@ fn mapped_functions(functions:&[Function])->Vec<metadata::Function> {
         result:metadata::IntegerType::from_rust_name(f.result().name()).expect("completed result type"),
         calls:f.calls().iter().copied().map(native_id).collect() }).collect()
 }
-fn check_object(object:&NativeObject, snapshot:&Snapshot)->Result<Original,String> {
+/// Check the x86-64 TinyCC FDE for the one body in this unwind unit.
+fn check_unwind_frame(file: &object::File<'_>, body_name: &str) -> Result<(), String> {
+    let error = "native scalar object lacks a valid unwind range";
+    let body = file.symbols().find(|symbol| symbol.name().is_ok_and(|name| name == body_name)).ok_or(error)?;
+    let frames = file.section_by_name(".eh_frame").ok_or(error)?;
+    let bytes = frames.data().map_err(|_| error)?;
+    let mut relocations = frames.relocations();
+    let (position, relocation) = relocations.next().ok_or(error)?;
+    let object::RelocationTarget::Symbol(target) = relocation.target() else { return Err(error.into()); };
+    let target = file.symbol_by_index(target).map_err(|_| error)?;
+    let expected = object::RelocationFlags::Elf { r_type: object::elf::R_X86_64_PC32 };
+    if relocations.next().is_some() || target.kind() != object::SymbolKind::Section
+        || target.section_index() != body.section_index()
+        || relocation.flags() != expected || relocation.addend() != 0 || body.address() != 0 {
+        return Err(error.into());
+    }
+
+    // A DWARF32 FDE starts with its length and backwards CIE offset,
+    // followed by TinyCC's pcrel/sdata4 start and range.
+    let position = usize::try_from(position).map_err(|_| error)?;
+    let start = position.checked_sub(8).ok_or(error)?;
+    let end = position.checked_add(8).ok_or(error)?;
+    let mut fields = bytes.get(start..end).ok_or(error)?.chunks_exact(4)
+        .map(|word| u32::from_le_bytes(word.try_into().unwrap()));
+    let [length, cie, pc, range] = std::array::from_fn(|_| fields.next().unwrap());
+    let fde_end = start.checked_add(4).and_then(|start| start.checked_add(length as usize)).ok_or(error)?;
+    if start == 0 || cie as usize != start + 4 || pc != 0 || range == 0 || u64::from(range) != body.size()
+        || fde_end < end || bytes.get(fde_end..) != Some(&[0; 4]) {
+        return Err(error.into());
+    }
+    Ok(())
+}
+
+fn check_object(object:&NativeObject, snapshot:&Snapshot, panic_abort:bool)->Result<Original,String> {
     let symbols=unit_object::symbols(&object.bytes)?;
     let function=snapshot.functions.iter().find(|f|f.definition()==object.definition).ok_or("object has no completed definition")?;
-    let trampoline=object.symbol.replacen("f_","tramp_",1);
-    let definitions=BTreeSet::from([object.symbol.as_bytes().to_vec(),trampoline.as_bytes().to_vec()]);
+    let helpers: Vec<_> = panic_abort.then(|| object.symbol.replacen("f_","tramp_",1)).into_iter().collect();
+    let definitions = std::iter::once(&object.symbol).chain(&helpers)
+        .map(|name| name.as_bytes().to_vec()).collect::<BTreeSet<_>>();
     let expected_calls:BTreeSet<Vec<u8>>=function.calls().iter().map(|id| {
         snapshot.extern_symbols.get(id).map(String::as_str)
             .or_else(|| snapshot.objects.iter().find(|(o,_)|o.definition==*id).map(|(o,_)|o.symbol.as_str()))
@@ -237,6 +271,9 @@ fn check_object(object:&NativeObject, snapshot:&Snapshot)->Result<Original,Strin
     // TinyCC's actual x64 call relocations must name exactly the completed
     // source callees. Section/local relocations are not external dependencies.
     let file=object::File::parse(object.bytes.as_slice()).map_err(|e|e.to_string())?;
+    if !panic_abort {
+        check_unwind_frame(&file, &object.symbol)?;
+    }
     let mut used=BTreeSet::new();
     for section in file.sections() {
         for (offset,relocation) in section.relocations() {
@@ -258,7 +295,7 @@ fn check_object(object:&NativeObject, snapshot:&Snapshot)->Result<Original,Strin
         }
     }
     if used!=expected_calls {return Err("completed native call lacks actual relocation evidence".into());}
-    Ok(Original{hash:hash(&object.bytes),digest:Sha256::digest(object.bytes.as_slice()).into(),helpers:vec![trampoline],symbols:symbols.defined.iter().chain(&symbols.undefined).map(|s|String::from_utf8(s.clone()).map_err(|e|e.to_string())).collect::<Result<_,_>>()?})
+    Ok(Original{hash:hash(&object.bytes),digest:Sha256::digest(object.bytes.as_slice()).into(),helpers,symbols:symbols.defined.iter().chain(&symbols.undefined).map(|s|String::from_utf8(s.clone()).map_err(|e|e.to_string())).collect::<Result<_,_>>()?})
 }
 fn verify_members(bytes:&[u8],files:&BTreeMap<String,Arc<Vec<u8>>>,members:&[String])->Result<(),String> {
     let archive=object::read::archive::ArchiveFile::parse(bytes).map_err(|e|e.to_string())?;
@@ -320,7 +357,7 @@ impl Service {
             let instances:Vec<_>=snapshot.objects.iter().map(|(o,_)|metadata::EmittedFunction{definition:native_id(o.definition),symbol:o.symbol.clone()}).collect();
             for (object,_) in &snapshot.objects {
                 if !self.originals.contains_key(&object.serial) {
-                    self.originals.insert(object.serial,check_object(object,snapshot)?);
+                    self.originals.insert(object.serial,check_object(object,snapshot,self.context.profile.panic_abort)?);
                 }
             }
             let mut objects:Vec<_>=snapshot.objects.iter().map(|(o,_)|metadata::ObjectMember{

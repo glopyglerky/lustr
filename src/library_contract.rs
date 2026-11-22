@@ -105,6 +105,10 @@ impl LibraryKey {
     pub fn is_executable(&self) -> bool { self.executable_dependencies.is_some() }
     pub fn target_kind(&self) -> &'static str { if self.is_executable() { "bin" } else { "lib" } }
 
+    pub fn supports_link_profile(&self, panic_abort: bool) -> bool {
+        panic_abort || !self.is_executable() && self.external.is_none()
+    }
+
     pub fn matches_target_name(&self, target: &str) -> bool {
         if self.is_executable() {
             target.bytes().map(|byte| if byte == b'-' { b'_' } else { byte }).eq(self.crate_name.bytes())

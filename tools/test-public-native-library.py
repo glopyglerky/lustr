@@ -1468,6 +1468,83 @@ pub fn unsigned_word(x: usize) -> usize { x ^ 7 }
     report["cargo_integer_signatures"] = {"passed": True, "runtime_value": expected.decode(), "type_count": 6}
 
 
+def qualify_unwind_library(root, package, sdk, commands, environment, oracle_env, projects,
+                           daemon_argv, daemon_trace, prefixes, owner, report):
+    path = root / "projects" / "unwind-leaf"
+    source = path / "src/lib.rs"
+    source.parent.mkdir(parents=True)
+    manifest = path / "Cargo.toml"
+    write_new(manifest, '[package]\nname="unwind-leaf"\nversion="0.1.0"\nedition="2024"\n'
+                        '[profile.dev]\ndebug=0\n')
+    projects["unwind-leaf"] = {"manifest": manifest}
+    build = path / "intermediates"
+    env = dict(environment, CARGO_BUILD_BUILD_DIR=str(build), CARGO_TARGET_DIR=str(path / "target"))
+    env.pop("CARGO_INCREMENTAL", None)
+    argv = [package / "bin/cargo", "build", "--lib", "--offline", "--message-format=json"]
+    result = {"passed": False, "history": []}
+    report["cargo_unwind_library"] = result
+    original_archive = None
+    for label, text, status, compiled in [
+        ("cold", BASE, 0, 3), ("noop", BASE, 0, 0), ("edit", EDIT, 0, 1),
+        ("invalid", INVALID, 101, 0), ("repair", EDIT, 0, 0),
+    ]:
+        source.write_bytes(text)
+        before = set((root / "observations").glob("*/report.json"))
+        stdout, stderr, trace = commands.run("unwind-library-" + label, argv, path, env, expected=status, traced=True)
+        observed = inspect_processes(trace_events(trace.read_bytes(), path), package, argv[0], argv, projects)
+        require(len(observed["compiles"]) == 1 and not observed["runs"], "unwind Cargo graph did not compile exactly its leaf")
+        invocation = parse_compile(observed["compiles"][0])
+        codegen = invocation["codegen"]
+        require(invocation["--emit"] == "dep-info,metadata,link" and "panic" not in codegen
+                and codegen.get("debuginfo", "0") == "0" and "incremental" in codegen
+                and Path(codegen["incremental"]).is_relative_to(build), "unwind library lost the actual Cargo link profile")
+        records = [json.loads(p.read_bytes()) for p in set((root / "observations").glob("*/report.json")) - before]
+        require(len(records) == 1 and records[0]["owner_pid"] == owner[0], "unwind library escaped native retention")
+        record = records[0]
+        require(record["context"]["profile"]["panic_abort"] is False
+                and record["counts"]["compiled_objects"] == compiled, "unwind profile or retained object work changed")
+        prefix = daemon_trace.read_bytes()
+        frozen_prefix(prefixes[-1]["bytes"], prefix)
+        owned = inspect_processes(trace_events(prefix, root), package, Path(daemon_argv[0]), daemon_argv, projects, daemon=True)
+        wanted = [{"argv": item["argv"], "cwd": item["cwd"]} for item in record["commands"]]
+        reconcile_artifact_calls(owned["artifacts"][prefixes[-1]["artifact_count"]:], wanted)
+        prefixes.append({"name": "unwind-library-" + label, "bytes": prefix, "artifact_count": len(owned["artifacts"])})
+        if status:
+            require(b"L0110" in stdout + stderr and not record["outputs"], "invalid unwind library published an artifact or lost its error")
+        else:
+            outputs = {row["emit"]: Path(row["path"]) for row in record["outputs"]}
+            if label == "cold":
+                original_archive = sha(outputs["link"].read_bytes())
+            elif label == "noop":
+                require(record["artifact_reused"] and sha(outputs["link"].read_bytes()) == original_archive,
+                        "unchanged unwind request replaced its archive")
+            if label in {"cold", "edit"}:
+                frames, _, _ = commands.run("unwind-frames-" + label,
+                    [Path(shutil.which("readelf")), "-wf", outputs["link"]], path, oracle_env)
+                require(frames.count(b" FDE ") == 3, "archive lacks one unwind range for each emitted body")
+                metadata, _, _ = commands.run("unwind-metadata-" + label,
+                    [sdk / "bin/rustc", "-Zls=root", outputs["metadata"]], path, oracle_env)
+                require(b"required_panic_strategy None panic_in_drop_strategy Unwind" in metadata,
+                        "upstream metadata reader reported a different panic requirement")
+                caller = path / f"caller_{label}.rs"
+                executable = caller.with_suffix("")
+                mask = 63 if label == "cold" else 127
+                write_new(caller, f"""fn main() {{
+    assert_eq!(unwind_leaf::project(255), {mask} ^ 165);
+    assert_eq!(unwind_leaf::merge(u64::MAX, 15), u64::MAX ^ 15);
+    println!("unwind leaf ok");
+}}
+""")
+                commands.run("unwind-original-link-" + label,
+                    [sdk / "bin/rustc", "--edition=2024", "-Clink-arg=-Wl,--fatal-warnings", caller, "-o", executable,
+                     "--extern", f"unwind_leaf={outputs['link']}", "--extern", f"unwind_leaf={outputs['metadata']}"],
+                    path, oracle_env)
+                native, _, _ = commands.run("unwind-original-run-" + label, [executable], path, oracle_env)
+                require(native == b"unwind leaf ok\n", "original Rust could not link and execute the native unwind archive")
+        result["history"].append({"case": label, "status": status, "compiled_objects": compiled})
+    result["passed"] = True
+
+
 def qualify_default_executable_check(root, package, sdk, commands, environment, oracle_env, projects,
                                      daemon_argv, daemon_trace, prefixes, owner, report):
     crate = "default_check"
@@ -2331,6 +2408,8 @@ def main():
                                       daemon_trace, daemon_argv, prefixes, report)
         qualify_integer_signatures(root, package, sdk, commands, environment, oracle_env, projects,
                                    daemon_argv, daemon_trace, prefixes, owner, report)
+        qualify_unwind_library(root, package, sdk, commands, environment, oracle_env, projects,
+                               daemon_argv, daemon_trace, prefixes, owner, report)
         qualify_default_executable_check(root, package, sdk, commands, environment, oracle_env, projects,
                                          daemon_argv, daemon_trace, prefixes, owner, report)
         seal_reports()

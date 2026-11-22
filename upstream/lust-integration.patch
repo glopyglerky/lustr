@@ -3028,7 +3028,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..5dbdf6c033155477089e366530256df5
      }
  
 diff --git a/src/cgen.rs b/src/cgen.rs
-index ac6965592d3f4cc6ea1969df299fe33c974056b0..e4f60047d41b2522da053ef561462fde887b2372 100644
+index ac6965592d3f4cc6ea1969df299fe33c974056b0..17e82470b5524aa0295093de6eb8420bca6c63fa 100644
 --- a/src/cgen.rs
 +++ b/src/cgen.rs
 @@ -178,6 +178,9 @@ enum Step {
@@ -3752,7 +3752,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..e4f60047d41b2522da053ef561462fde
              let _ = writeln!(self.out, "    if ({rc} < 0) lust_panic_cstr(\"{div0msg}\", {at});");
              if matches!(b, B::SaturatingAdd | B::SaturatingSub | B::SaturatingMul | B::SaturatingDiv) {
                  // Clamp to the endpoint the true result passes.
-@@ -10355,6 +10482,26 @@ fn strip_impl_blocks(src: &str) -> String {
+@@ -10355,6 +10482,38 @@ fn strip_impl_blocks(src: &str) -> String {
  /// (`runtime_decls`), from the compiler's predefined types.
  const INT_TYPEDEFS: &str = "typedef signed char int8_t; typedef unsigned char uint8_t; typedef short int16_t; typedef unsigned short uint16_t;\ntypedef int int32_t; typedef unsigned int uint32_t;\n#ifdef __INT64_TYPE__\ntypedef __INT64_TYPE__ int64_t; typedef unsigned __INT64_TYPE__ uint64_t;\n#else\ntypedef long long int64_t; typedef unsigned long long uint64_t;\n#endif\n#ifdef __SIZE_TYPE__\ntypedef __SIZE_TYPE__ size_t; typedef __PTRDIFF_TYPE__ ptrdiff_t; typedef __UINTPTR_TYPE__ uintptr_t; typedef __INTPTR_TYPE__ intptr_t;\n#else\ntypedef unsigned long size_t; typedef long ptrdiff_t; typedef unsigned long uintptr_t; typedef long intptr_t;\n#endif\n#define INT64_MIN (-9223372036854775807LL-1)\n#ifndef NULL\n#define NULL ((void*)0)\n#endif\n";
  
@@ -3766,20 +3766,32 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..e4f60047d41b2522da053ef561462fde
 +
 +/// A completed total scalar body with its exact native direct-call prototypes.
 +/// The library completion proof, not this text operation, owns totality.
-+pub fn native_scalar_unit(output: &FnOut) -> Option<String> {
++pub fn native_scalar_unit(output: &FnOut, unwind_tables: bool) -> Option<String> {
 +    if !output.mixed_total || !output.glue.is_empty() || !output.ll.is_empty() || !output.ll_c.is_empty() || !output.types.is_empty() || !output.named.is_empty() {
 +        return None;
 +    }
 +    let mut unit = String::from(INT_TYPEDEFS);
 +    for declaration in &output.externs { unit.push_str(declaration); unit.push('\n'); }
-+    unit.push_str(&output.code_text());
++    let code = output.code_text();
++    if unwind_tables {
++        // The checked scalar call graph uses the body symbol directly.
++        // TinyCC's x86-64 EH frame relocations omit offsets for later
++        // definitions in a unit, so emit the body without its trampoline.
++        let function = plain_fn_def(&code)?;
++        if function.frame.is_some() || !function.pks.is_empty() || function.statics {
++            return None;
++        }
++        unit.push_str(function.def);
++    } else {
++        unit.push_str(&code);
++    }
 +    Some(unit)
 +}
 +
  fn runtime_decls() -> &'static str {
      static DECLS: std::sync::OnceLock<String> = std::sync::OnceLock::new();
      DECLS.get_or_init(|| {
-@@ -10444,6 +10591,8 @@ pub struct UnwindInit {
+@@ -10444,6 +10603,8 @@ pub struct UnwindInit {
      pub tables: bool,
      pub ids: [u64; 4],
      pub hook_runner: Option<u32>,
@@ -3788,7 +3800,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..e4f60047d41b2522da053ef561462fde
  }
  
  /// The `main_unit` argument for `p` (`slot_of` maps a fn to its slot).
-@@ -10461,7 +10610,11 @@ pub fn unwind_init(p: &Program, slot_of: impl Fn(LocalDefId) -> u32) -> Option<U
+@@ -10461,7 +10622,11 @@ pub fn unwind_init(p: &Program, slot_of: impl Fn(LocalDefId) -> u32) -> Option<U
          .map(|i| slot_of(LocalDefId(i as u32)));
      let (a, b) = crate::check::any::type_id_words(p, &p.tys, REF_STR);
      let (c, d) = crate::check::any::type_id_words(p, &p.tys, STRING);
@@ -3801,7 +3813,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..e4f60047d41b2522da053ef561462fde
  }
  
  /// The location unit: the per-slot line and file tables and
-@@ -10506,8 +10659,9 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
+@@ -10506,8 +10671,9 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
      let unwind = init.as_ref().is_some_and(|i| i.unwind);
      let tables = init.as_ref().is_some_and(|i| i.unwind && i.tables);
      let runner_slot = init.as_ref().and_then(|i| i.hook_runner);
@@ -3812,7 +3824,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..e4f60047d41b2522da053ef561462fde
              format!("\n  lust_unw_init({}, {a}ull, {b}ull, {c}ull, {d}ull);", if unwind && tables { 2 } else { unwind as u8 }),
              hook_runner.map_or(String::new(), |s| {
                  // Release C names the runner directly (only its address is taken here).
-@@ -10518,15 +10672,24 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
+@@ -10518,15 +10684,24 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
      };
      let mut c = unit_header();
      c.push_str("void lust_loc_init(void);\nvoid lust_kstatics_init(void);\n");
@@ -3842,7 +3854,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..e4f60047d41b2522da053ef561462fde
      };
      for u in overlays {
          let _ = writeln!(c, "void lust_overlay_u{u}(void);");
-@@ -12044,7 +12207,7 @@ pub fn fn_unit_parts(
+@@ -12044,7 +12219,7 @@ pub fn fn_unit_parts(
      // table; on Err print `Error: {err:?}` to stderr and exit 1, as
      // Rust does; an `ExitCode` is the exit status. Registered below
      // in `lust_main_entry_p`, which the main unit prefers over the
@@ -3851,7 +3863,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..e4f60047d41b2522da053ef561462fde
      // by main's own FnOut (see `gen_fn`).
      let entry_at = c.len();
      if let Some((m, idx)) = term_main {
-@@ -13126,7 +13289,7 @@ fn glue_def_value(
+@@ -13126,7 +13301,7 @@ fn glue_def_value(
      match g {
          Glue::CloneFrom => unreachable!("clonefrom glue returns above"),
          Glue::Drop => {
@@ -3860,7 +3872,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..e4f60047d41b2522da053ef561462fde
              match t {
                  CTy::String => body.push_str("  lust_string_drop(p);\n"),
                  CTy::Hash(k, _) if hash::is_table(*k) => body.push_str(&hash::drop_body(p, t, &mut need)),
-@@ -13364,7 +13527,7 @@ fn glue_def_value(
+@@ -13364,7 +13539,7 @@ fn glue_def_value(
              } else {
                  body = body.replace(UNW_DSTEP, "").replace("UNW_DSTEP ", "");
              }
@@ -3869,7 +3881,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..e4f60047d41b2522da053ef561462fde
          }
          Glue::Clone => {
              let _ = writeln!(protos, "{ct} clone_{m}({ct} *p);");
-@@ -14781,9 +14944,9 @@ mod tests {
+@@ -14781,9 +14956,9 @@ mod tests {
              let shards = names::glue_shards(&program, &glue, &outs, 1);
              let drop_hooks = format!("void drop_{}_(", ctype(&CTy::Adt(hooks)));
              let shard = shards.iter().find(|s| s.lines().any(|l| l.starts_with(&drop_hooks) && l.ends_with('{'))).expect("a shard defines the struct's drop glue");
@@ -13309,7 +13321,7 @@ index c4b23e007d746b984e392919dcf1bc9bc87a265e..47bb8992d04e52e8ba9774e3e865ddf1
              _ => return None,
          }
 diff --git a/src/protocol.rs b/src/protocol.rs
-index 504b467a9d240272c85f999b59f57a5d52b3cd4e..cc27506f57f146771ef686fd21324bbac0a151c1 100644
+index 504b467a9d240272c85f999b59f57a5d52b3cd4e..35ca055f0346593293b297a8c864e3da0f36c7d9 100644
 --- a/src/protocol.rs
 +++ b/src/protocol.rs
 @@ -6,7 +6,7 @@
@@ -13520,7 +13532,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..cc27506f57f146771ef686fd21324bba
                  client: Client::current(&typed),
              });
          }
-@@ -791,6 +872,24 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -791,6 +872,25 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
      if let Some(on) = debug_assertions {
          session.profile.debug_assertions = on;
      }
@@ -13531,7 +13543,8 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..cc27506f57f146771ef686fd21324bba
 +            executable_dependencies:executable_artifacts.then_some(executable_dependencies),
 +            sdk_receipt:library_contract::SDK_RECEIPT.into()};
 +        if !key.valid() || !matches!(cmd.as_str(), "build" | "check") || session.krate.target_kind != key.target_kind()
-+            || cmd == "build" && !session.profile.panic_abort || session.target_triple != library_contract::TARGET
++            || cmd == "build" && !key.supports_link_profile(session.profile.panic_abort)
++            || session.target_triple != library_contract::TARGET
 +            || debug || emit_c.is_some() || !run_args.is_empty()
 +            || !key.valid_output(&abs(&out), cmd == "check", library_options) { return None; }
 +        if key.is_executable() {
@@ -13545,7 +13558,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..cc27506f57f146771ef686fd21324bba
      let req = Request {
          cmd: if cmd == "check" { Cmd::Check } else { Cmd::Build },
          session,
-@@ -803,6 +902,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -803,6 +903,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
          max_errors,
          run_args: if run { Some(run_args.clone()) } else { None },
          harness: false, cc: false,
@@ -13553,7 +13566,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..cc27506f57f146771ef686fd21324bba
          client: Client::current(&typed),
      };
      Some(Invocation::Compile { req, run, args: run_args })
-@@ -909,8 +1009,40 @@ pub fn encode(r: &Request) -> Vec<u8> {
+@@ -909,8 +1010,40 @@ pub fn encode(r: &Request) -> Vec<u8> {
      path_field(&mut out, s.krate.manifest_path.as_deref());
      put_field(&mut out, s.krate.target_kind.as_bytes());
      put_field(&mut out, s.krate.target_name.as_bytes());
@@ -13594,7 +13607,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..cc27506f57f146771ef686fd21324bba
      for f in &s.features {
          put_field(&mut out, f.as_bytes());
      }
-@@ -951,8 +1083,45 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -951,8 +1084,45 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
      let manifest = get_field(r)?;
      let target_kind = text(get_field(r)?)?;
      let target_name = text(get_field(r)?)?;
@@ -13640,7 +13653,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..cc27506f57f146771ef686fd21324bba
      // A feature count this large is a bad request, not a loop to run.
      let n_features: usize = f[11].parse().ok()?;
      if n_features > 4096 {
-@@ -982,11 +1151,13 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -982,11 +1152,13 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
      Some(Request {
          cmd: if f[0] == "check" { Cmd::Check } else { Cmd::Build },
          session: SessionKey {
@@ -13654,7 +13667,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..cc27506f57f146771ef686fd21324bba
                  root,
                  test: f[5] == "1",
              },
-@@ -1006,12 +1177,17 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -1006,12 +1178,17 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
          max_errors: f[4].parse().ok()?,
          run_args: None,
          harness: false, cc: false,
@@ -13673,7 +13686,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..cc27506f57f146771ef686fd21324bba
  }
  
  /// The whole answer to a request of another build: a head no client takes
-@@ -1020,37 +1196,78 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
+@@ -1020,37 +1197,78 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
      write!(w, "- - - {}\n", build_id())
  }
  
@@ -13781,7 +13794,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..cc27506f57f146771ef686fd21324bba
  }
  
  /// Prints a response. For `run`, runs the program after a successful build. Never returns.
-@@ -1331,9 +1548,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
+@@ -1331,9 +1549,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
      Some(PathBuf::from(text[at..end].replace("\\\\", "\\")))
  }
  
@@ -13831,7 +13844,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..cc27506f57f146771ef686fd21324bba
  pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug: bool, net: CargoNet) -> ! {
      let profile = profile.unwrap_or("release");
      let dev = profile == "dev";
-@@ -1408,12 +1665,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
+@@ -1408,12 +1666,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
      exit_with(status);
  }
  
@@ -13850,7 +13863,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..cc27506f57f146771ef686fd21324bba
  pub fn run_rustc_check(file: &Path) -> ! {
      let obj = std::env::temp_dir().join(format!("lust-rustc-check-{}.o", std::process::id()));
      eprintln!("lust: checking with rustc (oracle): rustc --edition 2024 --emit=obj {}", file.display());
-@@ -1461,6 +1724,150 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
+@@ -1461,6 +1725,150 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
  mod tests {
      use super::*;
  
@@ -14001,7 +14014,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..cc27506f57f146771ef686fd21324bba
      fn args(list: &[&str]) -> Vec<String> {
          list.iter().map(|s| s.to_string()).collect()
      }
-@@ -1486,6 +1893,23 @@ mod tests {
+@@ -1486,6 +1894,23 @@ mod tests {
          assert_ne!(k, SessionKey::synthetic(Path::new("/tmp/x/other.rs"), false), "file differs");
      }
  
@@ -17948,10 +17961,88 @@ index 74e6a71b9107da083ac052be5400a4bd06a7da0e..2332412671762d8e5efdc8b2e93826ab
  
  /// One marker: an index into `STD_FILES` with std's line and column, a
 diff --git a/src/tcc.rs b/src/tcc.rs
-index b978e5092190f63396af29c882284e1446de35d8..cddd2ff213111602607c73ce2ee49115bd568511 100644
+index b978e5092190f63396af29c882284e1446de35d8..6df8012b7289411514231d79068ef7cf0e88b1ab 100644
 --- a/src/tcc.rs
 +++ b/src/tcc.rs
-@@ -298,13 +298,35 @@ fn link_executable(tcc: &Tcc, objs: &[PathBuf], out: &Path) -> Result<(), String
+@@ -129,12 +129,14 @@ struct Tcc {
+ 
+ impl Tcc {
+     fn new(output: c_int, debug: bool) -> Result<Tcc, String> {
++        // Regular units can contain several functions. TinyCC writes
++        // overlapping .eh_frame FDEs in that case.
++        let options = if debug { c"-g -w -fno-asynchronous-unwind-tables" } else { c"-w -fno-asynchronous-unwind-tables" };
++        Self::with_options(output, options)
++    }
++
++    fn with_options(output: c_int, options: &CStr) -> Result<Tcc, String> {
+         let lib = cstr(&tcc_paths().0);
+-        // No asynchronous unwind tables: tcc writes overlapping .eh_frame
+-        // FDEs (spike K6), which makes the system linker reject its
+-        // objects. Lust frames never unwind, so the tables are pure cost.
+-        let opts =
+-            CString::new(if debug { "-g -w -fno-asynchronous-unwind-tables" } else { "-w -fno-asynchronous-unwind-tables" }).unwrap();
+         // SAFETY: a fresh libtcc state; the error vector is boxed so its address is stable.
+         unsafe {
+             let s = tcc_new();
+@@ -144,7 +146,7 @@ impl Tcc {
+             let mut t = Tcc { s, errs: Box::default() };
+             tcc_set_error_func(s, &mut *t.errs as *mut Vec<String> as *mut c_void, on_error);
+             tcc_set_lib_path(s, lib.as_ptr());
+-            tcc_set_options(s, opts.as_ptr());
++            tcc_set_options(s, options.as_ptr());
+             tcc_set_output_type(s, output);
+             Ok(t)
+         }
+@@ -165,6 +167,30 @@ fn cstr(p: &Path) -> CString {
+     CString::new(p.to_string_lossy().as_bytes()).expect("path contains NUL")
+ }
+ 
++fn write_object(tcc: &Tcc, path: &Path, source: &str) -> Result<(), String> {
++    let source = CString::new(source).map_err(|_| "generated C contains a NUL byte".to_string())?;
++    // SAFETY: valid state and NUL-terminated strings that outlive the calls.
++    unsafe {
++        if tcc_compile_string(tcc.s, source.as_ptr()) != 0 {
++            return Err(tcc.fail("compile the generated C"));
++        }
++        if tcc_output_file(tcc.s, cstr(path).as_ptr()) != 0 {
++            return Err(tcc.fail("write an object file"));
++        }
++    }
++    Ok(())
++}
++
++/// Compile a checked scalar library object at a fresh staging path.
++pub fn compile_scalar_object(path: &Path, source: &str, unwind_tables: bool) -> Result<(), String> {
++    let tcc = if unwind_tables {
++        Tcc::with_options(TCC_OUTPUT_OBJ, c"-w -fasynchronous-unwind-tables")?
++    } else {
++        Tcc::new(TCC_OUTPUT_OBJ, false)?
++    };
++    write_object(&tcc, path, source)
++}
++
+ /// Compiles `(object path, C source)` pairs.
+ pub fn compile_units(units: &[(PathBuf, String)], debug: bool) -> Result<(), String> {
+     // An object may be a hard link to a disk cache entry (`Cache::unit_object`). tcc
+@@ -175,16 +201,7 @@ pub fn compile_units(units: &[(PathBuf, String)], debug: bool) -> Result<(), Str
+     if units.len() <= 2 {
+         for (obj, src) in units {
+             let tcc = Tcc::new(TCC_OUTPUT_OBJ, debug)?;
+-            let c = CString::new(src.as_str()).map_err(|_| "generated C contains a NUL byte".to_string())?;
+-            // SAFETY: valid state and NUL-terminated strings that outlive the calls.
+-            unsafe {
+-                if tcc_compile_string(tcc.s, c.as_ptr()) != 0 {
+-                    return Err(tcc.fail("compile the generated C"));
+-                }
+-                if tcc_output_file(tcc.s, cstr(obj).as_ptr()) != 0 {
+-                    return Err(tcc.fail("write an object file"));
+-                }
+-            }
++            write_object(&tcc, obj, src)?;
+         }
+         return Ok(());
+     }
+@@ -298,13 +315,35 @@ fn link_executable(tcc: &Tcc, objs: &[PathBuf], out: &Path) -> Result<(), String
      linked
  }
  
@@ -17990,7 +18081,7 @@ index b978e5092190f63396af29c882284e1446de35d8..cddd2ff213111602607c73ce2ee49115
  /// The base name is versioned (for example `base-3`), so a rebuilt base never changes what an
  /// executable built earlier loads.
  pub fn link_with_base(objs: &[PathBuf], dir: &Path, base: &str, out: &Path, debug: bool) -> Result<(), String> {
-@@ -320,7 +342,7 @@ pub fn link_with_base(objs: &[PathBuf], dir: &Path, base: &str, out: &Path, debu
+@@ -320,7 +359,7 @@ pub fn link_with_base(objs: &[PathBuf], dir: &Path, base: &str, out: &Path, debu
          tcc_set_options(tcc.s, rpath.as_ptr());
          tcc_add_library_path(tcc.s, cstr(dir).as_ptr());
          if tcc_add_library(tcc.s, base.as_ptr()) != 0 {

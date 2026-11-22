@@ -90,7 +90,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     let extra_filename = codegen.remove("extra-filename").unwrap_or_default();
     let panic = match codegen.remove("panic").as_deref() {
         Some("abort") => "panic=abort",
-        None | Some("unwind") if check => "panic=unwind",
+        None | Some("unwind") => "panic=unwind",
         _ => return None,
     };
     // Rust defaults to embedded LLVM bitcode for an rlib; this native scalar
@@ -101,8 +101,8 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
             "opt-level" => value == "0",
             "debuginfo" => value == "0" || check && matches!(value.as_str(), "1" | "2"),
             // Cargo provides an optional on-disk incremental cache location.
-            // Metadata-only work reuses the native retained session instead.
-            "incremental" => check && std::path::Path::new(value).is_absolute(),
+            // Reuse belongs to the native session rather than Rust's on-disk cache.
+            "incremental" => (check || panic == "panic=unwind") && std::path::Path::new(value).is_absolute(),
             "overflow-checks" | "debug-assertions" => matches!(value.as_str(),"yes"|"no"|"on"|"off"|"true"|"false"|"y"|"n"),
             // This artifact path emits no debug sections (nonzero debuginfo
             // is refused above). Cargo's standard debug stripping has no
@@ -126,7 +126,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     let context = LibraryKey { crate_name:name?, metadata, extra_filename, source_path,
         working_directory: std::env::current_dir().ok()?, check_cfg, search_paths, external, executable_dependencies,
         sdk_receipt:SDK_RECEIPT.into() };
-    if !context.valid() { return None; }
+    if !context.valid() || !check && !context.supports_link_profile(panic == "panic=abort") { return None; }
     if std::env::var("CARGO_CRATE_NAME").is_ok_and(|v|v != context.crate_name) { return None; }
     let out_dir = std::path::absolute(out_dir?).ok()?;
     let output = out_dir.join(if check { context.metadata_name() } else if binary { context.binary_name() } else { context.archive_name() });

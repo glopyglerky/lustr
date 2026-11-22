@@ -10492,13 +10492,25 @@ pub fn mixed_scalar_unit(output: &FnOut) -> Option<String> {
 
 /// A completed total scalar body with its exact native direct-call prototypes.
 /// The library completion proof, not this text operation, owns totality.
-pub fn native_scalar_unit(output: &FnOut) -> Option<String> {
+pub fn native_scalar_unit(output: &FnOut, unwind_tables: bool) -> Option<String> {
     if !output.mixed_total || !output.glue.is_empty() || !output.ll.is_empty() || !output.ll_c.is_empty() || !output.types.is_empty() || !output.named.is_empty() {
         return None;
     }
     let mut unit = String::from(INT_TYPEDEFS);
     for declaration in &output.externs { unit.push_str(declaration); unit.push('\n'); }
-    unit.push_str(&output.code_text());
+    let code = output.code_text();
+    if unwind_tables {
+        // The checked scalar call graph uses the body symbol directly.
+        // TinyCC's x86-64 EH frame relocations omit offsets for later
+        // definitions in a unit, so emit the body without its trampoline.
+        let function = plain_fn_def(&code)?;
+        if function.frame.is_some() || !function.pks.is_empty() || function.statics {
+            return None;
+        }
+        unit.push_str(function.def);
+    } else {
+        unit.push_str(&code);
+    }
     Some(unit)
 }
 

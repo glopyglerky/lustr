@@ -8,7 +8,9 @@ and equivalent complete-work performance remain open.
 
 The installed public rustc entry parses the actual Cargo invocation. It accepts
 the represented edition-2024, Linux-x64 leaf-library request with
-embed-bitcode=no and opt-level=0. Builds require panic=abort and debuginfo=0.
+embed-bitcode=no and opt-level=0. Linked builds require debuginfo=0.
+A scalar leaf library can also link with Cargo's default unwind strategy.
+Linked executables and libraries with dependencies require panic=abort.
 Metadata-only checks also accept the default Cargo dev profile. Compile-time target
 facts must identify the actual Linux GNU x86-64 little-endian 64-bit host before
 argument normalization or library discovery; an omitted --target is never
@@ -106,6 +108,14 @@ original optional panic requirement. The completed scalar library has no
 forced final panic strategy in this mode. The debug-info request needs no
 code generation for a metadata-only build, and the native session retains
 checked work while the compiler owner lives.
+
+With debuginfo disabled, the unwind leaf-library route emits one checked
+body per native object, including an unwind range that covers that body.
+Each object carries its real frame description entry from TinyCC. The
+single-body unit avoids the overlapping ranges TinyCC produces when a
+body and trampoline share a unit. Symbol renaming preserves the allocated
+frame data and its relocation. Pinned Rust independently reads the
+metadata and links and runs the archive with linker warnings treated as errors.
 
 For executable crate dependency lints, Lustr counts resolved module imports
 and extern items as well as the function signature reads of checked and

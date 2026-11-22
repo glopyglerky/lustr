@@ -120,7 +120,7 @@ pub(crate) fn request_supported(req: &Request) -> bool {
         && key.valid_output(&req.out, req.cmd == crate::protocol::Cmd::Check, req.library_options)
         && req.session.krate.target_kind == key.target_kind()
         && key.matches_target_name(&req.session.krate.target_name)
-        && (req.cmd == crate::protocol::Cmd::Check || req.session.profile.panic_abort)
+        && (req.cmd == crate::protocol::Cmd::Check || key.supports_link_profile(req.session.profile.panic_abort))
         && req.session.target_triple == crate::protocol::library_contract::TARGET
         && crate::protocol::host_triple() == crate::protocol::library_contract::TARGET
         && !req.debug && !req.cc && !req.harness && req.emit_c.is_none() && req.run_args.is_none()
@@ -395,7 +395,9 @@ pub(super) fn finish(req: &Request, p: &check::collect::Program, front: &Front, 
                 if *bound_generation!=code_generation || object.symbol!=symbol { return Err("retained native object symbol context changed".into()); }
                 state.reused_objects+=1; objects.push((object.clone(),true));continue;
             }
-            let text=cgen::native_scalar_unit(output).ok_or("native library function requires unrepresented runtime/glue")?;
+            let unwind_tables = !req.session.profile.panic_abort;
+            let text=cgen::native_scalar_unit(output, unwind_tables)
+                .ok_or("native library function requires unrepresented runtime/glue")?;
             if let Some(object)=state.objects.get(&text) {
                 if object.definition!=f.definition() || object.symbol!=symbol { return Err("native object cache owner differs".into()); }
                 state.by_definition.insert(f.definition(),(code_generation,object.clone()));
@@ -404,9 +406,8 @@ pub(super) fn finish(req: &Request, p: &check::collect::Program, front: &Front, 
             state.next_object+=1;
             std::fs::create_dir_all(&caches.obj_dir).map_err(|e|format!("native object staging: {e}"))?;
             let path=caches.obj_dir.join(format!("native-library-{}.o",state.next_object));
-            // A singleton uses Lust's original in-process libtcc path. Never
-            // hand a prior artifact to compile_units, which removes its output.
-            crate::tcc::compile_units(&[(path.clone(),text.clone())],false)?;
+            // A fresh path preserves previous object generations on failure.
+            crate::tcc::compile_scalar_object(&path, &text, unwind_tables)?;
             let bytes=std::fs::read(&path).map_err(|e|format!("native object bytes: {e}"))?;
             std::fs::remove_file(&path).map_err(|e|format!("native object staging cleanup: {e}"))?;
             let object=Arc::new(Object {definition:f.definition(),symbol,c_source:Arc::from(text.as_str()),bytes:Arc::new(bytes),serial:state.next_object});

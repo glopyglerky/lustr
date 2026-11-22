@@ -129,12 +129,14 @@ struct Tcc {
 
 impl Tcc {
     fn new(output: c_int, debug: bool) -> Result<Tcc, String> {
+        // Regular units can contain several functions. TinyCC writes
+        // overlapping .eh_frame FDEs in that case.
+        let options = if debug { c"-g -w -fno-asynchronous-unwind-tables" } else { c"-w -fno-asynchronous-unwind-tables" };
+        Self::with_options(output, options)
+    }
+
+    fn with_options(output: c_int, options: &CStr) -> Result<Tcc, String> {
         let lib = cstr(&tcc_paths().0);
-        // No asynchronous unwind tables: tcc writes overlapping .eh_frame
-        // FDEs (spike K6), which makes the system linker reject its
-        // objects. Lust frames never unwind, so the tables are pure cost.
-        let opts =
-            CString::new(if debug { "-g -w -fno-asynchronous-unwind-tables" } else { "-w -fno-asynchronous-unwind-tables" }).unwrap();
         // SAFETY: a fresh libtcc state; the error vector is boxed so its address is stable.
         unsafe {
             let s = tcc_new();
@@ -144,7 +146,7 @@ impl Tcc {
             let mut t = Tcc { s, errs: Box::default() };
             tcc_set_error_func(s, &mut *t.errs as *mut Vec<String> as *mut c_void, on_error);
             tcc_set_lib_path(s, lib.as_ptr());
-            tcc_set_options(s, opts.as_ptr());
+            tcc_set_options(s, options.as_ptr());
             tcc_set_output_type(s, output);
             Ok(t)
         }
@@ -165,6 +167,30 @@ fn cstr(p: &Path) -> CString {
     CString::new(p.to_string_lossy().as_bytes()).expect("path contains NUL")
 }
 
+fn write_object(tcc: &Tcc, path: &Path, source: &str) -> Result<(), String> {
+    let source = CString::new(source).map_err(|_| "generated C contains a NUL byte".to_string())?;
+    // SAFETY: valid state and NUL-terminated strings that outlive the calls.
+    unsafe {
+        if tcc_compile_string(tcc.s, source.as_ptr()) != 0 {
+            return Err(tcc.fail("compile the generated C"));
+        }
+        if tcc_output_file(tcc.s, cstr(path).as_ptr()) != 0 {
+            return Err(tcc.fail("write an object file"));
+        }
+    }
+    Ok(())
+}
+
+/// Compile a checked scalar library object at a fresh staging path.
+pub fn compile_scalar_object(path: &Path, source: &str, unwind_tables: bool) -> Result<(), String> {
+    let tcc = if unwind_tables {
+        Tcc::with_options(TCC_OUTPUT_OBJ, c"-w -fasynchronous-unwind-tables")?
+    } else {
+        Tcc::new(TCC_OUTPUT_OBJ, false)?
+    };
+    write_object(&tcc, path, source)
+}
+
 /// Compiles `(object path, C source)` pairs.
 pub fn compile_units(units: &[(PathBuf, String)], debug: bool) -> Result<(), String> {
     // An object may be a hard link to a disk cache entry (`Cache::unit_object`). tcc
@@ -175,16 +201,7 @@ pub fn compile_units(units: &[(PathBuf, String)], debug: bool) -> Result<(), Str
     if units.len() <= 2 {
         for (obj, src) in units {
             let tcc = Tcc::new(TCC_OUTPUT_OBJ, debug)?;
-            let c = CString::new(src.as_str()).map_err(|_| "generated C contains a NUL byte".to_string())?;
-            // SAFETY: valid state and NUL-terminated strings that outlive the calls.
-            unsafe {
-                if tcc_compile_string(tcc.s, c.as_ptr()) != 0 {
-                    return Err(tcc.fail("compile the generated C"));
-                }
-                if tcc_output_file(tcc.s, cstr(obj).as_ptr()) != 0 {
-                    return Err(tcc.fail("write an object file"));
-                }
-            }
+            write_object(&tcc, obj, src)?;
         }
         return Ok(());
     }
