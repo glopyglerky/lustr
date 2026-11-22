@@ -594,6 +594,12 @@ impl SourceMap {
     pub fn file_count(&self) -> usize {
         self.files.len()
     }
+    /// Compare the source snapshots, ignoring their diagnostic expansion tables.
+    pub(crate) fn same_sources(&self, other: &Self) -> bool {
+        self.files.len() == other.files.len() && self.files.iter().zip(&other.files).all(|(a, b)| {
+            std::sync::Arc::ptr_eq(a, b) || (a.path == b.path && a.text == b.text)
+        })
+    }
     /// The text of `file`, when the map keeps it (multi-file crates).
     pub fn text(&self, file: FileId) -> Option<&str> {
         self.files.get(file.0 as usize).and_then(|f| f.text.as_deref())

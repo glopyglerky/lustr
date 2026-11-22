@@ -2841,12 +2841,24 @@ impl PreparedRequest<'_> {
         &self.state.as_ref().expect("checked request is consumed").source
     }
 
-    /// The public executable artifact path must account for actual inputs
-    /// before writing Cargo dep-info. Start with the single-file group.
-    pub(crate) fn uses_only_root_source(&self) -> bool {
-        self.source_map().file_count() == 1 && self.session.front.chunks.iter().all(|chunk| {
-            chunk.expand_deps.iter().all(|dep| !matches!(dep, expand::Dep::File { .. } | expand::Dep::Env { .. }))
-        })
+    /// The original resolver's file inventory supplies module dependencies.
+    /// Include files and environment reads need their own dep-info representation.
+    pub(crate) fn executable_source_modules(&self) -> Option<Vec<std::path::PathBuf>> {
+        if self.session.front.chunks.iter().flat_map(|chunk| &chunk.expand_deps)
+            .any(|dep| matches!(dep, expand::Dep::File { .. } | expand::Dep::Env { .. })) {
+            return None;
+        }
+        let map = self.source_map();
+        let cwd = &self.request.session.library.as_ref()?.working_directory;
+        let mut modules = Vec::new();
+        for index in 1..map.file_count() {
+            let file = FileId(index as u32);
+            let path = std::path::Path::new(map.path(file));
+            if path.as_os_str().is_empty() { continue; } // A retired source-map slot.
+            if !path.is_absolute() || map.text(file).is_none() { return None; }
+            modules.push(path.strip_prefix(cwd).unwrap_or(path).to_path_buf());
+        }
+        Some(modules)
     }
 
     /// Imported declarations in this executable slice are functions. For a

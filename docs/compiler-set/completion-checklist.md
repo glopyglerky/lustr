@@ -118,8 +118,9 @@ build, an unchanged request, body edit, type error, repair and provider edit.
 The body edit visits one body and changes two of six native object
 generations. The unchanged request reuses the executable with zero body
 checks. The matching `cargo check --bin` passes the same six cases with
-no object, archive, link or execution work. Wider Rust and Cargo coverage
-remain open.
+no object, archive, link or execution work. Both commands also pass when
+the edited body lives in an out-of-line module and the root file stays
+unchanged. Wider Rust and Cargo coverage remain open.
 
 Done when unchanged mixed programs and real downstream Cargo crates consume
 valid artifacts. Every obligation has one owner and every required instance is

@@ -99,6 +99,12 @@ The two library dependencies still carry genuine encoded crate metadata.
 The binary check does no object generation, archive construction or program
 execution.
 
+The retained executable also tracks out-of-line modules using the file
+inventory and source snapshots from the native resolver. Cargo observes the
+actual module paths in dep-info. Editing a module with an unchanged root
+rechecks the changed body and invalidates the linked artifact. Expansion
+inputs from include and environment macros still need dep-info support.
+
 General Cargo dependency graphs, additional crate types and profiles, and
 wider semantic completion remain open.
 

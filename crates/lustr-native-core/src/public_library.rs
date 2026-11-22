@@ -94,6 +94,7 @@ pub(crate) struct Owner {
 
 struct BinaryArtifact {
     source: Arc<str>,
+    module_sources: diag::SourceMap,
     shown: Option<PathBuf>,
     mode: u32,
     bytes: Arc<[u8]>,
@@ -241,7 +242,7 @@ impl Owner {
             // The admitted completion proves exactly one original source file,
             // no imported source and no env!/include! reads.
             let input=req.client.shown.as_deref().unwrap_or(&req.file);
-            let dep=dep_info(paths,input)?;
+            let dep=dep_info(paths,&[input.to_path_buf()])?;
             let check_bytes;
             let build_bytes;
             let expected: &[&[u8]] = if let Some(metadata) = &checked_metadata {
@@ -360,12 +361,13 @@ impl Owner {
                 let mut checked = 0;
                 let mut reused = false;
                 let mut source = None;
+                let mut inputs = vec![req.client.shown.as_deref().unwrap_or(&req.file).to_owned()];
                 let mut unused = Vec::new();
                 let mut response = match driver::prepare_library_import(&staged, session, executable) {
                     driver::Preparation::Ready(prepared) => {
-                        if !prepared.uses_only_root_source() {
-                            return Err("Cargo executable dependencies are outside the represented source-file set".into());
-                        }
+                        let modules = prepared.executable_source_modules()
+                            .ok_or("Cargo executable expansion inputs are outside the represented dependencies")?;
+                        inputs.extend(modules);
                         if req.json && req.library_options.force_warn_unused_crate_dependencies {
                             let used = prepared.executable_extern_uses().ok_or("executable extern lint form is not represented")?;
                             unused = executable.unused_externs(&used);
@@ -374,13 +376,14 @@ impl Owner {
                         if check {
                             prepared.emit()
                         } else if let Some(cached) = &self.binary_output
-                            && cached.source.as_ref() == prepared.source() && cached.shown == req.client.shown {
+                            && cached.source.as_ref() == prepared.source() && cached.shown == req.client.shown
+                            && cached.module_sources.same_sources(prepared.source_map()) {
                             write_new(&staged.out, &cached.bytes)?;
                             fs::set_permissions(&staged.out, fs::Permissions::from_mode(cached.mode)).map_err(|error|error.to_string())?;
                             reused = true;
                             driver::Response::default()
                         } else {
-                            source = Some(Arc::<str>::from(prepared.source()));
+                            source = Some((Arc::<str>::from(prepared.source()), prepared.source_map().clone()));
                             prepared.emit()
                         }
                     }
@@ -396,15 +399,14 @@ impl Owner {
                 if check {
                     write_new(&staged.out, &[])?;
                 }
-                let completed = if let Some(source) = source {
+                let completed = if let Some((source, module_sources)) = source {
                     let mode = fs::metadata(&staged.out).map_err(|error|error.to_string())?.mode() & 0o777;
                     let bytes = fs::read(&staged.out).map_err(|error|error.to_string())?.into();
-                    Some(BinaryArtifact { source, shown:req.client.shown.clone(), mode, bytes })
+                    Some(BinaryArtifact { source, module_sources, shown:req.client.shown.clone(), mode, bytes })
                 } else { None };
-                let input = req.client.shown.as_deref().unwrap_or(&req.file);
                 let paths = [dependencies, output];
                 let dep = stage.join(key.dep_info_name());
-                write_new(&dep, &dep_info(&paths, input)?)?;
+                write_new(&dep, &dep_info(&paths, &inputs)?)?;
                 match publication::replace_set(&[(&dep, &paths[0]), (&staged.out, &paths[1])])
                     .map_err(|error| format!("replace Cargo executable: {error}"))? {
                     publication::Replacement::Durable => {}
@@ -457,17 +459,29 @@ fn output_records(paths:&[PathBuf],expected:&[&[u8]],emits:&[&str])->Value{
 }
 /// Original Rust 5b7b37 rustc_interface::passes::escape_dep_filename and
 /// write_out_deps layout, applied to the actual completed source/output list.
-fn dep_info(outputs:&[PathBuf],source:&Path)->Result<Vec<u8>,String>{
-    let source=source.to_str().ok_or("dep-info source is not Unicode")?;
-    if source.contains(['\n','\r','\0']){return Err("dep-info source normalization is unrepresented".into());}
-    let escaped=source.replace(' ',"\\ ");
-    let mut text=String::new();
+fn dep_info(outputs: &[PathBuf], sources: &[PathBuf]) -> Result<Vec<u8>, String> {
+    let escape = |path: &Path| {
+        let path = path.to_str().ok_or("dep-info path is not Unicode")?;
+        if path.contains(['\n', '\r', '\0']) {
+            return Err("dep-info path normalization is unrepresented");
+        }
+        Ok(path.replace(' ', "\\ "))
+    };
+    let mut seen = std::collections::BTreeSet::new();
+    let sources = sources.iter().filter(|source| seen.insert(*source))
+        .map(|source| escape(source)).collect::<Result<Vec<_>, _>>()?;
+    let dependencies = sources.join(" ");
+    let mut text = String::new();
     for output in outputs {
-        let output=output.to_str().ok_or("dep-info output is not Unicode")?;
-        if output.contains(['\n','\r','\0']){return Err("dep-info output normalization is unrepresented".into());}
-        text.push_str(&format!("{output}: {escaped}\n\n"));
+        let output = output.to_str().ok_or("dep-info output is not Unicode")?;
+        if output.contains(['\n', '\r', '\0']) {
+            return Err("dep-info output normalization is unrepresented".into());
+        }
+        text.push_str(&format!("{output}: {dependencies}\n\n"));
     }
-    text.push_str(&format!("{escaped}:\n"));
+    for source in sources {
+        text.push_str(&format!("{source}:\n"));
+    }
     Ok(text.into_bytes())
 }
 fn normalize_failure(req:&driver::Request,response:&mut driver::Response){

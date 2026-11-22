@@ -483,7 +483,7 @@ def diagnostic(messages, source, text, code, *, tagged=True):
     return error
 
 
-def dep_info(data, outputs, source, cwd):
+def dep_info(data, outputs, source, cwd, *, modules=()):
     require(b"\r" not in data and data.endswith(b"\n"), "dep-info has malformed record endings")
     rules = {}
     for line in data.decode().splitlines():
@@ -497,8 +497,9 @@ def dep_info(data, outputs, source, cwd):
         prerequisites = [value.replace("\\ ", " ") for value in prerequisites]
         resolve = lambda value: str((Path(cwd) / value).resolve())
         rules[resolve(target)] = [resolve(value) for value in prerequisites]
-    expected = {str(path): [str(source)] for path in outputs.values()}
-    expected[str(source)] = []
+    inputs = [str(path) for path in (source, *modules)]
+    expected = {str(path): inputs for path in outputs.values()}
+    expected.update(dict.fromkeys(inputs, []))
     require(rules == expected, "dep-info targets or actual source prerequisites differ from requested artifacts")
     return rules
 
@@ -1124,19 +1125,31 @@ def qualify_dependency_links(root, package, sdk, commands, environment, oracle_e
 
 
 def qualify_executable(root, package, sdk, commands, environment, oracle_env, projects, owner,
-                       daemon_trace, daemon_argv, prefixes, report, *, check=False):
+                       daemon_trace, daemon_argv, prefixes, report, *, check=False, module=False):
     consumer, provider = projects["consumer"], projects["provider"]
     consumer["binary_target"] = "consumer"
     source = consumer["root"] / "src/main.rs"
     mode, emit = ("check", "metadata") if check else ("run", "link")
     group = "cargo-executable-check" if check else "cargo-executable"
-    target = consumer["root"] / f"binary-{mode}-target"
-    build = consumer["root"] / f"binary-{mode}-build"
+    if module:
+        group += "-module"
+        mode_directory = mode + "-module"
+        body = source.with_name("computation.rs")
+        body_prefix = b"pub fn execute() -> u64 { consumer::call("
+        body_suffix = b") }\n"
+        source.write_bytes(b'mod computation;\nfn main() { println!("{}", computation::execute()); }\n')
+    else:
+        mode_directory = mode
+        body = source
+        body_prefix = b'fn main() { println!("{}", consumer::call('
+        body_suffix = b')); }\n'
+    target = consumer["root"] / f"binary-{mode_directory}-target"
+    build = consumer["root"] / f"binary-{mode_directory}-build"
     application = target / "debug/consumer"
     env = dict(environment, CARGO_TARGET_DIR=str(target), CARGO_BUILD_BUILD_DIR=str(build))
     independent = dict(oracle_env, CARGO_HOME=environment["CARGO_HOME"],
-                       CARGO_TARGET_DIR=str(consumer["root"] / f"binary-{mode}-oracle-target"),
-                       CARGO_BUILD_BUILD_DIR=str(consumer["root"] / f"binary-{mode}-oracle-build"), RUSTC=str(sdk / "bin/rustc"))
+                       CARGO_TARGET_DIR=str(consumer["root"] / f"binary-{mode_directory}-oracle-target"),
+                       CARGO_BUILD_BUILD_DIR=str(consumer["root"] / f"binary-{mode_directory}-oracle-build"), RUSTC=str(sdk / "bin/rustc"))
     flags = [mode, "--bin", "consumer", "--offline", "--message-format=json"]
     argv = [package / "bin/cargo", *flags]
     cases = [
@@ -1152,7 +1165,7 @@ def qualify_executable(root, package, sdk, commands, environment, oracle_env, pr
     unit_directory, previous_units = None, {}
     for label, arg, mask, value, request_count, reused in cases:
         if arg is not None:
-            source.write_bytes(b'fn main() { println!("{}", consumer::call(' + arg + b')); }\n')
+            body.write_bytes(body_prefix + arg + body_suffix)
         if mask is not None:
             provider["source"].write_text(f"#![no_std]\npub fn mask(x: u64) -> u64 {{ x & {mask} }}\n")
         status = 0 if value is not None else 101
@@ -1229,10 +1242,11 @@ def qualify_executable(root, package, sdk, commands, environment, oracle_env, pr
             require(record["schema"] == "lustr-public-executable-v1" and record["owner_pid"] == owner[0]
                     and record["emit"] == emit and record["artifact_reused"] is reused and record["unused_extern_names"] == ["provider"],
                     "retained executable artifact state or actual unused-extern result changed")
-            require(record["checked_bodies"] == (0 if label == "noop" else 1),
+            expected_bodies = 0 if label == "noop" else 1 + int(module and label in {"cold", "provider-edit"})
+            require(record["checked_bodies"] == expected_bodies,
                     "executable did not retain the expected native check work")
             outputs = {kind: Path(filename) for kind, filename in zip(("dep-info", emit), record["outputs"])}
-            dep_info(outputs["dep-info"].read_bytes(), outputs, source, consumer["root"])
+            dep_info(outputs["dep-info"].read_bytes(), outputs, source, consumer["root"], modules=[body] if module else [])
             if check:
                 original_files = [Path(filename) for row in map(json.loads, original_stdout.splitlines())
                     if row["reason"] == "compiler-artifact" and row["target"]["kind"] == ["bin"]
@@ -2023,6 +2037,10 @@ def main():
                            daemon_trace, daemon_argv, prefixes, report)
         qualify_executable(root, package, sdk, commands, environment, oracle_env, projects, owner,
                            daemon_trace, daemon_argv, prefixes, report, check=True)
+        qualify_executable(root, package, sdk, commands, environment, oracle_env, projects, owner,
+                           daemon_trace, daemon_argv, prefixes, report, module=True)
+        qualify_executable(root, package, sdk, commands, environment, oracle_env, projects, owner,
+                           daemon_trace, daemon_argv, prefixes, report, check=True, module=True)
         seal_reports()
         save()
         # A direct archive passed where Cargo normally passes full metadata is refused.
