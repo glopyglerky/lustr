@@ -7437,7 +7437,7 @@ index da28835400f894866adb85f436e2cbdf109797d7..c2a8d6a10a776fba1df984670ff8b994
          assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
          assert!(decode_response(b"short").is_none());
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f3df6c1ff73d115a654f4d6a19e1f46d90ebdd99 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..5b2f7ae2b8b715fc47ab6802ce7375415495841b 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
 @@ -59,6 +59,7 @@ fn expand_tokens(
@@ -8811,7 +8811,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f3df6c1ff73d115a654f4d6a19e1f46d
          caches.objects = None;
          return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
      }
-@@ -5883,10 +6558,19 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5883,10 +6558,23 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      caches.objects = Some(req.debug);
      t.lap("tcc compile");
      let all_base: Vec<PathBuf> = [1, 2, 3, LOC_UNIT].into_iter().chain(link_fn_units.iter().copied()).map(base_obj).collect();
@@ -8829,11 +8829,15 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f3df6c1ff73d115a654f4d6a19e1f46d
 +            }
 +            objs.push(path);
 +        }
-+        crate::tcc::link(&objs, &req.out, req.debug, unwind_frames)
++        if unwind_frames {
++            crate::tcc::link_with_frames(&objs, &req.out, req.debug, true)
++        } else {
++            crate::tcc::link(&objs, &req.out, req.debug)
++        }
      } else {
          // The base library lives in a persistent dir under a content name
          // (see `resolve_base_dir`): the executable loads it by absolute
-@@ -5901,18 +6585,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5901,18 +6589,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
          let base = if rebuild_base {
              caches.base_gen += 1;
@@ -8874,7 +8878,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f3df6c1ff73d115a654f4d6a19e1f46d
                      install_base(&tmp, &base_dir.join(&soname))?;
                      if !caches.base_files.contains(&soname) {
                          caches.base_files.push_back(soname);
-@@ -5922,24 +6619,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5922,24 +6623,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              if built.is_err() {
                  let _ = std::fs::remove_file(&tmp);
              }
@@ -8906,7 +8910,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f3df6c1ff73d115a654f4d6a19e1f46d
              built
          } else {
              Ok(())
-@@ -5958,8 +6656,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5958,8 +6660,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // a small grace count while no known output file still references them. A binary the user
      // kept keeps its base; one that was overwritten or deleted does not. A running program
      // keeps its mapped copy after unlink.
@@ -8917,7 +8921,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f3df6c1ff73d115a654f4d6a19e1f46d
          if let Some(base_dir) = caches.base_dir.clone() {
              record_base_user(&base_dir, &soname, &req.out);
          }
-@@ -6058,6 +6756,66 @@ mod tests {
+@@ -6058,6 +6760,66 @@ mod tests {
          panic!("{}: still busy", bin.display())
      }
  
@@ -8984,7 +8988,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f3df6c1ff73d115a654f4d6a19e1f46d
      /// The base sweep never deletes a live owner's base (it may be a live
      /// session's current base, found by fuzz seed 7 multi when a guard
      /// session's first-build sweep deleted the warm session's base), but
-@@ -6417,10 +7175,547 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
+@@ -6417,10 +7179,547 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
              max_errors: 20,
              run_args: None,
              harness: false, cc: false,
@@ -18026,7 +18030,7 @@ index 74e6a71b9107da083ac052be5400a4bd06a7da0e..2332412671762d8e5efdc8b2e93826ab
  
  /// One marker: an index into `STD_FILES` with std's line and column, a
 diff --git a/src/tcc.rs b/src/tcc.rs
-index b978e5092190f63396af29c882284e1446de35d8..c4f45d95a68d5faea47ebbe0d6246f77d7fc74fe 100644
+index b978e5092190f63396af29c882284e1446de35d8..7c63694933c2a3c725859b2228da456cda2ce5e9 100644
 --- a/src/tcc.rs
 +++ b/src/tcc.rs
 @@ -129,12 +129,21 @@ struct Tcc {
@@ -18170,7 +18174,7 @@ index b978e5092190f63396af29c882284e1446de35d8..c4f45d95a68d5faea47ebbe0d6246f77
  /// The base name is versioned (for example `base-3`), so a rebuilt base never changes what an
  /// executable built earlier loads.
  pub fn link_with_base(objs: &[PathBuf], dir: &Path, base: &str, out: &Path, debug: bool) -> Result<(), String> {
-@@ -320,15 +370,15 @@ pub fn link_with_base(objs: &[PathBuf], dir: &Path, base: &str, out: &Path, debu
+@@ -320,7 +370,7 @@ pub fn link_with_base(objs: &[PathBuf], dir: &Path, base: &str, out: &Path, debu
          tcc_set_options(tcc.s, rpath.as_ptr());
          tcc_add_library_path(tcc.s, cstr(dir).as_ptr());
          if tcc_add_library(tcc.s, base.as_ptr()) != 0 {
@@ -18179,12 +18183,15 @@ index b978e5092190f63396af29c882284e1446de35d8..c4f45d95a68d5faea47ebbe0d6246f77
          }
      }
      link_executable(&tcc, objs, out)
- }
+@@ -328,7 +378,11 @@ pub fn link_with_base(objs: &[PathBuf], dir: &Path, base: &str, out: &Path, debu
  
  /// Links object files into a standalone executable at `out`.
--pub fn link(objs: &[PathBuf], out: &Path, debug: bool) -> Result<(), String> {
+ pub fn link(objs: &[PathBuf], out: &Path, debug: bool) -> Result<(), String> {
 -    let tcc = Tcc::new(TCC_OUTPUT_EXE, debug)?;
-+pub fn link(objs: &[PathBuf], out: &Path, debug: bool, unwind_frames: bool) -> Result<(), String> {
++    link_with_frames(objs, out, debug, false)
++}
++
++pub fn link_with_frames(objs: &[PathBuf], out: &Path, debug: bool, unwind_frames: bool) -> Result<(), String> {
 +    let tcc = Tcc::with_frames(TCC_OUTPUT_EXE, debug, unwind_frames)?;
      link_executable(&tcc, objs, out)
  }

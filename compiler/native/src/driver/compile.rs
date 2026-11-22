@@ -6570,7 +6570,11 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
             }
             objs.push(path);
         }
-        crate::tcc::link(&objs, &req.out, req.debug, unwind_frames)
+        if unwind_frames {
+            crate::tcc::link_with_frames(&objs, &req.out, req.debug, true)
+        } else {
+            crate::tcc::link(&objs, &req.out, req.debug)
+        }
     } else {
         // The base library lives in a persistent dir under a content name
         // (see `resolve_base_dir`): the executable loads it by absolute

@@ -377,7 +377,11 @@ pub fn link_with_base(objs: &[PathBuf], dir: &Path, base: &str, out: &Path, debu
 }
 
 /// Links object files into a standalone executable at `out`.
-pub fn link(objs: &[PathBuf], out: &Path, debug: bool, unwind_frames: bool) -> Result<(), String> {
+pub fn link(objs: &[PathBuf], out: &Path, debug: bool) -> Result<(), String> {
+    link_with_frames(objs, out, debug, false)
+}
+
+pub fn link_with_frames(objs: &[PathBuf], out: &Path, debug: bool, unwind_frames: bool) -> Result<(), String> {
     let tcc = Tcc::with_frames(TCC_OUTPUT_EXE, debug, unwind_frames)?;
     link_executable(&tcc, objs, out)
 }
