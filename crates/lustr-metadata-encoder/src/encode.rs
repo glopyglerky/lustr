@@ -133,21 +133,25 @@ impl Context {
     }
 }
 
-pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk) -> Result<Encoded, String> {
+pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk, link: bool) -> Result<Encoded, String> {
     let stable_id = stable_crate_id(input.crate_name, input.metadata, &sdk.cfg_version);
     let mut path_map = crate::upstream::odht_writer::HashTableOwned::default();
     path_map.insert(&stable_id, &0);
     let emitted: BTreeMap<_, _> = input.emitted.iter().map(|i| (i.definition, &i.symbol)).collect();
-    let mut mappings = Vec::with_capacity(input.functions.len());
+    let mut definitions = Vec::with_capacity(input.functions.len());
+    let mut mappings = Vec::with_capacity(input.emitted.len());
     for (n, function) in input.functions.iter().enumerate() {
         let index = (n + 1) as u32;
         let hash = function_path_hash(stable_id, &function.name);
         if path_map.insert(&hash, &index).is_some() {
             return Err("metadata DefPathHash collision; the original definition allocation cannot continue".into());
         }
-        mappings.push(SymbolMapping { definition: function.definition, rust_def_index: index,
-            rust_def_path_hash: hash, native_symbol: emitted[&function.definition].clone(),
-            rust_symbol: function_symbol(&function.name, input.crate_name, stable_id), public: function.public });
+        definitions.push((index, hash));
+        if link {
+            mappings.push(SymbolMapping { definition: function.definition, rust_def_index: index,
+                rust_def_path_hash: hash, native_symbol: emitted[&function.definition].clone(),
+                rust_symbol: function_symbol(&function.name, input.crate_name, stable_id), public: function.public });
+        }
     }
 
     let mut cx = Context::new();
@@ -171,10 +175,10 @@ pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk) -> Result<Encoded, String> {
         cx.opaque.emit_u8(0); // DefPathData::CrateRoot
         cx.opaque.emit_u32(0);
     });
-    for mapping in &mappings {
-        let index = mapping.rust_def_index as usize;
+    for &(index, hash) in &definitions {
+        let index = index as usize;
         let function = &input.functions[index - 1];
-        cx.table("def_path_hashes").set(index, &mapping.rust_def_path_hash.to_le_bytes());
+        cx.table("def_path_hashes").set(index, &hash.to_le_bytes());
         cx.fact("def_keys", index, |cx| {
             cx.opaque.emit_u8(1); cx.local_def(0);
             cx.opaque.emit_u8(6); // Original DefPathData::ValueNs
@@ -182,7 +186,7 @@ pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk) -> Result<Encoded, String> {
             cx.opaque.emit_u32(0);
         });
     }
-    let children: Vec<u32> = mappings.iter().map(|m| m.rust_def_index).collect();
+    let children: Vec<u32> = definitions.iter().map(|&(index, _)| index).collect();
     cx.array_fact("module_children_non_reexports", 0, &children, |cx, &id| cx.local_def(id));
     cx.table("def_kind").set(0, &[1]); // FixedSizeEncoding: Mod + 1.
     cx.fact("def_span", 0, |cx| cx.span(input.root_span));
@@ -190,8 +194,8 @@ pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk) -> Result<Encoded, String> {
     cx.fact("visibility", 0, |cx| cx.opaque.emit_u8(0));
     cx.fact("expn_that_defined", 0, |cx| { cx.opaque.emit_u32(0); cx.opaque.emit_u32(0); });
 
-    for (function, mapping) in input.functions.iter().zip(&mappings) {
-        let index = mapping.rust_def_index as usize;
+    for (function, &(def_index, _)) in input.functions.iter().zip(&definitions) {
+        let index = def_index as usize;
         cx.table("def_kind").set(index, &[12]); // FixedSizeEncoding: Fn + 1.
         cx.fact("def_span", index, |cx| cx.span(function.span));
         cx.fact("def_ident_span", index, |cx| cx.span(function.name_span));
@@ -226,7 +230,7 @@ pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk) -> Result<Encoded, String> {
         });
         cx.fact("type_of", index, |cx| {
             cx.opaque.emit_u8(13); // Original TyKind::FnDef
-            cx.def(mapping.rust_def_index);
+            cx.def(def_index);
             cx.opaque.emit_usize(0); // Binder bound vars
             cx.opaque.emit_usize(0); // GenericArgs
         });
@@ -239,9 +243,8 @@ pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk) -> Result<Encoded, String> {
 
     let tables: Vec<Table> = cx.tables.iter().map(|t| t.encode(&mut cx.opaque)).collect();
 
-    // Original exported_non_generic_symbols over actual completed visibility,
-    // nongeneric/nonconst/ordinary facts at the requested opt-level zero. A
-    // private called body is emitted, but is not a reachable exported symbol.
+    // The pinned Rust export providers stop before querying emission for
+    // metadata-only checks. Only a link has mappings from actual instances.
     let mut non_generic: Vec<_> = mappings.iter().filter(|m| m.public).collect();
     non_generic.sort_by_key(|m| m.rust_def_path_hash);
     let exports = cx.array(&non_generic, |cx, mapping| {
@@ -367,7 +370,7 @@ pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk) -> Result<Encoded, String> {
     // zero during hashing. Native checked source/request/object identities take
     // the place of the Rust HIR/query-state supplement. This is a conservative
     // native change detector, not a claim of byte-identical Rust HIR hashing.
-    let supplement = semantic_fingerprint(input, sdk);
+    let supplement = semantic_fingerprint(input, sdk, link);
     let mut hasher = XxHash3_128::new();
     hasher.write(&supplement[..16]); hasher.write(&cx.opaque.data);
     let crate_hash = hasher.finish_128().to_le_bytes();
@@ -496,7 +499,7 @@ fn stable_path(path: &str, hash: &mut crate::upstream::stable_hash::StableSipHas
     hash.write_u8(11); // EndOfPath
 }
 
-fn semantic_fingerprint(input: &Input<'_>, sdk: &Sdk) -> [u8; 16] {
+fn semantic_fingerprint(input: &Input<'_>, sdk: &Sdk, link: bool) -> [u8; 16] {
     use crate::upstream::stable_hash::{FromStableHash, SipHasher128Hash, StableSipHasher128};
     struct Fingerprint([u64; 2]);
     impl FromStableHash for Fingerprint {
@@ -516,6 +519,9 @@ fn semantic_fingerprint(input: &Input<'_>, sdk: &Sdk) -> [u8; 16] {
         for definition in &object.definitions { digest.write_u64(definition.krate); digest.write_u64(definition.path); }
     }
     digest.write(&[input.profile.overflow_checks as u8, input.profile.debug_assertions as u8]);
+    if !link {
+        digest.write(b"lustr-metadata-only-check");
+    }
     // Upstream tracks the unstable Option<bool> itself, not just its effective
     // default. Keep the qualified absent-option encoding unchanged; explicit
     // true/false are distinct native supplemental facts. Forced lint/JSON are

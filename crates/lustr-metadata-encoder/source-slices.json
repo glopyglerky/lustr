@@ -272,10 +272,11 @@
       "source_sha256": "75e01be382f01e791e71d7ede5bc8f3430902b4efebf269f50aead67bd7d0f1f",
       "sections": [
         "reachable_non_generics_helper",
+        "exported_non_generic_symbols_provider_local",
         "exported_non_generic_symbols_helper",
         "exported_generic_symbols_provider_local"
       ],
-      "adaptation": "Specialize original filters to completed ordinary nonconst nongeneric Item functions at actual opt0. Public effective visibility determines exports. The actual nonempty joined emitted inventory is visited before the no-generic-arguments branch yields no generic exports; missing instances fail, never become an empty graph. This is a source-owned specialization, not execution of the full TyCtxt query.",
+      "adaptation": "Specialize original filters to completed ordinary nonconst nongeneric Item functions at actual opt0. Public effective visibility determines link exports. Link input still requires actual emitted instances for every definition. The original provider guards return no exports for metadata-only requests, which carry checked declarations but no emission inputs.",
       "semantic_owner": "shared symbol-export service",
       "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
@@ -788,9 +789,9 @@
     "production_source_authored": true
   },
   "adapted_sources_sha256": {
-    "src/encode.rs": "ee39ed07bda3d08ebf22f81e219a28b7c4808724dfd2248a7ed9273bdca37637",
+    "src/encode.rs": "d9e04fa2aa7b95baf407070ab7e2fd0c9d98c83a5c35b807a836e8ee7ffbdc06",
     "src/identity.rs": "995799a9938d78fd5c800a1d28af4039f4e5868cea71536d0f70b2fc3643724d",
-    "src/lib.rs": "0a4b3c27e550aa3259eff323509bb42a3ee3030552d460169e40b8c986e05af5",
+    "src/lib.rs": "136a53710a690b23d49020b3dcce8260eeea213d7bdf6c73adbddeff832cab77",
     "src/sdk.rs": "a088d99b04d3046c52830699b15c960e849d84d1a101c52df68b1aaeb64898b6",
     "src/table.rs": "5ad2fa46decc550bfd5f7d23cc051c7087d4ef1f5b361b154630c122097c92bb",
     "src/upstream/codec.rs": "916922c930d3dc46c7003d65d920b6c84efa780ac5b0c06eec1586ead0216a7a",

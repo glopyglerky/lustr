@@ -55,9 +55,29 @@ impl LibraryKey {
     pub fn metadata_name(&self) -> String { format!("lib{}{}.rmeta", self.crate_name, self.extra_filename) }
     pub fn dep_info_name(&self) -> String { format!("{}{}.d", self.crate_name, self.extra_filename) }
     pub fn outputs(&self, archive: &Path) -> Option<[PathBuf;3]> {
-        if !archive.is_absolute() || archive.to_str()?.contains(['\0','\n','\r'])
-            || archive.file_name()?.to_str()? != self.archive_name() { return None; }
-        let parent = archive.parent()?;
+        let parent = output_parent(archive, &self.archive_name())?;
         Some([archive.to_owned(), parent.join(self.metadata_name()), parent.join(self.dep_info_name())])
     }
+
+    pub fn check_outputs(&self, metadata: &Path) -> Option<[PathBuf; 2]> {
+        let parent = output_parent(metadata, &self.metadata_name())?;
+        Some([parent.join(self.dep_info_name()), metadata.to_owned()])
+    }
+
+    pub fn valid_output(&self, path: &Path, check: bool, options: LibraryOptions) -> bool {
+        if check {
+            options.embed_metadata.is_none() && output_parent(path, &self.metadata_name()).is_some()
+        } else {
+            output_parent(path, &self.archive_name()).is_some()
+        }
+    }
+}
+
+fn output_parent<'a>(output: &'a Path, name: &str) -> Option<&'a Path> {
+    if !output.is_absolute() || output.to_str()?.contains(['\0', '\n', '\r'])
+        || output.file_name()?.to_str()? != name
+    {
+        return None;
+    }
+    output.parent()
 }

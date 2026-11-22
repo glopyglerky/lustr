@@ -13154,7 +13154,7 @@ index c4b23e007d746b984e392919dcf1bc9bc87a265e..47bb8992d04e52e8ba9774e3e865ddf1
              _ => return None,
          }
 diff --git a/src/protocol.rs b/src/protocol.rs
-index 504b467a9d240272c85f999b59f57a5d52b3cd4e..c27e683305bbc499962536c7720b9a5b9fef2a33 100644
+index 504b467a9d240272c85f999b59f57a5d52b3cd4e..6d7eb59e9cc057bf28ade4ea24442db644dbb873 100644
 --- a/src/protocol.rs
 +++ b/src/protocol.rs
 @@ -6,7 +6,7 @@
@@ -13355,7 +13355,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..c27e683305bbc499962536c7720b9a5b
                  client: Client::current(&typed),
              });
          }
-@@ -791,6 +862,17 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -791,6 +862,18 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
      if let Some(on) = debug_assertions {
          session.profile.debug_assertions = on;
      }
@@ -13363,9 +13363,10 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..c27e683305bbc499962536c7720b9a5b
 +        let key = LibraryKey {crate_name:library_name?, metadata:library_metadata?, extra_filename:library_extra?,
 +            source_path:file.clone(), working_directory:library_cwd?, check_cfg:library_cfg, search_paths:library_search,
 +            sdk_receipt:library_contract::SDK_RECEIPT.into()};
-+        if !key.valid() || cmd != "build" || session.krate.target_kind != "lib"
++        if !key.valid() || !matches!(cmd.as_str(), "build" | "check") || session.krate.target_kind != "lib"
 +            || !session.profile.panic_abort || session.target_triple != library_contract::TARGET
-+            || debug || emit_c.is_some() || !run_args.is_empty() || key.outputs(&abs(&out)).is_none() { return None; }
++            || debug || emit_c.is_some() || !run_args.is_empty()
++            || !key.valid_output(&abs(&out), cmd == "check", library_options) { return None; }
 +        session.krate.target_name = key.crate_name.clone();
 +        session.krate.target_explicit = true;
 +        session.library = Some(key);
@@ -13373,7 +13374,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..c27e683305bbc499962536c7720b9a5b
      let req = Request {
          cmd: if cmd == "check" { Cmd::Check } else { Cmd::Build },
          session,
-@@ -803,6 +885,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -803,6 +886,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
          max_errors,
          run_args: if run { Some(run_args.clone()) } else { None },
          harness: false, cc: false,
@@ -13381,7 +13382,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..c27e683305bbc499962536c7720b9a5b
          client: Client::current(&typed),
      };
      Some(Invocation::Compile { req, run, args: run_args })
-@@ -909,8 +992,23 @@ pub fn encode(r: &Request) -> Vec<u8> {
+@@ -909,8 +993,23 @@ pub fn encode(r: &Request) -> Vec<u8> {
      path_field(&mut out, s.krate.manifest_path.as_deref());
      put_field(&mut out, s.krate.target_kind.as_bytes());
      put_field(&mut out, s.krate.target_name.as_bytes());
@@ -13405,7 +13406,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..c27e683305bbc499962536c7720b9a5b
      for f in &s.features {
          put_field(&mut out, f.as_bytes());
      }
-@@ -951,8 +1049,33 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -951,8 +1050,33 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
      let manifest = get_field(r)?;
      let target_kind = text(get_field(r)?)?;
      let target_name = text(get_field(r)?)?;
@@ -13430,8 +13431,8 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..c27e683305bbc499962536c7720b9a5b
 +            library_options.embed_metadata=match get_field(r)?.as_slice() {b"-"=>None,b"1"=>Some(true),b"0"=>Some(false),_=>return None};
 +            library_options.force_warn_unused_crate_dependencies=match get_field(r)?.as_slice() {b"0"=>false,b"1"=>true,_=>return None};
 +            let library=LibraryKey{crate_name,metadata,extra_filename,source_path,working_directory,check_cfg,search_paths,sdk_receipt};
-+            if !library.valid() || library.outputs(&out).is_none() || library.source_path!=file
-+                || target_triple!=library_contract::TARGET || target_kind!="lib" || f[0]!="build" {return None;}
++            if !library.valid() || !library.valid_output(&out, f[0] == "check", library_options) || library.source_path!=file
++                || target_triple!=library_contract::TARGET || target_kind!="lib" || !matches!(f[0], "build" | "check") {return None;}
 +            Some(library)
 +        },
 +        _ => return None,
@@ -13439,7 +13440,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..c27e683305bbc499962536c7720b9a5b
      // A feature count this large is a bad request, not a loop to run.
      let n_features: usize = f[11].parse().ok()?;
      if n_features > 4096 {
-@@ -982,11 +1105,13 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -982,11 +1106,13 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
      Some(Request {
          cmd: if f[0] == "check" { Cmd::Check } else { Cmd::Build },
          session: SessionKey {
@@ -13453,7 +13454,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..c27e683305bbc499962536c7720b9a5b
                  root,
                  test: f[5] == "1",
              },
-@@ -1006,12 +1131,17 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -1006,12 +1132,17 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
          max_errors: f[4].parse().ok()?,
          run_args: None,
          harness: false, cc: false,
@@ -13472,7 +13473,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..c27e683305bbc499962536c7720b9a5b
  }
  
  /// The whole answer to a request of another build: a head no client takes
-@@ -1020,37 +1150,78 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
+@@ -1020,37 +1151,78 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
      write!(w, "- - - {}\n", build_id())
  }
  
@@ -13580,7 +13581,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..c27e683305bbc499962536c7720b9a5b
  }
  
  /// Prints a response. For `run`, runs the program after a successful build. Never returns.
-@@ -1331,9 +1502,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
+@@ -1331,9 +1503,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
      Some(PathBuf::from(text[at..end].replace("\\\\", "\\")))
  }
  
@@ -13630,7 +13631,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..c27e683305bbc499962536c7720b9a5b
  pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug: bool, net: CargoNet) -> ! {
      let profile = profile.unwrap_or("release");
      let dev = profile == "dev";
-@@ -1408,12 +1619,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
+@@ -1408,12 +1620,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
      exit_with(status);
  }
  
@@ -13649,7 +13650,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..c27e683305bbc499962536c7720b9a5b
  pub fn run_rustc_check(file: &Path) -> ! {
      let obj = std::env::temp_dir().join(format!("lust-rustc-check-{}.o", std::process::id()));
      eprintln!("lust: checking with rustc (oracle): rustc --edition 2024 --emit=obj {}", file.display());
-@@ -1461,6 +1678,150 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
+@@ -1461,6 +1679,150 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
  mod tests {
      use super::*;
  
@@ -13800,7 +13801,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..c27e683305bbc499962536c7720b9a5b
      fn args(list: &[&str]) -> Vec<String> {
          list.iter().map(|s| s.to_string()).collect()
      }
-@@ -1486,6 +1847,23 @@ mod tests {
+@@ -1486,6 +1848,23 @@ mod tests {
          assert_ne!(k, SessionKey::synthetic(Path::new("/tmp/x/other.rs"), false), "file differs");
      }
  

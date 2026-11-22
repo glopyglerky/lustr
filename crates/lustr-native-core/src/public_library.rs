@@ -108,13 +108,15 @@ impl Owner {
         let owner_start=observed.then(||OWNER_START.get_or_init(||fs::read_to_string("/proc/self/stat").ok().and_then(|s|s.rsplit_once(") ")
             .and_then(|(_,tail)|tail.split_whitespace().nth(19).map(str::to_owned)))).clone()).flatten();
         let profile=req.session.profile;
+        let check = req.cmd == driver::Cmd::Check;
+        let emits: &[&str] = if check { &["dep-info", "metadata"] } else { &["link", "metadata", "dep-info"] };
         let mut report=if observed {json!({"schema":"lustr-public-scalar-library-v1","owner_pid":std::process::id(),"owner_start":owner_start,
             "request_index":serial,"session_identity":self.identity,"native_context":req.session.describe(),
             "library_options":{"embed_metadata":req.library_options.embed_metadata,
                 "force_warn_unused_crate_dependencies":req.library_options.force_warn_unused_crate_dependencies},
             "context":{"crate_name":key.crate_name,"metadata":key.metadata,"extra_filename":key.extra_filename,
                 "source_path":key.source_path,"cwd":key.working_directory,"target":req.session.target_triple,"edition":"2024",
-                "emits":["dep-info","metadata","link"],"sdk_receipt_sha256":key.sdk_receipt,
+                "emits":if check { &["dep-info", "metadata"][..] } else { &["dep-info", "metadata", "link"][..] },"sdk_receipt_sha256":key.sdk_receipt,
                 "profile":{"panic_abort":profile.panic_abort,"overflow_checks":profile.overflow_checks,"debug_assertions":profile.debug_assertions},
                 "check_cfg":key.check_cfg,"search_dirs":key.search_paths},
             "source_path":req.file,"sdk_receipt_sha256":key.sdk_receipt,"status":3,"phase":"native-prepare",
@@ -162,20 +164,47 @@ impl Owner {
                 report["phase"]=json!(if response.code==4{"native-completion"}else if !state.generated.is_empty(){"native-emission"}else{"native-prepare"});
                 return Ok(());
             }
-            let snapshot=state.snapshot.clone().ok_or("native library returned no actual emission snapshot")?;
             let artifact_start=observed.then(std::time::Instant::now);
-            let artifact=self.artifacts.artifact_with_options(&snapshot,&step,&mut report,observed,req.library_options.embed_metadata)?;
+            let (linked, checked_metadata) = if check {
+                (None, Some(self.artifacts.check_metadata(
+                    state.generation, &state.source,
+                    state.completed_functions().ok_or("native library returned no completed check")?,
+                    &mut report,
+                )?))
+            } else {
+                let snapshot = state.snapshot.clone().ok_or("native library returned no actual emission snapshot")?;
+                (Some(self.artifacts.artifact_with_options(
+                    &snapshot, &step, &mut report, observed, req.library_options.embed_metadata,
+                )?), None)
+            };
+            let check_paths;
+            let build_paths;
+            let paths: &[PathBuf] = if check {
+                check_paths = key.check_outputs(&req.out).ok_or("requested metadata output plan changed")?;
+                &check_paths
+            } else {
+                build_paths = key.outputs(&req.out).ok_or("requested library output plan changed")?;
+                &build_paths
+            };
             if let Some(start)=artifact_start{report["timings_ns"]["artifact"]=json!(start.elapsed().as_nanos().min(u64::MAX as u128) as u64);}
             report["phase"]=json!("publication");
             let publication_start=observed.then(std::time::Instant::now);
-            let paths=key.outputs(&req.out).ok_or("requested library output plan changed")?;
-            let raw=artifact.files.get(&format!("{}.rmeta",key.crate_name)).ok_or("raw metadata is absent")?;
             // The admitted completion proves exactly one original source file,
             // no imported source and no env!/include! reads.
             let input=req.client.shown.as_deref().unwrap_or(&req.file);
-            let dep=dep_info(&paths,input)?;
-            let expected=[artifact.archive.as_slice(),raw.as_slice(),dep.as_slice()];
-            let matches=paths.iter().zip(expected).all(|(path,bytes)|fs::read(path).is_ok_and(|old|old==bytes));
+            let dep=dep_info(paths,input)?;
+            let check_bytes;
+            let build_bytes;
+            let expected: &[&[u8]] = if let Some(metadata) = &checked_metadata {
+                check_bytes = [dep.as_slice(), metadata.as_slice()];
+                &check_bytes
+            } else {
+                let artifact = linked.as_ref().expect("successful library build has linked artifacts");
+                let raw = artifact.files.get(&format!("{}.rmeta", key.crate_name)).ok_or("raw metadata is absent")?;
+                build_bytes = [artifact.archive.as_slice(), raw.as_slice(), dep.as_slice()];
+                &build_bytes
+            };
+            let matches=paths.iter().zip(expected).all(|(path,&bytes)|fs::read(path).is_ok_and(|old|old==bytes));
             report["output_reused"]=json!(matches);
             report["publication_count"]=json!(0);report["publication_state"]=json!("unchanged");
             if !matches {
@@ -185,29 +214,34 @@ impl Owner {
                 let publication=(||->Result<(),String>{
                     let staged=paths.iter().map(|p|staging.join(p.file_name().unwrap())).collect::<Vec<_>>();
                     for (path,bytes) in staged.iter().zip(expected){write_new(path,bytes)?;}
-                    // Metadata and dependency records precede the archive commit.
-                    let pairs=[(staged[1].as_path(),paths[1].as_path()),(staged[2].as_path(),paths[2].as_path()),(staged[0].as_path(),paths[0].as_path())];
+                    // The artifact Cargo consumes is installed last.
+                    let order: &[usize] = if check { &[0, 1] } else { &[1, 2, 0] };
+                    let pairs: Vec<_> = order.iter().map(|&i| (staged[i].as_path(), paths[i].as_path())).collect();
                     match publication::replace_set(&pairs).map_err(|e|format!("replace library output set: {e}"))? {
                         publication::Replacement::Durable=>{
-                            report["publication_count"]=json!(3);report["publication_state"]=json!("durable");
-                            self.artifacts.published(artifact.clone());session.library_published();
+                            report["publication_count"]=json!(paths.len());report["publication_state"]=json!("durable");
+                            if let Some(artifact) = &linked {
+                                self.artifacts.published(artifact.clone());session.library_published();
+                            }
                             // Retain the committed receipt before any fallible
                             // staging cleanup or observation can follow it.
-                            if observed {report["committed_outputs"]=output_records(&paths,expected);}
+                            if observed {report["committed_outputs"]=output_records(paths,expected,emits);}
                             Ok(())
                         },
                         publication::Replacement::Incomplete{replaced,error}=>{report["publication_state"]=json!("incomplete");report["publication_count"]=json!(replaced);Err(format!("library output replacement incomplete after {replaced} files: {error}"))},
-                        publication::Replacement::DurabilityUnknown(error)=>{report["publication_state"]=json!("durability-unknown");report["publication_count"]=json!(3);Err(format!("library output durability unconfirmed: {error}"))},
+                        publication::Replacement::DurabilityUnknown(error)=>{report["publication_state"]=json!("durability-unknown");report["publication_count"]=json!(paths.len());Err(format!("library output durability unconfirmed: {error}"))},
                     }
                 })();
                 let cleanup=fs::remove_dir_all(&staging).map_err(|e|format!("clean owned output staging: {e}"));
                 publication?;cleanup?;
             }
-            if matches {self.artifacts.published(artifact.clone());session.library_published();}
-            if observed {report["outputs"]=output_records(&paths,expected);}
+            if matches && let Some(artifact) = &linked {
+                self.artifacts.published(artifact.clone());session.library_published();
+            }
+            if observed {report["outputs"]=output_records(paths,expected,emits);}
             if let Some(start)=publication_start{report["timings_ns"]["publication"]=json!(start.elapsed().as_nanos().min(u64::MAX as u128) as u64);}
             if req.json {
-                for (path,emit) in paths.iter().zip(["link","metadata","dep-info"]) {
+                for (path,emit) in paths.iter().zip(emits) {
                     response.stderr.push_str(&json!({"$message_type":"artifact","artifact":path,"emit":emit}).to_string());
                     response.stderr.push('\n');
                 }
@@ -262,13 +296,13 @@ fn version_supported(req:&driver::Request)->bool {
         None=>std::env::var_os("RUSTC_FORCE_RUSTC_VERSION").is_none_or(|value|value==VERSION),
     }
 }
-fn output_records(paths:&[PathBuf;3],expected:[&[u8];3])->Value{
-    json!(paths.iter().zip(expected).zip(["link","metadata","dep-info"]).map(|((path,bytes),emit)|
+fn output_records(paths:&[PathBuf],expected:&[&[u8]],emits:&[&str])->Value{
+    json!(paths.iter().zip(expected).zip(emits).map(|((path,bytes),emit)|
         json!({"path":path,"sha256":hash(bytes),"size":bytes.len(),"emit":emit})).collect::<Vec<_>>())
 }
 /// Original Rust 5b7b37 rustc_interface::passes::escape_dep_filename and
 /// write_out_deps layout, applied to the actual completed source/output list.
-fn dep_info(outputs:&[PathBuf;3],source:&Path)->Result<Vec<u8>,String>{
+fn dep_info(outputs:&[PathBuf],source:&Path)->Result<Vec<u8>,String>{
     let source=source.to_str().ok_or("dep-info source is not Unicode")?;
     if source.contains(['\n','\r','\0']){return Err("dep-info source normalization is unrepresented".into());}
     let escaped=source.replace(' ',"\\ ");

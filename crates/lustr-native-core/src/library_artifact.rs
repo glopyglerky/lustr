@@ -3,6 +3,7 @@
 //! is consumed only as the already checked snapshot; no frontend enters here.
 use crate::{def,diag};
 use crate::driver::library::{Object as NativeObject,Snapshot,history};
+use crate::driver::library::completion::Function;
 use lustr_metadata_encoder as metadata;
 use object::{Object as _, ObjectSection as _, ObjectSymbol as _};
 use serde_json::{Value,json};
@@ -24,6 +25,7 @@ pub(crate) struct Service {
     sdk:Arc<metadata::Sdk>, sysroot:PathBuf, context:Context,
     originals:BTreeMap<u64,Original>, renamed:BTreeMap<(u64,String),Renamed>,
     pub artifact:Option<Arc<Artifact>>,
+    check_metadata: Option<(u64, Arc<Vec<u8>>)>,
     // At most three embedding choices for the current native snapshot.
     variants:BTreeMap<Option<bool>,Arc<Artifact>>,
     published:Option<Arc<Artifact>>, policy:history::Policy,
@@ -34,7 +36,7 @@ pub(crate) struct Service {
 }
 impl Service {
     pub fn new(sdk:Arc<metadata::Sdk>,sysroot:PathBuf,context:Context)->Result<Self,String> {
-        Ok(Self{sdk,sysroot,context,originals:BTreeMap::new(),renamed:BTreeMap::new(),artifact:None,variants:BTreeMap::new(),published:None,
+        Ok(Self{sdk,sysroot,context,originals:BTreeMap::new(),renamed:BTreeMap::new(),artifact:None,check_metadata:None,variants:BTreeMap::new(),published:None,
             policy:history::policy()?,original_used:BTreeMap::new(),renamed_used:BTreeMap::new(),
             evicted_originals:Vec::new(),evicted_renamed:Vec::new(),active_entries:0,inactive_entries:0,inactive_bytes:0})
     }
@@ -211,8 +213,8 @@ fn definition_name(snapshot:&Snapshot,id:def::DiskDefId)->Value {
     let name=snapshot.functions.iter().find(|f|f.definition()==id).map(|f|f.name()).unwrap_or("<absent>");
     json!({"name":name,"native_id":id_value(id)})
 }
-fn mapped_functions(snapshot:&Snapshot)->Vec<metadata::Function> {
-    snapshot.functions.iter().map(|f|metadata::Function {definition:native_id(f.definition()),name:f.name().into(),
+fn mapped_functions(functions:&[Function])->Vec<metadata::Function> {
+    functions.iter().map(|f|metadata::Function {definition:native_id(f.definition()),name:f.name().into(),
         name_span:span(f.name_span()),span:span(f.span()),public:f.visibility()==crate::driver::library::completion::Visibility::Public,
         parameters:f.parameters().iter().map(|p|metadata::Parameter{name:p.name().into(),span:span(p.span())}).collect(),
         calls:f.calls().iter().copied().map(native_id).collect() }).collect()
@@ -268,6 +270,36 @@ fn verify_members(bytes:&[u8],files:&BTreeMap<String,Arc<Vec<u8>>>,members:&[Str
     Ok(())
 }
 impl Service {
+    pub(crate) fn check_metadata(
+        &mut self, generation: u64, source: &str, functions: &[Function], report: &mut Value,
+    ) -> Result<Arc<Vec<u8>>, String> {
+        if let Some((cached, bytes)) = &self.check_metadata
+            && *cached == generation
+        {
+            report["artifact_reused"] = json!(true);
+            return Ok(bytes.clone());
+        }
+        report["phase"] = json!("source-owned-encode");
+        report["counts"]["metadata_encodes"] = json!(1);
+        let bytes = Arc::new(metadata::encode_check(&metadata::Input {
+            crate_name: &self.context.crate_name,
+            metadata: &self.context.metadata,
+            extra_filename: &self.context.extra_filename,
+            embed_metadata: None,
+            source_path: self.context.source.to_str().ok_or("source path is not Unicode")?,
+            working_directory: &self.context.cwd,
+            source,
+            root_span: metadata::Span { lo: 0, hi: source.len() as u32 },
+            profile: self.context.profile,
+            functions: &mapped_functions(functions),
+            emitted: &[],
+            backend_helpers: &[],
+            objects: &[],
+        }, &self.sdk)?);
+        self.check_metadata = Some((generation, bytes.clone()));
+        Ok(bytes)
+    }
+
     pub(crate) fn artifact(&mut self,snapshot:&Snapshot,step:&Path,report:&mut Value,materialize:bool)->Result<Arc<Artifact>,String> {
         self.artifact_with_options(snapshot,step,report,materialize,None)
     }
@@ -278,7 +310,7 @@ impl Service {
         let reused=cached.is_some();
         if !reused || materialize { std::fs::create_dir(&stage).map_err(|e|format!("create owned staging: {e}"))?; }
         if !reused {
-            let functions=mapped_functions(snapshot);
+            let functions=mapped_functions(&snapshot.functions);
             let instances:Vec<_>=snapshot.objects.iter().map(|(o,_)|metadata::EmittedFunction{definition:native_id(o.definition),symbol:o.symbol.clone()}).collect();
             for (object,_) in &snapshot.objects {
                 if !self.originals.contains_key(&object.serial) {

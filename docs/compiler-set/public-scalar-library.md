@@ -35,7 +35,9 @@ The installed compiler does not link the research qualifier or full Rust driver.
 
 ## Delivery contract
 
-The admitted public output set is exactly dep-info,metadata,link with --out-dir.
+The admitted public output sets with `--out-dir` are
+`dep-info,metadata,link` for `cargo build --lib` and
+`dep-info,metadata` for `cargo check --lib`.
 Names use the caller's crate name and extra filename, including the metadata's
 unhashed extra-filename record. Typed Cargo diagnostics preserve actual native
 codes, messages, spans, labels, fixes and rendered text. Artifact notifications
@@ -53,8 +55,16 @@ native checking emits no new artifacts. A durable replacement receipt is retaine
 before fallible cleanup; a later cleanup failure cannot be described as preserving
 the old output set.
 
-Metadata-only cargo check, public --extern ingestion, other crate types,
-unrepresented options/profiles and wider completion remain integration work.
+Metadata-only requests reuse Lust's completed checked declaration state.
+The pinned Rust symbol export providers return no exports without code
+generation. The check encoder therefore emits regular crate metadata with
+definitions and signatures but no emitted symbols. It caches one checked
+generation and publishes the dependency file before the metadata. The Rust
+metadata reader and downstream check consumer exercise the output separately
+from the retained native checker.
+
+Public `--extern` ingestion, other crate types, unrepresented options and
+profiles, and wider completion remain integration work.
 
 ## Metadata options and retained native state
 

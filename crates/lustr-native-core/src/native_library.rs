@@ -113,8 +113,9 @@ impl Session {
 /// constructor derives the mode from the same key, including after every reset.
 pub(crate) fn request_supported(req: &Request) -> bool {
     let Some(key) = &req.session.library else { return req.library_options == crate::protocol::LibraryOptions::default(); };
-    key.valid() && key.source_path == req.file && key.outputs(&req.out).is_some()
-        && req.cmd == crate::protocol::Cmd::Build && req.session.krate.target_kind == "lib"
+    key.valid() && key.source_path == req.file
+        && key.valid_output(&req.out, req.cmd == crate::protocol::Cmd::Check, req.library_options)
+        && req.session.krate.target_kind == "lib"
         && req.session.krate.target_name == key.crate_name && req.session.profile.panic_abort
         && req.session.target_triple == crate::protocol::library_contract::TARGET
         && crate::protocol::host_triple() == crate::protocol::library_contract::TARGET
@@ -122,6 +123,11 @@ pub(crate) fn request_supported(req: &Request) -> bool {
         && crate::image::state_dir().is_none() && std::env::var_os("LUST_FRONT_ARENA").is_none()
 }
 impl State {
+    pub(crate) fn completed_functions(&self) -> Option<&[Function]> {
+        let (generation, functions) = self.completed.as_ref()?;
+        (*generation == self.generation).then_some(functions.as_slice())
+    }
+
     pub(crate) fn function_name(&self, id:def::DiskDefId)->Option<&str> {
         self.checked_names.get(&id).map(String::as_str).or_else(||self.completed.as_ref()?.1.iter().find(|f|f.definition()==id).map(|f|f.name()))
     }

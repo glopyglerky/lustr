@@ -866,9 +866,10 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
         let key = LibraryKey {crate_name:library_name?, metadata:library_metadata?, extra_filename:library_extra?,
             source_path:file.clone(), working_directory:library_cwd?, check_cfg:library_cfg, search_paths:library_search,
             sdk_receipt:library_contract::SDK_RECEIPT.into()};
-        if !key.valid() || cmd != "build" || session.krate.target_kind != "lib"
+        if !key.valid() || !matches!(cmd.as_str(), "build" | "check") || session.krate.target_kind != "lib"
             || !session.profile.panic_abort || session.target_triple != library_contract::TARGET
-            || debug || emit_c.is_some() || !run_args.is_empty() || key.outputs(&abs(&out)).is_none() { return None; }
+            || debug || emit_c.is_some() || !run_args.is_empty()
+            || !key.valid_output(&abs(&out), cmd == "check", library_options) { return None; }
         session.krate.target_name = key.crate_name.clone();
         session.krate.target_explicit = true;
         session.library = Some(key);
@@ -1070,8 +1071,8 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
             library_options.embed_metadata=match get_field(r)?.as_slice() {b"-"=>None,b"1"=>Some(true),b"0"=>Some(false),_=>return None};
             library_options.force_warn_unused_crate_dependencies=match get_field(r)?.as_slice() {b"0"=>false,b"1"=>true,_=>return None};
             let library=LibraryKey{crate_name,metadata,extra_filename,source_path,working_directory,check_cfg,search_paths,sdk_receipt};
-            if !library.valid() || library.outputs(&out).is_none() || library.source_path!=file
-                || target_triple!=library_contract::TARGET || target_kind!="lib" || f[0]!="build" {return None;}
+            if !library.valid() || !library.valid_output(&out, f[0] == "check", library_options) || library.source_path!=file
+                || target_triple!=library_contract::TARGET || target_kind!="lib" || !matches!(f[0], "build" | "check") {return None;}
             Some(library)
         },
         _ => return None,

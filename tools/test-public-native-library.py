@@ -263,10 +263,11 @@ def metadata_replay_argv(invocation, choice):
     return argv
 
 
-def declared_compile(facts, project):
+def declared_compile(facts, project, *, check=False):
     require(facts.get("--crate-name") == CRATE and facts.get("--edition") == "2024"
             and facts.get("--crate-type") in {"lib", "rlib"}, "Cargo changed the declared leaf identity")
-    require(facts.get("--emit") == "dep-info,metadata,link", "Cargo did not request the complete leaf artifact contract")
+    emits = "dep-info,metadata" if check else "dep-info,metadata,link"
+    require(facts.get("--emit") == emits, "Cargo did not request the declared leaf artifacts")
     require(facts.get("--error-format") == "json" and facts.get("--json") == JSON_OPTIONS
             and facts["check_cfg"] == CHECK_CFG, "Cargo diagnostic/check-cfg request differs from pinned source")
     require(facts["source"] == str(project["source"]), "Cargo did not compile the unchanged selected source")
@@ -277,7 +278,7 @@ def declared_compile(facts, project):
     require(re.fullmatch(r"[0-9a-f]{16}", codegen["metadata"]) is not None
             and re.fullmatch(r"-[0-9a-f]{16}", codegen["extra-filename"]) is not None,
             "Cargo metadata or output disambiguator is malformed")
-    require(facts["unstable"] == {"embed-metadata": "no"}
+    require(facts["unstable"] == ({} if check else {"embed-metadata": "no"})
             and facts.get("--force-warn") == "unused_crate_dependencies",
             "Cargo split-metadata or forced-lint request differs from pinned source")
     allowed = {"codegen", "unstable", "check_cfg", "search_dirs", "source", "--crate-name", "--edition", "--crate-type",
@@ -288,8 +289,10 @@ def declared_compile(facts, project):
     out = Path(facts["--out-dir"]).resolve()
     require(out.is_relative_to(project["build"]), "Cargo compiler output escaped its configured build directory")
     suffix = codegen["extra-filename"]
-    return {"link": out / f"lib{CRATE}{suffix}.rlib", "metadata": out / f"lib{CRATE}{suffix}.rmeta",
-            "dep-info": out / f"{CRATE}{suffix}.d"}
+    outputs = {"metadata": out / f"lib{CRATE}{suffix}.rmeta", "dep-info": out / f"{CRATE}{suffix}.d"}
+    if not check:
+        outputs["link"] = out / f"lib{CRATE}{suffix}.rlib"
+    return outputs
 
 
 def information_query(argv):
@@ -363,7 +366,7 @@ def inspect_processes(parsed, package, expected_root, root_argv, projects, *, da
                     i += 2 if flag in {"--format-version", "--manifest-path", "--filter-platform"} else 1
                 require(args[args.index("--format-version") + 1] == "1", "nested Cargo metadata format differs")
             else:
-                require(args[:4] == ["build", "--unit-graph", "-Z", "unstable-options"]
+                require((args and args[0] in {"build", "check"} and args[1:4] == ["--unit-graph", "-Z", "unstable-options"])
                         and "--lib" in args and "--package" in args,
                         "product nested Cargo attempted compilation or an unrepresented operation")
                 allowed = {"--manifest-path", "--package", "--lib", "--offline", "--locked", "--no-default-features", "--target"}
@@ -591,7 +594,7 @@ def validate_context(record, facts, source_bytes, owner, *, prepared=True):
             and str(record.get("owner_start")) == owner[1], "library report changed the actual retained owner")
     expected = {"crate_name": facts["--crate-name"], "metadata": facts["codegen"]["metadata"],
                 "extra_filename": facts["codegen"]["extra-filename"], "source_path": facts["source"],
-                "target": TARGET, "edition": "2024", "emits": ["dep-info", "metadata", "link"],
+                "target": TARGET, "edition": "2024", "emits": facts["--emit"].split(","),
                 "check_cfg": facts["check_cfg"], "search_dirs": facts["search_dirs"],
                 "sdk_receipt_sha256": retained.SDK_RECEIPT,
                 "profile": {"panic_abort": True, "overflow_checks": True, "debug_assertions": True}}
@@ -879,7 +882,7 @@ def main():
               "socket_independent": False, "commands": [], "observed_history": [], "original_consumers": [],
               "refusals": [], "checked_runtime_results": 0,
               "native_work_evidence": "source-bound work instrumentation corroborated by immutable object generations; not an independent TinyCC profiler",
-              "unqualified_scope": ["metadata-only check", "under-Lustr --extern consumer ingestion",
+              "unqualified_scope": ["under-Lustr --extern consumer ingestion",
                     "non-scalar declarations", "other profiles/targets", "full Cargo graphs", "no_std compiler", "socket-free retained host"]}
     save = lambda: json_write(root / "report.json", report)
     commands = Commands(root / "commands", report, save)
@@ -920,6 +923,7 @@ def main():
         projects = {
             "first": project_fixture(projects_root, "first", "public-leaf-fixture", "implementation/leaf_entry.rs"),
             "second": project_fixture(projects_root, "second", "another-leaf-package", "sources/different_entry.rs"),
+            "check": project_fixture(projects_root, "check", "public-leaf-check", "src/lib.rs"),
         }
         for project in projects.values():
             project["source"].write_bytes(BASE)
@@ -1520,10 +1524,110 @@ def main():
                 "metadata option SVH identity does not match distinct upstream tracked states and restoration")
         transitions["passed"] = True
 
+        # Exercise the metadata-only route through ordinary pinned Cargo. Use
+        # different output directories from link requests and assert each
+        # actual daemon response rather than accepting Cargo's Fresh result.
+        project = projects["check"]
+        check_history = [("cold", BASE), ("noop", BASE), ("edit", EDIT),
+                         ("invalid", INVALID), ("repair", EDIT)]
+        checks = {"passed": False, "observed_history": [], "original_consumers": []}
+        report["metadata_only"] = checks
+        check_context = None
+        checked_bytes = None
+        for kind, source_bytes in check_history:
+            label = "metadata-check-" + kind
+            case = root / "cases" / label
+            case.mkdir()
+            project["source"].write_bytes(source_bytes)
+            write_new(case / "source.rs", source_bytes)
+            env = dict(environment, CARGO_TARGET_DIR=str(project["target"]), CARGO_BUILD_BUILD_DIR=str(project["build"]))
+            cargo_args = [package / "bin/cargo", "check", "--lib", "--offline", "--message-format=json"]
+            before_reports = set((root / "observations").glob("*/report.json"))
+            expected = 101 if kind == "invalid" else 0
+            stdout, _, trace = commands.run(label, cargo_args, project["root"], env, expected=expected, traced=True)
+            parsed = trace_events(trace.read_bytes(), project["root"])
+            client = inspect_processes(parsed, package, package / "bin/cargo", cargo_args, projects)
+            require(len(client["compiles"]) == 1 and parsed["exits"].get(parsed["root_pid"]) == expected,
+                    "Cargo check did not issue a real metadata-only compiler request")
+            invocation = client["compiles"][0]
+            facts = parse_compile(invocation)
+            outputs = declared_compile(facts, project, check=True)
+            new_reports = set((root / "observations").glob("*/report.json")) - before_reports
+            require(len(new_reports) == 1, "Cargo check did not use the retained native owner exactly once")
+            marker = next(iter(new_reports))
+            record = json.loads(marker.read_text())
+            validate_context(record, facts, source_bytes, owner)
+            if check_context is None:
+                check_context = record["native_context"]
+            require(record["native_context"] == check_context and process_identity(owner[0], package / "bin/lust-core") == owner,
+                    "Cargo check lost its retained native context")
+            counts = record["counts"]
+            require(all(counts[key] == 0 for key in ("generated_bodies", "compiled_objects", "reused_objects", "archive_builds"))
+                    and not record["commands"] and not record["objects"], "Cargo check performed native emission or archive work")
+            prefix = daemon_trace.read_bytes()
+            frozen_prefix(prefixes[-1]["bytes"], prefix)
+            owner_commands = inspect_processes(trace_events(prefix, root), package, Path(daemon_argv[0]), daemon_argv, projects, daemon=True)
+            require(len(owner_commands["artifacts"]) == prefixes[-1]["artifact_count"], "Cargo check invoked artifact tools")
+            prefixes.append({"name": label, "bytes": prefix, "artifact_count": len(owner_commands["artifacts"])})
+            messages = [json.loads(line) for line in stdout.splitlines() if line]
+            cargo_artifacts = [row for row in messages if row.get("reason") == "compiler-artifact"]
+            native_messages = [json.loads(line) for line in witness(marker.parent, "native.stderr").splitlines() if line]
+            unused_dependencies(native_messages)
+            require(not list(project["build"].rglob("*.rlib")) and not list(project["build"].rglob("*.o")),
+                    "Cargo check produced a link artifact")
+            rustc = sdk / "bin/rustc"
+            original_dir = case / "original"
+            original_dir.mkdir()
+            argv = invocation["argv"][1:]
+            argv[argv.index("--out-dir") + 1] = str(original_dir)
+            _, original_stderr, _ = commands.run(label + "-original-producer", [rustc, *argv],
+                                                   project["root"], oracle_env, expected=1 if expected else 0)
+            if kind == "invalid":
+                require(record["status"] == 1 and not cargo_artifacts and not record["outputs"]
+                        and counts["metadata_encodes"] == 0, "invalid Cargo check published metadata")
+                diagnostic(native_messages, project["source"], source_bytes, "L0110")
+                diagnostic([json.loads(line) for line in original_stderr.splitlines() if line],
+                           project["source"], source_bytes, "E0308")
+            else:
+                metadata_path = outputs["metadata"]
+                require(record["status"] == 0 and len(cargo_artifacts) == 1 and cargo_artifacts[0].get("fresh") is False
+                        and cargo_artifacts[0]["filenames"] == [str(metadata_path)], "Cargo check delivered the wrong artifact")
+                notices = {row["emit"]: Path(row["artifact"]) for row in native_messages if row.get("$message_type") == "artifact"}
+                require(notices == outputs, "Cargo check emitted the wrong artifact notices")
+                dep_info(outputs["dep-info"].read_bytes(), outputs, project["source"], project["root"])
+                current_bytes = metadata_path.read_bytes()
+                if kind == "noop":
+                    require(current_bytes == checked_bytes and counts["checked_bodies"] == counts["metadata_encodes"] == 0
+                            and record["artifact_reused"], "warm Cargo check did not reuse its checked metadata")
+                if kind == "edit":
+                    require(current_bytes != checked_bytes and counts["metadata_encodes"] == 1
+                            and set(source_rows(record["checked_definitions"], "check edit")) == {"limit"},
+                            "body edit did not update metadata from only the changed body")
+                checked_bytes = current_bytes
+                roots = []
+                for name, path in (("native", metadata_path), ("original", original_dir / metadata_path.name)):
+                    root_text, _, _ = commands.run(label + "-" + name + "-reader", [rustc, "-Zls=root", path], case, oracle_env)
+                    roots.append(construction.parse_root(root_text))
+                require(all(roots[0].get(key) == value for key, value in roots[1].items()
+                            if key not in {"hash", "svh", "svh_le_hex"}), "metadata-only Rust crate context differs from stock")
+                caller = case / "caller.rs"
+                write_new(caller, f"#![no_std]\npub fn call(x: u64) -> u64 {{ {CRATE}::project(x) }}\n")
+                delivered = case / "libcaller.rmeta"
+                commands.run(label + "-consumer", [rustc, "--edition=2024", "--crate-type=lib", "--emit=metadata",
+                    "-Cpanic=abort", "--extern", CRATE + "=" + str(metadata_path), caller, "-o", delivered], case, oracle_env)
+                require(delivered.is_file(), "independent consumer did not produce checked metadata")
+                checks["original_consumers"].append({"case": label, "metadata_sha256": sha(delivered.read_bytes())})
+            require(not trap_log.exists() and project["source"].read_bytes() == source_bytes,
+                    "Cargo check rewrote source or launched a competing tool")
+            checks["observed_history"].append({"case": label, "request": invocation,
+                "native_report": str(marker.relative_to(root)), "counts": counts, "status": record["status"]})
+            seal_reports()
+            save()
+        checks["passed"] = True
+
         # These valid request classes remain explicitly outside the bounded
         # slice. A refusal is recorded as unqualified coverage, never success.
         for label, extra in (
-            ("metadata-only", ["check", "--lib"]),
             ("external-crate", ["rustc", "--lib", "--", "--extern", "unused_external=" + str(saved_outputs["second"]["link"])]),
         ):
             target = root / "cases" / label

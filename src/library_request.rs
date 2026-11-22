@@ -62,9 +62,14 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     }
     if !matches!(kind.as_deref(), Some("lib" | "rlib")) || edition.as_deref() != Some("2024")
         || target.as_deref().is_some_and(|v| v != TARGET) { return None; }
-    let emit = emits?.split(',').map(str::to_owned).collect::<Vec<_>>();
-    if emit.len() != 3 || emit.iter().map(String::as_str).collect::<BTreeSet<_>>()
-        != BTreeSet::from(["dep-info","metadata","link"]) { return None; }
+    let emit = emits?;
+    let fields = emit.split(',').collect::<Vec<_>>();
+    let check = match (fields.len(), fields.into_iter().collect::<BTreeSet<_>>()) {
+        (2, fields) if fields == BTreeSet::from(["dep-info", "metadata"]) => true,
+        (3, fields) if fields == BTreeSet::from(["dep-info", "metadata", "link"]) => false,
+        _ => return None,
+    };
+    if check && options.embed_metadata.is_some() { return None; }
     let cargo_json = match error_format.as_deref() {
         None | Some("human") if json.is_none() => false,
         Some("json") => {
@@ -85,7 +90,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
         let represented = match key.as_str() {
             "opt-level" | "debuginfo" => value == "0",
             "overflow-checks" | "debug-assertions" => matches!(value.as_str(),"yes"|"no"|"on"|"off"|"true"|"false"|"y"|"n"),
-            "strip" => value == "none",
+            "strip" => value == "none" || check && value == "debuginfo",
             _ => false,
         };
         if !represented { return None; }
@@ -97,8 +102,8 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     if !context.valid() { return None; }
     if std::env::var("CARGO_CRATE_NAME").is_ok_and(|v|v != context.crate_name) { return None; }
     let out_dir = std::path::absolute(out_dir?).ok()?;
-    let output = out_dir.join(context.archive_name());
-    let mut native = vec!["build".into(),source,"--lib".into(),"-o".into(),output.to_str()?.into(),
+    let output = out_dir.join(if check { context.metadata_name() } else { context.archive_name() });
+    let mut native = vec![(if check { "check" } else { "build" }).into(),source,"--lib".into(),"-o".into(),output.to_str()?.into(),
         "--target".into(),TARGET.into(),"-C".into(),"panic=abort".into()];
     // Rust's opt-level=0 default enables these flags. Explicit values win;
     // Cargo's manifest profile is never substituted for its actual invocation.

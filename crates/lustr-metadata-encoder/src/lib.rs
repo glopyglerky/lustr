@@ -133,8 +133,15 @@ pub struct Encoded {
 }
 
 pub fn encode(input: &Input<'_>, sdk: &Sdk) -> Result<Encoded, String> {
-    validate(input)?;
-    encode::encode(input, sdk)
+    validate(input, true)?;
+    encode::encode(input, sdk, true)
+}
+
+/// Encode metadata for a checked library. Checked definitions and signatures
+/// remain visible, while the pinned Rust export providers return no symbols.
+pub fn encode_check(input: &Input<'_>, sdk: &Sdk) -> Result<Vec<u8>, String> {
+    validate(input, false)?;
+    Ok(encode::encode(input, sdk, false)?.metadata)
 }
 
 /// Original `RmetaLink::encode` for the actual Rust object members of the
@@ -170,7 +177,7 @@ fn identifier(name: &str) -> bool {
         })
 }
 
-fn validate(input: &Input<'_>) -> Result<(), String> {
+fn validate(input: &Input<'_>, link: bool) -> Result<(), String> {
     let failure = |reason: &str| format!("native metadata completion: {reason}");
     if !identifier(input.crate_name)
         || input.metadata.is_empty()
@@ -230,6 +237,27 @@ fn validate(input: &Input<'_>) -> Result<(), String> {
             }
         }
     }
+    if link {
+        validate_emission(input, &definitions)?;
+    } else if input.embed_metadata.is_some() || !input.emitted.is_empty()
+        || !input.objects.is_empty() || !input.backend_helpers.is_empty()
+    {
+        return Err(failure("metadata-only check has link or embedding inputs"));
+    }
+    // The call graph in both modes comes from the same checked generation.
+    for function in input.functions {
+        let mut calls = BTreeSet::new();
+        for called in &function.calls {
+            if !definitions.contains_key(called) || !calls.insert(called) {
+                return Err(failure("call edge is foreign or duplicated"));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn validate_emission(input: &Input<'_>, definitions: &BTreeMap<NativeId, &Function>) -> Result<(), String> {
+    let failure = |reason: &str| format!("native metadata completion: {reason}");
     let mut emitted = BTreeSet::new();
     let mut symbols = BTreeSet::new();
     for instance in input.emitted {
@@ -264,17 +292,6 @@ fn validate(input: &Input<'_>) -> Result<(), String> {
     for helper in input.backend_helpers {
         if !identifier(helper) || !symbols.insert(helper) {
             return Err(failure("backend helper overlaps a source definition"));
-        }
-    }
-    // This is a graph-integrity check on actual checked call records, not body
-    // checking or an alternative source parser. All records must name members
-    // of the same completed/emitted generation.
-    for function in input.functions {
-        let mut calls = BTreeSet::new();
-        for called in &function.calls {
-            if !definitions.contains_key(called) || !calls.insert(called) {
-                return Err(failure("call edge is foreign or duplicated"));
-            }
         }
     }
     Ok(())
