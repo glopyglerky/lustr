@@ -193,10 +193,23 @@ pinned distribution advertises no separate static archive-tool component.
 Its dynamic tool closure can require the 208,283,952-byte LLVM shared library;
 this is an explicit size/portability limitation, not minimality or speed proof.
 
-The installed SDK is verified once per owner and retained. File generations are
-checked before requests without rehashing all SDK bytes. A changed generation
-is terminal. Native function/object reuse and artifact reuse retain their actual
-keys. No-op requests invoke no encoder, object transformer or archive builder.
+The installed SDK metadata is verified once per owner and retained. File
+generations are checked before requests without rehashing all SDK bytes. A
+changed generation is terminal. The first library link verifies the archive
+tools and their declared runtime libraries before use. Checking a crate
+therefore avoids reading and hashing the archive tools and LLVM library.
+An altered archive tool still causes the link to fail before archive
+publication.
+
+Eight paired Linux x64 runs of the same debug compiler package workload
+measured median cold `cargo check --bin` times of 3.93 s before deferring
+verification and 1.24 s afterward. The median paired time ratios were 0.307
+for cold, 1.016 for retained no-op, 1.034 for body edit, 0.982 for invalid
+input and 1.011 for repair. This experiment measures this exact metadata-only
+Cargo workload. Overall and stock-Lust performance comparisons remain open.
+
+Native function/object reuse and artifact reuse retain their actual keys.
+No-op requests invoke no encoder, object transformer or archive builder.
 Optional observations expose actual work counters, immutable object witnesses,
 tool argv/results/durations and phase durations; independent process, archive and
 consumer evaluation remains necessary. These observations are not benchmarks.

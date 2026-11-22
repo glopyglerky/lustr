@@ -32,7 +32,16 @@ fn stamp(path:&Path)->Result<Stamp,String>{
 }
 struct Installed {
     root:PathBuf, sdk:Arc<metadata::Sdk>, inputs:Vec<(PathBuf,Stamp)>, tools:Value,
+    archive_inputs: Vec<ArchiveToolInput>,
+    archive_verification: OnceLock<Result<(), String>>,
 }
+
+struct ArchiveToolInput {
+    path: PathBuf,
+    size: u64,
+    sha256: String,
+}
+
 impl Installed {
     fn load()->Result<Arc<Self>,String>{
         let root=std::env::current_exe().map_err(|e|e.to_string())?.parent().and_then(Path::parent)
@@ -62,27 +71,39 @@ impl Installed {
         let inputs=paths.into_iter().map(|p|Ok((p.clone(),stamp(&p)?))).collect::<Result<Vec<_>,String>>()?;
         let sdk=Arc::new(lustr_metadata_sdk::open_bound(&inputs[0].0,&root,protocol::library_contract::SDK_RECEIPT)?);
         let mut tools=Vec::new();
+        let mut archive_inputs = Vec::new();
         for field in ["tools","allowed_sdk_libraries"] {
             for record in manifest[field].as_array().ok_or("artifact tool closure absent")? {
                 let path=root.join(record["path"].as_str().ok_or("artifact tool path absent")?);
-                let data=fs::read(&path).map_err(|e|format!("artifact tool closure {}: {e}",path.display()))?;
-                if Some(data.len() as u64)!=record["size"].as_u64() || Some(hash(&data).as_str())!=record["sha256"].as_str() {
-                    return Err("artifact tool closure differs from original exact bytes".into());
-                }
+                let size = record["size"].as_u64().ok_or("artifact tool length absent")?;
+                let sha256 = record["sha256"].as_str().ok_or("artifact tool digest absent")?;
                 if field=="tools" {tools.push(json!({"path":path,"sha256":record["sha256"],"size":record["size"]}));}
+                archive_inputs.push(ArchiveToolInput { path, size, sha256: sha256.into() });
             }
         }
         for (path,before) in &inputs {
             if stamp(path)?!=*before {return Err("metadata SDK changed during owner initialization".into());}
         }
         SDK_LOADS.fetch_add(1,Ordering::Relaxed);
-        Ok(Arc::new(Self{root,sdk,inputs,tools:json!(tools)}))
+        Ok(Arc::new(Self { root, sdk, inputs, tools: json!(tools), archive_inputs, archive_verification: OnceLock::new() }))
     }
     fn unchanged(&self)->Result<(),String>{
         for (path,loaded) in &self.inputs {
             if stamp(path)?!=*loaded {return Err(format!("loaded metadata SDK generation changed: {}",path.display()));}
         }
         Ok(())
+    }
+
+    fn verify_archive_tools(&self) -> Result<(), String> {
+        self.archive_verification.get_or_init(|| {
+            for tool in &self.archive_inputs {
+                let data = fs::read(&tool.path).map_err(|error| format!("artifact tool closure {}: {error}", tool.path.display()))?;
+                if data.len() as u64 != tool.size || hash(&data) != tool.sha256 {
+                    return Err("artifact tool closure differs from original exact bytes".into());
+                }
+            }
+            self.unchanged()
+        }).clone()
     }
 }
 pub(crate) struct Owner {
@@ -178,6 +199,9 @@ impl Owner {
                 report["phase"]=json!("request-context");return Ok(());
             }
             self.installed.unchanged()?;
+            if !check {
+                self.installed.verify_archive_tools()?;
+            }
             // Exactly one continuation; metadata consumes its completed snapshot.
             let native_start=observed.then(std::time::Instant::now);
             response = {
