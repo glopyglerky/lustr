@@ -119,7 +119,8 @@ pub(crate) fn request_supported(req: &Request) -> bool {
     key.valid() && key.source_path == req.file
         && key.valid_output(&req.out, req.cmd == crate::protocol::Cmd::Check, req.library_options)
         && req.session.krate.target_kind == key.target_kind()
-        && req.session.krate.target_name == key.crate_name && req.session.profile.panic_abort
+        && req.session.krate.target_name == key.crate_name
+        && (req.cmd == crate::protocol::Cmd::Check || req.session.profile.panic_abort)
         && req.session.target_triple == crate::protocol::library_contract::TARGET
         && crate::protocol::host_triple() == crate::protocol::library_contract::TARGET
         && !req.debug && !req.cc && !req.harness && req.emit_c.is_none() && req.run_args.is_none()

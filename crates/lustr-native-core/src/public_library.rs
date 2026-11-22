@@ -133,7 +133,8 @@ impl Owner {
         } else { None };
         let context=Context{crate_name:key.crate_name.clone(),metadata:key.metadata.clone(),extra_filename:key.extra_filename.clone(),
             source:key.source_path.clone(),cwd:key.working_directory.to_str().ok_or("library cwd is not Unicode")?.into(),
-            profile:metadata::Profile{overflow_checks:req.session.profile.overflow_checks,debug_assertions:req.session.profile.debug_assertions}};
+            profile:metadata::Profile{overflow_checks:req.session.profile.overflow_checks,
+                debug_assertions:req.session.profile.debug_assertions,panic_abort:req.session.profile.panic_abort}};
         let artifacts=Service::new(installed.sdk.clone(),installed.root.clone(),context)?;
         let executable = if let Some(dependencies) = &key.executable_dependencies {
             if req.session.krate.manifest_path.is_none() { return Err("executable artifacts require the actual Cargo unit".into()); }

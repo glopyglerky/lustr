@@ -340,7 +340,12 @@ pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk, link: bool) -> Result<Encoded
         };
         field("header", &mut |cx| cx.crate_header(input.crate_name, false));
         field("stable_crate_id", &mut |cx| cx.opaque.emit_raw_bytes(&stable_id.to_le_bytes()));
-        field("required_panic_strategy", &mut |cx| { cx.opaque.emit_u8(1); cx.opaque.emit_u8(1); });
+        field("required_panic_strategy", &mut |cx| {
+            cx.opaque.emit_bool(input.profile.panic_abort);
+            if input.profile.panic_abort {
+                cx.opaque.emit_u8(1); // Original PanicStrategy::Abort.
+            }
+        });
         field("panic_in_drop_strategy", &mut |cx| cx.opaque.emit_u8(0));
         field("edition", &mut |cx| cx.opaque.emit_u8(3));
         for name in ["has_global_allocator", "has_alloc_error_handler", "has_panic_handler", "has_default_lib_allocator"] {

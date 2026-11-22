@@ -88,13 +88,21 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     };
     let metadata = codegen.remove("metadata")?;
     let extra_filename = codegen.remove("extra-filename").unwrap_or_default();
-    if codegen.remove("panic").as_deref() != Some("abort") { return None; }
+    let panic = match codegen.remove("panic").as_deref() {
+        Some("abort") => "panic=abort",
+        None | Some("unwind") if check => "panic=unwind",
+        _ => return None,
+    };
     // Rust defaults to embedded LLVM bitcode for an rlib; this native scalar
     // artifact contract requires the caller's explicit no-bitcode selection.
     if !matches!(codegen.remove("embed-bitcode").as_deref(),Some("no"|"off"|"false"|"n")) {return None;}
     for (key,value) in &codegen {
         let represented = match key.as_str() {
-            "opt-level" | "debuginfo" => value == "0",
+            "opt-level" => value == "0",
+            "debuginfo" => value == "0" || check && matches!(value.as_str(), "1" | "2"),
+            // Cargo provides an optional on-disk incremental cache location.
+            // Metadata-only work reuses the native retained session instead.
+            "incremental" => check && std::path::Path::new(value).is_absolute(),
             "overflow-checks" | "debug-assertions" => matches!(value.as_str(),"yes"|"no"|"on"|"off"|"true"|"false"|"y"|"n"),
             // This artifact path emits no debug sections (nonzero debuginfo
             // is refused above). Cargo's standard debug stripping has no
@@ -123,7 +131,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     let out_dir = std::path::absolute(out_dir?).ok()?;
     let output = out_dir.join(if check { context.metadata_name() } else if binary { context.binary_name() } else { context.archive_name() });
     let mut native = vec![(if check { "check" } else { "build" }).into(),source,"-o".into(),output.to_str()?.into(),
-        "--target".into(),TARGET.into(),"-C".into(),"panic=abort".into()];
+        "--target".into(),TARGET.into(),"-C".into(),panic.into()];
     if binary { native.extend(["--bin".into(), context.crate_name.clone()]); }
     else { native.push("--lib".into()); }
     // Rust's opt-level=0 default enables these flags. Explicit values win;

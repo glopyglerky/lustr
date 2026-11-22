@@ -153,6 +153,7 @@ pub struct ScalarCrate<'a> {
     pub stable_id: u64,
     pub svh: [u8; 16],
     pub filename_suffix: &'a str,
+    pub requires_abort: bool,
     pub functions: Vec<ScalarFunction<'a>>,
     pub dependencies: Vec<ScalarDependency<'a>>,
 }
@@ -207,8 +208,13 @@ fn read_crate<'a>(bytes: &'a [u8], sdk: &Sdk, link: bool) -> Option<ScalarCrate<
     valid_identifier(name).then_some(())?;
     (r.take(2)? == [0, 0]).then_some(())?;
     let stable_id = u64::from_le_bytes(r.take(8)?.try_into().ok()?);
-    // Panic abort, unwind-in-drop default, edition 2024, no allocator or panic handler.
-    (r.take(8)? == [1, 1, 0, 3, 0, 0, 0, 0] && r.array()?.1 == 0).then_some(())?;
+    let requires_abort = match r.byte()? {
+        0 => false,
+        1 if r.byte()? == 1 => true,
+        _ => return None,
+    };
+    // Unwind-in-drop default, edition 2024, no allocator or panic handler.
+    (r.take(6)? == [0, 3, 0, 0, 0, 0] && r.array()?.1 == 0).then_some(())?;
     let (deps_position, dep_count) = r.array()?;
     (dep_count == suffix_count && (link || dep_count == sdk_dependencies.len())).then_some(())?;
     let mut deps = Read::new(data, deps_position);
@@ -304,7 +310,7 @@ fn read_crate<'a>(bytes: &'a [u8], sdk: &Sdk, link: bool) -> Option<ScalarCrate<
         (path_hash == crate::identity::function_path_hash(stable_id, function_name)).then_some(())?;
         functions.push(ScalarFunction { name: function_name, parameters, result, path_hash });
     }
-    Some(ScalarCrate { name, stable_id, svh, filename_suffix, functions, dependencies })
+    Some(ScalarCrate { name, stable_id, svh, filename_suffix, requires_abort, functions, dependencies })
 }
 
 fn only_implicit_core_reexport(data: &[u8], value: [u8; 16]) -> Option<bool> {

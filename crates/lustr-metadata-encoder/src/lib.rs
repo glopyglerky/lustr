@@ -121,6 +121,7 @@ pub struct EmittedFunction {
 pub struct Profile {
     pub overflow_checks: bool,
     pub debug_assertions: bool,
+    pub panic_abort: bool,
 }
 
 /// An actual native producer object, its planned archive member name, and the

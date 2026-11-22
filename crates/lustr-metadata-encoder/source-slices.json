@@ -342,7 +342,7 @@
       "sections": [
         "required_panic_strategy"
       ],
-      "adaptation": "Actual abort request requires Some(Abort), without inspecting or generating Rust MIR.",
+      "adaptation": "An actual abort request requires Some(Abort). An unwind-profile check of a completed scalar crate has no required panic strategy because the admitted declarations and checked call graph contain no FFI-unwind calls or panic runtime.",
       "semantic_owner": "required panic metadata policy",
       "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
@@ -930,10 +930,10 @@
     "production_source_authored": true
   },
   "adapted_sources_sha256": {
-    "src/encode.rs": "7268f5067f1fe3393cfffde1886a37b5f929360e68afff3c57e05692c3665c4a",
-    "src/extern_metadata.rs": "02091069b851f5c64ceaa8d0b2de0f82fd1180b23cbf3dec5eca5cec3d868737",
+    "src/encode.rs": "0c73092f52362ee2d9a5b48950a3ff4e1065b9bf7fa252b28b787dd9195ac21c",
+    "src/extern_metadata.rs": "0bbb96a8e2de6478d15f4adcd1d4d8475f3f7fd76025584f305f376eed867dd2",
     "src/identity.rs": "995799a9938d78fd5c800a1d28af4039f4e5868cea71536d0f70b2fc3643724d",
-    "src/lib.rs": "16d4b9db9b6c6fc8cee474d3d9090ad39d9643c34ab4a0bf4ca319c9be0f3d6a",
+    "src/lib.rs": "6ab2aaf10f64cb1dc9cb2b4066249b16fc83e5d223083f57bca550b96697c560",
     "src/sdk.rs": "a3b36996d928a939025057b084380ffd448158c71d12c2ec34f9d9e295ef4084",
     "src/table.rs": "5ad2fa46decc550bfd5f7d23cc051c7087d4ef1f5b361b154630c122097c92bb",
     "src/upstream/codec.rs": "916922c930d3dc46c7003d65d920b6c84efa780ac5b0c06eec1586ead0216a7a",

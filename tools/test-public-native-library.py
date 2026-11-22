@@ -1464,6 +1464,70 @@ pub fn unsigned_word(x: usize) -> usize { x ^ 7 }
     report["cargo_integer_signatures"] = {"passed": True, "runtime_value": expected.decode(), "type_count": 6}
 
 
+def qualify_default_executable_check(root, package, sdk, commands, environment, oracle_env, projects,
+                                     daemon_argv, daemon_trace, prefixes, owner, report):
+    crate = "default_check"
+    project_root = root / "projects" / "default-check"
+    (project_root / "src").mkdir(parents=True)
+    manifest, library = project_root / "Cargo.toml", project_root / "src/lib.rs"
+    source = project_root / "src/main.rs"
+    write_new(manifest, '[package]\nname="default_check"\nversion="0.1.0"\nedition="2024"\n')
+    write_new(library, b"#![no_std]\npub fn mask(value: u32) -> u32 { value & 255 }\n")
+    projects[crate] = {"manifest": manifest, "binary_target": crate}
+    target, build = project_root / "target", project_root / "build"
+    env = dict(environment, CARGO_TARGET_DIR=str(target), CARGO_BUILD_BUILD_DIR=str(build))
+    original_env = dict(oracle_env, RUSTC=str(sdk / "bin/rustc"), CARGO_HOME=environment["CARGO_HOME"],
+                        CARGO_TARGET_DIR=str(project_root / "original-target"),
+                        CARGO_BUILD_BUILD_DIR=str(project_root / "original-build"))
+    env.pop("CARGO_INCREMENTAL", None)
+    original_env.pop("CARGO_INCREMENTAL", None)
+    flags = ["check", "--bin", crate, "--offline", "--message-format=json"]
+    argv = [package / "bin/cargo", *flags]
+    result = {"passed": False, "history": []}
+    report["cargo_default_executable_check"] = result
+    for label, argument, status in [("cold", b"42", 0), ("noop", b"42", 0), ("invalid", b"false", 101), ("repair", b"42", 0)]:
+        source.write_bytes(b'fn main() { println!("{}", default_check::mask(' + argument + b')); }\n')
+        before = set((root / "observations").glob("*/report.json"))
+        stdout, stderr, trace = commands.run("default-check-" + label, argv, project_root, env, expected=status, traced=True)
+        original, _, _ = commands.run("default-check-" + label + "-original",
+            [sdk / "bin/cargo", *flags], project_root, original_env, expected=status)
+        observed = inspect_processes(trace_events(trace.read_bytes(), project_root), package, argv[0], argv, projects)
+        require(len(observed["compiles"]) == (2 if label == "cold" else 1) and not observed["runs"],
+                "default Cargo check did not check its original library and executable graph")
+        for attempt in observed["compiles"]:
+            invocation = parse_compile(attempt)
+            codegen = invocation["codegen"]
+            require(invocation["--emit"] == "dep-info,metadata" and codegen.get("debuginfo") == "2"
+                    and "panic" not in codegen and Path(codegen["incremental"]).is_relative_to(build),
+                    "test did not exercise the actual default Cargo profile")
+        prefix = daemon_trace.read_bytes()
+        frozen_prefix(prefixes[-1]["bytes"], prefix)
+        owned = inspect_processes(trace_events(prefix, root), package, Path(daemon_argv[0]), daemon_argv, projects, daemon=True)
+        require(len(owned["artifacts"]) == prefixes[-1]["artifact_count"] and not list(build.rglob("*.rlib"))
+                and not (target / "debug" / crate).exists(), "default Cargo check emitted link artifacts")
+        prefixes.append({"name": "default-check-" + label, "bytes": prefix, "artifact_count": len(owned["artifacts"])})
+        records = [json.loads(path.read_bytes()) for path in set((root / "observations").glob("*/report.json")) - before]
+        binaries = [record for record in records if record["schema"] == "lustr-public-executable-v1"]
+        if status:
+            require(not binaries and b"L0110" in stdout + stderr, "default check lost the native type error")
+        else:
+            require(len(binaries) == 1 and binaries[0]["owner_pid"] == owner[0]
+                    and binaries[0]["checked_bodies"] == (0 if label == "noop" else 1),
+                    "default check did not keep the native body state")
+        if label == "cold":
+            for output, filename in [(stdout, "native"), (original, "original")]:
+                paths = [Path(path) for row in map(json.loads, output.splitlines())
+                    if row["reason"] == "compiler-artifact" and row["target"]["kind"] == ["lib"]
+                    for path in row["filenames"] if path.endswith(".rmeta")]
+                require(len(paths) == 1, "default check lost the actual library metadata output")
+                root_text, _, _ = commands.run("default-check-panic-" + filename,
+                    [sdk / "bin/rustc", "-Zls=root", paths[0]], project_root, oracle_env)
+                require(b"required_panic_strategy None panic_in_drop_strategy Unwind" in root_text,
+                        "metadata encoded a different panic profile")
+        result["history"].append({"case": label, "status": status})
+    result["passed"] = True
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--package", type=Path, required=True)
@@ -2251,6 +2315,8 @@ def main():
                                       daemon_trace, daemon_argv, prefixes, report)
         qualify_integer_signatures(root, package, sdk, commands, environment, oracle_env, projects,
                                    daemon_argv, daemon_trace, prefixes, owner, report)
+        qualify_default_executable_check(root, package, sdk, commands, environment, oracle_env, projects,
+                                         daemon_argv, daemon_trace, prefixes, owner, report)
         seal_reports()
         save()
         # A direct archive passed where Cargo normally passes full metadata is refused.

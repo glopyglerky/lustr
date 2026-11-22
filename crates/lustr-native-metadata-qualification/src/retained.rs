@@ -44,7 +44,8 @@ impl Host {
         let objcopy=llvm.join("llvm-objcopy");let ar=llvm.join("llvm-ar");
         let tool_identities=json!([{"path":objcopy,"sha256":hash(&read(&objcopy)?)},{"path":ar,"sha256":hash(&read(&ar)?)}]);
         let artifacts=Service::new(sdk,sysroot.clone(),Context{crate_name:"consumer".into(),metadata:"native_consumer_v1".into(),extra_filename:String::new(),
-            source:source.clone(),cwd:cwd.clone(),profile:metadata::Profile{overflow_checks:true,debug_assertions:true}})?;
+            source:source.clone(),cwd:cwd.clone(),profile:metadata::Profile{
+                overflow_checks:key.profile.overflow_checks,debug_assertions:key.profile.debug_assertions,panic_abort:key.profile.panic_abort}})?;
         Ok(Self{sysroot,source,root,cwd,session,key,artifacts,artifact:None,last_published:None,last_success:None,index:0,tool_identities})
     }
     fn artifact(&mut self,snapshot:&Snapshot,step:&Path,report:&mut Value)->Result<(),String> {

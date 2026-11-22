@@ -13305,7 +13305,7 @@ index c4b23e007d746b984e392919dcf1bc9bc87a265e..47bb8992d04e52e8ba9774e3e865ddf1
              _ => return None,
          }
 diff --git a/src/protocol.rs b/src/protocol.rs
-index 504b467a9d240272c85f999b59f57a5d52b3cd4e..827c23826bd5689057ea3f784e6c2c56d7ef39d2 100644
+index 504b467a9d240272c85f999b59f57a5d52b3cd4e..e1e424ee007af108e3cb218d5868e31c6768076a 100644
 --- a/src/protocol.rs
 +++ b/src/protocol.rs
 @@ -6,7 +6,7 @@
@@ -13527,7 +13527,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..827c23826bd5689057ea3f784e6c2c56
 +            executable_dependencies:executable_artifacts.then_some(executable_dependencies),
 +            sdk_receipt:library_contract::SDK_RECEIPT.into()};
 +        if !key.valid() || !matches!(cmd.as_str(), "build" | "check") || session.krate.target_kind != key.target_kind()
-+            || !session.profile.panic_abort || session.target_triple != library_contract::TARGET
++            || cmd == "build" && !session.profile.panic_abort || session.target_triple != library_contract::TARGET
 +            || debug || emit_c.is_some() || !run_args.is_empty()
 +            || !key.valid_output(&abs(&out), cmd == "check", library_options) { return None; }
 +        session.krate.target_name = key.crate_name.clone();

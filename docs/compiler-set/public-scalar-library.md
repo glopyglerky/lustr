@@ -8,8 +8,9 @@ release admission, or speed relative to stock Lust or Rust.
 ## Compiler and request ownership
 
 The installed public rustc entry parses the actual Cargo invocation. It accepts
-the represented edition-2024, Linux-x64 leaf-library request with explicit
-panic=abort and embed-bitcode=no, opt-level=0 and debuginfo=0. Compile-time target
+the represented edition-2024, Linux-x64 leaf-library request with
+embed-bitcode=no and opt-level=0. Builds require panic=abort and debuginfo=0.
+Metadata-only checks also accept the default Cargo dev profile. Compile-time target
 facts must identify the actual Linux GNU x86-64 little-endian 64-bit host before
 argument normalization or library discovery; an omitted --target is never
 converted from a different host into the supported target. Rust's default
@@ -98,6 +99,12 @@ pinned Rust compiler produces that empty output for executable crate types.
 The two library dependencies still carry genuine encoded crate metadata.
 The binary check does no object generation, archive construction or program
 execution.
+
+The default dev check retains unwind-mode checking and publishes the
+original optional panic requirement. The completed scalar library has no
+forced final panic strategy in this mode. The debug-info request needs no
+code generation for a metadata-only build, and the native session retains
+checked work while the compiler owner lives.
 
 For executable crate dependency lints, Lustr counts resolved module imports
 and extern items as well as the function signature reads of checked and
