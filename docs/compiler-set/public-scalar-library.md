@@ -125,12 +125,16 @@ native object pipeline and relink when Cargo requests a build.
 General Cargo dependency graphs, additional crate types and profiles, and
 wider semantic completion remain open.
 
-On Linux x86_64 the current primitive signature path carries actual
-`i32`, `u32`, `i64`, `u64`, `isize`, and `usize` parameter and result
-types. Native code links and runs with signed and unsigned boundary values.
-The pinned Rust compiler also consumes the same library metadata and
-objects and produces matching results. The ordinary Cargo debug-strip
-request is supported when code generation emits no debug sections.
+On Linux x86_64 metadata-only checks preserve every Rust integer type in
+the admitted scalar signatures. Both the native checker and the pinned
+Rust compiler can read those signatures from Lustr's library metadata.
+
+The linked path supports `i32`, `u32`, `i64`, `u64`, `isize`, and `usize`.
+Native code links and runs with signed and unsigned boundary values. The
+pinned Rust compiler also consumes the same library metadata and objects
+and produces matching results. Linking narrower and 128-bit types requires
+additional ABI qualification. The ordinary Cargo debug-strip request is
+supported when code generation emits no debug sections.
 
 ## Metadata options and retained native state
 

@@ -5003,7 +5003,11 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
         }
     } else { None };
     let library_functions = if caches.library.is_some() {
-        match super::library::complete(&program, &map, &src, front, caches, verified) {
+        match super::library::complete(&program, &map, &src, front, caches, verified)
+            .and_then(|functions| {
+                if req.cmd != Cmd::Check { super::library::completion::require_direct_integer_abi(&functions)?; }
+                Ok(functions)
+            }) {
             Ok(functions) => { super::library::remember(caches, functions.clone()); Some(functions) }
             Err(error) => {
                 let code = match error { super::library::completion::Error::Unintegrated(_) => 4, _ => 3 };

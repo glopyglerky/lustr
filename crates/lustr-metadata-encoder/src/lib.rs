@@ -60,21 +60,30 @@ pub struct Parameter {
     pub ty: IntegerType,
 }
 
-/// Primitive integer signatures with represented direct x86_64 argument and
-/// result passing. Tags follow the pinned Rust TyKind and IntTy/UintTy orders.
+/// Primitive integer identities in the pinned Rust TyKind and IntTy/UintTy orders.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u8)]
-pub enum IntegerType { Isize, I32, I64, Usize, U32, U64 }
+pub enum IntegerType { Isize, I8, I16, I32, I64, I128, Usize, U8, U16, U32, U64, U128 }
 
 impl IntegerType {
-    const TYPES: [(Self, &str, [u8; 2]); 6] = [
+    const TYPES: [(Self, &str, [u8; 2]); 12] = [
         (Self::Isize, "isize", [2, 0]),
+        (Self::I8, "i8", [2, 1]),
+        (Self::I16, "i16", [2, 2]),
         (Self::I32, "i32", [2, 3]),
         (Self::I64, "i64", [2, 4]),
+        (Self::I128, "i128", [2, 5]),
         (Self::Usize, "usize", [3, 0]),
+        (Self::U8, "u8", [3, 1]),
+        (Self::U16, "u16", [3, 2]),
         (Self::U32, "u32", [3, 3]),
         (Self::U64, "u64", [3, 4]),
+        (Self::U128, "u128", [3, 5]),
     ];
+
+    fn has_direct_native_abi(self) -> bool {
+        matches!(self, Self::Isize | Self::I32 | Self::I64 | Self::Usize | Self::U32 | Self::U64)
+    }
 
     pub fn from_rust_name(name: &str) -> Option<Self> {
         Self::TYPES.iter().find(|row| row.1 == name).map(|row| row.0)
@@ -264,8 +273,14 @@ fn validate(input: &Input<'_>, sdk: &Sdk, link: bool) -> Result<(), String> {
             return Err(failure("definition identity, order, name or span differs from completed source"));
         }
         last_span_end = function.span.hi;
+        if link && !function.result.has_direct_native_abi() {
+            return Err(failure("unrepresented linked integer result ABI"));
+        }
         let mut parameters = BTreeSet::new();
         for parameter in &function.parameters {
+            if link && !parameter.ty.has_direct_native_abi() {
+                return Err(failure("unrepresented linked integer parameter ABI"));
+            }
             if !identifier(&parameter.name)
                 || !parameters.insert(&parameter.name)
                 || parameter.span.lo < function.name_span.hi

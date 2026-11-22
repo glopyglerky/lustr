@@ -28,11 +28,17 @@ struct Function {
 fn native_integer_type(ty: IntegerType) -> ty::IntTy {
     match ty {
         IntegerType::Isize => ty::IntTy::Isize,
+        IntegerType::I8 => ty::IntTy::I8,
+        IntegerType::I16 => ty::IntTy::I16,
         IntegerType::I32 => ty::IntTy::I32,
         IntegerType::I64 => ty::IntTy::I64,
+        IntegerType::I128 => ty::IntTy::I128,
         IntegerType::Usize => ty::IntTy::Usize,
+        IntegerType::U8 => ty::IntTy::U8,
+        IntegerType::U16 => ty::IntTy::U16,
         IntegerType::U32 => ty::IntTy::U32,
         IntegerType::U64 => ty::IntTy::U64,
+        IntegerType::U128 => ty::IntTy::U128,
     }
 }
 
@@ -112,6 +118,14 @@ impl Import {
 
     pub(super) fn owns(&self, id: def::DiskDefId) -> bool {
         id.krate == self.stable
+    }
+
+    pub(super) fn has_direct_integer_abi(&self) -> bool {
+        use driver::library::completion::has_direct_integer_abi;
+        self.functions.iter().all(|function| {
+            has_direct_integer_abi(function.result)
+                && function.parameters.iter().copied().all(has_direct_integer_abi)
+        })
     }
 
     pub(super) fn exported_symbols(&self) -> impl Iterator<Item = &str> {

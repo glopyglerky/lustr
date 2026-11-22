@@ -202,6 +202,12 @@ impl Owner {
             }
             self.installed.unchanged()?;
             if !check {
+                if self.imported.as_ref().is_some_and(|imported| !imported.has_direct_integer_abi()) {
+                    response.code = 4;
+                    response.stderr = "error: unrepresented linked integer ABI in Cargo extern metadata\n".into();
+                    report["phase"] = json!("native-completion");
+                    return Ok(());
+                }
                 self.installed.verify_archive_tools()?;
             }
             // Exactly one continuation; metadata consumes its completed snapshot.

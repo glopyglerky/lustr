@@ -193,7 +193,7 @@ fn main() {
         ("unused-parameter", "#![no_std]\npub fn value(unused:u64)->u64 { 1u64 }\n"),
         ("naming-lint", "#![no_std]\npub fn BadName(value:u64)->u64 { value }\n"),
         ("recursive-call", "#![no_std]\npub fn value(input:u64)->u64 { value(input) }\n"),
-        ("non-u64-signature", "#![no_std]\npub fn value(input:u32)->u32 { input }\n"),
+        ("unrepresented-linked-integer-abi", "#![no_std]\npub fn value(input:u16)->u16 { input }\n"),
         ("const-definition", "#![no_std]\nconst VALUE:u64=1;\npub fn value(input:u64)->u64 { input }\n"),
         ("statement-lints", "#![no_std]\npub fn value(input:u64)->u64 { let other=input; other }\n"),
         ("parenthesis-lint", "#![no_std]\npub fn value(input:u64)->u64 { (input) }\n"),

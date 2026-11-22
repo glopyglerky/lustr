@@ -283,6 +283,9 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool) -> Result<Vec<Functi
             calls,
         });
     }
+    if generated {
+        require_direct_integer_abi(&functions)?;
+    }
     functions.sort_by_key(|function| function.span.lo);
     // All source-visible signatures are primitive. In one root module, actual
     // local resolved call edges can name private functions without crossing a
@@ -333,9 +336,23 @@ fn snake_case(name: &str) -> bool {
 
 fn integer_type(kind: ty::TyKind) -> Result<ty::IntTy, Error> {
     match kind {
-        ty::TyKind::Int(ty) if matches!(ty.bits(), 32 | 64) => Ok(ty),
-        _ => Err(Error::Unintegrated("unrepresented integer ABI or non-integer signature")),
+        ty::TyKind::Int(ty) => Ok(ty),
+        _ => Err(Error::Unintegrated("non-integer signature")),
     }
+}
+
+pub(crate) fn has_direct_integer_abi(kind: ty::IntTy) -> bool {
+    matches!(kind.bits(), 32 | 64)
+}
+
+pub(crate) fn require_direct_integer_abi(functions: &[Function]) -> Result<(), Error> {
+    if functions.iter().any(|function| {
+        !has_direct_integer_abi(function.result)
+            || function.parameters.iter().any(|param| !has_direct_integer_abi(param.ty))
+    }) {
+        return Err(Error::Unintegrated("unrepresented linked integer ABI"));
+    }
+    Ok(())
 }
 
 fn expression(

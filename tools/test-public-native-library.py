@@ -1477,7 +1477,14 @@ def qualify_default_executable_check(root, package, sdk, commands, environment, 
     manifest, library = project_root / "Cargo.toml", project_root / "src/lib.rs"
     source = project_root / "src/main.rs"
     write_new(manifest, f'[package]\nname="{target_name}"\nversion="0.1.0"\nedition="2024"\n')
-    write_new(library, b"#![no_std]\npub fn mask(value: u32) -> u32 { value & 255 }\n")
+    extra_integer_types = [(b"i8", b"-7"), (b"u8", b"7"), (b"i16", b"-7"), (b"u16", b"7"),
+                           (b"i128", b"-7"), (b"u128", b"7")]
+    definitions = [b"pub fn mask(value: u32) -> u32 { value & 255 }"]
+    definitions.extend(b"pub fn mask_%s(value: %s) -> %s { value ^ %s }" % (ty, ty, ty, mask)
+                       for ty, mask in extra_integer_types)
+    write_new(library, b"#![no_std]\n" + b"\n".join(definitions) + b"\n")
+    checks = b" ".join(b"let _: %s = default_check::mask_%s(42%s);" % (ty, ty, ty)
+                       for ty, _ in extra_integer_types)
     projects[crate] = {"manifest": manifest, "binary_target": target_name}
     target, build = project_root / "target", project_root / "build"
     env = dict(environment, CARGO_TARGET_DIR=str(target), CARGO_BUILD_BUILD_DIR=str(build))
@@ -1491,7 +1498,7 @@ def qualify_default_executable_check(root, package, sdk, commands, environment, 
     result = {"passed": False, "history": []}
     report["cargo_default_executable_check"] = result
     for label, argument, status in [("cold", b"42", 0), ("noop", b"42", 0), ("invalid", b"false", 101), ("repair", b"42", 0)]:
-        source.write_bytes(b'fn main() { println!("{}", default_check::mask(' + argument + b')); }\n')
+        source.write_bytes(b'fn main() { ' + checks + b' println!("{}", default_check::mask(' + argument + b')); }\n')
         before = set((root / "observations").glob("*/report.json"))
         stdout, stderr, trace = commands.run("default-check-" + label, argv, project_root, env, expected=status, traced=True)
         original, _, _ = commands.run("default-check-" + label + "-original",
@@ -1529,6 +1536,10 @@ def qualify_default_executable_check(root, package, sdk, commands, environment, 
                     [sdk / "bin/rustc", "-Zls=root", paths[0]], project_root, oracle_env)
                 require(b"required_panic_strategy None panic_in_drop_strategy Unwind" in root_text,
                         "metadata encoded a different panic profile")
+                commands.run("default-check-original-consumer-" + filename,
+                    [sdk / "bin/rustc", "--edition=2024", source, "--emit=metadata",
+                     "--extern", f"{crate}={paths[0]}", "-o", project_root / f"independent-{filename}.rmeta"],
+                    project_root, oracle_env)
         result["history"].append({"case": label, "status": status})
     result["passed"] = True
 

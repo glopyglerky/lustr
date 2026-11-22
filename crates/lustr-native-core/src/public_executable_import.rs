@@ -38,6 +38,9 @@ impl ExecutableImports {
             let index = def::CrateId(u32::try_from(index + 1).map_err(|_| "too many Cargo crate identities")?);
             let definitions = Import::read(&input.metadata, sdk, index, true)?;
             let archive = if let Some(path) = &input.archive {
+                if !definitions.has_direct_integer_abi() {
+                    return Err("unrepresented linked integer ABI in Cargo extern metadata".into());
+                }
                 if !definitions.requires_abort {
                     return Err("executable linking requires the represented abort-profile archive".into());
                 }

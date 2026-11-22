@@ -1087,7 +1087,7 @@ def run_campaign(args, root, report, commands):
                 original_negative(commands, rustc, env, output, "original-invalid-body", expected["source"], "E0308", artifact=False)
             elif expected["status"] == 4:
                 require(result.get("phase") == "native-completion"
-                        and "unrepresented integer ABI or non-integer signature" in result.get("error", ""),
+                        and "unrepresented linked integer ABI" in result.get("error", ""),
                         "valid type gap became a native rejection or an unrelated operational failure")
                 valid = output / "independent-valid-source.rs"
                 valid.write_bytes(expected["source"])
