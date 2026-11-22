@@ -196,6 +196,6 @@ impl driver::imports::Definitions for Import {
         vec![driver::imports::Dependency { identity: self.artifact_identity.clone(), contents: self.metadata.clone() }]
     }
     fn take_emission(&self) -> Result<Box<dyn driver::imports::Emission + 'static>, String> {
-        Err("check-only extern metadata cannot supply linked objects".into())
+        Err("Cargo links the imported library artifacts at their final consumer".into())
     }
 }

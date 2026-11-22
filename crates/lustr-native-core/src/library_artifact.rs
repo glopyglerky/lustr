@@ -225,7 +225,9 @@ fn check_object(object:&NativeObject, snapshot:&Snapshot)->Result<Original,Strin
     let trampoline=object.symbol.replacen("f_","tramp_",1);
     let definitions=BTreeSet::from([object.symbol.as_bytes().to_vec(),trampoline.as_bytes().to_vec()]);
     let expected_calls:BTreeSet<Vec<u8>>=function.calls().iter().map(|id| {
-        snapshot.objects.iter().find(|(o,_)|o.definition==*id).map(|(o,_)|o.symbol.as_bytes().to_vec()).ok_or("completed call has no actual object")
+        snapshot.extern_symbols.get(id).map(String::as_str)
+            .or_else(|| snapshot.objects.iter().find(|(o,_)|o.definition==*id).map(|(o,_)|o.symbol.as_str()))
+            .map(|symbol| symbol.as_bytes().to_vec()).ok_or("completed call has no actual object or imported linkage")
     }).collect::<Result<_,_>>()?;
     if symbols.defined!=definitions || symbols.functions!=definitions || symbols.undefined!=expected_calls {
         return Err("per-function native ELF definition/call ownership differs from the completed graph".into());
@@ -302,9 +304,10 @@ impl Service {
     }
 
     pub(crate) fn artifact(&mut self,snapshot:&Snapshot,step:&Path,report:&mut Value,materialize:bool)->Result<Arc<Artifact>,String> {
-        self.artifact_with_options(snapshot,step,report,materialize,None)
+        self.artifact_with_options(snapshot,step,report,materialize,None,None)
     }
-    pub(crate) fn artifact_with_options(&mut self,snapshot:&Snapshot,step:&Path,report:&mut Value,materialize:bool,embed_metadata:Option<bool>)->Result<Arc<Artifact>,String> {
+    pub(crate) fn artifact_with_options(&mut self,snapshot:&Snapshot,step:&Path,report:&mut Value,materialize:bool,
+        embed_metadata:Option<bool>, dependency_context:Option<&metadata::Sdk>)->Result<Arc<Artifact>,String> {
         let stage=step.join("staging");
         report["phase"]=json!("staging");
         let cached=self.variants.get(&embed_metadata).filter(|a|a.generation==snapshot.generation).cloned();
@@ -327,7 +330,8 @@ impl Service {
             let encoded=metadata::encode(&metadata::Input {crate_name:&self.context.crate_name,metadata:&self.context.metadata,extra_filename:&self.context.extra_filename,embed_metadata,
                 source_path:self.context.source.to_str().ok_or("source path is not Unicode")?,working_directory:&self.context.cwd,
                 source:&snapshot.source,root_span:metadata::Span{lo:0,hi:snapshot.source.len() as u32},
-                profile:self.context.profile,functions:&functions,emitted:&instances,backend_helpers:&helpers,objects:&objects},&self.sdk)?;
+                profile:self.context.profile,functions:&functions,emitted:&instances,backend_helpers:&helpers,objects:&objects},
+                dependency_context.unwrap_or(&self.sdk))?;
             let mapping:BTreeMap<_,_>=encoded.symbols.iter().map(|s|(s.native_symbol.clone(),s.rust_symbol.clone())).collect();
             let rename_text:String=mapping.iter().map(|(native,rust)|format!("{native} {rust}\n")).collect();
             let mut files:BTreeMap<String,Arc<Vec<u8>>>=BTreeMap::new();

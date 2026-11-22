@@ -250,7 +250,7 @@ fn validate(input: &Input<'_>, sdk: &Sdk, link: bool) -> Result<(), String> {
     for function in input.functions {
         let mut calls = BTreeSet::new();
         for called in &function.calls {
-            if (!definitions.contains_key(called) && (link || !sdk.dependency_functions.contains(called))) || !calls.insert(called) {
+            if (!definitions.contains_key(called) && !sdk.dependency_functions.contains(called)) || !calls.insert(called) {
                 return Err(failure("call edge is foreign or duplicated"));
             }
         }

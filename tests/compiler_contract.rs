@@ -121,8 +121,8 @@ fn read_public_transport_request(
     let environment: usize = if words[12] == "-" { 0 } else { words[12].parse().map_err(|_| "invalid environment count")? };
     if features > 4096 || environment > 65536 { return Err("request field count exceeds bound".into()); }
     // Ten common fields precede the library discriminator. A library frame
-    // carries six values/paths, two counted vectors, then two request-only
-    // options before features, displayed source and environment. Decode that schema;
+    // carries six values/paths, two counted vectors, the dependency in mode 2,
+    // and two request-only options before features, displayed source and environment.
     // neither trailing fields nor a substituted compiler identity are ignored.
     let mut fixed = Vec::with_capacity(10);
     for _ in 0..10 { fixed.push(read_public_transport_field(reader)?); }
@@ -136,7 +136,10 @@ fn read_public_transport_request(
     let present = read_public_transport_field(reader)?;
     match (present.as_slice(), expected_library) {
         (b"0", None) => {}
-        (b"1", Some((library, options))) => {
+        (mode @ (b"1" | b"2"), Some((library, options))) => {
+            if (mode == b"2") != library.external.is_some() {
+                return Err("public library dependency presence changed".into());
+            }
             if !fixed[2].is_empty() || fixed[5].as_slice() != b"lib" || fixed[6].as_slice() != library.crate_name.as_bytes()
                 || fixed[8].as_slice() != source.as_os_str().as_bytes()
                 || fixed[9].as_slice() != transport_protocol::library_contract::TARGET.as_bytes()
@@ -169,6 +172,12 @@ fn read_public_transport_request(
                     return Err("public library search path changed".into());
                 }
             }
+            if let Some(dependency) = &library.external {
+                if read_public_transport_field(reader)?.as_slice() != dependency.alias.as_bytes()
+                    || read_public_transport_field(reader)?.as_slice() != dependency.artifact.as_os_str().as_bytes() {
+                    return Err("public library dependency alias or artifact changed".into());
+                }
+            }
             let embedding = match read_public_transport_field(reader)?.as_slice() {
                 b"-" => None, b"1" => Some(true), b"0" => Some(false),
                 _ => return Err("invalid public library embedding option".into()),
@@ -181,7 +190,7 @@ fn read_public_transport_request(
                 return Err("public library request changed its metadata or lint options".into());
             }
         }
-        (b"0" | b"1", _) => return Err("public request changed its library presence".into()),
+        (b"0" | b"1" | b"2", _) => return Err("public request changed its library presence".into()),
         _ => return Err("invalid public library discriminator".into()),
     }
     for _ in 0..features { read_public_transport_field(reader)?; }
@@ -231,6 +240,7 @@ fn transport_peer_validates_library_values_and_counted_vectors() {
         working_directory: PathBuf::from("/native-transport"),
         check_cfg: vec!["cfg(docsrs,test)".into(), "cfg(feature, values())".into()],
         search_paths: vec![PathBuf::from("/native-transport/deps-one"), PathBuf::from("/native-transport/deps-two")],
+        external: None,
     };
     req.session.krate.target_kind = "lib".into();
     req.session.krate.target_name = library.crate_name.clone();
@@ -300,6 +310,17 @@ fn transport_peer_validates_library_values_and_counted_vectors() {
         read_public_transport_request(&mut reader, identity, &req.file, &req.out, true, Some((&library, req.library_options))).unwrap();
         assert_eq!(reader.position() as usize, frame.len(), "every actual metadata/lint choice must consume its complete frame");
     }
+    let mut dependency_library = library.clone();
+    dependency_library.external = Some(transport_protocol::ExternMetadata {
+        alias: "wire_dep".into(), artifact: PathBuf::from("/native-transport/deps-one/libwire_dep.rmeta"),
+    });
+    req.session.library = Some(dependency_library.clone());
+    let frame = transport_protocol::encode(&req);
+    let mut reader = Cursor::new(&frame);
+    read_public_transport_request(&mut reader, identity, &req.file, &req.out, true, Some((&dependency_library, req.library_options))).unwrap();
+    assert_eq!(reader.position() as usize, frame.len());
+    dependency_library.external.as_mut().unwrap().artifact.set_file_name("another.rmeta");
+    assert!(read_public_transport_request(&mut Cursor::new(&frame), identity, &req.file, &req.out, true, Some((&dependency_library, req.library_options))).is_err());
 }
 
 #[test]

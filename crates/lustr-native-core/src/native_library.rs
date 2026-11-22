@@ -28,6 +28,7 @@ pub(crate) struct Snapshot {
     pub source: Arc<str>,
     pub functions: Arc<Vec<Function>>,
     pub objects: Vec<(Arc<Object>, bool)>,
+    pub extern_symbols: BTreeMap<def::DiskDefId, String>,
     pub checked: Vec<def::DiskDefId>,
     pub generated: Vec<def::DiskDefId>,
 }
@@ -366,13 +367,25 @@ pub(super) fn finish(req: &Request, p: &check::collect::Program, front: &Front, 
         if req.debug || req.cc || req.emit_c.is_some() || req.harness || req.run_args.is_some() {
             return Err("retained library output context changed".into());
         }
+        let mut extern_symbols = BTreeMap::new();
+        for call in functions.iter().flat_map(|function| function.calls()) {
+            if let Some((&krate, _)) = p.imported_crates.iter().find(|(_, stable)| **stable == call.krate) {
+                let id = def::DefId { krate, hash: call.hash };
+                let (_, _, linkage) = p.native_fn(id).ok_or("completed external call has no checked linkage")?;
+                if &linkage.id != call { return Err("external linkage identity changed after checking".into()); }
+                extern_symbols.insert(*call, linkage.symbol.clone());
+            }
+        }
         let mut objects=Vec::new();
         for f in functions.iter() {
             let slot=front.fn_slot[f.local().0 as usize] as usize;
             let output=&caches.out[slot];
             if !caches.has_out[slot] { return Err("native library function has no current generated body".into()); }
             let uses:Option<BTreeSet<_>>=output.used.iter().map(|&slot|disk_at.get(slot as usize).copied().flatten()).collect();
-            let mut expected=f.calls().clone();expected.insert(f.definition());
+            // Imported direct calls have no local codegen slot. Their exact
+            // linkage is reconciled against the emitted ELF relocations.
+            let mut expected:BTreeSet<_>=f.calls().iter().filter(|id| !extern_symbols.contains_key(id)).copied().collect();
+            expected.insert(f.definition());
             if uses.as_ref()!=Some(&expected) { return Err("native library generated source graph differs from completed calls".into()); }
             let symbol=format!("f_{}",names.fns[slot].as_ref().ok_or("native library stable symbol missing")?);
             let unchanged=!generated_set.contains(&(f.local().0 as usize));
@@ -400,7 +413,7 @@ pub(super) fn finish(req: &Request, p: &check::collect::Program, front: &Front, 
             state.compiled_objects+=1; objects.push((object,false));
         }
         Ok(Snapshot { generation:state.generation,source:state.source.clone(),functions,
-            objects,checked:state.checked.clone(),generated:generated.iter().map(|&n|p.disk_id(def::LocalDefId(n as u32))).collect() })
+            objects,extern_symbols,checked:state.checked.clone(),generated:generated.iter().map(|&n|p.disk_id(def::LocalDefId(n as u32))).collect() })
     })();
     match result { Ok(snapshot)=>{state.snapshot=Some(snapshot);prune(front,caches);Response::default()},
         Err(error)=>Response{code:3,stderr:format!("native library emission failed: {error}\n"),..Default::default()} }

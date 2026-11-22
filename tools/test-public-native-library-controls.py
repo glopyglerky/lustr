@@ -84,6 +84,25 @@ class ProcessEvidence(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "crosses"):
             campaign.trace_events(data.encode(), Path("/owned"))
 
+    def test_terminal_register_race_is_retained_without_an_exec_event(self):
+        data = exec_line(10, "/owned/llvm-ar", ["/owned/llvm-ar"])
+        data += "10 clone3({flags=CLONE_VM|CLONE_THREAD, exit_signal=0}, 88) = 11\n"
+        data += "10 exit_group(0 <unfinished ...>\n11 ???( <unfinished ...>\n"
+        data += "10 <... exit_group resumed>) = ?\n11 +++ exited with 0 +++\n10 +++ exited with 0 +++\n"
+        parsed = campaign.trace_events(data.encode(), Path("/owned"))
+        self.assertEqual(parsed["terminal_undecoded_stops"], [{"tid": "11", "leader": "10", "status": 0}])
+        self.assertEqual([row["filename"] for row in parsed["attempts"]], ["/owned/llvm-ar"])
+
+    def test_undecoded_process_or_live_thread_is_refused(self):
+        start = exec_line(10, "/owned/llvm-ar", ["/owned/llvm-ar"])
+        body = "10 clone(child_stack=NULL, flags={flags}) = 11\n"
+        done = "11 +++ exited with 0 +++\n10 +++ exited with 0 +++\n"
+        for data in (body.format(flags="SIGCHLD") + "10 exit_group(0) = ?\n11 ???( <unfinished ...>\n" + done,
+                     body.format(flags="CLONE_THREAD") + "11 ???( <unfinished ...>\n10 exit_group(0) = ?\n" + done,
+                     "10 exit_group(0) = ?\n10 ???( <unfinished ...>\n10 +++ exited with 0 +++\n"):
+            with self.subTest(trace=data), self.assertRaisesRegex(AssertionError, "thread-group shutdown"):
+                campaign.trace_events((start + data).encode(), Path("/owned"))
+
     def test_shortened_environment_cannot_prove_ownership(self):
         data = b'10 execve("/owned/cargo", ["/owned/cargo"], 0x123 /* 14 vars */) = 0\n'
         with self.assertRaises((AssertionError, ValueError)):

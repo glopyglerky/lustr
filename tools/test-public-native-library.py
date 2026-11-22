@@ -105,7 +105,7 @@ def trace_events(data, cwd):
     clone-resume still inherits that parent's observed working directory.
     """
     require(not data or data.endswith(b"\n"), "trace ends inside a record")
-    pending, events, exits = {}, [], {}
+    pending, events, exits, undecoded = {}, [], {}, {}
     for offset, line in enumerate(data.decode("utf-8", errors="strict").splitlines()):
         if not line.strip():
             continue
@@ -121,6 +121,14 @@ def trace_events(data, cwd):
             killed = re.fullmatch(r"\+\+\+ killed by (SIG[A-Z0-9]+)(?: \(core dumped\))? \+\+\+", record)
             require(ended is not None or killed is not None, "unparsed process exit")
             exits[pid] = int(ended.group(1)) if ended else killed.group(1)
+            if pid in undecoded:
+                start = undecoded.pop(pid)
+                events.append((start, pid, "undecoded_terminal_stop", "", exits[pid]))
+            continue
+        require(pid not in undecoded, "syscall follows an undecoded stop before exit")
+        if record == "???( <unfinished ...>":
+            require(pid not in pending and pid not in exits, "undecoded stop changed an observed identity")
+            undecoded[pid] = offset
             continue
         resumed = re.fullmatch(r"<\.\.\. ([a-z0-9_]+) resumed>(.*)", record)
         if resumed:
@@ -139,8 +147,9 @@ def trace_events(data, cwd):
         complete = re.fullmatch(r"([a-z0-9_]+)\((.*)\)\s+=\s+(.*)", record)
         require(complete is not None, "unparsed complete syscall: " + record)
         events.append((start, pid, complete.group(1), complete.group(2), complete.group(3)))
-    require(not pending, "syscall crosses an externally completed request boundary")
+    require(not pending and not undecoded, "syscall crosses an externally completed request boundary")
     directories, parents, attempts, changes = {}, {}, [], []
+    groups, group_exits, terminal_stops = {}, {}, []
     root_pid = None
     for _, pid, call, arguments, result in sorted(events):
         directories.setdefault(pid, str(cwd))
@@ -151,11 +160,25 @@ def trace_events(data, cwd):
                 require(child not in parents, "process creation reused an observed live identity")
                 parents[child] = pid
                 directories[child] = directories[pid]
+                if call in {"clone", "clone3"} and re.search(r"\bflags=[^,}]*\bCLONE_THREAD\b", arguments):
+                    groups[child] = groups.get(pid, pid)
             else:
                 require(re.fullmatch(r"-1 [A-Z][A-Z0-9_]* \([^\n]*\)", result) is not None, "unparsed failed process creation")
             continue
         if call == "exit_group":
             require(result == "?", "unexpected exit_group result")
+            group_exits[groups.get(pid, pid)] = arguments
+            continue
+        if call == "undecoded_terminal_stop":
+            leader = groups.get(pid)
+            # strace 6.8 emits this record when it cannot read the syscall
+            # registers. Require a known non-leader, a preceding group exit,
+            # and actual matching terminal events. Retain the unparsed stop
+            # separately from the executable inventory.
+            require(leader is not None and leader != pid and group_exits.get(leader) == "0"
+                    and result == exits.get(leader) == 0,
+                    "undecoded stop outside a completed observed thread-group shutdown")
+            terminal_stops.append({"tid": pid, "leader": leader, "status": result})
             continue
         require(call not in {"execveat", "fchdir"}, "unrepresented executable or cwd descriptor operation")
         if call == "chdir":
@@ -189,7 +212,8 @@ def trace_events(data, cwd):
         attempts.append({"pid": pid, "filename": filename, "argv": argv, "environment": env,
                          "cwd": directories[pid], "exec_result": result, "succeeded": success})
     require(attempts and root_pid is not None, "trace lacks actual initial execution")
-    return {"root_pid": root_pid, "attempts": attempts, "parents": parents, "exits": exits, "cwd_changes": changes}
+    return {"root_pid": root_pid, "attempts": attempts, "parents": parents, "exits": exits,
+            "cwd_changes": changes, "terminal_undecoded_stops": terminal_stops}
 
 
 def frozen_prefix(previous, current):
@@ -974,6 +998,103 @@ def qualify_dependency_checks(root, package, sdk, commands, environment, oracle_
     result["passed"] = True
 
 
+def qualify_dependency_links(root, package, sdk, commands, environment, oracle_env, projects, owner,
+                             daemon_trace, daemon_argv, prefixes, report):
+    consumer, provider = projects["consumer"], projects["provider"]
+    build = consumer["root"] / "link-intermediates"
+    env = dict(environment, CARGO_BUILD_BUILD_DIR=str(build), CARGO_TARGET_DIR=str(consumer["root"] / "link-target"))
+    argv = [package / "bin/cargo", "build", "--lib", "--offline", "--message-format=json"]
+    consumer_source = b"#![no_std]\npub fn call(x: u64) -> u64 { provider::mask(x) }\n"
+    result = {"passed": False, "history": [], "runtime_assertions": 0}
+    report["dependency_links"] = result
+    preceding_archive = None
+    provider_symbol = None
+    for label, mask, expected_requests in (("cold", 31, 2), ("noop", 31, 1), ("provider-edit", 63, 2)):
+        if label != "noop":
+            provider["source"].write_text(f"#![no_std]\npub fn mask(x: u64) -> u64 {{ x & {mask} }}\n")
+        if label != "provider-edit":
+            consumer["source"].write_bytes(consumer_source)
+        before = set((root / "observations").glob("*/report.json"))
+        _, _, trace = commands.run("dependency-link-" + label, argv, consumer["root"], env, traced=True)
+        events = trace_events(trace.read_bytes(), consumer["root"])
+        compiled = inspect_processes(events, package, argv[0], argv, projects)["compiles"]
+        require(len(compiled) == expected_requests, "Cargo link graph executed a different compiler inventory")
+        facts = {fact["--crate-name"]: fact for fact in map(parse_compile, compiled)}
+        consumer_facts = facts["consumer"]
+        provider_meta = Path(consumer_facts["--extern"].removeprefix("provider="))
+        consumer_out = Path(consumer_facts["--out-dir"])
+        consumer_suffix = consumer_facts["codegen"]["extra-filename"]
+        consumer_meta = consumer_out / f"libconsumer{consumer_suffix}.rmeta"
+        consumer_archive = consumer_meta.with_suffix(".rlib")
+        require(consumer_facts["--extern"] == f"provider={provider_meta}" and provider_meta.is_file()
+                and provider_meta.is_relative_to(build) and consumer_out.is_relative_to(build),
+                "Cargo did not supply the actual provider metadata in the link request")
+        witnesses = set((root / "observations").glob("*/report.json")) - before
+        records = sorted((json.loads(witness.read_text()) for witness in witnesses), key=lambda row: row["request_index"])
+        require(len(records) == expected_requests and set(facts) == {row["context"]["crate_name"] for row in records},
+                "Cargo link recording did not reach the same retained native owner")
+        for row in records:
+            name = row["context"]["crate_name"]
+            validate_context(row, facts[name], projects[name]["source"].read_bytes(), owner)
+            require(row["status"] == 0 and len(row["objects"]) == 1, "native link did not emit exactly its one source body")
+        native = next(row for row in records if row["context"]["crate_name"] == "consumer")
+        counts = native["counts"]
+        expected_work = 0 if label == "noop" else 1
+        require(all(counts[name] == expected_work for name in ("checked_bodies", "generated_bodies", "compiled_objects",
+                                                               "metadata_encodes", "archive_builds")),
+                "retained dependency link skipped changed work or regenerated unchanged work")
+        wanted = [{"argv": command["argv"], "cwd": command["cwd"]} for row in records for command in row["commands"]]
+        prefix = daemon_trace.read_bytes()
+        frozen_prefix(prefixes[-1]["bytes"], prefix)
+        owner_commands = inspect_processes(trace_events(prefix, root), package, Path(daemon_argv[0]), daemon_argv, projects, daemon=True)
+        actual = owner_commands["artifacts"][prefixes[-1]["artifact_count"]:]
+        reconcile_artifact_calls(actual, wanted)
+        prefixes.append({"name": "dependency-link-" + label, "bytes": prefix, "artifact_count": len(owner_commands["artifacts"])})
+        for row in records:
+            if row["context"]["crate_name"] == "provider":
+                provider_symbol = row["objects"][0]["rust_symbol"]
+        archive = consumer_archive.read_bytes()
+        members, _, _ = retained.archive_members(archive)
+        obj = retained.elf_object(members[native["objects"][0]["member"]])
+        require(obj["undefined"] == obj["external_calls"] == {provider_symbol},
+                "consumer object does not call the actual Rust symbol in provider")
+        data, _, _ = commands.run("dependency-link-" + label + "-reader",
+                                   [sdk / "bin/rustc", "-Zls=root", consumer_meta], consumer["root"], oracle_env)
+        roots = construction.parse_root(data)
+        require([row["name"] for row in roots["dependencies"]] == ["core", "provider", "compiler_builtins"]
+                and roots["dependencies"][1]["svh_le_hex"] == provider_meta.read_bytes()[24:40].hex(),
+                "linked consumer metadata did not bind the actual provider")
+        if label == "noop":
+            require(archive == preceding_archive and native["artifact_reused"], "warm link rebuilt an unchanged archive")
+        else:
+            case = root / "cases" / ("dependency-link-" + label)
+            case.mkdir()
+            caller = case / "caller.rs"
+            program = case / "caller"
+            write_new(caller, f"""fn main() {{
+    let values = (0u64..=65_535).chain([1u64 << 63, (1u64 << 63) + 31, u64::MAX, u64::MAX - 32]);
+    let mut checked = 0;
+    for x in values {{
+        assert_eq!(consumer::call(x), x & {mask});
+        checked += 1;
+    }}
+    println!("cross-crate results={{checked}}");
+}}
+""")
+            commands.run("dependency-link-" + label + "-runtime-link",
+                         [sdk / "bin/rustc", "--edition=2024", "-Cpanic=abort", "-Dwarnings",
+                          "--extern", f"consumer={consumer_meta}", "--extern", f"consumer={consumer_archive}",
+                          "-L", f"dependency={provider_meta.parent}", caller, "-o", program], case, oracle_env)
+            stdout, stderr, _ = commands.run("dependency-link-" + label + "-runtime", [program], case, oracle_env)
+            require(stdout == b"cross-crate results=65540\n" and not stderr,
+                    "actual linked scalar calls did not produce the expected results")
+            result["runtime_assertions"] += 65_540
+        preceding_archive = archive
+        result["history"].append({"case": label, "consumer_counts": counts, "archive_sha256": sha(archive)})
+    require(result["runtime_assertions"] == 131_080, "cross-crate runtime denominator changed")
+    result["passed"] = True
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--package", type=Path, required=True)
@@ -1740,7 +1861,11 @@ def main():
         qualify_dependency_checks(root, package, sdk, commands, environment, oracle_env, projects, owner, report)
         seal_reports()
         save()
-        # Linking with an extern artifact remains outside the represented slice.
+        qualify_dependency_links(root, package, sdk, commands, environment, oracle_env, projects, owner,
+                                 daemon_trace, daemon_argv, prefixes, report)
+        seal_reports()
+        save()
+        # A direct archive passed where Cargo normally passes full metadata is refused.
         for label, extra in (
             ("external-crate", ["rustc", "--lib", "--", "--extern", "unused_external=" + str(saved_outputs["second"]["link"])]),
         ):
@@ -1867,6 +1992,7 @@ def main():
                 require(len(observed["artifacts"]) == prefixes[-1]["artifact_count"], "artifact work occurred after final response")
                 report["daemon_trace"] = {"sha256": sha(final), "bytes": len(final), "process_tree": parsed["parents"],
                     "exits": parsed["exits"], "attempts": parsed["attempts"],
+                    "terminal_undecoded_stops": parsed["terminal_undecoded_stops"],
                     "boundaries": [{"case": row["name"], "bytes": len(row["bytes"]), "sha256": sha(row["bytes"]),
                                     "artifact_count": row["artifact_count"]} for row in prefixes]}
                 report["exec_trace_qualified"] = "cleanup_failure" not in report

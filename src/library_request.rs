@@ -74,7 +74,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
         (3, fields) if fields == BTreeSet::from(["dep-info", "metadata", "link"]) => false,
         _ => return None,
     };
-    if check && options.embed_metadata.is_some() || !check && external.is_some() { return None; }
+    if check && options.embed_metadata.is_some() { return None; }
     let cargo_json = match error_format.as_deref() {
         None | Some("human") if json.is_none() => false,
         Some("json") => {

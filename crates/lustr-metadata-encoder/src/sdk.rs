@@ -49,7 +49,7 @@ impl Sdk {
         Ok(Self { cfg_version, dependencies, receipt_hash, dependency_functions: BTreeSet::new() })
     }
 
-    /// Join an actual direct leaf dependency to the observed pinned Cargo check closure.
+    /// Join an actual direct leaf dependency to the observed pinned Cargo library closure.
     pub fn with_scalar_leaf(&self, leaf: &ScalarCrate<'_>) -> Option<Self> {
         if self.dependencies.len() != 2 || self.dependencies.iter().any(|dep| dep.name == leaf.name) {
             return None;

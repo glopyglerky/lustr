@@ -188,19 +188,20 @@ impl Owner {
                 return Ok(());
             }
             let artifact_start=observed.then(std::time::Instant::now);
+            let functions = state.completed_functions().ok_or("native library returned no completed functions")?;
+            let used = self.imported.as_ref().filter(|imported| functions.iter().flat_map(|function| function.calls())
+                .any(|id| imported.owns(*id)));
+            import_used = used.is_some();
+            let metadata_context = used.map(|imported| &imported.sdk);
             let (linked, checked_metadata) = if check {
-                let functions = state.completed_functions().ok_or("native library returned no completed check")?;
-                let used = self.imported.as_ref().filter(|imported| functions.iter().flat_map(|function| function.calls())
-                    .any(|id| imported.owns(*id)));
-                import_used = used.is_some();
                 (None, Some(self.artifacts.check_metadata(
-                    state.generation, &state.source, functions, used.map(|imported| &imported.sdk),
+                    state.generation, &state.source, functions, metadata_context,
                     &mut report,
                 )?))
             } else {
                 let snapshot = state.snapshot.clone().ok_or("native library returned no actual emission snapshot")?;
                 (Some(self.artifacts.artifact_with_options(
-                    &snapshot, &step, &mut report, observed, req.library_options.embed_metadata,
+                    &snapshot, &step, &mut report, observed, req.library_options.embed_metadata, metadata_context,
                 )?), None)
             };
             let check_paths;

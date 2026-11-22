@@ -94,7 +94,7 @@ impl LibraryKey {
         if check {
             options.embed_metadata.is_none() && output_parent(path, &self.metadata_name()).is_some()
         } else {
-            self.external.is_none() && output_parent(path, &self.archive_name()).is_some()
+            output_parent(path, &self.archive_name()).is_some()
         }
     }
 }

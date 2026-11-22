@@ -103,11 +103,17 @@ remains tied to that source.
 The [public scalar-library candidate](public-scalar-library.md) now connects the
 installed `RUSTC` entry and retained owner to genuine metadata/archive output
 under the [declared profile and actual Cargo command](native-cargo-continuation.md#authored-public-scalar-library-path).
-It is authored and pending exact-source hosted qualification through the
-[independent public evaluator](../../tools/test-public-native-library.py).
-Earlier passing research and native campaigns do not qualify this source.
-Metadata-only `cargo check`, under-Lustr `--extern` ingestion and wider Rust/Cargo
-coverage remain open.
+The [independent public evaluator](../../tools/test-public-native-library.py)
+passed the retained library link and metadata-only campaigns on the published
+check implementation. The direct-dependency follow-up `fb2ec542` passed the
+local traced Cargo campaign for a two-crate `no_std` scalar project. It reused
+the consumer's metadata on an unchanged request, rejected a changed provider
+signature, and emitted metadata that the original Rust compiler consumed in
+a third crate. Hosted evidence is bound separately to its exact source.
+The local dependent-library build passes cold linking, unchanged archive reuse
+and an edited provider. The independent executable completed 131,080 runtime
+assertions against the genuine native archives. Lustr final executable linking
+and wider Rust and Cargo coverage remain open.
 
 Done when unchanged mixed programs and real downstream Cargo crates consume
 valid artifacts. Every obligation has one owner and every required instance is
