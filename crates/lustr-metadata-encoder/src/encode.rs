@@ -15,6 +15,9 @@ use crate::upstream::mem_encoder::MemEncoder;
 use crate::upstream::schema::{METADATA_HEADER, ROOT_FIELDS, TABLE_FIELDS};
 use crate::{Encoded, Input, Sdk, Span, SymbolMapping};
 
+// Ordinal from the pinned rustc_attr_ir language_item_table.
+const EH_PERSONALITY_LANG_ITEM: u8 = 151;
+
 #[derive(Clone, Copy)]
 struct Array { position: usize, len: usize }
 impl Array {
@@ -165,6 +168,11 @@ pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk, link: bool) -> Result<Encoded
         cx.opaque.emit_u8(dep.kind);
         cx.opaque.emit_bool(dep.is_private);
     });
+    // The pinned weak-lang-item check records EhPersonality when neither
+    // the completed crate nor its dependencies define it. The admitted leaf
+    // has no lang attributes and its pinned core/builtins pair has no provider.
+    // This metadata fact is independent of whether the request emits code.
+    let missing_lang_items = cx.array(&[EH_PERSONALITY_LANG_ITEM], |cx, &item| cx.opaque.emit_u8(item));
 
     // Deterministic original definitions: crate root plus every completed local
     // declaration, including private functions. The same mapping drives the
@@ -338,7 +346,11 @@ pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk, link: bool) -> Result<Encoded
         }
         field("externally_implementable_items", &mut |cx| cx.array_ref(Array::EMPTY));
         field("crate_deps", &mut |cx| cx.array_ref(dependencies));
-        for name in ["dylib_dependency_formats", "lib_features", "stability_implications", "lang_items", "lang_items_missing",
+        for name in ["dylib_dependency_formats", "lib_features", "stability_implications", "lang_items"] {
+            field(name, &mut |cx| cx.array_ref(Array::EMPTY));
+        }
+        field("lang_items_missing", &mut |cx| cx.array_ref(missing_lang_items));
+        for name in [
             "stripped_cfg_items", "diagnostic_items", "canonical_symbols", "fake_doc_items", "native_libraries", "foreign_modules",
             "traits", "impls", "incoherent_impls", "interpret_alloc_index"] {
             field(name, &mut |cx| cx.array_ref(Array::EMPTY));

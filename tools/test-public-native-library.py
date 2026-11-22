@@ -796,6 +796,7 @@ def oracle_case(commands, sdk, env, case, attempt, outputs, mask, operation, rep
     require(notifications == expected_oracle_outputs, "original Rust artifact protocol differs from fixed leaf contract")
     original_root_text, _, _ = commands.run(case.name + "-reference-reader", [rustc, "-Zls=root", expected_oracle_outputs["metadata"]], case, env)
     original_root = construction.parse_root(original_root_text)
+    compare_lang_items(commands, rustc, env, case, outputs["metadata"], expected_oracle_outputs["metadata"])
     actual_members, _, _ = retained.archive_members(outputs["link"].read_bytes())
     reference_members, _, _ = retained.archive_members(expected_oracle_outputs["link"].read_bytes())
     full, reference_full = outputs["metadata"].read_bytes(), expected_oracle_outputs["metadata"].read_bytes()
@@ -838,6 +839,13 @@ def oracle_case(commands, sdk, env, case, attempt, outputs, mask, operation, rep
         "metadata_artifacts": metadata_evidence, "original_producer_unused_dependencies": original_unused,
         "original_consumer_unused_dependencies": consumer_unused, "executable": file_identity(program)})
     return actual_root
+
+
+def compare_lang_items(commands, rustc, env, case, native, original):
+    actual, _, _ = commands.run(case.name + "-lang-items", [rustc, "-Zls=lang_items", native], case, env)
+    expected, _, _ = commands.run(case.name + "-original-lang-items", [rustc, "-Zls=lang_items", original], case, env)
+    require(b"eh_personality = <missing>" in expected and actual == expected,
+            "native metadata lost the original missing language item record")
 
 
 def project_fixture(root, name, package, source_name):
@@ -1610,6 +1618,7 @@ def main():
                     roots.append(construction.parse_root(root_text))
                 require(all(roots[0].get(key) == value for key, value in roots[1].items()
                             if key not in {"hash", "svh", "svh_le_hex"}), "metadata-only Rust crate context differs from stock")
+                compare_lang_items(commands, rustc, oracle_env, case, metadata_path, original_dir / metadata_path.name)
                 caller = case / "caller.rs"
                 write_new(caller, f"#![no_std]\npub fn call(x: u64) -> u64 {{ {CRATE}::project(x) }}\n")
                 delivered = case / "libcaller.rmeta"

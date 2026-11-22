@@ -63,6 +63,12 @@ generation and publishes the dependency file before the metadata. The Rust
 metadata reader and downstream check consumer exercise the output separately
 from the retained native checker.
 
+Both artifact modes retain the missing `eh_personality` record that pinned
+Rust reports for the completed `no_std` leaf and its exact core/builtins
+dependencies. Qualification compares their language item lists with the
+original Rust artifacts. The record informs downstream checks and leaves the
+request's panic strategy unchanged.
+
 Public `--extern` ingestion, other crate types, unrepresented options and
 profiles, and wider completion remain integration work.
 

@@ -282,6 +282,39 @@
     },
     {
       "destination": "src/encode.rs",
+      "source": "compiler/rustc_resolve/src/late/weak_lang_items.rs",
+      "source_sha256": "ad42f79421494be53258e42570877f91c2c162ade987fa317a514cb1c941cc42",
+      "sections": [
+        "check_crate"
+      ],
+      "adaptation": "Retain the original EhPersonality absence record for the completed no_std leaf and pinned core/builtins closure. The paired original Rust readers verify that these artifacts have no personality definition.",
+      "semantic_owner": "Bounded shared crate metadata for original weak language item absence",
+      "necessity": "The pinned Rust loader carries missing weak language items into downstream checks and linking. Absence of a definition does not mean absence of that metadata record."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_attr_ir/src/lang_items.rs",
+      "source_sha256": "f1aae4e6441ad2cf7958eac9298472d905e56751efc95f92b821d4fbb3763056",
+      "sections": [
+        "LangItem::EhPersonality"
+      ],
+      "adaptation": "Encode the observed pinned EhPersonality ordinal with the existing metadata scalar encoding.",
+      "semantic_owner": "Bounded Rust language item wire identity",
+      "necessity": "The original CrateRoot missing array must carry the exact pinned discriminator."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_macros/src/serialize.rs",
+      "source_sha256": "d66ecd236e201c1e80f3a04ba0d32ef6600ce6d4f6c81b4506111bab84700bd5",
+      "sections": [
+        "Encodable enum discriminator"
+      ],
+      "adaptation": "Use the original single-byte discriminator for LangItem, whose pinned variant count is below 255.",
+      "semantic_owner": "Bounded Rust language item discriminator encoding",
+      "necessity": "The record must preserve the original Rust encoding width as well as the discriminator value."
+    },
+    {
+      "destination": "src/encode.rs",
       "source": "compiler/rustc_passes/src/check_export.rs",
       "source_sha256": "9f60f3670082473b04c95987594f2008d78c0b530b3c07393ad9306326b7f154",
       "sections": [
@@ -789,7 +822,7 @@
     "production_source_authored": true
   },
   "adapted_sources_sha256": {
-    "src/encode.rs": "d9e04fa2aa7b95baf407070ab7e2fd0c9d98c83a5c35b807a836e8ee7ffbdc06",
+    "src/encode.rs": "b3040a4900b1f448ee94555fe3d5a520ec0304acbdca459ef0929d5a58620b24",
     "src/identity.rs": "995799a9938d78fd5c800a1d28af4039f4e5868cea71536d0f70b2fc3643724d",
     "src/lib.rs": "136a53710a690b23d49020b3dcce8260eeea213d7bdf6c73adbddeff832cab77",
     "src/sdk.rs": "a088d99b04d3046c52830699b15c960e849d84d1a101c52df68b1aaeb64898b6",

@@ -75,6 +75,13 @@
     {
       "repository": "rust-lang/rust",
       "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_resolve/src/late/weak_lang_items.rs",
+      "sha256": "ad42f79421494be53258e42570877f91c2c162ade987fa317a514cb1c941cc42",
+      "role": "Record the original missing personality language item for the fixed native no_std leaf and SDK closure"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
       "path": "compiler/rustc_metadata/src/locator.rs",
       "sha256": "3e91bea232fdf8b8b01858bb55fb923f63f8c3ea66071cfc8eda9e9cebb9d758",
       "role": "Full standalone metadata and matching stub archive association; no stub-only full-metadata acceptance"
@@ -144,13 +151,13 @@
     "crates/lustr-native-core/LICENSE-LLVM": "8d85c1057d742e597985c7d4e6320b015a9139385cff4cbae06ffc0ebe89afee",
     "crates/lustr-metadata-encoder/Cargo.toml": "0f63faa420b6c2e1ec91739f61f7ee77ee874233399ed8e744783325168493c2",
     "crates/lustr-metadata-encoder/src/lib.rs": "136a53710a690b23d49020b3dcce8260eeea213d7bdf6c73adbddeff832cab77",
-    "crates/lustr-metadata-encoder/src/encode.rs": "d9e04fa2aa7b95baf407070ab7e2fd0c9d98c83a5c35b807a836e8ee7ffbdc06",
+    "crates/lustr-metadata-encoder/src/encode.rs": "b3040a4900b1f448ee94555fe3d5a520ec0304acbdca459ef0929d5a58620b24",
     "crates/lustr-metadata-sdk/Cargo.toml": "1251d90b032c4d77d9ef6768642ba959679a183a23f4c3d5e15748c4a02cac6a",
     "crates/lustr-metadata-sdk/src/lib.rs": "9569e298ece5030e7e6f5a405119885bec2c76a4186a49acf33d6028f43edbde",
     "tools/build-native-toolchain.rs": "6a30c0a2884f6df81812a53d658eea28d8f6233692dba7b4af72d196109c9579",
     "tools/install-native-metadata-sdk.py": "c6be8a4c32e9f86274321b282c54a5c461c9672a27e6d54994455948bde496fb",
     "tools/check-exclusive-coverage.py": "a6c24b3901d94daffb8c08aef335c64ea9c09ff7bda408c9c5e80041c2368d61",
-    "tools/update-public-library-source-manifest.py": "0be6e0523efd52903accfa2b003eb2bdd3157d67e776cc632389d2afdb464aeb",
+    "tools/update-public-library-source-manifest.py": "b464a417a5dade561c11d9179b7ab830415eea37bf6e8882accbe84b2c11f35a",
     "upstream/metadata-artifact-tools.json": "d1bd48f3b362645dce89172ce862f66189a1847c26e443f1861f9222021af9ff",
     "upstream/metadata-dependency-closure.json": "a5b2d8cccb4594fa2bfe56c33d202c4e6a1f88a1e09105bac8c4f1ab1e0ca32e",
     "docs/compiler-set/evidence/metadata-sdk-receipt-20261120/receipt.json": "4e400b263bf9923616dea44ead2d77213703177d3bfaf6becd6a19a4c5a657a7"
