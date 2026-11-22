@@ -1,0 +1,98 @@
+{
+  "schema": "lustr-public-qualified-before-after-v1",
+  "baseline": {
+    "source_identity": [
+      "514dfe1ef8b49160bf5c09458981768fbf4f2386",
+      "c2a11fa58ac5abef4e8da8247c8d6495ab7fe200"
+    ],
+    "passed": true,
+    "functional_passed": true,
+    "exec_trace_qualified": true,
+    "retained_public_integration": true,
+    "total_checked_runtime_results": 4194432,
+    "total_original_consumers": 16,
+    "cargo_unwind_library": {
+      "history": [
+        {
+          "case": "cold",
+          "compiled_objects": 3,
+          "status": 0
+        },
+        {
+          "case": "noop",
+          "compiled_objects": 0,
+          "status": 0
+        },
+        {
+          "case": "edit",
+          "compiled_objects": 1,
+          "status": 0
+        },
+        {
+          "case": "invalid",
+          "compiled_objects": 0,
+          "status": 101
+        },
+        {
+          "case": "repair",
+          "compiled_objects": 0,
+          "status": 0
+        }
+      ],
+      "passed": true
+    }
+  },
+  "repaired": {
+    "source_identity": [
+      "0cc0149f4b29e65fe40adcf9f59e42b7b11f23dd",
+      "af1ffe2bcb1d67c6288ad2fddf87238271af5b7a"
+    ],
+    "passed": true,
+    "functional_passed": true,
+    "exec_trace_qualified": true,
+    "retained_public_integration": true,
+    "total_checked_runtime_results": 4194432,
+    "total_original_consumers": 16,
+    "cargo_unwind_library": {
+      "history": [
+        {
+          "case": "cold",
+          "compiled_objects": 3,
+          "status": 0
+        },
+        {
+          "case": "noop",
+          "compiled_objects": 0,
+          "status": 0
+        },
+        {
+          "case": "edit",
+          "compiled_objects": 1,
+          "status": 0
+        },
+        {
+          "case": "invalid",
+          "compiled_objects": 0,
+          "status": 101
+        },
+        {
+          "case": "repair",
+          "compiled_objects": 0,
+          "status": 0
+        }
+      ],
+      "passed": true
+    }
+  },
+  "same_evaluator_sources": true,
+  "evaluator_sources": {
+    "tools/build-metadata-sdk-receipt.py": "eac23167bfc612bdd0ba6becfe6ed50922145bf59690619cbd744597b4228f8b",
+    "tools/test-native-consumer-metadata.py": "fa6a51108c4d2721b1bfe320ef591cebbeb0f8275354c3d527bae275947a223e",
+    "tools/test-public-native-library.py": "b130e8d95511ef0d9f3a030d5a6890a0bde1678c00865d189ca62ccbd4c8c464",
+    "tools/test-retained-native-metadata.py": "ad469a5469c81793601623fa6444d42effb22c148e34b595aeb3e3a141d1632d"
+  },
+  "baseline_report_sha256": "313dcf9c13a3987a6fb67885cad1584272670f8bc539e4c47fc1c784c1eda099",
+  "repaired_report_sha256": "bf5692f4e7f777418ed37cd95783591d614610c7d014b5c19f20c22823f8e193",
+  "kind": "summary of two retained original reports; not original report bytes",
+  "published_same_tree_commit": "9185df0d2d284d08db4fb015f40c67667a6e398c"
+}

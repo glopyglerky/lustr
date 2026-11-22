@@ -1,8 +1,15 @@
 # Public retained scalar-library integration
 
-This path covers the compiler requests described below. Current hosted
-qualification is tracked on PR #33. Full Rust coverage, release admission,
-and equivalent complete-work performance remain open.
+This path covers the compiler requests described below. The public scalar
+campaign passed at
+[`514dfe1ef8b49160bf5c09458981768fbf4f2386`](https://github.com/glopyglerky/lustr/tree/514dfe1ef8b49160bf5c09458981768fbf4f2386)
+in [run 45073103551, job 137364264163](https://github.com/glopyglerky/lustr/actions/runs/45073103551/job/137364264163).
+The [source/artifact checkpoint](native-cargo-continuation.md#verified-hosted-checkpoint)
+and [22 November audit](evidence/compiler-review-20261122/README.md) retain the
+exact evidence and limits. Full Rust coverage, release admission and equivalent
+complete-work performance remain open. A subsequently identified profile-default
+defect is being corrected and validated separately; it was outside the passing
+hosted campaign and cannot inherit its result.
 
 ## Compiler and request ownership
 
@@ -14,9 +21,14 @@ Linked executables and libraries with dependencies require panic=abort.
 Metadata-only checks also accept the default Cargo dev profile. Compile-time target
 facts must identify the actual Linux GNU x86-64 little-endian 64-bit host before
 argument normalization or library discovery; an omitted --target is never
-converted from a different host into the supported target. Rust's default
-overflow-checks/debug-assertions at O0 are retained; explicitly supplied values
-are passed through. The actual crate name, metadata disambiguator, extra filename,
+converted from a different host into the supported target. The request contract
+requires pinned Rust's effective overflow-checks/debug-assertions settings,
+including explicit overrides and inherited defaults. The audit found that
+`514dfe1e` did not inherit an explicit `debug-assertions=no` when overflow-checks
+was omitted. Both entry adapters are corrected, with 24/24 paired profile cases
+and the unchanged public campaign passing; see the audit for exact sources,
+profiles and package identities. Retained profile changes are a separate history.
+The actual crate name, metadata disambiguator, extra filename,
 original absolute source path, working directory, check-cfg inputs, dependency
 search paths and fixed installed SDK identity join the native session context.
 Executable requests retain the actual Cargo target name, including hyphens,
@@ -26,8 +38,10 @@ RUSTC_FORCE_RUSTC_VERSION environment: absent or the pinned version is represent
 an empty or different override is refused before native preparation.
 
 The native Cargo graph binds the real package, library target and source.
-Dependencies, build scripts and selected features are refused by this first
-library context. No manifest is erased. The existing native completion remains
+The initial leaf context refuses dependencies; the bounded `--extern` path
+below admits the represented scalar dependency. General dependency graphs,
+build scripts and selected features remain outside this library artifact
+context. No manifest is erased. The existing native completion remains
 restricted to one ASCII no_std source with flat, ordinary integer functions, the
 represented bitwise/direct-call expression graph, complete liveness and all
 existing declaration/lint/IR ownership checks.
@@ -79,7 +93,7 @@ the pinned metadata's public definitions, signatures, crate identity and
 dependency hashes, then installs them into Lust's resolver. A new provider
 artifact invalidates the consumer's retained state before checking. The
 consumer's metadata records the provider if a checked call uses it, in the
-original dependency order. The authored scope covers the pinned SDK closure
+original dependency order. The represented scope covers the pinned SDK closure
 and an edition 2024 leaf dependency with no build script or features. The
 consumer archive retains calls to the actual provider's Rust symbol. Lustr
 checks these relocations before publishing, and the evaluator links and runs a
@@ -172,12 +186,14 @@ a return to a still-retained option must reproduce the earlier artifact bytes
 with zero encoder, transformer and archive-builder work. Changing the embedding
 option cannot duplicate native checking or TinyCC emission.
 
-Cargo's `--force-warn=unused_crate_dependencies` is represented only after the
-actual dependency-free context is admitted. With the requested JSON mode, the
-response includes the original empty `unused_extern` result at `force-warn`
-level, including the represented typed-error path. This is per-request
-diagnostic behavior. The upstream lint option does not enter the crate hash,
-and it must not invalidate metadata or native objects.
+The admitted dependency-free leaf context represents Cargo's
+`--force-warn=unused_crate_dependencies` and, with the requested JSON mode,
+includes the original empty `unused_extern` result at `force-warn` level,
+including the represented typed-error path. The dependent executable tracks
+actual crate use as described above; its result cannot be replaced by that
+empty leaf result. This is per-request diagnostic behavior. The upstream lint
+option does not enter the crate hash, and it must not invalidate metadata or
+native objects.
 
 These distinctions follow pinned [Cargo invocation and dependency-path
 construction](https://github.com/rust-lang/cargo/blob/c07ac2c4d12237effc4b94f4543769b421790045/src/compiler/mod.rs),
@@ -186,8 +202,9 @@ option](https://github.com/rust-lang/rust/blob/5b7b37aefcb5b2fba3c2392bc9065b9e4
 [tracked option definitions](https://github.com/rust-lang/rust/blob/5b7b37aefcb5b2fba3c2392bc9065b9e4602d494/compiler/rustc_session/src/options.rs)
 and [metadata hash/stub
 encoding](https://github.com/rust-lang/rust/blob/5b7b37aefcb5b2fba3c2392bc9065b9e4602d494/compiler/rustc_metadata/src/rmeta/encoder.rs).
-They are authored implementation requirements until qualified on their exact
-source.
+The hosted public campaign qualifies the represented implementation at
+`514dfe1e`; the requirement and result do not automatically qualify a later
+source or a wider semantic/profile scope.
 
 ## Retention and resource accounting
 
@@ -259,13 +276,16 @@ The original source-slice inventories, native integration patch and dependency/t
 manifests remain explicit. tools/update-public-library-source-manifest.py only
 regenerates source hashes; it performs no compilation or qualification.
 
-The new independent public campaign must run real pinned Cargo, capture actual
-requests, reject Cargo Fresh as compiler reuse evidence, verify native type-error
-spans and recovery, inspect real archives and metadata, and execute an independent
-original-Rust consumer after product tracing. Passing earlier research campaigns
-does not qualify this new public source.
+The independent public campaign runs real pinned Cargo, captures actual
+requests, rejects Cargo Fresh as compiler reuse evidence, verifies native type-error
+spans and recovery, inspects real archives and metadata, and executes an independent
+original-Rust consumer after product tracing. The hosted result is bound to
+`514dfe1e` above. The later profile/default and SDK-construction corrections have
+their own complete build, public campaign and debugger evidence in the audit.
+Earlier research and baseline results are not carried forward as a later
+source's pass.
 
-The existing campaign retains nine real Cargo histories, four direct eviction
+The original library/embedding campaign specified nine real Cargo histories, four direct eviction
 replays, three direct no-op/invalid/repair requests, one warm version refusal and
 two unintegrated-request refusals. Its twelve original-Rust consumers and
 3,145,824 expected assertions remain required. An additional direct-request
@@ -274,8 +294,11 @@ explicit true and explicit false. Four additional original producers/readers
 and consumers must verify format, identity, native-object reuse and 1,048,608
 result assertions. A malformed embedding request between the last two states
 must preserve outputs and leave the owner untouched. This group is not counted
-as additional Cargo histories. The combined authored expectation is sixteen
-consumers and 4,194,432 assertions; it is not a passing result.
+as additional Cargo histories. Its combined expectation was sixteen consumers
+and 4,194,432 assertions. These retained counts describe that original campaign
+definition; they are not a new aggregate of later dependency, executable,
+profile-default or frame-walking checks. Use the exact hosted report and audit
+records for what actually ran and passed at each source.
 
 The [source-bound attempt records](evidence/public-scalar-library-20261120/README.md)
 preserve the failed real Cargo requests and separate research qualifications.

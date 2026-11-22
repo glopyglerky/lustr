@@ -96,9 +96,9 @@
       "qualification": "compiler/native/unicode-semantics.json; exhaustive scalar comparison is data qualification, not full Rust coverage"
     },
     {
-      "status": "authored-pending-exact-source-qualification",
+      "status": "implemented-partial",
       "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
-      "targets": "x86_64-unknown-linux-gnu only; edition 2024; explicit abort/O0/no debug/no embedded bitcode",
+      "targets": "x86_64-unknown-linux-gnu only; edition 2024; represented scalar O0/no embedded bitcode requests; linked output requires no debug, leaf libraries accept abort or unwind, dependent libraries/executables require abort; metadata-only checks accept the default dev profile",
       "features": {
         "native": [
           "exclusive-native"
@@ -117,7 +117,7 @@
         "native function compilation",
         "complete rustc driver"
       ],
-      "qualification": "upstream/public-library-integration.json; exact-source public campaign pending, no full-Rust or speed claim",
+      "qualification": "Public scalar campaign passed at 514dfe1ef8b49160bf5c09458981768fbf4f2386 in run 45073103551/job 137364264163; source/artifact verification and the separately identified profile-default repair are recorded in docs/compiler-set/evidence/compiler-review-20261122/README.md. The source-bound repair build and runtime campaigns passed; no full-Rust or speed claim.",
       "id": "native-scalar-metadata",
       "missing_capability": "Genuine Rust metadata and symbol identity for the completed native scalar-library graph",
       "owner": "Original Rust metadata serializer after native completion",
@@ -142,9 +142,9 @@
       ]
     },
     {
-      "status": "authored-pending-exact-source-qualification",
+      "status": "implemented-partial",
       "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
-      "targets": "x86_64-unknown-linux-gnu only; edition 2024; explicit abort/O0/no debug/no embedded bitcode",
+      "targets": "x86_64-unknown-linux-gnu only; edition 2024; represented scalar O0/no embedded bitcode requests; linked output requires no debug, leaf libraries accept abort or unwind, dependent libraries/executables require abort; metadata-only checks accept the default dev profile",
       "features": {
         "native": [
           "exclusive-native"
@@ -163,7 +163,7 @@
         "native function compilation",
         "complete rustc driver"
       ],
-      "qualification": "upstream/public-library-integration.json; exact-source public campaign pending, no full-Rust or speed claim",
+      "qualification": "Public scalar campaign passed at 514dfe1ef8b49160bf5c09458981768fbf4f2386 in run 45073103551/job 137364264163; source/artifact verification and the separately identified profile-default repair are recorded in docs/compiler-set/evidence/compiler-review-20261122/README.md. The source-bound repair build and runtime campaigns passed; no full-Rust or speed claim.",
       "id": "native-scalar-artifact-host",
       "missing_capability": "Public Cargo outputs, original metadata wrappers, SDK data and owned retained publication",
       "owner": "Shared retained library artifact host",
@@ -228,15 +228,15 @@
       "production_admitted": false,
       "public_retained_integration": false,
       "required_for": "actual ordinary Rust-consumer acceptance, runtime results, privacy/signature refusal and independent exec trace for the bounded native metadata join",
-      "blocking_reason": "The actual retained native/TinyCC caller is authored but unqualified; public entry, wider Rust obligations and compiler speed remain unfinished. Earlier passing evidence stays scoped to its original one-shot source.",
+      "blocking_reason": "This independent research executable is not the public compiler route. Its one-shot and retained campaigns remain qualified only at their original sources; the public caller uses the shared artifact service separately. Wider Rust obligations and measured compiler speed remain unfinished.",
       "qualification_record": "docs/compiler-set/evidence/native-metadata-join-20261120/README.md",
       "retained_native_caller_authored": true,
-      "retained_native_qualification": "pending exact-source hosted compilation and campaign"
+      "retained_native_qualification": "Retained research passed at fab59023b9635f2c5e5d03d29b44865839dc3eba; see docs/compiler-set/evidence/retained-metadata-correction-20261120/runtime-success-fab59023.json. This does not qualify a later research executable or the public caller."
     }
   ],
   "not_imported": [
     "general trait solver",
-    "general Rust metadata encoder beyond the bounded research source slices",
+    "general Rust metadata encoder beyond the bounded scalar source slices",
     "full Rust compiler source"
   ],
   "guard_scope": "structural source and public entry constraints only; source inventories do not prove minimal dependency closure or semantic exclusivity",
@@ -248,13 +248,13 @@
       "source_inventory": "crates/lustr-metadata-encoder/source-slices.json",
       "production_admitted": false,
       "native_caller_committed": true,
-      "required_for": "intended serialization of genuine native completed definitions and actual emitted instances without whole-consumer Rust analysis",
-      "blocking_reason": "The actual Cargo split-metadata and forced-lint request correction is authored but uncompiled/unqualified. Exact-source public campaigns and measured bridge performance are pending; wider Rust completion remains unintegrated.",
+      "required_for": "serialization of genuine native completed definitions and actual emitted instances without whole-consumer Rust analysis",
+      "blocking_reason": "The bounded public scalar campaign passed at 514dfe1e. Wider Rust completion, default-profile executable/debug support and measured compiler speed remain unqualified. The separate profile/default and SDK-construction repairs pass their source-bound build, runtime and frame campaigns; see the audit record. Full replacement admission remains unavailable.",
       "native_caller_path": "crates/lustr-native-metadata-qualification",
       "public_retained_integration": true,
-      "qualification_record": "docs/compiler-set/evidence/native-metadata-join-20261120/README.md",
+      "qualification_record": "docs/compiler-set/evidence/compiler-review-20261122/README.md",
       "retained_native_caller_authored": true,
-      "retained_native_qualification": "pending exact-source hosted compilation and campaign",
+      "retained_native_qualification": "Public retained scalar campaign passed at 514dfe1ef8b49160bf5c09458981768fbf4f2386 in run 45073103551/job 137364264163. Earlier research remains source-bound; subsequent repairs require separate exact-source qualification.",
       "public_native_caller_path": "crates/lustr-native-core/src/public_library.rs",
       "production_source_authored": true
     },
@@ -265,13 +265,13 @@
       "source_inventory": "crates/lustr-metadata-encoder/source-slices.json",
       "production_admitted": false,
       "native_caller_committed": true,
-      "required_for": "immutable ordered core/compiler_builtins context intended to be loaded once outside repeated consumer compilation",
-      "blocking_reason": "Current public Cargo scalar-library path is authored; exact-source public qualification and measured bridge performance are pending. Wider Rust completion remains unintegrated.",
+      "required_for": "immutable ordered core/compiler_builtins context loaded once outside repeated consumer compilation",
+      "blocking_reason": "The bounded public scalar campaign passed at 514dfe1e. Wider Rust completion, target/profile coverage and measured compiler speed remain unqualified. The separate profile/default and SDK-construction repairs pass their source-bound build, runtime and frame campaigns; see the audit record. Full replacement admission remains unavailable.",
       "native_caller_path": "crates/lustr-native-metadata-qualification",
       "public_retained_integration": true,
-      "qualification_record": "docs/compiler-set/evidence/native-metadata-join-20261120/README.md",
+      "qualification_record": "docs/compiler-set/evidence/compiler-review-20261122/README.md",
       "retained_native_caller_authored": true,
-      "retained_native_qualification": "pending exact-source hosted compilation and campaign",
+      "retained_native_qualification": "Public retained scalar campaign passed at 514dfe1ef8b49160bf5c09458981768fbf4f2386 in run 45073103551/job 137364264163. Earlier research remains source-bound; subsequent repairs require separate exact-source qualification.",
       "public_native_caller_path": "crates/lustr-native-core/src/public_library.rs",
       "production_source_authored": true
     }

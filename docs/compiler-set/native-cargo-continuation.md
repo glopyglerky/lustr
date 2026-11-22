@@ -7,15 +7,59 @@ It is not a complete Rust compiler, a new complementary owner, or a release.
 
 ## Authored public scalar-library path
 
-Status: authored, pending exact-source hosted construction and qualification.
+Reviewed at published source
+[`514dfe1ef8b49160bf5c09458981768fbf4f2386`](https://github.com/glopyglerky/lustr/tree/514dfe1ef8b49160bf5c09458981768fbf4f2386)
+on 22 November 2026. The hosted public-native-library campaign passed on that
+source. This is bounded public compiler evidence, not full Rust coverage.
 The installed public `RUSTC` entry now connects the retained native owner to the
 shared metadata and archive service. The [bounded contract](public-scalar-library.md)
 and [source inventory](../../upstream/public-library-integration.json) identify
 the actual request, completed native facts, imported operations and package inputs.
 
-The declared Cargo fixture is a dependency-free edition-2024 library on the
-actual `x86_64-unknown-linux-gnu` host. Its single ASCII `#![no_std]` source uses
-the represented flat `u64` functions and expression graph. Its profile is:
+### Verified hosted checkpoint
+
+| Identity | Observed value |
+| --- | --- |
+| Published PR head | `514dfe1ef8b49160bf5c09458981768fbf4f2386` |
+| Actual CI merge checkout | `2e965671147d81f2df62a20895d5fba74fcf7631` |
+| Shared source tree | `c2a11fa58ac5abef4e8da8247c8d6495ab7fe200` |
+| Hosted run and job | [Run 45073103551, job 137364264163](https://github.com/glopyglerky/lustr/actions/runs/45073103551/job/137364264163) |
+| Public evidence artifact | [14774221657](https://github.com/glopyglerky/lustr/actions/runs/45073103551/artifacts/14774221657) |
+| Downloaded ZIP SHA-256 | `72153b89382c264d0f2b2ed13d3faa4f7d14fa2ae2b31698c6abda3e8ba2e1cf` |
+
+The artifact was downloaded and independently verified, rather than inferred
+from a green status. Its passing result qualifies the job's declared public
+scalar campaign on the shared tree above. The broader Linux/macOS workflows
+were still pending when observed. PR #33 was unmerged and contained 235 commits
+at this checkpoint. Refresh live source and CI before carrying any result forward.
+
+### Implemented request scope
+
+All rows below are bounded to the represented edition-2024 Linux GNU x86-64
+scalar declarations and expression graph. They do not imply general Cargo or
+language support. The [public contract](public-scalar-library.md) defines the
+admitted operations and semantic restrictions in detail.
+
+| Public operation | Implemented scope at the reviewed source | Remaining boundary |
+| --- | --- | --- |
+| `cargo build --lib` | Genuine metadata, archive and dep-info for the flat `no_std` scalar library. Leaf libraries accept abort or unwind with debug information disabled. | Wider declarations, generic bodies, full native ABI and default debug information. |
+| `cargo check --lib` | Genuine metadata-only output, including default dev checking and represented integer signatures. | Arbitrary crate semantics and dependency graphs. |
+| `--extern` dependencies | Pinned metadata identities and scalar declarations enter Lust's resolver; native archives compose with separately checked consumers. | General dependencies, feature combinations, proc macros and build scripts in this artifact path. |
+| `cargo run --bin` | Hosted scalar executable using the bounded native libraries, with abort and no debug information. | Default-profile unwind executables and complete source-level debugging. |
+| `cargo check --bin` | Actual scalar dependency metadata, dep-info and the pinned compiler's empty executable metadata output, without code generation. | General binary/project coverage. |
+| Retained requests | Cold, no-op, edits, invalid-input recovery, dependency changes and represented module/include/environment observations have their campaign controls. | Full semantic invalidation and all donor-supported histories. |
+
+Pinned Rust independently reads the library metadata, links and runs the
+archives. GDB walked through two native frames into the Rust caller for the
+unwind leaf-library fixture. This establishes frame-description interoperability
+for that fixture. It does not establish native panic propagation, destructor
+cleanup, catch behavior or Rust line/type/local debugging. Those are explicit
+remaining conditions in the [checklist](completion-checklist.md).
+
+### Declared profile and command
+
+The original abort-only fixture remains a reproducible qualified mode; it is
+no longer the entire implemented scope. Its profile is:
 
 ```toml
 [profile.dev]
@@ -37,9 +81,12 @@ RUSTC="$PACKAGE_ROOT/bin/rustc" "$PACKAGE_ROOT/bin/cargo" build --lib --offline 
 Cargo supplies the real crate name, source, `-Cmetadata`, `-Cextra-filename`,
 `--out-dir`, check-cfg and JSON options. The admitted request emits exactly
 `dep-info,metadata,link` with `embed-bitcode=no`. The public path preserves those
-inputs and returns the named `.d`, `.rmeta` and `.rlib` artifacts. Metadata-only
-`cargo check`, under-Lustr `--extern` ingestion, dependencies/build scripts in this
-library context and wider declarations, profiles and targets remain integration gaps.
+inputs and returns the named `.d`, `.rmeta` and `.rlib` artifacts. The unwind
+leaf fixture removes the abort override while keeping `debug=0`; the check
+campaign also exercises the ordinary dev profile. The scalar dependency and
+executable campaigns use their own declared requests. Do not generalize one
+fixture's settings to the others or weaken an unchanged project's profile to
+claim default-profile support.
 
 The [independent public qualifier](../../tools/test-public-native-library.py)
 requires real Cargo invocations, actual process traces, same-owner edits and
@@ -47,8 +94,20 @@ recovery, exact diagnostics, genuine metadata/archive readers and result-checked
 consumers. Its eviction and raw-protocol subgroups directly replay captured Cargo
 compiler requests; they are separate from the real Cargo history. The pinned Rust
 reader and consumer run only as evaluators. The
-[mutation controls](../../tools/test-public-native-library-controls.py) and new
-Compiler set step are authored; no result for this candidate is claimed here.
+[mutation controls](../../tools/test-public-native-library-controls.py) protect
+the evaluator's expectations. Their passing controls are distinct from actual
+compiler and generated-program results. The hosted checkpoint above supersedes
+the earlier pending status for that exact public source only.
+
+The audit identified a separate request-semantics defect: when
+`overflow-checks` is omitted, explicit `debug-assertions=no` must affect its
+effective default as it does in the pinned Rust compiler. Both entry adapters
+are corrected. The [audit record](evidence/compiler-review-20261122/README.md)
+records the original 21/24 result, repaired 24/24 result and a new successful
+public campaign with unchanged evaluators. It also records the SDK-construction
+repair and six native DWARF walks with two corruption controls on the newly
+constructed package. The baseline hosted job is separate from this repair's
+source-bound qualification and its subsequent hosted checks.
 
 The public owner still uses `std` and Unix sockets. The metadata encoder's
 `no_std` plus `alloc` boundary does not make the installed compiler portable.
@@ -74,6 +133,9 @@ selective encoder and constructs original metadata/archive members. It uses the
 checked native generation once. At the one-shot source qualified below, the
 installed compiler and retained Cargo path did not invoke it. The authored public
 candidate above now shares the artifact service with the retained research caller.
+The following dated sections preserve the evidence and limitations of their
+original sources; they do not reset the current public checkpoint to a pending
+or unjoined implementation.
 
 Its new required Compiler set job uses an ordinary pinned Rust consumer and
 actual process traces, with runtime, privacy, signature, record/member mutation
@@ -548,12 +610,16 @@ time. The [total-time policy](practical-performance.md) governs the eventual
 measurement; historical or synthetic performance records cannot qualify this
 source.
 
-Beyond the authored public scalar path, [genuine consumer metadata](shared-consumer-metadata.md)
+Beyond the public scalar path, [genuine consumer metadata](shared-consumer-metadata.md)
 still requires wider accepted definitions, declaration/privacy/lint completion
-and emitted instance graphs without whole-consumer Rust analysis. Metadata-only
-checks, under-Lustr `--extern` ingestion, general complementary coverage and full
-language/profile/target qualification remain unfinished. The implementation
-still uses `std` and Unix sockets.
+and emitted instance graphs without whole-consumer Rust analysis. The original
+scalar metadata join, metadata-only checks and bounded under-Lustr `--extern`
+ingestion now have the source-bound public result at the top of this document.
+Do not restart those completed slices from the predecessor's failed probe.
+General complementary semantics, ordinary default-profile executables/debugging
+and full language/profile/target qualification remain unfinished. The
+implementation still uses `std` and Unix sockets. Continue through the existing
+[architecture plan](architecture-plan.md) and [checklist](completion-checklist.md).
 
 The first release remains a correct, complete replacement that beats matched
 stock rustc overall. The provisional subset budgets are optimization targets,

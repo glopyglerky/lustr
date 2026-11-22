@@ -1,0 +1,223 @@
+{
+  "schema": "lustr-review-sdk-identity-v1",
+  "kind": "original observation records with private absolute roots replaced by generic tokens",
+  "redaction": "<SDK_1>, <SDK_2> and <AUDIT> replace absolute host roots; statuses, standard output/error, relative SDK paths and file hashes are otherwise retained",
+  "original_reports": [
+    {
+      "name": "sdk-loader-comparison.json",
+      "sha256": "1402d979c4980cf0dc4682fac7db2df538a7123a1795ad23c6b36e021f1ba91c"
+    },
+    {
+      "name": "sdk-layout-comparison.json",
+      "sha256": "ab6cfea2d972507d9de7991e87455fa83e4e06c54fac880c39cc8f4eaba1b66c"
+    }
+  ],
+  "loader_comparison": [
+    {
+      "label": "cargo-child-loader",
+      "argv": [
+        "<SDK_1>/bin/rustc",
+        "-vV"
+      ],
+      "LD_LIBRARY_PATH": "<AUDIT>/repaired-entry-diagnostic-01/target/debug:<SDK_1>/lib/rustlib/x86_64-unknown-linux-gnu/lib",
+      "status": 127,
+      "stdout": "",
+      "stderr": "<SDK_1>/bin/rustc: error while loading shared libraries: libLLVM.so.23.1-rust-1.102.0-nightly: cannot open shared object file: No such file or directory\n"
+    },
+    {
+      "label": "loader-unset",
+      "argv": [
+        "<SDK_1>/bin/rustc",
+        "-vV"
+      ],
+      "LD_LIBRARY_PATH": null,
+      "status": 0,
+      "stdout": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+      "stderr": ""
+    }
+  ],
+  "sdk_layouts": [
+    {
+      "sdk": "<SDK_1>",
+      "files": [
+        {
+          "path": "bin/rustc",
+          "sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+          "bytes": 646208
+        },
+        {
+          "path": "bin/cargo",
+          "sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+          "bytes": 36722856
+        },
+        {
+          "path": "lib/libLLVM-23-rust-1.102.0-nightly.so",
+          "bytes": 44,
+          "sha256": "c1473b5e610614991e7836a5221a271b0b899ac79ec1b758479907ccfbb8a7da",
+          "link": null
+        },
+        {
+          "path": "lib/libLLVM.so.23.1-rust-1.102.0-nightly",
+          "bytes": 208283952,
+          "sha256": "5b12901d3a06a2eca8eae8e0781f678a6b2213740e2754f90dc22aef3f23dc21",
+          "link": null
+        },
+        {
+          "path": "lib/librustc_driver-f21b5e769b80ce6a.so",
+          "bytes": 164782176,
+          "sha256": "ace7e2aa6ae11ca4c9b1edaf70701fc9390de38dd86bcf16bb8f22d5e658bd72",
+          "link": null
+        },
+        {
+          "path": "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_driver-f21b5e769b80ce6a.so",
+          "bytes": 164782176,
+          "sha256": "ace7e2aa6ae11ca4c9b1edaf70701fc9390de38dd86bcf16bb8f22d5e658bd72",
+          "link": null
+        }
+      ],
+      "closure": [
+        {
+          "path": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcore-b13a99ac1c8a27b3.rmeta",
+          "exists": true,
+          "matches_expected": true
+        },
+        {
+          "path": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcore-b13a99ac1c8a27b3.rlib",
+          "exists": true,
+          "matches_expected": true
+        },
+        {
+          "path": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcompiler_builtins-fb8df4e3730e7261.rmeta",
+          "exists": true,
+          "matches_expected": true
+        },
+        {
+          "path": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcompiler_builtins-fb8df4e3730e7261.rlib",
+          "exists": true,
+          "matches_expected": true
+        },
+        {
+          "path": "lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-objcopy",
+          "exists": true,
+          "matches_expected": true
+        },
+        {
+          "path": "lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-ar",
+          "exists": true,
+          "matches_expected": true
+        },
+        {
+          "path": "lib/libLLVM.so.23.1-rust-1.102.0-nightly",
+          "exists": true,
+          "matches_expected": true
+        }
+      ],
+      "cargo_loader_probe": {
+        "argv": [
+          "<SDK_1>/bin/rustc",
+          "-vV"
+        ],
+        "environment": {
+          "PATH": "/usr/bin:/bin",
+          "LANG": "C",
+          "LC_ALL": "C",
+          "LD_LIBRARY_PATH": "<SDK_1>/lib/rustlib/x86_64-unknown-linux-gnu/lib"
+        },
+        "status": 127,
+        "stdout": "",
+        "stderr": "<SDK_1>/bin/rustc: error while loading shared libraries: libLLVM.so.23.1-rust-1.102.0-nightly: cannot open shared object file: No such file or directory\n"
+      }
+    },
+    {
+      "sdk": "<SDK_2>",
+      "files": [
+        {
+          "path": "bin/rustc",
+          "sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+          "bytes": 646208
+        },
+        {
+          "path": "bin/cargo",
+          "sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+          "bytes": 36722856
+        },
+        {
+          "path": "lib/libLLVM-23-rust-1.102.0-nightly.so",
+          "bytes": 44,
+          "sha256": "c1473b5e610614991e7836a5221a271b0b899ac79ec1b758479907ccfbb8a7da",
+          "link": null
+        },
+        {
+          "path": "lib/libLLVM.so.23.1-rust-1.102.0-nightly",
+          "bytes": 208283952,
+          "sha256": "5b12901d3a06a2eca8eae8e0781f678a6b2213740e2754f90dc22aef3f23dc21",
+          "link": null
+        },
+        {
+          "path": "lib/librustc_driver-f21b5e769b80ce6a.so",
+          "bytes": 164782176,
+          "sha256": "ace7e2aa6ae11ca4c9b1edaf70701fc9390de38dd86bcf16bb8f22d5e658bd72",
+          "link": null
+        },
+        {
+          "path": "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_driver-f21b5e769b80ce6a.so",
+          "bytes": 164782176,
+          "sha256": "ace7e2aa6ae11ca4c9b1edaf70701fc9390de38dd86bcf16bb8f22d5e658bd72",
+          "link": null
+        }
+      ],
+      "closure": [
+        {
+          "path": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcore-b13a99ac1c8a27b3.rmeta",
+          "exists": true,
+          "matches_expected": true
+        },
+        {
+          "path": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcore-b13a99ac1c8a27b3.rlib",
+          "exists": true,
+          "matches_expected": true
+        },
+        {
+          "path": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcompiler_builtins-fb8df4e3730e7261.rmeta",
+          "exists": true,
+          "matches_expected": true
+        },
+        {
+          "path": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcompiler_builtins-fb8df4e3730e7261.rlib",
+          "exists": true,
+          "matches_expected": true
+        },
+        {
+          "path": "lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-objcopy",
+          "exists": false,
+          "matches_expected": false
+        },
+        {
+          "path": "lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-ar",
+          "exists": false,
+          "matches_expected": false
+        },
+        {
+          "path": "lib/libLLVM.so.23.1-rust-1.102.0-nightly",
+          "exists": true,
+          "matches_expected": true
+        }
+      ],
+      "cargo_loader_probe": {
+        "argv": [
+          "<SDK_2>/bin/rustc",
+          "-vV"
+        ],
+        "environment": {
+          "PATH": "/usr/bin:/bin",
+          "LANG": "C",
+          "LC_ALL": "C",
+          "LD_LIBRARY_PATH": "<SDK_2>/lib/rustlib/x86_64-unknown-linux-gnu/lib"
+        },
+        "status": 127,
+        "stdout": "",
+        "stderr": "<SDK_2>/bin/rustc: error while loading shared libraries: libLLVM.so.23.1-rust-1.102.0-nightly: cannot open shared object file: No such file or directory\n"
+      }
+    }
+  ]
+}

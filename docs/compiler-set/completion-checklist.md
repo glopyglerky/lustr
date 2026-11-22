@@ -1,17 +1,24 @@
 # Completion checklist
 
-Reviewed 19 November 2026. This is the single work register for the
+Reviewed 22 November 2026. This is the single work register for the
 [exclusive coverage contract](exclusive-coverage-contract.md). Lustr's sole goal
 is full rustc replacement with exclusive Lust ownership of covered work and
 only necessary upstream complementary implementation. Full Rust stays in blueFe.
 
-Pre-correction default: `7cea76c9d3adc587b54ccff168fe07efafd40309`.
-Audited continuation: [PR #32](https://github.com/glopyglerky/lustr/pull/32),
-`cb0721d49be95ec3f34a113c2354bc9d2a38bbf3`.
-Governing documentation landed through [PR #31](https://github.com/glopyglerky/lustr/pull/31)
-at `2fbafe391fdf3d0a59b8cc24e9b0f55be3570cbd`. The current
-[cleanup record](exclusive-coverage-cleanup.md) describes the implementation
-correction separately from the unfinished full compiler.
+Current reviewed source: [PR #33](https://github.com/glopyglerky/lustr/pull/33),
+`514dfe1ef8b49160bf5c09458981768fbf4f2386`. Its
+[public scalar hosted checkpoint](native-cargo-continuation.md#verified-hosted-checkpoint)
+passed on the exact matching tree; the broader Linux/macOS matrix was pending
+when observed. The PR remained unmerged. No full-Rust or matched speed pass is
+claimed. Refresh live source and CI before updating status.
+
+Historical baselines remain `next` at
+`7cea76c9d3adc587b54ccff168fe07efafd40309`, PR #32 at
+`cb0721d49be95ec3f34a113c2354bc9d2a38bbf3`, and the PR #31 governing documentation
+at `2fbafe391fdf3d0a59b8cc24e9b0f55be3570cbd`. The
+[cleanup record](exclusive-coverage-cleanup.md) preserves their relationship to
+the active implementation correction. The [architecture plan](architecture-plan.md)
+orders the work below without introducing another register.
 
 ## 0. Correct active direction and reconcile existing work
 
@@ -30,6 +37,19 @@ limits are recorded in the [cleanup record](exclusive-coverage-cleanup.md).
 - Preserve already integrated process ownership, scanner-fixture, SDK acquisition,
   callback, Unicode, normalization, native runtime and retained-state repairs.
   Verify whether a fix is present at the chosen head before reimplementing it.
+- Correct demonstrated behavior before widening admission. The 22 November
+  audit found that an omitted overflow-checks option did not inherit an explicit
+  `debug-assertions=no` setting as the pinned Rust compiler does. Both entry
+  adapters are corrected; all 24 cold profile cases now pass. The SDK identity
+  probe's separate loader defect is also fixed and the complete constructor
+  passes against the unchanged affected SDK. The
+  [audit record](evidence/compiler-review-20261122/README.md) binds these results
+  to exact source, package and evaluator identities. Retained profile-option
+  transitions remain an additional qualification obligation; the cold profile
+  cases do not establish that history.
+- Keep the public status and import/profile descriptions consistent with actual
+  source and qualified scope. A historical failed scalar join must not send the
+  next contributor back to rebuilding an already implemented service.
 
 Done when current instructions agree and every code disposition has an exact
 implementation change. A documentation merge alone does not close code cleanup.
@@ -48,6 +68,14 @@ Unprobed/unknown donor evidence is not proof of a complementary obligation.
 Capability test coverage must state its exceptions; a general CI pass is not
 proof that the capability tests ran.
 
+Advance the public artifact bridge through the existing donor-supported types
+and operations: remaining integer ABIs, aggregates, references/slices, enums,
+methods, generics, traits, modules and their runtime requirements. Preserve the
+original donor and its explicit integration patch. For each expansion, require
+an unchanged public request, independently checked result and precise retained
+edit behavior. Keep general native-language support separate from the smaller
+set currently represented in genuine Rust library metadata.
+
 Done when pure and mixed programs retain Lust ownership for the complete covered
 set being claimed. The current scalar bridge cannot define that set. Failure
 in a represented native emission must fail the request without reassignment.
@@ -65,6 +93,33 @@ optional, renamed, target and build dependencies and transitive lock changes.
 No product feature combination may activate a retrying experimental ABI or a
 full competing SDK. Remove obsolete general launchers and retain only useful
 bounded research qualifiers outside production admission.
+
+Use one retained semantic database and authoritative definitions/types/instances
+across the native and imported services. The pinned
+[`Interner` interface](https://github.com/rust-lang/rust/blob/5b7b37aefcb5b2fba3c2392bc9065b9e4602d494/compiler/rustc_type_ir/src/interner.rs)
+is a researched upstream boundary, not a complete implemented complement.
+Select the next service from an unchanged mixed fixture's demonstrated missing
+operation. Require native-owned consumers of the imported fact, valid and
+invalid cases, and an edit that invalidates those consumers without starting a
+second frontend. Preserve the completed scalar service while testing this
+general semantic boundary early. Start this work alongside ordinary Cargo/debug
+completion after correcting demonstrated behavior, before another broad scalar
+expansion. Narrow bridge prerequisites for the mixed fixture may proceed.
+
+Require the unchanged mixed program to execute, its invalid controls to fail
+for the expected reason, and an edit to the imported fact to invalidate native
+consumers while preserving unrelated work. Record the import closure and phase
+costs. If this needs duplicate native stages, fabricated facts or whole-program
+analysis, redesign the failing identity/query/typed-body adapter and re-run the
+same fixture before widening admission. A compiler fallback or unrelated scalar
+pass cannot close the failed boundary.
+
+Complete the remaining macro/proc-macro, trait/projection, region/move,
+const-evaluation, unsafe/FFI and async/coroutine obligations through justified
+upstream reuse. A feature is not complete until its declarations, checking,
+lowering, runtime, artifacts and dependency reads work in the same program.
+An adapter must expose complete typed control flow to borrowed borrow-checking
+operations; a generated object cannot stand in for an invalid-program proof.
 
 Done when admitted imports implement their claimed complementary obligations
 inside the owned compilation and the closure contains no unjustified duplicate
@@ -86,8 +141,10 @@ Native prepared state does not yet provide all wider declaration/privacy/lint
 obligations. Supply the necessary completion using actual native proofs. Preserve
 original applicable checks, real emitted instances and the exported-symbol
 query. Unconditional analysis success, fabricated typed results or empty
-instance graphs are forbidden. The generic solver seam in the upstream report
-is researched future reuse, not a replacement task for this established boundary.
+instance graphs are forbidden. The original scalar join is now complete within
+its qualified scope. Extend that service for wider native declarations and
+connect the first general semantic service through those same identities;
+neither task may recreate the retired whole-consumer analysis route.
 
 The [bounded native metadata caller](../../crates/lustr-native-metadata-qualification/README.md)
 joins actual completed scalar declarations and emitted objects to the selective
@@ -120,7 +177,29 @@ generations. The unchanged request reuses the executable with zero body
 checks. The matching `cargo check --bin` passes the same six cases with
 no object, archive, link or execution work. Both commands also pass when
 the edited body lives in an out-of-line module and the root file stays
-unchanged. Wider Rust and Cargo coverage remain open.
+unchanged. These preceding local and historical statements retain their named
+scope. The [hosted checkpoint at 514dfe1e](native-cargo-continuation.md#verified-hosted-checkpoint)
+adds independently checked public campaign evidence for the current source.
+It includes unwind-mode scalar leaf libraries with debug information disabled.
+Wider Rust and Cargo coverage remain open.
+
+The remaining runtime/artifact work is concrete:
+
+- Finish ordinary dev-profile executable linking and test builds while preserving
+  the requested panic strategy, debug information and option precedence.
+- Exercise actual cross-boundary panic propagation, destructor order, caught
+  panics, thread panics and terminal failure cases. Keep these results separate
+  from the existing GDB frame-walking result.
+- Supply Rust source line/type/parameter/local information and test actual
+  breakpoints and stepping after retained edits. A generated-C location or
+  `.eh_frame` section is insufficient.
+- Encode and consume genuine generic/inline bodies, exported traits/macros,
+  layouts, crate/dependency identities and required instance graphs. Link and
+  execute independent consumers in both directions at the pinned SDK revision.
+- Integrate real standard-library and dependency/runtime behavior without
+  substituting adapter crates to count arbitrary Cargo packages as supported.
+- Preserve allocation ownership, drop flags, constants, FFI and unwind rules
+  through every native/imported boundary and each declared crate type.
 
 Done when unchanged mixed programs and real downstream Cargo crates consume
 valid artifacts. Every obligation has one owner and every required instance is
@@ -131,14 +210,21 @@ emitted exactly once. Unsupported interfaces remain visible as integration gaps.
 The [native Cargo continuation](native-cargo-continuation.md) records the current
 unit-plan and host-script integration, narrow reuse checks, negative module
 lookups and generated-input leases. The new public scalar candidate adds retained
-artifact and inactive-history ownership with authored edit, rejection, repair and
-eviction checks. Those pending checks and the earlier bounded results do not
-close the wider completion conditions below.
+artifact and inactive-history ownership with source-bound edit, rejection,
+repair and eviction controls. The passing public checkpoint covers the declared
+campaign, not the wider completion conditions below.
 
 Connect precise native and complementary semantic dependencies. Cover body,
 signature, type, trait, macro, included-file, dependency, environment/build-script,
 target/profile and policy changes. Track negative lookups and real const/runtime
 inputs. Test edit/reversal histories, restart and failed publication.
+
+Include newly added impls and negative lookups, macro expansion/hygiene, generic
+instance changes, layout/drop changes, removed and reintroduced definitions,
+cache eviction and concurrent workspace requests. Host-script and proc-macro
+reuse needs the executable and observed file/environment inputs; when those
+inputs cannot be proved unchanged, perform valid recomputation within the
+assigned owner. Include host-versus-target changes and generated source.
 
 Done when fresh and retained results agree, relevant changes invalidate consumers,
 unaffected native work stays retained and failed/ambiguous work cannot overwrite
@@ -146,11 +232,31 @@ the last successful state. Preserve independent oracles in qualification.
 
 ## 5. Replace conflicting public execution paths
 
+Status: the retired retry/full-driver routes remain excluded from product
+construction. Bounded public Cargo requests now work through the native owner.
+Ordinary complete Cargo usage remains unfinished and must use the same pipeline.
+
 Remove ordinary whole-program native-fail/rustc-retry, diagnostic-based routing,
 user-selectable language engines and hidden stock/full-driver escape paths from
 public compilation and package builders. Preserve useful Cargo graph/argument,
 configuration, artifact and process handling. Disable invalid product claims
 until the actual complement is delivered.
+
+Complete these user operations on unchanged projects with their existing
+dependencies and settings:
+
+| Operation family | Required completion evidence |
+| --- | --- |
+| Direct `rustc` and Cargo discovery | Correct represented command/query/options, diagnostics, exit status, dep-info, environment and target/profile precedence. Account for unsupported flags explicitly until implemented. |
+| `cargo check`, `build`, `run` | Normal workspace/package/target/feature selections, real dependencies, build scripts and proc macros; cold and retained results through the public entry. |
+| `cargo test` | Unit/integration tests and applicable test harness behavior, unwind/drop semantics and expected invalid-program/runtime failures. |
+| Release and custom profiles | Requested optimization, debug, panic, codegen/LTO and linker behavior without whole-program delegation to stock rustc. |
+| Libraries and tool interoperability | Applicable `rlib`, `staticlib`, `cdylib`, `dylib` and proc-macro artifacts, downstream linking, rustdoc/doctest integration and Cargo JSON/diagnostic consumers. |
+
+Start with a small workspace that exercises the complete public operation,
+then qualify unchanged real projects with the same mechanisms. Keep a feature
+refusal visible until implemented. Changing source, dropping features or
+disabling debug/unwind is a separate fixture, never the original project's pass.
 
 Done when production entry points use the exclusive boundary, a supported case
 cannot invoke the competing compiler, and incomplete coverage fails honestly.
@@ -193,6 +299,41 @@ Done when the package satisfies architecture and applicable correctness with
 no fallback hiding a known gap. Cargo-only compatibility does not qualify an
 integrated native platform. No current artifact is qualified as the full product.
 
+### Host, target and profile matrix
+
+Keep host execution, output target and requested profile separate. Inventory
+the exact declared SDK's target list and classify every target; a family row
+below is not a claim that all its members work. Record the target triple,
+compiler host, SDK and linker identities, crate/operation/profile settings,
+source/package hashes, expected semantics and execution evidence for every
+advertised cell. Unsupported, unimplemented, untested and failed remain distinct.
+
+| Matrix area | Current boundary and required qualification |
+| --- | --- |
+| Linux GNU x86-64 host/target | The exact-source public scalar campaign passed. Broader native Linux workflows were pending at the review checkpoint. Full default dev/test/release and general Rust artifacts remain open. |
+| Other Linux ABIs/architectures | No scalar GNU x86-64 result transfers to musl, AArch64, RISC-V or another target. Qualify target facts, object format, layout/ABI, runtime, linker and generated results independently. |
+| macOS x86-64 and arm64 | The current broad macOS workflow result was pending when observed. Qualify the actual native route, Mach-O linking/signing, runtime, debug information and retained edits for each host/target combination. |
+| Windows MSVC/GNU and other hosted targets | Qualify applicable PE/COFF or other object format, process/argument/transport behavior, linker/runtime, unwind/debug format and ordinary Cargo operations. No Linux pass supplies this evidence. |
+| WebAssembly and bare-metal targets | Preserve the declared target's actual `core`/`alloc`/`std`, ABI, panic and execution environment. Use appropriate execution evidence; a host-only library check does not establish target operation. |
+| Remaining SDK targets | Keep each exact triple visible in the declared inventory with its implementation and evidence status. Do not silently exclude it while advertising universal rustc replacement. |
+| Cross compilation | Build scripts/proc macros execute for the host while program artifacts target the selected triple. Qualify both paths, dependency identities and output behavior together. |
+
+For every applicable cell cover default dev/test, release and supported custom
+profiles; declared Rust editions, features and configuration; panic abort/unwind
+where the target provides them; debug levels and
+stripping; incremental on/off; and required crate types. A setting unsupported
+by the target itself is not a compiler defect, but its expected rejection or
+target-defined behavior must match the declared Rust SDK. Required skipped or
+cancelled executions remain unqualified. This matrix records completion scope;
+it does not impose an unrelated portability rewrite before the existing pipeline
+works.
+
+Keep the compiler language version, imported semantic source, SDK and metadata
+version coherent. An upstream upgrade needs explicit source/dependency changes,
+new or changed acceptance/rejection expectations, cross-crate version checks and
+retained invalidation evidence. The previous pin's passing result does not
+qualify the new revision.
+
 ## 7. Establish overall speedup, report subset targets, then release
 
 Use the [performance policy](practical-performance.md). Keep all historical
@@ -201,6 +342,15 @@ work, flags, targets, thread counts, cache/lifecycle state, workload inputs and
 actual artifacts. The existing complete-package assessor requires 24 matched
 pairs plus applicable qualification. Historical 12-pair characterization is
 not that prospective assessment.
+
+Compare pristine Lust on work it actually supports and stock rustc at the
+artifact-compatible pin. If that pin is older, identify a current-stock-Rust
+comparison separately. A Cranelift baseline is useful where it provides the
+same required semantics, but it cannot replace the matching stock comparison.
+Record the actual frontend/backend concurrency and Cargo jobserver settings.
+Choose unchanged small and multi-crate projects, generic/trait-heavy code,
+macro/build-script workloads and real edit sequences before sampling. Preserve
+the actual source, features and requested artifacts in each comparison.
 
 The first complete replacement must beat matched stock rustc overall on the
 predeclared workload and frequencies, with paired uncertainty for total elapsed
@@ -253,7 +403,8 @@ must preserve the same retained session, semantic environment, invalidation,
 failure and ownership contracts, with actual no-socket operation and matched timing
 evidence. A
 protocol-only `no_std` crate or fresh per-request compilation does not complete
-that migration. Continue the genuine metadata boundary first.
+that migration. Continue correctness repairs and dependency-ready compiler
+completion first, including the wider genuine metadata boundary.
 
 Keep these implementation preferences separate from Rust program support.
 Programs using `std` or target-specific Unix sockets remain part of the full

@@ -25,11 +25,12 @@ is the canonical direction.
 compiler described above.**
 
 While [PR #33](https://github.com/glopyglerky/lustr/pull/33) remains unmerged,
-its correction is the current implementation lane. Its published audit baseline
-is [`ea26fe16`](https://github.com/glopyglerky/lustr/tree/ea26fe16636d390763257a19c19df3db992cdbcb);
-refresh the PR head before building or continuing work. At that baseline, `next`
-has received governing documentation separately and still contains earlier
-product code. After the correction merges, verify its inclusion in the current
+its correction is the current implementation lane. The 22 November review pins
+[`514dfe1e`](https://github.com/glopyglerky/lustr/tree/514dfe1ef8b49160bf5c09458981768fbf4f2386)
+and its source-bound hosted result below. Refresh the PR head before building or
+continuing work. The earlier documentation audit at `ea26fe16` remains historical;
+documentation on `next` does not establish inclusion of PR #33's compiler source.
+After the correction merges, verify its inclusion in the current
 integration source and continue from that source. Closed predecessor PRs and
 preview tags remain historical sources, not alternative development lanes.
 
@@ -38,23 +39,39 @@ preview tags remain historical sources, not alternative development lanes.
 | Pre-correction default `next`, [7cea76c9](https://github.com/glopyglerky/lustr/tree/7cea76c9d3adc587b54ccff168fe07efafd40309) | Earlier native-first entry, library retry and full-Rust compatibility paths. It predates the scalar mixed bridge. |
 | Reviewed [PR #32](https://github.com/glopyglerky/lustr/pull/32), [cb0721d4](https://github.com/glopyglerky/lustr/tree/cb0721d49be95ec3f34a113c2354bc9d2a38bbf3) | Retained native work, useful correctness repairs, partial shared semantic work, scalar composition and genuine Rust artifacts. Public retries and whole-consumer Rust analysis still conflict with the required design. |
 | Governing documentation, merged [PR #31](https://github.com/glopyglerky/lustr/pull/31), [2fbafe39](https://github.com/glopyglerky/lustr/tree/2fbafe391fdf3d0a59b8cc24e9b0f55be3570cbd) | One controlling direction, explicit selective-import and ownership rules, upstream source/history research, and reconciled active plans. This merge changed no product source. |
-| Current [implementation correction](docs/compiler-set/exclusive-coverage-cleanup.md), [PR #33](https://github.com/glopyglerky/lustr/pull/33) | Removes public retries, the whole-program mixed launcher and whole-compiler packaging. Adds the partial import inventory and guarded native package boundaries; repairs Cargo discovery, selection caching and environment preservation. The full complement and speed qualification remain unfinished. |
+| Current [implementation correction](docs/compiler-set/exclusive-coverage-cleanup.md), [PR #33](https://github.com/glopyglerky/lustr/pull/33), reviewed at `514dfe1e` | Removes public retries and whole-compiler packaging. Connects retained native work to genuine scalar Rust libraries, checks, bounded dependencies and executables. The complete complement, ordinary default-profile executable/debug support and matched speed qualification remain unfinished. |
 
 The current [public scalar-library candidate](docs/compiler-set/public-scalar-library.md)
 connects the installed `RUSTC` entry and retained native owner to genuine `.rlib`,
-`.rmeta` and dep-info output. It is authored and pending exact-source hosted
-qualification. The [declared profile and Cargo command](docs/compiler-set/native-cargo-continuation.md#authored-public-scalar-library-path)
-cover a dependency-free edition-2024, Linux x86-64, flat `no_std` scalar library.
-Metadata-only `cargo check`, under-Lustr `--extern` ingestion and wider Rust/Cargo
-coverage remain open. The [public qualifier](tools/test-public-native-library.py)
-requires real Cargo requests, retained state, genuine artifacts and independent
-result-checked consumers.
+`.rmeta` and dep-info output. The [public-native-library hosted job](https://github.com/glopyglerky/lustr/actions/runs/45073103551/job/137364264163)
+passed for `514dfe1e`; its downloaded artifact and source identity were independently
+checked. The [current request and evidence table](docs/compiler-set/native-cargo-continuation.md#authored-public-scalar-library-path)
+records the exact scope: Linux GNU x86-64 scalar library builds, metadata-only
+library/binary checks, bounded `--extern` dependency composition and hosted scalar
+executables. Leaf libraries accept `panic=unwind` with debug information disabled;
+linked executables and dependent libraries still require `panic=abort` and no
+debug information. The broad Linux/macOS workflow results were still pending
+when this checkpoint was observed. This passing job is not the entire PR matrix.
+
+Default-profile executable linking, Rust source-level debug information, general
+dependency/proc-macro support, wider native artifact integration and the full
+Rust complement remain open. The audit corrected an effective overflow-checks
+default error in both entry adapters and a construction-time SDK loader error.
+The repaired source passes all 24 profile cases, the full public campaign and
+six DWARF frame walks with two corruption controls. The
+[audit record](docs/compiler-set/evidence/compiler-review-20261122/README.md)
+binds those results to the tested source and package, separately from hosted
+checks on the newly published head. Follow the
+[completion checklist](docs/compiler-set/completion-checklist.md), which is the
+single work register, and the [end-to-end implementation plan](docs/compiler-set/architecture-plan.md).
 
 The public host still uses `std` and Unix sockets. Its pinned archive/object tools
 require a 208,283,952-byte LLVM shared library, about 208 MB, which remains a
 package-size and portability limitation. This candidate has no matched speed
-result. The [passing predecessor evidence](docs/compiler-set/evidence/retained-metadata-correction-20261120/runtime-success-fab59023.json)
-remains tied to `fab59023` and does not qualify this new public source.
+result. Zero rebuilt objects on an unchanged request and one rebuilt object on
+the demonstrated body edit are reuse evidence, not a whole-build speedup.
+The [passing predecessor evidence](docs/compiler-set/evidence/retained-metadata-correction-20261120/runtime-success-fab59023.json)
+remains tied to `fab59023`; it is separate from the hosted public result above.
 
 A narrow bridge cannot redefine Lust's supported subset. Work Lust can compile
 but the bridge cannot represent is an integration gap. It must not quietly move

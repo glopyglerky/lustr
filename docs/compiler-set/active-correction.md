@@ -1,6 +1,7 @@
 # Active exclusive-coverage correction
 
-Recorded 19 November 2026. The sole corrective implementation lane is
+Recorded 19 November 2026; current evidence reviewed 22 November 2026.
+The sole corrective implementation lane is
 [PR #33](https://github.com/glopyglerky/lustr/pull/33), targeting `next`.
 The [exclusive coverage contract](exclusive-coverage-contract.md) is the
 controlling direction, merged through [PR #31](https://github.com/glopyglerky/lustr/pull/31).
@@ -12,11 +13,17 @@ resume after closure.
 
 ## Start from the implementation source
 
-The repository-wide documentation audit uses published PR #33 head
+The current compiler audit pins published PR #33 head
+[`514dfe1e`](https://github.com/glopyglerky/lustr/tree/514dfe1ef8b49160bf5c09458981768fbf4f2386).
+Its [public scalar hosted checkpoint](native-cargo-continuation.md#verified-hosted-checkpoint)
+passed on the matching tree, and its original evidence artifact was independently
+downloaded and verified. The [22 November review](evidence/compiler-review-20261122/README.md)
+records the separate regression probe, qualified repairs and revised plan. The earlier
+repository-wide documentation audit remains pinned to
 [`ea26fe16`](https://github.com/glopyglerky/lustr/tree/ea26fe16636d390763257a19c19df3db992cdbcb).
-Refresh the live head and its evidence before continuing. The default branch
-contains governing documentation merged separately from compiler code; it still
-contains the older product implementation at this checkpoint. A documentation
+Refresh the live head and its evidence before continuing. Governing documentation
+was merged into the default branch separately from the compiler correction;
+PR #33 remained unmerged at this review. A documentation
 merge, closed predecessor PR or preview release must not be taken as the current
 implementation source. Preserve unique work, then continue on the same corrective
 PR while it remains unmerged. After merge, use the verified integration source
@@ -32,7 +39,35 @@ the immutable evidence collections. No preview package is a current replacement
 recommendation. Required CI evidence is not a claim of server-enforced merge or
 release protection.
 
-## Existing implementation and evidence
+## Current public integration and remaining work
+
+The public entry now connects real Cargo requests to retained native checking,
+scalar Rust metadata/archive output, metadata-only library/binary checks,
+bounded `--extern` dependency ingestion and hosted scalar executables. The
+unwind leaf-library route requires debug information disabled. Default-profile
+executables and Rust source debugging remain open, along with general Rust,
+dependency/proc-macro and target/profile coverage. The broad Linux/macOS workflow
+matrix was still pending when the public checkpoint was observed.
+
+A focused profile-default probe found three overflow-behavior mismatches in
+the 24-case baseline, while the pinned Rust reference passed all 24 cases.
+Both entry adapters are corrected and all 24 paired cases now pass. A second
+SDK-loader defect in the build-time identity query is fixed. The complete
+constructor, unchanged public Cargo campaign and six DWARF walks with two
+corruption controls pass on the repaired package. Five focused Rust unit tests
+also pass. The [audit record](evidence/compiler-review-20261122/README.md)
+binds the local tested commit and byte-identical published source tree, package
+and evaluator identities. These results are separate from new-head hosted
+checks. No compiler-speed claim is made.
+
+The [architecture plan](architecture-plan.md) continues the same native compiler
+through ordinary Cargo workflows, wider native artifacts and selective semantic
+services sharing its retained facts. The [completion checklist](completion-checklist.md)
+is the sole work register. The first scalar metadata join is completed within
+its qualified scope; do not repeat the predecessor's failed probe as the next
+task or restore its whole-consumer frontend to extend coverage.
+
+## Earlier source-bound implementation and evidence
 
 The [native Cargo continuation](native-cargo-continuation.md) is the latest
 implementation and failure record. The earlier
@@ -130,9 +165,10 @@ relabel these distinct operations as one fully qualified optimized package.
 
 **Full Rust replacement, complete integration of Lust's supported set,
 minimal complementary closure and near-stock speed remain unfinished.** The
-complete-replacement release guard deliberately refuses admission. Standard
-Cargo is currently a metadata and unit-planning utility; arbitrary direct Cargo compilation is
-not the qualified Lustr frontend.
+complete-replacement release guard deliberately refuses admission. At that
+earlier construction checkpoint, Cargo supplied metadata and unit planning.
+The later bounded public Cargo integration is qualified separately above;
+arbitrary direct Cargo compilation is still not a qualified full-Rust frontend.
 
 ## One lane, preserved history
 
@@ -143,20 +179,22 @@ whole-analysis optimizations and unique historical archives. Keep all referenced
 branches, commits and original failed results. Closure of an old PR does not mean
 every unique archive was merged or that an old package was repaired.
 
-Continue the genuine consumer-metadata boundary documented in the correction:
+Continue the wider genuine consumer-metadata boundary documented in the correction:
 real native declaration/privacy/lint/definition completion and the actual emitted
 instance graph must feed the encoder. Do not substitute unconditional analysis
 success, fabricated metadata, whole-consumer Rust reanalysis or an arbitrary
 blanket solver import. A bridge gap remains Lust-owned integration work.
 
 The separate [bounded metadata caller](../../crates/lustr-native-metadata-qualification/README.md)
-now connects those records to the selective serializer in a research executable.
+first connected those records to the selective serializer in a research executable.
 Its [hosted qualification](evidence/native-metadata-join-20261120/README.md) passed
 for published source `974eb097ea9fc84a18c716fe0c2d469fdfcfab6c`, tree
 `948074da4b3b23ed25fa789b17a924555f24e4ca`: 31 named controls, 262,152 runtime
 assertions and eight actual candidate traces. The original failures are
-preserved. This finite scalar-library result does not integrate the public
-retained path or establish full Rust replacement or compilation speed.
+preserved. That research result did not integrate the public retained path or
+establish full Rust replacement or compilation speed. The later public retained
+integration and its exact hosted pass at `514dfe1e` are recorded at the top of
+this document; wider completion and the current repair remain separate.
 
 This documentation publication directs ongoing work to the reviewed correction.
 It does not merge product code, publish a compiler package or turn an incomplete

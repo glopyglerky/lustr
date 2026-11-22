@@ -1,0 +1,232 @@
+{
+  "schema": "lustr-compiler-review-v1",
+  "date": "2026-11-22",
+  "baseline": {
+    "head": "514dfe1ef8b49160bf5c09458981768fbf4f2386",
+    "tree": "c2a11fa58ac5abef4e8da8247c8d6495ab7fe200",
+    "native_tree": "296c3bb8d62d0b383e37f5e84416b9398af58c2e",
+    "hosted_checks": {
+      "successful": 19,
+      "in_progress": [
+        "linux-x86_64",
+        "macos-arm64"
+      ],
+      "total": 21
+    },
+    "hosted_public_run": 45073103551,
+    "hosted_public_job": 137364264163,
+    "hosted_public_artifact": 14774221657,
+    "hosted_public_artifact_sha256": "72153b89382c264d0f2b2ed13d3faa4f7d14fa2ae2b31698c6abda3e8ba2e1cf",
+    "hosted_public_report_sha256": "3ca4909182d4ffcf46da4ea2de97eed379606f145b602c22e34e52fcd15b0631"
+  },
+  "qualified_repair": {
+    "local_commit": "0cc0149f4b29e65fe40adcf9f59e42b7b11f23dd",
+    "published_same_tree_commit": "9185df0d2d284d08db4fb015f40c67667a6e398c",
+    "tree": "af1ffe2bcb1d67c6288ad2fddf87238271af5b7a",
+    "native_tree_unchanged": true,
+    "full_constructor_passed": true,
+    "profile_cases_passed": 24,
+    "profile_cases_total": 24,
+    "public_campaign_passed": true,
+    "public_campaign_total_original_consumers": 16,
+    "public_campaign_total_runtime_assertions": 4194432,
+    "additional_dependency_runtime_assertions": 131080,
+    "dwarf_walks_passed": 6,
+    "corrupted_cfi_controls_rejected": 2,
+    "new_hosted_result": "pending; not inferred from these local execution records"
+  },
+  "source_preservation": {
+    "pristine_lust_commit": "240e08d91d4aed0299639f6f11fd522912b248f9",
+    "pristine_lust_tree": "0ab1b09815802894e6078de0af59273cbdf46cb0",
+    "declared_integration_patch_verified": true,
+    "post_qualification_manifest_files": 13122,
+    "post_qualification_gitlinks": 1,
+    "post_qualification_report_sha256": "147c87893f45e320497c0032c7c4d042d19c2bc7b1e26df7f43b87ecb41a7436",
+    "source_verified": true,
+    "candidate_package_unchanged": true,
+    "original_package_unchanged": true,
+    "clean_checkout_verified": true
+  },
+  "focused_controls": {
+    "root_rust_unit_tests": 5,
+    "profile_evaluator_controls": 3,
+    "unwind_evaluator_controls": 11,
+    "public_evaluator_controls": 29,
+    "workflow_input_controls": 5,
+    "exclusive_coverage_guard_passed": true,
+    "exclusive_guard_mutations": {
+      "tampered_inventories_rejected": 10,
+      "product_package_mutations_rejected": 41,
+      "restored_retired_policy_rejected": 4,
+      "metadata_research_mutations_rejected": 14,
+      "inspection_passthrough_mutations_rejected": 3,
+      "moving_donor_pin_rejected": true
+    }
+  },
+  "scope_limits": {
+    "full_rust_coverage": false,
+    "performance_qualified": false,
+    "release_status": "unavailable",
+    "default_profile_executable_linking_qualified": false,
+    "rust_source_debug_qualified": false,
+    "general_panic_cleanup_qualified": false,
+    "retained_profile_option_transitions_qualified": false
+  },
+  "profile_runtime_corrections": [
+    {
+      "name": "direct-debug-off-implicit-overflow-overflow",
+      "mode": "direct",
+      "fixture": "overflow",
+      "expected_panic": false,
+      "expected_debug_assertions": false,
+      "expected_overflow_checks": false,
+      "explicit_codegen": [
+        "debug-assertions=off"
+      ],
+      "source_sha256": "194134f2a695c459e9585ccfb48f66262ab89446be9aee5b8d11efbc0e88dba5",
+      "baseline": {
+        "candidate": {
+          "compile_status": 0,
+          "runtime_status": -6,
+          "stdout": "",
+          "stderr": "\nthread 'main' (452263) panicked at <AUDIT>/profile-baseline-01/cases/direct-debug-off-implicit-overflow-overflow/main.rs:1:25:\nattempt to add with overflow\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+          "binary_sha256": "59b8108a66a53268e8ae72a98c64d14de425d7915ec94cfe13825f7797240bee",
+          "passed": false
+        },
+        "reference": {
+          "compile_status": 0,
+          "runtime_status": 0,
+          "stdout": "wrapped=0\n",
+          "stderr": "",
+          "binary_sha256": "cac995e76b6517e5f9c0f573a918267355848f13c2139a52d1c9d769475687fe",
+          "passed": true
+        }
+      },
+      "repaired": {
+        "candidate": {
+          "compile_status": 0,
+          "runtime_status": 0,
+          "stdout": "wrapped=0\n",
+          "stderr": "",
+          "binary_sha256": "c63c6d5d5055b6d81f276bb6243db8358ebb02418d2521482913b3c91389eaa3",
+          "passed": true
+        },
+        "reference": {
+          "compile_status": 0,
+          "runtime_status": 0,
+          "stdout": "wrapped=0\n",
+          "stderr": "",
+          "binary_sha256": "cac995e76b6517e5f9c0f573a918267355848f13c2139a52d1c9d769475687fe",
+          "passed": true
+        }
+      }
+    },
+    {
+      "name": "direct-debug-last-off-overflow",
+      "mode": "direct",
+      "fixture": "overflow",
+      "expected_panic": false,
+      "expected_debug_assertions": false,
+      "expected_overflow_checks": false,
+      "explicit_codegen": [
+        "debug-assertions=on",
+        "debug-assertions=off"
+      ],
+      "source_sha256": "194134f2a695c459e9585ccfb48f66262ab89446be9aee5b8d11efbc0e88dba5",
+      "baseline": {
+        "candidate": {
+          "compile_status": 0,
+          "runtime_status": -6,
+          "stdout": "",
+          "stderr": "\nthread 'main' (452614) panicked at <AUDIT>/profile-baseline-01/cases/direct-debug-last-off-overflow/main.rs:1:25:\nattempt to add with overflow\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+          "binary_sha256": "22133a0819395f08cc7a08cc27c5dcab9341b10efc9af61b4e8afe6fb3c44e84",
+          "passed": false
+        },
+        "reference": {
+          "compile_status": 0,
+          "runtime_status": 0,
+          "stdout": "wrapped=0\n",
+          "stderr": "",
+          "binary_sha256": "cac995e76b6517e5f9c0f573a918267355848f13c2139a52d1c9d769475687fe",
+          "passed": true
+        }
+      },
+      "repaired": {
+        "candidate": {
+          "compile_status": 0,
+          "runtime_status": 0,
+          "stdout": "wrapped=0\n",
+          "stderr": "",
+          "binary_sha256": "ce944536e78499e816e083715a9a67fb9c4f477e35da1a0c8bb3f7b5bed5f6c7",
+          "passed": true
+        },
+        "reference": {
+          "compile_status": 0,
+          "runtime_status": 0,
+          "stdout": "wrapped=0\n",
+          "stderr": "",
+          "binary_sha256": "cac995e76b6517e5f9c0f573a918267355848f13c2139a52d1c9d769475687fe",
+          "passed": true
+        }
+      }
+    },
+    {
+      "name": "cargo-debug-off-implicit-overflow-overflow",
+      "mode": "cargo",
+      "fixture": "overflow",
+      "expected_panic": false,
+      "expected_debug_assertions": false,
+      "expected_overflow_checks": false,
+      "explicit_codegen": [
+        "debug-assertions=off"
+      ],
+      "source_sha256": "194134f2a695c459e9585ccfb48f66262ab89446be9aee5b8d11efbc0e88dba5",
+      "baseline": {
+        "candidate": {
+          "compile_status": 0,
+          "runtime_status": -6,
+          "stdout": "",
+          "stderr": "\nthread 'main' (453435) panicked at src/main.rs:1:25:\nattempt to add with overflow\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+          "binary_sha256": "6c8f690ed7ece23ec6920dce9c732cc8e16ae4e9e7f32acfdd1db29459fe5f77",
+          "passed": false
+        },
+        "reference": {
+          "compile_status": 0,
+          "runtime_status": 0,
+          "stdout": "wrapped=0\n",
+          "stderr": "",
+          "binary_sha256": "a46a06a6b58a758caafccfecd59e3f06a2abe2b3caf53882cb9f916495c12496",
+          "passed": true
+        }
+      },
+      "repaired": {
+        "candidate": {
+          "compile_status": 0,
+          "runtime_status": 0,
+          "stdout": "wrapped=0\n",
+          "stderr": "",
+          "binary_sha256": "d067093f3c77292b07f21e3dd870b7eb322e70b6d942b6fc738670b5994309c3",
+          "passed": true
+        },
+        "reference": {
+          "compile_status": 0,
+          "runtime_status": 0,
+          "stdout": "wrapped=0\n",
+          "stderr": "",
+          "binary_sha256": "a46a06a6b58a758caafccfecd59e3f06a2abe2b3caf53882cb9f916495c12496",
+          "passed": true
+        }
+      }
+    }
+  ],
+  "runtime_output_redaction": "Only the private absolute audit root is replaced by <AUDIT>; runtime statuses and output text are retained.",
+  "evidence_summaries_sha256": {
+    "construction.json": "7e773acf7f77bf50ae8e5d44220df9493390c6ba5b1a077a84c5c2b5ce305642",
+    "profile-after.json": "9adaf24b6b5acc600ccafe981c47b3bd6c7aeb7648831e21b52cae684f1fdcb5",
+    "profile-before.json": "4c098881c6cb5176ff9375c3d5e61cacba77435c2f022480d2c69a9cd579be3e",
+    "public-campaigns.json": "34b19c0f323bdffb27efb6eb174d361e11c7f8739eb810c046870609e2971b15",
+    "sdk-identity.json": "eca86d24bda70215e41107984daae9ac9755c15ba0554a0be2c514156af0a121",
+    "unwind-after.json": "27fdd017e9c8550168914df90eef06ac6ea917ddca59996bdd99c6d6f4ace94c",
+    "unwind-baseline.json": "3c57a8105d664e8e0948b028d34eedf35ae6501f93d7e6b3d47f7d0585c7edc1"
+  }
+}

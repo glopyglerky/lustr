@@ -923,9 +923,9 @@
     "native_caller_committed": true,
     "native_caller_path": "crates/lustr-native-metadata-qualification",
     "public_retained_integration": true,
-    "qualification": "Current shared/public path requires exact-source hosted qualification; no broader Rust or performance admission.",
+    "qualification": "Bounded public scalar campaign passed at 514dfe1ef8b49160bf5c09458981768fbf4f2386 in run 45073103551/job 137364264163. See docs/compiler-set/evidence/compiler-review-20261122/README.md for exact source/artifact verification and the separately qualified profile/default and SDK-construction repairs. No broader Rust, release or performance admission.",
     "retained_native_caller_authored": true,
-    "retained_native_qualification": "Earlier exact-source retained evidence remains in the repository; the authored shared/public integration requires new exact-source hosted qualification.",
+    "retained_native_qualification": "Public retained scalar integration is qualified only for the declared campaign at 514dfe1ef8b49160bf5c09458981768fbf4f2386. Earlier retained research remains tied to its original source; subsequent repairs require their own exact-source evidence.",
     "public_native_caller_path": "crates/lustr-native-core/src/public_library.rs",
     "production_source_authored": true
   },
