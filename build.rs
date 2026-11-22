@@ -81,8 +81,14 @@ fn main() {
         println!("cargo:rerun-if-changed={}", lust.join("bin/lust").display());
         println!("cargo:rerun-if-changed={}", lust.join("bin/lust-core").display());
     }
-    let declared = Command::new(&compiler).arg("-vV").output().expect("query pinned bootstrap SDK identity");
-    assert!(declared.status.success());
+    // Cargo adds its target/dependency library search paths to build scripts.
+    // A rustc-dev SDK can then select its target-libdir driver copy, whose
+    // loader origin does not contain the pinned LLVM library. The selected
+    // compiler must resolve its own SDK, as the constructor's queries do.
+    let declared = Command::new(&compiler).arg("-vV").env_remove("LD_LIBRARY_PATH")
+        .output().expect("query pinned bootstrap SDK identity");
+    assert!(declared.status.success(), "pinned bootstrap SDK identity query failed: {}",
+        String::from_utf8_lossy(&declared.stderr));
     let declared = String::from_utf8(declared.stdout).unwrap();
     assert!(declared.lines().any(|line| line == format!("commit-hash: {}", pin["source"])));
     let release = declared.lines().find_map(|line| line.strip_prefix("release: ")).expect("declared Rust semantic version");

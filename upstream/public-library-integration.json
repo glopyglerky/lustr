@@ -1,18 +1,22 @@
 {
   "schema": "lustr-public-library-integration-v1",
   "rust_revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
-  "status": "authored-unqualified",
+  "status": "implemented-partial",
   "full_rust_coverage": false,
   "performance_qualified": false,
+  "qualification_record": "docs/compiler-set/evidence/compiler-review-20261122/README.md; results apply only to the exact source and package identities recorded there, not every future regeneration of this inventory",
   "metadata_dependency_closure": "upstream/metadata-dependency-closure.json",
   "artifact_tool_closure": "upstream/metadata-artifact-tools.json",
   "product_owner": "crates/lustr-native-core/src/public_library.rs",
   "shared_artifact_service": "crates/lustr-native-core/src/library_artifact.rs",
   "supported_context": "Linux x64, edition 2024, embed-bitcode=no and opt-level=0. Native builds require debuginfo=0. Scalar leaf libraries also link with the unwind panic strategy and actual per-function unwind ranges. Linked executables and libraries with dependencies require panic=abort. Metadata-only checks also accept the ordinary Cargo dev profile with unwind, debuginfo=2 and the optional incremental cache location. Checked scalar signatures carry every integer type. Linked artifacts require the existing direct ABI for 32-bit, 64-bit and pointer-sized integers. Cargo library checks and builds may use one direct scalar leaf dependency supplied as metadata. Cargo executable checks use a closed scalar metadata graph. Executable builds additionally use the matching archives. Executable dep-info covers source files and actual include and environment reads from the native resolver and expander. The admitted extern lint uses native checked reads.",
-  "request_options": "LibraryOptions is per request, outside native SessionKey and Client. Unstable embedding None/true/false are distinct metadata/SVH variants; effective None/true use full archive metadata and false uses its matching header stub. Force-warn/JSON do not enter the metadata hash. Stable -C embed-metadata remains unrepresented.",
+  "request_options": "LibraryOptions is per request, outside native SessionKey and Client. At O0, omitted overflow-checks inherits the effective debug-assertions setting; admitted explicit values take precedence. The direct Rust adapter preserves last-option precedence, while the bounded Cargo artifact adapter still refuses duplicate codegen options. Unstable embedding None/true/false are distinct metadata/SVH variants; effective None/true use full archive metadata and false uses its matching header stub. Force-warn/JSON do not enter the metadata hash. Stable -C embed-metadata remains unrepresented.",
   "artifact_variants": "At most three embedding choices for the current native link snapshot, plus the last durable link publication. The metadata-only cache holds a single checked generation and requires no native object, export, or archive work.",
   "semantic_owner": "One existing native prepare/emit continuation; only existing completed scalar declarations/bodies.",
   "unimplemented": [
+    "ordinary default-profile executable linking",
+    "Rust source-level debug information",
+    "general Rust panic cleanup and exception semantics",
     "stable -C embed-metadata and wider unstable options",
     "general native library and executable dependency graphs",
     "wider native completion",
@@ -35,7 +39,7 @@
       "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
       "path": "compiler/rustc_session/src/session.rs",
       "sha256": "cf93aa2f3af4a4be00930d9c1078c17a91add82ac6206e38e3fee74c724e93a8",
-      "role": "Effective embedding precedence and the unwind-table requirement for the linked unwind profile"
+      "role": "Effective embedding precedence, overflow_checks inheritance from effective debug_assertions, and the unwind-table requirement for the linked unwind profile"
     },
     {
       "repository": "TinyCC/tinycc",
@@ -137,11 +141,14 @@
     }
   ],
   "source_sha256": {
-    "src/lib.rs": "3fed93e365f2863905198b74ecda1dd3a6b41056b3ac8f9d442867ba92d86f97",
+    "Cargo.toml": "3cbe194c029ff28d35f7ae2d5c8ad9a5406c50a36101757637e0d0d5d33ce547",
+    "Cargo.lock": "ad33e3260c84791c32381d5d42f710457dcb4f0241d0b167f3659baf78b6fac0",
+    "build.rs": "209664ecbac600246cb18a83a91c46d474062ebb6d6b4236b1e42cb16544e39a",
+    "src/lib.rs": "11b8360857f8fa15460ddbb287c9e01e51a2d117ede2a3f6c071d06672335eb0",
     "src/main.rs": "4fb5ec2c0d2fdffab03f94ec3cd20dba559446e883885a1434f40a76e00fc565",
     "src/native_queries.rs": "805c995a5c51a5af0e544a573cb2f3000b45e0b92baf6f98ff53871d1e4d4864",
     "src/library_contract.rs": "818d0474d4fbb8188346313ea3e66f05b43263e52ed3e32240ded51352c64e30",
-    "src/library_request.rs": "1720b7f9a08ca5ce2e524a166cfcfd864a3c3c81e3885e8d77030fd49438af2a",
+    "src/library_request.rs": "589b002b4530ff36cf1dcf6c43b5e97676c36cd5e2a3bf226b1273a257ffa5b5",
     "compiler/native/Cargo.toml": "022fce40408d543c29550f7b03de3e622a5e01a08c82ea642d30537f61f93891",
     "compiler/native/Cargo.lock": "d46a58d499b1cfa163f5e2a23f10c0e69e077638f7a84e38e13332875a52f181",
     "compiler/native/build.rs": "044e0595531dd5468cf4df3dcfb21e1f43592fbada278c63b461d6dcb6a8b946",
@@ -181,7 +188,7 @@
     "tools/build-native-toolchain.rs": "6a30c0a2884f6df81812a53d658eea28d8f6233692dba7b4af72d196109c9579",
     "tools/install-native-metadata-sdk.py": "c6be8a4c32e9f86274321b282c54a5c461c9672a27e6d54994455948bde496fb",
     "tools/check-exclusive-coverage.py": "a6c24b3901d94daffb8c08aef335c64ea9c09ff7bda408c9c5e80041c2368d61",
-    "tools/update-public-library-source-manifest.py": "6750944ba399ecba7d8ec0e9a283a8e80113d13fd0abc40a3dc6ce5c3e9f10d5",
+    "tools/update-public-library-source-manifest.py": "e43c658c99f0d8cdfe5560598182de1fb8a70137c20d671f5ecf1b7d90cb2f12",
     "upstream/metadata-artifact-tools.json": "d1bd48f3b362645dce89172ce862f66189a1847c26e443f1861f9222021af9ff",
     "upstream/metadata-dependency-closure.json": "a5b2d8cccb4594fa2bfe56c33d202c4e6a1f88a1e09105bac8c4f1ab1e0ca32e",
     "docs/compiler-set/evidence/metadata-sdk-receipt-20261120/receipt.json": "4e400b263bf9923616dea44ead2d77213703177d3bfaf6becd6a19a4c5a657a7"

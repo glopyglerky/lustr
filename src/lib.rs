@@ -22,6 +22,8 @@ pub fn native_request(args: &[OsString]) -> Option<Native> {
     let mut input = None;
     let mut output = None;
     let mut settings = Vec::new();
+    let mut debug_assertions = None;
+    let mut explicit_overflow_checks = false;
     let mut edition = false;
     let mut crate_type = false;
     let mut emit = false;
@@ -78,6 +80,10 @@ pub fn native_request(args: &[OsString]) -> Option<Native> {
                 | "overflow-checks=off"
                 | "debug-assertions=on"
                 | "debug-assertions=off" => {
+                    if let Some(value) = flag.strip_prefix("debug-assertions=") {
+                        debug_assertions = Some(value);
+                    }
+                    explicit_overflow_checks |= flag.starts_with("overflow-checks=");
                     settings.extend(["-C".to_owned(), flag.to_owned()]);
                 }
                 "opt-level=0" | "debuginfo=0" => {}
@@ -95,6 +101,12 @@ pub fn native_request(args: &[OsString]) -> Option<Native> {
     }
     let input = input?;
     let output = output.unwrap_or_else(|| PathBuf::from(&input).file_stem().map(PathBuf::from).unwrap());
+    // Pinned rustc's Session::overflow_checks inherits the effective debug
+    // assertion setting unless overflow checks were explicitly supplied.
+    // Resolve the Rust request here, before the native profile defaults apply.
+    if !explicit_overflow_checks && let Some(debug) = debug_assertions {
+        settings.extend(["-C".to_owned(), format!("overflow-checks={debug}")]);
+    }
     let mut native = vec!["build".to_owned(), input, "-o".to_owned(), output.to_str()?.to_owned(), "--no-default-features".to_owned()];
     native.extend(settings);
     Some(Native { args: native, output })
@@ -194,6 +206,46 @@ mod tests {
     fn ordinary_binary_uses_native_compiler() {
         let n = native_request(&args(&["--edition=2024", "main.rs", "-o", "out", "-C", "panic=unwind"])).unwrap();
         assert_eq!(n.args, ["build", "main.rs", "-o", "out", "--no-default-features", "-C", "panic=unwind"]);
+    }
+
+    #[test]
+    fn rustc_overflow_default_follows_the_effective_debug_assertions() {
+        let direct = args(&["--edition=2024", "main.rs", "-o", "out"]);
+        let cargo = args(&["--edition=2024", "main.rs", "--crate-name=profile_defaults", "--crate-type=bin",
+            "--emit=dep-info,link", "--out-dir=target", "-Cmetadata=profile", "-Cembed-bitcode=no",
+            "-Cpanic=abort", "-Cdebuginfo=0"]);
+        let mut prefixes = vec![&direct];
+        if public_library_host_supported() { prefixes.push(&cargo); }
+        for prefix in prefixes {
+            for (flags, expected) in [
+                (vec!["-Cdebug-assertions=off"], "overflow-checks=off"),
+                (vec!["-Cdebug-assertions=off", "-Coverflow-checks=on"], "overflow-checks=on"),
+                (vec!["-Cdebug-assertions=on", "-Coverflow-checks=off"], "overflow-checks=off"),
+            ] {
+                let mut request = prefix.clone();
+                request.extend(args(&flags));
+                let native = native_request(&request).expect("represented Rust request");
+                let overflow = native.args.windows(2).filter(|pair| pair[0] == "-C")
+                    .map(|pair| pair[1].as_str()).filter(|flag| flag.starts_with("overflow-checks=")).last();
+                assert_eq!(overflow, Some(expected), "request: {request:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn direct_rustc_check_overrides_keep_last_option_precedence() {
+        for (flags, expected) in [
+            (vec!["-Cdebug-assertions=on", "-Cdebug-assertions=off"], "overflow-checks=off"),
+            (vec!["-Cdebug-assertions=off", "-Cdebug-assertions=on"], "overflow-checks=on"),
+            (vec!["-Coverflow-checks=off", "-Cdebug-assertions=off", "-Coverflow-checks=on"], "overflow-checks=on"),
+        ] {
+            let mut request = args(&["--edition=2024", "main.rs", "-o", "out"]);
+            request.extend(args(&flags));
+            let native = native_request(&request).unwrap();
+            let overflow = native.args.windows(2).filter(|pair| pair[0] == "-C")
+                .map(|pair| pair[1].as_str()).filter(|flag| flag.starts_with("overflow-checks=")).last();
+            assert_eq!(overflow, Some(expected));
+        }
     }
     #[test]
     fn artifact_and_configuration_contracts_are_not_dropped() {

@@ -301,11 +301,11 @@ jobs:
           persist-credentials: false
       - name: Install the declared build SDK and research oracle
         run: rustup toolchain install nightly-2026-11-09 --profile minimal --component rustc-dev --component llvm-tools
-      - name: Install the native planning process observer
+      - name: Install process and native frame observers
         run: |
-          if ! command -v strace >/dev/null; then
+          if ! command -v strace >/dev/null || ! command -v gdb >/dev/null; then
             sudo apt-get update
-            sudo apt-get install -y strace
+            sudo apt-get install -y strace gdb
           fi
       - name: Reject product and research feature unification before compiler work
         run: python3 tools/test-native-build-policy.py --rustc "$(rustup which rustc)" --output "$RUNNER_TEMP/native-build-policy.json"
@@ -346,8 +346,11 @@ jobs:
           records="$RUNNER_TEMP/public-native-library"
           mkdir -p "$records"
           git rev-parse HEAD HEAD^{tree} HEAD:compiler/native > "$records/source.txt"
-          sha256sum tools/test-public-native-library.py tools/test-public-native-library-controls.py tools/test-retained-native-metadata.py tools/test-native-consumer-metadata.py tools/build-metadata-sdk-receipt.py > "$records/evaluator-inputs.sha256"
+          python3 tools/native-metadata-source-manifest.py record "$records/source-inputs.json"
+          sha256sum tools/test-public-native-library.py tools/test-public-native-library-controls.py tools/test-retained-native-metadata.py tools/test-native-consumer-metadata.py tools/build-metadata-sdk-receipt.py tools/test-rustc-profile-defaults.py tools/test-native-unwind-frames.py tools/test-native-unwind-frames-controls.py > "$records/evaluator-inputs.sha256"
           python3 tools/test-public-native-library-controls.py -v 2>&1 | tee "$records/evaluator-controls.log"
+          python3 tools/test-rustc-profile-defaults.py --self-test 2>&1 | tee "$records/profile-evaluator-controls.log"
+          python3 tools/test-native-unwind-frames-controls.py -v 2>&1 | tee "$records/unwind-evaluator-controls.log"
           python3 tools/test-public-native-library.py \
             --package "$RUNNER_TEMP/lustr-native-built/toolchain" \
             --sdk "$(rustc --print sysroot)" \
@@ -366,6 +369,16 @@ jobs:
           python3 -c 'import json,sys; r=json.load(open(sys.argv[1]))["cargo_integer_signatures"]; assert r["passed"] and r["type_count"] == 6' "$records/campaign/report.json"
           python3 -c 'import json,sys; r=json.load(open(sys.argv[1]))["cargo_unwind_library"]; assert r["passed"] and [x["status"] for x in r["history"]] == [0,0,0,101,0] and [x["compiled_objects"] for x in r["history"]] == [3,0,1,0,0]' "$records/campaign/report.json"
           python3 -c 'import json,sys; r=json.load(open(sys.argv[1]))["cargo_default_executable_check"]; assert r["passed"] and [x["case"] for x in r["history"]] == ["cold","noop","invalid","repair"] and [x["status"] for x in r["history"]] == [0,0,101,0]' "$records/campaign/report.json"
+          python3 tools/test-rustc-profile-defaults.py \
+            --package "$RUNNER_TEMP/lustr-native-built/toolchain" \
+            --sdk "$(rustc --print sysroot)" \
+            --source-evidence "$records/source-inputs.json" \
+            --output "$records/profile-defaults" 2>&1 | tee "$records/profile-defaults.log"
+          python3 tools/test-native-unwind-frames.py \
+            --artifact-dir "$records/campaign" \
+            --gdb "$(command -v gdb)" \
+            --output "$records/unwind-frames" 2>&1 | tee "$records/unwind-frames.log"
+          python3 tools/native-metadata-source-manifest.py verify "$records/source-inputs.json"
           sha256sum --check "$records/evaluator-inputs.sha256"
       - name: Retain public library diagnostics immediately
         if: ${{ always() && steps.public_library.outcome != 'skipped' }}

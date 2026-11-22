@@ -138,10 +138,14 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
         native.extend(["--bin".into(), target]);
     }
     else { native.push("--lib".into()); }
-    // Rust's opt-level=0 default enables these flags. Explicit values win;
-    // Cargo's manifest profile is never substituted for its actual invocation.
-    for key in ["overflow-checks","debug-assertions"] {
-        native.extend(["-C".into(),format!("{key}={}",codegen.get(key).map_or("on",String::as_str))]);
+    // At O0 Rust enables debug assertions by default. Omitted overflow checks
+    // inherit the effective debug assertion setting (Session::overflow_checks),
+    // including an explicit override. The actual Rust request owns both values;
+    // the native Cargo profile must not substitute its defaults afterwards.
+    let debug = codegen.get("debug-assertions").map_or("on", String::as_str);
+    let overflow = codegen.get("overflow-checks").map_or(debug, String::as_str);
+    for (key, value) in [("overflow-checks", overflow), ("debug-assertions", debug)] {
+        native.extend(["-C".into(),format!("{key}={value}")]);
     }
     if let Some(manifest_dir) = std::env::var_os("CARGO_MANIFEST_DIR") {
         let manifest = PathBuf::from(manifest_dir).join("Cargo.toml");

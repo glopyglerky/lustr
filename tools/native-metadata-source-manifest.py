@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bind the actual tracked inputs of the bounded metadata qualification job."""
+"""Bind tracked inputs of the bounded metadata and public compiler campaigns."""
 import argparse
 import hashlib
 import json
@@ -11,12 +11,19 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 INPUTS = [
+    "Cargo.toml", "Cargo.lock", "build.rs", "src",
     "compiler/native", "crates/lustr-native-core", "crates/lustr-metadata-encoder",
     "crates/lustr-metadata-sdk", "crates/lustr-native-metadata-qualification",
     "tools/test-native-consumer-metadata.py", "tools/test-native-metadata-trace.py",
     "tools/test-retained-native-metadata.py", "tools/test-retained-metadata-controls.py",
     "tools/native-metadata-source-manifest.py", "tools/build-tinycc-pic.rs",
     "tools/check-exclusive-coverage.py", "tools/build-metadata-sdk-receipt.py",
+    "tools/build-native-toolchain.rs", "tools/install-native-metadata-sdk.py",
+    "tools/update-public-library-source-manifest.py",
+    "tools/test-public-native-library.py", "tools/test-public-native-library-controls.py",
+    "tools/test-rustc-profile-defaults.py", "tools/test-native-unwind-frames.py",
+    "tools/test-native-unwind-frames-controls.py", "upstream/public-library-integration.json",
+    "upstream/metadata-artifact-tools.json", "upstream/metadata-dependency-closure.json",
     "upstream/bluefe-core.pin", ".github/workflows/compiler-set.yml",
 ]
 
