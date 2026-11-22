@@ -181,6 +181,11 @@ unchanged. These preceding local and historical statements retain their named
 scope. The [hosted checkpoint at 514dfe1e](native-cargo-continuation.md#verified-hosted-checkpoint)
 adds independently checked public campaign evidence for the current source.
 It includes unwind-mode scalar leaf libraries with debug information disabled.
+The local public campaign also builds and runs a dependency-free unwind
+executable with `debug=0`. Its destructor order and caught panic match pinned
+Rust. An unchanged request checks zero bodies, an edit checks one, and an
+invalid edit leaves the prior executable intact. TinyCC's final link retains
+the executable's unwind ranges.
 Wider Rust and Cargo coverage remain open.
 
 The remaining runtime/artifact work is concrete:

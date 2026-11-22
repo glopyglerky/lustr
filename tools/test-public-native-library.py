@@ -335,7 +335,8 @@ def information_query(argv):
     return args == standard or args == standard[:4] + ["--target", TARGET] + standard[4:]
 
 
-def inspect_processes(parsed, package, expected_root, root_argv, projects, *, daemon=False, complete=None, application=None):
+def inspect_processes(parsed, package, expected_root, root_argv, projects, *, daemon=False, complete=None,
+                      application=None, unwind_binary_start=None):
     """Classify exact product/query/planning executables, never compiler names alone."""
     if complete is None:
         complete = not daemon
@@ -424,8 +425,10 @@ def inspect_processes(parsed, package, expected_root, root_argv, projects, *, da
             artifacts.append(attempt)
         elif path == tcc and daemon:
             scratch = Path(parsed["attempts"][0]["environment"]["TMPDIR"]) / ("lust-daemon-" + parsed["root_pid"])
+            unwind = unwind_binary_start is not None and len(artifacts) >= unwind_binary_start
+            flag = "-fasynchronous-unwind-tables" if unwind else "-fno-asynchronous-unwind-tables"
             require(len(argv) == 8 and argv[1:6] == ["-B" + str(package / "lib/lust/tcc/lib/tcc"),
-                    "-c", "-w", "-fno-asynchronous-unwind-tables", "-o"],
+                    "-c", "-w", flag, "-o"],
                     "unexpected native C compiler options")
             c_source, obj = Path(argv[-1]), Path(argv[-2])
             require(c_source.is_absolute() and c_source == obj.with_suffix(".c")
@@ -1621,6 +1624,114 @@ def qualify_default_executable_check(root, package, sdk, commands, environment, 
     result["passed"] = True
 
 
+def qualify_unwind_executable(root, package, sdk, commands, environment, oracle_env, projects,
+                              daemon_argv, daemon_trace, prefixes, owner, report, artifact_start):
+    name = "unwind-executable"
+    path = root / "projects" / name
+    source = path / "src/main.rs"
+    source.parent.mkdir(parents=True)
+    manifest = path / "Cargo.toml"
+    write_new(manifest, f'[package]\nname="{name}"\nversion="0.1.0"\nedition="2024"\n'
+                        '[profile.dev]\ndebug=0\n')
+    projects["unwind_executable"] = {"manifest": manifest, "binary_target": name}
+    baseline = b'''
+struct Mark(&'static str);
+impl Drop for Mark {
+    fn drop(&mut self) { println!("drop:{}", self.0); }
+}
+#[inline(never)]
+fn leaf() {
+    let _frame = Mark("leaf");
+    panic!("unwind fixture");
+}
+fn main() {
+    std::panic::set_hook(Box::new(|_| {}));
+    let _outer = Mark("outer");
+    let recovered = std::panic::catch_unwind(|| {
+        let _middle = Mark("middle");
+        leaf();
+    });
+    assert!(recovered.is_err());
+    println!("caught");
+}
+'''
+    environment = dict(environment, CARGO_TARGET_DIR=str(path / "target"),
+                       CARGO_BUILD_BUILD_DIR=str(path / "intermediates"))
+    oracle_env = dict(oracle_env, RUSTC=str(sdk / "bin/rustc"), CARGO_HOME=environment["CARGO_HOME"],
+                      CARGO_TARGET_DIR=str(path / "original-target"),
+                      CARGO_BUILD_BUILD_DIR=str(path / "original-intermediates"))
+    environment.pop("CARGO_INCREMENTAL", None)
+    oracle_env.pop("CARGO_INCREMENTAL", None)
+    application = path / "target/debug" / name
+    flags = ["run", "--bin", name, "--offline", "--message-format=json"]
+    argv = [package / "bin/cargo", *flags]
+    result = {"passed": False, "history": []}
+    report["cargo_unwind_executable"] = result
+    edited = baseline.replace(b'Mark("leaf")', b'Mark("edited")')
+    invalid = edited.replace(b'let _frame =', b'let _frame: bool =')
+    previous = None
+    for label, text, runtime in [("cold", baseline, b"leaf"), ("noop", baseline, b"leaf"),
+                                 ("edit", edited, b"edited"), ("invalid", invalid, None),
+                                 ("repair", edited, b"edited")]:
+        source.write_bytes(text)
+        before = set((root / "observations").glob("*/report.json"))
+        status = 101 if runtime is None else 0
+        stdout, stderr, trace = commands.run(name + "-" + label, argv, path, environment, expected=status, traced=True)
+        original, original_errors, _ = commands.run(name + "-" + label + "-original",
+            [sdk / "bin/cargo", *flags], path, oracle_env, expected=status)
+        observed = inspect_processes(trace_events(trace.read_bytes(), path, application=application),
+            package, argv[0], argv, projects, application=application)
+        require(len(observed["compiles"]) == 1, "unwind executable did not compile exactly its Cargo target")
+        invocation = parse_compile(observed["compiles"][0])
+        codegen = invocation["codegen"]
+        require(invocation["--emit"] == "dep-info,link" and invocation["--crate-type"] == "bin"
+                and "panic" not in codegen and codegen.get("debuginfo", "0") == "0",
+                "unwind executable lost its Cargo panic or debug profile")
+        prefix = daemon_trace.read_bytes()
+        frozen_prefix(prefixes[-1]["bytes"], prefix)
+        owned = inspect_processes(trace_events(prefix, root), package, Path(daemon_argv[0]), daemon_argv, projects,
+                                  daemon=True, unwind_binary_start=artifact_start)
+        calls = owned["artifacts"][prefixes[-1]["artifact_count"]:]
+        require(all(Path(call["filename"]).name == "tcc" for call in calls), "unexpected unwind executable tool")
+        prefixes.append({"name": name + "-" + label, "bytes": prefix, "artifact_count": len(owned["artifacts"])})
+        records = [json.loads(p.read_bytes()) for p in set((root / "observations").glob("*/report.json")) - before]
+        digest = sha(application.read_bytes())
+        frame_ranges = None
+        if status:
+            require(not records and not observed["runs"] and not calls and digest == previous
+                    and b"L0110" in stdout + stderr and b"E0308" in original + original_errors,
+                    "invalid unwind executable did not preserve the last valid artifact and reject the type error")
+        else:
+            expected = b"drop:" + runtime + b"\ndrop:middle\ncaught\ndrop:outer"
+            require(len(observed["runs"]) == 1 and stdout.rstrip().endswith(expected)
+                    and original.rstrip().endswith(expected), "native unwind cleanup or catch result differs from pinned Rust")
+            require(len(records) == 1 and records[0]["schema"] == "lustr-public-executable-v1"
+                    and records[0]["owner_pid"] == owner[0], "unwind executable escaped native retention")
+            if label == "noop":
+                require(records[0]["checked_bodies"] == 0 and not calls and digest == previous,
+                        "unchanged unwind request did not retain its checked bodies and artifact")
+            elif label == "edit":
+                require(records[0]["checked_bodies"] == 1 and digest != previous,
+                        "unwind body edit did not update exactly the edited checked body and executable")
+            elif label == "repair":
+                require(digest == previous, "repair did not restore the edited unwind executable")
+            if label in {"cold", "edit"}:
+                segments, _, _ = commands.run(name + "-segments-" + label,
+                    [Path(shutil.which("readelf")), "-Wl", application], path, oracle_env)
+                frames, _, _ = commands.run(name + "-frames-" + label,
+                    [Path(shutil.which("readelf")), "-wf", application], path, oracle_env)
+                ranges = sorted((int(lo, 16), int(hi, 16)) for lo, hi in re.findall(rb"FDE .*pc=([a-f0-9]+)\.\.([a-f0-9]+)", frames))
+                require(b"GNU_EH_FRAME" in segments and ranges and all(lo < hi for lo, hi in ranges)
+                        and all(left[1] <= right[0] for left, right in zip(ranges, ranges[1:])),
+                        "linked unwind executable lacks real, distinct frame ranges")
+                frame_ranges = len(ranges)
+        previous = digest
+        result["history"].append({"case": label, "status": status, "executable_sha256": digest,
+                                  "checked_bodies": records[0]["checked_bodies"] if records else None,
+                                  "frame_ranges": frame_ranges})
+    result["passed"] = True
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--package", type=Path, required=True)
@@ -1645,6 +1756,7 @@ def main():
     delivered_handles = []
     owner = None
     prefixes = []
+    unwind_binary_start = None
     sealed = {}
     sealed_directories = {}
     try:
@@ -2452,6 +2564,9 @@ def main():
                                         "invocation": observed["compiles"][0]})
             seal_reports()
             save()
+        unwind_binary_start = prefixes[-1]["artifact_count"]
+        qualify_unwind_executable(root, package, sdk, commands, environment, oracle_env, projects,
+                                   daemon_argv, daemon_trace, prefixes, owner, report, unwind_binary_start)
         require([row["case"] for row in report["observed_history"]] == [row[0] for row in HISTORY],
                 "history was shortened, duplicated or reordered")
         require([row["case"] for row in report["original_consumers"]] == SUCCESS_CASES
@@ -2537,7 +2652,8 @@ def main():
                 parsed = trace_events(final, root)
                 require(parsed["root_pid"] == str(owner[0]) and parsed["exits"].get(str(owner[0])) in {0, "SIGTERM"},
                         "final process trace lacks actual owned termination")
-                observed = inspect_processes(parsed, package, package / "bin/lust-core", [str(package / "bin/lust-core"), "daemon"], projects, daemon=True, complete=True)
+                observed = inspect_processes(parsed, package, package / "bin/lust-core", [str(package / "bin/lust-core"), "daemon"], projects,
+                                             daemon=True, complete=True, unwind_binary_start=unwind_binary_start)
                 require(len(observed["artifacts"]) == prefixes[-1]["artifact_count"], "artifact work occurred after final response")
                 report["daemon_trace"] = {"sha256": sha(final), "bytes": len(final), "process_tree": parsed["parents"],
                     "exits": parsed["exits"], "attempts": parsed["attempts"],

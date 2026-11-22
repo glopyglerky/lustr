@@ -106,7 +106,8 @@ impl LibraryKey {
     pub fn target_kind(&self) -> &'static str { if self.is_executable() { "bin" } else { "lib" } }
 
     pub fn supports_link_profile(&self, panic_abort: bool) -> bool {
-        panic_abort || !self.is_executable() && self.external.is_none()
+        panic_abort || self.external.is_none()
+            && self.executable_dependencies.as_ref().is_none_or(Vec::is_empty)
     }
 
     pub fn matches_target_name(&self, target: &str) -> bool {

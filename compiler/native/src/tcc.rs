@@ -129,9 +129,16 @@ struct Tcc {
 
 impl Tcc {
     fn new(output: c_int, debug: bool) -> Result<Tcc, String> {
-        // Regular units can contain several functions. TinyCC writes
-        // overlapping .eh_frame FDEs in that case.
-        let options = if debug { c"-g -w -fno-asynchronous-unwind-tables" } else { c"-w -fno-asynchronous-unwind-tables" };
+        Self::with_frames(output, debug, false)
+    }
+
+    fn with_frames(output: c_int, debug: bool, unwind_frames: bool) -> Result<Tcc, String> {
+        let options = match (debug, unwind_frames) {
+            (false, false) => c"-w -fno-asynchronous-unwind-tables",
+            (true, false) => c"-g -w -fno-asynchronous-unwind-tables",
+            (false, true) => c"-w -fasynchronous-unwind-tables",
+            (true, true) => c"-g -w -fasynchronous-unwind-tables",
+        };
         Self::with_options(output, options)
     }
 
@@ -183,16 +190,16 @@ fn write_object(tcc: &Tcc, path: &Path, source: &str) -> Result<(), String> {
 
 /// Compile a checked scalar library object at a fresh staging path.
 pub fn compile_scalar_object(path: &Path, source: &str, unwind_tables: bool) -> Result<(), String> {
-    let tcc = if unwind_tables {
-        Tcc::with_options(TCC_OUTPUT_OBJ, c"-w -fasynchronous-unwind-tables")?
-    } else {
-        Tcc::new(TCC_OUTPUT_OBJ, false)?
-    };
+    let tcc = Tcc::with_frames(TCC_OUTPUT_OBJ, false, unwind_tables)?;
     write_object(&tcc, path, source)
 }
 
 /// Compiles `(object path, C source)` pairs.
 pub fn compile_units(units: &[(PathBuf, String)], debug: bool) -> Result<(), String> {
+    compile_units_with_frames(units, debug, false)
+}
+
+pub fn compile_units_with_frames(units: &[(PathBuf, String)], debug: bool, unwind_frames: bool) -> Result<(), String> {
     // An object may be a hard link to a disk cache entry (`Cache::unit_object`). tcc
     // replaces its output file, but the cache must not depend on that.
     for (obj, _) in units {
@@ -200,7 +207,7 @@ pub fn compile_units(units: &[(PathBuf, String)], debug: bool) -> Result<(), Str
     }
     if units.len() <= 2 {
         for (obj, src) in units {
-            let tcc = Tcc::new(TCC_OUTPUT_OBJ, debug)?;
+            let tcc = Tcc::with_frames(TCC_OUTPUT_OBJ, debug, unwind_frames)?;
             write_object(&tcc, obj, src)?;
         }
         return Ok(());
@@ -234,7 +241,11 @@ pub fn compile_units(units: &[(PathBuf, String)], debug: bool) -> Result<(), Str
                 // -B: the runtime dir, so tcc finds its headers wherever the package lives.
                 let mut b = std::ffi::OsString::from("-B");
                 b.push(lib);
-                cmd.arg(b).arg("-c").arg("-w").arg("-fno-asynchronous-unwind-tables");
+                cmd.arg(b).arg("-c").arg("-w").arg(if unwind_frames {
+                    "-fasynchronous-unwind-tables"
+                } else {
+                    "-fno-asynchronous-unwind-tables"
+                });
                 if debug {
                     cmd.arg("-g");
                 }
@@ -366,8 +377,8 @@ pub fn link_with_base(objs: &[PathBuf], dir: &Path, base: &str, out: &Path, debu
 }
 
 /// Links object files into a standalone executable at `out`.
-pub fn link(objs: &[PathBuf], out: &Path, debug: bool) -> Result<(), String> {
-    let tcc = Tcc::new(TCC_OUTPUT_EXE, debug)?;
+pub fn link(objs: &[PathBuf], out: &Path, debug: bool, unwind_frames: bool) -> Result<(), String> {
+    let tcc = Tcc::with_frames(TCC_OUTPUT_EXE, debug, unwind_frames)?;
     link_executable(&tcc, objs, out)
 }
 

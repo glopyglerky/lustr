@@ -5419,6 +5419,10 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
     // their objects, in the session and in the disk unit cache.
     let standalone = caches.output == super::session::OutputKind::Standalone;
     let retain_standalone = req.session.library.as_ref().is_some_and(|key| key.is_executable());
+    // Cargo's dependency-free unwind binaries use the existing native panic
+    // propagation. TinyCC's own linker also preserves its multi-body frame
+    // relocations, which cannot be passed to another linker in this form.
+    let unwind_frames = standalone && retain_standalone && !req.session.profile.panic_abort;
     let fresh_base = caches.objects != Some(req.debug) || !caches.persistent || (standalone && !retain_standalone);
     let cap_grown = n_slots > caches.table_cap;
     if fresh_base || cap_grown {
@@ -6508,7 +6512,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
         }
     }
     // Disk unit objects key on each unit's full C text (see cache.rs):
-    // tcc's output is a function of the C, the debug flag, and the
+    // tcc's output is a function of the C, emission options, and the
     // compiler, so a hit can never serve an object whose C differs. The
     // C is already built here for every unit in `todo`, so the key costs
     // one hash per unit.
@@ -6518,7 +6522,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
         return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
     }
     let keys: Vec<Option<String>> = match &disk_cache {
-        Some(cache) => par_map(&units, |(_, c)| Some(cache.unit_key(c, req.debug))),
+        Some(cache) => par_map(&units, |(_, c)| Some(cache.unit_key(c, req.debug, unwind_frames))),
         None => vec![None; units.len()],
     };
     // The units move into the miss list, and their C is freed before the
@@ -6537,7 +6541,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
             miss_keys.push(key);
         }
     }
-    if let Err(e) = crate::tcc::compile_units(&miss_units, req.debug) {
+    if let Err(e) = crate::tcc::compile_units_with_frames(&miss_units, req.debug, unwind_frames) {
         caches.objects = None;
         return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
     }
@@ -6566,7 +6570,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
             }
             objs.push(path);
         }
-        crate::tcc::link(&objs, &req.out, req.debug)
+        crate::tcc::link(&objs, &req.out, req.debug, unwind_frames)
     } else {
         // The base library lives in a persistent dir under a content name
         // (see `resolve_base_dir`): the executable loads it by absolute

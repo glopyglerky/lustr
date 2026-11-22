@@ -273,10 +273,10 @@ impl Cache {
         Cache { dir: dir.to_path_buf(), id: (1, 2) }
     }
 
-    /// The disk key of one C unit's object: compiler id, debug flag, and
-    /// the unit's C text. See the module docs.
-    pub fn unit_key(&self, c_text: &str, debug: bool) -> String {
-        let (a, b) = hash128(&[&self.id.0.to_le_bytes(), &self.id.1.to_le_bytes(), &[debug as u8], b"unit-v3", c_text.as_bytes()], 29);
+    /// The disk key binds the compiler, emission options and unit text.
+    pub fn unit_key(&self, c_text: &str, debug: bool, unwind_frames: bool) -> String {
+        let profile: &[u8] = if unwind_frames { b"unit-v3-async-unwind" } else { b"unit-v3" };
+        let (a, b) = hash128(&[&self.id.0.to_le_bytes(), &self.id.1.to_le_bytes(), &[debug as u8], profile, c_text.as_bytes()], 29);
         format!("{a:016x}{b:016x}")
     }
 
@@ -601,11 +601,12 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let cache = Cache { dir: dir.clone(), id: (3, 4) };
-        let base = cache.unit_key("int f(void);", false);
+        let base = cache.unit_key("int f(void);", false, false);
         // Any C change misses, even one only a slot number apart.
-        assert_ne!(base, cache.unit_key("int g(void);", false), "C text");
-        assert_ne!(base, cache.unit_key("int f(void);", true), "debug flag");
-        assert_ne!(base, Cache { dir: dir.clone(), id: (5, 4) }.unit_key("int f(void);", false), "compiler id");
+        assert_ne!(base, cache.unit_key("int g(void);", false, false), "C text");
+        assert_ne!(base, cache.unit_key("int f(void);", true, false), "debug flag");
+        assert_ne!(base, cache.unit_key("int f(void);", false, true), "unwind frames");
+        assert_ne!(base, Cache { dir: dir.clone(), id: (5, 4) }.unit_key("int f(void);", false, false), "compiler id");
         let obj = dir.join("made.o");
         std::fs::write(&obj, b"fake-object").unwrap();
         let dest = dir.join("dest.o");

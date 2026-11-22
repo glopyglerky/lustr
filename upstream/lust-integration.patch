@@ -7316,7 +7316,7 @@ index 0000000000000000000000000000000000000000..53d264109fa82bbac388bcf149b60f2d
 +    }
 +}
 diff --git a/src/driver/cache.rs b/src/driver/cache.rs
-index da28835400f894866adb85f436e2cbdf109797d7..7bf7b80e9fef80d6bff312bdc572dbf4940d5906 100644
+index da28835400f894866adb85f436e2cbdf109797d7..c2a8d6a10a776fba1df984670ff8b994b1633f06 100644
 --- a/src/driver/cache.rs
 +++ b/src/driver/cache.rs
 @@ -131,7 +131,7 @@ fn tcc_hash() -> (u64, u64) {
@@ -7349,6 +7349,21 @@ index da28835400f894866adb85f436e2cbdf109797d7..7bf7b80e9fef80d6bff312bdc572dbf4
      /// Opens the cache for `src_file`. None when turned off or the dir cannot be made.
      pub fn open(src_file: &Path) -> Option<Cache> {
          // A std or adapter source override: the compiler id does not cover that tree.
+@@ -267,10 +273,10 @@ impl Cache {
+         Cache { dir: dir.to_path_buf(), id: (1, 2) }
+     }
+ 
+-    /// The disk key of one C unit's object: compiler id, debug flag, and
+-    /// the unit's C text. See the module docs.
+-    pub fn unit_key(&self, c_text: &str, debug: bool) -> String {
+-        let (a, b) = hash128(&[&self.id.0.to_le_bytes(), &self.id.1.to_le_bytes(), &[debug as u8], b"unit-v3", c_text.as_bytes()], 29);
++    /// The disk key binds the compiler, emission options and unit text.
++    pub fn unit_key(&self, c_text: &str, debug: bool, unwind_frames: bool) -> String {
++        let profile: &[u8] = if unwind_frames { b"unit-v3-async-unwind" } else { b"unit-v3" };
++        let (a, b) = hash128(&[&self.id.0.to_le_bytes(), &self.id.1.to_le_bytes(), &[debug as u8], profile, c_text.as_bytes()], 29);
+         format!("{a:016x}{b:016x}")
+     }
+ 
 @@ -375,6 +381,11 @@ impl Cache {
      /// The caller gives the source bytes it read, so the file is read once per process.
      /// A stored `--timings` text never exists; a hit with timings gets one fresh line.
@@ -7395,7 +7410,24 @@ index da28835400f894866adb85f436e2cbdf109797d7..7bf7b80e9fef80d6bff312bdc572dbf4
              client: Default::default(),
          }
      }
-@@ -659,7 +672,7 @@ mod tests {
+@@ -588,11 +601,12 @@ mod tests {
+         let _ = std::fs::remove_dir_all(&dir);
+         std::fs::create_dir_all(&dir).unwrap();
+         let cache = Cache { dir: dir.clone(), id: (3, 4) };
+-        let base = cache.unit_key("int f(void);", false);
++        let base = cache.unit_key("int f(void);", false, false);
+         // Any C change misses, even one only a slot number apart.
+-        assert_ne!(base, cache.unit_key("int g(void);", false), "C text");
+-        assert_ne!(base, cache.unit_key("int f(void);", true), "debug flag");
+-        assert_ne!(base, Cache { dir: dir.clone(), id: (5, 4) }.unit_key("int f(void);", false), "compiler id");
++        assert_ne!(base, cache.unit_key("int g(void);", false, false), "C text");
++        assert_ne!(base, cache.unit_key("int f(void);", true, false), "debug flag");
++        assert_ne!(base, cache.unit_key("int f(void);", false, true), "unwind frames");
++        assert_ne!(base, Cache { dir: dir.clone(), id: (5, 4) }.unit_key("int f(void);", false, false), "compiler id");
+         let obj = dir.join("made.o");
+         std::fs::write(&obj, b"fake-object").unwrap();
+         let dest = dir.join("dest.o");
+@@ -659,7 +673,7 @@ mod tests {
  
      #[test]
      fn response_round_trips() {
@@ -7405,7 +7437,7 @@ index da28835400f894866adb85f436e2cbdf109797d7..7bf7b80e9fef80d6bff312bdc572dbf4
          assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
          assert!(decode_response(b"short").is_none());
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..0c8ac9906709b4324ec4c2ce7a92ae4b3abbc964 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f3df6c1ff73d115a654f4d6a19e1f46d90ebdd99 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
 @@ -59,6 +59,7 @@ fn expand_tokens(
@@ -8718,18 +8750,22 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..0c8ac9906709b4324ec4c2ce7a92ae4b
      // Nothing reads the IR after codegen. A one-shot build leaks it at exit
      // (`leak_at_exit`), but on a large program it is the largest block
      // alive at the peak (ts-rust's bins: about 2.4 GB of 9.4 GB, through
-@@ -4751,7 +5417,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4751,7 +5417,13 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // rebuilds and the base
      // relinks over the existing unit objects. Unrelated units keep
      // their objects, in the session and in the disk unit cache.
 -    let fresh_base = caches.objects != Some(req.debug) || !caches.persistent;
 +    let standalone = caches.output == super::session::OutputKind::Standalone;
 +    let retain_standalone = req.session.library.as_ref().is_some_and(|key| key.is_executable());
++    // Cargo's dependency-free unwind binaries use the existing native panic
++    // propagation. TinyCC's own linker also preserves its multi-body frame
++    // relocations, which cannot be passed to another linker in this form.
++    let unwind_frames = standalone && retain_standalone && !req.session.profile.panic_abort;
 +    let fresh_base = caches.objects != Some(req.debug) || !caches.persistent || (standalone && !retain_standalone);
      let cap_grown = n_slots > caches.table_cap;
      if fresh_base || cap_grown {
          caches.table_cap = n_slots * 2 + 64;
-@@ -4760,7 +5428,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4760,7 +5432,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          caches.base_units = groups.len();
      }
      let table_dirty = cap_grown || groups.len() != caches.base_units;
@@ -8740,7 +8776,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..0c8ac9906709b4324ec4c2ce7a92ae4b
      let dir = caches.obj_dir.clone();
      let base_obj = |u: usize| dir.join(format!("u{u}.o"));
      let overlay_obj = |u: usize| dir.join(format!("o{u}.o"));
-@@ -5807,6 +6477,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5807,6 +6481,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // this check keeps that a pin, not a hope.
      if let Some(run_args) = &req.run_args
          && !caches.persistent
@@ -8748,7 +8784,34 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..0c8ac9906709b4324ec4c2ce7a92ae4b
          && fresh_base
          && groups.len() == 1
          && !req.debug
-@@ -5883,9 +6554,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5837,7 +6512,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+         }
+     }
+     // Disk unit objects key on each unit's full C text (see cache.rs):
+-    // tcc's output is a function of the C, the debug flag, and the
++    // tcc's output is a function of the C, emission options, and the
+     // compiler, so a hit can never serve an object whose C differs. The
+     // C is already built here for every unit in `todo`, so the key costs
+     // one hash per unit.
+@@ -5847,7 +6522,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+         return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
+     }
+     let keys: Vec<Option<String>> = match &disk_cache {
+-        Some(cache) => par_map(&units, |(_, c)| Some(cache.unit_key(c, req.debug))),
++        Some(cache) => par_map(&units, |(_, c)| Some(cache.unit_key(c, req.debug, unwind_frames))),
+         None => vec![None; units.len()],
+     };
+     // The units move into the miss list, and their C is freed before the
+@@ -5866,7 +6541,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+             miss_keys.push(key);
+         }
+     }
+-    if let Err(e) = crate::tcc::compile_units(&miss_units, req.debug) {
++    if let Err(e) = crate::tcc::compile_units_with_frames(&miss_units, req.debug, unwind_frames) {
+         caches.objects = None;
+         return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
+     }
+@@ -5883,10 +6558,19 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      caches.objects = Some(req.debug);
      t.lap("tcc compile");
      let all_base: Vec<PathBuf> = [1, 2, 3, LOC_UNIT].into_iter().chain(link_fn_units.iter().copied()).map(base_obj).collect();
@@ -8756,6 +8819,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..0c8ac9906709b4324ec4c2ce7a92ae4b
 +    let linked = if standalone {
          let mut objs = vec![base_obj(0)];
          objs.extend(all_base);
+-        crate::tcc::link(&objs, &req.out, req.debug)
 +        // The imported provider supplied immutable snapshots, so a dependency
 +        // path changing after prepare cannot substitute code at emission.
 +        for (index, bytes) in imported_objects.iter().enumerate() {
@@ -8765,10 +8829,11 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..0c8ac9906709b4324ec4c2ce7a92ae4b
 +            }
 +            objs.push(path);
 +        }
-         crate::tcc::link(&objs, &req.out, req.debug)
++        crate::tcc::link(&objs, &req.out, req.debug, unwind_frames)
      } else {
          // The base library lives in a persistent dir under a content name
-@@ -5901,18 +6581,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+         // (see `resolve_base_dir`): the executable loads it by absolute
+@@ -5901,18 +6585,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
          let base = if rebuild_base {
              caches.base_gen += 1;
@@ -8809,7 +8874,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..0c8ac9906709b4324ec4c2ce7a92ae4b
                      install_base(&tmp, &base_dir.join(&soname))?;
                      if !caches.base_files.contains(&soname) {
                          caches.base_files.push_back(soname);
-@@ -5922,24 +6615,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5922,24 +6619,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              if built.is_err() {
                  let _ = std::fs::remove_file(&tmp);
              }
@@ -8841,7 +8906,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..0c8ac9906709b4324ec4c2ce7a92ae4b
              built
          } else {
              Ok(())
-@@ -5958,8 +6652,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5958,8 +6656,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // a small grace count while no known output file still references them. A binary the user
      // kept keeps its base; one that was overwritten or deleted does not. A running program
      // keeps its mapped copy after unlink.
@@ -8852,7 +8917,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..0c8ac9906709b4324ec4c2ce7a92ae4b
          if let Some(base_dir) = caches.base_dir.clone() {
              record_base_user(&base_dir, &soname, &req.out);
          }
-@@ -6058,6 +6752,66 @@ mod tests {
+@@ -6058,6 +6756,66 @@ mod tests {
          panic!("{}: still busy", bin.display())
      }
  
@@ -8919,7 +8984,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..0c8ac9906709b4324ec4c2ce7a92ae4b
      /// The base sweep never deletes a live owner's base (it may be a live
      /// session's current base, found by fuzz seed 7 multi when a guard
      /// session's first-build sweep deleted the warm session's base), but
-@@ -6417,10 +7171,547 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
+@@ -6417,10 +7175,547 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
              max_errors: 20,
              run_args: None,
              harness: false, cc: false,
@@ -17961,16 +18026,23 @@ index 74e6a71b9107da083ac052be5400a4bd06a7da0e..2332412671762d8e5efdc8b2e93826ab
  
  /// One marker: an index into `STD_FILES` with std's line and column, a
 diff --git a/src/tcc.rs b/src/tcc.rs
-index b978e5092190f63396af29c882284e1446de35d8..6df8012b7289411514231d79068ef7cf0e88b1ab 100644
+index b978e5092190f63396af29c882284e1446de35d8..c4f45d95a68d5faea47ebbe0d6246f77d7fc74fe 100644
 --- a/src/tcc.rs
 +++ b/src/tcc.rs
-@@ -129,12 +129,14 @@ struct Tcc {
+@@ -129,12 +129,21 @@ struct Tcc {
  
  impl Tcc {
      fn new(output: c_int, debug: bool) -> Result<Tcc, String> {
-+        // Regular units can contain several functions. TinyCC writes
-+        // overlapping .eh_frame FDEs in that case.
-+        let options = if debug { c"-g -w -fno-asynchronous-unwind-tables" } else { c"-w -fno-asynchronous-unwind-tables" };
++        Self::with_frames(output, debug, false)
++    }
++
++    fn with_frames(output: c_int, debug: bool, unwind_frames: bool) -> Result<Tcc, String> {
++        let options = match (debug, unwind_frames) {
++            (false, false) => c"-w -fno-asynchronous-unwind-tables",
++            (true, false) => c"-g -w -fno-asynchronous-unwind-tables",
++            (false, true) => c"-w -fasynchronous-unwind-tables",
++            (true, true) => c"-g -w -fasynchronous-unwind-tables",
++        };
 +        Self::with_options(output, options)
 +    }
 +
@@ -17984,7 +18056,7 @@ index b978e5092190f63396af29c882284e1446de35d8..6df8012b7289411514231d79068ef7cf
          // SAFETY: a fresh libtcc state; the error vector is boxed so its address is stable.
          unsafe {
              let s = tcc_new();
-@@ -144,7 +146,7 @@ impl Tcc {
+@@ -144,7 +153,7 @@ impl Tcc {
              let mut t = Tcc { s, errs: Box::default() };
              tcc_set_error_func(s, &mut *t.errs as *mut Vec<String> as *mut c_void, on_error);
              tcc_set_lib_path(s, lib.as_ptr());
@@ -17993,7 +18065,7 @@ index b978e5092190f63396af29c882284e1446de35d8..6df8012b7289411514231d79068ef7cf
              tcc_set_output_type(s, output);
              Ok(t)
          }
-@@ -165,6 +167,30 @@ fn cstr(p: &Path) -> CString {
+@@ -165,8 +174,32 @@ fn cstr(p: &Path) -> CString {
      CString::new(p.to_string_lossy().as_bytes()).expect("path contains NUL")
  }
  
@@ -18013,21 +18085,24 @@ index b978e5092190f63396af29c882284e1446de35d8..6df8012b7289411514231d79068ef7cf
 +
 +/// Compile a checked scalar library object at a fresh staging path.
 +pub fn compile_scalar_object(path: &Path, source: &str, unwind_tables: bool) -> Result<(), String> {
-+    let tcc = if unwind_tables {
-+        Tcc::with_options(TCC_OUTPUT_OBJ, c"-w -fasynchronous-unwind-tables")?
-+    } else {
-+        Tcc::new(TCC_OUTPUT_OBJ, false)?
-+    };
++    let tcc = Tcc::with_frames(TCC_OUTPUT_OBJ, false, unwind_tables)?;
 +    write_object(&tcc, path, source)
 +}
 +
  /// Compiles `(object path, C source)` pairs.
  pub fn compile_units(units: &[(PathBuf, String)], debug: bool) -> Result<(), String> {
++    compile_units_with_frames(units, debug, false)
++}
++
++pub fn compile_units_with_frames(units: &[(PathBuf, String)], debug: bool, unwind_frames: bool) -> Result<(), String> {
      // An object may be a hard link to a disk cache entry (`Cache::unit_object`). tcc
-@@ -175,16 +201,7 @@ pub fn compile_units(units: &[(PathBuf, String)], debug: bool) -> Result<(), Str
+     // replaces its output file, but the cache must not depend on that.
+     for (obj, _) in units {
+@@ -174,17 +207,8 @@ pub fn compile_units(units: &[(PathBuf, String)], debug: bool) -> Result<(), Str
+     }
      if units.len() <= 2 {
          for (obj, src) in units {
-             let tcc = Tcc::new(TCC_OUTPUT_OBJ, debug)?;
+-            let tcc = Tcc::new(TCC_OUTPUT_OBJ, debug)?;
 -            let c = CString::new(src.as_str()).map_err(|_| "generated C contains a NUL byte".to_string())?;
 -            // SAFETY: valid state and NUL-terminated strings that outlive the calls.
 -            unsafe {
@@ -18038,11 +18113,25 @@ index b978e5092190f63396af29c882284e1446de35d8..6df8012b7289411514231d79068ef7cf
 -                    return Err(tcc.fail("write an object file"));
 -                }
 -            }
++            let tcc = Tcc::with_frames(TCC_OUTPUT_OBJ, debug, unwind_frames)?;
 +            write_object(&tcc, obj, src)?;
          }
          return Ok(());
      }
-@@ -298,13 +315,35 @@ fn link_executable(tcc: &Tcc, objs: &[PathBuf], out: &Path) -> Result<(), String
+@@ -217,7 +241,11 @@ pub fn compile_units(units: &[(PathBuf, String)], debug: bool) -> Result<(), Str
+                 // -B: the runtime dir, so tcc finds its headers wherever the package lives.
+                 let mut b = std::ffi::OsString::from("-B");
+                 b.push(lib);
+-                cmd.arg(b).arg("-c").arg("-w").arg("-fno-asynchronous-unwind-tables");
++                cmd.arg(b).arg("-c").arg("-w").arg(if unwind_frames {
++                    "-fasynchronous-unwind-tables"
++                } else {
++                    "-fno-asynchronous-unwind-tables"
++                });
+                 if debug {
+                     cmd.arg("-g");
+                 }
+@@ -298,13 +326,35 @@ fn link_executable(tcc: &Tcc, objs: &[PathBuf], out: &Path) -> Result<(), String
      linked
  }
  
@@ -18081,7 +18170,7 @@ index b978e5092190f63396af29c882284e1446de35d8..6df8012b7289411514231d79068ef7cf
  /// The base name is versioned (for example `base-3`), so a rebuilt base never changes what an
  /// executable built earlier loads.
  pub fn link_with_base(objs: &[PathBuf], dir: &Path, base: &str, out: &Path, debug: bool) -> Result<(), String> {
-@@ -320,7 +359,7 @@ pub fn link_with_base(objs: &[PathBuf], dir: &Path, base: &str, out: &Path, debu
+@@ -320,15 +370,15 @@ pub fn link_with_base(objs: &[PathBuf], dir: &Path, base: &str, out: &Path, debu
          tcc_set_options(tcc.s, rpath.as_ptr());
          tcc_add_library_path(tcc.s, cstr(dir).as_ptr());
          if tcc_add_library(tcc.s, base.as_ptr()) != 0 {
@@ -18090,6 +18179,16 @@ index b978e5092190f63396af29c882284e1446de35d8..6df8012b7289411514231d79068ef7cf
          }
      }
      link_executable(&tcc, objs, out)
+ }
+ 
+ /// Links object files into a standalone executable at `out`.
+-pub fn link(objs: &[PathBuf], out: &Path, debug: bool) -> Result<(), String> {
+-    let tcc = Tcc::new(TCC_OUTPUT_EXE, debug)?;
++pub fn link(objs: &[PathBuf], out: &Path, debug: bool, unwind_frames: bool) -> Result<(), String> {
++    let tcc = Tcc::with_frames(TCC_OUTPUT_EXE, debug, unwind_frames)?;
+     link_executable(&tcc, objs, out)
+ }
+ 
 diff --git a/src/testrun.rs b/src/testrun.rs
 index 3395a8b4b850e5fc7e80ddb3e36cce0fa641671d..5edce806b12a6bfd26ff0674b38a3aa2faa8a4d6 100644
 --- a/src/testrun.rs
