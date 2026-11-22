@@ -882,7 +882,11 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
             || cmd == "build" && !session.profile.panic_abort || session.target_triple != library_contract::TARGET
             || debug || emit_c.is_some() || !run_args.is_empty()
             || !key.valid_output(&abs(&out), cmd == "check", library_options) { return None; }
-        session.krate.target_name = key.crate_name.clone();
+        if key.is_executable() {
+            if !key.matches_target_name(&session.krate.target_name) { return None; }
+        } else {
+            session.krate.target_name = key.crate_name.clone();
+        }
         session.krate.target_explicit = true;
         session.library = Some(key);
     }
@@ -1112,7 +1116,8 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
             library_options.force_warn_unused_crate_dependencies=match get_field(r)?.as_slice() {b"0"=>false,b"1"=>true,_=>return None};
             let library=LibraryKey{crate_name,metadata,extra_filename,source_path,working_directory,check_cfg,search_paths,external,executable_dependencies,sdk_receipt};
             if !library.valid() || !library.valid_output(&out, f[0] == "check", library_options) || library.source_path!=file
-                || target_triple!=library_contract::TARGET || target_kind!=library.target_kind() || !matches!(f[0], "build" | "check") {return None;}
+                || target_triple!=library_contract::TARGET || target_kind!=library.target_kind()
+                || !library.matches_target_name(&target_name) || !matches!(f[0], "build" | "check") {return None;}
             Some(library)
         },
         _ => return None,

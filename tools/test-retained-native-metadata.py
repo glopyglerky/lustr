@@ -39,7 +39,7 @@ INSERT = REORDER + STACK
 SIGNATURE = REORDER.replace(b"combine(left: u64, right: u64) -> u64 { left | right }",
                             b"combine(left: u64, right: u64, mask: u64) -> u64 { left ^ right ^ mask }")
 INVALID = REORDER.replace(b"{ value & 255u64 }", b"{ true }")
-TYPE_GAP = REORDER.replace(b"combine(left: u64, right: u64) -> u64", b"combine(left: u32, right: u32) -> u32")
+TYPE_GAP = REORDER.replace(b"combine(left: u64, right: u64) -> u64", b"combine(left: u16, right: u16) -> u16")
 REORDER_EDIT = REORDER.replace(b"value & 255u64", b"value & 511u64")
 CHECK_SECOND = REORDER_EDIT.replace(b"left | right", b"left ^ right")
 DROP_EDIT = CHECK_SECOND.replace(b"value & 511u64", b"value & 2047u64")
@@ -60,9 +60,9 @@ def case(name, source=REORDER, *, action="build", status=0, dirty=(), required=(
                 artifact_cache_reuse=artifact_cache_reuse, metadata_count=metadata_count, archive_count=archive_count)
 
 
-# These expected outcomes are part of the authored evaluator, not candidate
-# output. A valid u32 declaration is a known gap of this u64 metadata bridge;
-# its refusal is a negative control, never accepted compilation coverage.
+# These outcomes are declared before the candidate runs. A valid u16
+# signature requires narrow-integer ABI support beyond the native metadata
+# caller's linked scalar path.
 HISTORY = [
     case("cold", BASE, dirty=NAMES, required=NAMES, checked=NAMES, check_required=NAMES, compiled_count=3),
     case("no-op", BASE, noop=True, unchanged=NAMES),
@@ -1086,7 +1086,8 @@ def run_campaign(args, root, report, commands):
                 native_type_rejection(result, source, expected)
                 original_negative(commands, rustc, env, output, "original-invalid-body", expected["source"], "E0308", artifact=False)
             elif expected["status"] == 4:
-                require(result.get("phase") == "native-completion" and "u64" in result.get("error", ""),
+                require(result.get("phase") == "native-completion"
+                        and "unrepresented integer ABI or non-integer signature" in result.get("error", ""),
                         "valid type gap became a native rejection or an unrelated operational failure")
                 valid = output / "independent-valid-source.rs"
                 valid.write_bytes(expected["source"])
@@ -1160,7 +1161,7 @@ def main():
               "expected_consumers": EXPECTED_CONSUMERS, "expected_consumer_count": EXPECTED_CONSUMER_COUNT,
               "expected_runtime_assertions": EXPECTED_ASSERTION_TOTAL,
               "unqualified_scope": ["public installed compiler route", "arbitrary metadata declarations and runtime ABI",
-                                    "u32 type-gap control is unintegrated compilation", "cross-target emission", "performance"]}
+                                    "u16 linked ABI remains unintegrated", "cross-target emission", "performance"]}
     commands = Commands(root)
     try:
         run_campaign(args, root, report, commands)

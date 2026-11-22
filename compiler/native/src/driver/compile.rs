@@ -2203,7 +2203,7 @@ fn resolved_setup(
                 _ => false,
             }};
             if !unit.target.kind.iter().any(|kind| kind == library.target_kind() || !library.is_executable() && kind == "rlib")
-                || unit.target.name != library.crate_name || !matched_dependencies
+                || unit.target.name != key.krate.target_name || !matched_dependencies
                 // Cargo metadata names the actual script target in every
                 // build mode; UnitInfo's planned script is product-only.
                 || unit.package.targets.iter().any(|target|target.kind.iter().any(|kind|kind=="custom-build"))

@@ -1401,9 +1401,10 @@ def qualify_executable_extern_uses(root, package, sdk, commands, environment, or
 def qualify_integer_signatures(root, package, sdk, commands, environment, oracle_env, projects,
                                daemon_argv, daemon_trace, prefixes, owner, report):
     crate = "typed_leaves"
-    project = project_fixture(root / "projects", "integers", crate, "src/lib.rs", crate, explicit_strip=False)
+    target_name = "typed-leaves"
+    project = project_fixture(root / "projects", "integers", target_name, "src/lib.rs", crate, explicit_strip=False)
     projects["integers"] = project
-    project["binary_target"] = crate
+    project["binary_target"] = target_name
     producer = b"""#![no_std]
 pub fn signed_narrow(x: i32) -> i32 { x ^ -7 }
 pub fn signed_wide(x: i64) -> i64 { x ^ -7 }
@@ -1428,16 +1429,19 @@ pub fn unsigned_word(x: usize) -> usize { x ^ 7 }
 }
 """)
     build, target = project["build"], project["target"]
-    application = target / "debug" / crate
+    application = target / "debug" / target_name
     env = dict(environment, CARGO_BUILD_BUILD_DIR=str(build), CARGO_TARGET_DIR=str(target))
     before = set((root / "observations").glob("*/report.json"))
-    argv = [package / "bin/cargo", "run", "--bin", crate, "--offline", "--message-format=json"]
+    argv = [package / "bin/cargo", "run", "--bin", target_name, "--offline", "--message-format=json"]
     stdout, _, trace = commands.run("integer-signatures-native", argv, project["root"], env, traced=True)
     observed = inspect_processes(trace_events(trace.read_bytes(), project["root"], application=application),
         package, argv[0], argv, projects, application=application)
     require(len(observed["compiles"]) == 2 and len(observed["runs"]) == 1, "integer executable did not use one library and one binary")
     library = parse_compile(observed["compiles"][0])
+    binary = parse_compile(observed["compiles"][-1], executable=True)
     require(library["codegen"].get("strip") == "debuginfo", "ordinary Cargo debug-strip request was not exercised")
+    require(binary["--crate-name"] == crate and observed["compiles"][-1]["environment"].get("CARGO_BIN_NAME") == target_name,
+            "Cargo target name and Rust crate identity were not exercised separately")
     records = [json.loads(path.read_bytes()) for path in set((root / "observations").glob("*/report.json")) - before]
     libraries = [record for record in records if record["schema"] == "lustr-public-scalar-library-v1"]
     require(len(libraries) == 1 and libraries[0]["owner_pid"] == owner[0], "integer library escaped native retention")
@@ -1467,13 +1471,14 @@ pub fn unsigned_word(x: usize) -> usize { x ^ 7 }
 def qualify_default_executable_check(root, package, sdk, commands, environment, oracle_env, projects,
                                      daemon_argv, daemon_trace, prefixes, owner, report):
     crate = "default_check"
+    target_name = "default-check"
     project_root = root / "projects" / "default-check"
     (project_root / "src").mkdir(parents=True)
     manifest, library = project_root / "Cargo.toml", project_root / "src/lib.rs"
     source = project_root / "src/main.rs"
-    write_new(manifest, '[package]\nname="default_check"\nversion="0.1.0"\nedition="2024"\n')
+    write_new(manifest, f'[package]\nname="{target_name}"\nversion="0.1.0"\nedition="2024"\n')
     write_new(library, b"#![no_std]\npub fn mask(value: u32) -> u32 { value & 255 }\n")
-    projects[crate] = {"manifest": manifest, "binary_target": crate}
+    projects[crate] = {"manifest": manifest, "binary_target": target_name}
     target, build = project_root / "target", project_root / "build"
     env = dict(environment, CARGO_TARGET_DIR=str(target), CARGO_BUILD_BUILD_DIR=str(build))
     original_env = dict(oracle_env, RUSTC=str(sdk / "bin/rustc"), CARGO_HOME=environment["CARGO_HOME"],
@@ -1481,7 +1486,7 @@ def qualify_default_executable_check(root, package, sdk, commands, environment, 
                         CARGO_BUILD_BUILD_DIR=str(project_root / "original-build"))
     env.pop("CARGO_INCREMENTAL", None)
     original_env.pop("CARGO_INCREMENTAL", None)
-    flags = ["check", "--bin", crate, "--offline", "--message-format=json"]
+    flags = ["check", "--offline", "--message-format=json"]
     argv = [package / "bin/cargo", *flags]
     result = {"passed": False, "history": []}
     report["cargo_default_executable_check"] = result
@@ -1504,7 +1509,7 @@ def qualify_default_executable_check(root, package, sdk, commands, environment, 
         frozen_prefix(prefixes[-1]["bytes"], prefix)
         owned = inspect_processes(trace_events(prefix, root), package, Path(daemon_argv[0]), daemon_argv, projects, daemon=True)
         require(len(owned["artifacts"]) == prefixes[-1]["artifact_count"] and not list(build.rglob("*.rlib"))
-                and not (target / "debug" / crate).exists(), "default Cargo check emitted link artifacts")
+                and not (target / "debug" / target_name).exists(), "default Cargo check emitted link artifacts")
         prefixes.append({"name": "default-check-" + label, "bytes": prefix, "artifact_count": len(owned["artifacts"])})
         records = [json.loads(path.read_bytes()) for path in set((root / "observations").glob("*/report.json")) - before]
         binaries = [record for record in records if record["schema"] == "lustr-public-executable-v1"]

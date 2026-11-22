@@ -132,7 +132,11 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     let output = out_dir.join(if check { context.metadata_name() } else if binary { context.binary_name() } else { context.archive_name() });
     let mut native = vec![(if check { "check" } else { "build" }).into(),source,"-o".into(),output.to_str()?.into(),
         "--target".into(),TARGET.into(),"-C".into(),panic.into()];
-    if binary { native.extend(["--bin".into(), context.crate_name.clone()]); }
+    if binary {
+        let target = std::env::var("CARGO_BIN_NAME").unwrap_or_else(|_| context.crate_name.clone());
+        if !context.matches_target_name(&target) { return None; }
+        native.extend(["--bin".into(), target]);
+    }
     else { native.push("--lib".into()); }
     // Rust's opt-level=0 default enables these flags. Explicit values win;
     // Cargo's manifest profile is never substituted for its actual invocation.

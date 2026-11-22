@@ -1,9 +1,8 @@
 # Public retained scalar-library integration
 
-Status: authored; the latest published public campaign failed. The corrected
-source requires its own hosted construction and qualification.
-This is a bounded public library path. It does not establish full Rust coverage,
-release admission, or speed relative to stock Lust or Rust.
+This path covers the compiler requests described below. Current hosted
+qualification is tracked on PR #33. Full Rust coverage, release admission,
+and equivalent complete-work performance remain open.
 
 ## Compiler and request ownership
 
@@ -18,6 +17,8 @@ overflow-checks/debug-assertions at O0 are retained; explicitly supplied values
 are passed through. The actual crate name, metadata disambiguator, extra filename,
 original absolute source path, working directory, check-cfg inputs, dependency
 search paths and fixed installed SDK identity join the native session context.
+Executable requests retain the actual Cargo target name, including hyphens,
+and validate it against the Rust crate name used for compiler artifacts.
 Output paths remain per-request inputs. Every request checks its actual
 RUSTC_FORCE_RUSTC_VERSION environment: absent or the pinned version is represented;
 an empty or different override is refused before native preparation.
