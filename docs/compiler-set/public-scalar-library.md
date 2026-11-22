@@ -81,9 +81,19 @@ consumer archive retains calls to the actual provider's Rust symbol. Lustr
 checks these relocations before publishing, and the evaluator links and runs a
 third executable against both archives.
 
-Native final executable linking, multi-dependency and transitive import
-resolution, other crate types, additional profiles and wider semantic
-completion remain open.
+An ordinary `cargo run --bin` request can also build a hosted scalar
+executable against the two native libraries. The retained owner associates
+each actual `.rlib` with its matching full `.rmeta`, checks the dependency
+identities and the objects named by the archive, then installs their scalar
+declarations in Lust's resolver. The existing native build links the supplied
+objects into the executable delivered to Cargo. Unchanged requests reuse the
+published executable bytes. A body edit updates changed objects and relinks
+with the retained objects. The executable gate compares cold, unchanged,
+edited, invalid, repaired and dependency-edited requests with pinned Cargo
+and Rust, including the runtime output.
+
+General Cargo dependency graphs, executable metadata-only checks, additional
+crate types and profiles, and wider semantic completion remain open.
 
 ## Metadata options and retained native state
 

@@ -915,7 +915,7 @@ fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Re
     if req.session.library.is_some() {
         entry.served+=1;
         if entry.recompute_next {entry.recompute_next=false;replace_session(entry,&req.session);}
-        if req.session.library.as_ref().is_some_and(|key| key.external.is_some())
+        if req.session.library.as_ref().is_some_and(|key| key.external.is_some() || key.is_executable())
             && entry.library.as_ref().is_some_and(|owner| owner.as_ref().ok().is_none_or(|owner| !owner.import_is_current(req))) {
             replace_session(entry, &req.session);
         }

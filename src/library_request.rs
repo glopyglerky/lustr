@@ -1,6 +1,6 @@
 //! Parse the actual Rust compiler request used by the pinned Cargo leaf unit.
 //! Unsupported options remain refusals; this adapter never reads Rust source.
-use crate::{Native, library_contract::{ExternMetadata, LibraryKey, LibraryOptions, SDK_RECEIPT, TARGET}};
+use crate::{Native, library_contract::{ExternMetadata, LibraryKey, LibraryOptions, LinkExtern, SDK_RECEIPT, TARGET}};
 use std::{collections::{BTreeMap,BTreeSet}, ffi::OsString, path::PathBuf};
 
 pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
@@ -16,7 +16,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     let mut json = None;
     let mut check_cfg = Vec::new();
     let mut search_paths = Vec::new();
-    let mut external = None;
+    let mut externs = Vec::new();
     let mut codegen = BTreeMap::new();
     let mut options = LibraryOptions::default();
     let mut i = 0;
@@ -40,8 +40,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
         else if arg == "--json" || arg.starts_with("--json=") { unique(&mut json,"--json")?; }
         else if arg == "--check-cfg" || arg.starts_with("--check-cfg=") { check_cfg.push(value("--check-cfg")?.to_owned()); }
         else if arg == "--extern" || arg.starts_with("--extern=") {
-            if external.is_some() { return None; }
-            external = Some(ExternMetadata::parse(value("--extern")?)?);
+            externs.push(value("--extern")?);
         }
         else if arg == "-L" || arg.starts_with("-L") {
             let value = if arg == "-L" { i += 1; args.get(i)?.to_str()? } else { &arg[2..] };
@@ -65,16 +64,18 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
         else { return None; }
         i += 1;
     }
-    if !matches!(kind.as_deref(), Some("lib" | "rlib")) || edition.as_deref() != Some("2024")
+    let binary = kind.as_deref() == Some("bin");
+    if !matches!(kind.as_deref(), Some("bin" | "lib" | "rlib")) || edition.as_deref() != Some("2024")
         || target.as_deref().is_some_and(|v| v != TARGET) { return None; }
     let emit = emits?;
     let fields = emit.split(',').collect::<Vec<_>>();
     let check = match (fields.len(), fields.into_iter().collect::<BTreeSet<_>>()) {
-        (2, fields) if fields == BTreeSet::from(["dep-info", "metadata"]) => true,
-        (3, fields) if fields == BTreeSet::from(["dep-info", "metadata", "link"]) => false,
+        (2, fields) if binary && fields == BTreeSet::from(["dep-info", "link"]) => false,
+        (2, fields) if !binary && fields == BTreeSet::from(["dep-info", "metadata"]) => true,
+        (3, fields) if !binary && fields == BTreeSet::from(["dep-info", "metadata", "link"]) => false,
         _ => return None,
     };
-    if check && options.embed_metadata.is_some() { return None; }
+    if (check || binary) && options.embed_metadata.is_some() { return None; }
     let cargo_json = match error_format.as_deref() {
         None | Some("human") if json.is_none() => false,
         Some("json") => {
@@ -102,14 +103,26 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     }
     let source = source?;
     let source_path = std::path::absolute(&source).ok()?;
+    let (external, executable_dependencies) = if binary {
+        (None, Some(link_externs(externs)?))
+    } else {
+        match externs.as_slice() {
+            [] => (None, None),
+            [value] => (Some(ExternMetadata::parse(value)?), None),
+            _ => return None,
+        }
+    };
     let context = LibraryKey { crate_name:name?, metadata, extra_filename, source_path,
-        working_directory: std::env::current_dir().ok()?, check_cfg, search_paths, external, sdk_receipt:SDK_RECEIPT.into() };
+        working_directory: std::env::current_dir().ok()?, check_cfg, search_paths, external, executable_dependencies,
+        sdk_receipt:SDK_RECEIPT.into() };
     if !context.valid() { return None; }
     if std::env::var("CARGO_CRATE_NAME").is_ok_and(|v|v != context.crate_name) { return None; }
     let out_dir = std::path::absolute(out_dir?).ok()?;
-    let output = out_dir.join(if check { context.metadata_name() } else { context.archive_name() });
-    let mut native = vec![(if check { "check" } else { "build" }).into(),source,"--lib".into(),"-o".into(),output.to_str()?.into(),
+    let output = out_dir.join(if binary { context.binary_name() } else if check { context.metadata_name() } else { context.archive_name() });
+    let mut native = vec![(if check { "check" } else { "build" }).into(),source,"-o".into(),output.to_str()?.into(),
         "--target".into(),TARGET.into(),"-C".into(),"panic=abort".into()];
+    if binary { native.extend(["--bin".into(), context.crate_name.clone()]); }
+    else { native.push("--lib".into()); }
     // Rust's opt-level=0 default enables these flags. Explicit values win;
     // Cargo's manifest profile is never substituted for its actual invocation.
     for key in ["overflow-checks","debug-assertions"] {
@@ -136,5 +149,26 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     if let Some(dependency) = context.external {
         native.extend(["--lustr-library-extern-metadata".into(), format!("{}={}", dependency.alias, dependency.artifact.to_str()?)]);
     }
+    if let Some(dependencies) = context.executable_dependencies {
+        native.push("--lustr-executable-artifacts".into());
+        for link in dependencies {
+            native.extend(["--lustr-executable-extern".into(),
+                format!("{}={}", link.metadata.alias, link.metadata.artifact.to_str()?), link.archive.to_str()?.into()]);
+        }
+    }
     Some(Native {args:native,output})
+}
+
+fn link_externs(arguments: Vec<&str>) -> Option<Vec<LinkExtern>> {
+    let mut pairs = BTreeMap::<&str, (Option<ExternMetadata>, Option<PathBuf>)>::new();
+    for argument in arguments {
+        let (alias, path) = argument.split_once('=')?;
+        let (metadata, archive) = pairs.entry(alias).or_default();
+        match PathBuf::from(path).extension()?.to_str()? {
+            "rmeta" if metadata.is_none() => *metadata = Some(ExternMetadata::parse(argument)?),
+            "rlib" if archive.is_none() => *archive = Some(std::path::absolute(path).ok()?),
+            _ => return None,
+        }
+    }
+    pairs.into_values().map(|(metadata, archive)| Some(LinkExtern { metadata: metadata?, archive: archive? })).collect()
 }

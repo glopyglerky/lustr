@@ -112,8 +112,12 @@ signature, and emitted metadata that the original Rust compiler consumed in
 a third crate. Hosted evidence is bound separately to its exact source.
 The local dependent-library build passes cold linking, unchanged archive reuse
 and an edited provider. The independent executable completed 131,080 runtime
-assertions against the genuine native archives. Lustr final executable linking
-and wider Rust and Cargo coverage remain open.
+assertions against the genuine native archives. The ordinary `cargo run` path
+also passes on the Linux x64 scalar project, including the unmodified cold
+build, an unchanged request, body edit, type error, repair and provider edit.
+The body edit visits one body and changes two of six native object
+generations. The unchanged request reuses the executable with zero body
+checks. Wider Rust and Cargo coverage remain open.
 
 Done when unchanged mixed programs and real downstream Cargo crates consume
 valid artifacts. Every obligation has one owner and every required instance is

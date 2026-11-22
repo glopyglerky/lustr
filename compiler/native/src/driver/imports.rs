@@ -34,6 +34,7 @@ pub trait Emission: Send {
 pub trait Definitions {
     /// Name decoded from an artifact supplied for an actual Cargo unit.
     fn cargo_crate_name(&self) -> Option<&str> { None }
+    fn cargo_extern_matches(&self, _alias: &str, _name: &str) -> bool { false }
     fn mount(&self, tables: &mut ResolvedTables, interner: &Interner) -> Result<(), Diag>;
     fn install(&self, program: &mut Program) -> Result<(), Vec<Diag>>;
     /// Validate the installed semantic facts without executing an emitter.

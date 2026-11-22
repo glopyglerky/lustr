@@ -483,7 +483,8 @@ impl Session {
     pub fn new(obj_dir: PathBuf, persistent: bool, key: SessionKey) -> Session {
         let interner = Interner::default();
         let known = Known::new(&interner);
-        let library_mode = key.library.is_some();
+        let artifact_mode = key.library.is_some();
+        let library_mode = key.library.as_ref().is_some_and(|key| !key.is_executable());
         Session {
             key,
             front: Front {
@@ -583,7 +584,7 @@ impl Session {
                 obj_dir,
                 objects: None,
                 persistent,
-                output: if persistent && !library_mode { OutputKind::SessionImage } else { OutputKind::Standalone },
+                output: if persistent && !artifact_mode { OutputKind::SessionImage } else { OutputKind::Standalone },
                 leak_at_exit: false,
                 image_one_shot: false,
                 overlays: Default::default(),
@@ -592,7 +593,7 @@ impl Session {
             },
             std_cache: None,
             disk_cache: None,
-            cache_tried: library_mode,
+            cache_tried: artifact_mode,
             imported_request: false,
         }
     }

@@ -57,6 +57,21 @@ class ProcessEvidence(unittest.TestCase):
         inspected = campaign.inspect_processes(parsed, package, Path(cargo), argv, {})
         self.assertEqual([row["pid"] for row in inspected["compiles"]], ["11"])
 
+    def test_relative_application_is_bound_to_cargo_root_and_cwd(self):
+        package = self.package_fixture()
+        cargo = str(package / "bin/cargo")
+        app = package / "target/debug/app"
+        argv = [cargo, "run"]
+        start = exec_line(10, cargo, argv)
+        run = exec_line(10, "target/debug/app", ["target/debug/app"])
+        data = (start + run + "10 +++ exited with 0 +++\n").encode()
+        parsed = campaign.trace_events(data, package, application=app)
+        self.assertEqual(len(campaign.inspect_processes(parsed, package, Path(cargo), argv, {}, application=app)["runs"]), 1)
+        with self.assertRaisesRegex(AssertionError, "unbound relative executable"):
+            campaign.trace_events(data, package / "different-directory", application=app)
+        with self.assertRaisesRegex(AssertionError, "unbound relative executable"):
+            campaign.trace_events(data.replace(b"10 execve(\"target", b"11 execve(\"target"), package, application=app)
+
     def test_direct_root_does_not_hide_an_extra_compiler(self):
         package = self.package_fixture()
         compiler = str(package / "bin/rustc")

@@ -98,7 +98,7 @@ def process_identity(pid, executable):
         return None
 
 
-def trace_events(data, cwd):
+def trace_events(data, cwd, *, application=None):
     """Parse complete observed process events; shortened or split tails fail.
 
     Calls are ordered by their entry, so a child running before its parent's
@@ -203,7 +203,10 @@ def trace_events(data, cwd):
             key, value = value.split("=", 1)
             require(key not in env, "duplicate environment key")
             env[key] = value
-        require(Path(filename).is_absolute(), "unbound relative executable")
+        require(Path(filename).is_absolute() or (
+            application is not None and pid == root_pid and argv == [filename]
+            and (Path(directories[pid]) / filename).resolve() == application.resolve()
+        ), "unbound relative executable")
         success = result == "0"
         require(success or re.fullmatch(r"-1 [A-Z][A-Z0-9_]* \([^\n]*\)", result) is not None,
                 "unparsed executable result")
@@ -221,7 +224,7 @@ def frozen_prefix(previous, current):
     require(not current or current.endswith(b"\n"), "response trace prefix is incomplete")
 
 
-def parse_compile(attempt):
+def parse_compile(attempt, *, executable=False):
     args = attempt["argv"][1:]
     result = {"codegen": {}, "unstable": {}, "check_cfg": [], "search_dirs": []}
     position = 0
@@ -253,6 +256,8 @@ def parse_compile(attempt):
             value = value if equal else next_value()
             if flag == "--check-cfg":
                 result["check_cfg"].append(value)
+            elif flag == "--extern" and executable:
+                result.setdefault(flag, []).append(value)
             else:
                 require(flag not in result, "duplicate actual compiler flag")
                 result[flag] = value
@@ -330,7 +335,7 @@ def information_query(argv):
     return args == standard or args == standard[:4] + ["--target", TARGET] + standard[4:]
 
 
-def inspect_processes(parsed, package, expected_root, root_argv, projects, *, daemon=False, complete=None):
+def inspect_processes(parsed, package, expected_root, root_argv, projects, *, daemon=False, complete=None, application=None):
     """Classify exact product/query/planning executables, never compiler names alone."""
     if complete is None:
         complete = not daemon
@@ -339,11 +344,12 @@ def inspect_processes(parsed, package, expected_root, root_argv, projects, *, da
     cargo = (package / "bin/cargo").resolve()
     llvm = package / "lib/rustlib" / TARGET / "bin"
     tools = {(llvm / name).resolve(): name for name in ("llvm-ar", "llvm-objcopy")}
+    tcc = package / "lib/lust/tcc/bin/tcc"
     hashes = {Path(shutil.which("sha256sum")).resolve()}
     actual = parsed["attempts"]
     require(actual[0]["filename"] == str(expected_root) and actual[0]["argv"] == list(map(str, root_argv))
             and actual[0]["succeeded"], "trace initial execution differs from the actual requested command")
-    compiles, artifacts, plans = [], [], []
+    compiles, artifacts, plans, runs = [], [], [], []
     manifests = {str(row["manifest"]) for row in projects.values()}
     for index, attempt in enumerate(actual):
         path = Path(attempt["filename"])
@@ -391,14 +397,20 @@ def inspect_processes(parsed, package, expected_root, root_argv, projects, *, da
                 require(args[args.index("--format-version") + 1] == "1", "nested Cargo metadata format differs")
             else:
                 require((args and args[0] in {"build", "check"} and args[1:4] == ["--unit-graph", "-Z", "unstable-options"])
-                        and "--lib" in args and "--package" in args,
+                        and ("--lib" in args or "--bin" in args) and "--package" in args,
                         "product nested Cargo attempted compilation or an unrepresented operation")
-                allowed = {"--manifest-path", "--package", "--lib", "--offline", "--locked", "--no-default-features", "--target"}
+                allowed = {"--manifest-path", "--package", "--lib", "--bin", "--offline", "--locked", "--no-default-features", "--target"}
+                if "--bin" in args:
+                    manifest = args[args.index("--manifest-path") + 1]
+                    name = args[args.index("--bin") + 1]
+                    require("--lib" not in args and any(str(row["manifest"]) == manifest
+                            and row.get("binary_target") == name for row in projects.values()),
+                            "nested binary unit planning selected another target")
                 i = 4
                 while i < len(args):
                     flag = args[i]
                     require(flag in allowed, "nested unit-graph command changed its selected unit")
-                    i += 2 if flag in {"--manifest-path", "--package", "--target"} else 1
+                    i += 2 if flag in {"--manifest-path", "--package", "--target", "--bin"} else 1
             require(attempt["environment"].get("RUSTC") == str(package / "bin/lustr")
                     and not attempt["environment"].get("RUSTC_WRAPPER")
                     and not attempt["environment"].get("RUSTC_WORKSPACE_WRAPPER"),
@@ -410,9 +422,25 @@ def inspect_processes(parsed, package, expected_root, root_argv, projects, *, da
         elif resolved in tools:
             require(daemon, "artifact work escaped the retained native owner")
             artifacts.append(attempt)
+        elif path == tcc and daemon:
+            scratch = Path(parsed["attempts"][0]["environment"]["TMPDIR"]) / ("lust-daemon-" + parsed["root_pid"])
+            require(len(argv) == 8 and argv[1:6] == ["-B" + str(package / "lib/lust/tcc/lib/tcc"),
+                    "-c", "-w", "-fno-asynchronous-unwind-tables", "-o"],
+                    "unexpected native C compiler options")
+            c_source, obj = Path(argv[-1]), Path(argv[-2])
+            require(c_source.is_absolute() and c_source == obj.with_suffix(".c")
+                    and obj.suffix == ".o" and obj.parent.parent == scratch
+                    and re.fullmatch(r"[0-9]+(?:r[0-9]+)?", obj.parent.name)
+                    and re.fullmatch(r"u[0-9]+\.o", obj.name),
+                    "native C compiler left its retained per-unit object inputs")
+            artifacts.append(attempt)
+        elif (not daemon and application is not None and
+              (Path(attempt["cwd"]) / path).resolve() == application.resolve() and argv == [str(path)]):
+            runs.append(attempt)
         else:
             raise AssertionError("undeclared product executable: " + str(path))
-        require(attempt["pid"] in parsed["parents"], "child execution has no observed process ancestry")
+        require(attempt["pid"] in parsed["parents"] or attempt in runs and attempt["pid"] == parsed["root_pid"],
+                "child execution has no observed process ancestry")
     # Every finite child must actually exit successfully. The public compiler
     # may report a declared source/refusal error; its status is checked by caller.
     for attempt in actual[1:]:
@@ -420,7 +448,7 @@ def inspect_processes(parsed, package, expected_root, root_argv, projects, *, da
             status = parsed["exits"].get(attempt["pid"])
             require(status == 0 or (not complete and status is None),
                     "query/planning/artifact child exit was missing or failed")
-    return {"compiles": compiles, "artifacts": artifacts, "plans": plans}
+    return {"compiles": compiles, "artifacts": artifacts, "plans": plans, "runs": runs}
 
 
 def diagnostic(messages, source, text, code, *, tagged=True):
@@ -1095,6 +1123,112 @@ def qualify_dependency_links(root, package, sdk, commands, environment, oracle_e
     result["passed"] = True
 
 
+def qualify_executable(root, package, sdk, commands, environment, oracle_env, projects, owner,
+                       daemon_trace, daemon_argv, prefixes, report):
+    consumer, provider = projects["consumer"], projects["provider"]
+    consumer["binary_target"] = "consumer"
+    source = consumer["root"] / "src/main.rs"
+    target = consumer["root"] / "binary-target"
+    build = consumer["root"] / "binary-build"
+    application = target / "debug/consumer"
+    env = dict(environment, CARGO_TARGET_DIR=str(target), CARGO_BUILD_BUILD_DIR=str(build))
+    independent = dict(oracle_env, CARGO_HOME=environment["CARGO_HOME"],
+                       CARGO_TARGET_DIR=str(consumer["root"] / "binary-oracle-target"),
+                       CARGO_BUILD_BUILD_DIR=str(consumer["root"] / "binary-oracle-build"), RUSTC=str(sdk / "bin/rustc"))
+    flags = ["run", "--bin", "consumer", "--offline", "--message-format=json"]
+    argv = [package / "bin/cargo", *flags]
+    cases = [
+        ("cold", b"255", 31, 31, 3, False),
+        ("noop", b"255", None, 31, 1, True),
+        ("edit", b"49", None, 17, 1, False),
+        ("invalid", b"false", None, None, 1, None),
+        ("repair", b"49", None, 17, 1, True),
+        ("provider-edit", None, 63, 49, 3, False),
+    ]
+    result = {"passed": False, "history": []}
+    report["cargo_executable"] = result
+    unit_directory, previous_units = None, {}
+    for label, arg, mask, value, request_count, reused in cases:
+        if arg is not None:
+            source.write_bytes(b'fn main() { println!("{}", consumer::call(' + arg + b')); }\n')
+        if mask is not None:
+            provider["source"].write_text(f"#![no_std]\npub fn mask(x: u64) -> u64 {{ x & {mask} }}\n")
+        status = 0 if value is not None else 101
+        before = set((root / "observations").glob("*/report.json"))
+        stdout, stderr, trace = commands.run("cargo-executable-" + label, argv, consumer["root"], env, expected=status, traced=True)
+        records = sorted(
+            (json.loads(path.read_text()) for path in set((root / "observations").glob("*/report.json")) - before
+             if path.parent.name.startswith("request-")), key=lambda row: row["request_index"])
+        executable_reports = [json.loads(path.read_text()) for path in set((root / "observations").glob("*/report.json")) - before
+                              if path.parent.name.startswith("executable-")]
+        events = trace_events(trace.read_bytes(), consumer["root"], application=application)
+        observed = inspect_processes(events, package, argv[0], argv, projects, application=application)
+        require(len(observed["compiles"]) == request_count and len(records) == request_count - 1,
+                "Cargo invoked a different native executable compilation graph")
+        actual = parse_compile(observed["compiles"][-1], executable=True)
+        require(actual["--crate-type"] == "bin" and actual["--emit"] == "dep-info,link"
+                and actual["source"] == str(source) and len(actual["--extern"]) == 4,
+                "normal Cargo executable request changed its artifact/source boundary")
+        inputs = {row.split("=", 1)[0]: set() for row in actual["--extern"]}
+        for row in actual["--extern"]:
+            alias, artifact = row.split("=", 1)
+            require(Path(artifact).is_relative_to(build) and Path(artifact).is_file(),
+                    "executable request lost a real archive or metadata file")
+            inputs[alias].add(Path(artifact).suffix)
+        require(inputs == {"consumer": {".rlib", ".rmeta"}, "provider": {".rlib", ".rmeta"}},
+                "actual Cargo executable dependency pairs differ")
+        prefix = daemon_trace.read_bytes()
+        frozen_prefix(prefixes[-1]["bytes"], prefix)
+        owners = inspect_processes(trace_events(prefix, root), package, Path(daemon_argv[0]), daemon_argv, projects, daemon=True)
+        actual_tools = owners["artifacts"][prefixes[-1]["artifact_count"]:]
+        wanted = [{"argv": command["argv"], "cwd": command["cwd"]} for row in records for command in row["commands"]]
+        native_tools = [tool for tool in actual_tools if tool["filename"] == str(package / "lib/lust/tcc/bin/tcc")]
+        require(not native_tools or (status == 0 and not reused and
+                len({tool["argv"][-2] for tool in native_tools}) == len(native_tools)),
+                "native object work ran for reused or rejected executable work, or repeated a unit")
+        require(label != "cold" or native_tools, "cold executable did not compile native object units")
+        if native_tools:
+            directories = {Path(tool["argv"][-2]).parent for tool in native_tools}
+            require(len(directories) == 1, "executable objects came from several native sessions")
+            unit_directory = next(iter(directories))
+        require(unit_directory is not None, "no executable object directory was bound by the cold trace")
+        units = {}
+        for path in sorted(unit_directory.glob("u*.o")):
+            observed_file = path.stat()
+            units[path.name] = (observed_file.st_ino, observed_file.st_ctime_ns, sha(path.read_bytes()))
+        changed_units = [name for name, generation in units.items() if previous_units.get(name) != generation]
+        require(units and (not ((reused or status) and changed_units)),
+                "reused or rejected executable changed native object generations")
+        if label == "edit":
+            require(units.keys() == previous_units.keys() and 0 < len(changed_units) < len(units),
+                    "executable body edit did not reuse unchanged native object generations")
+        previous_units = units
+        reconcile_artifact_calls([tool for tool in actual_tools if tool not in native_tools], wanted)
+        prefixes.append({"name": "cargo-executable-" + label, "bytes": prefix, "artifact_count": len(owners["artifacts"])})
+        original_stdout, _, _ = commands.run("cargo-executable-" + label + "-original",
+                                              [sdk / "bin/cargo", *flags], consumer["root"], independent, expected=status)
+        if status:
+            require(not executable_reports and not observed["runs"] and b"L0110" in stdout + stderr,
+                    "an invalid executable ran or escaped the native checker")
+        else:
+            require(len(executable_reports) == len(observed["runs"]) == 1 and stdout.splitlines()[-1] == original_stdout.splitlines()[-1] == str(value).encode(),
+                    "native and original executables did not run exactly the matching computation")
+            record = executable_reports[0]
+            require(record["schema"] == "lustr-public-executable-v1" and record["owner_pid"] == owner[0]
+                    and record["artifact_reused"] is reused and record["unused_extern_names"] == ["provider"],
+                    "retained executable artifact state or actual unused-extern result changed")
+            if label == "noop":
+                require(record["checked_bodies"] == 0, "unchanged executable rechecked a native body")
+            outputs = {kind: Path(filename) for kind, filename in zip(("dep-info","link"), record["outputs"])}
+            dep_info(outputs["dep-info"].read_bytes(), outputs, source, consumer["root"])
+            require(outputs["link"].read_bytes() == application.read_bytes(),
+                    "Cargo ran another executable than the native published artifact")
+        result["history"].append({"case": label, "status": status, "runtime_value": value,
+                                  "artifact_reused": reused, "tinycc_processes": len(native_tools),
+                                  "changed_native_objects": changed_units})
+    result["passed"] = True
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--package", type=Path, required=True)
@@ -1110,7 +1244,7 @@ def main():
               "socket_independent": False, "commands": [], "observed_history": [], "original_consumers": [],
               "refusals": [], "checked_runtime_results": 0,
               "native_work_evidence": "source-bound work instrumentation corroborated by immutable object generations; not an independent TinyCC profiler",
-              "unqualified_scope": ["under-Lustr --extern consumer ingestion",
+              "unqualified_scope": ["general --extern consumer ingestion",
                     "non-scalar declarations", "other profiles/targets", "full Cargo graphs", "no_std compiler", "socket-free retained host"]}
     save = lambda: json_write(root / "report.json", report)
     commands = Commands(root / "commands", report, save)
@@ -1138,7 +1272,8 @@ def main():
             require(file_identity(package / relative)["sha256"] == file_identity(sdk / relative)["sha256"],
                     "installed selective SDK artifact/tool differs from original bytes: " + relative)
         tool_paths = [package / "bin" / name for name in ("lustr", "rustc", "lust", "lust-core", "cargo")]
-        tool_paths += [llvm / name for name in ("llvm-ar", "llvm-objcopy")] + [sdk / "bin/rustc", Path(__file__), receipt]
+        tool_paths += [llvm / name for name in ("llvm-ar", "llvm-objcopy")]
+        tool_paths += [package / "lib/lust/tcc/bin/tcc", sdk / "bin/rustc", Path(__file__), receipt]
         report["tools"] = [file_identity(path) for path in tool_paths]
         source_identity, _, _ = commands.run("source-identity", ["git", "rev-parse", "HEAD", "HEAD^{tree}"], ROOT,
                                              {"PATH": "/usr/bin:/bin", "LANG": "C", "LC_ALL": "C"})
@@ -1863,6 +1998,10 @@ def main():
         save()
         qualify_dependency_links(root, package, sdk, commands, environment, oracle_env, projects, owner,
                                  daemon_trace, daemon_argv, prefixes, report)
+        seal_reports()
+        save()
+        qualify_executable(root, package, sdk, commands, environment, oracle_env, projects, owner,
+                           daemon_trace, daemon_argv, prefixes, report)
         seal_reports()
         save()
         # A direct archive passed where Cargo normally passes full metadata is refused.

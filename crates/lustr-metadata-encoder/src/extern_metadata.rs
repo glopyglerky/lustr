@@ -7,7 +7,7 @@ use alloc::{
     vec::Vec,
 };
 
-use crate::{Sdk, TARGET, upstream::schema};
+use crate::{Sdk, TARGET, upstream::{predefined_symbols::PREDEFINED_SYMBOLS, schema}};
 
 struct Read<'a> {
     bytes: &'a [u8],
@@ -62,12 +62,7 @@ impl<'a> Read<'a> {
                 (target < self.at).then_some(())?;
                 Self::new(self.bytes, target).text()
             }
-            // Pinned predefined symbols for the closed SDK dependency pair.
-            2 => match self.leb()? {
-                597 => Some("compiler_builtins"),
-                674 => Some("core"),
-                _ => None,
-            },
+            2 => PREDEFINED_SYMBOLS.get(self.leb()?).copied(),
             _ => None,
         }
     }
@@ -157,6 +152,14 @@ pub struct ScalarCrate<'a> {
     pub svh: [u8; 16],
     pub filename_suffix: &'a str,
     pub functions: Vec<ScalarFunction<'a>>,
+    pub dependencies: Vec<ScalarDependency<'a>>,
+}
+
+#[derive(Debug)]
+pub struct ScalarDependency<'a> {
+    pub name: &'a str,
+    pub svh: [u8; 16],
+    pub filename_suffix: &'a str,
 }
 
 impl ScalarCrate<'_> {
@@ -168,6 +171,16 @@ impl ScalarCrate<'_> {
 /// Read the supported scalar interface from full metadata on the pinned host.
 /// The caller joins the crate name, filename and actual Cargo graph before exposing it.
 pub fn read_scalar_crate<'a>(bytes: &'a [u8], sdk: &Sdk) -> Option<ScalarCrate<'a>> {
+    read_crate(bytes, sdk, false)
+}
+
+/// Preserve non-SDK dependency identities so the executable loader can bind
+/// them to actual Cargo artifacts before publishing any definitions.
+pub fn read_link_crate<'a>(bytes: &'a [u8], sdk: &Sdk) -> Option<ScalarCrate<'a>> {
+    read_crate(bytes, sdk, true)
+}
+
+fn read_crate<'a>(bytes: &'a [u8], sdk: &Sdk, link: bool) -> Option<ScalarCrate<'a>> {
     let sdk_dependencies = &sdk.dependencies;
     let file = bytes.strip_suffix(b"rust-end-file")?;
     (file.starts_with(schema::METADATA_HEADER)).then_some(())?;
@@ -180,10 +193,9 @@ pub fn read_scalar_crate<'a>(bytes: &'a [u8], sdk: &Sdk) -> Option<ScalarCrate<'
 
     let mut unhashed_tail = Read::new(file, unhashed);
     let filename_suffix = unhashed_tail.text()?;
-    (unhashed_tail.leb()? == sdk_dependencies.len() + 1 && unhashed_tail.text()?.is_empty()).then_some(())?;
-    for dependency in sdk_dependencies {
-        (unhashed_tail.text()? == dependency.extra_filename).then_some(())?;
-    }
+    let suffix_count = unhashed_tail.leb()?.checked_sub(1)?;
+    (suffix_count <= 4096 && unhashed_tail.text()?.is_empty()).then_some(())?;
+    let suffixes = (0..suffix_count).map(|_| unhashed_tail.text()).collect::<Option<Vec<_>>>()?;
     (unhashed_tail.at == file.len()).then_some(())?;
 
     let data = file.get(..unhashed)?;
@@ -196,16 +208,28 @@ pub fn read_scalar_crate<'a>(bytes: &'a [u8], sdk: &Sdk) -> Option<ScalarCrate<'
     // Panic abort, unwind-in-drop default, edition 2024, no allocator or panic handler.
     (r.take(8)? == [1, 1, 0, 3, 0, 0, 0, 0] && r.array()?.1 == 0).then_some(())?;
     let (deps_position, dep_count) = r.array()?;
-    (dep_count == sdk_dependencies.len()).then_some(())?;
+    (dep_count == suffix_count && (link || dep_count == sdk_dependencies.len())).then_some(())?;
     let mut deps = Read::new(data, deps_position);
-    for dependency in sdk_dependencies {
-        (deps.symbol()? == dependency.name
-            && deps.take(16)? == dependency.hash
-            && deps.byte()? == 0
-            && deps.byte()? == dependency.kind
-            && deps.byte()? == u8::from(dependency.is_private))
-        .then_some(())?;
+    let mut dependencies = Vec::new();
+    let mut seen = BTreeSet::new();
+    let mut matched = 0;
+    for (index, filename_suffix) in suffixes.into_iter().enumerate() {
+        let name = deps.symbol()?;
+        let svh = deps.take(16)?.try_into().ok()?;
+        (deps.byte()? == 0 && seen.insert(name)).then_some(())?;
+        let (kind, is_private) = (deps.byte()?, deps.byte()?);
+        let expected = if link { sdk_dependencies.iter().find(|dep| dep.name == name) }
+            else { sdk_dependencies.get(index) };
+        if let Some(expected) = expected {
+            (expected.name == name && expected.hash == svh && expected.kind == kind
+                && u8::from(expected.is_private) == is_private && expected.extra_filename == filename_suffix).then_some(())?;
+            matched += 1;
+        } else {
+            (link && valid_identifier(name) && kind == 2 && is_private == 0).then_some(())?;
+            dependencies.push(ScalarDependency { name, svh, filename_suffix });
+        }
     }
+    (matched == sdk_dependencies.len()).then_some(())?;
     for field in &schema::ROOT_FIELDS[11..26] {
         let (at, len) = r.array()?;
         if *field == "lang_items_missing" {
@@ -279,7 +303,7 @@ pub fn read_scalar_crate<'a>(bytes: &'a [u8], sdk: &Sdk) -> Option<ScalarCrate<'
         (path_hash == crate::identity::function_path_hash(stable_id, function_name)).then_some(())?;
         functions.push(ScalarFunction { name: function_name, arity: count - 1, path_hash });
     }
-    Some(ScalarCrate { name, stable_id, svh, filename_suffix, functions })
+    Some(ScalarCrate { name, stable_id, svh, filename_suffix, functions, dependencies })
 }
 
 fn only_implicit_core_reexport(data: &[u8], value: [u8; 16]) -> Option<bool> {
@@ -318,4 +342,31 @@ fn native_size(value: &[u8]) -> Option<usize> {
 fn valid_identifier(value: &str) -> bool {
     !value.is_empty()
         && value.bytes().enumerate().all(|(index, byte)| byte == b'_' || byte.is_ascii_alphabetic() || index > 0 && byte.is_ascii_digit())
+}
+
+/// Match a real full metadata artifact with the metadata carried by its archive.
+pub fn archive_metadata_matches(full: &[u8], embedded: &[u8], name: &str) -> bool {
+    if full == embedded { return true; }
+    let matches = || -> Option<()> {
+        let stub = embedded.strip_suffix(b"rust-end-file")?;
+        (stub.starts_with(schema::METADATA_HEADER) && stub.get(16..24)? == [0; 8]
+            && stub.get(24..40)? == full.get(24..40)?).then_some(())?;
+        let root = native_size(stub.get(8..16)?)?;
+        let mut prefix = Read::new(stub, 40);
+        (prefix.text()? == Read::new(full, 40).text()? && prefix.at == root).then_some(())?;
+        let mut header = Read::new(stub, root);
+        (header.byte()? == 0 && header.text()? == TARGET && header.symbol()? == name
+            && header.take(2)? == [0, 1] && header.at == stub.len()).then_some(())
+    };
+    matches().is_some()
+}
+
+pub fn archive_object_members(data: &[u8]) -> Option<Vec<&str>> {
+    let payload = data.strip_suffix(b"rust-end-file")?;
+    let mut r = Read::new(payload, 0);
+    let count = r.leb()?;
+    (count <= payload.len()).then_some(())?;
+    let objects = (0..count).map(|_| r.text()).collect::<Option<Vec<_>>>()?;
+    // This deliberately shares the admitted original native-lib inventory.
+    (r.leb()? == 0 && r.at == payload.len()).then_some(objects)
 }

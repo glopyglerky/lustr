@@ -1826,6 +1826,13 @@ pub(crate) fn resolve_native_library(
     resolve_crate_seeded(input, interner, known, cache, false, imports, Some(parse))
 }
 
+pub(crate) fn resolve_native_executable(
+    input: &CrateInput, interner: &Interner, known: &Known, cache: &mut ResolveCache, with_platform: bool,
+    imports: &mut dyn FnMut(&mut ResolvedTables) -> Result<(), Diag>,
+) -> Result<ResolvedCrate, ResolveError> {
+    resolve_crate_seeded(input, interner, known, cache, with_platform, Some(imports), None)
+}
+
 fn resolve_crate_seeded(
     input: &CrateInput,
     interner: &Interner,

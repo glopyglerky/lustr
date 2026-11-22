@@ -2184,7 +2184,14 @@ fn resolved_setup(
             return Err(code2("Lustr integration is incomplete for the requested Rust library artifact; no stock compiler was invoked".into()));
         }
         if let Some(library) = &key.library {
-            let matched_dependencies = match (&library.external, unit.deps.as_slice()) {
+            let matched_dependencies = if let Some(executable) = &library.executable_dependencies {
+                executable.len() == unit.deps.len() && imports.is_some_and(|imports| unit.deps.iter().all(|dep| {
+                    #[cfg(feature = "exclusive-native")]
+                    if dep.build_script.is_some() { return false; }
+                    imports.cargo_extern_matches(&dep.extern_name, &dep.lib_name.replace('-', "_"))
+                        && dep.edition == "2024" && dep.features.is_empty()
+                }))
+            } else { match (&library.external, unit.deps.as_slice()) {
                 (None, []) => imports.is_none(),
                 (Some(request), [dep]) => imports.and_then(|i| i.cargo_crate_name()).is_some_and(|name| {
                     #[cfg(feature = "exclusive-native")]
@@ -2194,8 +2201,8 @@ fn resolved_setup(
                         && dep.features.is_empty() && dep.deps.is_empty()
                 }),
                 _ => false,
-            };
-            if !unit.target.kind.iter().any(|kind| matches!(kind.as_str(),"lib"|"rlib"))
+            }};
+            if !unit.target.kind.iter().any(|kind| kind == library.target_kind() || !library.is_executable() && kind == "rlib")
                 || unit.target.name != library.crate_name || !matched_dependencies
                 // Cargo metadata names the actual script target in every
                 // build mode; UnitInfo's planned script is product-only.
@@ -2467,7 +2474,11 @@ fn resolved_setup(
                 &super::library::parse_root, imports.map(|_| &mut mount as _))
         } else if let Some(imports) = imports {
             let mut mount = |tables: &mut crate::resolve::imports::ResolvedTables| imports.mount(tables, &front.interner);
-            worklist::resolve_crate_with_imports(&input, &front.interner, &front.known, plan.platform, &mut mount)
+            if key.library.as_ref().is_some_and(|key| key.is_executable()) {
+                worklist::resolve_native_executable(&input, &front.interner, &front.known, &mut front.resolve_cache, plan.platform, &mut mount)
+            } else {
+                worklist::resolve_crate_with_imports(&input, &front.interner, &front.known, plan.platform, &mut mount)
+            }
         } else {
             worklist::resolve_crate_with(&input, &front.interner, &front.known, &mut front.resolve_cache, plan.platform)
         };
@@ -2828,6 +2839,37 @@ impl PreparedRequest<'_> {
 
     pub fn source(&self) -> &str {
         &self.state.as_ref().expect("checked request is consumed").source
+    }
+
+    /// The public executable artifact path must account for actual inputs
+    /// before writing Cargo dep-info. Start with the single-file group.
+    pub(crate) fn uses_only_root_source(&self) -> bool {
+        self.source_map().file_count() == 1 && self.session.front.chunks.iter().all(|chunk| {
+            chunk.expand_deps.iter().all(|dep| !matches!(dep, expand::Dep::File { .. } | expand::Dep::Env { .. }))
+        })
+    }
+
+    /// Imported declarations in this executable slice are functions. For a
+    /// root without import declarations, their actual signature reads carry
+    /// every explicit extern reference, including reused bodies.
+    pub(crate) fn executable_extern_uses(&self) -> Option<std::collections::BTreeSet<crate::def::CrateId>> {
+        let program = self.program();
+        if program.ast.items.iter().chain(&program.ast.stmt_items).any(|item| {
+            matches!(item.kind, crate::ast::ItemKind::Use(_) | crate::ast::ItemKind::ExternCrate(_))
+        }) { return None; }
+        let mut used = std::collections::BTreeSet::new();
+        let caches = &self.session.caches;
+        for &slot in &self.session.front.fn_slot {
+            if let Some(Some(reads)) = caches.slot_reads.get(slot as usize) {
+                for (key, read) in reads.iter(&caches.read_keys) {
+                    if let super::graph::ReadKey::Sig(definition) = key
+                        && !read.failed && program.imported_crates.contains_key(&definition.krate) {
+                        used.insert(definition.krate);
+                    }
+                }
+            }
+        }
+        Some(used)
     }
 
     /// Exact imported input snapshots held by this checked continuation.
@@ -4868,7 +4910,8 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
         }),
     };
     let imported_dependencies = imports.map_or_else(Vec::new, |i| i.dependencies());
-    let imported_emission = match imports.filter(|_| req.session.library.is_none()).map(|i| i.take_emission()).transpose() {
+    let imported_emission = match imports.filter(|_| req.session.library.as_ref().is_none_or(|key| key.is_executable()))
+        .map(|i| i.take_emission()).transpose() {
         Ok(emission) => emission,
         Err(error) => return Preparation::Failed(Response {
             code: 3, stderr: format!("error: imported emission ownership failed: {error}\n"), ..Default::default()
@@ -5341,7 +5384,8 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
     // relinks over the existing unit objects. Unrelated units keep
     // their objects, in the session and in the disk unit cache.
     let standalone = caches.output == super::session::OutputKind::Standalone;
-    let fresh_base = caches.objects != Some(req.debug) || !caches.persistent || standalone;
+    let retain_standalone = req.session.library.as_ref().is_some_and(|key| key.is_executable());
+    let fresh_base = caches.objects != Some(req.debug) || !caches.persistent || (standalone && !retain_standalone);
     let cap_grown = n_slots > caches.table_cap;
     if fresh_base || cap_grown {
         caches.table_cap = n_slots * 2 + 64;
@@ -5350,7 +5394,9 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
         caches.base_units = groups.len();
     }
     let table_dirty = cap_grown || groups.len() != caches.base_units;
-    let rebuild_base = fresh_base || table_dirty || caches.overlays.len() + dirty_fn_units.len() > MAX_OVERLAYS;
+    // A Cargo executable must be self-contained. Update changed units in
+    // their original object slots and link with the unchanged objects.
+    let rebuild_base = standalone || fresh_base || table_dirty || caches.overlays.len() + dirty_fn_units.len() > MAX_OVERLAYS;
     let dir = caches.obj_dir.clone();
     let base_obj = |u: usize| dir.join(format!("u{u}.o"));
     let overlay_obj = |u: usize| dir.join(format!("o{u}.o"));

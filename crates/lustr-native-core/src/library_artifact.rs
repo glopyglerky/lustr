@@ -10,7 +10,7 @@ use serde_json::{Value,json};
 use sha2::{Digest,Sha256};
 use std::{collections::{BTreeMap,BTreeSet},io::Write,path::{Path,PathBuf},sync::Arc};
 #[path="unit_object.rs"]
-mod unit_object;
+pub(crate) mod unit_object;
 #[path="metadata_archive.rs"]
 mod archive;
 
