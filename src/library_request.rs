@@ -9,6 +9,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     let mut name = None;
     let mut kind = None;
     let mut test = false;
+    let mut custom_test = false;
     let mut allow_dead_code_pub_in_binary = false;
     let mut edition = None;
     let mut target = None;
@@ -37,6 +38,10 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
         else if arg == "--test" {
             if test { return None; }
             test = true;
+        }
+        else if arg == "--cfg" || arg.starts_with("--cfg=") {
+            if custom_test || value("--cfg")? != "test" { return None; }
+            custom_test = true;
         }
         else if arg == "--edition" || arg.starts_with("--edition=") { unique(&mut edition,"--edition")?; }
         else if arg == "--target" || arg.starts_with("--target=") { unique(&mut target,"--target")?; }
@@ -83,10 +88,12 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
         else { return None; }
         i += 1;
     }
-    let binary = test || kind.as_deref() == Some("bin");
-    let represented_kind = if test { matches!(kind.as_deref(), None | Some("bin")) }
+    if test && custom_test { return None; }
+    let test_target = test || custom_test;
+    let binary = test_target || kind.as_deref() == Some("bin");
+    let represented_kind = if test_target { matches!(kind.as_deref(), None | Some("bin")) }
         else { matches!(kind.as_deref(), Some("bin" | "lib" | "rlib")) };
-    if !represented_kind || (allow_dead_code_pub_in_binary && !test) || edition.as_deref() != Some("2024")
+    if !represented_kind || (allow_dead_code_pub_in_binary && !test_target) || edition.as_deref() != Some("2024")
         || target.as_deref().is_some_and(|v| v != TARGET) { return None; }
     let emit = emits?;
     let fields = emit.split(',').collect::<Vec<_>>();
@@ -141,7 +148,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     };
     let context = LibraryKey { crate_name:name?, metadata, extra_filename, source_path,
         working_directory: std::env::current_dir().ok()?, check_cfg, search_paths, external, executable_dependencies,
-        sdk_receipt:SDK_RECEIPT.into() };
+        custom_test, sdk_receipt:SDK_RECEIPT.into() };
     if test && panic != "panic=unwind" { return None; }
     if !context.valid() || !check && !context.supports_link_profile(panic == "panic=abort") { return None; }
     if std::env::var("CARGO_CRATE_NAME").is_ok_and(|v|v != context.crate_name) { return None; }
@@ -157,6 +164,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     }
     else { native.push("--lib".into()); }
     if test { native.push("--lustr-executable-test".into()); }
+    if custom_test { native.push("--lustr-custom-test".into()); }
     // At O0 Rust enables debug assertions by default. Omitted overflow checks
     // inherit the effective debug assertion setting (Session::overflow_checks),
     // including an explicit override. The actual Rust request owns both values;

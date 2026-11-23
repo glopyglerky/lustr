@@ -686,6 +686,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     let mut library_external = None;
     let mut executable_artifacts = false;
     let mut executable_test = false;
+    let mut custom_test = false;
     let mut executable_dependencies = Vec::new();
     let mut library_options = LibraryOptions::default();
     let mut library_debug_supplied = false;
@@ -724,7 +725,8 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
             "--lustr-library-search" => library_search.push(PathBuf::from(it.next()?)),
             "--lustr-library-extern-metadata" if library_external.is_none() => library_external = Some(ExternMetadata::parse(it.next()?)?),
             "--lustr-executable-artifacts" if !executable_artifacts => executable_artifacts = true,
-            "--lustr-executable-test" if !executable_test => executable_test = true,
+            "--lustr-executable-test" if !executable_test && !custom_test => executable_test = true,
+            "--lustr-custom-test" if !executable_test && !custom_test => custom_test = true,
             "--lustr-executable-extern" => executable_dependencies.push(ExecutableExtern {
                 metadata: ExternMetadata::parse(it.next()?)?,
                 archive: Some(it.next()?).filter(|path| !path.is_empty()).map(PathBuf::from),
@@ -781,7 +783,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     }
     let library_supplied = library_name.is_some() || library_metadata.is_some() || library_extra.is_some() || library_cwd.is_some()
         || !library_cfg.is_empty() || !library_search.is_empty() || library_external.is_some()
-        || executable_artifacts || executable_test || !executable_dependencies.is_empty()
+        || executable_artifacts || executable_test || custom_test || !executable_dependencies.is_empty()
         || library_debug_supplied || library_options != LibraryOptions::default();
     if library_supplied && (rustc || release || profile.is_some()) { return None; }
     let abs = |p: &Path| std::path::absolute(p).unwrap_or_else(|_| p.to_path_buf());
@@ -884,7 +886,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
         if !executable_artifacts && !executable_dependencies.is_empty() { return None; }
         let key = LibraryKey {crate_name:library_name?, metadata:library_metadata?, extra_filename:library_extra?,
             source_path:file.clone(), working_directory:library_cwd?, check_cfg:library_cfg, search_paths:library_search, external:library_external,
-            executable_dependencies:executable_artifacts.then_some(executable_dependencies),
+            executable_dependencies:executable_artifacts.then_some(executable_dependencies), custom_test,
             sdk_receipt:library_contract::SDK_RECEIPT.into()};
         if !key.valid() || !matches!(cmd.as_str(), "build" | "check") || session.krate.target_kind != key.target_kind()
             || cmd == "build" && !key.supports_link_profile(session.profile.panic_abort)
@@ -897,10 +899,10 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
             session.krate.target_name = key.crate_name.clone();
         }
         if executable_test && (session.profile.panic_abort || !key.is_executable()) { return None; }
-        session.krate.test = executable_test;
+        session.krate.test = executable_test || custom_test;
         // Cargo gives a bin name for binary unit tests. Library unit
         // tests supply their source and crate name, with no --crate-type.
-        session.krate.target_explicit = !executable_test || std::env::var_os("CARGO_BIN_NAME").is_some();
+        session.krate.target_explicit = !session.krate.test || std::env::var_os("CARGO_BIN_NAME").is_some();
         session.library = Some(key);
     }
     let req = Request {
@@ -1026,6 +1028,7 @@ pub fn encode(r: &Request) -> Vec<u8> {
     path_field(&mut out, Some(&s.krate.root));
     put_field(&mut out, s.target_triple.as_bytes());
     put_field(&mut out, match &s.library {
+        Some(library) if library.custom_test => b"4",
         Some(library) if library.is_executable() => b"3",
         Some(library) if library.external.is_some() => b"2",
         Some(_) => b"1",
@@ -1107,7 +1110,7 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
     let mut library_options = LibraryOptions::default();
     let library = match get_field(r)?.as_slice() {
         b"0" => None,
-        mode @ (b"1" | b"2" | b"3") => {
+        mode @ (b"1" | b"2" | b"3" | b"4") => {
             let crate_name=text(get_field(r)?)?; let metadata=text(get_field(r)?)?;
             let extra_filename=text(get_field(r)?)?; let sdk_receipt=text(get_field(r)?)?;
             let source_path=path(get_field(r)?); let working_directory=path(get_field(r)?);
@@ -1118,7 +1121,7 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
             let external = if mode == b"2" {
                 Some(ExternMetadata { alias: text(get_field(r)?)?, artifact: path(get_field(r)?) })
             } else { None };
-            let executable_dependencies = if mode == b"3" {
+            let executable_dependencies = if matches!(mode, b"3" | b"4") {
                 let count:usize = text(get_field(r)?)?.parse().ok()?;
                 if count > 4096 { return None; }
                 Some((0..count).map(|_| Some(ExecutableExtern {
@@ -1129,7 +1132,9 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
             library_options.embed_metadata=match get_field(r)?.as_slice() {b"-"=>None,b"1"=>Some(true),b"0"=>Some(false),_=>return None};
             library_options.force_warn_unused_crate_dependencies=match get_field(r)?.as_slice() {b"0"=>false,b"1"=>true,_=>return None};
             library_options.debug=DebugOptions::decode(&get_field(r)?)?;
-            let library=LibraryKey{crate_name,metadata,extra_filename,source_path,working_directory,check_cfg,search_paths,external,executable_dependencies,sdk_receipt};
+            let custom_test = mode == b"4";
+            if custom_test && f[5] != "1" { return None; }
+            let library=LibraryKey{crate_name,metadata,extra_filename,source_path,working_directory,check_cfg,search_paths,external,executable_dependencies,custom_test,sdk_receipt};
             if !library.valid() || !library.valid_output(&out, f[0] == "check", library_options) || library.source_path!=file
                 || target_triple!=library_contract::TARGET || target_kind!=library.target_kind()
                 || !library.matches_target_name(&target_name) || !matches!(f[0], "build" | "check") {return None;}

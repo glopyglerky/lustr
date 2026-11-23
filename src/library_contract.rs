@@ -176,6 +176,8 @@ pub struct LibraryKey {
     pub search_paths: Vec<PathBuf>,
     pub external: Option<ExternMetadata>,
     pub executable_dependencies: Option<Vec<ExecutableExtern>>,
+    /// Cargo supplies cfg(test), and the crate supplies its own main.
+    pub custom_test: bool,
     pub sdk_receipt: String,
 }
 impl LibraryKey {
@@ -197,6 +199,7 @@ impl LibraryKey {
                 self.external.is_none() && dependencies.iter().all(ExecutableExtern::valid)
                     && dependencies.windows(2).all(|pair| pair[0].metadata.alias < pair[1].metadata.alias)
             })
+            && (!self.custom_test || self.is_executable())
             && self.sdk_receipt == SDK_RECEIPT
     }
     pub fn archive_name(&self) -> String { format!("lib{}{}.rlib", self.crate_name, self.extra_filename) }

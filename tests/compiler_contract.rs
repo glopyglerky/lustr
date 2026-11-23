@@ -136,8 +136,9 @@ fn read_public_transport_request(
     let present = read_public_transport_field(reader)?;
     match (present.as_slice(), expected_library) {
         (b"0", None) => {}
-        (mode @ (b"1" | b"2" | b"3"), Some((library, options))) => {
-            if (mode == b"2") != library.external.is_some() || (mode == b"3") != library.is_executable() {
+        (mode @ (b"1" | b"2" | b"3" | b"4"), Some((library, options))) => {
+            if (mode == b"2") != library.external.is_some() || matches!(mode, b"3" | b"4") != library.is_executable()
+                || (mode == b"4") != library.custom_test {
                 return Err("public library dependency presence changed".into());
             }
             if !fixed[2].is_empty() || fixed[5].as_slice() != library.target_kind().as_bytes() || fixed[6].as_slice() != library.crate_name.as_bytes()
@@ -287,6 +288,7 @@ fn transport_peer_validates_library_values_and_counted_vectors() {
         search_paths: vec![PathBuf::from("/native-transport/deps-one"), PathBuf::from("/native-transport/deps-two")],
         external: None,
         executable_dependencies: None,
+        custom_test: false,
     };
     req.session.krate.target_kind = "lib".into();
     req.session.krate.target_name = library.crate_name.clone();
@@ -797,6 +799,33 @@ fn checks_application() {
     assert!(stdout.contains("1 passed; 0 failed"), "{stdout}");
     let binary = f.root.join("target/debug/integration-test-target");
     assert_eq!(f.succeeds("application", &mut Command::new(binary)).stdout, b"original application\n");
+}
+
+#[test]
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn cargo_runs_the_crates_custom_test_main() {
+    let f = Fixture::new("custom-test-harness");
+    f.source("Cargo.toml", "[package]\nname = \"custom-harness\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[[test]]\nname = \"behavior\"\nharness = false\n");
+    f.source("src/main.rs", "fn main() { println!(\"ordinary application\"); }\n");
+    f.source("tests/behavior.rs", r#"
+#[cfg(test)]
+fn main() {
+    assert!(!env!("CARGO_BIN_EXE_custom-harness").is_empty());
+    assert!(!env!("CARGO_TARGET_TMPDIR").is_empty());
+    println!("custom harness uses cfg(test)");
+}
+
+#[cfg(not(test))]
+fn main() { panic!("test entry compiled with the normal cfg"); }
+"#);
+    let args = ["test", "--offline", "--test", "behavior"];
+    let compiled = f.succeeds("compile", f.command("cargo").args(args).arg("--no-run"));
+    assert!(compiled.stdout.is_empty());
+    let ran = f.succeeds("run", f.command("cargo").args(args));
+    assert_eq!(ran.stdout, b"custom harness uses cfg(test)\n");
+    let binary = f.root.join("target/debug/custom-harness");
+    assert_eq!(f.succeeds("application", &mut Command::new(binary)).stdout, b"ordinary application\n");
 }
 
 #[test]

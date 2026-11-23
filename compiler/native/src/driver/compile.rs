@@ -3101,7 +3101,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
     }
     let rust_debug = req.cmd == Cmd::Build && req.library_options.debug.native_rust();
     let public_executable = req.session.library.as_ref().is_some_and(|key| key.is_executable());
-    let cargo_test = req.session.library.is_some() && req.session.krate.test;
+    let cargo_test = req.session.krate.test && req.session.library.as_ref().is_some_and(|key| !key.custom_test);
     if session.caches.library.is_some() && (req.cc || req.debug || req.emit_c.is_some() || req.harness || req.run_args.is_some()) {
         return Preparation::Failed(Response {code:3, stderr:"native library output context changed\n".into(), ..Default::default()});
     }
@@ -5075,7 +5075,7 @@ fn stage_imported_objects(dir: &Path, objects: &[Arc<[u8]>]) -> Result<Vec<PathB
 
 fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> Response {
     let rust_debug = req.cmd == Cmd::Build && req.library_options.debug.native_rust();
-    let cargo_test = req.session.library.as_ref().filter(|_| req.session.krate.test);
+    let cargo_test = req.session.library.as_ref().filter(|key| req.session.krate.test && !key.custom_test);
     let CheckedRequest {
         mut program, results, reemit, map, source: src, path, work, fn_count, fn_lines_all, body_hashes_all,
         inst_ids, mode, check_fp, verified, reads_reused, reads_invalidated, reemitted, mixed, release,
