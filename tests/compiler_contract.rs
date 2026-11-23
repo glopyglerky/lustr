@@ -1257,8 +1257,9 @@ fn main() { let _: i32 = "active cfg flags were lost"; }
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and Clang"]
 fn rustc_consumes_a_rust_archive_with_embedded_metadata() {
     let f = Fixture::new("embedded-extern");
+    let manifest = f.source("Cargo.toml", "[package]\nname=\"application\"\nedition=\"2024\"\nversion=\"0.1.0\"\n");
     f.source("provider.rs", "#![no_std]\npub fn doubled(n: u64) -> u64 { n.wrapping_mul(2) }\n");
-    f.source("main.rs", r#"
+    f.source("src/main.rs", r#"
 fn main() {
     let answer = provider_alias::doubled(21);
     println!("{answer}");
@@ -1280,43 +1281,55 @@ fn main() {
     f.succeeds("original-provider", &mut provider("yes"));
     assert!(!f.root.join("libprovider.rmeta").exists());
 
-    let compiler = |original: bool, out: &Path, emit: &str| {
+    let compiler = |original: bool, out: &Path| {
         let mut command = if original { oracle_command() } else { f.command("rustc") };
-        for key in ["CARGO_MANIFEST_DIR", "CARGO_MANIFEST_PATH", "CARGO_CRATE_NAME", "CARGO_BIN_NAME"] {
-            command.env_remove(key);
-        }
+        command.env("CARGO_MANIFEST_PATH", &manifest).env("CARGO_CRATE_NAME", "application").env("CARGO_BIN_NAME", "application");
         command.args(["--crate-name", "application", "--crate-type=bin", "--edition=2024",
-            "-Cmetadata=embedded", "-Cembed-bitcode=no", "--emit", emit, "--out-dir"]).arg(out)
-            .arg("--extern").arg(format!("provider_alias={}", archive.display())).arg("main.rs");
+            "-Cmetadata=embedded", "-Cembed-bitcode=no", "--emit=dep-info,metadata", "--out-dir"]).arg(out)
+            .arg("--extern").arg(format!("provider_alias={}", archive.display())).arg("src/main.rs");
         command
     };
+    let target = |original| f.root.join(if original { "original-target" } else { "target" });
+    let cargo = |original| {
+        let mut command = f.command("cargo");
+        command.env("CARGO_TARGET_DIR", target(original));
+        if original { command.env("RUSTC", &oracle); }
+        command.args(["rustc", "--quiet", "--frozen", "--", "--extern"])
+            .arg(format!("provider_alias={}", archive.display()));
+        command
+    };
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
     for (name, original) in [("native", false), ("original", true)] {
         let out = f.root.join(name);
         std::fs::create_dir(&out).unwrap();
-        f.succeeds(&format!("{name}-check"), &mut compiler(original, &out, "dep-info,metadata"));
+        f.succeeds(&format!("{name}-check"), &mut compiler(original, &out));
         assert!(out.join("libapplication.rmeta").is_file());
-        f.succeeds(&format!("{name}-link"), &mut compiler(original, &out, "dep-info,link"));
-        let ran = f.succeeds(&format!("{name}-run"), &mut Command::new(out.join("application")));
+        f.succeeds(&format!("{name}-link"), &mut cargo(original));
+        let ran = f.succeeds(&format!("{name}-run"), &mut Command::new(target(original).join("debug/application")));
         assert_eq!(ran.stdout, b"42\n");
         assert!(!f.root.join("libprovider.rmeta").exists());
     }
 
-    let out = f.root.join("native");
-    let before = std::fs::read(out.join("application")).unwrap();
+    let executable = target(false).join("debug/application");
+    let before = std::fs::read(&executable).unwrap();
     std::fs::rename(&archive, f.root.join("original-provider.rlib")).unwrap();
     f.succeeds("original-provider-stub", &mut provider("no"));
     assert!(!f.root.join("libprovider.rmeta").exists());
+    // Force a fresh compiler request through Cargo for the negative archives.
+    let app = f.root.join("src/main.rs");
+    let text = std::fs::read_to_string(&app).unwrap();
+    std::fs::write(&app, format!("{text}\n// Stub archive check\n")).unwrap();
     for (label, original) in [("native", false), ("original", true)] {
         let output = f.invoke(&format!("{label}-missing-embedded-metadata"),
-            &mut compiler(original, &f.root.join(label), "dep-info,link"));
+            &mut cargo(original));
         assert!(!output.status.success());
     }
-    assert_eq!(std::fs::read(out.join("application")).unwrap(), before);
+    assert_eq!(std::fs::read(&executable).unwrap(), before);
     std::fs::rename(&archive, f.root.join("stub-provider.rlib")).unwrap();
     std::fs::write(&archive, b"invalid Rust archive").unwrap();
-    let output = f.invoke("native-corrupt-archive", &mut compiler(false, &out, "dep-info,link"));
+    let output = f.invoke("native-corrupt-archive", &mut cargo(false));
     assert!(!output.status.success());
-    assert_eq!(std::fs::read(out.join("application")).unwrap(), before);
+    assert_eq!(std::fs::read(&executable).unwrap(), before);
 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
