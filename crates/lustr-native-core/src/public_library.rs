@@ -165,7 +165,7 @@ impl Owner {
     pub(crate) fn import_is_current(&self, req: &driver::Request) -> bool {
         if let Some(executable) = &self.executable {
             return req.session.library.as_ref().and_then(|key| key.executable_dependencies.as_ref())
-                .is_some_and(|inputs| executable.unchanged(inputs));
+                .is_some_and(|inputs| executable.unchanged(inputs, req.cmd != driver::Cmd::Check));
         }
         match (&self.imported, req.session.library.as_ref().and_then(|key| key.external.as_ref())) {
             (Some(imported), Some(external)) => imported.unchanged(&external.artifact),
@@ -186,7 +186,7 @@ impl Owner {
                 self.installed.standard.as_deref(), req.cmd != driver::Cmd::Check, req.session.profile.panic_abort))
             .transpose()?;
         if imported.as_ref().is_some_and(|value| !value.unchanged(&key.external.as_ref().unwrap().artifact))
-            || executable.as_ref().is_some_and(|value| !value.unchanged(key.executable_dependencies.as_ref().unwrap())) {
+            || executable.as_ref().is_some_and(|value| !value.unchanged(key.executable_dependencies.as_ref().unwrap(), req.cmd != driver::Cmd::Check)) {
             return Err("extern inputs changed during generation refresh".into());
         }
         self.imported = imported;
@@ -497,7 +497,7 @@ impl Owner {
                         | driver::Preparation::Failed(response) | driver::Preparation::IntegrationIncomplete(response) => response,
                 };
                 if response.code != 0 { return Ok(response); }
-                if !key.executable_dependencies.as_ref().is_some_and(|inputs| executable.unchanged(inputs)) {
+                if !key.executable_dependencies.as_ref().is_some_and(|inputs| executable.unchanged(inputs, !check)) {
                     return Err("Cargo executable dependency changed during checking or linking".into());
                 }
                 // rustc emits a zero-byte metadata output for an executable.

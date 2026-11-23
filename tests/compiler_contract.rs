@@ -1557,7 +1557,7 @@ pub fn flip(value: u64) -> u64 { value ^ 1 }
     std::fs::create_dir(archive.parent().unwrap()).unwrap();
     std::fs::write(&archive, b"metadata-only requests do not read this archive").unwrap();
     let artifact = f.source("probe.rs", "fn main() { assert_eq!(doc_consumer::flip(42), 43); }\n");
-    let check = |upstream: bool, output: &Path| {
+    let request = |upstream: bool, metadata_only: bool, output: &Path| {
         let mut command = if upstream {
             let mut command = Command::new(&oracle);
             command.current_dir(&f.root).env_remove("LD_LIBRARY_PATH");
@@ -1565,23 +1565,37 @@ pub fn flip(value: u64) -> u64 { value ^ 1 }
         } else {
             f.command("rustc")
         };
-        command.args(["--edition=2024", "--emit=metadata", "--extern"])
-            .arg(format!("doc_consumer={}", metadata.display())).arg("--extern")
+        command.arg("--edition=2024");
+        if metadata_only {
+            command.arg("--emit=metadata");
+        }
+        command.arg("--extern").arg(format!("doc_consumer={}", metadata.display())).arg("--extern")
             .arg(format!("doc_consumer={}", archive.display())).arg(&artifact).arg("-o").arg(output);
         command
     };
     for (name, upstream) in [("native", false), ("original", true)] {
         let output = f.root.join(format!("{name}-checked"));
-        f.succeeds(&format!("{name}-unused-archive"), &mut check(upstream, &output));
+        f.succeeds(&format!("{name}-unused-archive"), &mut request(upstream, true, &output));
         assert_eq!(std::fs::metadata(output).unwrap().len(), 0);
     }
     std::fs::remove_file(&archive).unwrap();
     for (name, upstream) in [("native", false), ("original", true)] {
         let output = f.root.join(format!("{name}-missing"));
-        let observed = f.invoke(&format!("{name}-missing-archive"), &mut check(upstream, &output));
+        let observed = f.invoke(&format!("{name}-missing-archive"), &mut request(upstream, true, &output));
         assert!(!observed.status.success());
         assert!(!output.exists());
     }
+
+    // Use the same compiler session and paths when moving from a metadata-only
+    // request to a linked executable, and then back to checking.
+    std::fs::copy(metadata.with_extension("rlib"), &archive).unwrap();
+    let metadata_only = f.root.join("checked");
+    f.succeeds("native-check-before-link", &mut request(false, true, &metadata_only));
+    let binary = f.root.join("linked");
+    f.succeeds("native-link-after-check", &mut request(false, false, &binary));
+    f.succeeds("native-run-after-check", &mut Command::new(binary));
+    std::fs::write(&archive, b"metadata-only requests do not read this archive").unwrap();
+    f.succeeds("native-check-after-link", &mut request(false, true, &metadata_only));
 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]

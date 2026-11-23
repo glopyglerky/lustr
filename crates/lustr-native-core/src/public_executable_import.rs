@@ -111,23 +111,23 @@ impl ExecutableImports {
             return Err("the supplied Cargo archives do not close the imported object references".into());
         }
         let resolved = Self { crates, direct: inputs.len(), searched, objects };
-        if !resolved.unchanged(inputs) { return Err("Cargo dependencies changed while loading their metadata graph".into()); }
+        if !resolved.unchanged(inputs, linking) { return Err("Cargo dependencies changed while loading their metadata graph".into()); }
         Ok(resolved)
     }
 
-    pub(super) fn unchanged(&self, inputs: &[ExecutableExtern]) -> bool {
+    pub(super) fn unchanged(&self, inputs: &[ExecutableExtern], linking: bool) -> bool {
         self.direct == inputs.len()
             && self.direct_crates().iter().zip(inputs).all(|(item, input)| &item.input == input)
             && self.crates.iter().all(|item| {
                 let input = &item.input;
                 item.definitions.unchanged(&input.metadata.artifact)
                     && match (&item.archive, &input.archive) {
-                        (Some((before, _)), Some(path)) => stamp(path).is_ok_and(|observed| &observed == before),
+                        (Some((before, _)), Some(path)) if linking => stamp(path).is_ok_and(|observed| &observed == before),
                         // A metadata-only request checks each explicit path,
                         // but reads no archive code when full metadata is supplied.
-                        (None, Some(path)) => path.is_file(),
+                        (None, Some(path)) if !linking => path.is_file(),
                         (None, None) => true,
-                        (Some(_), None) => false,
+                        _ => false,
                     }
             })
             && self.searched.iter().all(|(path, old)| search_stamp(path).is_ok_and(|current| &current == old))
