@@ -154,7 +154,7 @@ impl Owner {
             _ => false,
         }
     }
-    fn refresh_imports(&mut self, req: &driver::Request) -> Result<(), String> {
+    pub(crate) fn refresh_imports(&mut self, req: &driver::Request) -> Result<(), String> {
         self.installed.unchanged()?;
         if self.import_is_current(req) { return Ok(()); }
         let key = req.session.library.as_ref().ok_or("library identity absent")?;
@@ -176,7 +176,6 @@ impl Owner {
         Ok(())
     }
     pub(crate) fn compile(&mut self,req:&driver::Request,session:&mut driver::Session)->driver::Response {
-        if let Err(error) = self.refresh_imports(req) { return failed(req, &error); }
         let serial=REQUESTS.fetch_add(1,Ordering::Relaxed)+1;
         if self.executable.is_some() {
             return self.compile_executable(req, session, serial);

@@ -913,6 +913,7 @@ fn compile_fresh(entry: &mut Entry, req: &Request) -> (Response, bool) {
 fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Response {
     #[cfg(feature="exclusive-native")]
     if req.session.library.is_some() {
+        enum Attempt { InputFailure(Response), Compiled(Response) }
         entry.served+=1;
         if entry.recompute_next {entry.recompute_next=false;replace_session(entry,&req.session);}
         let result=std::panic::catch_unwind(std::panic::AssertUnwindSafe(||{
@@ -922,11 +923,20 @@ fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Re
             if entry.library.as_ref().is_some_and(|owner| owner.is_err()) { entry.library = None; }
             if entry.library.is_none(){entry.library=Some(crate::public_library::Owner::new(req));}
             match entry.library.as_mut().unwrap() {
-                Ok(owner)=>owner.compile(req,&mut entry.session),
-                Err(error)=>crate::public_library::failed(req,error),
+                Ok(owner)=>match owner.refresh_imports(req) {
+                    Ok(())=>Attempt::Compiled(owner.compile(req,&mut entry.session)),
+                    Err(error)=>Attempt::InputFailure(crate::public_library::failed(req,&error)),
+                },
+                Err(error)=>Attempt::InputFailure(crate::public_library::failed(req,error)),
             }
         }));
-        return terminal_answer(entry,req,result);
+        return match result {
+            // Input validation has not entered native preparation or changed
+            // the previous imported facts. Keep that known state on failure.
+            Ok(Attempt::InputFailure(response))=>response,
+            Ok(Attempt::Compiled(response))=>terminal_answer(entry,req,Ok(response)),
+            Err(payload)=>terminal_answer(entry,req,Err(payload)),
+        };
     }
     compile_guarded_with(entry, req, jobs, driver::compile)
 }

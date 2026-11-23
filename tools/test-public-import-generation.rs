@@ -18,7 +18,9 @@ fn wrapper(args: &[String], captures: &Path) -> ! {
         write(captures.join(format!("{}.json", args[index + 1])),
             serde_json::to_vec_pretty(&json!({"program":args[0], "args":&args[1..], "cwd":std::env::current_dir().unwrap(), "env":env})).unwrap());
     }
-    let status = Command::new(&args[0]).args(&args[1..]).status().unwrap();
+    // The recorder is an evaluator around Cargo, not a requested compiler
+    // wrapper. The candidate keeps its existing external-wrapper refusal.
+    let status = Command::new(&args[0]).args(&args[1..]).env_remove("RUSTC_WRAPPER").status().unwrap();
     std::process::exit(status.code().unwrap_or(125));
 }
 
@@ -63,7 +65,10 @@ impl Test {
         command
     }
     fn replay(&self) -> Command {
-        let request: Value = serde_json::from_slice(&fs::read(self.root.join("captures/reader.json")).unwrap()).unwrap();
+        self.replay_named("reader")
+    }
+    fn replay_named(&self, name: &str) -> Command {
+        let request: Value = serde_json::from_slice(&fs::read(self.root.join(format!("captures/{name}.json"))).unwrap()).unwrap();
         let mut command = self.command(self.package.join("bin/rustc"));
         command.current_dir(request["cwd"].as_str().unwrap());
         command.args(request["args"].as_array().unwrap().iter().map(|arg| arg.as_str().unwrap()));
@@ -102,6 +107,15 @@ impl Test {
             .arg("-o").arg(self.root.join(format!("{label}.rmeta"))).env("LD_LIBRARY_PATH", self.sdk.join("lib"));
         self.run(label, &mut command, expected);
     }
+    fn metadata(&self, name: &str) -> PathBuf {
+        let request: Value = serde_json::from_slice(&fs::read(self.root.join(format!("captures/{name}.json"))).unwrap()).unwrap();
+        let args = request["args"].as_array().unwrap();
+        let index = args.iter().position(|arg| arg == "--out-dir").unwrap();
+        let directory = Path::new(args[index + 1].as_str().unwrap());
+        let paths: Vec<_> = fs::read_dir(directory).unwrap().map(|entry| entry.unwrap().path())
+            .filter(|path| path.file_name().unwrap().to_str().unwrap().starts_with(&format!("lib{name}-")) && path.extension().is_some_and(|ext| ext == "rmeta")).collect();
+        assert_eq!(paths.len(), 1); paths[0].clone()
+    }
 }
 
 fn main() {
@@ -138,14 +152,35 @@ fn main() {
     test.run("request-noop", &mut test.replay(), 0);
     test.observe("request-noop", Some(&[]));
 
+    let provider_output = test.metadata("schema");
+    let provider_bytes = fs::read(&provider_output).unwrap();
+    let reader_output = test.metadata("reader");
+    let reader_bytes = fs::read(&reader_output).unwrap();
+    write(&provider, PROVIDER.replace("x & 63u64", "true"));
+    test.run("invalid-provider-request", &mut test.replay_named("schema"), 1);
+    assert_eq!(fs::read(&provider_output).unwrap(), provider_bytes, "invalid provider request replaced valid metadata");
+    test.observe("invalid-provider-request", None);
+    let invalid = test.run("invalid-provider", &mut test.cargo(), 101);
+    assert!(String::from_utf8_lossy(&invalid).contains("L0110"));
+    // Cargo may remove stale output before invoking its compiler. Any output
+    // still present must be the previous valid bytes, never a failed result.
+    if let Ok(bytes) = fs::read(&provider_output) { assert_eq!(bytes, provider_bytes, "invalid provider published metadata"); }
+    assert_eq!(fs::read(&reader_output).unwrap(), reader_bytes);
+    test.observe("invalid-provider", None);
+    write(&provider, PROVIDER);
+    test.run("provider-repair", &mut test.cargo(), 0);
+    test.observe("provider-repair", Some(&[]));
+
     write(&provider, PROVIDER.replace("63u64", "127u64"));
     test.run("provider-body", &mut test.cargo(), 0);
     test.observe("provider-body", Some(&[]));
     test.oracle("original-reads-updated-provider", 0);
+    let reader_bytes = fs::read(&reader_output).unwrap();
 
     write(&provider, PROVIDER.replace("u64", "u32"));
     let diagnostics = test.run("provider-type", &mut test.cargo(), 101);
     assert!(String::from_utf8_lossy(&diagnostics).contains("L0110"));
+    if let Ok(bytes) = fs::read(&reader_output) { assert_eq!(bytes, reader_bytes, "invalid consumer replaced the last valid metadata"); }
     test.observe("provider-type", Some(&["read"]));
     test.oracle("original-type-mismatch", 1);
 
@@ -154,6 +189,16 @@ fn main() {
     test.observe("type-repair", Some(&["read"]));
     test.run("repaired-noop", &mut test.replay(), 0);
     test.observe("repaired-noop", Some(&[]));
+
+    write(&provider, PROVIDER.replace("project", "renamed_definition"));
+    test.run("missing-definition", &mut test.cargo(), 101);
+    test.observe("missing-definition", None);
+    test.oracle("original-missing-definition", 1);
+    write(&provider, PROVIDER);
+    test.run("definition-repair", &mut test.cargo(), 0);
+    test.observe("definition-repair", None);
+    test.run("definition-repair-noop", &mut test.replay(), 0);
+    test.observe("definition-repair-noop", Some(&[]));
 
     // A malformed replacement must fail before touching retained semantic
     // state or the last successful public output. Restore exact bytes, then

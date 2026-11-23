@@ -5628,6 +5628,72 @@ pub struct InstanceInfo {
 /// by check, mono, and the driver. Parallel vecs are indexed by
 /// the session-local `AdtId` / `LocalDefId` of the compat tables
 /// in `Program`, including the instances mono appends.
+/// Native-collected associated-item binders and predicates. These are facts
+/// for the semantic owner, not an admission of generic associated types.
+/// Lifetime indices follow the enclosing trait's universals, exactly as for
+/// native method generics. Keep the item's obligations separate from the
+/// trait-wide environment: an item where clause is not a supertrait bound.
+#[derive(Clone, Debug)]
+pub struct AssociatedTypeGenerics {
+    pub parent: DefId,
+    pub generics: Generics,
+    pub lifetimes: Vec<(Sym, u32)>,
+    pub region_facts: Vec<(u32, u32)>,
+    pub span: Span,
+}
+
+#[cfg(test)]
+mod associated_item_predicate_tests {
+    use super::*;
+    use std::sync::Arc;
+
+    fn collect(source: &str) -> Result<Program, Vec<Diag>> {
+        let interner = Arc::new(Interner::default());
+        let known = Arc::new(Known::new(&interner));
+        let lexed = crate::lexer::lex(source, crate::diag::FileId(0), 0, &interner).unwrap();
+        let ast = crate::parser::parse(&lexed, &interner, &known).unwrap();
+        let ids = crate::def::CrateIds { local: crate::def::LOCAL_CRATE, stable: crate::def::synthetic_crate_hash("associated-item.rs", false) };
+        crate::check::collect::collect(Arc::new(ast), interner, known, ids)
+    }
+
+    #[test]
+    fn associated_item_where_clause_is_an_impl_obligation() {
+        let invalid = "struct Codec; trait Family { type View where Self: Copy; } impl Family for Codec { type View = u32; } fn main() {}";
+        let errors = collect(invalid).err().expect("non-Copy provider must fail");
+        assert!(errors.iter().any(|diag| diag.code == "L0612"), "{errors:?}");
+        let valid = invalid.replace("struct Codec;", "#[derive(Copy, Clone)] struct Codec;");
+        assert!(collect(&valid).is_ok());
+        // The item's constraint can also be established by the real impl
+        // environment; it must not become an unconditional trait superbound.
+        assert!(collect("trait Family { type View where Self: Copy; } impl<T: Copy> Family for T { type View = u32; } fn main() {}").is_ok());
+        assert!(collect("trait Family { type View where Self: Copy; } struct NonCopy; fn main() {}").is_ok());
+    }
+
+    #[test]
+    fn rejected_gat_retains_its_actual_binders_and_predicates() {
+        let mut program = collect("trait Family { type View; } fn main() {}").unwrap();
+        let interner = program.interner.clone();
+        let source = "trait Family { type View<'a, 'b> where Self: 'a, 'a: 'b; } fn main() {}";
+        let lexed = crate::lexer::lex(source, crate::diag::FileId(0), 0, &interner).unwrap();
+        let ast = crate::parser::parse(&lexed, &interner, &program.known).unwrap();
+        // Exercise the normal declaration collector against an existing
+        // native definition inventory. No service is allowed to erase the
+        // rejection or manufacture a successful provider from these facts.
+        program.ast = Arc::new(ast);
+        let mut errors = Vec::new();
+        build_trait_tables(&mut program, &mut errors);
+        assert!(errors.iter().any(|diag| diag.code == "L0621"), "GAT admission was not implemented");
+        let parent = program.gx.trait_names[&interner.intern("Family")];
+        let assoc = program.gx.index.trait_record(parent).unwrap().assoc_by_name(interner.intern("View")).unwrap();
+        let item = &program.gx.trait_assoc_generics[&assoc];
+        assert_eq!(item.parent, parent);
+        assert_eq!(item.lifetimes, [(interner.intern("a"), 0), (interner.intern("b"), 1)]);
+        assert_eq!(item.region_facts, [(0, 1)]);
+        assert!(item.generics.predicates.iter().any(|predicate| matches!(predicate,
+            Predicate::TypeOutlives(ty, Region::Param(0)) if matches!(program.tys.kind(*ty), TyKind::Param(ParamId(0))))));
+    }
+}
+
 pub struct GenTables {
     pub lang: LangTraits,
     pub index: ImplIndex,
@@ -5642,6 +5708,7 @@ pub struct GenTables {
     /// Associated type defaults from trait definitions, in trait
     /// signature form (over the trait's params, Self at 0).
     pub trait_assoc_defaults: FxMap<DefId, Ty>,
+    pub trait_assoc_generics: FxMap<DefId, AssociatedTypeGenerics>,
     /// User traits written `unsafe trait`: their impls must be
     /// `unsafe impl`, and no other impl may be.
     pub trait_unsafe: FxMap<DefId, bool>,
@@ -5905,6 +5972,7 @@ impl Default for GenTables {
             trait_methods: FxMap::default(),
             lang_method_sigs: FxMap::default(),
             trait_assoc_defaults: FxMap::default(),
+            trait_assoc_generics: FxMap::default(),
             trait_unsafe: FxMap::default(),
             trait_assoc_consts: FxMap::default(),
             wf_headers: Vec::new(),
@@ -7302,9 +7370,19 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
             let proj = p.tys.intern(TyKind::Projection(AssocId(assoc_def), trait_args));
             let at_bounds = at.bounds.clone();
             let at_where = at.where_clause.clone();
+            let at_params = at.generics.clone();
+            let at_span = at.span;
             let at_default = at.default;
             {
                 let cx = p.gx.resolve_cx(&p.type_names, &p.aliases);
+                let mut seed = scope.clone();
+                // The still-rejected GAT service needs the exact named-region
+                // predicates. Ordinary items keep the native region gate.
+                seed.type_outlives |= !at_params.params.is_empty();
+                let (own, own_scope) = build_generics_shifted(
+                    &p.ast, &p.interner, &p.known, &cx, &mut p.tys,
+                    &at_params, &at_where, generics.params.len() as u32, &seed, errs,
+                );
                 let mut relaxed: Vec<u32> = Vec::new();
                 let mut preds: Vec<Predicate> = Vec::new();
                 for b in &at_bounds {
@@ -7322,7 +7400,6 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
                     preds.push(Predicate::Trait(Binder::plain(TraitRef { def: cx.lang.sized, args, bindings: EMPTY_BINDINGS })));
                 }
                 generics.predicates.extend(preds);
-                let _ = at_where;
                 if at_default.is_some() {
                     // Associated type defaults are unstable in
                     // rustc (E0658); rule zero rejects them.
@@ -7336,6 +7413,10 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
                         Err(diag) => errs.push(diag),
                     }
                 }
+                p.gx.trait_assoc_generics.insert(assoc_def, AssociatedTypeGenerics {
+                    parent: trait_def, generics: own, lifetimes: own_scope.lifetimes,
+                    region_facts: own_scope.region_facts, span: at_span,
+                });
             }
         }
         // Associated consts: resolve and store the type for impl
@@ -13798,14 +13879,24 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
         .collect();
     for rec in records {
         let Some(trec) = p.gx.index.trait_record(rec.trait_def).cloned() else { continue };
-        if trec.generics.predicates.is_empty() {
+        let mut predicates = trec.generics.predicates.clone();
+        for &(assoc, _) in &rec.assoc_tys {
+            if let Some(item) = p.gx.trait_assoc_generics.get(&assoc) {
+                // Generic associated items still fail their declaration gate;
+                // do not erase a binder to pretend they are ordinary types.
+                if item.generics.params.is_empty() && item.lifetimes.is_empty() {
+                    predicates.extend_from_slice(&item.generics.predicates);
+                }
+            }
+        }
+        if predicates.is_empty() {
             continue;
         }
         let subst_args: Vec<GenericArg> = p.tys.args(rec.trait_ref.args).to_vec();
         let self_ty = subst_args.first().and_then(|g| g.as_ty()).unwrap_or(ERROR);
         let mut goals: Vec<TraitRef> = Vec::new();
         let mut statics: Vec<Ty> = Vec::new();
-        for &pred in &trec.generics.predicates {
+        for &pred in &predicates {
             let pred = subst_predicate(&mut p.tys, pred, &subst_args);
             // `trait Tr: 'static`: the impl's Self type must be `'static`;
             // `type Req: 'static`: the impl's binding of `Req` must be.

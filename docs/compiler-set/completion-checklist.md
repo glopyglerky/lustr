@@ -322,11 +322,27 @@ and archives before refreshing native declarations, replays actual dependency
 reads and retains unrelated bodies. Exact input bytes participate in that
 generation; disk restoration remains disabled. The installed scalar
 default-profile Cargo check/edit history is the first acceptance operation.
-The new Rust qualifier is `tools/test-public-import-generation.rs`; execution
-is pending at this source checkpoint. This is a P2 prerequisite, not admission
+The new Rust qualifier is `tools/test-public-import-generation.rs`. Initial
+execution passed default Cargo check, independent pinned-Rust metadata reading,
+provider body/type edits, type repair and renamed-definition failure/repair,
+then exposed a malformed-input recovery regression: status 3 reset a session
+even though validation had not entered native preparation. Its repair keeps
+input failures separate from failures after compilation starts. Qualification
+of that repair is pending. This is a P2 prerequisite, not admission
 of the P1 GAT service or completion of P2. Next: construct this exact candidate,
 run the valid/type-change/malformed-input/repair histories and pinned Rust
 metadata consumer, then continue the native declaration/predicate service.
+
+P0/P1 now also owns the demonstrated associated-item where-clause gap:
+the native checker accepted a non-Copy provider for an associated type requiring
+`Self: Copy`, while pinned Rust rejected it with E0277. Collection now retains
+typed associated-item parameters, universal lifetimes, region facts and where
+predicates separately from trait-wide bounds. Ordinary provider assignments
+consume those predicates in native impl validation. GATs remain unadmitted;
+their original rejection is preserved while the service's necessary facts are
+retained. Focused predicate and fingerprint controls are being run. The next
+integration step remains the selective upstream normalization/WF/region service
+and genuine provider metadata; these prerequisites do not close P1 or P2.
 
 The coordinator owns this register, shared-interface decisions and final
 integration. Worker A starts P1/P2; worker B starts P3; worker C starts P4 and

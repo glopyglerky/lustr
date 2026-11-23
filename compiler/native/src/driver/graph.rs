@@ -1405,6 +1405,12 @@ pub(crate) fn resolved_traits_hash(p: &Program) -> u64 {
                 hash_ty(&mut h, p, &p.tys, t);
                 has_default.hash(&mut h);
             }
+            if let Some(item) = p.gx.trait_assoc_generics.get(&d) {
+                hash_def_pub(&mut h, p, item.parent);
+                hash_generics(&mut h, p, &item.generics);
+                item.lifetimes.len().hash(&mut h);
+                item.region_facts.hash(&mut h);
+            }
         }
         (r.methods.len() as u64).hash(&mut h);
         for &(d, n) in &r.methods {
@@ -4130,6 +4136,18 @@ fn main() {}
         let changed = fp_of("fn f(x: bool) -> i64 { 1 }\nfn main() {}\n");
         assert_eq!(a, same, "a body edit does not move the signature fingerprint");
         assert_ne!(a, changed, "a parameter type edit does");
+    }
+
+    #[test]
+    fn resolved_traits_hash_tracks_associated_item_where_predicates() {
+        let hash = |bound: &str| {
+            let source = format!("trait Family {{ type View where Self: {bound}; }} fn main() {{}}");
+            let mut hash = 0;
+            with_program(&source, |_, program| hash = resolved_traits_hash(program));
+            hash
+        };
+        assert_eq!(hash("Copy"), hash("Copy"));
+        assert_ne!(hash("Copy"), hash("Clone"));
     }
 
     /// Non-generic instance keys hash exactly like today's disk-def slot
