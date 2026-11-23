@@ -99,8 +99,14 @@ impl Import {
                 return Err("extern artifact has no represented interface in the pinned SDK".into());
             };
             let interface = super::metadata_query::read(installation, &request.alias, path, &bytes, search_paths);
-            if stamp(path)? != before {
-                return Err("extern metadata generation changed during the Rust query".into());
+            let observed = stamp(path)?;
+            if observed != before {
+                // Cargo may hard-link published metadata while it is being
+                // read. Check the bytes before adopting the new file stamp.
+                let current = std::fs::read(path).map_err(|error| format!("revalidate extern metadata: {error}"))?;
+                if current.as_slice() != bytes.as_ref() || stamp(path)? != observed {
+                    return Err("extern metadata generation changed during the Rust query".into());
+                }
             }
             let interface = interface?;
             let extension = if from_archive { "rlib" } else { "rmeta" };
@@ -116,7 +122,7 @@ impl Import {
                 index, functions: interface.functions, projection: None,
             });
             return Ok(Self {
-                facts, stamp: before,
+                facts, stamp: observed,
                 identity: Identity { name: interface.name, svh: interface.svh, suffix: interface.suffix },
                 requires_abort: interface.requires_abort,
                 code_free: false,
