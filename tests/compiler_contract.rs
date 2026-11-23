@@ -565,7 +565,9 @@ fn ordinary_cargo_checks_associated_lifetimes_across_native_crates() {
     f.source("provider/src/lib.rs", &provider.replace("u32", "u64"));
     let changed = f.invoke("changed-assignment", f.command("cargo").args(request));
     assert_eq!(changed.status.code(), Some(101));
-    assert!(String::from_utf8_lossy(&changed.stderr).contains("L0110"));
+    assert!(changed.stdout.split(|&byte| byte == b'\n')
+        .filter_map(|line| serde_json::from_slice::<serde_json::Value>(line).ok())
+        .any(|record| record["reason"] == "compiler-message" && record["message"]["code"]["code"] == "L0110"));
     let changed = original("original-reader-changed");
     assert_eq!(changed.status.code(), Some(1));
     assert!(String::from_utf8_lossy(&changed.stderr).contains("E0308"));
