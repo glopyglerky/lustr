@@ -117,3 +117,18 @@ match the construction receipts. See
 The preceding package remains the failure witness and a scoped rollback; its
 22-case evidence is unchanged. GAT service/admission and metadata integration
 remain unfinished.
+
+## P1 declaration boundary
+
+The next native collection slice retains identity arguments in the written
+lifetime/type/const order and region-preserving bounds on the full associated
+application. Bound resolution includes the item's actual parameter scope,
+and the declaration fingerprint includes these facts. Native parameter indices
+remain distinct from Rust metadata indices. This is a typed input boundary for
+P1/P2, without a second parser, checker or admitted GAT service.
+
+Ten focused tests pass. The new collector check includes a lifetime, a type
+parameter, a const parameter, `Gate<&'a T>`, an associated result outlives bound,
+where predicates and a lifetime fact. The existing L0621 admission gate is
+explicitly asserted. No installed execution or new service qualification is
+transferred from the preceding compiler source to this slice.

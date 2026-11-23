@@ -1409,6 +1409,8 @@ pub(crate) fn resolved_traits_hash(p: &Program) -> u64 {
                 hash_def_pub(&mut h, p, item.parent);
                 hash_generics(&mut h, p, &item.generics);
                 item.lifetimes.len().hash(&mut h);
+                item.arguments.len().hash(&mut h);
+                for argument in &item.arguments { hash_arg(&mut h, p, &p.tys, argument); }
                 item.region_facts.hash(&mut h);
                 item.region_predicates.len().hash(&mut h);
                 for predicate in &item.region_predicates {
@@ -1416,6 +1418,8 @@ pub(crate) fn resolved_traits_hash(p: &Program) -> u64 {
                 }
                 item.bounds.len().hash(&mut h);
                 for predicate in &item.bounds { hash_predicate(&mut h, p, &p.tys, predicate); }
+                item.declared_bounds.len().hash(&mut h);
+                for predicate in &item.declared_bounds { hash_predicate(&mut h, p, &p.tys, predicate); }
             }
         }
         (r.methods.len() as u64).hash(&mut h);
@@ -2082,6 +2086,8 @@ fn hash_impl_associated_items(h: &mut FxHasher, p: &Program, rec: &crate::traits
             1u8.hash(h);
             hash_generics(h, p, &item.declaration.generics);
             item.declaration.lifetimes.len().hash(h);
+            item.declaration.arguments.len().hash(h);
+            for argument in &item.declaration.arguments { hash_arg(h, p, &p.tys, argument); }
             item.declaration.region_facts.hash(h);
             item.declaration.region_predicates.len().hash(h);
             for predicate in &item.declaration.region_predicates { hash_predicate(h, p, &p.tys, predicate); }

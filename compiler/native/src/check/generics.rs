@@ -5638,9 +5638,17 @@ pub struct AssociatedTypeGenerics {
     pub parent: DefId,
     pub generics: Generics,
     pub lifetimes: Vec<(Sym, u32)>,
+    /// Identity arguments in the source declaration's parameter order. Native
+    /// type/const and lifetime indices have distinct namespaces; do not cast
+    /// either one into an upstream metadata parameter index.
+    pub arguments: Vec<GenericArg>,
     pub region_facts: Vec<(u32, u32)>,
     pub region_predicates: Vec<Predicate>,
     pub bounds: Vec<Predicate>,
+    /// Region-preserving bounds on the full associated application, including
+    /// its own arguments. `bounds` above remains the ordinary native checker
+    /// representation; GAT admission is still gated.
+    pub declared_bounds: Vec<Predicate>,
     pub span: Span,
 }
 
@@ -5651,6 +5659,26 @@ pub struct AssociatedTypeGenerics {
 pub struct ImplAssociatedType {
     pub declaration: AssociatedTypeGenerics,
     pub value: Ty,
+}
+
+fn associated_identity_arguments(
+    tys: &mut impl TyIntern, syntax: &ast::Generics, own: &Generics, own_scope: &Scope, shift: u32,
+) -> Vec<GenericArg> {
+    let mut lifetimes = own_scope.lifetimes.iter();
+    let mut parameters = own.params.iter().enumerate();
+    syntax.params.iter().map(|parameter| match parameter {
+        ast::GenericParam::Lifetime { .. } => GenericArg::Lifetime(Region::Param(
+            lifetimes.next().expect("collected own lifetime").1,
+        )),
+        ast::GenericParam::Type { .. } => {
+            let (index, _) = parameters.next().expect("collected own type parameter");
+            GenericArg::Ty(tys.intern(TyKind::Param(ParamId(shift + index as u32))))
+        }
+        ast::GenericParam::Const { .. } => {
+            let (index, _) = parameters.next().expect("collected own const parameter");
+            GenericArg::Const(tys.intern_const(ConstKind::Param(shift + index as u32)))
+        }
+    }).collect()
 }
 
 #[cfg(test)]
@@ -5744,6 +5772,41 @@ mod associated_item_predicate_tests {
         assert!(errors.iter().any(|diag| diag.code == "L0617"), "{errors:?}");
         let repaired = source.replace("impl<'b> Family for &'b u8", "impl Family for &'static u8");
         if let Err(errors) = collect(&repaired) { panic!("valid provider: {errors:?}"); }
+    }
+
+    #[test]
+    fn rejected_gat_preserves_argument_order_and_regioned_bounds() {
+        let mut program = collect("trait Gate<X> {} trait Family { type View; } fn main() {}").unwrap();
+        let interner = program.interner.clone();
+        let source = "trait Gate<X> {} trait Family { type View<'a, T: Copy, const N: usize>: Gate<&'a T> + 'a where Self: 'a, T: 'a, 'a: 'static; } fn main() {}";
+        let lexed = crate::lexer::lex(source, crate::diag::FileId(0), 0, &interner).unwrap();
+        program.ast = Arc::new(crate::parser::parse(&lexed, &interner, &program.known).unwrap());
+        let mut errors = Vec::new();
+        build_trait_tables(&mut program, &mut errors);
+        assert!(errors.iter().any(|error| error.code == "L0621"), "GAT admission remains gated");
+        let parent = program.gx.trait_names[&interner.intern("Family")];
+        let gate = program.gx.trait_names[&interner.intern("Gate")];
+        let assoc = program.gx.index.trait_record(parent).unwrap().assoc_by_name(interner.intern("View")).unwrap();
+        let item = &program.gx.trait_assoc_generics[&assoc];
+        assert_eq!(item.arguments.len(), 3);
+        assert_eq!(item.arguments[0], GenericArg::Lifetime(Region::Param(0)));
+        assert!(matches!(item.arguments[1], GenericArg::Ty(t) if matches!(program.tys.kind(t), TyKind::Param(ParamId(1)))));
+        assert!(matches!(item.arguments[2], GenericArg::Const(c) if matches!(program.tys.const_kind(c), ConstKind::Param(2))));
+        assert_eq!(item.region_facts, [(0, STATIC_FACT)]);
+        let application = item.declared_bounds.iter().find_map(|predicate| match predicate {
+            Predicate::TypeOutlives(t, Region::Param(0)) => Some(*t), _ => None,
+        }).expect("the declared result outlives its actual item lifetime");
+        let TyKind::Projection(AssocId(def), arguments) = program.tys.kind(application) else { panic!("associated application") };
+        assert_eq!(def, assoc);
+        assert_eq!(&program.tys.args(arguments)[1..], item.arguments);
+        assert!(item.declared_bounds.iter().any(|predicate| match predicate {
+            Predicate::Trait(bound) if bound.value.def == gate => {
+                let args = program.tys.args(bound.value.args);
+                args[0] == GenericArg::Ty(application) && args[1].as_ty().is_some_and(|ty| matches!(program.tys.kind(ty),
+                    TyKind::Ref(Region::Param(0), _, inner) if matches!(program.tys.kind(inner), TyKind::Param(ParamId(1)))))
+            }
+            _ => false,
+        }), "the bound must retain its own type and lifetime arguments");
     }
 
     #[test]
@@ -7451,6 +7514,10 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
                 region_scope.lifetimes.extend_from_slice(&own_scope.lifetimes);
                 region_scope.type_params.extend_from_slice(&own_scope.type_params);
                 region_scope.const_params.extend_from_slice(&own_scope.const_params);
+                region_scope.param_tys.extend_from_slice(&own_scope.param_tys);
+                region_scope.assoc_srcs.extend_from_slice(&own_scope.assoc_srcs);
+                region_scope.region_facts.extend_from_slice(&own_scope.region_facts);
+                let arguments = associated_identity_arguments(&mut p.tys, &at_params, &own, &own_scope, generics.params.len() as u32);
                 let (_, region_predicates) = regioned_bound_preds(
                     &p.ast, &p.interner, &p.known, &cx, &mut p.tys,
                     &region_scope, &at_params, &at_where, &[],
@@ -7458,7 +7525,7 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
                 let mut relaxed: Vec<u32> = Vec::new();
                 let mut preds: Vec<Predicate> = Vec::new();
                 for b in &at_bounds {
-                    bound_predicates(&p.ast, &p.interner, &p.known, &cx, &mut p.tys, &scope, proj, b, &mut preds, &mut relaxed, errs);
+                    bound_predicates(&p.ast, &p.interner, &p.known, &cx, &mut p.tys, &region_scope, proj, b, &mut preds, &mut relaxed, errs);
                 }
                 // An associated type has an implicit `Sized` bound
                 // unless the trait writes `type A: ?Sized` (rustc
@@ -7472,6 +7539,34 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
                     preds.push(Predicate::Trait(Binder::plain(TraitRef { def: cx.lang.sized, args, bindings: EMPTY_BINDINGS })));
                 }
                 let item_bounds = preds.clone();
+                // Preserve the actual GAT application and all represented
+                // regioned bounds for the selective service/metadata boundary.
+                // No erased projection stands in for its declared binder.
+                let mut application = self_args.clone();
+                application.extend_from_slice(&arguments);
+                let application = p.tys.intern_args(&application);
+                let application = p.tys.intern(TyKind::Projection(AssocId(assoc_def), application));
+                let mut kept_scope = region_scope.clone();
+                kept_scope.regions = RegionMode::Keep { next: None, elided: Some(Region::Bound(0)) };
+                let mut declared_bounds = Vec::new();
+                let mut kept_relaxed = Vec::new();
+                for bound in &at_bounds {
+                    if let TraitBound::Lifetime(lifetime) = bound {
+                        match scope_region(&p.interner, &kept_scope, Some(*lifetime), lifetime.span) {
+                            Ok(region) => declared_bounds.push(Predicate::TypeOutlives(application, region)),
+                            Err(diagnostic) => errs.push(diagnostic),
+                        }
+                    } else {
+                        bound_predicates(&p.ast, &p.interner, &p.known, &cx, &mut p.tys, &kept_scope,
+                            application, bound, &mut declared_bounds, &mut kept_relaxed, errs);
+                    }
+                }
+                if !relaxed.contains(&u32::MAX) && !declared_bounds.iter().any(|predicate| {
+                    matches!(predicate, Predicate::Trait(bound) if bound.value.def == cx.lang.sized)
+                }) {
+                    let args = p.tys.intern_args(&[GenericArg::Ty(application)]);
+                    declared_bounds.push(Predicate::Trait(Binder::plain(TraitRef { def: cx.lang.sized, args, bindings: EMPTY_BINDINGS })));
+                }
                 generics.predicates.extend(preds);
                 if at_default.is_some() {
                     // Associated type defaults are unstable in
@@ -7487,8 +7582,8 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
                     }
                 }
                 p.gx.trait_assoc_generics.insert(assoc_def, AssociatedTypeGenerics {
-                    parent: trait_def, generics: own, lifetimes: own_scope.lifetimes,
-                    region_facts: own_scope.region_facts, region_predicates, bounds: item_bounds, span: at_span,
+                    parent: trait_def, generics: own, lifetimes: own_scope.lifetimes, arguments,
+                    region_facts: own_scope.region_facts, region_predicates, bounds: item_bounds, declared_bounds, span: at_span,
                 });
             }
         }
@@ -7848,6 +7943,7 @@ pub fn finish_trait_impl(
                 region_scope.regions = RegionMode::Keep { next: None, elided: Some(Region::Bound(0)) };
                 match resolve_scoped(&p.ast, &p.interner, &p.known, &cx, &mut p.tys, d, &region_scope) {
                     Ok(value) => {
+                        let arguments = associated_identity_arguments(&mut p.tys, &at.generics, &own, &own_scope, impl_generics.params.len() as u32);
                         let mut required = regioned_bound_tys(
                             &p.ast, &p.interner, &p.known, &cx, &mut p.tys,
                             &item_scope, &at.generics, &at.where_clause, &[],
@@ -7865,8 +7961,9 @@ pub fn finish_trait_impl(
                         p.gx.impl_assoc_generics.insert((impl_def, assoc), ImplAssociatedType {
                             declaration: AssociatedTypeGenerics {
                                 parent: impl_def, generics: own, lifetimes: own_scope.lifetimes,
+                                arguments,
                                 region_facts: own_scope.region_facts, region_predicates,
-                                bounds: Vec::new(), span: at.span,
+                                bounds: Vec::new(), declared_bounds: Vec::new(), span: at.span,
                             }, value,
                         });
                     }

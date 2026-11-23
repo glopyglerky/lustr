@@ -4881,7 +4881,7 @@ index f31b8af0e01c3261fd76f2a4e82954e9de656aca..629b1471654155f02430dd628fc2ae12
          })
      }
 diff --git a/src/check/generics.rs b/src/check/generics.rs
-index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76bc95273f1 100644
+index 084f420a96af81551cafc7aa39f3f8c23edf4d25..b423266af444b229bba4e07e395e01ad9d4703ab 100644
 --- a/src/check/generics.rs
 +++ b/src/check/generics.rs
 @@ -1414,6 +1414,8 @@ pub struct Scope {
@@ -4998,7 +4998,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
          }
          // Omitted trailing params take their defaults.
          let n_written = gargs.iter().filter(|g| !matches!(g, GenericArg::Lifetime(_))).count();
-@@ -5562,10 +5628,141 @@ pub struct InstanceInfo {
+@@ -5562,10 +5628,204 @@ pub struct InstanceInfo {
  /// by check, mono, and the driver. Parallel vecs are indexed by
  /// the session-local `AdtId` / `LocalDefId` of the compat tables
  /// in `Program`, including the instances mono appends.
@@ -5012,9 +5012,17 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
 +    pub parent: DefId,
 +    pub generics: Generics,
 +    pub lifetimes: Vec<(Sym, u32)>,
++    /// Identity arguments in the source declaration's parameter order. Native
++    /// type/const and lifetime indices have distinct namespaces; do not cast
++    /// either one into an upstream metadata parameter index.
++    pub arguments: Vec<GenericArg>,
 +    pub region_facts: Vec<(u32, u32)>,
 +    pub region_predicates: Vec<Predicate>,
 +    pub bounds: Vec<Predicate>,
++    /// Region-preserving bounds on the full associated application, including
++    /// its own arguments. `bounds` above remains the ordinary native checker
++    /// representation; GAT admission is still gated.
++    pub declared_bounds: Vec<Predicate>,
 +    pub span: Span,
 +}
 +
@@ -5025,6 +5033,26 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
 +pub struct ImplAssociatedType {
 +    pub declaration: AssociatedTypeGenerics,
 +    pub value: Ty,
++}
++
++fn associated_identity_arguments(
++    tys: &mut impl TyIntern, syntax: &ast::Generics, own: &Generics, own_scope: &Scope, shift: u32,
++) -> Vec<GenericArg> {
++    let mut lifetimes = own_scope.lifetimes.iter();
++    let mut parameters = own.params.iter().enumerate();
++    syntax.params.iter().map(|parameter| match parameter {
++        ast::GenericParam::Lifetime { .. } => GenericArg::Lifetime(Region::Param(
++            lifetimes.next().expect("collected own lifetime").1,
++        )),
++        ast::GenericParam::Type { .. } => {
++            let (index, _) = parameters.next().expect("collected own type parameter");
++            GenericArg::Ty(tys.intern(TyKind::Param(ParamId(shift + index as u32))))
++        }
++        ast::GenericParam::Const { .. } => {
++            let (index, _) = parameters.next().expect("collected own const parameter");
++            GenericArg::Const(tys.intern_const(ConstKind::Param(shift + index as u32)))
++        }
++    }).collect()
 +}
 +
 +#[cfg(test)]
@@ -5121,6 +5149,41 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
 +    }
 +
 +    #[test]
++    fn rejected_gat_preserves_argument_order_and_regioned_bounds() {
++        let mut program = collect("trait Gate<X> {} trait Family { type View; } fn main() {}").unwrap();
++        let interner = program.interner.clone();
++        let source = "trait Gate<X> {} trait Family { type View<'a, T: Copy, const N: usize>: Gate<&'a T> + 'a where Self: 'a, T: 'a, 'a: 'static; } fn main() {}";
++        let lexed = crate::lexer::lex(source, crate::diag::FileId(0), 0, &interner).unwrap();
++        program.ast = Arc::new(crate::parser::parse(&lexed, &interner, &program.known).unwrap());
++        let mut errors = Vec::new();
++        build_trait_tables(&mut program, &mut errors);
++        assert!(errors.iter().any(|error| error.code == "L0621"), "GAT admission remains gated");
++        let parent = program.gx.trait_names[&interner.intern("Family")];
++        let gate = program.gx.trait_names[&interner.intern("Gate")];
++        let assoc = program.gx.index.trait_record(parent).unwrap().assoc_by_name(interner.intern("View")).unwrap();
++        let item = &program.gx.trait_assoc_generics[&assoc];
++        assert_eq!(item.arguments.len(), 3);
++        assert_eq!(item.arguments[0], GenericArg::Lifetime(Region::Param(0)));
++        assert!(matches!(item.arguments[1], GenericArg::Ty(t) if matches!(program.tys.kind(t), TyKind::Param(ParamId(1)))));
++        assert!(matches!(item.arguments[2], GenericArg::Const(c) if matches!(program.tys.const_kind(c), ConstKind::Param(2))));
++        assert_eq!(item.region_facts, [(0, STATIC_FACT)]);
++        let application = item.declared_bounds.iter().find_map(|predicate| match predicate {
++            Predicate::TypeOutlives(t, Region::Param(0)) => Some(*t), _ => None,
++        }).expect("the declared result outlives its actual item lifetime");
++        let TyKind::Projection(AssocId(def), arguments) = program.tys.kind(application) else { panic!("associated application") };
++        assert_eq!(def, assoc);
++        assert_eq!(&program.tys.args(arguments)[1..], item.arguments);
++        assert!(item.declared_bounds.iter().any(|predicate| match predicate {
++            Predicate::Trait(bound) if bound.value.def == gate => {
++                let args = program.tys.args(bound.value.args);
++                args[0] == GenericArg::Ty(application) && args[1].as_ty().is_some_and(|ty| matches!(program.tys.kind(ty),
++                    TyKind::Ref(Region::Param(0), _, inner) if matches!(program.tys.kind(inner), TyKind::Param(ParamId(1)))))
++            }
++            _ => false,
++        }), "the bound must retain its own type and lifetime arguments");
++    }
++
++    #[test]
 +    fn associated_item_region_facts_and_trait_arguments_are_obligations() {
 +        let source = "trait Family { type View where Self: 'static; } impl<T> Family for T { type View = u32; } fn main() {}";
 +        assert!(collect(source).is_err());
@@ -5140,7 +5203,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
      pub trait_scopes: FxMap<DefId, Scope>,
      pub trait_methods: FxMap<DefId, TraitMethodTemplate>,
      /// Signatures of the lang trait methods, by method def
-@@ -5575,6 +5772,8 @@ pub struct GenTables {
+@@ -5575,6 +5835,8 @@ pub struct GenTables {
      /// Associated type defaults from trait definitions, in trait
      /// signature form (over the trait's params, Self at 0).
      pub trait_assoc_defaults: FxMap<DefId, Ty>,
@@ -5149,7 +5212,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
      /// User traits written `unsafe trait`: their impls must be
      /// `unsafe impl`, and no other impl may be.
      pub trait_unsafe: FxMap<DefId, bool>,
-@@ -5833,10 +6032,13 @@ impl Default for GenTables {
+@@ -5833,10 +6095,13 @@ impl Default for GenTables {
              lang: LangTraits::new(),
              index: ImplIndex::new(),
              trait_names: crate::driver::read_cover::NameMap::new("trait"),
@@ -5163,7 +5226,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
              trait_unsafe: FxMap::default(),
              trait_assoc_consts: FxMap::default(),
              wf_headers: Vec::new(),
-@@ -5929,8 +6131,10 @@ impl GenTables {
+@@ -5929,8 +6194,10 @@ impl GenTables {
          ResolveCx {
              type_names: &NO_ADTS,
              adt_info: &self.adt_info,
@@ -5174,7 +5237,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
              aliases: &NO_TYS,
              generic_aliases: &NO_ALIASES,
              index: &self.index,
-@@ -5944,8 +6148,10 @@ impl GenTables {
+@@ -5944,8 +6211,10 @@ impl GenTables {
          ResolveCx {
              type_names,
              adt_info: &self.adt_info,
@@ -5185,7 +5248,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
              aliases,
              generic_aliases: &self.generic_aliases,
              index: &self.index,
-@@ -6154,6 +6360,25 @@ fn valid_receiver(tys: &impl TyIntern, t: Ty, self_ty: Ty) -> bool {
+@@ -6154,6 +6423,25 @@ fn valid_receiver(tys: &impl TyIntern, t: Ty, self_ty: Ty) -> bool {
      }
  }
  
@@ -5211,7 +5274,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
  /// Resolves one fn signature in template form: self parameter,
  /// params, and return, under the combined scope. Handles
  /// `impl Trait` argument sugar by growing the generics. Returns
-@@ -6236,7 +6461,7 @@ pub fn resolve_fn_sig(
+@@ -6236,7 +6524,7 @@ pub fn resolve_fn_sig(
              let lhs = apit_param(ast, interner, known, cx, tys, &mut generics, &mut scope, bounds, ast.ty_span(n), errs);
              scope.apit.push((n, lhs));
          }
@@ -5220,7 +5283,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
              // No Sized check here: a declaration with no body may
              // name unsized params (rustc allows it). The value
              // positions of a fn with a body are `check_written_wf`'s.
-@@ -6308,7 +6533,7 @@ pub fn resolve_fn_sig(
+@@ -6308,7 +6596,7 @@ pub fn resolve_fn_sig(
                  }
              }
          }
@@ -5229,7 +5292,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
              errs.push(d);
              ERROR
          }),
-@@ -6580,7 +6805,7 @@ fn region_sig(
+@@ -6580,7 +6868,7 @@ fn region_sig(
          let t = if let TyExpr::ImplTrait { .. } = ast.ty(param.ty) {
              *params.get(skip + i)?
          } else {
@@ -5238,7 +5301,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
          };
          for _ in names.len()..counter.load(Ordering::Relaxed) as usize {
              names.push(format!("the lifetime of parameter {}", i + 1));
-@@ -6615,7 +6840,7 @@ fn region_sig(
+@@ -6615,7 +6903,7 @@ fn region_sig(
          // goes to `RegionTables::opaque_sigs`, whose rules never read
          // the return.
          Some(t) if opaque_caps.is_some() || matches!(ast.ty(t), TyExpr::ImplTrait { .. }) => UNIT,
@@ -5247,7 +5310,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
              Ok(t) => t,
              Err(d) => {
                  if d.code == "L0202" {
-@@ -7211,9 +7436,25 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
+@@ -7211,13 +7499,33 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
              let proj = p.tys.intern(TyKind::Projection(AssocId(assoc_def), trait_args));
              let at_bounds = at.bounds.clone();
              let at_where = at.where_clause.clone();
@@ -5266,6 +5329,10 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
 +                region_scope.lifetimes.extend_from_slice(&own_scope.lifetimes);
 +                region_scope.type_params.extend_from_slice(&own_scope.type_params);
 +                region_scope.const_params.extend_from_slice(&own_scope.const_params);
++                region_scope.param_tys.extend_from_slice(&own_scope.param_tys);
++                region_scope.assoc_srcs.extend_from_slice(&own_scope.assoc_srcs);
++                region_scope.region_facts.extend_from_slice(&own_scope.region_facts);
++                let arguments = associated_identity_arguments(&mut p.tys, &at_params, &own, &own_scope, generics.params.len() as u32);
 +                let (_, region_predicates) = regioned_bound_preds(
 +                    &p.ast, &p.interner, &p.known, &cx, &mut p.tys,
 +                    &region_scope, &at_params, &at_where, &[],
@@ -5273,28 +5340,61 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
                  let mut relaxed: Vec<u32> = Vec::new();
                  let mut preds: Vec<Predicate> = Vec::new();
                  for b in &at_bounds {
-@@ -7230,8 +7471,8 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
+-                    bound_predicates(&p.ast, &p.interner, &p.known, &cx, &mut p.tys, &scope, proj, b, &mut preds, &mut relaxed, errs);
++                    bound_predicates(&p.ast, &p.interner, &p.known, &cx, &mut p.tys, &region_scope, proj, b, &mut preds, &mut relaxed, errs);
+                 }
+                 // An associated type has an implicit `Sized` bound
+                 // unless the trait writes `type A: ?Sized` (rustc
+@@ -7230,8 +7538,36 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
                      let args = p.tys.intern_args(&[GenericArg::Ty(proj)]);
                      preds.push(Predicate::Trait(Binder::plain(TraitRef { def: cx.lang.sized, args, bindings: EMPTY_BINDINGS })));
                  }
 +                let item_bounds = preds.clone();
++                // Preserve the actual GAT application and all represented
++                // regioned bounds for the selective service/metadata boundary.
++                // No erased projection stands in for its declared binder.
++                let mut application = self_args.clone();
++                application.extend_from_slice(&arguments);
++                let application = p.tys.intern_args(&application);
++                let application = p.tys.intern(TyKind::Projection(AssocId(assoc_def), application));
++                let mut kept_scope = region_scope.clone();
++                kept_scope.regions = RegionMode::Keep { next: None, elided: Some(Region::Bound(0)) };
++                let mut declared_bounds = Vec::new();
++                let mut kept_relaxed = Vec::new();
++                for bound in &at_bounds {
++                    if let TraitBound::Lifetime(lifetime) = bound {
++                        match scope_region(&p.interner, &kept_scope, Some(*lifetime), lifetime.span) {
++                            Ok(region) => declared_bounds.push(Predicate::TypeOutlives(application, region)),
++                            Err(diagnostic) => errs.push(diagnostic),
++                        }
++                    } else {
++                        bound_predicates(&p.ast, &p.interner, &p.known, &cx, &mut p.tys, &kept_scope,
++                            application, bound, &mut declared_bounds, &mut kept_relaxed, errs);
++                    }
++                }
++                if !relaxed.contains(&u32::MAX) && !declared_bounds.iter().any(|predicate| {
++                    matches!(predicate, Predicate::Trait(bound) if bound.value.def == cx.lang.sized)
++                }) {
++                    let args = p.tys.intern_args(&[GenericArg::Ty(application)]);
++                    declared_bounds.push(Predicate::Trait(Binder::plain(TraitRef { def: cx.lang.sized, args, bindings: EMPTY_BINDINGS })));
++                }
                  generics.predicates.extend(preds);
 -                let _ = at_where;
                  if at_default.is_some() {
                      // Associated type defaults are unstable in
                      // rustc (E0658); rule zero rejects them.
-@@ -7245,6 +7486,10 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
+@@ -7245,6 +7581,10 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
                          Err(diag) => errs.push(diag),
                      }
                  }
 +                p.gx.trait_assoc_generics.insert(assoc_def, AssociatedTypeGenerics {
-+                    parent: trait_def, generics: own, lifetimes: own_scope.lifetimes,
-+                    region_facts: own_scope.region_facts, region_predicates, bounds: item_bounds, span: at_span,
++                    parent: trait_def, generics: own, lifetimes: own_scope.lifetimes, arguments,
++                    region_facts: own_scope.region_facts, region_predicates, bounds: item_bounds, declared_bounds, span: at_span,
 +                });
              }
          }
          // Associated consts: resolve and store the type for impl
-@@ -7469,7 +7714,15 @@ pub(crate) fn insert_synthetic(
+@@ -7469,7 +7809,15 @@ pub(crate) fn insert_synthetic(
  fn static_header_regions(p: &mut Program, imp: &ast::ImplDef, rec: &TraitRecord, scope: &Scope, errs: &mut Vec<Diag>) {
      let self_param = p.tys.intern(TyKind::Param(ParamId(0)));
      let mut wants: Vec<Ty> = Vec::new();
@@ -5311,7 +5411,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
          let Predicate::TypeOutlives(x, Region::Static) = *pred else { continue };
          if x == self_param {
              wants.extend(scope.self_ty_regioned);
-@@ -7558,19 +7811,67 @@ pub fn finish_trait_impl(
+@@ -7558,19 +7906,69 @@ pub fn finish_trait_impl(
              ));
              continue;
          };
@@ -5354,6 +5454,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
 +                region_scope.regions = RegionMode::Keep { next: None, elided: Some(Region::Bound(0)) };
 +                match resolve_scoped(&p.ast, &p.interner, &p.known, &cx, &mut p.tys, d, &region_scope) {
 +                    Ok(value) => {
++                        let arguments = associated_identity_arguments(&mut p.tys, &at.generics, &own, &own_scope, impl_generics.params.len() as u32);
 +                        let mut required = regioned_bound_tys(
 +                            &p.ast, &p.interner, &p.known, &cx, &mut p.tys,
 +                            &item_scope, &at.generics, &at.where_clause, &[],
@@ -5371,8 +5472,9 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
 +                        p.gx.impl_assoc_generics.insert((impl_def, assoc), ImplAssociatedType {
 +                            declaration: AssociatedTypeGenerics {
 +                                parent: impl_def, generics: own, lifetimes: own_scope.lifetimes,
++                                arguments,
 +                                region_facts: own_scope.region_facts, region_predicates,
-+                                bounds: Vec::new(), span: at.span,
++                                bounds: Vec::new(), declared_bounds: Vec::new(), span: at.span,
 +                            }, value,
 +                        });
 +                    }
@@ -5381,7 +5483,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
              }
              None => errs.push(Diag::new(
                  "L0110",
-@@ -11002,7 +11303,11 @@ fn instance_adt_id(p: &mut Program, def: DefId, args: ArgsId) -> AdtId {
+@@ -11002,7 +11400,11 @@ fn instance_adt_id(p: &mut Program, def: DefId, args: ArgsId) -> AdtId {
      let mut key = p.instance_key_hash(&crate::driver::graph::InstanceKey { def, args }).0;
      let at = loop {
          let at = (p.gx.inst_order.base + p.gx.inst_order.place_of(key)) as usize;
@@ -5394,7 +5496,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
              break at;
          }
          key = key.rotate_left(17) ^ 0x9e37_79b9_7f4a_7c15;
-@@ -13176,6 +13481,12 @@ fn made_among(p: &Program, t: Ty, before: &[AdtId], depth: u32) -> bool {
+@@ -13176,6 +13578,12 @@ fn made_among(p: &Program, t: Ty, before: &[AdtId], depth: u32) -> bool {
  
  /// `ensure_adt_instances_in` for types already in the global
  /// store (signatures and fields at collect time).
@@ -5407,7 +5509,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
  fn ensure_global_adt_instances(p: &mut Program, t: Ty, depth: u32) {
      if depth > 32 {
          return;
-@@ -13697,15 +14008,94 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
+@@ -13697,15 +14105,94 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
          .collect();
      for rec in records {
          let Some(trec) = p.gx.index.trait_record(rec.trait_def).cloned() else { continue };
@@ -5507,7 +5609,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
              // `trait Tr: 'static`: the impl's Self type must be `'static`;
              // `type Req: 'static`: the impl's binding of `Req` must be.
              if let Predicate::TypeOutlives(t, Region::Static) = pred {
-@@ -13739,15 +14129,15 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
+@@ -13739,15 +14226,15 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
              goals.push(TraitRef { def: b.value.def, args, bindings });
          }
          if goals.is_empty() && statics.is_empty() {
@@ -5526,7 +5628,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
                  format!("this impl of `{tname}` does not satisfy the `'static` bound the trait requires"),
                  "Implement the trait for a type without references, or add `'static` bounds to the impl's type parameters.",
              ));
-@@ -13758,13 +14148,13 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
+@@ -13758,13 +14245,13 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
                  let tname = p.display_path(trec.name);
                  errs.push(Diag::new(
                      "L0612",
@@ -5543,7 +5645,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
  }
  
  /// Supertrait cycles among user traits (rustc E0391): an edge
-@@ -14472,6 +14862,15 @@ fn wf_goals(p: &mut Program, adt_idx: &FxMap<DefId, usize>, t: Ty, seen: &mut Ve
+@@ -14472,6 +14959,15 @@ fn wf_goals(p: &mut Program, adt_idx: &FxMap<DefId, usize>, t: Ty, seen: &mut Ve
              if let Some(def) = p.gx.index.trait_of_assoc(assoc.0) {
                  out.push(TraitRef { def, args: a, bindings: EMPTY_BINDINGS });
              }
@@ -5559,7 +5661,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
              in_args(p, seen, out, sized, a);
          }
          TyKind::FnDef(_, a) | TyKind::Closure(_, a) | TyKind::Opaque(_, a) => in_args(p, seen, out, sized, a),
-@@ -14703,9 +15102,16 @@ fn check_written_wf(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&crate:
+@@ -14703,9 +15199,16 @@ fn check_written_wf(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&crate:
          if rec.synthetic != Synthetic::None || !rec.local {
              continue;
          }
@@ -5578,7 +5680,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ccca656727ff44fee863fe587aeb76b
      }
      for (ty, generics, span) in &p.gx.wf_headers {
          items.push((vec![(*ty, *span)], Vec::new(), generics.clone(), *span));
-@@ -14728,6 +15134,25 @@ fn check_written_wf(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&crate:
+@@ -14728,6 +15231,25 @@ fn check_written_wf(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&crate:
              .collect();
          let args = p.tys.intern_args(&own);
          generics.predicates.push(Predicate::Trait(Binder::plain(TraitRef { def: rec.def, args, bindings: EMPTY_BINDINGS })));
@@ -10514,7 +10616,7 @@ index a985aebad215015e7099d8f75e73a0f0735078cb..0212059f42297d779ee5f1d4d56eae9b
      // recorded read (check/where_overflow.rs `recursion_limit`), so a change
      // checks every body again.
 diff --git a/src/driver/graph.rs b/src/driver/graph.rs
-index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..2dd6f97705a221b2057257cba5843483c40719a3 100644
+index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..8e8b82887f98f91af2e5d696eff62b10143106c4 100644
 --- a/src/driver/graph.rs
 +++ b/src/driver/graph.rs
 @@ -494,15 +494,19 @@ impl Reads {
@@ -10540,7 +10642,7 @@ index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..2dd6f97705a221b2057257cba5843483
      } else {
          def.krate.0 as u64
      }
-@@ -1401,6 +1405,18 @@ pub(crate) fn resolved_traits_hash(p: &Program) -> u64 {
+@@ -1401,6 +1405,22 @@ pub(crate) fn resolved_traits_hash(p: &Program) -> u64 {
                  hash_ty(&mut h, p, &p.tys, t);
                  has_default.hash(&mut h);
              }
@@ -10548,6 +10650,8 @@ index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..2dd6f97705a221b2057257cba5843483
 +                hash_def_pub(&mut h, p, item.parent);
 +                hash_generics(&mut h, p, &item.generics);
 +                item.lifetimes.len().hash(&mut h);
++                item.arguments.len().hash(&mut h);
++                for argument in &item.arguments { hash_arg(&mut h, p, &p.tys, argument); }
 +                item.region_facts.hash(&mut h);
 +                item.region_predicates.len().hash(&mut h);
 +                for predicate in &item.region_predicates {
@@ -10555,11 +10659,13 @@ index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..2dd6f97705a221b2057257cba5843483
 +                }
 +                item.bounds.len().hash(&mut h);
 +                for predicate in &item.bounds { hash_predicate(&mut h, p, &p.tys, predicate); }
++                item.declared_bounds.len().hash(&mut h);
++                for predicate in &item.declared_bounds { hash_predicate(&mut h, p, &p.tys, predicate); }
 +            }
          }
          (r.methods.len() as u64).hash(&mut h);
          for &(d, n) in &r.methods {
-@@ -1424,6 +1440,7 @@ fn lang_impl_shape(p: &Program, rec: &crate::traits::index::ImplRecord) -> u64 {
+@@ -1424,6 +1444,7 @@ fn lang_impl_shape(p: &Program, rec: &crate::traits::index::ImplRecord) -> u64 {
      "lang-impl-shape-v1".hash(&mut h);
      hash_trait_ref(&mut h, p, tys, &rec.trait_ref);
      hash_generics(&mut h, p, &rec.generics);
@@ -10567,7 +10673,7 @@ index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..2dd6f97705a221b2057257cba5843483
      (rec.assoc_tys.len() as u64).hash(&mut h);
      for (d, t) in &rec.assoc_tys {
          hash_def_pub(&mut h, p, *d);
-@@ -2036,6 +2053,7 @@ fn impl_content(p: &Program, def: DefId) -> u64 {
+@@ -2036,6 +2057,7 @@ fn impl_content(p: &Program, def: DefId) -> u64 {
          }
      }
      hash_generics(&mut h, p, &rec.generics);
@@ -10575,7 +10681,7 @@ index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..2dd6f97705a221b2057257cba5843483
      (rec.assoc_tys.len() as u64).hash(&mut h);
      for (d, t) in &rec.assoc_tys {
          hash_def_pub(&mut h, p, *d);
-@@ -2054,6 +2072,24 @@ fn impl_content(p: &Program, def: DefId) -> u64 {
+@@ -2054,6 +2076,26 @@ fn impl_content(p: &Program, def: DefId) -> u64 {
      h.finish()
  }
  
@@ -10589,6 +10695,8 @@ index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..2dd6f97705a221b2057257cba5843483
 +            1u8.hash(h);
 +            hash_generics(h, p, &item.declaration.generics);
 +            item.declaration.lifetimes.len().hash(h);
++            item.declaration.arguments.len().hash(h);
++            for argument in &item.declaration.arguments { hash_arg(h, p, &p.tys, argument); }
 +            item.declaration.region_facts.hash(h);
 +            item.declaration.region_predicates.len().hash(h);
 +            for predicate in &item.declaration.region_predicates { hash_predicate(h, p, &p.tys, predicate); }
@@ -10600,7 +10708,7 @@ index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..2dd6f97705a221b2057257cba5843483
  /// Folds one visibility into `h`: its form, and for `pub(in path)` the
  /// written path by name (never by `Sym` id).
  fn hash_vis(h: &mut FxHasher, p: &Program, vis: &VisKind) {
-@@ -2344,7 +2380,14 @@ fn sig_fingerprint(p: &Program, def: DefId) -> Fingerprint {
+@@ -2344,7 +2386,14 @@ fn sig_fingerprint(p: &Program, def: DefId) -> Fingerprint {
          2u8.hash(&mut h);
          // Const and static payloads are found by def; aliases by flat
          // name, which the def record carries.
@@ -10616,7 +10724,7 @@ index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..2dd6f97705a221b2057257cba5843483
              0u8.hash(&mut h);
              hash_ty_deep(&mut h, p, &p.tys, item.ty, &mut seen);
              value_fp(p, &item.value, &item.value_fp).hash(&mut h);
-@@ -4121,6 +4164,39 @@ fn main() {}
+@@ -4121,6 +4170,39 @@ fn main() {}
          assert_ne!(a, changed, "a parameter type edit does");
      }
  
@@ -10656,7 +10764,7 @@ index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..2dd6f97705a221b2057257cba5843483
      /// Non-generic instance keys hash exactly like today's disk-def slot
      /// keys, and lifetime args never enter the hash (section 4.2).
      #[test]
-@@ -4187,7 +4263,7 @@ fn main() {}
+@@ -4187,7 +4269,7 @@ fn main() {}
                  if let Terminator::Call { target, unwind, .. } = &b.term {
                      assert!(unwind.is_some(), "every call carries a cleanup edge (W-CORELANG)");
                      match target {

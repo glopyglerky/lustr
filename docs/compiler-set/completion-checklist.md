@@ -353,6 +353,15 @@ every associated binder and regioned bound into the typed P1/P2 declaration
 boundary; keep provider admission gated until the selective service and metadata
 consumer join are actually checked.
 
+P1 declaration work now retains the associated item's identity arguments in
+written lifetime/type/const order and region-preserving bounds on its full
+application. A generic bound no longer resolves solely in the parent's scope.
+These facts enter declaration fingerprints; they are inputs for the semantic
+service and metadata producer, not a successful GAT provider proof. Ten focused
+tests pass, including the normal collector's retained `Gate<&'a T>` bound,
+`Self: 'a`, `T: 'a` and lifetime fact. Installed ordinary-path regression checking
+of this source is next; the GAT gate remains active.
+
 23 November implementation continuation: P2's imported-generation update is
 ACTIVE on the `3507c74d` base. The public owner validates replacement metadata
 and archives before refreshing native declarations, replays actual dependency
