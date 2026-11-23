@@ -93,6 +93,7 @@ fn runnable(run: Run) -> TestFn {
             0 => Ok(()),
             1 => Err(message.expect("native string panic has a valid UTF-8 message")),
             2 => std::panic::resume_unwind(Box::new(NativePanic)),
+            status @ 257..=511 => test::assert_test_result(ExitCode::from((status - 256) as u8)),
             _ => unreachable!("invalid native test status"),
         }
     }))

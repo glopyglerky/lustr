@@ -1050,6 +1050,8 @@ pub struct FnOut {
     /// runtime. Used only by the mixed compiler's C boundary. Cached generated
     /// code retains this result with the body it describes.
     pub mixed_total: bool,
+    /// This body keeps its C ABI wrapper for its test Termination entry.
+    test_termination: bool,
     /// The fn's C text (`code_text`, `code_len`, `has_code`).
     pub text: CText,
     pub glue: HashSet<(Glue, CTy)>,
@@ -2562,10 +2564,13 @@ fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slot
         }
         g.out.push_str(&trampoline(p, body.fn_id, slots.of(body.fn_id)));
     }
-    // A `main` returning `Result` gets a Termination entry in its
-    // unit (see `fn_unit`): it needs the error type's Debug glue
-    // and the Result's own drop glue.
-    if Some(body.fn_id) == p.main
+    // A main or Cargo test returning Result needs the error's Debug
+    // glue and the Result's own drop glue for its Termination entry.
+    let test_termination = names::release()
+        && p.fn_def(body.fn_id).is_test
+        && p.fn_info(body.fn_id).ret != UNIT
+        && has_native_termination(p, p.fn_info(body.fn_id).ret);
+    if (Some(body.fn_id) == p.main || test_termination)
         && let Some((_, err_t)) = p.tys.result_args(p.fn_info(body.fn_id).ret)
     {
         let rc = cty(&p.tys, p.fn_info(body.fn_id).ret);
@@ -2573,6 +2578,10 @@ fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slot
         if needs_drop_c(p, &rc) {
             g.want(Glue::Drop, &rc);
         }
+    }
+    if test_termination {
+        let slot = slots.of(body.fn_id);
+        emit_termination_entry(&mut g.out, p, body.fn_id, slot, &rust_tests::termination_entry(slot), "");
     }
     let mut types = std::mem::take(&mut g.sig_types);
     let mut named = std::mem::take(&mut g.sig_named);
@@ -2625,6 +2634,7 @@ fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slot
     let externs = externs.into_iter().map(shared_extern).collect();
     FnOut {
         mixed_total: false,
+        test_termination,
         text: CText::Plain(code),
         glue,
         types,
@@ -10807,6 +10817,45 @@ pub fn table_unit(capacity: usize, fn_units: &[usize]) -> String {
     c
 }
 
+fn emit_termination_entry(c: &mut String, p: &Program, m: LocalDefId, idx: u32, entry: &str, linkage: &str) {
+    let ret = p.fn_info(m).ret;
+    let rc = cty(&p.tys, ret);
+    let rt = ctype(&rc);
+    let cast = fn_ptr_cast(p, m);
+    // Main's body is in this unit: release C calls it by name.
+    let target = if names::release() { names::body(idx) } else { format!("lust_fns[{idx}]") };
+    let _ = writeln!(c, "{linkage}int {entry}(void) {{");
+    if ret_is_large(p, m) {
+        let _ = writeln!(c, "  {rt} r; ({cast}{target})(&r);");
+    } else {
+        let _ = writeln!(c, "  {rt} r = ({cast}{target})();");
+    }
+    if p.unwind {
+        let _ = writeln!(c, "  if (lust_unw_pending && lust_unw_mine()) return 0;");
+    }
+    match p.tys.result_args(ret) {
+        Some((ok_t, err_t)) => {
+            let disc = disc_call(p, &rc, "(&r)");
+            let field = variant_field(p, &rc, "r", 1, 0);
+            let ec = cty(&p.tys, err_t);
+            let ok = if p.tys.is_exit_code(ok_t) { format!(" else {{ rc = {}; }}", variant_field(p, &rc, "r", 0, 0)) } else { String::new() };
+            let _ = writeln!(c, "  int rc = 0;");
+            let _ = writeln!(
+                c,
+                "  if ({disc}) {{ lust_sink k; lust_print_begin(&k, 1); lust_Formatter f; lust_f_init(&f, &k); lust_f_write(&f, \"Error: \", 7); (void)dbg_{}(&f, &{field}); lust_f_write(&f, \"\\n\", 1); lust_print_end(1); rc = 1; }}{ok}",
+                mangle(&ec)
+            );
+        }
+        None => {
+            let _ = writeln!(c, "  int rc = r;");
+        }
+    }
+    if needs_drop_c(p, &rc) {
+        let _ = writeln!(c, "  drop_{}(&r);", mangle(&rc));
+    }
+    let _ = writeln!(c, "  return rc;\n}}");
+}
+
 /// The shared glue unit. With a frozen shared set it holds only those keys; the rest of the
 /// glue is static in the function units (see `GlueSet`).
 pub fn glue_unit(p: &Program, g: &GlueSet) -> String {
@@ -12257,7 +12306,7 @@ pub fn fn_unit_parts(
         let f = &fns[s];
         let m = c.len();
         // An LLVM fn's C is its C ABI wrapper and trampoline: kept only when a text names them.
-        match (c_refs, f.ll.is_empty(), names::fn_tag_opt(s as u32)) {
+        match (c_refs.filter(|_| !f.test_termination), f.ll.is_empty(), names::fn_tag_opt(s as u32)) {
             (Some(r), false, Some(id)) => c.push_str(&r.c_body(text_of(s), &id)),
             (_, _, Some(id)) if copy_hot.is_some_and(|h| !is_hot(&h.hot, &id)) => c.push_str(&cold_cleanup(text_of(s), &id)),
             _ => c.push_str(text_of(s)),
@@ -12273,42 +12322,7 @@ pub fn fn_unit_parts(
     // by main's own FnOut (see `gen_fn`).
     let entry_at = c.len();
     if let Some((m, idx)) = term_main {
-        let ret = p.fn_info(m).ret;
-        let rc = cty(&p.tys, ret);
-        let rt = ctype(&rc);
-        let cast = fn_ptr_cast(p, m);
-        // Main's body is in this unit: release C calls it by name.
-        let target = if names::release() { names::body(idx) } else { format!("lust_fns[{idx}]") };
-        let _ = writeln!(c, "static int lust_main_entry_impl(void) {{");
-        if ret_is_large(p, m) {
-            let _ = writeln!(c, "  {rt} r; ({cast}{target})(&r);");
-        } else {
-            let _ = writeln!(c, "  {rt} r = ({cast}{target})();");
-        }
-        if p.unwind {
-            let _ = writeln!(c, "  if (lust_unw_pending && lust_unw_mine()) return 0;");
-        }
-        match p.tys.result_args(ret) {
-            Some((ok_t, err_t)) => {
-                let disc = disc_call(p, &rc, "(&r)");
-                let field = variant_field(p, &rc, "r", 1, 0);
-                let ec = cty(&p.tys, err_t);
-                let ok = if p.tys.is_exit_code(ok_t) { format!(" else {{ rc = {}; }}", variant_field(p, &rc, "r", 0, 0)) } else { String::new() };
-                let _ = writeln!(c, "  int rc = 0;");
-                let _ = writeln!(
-                    c,
-                    "  if ({disc}) {{ lust_sink k; lust_print_begin(&k, 1); lust_Formatter f; lust_f_init(&f, &k); lust_f_write(&f, \"Error: \", 7); (void)dbg_{}(&f, &{field}); lust_f_write(&f, \"\\n\", 1); lust_print_end(1); rc = 1; }}{ok}",
-                    mangle(&ec)
-                );
-            }
-            None => {
-                let _ = writeln!(c, "  int rc = r;");
-            }
-        }
-        if needs_drop_c(p, &rc) {
-            let _ = writeln!(c, "  drop_{}(&r);", mangle(&rc));
-        }
-        let _ = writeln!(c, "  return rc;\n}}");
+        emit_termination_entry(&mut c, p, m, idx, "lust_main_entry_impl", "static ");
     }
     record::piece(record::Kind::Entry, 0, &c[entry_at..]);
     let register_at = c.len();

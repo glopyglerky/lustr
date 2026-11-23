@@ -2,7 +2,7 @@
 // adapter owns scheduling, filtering, reporting and result classification.
 use super::{Program, SourceMap, c_string_lit, names};
 use crate::ast::{Ast, AttrInput, Expr};
-use crate::check::collect::FnLoc;
+use crate::check::collect::{FnLoc, has_native_termination};
 use crate::def::LocalDefId;
 use crate::lexer::{Tok, TokenTree};
 use crate::ty::UNIT;
@@ -17,6 +17,7 @@ pub(crate) struct NativeTest {
     column: u32,
     ignored: Option<Option<String>>,
     panic: Option<Option<String>>,
+    reports_status: bool,
 }
 
 pub(crate) fn collect(program: &Program, map: &SourceMap, cwd: &Path) -> Result<Vec<NativeTest>, String> {
@@ -26,7 +27,10 @@ pub(crate) fn collect(program: &Program, map: &SourceMap, cwd: &Path) -> Result<
         if !def.is_test {
             continue;
         }
-        if !matches!(function.loc, FnLoc::Item(_)) || !function.params.is_empty() || function.ret != UNIT || !def.generics.params.is_empty()
+        if !matches!(function.loc, FnLoc::Item(_))
+            || !function.params.is_empty()
+            || !has_native_termination(program, function.ret)
+            || !def.generics.params.is_empty()
         {
             return Err(format!("native Cargo harness does not represent the signature of {}", program.display_path(function.name)));
         }
@@ -44,10 +48,14 @@ pub(crate) fn collect(program: &Program, map: &SourceMap, cwd: &Path) -> Result<
             }
         }
         let name = program.display_path(function.name);
+        let reports_status = function.ret != UNIT;
+        if reports_status && panic.is_some() {
+            return Err(format!("test {name} must return () to use #[should_panic]"));
+        }
         if [&ignored, &panic].iter().any(|text| text.as_ref().and_then(|value| value.as_ref()).is_some_and(|value| value.contains('\0'))) {
             return Err(format!("native Cargo test attribute in {name} contains a NUL byte"));
         }
-        tests.push(NativeTest { id: LocalDefId(index as u32), name, file, line, column, ignored, panic });
+        tests.push(NativeTest { id: LocalDefId(index as u32), name, file, line, column, ignored, panic, reports_status });
     }
     Ok(tests)
 }
@@ -84,12 +92,18 @@ pub(super) fn main_declarations(out: &mut String, tests: &[NativeTest], slots: &
         int lustr_test_main(int argc, char **argv, size_t count, const lust_test_descriptor*);\n",
     );
     for (i, test) in tests.iter().enumerate() {
-        let symbol = names::body(slots[test.id.0 as usize]);
+        let slot = slots[test.id.0 as usize];
+        if test.reports_status {
+            let symbol = termination_entry(slot);
+            let _ = writeln!(out, "int {symbol}(void);\nstatic void lust_test_body_{i}(void *result) {{ *(int*)result = {symbol}(); }}");
+        } else {
+            let symbol = names::body(slot);
+            let _ =
+                writeln!(out, "lust_Unit {symbol}(void);\nstatic void lust_test_body_{i}(void *unused) {{ (void)unused; {symbol}(); }}");
+        }
         let _ = writeln!(
             out,
-            "lust_Unit {symbol}(void);\n\
-             static void lust_test_body_{i}(void *unused) {{ (void)unused; {symbol}(); }}\n\
-             static int lust_test_run_{i}(void *ctx, lust_test_report report) {{\n\
+            "static int lust_test_run_{i}(void *ctx, lust_test_report report) {{\n\
                return lust_test_invoke(lust_test_body_{i}, ctx, report);\n\
              }}"
         );
@@ -114,12 +128,17 @@ pub(super) fn main_declarations(out: &mut String, tests: &[NativeTest], slots: &
     out.push_str("};\n");
 }
 
+pub(super) fn termination_entry(slot: u32) -> String {
+    format!("lust_test_termination_{}", names::fn_tag(slot))
+}
+
 /// Joins the original native catch to the Rust libtest adapter. Copy the
 /// message while its native payload is alive, then drop it on the native side.
 pub(crate) const CATCH_ADAPTER: &str = "
 int lust_test_invoke(void (*body)(void*), void *ctx,
                       void (*report)(void*, const uint8_t*, size_t)) {
-    if (!lust_unw_try(body, 0)) return 0;
+    int status = 0;
+    if (!lust_unw_try(body, &status)) return status ? 256 + status : 0;
     lust_exc exc;
     lust_unw_take_any(&exc);
     lust_unw_get()->count--;
