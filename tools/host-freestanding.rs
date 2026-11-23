@@ -126,7 +126,8 @@ impl Composition {
         let link = sess.opts.output_types.contains_key(&OutputType::Exe);
         let name = sess.opts.crate_name.as_deref().ok_or("missing original native crate name")?;
         let metadata = format!("{name}/{:?}/{:?}", sess.opts.crate_types, sess.opts.cg.metadata);
-        let metadata = SourceFileHash::new_in_memory(SourceFileHashAlgorithm::Sha256, &metadata);
+        let digest = SourceFileHash::new_in_memory(SourceFileHashAlgorithm::Sha256, &metadata).to_string();
+        let metadata = digest.strip_prefix("sha256=").ok_or("unexpected native crate digest encoding")?;
         let mut command = Command::new(&self.producer);
         command.arg(if link { "link" } else { "check" });
         command.arg(if no_std { "no-std" } else { "std" });
