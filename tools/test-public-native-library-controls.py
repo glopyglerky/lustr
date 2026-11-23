@@ -99,6 +99,30 @@ class ProcessEvidence(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "crosses"):
             campaign.trace_events(data.encode(), Path("/owned"))
 
+    def test_startup_waits_for_a_complete_observer_snapshot(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        root = Path(directory.name)
+        path = root / "daemon.trace"
+        daemon = "/owned/lust-core"
+        start = exec_line(10, daemon, [daemon, "daemon"]).encode()
+        pending = start + b"10 clone3({flags=CLONE_VM|CLONE_THREAD} <unfinished ...>\n"
+        partial = pending + b"10 <... clone3 resumed>, 88) = "
+        self.assertIsNone(campaign.startup_trace(path, root))
+        for snapshot in (pending, partial):
+            path.write_bytes(snapshot)
+            self.assertIsNone(campaign.startup_trace(path, root))
+            with self.assertRaises(campaign.IncompleteTrace):
+                campaign.trace_events(snapshot, root)
+        complete = partial + b"11\n"
+        path.write_bytes(complete)
+        data, parsed = campaign.startup_trace(path, root)
+        self.assertEqual(data, complete)
+        self.assertEqual(parsed["root_pid"], "10")
+        path.write_bytes(complete + b"malformed completed record\n")
+        with self.assertRaisesRegex(AssertionError, "unparsed complete syscall"):
+            campaign.startup_trace(path, root)
+
     def test_terminal_register_race_is_retained_without_an_exec_event(self):
         data = exec_line(10, "/owned/llvm-ar", ["/owned/llvm-ar"])
         data += "10 clone3({flags=CLONE_VM|CLONE_THREAD, exit_signal=0}, 88) = 11\n"

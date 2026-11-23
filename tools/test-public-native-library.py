@@ -98,13 +98,18 @@ def process_identity(pid, executable):
         return None
 
 
+class IncompleteTrace(AssertionError):
+    """An observed write or syscall has yet to finish."""
+
+
 def trace_events(data, cwd, *, application=None):
     """Parse complete observed process events; shortened or split tails fail.
 
     Calls are ordered by their entry, so a child running before its parent's
     clone-resume still inherits that parent's observed working directory.
     """
-    require(not data or data.endswith(b"\n"), "trace ends inside a record")
+    if data and not data.endswith(b"\n"):
+        raise IncompleteTrace("trace ends inside a record")
     pending, events, exits, undecoded = {}, [], {}, {}
     for offset, line in enumerate(data.decode("utf-8", errors="strict").splitlines()):
         if not line.strip():
@@ -147,7 +152,8 @@ def trace_events(data, cwd, *, application=None):
         complete = re.fullmatch(r"([a-z0-9_]+)\((.*)\)\s+=\s+(.*)", record)
         require(complete is not None, "unparsed complete syscall: " + record)
         events.append((start, pid, complete.group(1), complete.group(2), complete.group(3)))
-    require(not pending and not undecoded, "syscall crosses an externally completed request boundary")
+    if pending or undecoded:
+        raise IncompleteTrace("syscall crosses an externally completed request boundary")
     directories, parents, attempts, changes = {}, {}, [], []
     groups, group_exits, terminal_stops = {}, {}, []
     root_pid = None
@@ -217,6 +223,17 @@ def trace_events(data, cwd, *, application=None):
     require(attempts and root_pid is not None, "trace lacks actual initial execution")
     return {"root_pid": root_pid, "attempts": attempts, "parents": parents, "exits": exits,
             "cwd_changes": changes, "terminal_undecoded_stops": terminal_stops}
+
+
+def startup_trace(path, cwd):
+    try:
+        data = path.read_bytes()
+        if data:
+            return data, trace_events(data, cwd)
+    except (FileNotFoundError, IncompleteTrace):
+        # The socket can be ready while strace is still writing its record.
+        pass
+    return None
 
 
 def frozen_prefix(previous, current):
@@ -1839,16 +1856,17 @@ def main():
             identities = [identity for pid in children if (identity := process_identity(int(pid), package / "bin/lust-core"))]
             require(len(identities) <= 1, "tracer owns more than one candidate daemon")
             if identities and endpoint.exists():
-                owner = identities[0]
-                break
+                snapshot = startup_trace(daemon_trace, root)
+                if snapshot is not None:
+                    owner = identities[0]
+                    break
             time.sleep(0.02)
         require(owner is not None and daemon.poll() is None, "actual retained public owner failed to start")
         report["owner_identity"] = owner
         owner_environment = Path(f"/proc/{owner[0]}/environ").read_bytes().split(b"\0")
         require(b"LUSTR_LIBRARY_HISTORY_ENTRIES=2" in owner_environment, "actual retained owner did not receive its startup cache budget")
         report["owner_history_budget"] = {"entries": 2, "observed_in_actual_owner_environment": True}
-        first_prefix = daemon_trace.read_bytes()
-        parsed = trace_events(first_prefix, root)
+        first_prefix, parsed = snapshot
         require(parsed["root_pid"] == str(owner[0]), "traced initial process differs from observed owner")
         inspect_processes(parsed, package, Path(daemon_argv[0]), daemon_argv, projects, daemon=True)
         prefixes.append({"name": "ready", "bytes": first_prefix, "artifact_count": 0})
