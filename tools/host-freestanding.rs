@@ -180,7 +180,7 @@ fn bind(sess: &Session, item: &mut Item, symbol: &str) -> Symbol {
         local = Symbol::intern(&format!("_{symbol}"));
     }
     let id = Ident::new(local, span);
-    let private = Visibility { kind: VisibilityKind::Inherited, span, tokens: None };
+    let private = Visibility { kind: VisibilityKind::Inherited, span };
     let mut declaration = function.clone();
     declaration.ident = id;
     declaration.body = None;

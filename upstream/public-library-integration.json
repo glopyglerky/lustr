@@ -325,7 +325,7 @@
     "tools/host-crate-interface.rs": "d9efee4fcfe1b8179e86042e9c788da12a5dd050e774d92231d8efacb3274e8b",
     "upstream/complement-imports.json": "69627ceee8fb8d2185cd296520438ab1bb1f0fe0601fce870babeedfa3677280",
     "upstream/proc-macro-expansion.patch": "a7f4f05d73321d640fd131211e53f532c84c27c13cc7aaba3ba27828d6a1a004",
-    "tools/host-freestanding.rs": "ad3885f0110db51e93ab1336b0542ec63f0d2fe9386d0f97d3f24b9b05a004f9",
+    "tools/host-freestanding.rs": "d2b4d5b758d1c69c313070d177df60b76cbd1b1aebc8586f4f3d11a4c69373b5",
     "tools/native-freestanding-item.rs": "909b1dfc2e9f035d8f935bc5b5716dac352e7a8a7fc4d8f807101739007eb59e",
     "tools/proc-macro-expansion/client/Cargo.toml": "7b0709ed816f2f215df9b5f787d26239e96b33bc43384a51b56c4451927f9a52",
     "tools/proc-macro-expansion/client/Cargo.lock": "db15c149da01521cf567dc9733c6aafc3f11075218f919235c6153e8e688e45f",
