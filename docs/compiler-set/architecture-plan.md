@@ -3,8 +3,9 @@
 The [exclusive coverage contract](exclusive-coverage-contract.md) controls this
 plan. Lustr's only goal is full rustc replacement using Lust for all work Lust
 covers and only the necessary upstream implementation for the complement.
-The full Rust source stays in blueFe. A larger dependency graph is not blanket
-permission to import a complete competing compiler.
+The pinned Rust source is available in blueFe. Reuse its working compiler for
+complementary operations and improve the interface where it duplicates work
+Lust can retain.
 
 ## Required result
 

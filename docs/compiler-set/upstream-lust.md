@@ -42,11 +42,10 @@ targets. Record provenance, hashes, licenses, real callers, semantic owner,
 adapter and qualification. Include necessary shared data and generators.
 Disclose broad SDK and compiler-private research dependencies separately.
 
-The full upstream compiler graph is not blanket permission. A full Rust source
-checkout in Lustr, complete-driver wrapper or duplicate covered stage violates
-the goal even if hidden behind a library or removed from final object emission.
-A source allowlist does not prove a minimal semantic closure. When the selected
-interface drags duplicate work in, improve the interface before admission.
+Use the pinned Rust compiler implementation for complementary behavior and
+record its effective dependency graph. A compiled program should exercise
+the required Lust work through the ordinary toolchain entry. Improve and
+measure interfaces that repeat covered frontend work.
 
 The [Rust review](upstream-rust-review-2026-11-19.md) documents reusable upstream
 interfaces that support a selective approach. It does not authorize copying all
@@ -63,5 +62,5 @@ Choose legitimate matched comparisons after establishing correctness.
 
 The [prior policy](https://github.com/glopyglerky/lustr/blob/f42649f4f02d170dc899ac70fcc048db2b91da73/docs/compiler-set/upstream-lust.md)
 and [older default policy](https://github.com/glopyglerky/lustr/blob/7cea76c9d3adc587b54ccff168fe07efafd40309/docs/compiler-set/upstream-lust.md)
-remain in history. Their broader import permission and independent-expansion or
-mandatory-speedup directions are superseded by this contract.
+remain in history. Use the current Rust pin, source policy and measured
+integration results for new work.
