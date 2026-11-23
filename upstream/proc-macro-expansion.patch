@@ -90,7 +90,7 @@ index 4b5e25e48801cf4ec70741358a22e0c875fdf26a..89e909b062093b2ce7b672d3498f9a67
      }
  }
 diff --git a/src/tools/rust-analyzer/crates/proc-macro-api/src/process.rs b/src/tools/rust-analyzer/crates/proc-macro-api/src/process.rs
-index 035c12669c8f60b1be81c453cd66685ef4be6ef9..bfb88a8b5f302d89eb24a28e835810f5361af282 100644
+index 035c12669c8f60b1be81c453cd66685ef4be6ef9..78e2d29be420c7796f4679525ec323377abd2fb6 100644
 --- a/src/tools/rust-analyzer/crates/proc-macro-api/src/process.rs
 +++ b/src/tools/rust-analyzer/crates/proc-macro-api/src/process.rs
 @@ -282,7 +282,16 @@ pub(crate) fn expand(
@@ -118,6 +118,68 @@ index 035c12669c8f60b1be81c453cd66685ef4be6ef9..bfb88a8b5f302d89eb24a28e835810f5
              ),
          };
  
+@@ -424,8 +434,10 @@ fn mk_child<'a>(
+         cmd.arg("--format");
+         cmd.arg(format);
+     }
+-    cmd.env("RUST_ANALYZER_INTERNALS_DO_NOT_USE", "this is unstable")
+-        .stdin(Stdio::piped())
++    if format != Some("bidirectional-postcard-prototype") {
++        cmd.env("RUST_ANALYZER_INTERNALS_DO_NOT_USE", "this is unstable");
++    }
++    cmd.stdin(Stdio::piped())
+         .stdout(Stdio::piped())
+         .stderr(Stdio::inherit());
+     if cfg!(windows) {
+diff --git a/src/tools/rust-analyzer/crates/proc-macro-srv-cli/src/main.rs b/src/tools/rust-analyzer/crates/proc-macro-srv-cli/src/main.rs
+index 926633df628dfbfceb45a89c7c7e79c8a37a2560..a03fd82b789b8162e1cbc50697fa5e2fb09dca92 100644
+--- a/src/tools/rust-analyzer/crates/proc-macro-srv-cli/src/main.rs
++++ b/src/tools/rust-analyzer/crates/proc-macro-srv-cli/src/main.rs
+@@ -16,16 +16,6 @@
+ use proc_macro_srv_cli::main_loop::run;
+ 
+ fn main() -> std::io::Result<()> {
+-    let v = std::env::var("RUST_ANALYZER_INTERNALS_DO_NOT_USE");
+-    if v.is_err() {
+-        eprintln!(
+-            "This is an IDE implementation detail, you can use this tool by exporting RUST_ANALYZER_INTERNALS_DO_NOT_USE."
+-        );
+-        eprintln!(
+-            "Note that this tool's API is highly unstable and may break without prior notice"
+-        );
+-        std::process::exit(122);
+-    }
+     let matches = Command::new("proc-macro-srv")
+         .args(&[
+             clap::Arg::new("format")
+@@ -39,13 +29,24 @@ fn main() -> std::io::Result<()> {
+                 .help("Prints the version of the proc-macro-srv"),
+         ])
+         .get_matches();
++    let &format = matches
++        .get_one::<ProtocolFormatArg>("format")
++        .expect("format value should always be present");
++    if !matches!(format.0, ProtocolFormat::BidirectionalPostcardPrototype)
++        && std::env::var_os("RUST_ANALYZER_INTERNALS_DO_NOT_USE").is_none()
++    {
++        eprintln!(
++            "This is an IDE implementation detail, you can use this tool by exporting RUST_ANALYZER_INTERNALS_DO_NOT_USE."
++        );
++        eprintln!(
++            "Note that this tool's API is highly unstable and may break without prior notice"
++        );
++        std::process::exit(122);
++    }
+     if matches.get_flag("version") {
+         println!("rust-analyzer-proc-macro-srv {}", version::version());
+         return Ok(());
+     }
+-    let &format = matches
+-        .get_one::<ProtocolFormatArg>("format")
+-        .expect("format value should always be present");
+ 
+     let mut stdin = std::io::BufReader::new(std::io::stdin());
+     let mut stdout = std::io::stdout();
 diff --git a/src/tools/rust-analyzer/crates/proc-macro-srv/src/token_stream.rs b/src/tools/rust-analyzer/crates/proc-macro-srv/src/token_stream.rs
 index 7038152ac2651c3ab40df66f7b0d1c3ff0e1af16..d6b18fe06732963ade343997e17247580bb37b99 100644
 --- a/src/tools/rust-analyzer/crates/proc-macro-srv/src/token_stream.rs

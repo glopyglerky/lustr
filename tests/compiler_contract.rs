@@ -1711,6 +1711,8 @@ use proc_macro::{TokenStream, tracked};
 pub fn value(input: TokenStream) -> TokenStream {
     let token = input.into_iter().next().unwrap();
     assert_eq!(token.span().source_text().as_deref(), Some("0x2a"));
+    assert!(std::env::var_os("RUST_ANALYZER_USE_POSTCARD").is_none());
+    assert!(std::env::var_os("RUST_ANALYZER_INTERNALS_DO_NOT_USE").is_none());
     let offset = tracked::env_var("LUSTR_TEST_MACRO_OFFSET").unwrap().parse::<u32>().unwrap();
     tracked::path("asset.txt");
     let asset = std::fs::read_to_string("asset.txt").unwrap().trim().parse::<u32>().unwrap();
@@ -1727,6 +1729,8 @@ fn main() { println!("{} {}", independent(), expanded()); }
     let cargo = |operation: &str, offset: &str| {
         let mut command = f.command("cargo");
         command.env("LUSTR_TEST_MACRO_OFFSET", offset)
+            .env_remove("RUST_ANALYZER_USE_POSTCARD")
+            .env_remove("RUST_ANALYZER_INTERNALS_DO_NOT_USE")
             .args([operation, "--frozen", "--jobs", "2"]);
         command
     };

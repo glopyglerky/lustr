@@ -210,21 +210,24 @@ impl HostMacros {
                 "range": {"start": token.span.lo, "end": token.span.hi},
             }))
         }).collect::<Result<Vec<_>, _>>()?;
+        let mut environment: BTreeMap<String, String> = match &ctx.client.env {
+            Some(environment) => environment.iter().cloned().collect(),
+            None => std::env::vars_os().filter_map(|(name, value)| {
+                Some((name.into_string().ok()?, value.into_string().ok()?))
+            }).collect(),
+        };
+        environment.extend(ctx.cargo_env.iter().cloned());
         let request = json!({
             "server": self.server, "dylib": artifact.input.metadata.artifact,
             "macro_name": call.name_text(), "working_directory": self.cwd,
             "definition": {"start": definition.start, "end": definition.end},
             "provider_source": definition.load_source(),
             "consumer_source": ctx.src,
+            "environment": environment.into_iter().collect::<Vec<_>>(),
             "call": {"start": call.span.lo, "end": call.span.hi},
             "tokens": tokens,
         });
-        let mut command = Command::new(&self.client);
-        if let Some(environment) = &ctx.client.env {
-            command.env_clear().envs(environment.iter().map(|(name, value)| (name, value)));
-        }
-        command.envs(ctx.cargo_env.iter().map(|(name, value)| (name, value)));
-        let mut child = command.env("RUST_ANALYZER_USE_POSTCARD", "1").env_remove("LD_LIBRARY_PATH")
+        let mut child = Command::new(&self.client).env_clear().env("RUST_ANALYZER_USE_POSTCARD", "1")
             .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn()?;
         let sent = serde_json::to_writer(child.stdin.take().unwrap(), &request);
         let reply = child.wait_with_output()?;

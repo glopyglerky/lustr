@@ -34,6 +34,7 @@ struct Request {
     provider_source: Option<String>,
     call: Range,
     consumer_source: String,
+    environment: Vec<(String, String)>,
     tokens: Vec<Token>,
 }
 
@@ -54,8 +55,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let server = AbsPathBuf::try_from(request.server.as_str()).map_err(|_| "server path is not absolute")?;
     let dylib = AbsPathBuf::try_from(request.dylib.as_str()).map_err(|_| "artifact path is not absolute")?;
     let version = semver::Version::parse("1.102.0-nightly")?;
-    let client =
-        ProcMacroClient::spawn(&server, std::iter::empty::<(&str, &Option<String>)>(), Some(&version), 1)?;
+    // The client switch selects the transport. The worker obtains the user's
+    // environment from the expansion request, just before executing the macro.
+    let client = ProcMacroClient::spawn(
+        &server, [("RUST_ANALYZER_USE_POSTCARD", &None::<String>)], Some(&version), 1,
+    )?;
     let macros = client.load_dylib(MacroDylib::new(dylib)).map_err(|error| error.to_string())?;
     let expansion = macros.iter().find(|candidate| {
         candidate.name() == request.macro_name && candidate.kind() == ProcMacroKind::Bang
@@ -105,7 +109,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let observed = RefCell::<Option<ExpansionInputs>>::new(None);
     let note = |inputs| assert!(observed.replace(Some(inputs)).is_none());
     let expanded = expansion.expand_with_inputs(
-        input.view(), None, Vec::new(), def_site, call_site, call_site,
+        input.view(), None, request.environment, def_site, call_site, call_site,
         request.working_directory.clone(), &callback, &note,
     ).map_err(|error| error.to_string())?
         .map_err(|error| format!("procedural macro panicked: {error}"))?;
