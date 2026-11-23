@@ -28,6 +28,18 @@ pub fn answer(args: &[OsString], bin: &Path, host: &str) -> Option<Result<(), St
     Some(query(args, bin, host))
 }
 
+fn discovery_codegen_option(option: &str) -> Result<(), String> {
+    // These options affect emission and linking. None of the queries below
+    // computes an artifact, its linker arguments, or its relocation policy.
+    // Rust's target cfg describes the target's default relocation model.
+    match option.split_once('=') {
+        Some(("link-arg" | "link_arg", _)) => Ok(()),
+        Some(("relocation-model" | "relocation_model", "default" | "static" | "pic" | "pie"
+            | "dynamic-no-pic" | "ropi" | "rwpi" | "ropi-rwpi")) => Ok(()),
+        _ => Err(format!("the native information query does not represent codegen option {option:?}")),
+    }
+}
+
 fn query(args: &[OsString], bin: &Path, host: &str) -> Result<(), String> {
     let args = args.iter().map(|arg| arg.to_str().ok_or("query arguments must be UTF-8")).collect::<Result<Vec<_>, _>>()?;
     let mut prints = Vec::new();
@@ -46,8 +58,8 @@ fn query(args: &[OsString], bin: &Path, host: &str) -> Result<(), String> {
             "--crate-name" if name.is_none() => name = Some(value(arg)?),
             "--target" if target.is_none() => target = Some(value(arg)?),
             "--cfg" | "--check-cfg" => cfg_options.extend([arg, value(arg)?]),
-            // Cargo's target discovery sets this diagnostic level. Compilation
-            // and profile flags are never silently discarded.
+            "-C" | "--codegen" => discovery_codegen_option(value(arg)?)?,
+            // Cargo's target discovery sets this diagnostic level.
             "-Wwarnings" => {}
             arg if arg.starts_with("--print=") => prints.push(&arg[8..]),
             arg if arg.starts_with("--crate-type=") => crate_types.extend(arg[13..].split(',')),
@@ -55,6 +67,8 @@ fn query(args: &[OsString], bin: &Path, host: &str) -> Result<(), String> {
             arg if arg.starts_with("--target=") && target.is_none() => target = Some(&arg[9..]),
             arg if arg.starts_with("--cfg=") => cfg_options.extend(["--cfg", &arg[6..]]),
             arg if arg.starts_with("--check-cfg=") => cfg_options.extend(["--check-cfg", &arg[12..]]),
+            arg if arg.starts_with("-C") => discovery_codegen_option(&arg[2..])?,
+            arg if arg.starts_with("--codegen=") => discovery_codegen_option(&arg[10..])?,
             _ => return Err(format!("the native information query does not represent argument {arg:?}")),
         }
     }

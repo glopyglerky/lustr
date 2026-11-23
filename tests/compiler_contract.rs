@@ -1260,6 +1260,29 @@ fn main() { let _: i32 = "active cfg flags were lost"; }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn cargo_discovery_accepts_freestanding_link_settings() {
+    let f = Fixture::new("cargo-freestanding-discovery");
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let query = ["-", "--crate-name", "discovery", "--print=file-names", "--print=crate-name", "--print=cfg"];
+    let link = ["-C", "link-arg=-nostdlib", "-Clink-arg=-static", "--codegen=relocation-model=static"];
+    for (name, original) in [("native", false), ("original", true)] {
+        let command = || {
+            let mut compiler = if original { Command::new(&oracle) } else { f.command("rustc") };
+            compiler.current_dir(&f.root).env_remove("LD_LIBRARY_PATH").args(query);
+            compiler
+        };
+        let plain = f.succeeds(&format!("{name}-query"), &mut command());
+        let configured = f.succeeds(&format!("{name}-with-link-settings"), command().args(link));
+        assert_eq!(configured.stdout, plain.stdout);
+        let invalid = f.invoke(&format!("{name}-invalid-relocation"), command().arg("-Crelocation-model=invalid"));
+        assert!(!invalid.status.success());
+        assert!(invalid.stdout.is_empty());
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and Clang"]
 fn rustc_consumes_a_rust_archive_with_embedded_metadata() {
     let f = Fixture::new("embedded-extern");
