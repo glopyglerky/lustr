@@ -152,13 +152,14 @@ pub(crate) fn prepare(args: &[String]) -> Result<PreparedUnit, String> {
 /// owners. Keep the full original source and positions for this native item.
 pub(crate) fn prepare_item(args: &[String], source: &str, span: Range<u32>) -> Result<PreparedUnit, String> {
     prepare_request(request(args)?, false, true, Some(ItemSelection {
-        source, spans: &[span], total_scalars: false, policy_span: None, codegen: None,
+        source, original_matches: None, spans: &[span], total_scalars: false, policy_span: None, codegen: None,
     }))
 }
 
 #[derive(Clone, Copy)]
 struct ItemSelection<'a> {
     source: &'a str,
+    original_matches: Option<&'a dyn Fn(&str) -> bool>,
     spans: &'a [Range<u32>],
     total_scalars: bool,
     policy_span: Option<&'a Range<u32>>,
@@ -182,10 +183,10 @@ impl ItemCodegen {
 /// publishes the object containing the checked symbols.
 pub(crate) fn complete_items(
     args: &[String], source: &str, spans: &[Range<u32>], link: bool, policy_span: Option<Range<u32>>,
-    codegen: ItemCodegen,
+    codegen: ItemCodegen, original_matches: Option<&dyn Fn(&str) -> bool>,
 ) -> Result<Vec<(String, String)>, String> {
     let prepared = prepare_request(request(args)?, false, true, Some(ItemSelection {
-        source, spans, total_scalars: true, policy_span: policy_span.as_ref(), codegen: link.then_some(codegen),
+        source, original_matches, spans, total_scalars: true, policy_span: policy_span.as_ref(), codegen: link.then_some(codegen),
     }))?;
     let program = prepared.program();
     let mut bindings = Vec::with_capacity(spans.len());
@@ -261,7 +262,22 @@ fn prepare_request(r: Request, artifact: bool, capture: bool, items: Option<Item
     if r.output.exists() { return Err("object output already exists; use a fresh path".into()); }
     let working_directory = capture.then(std::env::current_dir).transpose()
         .map_err(|error| format!("cannot retain native request working directory: {error}"))?;
-    let source = fs::read_to_string(&r.source).map_err(|e| format!("cannot read source: {e}"))?;
+    let mut source = fs::read_to_string(&r.source).map_err(|e| format!("cannot read source: {e}"))?;
+    if let Some(selected) = items {
+        let matches = selected.original_matches.map_or_else(
+            || selected.source == source,
+            |original_matches| original_matches(&source),
+        );
+        if !matches {
+            return Err("the original source changed since the item was selected".into());
+        }
+        if selected.original_matches.is_some() {
+            // The enclosing Rust source map has verified the raw bytes. Its
+            // normalized text supplies the coordinates used for each span.
+            source.clear();
+            source.push_str(selected.source);
+        }
+    }
     let selected_items = items.filter(|selected| selected.total_scalars);
     let source_limit = if selected_items.is_some() { u32::MAX as usize } else { SOURCE_LIMIT };
     if source.len() > source_limit { return Err("native object source exceeds current bound".into()); }
@@ -273,9 +289,6 @@ fn prepare_request(r: Request, artifact: bool, capture: bool, items: Option<Item
     } else {
         map.add_file(&source_path, &source)
     };
-    if items.is_some_and(|selected| selected.source != source) {
-        return Err("the original source changed since the item was selected".into());
-    }
     let policy_len = if selected_items.is_none_or(|selected| selected.policy_span.is_some()) { 5 } else { 0 };
     let lexed = if let Some(selected) = selected_items {
         // Rust owns the rest of the crate. Only check the original source

@@ -163,6 +163,11 @@ impl Composition<'_> {
     ) -> Result<(Option<PathBuf>, Vec<String>), String> {
         let file = sess.source_map().lookup_source_file(items[0].span.lo());
         let source = file.src.as_ref().ok_or("missing original source snapshot")?;
+        let verify_original = |text: &str| {
+            text.len() == file.unnormalized_source_len as usize && file.src_hash.matches(text)
+        };
+        let original_matches = (!file.normalized_pos.is_empty())
+            .then_some(&verify_original as &dyn Fn(&str) -> bool);
         let object = directory.join("native-items.o");
         let setting = |value| if value { "on" } else { "off" };
         let link = sess.opts.output_types.contains_key(&OutputType::Exe);
@@ -187,7 +192,7 @@ impl Composition<'_> {
             object.to_str().ok_or("native item output path must be UTF-8")?.to_owned(),
         ];
         let report = sess.time("lustr_native_items", || {
-            crate::native_object::complete_items(&args, source, &extents, link, policy_span, codegen)
+            crate::native_object::complete_items(&args, source, &extents, link, policy_span, codegen, original_matches)
         })?;
         if report.len() != items.len() {
             return Err("native object does not cover every selected definition".into());
@@ -353,7 +358,6 @@ impl Callbacks for Composition<'_> {
         }
         let selected: Vec<_> = krate.items.iter().enumerate().filter(|(_, item)| {
             native_function(item).is_some()
-                && sess.source_map().lookup_source_file(item.span.lo()).normalized_pos.is_empty()
         }).map(|(index, item)| (index, item.as_ref())).collect();
         if let Some((_, first)) = selected.first() {
             let directory = Scratch::create(self.output.as_deref().unwrap())
@@ -370,8 +374,11 @@ impl Callbacks for Composition<'_> {
                         let span = native_function(item).unwrap().body.as_ref().unwrap().span;
                         file.relative_position(span.lo()).0..file.relative_position(span.hi()).0
                     }).collect::<Vec<_>>();
-                    if let Some(cache) = file.src.as_ref().and_then(|source|
-                        host_retained_link::Cache::open(sess, self.output.as_deref().unwrap(), self.args, source, &bodies, &symbols))
+                    // The retained Rust link context still uses raw source
+                    // coordinates for the persisted artifacts.
+                    if file.normalized_pos.is_empty()
+                        && let Some(cache) = file.src.as_ref().and_then(|source|
+                            host_retained_link::Cache::open(sess, self.output.as_deref().unwrap(), self.args, source, &bodies, &symbols))
                     {
                         let outputs = rustc_interface::util::build_output_filenames(&krate.attrs, sess);
                         if let OutFileName::Real(deps) = outputs.path(OutputType::DepInfo)

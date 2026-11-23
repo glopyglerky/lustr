@@ -2720,6 +2720,24 @@ mod tests {
     assert_eq!(result.status.code(), Some(101));
     let later = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
     assert!(!later[traces.len()..].contains("\"entry\":\"rust-complement\""), "{later}");
+
+    for (name, encoded) in [
+        ("crlf", source.replace('\n', "\r\n")),
+        ("bom", format!("\u{{feff}}{source}")),
+    ] {
+        let path = f.source("src/main.rs", &encoded);
+        let result = f.succeeds(name, cargo(name, false, false).args(["run", "--frozen"]));
+        assert_eq!(result.stdout, b"42\n");
+        let exe = f.root.join(name).join("debug/async_program");
+        let debug = f.succeeds(&format!("{name}-debug"),
+            Command::new("readelf").args(["--debug-dump=info", "--wide"]).arg(exe));
+        let info = String::from_utf8_lossy(&debug.stdout);
+        let native_unit = info.split("Compilation Unit @").find(|unit|
+            unit.lines().any(|line| line.contains("DW_AT_producer") && line.contains("Lustr")))
+            .expect("Lust owns the function in normalized Rust source");
+        assert!(native_unit.contains("apply_mask") && native_unit.contains("src/main.rs"), "{native_unit}");
+        assert_eq!(std::fs::read_to_string(path).unwrap(), encoded);
+    }
 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
