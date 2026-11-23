@@ -2996,7 +2996,7 @@ pub(crate) fn prepare_projection_import<'a>(
     session: &'a mut Session,
     definitions: &dyn super::imports::Definitions,
 ) -> Result<Preparation<'a>, super::imports::Unintegrated> {
-    let previous = session.imported_inputs.as_ref();
+    let previous = session.imported_generation.as_ref();
     if req.session != session.key || !session.caches.persistent || session.caches.output != super::OutputKind::Standalone
         || previous.is_none() && (session.imported_request || session.front.env_hash.is_some()
             || !session.front.src.is_empty() || !session.front.slot_of.is_empty())
@@ -3013,12 +3013,12 @@ pub(crate) fn prepare_projection_import<'a>(
 /// slots and emitted objects survive; their normal full-mode replay determines
 /// which results still hold. Only validated providers enter this boundary.
 fn update_imported_generation(session: &mut Session, definitions: &dyn super::imports::Definitions) {
-    let inputs = definitions.dependencies();
-    if let Some(previous) = &session.imported_inputs
-        && !(inputs.len() == previous.len() && inputs.iter().zip(previous).all(|(a, b)| {
-            a.identity == b.identity && a.contents == b.contents
-        }))
-    {
+    use super::imports::Generation;
+    let generation = match definitions.scalar_definitions() {
+        Some(facts) => Generation::Scalar(facts),
+        None => Generation::Inputs(definitions.dependencies()),
+    };
+    if session.imported_generation.as_ref().is_some_and(|previous| *previous != generation) {
         // Recollect signatures from the new metadata. Keep the slots, types,
         // and read sets: the normal full-mode walk reuses bodies whose
         // signature and other dependencies still hold.
@@ -3029,7 +3029,7 @@ fn update_imported_generation(session: &mut Session, definitions: &dyn super::im
         super::patch::drop_kept(&mut session.front, &mut session.caches);
     }
     session.imported_request = true;
-    session.imported_inputs = Some(inputs);
+    session.imported_generation = Some(generation);
     session.cache_tried = true;
     session.disk_cache = None;
 }
@@ -5520,7 +5520,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
     // their objects, in the session and in the disk unit cache.
     let standalone = caches.output == super::session::OutputKind::Standalone;
     let retain_standalone = req.session.library.as_ref().is_some_and(|key| key.is_executable())
-        || session.imported_inputs.is_some();
+        || session.imported_generation.is_some();
     // Cargo's dependency-free unwind binaries use the existing native panic
     // propagation. TinyCC's own linker also preserves its multi-body frame
     // relocations, which cannot be passed to another linker in this form.

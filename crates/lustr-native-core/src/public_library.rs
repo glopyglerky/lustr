@@ -366,7 +366,7 @@ impl Owner {
             // Completed scalar bodies expose every reference to an admitted
             // dependency as an actual checked call edge.
             let unused = self.imported.as_ref().filter(|_| !import_used)
-                .map(|imported| imported.alias.as_str()).into_iter().collect::<Vec<_>>();
+                .map(|imported| imported.facts.alias.as_str()).into_iter().collect::<Vec<_>>();
             let lint=json!({"$message_type":"unused_extern","lint_level":"force-warn","unused_extern_names":unused});
             response.stderr.insert_str(0,&format!("{lint}\n"));
         }

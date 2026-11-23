@@ -9,7 +9,7 @@ use crate::{
     check::collect::Program,
     def,
     diag::Diag,
-    driver::imports::{Definitions, Dependency, Emission},
+    driver::imports::{Definitions, Dependency, Emission, ScalarDefinitions},
     intern::Interner,
     library_artifact::unit_object,
     protocol::ExecutableExtern,
@@ -102,7 +102,8 @@ impl ExecutableImports {
     }
 
     pub(super) fn unused_externs(&self, used: &BTreeSet<def::CrateId>) -> Vec<&str> {
-        self.crates.iter().filter(|item| !used.contains(&item.definitions.index)).map(|item| item.definitions.alias.as_str()).collect()
+        self.crates.iter().map(|item| &item.definitions.facts)
+            .filter(|facts| !used.contains(&facts.index)).map(|facts| facts.alias.as_str()).collect()
     }
 }
 
@@ -140,7 +141,8 @@ fn archive_objects<'a>(bytes: &'a [u8], definitions: &Import) -> Result<Vec<&'a 
 
 impl Definitions for ExecutableImports {
     fn cargo_extern_matches(&self, alias: &str, name: &str) -> bool {
-        self.crates.iter().any(|item| item.definitions.alias == alias && item.definitions.identity.name == name)
+        self.crates.iter().map(|item| &item.definitions.facts)
+            .any(|facts| facts.alias == alias && facts.crate_name == name)
     }
 
     fn mount(&self, tables: &mut ResolvedTables, interner: &Interner) -> Result<(), Diag> {
@@ -176,6 +178,10 @@ impl Definitions for ExecutableImports {
                 deps
             })
             .collect()
+    }
+
+    fn scalar_definitions(&self) -> Option<Vec<Arc<ScalarDefinitions>>> {
+        Some(self.crates.iter().map(|item| item.definitions.facts.clone()).collect())
     }
 
     fn take_emission(&self) -> Result<Box<dyn Emission + 'static>, String> {

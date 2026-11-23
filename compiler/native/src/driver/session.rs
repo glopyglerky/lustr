@@ -454,9 +454,9 @@ pub struct Session {
     pub(crate) cache_tried: bool,
     /// Ordinary requests cannot consume a session's imported state.
     pub(crate) imported_request: bool,
-    /// Exact validated imported inputs for the retained generation. Changed
-    /// bytes force declaration refresh and replay of native semantic reads.
-    pub(crate) imported_inputs: Option<Vec<super::imports::Dependency>>,
+    /// Validated facts for the retained imported generation. Changed facts
+    /// force declaration refresh and replay of native semantic reads.
+    pub(crate) imported_generation: Option<super::imports::Generation>,
 }
 
 impl Front {
@@ -597,7 +597,7 @@ impl Session {
             disk_cache: None,
             cache_tried: artifact_mode,
             imported_request: false,
-            imported_inputs: None,
+            imported_generation: None,
         }
     }
     pub fn obj_dir(&self) -> &Path {

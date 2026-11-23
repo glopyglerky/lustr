@@ -2,18 +2,47 @@
 //!
 //! The provider installs resolved definitions before collection checks any
 //! initializer or body. It supplies actual compiler facts, never declarations
-//! generated as source. Retained owners bind exact validated dependency bytes
-//! to declaration refresh and native read replay. Disk-cache restoration of
-//! imported generations remains unavailable.
+//! generated as source. Retained owners bind validated declaration inputs to
+//! native read replay and keep the exact dependency bytes for artifact use.
+//! Disk-cache restoration of imported generations remains unavailable.
 
-use crate::{check::collect::Program, diag::Diag, intern::Interner, resolve::imports::ResolvedTables};
+use std::sync::Arc;
 
-/// An immutable input to the imported semantic service. The provider records
-/// the real metadata/compiler/object identity it consumed; native checking's
-/// definition reads remain attached to the imported definitions themselves.
+use crate::{check::collect::Program, def, diag::Diag, intern::Interner, resolve::imports::ResolvedTables, ty};
+
+/// An immutable metadata, compiler, or object input consumed by the provider.
+#[derive(PartialEq, Eq)]
 pub struct Dependency {
     pub identity: String,
-    pub contents: std::sync::Arc<[u8]>,
+    pub contents: Arc<[u8]>,
+}
+
+/// The full set of native declarations exposed by the scalar metadata reader.
+/// It does not expose implementation bodies, inlining, or const evaluation.
+#[derive(PartialEq, Eq)]
+pub struct ScalarDefinitions {
+    pub alias: String,
+    pub crate_name: String,
+    pub stable: def::StableCrateHash,
+    pub index: def::CrateId,
+    pub functions: Vec<ScalarFunction>,
+}
+
+#[derive(PartialEq, Eq)]
+pub struct ScalarFunction {
+    pub name: String,
+    pub hash: def::DefPathHash,
+    pub parameters: Vec<ty::IntTy>,
+    pub result: ty::IntTy,
+    pub symbol: String,
+}
+
+/// Inputs that affect the current checked declarations. Providers without a
+/// complete representation of their facts conservatively use exact bytes.
+#[derive(PartialEq, Eq)]
+pub(crate) enum Generation {
+    Inputs(Vec<Dependency>),
+    Scalar(Vec<Arc<ScalarDefinitions>>),
 }
 
 /// Native-supported work whose joined context/profile is not implemented by
@@ -40,6 +69,9 @@ pub trait Definitions {
     /// Validate the installed semantic facts without executing an emitter.
     fn validate_checked(&self, program: &Program) -> Result<(), String>;
     fn dependencies(&self) -> Vec<Dependency>;
+    /// Executables use only admitted scalar declarations in checking. Their
+    /// raw metadata and archive inputs remain bound to artifact publication.
+    fn scalar_definitions(&self) -> Option<Vec<Arc<ScalarDefinitions>>> { None }
     /// Transfer the immutable, single-use plan after semantic validation.
     /// Constructing or taking the plan must not emit code or materialize objects.
     fn take_emission(&self) -> Result<Box<dyn Emission + 'static>, String>;

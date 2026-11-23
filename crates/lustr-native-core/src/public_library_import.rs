@@ -8,6 +8,7 @@ use crate::{
     def,
     diag::{Diag, Span},
     driver,
+    driver::imports::{ScalarDefinitions, ScalarFunction},
     intern::Interner,
     protocol::ExternMetadata,
     resolve::imports::{Bind, DefInfo, ExternInfo, InsertOut, ResKind, ResolvedTables, Target, VisKind},
@@ -16,14 +17,6 @@ use crate::{
 use lustr_metadata_encoder::{IntegerType, Sdk, read_link_crate, read_scalar_crate};
 
 use super::{Stamp, stamp};
-
-struct Function {
-    name: String,
-    hash: def::DefPathHash,
-    parameters: Vec<ty::IntTy>,
-    result: ty::IntTy,
-    symbol: String,
-}
 
 fn native_integer_type(ty: IntegerType) -> ty::IntTy {
     match ty {
@@ -50,14 +43,11 @@ pub(super) struct Identity {
 }
 
 pub(super) struct Import {
-    pub(super) alias: String,
+    pub(super) facts: Arc<ScalarDefinitions>,
     pub(super) stamp: Stamp,
     pub(super) identity: Identity,
     pub(super) requires_abort: bool,
     pub(super) dependencies: Vec<Identity>,
-    pub(super) index: def::CrateId,
-    stable: def::StableCrateHash,
-    functions: Vec<Function>,
     artifact_identity: String,
     pub(super) metadata: Arc<[u8]>,
     pub(super) sdk: Sdk,
@@ -84,7 +74,7 @@ impl Import {
         let functions = leaf
             .functions
             .iter()
-            .map(|function| Function {
+            .map(|function| ScalarFunction {
                 name: function.name.into(),
                 hash: def::DefPathHash(function.path_hash),
                 parameters: function.parameters.iter().copied().map(native_integer_type).collect(),
@@ -96,16 +86,19 @@ impl Import {
         let dependencies = leaf.dependencies.iter().map(|dep| Identity {
             name: dep.name.into(), svh: dep.svh, suffix: dep.filename_suffix.into(),
         }).collect();
-        let stable = def::StableCrateHash(leaf.stable_id);
+        let facts = Arc::new(ScalarDefinitions {
+            alias: request.alias.clone(),
+            crate_name: identity.name.clone(),
+            stable: def::StableCrateHash(leaf.stable_id),
+            index,
+            functions,
+        });
         Ok(Self {
-                alias: request.alias.clone(),
+                facts,
                 stamp: before,
                 identity,
                 requires_abort: leaf.requires_abort,
                 dependencies,
-                index,
-                stable,
-                functions,
                 artifact_identity: path.to_str().ok_or("extern metadata path is not Unicode")?.into(),
                 metadata: data.into(),
                 sdk: context,
@@ -117,19 +110,19 @@ impl Import {
     }
 
     pub(super) fn owns(&self, id: def::DiskDefId) -> bool {
-        id.krate == self.stable
+        id.krate == self.facts.stable
     }
 
     pub(super) fn has_direct_integer_abi(&self) -> bool {
         use driver::library::completion::has_direct_integer_abi;
-        self.functions.iter().all(|function| {
+        self.facts.functions.iter().all(|function| {
             has_direct_integer_abi(function.result)
                 && function.parameters.iter().copied().all(has_direct_integer_abi)
         })
     }
 
     pub(super) fn exported_symbols(&self) -> impl Iterator<Item = &str> {
-        self.functions.iter().map(|function| function.symbol.as_str())
+        self.facts.functions.iter().map(|function| function.symbol.as_str())
     }
 
     fn failure(message: &str) -> Diag {
@@ -139,25 +132,25 @@ impl Import {
 
 impl driver::imports::Definitions for Import {
     fn mount(&self, tables: &mut ResolvedTables, interner: &Interner) -> Result<(), Diag> {
-        if tables.externs.iter().any(|existing| existing.owner == ty::defs::ROOT_MODULE && existing.name == self.alias)
-            || tables.module_defs.iter().chain(tables.def_info.keys()).any(|id| id.krate == self.index)
+        if tables.externs.iter().any(|existing| existing.owner == ty::defs::ROOT_MODULE && existing.name == self.facts.alias)
+            || tables.module_defs.iter().chain(tables.def_info.keys()).any(|id| id.krate == self.facts.index)
         {
             return Err(Self::failure("extern namespace is already occupied"));
         }
-        let root = tables.add_crate_root(interner.intern(&self.alias));
-        let root_id = def::DefId { krate: self.index, hash: def::DefPathHash(self.stable.0) };
+        let root = tables.add_crate_root(interner.intern(&self.facts.alias));
+        let root_id = def::DefId { krate: self.facts.index, hash: def::DefPathHash(self.facts.stable.0) };
         tables.module_defs[root.0 as usize] = root_id;
         tables.externs.push(ExternInfo {
-            name: self.alias.clone(),
+            name: self.facts.alias.clone(),
             def: root_id,
             is_std_lib: false,
             owner: ty::defs::ROOT_MODULE,
             root_module: Some(root),
             unsupported: None,
         });
-        for function in &self.functions {
-            let id = def::DefId { krate: self.index, hash: function.hash };
-            let flat = interner.intern(&format!("$lustr$extern${:016x}${:016x}", self.stable.0, function.hash.0));
+        for function in &self.facts.functions {
+            let id = def::DefId { krate: self.facts.index, hash: function.hash };
+            let flat = interner.intern(&format!("$lustr$extern${:016x}${:016x}", self.facts.stable.0, function.hash.0));
             let info = DefInfo { kind: ResKind::Fn, flat, module: root, vis: VisKind::Pub };
             if tables.def_info.insert(id, info).is_some()
                 || tables.flat[1].insert(flat, id).is_some()
@@ -173,18 +166,18 @@ impl driver::imports::Definitions for Import {
             {
                 return Err(Self::failure("extern function identity conflicts with an existing binding"));
             }
-            tables.display_names.insert(flat, interner.intern(&format!("{}::{}", self.alias, function.name)));
+            tables.display_names.insert(flat, interner.intern(&format!("{}::{}", self.facts.alias, function.name)));
         }
         Ok(())
     }
 
     fn install(&self, program: &mut Program) -> Result<(), Vec<Diag>> {
-        if program.krate == self.index || program.imported_crates.values().any(|stable| *stable == self.stable)
-            || program.imported_crates.insert(self.index, self.stable).is_some() {
+        if program.krate == self.facts.index || program.imported_crates.values().any(|stable| *stable == self.facts.stable)
+            || program.imported_crates.insert(self.facts.index, self.facts.stable).is_some() {
             return Err(vec![Self::failure("extern crate identity is already occupied")]);
         }
-        for function in &self.functions {
-            let id = def::DefId { krate: self.index, hash: function.hash };
+        for function in &self.facts.functions {
+            let id = def::DefId { krate: self.facts.index, hash: function.hash };
             let info = program
                 .resolved
                 .as_ref()
@@ -196,7 +189,7 @@ impl driver::imports::Definitions for Import {
             let ret = program.tys.intern(ty::TyKind::Int(function.result));
             data.sig = ty::SigData::Fn { params: params.clone(), ret };
             data.native_linkage = Some(Box::new(ty::defs::NativeLinkage {
-                id: def::DiskDefId { krate: self.stable, hash: function.hash },
+                id: def::DiskDefId { krate: self.facts.stable, hash: function.hash },
                 symbol: function.symbol.clone(),
             }));
             program.defs.insert(id, data);
@@ -222,16 +215,16 @@ impl driver::imports::Definitions for Import {
     }
 
     fn validate_checked(&self, program: &Program) -> Result<(), String> {
-        if program.imported_crates.get(&self.index) != Some(&self.stable) {
+        if program.imported_crates.get(&self.facts.index) != Some(&self.facts.stable) {
             return Err("checked extern crate identity changed".into());
         }
-        for function in &self.functions {
-            let id = def::DefId { krate: self.index, hash: function.hash };
+        for function in &self.facts.functions {
+            let id = def::DefId { krate: self.facts.index, hash: function.hash };
             let (params, ret, linkage) = program.native_fn(id).ok_or("checked extern signature is absent")?;
             if params.len() != function.parameters.len()
                 || params.iter().zip(&function.parameters).any(|(&id, &kind)| program.tys.kind(id) != ty::TyKind::Int(kind))
                 || program.tys.kind(ret) != ty::TyKind::Int(function.result)
-                || linkage.id.krate != self.stable
+                || linkage.id.krate != self.facts.stable
                 || linkage.id.hash != function.hash
                 || linkage.symbol != function.symbol
             {
@@ -242,7 +235,7 @@ impl driver::imports::Definitions for Import {
     }
 
     fn cargo_crate_name(&self) -> Option<&str> {
-        Some(&self.identity.name)
+        Some(&self.facts.crate_name)
     }
     fn dependencies(&self) -> Vec<driver::imports::Dependency> {
         vec![driver::imports::Dependency { identity: self.artifact_identity.clone(), contents: self.metadata.clone() }]
