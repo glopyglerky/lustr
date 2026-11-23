@@ -3188,7 +3188,7 @@ index 019e079ad31611c7eba4ad0fe3a7a4d60b71cc17..155b2a5ce50e86f428703c7ae797c73b
              match fit {
                  Fit::Yes => {
 diff --git a/src/cc.rs b/src/cc.rs
-index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..6ea6adfd71876b34a397ff30e313e22499e9692e 100644
+index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..a59dff2257be4c405f26668c5c83470ab9b626c9 100644
 --- a/src/cc.rs
 +++ b/src/cc.rs
 @@ -19,6 +19,7 @@
@@ -3223,7 +3223,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..6ea6adfd71876b34a397ff30e313e224
      }
      let (arch, os) = (triple.split('-').next().unwrap_or(""), triple);
      let host_like = arch == std::env::consts::ARCH
-@@ -179,13 +182,46 @@ pub fn spec_for(triple: &str) -> Result<CcSpec, String> {
+@@ -179,13 +182,104 @@ pub fn spec_for(triple: &str) -> Result<CcSpec, String> {
          // musl toolchain, which the link error will name).
          let cmd = vec!["cc".to_string()];
          let cxx = cxx_for(&cmd);
@@ -3268,10 +3268,68 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..6ea6adfd71876b34a397ff30e313e224
 +    Ok(())
 +}
 +
++#[cfg(feature = "exclusive-native")]
++fn installed_cargo_runtime_dir() -> Option<PathBuf> {
++    let executable = std::env::current_exe().ok()?;
++    let root = executable.parent()?.parent()?;
++    Some(root.join("lib/lustr-cargo-runtime"))
++}
++
++/// Build the invariant runtime units during toolchain construction with the
++/// same compiler, options and headers as an ordinary native Cargo build.
++#[cfg(feature = "exclusive-native")]
++pub(crate) fn prime_cargo_runtime() -> Result<(), String> {
++    if crate::protocol::host_triple() != "x86_64-unknown-linux-gnu"
++        || !on_path("clang") || !on_path("clang++") {
++        return Ok(());
++    }
++    let directory = installed_cargo_runtime_dir().ok_or("cannot locate the toolchain runtime directory")?;
++    std::fs::create_dir(&directory).map_err(|error| format!("create runtime object directory: {error}"))?;
++    let spec = spec_for_native_cargo(crate::protocol::host_triple(), true, false)?;
++    let flags_text = cflags(false);
++    let flags: Vec<_> = flags_text.split_whitespace().map(str::to_owned).collect();
++    let source = directory.join("u2.c");
++    for test in [false, true] {
++        let text = crate::cgen::cargo_runtime_unit(test);
++        let preprocessed = preprocessed(&text, &spec.cmd, &flags_text, false)
++            .ok_or("could not preprocess the native Cargo runtime")?;
++        let key = unit_key(&text, Some(&preprocessed), &spec, false, None, false);
++        let object = directory.join(format!("unit-{key}.o"));
++        std::fs::write(&source, text).map_err(|error| format!("stage native Cargo runtime: {error}"))?;
++        let output = unit_command(&spec.cmd, &flags, &object, Some(&key), None, &source)
++            .output().map_err(|error| format!("compile native Cargo runtime: {error}"))?;
++        std::fs::remove_file(&source).map_err(|error| format!("remove native Cargo runtime source: {error}"))?;
++        if !output.status.success() {
++            return Err(format!("native Cargo runtime compilation failed: {}", String::from_utf8_lossy(&output.stderr)));
++        }
++        let bytes = std::fs::read(&object).map_err(|error| format!("read native Cargo runtime object: {error}"))?;
++        let digest = cargo_runtime_digest(&bytes);
++        std::fs::write(object.with_extension("sha256"), digest).map_err(|error| format!("record native Cargo runtime object: {error}"))?;
++        println!("{}", object.display());
++    }
++    Ok(())
++}
++
++#[cfg(feature = "exclusive-native")]
++fn cargo_runtime_digest(bytes: &[u8]) -> String {
++    use sha2::Digest;
++    sha2::Sha256::digest(bytes).iter().map(|byte| format!("{byte:02x}")).collect()
++}
++
++#[cfg(feature = "exclusive-native")]
++fn reuse_cargo_runtime(directory: &Path, key: &str, destination: &Path) -> bool {
++    let source = directory.join(format!("unit-{key}.o"));
++    let Ok(digest) = std::fs::read_to_string(source.with_extension("sha256")) else { return false; };
++    let Ok(bytes) = std::fs::read(source) else { return false; };
++    if cargo_runtime_digest(&bytes) != digest { return false; }
++    let _ = std::fs::remove_file(destination);
++    std::fs::write(destination, bytes).is_ok()
++}
++
  /// The C flags of every unit, one string so the cache key and the command
  /// line can never disagree.
  pub fn cflags(debug: bool) -> String {
-@@ -237,7 +273,7 @@ fn ldflags(spec: &CcSpec, debug: bool) -> Vec<String> {
+@@ -237,7 +331,7 @@ fn ldflags(spec: &CcSpec, debug: bool) -> Vec<String> {
      if spec.statik {
          v.push("-static".into());
      }
@@ -3280,7 +3338,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..6ea6adfd71876b34a397ff30e313e224
          v.push("-s".into());
      } else {
          v.push("-g".into());
-@@ -485,6 +521,10 @@ pub fn llflags(debug: bool) -> String {
+@@ -485,6 +579,10 @@ pub fn llflags(debug: bool) -> String {
      if debug { format!("{base} -g") } else { base }
  }
  
@@ -3291,7 +3349,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..6ea6adfd71876b34a397ff30e313e224
  /// Compiles one LLVM backend unit into `obj`: the C unit `src` and the helpers' C `hc` to
  /// bitcode with the C flags (no LLVM passes yet), then the IR `ll` with both linked in, so
  /// the optimizer sees one module (cgen/ll.rs: the C helpers inline into the LLVM fns). The
-@@ -565,7 +605,7 @@ fn compile_pair(
+@@ -565,7 +663,7 @@ fn compile_pair(
      // A relative compiler path must not resolve against the work dir (PGO compiles there).
      let prog = if words[0].contains('/') { std::fs::canonicalize(&words[0]).unwrap_or_else(|_| PathBuf::from(&words[0])) } else { PathBuf::from(&words[0]) };
      let mut cmd = cc_command(prog);
@@ -3300,7 +3358,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..6ea6adfd71876b34a397ff30e313e224
      if nopre {
          cmd.args(["-mllvm", "-disable-preinline"]);
      }
-@@ -666,7 +706,7 @@ fn memo_tag(spec: &CcSpec, debug: bool, work: &Path) -> String {
+@@ -666,7 +764,7 @@ fn memo_tag(spec: &CcSpec, debug: bool, work: &Path) -> String {
              spec.triple.as_bytes(),
              compiler_id(&spec.cmd).as_bytes(),
              cflags(debug).as_bytes(),
@@ -3309,7 +3367,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..6ea6adfd71876b34a397ff30e313e224
              pgo_env.join(" ").as_bytes(),
              profile.as_bytes(),
          ],
-@@ -738,7 +778,7 @@ pub fn memo_misses(units: &[UnitIn], spec: &CcSpec, debug: bool, cache: Option<&
+@@ -738,7 +836,7 @@ pub fn memo_misses(units: &[UnitIn], spec: &CcSpec, debug: bool, cache: Option<&
  /// units to pass again with text (an LLVM unit's three parts come with text or without as
  /// one). Returns a one-line summary, or the compiler's error text.
  pub fn build(units: &[UnitIn], spec: &CcSpec, out: &Path, debug: bool, cache: Option<&crate::driver::cache::Cache>, work: &Path) -> Result<String, CcError> {
@@ -3318,7 +3376,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..6ea6adfd71876b34a397ff30e313e224
  }
  
  /// `build`, with the units a `Stream` took while they assembled: for each, the stream's key,
-@@ -751,6 +791,7 @@ pub fn build_with(
+@@ -751,6 +849,7 @@ pub fn build_with(
      cache: Option<&crate::driver::cache::Cache>,
      work: &Path,
      stream: Option<Stream>,
@@ -3326,7 +3384,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..6ea6adfd71876b34a397ff30e313e224
  ) -> Result<String, CcError> {
      // The streamed units compile on from here, `jobs` at once, while this prepares the rest.
      if let Some(s) = &stream {
-@@ -912,7 +953,7 @@ pub fn build_with(
+@@ -912,7 +1011,7 @@ pub fn build_with(
              keyed.then(|| match ll_of.get(unit.as_str()) {
                  Some(ll) => {
                      let hc = hc_of.get(unit.as_str()).copied().unwrap_or("");
@@ -3335,7 +3393,36 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..6ea6adfd71876b34a397ff30e313e224
                  }
                  None => unit_key(c, pre_of(i), spec, debug, part.as_deref(), is_cxx(&names[i])),
              })
-@@ -1125,7 +1166,12 @@ pub fn build_with(
+@@ -981,6 +1080,12 @@ pub fn build_with(
+     let lost = std::sync::Mutex::new(Vec::new());
+     let limit = crate::pool::threads().max(1).min(units.len().max(1));
+     let t_compile = std::time::Instant::now();
++    #[cfg(feature = "exclusive-native")]
++    let installed_runtime = if !pgo_on && (spec.rust_debug || spec.test_runtime.is_some()) {
++        installed_cargo_runtime_dir()
++    } else {
++        None
++    };
+     std::thread::scope(|scope| {
+         for _ in 0..limit {
+             scope.spawn(|| loop {
+@@ -1018,6 +1123,15 @@ pub fn build_with(
+                     hits.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                     continue;
+                 }
++                #[cfg(feature = "exclusive-native")]
++                if name == "u2" && pre_of(i).is_some()
++                    && let (Some(directory), Some(cache), Some(key)) = (&installed_runtime, cache, &keys[i])
++                    && reuse_cargo_runtime(directory, key, obj)
++                {
++                    cache.store_unit_object(key, obj);
++                    hits.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
++                    continue;
++                }
+                 if entries[i].is_some() {
+                     lost.lock().unwrap_or_else(|e| e.into_inner()).push(units[i].name.clone());
+                     continue;
+@@ -1125,7 +1239,12 @@ pub fn build_with(
          // A build with a C++ unit links with the C++ driver (its runtime and personality).
          let link = if units.iter().any(|u| is_cxx(&u.name)) { &spec.cxx } else { &spec.cmd };
          let mut cmd = cc_command(&link[0]);
@@ -3349,7 +3436,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..6ea6adfd71876b34a397ff30e313e224
          match cmd.output() {
              Ok(o) if o.status.success() => Ok(format!(
                  "{} units ({} from cache, clang {:.2}s, {}link {:.2}s{}), linked {}",
-@@ -1199,6 +1245,8 @@ mod tests {
+@@ -1199,6 +1318,8 @@ mod tests {
          let units = || vec![UnitIn::text("u0", main.into()), UnitIn::text("u1", f.into()), UnitIn::text("u2", g.into())];
          let plain = crate::driver::cache::Cache::at(&root.join("c1"));
          super::build(&units(), &spec, &root.join("a"), false, Some(&plain), &root.join("w1")).unwrap();
@@ -3358,7 +3445,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..6ea6adfd71876b34a397ff30e313e224
          // The stream's cache already holds g's object (a build of another main and g): u2 is a
          // hit, u1 a miss the stream compiles, u0 a miss build compiles.
          let streamed = crate::driver::cache::Cache::at(&root.join("c2"));
-@@ -1207,10 +1255,13 @@ mod tests {
+@@ -1207,10 +1328,13 @@ mod tests {
          let Some(stream) = super::Stream::start(&spec.triple, false, Some(crate::driver::cache::Cache::at(&root.join("c2"))), root.join("w2")) else { return };
          stream.add("u1", f);
          stream.add("u2", g);
@@ -3375,7 +3462,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..6ea6adfd71876b34a397ff30e313e224
          let _ = std::fs::remove_dir_all(&root);
      }
  
-@@ -1305,7 +1356,7 @@ mod tests {
+@@ -1305,7 +1429,7 @@ mod tests {
  
      fn zig_spec(target: &str) -> super::CcSpec {
          let cmd: Vec<String> = ["zig", "cc", "-target", target].into_iter().map(str::to_string).collect();
@@ -3384,7 +3471,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..6ea6adfd71876b34a397ff30e313e224
      }
  
      #[test]
-@@ -1461,7 +1512,7 @@ mod tests {
+@@ -1461,7 +1585,7 @@ mod tests {
      /// begins (the parts are hashed with their lengths).
      #[test]
      fn an_llvm_unit_key_moves_with_each_text() {
@@ -3393,7 +3480,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..6ea6adfd71876b34a397ff30e313e224
          let key = |c: &str, ll: &str, hc: &str, extra: &str| super::ll_unit_key(c, ll, hc, extra, &spec, false, None);
          let base = key("c", "ll", "hc", "x");
          for other in [key("c2", "ll", "hc", "x"), key("c", "ll2", "hc", "x"), key("c", "ll", "hc2", "x"), key("c", "ll", "hc", "y"), key("cl", "l", "hc", "x")] {
-@@ -1474,7 +1525,7 @@ mod tests {
+@@ -1474,7 +1598,7 @@ mod tests {
      fn unit_key_moves_with_every_input() {
          let spec = |triple: &str, cmd: &str| {
              let cmd: Vec<String> = cmd.split_whitespace().map(str::to_string).collect();
@@ -3416,7 +3503,7 @@ index dcf8c8e922873b5f8c8d8c3c7ebe5299f9b246e2..4a1769fcb2fde1bb27ed7aeca057eb2e
  
  /// The LLVM major version of a clang command; an error for another compiler (gcc writes
 diff --git a/src/cgen.rs b/src/cgen.rs
-index ac6965592d3f4cc6ea1969df299fe33c974056b0..4bc18fefd99859e5e8736ae86e9bb59881b60c60 100644
+index ac6965592d3f4cc6ea1969df299fe33c974056b0..6ecdc4de716101ef9c79c928ef6adbe0c7f1ffb7 100644
 --- a/src/cgen.rs
 +++ b/src/cgen.rs
 @@ -26,6 +26,8 @@ pub mod record;
@@ -4299,7 +4386,23 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..4bc18fefd99859e5e8736ae86e9bb598
  fn runtime_decls() -> &'static str {
      static DECLS: std::sync::OnceLock<String> = std::sync::OnceLock::new();
      DECLS.get_or_init(|| {
-@@ -10444,6 +10661,8 @@ pub struct UnwindInit {
+@@ -10427,6 +10644,15 @@ pub fn runtime_unit() -> String {
+     format!("#define LUST_IMPL 1\n{}", runtime_source(true))
+ }
+ 
++pub(crate) fn cargo_runtime_unit(test: bool) -> String {
++    let mut source = runtime_unit();
++    if test {
++        source.insert_str(0, "#define LUST_LIBTEST_CAPTURE 1\n");
++        source.push_str(rust_tests::CATCH_ADAPTER);
++    }
++    source
++}
++
+ /// The source files panic locations name: every file's path (index 0 is
+ /// the crate root) and each slot's file index.
+ pub struct SlotFiles<'a> {
+@@ -10444,6 +10670,8 @@ pub struct UnwindInit {
      pub tables: bool,
      pub ids: [u64; 4],
      pub hook_runner: Option<u32>,
@@ -4308,7 +4411,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..4bc18fefd99859e5e8736ae86e9bb598
  }
  
  /// The `main_unit` argument for `p` (`slot_of` maps a fn to its slot).
-@@ -10461,7 +10680,11 @@ pub fn unwind_init(p: &Program, slot_of: impl Fn(LocalDefId) -> u32) -> Option<U
+@@ -10461,7 +10689,11 @@ pub fn unwind_init(p: &Program, slot_of: impl Fn(LocalDefId) -> u32) -> Option<U
          .map(|i| slot_of(LocalDefId(i as u32)));
      let (a, b) = crate::check::any::type_id_words(p, &p.tys, REF_STR);
      let (c, d) = crate::check::any::type_id_words(p, &p.tys, STRING);
@@ -4321,7 +4424,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..4bc18fefd99859e5e8736ae86e9bb598
  }
  
  /// The location unit: the per-slot line and file tables and
-@@ -10503,11 +10726,21 @@ pub fn loc_unit(files: &SlotFiles, slot_lines: &[u32]) -> String {
+@@ -10503,11 +10735,21 @@ pub fn loc_unit(files: &SlotFiles, slot_lines: &[u32]) -> String {
  /// sets up the runtime's panic payloads and hook runner; under
  /// panic=unwind a `main` that ends by a panic exits 101.
  pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -> String {
@@ -4344,7 +4447,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..4bc18fefd99859e5e8736ae86e9bb598
              format!("\n  lust_unw_init({}, {a}ull, {b}ull, {c}ull, {d}ull);", if unwind && tables { 2 } else { unwind as u8 }),
              hook_runner.map_or(String::new(), |s| {
                  // Release C names the runner directly (only its address is taken here).
-@@ -10518,20 +10751,32 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
+@@ -10518,20 +10760,32 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
      };
      let mut c = unit_header();
      c.push_str("void lust_loc_init(void);\nvoid lust_kstatics_init(void);\n");
@@ -4383,7 +4486,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..4bc18fefd99859e5e8736ae86e9bb598
          // Main runs under a catch point (std's lang_start catches its panic).
          let _ = writeln!(
              c,
-@@ -10550,6 +10795,11 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
+@@ -10550,6 +10804,11 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
      if !runner.is_empty() {
          c.push('\n');
      }
@@ -4395,7 +4498,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..4bc18fefd99859e5e8736ae86e9bb598
      if tables {
          c.push_str("  int rc = 0;\n  if (lust_unw_try(lust_main_thunk, &rc)) rc = lust_unw_main_caught();\n  lust_tls_exit();\n  lust_flush();\n  return rc;\n}\n");
          return c;
-@@ -10582,6 +10832,45 @@ pub fn table_unit(capacity: usize, fn_units: &[usize]) -> String {
+@@ -10582,6 +10841,45 @@ pub fn table_unit(capacity: usize, fn_units: &[usize]) -> String {
      c
  }
  
@@ -4441,7 +4544,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..4bc18fefd99859e5e8736ae86e9bb598
  /// The shared glue unit. With a frozen shared set it holds only those keys; the rest of the
  /// glue is static in the function units (see `GlueSet`).
  pub fn glue_unit(p: &Program, g: &GlueSet) -> String {
-@@ -12032,7 +12321,7 @@ pub fn fn_unit_parts(
+@@ -12032,7 +12330,7 @@ pub fn fn_unit_parts(
          let f = &fns[s];
          let m = c.len();
          // An LLVM fn's C is its C ABI wrapper and trampoline: kept only when a text names them.
@@ -4450,7 +4553,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..4bc18fefd99859e5e8736ae86e9bb598
              (Some(r), false, Some(id)) => c.push_str(&r.c_body(text_of(s), &id)),
              (_, _, Some(id)) if copy_hot.is_some_and(|h| !is_hot(&h.hot, &id)) => c.push_str(&cold_cleanup(text_of(s), &id)),
              _ => c.push_str(text_of(s)),
-@@ -12044,46 +12333,11 @@ pub fn fn_unit_parts(
+@@ -12044,46 +12342,11 @@ pub fn fn_unit_parts(
      // table; on Err print `Error: {err:?}` to stderr and exit 1, as
      // Rust does; an `ExitCode` is the exit status. Registered below
      // in `lust_main_entry_p`, which the main unit prefers over the
@@ -4499,7 +4602,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..4bc18fefd99859e5e8736ae86e9bb598
      }
      record::piece(record::Kind::Entry, 0, &c[entry_at..]);
      let register_at = c.len();
-@@ -13126,7 +13380,7 @@ fn glue_def_value(
+@@ -13126,7 +13389,7 @@ fn glue_def_value(
      match g {
          Glue::CloneFrom => unreachable!("clonefrom glue returns above"),
          Glue::Drop => {
@@ -4508,7 +4611,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..4bc18fefd99859e5e8736ae86e9bb598
              match t {
                  CTy::String => body.push_str("  lust_string_drop(p);\n"),
                  CTy::Hash(k, _) if hash::is_table(*k) => body.push_str(&hash::drop_body(p, t, &mut need)),
-@@ -13364,7 +13618,7 @@ fn glue_def_value(
+@@ -13364,7 +13627,7 @@ fn glue_def_value(
              } else {
                  body = body.replace(UNW_DSTEP, "").replace("UNW_DSTEP ", "");
              }
@@ -4517,7 +4620,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..4bc18fefd99859e5e8736ae86e9bb598
          }
          Glue::Clone => {
              let _ = writeln!(protos, "{ct} clone_{m}({ct} *p);");
-@@ -14261,7 +14515,7 @@ mod tests {
+@@ -14261,7 +14524,7 @@ mod tests {
          let span = Span::new(FileId(0), 0, 0);
          let elems = body.tys.intern_tys(&[STRING, int(IntTy::U8)]);
          let tuple_ty = body.tys.intern(TyKind::Tuple(elems));
@@ -4526,7 +4629,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..4bc18fefd99859e5e8736ae86e9bb598
          body.locals = vec![local(UNIT), local(tuple_ty), local(STRING)];
          body.blocks = vec![BlockData {
              stmts: vec![Stmt {
-@@ -14781,9 +15035,9 @@ mod tests {
+@@ -14781,9 +15044,9 @@ mod tests {
              let shards = names::glue_shards(&program, &glue, &outs, 1);
              let drop_hooks = format!("void drop_{}_(", ctype(&CTy::Adt(hooks)));
              let shard = shards.iter().find(|s| s.lines().any(|l| l.starts_with(&drop_hooks) && l.ends_with('{'))).expect("a shard defines the struct's drop glue");
@@ -4538,7 +4641,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..4bc18fefd99859e5e8736ae86e9bb598
              let keys = names::glue_shard_keys(&glue, &outs, 1);
              let made = names::glue_shard_texts(&program, &glue, &keys, &[], true);
              assert_eq!(made.iter().map(|(c, _)| c.as_str()).collect::<Vec<_>>(), shards, "a record does not change a shard");
-@@ -14898,7 +15152,7 @@ mod tests {
+@@ -14898,7 +15161,7 @@ mod tests {
          let inputs = body.tys.intern_tys(&[i64_ty]);
          let sig = body.tys.intern_sig(Binder::plain(FnSig::plain(inputs, i64_ty)));
          let fnptr_ty = body.tys.intern(TyKind::FnPtr(sig));
@@ -10191,7 +10294,7 @@ index da28835400f894866adb85f436e2cbdf109797d7..c2a8d6a10a776fba1df984670ff8b994
          assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
          assert!(decode_response(b"short").is_none());
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be99da4e79 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f77a7186947d6c5dd16e02e906732a6cc31eb0cb 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
 @@ -30,7 +30,7 @@ use crate::check::collect::{self, LocalDefId};
@@ -11667,7 +11770,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
      // Nothing reads the IR after codegen. A one-shot build leaks it at exit
      // (`leak_at_exit`), but on a large program it is the largest block
      // alive at the peak (ts-rust's bins: about 2.4 GB of 9.4 GB, through
-@@ -4718,7 +5517,19 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4718,7 +5517,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      const SHARD_RECORD: &str = "glue shard ";
      let fn_units: Vec<usize> = (0..groups.len()).map(|g| g + FIRST_FN_UNIT).collect();
      let dirty_fn_units: Vec<usize> = (0..groups.len()).filter(|&g| dirty_groups[g]).map(|g| g + FIRST_FN_UNIT).collect();
@@ -11677,18 +11780,11 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
 +        main_slot, overlays, cgen::unwind_init(&program, |f| front.fn_slot[f.0 as usize]),
 +        tests.as_deref().map(|tests| (tests, front.fn_slot.as_slice())),
 +    );
-+    let runtime_unit = || {
-+        let mut unit = cgen::runtime_unit();
-+        if tests.is_some() {
-+            unit.insert_str(0, "#define LUST_LIBTEST_CAPTURE 1\n");
-+            unit.push_str(cgen::rust_tests::CATCH_ADAPTER);
-+        }
-+        unit
-+    };
++    let runtime_unit = || cgen::cargo_runtime_unit(tests.is_some());
      // Instance slots take their template's line: cgen stores an
      // instance's panic lines relative to it (see `line_base_of`).
      let mut slot_lines = vec![0u32; n_slots];
-@@ -4751,7 +5562,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4751,7 +5555,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // rebuilds and the base
      // relinks over the existing unit objects. Unrelated units keep
      // their objects, in the session and in the disk unit cache.
@@ -11704,7 +11800,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
      let cap_grown = n_slots > caches.table_cap;
      if fresh_base || cap_grown {
          caches.table_cap = n_slots * 2 + 64;
-@@ -4760,7 +5578,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4760,7 +5571,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          caches.base_units = groups.len();
      }
      let table_dirty = cap_grown || groups.len() != caches.base_units;
@@ -11715,7 +11811,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
      let dir = caches.obj_dir.clone();
      let base_obj = |u: usize| dir.join(format!("u{u}.o"));
      let overlay_obj = |u: usize| dir.join(format!("o{u}.o"));
-@@ -4842,9 +5662,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4842,9 +5655,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          super::release_c::groups(&caches.out, names, &file, &line)
      };
      let gen_unit = |u: usize, overlay: bool| match u {
@@ -11727,7 +11823,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
          3 => cgen::table_unit(caches.table_cap, &fn_units),
          LOC_UNIT => cgen::loc_unit(&files, &slot_lines),
          g => {
-@@ -4853,7 +5673,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4853,7 +5666,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
      };
      // Release C: whether fn bodies are LLVM IR (cgen/ll.rs), and B1's switches.
@@ -11736,7 +11832,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
      // B1 (`cgen::record`): each C fn unit records the pieces it is made of and what it
      // read, and the next build sets the record against its program
      // (`Caches::unit_records`). A session that keeps its caches (a daemon, a front
-@@ -5007,7 +5827,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5007,7 +5820,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              let assemble = |u: usize, inl: &[Vec<usize>], c_refs: Option<&cgen::ll::CRefs>, copy_hot: Option<&cgen::CopyHot>| {
                  let t = Instant::now();
                  let (c, helpers) = cgen::in_layout_phase(asm_tag, || cgen::names::with(rn, || match u {
@@ -11745,7 +11841,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
                      1 => match super::release_c::statics_bytes() {
                          0 => (adapt(cgen::names::statics_unit(&program, &caches.glue), &Default::default()), String::new()),
                          target => {
-@@ -5023,7 +5843,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5023,7 +5836,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                              (adapt(index, &Default::default()), String::new())
                          }
                      },
@@ -11754,7 +11850,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
                      3 => {
                          let rg = rg_cell.get().expect("the fn units are cut before unit 3");
                          (super::release_c::table_unit(&rg.iter().filter(|(_, s)| s.contains(&(main_slot as usize))).map(|(r, _)| r.clone()).collect::<Vec<_>>()), String::new())
-@@ -5291,7 +6111,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5291,7 +6104,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                          if k < n_early {
                              Ok(assemble(first[k], &[], None, None))
                          } else {
@@ -11765,7 +11861,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
                          }
                      })
                      .into_iter()
-@@ -5617,7 +6439,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5617,7 +6432,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      };
      let rgroups = rg_cell.into_inner();
      // The LLVM backend (cgen/ll.rs) wrote `.ll` companions: only cc.rs builds them.
@@ -11774,7 +11870,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
      // The units the link takes after 1..4: release C has its own fn units, glue shards and
      // statics parts.
      let link_fn_units: Vec<usize> = match &rgroups {
-@@ -5656,7 +6478,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5656,7 +6471,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              return Response { code: 0, ..Default::default() };
          }
      }
@@ -11783,7 +11879,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
          return Response {
              stderr: "error: LUST_RELEASE_BACKEND=llvm builds through the release driver (`lust build --release --target <triple>`) or with --emit-c\n".into(),
              code: 2,
-@@ -5671,7 +6493,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5671,7 +6486,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // frozen, so a clean unit's C is the same as last time and its object
      // comes from the cache. Overlays do not exist here: every build emits
      // the base form of each unit.
@@ -11792,7 +11888,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
          // The release driver returns before the visits line at the end: its log line is here
          // (front-check's path coverage).
          front.last_visits.clear();
-@@ -5688,7 +6510,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5688,7 +6503,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
              }
          }
@@ -11804,7 +11900,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
              // Release C (`LUST_RELEASE_C=1`) already holds the content-addressed units.
              let mut all: Vec<(String, String)> = if rgroups.is_some() {
                  // An LLVM companion keeps its `.ll` name (cc.rs pairs it with its C unit). The
-@@ -5749,8 +6574,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5749,8 +6567,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          {
              let _ = writeln!(resp.stderr, "b1: {l}");
          }
@@ -11818,7 +11914,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
              // A build that leaks at exit leaks the unit texts too (they moved out of `units`).
              if leak_at_exit {
                  std::mem::forget(all);
-@@ -5807,6 +6636,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5807,6 +6629,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // this check keeps that a pin, not a hope.
      if let Some(run_args) = &req.run_args
          && !caches.persistent
@@ -11826,7 +11922,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
          && fresh_base
          && groups.len() == 1
          && !req.debug
-@@ -5837,7 +6667,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5837,7 +6660,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
      }
      // Disk unit objects key on each unit's full C text (see cache.rs):
@@ -11835,7 +11931,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
      // compiler, so a hit can never serve an object whose C differs. The
      // C is already built here for every unit in `todo`, so the key costs
      // one hash per unit.
-@@ -5847,7 +6677,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5847,7 +6670,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
      }
      let keys: Vec<Option<String>> = match &disk_cache {
@@ -11844,7 +11940,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
          None => vec![None; units.len()],
      };
      // The units move into the miss list, and their C is freed before the
-@@ -5866,7 +6696,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5866,7 +6689,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              miss_keys.push(key);
          }
      }
@@ -11853,7 +11949,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
          caches.objects = None;
          return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
      }
-@@ -5883,10 +6713,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5883,10 +6706,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      caches.objects = Some(req.debug);
      t.lap("tcc compile");
      let all_base: Vec<PathBuf> = [1, 2, 3, LOC_UNIT].into_iter().chain(link_fn_units.iter().copied()).map(base_obj).collect();
@@ -11874,7 +11970,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
      } else {
          // The base library lives in a persistent dir under a content name
          // (see `resolve_base_dir`): the executable loads it by absolute
-@@ -5901,18 +6739,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5901,18 +6732,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
          let base = if rebuild_base {
              caches.base_gen += 1;
@@ -11915,7 +12011,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
                      install_base(&tmp, &base_dir.join(&soname))?;
                      if !caches.base_files.contains(&soname) {
                          caches.base_files.push_back(soname);
-@@ -5922,24 +6773,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5922,24 +6766,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              if built.is_err() {
                  let _ = std::fs::remove_file(&tmp);
              }
@@ -11947,7 +12043,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
              built
          } else {
              Ok(())
-@@ -5958,8 +6810,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5958,8 +6803,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // a small grace count while no known output file still references them. A binary the user
      // kept keeps its base; one that was overwritten or deleted does not. A running program
      // keeps its mapped copy after unlink.
@@ -11958,7 +12054,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
          if let Some(base_dir) = caches.base_dir.clone() {
              record_base_user(&base_dir, &soname, &req.out);
          }
-@@ -6058,6 +6910,66 @@ mod tests {
+@@ -6058,6 +6903,66 @@ mod tests {
          panic!("{}: still busy", bin.display())
      }
  
@@ -12025,7 +12121,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..d5bdf161354e82a6882b38cb3615c4be
      /// The base sweep never deletes a live owner's base (it may be a live
      /// session's current base, found by fuzz seed 7 multi when a guard
      /// session's first-build sweep deleted the warm session's base), but
-@@ -6417,10 +7329,547 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
+@@ -6417,10 +7322,547 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
              max_errors: 20,
              run_args: None,
              harness: false, cc: false,
@@ -16027,7 +16123,7 @@ index 5a8d06b853ee2f1f83e6f8e37f315b032a4eaa78..0602ea58e0aaf79551162b5088ceb69a
              self.drop_local(g);
          } else {
 diff --git a/src/main.rs b/src/main.rs
-index 20f43a0f0b85fac8b27e4569d433f3cf101f05eb..902295e80c3df9eee35fbc0d042d880b397a75e1 100644
+index 20f43a0f0b85fac8b27e4569d433f3cf101f05eb..f71895124fd1d19987f9092e14e261d27dae13fe 100644
 --- a/src/main.rs
 +++ b/src/main.rs
 @@ -17,6 +17,12 @@ mod cgen;
@@ -16051,12 +16147,20 @@ index 20f43a0f0b85fac8b27e4569d433f3cf101f05eb..902295e80c3df9eee35fbc0d042d880b
  
  use protocol::Invocation;
  
-@@ -368,10 +375,25 @@ fn image_run(reqs: &[driver::Request], dir: &std::path::Path) -> Vec<driver::Res
+@@ -368,10 +375,33 @@ fn image_run(reqs: &[driver::Request], dir: &std::path::Path) -> Vec<driver::Res
  }
  
  fn main() {
 +    protocol::reject_internal_probe();
 +    if protocol::product_identity_query() { return; }
++    #[cfg(feature = "exclusive-native")]
++    if std::env::args_os().skip(1).eq([std::ffi::OsString::from("--lustr-prime-cargo-runtime")]) {
++        if let Err(error) = cc::prime_cargo_runtime() {
++            eprintln!("error: {error}");
++            std::process::exit(1);
++        }
++        return;
++    }
 +    #[cfg(feature = "exclusive-native")]
 +    if std::env::args_os().skip(1).eq([std::ffi::OsString::from("--lustr-print-cfg")]) {
 +        // Cargo's read-only compiler query uses the same target/profile facts
