@@ -42,7 +42,10 @@ fn record(path: &Path, bytes: &[u8]) {
 }
 fn observe(label: &str, command: &mut Command, logs: &Path) -> std::io::Result<std::process::Output> {
     record(&logs.join(format!("{label}.command")), format!("{command:?}\n").as_bytes());
-    let output = command.env_remove("LD_LIBRARY_PATH").output();
+    if !command.get_envs().any(|(name, _)| name == "LD_LIBRARY_PATH") {
+        command.env_remove("LD_LIBRARY_PATH");
+    }
+    let output = command.output();
     let status = match &output {
         Ok(output) => {
             record(&logs.join(format!("{label}.stdout")), &output.stdout);
@@ -149,8 +152,10 @@ fn cargo(sdk: &Path, repo: &Path, manifest: &str, package: &str, work: &Path, na
     command
 }
 fn main() {
-    let mut args = std::env::args_os().skip(1);
-    let repo = PathBuf::from(args.next().expect("REPOSITORY RUST_SDK TINYCC NEW_OUTPUT [--release|--debug]")).canonicalize().unwrap();
+    let mut args = std::env::args_os().skip(1).peekable();
+    let repo = PathBuf::from(args.next().expect(
+        "REPOSITORY RUST_SDK TINYCC NEW_OUTPUT [--release|--debug] [--rustdoc-source PINNED_RUST_REPOSITORY]",
+    )).canonicalize().unwrap();
     construction_inputs(&repo).unwrap_or_else(|error| panic!("{error}"));
     let sdk = args.next().unwrap();
     let sdk = if sdk == "--current-sdk" {
@@ -164,12 +169,21 @@ fn main() {
     .unwrap();
     let tcc = PathBuf::from(args.next().unwrap()).canonicalize().unwrap();
     let output = PathBuf::from(args.next().unwrap());
-    let profile = match args.next() {
-        None => BuildProfile::Development,
-        Some(flag) if flag == "--debug" => BuildProfile::Development,
-        Some(flag) if flag == "--release" => BuildProfile::Release,
-        Some(_) => panic!("expected --release or --debug after NEW_OUTPUT"),
+    let profile = match args.peek() {
+        Some(flag) if flag == "--release" => {
+            args.next();
+            BuildProfile::Release
+        }
+        Some(flag) if flag == "--debug" => {
+            args.next();
+            BuildProfile::Development
+        }
+        _ => BuildProfile::Development,
     };
+    let rustdoc_source = args.next().map(|flag| {
+        assert_eq!(flag, "--rustdoc-source", "expected --rustdoc-source");
+        PathBuf::from(args.next().expect("pinned Rust source repository")).canonicalize().unwrap()
+    });
     assert!(args.next().is_none() && output.is_absolute());
     assert!(!output.exists(), "output must be new; existing data is preserved");
     assert!(!output.parent().unwrap().canonicalize().unwrap().starts_with(&repo), "keep generated output outside source");
@@ -235,6 +249,9 @@ fn main() {
         _ => panic!("the primary native runtime has no adapter for this build host"),
     };
     assert_eq!(host, expected_host, "select an SDK for this native build host");
+    if rustdoc_source.is_some() {
+        assert_eq!(host, "x86_64-unknown-linux-gnu", "the source-built Rustdoc component is available on Linux x86_64");
+    }
     let host_receipt = output.join("HOST-SDK-RECEIPT.txt");
     record(&host_receipt, host_sdk::snapshot(&sdk, source, host).expect("record selected host SDK identity").as_bytes());
     let guard = work.join("source-guard");
@@ -343,6 +360,52 @@ fn main() {
             copy(&repo.join("crates/lustr-metadata-encoder").join(name), &licenses.join(name));
         }
         record(&licenses.join("SOURCE.txt"), format!("https://github.com/rust-lang/rust\nRevision {source}\nlibrary/test and its standard library runtime dependencies\n").as_bytes());
+    }
+    if let Some(rustdoc_source) = rustdoc_source {
+        let checkout = work.join("rustdoc-source");
+        checked("rustdoc-source-copy", Command::new("git")
+            .args(["clone", "--local", "--shared", "--no-checkout", "--"])
+            .arg(rustdoc_source).arg(&checkout), &logs);
+        checked("rustdoc-source-pin", Command::new("git").current_dir(&checkout)
+            .args(["checkout", "--detach", source]), &logs);
+        construction_inputs(&checkout).unwrap_or_else(|error| panic!("{error}"));
+        let patch = repo.join("upstream/rustdoc-test-builders.patch");
+        checked("rustdoc-patch", Command::new("git").current_dir(&checkout)
+            .arg("apply").arg(&patch), &logs);
+        let mut flags = std::ffi::OsString::from("-Clink-arg=-Wl,-rpath,$ORIGIN/../lib\x1f-Lnative=");
+        flags.push(sdk.join("lib"));
+        checked("rustdoc-build", cargo(&sdk, &checkout, "Cargo.toml", "rustdoc-tool", &work, "rustdoc", profile)
+            .env("CARGO_ENCODED_RUSTFLAGS", flags)
+            .env("LD_LIBRARY_PATH", sdk.join("lib"))
+            .env("DOC_RUST_LANG_ORG_CHANNEL", "https://doc.rust-lang.org/nightly"), &logs);
+
+        let component = package.join("libexec/lustr-rustdoc");
+        fs::create_dir_all(component.join("bin")).unwrap();
+        symlink(sdk.join("lib"), component.join("lib")).unwrap();
+        let rustdoc = component.join("bin/rustdoc");
+        let validator = component.join("bin/lustr-rustdoc-compile-fail");
+        copy(&work.join("rustdoc-target").join(profile.directory()).join("rustdoc-tool-binary"), &rustdoc);
+        fs::hard_link(&rustdoc, &validator).unwrap();
+        symlink("../libexec/lustr-rustdoc/bin/rustdoc", package.join("bin/rustdoc")).unwrap();
+        checked("installed-rustdoc-version", Command::new(&rustdoc).arg("--version"), &logs);
+        let validator_version = checked("installed-rustdoc-validator-version", Command::new(&validator).arg("-vV"), &logs);
+        assert_eq!(validator_version, version, "Rustdoc's validator must use the declared SDK compiler");
+        let licenses = component.join("licenses");
+        fs::create_dir(&licenses).unwrap();
+        for name in ["COPYRIGHT", "LICENSE-MIT", "LICENSE-APACHE", "Cargo.lock"] {
+            copy(&checkout.join(name), &licenses.join(name));
+        }
+        record(&component.join("SOURCE.txt"), format!(concat!(
+            "https://github.com/rust-lang/rust\nRevision {source}\n",
+            "Patch upstream/rustdoc-test-builders.patch\n",
+            "Rustdoc uses the matching SDK for documentation analysis and compile-fail validation.\n",
+            "Other test bodies request the installed Lustr compiler.\n",
+        ), source = source).as_bytes());
+        runtime_identities.push(checked("hash-rustdoc", host_runtime::sha256_command()
+            .arg(&rustdoc).arg(&patch).arg(component.join("SOURCE.txt")), &logs));
+        for path in [licenses, component.join("bin"), component, package.join("libexec")] {
+            fs::File::open(path).unwrap().sync_all().unwrap();
+        }
     }
     let mixed_route = "exclusive native Lust; complementary compilation unavailable";
     record(&output.join("NATIVE-BUILD-RECEIPT.txt"), native_output.as_bytes());

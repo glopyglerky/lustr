@@ -1531,9 +1531,18 @@ pub fn flip(value: u64) -> u64 { value ^ 1 }
     let mut flags = std::ffi::OsString::from("-Zunstable-options\x1f--test-builder\x1f");
     flags.push(f.package.join("bin/rustc"));
     f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
-    let run = f.succeeds("cargo-test-doc", f.command("cargo")
-        .env("RUSTDOC", oracle.with_file_name("rustdoc")).env("CARGO_ENCODED_RUSTDOCFLAGS", flags)
-        .args(["test", "--doc", "--frozen"]));
+    let installed = f.package.join("bin/rustdoc").is_file();
+    let test_doc = || {
+        let mut command = f.command("cargo");
+        command.env_remove("RUSTDOCFLAGS").env_remove("CARGO_ENCODED_RUSTDOCFLAGS")
+            .args(["test", "--doc", "--frozen"]);
+        if !installed {
+            command.env("RUSTDOC", oracle.with_file_name("rustdoc"))
+                .env("CARGO_ENCODED_RUSTDOCFLAGS", &flags);
+        }
+        command
+    };
+    let run = f.succeeds("cargo-test-doc", &mut test_doc());
     let output = String::from_utf8(run.stdout).unwrap();
     assert!(output.contains("2 passed; 0 failed"), "{output}");
     let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
@@ -1596,6 +1605,27 @@ pub fn flip(value: u64) -> u64 { value ^ 1 }
     f.succeeds("native-run-after-check", &mut Command::new(binary));
     std::fs::write(&archive, b"metadata-only requests do not read this archive").unwrap();
     f.succeeds("native-check-after-link", &mut request(false, true, &metadata_only));
+
+    if installed {
+        let source = r#"
+#![no_std]
+/// ```compile_fail,standalone_crate
+/// let _: u8 = doc_consumer::flip(42);
+/// ```
+pub fn flip(value: u64) -> u64 { value ^ 1 }
+"#;
+        f.source("src/lib.rs", source);
+        let invalid = f.succeeds("installed-rustdoc-invalid-example", &mut test_doc());
+        assert!(String::from_utf8_lossy(&invalid.stdout).contains("1 passed; 0 failed"));
+
+        // This is valid Rust outside the initial native subset. Its tag must
+        // fail the documentation test, even if Lust would reject the body.
+        f.source("src/lib.rs", &source.replace("let _: u8 = doc_consumer::flip(42);",
+            "let value = unsafe { std::ptr::read(&42_u64) }; assert_eq!(doc_consumer::flip(value), 43);"));
+        let valid = f.invoke("installed-rustdoc-valid-marked-invalid", &mut test_doc());
+        assert_eq!(valid.status.code(), Some(101));
+        assert!(String::from_utf8_lossy(&valid.stdout).contains("Test compiled successfully"));
+    }
 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]

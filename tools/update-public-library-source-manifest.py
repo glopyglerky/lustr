@@ -33,6 +33,7 @@ FILES=[
  "crates/lustr-metadata-sdk/Cargo.toml","crates/lustr-metadata-sdk/src/lib.rs",
  "tools/build-native-toolchain.rs","tools/native-test-runtime.rs","tools/install-native-metadata-sdk.py","tools/check-exclusive-coverage.py",
  "tools/update-public-library-source-manifest.py","upstream/metadata-artifact-tools.json","upstream/metadata-dependency-closure.json",
+ "upstream/rustdoc-test-builders.patch",
  "docs/compiler-set/evidence/metadata-sdk-receipt-20261120/receipt.json",
  "docs/compiler-set/evidence/metadata-sdk-receipt-20261120/standard-receipt.json",
 ]
