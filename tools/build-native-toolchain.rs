@@ -285,6 +285,7 @@ fn main() {
     let identity = std::str::from_utf8(&identity).unwrap().split_whitespace().next().unwrap();
     record(&package.join("lib/lustr-native.id"), format!("{identity}\n").as_bytes());
     selection_toolchain::write(&package, source, host);
+    let mut test_runtime_identity = None;
     if host == "x86_64-unknown-linux-gnu" {
         checked("metadata-sdk-package", Command::new("python3").arg(repo.join("tools/install-native-metadata-sdk.py"))
             .arg(&repo).arg(&sdk).arg(&package), &logs);
@@ -292,6 +293,18 @@ fn main() {
             checked(&format!("installed-{tool}"),Command::new(package.join("lib/rustlib/x86_64-unknown-linux-gnu/bin").join(tool)).arg("--version"),&logs);
         }
         checked("prime-selection-tools", Command::new(package.join("bin/lustr")).arg("--lustr-prime-selection-tools"), &logs);
+        let runtime = package.join("lib/liblustr_test_runtime.a");
+        checked("native-test-runtime", Command::new(sdk.join("bin/rustc"))
+            .env_remove("LD_LIBRARY_PATH")
+            .args(["--edition=2024", "--crate-type=staticlib", "-Cpanic=unwind", "-Copt-level=2", "--crate-name=lustr_test_runtime"])
+            .arg(repo.join("tools/native-test-runtime.rs")).arg("-o").arg(&runtime), &logs);
+        test_runtime_identity = Some(checked("hash-native-test-runtime", host_runtime::sha256_command().arg(runtime), &logs));
+        let licenses = package.join("lib/lustr-test-licenses");
+        fs::create_dir(&licenses).unwrap();
+        for name in ["LICENSE-MIT", "LICENSE-APACHE"] {
+            copy(&repo.join("crates/lustr-metadata-encoder").join(name), &licenses.join(name));
+        }
+        record(&licenses.join("SOURCE.txt"), format!("https://github.com/rust-lang/rust\nRevision {source}\nlibrary/test and its standard library runtime dependencies\n").as_bytes());
     }
     let mixed_route = "exclusive native Lust; complementary compilation unavailable";
     record(&output.join("NATIVE-BUILD-RECEIPT.txt"), native_output.as_bytes());
@@ -308,6 +321,9 @@ fn main() {
     );
     for name in ["lustr", "lust", "lust-core"] {
         let result = checked(&format!("hash-{name}"), host_runtime::sha256_command().arg(package.join("bin").join(name)), &logs);
+        manifest.push_str(std::str::from_utf8(&result).unwrap());
+    }
+    if let Some(result) = test_runtime_identity {
         manifest.push_str(std::str::from_utf8(&result).unwrap());
     }
     record(&output.join("COMPONENTS.txt"), manifest.as_bytes());

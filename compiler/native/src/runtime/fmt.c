@@ -19,16 +19,28 @@ void lust_sink_string(lust_sink *k, lust_String *s) {
 /* The sinks of `print!` and `eprint!`: std formats straight into its
    locked Stdout (a LineWriter, panic.c `lust_print_out`) or its
    unbuffered Stderr, so each piece is written as it is formatted. */
+#ifdef LUST_LIBTEST_CAPTURE
+void lustr_test_write(int32_t to_stderr, const uint8_t *bytes, size_t length);
+#endif
+
 static int lust_stdout_sink_write(lust_sink *k, const uint8_t *p, uint64_t n) {
     (void)k;
+#ifdef LUST_LIBTEST_CAPTURE
+    lustr_test_write(0, p, n);
+#else
     lust_print_out(p, n);
+#endif
     return 0;
 }
 
 static int lust_stderr_sink_write(lust_sink *k, const uint8_t *p, uint64_t n) {
     (void)k;
+#ifdef LUST_LIBTEST_CAPTURE
+    lustr_test_write(1, p, n);
+#else
     fwrite(p, 1, n, stderr);
     fflush(stderr);
+#endif
     return 0;
 }
 

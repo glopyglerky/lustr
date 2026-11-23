@@ -513,6 +513,54 @@ fn ordinary_cargo_links_rust_debug_information() {
     assert_eq!(std::fs::read(executable).unwrap(), good, "a rejected edit replaced the last good executable");
 }
 
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn ordinary_cargo_executes_native_tests_with_libtest() {
+    let f = Fixture::new("rust-test");
+    f.source("Cargo.toml", "[package]\nname = \"test-leaf\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    f.source("src/main.rs", r#"
+fn main() { panic!("ordinary entry was called"); }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn arithmetic() {
+        println!("native print is captured");
+        assert_eq!(21_u32 * 2, 42);
+    }
+    #[test]
+    #[should_panic(expected = "native panic text")]
+    fn expected() { panic!("native panic text"); }
+    #[test]
+    #[ignore = "negative control"]
+    #[should_panic(expected = "wrong text")]
+    fn wrong() { panic!("native panic text"); }
+}
+"#);
+    let no_run = f.succeeds("compile", f.command("cargo").args(["test", "--offline", "--no-run"]));
+    assert!(no_run.stdout.is_empty());
+    let listed = f.succeeds("list", f.command("cargo").args(["test", "--offline", "--", "--list"]));
+    for name in ["tests::arithmetic: test", "tests::expected: test", "tests::wrong: test"] {
+        assert!(String::from_utf8_lossy(&listed.stdout).contains(name));
+    }
+    let ran = f.succeeds("run", f.command("cargo").args(["test", "--offline", "--", "--test-threads=2"]));
+    let stdout = String::from_utf8_lossy(&ran.stdout);
+    assert!(stdout.contains("2 passed; 0 failed; 1 ignored"));
+    assert!(stdout.contains("ignored, negative control"));
+    assert!(!stdout.contains("native print is captured"));
+    assert!(!String::from_utf8_lossy(&ran.stderr).contains("native panic text"));
+    let shown = f.succeeds("show-output", f.command("cargo").args(["test", "--offline", "--", "--show-output", "tests::arithmetic"]));
+    assert!(String::from_utf8_lossy(&shown.stdout).contains("native print is captured"));
+
+    let wrong = f.invoke("wrong", f.command("cargo").args(["test", "--offline", "--", "--ignored", "tests::wrong"]));
+    assert_eq!(wrong.status.code(), Some(101));
+    let stdout = String::from_utf8_lossy(&wrong.stdout);
+    assert!(stdout.contains("panic did not contain expected string"));
+    assert!(stdout.contains("thread 'tests::wrong'"));
+    assert!(!stdout.contains("ordinary entry was called"));
+}
+
 #[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT"]
 fn native_output_failure_does_not_become_success() {

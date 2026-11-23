@@ -27,6 +27,7 @@ mod slices;
 mod kconst;
 pub mod ll;
 mod ll_debug;
+pub(crate) mod rust_tests;
 use unwind::Unw;
 
 /// A body-independent type, so glue can be shared across functions.
@@ -10695,6 +10696,15 @@ pub fn loc_unit(files: &SlotFiles, slot_lines: &[u32]) -> String {
 /// sets up the runtime's panic payloads and hook runner; under
 /// panic=unwind a `main` that ends by a panic exits 101.
 pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -> String {
+    main_unit_with_tests(main_slot, overlays, init, None)
+}
+
+pub(crate) fn main_unit_with_tests(
+    main_slot: u32,
+    overlays: &[usize],
+    init: Option<UnwindInit>,
+    tests: Option<(&[rust_tests::NativeTest], &[u32])>,
+) -> String {
     let unwind = init.as_ref().is_some_and(|i| i.unwind);
     let tables = init.as_ref().is_some_and(|i| i.unwind && i.tables);
     let runner_slot = init.as_ref().and_then(|i| i.hook_runner);
@@ -10717,7 +10727,10 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
             let _ = writeln!(c, "lust_Unit {}(uint8_t);", names::body(s));
         }
     }
-    let main_call = if termination_entry {
+    let main_call = if let Some((tests, slots)) = tests {
+        rust_tests::main_declarations(&mut c, tests, slots);
+        String::new()
+    } else if termination_entry {
         // The body unit must register its typed wrapper. Never declare or call a
         // Result/ExitCode body as a unit-returning function if that invariant fails.
         "abort()".to_string()
@@ -10733,7 +10746,7 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
     for u in overlays {
         let _ = writeln!(c, "void lust_overlay_u{u}(void);");
     }
-    if tables {
+    if tables && tests.is_none() {
         // Main runs under a catch point (std's lang_start catches its panic).
         let _ = writeln!(
             c,
@@ -10751,6 +10764,11 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
     c.push_str(runner.trim_start_matches('\n'));
     if !runner.is_empty() {
         c.push('\n');
+    }
+    if let Some((tests, _)) = tests {
+        let _ = writeln!(c, "  int rc = lustr_test_main(argc, argv, {}, lust_tests);", tests.len());
+        c.push_str("  lust_tls_exit();\n  lust_flush();\n  return rc;\n}\n");
+        return c;
     }
     if tables {
         c.push_str("  int rc = 0;\n  if (lust_unw_try(lust_main_thunk, &rc)) rc = lust_unw_main_caught();\n  lust_tls_exit();\n  lust_flush();\n  return rc;\n}\n");

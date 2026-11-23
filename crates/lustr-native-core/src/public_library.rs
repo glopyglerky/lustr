@@ -51,6 +51,8 @@ impl Installed {
         if hash(&receipt_bytes)!=protocol::library_contract::SDK_RECEIPT {return Err("installed SDK receipt changed".into());}
         let facts:Value=serde_json::from_slice(&receipt_bytes).map_err(|e|e.to_string())?;
         let mut paths=vec![receipt];
+        let test_runtime = root.join("lib/liblustr_test_runtime.a");
+        if test_runtime.is_file() { paths.push(test_runtime); }
         for dep in facts["dependencies"].as_array().ok_or("SDK dependencies missing")? {
             for field in ["artifact","link_artifact"] {
                 paths.push(root.join(dep[field]["path"].as_str().ok_or("SDK artifact path missing")?));

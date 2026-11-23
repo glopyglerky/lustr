@@ -120,6 +120,8 @@ pub(crate) fn request_supported(req: &Request) -> bool {
         && key.valid_output(&req.out, req.cmd == crate::protocol::Cmd::Check, req.library_options)
         && req.session.krate.target_kind == key.target_kind()
         && key.matches_target_name(&req.session.krate.target_name)
+        && (!req.session.krate.test || (!req.session.profile.panic_abort
+            && key.executable_dependencies.as_ref().is_some_and(Vec::is_empty)))
         && (req.cmd == crate::protocol::Cmd::Check || key.supports_link_profile(req.session.profile.panic_abort))
         && req.session.target_triple == crate::protocol::library_contract::TARGET
         && crate::protocol::host_triple() == crate::protocol::library_contract::TARGET

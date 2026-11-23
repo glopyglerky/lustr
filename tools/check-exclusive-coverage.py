@@ -489,7 +489,9 @@ def check(root):
     unicode = json.loads((root / "compiler/native/unicode-semantics.json").read_text())
     require(inventory["rust_source"] == unicode["rust_source"], "import inventory and native Unicode contract disagree")
     imports = {item["id"]: item for item in inventory["imports"]}
-    require(set(imports) == {"identifier-normalization", "declared-sdk-unicode-data", "native-scalar-metadata", "native-scalar-artifact-host"}, "new import needs a reviewed necessity/ownership gate")
+    require(set(imports) == {"identifier-normalization", "declared-sdk-unicode-data", "native-scalar-metadata",
+                            "native-scalar-artifact-host", "native-libtest-runtime"},
+            "new imports require source and ownership declarations")
     normalization = imports.get("identifier-normalization", {})
     expected_dependencies = {name: unicode["compiler_dependencies"][name]
                              for name in unicode["native_identifier_normalization"]["dependencies"]}
@@ -513,6 +515,11 @@ def check(root):
             require(field in item, f"{item['id']}: missing {field}")
         require((root / item["adapter"]).is_file(), f"{item['id']}: missing adapter")
         require(item["upstream_rust_source"] == inventory["rust_source"], f"{item['id']}: imported Rust pin disagrees")
+    libtest = imports.get("native-libtest-runtime", {})
+    require(libtest.get("adapter") == "tools/native-test-runtime.rs"
+            and libtest.get("dependency_edges") == [["native-test-runtime", "libtest"], ["libtest", "std"]]
+            and libtest.get("excluded_duplicate_phases") == imports.get("native-scalar-artifact-host", {}).get("excluded_duplicate_phases"),
+            "the native test adapter may import the test runtime but must keep compilation in Lust")
     for path, expected in unicode["generated_and_retained_data"].items():
         require(hashlib.sha256((root / path).read_bytes()).hexdigest() == expected, f"Unicode source changed without declared identity: {path}")
     require(bool(inventory["research_components"]), "full rustc SDK research dependencies must remain disclosed")

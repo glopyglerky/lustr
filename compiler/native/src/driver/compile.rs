@@ -2207,7 +2207,7 @@ fn resolved_setup(
                 // Cargo metadata names the actual script target in every
                 // build mode; UnitInfo's planned script is product-only.
                 || unit.package.targets.iter().any(|target|target.kind.iter().any(|kind|kind=="custom-build"))
-                || !unit.features.is_empty() || key.krate.test {
+                || !unit.features.is_empty() {
                 return Err(code2("public scalar-library integration requires the matching Cargo dependency and script-free unit".into()));
             }
         } else if imports.is_some() {
@@ -3057,6 +3057,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
         return Preparation::Failed(Response {code:3, stderr:"public library request context is not represented\n".into(), ..Default::default()});
     }
     let rust_debug = req.cmd == Cmd::Build && req.library_options.debug.native_executable();
+    let cargo_test = req.session.library.is_some() && req.session.krate.test;
     if session.caches.library.is_some() && (req.cc || req.debug || req.emit_c.is_some() || req.harness || req.run_args.is_some()) {
         return Preparation::Failed(Response {code:3, stderr:"native library output context changed\n".into(), ..Default::default()});
     }
@@ -4241,7 +4242,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
     // catch_unwind would return Ok after a panic (rel-opt).
     let tables_env = std::env::var("LUST_UNWIND_TABLES").ok();
     program.unwind_tables = program.unwind
-        && if rust_debug {
+        && if rust_debug || cargo_test {
             true
         } else if req.cc {
             tables_env.as_deref() != Some("0")
@@ -4598,7 +4599,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
     // then a release driver build). A check makes no C and keeps the key.
     let mixed = req.session.krate.target_kind == "lustr-mixed-native";
     let library = caches.library.is_some();
-    let release = rust_debug || library || mixed || super::release_c::on(caches.persistent, req.cc);
+    let release = rust_debug || cargo_test || library || mixed || super::release_c::on(caches.persistent, req.cc);
     if req.cmd == Cmd::Build {
         let key = super::release_c::codegen_key(release, req.debug, program.unwind_tables)
             ^ if library { 0x6c69_622d_746f_7461 } else { 0 }
@@ -4938,7 +4939,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
     // A lust file is a bin crate, so check needs `main` too, as `rustc --emit=metadata`
     // does. `lust test` sets `harness`: it adds a generated `main` after this check.
     // A Cargo lib target (`--lib`) is a lib crate: rustc needs no `main` there.
-    if !req.harness && req.session.krate.target_kind != "lib" && program.main.is_none() {
+    if !req.harness && !cargo_test && req.session.krate.target_kind != "lib" && program.main.is_none() {
         diags.push(Diag::new("L0130", diag::Span::default(), "no `main` function", "Add `fn main() { ... }`."));
     }
     t.lap(if mode == "full" { "check+borrowck (par)" } else { "check changed fns (par)" });
@@ -5008,6 +5009,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
 
 fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> Response {
     let rust_debug = req.cmd == Cmd::Build && req.library_options.debug.native_executable();
+    let cargo_test = req.session.library.as_ref().filter(|_| req.session.krate.test);
     let CheckedRequest {
         mut program, results, reemit, map, source: src, path, work, fn_count, fn_lines_all, body_hashes_all,
         inst_ids, mode, check_fp, verified, reads_reused, reads_invalidated, reemitted, mixed, release,
@@ -5069,6 +5071,15 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
         }
     } else { None };
     let mut resp = Response::default();
+    let tests = match cargo_test.map(|key| cgen::rust_tests::collect(&program, &map, &key.working_directory)).transpose() {
+        Ok(tests) => tests,
+        Err(error) => {
+            drop(results); drop(reemit);
+            program.verified = verified;
+            super::patch::keep(front, program);
+            return Response { code: 4, stderr: format!("error: {error}\n"), ..Default::default() };
+        }
+    };
     if req.cmd == Cmd::Check {
         if prepared_mixed.is_some() {
             resp.mixed = Some(crate::protocol::MixedOutcome::Checked);
@@ -5437,7 +5448,19 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
     const SHARD_RECORD: &str = "glue shard ";
     let fn_units: Vec<usize> = (0..groups.len()).map(|g| g + FIRST_FN_UNIT).collect();
     let dirty_fn_units: Vec<usize> = (0..groups.len()).filter(|&g| dirty_groups[g]).map(|g| g + FIRST_FN_UNIT).collect();
-    let main_slot = front.fn_slot[program.main.unwrap().0 as usize];
+    let main_slot = if tests.is_some() { u32::MAX } else { front.fn_slot[program.main.unwrap().0 as usize] };
+    let main_unit = |overlays| cgen::main_unit_with_tests(
+        main_slot, overlays, cgen::unwind_init(&program, |f| front.fn_slot[f.0 as usize]),
+        tests.as_deref().map(|tests| (tests, front.fn_slot.as_slice())),
+    );
+    let runtime_unit = || {
+        let mut unit = cgen::runtime_unit();
+        if tests.is_some() {
+            unit.insert_str(0, "#define LUST_LIBTEST_CAPTURE 1\n");
+            unit.push_str(cgen::rust_tests::CATCH_ADAPTER);
+        }
+        unit
+    };
     // Instance slots take their template's line: cgen stores an
     // instance's panic lines relative to it (see `line_base_of`).
     let mut slot_lines = vec![0u32; n_slots];
@@ -5570,9 +5593,9 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
         super::release_c::groups(&caches.out, names, &file, &line)
     };
     let gen_unit = |u: usize, overlay: bool| match u {
-        0 => cgen::main_unit(main_slot, &registered, cgen::unwind_init(&program, |f| front.fn_slot[f.0 as usize])),
+        0 => main_unit(&registered),
         1 => cgen::glue_unit(&program, &caches.glue),
-        2 => cgen::runtime_unit(),
+        2 => runtime_unit(),
         3 => cgen::table_unit(caches.table_cap, &fn_units),
         LOC_UNIT => cgen::loc_unit(&files, &slot_lines),
         g => {
@@ -5735,7 +5758,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
             let assemble = |u: usize, inl: &[Vec<usize>], c_refs: Option<&cgen::ll::CRefs>, copy_hot: Option<&cgen::CopyHot>| {
                 let t = Instant::now();
                 let (c, helpers) = cgen::in_layout_phase(asm_tag, || cgen::names::with(rn, || match u {
-                    0 => (cgen::main_unit(main_slot, &[], cgen::unwind_init(&program, |f| front.fn_slot[f.0 as usize])), String::new()),
+                    0 => (main_unit(&[]), String::new()),
                     1 => match super::release_c::statics_bytes() {
                         0 => (adapt(cgen::names::statics_unit(&program, &caches.glue), &Default::default()), String::new()),
                         target => {
@@ -5751,7 +5774,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
                             (adapt(index, &Default::default()), String::new())
                         }
                     },
-                    2 => (cgen::runtime_unit(), String::new()),
+                    2 => (runtime_unit(), String::new()),
                     3 => {
                         let rg = rg_cell.get().expect("the fn units are cut before unit 3");
                         (super::release_c::table_unit(&rg.iter().filter(|(_, s)| s.contains(&(main_slot as usize))).map(|(r, _)| r.clone()).collect::<Vec<_>>()), String::new())
@@ -6386,7 +6409,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
             return Response { code: 0, ..Default::default() };
         }
     }
-    if llvm && !req.cc && !rust_debug {
+    if llvm && !req.cc && !rust_debug && tests.is_none() {
         return Response {
             stderr: "error: LUST_RELEASE_BACKEND=llvm builds through the release driver (`lust build --release --target <triple>`) or with --emit-c\n".into(),
             code: 2,
@@ -6401,7 +6424,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
     // frozen, so a clean unit's C is the same as last time and its object
     // comes from the cache. Overlays do not exist here: every build emits
     // the base form of each unit.
-    if req.cc || rust_debug {
+    if req.cc || rust_debug || tests.is_some() {
         // The release driver returns before the visits line at the end: its log line is here
         // (front-check's path coverage).
         front.last_visits.clear();
@@ -6418,7 +6441,9 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
                 }
             }
         }
-        let spec = if rust_debug { crate::cc::spec_for_rust_debug(triple) } else { crate::cc::spec_for(triple) };
+        let spec = if rust_debug || tests.is_some() {
+            crate::cc::spec_for_native_cargo(triple, rust_debug, tests.is_some())
+        } else { crate::cc::spec_for(triple) };
         let prepared = spec.and_then(|spec| {
             // Release C (`LUST_RELEASE_C=1`) already holds the content-addressed units.
             let mut all: Vec<(String, String)> = if rgroups.is_some() {

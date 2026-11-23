@@ -685,6 +685,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     let (mut library_cfg, mut library_search) = (Vec::new(),Vec::new());
     let mut library_external = None;
     let mut executable_artifacts = false;
+    let mut executable_test = false;
     let mut executable_dependencies = Vec::new();
     let mut library_options = LibraryOptions::default();
     let mut library_debug_supplied = false;
@@ -723,6 +724,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
             "--lustr-library-search" => library_search.push(PathBuf::from(it.next()?)),
             "--lustr-library-extern-metadata" if library_external.is_none() => library_external = Some(ExternMetadata::parse(it.next()?)?),
             "--lustr-executable-artifacts" if !executable_artifacts => executable_artifacts = true,
+            "--lustr-executable-test" if !executable_test => executable_test = true,
             "--lustr-executable-extern" => executable_dependencies.push(ExecutableExtern {
                 metadata: ExternMetadata::parse(it.next()?)?,
                 archive: Some(it.next()?).filter(|path| !path.is_empty()).map(PathBuf::from),
@@ -779,7 +781,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     }
     let library_supplied = library_name.is_some() || library_metadata.is_some() || library_extra.is_some() || library_cwd.is_some()
         || !library_cfg.is_empty() || !library_search.is_empty() || library_external.is_some()
-        || executable_artifacts || !executable_dependencies.is_empty()
+        || executable_artifacts || executable_test || !executable_dependencies.is_empty()
         || library_debug_supplied || library_options != LibraryOptions::default();
     if library_supplied && (rustc || release || profile.is_some()) { return None; }
     let abs = |p: &Path| std::path::absolute(p).unwrap_or_else(|_| p.to_path_buf());
@@ -894,6 +896,9 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
         } else {
             session.krate.target_name = key.crate_name.clone();
         }
+        if executable_test && (session.profile.panic_abort
+            || !key.executable_dependencies.as_ref().is_some_and(Vec::is_empty)) { return None; }
+        session.krate.test = executable_test;
         session.krate.target_explicit = true;
         session.library = Some(key);
     }
