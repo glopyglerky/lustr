@@ -682,7 +682,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     let mut max_errors = 20usize;
     let mut crate_flags = CrateFlags::default();
     let (mut library_name, mut library_metadata, mut library_extra, mut library_cwd) = (None,None,None,None);
-    let (mut library_cfg, mut library_search) = (Vec::new(),Vec::new());
+    let (mut library_cfg, mut library_check_cfg, mut library_search) = (Vec::new(),Vec::new(),Vec::new());
     let mut library_external = None;
     let mut executable_artifacts = false;
     let mut executable_test = false;
@@ -722,7 +722,8 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
             "--lustr-library-metadata" if library_metadata.is_none() => library_metadata = Some(it.next()?.clone()),
             "--lustr-library-extra-filename" if library_extra.is_none() => library_extra = Some(it.next()?.clone()),
             "--lustr-library-cwd" if library_cwd.is_none() => library_cwd = Some(PathBuf::from(it.next()?)),
-            "--lustr-library-check-cfg" => library_cfg.push(it.next()?.clone()),
+            "--lustr-library-cfg" => library_cfg.push(it.next()?.clone()),
+            "--lustr-library-check-cfg" => library_check_cfg.push(it.next()?.clone()),
             "--lustr-library-search" => library_search.push(PathBuf::from(it.next()?)),
             "--lustr-library-extern-metadata" if library_external.is_none() => library_external = Some(ExternMetadata::parse(it.next()?)?),
             "--lustr-executable-artifacts" if !executable_artifacts => executable_artifacts = true,
@@ -784,7 +785,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
         return None;
     }
     let library_supplied = library_name.is_some() || library_metadata.is_some() || library_extra.is_some() || library_cwd.is_some()
-        || !library_cfg.is_empty() || !library_search.is_empty() || library_external.is_some()
+        || !library_cfg.is_empty() || !library_check_cfg.is_empty() || !library_search.is_empty() || library_external.is_some()
         || executable_artifacts || executable_test || custom_test || !executable_dependencies.is_empty()
         || library_debug_supplied || library_opt.is_some() || library_options != LibraryOptions::default();
     if library_supplied && (rustc || release || profile.is_some()) { return None; }
@@ -887,7 +888,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     if library_supplied {
         if !executable_artifacts && !executable_dependencies.is_empty() { return None; }
         let key = LibraryKey {crate_name:library_name?, metadata:library_metadata?, extra_filename:library_extra?,
-            source_path:file.clone(), working_directory:library_cwd?, check_cfg:library_cfg, search_paths:library_search, external:library_external,
+            source_path:file.clone(), working_directory:library_cwd?, cfg:library_cfg, check_cfg:library_check_cfg, search_paths:library_search, external:library_external,
             executable_dependencies:executable_artifacts.then_some(executable_dependencies),
             optimization:library_opt.unwrap_or_default(), custom_test,
             sdk_receipt:library_contract::SDK_RECEIPT.into()};
@@ -1042,6 +1043,8 @@ pub fn encode(r: &Request) -> Vec<u8> {
         }
         path_field(&mut out,Some(&library.source_path));
         path_field(&mut out,Some(&library.working_directory));
+        put_field(&mut out,library.cfg.len().to_string().as_bytes());
+        for value in &library.cfg { put_field(&mut out,value.as_bytes()); }
         put_field(&mut out,library.check_cfg.len().to_string().as_bytes());
         for value in &library.check_cfg { put_field(&mut out,value.as_bytes()); }
         put_field(&mut out,library.search_paths.len().to_string().as_bytes());
@@ -1117,7 +1120,9 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
             let crate_name=text(get_field(r)?)?; let metadata=text(get_field(r)?)?;
             let extra_filename=text(get_field(r)?)?; let sdk_receipt=text(get_field(r)?)?;
             let source_path=path(get_field(r)?); let working_directory=path(get_field(r)?);
-            let count:usize=text(get_field(r)?)?.parse().ok()?; if count>2{return None;}
+            let count:usize=text(get_field(r)?)?.parse().ok()?; if count>4096{return None;}
+            let cfg=(0..count).map(|_|text(get_field(r)?)).collect::<Option<Vec<_>>>()?;
+            let count:usize=text(get_field(r)?)?.parse().ok()?; if count>4096{return None;}
             let check_cfg=(0..count).map(|_|text(get_field(r)?)).collect::<Option<Vec<_>>>()?;
             let count:usize=text(get_field(r)?)?.parse().ok()?; if count>4096{return None;}
             let search_paths=(0..count).map(|_|Some(path(get_field(r)?))).collect::<Option<Vec<_>>>()?;
@@ -1138,7 +1143,7 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
             let optimization=OptLevel::parse(&text(get_field(r)?)?)?;
             let custom_test = mode == b"4";
             if custom_test && f[5] != "1" { return None; }
-            let library=LibraryKey{crate_name,metadata,extra_filename,source_path,working_directory,check_cfg,search_paths,external,executable_dependencies,optimization,custom_test,sdk_receipt};
+            let library=LibraryKey{crate_name,metadata,extra_filename,source_path,working_directory,cfg,check_cfg,search_paths,external,executable_dependencies,optimization,custom_test,sdk_receipt};
             if !library.valid() || !library.valid_output(&out, f[0] == "check", library_options) || library.source_path!=file
                 || target_triple!=library_contract::TARGET || target_kind!=library.target_kind()
                 || !library.matches_target_name(&target_name) || !matches!(f[0], "build" | "check") {return None;}

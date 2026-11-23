@@ -330,7 +330,14 @@ fn read_public_transport_request(
                     return Err(format!("public library request changed {name}"));
                 }
             }
-            let cfg_count = read_public_transport_count(reader, "check-cfg", 2)?;
+            let cfg_count = read_public_transport_count(reader, "cfg", 4096)?;
+            if cfg_count != library.cfg.len() { return Err("public library cfg inventory changed".into()); }
+            for expected in &library.cfg {
+                if read_public_transport_field(reader)?.as_slice() != expected.as_bytes() {
+                    return Err("public library cfg value changed".into());
+                }
+            }
+            let cfg_count = read_public_transport_count(reader, "check-cfg", 4096)?;
             if cfg_count != library.check_cfg.len() { return Err("public library check-cfg inventory changed".into()); }
             for expected in &library.check_cfg {
                 if read_public_transport_field(reader)?.as_slice() != expected.as_bytes() {
@@ -458,6 +465,7 @@ fn transport_peer_validates_library_values_and_counted_vectors() {
         sdk_receipt: transport_protocol::library_contract::SDK_RECEIPT.into(),
         source_path: req.file.clone(),
         working_directory: PathBuf::from("/native-transport"),
+        cfg: vec!["build_mode=\"safe\"".into()],
         check_cfg: vec!["cfg(docsrs,test)".into(), "cfg(feature, values())".into()],
         search_paths: vec![PathBuf::from("/native-transport/deps-one"), PathBuf::from("/native-transport/deps-two")],
         external: None,
@@ -495,7 +503,7 @@ fn transport_peer_validates_library_values_and_counted_vectors() {
         read_public_transport_field(&mut cursor).unwrap();
         fields.push((start, cursor.position() as usize));
     }
-    assert_eq!(fields.len(), 34, "library schema/options plus two features and two environment pairs");
+    assert_eq!(fields.len(), 36, "library schema/options plus two features and two environment pairs");
     let replace_field = |index: usize, bytes: &[u8]| {
         let (start, end) = fields[index];
         let mut changed = encoded[..start].to_vec();
@@ -508,21 +516,22 @@ fn transport_peer_validates_library_values_and_counted_vectors() {
         (10, b"2"), (10, b"0"), // invalid discriminator and lost library context
         (11, b"wrong_crate"), (12, b"wrong_metadata"), (13, b"-wrong_suffix"),
         (14, b"wrong_sdk"), (15, b"/wrong/source.rs"), (16, b"/wrong/cwd"),
-        (17, b"invalid"), (17, b"3"), (17, b"1"), // malformed, oversized or incomplete cfg inventory
-        (19, b"cfg(wrong)"),
-        (20, b"4097"), (20, b"1"), // oversized or incomplete search inventory
-        (22, b"/wrong/dependency"),
-        (23, b"invalid"), (23, b"-"), (23, b"1"), // malformed, absent or different embedding choice
-        (24, b"2"), (24, b"0"), // malformed or different forced-lint choice
-        (25, b"102"), (25, b"00"), (25, b"999"), // changed, truncated or unknown debug output choices
-        (26, b"3"), (26, b"9"), (26, b"00"), // different, unknown or malformed optimization level
+        (17, b"invalid"), (17, b"4097"), (17, b"0"), // malformed, oversized or incomplete cfg inventory
+        (18, b"build_mode=\"wrong\""),
+        (19, b"4097"), (19, b"1"), (21, b"cfg(wrong)"),
+        (22, b"4097"), (22, b"1"), // oversized or incomplete search inventory
+        (24, b"/wrong/dependency"),
+        (25, b"invalid"), (25, b"-"), (25, b"1"), // malformed, absent or different embedding choice
+        (26, b"2"), (26, b"0"), // malformed or different forced-lint choice
+        (27, b"102"), (27, b"00"), (27, b"999"), // changed, truncated or unknown debug output choices
+        (28, b"3"), (28, b"9"), (28, b"00"), // different, unknown or malformed optimization level
     ];
     for &(index, bytes) in wrong_fields {
         let changed = replace_field(index, bytes);
         assert!(read_public_transport_request(&mut Cursor::new(&changed), identity, &req.file, &req.out, true, Some((&library, req.library_options))).is_err(),
                 "changed library field {index} was accepted");
     }
-    for index in [19, 22, 23, 24, 25, 26, 33] {
+    for index in [18, 21, 24, 25, 26, 27, 28, 35] {
         let truncated = &encoded[..fields[index].1 - 1];
         assert!(read_public_transport_request(&mut Cursor::new(truncated), identity, &req.file, &req.out, true, Some((&library, req.library_options))).is_err(),
                 "truncated vector, request option or final environment field {index} was accepted");
@@ -1133,6 +1142,74 @@ fn main() {
     assert_eq!(repaired.stdout, cold.stdout);
     let dep_info = std::fs::read_to_string(f.root.join("target/debug/generated-value.d")).unwrap();
     assert!(dep_info.contains("value.txt") && dep_info.contains("generated.rs"));
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and Clang"]
+fn ordinary_cargo_preserves_build_script_cfg_across_edits() {
+    let f = Fixture::new("cargo-build-cfg");
+    f.source("Cargo.toml", "[package]\nname=\"build-cfg\"\nedition=\"2024\"\nversion=\"0.1.0\"\n");
+    f.source("build.rs", r#"
+fn main() {
+    println!("cargo::rerun-if-changed=configuration.txt");
+    println!("cargo::rustc-check-cfg=cfg(build_enabled)");
+    println!("cargo::rustc-check-cfg=cfg(declared_but_unset)");
+    println!("cargo::rustc-check-cfg=cfg(build_mode, values(\"fast\", \"safe\", \"invalid\"))");
+    let flags = std::fs::read_to_string("configuration.txt").unwrap();
+    print!("{flags}");
+}
+"#);
+    f.source("src/main.rs", r#"
+#[cfg(all(build_enabled, build_mode = "fast", build_mode = "safe"))]
+fn selected() -> u32 { 41 }
+#[cfg(not(all(build_enabled, build_mode = "fast", build_mode = "safe")))]
+fn selected() -> u32 { 42 }
+#[cfg(build_mode = "invalid")]
+fn invalid() -> u32 { "invalid body must be rejected" }
+#[cfg(declared_but_unset)]
+fn not_enabled_by_declaration() -> u32 { "must remain disabled" }
+fn main() {
+    let mode = cfg!(build_mode = "fast");
+    let unset = cfg!(declared_but_unset);
+    let value = selected();
+    println!("{value}:{mode}:{unset}");
+}
+"#);
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let target = |original: bool| f.root.join(if original { "original-target" } else { "target" });
+    let command = |original: bool| {
+        let mut command = f.command("cargo");
+        command.env("CARGO_TARGET_DIR", target(original));
+        if original { command.env("RUSTC", &oracle); }
+        command
+    };
+    f.succeeds("lockfile", command(false).args(["generate-lockfile", "--offline"]));
+    let initial = "cargo::rustc-cfg=build_enabled\ncargo::rustc-cfg=build_mode=\"fast\"\ncargo::rustc-cfg=build_mode=\"safe\"\n";
+    for (state, flags, expected) in [
+        ("cold", initial, Some(b"41:true:false\n".as_slice())),
+        ("edited", "cargo::rustc-cfg=build_mode=\"safe\"\n", Some(b"42:false:false\n".as_slice())),
+        ("invalid", "cargo::rustc-cfg=build_mode=\"invalid\"\n", None),
+        ("repaired", initial, Some(b"41:true:false\n".as_slice())),
+    ] {
+        f.source("configuration.txt", flags);
+        for (compiler, original) in [("native", false), ("original", true)] {
+            let name = format!("{compiler}-{state}");
+            let mut command = command(original);
+            command.args(["run", "--quiet", "--frozen"]);
+            if let Some(expected) = expected {
+                assert_eq!(f.succeeds(&name, &mut command).stdout, expected);
+            } else {
+                let executable = target(original).join("debug/build-cfg");
+                let before = std::fs::read(&executable).unwrap();
+                let result = f.invoke(&name, &mut command);
+                assert_eq!(result.status.code(), Some(101));
+                assert!(result.stdout.is_empty());
+                assert!(String::from_utf8_lossy(&result.stderr).contains("invalid body must be rejected"));
+                assert_eq!(std::fs::read(executable).unwrap(), before);
+            }
+        }
+    }
 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]

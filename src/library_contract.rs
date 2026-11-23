@@ -19,10 +19,18 @@ fn cargo_check_cfg(value: &str) -> bool {
     if value == "cfg(docsrs,test)" {
         return true;
     }
-    let Some(features) = value.strip_prefix("cfg(feature, values(").and_then(|s| s.strip_suffix("))")) else {
+    let Some(spec) = value.strip_prefix("cfg(").and_then(|spec| spec.strip_suffix(')')) else {
         return false;
     };
-    features.is_empty() || features.split(',').all(|literal| cargo_feature_name(literal.trim()).is_some())
+    let name_allowed = |name: &str| identifier(name) && !matches!(name, "_" | "lust_dev");
+    let Some((name, values)) = spec.split_once(',') else {
+        return name_allowed(name.trim());
+    };
+    let Some(values) = values.trim().strip_prefix("values(").and_then(|values| values.strip_suffix(')')) else {
+        return false;
+    };
+    name_allowed(name.trim()) && (values.is_empty()
+        || values.split(',').all(|literal| cargo_feature_name(literal.trim()).is_some()))
 }
 
 /// This artifact adapter has only the actual Linux GNU x64 host implementation.
@@ -228,6 +236,7 @@ pub struct LibraryKey {
     pub extra_filename: String,
     pub source_path: PathBuf,
     pub working_directory: PathBuf,
+    pub cfg: Vec<String>,
     pub check_cfg: Vec<String>,
     pub search_paths: Vec<PathBuf>,
     pub external: Option<ExternMetadata>,
@@ -248,7 +257,8 @@ impl LibraryKey {
             && self.source_path.is_absolute() && self.working_directory.is_absolute()
             && self.source_path.to_str().is_some_and(|s| !s.contains(['\0','\n','\r']))
             && self.working_directory.to_str().is_some_and(|s| !s.contains(['\0','\n','\r']))
-            && self.check_cfg.len() <= 2
+            && self.cfg.len() <= 4096
+            && self.check_cfg.len() <= 4096
             && self.check_cfg.iter().all(|s| cargo_check_cfg(s))
             && self.search_paths.iter().all(|p| p.is_absolute())
             && self.external.as_ref().is_none_or(ExternMetadata::valid)

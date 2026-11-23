@@ -439,7 +439,7 @@ fn compile_script(plan: &BuildScriptUnit, directory: &Path, binary: &Path, env: 
 /// grammar, but admit only the custom forms the downstream cfg service can
 /// preserve. Its existing string consumer does not decode escaped/raw values
 /// or alter the separately owned Cargo feature/test/builtin configuration.
-fn cfg_directive(kind: &str, value: &str) -> Result<String, String> {
+pub(in crate::driver) fn cfg_directive(kind: &str, value: &str) -> Result<String, String> {
     use crate::lexer::Tok;
     let unsupported = || format!("native build-script integration does not yet represent `{kind}={value}`");
     let interner = crate::intern::Interner::default();
@@ -449,7 +449,7 @@ fn cfg_directive(kind: &str, value: &str) -> Result<String, String> {
         let name = interner.get(symbol);
         if crate::resolve::cfg::KNOWN_CFG_NAMES.contains(&name)
             || crate::resolve::cfg::UNSTABLE_CFG_NAMES.contains(&name)
-            || matches!(name, "proc_macro" | "doc" | "doctest")
+            || matches!(name, "proc_macro" | "doc" | "doctest" | "lust_dev")
         {
             return Err(format!(
                 "native build-script integration does not yet represent overriding builtin or separately owned cfg `{name}`"

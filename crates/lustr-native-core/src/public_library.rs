@@ -219,7 +219,7 @@ impl Owner {
                 "source_path":key.source_path,"cwd":key.working_directory,"target":req.session.target_triple,"edition":"2024",
                 "emits":if check { &["dep-info", "metadata"][..] } else { &["dep-info", "metadata", "link"][..] },"sdk_receipt_sha256":key.sdk_receipt,
                 "profile":{"panic_abort":profile.panic_abort,"overflow_checks":profile.overflow_checks,"debug_assertions":profile.debug_assertions},
-                "check_cfg":key.check_cfg,"search_dirs":key.search_paths},
+            "cfg":key.cfg,"check_cfg":key.check_cfg,"search_dirs":key.search_paths},
             "source_path":req.file,"sdk_receipt_sha256":key.sdk_receipt,"status":3,"phase":"native-prepare",
             "artifact_tools":self.installed.tools,"commands":[],"objects":[],"outputs":[],"checked_definitions":[],"generated_definitions":[],
             "artifact_reused":false,"counts":{"checked_bodies":0,"generated_bodies":0,"compiled_objects":0,"reused_objects":0,

@@ -31,6 +31,8 @@ use std::path::{Path, PathBuf};
 mod native;
 #[cfg(feature = "exclusive-native")]
 pub use native::outputs as outputs_native;
+#[cfg(feature = "exclusive-native")]
+pub(super) use native::cfg_directive;
 
 /// The env a build script check runs under: the requesting client's
 /// whole env (`protocol::Client::env`), or None for this process's own

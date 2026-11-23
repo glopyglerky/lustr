@@ -2168,7 +2168,7 @@ fn resolved_setup(
     // A public rustc-compatible request already carries Cargo's selected
     // source, features, environment and extern artifacts. Starting Cargo
     // again against a path dependency's manifest resolves a different graph.
-    let (root_path, mut root_text, crate_ids, env, externs, crate_name, cargo_env) = if let Some(artifact) = supplied_unit {
+    let (root_path, mut root_text, crate_ids, mut env, externs, crate_name, cargo_env) = if let Some(artifact) = supplied_unit {
         if (artifact.is_executable() || artifact.external.is_some()) != imports.is_some() {
             return Err(code2("Cargo compiler request is missing its selected artifact inputs".into()));
         }
@@ -2176,10 +2176,7 @@ fn resolved_setup(
         let relative = req.client.shown.as_ref().is_some_and(|path| path.is_relative());
         front.display_root = relative.then(|| cwd.clone());
         front.client.shown_root = Some((cwd.clone(), if relative { PathBuf::new() } else { cwd.clone() }));
-        let mut env = CfgEnv::new(&key.target_triple, &key.features, key.krate.test, key.profile);
-        for cfg in &artifact.check_cfg {
-            env.add_check_cfg(cfg);
-        }
+        let env = CfgEnv::new(&key.target_triple, &key.features, key.krate.test, key.profile);
         t.lap("Cargo compiler request");
         // The resolver reads env! from the original client's environment.
         // Imported crates are mounted from their actual metadata by the owner.
@@ -2261,7 +2258,6 @@ fn resolved_setup(
             }
         }
         let mut env = CfgEnv::new(&key.target_triple, &unit.features, key.krate.test, key.profile);
-        if let Some(library) = &key.library { for cfg in &library.check_cfg { env.add_check_cfg(cfg); } }
         // Cargo env for the selected unit plus its build script
         // outputs (section 1.1): `OUT_DIR` and `rustc-env` pairs for
         // `env!`, `rustc-cfg` values for `#[cfg]`. Product scripts use their
@@ -2309,10 +2305,19 @@ fn resolved_setup(
     } else {
         front.display_root = None;
         let stem = key.krate.target_name.clone();
-        let mut env = CfgEnv::new(&key.target_triple, &key.features, key.krate.test, key.profile);
-        if let Some(library) = &key.library { for cfg in &library.check_cfg { env.add_check_cfg(cfg); } }
+        let env = CfgEnv::new(&key.target_triple, &key.features, key.krate.test, key.profile);
         (key.krate.root.clone(), user_src.to_string(), crate_ids_default, env, Vec::new(), stem, Vec::new())
     };
+    if let Some(library) = &key.library {
+        for cfg in &library.check_cfg {
+            env.add_check_cfg(cfg);
+        }
+        #[cfg(feature = "exclusive-native")]
+        for cfg in &library.cfg {
+            let cfg = super::buildscript::cfg_directive("rustc-cfg", cfg).map_err(code2)?;
+            env.add_rustc_cfg(&cfg);
+        }
+    }
     // Body patch (driver/patch.rs): when every edit since the last full
     // resolve sits inside a fn body, edit the merged Ast in place.
     let inputs = super::patch::inputs_fingerprint(&(

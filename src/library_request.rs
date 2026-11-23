@@ -23,6 +23,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     let mut emits = None;
     let mut error_format = None;
     let mut json = None;
+    let mut cfg = BTreeSet::new();
     let mut check_cfg = Vec::new();
     let mut features = BTreeSet::new();
     let mut search_paths = Vec::new();
@@ -47,12 +48,13 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
             test = true;
         }
         else if arg == "--cfg" || arg.starts_with("--cfg=") {
-            let cfg = value("--cfg")?;
-            if cfg == "test" {
+            let spec = value("--cfg")?.trim();
+            if spec == "test" {
                 custom_test = true;
+            } else if let Some((_, literal)) = spec.split_once('=').filter(|(name, _)| name.trim() == "feature") {
+                features.insert(cargo_feature_name(literal.trim())?);
             } else {
-                let name = cargo_feature_name(cfg.strip_prefix("feature=")?)?;
-                features.insert(name);
+                cfg.insert(spec.to_owned());
             }
         }
         else if arg == "--edition" || arg.starts_with("--edition=") { unique(&mut edition,"--edition")?; }
@@ -162,7 +164,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
         }
     };
     let context = LibraryKey { crate_name:name?, metadata, extra_filename, source_path,
-        working_directory: std::env::current_dir().ok()?, check_cfg, search_paths, external, executable_dependencies,
+        working_directory: std::env::current_dir().ok()?, cfg: cfg.into_iter().collect(), check_cfg, search_paths, external, executable_dependencies,
         optimization, custom_test, sdk_receipt:SDK_RECEIPT.into() };
     if test && panic != "panic=unwind" { return None; }
     if !context.valid() { return None; }
@@ -230,6 +232,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
         ("--lustr-library-cwd",context.working_directory.to_str()?)] {
         native.extend([flag.into(),value.into()]);
     }
+    for cfg in context.cfg { native.extend(["--lustr-library-cfg".into(),cfg]); }
     for cfg in context.check_cfg { native.extend(["--lustr-library-check-cfg".into(),cfg]); }
     for path in context.search_paths { native.extend(["--lustr-library-search".into(),path.to_str()?.into()]); }
     if let Some(dependency) = context.external {
