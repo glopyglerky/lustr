@@ -220,7 +220,7 @@ index e38d2ac11bce836fd62a455da38be2244cee15b6..36ba55f430c66a48b615019b709d6650
  
  pub trait ProcMacroSrvSpan: Copy + Send + Sync {
 diff --git a/src/tools/rust-analyzer/crates/proc-macro-srv/src/server_impl/rust_analyzer_span.rs b/src/tools/rust-analyzer/crates/proc-macro-srv/src/server_impl/rust_analyzer_span.rs
-index 188d24abcc67b8e1576c10298eb8116aad7de7b1..6adaa1644016f1aa01d669c82c0607076fdf808e 100644
+index 188d24abcc67b8e1576c10298eb8116aad7de7b1..98b49242af1ba76c8a0a28efb65e7c5fa56d3543 100644
 --- a/src/tools/rust-analyzer/crates/proc-macro-srv/src/server_impl/rust_analyzer_span.rs
 +++ b/src/tools/rust-analyzer/crates/proc-macro-srv/src/server_impl/rust_analyzer_span.rs
 @@ -58,8 +58,10 @@ fn literal_from_str(&mut self, s: &str) -> Result<Literal<Self::Span>, String> {
@@ -230,7 +230,7 @@ index 188d24abcc67b8e1576c10298eb8116aad7de7b1..6adaa1644016f1aa01d669c82c060707
 -    fn emit_diagnostic(&mut self, _: Diagnostic<Self::Span>) {
 -        // FIXME handle diagnostic
 +    fn emit_diagnostic(&mut self, diagnostic: Diagnostic<Self::Span>) {
-+        if matches!(diagnostic.level, rustc_proc_macro::bridge::Level::Error) {
++        if matches!(diagnostic.level, rustc_proc_macro::Level::Error) {
 +            self.tracked_env.errors.push(diagnostic.message);
 +        }
      }

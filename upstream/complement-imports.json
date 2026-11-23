@@ -341,7 +341,7 @@
       "excluded_duplicate_phases": ["consumer parsing, resolution, checking, code generation and link remain native"],
       "qualification": "Default Cargo check and run with an observed source-reading function-like macro, and tracked input, failure and repair histories. Wider token, hygiene, macro forms and elapsed performance remain open.",
       "closure_sha256": {
-        "upstream/proc-macro-expansion.patch": "f49d9f4ed27ff2f6bda79f9611b8b1d74dcb59d337e5772e36ae8b80df65992a",
+        "upstream/proc-macro-expansion.patch": "a7f4f05d73321d640fd131211e53f532c84c27c13cc7aaba3ba27828d6a1a004",
         "tools/proc-macro-expansion/client/Cargo.toml": "e29dc1b0b694f174165744795bf3c3c436c4af52843d3e41a50cf6edc568d2c9",
         "tools/proc-macro-expansion/client/Cargo.lock": "29c454cf78102050615d752a7f662d766159e2ee553af1f1494c97383908619d",
         "tools/proc-macro-expansion/server/Cargo.toml": "204413094ed7bc3abf672d35902583a948801ead82c323799ce80e92490d2753",
