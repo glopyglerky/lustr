@@ -5,7 +5,7 @@
 // and `async` keep theirs (L0404, L0405), and each AST v2 form whose parser
 // lands later rejects with the Appendix A code for its area (docs/ARCH.md S3b).
 use crate::ast::*;
-use crate::diag::{Diag, Span, not_yet};
+use crate::diag::{self, Diag, Span};
 use crate::intern::{Interner, Known, Sym};
 use crate::lexer::{Delim, Lexed, Tok, Token, TokenTree, decode_byte_char, decode_byte_str};
 
@@ -23,6 +23,10 @@ const C_LIT: &str = "L0641"; // C string literals and other std-surface syntax
 const C_METHOD: &str = "L0721"; // method and receiver forms
 const C_EXTERN: &str = "L0810"; // extern blocks and foreign items
 const C_CORE: &str = "L0820"; // core expression, pattern, and statement forms
+
+fn not_yet(code: &'static str, span: Span, what: &str) -> Diag {
+    diag::not_yet(code, span, what).requiring_rust_complement()
+}
 
 fn unsafe_error(span: Span) -> Diag {
     Diag::new("L0404", span, "`unsafe` is not supported", "Remove the unsafe code.")
@@ -2176,7 +2180,7 @@ impl<'a> Parser<'a> {
                 })
             }
             Tok::Ident(_, _) if self.at_ident("union") && matches!(self.peek_at(1), Tok::Ident(_, _)) => {
-                return Err(not_yet(C_TY, start, "unions").requiring_rust_complement());
+                return Err(not_yet(C_TY, start, "unions"));
             }
             Tok::Ident(_, _) | Tok::SelfUpper | Tok::Crate | Tok::Super if self.cfg_syntax && self.at_path_macro_call() => {
                 self.skip_macro_invocation()?;

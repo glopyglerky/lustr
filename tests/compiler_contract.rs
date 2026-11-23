@@ -3122,3 +3122,63 @@ fn cargo_preserves_unions_crate_policies_and_target_features() {
         assert!(!f.root.join(lane).join("debug/libcapabilities.rlib").exists());
     }
 }
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn cargo_compiles_foreign_functions_attributes_strings_and_callbacks() {
+    let f = Fixture::new("cargo-foreign-rust");
+    f.source("Cargo.toml", r#"
+[workspace]
+members = ["app", "abi", "export", "text", "callback"]
+resolver = "3"
+"#);
+    for (name, source) in [
+        ("abi", "#![no_std]\npub extern \"C\" fn mask(n: u64) -> u64 { n ^ 19 }\n"),
+        ("export", "#![no_std]\n#[unsafe(no_mangle)]\npub fn lustr_exported_mask(n: u64) -> u64 { n ^ 19 }\n"),
+        ("text", "#![no_std]\npub fn count() -> usize { c\"abc\".to_bytes().len() }\n"),
+        ("callback", "#![no_std]\npub fn apply(call: extern \"C\" fn(u64) -> u64, value: u64) -> u64 { call(value) }\n"),
+    ] {
+        f.source(&format!("{name}/Cargo.toml"), &format!(
+            "[package]\nname=\"{name}\"\nversion=\"0.1.0\"\nedition=\"2024\"\n"));
+        f.source(&format!("{name}/src/lib.rs"), source);
+    }
+    f.source("app/Cargo.toml", r#"
+[package]
+name = "app"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+abi = { path = "../abi" }
+export = { path = "../export" }
+text = { path = "../text" }
+callback = { path = "../callback" }
+"#);
+    f.source("app/src/main.rs", r#"
+fn main() {
+    println!("{} {} {}", callback::apply(abi::mask, 57), export::lustr_exported_mask(57), text::count());
+}
+"#);
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let cargo = |lane: &str, original: bool| {
+        let mut command = f.command("cargo");
+        command.env("CARGO_TARGET_DIR", f.root.join(lane));
+        if original { command.env("RUSTC", &oracle); }
+        command
+    };
+    for (lane, original) in [("lustr", false), ("original", true)] {
+        f.succeeds(&format!("{lane}-check"), cargo(lane, original).args(["check", "--workspace", "--frozen", "--jobs", "2"]));
+        let run = f.succeeds(&format!("{lane}-run"), cargo(lane, original).args(["run", "-p", "app", "--frozen", "--jobs", "2"]));
+        assert_eq!(run.stdout, b"42 42 3\n");
+    }
+
+    f.source("abi/src/lib.rs", "#![no_std]\npub extern \"C\" fn mask(_: u64) -> u64 { true }\n");
+    for (lane, original) in [("lustr-invalid", false), ("original-invalid", true)] {
+        let rejected = f.invoke(lane, cargo(lane, original).args(["build", "--workspace", "--frozen", "--jobs", "2"]));
+        assert_eq!(rejected.status.code(), Some(101));
+        assert!(String::from_utf8_lossy(&rejected.stderr).contains("E0308"));
+        assert!(!f.root.join(lane).join("debug/app").exists());
+    }
+}
