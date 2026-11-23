@@ -36,9 +36,9 @@ fn rustc_reads_line_based_argument_files_before_handling_requests() {
         assert_eq!(out.stdout, b"42\n");
     }
 
-    f.source("query", "--version\n");
+    f.source("query", "-vV\n");
     let query = f.succeeds("query", f.command("rustc").arg("@query"));
-    assert_eq!(query.stdout, f.succeeds("direct-query", f.command("rustc").arg("--version")).stdout);
+    assert_eq!(query.stdout, f.succeeds("direct-query", f.command("rustc").arg("-vV")).stdout);
     std::fs::write(f.root.join("bad encoding"), [0xff]).unwrap();
     let failures = ["@not present", "@bad encoding"];
     for (label, mut command) in [("native-bad-argfiles", f.command("rustc")), ("original-bad-argfiles", original_command())] {

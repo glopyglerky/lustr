@@ -430,9 +430,28 @@ repair. Cargo skips compiler requests on a no-op. The consumer checks two of
 three bodies after repair. The separate retained consumer qualification also
 rejects a lifetime escape and preserves the valid outputs across malformed
 metadata. The regression suite exercises renamed crate and definition
-identities and different trait and impl lifetime names. Continue this
-provider/consumer path into linked Cargo builds and then wider predicates,
-receivers, and associated results.
+identities and different trait and impl lifetime names.
+
+The Linux x86-64 linked path now builds and runs the represented provider and
+consumer through ordinary Cargo in both default and release profiles. The
+provider can export native functions alongside the lifetime-generic associated
+type. Pinned Rust independently reads the native metadata, links the native
+archive and runs the unchanged consumer. A provider function edit relinks the
+consumer without checking its bodies again. A changed associated type still
+invalidates affected work and preserves the last valid executable on failure.
+
+Source `ef93bc2f` also preserves shared `str` and integer-slice referents in
+the native and metadata representations. Pinned Rust and Lustr agree on their
+runtime results and reject an escaping lifetime. Continue with wider
+predicates, receivers, associated results and library signatures.
+
+Source `78cb4906` builds ordinary Cargo unit tests for a represented
+`#![no_std]` library. Its test uses the core prelude and an explicit,
+configuration-enabled `extern crate std` for hosted output. Both compilers
+reject a disabled import, an unqualified std-only macro and an unqualified
+`Vec`. The installed package still lacks Rustdoc, so `cargo test --doc`
+fails when Cargo launches it. Freestanding executable compilation and the
+broader no-std target and runtime matrix remain unfinished.
 
 The coordinator owns this register, shared-interface decisions and final
 integration. Worker A starts P1/P2; worker B starts P3; worker C starts P4 and
