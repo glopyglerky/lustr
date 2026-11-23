@@ -3400,7 +3400,7 @@ fn resolve_trait_path_args(
                         inputs.push(GenericArg::Const(c));
                     }
                     AstArg::Binding { name, span: bspan, kind } => {
-                        let assoc = assoc_in_supers(cx, tys, trait_def, *name).ok_or_else(|| {
+                        let (assoc, owner) = assoc_in_supers(cx, tys, trait_def, *name).ok_or_else(|| {
                             Diag::new(
                                 "L0102",
                                 *bspan,
@@ -3409,7 +3409,12 @@ fn resolve_trait_path_args(
                             )
                         })?;
                         let bound = match kind {
-                            ast::BindingKind::EqTy(t) => GenericArg::Ty(resolve_scoped(ast, interner, known, cx, tys, *t, scope)?),
+                            ast::BindingKind::EqTy(t) => {
+                                if cx.adt_lifetimes.contains_key(&owner) {
+                                    return Err(not_yet("L0203", *bspan, "associated type bindings on traits with lifetime parameters"));
+                                }
+                                GenericArg::Ty(resolve_scoped(ast, interner, known, cx, tys, *t, scope)?)
+                            }
                             ast::BindingKind::EqConst(e) => {
                                 GenericArg::Const(resolve_const_arg(ast, interner, known, tys, scope, *e, *bspan)?)
                             }
@@ -3727,7 +3732,7 @@ fn assoc_projection(
     }
 }
 
-/// The def of the associated item `name` of a trait, looking
+/// The associated item `name` and its defining trait, looking
 /// through its supertraits as rustc does for a trait reference's
 /// binding (`ExactSizeIterator<Item = ..>` names
 /// `Iterator::Item`). A qualified path must name the defining
@@ -3735,8 +3740,8 @@ fn assoc_projection(
 /// this. None when no supertrait path names it, or when two
 /// different items of the name are reachable (rustc reports
 /// that binding ambiguous).
-fn assoc_in_supers(cx: &ResolveCx, tys: &impl TyIntern, trait_def: DefId, name: Sym) -> Option<DefId> {
-    let mut found: Option<DefId> = None;
+fn assoc_in_supers(cx: &ResolveCx, tys: &impl TyIntern, trait_def: DefId, name: Sym) -> Option<(DefId, DefId)> {
+    let mut found = None;
     let mut seen: Vec<DefId> = Vec::new();
     let mut stack = vec![trait_def];
     while let Some(def) = stack.pop() {
@@ -3747,8 +3752,8 @@ fn assoc_in_supers(cx: &ResolveCx, tys: &impl TyIntern, trait_def: DefId, name: 
         let rec = cx.index.trait_record(def)?;
         if let Some(d) = rec.assoc_by_name(name) {
             match found {
-                None => found = Some(d),
-                Some(prev) if prev == d => {}
+                None => found = Some((d, def)),
+                Some((prev, _)) if prev == d => {}
                 Some(_) => return None,
             }
         }
@@ -3783,6 +3788,9 @@ fn projection_of(
             "Check the spelling against the trait definition.",
         )
     })?;
+    if cx.adt_lifetimes.contains_key(&tr.def) {
+        return Err(not_yet("L0203", span, "associated type projections on traits with lifetime parameters"));
+    }
     Ok(tys.intern(TyKind::Projection(AssocId(assoc), tr.args)))
 }
 
@@ -6320,16 +6328,6 @@ pub fn collect_trait_defs(p: &mut Program, errs: &mut Vec<Diag>) {
             .collect();
         if !lts.is_empty() {
             p.gx.adt_lifetimes.insert(def, lts);
-            // A projection through such a trait would carry the trait's
-            // regions in a type that has no slots for them: a stated cut.
-            if let Some(at) = tdef.types.first() {
-                errs.push(Diag::new(
-                    "L0203",
-                    at.name_span,
-                    "associated types in a trait with lifetime parameters are not supported yet",
-                    "Move the lifetime to the methods, or make the type a generic parameter of the trait.",
-                ));
-            }
         }
         // Associated items: types live in the type namespace, consts and
         // methods in the value namespace. A second item of one name in one
@@ -7525,6 +7523,13 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
                 let mut relaxed: Vec<u32> = Vec::new();
                 let mut preds: Vec<Predicate> = Vec::new();
                 for b in &at_bounds {
+                    // Only the regioned declaration can express this bound.
+                    // The impl checks it using the actual trait arguments.
+                    if let TraitBound::Lifetime(lt) = b
+                        && region_scope.lifetimes.iter().any(|&(name, _)| name == lt.name)
+                    {
+                        continue;
+                    }
                     bound_predicates(&p.ast, &p.interner, &p.known, &cx, &mut p.tys, &region_scope, proj, b, &mut preds, &mut relaxed, errs);
                 }
                 // An associated type has an implicit `Sized` bound
@@ -7906,6 +7911,16 @@ pub fn finish_trait_impl(
             ));
             continue;
         };
+        if let Some(declaration) = p.gx.trait_assoc_generics.get(&assoc)
+            && at.generics.params.len() != declaration.arguments.len()
+        {
+            errs.push(Diag::new(
+                "L0110",
+                at.name_span,
+                "this associated type has a different number of generic parameters than the trait declares",
+                "Match the associated type declaration in the trait.",
+            ));
+        }
         let mut item_scope = scope.clone();
         item_scope.type_outlives = true;
         let (own, own_scope, region_predicates) = {
@@ -14167,8 +14182,22 @@ fn check_impl_associated_outlives(
             Predicate::TypeOutlives(rewrite_impl_projections(p, value, self_ty, &bindings), region)
         } else { predicate }
     };
-    let required: Vec<_> = item.generics.predicates.iter().chain(&item.bounds).copied().map(&mut instantiate).collect();
+    let mut required: Vec<_> = item.generics.predicates.iter().chain(&item.bounds).copied().map(&mut instantiate).collect();
     let allowed: Vec<_> = item.generics.predicates.iter().copied().map(&mut instantiate).collect();
+    // Pinned rustc_type_ir's ArgFolder instantiates an early region from its
+    // argument slot. Lust numbers regions separately from type and const
+    // parameters, so the corresponding arguments come from its impl header.
+    // Named result bounds here are outside nested binders.
+    for &bound in &item.declared_bounds {
+        let Predicate::TypeOutlives(_, Region::Param(index)) = bound else { continue };
+        let Some(actual @ (Region::Param(_) | Region::Static)) = p.regions.impl_heads.get(&rec.def)
+            .and_then(|head| head.trait_lifetimes.get(index as usize)).copied()
+        else {
+            errs.push(not_yet("L0203", assignment.declaration.span, "this associated type's lifetime argument"));
+            return;
+        };
+        required.push(Predicate::TypeOutlives(assignment.value, actual));
+    }
     let base_facts = p.regions.impl_regions.get(&rec.def).map_or_else(Vec::new, |regions| regions.facts.clone());
     let mut facts = base_facts.clone();
     facts.extend_from_slice(&assignment.declaration.region_facts);
