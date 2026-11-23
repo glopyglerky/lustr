@@ -1077,11 +1077,11 @@
     "production_source_authored": true
   },
   "adapted_sources_sha256": {
-    "src/encode.rs": "28193a09e4ec67915f1b980c9754a92f42027f14ffa7c45fb301fa7065715a9c",
+    "src/encode.rs": "3e77d75a818dd8280a807252aa628cdfc5e7bcd4d350855cfde17713608c1a91",
     "src/encode_projection.rs": "15864ab3bf6aca54020e503cfb5b782bbd1a16d66f45bc84111ae4fa64116d48",
     "src/extern_metadata.rs": "427503c0b24c51b0ba7c9337a27c629df062471e6cca37e2dddd322bdf4d87a6",
     "src/identity.rs": "4d153100f5cfe9de796082d708518bd0d2cb4180fd17fffa9a84bd9b6b389f9f",
-    "src/lib.rs": "41d5e33b8b0c094e159d7271fd57caf8da5bee0dcb87e85de87a1fa19e62c976",
+    "src/lib.rs": "cea390b2515f331af4dffc463ef3815a7735f851dfd9b9e2a1bb7db31c65d9d9",
     "src/sdk.rs": "bcb43af0564553d2e2636f25a7aa6c06f81a8eb19997f4a2324c3071b1fb025f",
     "src/table.rs": "5ad2fa46decc550bfd5f7d23cc051c7087d4ef1f5b361b154630c122097c92bb",
     "src/upstream/codec.rs": "916922c930d3dc46c7003d65d920b6c84efa780ac5b0c06eec1586ead0216a7a",

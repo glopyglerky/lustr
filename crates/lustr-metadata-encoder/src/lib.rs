@@ -311,7 +311,7 @@ fn validate(input: &Input<'_>, sdk: &Sdk, link: bool, projection: Option<&Projec
         return Err(failure("absolute Unicode source path is required"));
     }
     if input.source.len() > 2 * 1024 * 1024
-        || !input.source.is_ascii()
+        || input.source.starts_with('\u{feff}')
         || input.source.as_bytes().contains(&b'\r')
         || input.root_span != (Span { lo: 0, hi: input.source.len() as u32 })
     {

@@ -12,7 +12,7 @@ use crate::identity::{function_path_hash, function_symbol, stable_crate_id};
 use crate::table::{Table, TableBuilder};
 use crate::upstream::codec::Encoder;
 use crate::upstream::mem_encoder::MemEncoder;
-use crate::upstream::schema::{METADATA_HEADER, ROOT_FIELDS, TABLE_FIELDS};
+use crate::upstream::schema::{DOC_COMMENT, METADATA_HEADER, ROOT_FIELDS, TABLE_FIELDS};
 use crate::{Encoded, Input, Sdk, Span, SymbolMapping};
 #[path = "encode_projection.rs"]
 mod projection;
@@ -221,7 +221,7 @@ pub(crate) fn encode(
         // Rust retains source doc comments for downstream exported definitions.
         let docs = if function.public { function.docs.as_slice() } else { &[] };
         cx.array_fact("attributes", index, docs, |cx, doc| {
-            cx.opaque.emit_raw_bytes(&[0, schema::DOC_COMMENT, 0, 0, u8::from(doc.block)]);
+            cx.opaque.emit_raw_bytes(&[0, DOC_COMMENT, 0, 0, u8::from(doc.block)]);
             cx.span(doc.span);
             cx.symbol(&doc.text);
         });
@@ -474,12 +474,16 @@ fn encode_source_file(cx: &mut Context, input: &Input<'_>, stable_id: u64) {
     cx.opaque.emit_u32(input.source.len() as u32);
     cx.opaque.emit_u32(input.source.len() as u32); // Original unnormalized_source_len.
 
-    // Original SourceFile difference-list encoding. The native completed
-    // source is ASCII without CR/BOM normalization, so there are no multibyte
-    // or normalized positions to erase or invent.
+    // Original SourceFile difference-list encoding and UTF-8 byte positions.
+    // The admitted source requires no CRLF or BOM normalization.
     let mut lines = vec![0u32];
-    for (index, &byte) in input.source.as_bytes().iter().enumerate() {
-        if byte == b'\n' && index + 1 < input.source.len() { lines.push((index + 1) as u32); }
+    let mut multibyte = Vec::new();
+    for (index, ch) in input.source.char_indices() {
+        if ch == '\n' && index + 1 < input.source.len() {
+            lines.push((index + 1) as u32);
+        } else if !ch.is_ascii() {
+            multibyte.push((index as u32, ch.len_utf8() as u8));
+        }
     }
     cx.opaque.emit_u32(lines.len() as u32);
     let max_line_length = lines.windows(2).map(|pair| pair[1] - pair[0]).max().unwrap_or(0);
@@ -488,7 +492,11 @@ fn encode_source_file(cx: &mut Context, input: &Input<'_>, stable_id: u64) {
     for pair in lines.windows(2) {
         cx.opaque.emit_raw_bytes(&(pair[1] - pair[0]).to_le_bytes()[..bytes_per_diff as usize]);
     }
-    cx.opaque.emit_usize(0); // multibyte_chars
+    cx.opaque.emit_usize(multibyte.len());
+    for (position, bytes) in multibyte {
+        cx.opaque.emit_u32(position);
+        cx.opaque.emit_u8(bytes);
+    }
     cx.opaque.emit_raw_bytes(&source_file_id(input, stable_id));
     cx.opaque.emit_usize(0); // normalized_pos
     cx.opaque.emit_u32(0); // local crate

@@ -107,6 +107,20 @@
     {
       "repository": "rust-lang/rust",
       "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_span/src/lib.rs",
+      "sha256": "9682c3b7d227039f040afff82aae4d2fd8133692bc9ef84f0974323f8a0acca0",
+      "role": "Original SourceFile multibyte character sequence and normalized position wire order"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_span/src/analyze_source_file.rs",
+      "sha256": "15cb5f3992b3e6f178b1bfac78ed136dd95f6d5b87c3eb4e4587da69b132734d",
+      "role": "Original generic byte-offset analysis for line starts and multibyte characters"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
       "path": "compiler/rustc_session/src/options.rs",
       "sha256": "9ac7d7de14cbef1624c9998593b081000dcd496413d2bb3643aac2bd1c9c7e69",
       "role": "Pinned debug, split and strip option value parsing; separate embedding options, excluded lint crate-hash state and untracked JSON response mode"
@@ -279,7 +293,7 @@
     "crates/lustr-native-core/Cargo.lock": "bc7c64836b4b04b12031fdeb3a3bb90b9a723a40208b39379f8cd54ba96b4372",
     "crates/lustr-native-core/src/library_history.rs": "b9b5599d739bd221cfcdb59280f456c2556859d0dc400b8b1afe57407678354f",
     "crates/lustr-native-core/src/native_library.rs": "68fffd34b8201c1f6ac959b734e8102d8d0c1738493bdae26bad26ac450000dd",
-    "crates/lustr-native-core/src/native_completion.rs": "05a2ef2b898f18b9cfce8899147d4091308051e0b8fdb4888e3b550225555184",
+    "crates/lustr-native-core/src/native_completion.rs": "304030572d3fe5535142c4a2b78d50d332b0220fee97d8c7bca5479501f2e3a5",
     "crates/lustr-native-core/src/library_artifact.rs": "a3a386c92fb497269dc14e4856e29e3d21ea447d0448c1dbc8525f5013664f90",
     "crates/lustr-native-core/src/metadata_archive.rs": "4906cce455716560344bdb329c3bcbc563da21e8c615c357583c038a90e11dfa",
     "crates/lustr-native-core/src/public_library.rs": "35c6ecd43abe3980a108b5f42fc8e650bf21cc28e79454ce6c2288db28c9fcb9",
@@ -289,8 +303,8 @@
     "crates/lustr-native-core/src/unit_publication.rs": "035ee3f6a763a9562348f50476815bd24e7b6bc67a1a14a69edcd2fe8f44ae05",
     "crates/lustr-native-core/LICENSE-LLVM": "8d85c1057d742e597985c7d4e6320b015a9139385cff4cbae06ffc0ebe89afee",
     "crates/lustr-metadata-encoder/Cargo.toml": "0f63faa420b6c2e1ec91739f61f7ee77ee874233399ed8e744783325168493c2",
-    "crates/lustr-metadata-encoder/src/lib.rs": "41d5e33b8b0c094e159d7271fd57caf8da5bee0dcb87e85de87a1fa19e62c976",
-    "crates/lustr-metadata-encoder/src/encode.rs": "28193a09e4ec67915f1b980c9754a92f42027f14ffa7c45fb301fa7065715a9c",
+    "crates/lustr-metadata-encoder/src/lib.rs": "cea390b2515f331af4dffc463ef3815a7735f851dfd9b9e2a1bb7db31c65d9d9",
+    "crates/lustr-metadata-encoder/src/encode.rs": "3e77d75a818dd8280a807252aa628cdfc5e7bcd4d350855cfde17713608c1a91",
     "crates/lustr-metadata-encoder/src/extern_metadata.rs": "427503c0b24c51b0ba7c9337a27c629df062471e6cca37e2dddd322bdf4d87a6",
     "crates/lustr-metadata-encoder/src/sdk.rs": "bcb43af0564553d2e2636f25a7aa6c06f81a8eb19997f4a2324c3071b1fb025f",
     "crates/lustr-metadata-encoder/src/upstream/predefined_symbols.rs": "ed7963c315a7e9ac5a51a206cc68a78e4a741291d344c74bab1dbf1fde7cf645",
@@ -300,7 +314,7 @@
     "tools/native-test-runtime.rs": "928a07c0e01caaa520b6bdb6e0746e5c047f34e47a7574fc416d70ed30685ed7",
     "tools/install-native-metadata-sdk.py": "6a5e8f7728888dfb7e24ab05389ce0675a0ebbb8cd22f7a7582c9e467717b0e2",
     "tools/check-exclusive-coverage.py": "fca596f1b08f7517de13e9f77035afb4fbaeb21578992d383b905df9ad0c88b3",
-    "tools/update-public-library-source-manifest.py": "0c2e7737ed712622eef1a0e5e0e981c471655afee839f5f52848a9e4f192251f",
+    "tools/update-public-library-source-manifest.py": "73e234ab6eca973e4de78522b7c718395c54f3c5929baa3aaada83956b2b05ea",
     "upstream/metadata-artifact-tools.json": "d1bd48f3b362645dce89172ce862f66189a1847c26e443f1861f9222021af9ff",
     "upstream/metadata-dependency-closure.json": "a5b2d8cccb4594fa2bfe56c33d202c4e6a1f88a1e09105bac8c4f1ab1e0ca32e",
     "docs/compiler-set/evidence/metadata-sdk-receipt-20261120/receipt.json": "4e400b263bf9923616dea44ead2d77213703177d3bfaf6becd6a19a4c5a657a7",

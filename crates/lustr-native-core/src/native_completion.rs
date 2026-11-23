@@ -261,9 +261,6 @@ impl View<'_> {
 pub(crate) fn complete(prepared: View<'_>, generated: bool, family: Option<&Family>) -> Result<Vec<Function>, Error> {
     let p = prepared.program();
     let syntax = &p.ast;
-    if !prepared.source().is_ascii() {
-        return Err(Error::Unintegrated("Unicode source lint and identifier records"));
-    }
     if prepared.source().as_bytes().contains(&b'\r') {
         return Err(Error::Unintegrated("normalized source byte/span mapping"));
     }
@@ -424,6 +421,21 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool, family: Option<&Fami
         require_direct_integer_abi(&functions)?;
     }
     functions.sort_by_key(|function| function.span.lo);
+    let source = prepared.source();
+    if !source.is_ascii() {
+        // The admitted comments have no identifier or lint obligations.
+        // Non-ASCII code still requires the corresponding source records.
+        let mut cursor = 0;
+        for doc in functions.iter().flat_map(|function| &function.docs) {
+            if source.get(cursor..doc.span.lo as usize).is_none_or(|text| !text.is_ascii()) {
+                return Err(Error::Unintegrated("Unicode source outside completed function documentation"));
+            }
+            cursor = doc.span.hi as usize;
+        }
+        if source.get(cursor..).is_none_or(|text| !text.is_ascii()) {
+            return Err(Error::Unintegrated("Unicode source outside completed function documentation"));
+        }
+    }
     // All source-visible signatures are primitive. In one root module, actual
     // local resolved call edges can name private functions without crossing a
     // visibility boundary. There are no nominal types to leak in a public API.

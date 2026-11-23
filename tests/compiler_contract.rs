@@ -1474,8 +1474,8 @@ fn cargo_preserves_original_function_documentation_in_rust_metadata() {
     f.source("Cargo.toml", "[package]\nname=\"documented\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
     f.source("src/lib.rs", r#"
 #![no_std]
-/// Line documentation from original Rust.
-/** Block documentation from original Rust. */
+/// Line documentation from original Rust contains π and 雪.
+/** Block documentation from original Rust contains 🦀. */
 pub fn flip(value: u64) -> u64 { value ^ 1 }
 "#);
     f.source("src/main.rs", "fn main() { let value = documented::flip(42); println!(\"{value}\"); }\n");
@@ -1497,8 +1497,8 @@ pub fn flip(value: u64) -> u64 { value ^ 1 }
         .args(["--edition=2024", "--crate-name", "reexporter", "--extern"])
         .arg(format!("documented={}", metadata_path.display())).arg("--out-dir").arg(&docs).arg(exported));
     let html = std::fs::read_to_string(docs.join("reexporter/fn.flip.html")).unwrap();
-    assert!(html.contains("Line documentation from original Rust."));
-    assert!(html.contains("Block documentation from original Rust."));
+    assert!(html.contains("Line documentation from original Rust contains π and 雪."));
+    assert!(html.contains("Block documentation from original Rust contains 🦀."));
 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
