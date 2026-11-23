@@ -3188,10 +3188,18 @@ index 019e079ad31611c7eba4ad0fe3a7a4d60b71cc17..155b2a5ce50e86f428703c7ae797c73b
              match fit {
                  Fit::Yes => {
 diff --git a/src/cc.rs b/src/cc.rs
-index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..1670f5e3ad52fc755a1c7e46141695e481354a93 100644
+index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..6ea6adfd71876b34a397ff30e313e22499e9692e 100644
 --- a/src/cc.rs
 +++ b/src/cc.rs
-@@ -44,6 +44,8 @@ pub struct CcSpec {
+@@ -19,6 +19,7 @@
+ // the compiler identity, the flag string, the Rust target triple, and with
+ // PGO (`cc/pgo.rs`) the unit's own part of the profile; an object is a
+ // function of those alone.
++use std::io::Write;
+ use std::path::{Path, PathBuf};
+ use std::process::Command;
+ 
+@@ -44,6 +45,8 @@ pub struct CcSpec {
      pub statik: bool,
      /// File name suffix of the output (".exe" on Windows triples).
      pub exe_suffix: &'static str,
@@ -3200,7 +3208,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..1670f5e3ad52fc755a1c7e46141695e4
  }
  
  /// The zig target spelling of a Rust triple. The front end keeps the Rust
-@@ -163,12 +165,12 @@ pub fn spec_for(triple: &str) -> Result<CcSpec, String> {
+@@ -163,12 +166,12 @@ pub fn spec_for(triple: &str) -> Result<CcSpec, String> {
              cmd.extend(["-target".into(), zt.into()]);
          }
          let cxx = cxx_for(&cmd);
@@ -3215,7 +3223,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..1670f5e3ad52fc755a1c7e46141695e4
      }
      let (arch, os) = (triple.split('-').next().unwrap_or(""), triple);
      let host_like = arch == std::env::consts::ARCH
-@@ -179,13 +181,30 @@ pub fn spec_for(triple: &str) -> Result<CcSpec, String> {
+@@ -179,13 +182,46 @@ pub fn spec_for(triple: &str) -> Result<CcSpec, String> {
          // musl toolchain, which the link error will name).
          let cmd = vec!["cc".to_string()];
          let cxx = cxx_for(&cmd);
@@ -3244,10 +3252,26 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..1670f5e3ad52fc755a1c7e46141695e4
 +    })
 +}
 +
++pub(crate) fn compile_scalar_debug_object(path: &Path, text: &str) -> Result<(), String> {
++    let input = path.with_extension("ll");
++    let mut source = std::fs::File::options().write(true).create_new(true).open(&input)
++        .map_err(|error| format!("stage native scalar LLVM IR: {error}"))?;
++    source.write_all(text.as_bytes()).map_err(|error| format!("write native scalar LLVM IR: {error}"))?;
++    drop(source);
++    let built = cc_command("clang").args(["--target=x86_64-unknown-linux-gnu", "-Wno-override-module", "-O0", "-x", "ir", "-c"])
++        .arg(&input).arg("-o").arg(path).output();
++    std::fs::remove_file(&input).map_err(|error| format!("remove native scalar LLVM IR: {error}"))?;
++    let result = built.map_err(|error| format!("run Clang for a native scalar debug object: {error}"))?;
++    if !result.status.success() {
++        return Err(format!("Clang rejected native scalar LLVM IR ({}): {}", result.status, String::from_utf8_lossy(&result.stderr)));
++    }
++    Ok(())
++}
++
  /// The C flags of every unit, one string so the cache key and the command
  /// line can never disagree.
  pub fn cflags(debug: bool) -> String {
-@@ -237,7 +256,7 @@ fn ldflags(spec: &CcSpec, debug: bool) -> Vec<String> {
+@@ -237,7 +273,7 @@ fn ldflags(spec: &CcSpec, debug: bool) -> Vec<String> {
      if spec.statik {
          v.push("-static".into());
      }
@@ -3256,7 +3280,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..1670f5e3ad52fc755a1c7e46141695e4
          v.push("-s".into());
      } else {
          v.push("-g".into());
-@@ -485,6 +504,10 @@ pub fn llflags(debug: bool) -> String {
+@@ -485,6 +521,10 @@ pub fn llflags(debug: bool) -> String {
      if debug { format!("{base} -g") } else { base }
  }
  
@@ -3267,7 +3291,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..1670f5e3ad52fc755a1c7e46141695e4
  /// Compiles one LLVM backend unit into `obj`: the C unit `src` and the helpers' C `hc` to
  /// bitcode with the C flags (no LLVM passes yet), then the IR `ll` with both linked in, so
  /// the optimizer sees one module (cgen/ll.rs: the C helpers inline into the LLVM fns). The
-@@ -565,7 +588,7 @@ fn compile_pair(
+@@ -565,7 +605,7 @@ fn compile_pair(
      // A relative compiler path must not resolve against the work dir (PGO compiles there).
      let prog = if words[0].contains('/') { std::fs::canonicalize(&words[0]).unwrap_or_else(|_| PathBuf::from(&words[0])) } else { PathBuf::from(&words[0]) };
      let mut cmd = cc_command(prog);
@@ -3276,7 +3300,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..1670f5e3ad52fc755a1c7e46141695e4
      if nopre {
          cmd.args(["-mllvm", "-disable-preinline"]);
      }
-@@ -666,7 +689,7 @@ fn memo_tag(spec: &CcSpec, debug: bool, work: &Path) -> String {
+@@ -666,7 +706,7 @@ fn memo_tag(spec: &CcSpec, debug: bool, work: &Path) -> String {
              spec.triple.as_bytes(),
              compiler_id(&spec.cmd).as_bytes(),
              cflags(debug).as_bytes(),
@@ -3285,7 +3309,24 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..1670f5e3ad52fc755a1c7e46141695e4
              pgo_env.join(" ").as_bytes(),
              profile.as_bytes(),
          ],
-@@ -912,7 +935,7 @@ pub fn build_with(
+@@ -738,7 +778,7 @@ pub fn memo_misses(units: &[UnitIn], spec: &CcSpec, debug: bool, cache: Option<&
+ /// units to pass again with text (an LLVM unit's three parts come with text or without as
+ /// one). Returns a one-line summary, or the compiler's error text.
+ pub fn build(units: &[UnitIn], spec: &CcSpec, out: &Path, debug: bool, cache: Option<&crate::driver::cache::Cache>, work: &Path) -> Result<String, CcError> {
+-    build_with(units, spec, out, debug, cache, work, None)
++    build_with(units, spec, out, debug, cache, work, None, &[])
+ }
+ 
+ /// `build`, with the units a `Stream` took while they assembled: for each, the stream's key,
+@@ -751,6 +791,7 @@ pub fn build_with(
+     cache: Option<&crate::driver::cache::Cache>,
+     work: &Path,
+     stream: Option<Stream>,
++    imported_objects: &[PathBuf],
+ ) -> Result<String, CcError> {
+     // The streamed units compile on from here, `jobs` at once, while this prepares the rest.
+     if let Some(s) = &stream {
+@@ -912,7 +953,7 @@ pub fn build_with(
              keyed.then(|| match ll_of.get(unit.as_str()) {
                  Some(ll) => {
                      let hc = hc_of.get(unit.as_str()).copied().unwrap_or("");
@@ -3294,12 +3335,13 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..1670f5e3ad52fc755a1c7e46141695e4
                  }
                  None => unit_key(c, pre_of(i), spec, debug, part.as_deref(), is_cxx(&names[i])),
              })
-@@ -1125,7 +1148,11 @@ pub fn build_with(
+@@ -1125,7 +1166,12 @@ pub fn build_with(
          // A build with a C++ unit links with the C++ driver (its runtime and personality).
          let link = if units.iter().any(|u| is_cxx(&u.name)) { &spec.cxx } else { &spec.cmd };
          let mut cmd = cc_command(&link[0]);
 -        cmd.args(&link[1..]).args(ldflags(spec, debug)).args(pgo.as_ref().map(pgo::Mode::link_flags).unwrap_or_default()).args(&objs).arg("-o").arg(out);
 +        cmd.args(&link[1..]).args(ldflags(spec, debug)).args(pgo.as_ref().map(pgo::Mode::link_flags).unwrap_or_default()).args(&objs);
++        cmd.args(imported_objects);
 +        if let Some(runtime) = &spec.test_runtime {
 +            cmd.arg(runtime).args(["-ldl", "-lm", "-pthread"]);
 +        }
@@ -3307,7 +3349,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..1670f5e3ad52fc755a1c7e46141695e4
          match cmd.output() {
              Ok(o) if o.status.success() => Ok(format!(
                  "{} units ({} from cache, clang {:.2}s, {}link {:.2}s{}), linked {}",
-@@ -1199,6 +1226,8 @@ mod tests {
+@@ -1199,6 +1245,8 @@ mod tests {
          let units = || vec![UnitIn::text("u0", main.into()), UnitIn::text("u1", f.into()), UnitIn::text("u2", g.into())];
          let plain = crate::driver::cache::Cache::at(&root.join("c1"));
          super::build(&units(), &spec, &root.join("a"), false, Some(&plain), &root.join("w1")).unwrap();
@@ -3316,7 +3358,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..1670f5e3ad52fc755a1c7e46141695e4
          // The stream's cache already holds g's object (a build of another main and g): u2 is a
          // hit, u1 a miss the stream compiles, u0 a miss build compiles.
          let streamed = crate::driver::cache::Cache::at(&root.join("c2"));
-@@ -1207,10 +1236,13 @@ mod tests {
+@@ -1207,10 +1255,13 @@ mod tests {
          let Some(stream) = super::Stream::start(&spec.triple, false, Some(crate::driver::cache::Cache::at(&root.join("c2"))), root.join("w2")) else { return };
          stream.add("u1", f);
          stream.add("u2", g);
@@ -3324,7 +3366,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..1670f5e3ad52fc755a1c7e46141695e4
 +        // Apple ld includes the output filename in its required ad-hoc code
 +        // signature. Hold that filename fixed while comparing the two paths;
 +        // no signature or executable bytes are stripped from this assertion.
-+        let r = super::build_with(&units(), &spec, &root.join("a"), false, Some(&streamed), &root.join("w2"), Some(stream)).unwrap();
++        let r = super::build_with(&units(), &spec, &root.join("a"), false, Some(&streamed), &root.join("w2"), Some(stream), &[]).unwrap();
          assert!(r.contains("3 units (1 from cache"), "u2 hit, u1 compiled by the stream, u0 by build: {r}");
 -        assert_eq!(std::fs::read(root.join("a")).unwrap(), std::fs::read(root.join("b")).unwrap(), "the same binary");
 -        assert_eq!(std::process::Command::new(root.join("b")).status().ok().and_then(|s| s.code()), Some(7));
@@ -3333,7 +3375,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..1670f5e3ad52fc755a1c7e46141695e4
          let _ = std::fs::remove_dir_all(&root);
      }
  
-@@ -1305,7 +1337,7 @@ mod tests {
+@@ -1305,7 +1356,7 @@ mod tests {
  
      fn zig_spec(target: &str) -> super::CcSpec {
          let cmd: Vec<String> = ["zig", "cc", "-target", target].into_iter().map(str::to_string).collect();
@@ -3342,7 +3384,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..1670f5e3ad52fc755a1c7e46141695e4
      }
  
      #[test]
-@@ -1461,7 +1493,7 @@ mod tests {
+@@ -1461,7 +1512,7 @@ mod tests {
      /// begins (the parts are hashed with their lengths).
      #[test]
      fn an_llvm_unit_key_moves_with_each_text() {
@@ -3351,7 +3393,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..1670f5e3ad52fc755a1c7e46141695e4
          let key = |c: &str, ll: &str, hc: &str, extra: &str| super::ll_unit_key(c, ll, hc, extra, &spec, false, None);
          let base = key("c", "ll", "hc", "x");
          for other in [key("c2", "ll", "hc", "x"), key("c", "ll2", "hc", "x"), key("c", "ll", "hc2", "x"), key("c", "ll", "hc", "y"), key("cl", "l", "hc", "x")] {
-@@ -1474,7 +1506,7 @@ mod tests {
+@@ -1474,7 +1525,7 @@ mod tests {
      fn unit_key_moves_with_every_input() {
          let spec = |triple: &str, cmd: &str| {
              let cmd: Vec<String> = cmd.split_whitespace().map(str::to_string).collect();
@@ -3374,7 +3416,7 @@ index dcf8c8e922873b5f8c8d8c3c7ebe5299f9b246e2..4a1769fcb2fde1bb27ed7aeca057eb2e
  
  /// The LLVM major version of a clang command; an error for another compiler (gcc writes
 diff --git a/src/cgen.rs b/src/cgen.rs
-index ac6965592d3f4cc6ea1969df299fe33c974056b0..757d2051f73eb7626d604c67caded35f337c9f04 100644
+index ac6965592d3f4cc6ea1969df299fe33c974056b0..2fc8f0b4ab6323588726161bd071c9f10053e89f 100644
 --- a/src/cgen.rs
 +++ b/src/cgen.rs
 @@ -26,6 +26,8 @@ pub mod record;
@@ -3518,12 +3560,12 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..757d2051f73eb7626d604c67caded35f
 +    gen_fn_policy(p, body, map, base_line, slots, true, false)
 +}
 +
-+pub(crate) fn gen_fn_rust_debug(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32]) -> FnOut {
++pub(crate) fn gen_fn_rust_debug(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32], scalar_library: bool) -> FnOut {
 +    let source = rust_debug_source(p, body.fn_id, map);
 +    if source.is_none() && !shipped_debug_body(p, body.fn_id) {
 +        return FnOut { error: Some("Rust debug function source cannot be bound to the native body".into()), ..Default::default() };
 +    }
-+    let mut output = gen_fn_policy(p, body, map, base_line, slots, false, true);
++    let mut output = gen_fn_policy(p, body, map, base_line, slots, scalar_library, true);
 +    output.rust_debug_source = source;
 +    output
 +}
@@ -4207,7 +4249,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..757d2051f73eb7626d604c67caded35f
              let _ = writeln!(self.out, "    if ({rc} < 0) lust_panic_cstr(\"{div0msg}\", {at});");
              if matches!(b, B::SaturatingAdd | B::SaturatingSub | B::SaturatingMul | B::SaturatingDiv) {
                  // Clamp to the endpoint the true result passes.
-@@ -10355,6 +10529,38 @@ fn strip_impl_blocks(src: &str) -> String {
+@@ -10355,6 +10529,49 @@ fn strip_impl_blocks(src: &str) -> String {
  /// (`runtime_decls`), from the compiler's predefined types.
  const INT_TYPEDEFS: &str = "typedef signed char int8_t; typedef unsigned char uint8_t; typedef short int16_t; typedef unsigned short uint16_t;\ntypedef int int32_t; typedef unsigned int uint32_t;\n#ifdef __INT64_TYPE__\ntypedef __INT64_TYPE__ int64_t; typedef unsigned __INT64_TYPE__ uint64_t;\n#else\ntypedef long long int64_t; typedef unsigned long long uint64_t;\n#endif\n#ifdef __SIZE_TYPE__\ntypedef __SIZE_TYPE__ size_t; typedef __PTRDIFF_TYPE__ ptrdiff_t; typedef __UINTPTR_TYPE__ uintptr_t; typedef __INTPTR_TYPE__ intptr_t;\n#else\ntypedef unsigned long size_t; typedef long ptrdiff_t; typedef unsigned long uintptr_t; typedef long intptr_t;\n#endif\n#define INT64_MIN (-9223372036854775807LL-1)\n#ifndef NULL\n#define NULL ((void*)0)\n#endif\n";
  
@@ -4243,10 +4285,21 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..757d2051f73eb7626d604c67caded35f
 +    Some(unit)
 +}
 +
++pub(crate) fn native_scalar_debug_unit(outputs: &[FnOut], slot: usize, triple: &str) -> Option<String> {
++    let output = &outputs[slot];
++    if !output.mixed_total || output.ll.is_empty() || !output.ll_c.is_empty()
++        || !output.glue.is_empty() || !output.types.is_empty() || !output.named.is_empty()
++        || output.rust_debug_source.is_none()
++    {
++        return None;
++    }
++    Some(ll::ll_unit(outputs, &[slot], &[], triple))
++}
++
  fn runtime_decls() -> &'static str {
      static DECLS: std::sync::OnceLock<String> = std::sync::OnceLock::new();
      DECLS.get_or_init(|| {
-@@ -10444,6 +10650,8 @@ pub struct UnwindInit {
+@@ -10444,6 +10661,8 @@ pub struct UnwindInit {
      pub tables: bool,
      pub ids: [u64; 4],
      pub hook_runner: Option<u32>,
@@ -4255,7 +4308,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..757d2051f73eb7626d604c67caded35f
  }
  
  /// The `main_unit` argument for `p` (`slot_of` maps a fn to its slot).
-@@ -10461,7 +10669,11 @@ pub fn unwind_init(p: &Program, slot_of: impl Fn(LocalDefId) -> u32) -> Option<U
+@@ -10461,7 +10680,11 @@ pub fn unwind_init(p: &Program, slot_of: impl Fn(LocalDefId) -> u32) -> Option<U
          .map(|i| slot_of(LocalDefId(i as u32)));
      let (a, b) = crate::check::any::type_id_words(p, &p.tys, REF_STR);
      let (c, d) = crate::check::any::type_id_words(p, &p.tys, STRING);
@@ -4268,7 +4321,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..757d2051f73eb7626d604c67caded35f
  }
  
  /// The location unit: the per-slot line and file tables and
-@@ -10503,11 +10715,21 @@ pub fn loc_unit(files: &SlotFiles, slot_lines: &[u32]) -> String {
+@@ -10503,11 +10726,21 @@ pub fn loc_unit(files: &SlotFiles, slot_lines: &[u32]) -> String {
  /// sets up the runtime's panic payloads and hook runner; under
  /// panic=unwind a `main` that ends by a panic exits 101.
  pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -> String {
@@ -4291,7 +4344,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..757d2051f73eb7626d604c67caded35f
              format!("\n  lust_unw_init({}, {a}ull, {b}ull, {c}ull, {d}ull);", if unwind && tables { 2 } else { unwind as u8 }),
              hook_runner.map_or(String::new(), |s| {
                  // Release C names the runner directly (only its address is taken here).
-@@ -10518,20 +10740,32 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
+@@ -10518,20 +10751,32 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
      };
      let mut c = unit_header();
      c.push_str("void lust_loc_init(void);\nvoid lust_kstatics_init(void);\n");
@@ -4330,7 +4383,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..757d2051f73eb7626d604c67caded35f
          // Main runs under a catch point (std's lang_start catches its panic).
          let _ = writeln!(
              c,
-@@ -10550,6 +10784,11 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
+@@ -10550,6 +10795,11 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
      if !runner.is_empty() {
          c.push('\n');
      }
@@ -4342,7 +4395,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..757d2051f73eb7626d604c67caded35f
      if tables {
          c.push_str("  int rc = 0;\n  if (lust_unw_try(lust_main_thunk, &rc)) rc = lust_unw_main_caught();\n  lust_tls_exit();\n  lust_flush();\n  return rc;\n}\n");
          return c;
-@@ -10582,6 +10821,45 @@ pub fn table_unit(capacity: usize, fn_units: &[usize]) -> String {
+@@ -10582,6 +10832,45 @@ pub fn table_unit(capacity: usize, fn_units: &[usize]) -> String {
      c
  }
  
@@ -4388,7 +4441,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..757d2051f73eb7626d604c67caded35f
  /// The shared glue unit. With a frozen shared set it holds only those keys; the rest of the
  /// glue is static in the function units (see `GlueSet`).
  pub fn glue_unit(p: &Program, g: &GlueSet) -> String {
-@@ -12032,7 +12310,7 @@ pub fn fn_unit_parts(
+@@ -12032,7 +12321,7 @@ pub fn fn_unit_parts(
          let f = &fns[s];
          let m = c.len();
          // An LLVM fn's C is its C ABI wrapper and trampoline: kept only when a text names them.
@@ -4397,7 +4450,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..757d2051f73eb7626d604c67caded35f
              (Some(r), false, Some(id)) => c.push_str(&r.c_body(text_of(s), &id)),
              (_, _, Some(id)) if copy_hot.is_some_and(|h| !is_hot(&h.hot, &id)) => c.push_str(&cold_cleanup(text_of(s), &id)),
              _ => c.push_str(text_of(s)),
-@@ -12044,46 +12322,11 @@ pub fn fn_unit_parts(
+@@ -12044,46 +12333,11 @@ pub fn fn_unit_parts(
      // table; on Err print `Error: {err:?}` to stderr and exit 1, as
      // Rust does; an `ExitCode` is the exit status. Registered below
      // in `lust_main_entry_p`, which the main unit prefers over the
@@ -4446,7 +4499,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..757d2051f73eb7626d604c67caded35f
      }
      record::piece(record::Kind::Entry, 0, &c[entry_at..]);
      let register_at = c.len();
-@@ -13126,7 +13369,7 @@ fn glue_def_value(
+@@ -13126,7 +13380,7 @@ fn glue_def_value(
      match g {
          Glue::CloneFrom => unreachable!("clonefrom glue returns above"),
          Glue::Drop => {
@@ -4455,7 +4508,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..757d2051f73eb7626d604c67caded35f
              match t {
                  CTy::String => body.push_str("  lust_string_drop(p);\n"),
                  CTy::Hash(k, _) if hash::is_table(*k) => body.push_str(&hash::drop_body(p, t, &mut need)),
-@@ -13364,7 +13607,7 @@ fn glue_def_value(
+@@ -13364,7 +13618,7 @@ fn glue_def_value(
              } else {
                  body = body.replace(UNW_DSTEP, "").replace("UNW_DSTEP ", "");
              }
@@ -4464,7 +4517,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..757d2051f73eb7626d604c67caded35f
          }
          Glue::Clone => {
              let _ = writeln!(protos, "{ct} clone_{m}({ct} *p);");
-@@ -14261,7 +14504,7 @@ mod tests {
+@@ -14261,7 +14515,7 @@ mod tests {
          let span = Span::new(FileId(0), 0, 0);
          let elems = body.tys.intern_tys(&[STRING, int(IntTy::U8)]);
          let tuple_ty = body.tys.intern(TyKind::Tuple(elems));
@@ -4473,7 +4526,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..757d2051f73eb7626d604c67caded35f
          body.locals = vec![local(UNIT), local(tuple_ty), local(STRING)];
          body.blocks = vec![BlockData {
              stmts: vec![Stmt {
-@@ -14781,9 +15024,9 @@ mod tests {
+@@ -14781,9 +15035,9 @@ mod tests {
              let shards = names::glue_shards(&program, &glue, &outs, 1);
              let drop_hooks = format!("void drop_{}_(", ctype(&CTy::Adt(hooks)));
              let shard = shards.iter().find(|s| s.lines().any(|l| l.starts_with(&drop_hooks) && l.ends_with('{'))).expect("a shard defines the struct's drop glue");
@@ -4485,7 +4538,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..757d2051f73eb7626d604c67caded35f
              let keys = names::glue_shard_keys(&glue, &outs, 1);
              let made = names::glue_shard_texts(&program, &glue, &keys, &[], true);
              assert_eq!(made.iter().map(|(c, _)| c.as_str()).collect::<Vec<_>>(), shards, "a record does not change a shard");
-@@ -14898,7 +15141,7 @@ mod tests {
+@@ -14898,7 +15152,7 @@ mod tests {
          let inputs = body.tys.intern_tys(&[i64_ty]);
          let sig = body.tys.intern_sig(Binder::plain(FnSig::plain(inputs, i64_ty)));
          let fnptr_ty = body.tys.intern(TyKind::FnPtr(sig));
@@ -4495,7 +4548,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..757d2051f73eb7626d604c67caded35f
          // locals 8.. hold &l2, &l5, &l6, &l7 for the four prints.
          let ref_i64 = body.tys.mk_ref(false, i64_ty);
 diff --git a/src/cgen/ll.rs b/src/cgen/ll.rs
-index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..f80aa98de534828b7f81010560a5c49712c35791 100644
+index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..74e8db05a6e86dea1d73a5cbbf960da83fbcc08c 100644
 --- a/src/cgen/ll.rs
 +++ b/src/cgen/ll.rs
 @@ -19,6 +19,7 @@
@@ -4506,7 +4559,15 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..f80aa98de534828b7f81010560a5c497
  use super::unwind::{is_ident, skip_lit};
  use super::*;
  
-@@ -253,6 +254,7 @@ struct Ll {
+@@ -246,6 +247,7 @@ pub struct LlFn {
+ /// The per-fn state of LLVM emission.
+ struct Ll {
+     tag: String,
++    scalar_export: bool,
+     /// Helper definitions (C), in order.
+     helpers: String,
+     n_helpers: usize,
+@@ -253,6 +255,7 @@ struct Ll {
      statics: Vec<bool>,
      /// The cleanup blocks each landing pad enters.
      pads: BTreeSet<u32>,
@@ -4514,7 +4575,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..f80aa98de534828b7f81010560a5c497
      decls: BTreeSet<String>,
      body: String,
      /// The number of continuation blocks made so far.
-@@ -459,11 +461,12 @@ impl FnGen<'_, '_> {
+@@ -459,11 +462,16 @@ impl FnGen<'_, '_> {
      /// Generates fn `fl_<id>` and its C side (helpers, the C ABI wrapper `f_<id>`, the
      /// trampoline) into `self.out`. Returns the LLVM definition and declarations, or an
      /// internal error.
@@ -4524,11 +4585,37 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..f80aa98de534828b7f81010560a5c497
          let fid = self.body.fn_id;
          let slot = self.slots.of(fid);
          let tag = names::fn_tag(slot);
-+        let mut debug = if rust_debug { Some(DebugFn::new(self, &format!("fl_{tag}"))?) } else { None };
++        let scalar_export = rust_debug && self.nounwind;
++        let linkage = body_symbol(&tag, scalar_export);
++        // Archive publication can rename the scalar object symbol. Its source
++        // subprogram must not advertise the pre-publication linkage name.
++        let mut debug = if rust_debug { Some(DebugFn::new(self, (!scalar_export).then_some(linkage.as_str()))?) } else { None };
          let n = self.body.blocks.len();
          let mut reachable = vec![false; n];
          let mut stack = vec![0usize];
-@@ -490,6 +493,7 @@ impl FnGen<'_, '_> {
+@@ -471,8 +479,14 @@ impl FnGen<'_, '_> {
+             if std::mem::replace(&mut reachable[b], true) {
+                 continue;
+             }
+-            stack.extend(succ(&self.body.blocks[b].term).into_iter().map(|s| s.0 as usize));
+-            stack.extend(self.body.stmt_unwind.iter().filter(|e| e.0.0 as usize == b).map(|e| e.2.0 as usize));
++            if self.nounwind && let Terminator::Call { next, .. } = &self.body.blocks[b].term {
++                stack.push(next.0 as usize);
++            } else {
++                stack.extend(succ(&self.body.blocks[b].term).into_iter().map(|s| s.0 as usize));
++            }
++            if self.unwind {
++                stack.extend(self.body.stmt_unwind.iter().filter(|e| e.0.0 as usize == b).map(|e| e.2.0 as usize));
++            }
+         }
+         let order: Vec<usize> = (0..n).filter(|&b| reachable[b]).collect();
+         let cost = order
+@@ -486,10 +500,12 @@ impl FnGen<'_, '_> {
+             .collect();
+         let mut ll = Ll {
+             tag: tag.clone(),
++            scalar_export,
+             helpers: String::new(),
              n_helpers: 0,
              statics,
              pads: BTreeSet::new(),
@@ -4536,7 +4623,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..f80aa98de534828b7f81010560a5c497
              decls: BTreeSet::new(),
              body: String::new(),
              conts: 0,
-@@ -508,27 +512,46 @@ impl FnGen<'_, '_> {
+@@ -508,27 +524,46 @@ impl FnGen<'_, '_> {
              let block = self.body.block(Bb(bi as u32));
              let cleanup = self.cleanup.get(bi).copied().unwrap_or(false);
              let _ = writeln!(ll.body, "bb{bi}:");
@@ -4550,7 +4637,8 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..f80aa98de534828b7f81010560a5c497
 +                    }
                      continue;
                  }
-                 let unwind = if cleanup || !p.unwind { None } else { self.stmt_unw.get(&(bi as u32, si as u32)).copied() };
+-                let unwind = if cleanup || !p.unwind { None } else { self.stmt_unw.get(&(bi as u32, si as u32)).copied() };
++                let unwind = if cleanup || !self.unwind { None } else { self.stmt_unw.get(&(bi as u32, si as u32)).copied() };
                  self.at = (bi as u32, si as u32);
                  (ll.span, ll.unwind) = (s.span, unwind);
 -                if native_on() && self.ll_native_stmt(&mut ll, s, unwind) {
@@ -4581,16 +4669,18 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..f80aa98de534828b7f81010560a5c497
              }
              let term_unwind = if cleanup { None } else { self.stmt_unw.get(&(bi as u32, block.stmts.len() as u32)).copied() };
              self.at = (bi as u32, block.stmts.len() as u32);
-             (ll.span, ll.unwind) = (block.term_span, term_unwind.filter(|_| p.unwind));
+-            (ll.span, ll.unwind) = (block.term_span, term_unwind.filter(|_| p.unwind));
+-            self.ll_term(&mut ll, bi, cleanup, term_unwind.filter(|_| p.unwind));
++            (ll.span, ll.unwind) = (block.term_span, term_unwind.filter(|_| self.unwind));
 +            let start = ll.body.len();
-             self.ll_term(&mut ll, bi, cleanup, term_unwind.filter(|_| p.unwind));
++            self.ll_term(&mut ll, bi, cleanup, term_unwind.filter(|_| self.unwind));
 +            if !cleanup && let Some(debug) = &mut debug {
 +                debug.mark(self, &mut ll.body, start, block.term_span);
 +            }
          }
          if let Some(e) = ll.error.take() {
              return Err(e);
-@@ -544,7 +567,10 @@ impl FnGen<'_, '_> {
+@@ -544,7 +579,10 @@ impl FnGen<'_, '_> {
          // that holds strs adds literals and an entry write to the entry helper.
          let kdecls: Vec<Option<String>> = (0..self.local_cty.len()).map(|i| if ll.statics[i] { self.kstatic_decl(i) } else { None }).collect();
          let kstr_init = self.ll_kstr_init(&mut ll);
@@ -4602,24 +4692,70 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..f80aa98de534828b7f81010560a5c497
          // The C sides: the helpers with the macros and statics they read; then the C ABI
          // wrapper and the trampoline, which stay in the unit's plain C. A fn with no helpers
          // (and no literal or constant prologue) has no helper side: nothing in C reads its
-@@ -645,6 +671,7 @@ impl FnGen<'_, '_> {
+@@ -562,8 +600,10 @@ impl FnGen<'_, '_> {
+             self.kstrs.clear();
+             String::new()
+         };
+-        let wrapper = self.ll_wrapper(slot);
+-        let _ = writeln!(self.out, "/* {} */\n{wrapper}{}", p.display_path(p.fn_info(fid).name), trampoline(p, fid, slot));
++        if !scalar_export {
++            let wrapper = self.ll_wrapper(slot);
++            let _ = writeln!(self.out, "/* {} */\n{wrapper}{}", p.display_path(p.fn_info(fid).name), trampoline(p, fid, slot));
++        }
+         ll.decls.insert("declare i32 @__gcc_personality_v0(...)".into());
+         // The inline cost on a comment line above the fn, for reading the IR.
+         let def = format!("; cost {cost}\n{def}");
+@@ -604,7 +644,7 @@ impl FnGen<'_, '_> {
+                 if native_on() && {
+                     let dest_clear = !ll.flags_at_term[bi][dest.local as usize];
+                     let span = self.body.blocks[bi].term_span;
+-                    self.ll_native_call(ll, *f, args, dest, dest_clear, span, if cleanup || !self.p.unwind { None } else { call_unwind.map(|u| u.0) })
++                    self.ll_native_call(ll, *f, args, dest, dest_clear, span, if cleanup || !self.unwind { None } else { call_unwind.map(|u| u.0) })
+                 } =>
+             {
+                 let _ = writeln!(ll.body, "  br label %bb{}", next.0);
+@@ -620,7 +660,7 @@ impl FnGen<'_, '_> {
+                 self.unw = None;
+                 let text = std::mem::replace(&mut self.out, saved);
+                 let h = self.ll_helper(ll, &text, None);
+-                let u = if cleanup || !self.p.unwind { None } else { call_unwind.map(|u| u.0) };
++                let u = if cleanup || !self.unwind { None } else { call_unwind.map(|u| u.0) };
+                 self.ll_call(ll, &h, u);
+                 let _ = writeln!(ll.body, "  br label %bb{}", next.0);
+             }
+@@ -644,7 +684,8 @@ impl FnGen<'_, '_> {
+                 }
                  _ => ll.body.push_str("  ret void\n"),
              },
-             Terminator::Unreachable | Terminator::MatchExhausted if cleanup && self.p.unwind => {
+-            Terminator::Unreachable | Terminator::MatchExhausted if cleanup && self.p.unwind => {
++            Terminator::Unreachable | Terminator::MatchExhausted if cleanup && self.unwind => {
 +                ll.resumes = true;
                  ll.conts += 1;
                  let _ = writeln!(ll.body, "  %v{0} = load {{ ptr, i32 }}, ptr %exn\n  resume {{ ptr, i32 }} %v{0}", ll.conts);
              }
-@@ -686,7 +713,7 @@ impl FnGen<'_, '_> {
+@@ -686,7 +727,7 @@ impl FnGen<'_, '_> {
      }
  
      /// The LLVM definition of `fl_<id>`.
 -    fn ll_define(&mut self, ll: &mut Ll, kstr_init: Option<&str>) -> String {
-+    fn ll_define(&mut self, ll: &mut Ll, kstr_init: Option<&str>, debug: Option<&mut DebugFn>) -> String {
++    fn ll_define(&mut self, ll: &mut Ll, kstr_init: Option<&str>, mut debug: Option<&mut DebugFn>) -> String {
          let p = self.p;
          let fid = self.body.fn_id;
          let info = p.fn_info(fid);
-@@ -811,9 +838,10 @@ impl FnGen<'_, '_> {
+@@ -731,7 +772,11 @@ impl FnGen<'_, '_> {
+                         }
+                     }
+                     params.push(format!("{ty} {ext}noundef %p{i}"));
+-                    let _ = writeln!(entry, "  %l{i} = alloca {ty}, align {align}\n  store {ty} %p{i}, ptr %l{i}");
++                    if let Some(debug) = debug.as_deref_mut() {
++                        debug.scalar_argument(&mut entry, i as Local, ty, align);
++                    } else {
++                        let _ = writeln!(entry, "  %l{i} = alloca {ty}, align {align}\n  store {ty} %p{i}, ptr %l{i}");
++                    }
+                     is_param[i] = true;
+                 }
+                 // No `noundef`: an aggregate's bits may hold padding or an inactive variant's
+@@ -811,9 +856,10 @@ impl FnGen<'_, '_> {
                  }
              }
          }
@@ -4633,7 +4769,14 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..f80aa98de534828b7f81010560a5c497
              allocas.push_str("  %exn = alloca { ptr, i32 }\n");
          }
          allocas.push_str(&ll.allocas);
-@@ -835,12 +863,18 @@ impl FnGen<'_, '_> {
+@@ -831,20 +877,29 @@ impl FnGen<'_, '_> {
+         } else {
+             attrs.push_str(&source_fn_attrs(p, fid));
+         }
++        if !self.unwind {
++            attrs.push_str(" nounwind");
++        }
+         if p.unwind {
              attrs.push_str(" uwtable");
              // The C personality, as the helpers' cleanup guards have it: every landing pad
              // here only cleans up, and LLVM inlines no fn of another personality.
@@ -4641,19 +4784,46 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..f80aa98de534828b7f81010560a5c497
 +            if exception_cleanup {
                  attrs.push_str(" personality ptr @__gcc_personality_v0");
              }
-         } else {
-             attrs.push_str(" nounwind");
+-        } else {
+-            attrs.push_str(" nounwind");
          }
+-        let id = names::fn_tag(self.slots.of(fid));
 +        if let Some(debug) = debug {
 +            attrs.push_str(&debug.attribute());
 +            for i in 1..=self.body.arg_count {
-+                debug.declare(&mut entry, i as Local, true);
++                if !matches!(pass_of(p, &self.local_cty[i]), Pass::Scalar(..)) {
++                    debug.declare(&mut entry, i as Local, true);
++                }
 +            }
 +        }
-         let id = names::fn_tag(self.slots.of(fid));
++        let symbol = body_symbol(&names::fn_tag(self.slots.of(fid)), ll.scalar_export);
          let mut d = String::new();
          let _ = writeln!(d, "; {}", p.display_path(info.name).replace('\n', " "));
-@@ -2939,7 +2973,7 @@ fn source_fn_attrs(p: &Program, f: LocalDefId) -> String {
+-        let _ = writeln!(d, "define {ret_ll} @fl_{id}({}){attrs} {{\nentry:", params.join(", "));
++        let _ = writeln!(d, "define {ret_ll} @{symbol}({}){attrs} {{\nentry:", params.join(", "));
+         d.push_str(&allocas);
+         d.push_str(&entry);
+         d.push_str(&flags);
+@@ -1722,7 +1777,8 @@ impl FnGen<'_, '_> {
+         self.note_callee(f);
+         let id = names::fn_tag(self.slots.of(f));
+         self.ll_note_proto(f, &id);
+-        ll.decls.insert(ll_decl(p, f, &id));
++        let symbol = body_symbol(&id, ll.scalar_export);
++        ll.decls.insert(ll_decl(p, f, &symbol));
+         ll.conts += 1;
+         let k = ll.conts;
+         let mut vals: Vec<String> = Vec::new();
+@@ -1830,7 +1886,7 @@ impl FnGen<'_, '_> {
+             _ => "void".into(),
+         };
+         let assign = if ret_ty == "void" { String::new() } else { format!("%v{k} = ") };
+-        let call = format!("{ret_ty} @fl_{id}({})", vals.join(", "));
++        let call = format!("{ret_ty} @{symbol}({})", vals.join(", "));
+         match unwind {
+             Some(u) => {
+                 ll.pads.insert(u);
+@@ -2939,7 +2995,7 @@ fn source_fn_attrs(p: &Program, f: LocalDefId) -> String {
                  if let crate::ast::AttrInput::List(_, trees) = &a.input {
                      for t in trees {
                          if let TokenTree::Token(t) = t
@@ -4662,7 +4832,61 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..f80aa98de534828b7f81010560a5c497
                          {
                              match p.name(n) {
                                  "always" => how = " alwaysinline",
-@@ -3387,8 +3421,24 @@ pub fn ll_unit(fns: &[FnOut], slots: &[usize], inl: &[usize], triple: &str) -> S
+@@ -3066,7 +3122,12 @@ fn ll_proto(p: &Program, f: LocalDefId, id: &str) -> String {
+ 
+ /// The LLVM declaration of written fn `f`'s internal ABI entry `fl_<id>`: the types and
+ /// extension attributes of its definition (`FnGen::ll_define`).
+-fn ll_decl(p: &Program, f: LocalDefId, id: &str) -> String {
++fn body_symbol(tag: &str, scalar_export: bool) -> String {
++    let prefix = if scalar_export { "f" } else { "fl" };
++    format!("{prefix}_{tag}")
++}
++
++fn ll_decl(p: &Program, f: LocalDefId, symbol: &str) -> String {
+     let info = p.fn_info(f);
+     let rt = cty(&p.tys, info.ret);
+     let mut params: Vec<String> = Vec::new();
+@@ -3098,7 +3159,7 @@ fn ll_decl(p: &Program, f: LocalDefId, id: &str) -> String {
+     if crate::check::caller::is_track_caller(p, f) {
+         params.push("ptr, i64".into());
+     }
+-    format!("declare {ret} @fl_{id}({})", params.join(", "))
++    format!("declare {ret} @{symbol}({})", params.join(", "))
+ }
+ 
+ /// The line that ends an LLVM unit's plain C prelude (only its wrappers' types): what
+@@ -3351,6 +3412,11 @@ impl Adapters {
+ /// The `.ll` text of one release fn unit: the declarations its fns name (each once) and
+ /// their definitions, then an `available_externally` copy of each fn in `inl`
+ /// (`ll_inline_set`). Empty when no fn of the unit has LLVM IR.
++fn llvm_symbol(declaration: &str) -> Option<&str> {
++    let (_, suffix) = declaration.split_once(" @")?;
++    suffix.split_once('(').map(|(name, _)| name)
++}
++
+ pub fn ll_unit(fns: &[FnOut], slots: &[usize], inl: &[usize], triple: &str) -> String {
+     if slots.iter().all(|&s| fns[s].ll.is_empty()) {
+         return String::new();
+@@ -3371,24 +3437,37 @@ pub fn ll_unit(fns: &[FnOut], slots: &[usize], inl: &[usize], triple: &str) -> S
+         .iter()
+         .chain(inl)
+         .filter_map(|&s| {
+-            let d = &fns[s].ll;
+-            let at = d.find(" @fl_")? + 2;
+-            d.get(at..at + 19)
++            let definition = fns[s].ll.lines().find(|line| line.starts_with("define "))?;
++            llvm_symbol(definition)
+         })
+         .collect();
+     for d in decls {
+-        if d.starts_with("declare ")
+-            && let Some(at) = d.find(" @fl_")
+-            && d.get(at + 2..at + 21).is_some_and(|n| defined.contains(n))
+-        {
++        if d.starts_with("declare ") && llvm_symbol(d).is_some_and(|name| defined.contains(name)) {
+             continue;
+         }
+         out.push_str(d);
          out.push('\n');
      }
      out.push('\n');
@@ -4680,6 +4904,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..f80aa98de534828b7f81010560a5c497
 +    if !compile_units.is_empty() {
 +        assert!(inl.is_empty(), "Rust debug units are emitted without cross-unit copies");
 +        out.push_str("declare void @llvm.dbg.declare(metadata, metadata, metadata)\n");
++        out.push_str("declare void @llvm.dbg.value(metadata, metadata, metadata)\n");
 +        let units = compile_units.iter().map(|id| format!("!{id}")).collect::<Vec<_>>().join(", ");
 +        let _ = writeln!(out, "!llvm.dbg.cu = !{{{units}}}");
 +        let _ = writeln!(out, "!llvm.module.flags = !{{!{metadata}, !{}}}", metadata + 1);
@@ -4690,10 +4915,10 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..f80aa98de534828b7f81010560a5c497
      // as release C's static copies are, so a training build counts each unit's copy in its
 diff --git a/src/cgen/ll_debug.rs b/src/cgen/ll_debug.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..2f6077297870e78cd4610ac84f08b3cff9a6369c
+index 0000000000000000000000000000000000000000..a230563af19e0b8bfad1db5b3cb8549d133077cd
 --- /dev/null
 +++ b/src/cgen/ll_debug.rs
-@@ -0,0 +1,691 @@
+@@ -0,0 +1,714 @@
 +// Rust source debug records for the LLVM emitter. The native checker and
 +// lowerer supply bindings and types; LLVM resolves instruction and frame
 +// locations to the addresses in the emitted object.
@@ -4736,7 +4961,7 @@ index 0000000000000000000000000000000000000000..2f6077297870e78cd4610ac84f08b3cf
 +}
 +
 +impl DebugFn {
-+    pub(super) fn new(function: &FnGen<'_, '_>, linkage: &str) -> Result<Self, String> {
++    pub(super) fn new(function: &FnGen<'_, '_>, linkage: Option<&str>) -> Result<Self, String> {
 +        let mut debug = Self {
 +            entries: vec![String::new()],
 +            files: BTreeMap::new(),
@@ -4769,9 +4994,10 @@ index 0000000000000000000000000000000000000000..2f6077297870e78cd4610ac84f08b3cf
 +            types.push(ty);
 +        }
 +        let signature = debug.push(format!("!DISubroutineType(types: !{{{}}})", types.join(", ")));
++        let linkage = linkage.map_or_else(String::new, |name| format!(", linkageName: {}", quote(name)));
 +        debug.subprogram = debug.push(format!(
-+            "distinct !DISubprogram(name: {}, linkageName: {}, scope: !%{file}, file: !%{file}, line: {line}, type: !%{signature}, scopeLine: {line}, spFlags: DISPFlagDefinition, unit: !%0)",
-+            quote(&name), quote(linkage)
++            "distinct !DISubprogram(name: {}{linkage}, scope: !%{file}, file: !%{file}, line: {line}, type: !%{signature}, scopeLine: {line}, spFlags: DISPFlagDefinition, unit: !%0)",
++            quote(&name)
 +        ));
 +        for (i, local) in function.body.locals.iter().enumerate().skip(1) {
 +            let LocalDecl { name: Some(name), binding_span: Some(span), ty, .. } = local else { continue };
@@ -5216,12 +5442,10 @@ index 0000000000000000000000000000000000000000..2f6077297870e78cd4610ac84f08b3cf
 +        }
 +    }
 +
-+    pub(super) fn declare(&mut self, body: &mut String, local: Local, argument: bool) {
-+        let Some((file, line, column, ty, name)) = self.bindings.get(&local).cloned() else {
-+            return;
-+        };
++    fn binding(&mut self, local: Local, argument: bool) -> Option<(usize, usize)> {
++        let (file, line, column, ty, name) = self.bindings.get(&local).cloned()?;
 +        if self.active.iter().any(|&(l, _)| l == local) {
-+            return;
++            return None;
 +        }
 +        let parent = if argument { self.subprogram } else { self.scope() };
 +        let (scope, node) = if let Some(&nodes) = self.scopes.get(&(local, parent)) {
@@ -5242,11 +5466,35 @@ index 0000000000000000000000000000000000000000..2f6077297870e78cd4610ac84f08b3cf
 +        if !argument {
 +            self.active.push((local, scope));
 +        }
-+        let location = self.location(scope, line, column);
++        Some((node, self.location(scope, line, column)))
++    }
++
++    pub(super) fn declare(&mut self, body: &mut String, local: Local, argument: bool) {
++        let Some((node, location)) = self.binding(local, argument) else { return };
 +        let _ = writeln!(
 +            body,
 +            "  call void @llvm.dbg.declare(metadata ptr %l{local}, metadata !%{node}, metadata !DIExpression()), !dbg !%{location}"
 +        );
++    }
++
++    pub(super) fn scalar_argument(&mut self, entry: &mut String, local: Local, ty: &str, align: u64) {
++        let _ = writeln!(entry, "  %l{local} = alloca {ty}, align {align}");
++        let binding = self.binding(local, true);
++        if let Some((node, location)) = binding {
++            let _ = writeln!(
++                entry,
++                "  call void @llvm.dbg.value(metadata {ty} %p{local}, metadata !%{node}, metadata !DIExpression()), !dbg !%{location}"
++            );
++        }
++        let _ = writeln!(entry, "  store {ty} %p{local}, ptr %l{local}");
++        if let Some((node, location)) = binding {
++            // Before the spill the incoming SSA value owns the location.
++            // Afterward the variable can be read and changed in its stack slot.
++            let _ = writeln!(
++                entry,
++                "  call void @llvm.dbg.value(metadata ptr %l{local}, metadata !%{node}, metadata !DIExpression(DW_OP_deref)), !dbg !%{location}"
++            );
++        }
 +    }
 +
 +    pub(super) fn dead(&mut self, body: &mut String, local: Local) {
@@ -9943,7 +10191,7 @@ index da28835400f894866adb85f436e2cbdf109797d7..c2a8d6a10a776fba1df984670ff8b994
          assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
          assert!(decode_response(b"short").is_none());
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b6402996844 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..441c412fbe77d97499cf8ee63d6bcd44574fedfe 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
 @@ -59,6 +59,7 @@ fn expand_tokens(
@@ -10734,7 +10982,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
 +    if !super::library::request_supported(req) {
 +        return Preparation::Failed(Response {code:3, stderr:"public library request context is not represented\n".into(), ..Default::default()});
 +    }
-+    let rust_debug = req.cmd == Cmd::Build && req.library_options.debug.native_executable();
++    let rust_debug = req.cmd == Cmd::Build && req.library_options.debug.native_rust();
 +    let cargo_test = req.session.library.is_some() && req.session.krate.test;
 +    if session.caches.library.is_some() && (req.cc || req.debug || req.emit_c.is_some() || req.harness || req.run_args.is_some()) {
 +        return Preparation::Failed(Response {code:3, stderr:"native library output context changed\n".into(), ..Default::default()});
@@ -11126,12 +11374,11 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
      // A one-shot process (`leak_at_exit`) exits right after this call. Freeing the IR and
      // program arenas, mostly built on worker threads, costs about 10 ms on a 31k-line crate,
      // so leak them on every return below and let the OS reclaim the memory at exit. A
-@@ -4396,10 +4983,121 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4396,10 +4983,133 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
              }
          }
 -        return resp;
--    }
 +        return Preparation::finished(resp);
 +    }
 +    if let Some(imports) = imports
@@ -11169,8 +11416,20 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
 +    Preparation::Ready(PreparedRequest { request: req, session, state: Some(state) })
 +}
 +
++fn stage_imported_objects(dir: &Path, objects: &[Arc<[u8]>]) -> Result<Vec<PathBuf>, String> {
++    if !objects.is_empty() {
++        std::fs::create_dir_all(dir).map_err(|error| format!("create imported object scope: {error}"))?;
+     }
++    objects.iter().enumerate().map(|(index, bytes)| {
++        // The supplied immutable bytes were bound during preparation.
++        let path = dir.join(format!("imported-{index}.o"));
++        std::fs::write(&path, bytes).map_err(|error| format!("materialize imported object: {error}"))?;
++        Ok(path)
++    }).collect()
++}
++
 +fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> Response {
-+    let rust_debug = req.cmd == Cmd::Build && req.library_options.debug.native_executable();
++    let rust_debug = req.cmd == Cmd::Build && req.library_options.debug.native_rust();
 +    let cargo_test = req.session.library.as_ref().filter(|_| req.session.krate.test);
 +    let CheckedRequest {
 +        mut program, results, reemit, map, source: src, path, work, fn_count, fn_lines_all, body_hashes_all,
@@ -11250,7 +11509,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
          // The answer, before the timing and stats lines, for a no-op
          // check of the same request to reuse.
          if let Some(fp) = check_fp {
-@@ -4446,10 +5144,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4446,10 +5156,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          return resp;
      }
  
@@ -11275,7 +11534,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
      // Each fn's base line: cgen stores its line numbers relative to it
      // and the main unit adds each slot's base back, so a reused body's
      // C stays right when its source text moves. An instance's base is
-@@ -4471,7 +5183,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4471,7 +5195,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let line_base_of = |_: &Front, i: usize| -> u32 { line_bases.get(i).copied().unwrap_or(0) };
      // Release C (driver/release_c.rs): content-addressed names, set as cgen's naming
      // context around every step that prints C.
@@ -11284,7 +11543,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
      let rn = rnames.as_ref();
      // A release C build to the release driver streams its cc step (`cc::Stream`): each unit the
      // assembly makes compiles from the time its text exists. Not with --emit-c nor LLVM units.
-@@ -4498,7 +5210,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4498,7 +5222,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let (outs, cg_noted): (Vec<_>, Vec<_>) = par_map(&bodies, |(i, b)| {
          check::derive_delta::scoped(program.record_reads, || {
              cgen::in_layout_phase(layout_tag, || {
@@ -11292,7 +11551,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
 +                cgen::names::with(rn, || {
 +                    let total = library_functions.is_some() || mixed && super::mixed::total(b);
 +                    let mut output = if rust_debug {
-+                        cgen::gen_fn_rust_debug(&program, b, &map, line_base_of(front, *i), &front.fn_slot)
++                        cgen::gen_fn_rust_debug(&program, b, &map, line_base_of(front, *i), &front.fn_slot, library_functions.is_some())
 +                    } else if total {
 +                        cgen::gen_fn_total(&program, b, &map, line_base_of(front, *i), &front.fn_slot)
 +                    } else {
@@ -11304,7 +11563,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
              })
          })
      })
-@@ -4519,7 +5242,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4519,7 +5254,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // Cached IR serves only the slot-moved re-emit, which runs only in a
      // program with no generics: a generic program caches none (on tsgo it
      // was 1.5 GB of a daemon session, made serially per generated body).
@@ -11313,7 +11572,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
      // The stable id of each fn whose slot the new C prints (`FnOut::used`),
      // by slot: the pairs below are the next renumber's re-emit trigger.
      let mut wanted = vec![false; if keep_ir { front.slot_of.len() } else { 0 }];
-@@ -4552,10 +5275,22 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4552,10 +5287,22 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          caches.out[s] = out;
          caches.has_out[s] = true;
          dirty_slots.push(s);
@@ -11337,7 +11596,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
      // LUST_CHECK_GENREUSE=1 (genreuse_oracle.rs): every concrete body a release C build keeps
      // is checked, lowered and generated again without reuse (nothing stored), and its C must
      // equal the kept C. Release C names are content-addressed; dev C names a vtable by a
-@@ -4681,6 +5416,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4681,6 +5428,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      }
      let glue_changed = shared_changed || regenerated || statics_changed;
      t.lap("codegen (par)");
@@ -11352,7 +11611,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
      // Nothing reads the IR after codegen. A one-shot build leaks it at exit
      // (`leak_at_exit`), but on a large program it is the largest block
      // alive at the peak (ts-rust's bins: about 2.4 GB of 9.4 GB, through
-@@ -4718,7 +5461,19 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4718,7 +5473,19 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      const SHARD_RECORD: &str = "glue shard ";
      let fn_units: Vec<usize> = (0..groups.len()).map(|g| g + FIRST_FN_UNIT).collect();
      let dirty_fn_units: Vec<usize> = (0..groups.len()).filter(|&g| dirty_groups[g]).map(|g| g + FIRST_FN_UNIT).collect();
@@ -11373,7 +11632,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
      // Instance slots take their template's line: cgen stores an
      // instance's panic lines relative to it (see `line_base_of`).
      let mut slot_lines = vec![0u32; n_slots];
-@@ -4751,7 +5506,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4751,7 +5518,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // rebuilds and the base
      // relinks over the existing unit objects. Unrelated units keep
      // their objects, in the session and in the disk unit cache.
@@ -11389,7 +11648,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
      let cap_grown = n_slots > caches.table_cap;
      if fresh_base || cap_grown {
          caches.table_cap = n_slots * 2 + 64;
-@@ -4760,7 +5522,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4760,7 +5534,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          caches.base_units = groups.len();
      }
      let table_dirty = cap_grown || groups.len() != caches.base_units;
@@ -11400,7 +11659,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
      let dir = caches.obj_dir.clone();
      let base_obj = |u: usize| dir.join(format!("u{u}.o"));
      let overlay_obj = |u: usize| dir.join(format!("o{u}.o"));
-@@ -4842,9 +5606,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4842,9 +5618,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          super::release_c::groups(&caches.out, names, &file, &line)
      };
      let gen_unit = |u: usize, overlay: bool| match u {
@@ -11412,7 +11671,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
          3 => cgen::table_unit(caches.table_cap, &fn_units),
          LOC_UNIT => cgen::loc_unit(&files, &slot_lines),
          g => {
-@@ -4853,7 +5617,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4853,7 +5629,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
      };
      // Release C: whether fn bodies are LLVM IR (cgen/ll.rs), and B1's switches.
@@ -11421,7 +11680,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
      // B1 (`cgen::record`): each C fn unit records the pieces it is made of and what it
      // read, and the next build sets the record against its program
      // (`Caches::unit_records`). A session that keeps its caches (a daemon, a front
-@@ -5007,7 +5771,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5007,7 +5783,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              let assemble = |u: usize, inl: &[Vec<usize>], c_refs: Option<&cgen::ll::CRefs>, copy_hot: Option<&cgen::CopyHot>| {
                  let t = Instant::now();
                  let (c, helpers) = cgen::in_layout_phase(asm_tag, || cgen::names::with(rn, || match u {
@@ -11430,7 +11689,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
                      1 => match super::release_c::statics_bytes() {
                          0 => (adapt(cgen::names::statics_unit(&program, &caches.glue), &Default::default()), String::new()),
                          target => {
-@@ -5023,7 +5787,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5023,7 +5799,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                              (adapt(index, &Default::default()), String::new())
                          }
                      },
@@ -11439,7 +11698,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
                      3 => {
                          let rg = rg_cell.get().expect("the fn units are cut before unit 3");
                          (super::release_c::table_unit(&rg.iter().filter(|(_, s)| s.contains(&(main_slot as usize))).map(|(r, _)| r.clone()).collect::<Vec<_>>()), String::new())
-@@ -5291,7 +6055,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5291,7 +6067,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                          if k < n_early {
                              Ok(assemble(first[k], &[], None, None))
                          } else {
@@ -11450,7 +11709,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
                          }
                      })
                      .into_iter()
-@@ -5617,7 +6383,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5617,7 +6395,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      };
      let rgroups = rg_cell.into_inner();
      // The LLVM backend (cgen/ll.rs) wrote `.ll` companions: only cc.rs builds them.
@@ -11459,7 +11718,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
      // The units the link takes after 1..4: release C has its own fn units, glue shards and
      // statics parts.
      let link_fn_units: Vec<usize> = match &rgroups {
-@@ -5656,7 +6422,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5656,7 +6434,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              return Response { code: 0, ..Default::default() };
          }
      }
@@ -11468,7 +11727,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
          return Response {
              stderr: "error: LUST_RELEASE_BACKEND=llvm builds through the release driver (`lust build --release --target <triple>`) or with --emit-c\n".into(),
              code: 2,
-@@ -5671,7 +6437,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5671,7 +6449,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // frozen, so a clean unit's C is the same as last time and its object
      // comes from the cache. Overlays do not exist here: every build emits
      // the base form of each unit.
@@ -11477,7 +11736,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
          // The release driver returns before the visits line at the end: its log line is here
          // (front-check's path coverage).
          front.last_visits.clear();
-@@ -5688,7 +6454,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5688,7 +6466,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
              }
          }
@@ -11489,7 +11748,21 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
              // Release C (`LUST_RELEASE_C=1`) already holds the content-addressed units.
              let mut all: Vec<(String, String)> = if rgroups.is_some() {
                  // An LLVM companion keeps its `.ll` name (cc.rs pairs it with its C unit). The
-@@ -5807,6 +6576,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5749,8 +6530,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+         {
+             let _ = writeln!(resp.stderr, "b1: {l}");
+         }
++        let imported = match stage_imported_objects(&dir, &imported_objects) {
++            Ok(paths) => paths,
++            Err(error) => return Response { code: 3, stderr: format!("error: {error}\n"), ..Default::default() },
++        };
+         let job = move || {
+-            let built = crate::cc::build_with(&all, &spec, &out, debug, cache.as_ref(), &cc_dir, stream).map_err(|e| e.to_string());
++            let built = crate::cc::build_with(&all, &spec, &out, debug, cache.as_ref(), &cc_dir, stream, &imported).map_err(|e| e.to_string());
+             // A build that leaks at exit leaks the unit texts too (they moved out of `units`).
+             if leak_at_exit {
+                 std::mem::forget(all);
+@@ -5807,6 +6592,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // this check keeps that a pin, not a hope.
      if let Some(run_args) = &req.run_args
          && !caches.persistent
@@ -11497,7 +11770,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
          && fresh_base
          && groups.len() == 1
          && !req.debug
-@@ -5837,7 +6607,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5837,7 +6623,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
      }
      // Disk unit objects key on each unit's full C text (see cache.rs):
@@ -11506,7 +11779,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
      // compiler, so a hit can never serve an object whose C differs. The
      // C is already built here for every unit in `todo`, so the key costs
      // one hash per unit.
-@@ -5847,7 +6617,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5847,7 +6633,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
      }
      let keys: Vec<Option<String>> = match &disk_cache {
@@ -11515,7 +11788,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
          None => vec![None; units.len()],
      };
      // The units move into the miss list, and their C is freed before the
-@@ -5866,7 +6636,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5866,7 +6652,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              miss_keys.push(key);
          }
      }
@@ -11524,7 +11797,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
          caches.objects = None;
          return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
      }
-@@ -5883,10 +6653,23 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5883,10 +6669,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      caches.objects = Some(req.debug);
      t.lap("tcc compile");
      let all_base: Vec<PathBuf> = [1, 2, 3, LOC_UNIT].into_iter().chain(link_fn_units.iter().copied()).map(base_obj).collect();
@@ -11533,14 +11806,9 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
          let mut objs = vec![base_obj(0)];
          objs.extend(all_base);
 -        crate::tcc::link(&objs, &req.out, req.debug)
-+        // The imported provider supplied immutable snapshots, so a dependency
-+        // path changing after prepare cannot substitute code at emission.
-+        for (index, bytes) in imported_objects.iter().enumerate() {
-+            let path = caches.obj_dir.join(format!("imported-{index}.o"));
-+            if let Err(error) = std::fs::write(&path, bytes) {
-+                return Response { code: 3, stderr: format!("error: cannot materialize imported object: {error}\n"), ..Default::default() };
-+            }
-+            objs.push(path);
++        match stage_imported_objects(&caches.obj_dir, &imported_objects) {
++            Ok(paths) => objs.extend(paths),
++            Err(error) => return Response { code: 3, stderr: format!("error: {error}\n"), ..Default::default() },
 +        }
 +        if unwind_frames {
 +            crate::tcc::link_with_frames(&objs, &req.out, req.debug, true)
@@ -11550,7 +11818,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
      } else {
          // The base library lives in a persistent dir under a content name
          // (see `resolve_base_dir`): the executable loads it by absolute
-@@ -5901,18 +6684,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5901,18 +6695,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
          let base = if rebuild_base {
              caches.base_gen += 1;
@@ -11591,7 +11859,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
                      install_base(&tmp, &base_dir.join(&soname))?;
                      if !caches.base_files.contains(&soname) {
                          caches.base_files.push_back(soname);
-@@ -5922,24 +6718,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5922,24 +6729,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              if built.is_err() {
                  let _ = std::fs::remove_file(&tmp);
              }
@@ -11623,7 +11891,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
              built
          } else {
              Ok(())
-@@ -5958,8 +6755,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5958,8 +6766,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // a small grace count while no known output file still references them. A binary the user
      // kept keeps its base; one that was overwritten or deleted does not. A running program
      // keeps its mapped copy after unlink.
@@ -11634,7 +11902,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
          if let Some(base_dir) = caches.base_dir.clone() {
              record_base_user(&base_dir, &soname, &req.out);
          }
-@@ -6058,6 +6855,66 @@ mod tests {
+@@ -6058,6 +6866,66 @@ mod tests {
          panic!("{}: still busy", bin.display())
      }
  
@@ -11701,7 +11969,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..b4be7b8edb7ad5e948ed2bf85d306b64
      /// The base sweep never deletes a live owner's base (it may be a live
      /// session's current base, found by fuzz seed 7 multi when a guard
      /// session's first-build sweep deleted the warm session's base), but
-@@ -6417,10 +7274,547 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
+@@ -6417,10 +7285,547 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
              max_errors: 20,
              run_args: None,
              harness: false, cc: false,
@@ -16322,7 +16590,7 @@ index c4b23e007d746b984e392919dcf1bc9bc87a265e..47bb8992d04e52e8ba9774e3e865ddf1
              _ => return None,
          }
 diff --git a/src/protocol.rs b/src/protocol.rs
-index 504b467a9d240272c85f999b59f57a5d52b3cd4e..da67a958bcf3f815f90fe42969afac538d802a43 100644
+index 504b467a9d240272c85f999b59f57a5d52b3cd4e..0ca6dda492dc8687e7f9c8a4e480572370b99b20 100644
 --- a/src/protocol.rs
 +++ b/src/protocol.rs
 @@ -6,7 +6,7 @@
@@ -16541,7 +16809,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..da67a958bcf3f815f90fe42969afac53
                  client: Client::current(&typed),
              });
          }
-@@ -791,6 +880,30 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -791,6 +880,29 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
      if let Some(on) = debug_assertions {
          session.profile.debug_assertions = on;
      }
@@ -16561,8 +16829,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..da67a958bcf3f815f90fe42969afac53
 +        } else {
 +            session.krate.target_name = key.crate_name.clone();
 +        }
-+        if executable_test && (session.profile.panic_abort
-+            || !key.executable_dependencies.as_ref().is_some_and(Vec::is_empty)) { return None; }
++        if executable_test && (session.profile.panic_abort || !key.is_executable()) { return None; }
 +        session.krate.test = executable_test;
 +        // Cargo gives a bin name for binary unit tests. Library unit
 +        // tests supply their source and crate name, with no --crate-type.
@@ -16572,7 +16839,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..da67a958bcf3f815f90fe42969afac53
      let req = Request {
          cmd: if cmd == "check" { Cmd::Check } else { Cmd::Build },
          session,
-@@ -803,6 +916,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -803,6 +915,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
          max_errors,
          run_args: if run { Some(run_args.clone()) } else { None },
          harness: false, cc: false,
@@ -16580,7 +16847,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..da67a958bcf3f815f90fe42969afac53
          client: Client::current(&typed),
      };
      Some(Invocation::Compile { req, run, args: run_args })
-@@ -909,8 +1023,41 @@ pub fn encode(r: &Request) -> Vec<u8> {
+@@ -909,8 +1022,41 @@ pub fn encode(r: &Request) -> Vec<u8> {
      path_field(&mut out, s.krate.manifest_path.as_deref());
      put_field(&mut out, s.krate.target_kind.as_bytes());
      put_field(&mut out, s.krate.target_name.as_bytes());
@@ -16622,7 +16889,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..da67a958bcf3f815f90fe42969afac53
      for f in &s.features {
          put_field(&mut out, f.as_bytes());
      }
-@@ -951,8 +1098,46 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -951,8 +1097,46 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
      let manifest = get_field(r)?;
      let target_kind = text(get_field(r)?)?;
      let target_name = text(get_field(r)?)?;
@@ -16669,7 +16936,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..da67a958bcf3f815f90fe42969afac53
      // A feature count this large is a bad request, not a loop to run.
      let n_features: usize = f[11].parse().ok()?;
      if n_features > 4096 {
-@@ -982,11 +1167,13 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -982,11 +1166,13 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
      Some(Request {
          cmd: if f[0] == "check" { Cmd::Check } else { Cmd::Build },
          session: SessionKey {
@@ -16683,7 +16950,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..da67a958bcf3f815f90fe42969afac53
                  root,
                  test: f[5] == "1",
              },
-@@ -1006,12 +1193,17 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -1006,12 +1192,17 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
          max_errors: f[4].parse().ok()?,
          run_args: None,
          harness: false, cc: false,
@@ -16702,7 +16969,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..da67a958bcf3f815f90fe42969afac53
  }
  
  /// The whole answer to a request of another build: a head no client takes
-@@ -1020,37 +1212,78 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
+@@ -1020,37 +1211,78 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
      write!(w, "- - - {}\n", build_id())
  }
  
@@ -16810,7 +17077,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..da67a958bcf3f815f90fe42969afac53
  }
  
  /// Prints a response. For `run`, runs the program after a successful build. Never returns.
-@@ -1331,9 +1564,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
+@@ -1331,9 +1563,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
      Some(PathBuf::from(text[at..end].replace("\\\\", "\\")))
  }
  
@@ -16860,7 +17127,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..da67a958bcf3f815f90fe42969afac53
  pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug: bool, net: CargoNet) -> ! {
      let profile = profile.unwrap_or("release");
      let dev = profile == "dev";
-@@ -1408,12 +1681,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
+@@ -1408,12 +1680,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
      exit_with(status);
  }
  
@@ -16879,7 +17146,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..da67a958bcf3f815f90fe42969afac53
  pub fn run_rustc_check(file: &Path) -> ! {
      let obj = std::env::temp_dir().join(format!("lust-rustc-check-{}.o", std::process::id()));
      eprintln!("lust: checking with rustc (oracle): rustc --edition 2024 --emit=obj {}", file.display());
-@@ -1461,6 +1740,150 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
+@@ -1461,6 +1739,150 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
  mod tests {
      use super::*;
  
@@ -17030,7 +17297,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..da67a958bcf3f815f90fe42969afac53
      fn args(list: &[&str]) -> Vec<String> {
          list.iter().map(|s| s.to_string()).collect()
      }
-@@ -1486,6 +1909,23 @@ mod tests {
+@@ -1486,6 +1908,23 @@ mod tests {
          assert_ne!(k, SessionKey::synthetic(Path::new("/tmp/x/other.rs"), false), "file differs");
      }
  
@@ -17372,10 +17639,10 @@ index 203135afe54ba9bb04d1295435f9424670379c71..ef842594db5d9f69da6392657b69b43b
          assert!(unit.target.src_path.ends_with("src/main.rs"));
 diff --git a/src/resolve/cargo_plan.rs b/src/resolve/cargo_plan.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..f29364d359d1eecbdff21c17c15bf723d0acd7f6
+index 0000000000000000000000000000000000000000..5d82db493cae392a5c7332be95e0153cdb2a2b62
 --- /dev/null
 +++ b/src/resolve/cargo_plan.rs
-@@ -0,0 +1,814 @@
+@@ -0,0 +1,825 @@
 +//! Product Cargo unit planning. The pinned Cargo prints its resolved unit graph
 +//! before compilation; only Lustr's read-only compiler queries may run here.
 +//! Source units then enter the existing retained native dependency compiler.
@@ -17553,7 +17820,8 @@ index 0000000000000000000000000000000000000000..f29364d359d1eecbdff21c17c15bf723
 +
 +fn injected_compiler_setting(name: &str) -> bool {
 +    matches!(name, "RUSTFLAGS" | "CARGO_ENCODED_RUSTFLAGS" | "CARGO_BUILD_RUSTFLAGS")
-+        || (name.starts_with("CARGO_TARGET_") && name != "CARGO_TARGET_DIR")
++        // Cargo sets TMPDIR for integration-test source and runtime inputs.
++        || (name.starts_with("CARGO_TARGET_") && !matches!(name, "CARGO_TARGET_DIR" | "CARGO_TARGET_TMPDIR"))
 +        || name.starts_with("CARGO_PROFILE_")
 +        || name.starts_with("CARGO_UNSTABLE_")
 +        || matches!(name, "CARGO_BUILD_TARGET" | "CARGO_BUILD_RUSTC" | "CARGO_BUILD_RUSTC_WRAPPER" | "CARGO_BUILD_RUSTC_WORKSPACE_WRAPPER")
@@ -17609,6 +17877,8 @@ index 0000000000000000000000000000000000000000..f29364d359d1eecbdff21c17c15bf723
 +        cmd.args(["--bin", &target.name]);
 +    } else if target.kind.iter().any(|kind| kind == "lib" || kind == "rlib") {
 +        cmd.arg("--lib");
++    } else if test && target.kind == ["test"] {
++        cmd.args(["--test", &target.name]);
 +    } else {
 +        return Err("native Cargo unit planning does not yet represent this root target kind".into());
 +    }
@@ -17722,6 +17992,7 @@ index 0000000000000000000000000000000000000000..f29364d359d1eecbdff21c17c15bf723
 +        return Err("Cargo unit graph must select exactly one root".into());
 +    }
 +    let root = index(&roots[0])?;
++    let expected_profile = if mode == "test" { "test" } else { "dev" };
 +    let mut units = Vec::new();
 +    for row in array(field(json, "units")?)? {
 +        let id = string(field(row, "pkg_id")?)?;
@@ -17758,7 +18029,7 @@ index 0000000000000000000000000000000000000000..f29364d359d1eecbdff21c17c15bf723
 +            return Err("Cargo unit activates a feature absent from its package".into());
 +        }
 +        let p = field(row, "profile")?;
-+        if string(field(p, "name")?)? != "dev" {
++        if string(field(p, "name")?)? != expected_profile {
 +            return Err("native Cargo unit profile integration is incomplete".into());
 +        }
 +        let panic_abort = match string(field(p, "panic")?)? {
@@ -17888,6 +18159,13 @@ index 0000000000000000000000000000000000000000..f29364d359d1eecbdff21c17c15bf723
 +                cargo_env: package_cargo_env(host.package, host.target),
 +                planning_key,
 +            });
++        } else if unit.mode == "test" && unit.target.kind == ["test"]
++            && dep.mode == "build" && dep.target.kind == ["bin"] && dep.package.id_repr == unit.package.id_repr
++            && name.bytes().eq(dep.target.name.bytes().map(|byte| if byte == b'-' { b'_' } else { byte }))
++        {
++            // Cargo builds same-package executables for CARGO_BIN_EXE_*.
++            // They participate in the plan but are not Rust extern crates.
++            dependencies(*to, units, graph, req, planned_profile, actual_profile, planning_key, active, visited, bindings)?;
 +        } else {
 +            let expected_mode = if unit.mode == "test" { "build" } else { unit.mode.as_str() };
 +            if dep.mode != expected_mode || !dep.target.kind.iter().any(|kind| kind == "lib" || kind == "rlib") {
