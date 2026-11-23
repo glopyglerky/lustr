@@ -21,7 +21,7 @@ fn operand(o: &ir::Operand) -> bool {
 
 /// Establish a boundary without pretending that the two panic runtimes or
 /// aggregate ABIs agree. These operations are total on their integer domains.
-pub(super) fn total(b: &ir::Body<'_>) -> bool {
+pub(crate) fn total(b: &ir::Body<'_>) -> bool {
     let mut live = vec![false; b.blocks.len()];
     let mut pending = vec![0usize];
     while let Some(n) = pending.pop() {

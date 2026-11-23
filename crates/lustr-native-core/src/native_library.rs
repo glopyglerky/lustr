@@ -14,6 +14,9 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use completion::{AcceptedBody, ExpressionResolution as Resolution, Function};
 
+#[cfg(feature = "native-qualification")]
+pub(crate) use super::mixed::total as total_scalar_body;
+
 struct StoredBody { body_hash: u64, head_hash: u64, origin: Option<diag::Span>, facts: AcceptedBody }
 #[derive(Clone)]
 pub(crate) struct Object {
