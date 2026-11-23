@@ -151,7 +151,16 @@ pub(crate) fn prepare(args: &[String]) -> Result<PreparedUnit, String> {
 /// The enclosing compiler has already assigned the other items to their
 /// owners. Keep the full original source and positions for this native item.
 pub(crate) fn prepare_item(args: &[String], source: &str, span: Range<u32>) -> Result<PreparedUnit, String> {
-    prepare_request(request(args)?, false, true, Some((source, &[span])))
+    prepare_request(request(args)?, false, true, Some(ItemSelection {
+        source, spans: &[span], total_scalars: false,
+    }))
+}
+
+#[derive(Clone, Copy)]
+struct ItemSelection<'a> {
+    source: &'a str,
+    spans: &'a [Range<u32>],
+    total_scalars: bool,
 }
 
 /// Check the original items in one native unit. A link request also emits and
@@ -159,7 +168,9 @@ pub(crate) fn prepare_item(args: &[String], source: &str, span: Range<u32>) -> R
 pub(crate) fn complete_items(
     args: &[String], source: &str, spans: &[Range<u32>], link: bool,
 ) -> Result<Vec<(String, String)>, String> {
-    let prepared = prepare_request(request(args)?, false, true, Some((source, spans)))?;
+    let prepared = prepare_request(request(args)?, false, true, Some(ItemSelection {
+        source, spans, total_scalars: true,
+    }))?;
     let program = prepared.program();
     let mut bindings = Vec::with_capacity(spans.len());
     if prepared.names.fns.len() != spans.len() {
@@ -205,7 +216,7 @@ fn item_tokens(mut lexed: lexer::Lexed, extents: &[Range<u32>]) -> Result<lexer:
     Ok(lexed)
 }
 
-fn prepare_request(r: Request, artifact: bool, capture: bool, items: Option<(&str, &[Range<u32>])>) -> Result<PreparedUnit, String> {
+fn prepare_request(r: Request, artifact: bool, capture: bool, items: Option<ItemSelection<'_>>) -> Result<PreparedUnit, String> {
     if r.output.exists() { return Err("object output already exists; use a fresh path".into()); }
     let working_directory = capture.then(std::env::current_dir).transpose()
         .map_err(|error| format!("cannot retain native request working directory: {error}"))?;
@@ -213,12 +224,12 @@ fn prepare_request(r: Request, artifact: bool, capture: bool, items: Option<(&st
     if source.len() > SOURCE_LIMIT { return Err("native object source exceeds current bound".into()); }
     let i = Arc::new(intern::Interner::default()); let k = Arc::new(intern::Known::new(&i));
     let mut map = diag::SourceMap::default(); let file = map.add_file(&r.source.to_string_lossy(), &source);
-    if items.is_some_and(|(expected, _)| expected != source) {
+    if items.is_some_and(|selected| selected.source != source) {
         return Err("the original source changed since the item was selected".into());
     }
     let lexed = lexer::lex(&source,file,0,&i).map_err(|e| diag::render(&mut vec![e], &map, &source, false, 20))?;
     let lexed = match items {
-        Some((_, extent)) => item_tokens(lexed, extent)?,
+        Some(selected) => item_tokens(lexed, selected.spans)?,
         None => lexed,
     };
     // This boundary consumes a real crate attribute and carries its policy
@@ -257,8 +268,8 @@ fn prepare_request(r: Request, artifact: bool, capture: bool, items: Option<(&st
     } else {
         let mut a=parser::parse_items(&lexed,5..t.len(),&i,&k).map_err(|e|diag::render(&mut vec![e],&map,&source,false,20))?;a.inner_attrs.insert(0,attr);(a,None)
     };
-    if let Some((_, selected)) = items
-        && (selected.is_empty() || a.items.len() != selected.len()
+    if let Some(selected) = items
+        && (selected.spans.is_empty() || a.items.len() != selected.spans.len()
             || a.items.iter().any(|item| !matches!(item.kind, ast::ItemKind::Fn(_))))
     {
         return Err("each selected native item must be one function definition".into());
@@ -327,7 +338,18 @@ fn prepare_request(r: Request, artifact: bool, capture: bool, items: Option<(&st
         }
         if artifact && !cgen::names::with(Some(&names),||f.params.iter().chain([&f.ret]).all(|&t|cgen::native_type_abi(&p,t).is_some())) {return Err("native producer effective C ABI differs from the image".into());}
         let first_line=map.line_display_col(map.call_site(f.def(&p.ast).name_span)).0;
-        let generated = cgen::names::with(Some(&names),||cgen::gen_fn(&p,&body,&map,first_line,&slots));
+        let total = items.is_some_and(|selected| selected.total_scalars);
+        if total && !crate::driver::library::total_scalar_body(&body) {
+            return Err("the checked native body needs an unrepresented runtime operation".into());
+        }
+        let mut generated = cgen::names::with(Some(&names), || {
+            if total {
+                cgen::gen_fn_total(&p, &body, &map, first_line, &slots)
+            } else {
+                cgen::gen_fn(&p, &body, &map, first_line, &slots)
+            }
+        });
+        generated.mixed_total = total;
         if let Some(e)=&generated.error { return Err(e.clone()); }
         if capture {
             if body.fn_id != id { return Err("native accepted body belongs to another definition".into()); }
@@ -371,12 +393,18 @@ fn emit_with_backend(prepared: PreparedUnit, backend: ObjectBackend<'_>) -> Resu
     };
     if prepared.artifact != artifact.is_some() { return Err("prepared native unit has a different artifact/backend contract".into()); }
     let (r, p, map, names, out) = (&prepared.request, &prepared.program, &prepared.map, &prepared.names, &prepared.generated);
-    let slots: Vec<u32> = (0..p.fns.len()).map(|n|n as u32).collect();
-    let mut glue = cgen::GlueSet::default();
-    glue.add(&p,&slots,out.iter().flat_map(|f|f.glue.iter()));
-    let indexes: Vec<usize> = (0..out.len()).collect();
-    let register = format!("lustr_unit_register_{:016x}",p.stable_crate.0);
-    let text = cgen::names::with(Some(&names),||cgen::fn_unit(&p,&out,&indexes,&glue,&register,None));
+    let text = if matches!(backend, ObjectBackend::TinyCc) {
+        out.iter().map(|output| cgen::native_scalar_unit(output, false)
+            .ok_or("native scalar code needs an unrepresented runtime operation"))
+            .collect::<Result<Vec<_>, _>>()?.join("\n")
+    } else {
+        let slots: Vec<u32> = (0..p.fns.len()).map(|n|n as u32).collect();
+        let mut glue = cgen::GlueSet::default();
+        glue.add(&p,&slots,out.iter().flat_map(|f|f.glue.iter()));
+        let indexes: Vec<usize> = (0..out.len()).collect();
+        let register = format!("lustr_unit_register_{:016x}",p.stable_crate.0);
+        cgen::names::with(Some(&names),||cgen::fn_unit(&p,&out,&indexes,&glue,&register,None))
+    };
     let parent = r.output.parent().ok_or("object output parent required")?;
     static NEXT:std::sync::atomic::AtomicU64=std::sync::atomic::AtomicU64::new(0);
     let scratch = parent.join(format!(".lustr-object-{}-{}",std::process::id(),NEXT.fetch_add(1,std::sync::atomic::Ordering::Relaxed)));

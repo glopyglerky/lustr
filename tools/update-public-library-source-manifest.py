@@ -27,7 +27,7 @@ FILES=[
  "crates/lustr-native-core/src/public_executable_import.rs","crates/lustr-native-core/src/public_macro_import.rs",
  "crates/lustr-native-core/src/public_metadata_query.rs",
  "crates/lustr-native-core/src/unit_object.rs","crates/lustr-native-core/src/unit_publication.rs",
- "crates/lustr-native-core/src/native_object.rs",
+ "crates/lustr-native-core/src/native_object.rs","crates/lustr-native-core/src/mixed_unit.rs",
  "crates/lustr-native-core/LICENSE-LLVM","crates/lustr-metadata-encoder/Cargo.toml",
  "crates/lustr-metadata-encoder/src/lib.rs","crates/lustr-metadata-encoder/src/encode.rs",
  "crates/lustr-metadata-encoder/src/extern_metadata.rs","crates/lustr-metadata-encoder/src/sdk.rs",
