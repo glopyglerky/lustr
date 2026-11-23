@@ -233,7 +233,7 @@ pub fn encode_projection_archive(input: &Input<'_>, sdk: &Sdk, family: &Projecti
 }
 
 /// Original `RmetaLink::encode` for the actual Rust object members of the
-/// admitted library. The completed scope has no native library declarations;
+/// admitted library. The completed scope has no foreign native libraries;
 /// an empty member list cannot stand in for the emitted object inventory.
 pub fn encode_rlib_link(object_members: &[&str]) -> Result<Vec<u8>, String> {
     let mut seen = BTreeSet::new();
@@ -311,7 +311,7 @@ fn validate(input: &Input<'_>, sdk: &Sdk, link: bool, projection: Option<&Projec
         };
         let lifetime = |name: &str, span: Span| name.strip_prefix('\'').is_some_and(identifier)
             && input.source.get(span.lo as usize..span.hi as usize) == Some(name);
-        if sdk.standard || sdk.dependencies.len() != 2 || sdk.core_size_traits.is_none() || !input.functions.is_empty()
+        if sdk.standard || sdk.dependencies.len() != 2 || sdk.core_size_traits.is_none()
             || family.receiver.name == family.family.name
             || ![&family.receiver, &family.family, &family.item].into_iter().all(named)
             || !lifetime(&family.lifetime, family.lifetime_span)
@@ -323,8 +323,9 @@ fn validate(input: &Input<'_>, sdk: &Sdk, link: bool, projection: Option<&Projec
         {
             return Err(failure("unrepresented projection declaration inventory"));
         }
-    } else if input.functions.is_empty() || input.functions.len() > 65_535 {
-        return Err(failure("a nonempty bounded completed function inventory is required"));
+    }
+    if input.functions.len() > 65_535 || input.functions.is_empty() && projection.is_none() {
+        return Err(failure("a bounded completed declaration inventory is required"));
     }
     let mut definitions = BTreeMap::new();
     let mut names = BTreeSet::new();
@@ -363,7 +364,7 @@ fn validate(input: &Input<'_>, sdk: &Sdk, link: bool, projection: Option<&Projec
             }
         }
     }
-    if link && projection.is_none() {
+    if link && !input.functions.is_empty() {
         validate_emission(input, &definitions)?;
     } else if (!link && input.embed_metadata.is_some()) || !input.emitted.is_empty()
         || !input.objects.is_empty() || !input.backend_helpers.is_empty()

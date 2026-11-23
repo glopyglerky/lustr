@@ -14,6 +14,7 @@ const DECLARATION_LIFETIME: u32 = 5;
 const IMPLEMENTATION: u32 = 6;
 const ASSIGNMENT: u32 = 7;
 const ASSIGNMENT_LIFETIME: u32 = 8;
+pub(super) const FIRST_FUNCTION: u32 = ASSIGNMENT_LIFETIME + 1;
 
 struct Definition<'a> {
     index: u32,

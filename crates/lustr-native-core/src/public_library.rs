@@ -284,7 +284,7 @@ impl Owner {
             }
             let artifact_start=observed.then(std::time::Instant::now);
             let family = state.completed_family();
-            let functions = state.completed_functions().or_else(|| family.map(|_| &[][..]))
+            let functions = state.completed_functions()
                 .ok_or("native library returned no completed declarations")?;
             let used = self.imported.as_ref().filter(|imported| functions.iter().flat_map(|function| function.calls())
                 .any(|id| imported.owns(*id)));

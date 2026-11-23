@@ -215,7 +215,7 @@ fn archive_objects<'a>(bytes: &'a [u8], definitions: &Import) -> Result<Vec<&'a 
     }
     let links = section(b"lib.rmeta-link", ".rmeta-link")?;
     let names = archive_object_members(links).ok_or("original Rust link metadata inventory is not represented")?;
-    if names.is_empty() == definitions.is_scalar() {
+    if names.is_empty() != definitions.code_free {
         return Err("Rust link metadata object inventory does not match the checked provider".into());
     }
     let mut objects = Vec::new();

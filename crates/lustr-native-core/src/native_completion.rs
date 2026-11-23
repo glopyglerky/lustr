@@ -40,8 +40,8 @@ pub(crate) struct FamilyImplementation {
 pub(crate) fn complete_family(p: &check::collect::Program, map: &diag::SourceMap, source: &str) -> Result<Family, Error> {
     let unsupported = Error::Unintegrated("projection provider does not have the represented checked declaration inventory");
     let fail = Error::Failed("native projection provider identities do not join checked declarations");
-    let items = p.ast.items.as_slice();
-    if !p.fns.is_empty() || !p.imported_crates.is_empty() || !p.ast.stmt_items.is_empty()
+    let items: Vec<_> = p.ast.items.iter().filter(|item| !matches!(item.kind, ast::ItemKind::Fn(_))).collect();
+    if !p.imported_crates.is_empty() || !p.ast.stmt_items.is_empty()
         || map.file_count() != 1 || !source.is_ascii() || source.as_bytes().contains(&b'\r')
         || items.len() < 2 || items.len() > 3 || items.iter().any(|item| !item.attrs.is_empty())
         || !matches!(p.ast.inner_attrs.as_slice(), [attr]
@@ -49,7 +49,7 @@ pub(crate) fn complete_family(p: &check::collect::Program, map: &diag::SourceMap
     {
         return Err(unsupported);
     }
-    let [receiver, family, tail @ ..] = items else { return Err(unsupported); };
+    let [receiver, family, tail @ ..] = items.as_slice() else { return Err(unsupported); };
     let (ast::ItemKind::Struct(receiver_ast), ast::ItemKind::Trait(trait_ast)) = (&receiver.kind, &family.kind) else {
         return Err(unsupported);
     };
@@ -246,7 +246,7 @@ impl View<'_> {
     fn identifier_span(&self, name: crate::intern::Sym, span: diag::Span) -> Option<diag::Span> { (self.identifier)(name, span) }
 }
 
-pub(crate) fn complete(prepared: View<'_>, generated: bool) -> Result<Vec<Function>, Error> {
+pub(crate) fn complete(prepared: View<'_>, generated: bool, family: Option<&Family>) -> Result<Vec<Function>, Error> {
     let p = prepared.program();
     let syntax = &p.ast;
     if !prepared.source().is_ascii() {
@@ -278,8 +278,9 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool) -> Result<Vec<Functi
     {
         return Err(Error::Failed("native root policy differs from its admitted source"));
     }
-    if syntax.items.len() != p.fns.len() || p.fns.len() != prepared.accepted_bodies().len() {
-        return Err(Error::Unintegrated("the complete declaration set is not a flat function set"));
+    let type_items = family.map_or(0, |family| 2 + usize::from(family.implementation.is_some()));
+    if syntax.items.len() != p.fns.len() + type_items || p.fns.len() != prepared.accepted_bodies().len() {
+        return Err(Error::Unintegrated("the checked functions and type declarations do not cover the complete declaration set"));
     }
     let mut functions = Vec::new();
     let mut identities = BTreeSet::new();

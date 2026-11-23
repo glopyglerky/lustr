@@ -147,8 +147,9 @@ pub(crate) fn encode(
     let emitted: BTreeMap<_, _> = input.emitted.iter().map(|i| (i.definition, &i.symbol)).collect();
     let mut definitions = Vec::with_capacity(input.functions.len());
     let mut mappings = Vec::with_capacity(input.emitted.len());
+    let first_function = if family.is_some() { projection::FIRST_FUNCTION } else { 1 };
     for (n, function) in input.functions.iter().enumerate() {
-        let index = (n + 1) as u32;
+        let index = first_function + n as u32;
         let hash = function_path_hash(stable_id, &function.name);
         if path_map.insert(&hash, &index).is_some() {
             return Err("metadata DefPathHash collision; the original definition allocation cannot continue".into());
@@ -189,9 +190,8 @@ pub(crate) fn encode(
         cx.opaque.emit_u8(0); // DefPathData::CrateRoot
         cx.opaque.emit_u32(0);
     });
-    for &(index, hash) in &definitions {
+    for (function, &(index, hash)) in input.functions.iter().zip(&definitions) {
         let index = index as usize;
-        let function = &input.functions[index - 1];
         cx.table("def_path_hashes").set(index, &hash.to_le_bytes());
         cx.fact("def_keys", index, |cx| {
             cx.opaque.emit_u8(1); cx.local_def(0);

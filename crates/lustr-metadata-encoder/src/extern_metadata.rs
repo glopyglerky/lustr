@@ -387,24 +387,36 @@ pub struct ProjectionDefinitions<'a> {
     pub family: (&'a str, u64),
     pub item: (&'a str, u64),
     pub referent: Option<crate::IntegerType>,
+    pub code_free: bool,
 }
 
 // Read the declaration, implementation and its result from the pinned
 // metadata schema. These records have not yet been installed in a session.
-fn read_projection_definitions<'a>(krate: &IndexedCrate<'a>, sdk: &Sdk) -> Option<ProjectionDefinitions<'a>> {
+fn read_projection_definitions<'a>(krate: &mut IndexedCrate<'a>, sdk: &Sdk) -> Option<ProjectionDefinitions<'a>> {
     let [sized, meta_sized] = sdk.core_size_traits?;
     let (traits, trait_count) = krate.traits;
     let (children, child_count) = krate.array("module_children_non_reexports", 0)?;
-    (trait_count == 1 && child_count == 3 && krate.trait_impls.1 <= 1
+    (trait_count == 1 && (3..=65_538).contains(&child_count) && krate.trait_impls.1 <= 1
         && only_implicit_prelude_reexport(krate.data, krate.value("module_children_reexports", 0)?, "core")?
         && krate.array("ambig_module_children", 0)?.1 == 0
         && krate.array("attributes", 0)?.1 == 0).then_some(())?;
     let trait_index = Read::new(krate.data, traits).leb()?;
     let mut children = Read::new(krate.data, children);
     let (mut receiver, mut ctor, mut family) = (None, None, false);
+    let mut indices = BTreeSet::new();
+    let mut functions = Vec::new();
+    let mut names = BTreeSet::new();
     for _ in 0..child_count {
         let index = children.leb()?;
+        (index != 0 && indices.insert(index)).then_some(())?;
         match krate.value::<1>("def_kind", index)? {
+            [12] => {
+                if let Some(function) = read_scalar_function(krate, index)? {
+                    names.insert(function.name).then_some(())?;
+                    functions.push(function);
+                }
+                continue;
+            }
             [2] if receiver.is_none() => receiver = Some(index),
             [37] if ctor.is_none() => ctor = Some(index),
             [6] if index == trait_index && !family => family = true,
@@ -473,12 +485,15 @@ fn read_projection_definitions<'a>(krate: &IndexedCrate<'a>, sdk: &Sdk) -> Optio
         krate.type_name(index, parent)?,
         u64::from_le_bytes(krate.value("def_path_hashes", index)?),
     ));
-    Some(ProjectionDefinitions {
+    let projection = ProjectionDefinitions {
         receiver: identity(receiver, 0)?,
         family: identity(trait_index, 0)?,
         item: identity(item, trait_index)?,
         referent,
-    })
+        code_free: child_count == 3,
+    };
+    krate.identity.functions = functions;
+    Some(projection)
 }
 
 fn read_index<'a>(bytes: &'a [u8], sdk: &Sdk, link: bool) -> Option<IndexedCrate<'a>> {
@@ -577,12 +592,12 @@ fn read_crate<'a>(bytes: &'a [u8], sdk: &Sdk, link: bool) -> Option<ScalarCrate<
 pub fn read_executable_crate<'a>(
     bytes: &'a [u8], sdk: &Sdk,
 ) -> Option<(ScalarCrate<'a>, Option<ProjectionDefinitions<'a>>)> {
-    let index = read_index(bytes, sdk, true)?;
+    let mut index = read_index(bytes, sdk, true)?;
     if index.traits.1 == 0 && index.trait_impls.1 == 0 {
         return Some((read_scalar_index(index, sdk)?, None));
     }
     (!sdk.standard && index.identity.dependencies.is_empty()).then_some(())?;
-    let projection = read_projection_definitions(&index, sdk)?;
+    let projection = read_projection_definitions(&mut index, sdk)?;
     Some((index.identity, Some(projection)))
 }
 
@@ -603,37 +618,42 @@ fn read_scalar_index<'a>(mut krate: IndexedCrate<'a>, sdk: &Sdk) -> Option<Scala
     for _ in 0..child_count {
         let index = children.leb()?;
         (index != 0 && indices.insert(index) && krate.value::<1>("def_kind", index)? == [12]).then_some(())?;
-        let visibility_offset = krate.position("visibility", index)?;
-        match *data.get(visibility_offset)? {
-            0 => {}
-            1 => continue,
-            _ => return None,
+        if let Some(function) = read_scalar_function(&krate, index)? {
+            names.insert(function.name).then_some(())?;
+            functions.push(function);
         }
-        let mut key = Read::new(data, krate.position("def_keys", index)?);
-        (key.take(3)? == [1, 0, 6]).then_some(())?;
-        let function_name = key.symbol()?;
-        (valid_identifier(function_name) && names.insert(function_name) && key.leb()? == 0).then_some(())?;
-
-        (krate.array("attributes", index)?.1 == 0
-            && krate.value::<1>("constness", index)? == [1]
-            && Read::new(data, krate.position("generics_of", index)?).take(7)? == [0; 7]
-            && Read::new(data, krate.position("explicit_clauses_of", index)?).take(2)? == [0; 2])
-            .then_some(())?;
-        let mut codegen = Read::new(data, krate.position("codegen_fn_attrs", index)?);
-        (codegen.take(13)? == [0; 13] && codegen.byte()? == 2 && codegen.take(6)? == [0; 6]).then_some(())?;
-        let mut signature = Read::new(data, krate.position("fn_sig", index)?);
-        (signature.leb()? == 0).then_some(())?;
-        let count = signature.leb()?;
-        (0 < count && count <= 65).then_some(())?;
-        let parameters = (1..count).map(|_| signature.integer_type()).collect::<Option<Vec<_>>>()?;
-        let result = signature.integer_type()?;
-        (signature.take(2)? == [66, 255]).then_some(())?;
-        let path_hash = u64::from_le_bytes(krate.value("def_path_hashes", index)?);
-        (path_hash == crate::identity::function_path_hash(krate.identity.stable_id, function_name)).then_some(())?;
-        functions.push(ScalarFunction { name: function_name, parameters, result, path_hash });
     }
     krate.identity.functions = functions;
     Some(krate.identity)
+}
+
+fn read_scalar_function<'a>(krate: &IndexedCrate<'a>, index: usize) -> Option<Option<ScalarFunction<'a>>> {
+    match krate.record("visibility", index)?.byte()? {
+        0 => {}
+        1 => return Some(None),
+        _ => return None,
+    }
+    let mut key = krate.record("def_keys", index)?;
+    (key.take(3)? == [1, 0, 6]).then_some(())?;
+    let function_name = key.symbol()?;
+    (valid_identifier(function_name) && key.leb()? == 0).then_some(())?;
+
+    (krate.array("attributes", index)?.1 == 0
+        && krate.value::<1>("constness", index)? == [1]
+        && krate.record("generics_of", index)?.take(7)? == [0; 7]
+        && krate.record("explicit_clauses_of", index)?.take(2)? == [0; 2]).then_some(())?;
+    let mut codegen = krate.record("codegen_fn_attrs", index)?;
+    (codegen.take(13)? == [0; 13] && codegen.byte()? == 2 && codegen.take(6)? == [0; 6]).then_some(())?;
+    let mut signature = krate.record("fn_sig", index)?;
+    (signature.leb()? == 0).then_some(())?;
+    let count = signature.leb()?;
+    (0 < count && count <= 65).then_some(())?;
+    let parameters = (1..count).map(|_| signature.integer_type()).collect::<Option<Vec<_>>>()?;
+    let result = signature.integer_type()?;
+    (signature.take(2)? == [66, 255]).then_some(())?;
+    let path_hash = u64::from_le_bytes(krate.value("def_path_hashes", index)?);
+    (path_hash == crate::identity::function_path_hash(krate.identity.stable_id, function_name)).then_some(())?;
+    Some(Some(ScalarFunction { name: function_name, parameters, result, path_hash }))
 }
 
 fn only_implicit_prelude_reexport(data: &[u8], value: [u8; 16], dependency: &str) -> Option<bool> {

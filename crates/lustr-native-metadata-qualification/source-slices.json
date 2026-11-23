@@ -30,7 +30,7 @@
     "src/main.rs": "261c2e27262f5389e5869134c1f0e739003092aa9bb0eeee35df1bb07aeeede6",
     "src/retained.rs": "c91dadb872aa17df7a9e171427557c01144592def10c397abaa66912e107b527",
     "../lustr-native-core/src/library_history.rs": "b9b5599d739bd221cfcdb59280f456c2556859d0dc400b8b1afe57407678354f",
-    "../lustr-native-core/src/library_artifact.rs": "95d8a8f8be939a6b93e59b435a5da16abc564d9890279c4d323167e78efe19db",
+    "../lustr-native-core/src/library_artifact.rs": "c468a04176e05eea028d895ad9bc16fed5df78a322b7758afcb90aac74ab9f8b",
     "../lustr-native-core/src/metadata_archive.rs": "4906cce455716560344bdb329c3bcbc563da21e8c615c357583c038a90e11dfa",
     "../lustr-native-core/src/unit_object.rs": "d43929971c980ec395913ce5f6cb13955e012e72ef2fcddcd14a24adaea1bd24",
     "../lustr-native-core/src/unit_publication.rs": "035ee3f6a763a9562348f50476815bd24e7b6bc67a1a14a69edcd2fe8f44ae05"

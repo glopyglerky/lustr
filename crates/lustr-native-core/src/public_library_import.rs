@@ -48,6 +48,7 @@ pub(super) struct Import {
     pub(super) stamp: Stamp,
     pub(super) identity: Identity,
     pub(super) requires_abort: bool,
+    pub(super) code_free: bool,
     pub(super) dependencies: Vec<Identity>,
     artifact_identity: String,
     pub(super) metadata: Arc<[u8]>,
@@ -95,6 +96,7 @@ impl Import {
         let dependencies = leaf.dependencies.iter().map(|dep| Identity {
             name: dep.name.into(), svh: dep.svh, suffix: dep.filename_suffix.into(),
         }).collect();
+        let code_free = projection.as_ref().is_some_and(|item| item.code_free);
         let projection = projection.map(|item| {
             let definition = |(name, hash): (&str, u64)| (name.into(), def::DefPathHash(hash));
             ProjectionDefinition {
@@ -117,6 +119,7 @@ impl Import {
                 stamp: before,
                 identity,
                 requires_abort: leaf.requires_abort,
+                code_free,
                 dependencies,
                 artifact_identity: path.to_str().ok_or("extern metadata path is not Unicode")?.into(),
                 metadata: data.into(),
@@ -142,10 +145,6 @@ impl Import {
 
     pub(super) fn exported_symbols(&self) -> impl Iterator<Item = &str> {
         self.facts.functions.iter().map(|function| function.symbol.as_str())
-    }
-
-    pub(super) fn is_scalar(&self) -> bool {
-        self.facts.projection.is_none()
     }
 
     fn flat_definition(&self, interner: &Interner, hash: def::DefPathHash) -> Sym {

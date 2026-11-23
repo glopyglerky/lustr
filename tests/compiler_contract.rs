@@ -538,13 +538,28 @@ fn default_cargo_links_debug_from_a_native_standard_provider() {
 #[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
 fn ordinary_cargo_checks_and_links_associated_lifetimes_across_native_crates() {
-    let f = Fixture::new("associated-lifetime-workspace");
+    assert_associated_lifetime_workspace("associated-lifetime-workspace", "", "*input", b"17\n");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn ordinary_cargo_links_code_from_the_same_crate_as_an_associated_type() {
+    let code = "\nfn mask(value: u32) -> u32 { value ^ 3 }\npub fn transform(value: u32) -> u32 { mask(value) ^ 8 }\n";
+    assert_associated_lifetime_workspace("associated-lifetime-code-workspace", code, "api::transform(*input)", b"26\n");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+fn assert_associated_lifetime_workspace(scope: &str, code: &str, body: &str, expected: &[u8]) {
+    let f = Fixture::new(scope);
     f.source("Cargo.toml", "[workspace]\nmembers = [\"provider\", \"application\"]\nresolver = \"3\"\n");
     f.source("provider/Cargo.toml", "[package]\nname = \"typed-schema\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
-    let provider = "#![no_std]\npub struct Token;\npub trait Access {\n    type Borrowed<'a> where Self: 'a;\n}\nimpl Access for Token {\n    type Borrowed<'r> = &'r u32;\n}\n";
-    f.source("provider/src/lib.rs", provider);
+    let provider = ["#![no_std]\npub struct Token;\npub trait Access {\n    type Borrowed<'a> where Self: 'a;\n}\nimpl Access for Token {\n    type Borrowed<'r> = &'r u32;\n}\n", code].concat();
+    f.source("provider/src/lib.rs", &provider);
     f.source("application/Cargo.toml", "[package]\nname = \"projection-app\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\napi = { package = \"typed-schema\", path = \"../provider\" }\n");
-    let source = f.source("application/src/main.rs", "use api::{Access, Token};\nfn value(input: <Token as Access>::Borrowed<'_>) -> u32 { *input }\nfn main() { println!(\"{}\", value(&17)); }\n");
+    let source = f.source("application/src/main.rs", &format!(
+        "use api::{{Access, Token}};\nfn value(input: <Token as Access>::Borrowed<'_>) -> u32 {{ {body} }}\nfn main() {{ println!(\"{{}}\", value(&17)); }}\n"
+    ));
     let request = ["check", "--offline", "-p", "projection-app", "--message-format=json"];
     let check = |label| f.succeeds(label, f.command("cargo").args(request));
     let first = check("check");
@@ -562,7 +577,8 @@ fn ordinary_cargo_checks_and_links_associated_lifetimes_across_native_crates() {
         .arg(&source).arg("--extern").arg(format!("api={}", metadata.display()))
         .arg("-o").arg(f.root.join("independent-reader.rmeta")));
     assert!(original("original-reader").status.success());
-    f.source("provider/src/lib.rs", &provider.replace("u32", "u64"));
+    let changed_provider = provider.replace("&'r u32", "&'r u64");
+    f.source("provider/src/lib.rs", &changed_provider);
     let changed = f.invoke("changed-assignment", f.command("cargo").args(request));
     assert_eq!(changed.status.code(), Some(101));
     assert!(changed.stdout.split(|&byte| byte == b'\n')
@@ -571,7 +587,7 @@ fn ordinary_cargo_checks_and_links_associated_lifetimes_across_native_crates() {
     let changed = original("original-reader-changed");
     assert_eq!(changed.status.code(), Some(1));
     assert!(String::from_utf8_lossy(&changed.stderr).contains("E0308"));
-    f.source("provider/src/lib.rs", provider);
+    f.source("provider/src/lib.rs", &provider);
     check("repair");
     assert!(original("original-reader-repair").status.success());
 
@@ -598,19 +614,19 @@ fn ordinary_cargo_checks_and_links_associated_lifetimes_across_native_crates() {
     }
     f.succeeds("original-reader-link", &mut link);
     let ran = f.succeeds("original-reader-run", &mut Command::new(independent));
-    assert_eq!(ran.stdout, b"17\n");
+    assert_eq!(ran.stdout, expected);
 
     let run = ["run", "--offline", "--quiet", "-p", "projection-app"];
     assert_eq!(f.succeeds("run", f.command("cargo").args(run)).stdout, ran.stdout);
     let binary = f.root.join("target/debug/projection-app");
     let valid = std::fs::read(&binary).unwrap();
-    f.source("provider/src/lib.rs", &provider.replace("u32", "u64"));
+    f.source("provider/src/lib.rs", &changed_provider);
     let rejected = f.invoke("changed-assignment-link", f.command("cargo").args(run));
     assert_eq!(rejected.status.code(), Some(101));
     assert!(String::from_utf8_lossy(&rejected.stderr).contains("L0110"));
     assert!(rejected.stdout.is_empty());
     assert_eq!(std::fs::read(&binary).unwrap(), valid);
-    f.source("provider/src/lib.rs", provider);
+    f.source("provider/src/lib.rs", &provider);
     assert_eq!(f.succeeds("repaired-link", f.command("cargo").args(run)).stdout, ran.stdout);
 }
 

@@ -5158,20 +5158,14 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
         match super::library::complete(&program, &map, &src, front, caches, verified)
             .and_then(|definitions| {
                 if req.cmd != Cmd::Check {
-                    match &definitions {
-                        super::library::Completed::Functions(functions) => super::library::completion::require_direct_integer_abi(functions)?,
-                        super::library::Completed::Family(_) => {}
-                    }
+                    super::library::completion::require_direct_integer_abi(&definitions.functions)?;
                 }
                 Ok(definitions)
             }) {
             Ok(definitions) => {
-                let functions = match &definitions {
-                    super::library::Completed::Functions(functions) => Some(functions.clone()),
-                    super::library::Completed::Family(_) => None,
-                };
+                let functions = definitions.functions.clone();
                 super::library::remember(caches, definitions, program.ast.inner_attrs.is_empty());
-                functions
+                Some(functions)
             }
             Err(error) => {
                 let code = match error { super::library::completion::Error::Unintegrated(_) => 4, _ => 3 };
@@ -5244,7 +5238,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
 
     // A completed type-only provider has no bodies or native code to emit.
     // Its archive and metadata are published together by the same library owner.
-    if super::library::finish_family(caches, req.library_options.debug.native_rust()) {
+    if super::library::finish_declaration_only(caches, req.library_options.debug.native_rust()) {
         drop(results);
         drop(reemit);
         program.verified = verified;

@@ -68,9 +68,9 @@ pub(crate) struct State {
 }
 
 #[derive(Clone)]
-pub(crate) enum Completed {
-    Functions(Arc<Vec<Function>>),
-    Family(Arc<completion::Family>),
+pub(crate) struct Completed {
+    pub functions: Arc<Vec<Function>>,
+    family: Option<Arc<completion::Family>>,
 }
 
 #[derive(Default)]
@@ -143,13 +143,14 @@ pub(crate) fn request_supported(req: &Request) -> bool {
 }
 impl State {
     pub(crate) fn completed_functions(&self) -> Option<&[Function]> {
-        let (generation, Completed::Functions(functions)) = self.completed.as_ref()? else { return None; };
-        (*generation == self.generation).then_some(functions.as_slice())
+        let (generation, definitions) = self.completed.as_ref()?;
+        (*generation == self.generation).then_some(definitions.functions.as_slice())
     }
 
     pub(crate) fn completed_family(&self) -> Option<&completion::Family> {
-        let (generation, Completed::Family(family)) = self.completed.as_ref()? else { return None; };
-        (*generation == self.generation).then_some(family)
+        let (generation, definitions) = self.completed.as_ref()?;
+        if *generation != self.generation { return None; }
+        definitions.family.as_deref()
     }
 
     pub(crate) fn function_name(&self, id:def::DiskDefId)->Option<&str> {
@@ -341,12 +342,6 @@ pub(super) fn rebuild<'p>(p:&'p check::collect::Program, id:def::LocalDefId, fro
 pub(super) fn complete(p: &check::collect::Program, map: &diag::SourceMap, source: &str, front: &Front, caches: &Caches, verified: u64)
     -> Result<Completed, completion::Error> {
     let state=caches.library.as_ref().ok_or(completion::Error::Failed("missing library session"))?;
-    if !p.gx.generic_associated.is_empty() {
-        if let Some((generation, Completed::Family(family))) = &state.completed && *generation == state.generation {
-            return Ok(Completed::Family(family.clone()));
-        }
-        return completion::complete_family(p, map, source).map(|family| Completed::Family(Arc::new(family)));
-    }
     let mut bodies=Vec::with_capacity(p.fns.len());
     for (n,f) in p.fns.iter().enumerate() {
         let id=def::LocalDefId(n as u32); let disk=p.disk_id(id); let slot=front.fn_slot[n] as usize;
@@ -369,9 +364,11 @@ pub(super) fn complete(p: &check::collect::Program, map: &diag::SourceMap, sourc
         current.pat_base=f.pats.0;
         bodies.push(current);
     }
-    if let Some((generation, Completed::Functions(functions)))=&state.completed && *generation==state.generation {
-        return Ok(Completed::Functions(functions.clone()));
+    if let Some((generation, definitions))=&state.completed && *generation==state.generation {
+        return Ok(definitions.clone());
     }
+    let family = if p.gx.generic_associated.is_empty() { None }
+        else { Some(Arc::new(completion::complete_family(p, map, source)?)) };
     // The original parser starts a plain parameter's span at its name token
     // (parser.rs: plain parameter branch), retaining that token's context.
     // Completion excludes patterns, attributes, mutation and non-ASCII source.
@@ -382,8 +379,9 @@ pub(super) fn complete(p: &check::collect::Program, map: &diag::SourceMap, sourc
         (hi<=span.hi && source.get(span.lo as usize..hi as usize)==Some(name))
             .then_some(diag::Span {hi,..span})
     };
-    completion::complete(completion::View {program:p,source,map,bodies:&bodies,identifier:&identifier},false)
-        .map(|functions| Completed::Functions(Arc::new(functions)))
+    let functions = completion::complete(completion::View {program:p,source,map,bodies:&bodies,identifier:&identifier},
+        false, family.as_deref())?;
+    Ok(Completed { functions: Arc::new(functions), family })
 }
 
 pub(super) fn remember(caches: &mut Caches, definitions: Completed, standard: bool) {
@@ -392,21 +390,24 @@ pub(super) fn remember(caches: &mut Caches, definitions: Completed, standard: bo
     state.standard = standard;
 }
 
-pub(super) fn finish_family(caches: &mut Caches, rust_debug: bool) -> bool {
+pub(super) fn finish_declaration_only(caches: &mut Caches, rust_debug: bool) -> bool {
     let Some(state) = &mut caches.library else { return false; };
-    let Some((generation, Completed::Family(family))) = &state.completed else { return false; };
-    if *generation != state.generation { return false; }
+    let Some((generation, definitions)) = &state.completed else { return false; };
+    if *generation != state.generation || !definitions.functions.is_empty() || definitions.family.is_none() {
+        return false;
+    }
     state.snapshot = Some(Snapshot {
         generation: state.generation,
         rust_debug,
         source: state.source.clone(),
-        functions: Arc::new(Vec::new()),
-        family: Some(family.clone()),
+        functions: definitions.functions.clone(),
+        family: definitions.family.clone(),
         objects: Vec::new(),
         extern_symbols: BTreeMap::new(),
         checked: Vec::new(),
         generated: Vec::new(),
     });
+    state.current(std::iter::empty());
     true
 }
 
@@ -487,7 +488,10 @@ pub(super) fn finish(req: &Request, p: &check::collect::Program, front: &Front, 
             state.objects.insert(text,object.clone()); state.by_definition.insert(f.definition(),(code_generation,object.clone()));
             state.compiled_objects+=1; objects.push((object,false));
         }
-        Ok(Snapshot { generation:state.generation,rust_debug,source:state.source.clone(),functions,family:None,
+        let family = state.completed.as_ref()
+            .filter(|(generation, _)| *generation == state.generation)
+            .and_then(|(_, definitions)| definitions.family.clone());
+        Ok(Snapshot { generation:state.generation,rust_debug,source:state.source.clone(),functions,family,
             objects,extern_symbols,checked:state.checked.clone(),generated:generated.iter().map(|&n|p.disk_id(def::LocalDefId(n as u32))).collect() })
     })();
     match result { Ok(snapshot)=>{state.snapshot=Some(snapshot);prune(front,caches);Response::default()},

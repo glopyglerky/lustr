@@ -1077,11 +1077,11 @@
     "production_source_authored": true
   },
   "adapted_sources_sha256": {
-    "src/encode.rs": "75b8b167642f6d90460f4d4652f7b824d5f4a18959c0a8f0db5e4fb874675a62",
-    "src/encode_projection.rs": "dba5ded78f7c0c31873648800f5cf9c26072191972f4462b30db818b431d85dc",
-    "src/extern_metadata.rs": "4fbe8e783f540716947bb6ce4693f1d9588c5547f65dd2139fd4f0ab4629c2a5",
+    "src/encode.rs": "afae5780bf65afbd0dedf8db36e3570c485c892efae197c1e190366ddb10af73",
+    "src/encode_projection.rs": "96d266dcf546ce03cabcee870d4d01e7db02263eff3f2f04c820eff84f74ac2f",
+    "src/extern_metadata.rs": "9aec85a58363471d508a1285e7d43662e2133b7c1bfbccc7c67f5a39db5ffcd9",
     "src/identity.rs": "4d153100f5cfe9de796082d708518bd0d2cb4180fd17fffa9a84bd9b6b389f9f",
-    "src/lib.rs": "c93ba831524ad6ef91e5773705f970a5ed3044df9615d75506286352cf327785",
+    "src/lib.rs": "6d78497036d69d0a149f0e3badc39479d0dbf4cb75028cec6072e5a3c290adfb",
     "src/sdk.rs": "bcb43af0564553d2e2636f25a7aa6c06f81a8eb19997f4a2324c3071b1fb025f",
     "src/table.rs": "5ad2fa46decc550bfd5f7d23cc051c7087d4ef1f5b361b154630c122097c92bb",
     "src/upstream/codec.rs": "916922c930d3dc46c7003d65d920b6c84efa780ac5b0c06eec1586ead0216a7a",

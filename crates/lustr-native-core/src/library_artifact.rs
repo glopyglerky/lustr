@@ -408,7 +408,7 @@ impl Service {
             files.insert(format!("{}.rmeta",self.context.crate_name),Arc::new(encoded.metadata.clone()));
             files.insert("lib.rmeta".into(),Arc::new(archive::wrapper(b".rmeta",encoded.metadata_stub.as_deref().unwrap_or(&encoded.metadata))?));
             let member_names:Vec<_>=objects.iter().map(|o|o.member.as_str()).collect();
-            let link = if snapshot.family.is_some() {
+            let link = if snapshot.functions.is_empty() && snapshot.family.is_some() {
                 metadata::encode_projection_link()
             } else {
                 metadata::encode_rlib_link(&member_names)?

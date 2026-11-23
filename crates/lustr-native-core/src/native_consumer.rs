@@ -51,6 +51,6 @@ pub(crate) fn complete(prepared: native_object::PreparedUnit) -> Result<Complete
     let functions = crate::driver::library::completion::complete(crate::driver::library::completion::View {
         program: prepared.program(), source: prepared.source(), map: prepared.source_map(),
         bodies: prepared.accepted_bodies(), identifier: &|name, span| prepared.identifier_span(name, span),
-    }, true)?;
+    }, true, None)?;
     Ok(CompletedUnit { prepared, functions })
 }
