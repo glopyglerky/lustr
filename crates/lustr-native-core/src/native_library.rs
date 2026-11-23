@@ -374,6 +374,7 @@ pub(super) fn finish(req: &Request, p: &check::collect::Program, front: &Front, 
     functions:Arc<Vec<Function>>, names:&cgen::names::Names, generated:&[usize]) -> Response {
     let state=caches.library.as_mut().unwrap();
     let rust_debug = req.library_options.debug.native_rust();
+    let optimization = req.session.library.as_ref().map_or(crate::protocol::OptLevel::None, |key| key.optimization);
     state.current(functions.iter().map(Function::definition));
     // Generated C may already be current when a later TinyCC operation fails.
     // Invalidate old definition-to-object joins before any fallible emission;
@@ -434,8 +435,8 @@ pub(super) fn finish(req: &Request, p: &check::collect::Program, front: &Front, 
             std::fs::create_dir_all(&caches.obj_dir).map_err(|e|format!("native object staging: {e}"))?;
             let path=caches.obj_dir.join(format!("native-library-{}.o",state.next_object));
             // A fresh path preserves previous object generations on failure.
-            if rust_debug {
-                crate::cc::compile_scalar_debug_object(&path, &text)?;
+            if rust_debug || optimization != crate::protocol::OptLevel::None {
+                crate::cc::compile_scalar_cargo_object(&path, &text, rust_debug, unwind_tables, optimization)?;
             } else {
                 crate::tcc::compile_scalar_object(&path, &text, unwind_tables)?;
             }

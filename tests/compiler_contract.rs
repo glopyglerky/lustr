@@ -673,6 +673,8 @@ fn ordinary_cargo_links_a_transitive_native_library() {
     f.source("provider/src/lib.rs", "#![no_std]\npub fn encode(value: u32) -> u32 { (value | 3) ^ 10 }\n");
     let grouped = f.succeeds("transitive-grouped-operand", f.command("cargo").args(run));
     assert_eq!(grouped.stdout, b"3\n");
+    let optimized = f.succeeds("transitive-optimized", f.command("cargo").args(run).arg("--release"));
+    assert_eq!(optimized.stdout, grouped.stdout);
 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]

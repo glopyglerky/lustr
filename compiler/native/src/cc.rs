@@ -217,18 +217,29 @@ pub(crate) fn spec_for_native_cargo(
     })
 }
 
-pub(crate) fn compile_scalar_debug_object(path: &Path, text: &str) -> Result<(), String> {
-    let input = path.with_extension("ll");
+pub(crate) fn compile_scalar_cargo_object(
+    path: &Path, text: &str, rust_debug: bool, unwind: bool, optimization: crate::protocol::OptLevel,
+) -> Result<(), String> {
+    let input = path.with_extension(if rust_debug { "ll" } else { "c" });
     let mut source = std::fs::File::options().write(true).create_new(true).open(&input)
-        .map_err(|error| format!("stage native scalar LLVM IR: {error}"))?;
-    source.write_all(text.as_bytes()).map_err(|error| format!("write native scalar LLVM IR: {error}"))?;
+        .map_err(|error| format!("stage native scalar object input: {error}"))?;
+    source.write_all(text.as_bytes()).map_err(|error| format!("write native scalar object input: {error}"))?;
     drop(source);
-    let built = cc_command("clang").args(["--target=x86_64-unknown-linux-gnu", "-Wno-override-module", "-O0", "-x", "ir", "-c"])
-        .arg(&input).arg("-o").arg(path).output();
-    std::fs::remove_file(&input).map_err(|error| format!("remove native scalar LLVM IR: {error}"))?;
-    let result = built.map_err(|error| format!("run Clang for a native scalar debug object: {error}"))?;
+    let mut command = cc_command("clang");
+    command.arg("--target=x86_64-unknown-linux-gnu");
+    let level = format!("-O{}", optimization.value());
+    if rust_debug {
+        command.arg("-Wno-override-module").arg(level).args(["-x", "ir"]);
+    } else {
+        let flags = cflags(false).replacen("-O2", &level, 1);
+        command.args(flags.split_whitespace()).args(["-x", "c"]);
+        if unwind { command.arg("-funwind-tables"); }
+    }
+    let built = command.arg("-c").arg(&input).arg("-o").arg(path).output();
+    std::fs::remove_file(&input).map_err(|error| format!("remove native scalar object input: {error}"))?;
+    let result = built.map_err(|error| format!("run Clang for a native scalar object: {error}"))?;
     if !result.status.success() {
-        return Err(format!("Clang rejected native scalar LLVM IR ({}): {}", result.status, String::from_utf8_lossy(&result.stderr)));
+        return Err(format!("Clang rejected native scalar object input ({}): {}", result.status, String::from_utf8_lossy(&result.stderr)));
     }
     Ok(())
 }

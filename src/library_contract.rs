@@ -300,7 +300,7 @@ impl LibraryKey {
         } else if check {
             options.embed_metadata.is_none() && output_parent(path, &self.metadata_name()).is_some()
         } else {
-            self.optimization == OptLevel::None && output_parent(path, &self.archive_name()).is_some()
+            output_parent(path, &self.archive_name()).is_some()
         }
     }
 }
