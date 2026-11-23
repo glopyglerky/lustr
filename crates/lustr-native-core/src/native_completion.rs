@@ -163,7 +163,6 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool) -> Result<Vec<Functi
     }
     if !syntax.stmt_items.is_empty()
         || !syntax.anon_consts.is_empty()
-        || !syntax.paren_exprs.is_empty()
         || !syntax.paren_tys.is_empty()
         || !p.consts.is_empty()
         || !p.statics.is_empty()
@@ -270,12 +269,12 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool) -> Result<Vec<Functi
                 return Err(Error::Unintegrated("binding attribute or naming lint obligations"));
             }
             let local = body.binding(*pat).ok_or(Error::Unintegrated("non-primitive or unbound checked local"))?;
-            expression(p, body, *init, 0, &mut reads)?;
+            expression(p, body, *init, 0, false, &mut reads)?;
             if reads.locals.insert(local, name.starts_with('_')).is_some() {
                 return Err(Error::Failed("two declarations name the same checked local"));
             }
         }
-        expression(p, body, tail, 0, &mut reads)?;
+        expression(p, body, tail, 0, false, &mut reads)?;
         if reads.expressions.iter().copied().ne(function.exprs.0..function.exprs.1) {
             return Err(Error::Unintegrated("unrepresented native expressions in the accepted body"));
         }
@@ -394,11 +393,18 @@ fn expression(
     body: &AcceptedBody,
     id: ast::ExprId,
     depth: usize,
+    bitwise_operand: bool,
     reads: &mut BodyReads,
 ) -> Result<(), Error> {
     use ExpressionResolution as Resolution;
     if depth > 128 {
         return Err(Error::Unintegrated("metadata expression nesting bound"));
+    }
+    // rustc's UnusedParens checks statement values and call arguments.
+    // Bitwise operands are outside that check, and the native AST already
+    // preserves the grouping that determines their evaluation order.
+    if p.ast.is_parenthesized(id) && !bitwise_operand {
+        return Err(Error::Unintegrated("parentheses lint diagnostics"));
     }
     if !reads.expressions.insert(id.0) {
         return Err(Error::Failed("native expression ownership is duplicated"));
@@ -409,7 +415,7 @@ fn expression(
         ast::Expr::Unary { op: ast::UnOp::Neg, expr }
             if matches!(p.ast.exprs.get(expr.0 as usize), Some(ast::Expr::Int(_, _))) =>
         {
-            expression(p, body, *expr, depth + 1, reads)?;
+            expression(p, body, *expr, depth + 1, false, reads)?;
         }
         ast::Expr::Path(path) if path.len() == 1 && !path[0].has_args() => match actual {
             Resolution::Parameter(parameter) => {
@@ -423,14 +429,16 @@ fn expression(
         ast::Expr::Binary { op: ast::BinOp::BitAnd | ast::BinOp::BitOr | ast::BinOp::BitXor, lhs, rhs }
             if actual == Resolution::PrimitiveOperands =>
         {
-            expression(p, body, *lhs, depth + 1, reads)?;
-            expression(p, body, *rhs, depth + 1, reads)?;
+            expression(p, body, *lhs, depth + 1, true, reads)?;
+            expression(p, body, *rhs, depth + 1, true, reads)?;
         }
         ast::Expr::Call { callee, args } => {
             if !reads.expressions.insert(callee.0) {
                 return Err(Error::Failed("native callee expression ownership is duplicated"));
             }
-            if !matches!(p.ast.exprs.get(callee.0 as usize), Some(ast::Expr::Path(path)) if path.len() == 1 && !path[0].has_args()) {
+            if p.ast.is_parenthesized(*callee)
+                || !matches!(p.ast.exprs.get(callee.0 as usize), Some(ast::Expr::Path(path)) if path.len() == 1 && !path[0].has_args())
+            {
                 return Err(Error::Unintegrated("indirect, generic or qualified call metadata"));
             }
             let function = match (body.expression(*callee), actual) {
@@ -442,7 +450,7 @@ fn expression(
             };
             reads.calls.insert(function);
             for argument in args {
-                expression(p, body, *argument, depth + 1, reads)?;
+                expression(p, body, *argument, depth + 1, false, reads)?;
             }
         }
         _ => return Err(Error::Unintegrated("body operation or applicable lint completion")),

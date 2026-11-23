@@ -662,6 +662,12 @@ fn ordinary_cargo_links_a_transitive_native_library() {
     f.source("provider/src/lib.rs", "#![no_std]\npub fn encode(value: u32) -> u32 {\n    let offset = value ^ 3;\n    offset ^ 11\n}\n");
     let edited = f.succeeds("transitive-edit", f.command("cargo").args(run));
     assert_eq!(edited.stdout, b"2\n");
+
+    // BitOr binds less tightly than BitXor, so removing the parentheses
+    // changes the result and would make the application print 11.
+    f.source("provider/src/lib.rs", "#![no_std]\npub fn encode(value: u32) -> u32 { (value | 3) ^ 10 }\n");
+    let grouped = f.succeeds("transitive-grouped-operand", f.command("cargo").args(run));
+    assert_eq!(grouped.stdout, b"3\n");
 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
