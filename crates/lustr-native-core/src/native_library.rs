@@ -21,6 +21,7 @@ pub(crate) struct Object {
     pub symbol: String,
     pub source_text: Arc<str>,
     pub rust_debug: bool,
+    pub compiled_with_clang: bool,
     pub bytes: Arc<Vec<u8>>,
     pub serial: u64,
 }
@@ -375,6 +376,7 @@ pub(super) fn finish(req: &Request, p: &check::collect::Program, front: &Front, 
     let state=caches.library.as_mut().unwrap();
     let rust_debug = req.library_options.debug.native_rust();
     let optimization = req.session.library.as_ref().map_or(crate::protocol::OptLevel::None, |key| key.optimization);
+    let compiled_with_clang = rust_debug || optimization != crate::protocol::OptLevel::None;
     state.current(functions.iter().map(Function::definition));
     // Generated C may already be current when a later TinyCC operation fails.
     // Invalidate old definition-to-object joins before any fallible emission;
@@ -435,14 +437,14 @@ pub(super) fn finish(req: &Request, p: &check::collect::Program, front: &Front, 
             std::fs::create_dir_all(&caches.obj_dir).map_err(|e|format!("native object staging: {e}"))?;
             let path=caches.obj_dir.join(format!("native-library-{}.o",state.next_object));
             // A fresh path preserves previous object generations on failure.
-            if rust_debug || optimization != crate::protocol::OptLevel::None {
+            if compiled_with_clang {
                 crate::cc::compile_scalar_cargo_object(&path, &text, rust_debug, unwind_tables, optimization)?;
             } else {
                 crate::tcc::compile_scalar_object(&path, &text, unwind_tables)?;
             }
             let bytes=std::fs::read(&path).map_err(|e|format!("native object bytes: {e}"))?;
             std::fs::remove_file(&path).map_err(|e|format!("native object staging cleanup: {e}"))?;
-            let object=Arc::new(Object {definition:f.definition(),symbol,source_text:Arc::from(text.as_str()),rust_debug,bytes:Arc::new(bytes),serial:state.next_object});
+            let object=Arc::new(Object {definition:f.definition(),symbol,source_text:Arc::from(text.as_str()),rust_debug,compiled_with_clang,bytes:Arc::new(bytes),serial:state.next_object});
             state.objects.insert(text,object.clone()); state.by_definition.insert(f.definition(),(code_generation,object.clone()));
             state.compiled_objects+=1; objects.push((object,false));
         }

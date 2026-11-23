@@ -223,7 +223,7 @@ fn mapped_functions(functions:&[Function])->Vec<metadata::Function> {
         calls:f.calls().iter().copied().map(native_id).collect() }).collect()
 }
 /// Check the x86-64 FDE for the one body in this unwind unit.
-fn check_unwind_frame(file: &object::File<'_>, body_name: &str, rust_debug: bool) -> Result<(), String> {
+fn check_unwind_frame(file: &object::File<'_>, body_name: &str, compiled_with_clang: bool) -> Result<(), String> {
     let error = "native scalar object lacks a valid unwind range";
     let body = file.symbols().find(|symbol| symbol.name().is_ok_and(|name| name == body_name)).ok_or(error)?;
     let frames = file.section_by_name(".eh_frame").ok_or(error)?;
@@ -240,7 +240,7 @@ fn check_unwind_frame(file: &object::File<'_>, body_name: &str, rust_debug: bool
     }
 
     // A DWARF32 FDE starts with its length and backwards CIE offset,
-    // followed by TinyCC's pcrel/sdata4 start and range.
+    // followed by the pcrel/sdata4 start and range.
     let position = usize::try_from(position).map_err(|_| error)?;
     let start = position.checked_sub(8).ok_or(error)?;
     let end = position.checked_add(8).ok_or(error)?;
@@ -249,7 +249,7 @@ fn check_unwind_frame(file: &object::File<'_>, body_name: &str, rust_debug: bool
     let [length, cie, pc, range] = std::array::from_fn(|_| fields.next().unwrap());
     let fde_end = start.checked_add(4).and_then(|start| start.checked_add(length as usize)).ok_or(error)?;
     // TinyCC ends the section with a terminator; LLVM ends at the FDE.
-    let end_marker: &[u8] = if rust_debug { &[] } else { &[0; 4] };
+    let end_marker: &[u8] = if compiled_with_clang { &[] } else { &[0; 4] };
     if start == 0 || cie as usize != start + 4 || pc != 0 || range == 0 || u64::from(range) != body.size()
         || fde_end < end || bytes.get(fde_end..) != Some(end_marker) {
         return Err(error.into());
@@ -275,7 +275,7 @@ fn check_object(object:&NativeObject, snapshot:&Snapshot, panic_abort:bool)->Res
     // source callees. Section/local relocations are not external dependencies.
     let file=object::File::parse(object.bytes.as_slice()).map_err(|e|e.to_string())?;
     if !panic_abort {
-        check_unwind_frame(&file, &object.symbol, object.rust_debug)?;
+        check_unwind_frame(&file, &object.symbol, object.compiled_with_clang)?;
     }
     let mut used=BTreeSet::new();
     for section in file.sections() {
