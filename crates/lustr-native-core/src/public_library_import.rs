@@ -35,7 +35,7 @@ fn native_integer_type(ty: IntegerType) -> ty::IntTy {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) struct Identity {
     pub name: String,
     pub svh: [u8; 16],

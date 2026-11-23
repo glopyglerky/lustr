@@ -154,7 +154,8 @@ impl Owner {
         let artifacts=Service::new(installed.sdk.clone(),installed.root.clone(),context)?;
         let executable = if let Some(dependencies) = &key.executable_dependencies {
             if req.session.krate.manifest_path.is_none() { return Err("executable artifacts require the actual Cargo unit".into()); }
-            Some(executable::ExecutableImports::open(dependencies, &installed.sdk, installed.standard.as_deref(), req.session.profile.panic_abort)?)
+            Some(executable::ExecutableImports::open(dependencies, &key.search_paths, &installed.sdk,
+                installed.standard.as_deref(), req.session.profile.panic_abort)?)
         } else { None };
         Ok(Self{installed,artifacts,identity:hash(req.session.describe().as_bytes()),imported,executable,binary_output:None})
     }
@@ -179,7 +180,8 @@ impl Owner {
         // generation intact, and fails this request without compiler retry.
         let imported = key.external.as_ref().map(|input| imports::Import::open(input, &self.installed.sdk)).transpose()?;
         let executable = key.executable_dependencies.as_ref()
-            .map(|inputs| executable::ExecutableImports::open(inputs, &self.installed.sdk, self.installed.standard.as_deref(), req.session.profile.panic_abort))
+            .map(|inputs| executable::ExecutableImports::open(inputs, &key.search_paths, &self.installed.sdk,
+                self.installed.standard.as_deref(), req.session.profile.panic_abort))
             .transpose()?;
         if imported.as_ref().is_some_and(|value| !value.unchanged(&key.external.as_ref().unwrap().artifact))
             || executable.as_ref().is_some_and(|value| !value.unchanged(key.executable_dependencies.as_ref().unwrap())) {
