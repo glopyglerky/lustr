@@ -3184,7 +3184,7 @@ index dcf8c8e922873b5f8c8d8c3c7ebe5299f9b246e2..4a1769fcb2fde1bb27ed7aeca057eb2e
  
  /// The LLVM major version of a clang command; an error for another compiler (gcc writes
 diff --git a/src/cgen.rs b/src/cgen.rs
-index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb40843a636 100644
+index ac6965592d3f4cc6ea1969df299fe33c974056b0..757d2051f73eb7626d604c67caded35f337c9f04 100644
 --- a/src/cgen.rs
 +++ b/src/cgen.rs
 @@ -26,6 +26,8 @@ pub mod record;
@@ -3254,7 +3254,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
      };
      std_loc(if pow { 0x40 } else { 0 }, line, 5)
  }
-@@ -1041,6 +1046,10 @@ fn bytes_array_lit(p: &Program, t: &CTy, bytes: &[u8]) -> String {
+@@ -1041,6 +1046,12 @@ fn bytes_array_lit(p: &Program, t: &CTy, bytes: &[u8]) -> String {
  /// The generated code for one function, plus the glue it needs.
  #[derive(Default)]
  pub struct FnOut {
@@ -3262,10 +3262,12 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
 +    /// runtime. Used only by the mixed compiler's C boundary. Cached generated
 +    /// code retains this result with the body it describes.
 +    pub mixed_total: bool,
++    /// This body keeps its C ABI wrapper for its test Termination entry.
++    test_termination: bool,
      /// The fn's C text (`code_text`, `code_len`, `has_code`).
      pub text: CText,
      pub glue: HashSet<(Glue, CTy)>,
-@@ -1063,6 +1072,8 @@ pub struct FnOut {
+@@ -1063,6 +1074,8 @@ pub struct FnOut {
      /// names; `ll_c` holds its helpers' C (with the prelude and statics they read), and
      /// `text` only the C ABI wrapper and the trampoline. Empty for C bodies.
      pub ll: String,
@@ -3274,7 +3276,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
      pub ll_decls: BTreeSet<String>,
      pub ll_c: String,
      /// The LLVM backend: the fn's size for cross-unit inlining (`ll::LlFn::cost`).
-@@ -1298,6 +1309,9 @@ impl<'s> Slots<'s> {
+@@ -1298,6 +1311,9 @@ impl<'s> Slots<'s> {
  
  struct FnGen<'b, 'p> {
      p: &'p Program,
@@ -3284,7 +3286,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
      body: &'b Body<'p>,
      out: String,
      glue: HashSet<(Glue, CTy)>,
-@@ -2068,6 +2082,29 @@ fn ret_is_large(p: &Program, f: LocalDefId) -> bool {
+@@ -2068,6 +2084,29 @@ fn ret_is_large(p: &Program, f: LocalDefId) -> bool {
      ret_by_out(p, &cty(&p.tys, p.fn_info(f).ret))
  }
  
@@ -3314,7 +3316,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
  /// True when a C function returns `t` through a hidden out-pointer:
  /// over 32 bytes, or a zero-sized type whose C struct holds an array
  /// member (`[T; 0]`, `[No; 4]`, also in a tuple, struct, or `Cell`).
-@@ -2433,6 +2470,38 @@ fn trampoline(p: &Program, f: LocalDefId, slot: u32) -> String {
+@@ -2433,6 +2472,44 @@ fn trampoline(p: &Program, f: LocalDefId, slot: u32) -> String {
  /// Generates C for one function body. `base_line` is the line of its `fn` keyword, in the
  /// file that defines it; `slots` maps every LocalDefId to its slot in `lust_fns`.
  pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32]) -> FnOut {
@@ -3327,15 +3329,17 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
 +}
 +
 +pub(crate) fn gen_fn_rust_debug(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32]) -> FnOut {
-+    let Some(source) = rust_debug_source(p, body.fn_id, map) else {
++    let source = rust_debug_source(p, body.fn_id, map);
++    if source.is_none() && !shipped_debug_body(p, body.fn_id) {
 +        return FnOut { error: Some("Rust debug function source cannot be bound to the native body".into()), ..Default::default() };
-+    };
++    }
 +    let mut output = gen_fn_policy(p, body, map, base_line, slots, false, true);
-+    output.rust_debug_source = Some(source);
++    output.rust_debug_source = source;
 +    output
 +}
 +
 +pub(crate) fn rust_debug_source(p: &Program, id: LocalDefId, map: &SourceMap) -> Option<(u64, u64)> {
++    if shipped_debug_body(p, id) { return None; }
 +    let item = p.fn_def(id);
 +    let name = map.call_site(item.name_span);
 +    let body = map.call_site(p.ast.block(item.body?).span);
@@ -3349,11 +3353,15 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
 +    ))
 +}
 +
++fn shipped_debug_body(p: &Program, id: LocalDefId) -> bool {
++    p.std_source_span(p.fn_def(id).name_span) || p.fn_shipped_crate(id).is_some()
++}
++
 +fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32], nounwind: bool, rust_debug: bool) -> FnOut {
      if !has_generated_body(p, body.fn_id) {
          return FnOut { error: Some(no_body_error(p, body, body.fn_id)), ..Default::default() };
      }
-@@ -2458,15 +2527,15 @@ pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots:
+@@ -2458,15 +2535,18 @@ pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots:
          Err(e) => return FnOut { error: Some(e), ..Default::default() },
      };
      let slots = Slots::new(slots);
@@ -3368,19 +3376,52 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
 -    if ll::on(p) {
 -        match g.function_ll() {
 +    if rust_debug || ll::on(p) {
-+        match g.function_ll(rust_debug) {
++        // Only the requested Rust crate has a debug source contract.
++        // The text of shipped std shims is not part of that crate's file.
++        let debug = rust_debug && !shipped_debug_body(p, body.fn_id);
++        match g.function_ll(debug) {
              Ok(f) => llfn = Some(f),
              Err(e) => return FnOut { error: Some(e), ..Default::default() },
          }
-@@ -2550,6 +2619,7 @@ pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots:
+@@ -2488,10 +2568,13 @@ pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots:
+         }
+         g.out.push_str(&trampoline(p, body.fn_id, slots.of(body.fn_id)));
+     }
+-    // A `main` returning `Result` gets a Termination entry in its
+-    // unit (see `fn_unit`): it needs the error type's Debug glue
+-    // and the Result's own drop glue.
+-    if Some(body.fn_id) == p.main
++    // A main or Cargo test returning Result needs the error's Debug
++    // glue and the Result's own drop glue for its Termination entry.
++    let test_termination = names::release()
++        && p.fn_def(body.fn_id).is_test
++        && p.fn_info(body.fn_id).ret != UNIT
++        && has_native_termination(p, p.fn_info(body.fn_id).ret);
++    if (Some(body.fn_id) == p.main || test_termination)
+         && let Some((_, err_t)) = p.tys.result_args(p.fn_info(body.fn_id).ret)
+     {
+         let rc = cty(&p.tys, p.fn_info(body.fn_id).ret);
+@@ -2500,6 +2583,10 @@ pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots:
+             g.want(Glue::Drop, &rc);
+         }
+     }
++    if test_termination {
++        let slot = slots.of(body.fn_id);
++        emit_termination_entry(&mut g.out, p, body.fn_id, slot, &rust_tests::termination_entry(slot), "");
++    }
+     let mut types = std::mem::take(&mut g.sig_types);
+     let mut named = std::mem::take(&mut g.sig_named);
+     let release = names::release();
+@@ -2550,6 +2637,8 @@ pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots:
      ll_c.shrink_to_fit();
      let externs = externs.into_iter().map(shared_extern).collect();
      FnOut {
 +        mixed_total: false,
++        test_termination,
          text: CText::Plain(code),
          glue,
          types,
-@@ -2558,6 +2628,7 @@ pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots:
+@@ -2558,6 +2647,7 @@ pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots:
          externs,
          named,
          ll,
@@ -3388,7 +3429,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
          ll_decls,
          ll_c,
          ll_cost,
-@@ -2614,7 +2685,7 @@ fn inline_attr(p: &Program, f: LocalDefId) -> InlineAttr {
+@@ -2614,7 +2704,7 @@ fn inline_attr(p: &Program, f: LocalDefId) -> InlineAttr {
      for a in p.fn_info(f).def(&p.ast).attrs.iter().filter(|a| a.path.len() == 1 && p.name(a.path[0].name) == "inline") {
          out = match &a.input {
              AttrInput::List(_, t) => match t.as_slice() {
@@ -3397,7 +3438,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                  _ => InlineAttr::Never,
              },
              _ => InlineAttr::Hint,
-@@ -2643,7 +2714,7 @@ fn static_drop_flags(p: &Program) -> (bool, bool) {
+@@ -2643,7 +2733,7 @@ fn static_drop_flags(p: &Program) -> (bool, bool) {
  impl<'b, 'p> FnGen<'b, 'p> {
      /// A generator for `body` with nothing emitted yet (`gen_fn`; an
      /// `ItemShim` builtin method's one-call body, `prim_shim`).
@@ -3406,7 +3447,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
          let local_cty: Vec<CTy> = body.locals.iter().map(|l| cty(&body.tys, l.ty)).collect();
          let byte_blobs = crate::ir::byte_blob_locals(body);
          let kstatic: crate::intern::FxMap<Local, crate::ty::consteval::ConstValue> = if names::release() {
-@@ -2668,6 +2739,9 @@ impl<'b, 'p> FnGen<'b, 'p> {
+@@ -2668,6 +2758,9 @@ impl<'b, 'p> FnGen<'b, 'p> {
          };
          FnGen {
              p,
@@ -3416,7 +3457,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
              body,
              out: String::new(),
              glue: HashSet::new(),
-@@ -2695,7 +2769,7 @@ impl<'b, 'p> FnGen<'b, 'p> {
+@@ -2695,7 +2788,7 @@ impl<'b, 'p> FnGen<'b, 'p> {
              prelude: String::new(),
              adapters: 0,
              shims: HashMap::new(),
@@ -3425,7 +3466,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
              byte_blobs,
              kstatic,
              kcx: kconst::StaticCx::default(),
-@@ -2719,22 +2793,22 @@ impl<'b, 'p> FnGen<'b, 'p> {
+@@ -2719,22 +2812,22 @@ impl<'b, 'p> FnGen<'b, 'p> {
  }
  
  /// The line of `ty`'s `int_impl!` or `uint_impl!` invocation in
@@ -3461,7 +3502,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
      }
  }
  
-@@ -2830,14 +2904,20 @@ impl FnGen<'_, '_> {
+@@ -2830,14 +2923,20 @@ impl FnGen<'_, '_> {
              if std::mem::replace(&mut reachable[b], true) {
                  continue;
              }
@@ -3485,7 +3526,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
          let cl_order: Vec<usize> = if zc { order.iter().copied().filter(|&b| self.cleanup[b]).collect() } else { Vec::new() };
          let order: Vec<usize> = if zc { order.into_iter().filter(|&b| !self.cleanup[b]).collect() } else { order };
          let mut cl_text = String::new();
-@@ -3022,7 +3102,7 @@ impl FnGen<'_, '_> {
+@@ -3022,7 +3121,7 @@ impl FnGen<'_, '_> {
          if zc {
              // A panic never returns with unwind tables: no entry check.
              self.out.push_str("  lust_exc ex;\n");
@@ -3494,7 +3535,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
              // A call made while its thread has a pending exception comes
              // from code that runs on after a panic (glue, a runtime
              // callback): it returns at once, as if never called.
-@@ -3058,7 +3138,7 @@ impl FnGen<'_, '_> {
+@@ -3058,7 +3157,7 @@ impl FnGen<'_, '_> {
      /// Emits the blocks `order` (reachable, in this order): their labels, statements with
      /// their unwind actions, and terminators.
      fn blocks(&mut self, order: &[usize]) {
@@ -3503,7 +3544,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
          let entry = if zc && self.zc_frame && !self.zc_in_cleanup { self.zc_entry_states(order) } else { Vec::new() };
          for (k, &bi) in order.iter().enumerate() {
              self.zc_st = entry.get(bi).copied().flatten();
-@@ -3154,7 +3234,7 @@ impl FnGen<'_, '_> {
+@@ -3154,7 +3253,7 @@ impl FnGen<'_, '_> {
      /// the statement count is the terminator): abort in a cleanup
      /// block, else its cleanup entry, if lowering gave it one.
      fn stmt_action(&self, bi: usize, si: usize) -> Option<Unw> {
@@ -3512,7 +3553,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
              return None;
          }
          if self.cleanup[bi] {
-@@ -3423,6 +3503,26 @@ impl FnGen<'_, '_> {
+@@ -3423,6 +3522,26 @@ impl FnGen<'_, '_> {
      /// out of a type with a `Drop` impl (E0509, borrowck), so no place
      /// split here has one.
      fn elab_drop(&mut self, l: Local, prefix: &[Step]) -> String {
@@ -3539,7 +3580,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
          let paths = &self.move_paths[l as usize];
          let own = paths.iter().position(|p| p == prefix);
          let deeper = paths.iter().any(|p| p.len() > prefix.len() && p.starts_with(prefix));
-@@ -3480,10 +3580,13 @@ impl FnGen<'_, '_> {
+@@ -3480,10 +3599,13 @@ impl FnGen<'_, '_> {
          };
          match t {
              CTy::Array(el, n) if variant.is_none() => {
@@ -3555,7 +3596,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                  let kept: Vec<u64> = next_steps.iter().filter_map(|s| if let Step::Elem(c) = s { Some(*c) } else { None }).collect();
                  let mut parts: Vec<Result<(u64, u64), u64>> = Vec::new();
                  let (mut dropping, mut start) = (true, 0);
-@@ -3503,7 +3606,7 @@ impl FnGen<'_, '_> {
+@@ -3503,7 +3625,7 @@ impl FnGen<'_, '_> {
                  if dropping {
                      parts.push(Ok((start, *n)));
                  }
@@ -3564,7 +3605,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                      match part {
                          Ok((a, b)) if b > a => {
                              let i = self.tmp();
-@@ -3511,7 +3614,7 @@ impl FnGen<'_, '_> {
+@@ -3511,7 +3633,7 @@ impl FnGen<'_, '_> {
                              let _ = write!(out, " for (uint64_t {i} = {a}; {i} < {b}; {i}++) drop_{}(&{e}.v[{i}]);", mangle(el));
                          }
                          Ok(_) => {}
@@ -3573,7 +3614,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                      }
                  }
              }
-@@ -3526,7 +3629,7 @@ impl FnGen<'_, '_> {
+@@ -3526,7 +3648,7 @@ impl FnGen<'_, '_> {
              CTy::Boxed(inner) => {
                  // Drop the still-owned part behind the pointer,
                  // then free the allocation itself (its `sizeof` needs the type defined).
@@ -3582,7 +3623,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                  self.note_held(inner);
                  let et = ctype(inner);
                  let _ = write!(out, " lust_dealloc((void*){e}, sizeof({et}), _Alignof({et}));");
-@@ -3536,7 +3639,7 @@ impl FnGen<'_, '_> {
+@@ -3536,7 +3658,7 @@ impl FnGen<'_, '_> {
                  let _ = write!(out, " switch ({d}) {{");
                  for s in next_steps {
                      if let Step::Downcast(v) = s {
@@ -3591,7 +3632,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                          let _ = write!(out, " case {v}: {{{body} }} break;");
                      }
                  }
-@@ -3553,7 +3656,7 @@ impl FnGen<'_, '_> {
+@@ -3553,7 +3675,7 @@ impl FnGen<'_, '_> {
                      _ => 0,
                  };
                  for f in 0..n {
@@ -3600,7 +3641,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                  }
              }
          }
-@@ -3809,7 +3912,7 @@ impl FnGen<'_, '_> {
+@@ -3809,7 +3931,7 @@ impl FnGen<'_, '_> {
      /// cleanup at block `b` before any element is read. The `(void)`
      /// keeps `wrap_calls` from adding its own check in front of `b`.
      fn index_unw(&self, len: &str, base: &str, l: Local, loc: &str, b: u32) -> String {
@@ -3609,7 +3650,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
              // The bounds panic never returns: the frame's cleanup runs from `L.st`.
              return format!(
                  "(*({{ if (__builtin_expect(l{l} >= {len}, 0)) {{ (void)lust_bounds(l{l}, {len}, {loc}); __builtin_unreachable(); }} &{base}[l{l}]; }}))"
-@@ -3940,7 +4043,7 @@ impl FnGen<'_, '_> {
+@@ -3940,7 +4062,7 @@ impl FnGen<'_, '_> {
              for p in &post {
                  let _ = writeln!(self.out, "    {p}");
              }
@@ -3618,7 +3659,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
              if !zc {
                  let _ = writeln!(self.out, "    {}", u.check());
              }
-@@ -4129,9 +4232,9 @@ impl FnGen<'_, '_> {
+@@ -4129,9 +4251,9 @@ impl FnGen<'_, '_> {
                  // (cgen/unwind.rs); a call without one (a catch
                  // boundary) is not checked.
                  if self.unw != Some(Unw::Abort) {
@@ -3630,7 +3671,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                  if zc && let Some(Unw::Goto(b)) = self.unw {
                      self.zc_store(b);
                  }
-@@ -4144,6 +4247,7 @@ impl FnGen<'_, '_> {
+@@ -4144,6 +4266,7 @@ impl FnGen<'_, '_> {
                  // dead assignment a zero of the destination type.
                  let dest_cty = self.place(dest, &loc).1;
                  let ret_unit = match target {
@@ -3638,7 +3679,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                      CallTarget::Fn(f) => cty(&self.p.tys, self.p.fn_info(*f).ret) == CTy::Unit,
                      CallTarget::Intrinsic(id) => lang::intrinsic(*id).ret == SigTy::Never,
                      CallTarget::Indirect(c) => matches!(&self.local_cty[*c as usize], CTy::FnPtr(_, r) if **r == CTy::Unit),
-@@ -4247,8 +4351,8 @@ impl FnGen<'_, '_> {
+@@ -4247,8 +4370,8 @@ impl FnGen<'_, '_> {
              }
              Terminator::MatchExhausted => self.term(&Terminator::Unreachable, span, next_block),
              Terminator::Panic(parts)
@@ -3649,7 +3690,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                      && parts.iter().any(|p| matches!(p, FmtPart::Arg { .. }))
                      && let Some(call) = self.panic_outlined(parts, &loc) =>
              {
-@@ -4270,12 +4374,12 @@ impl FnGen<'_, '_> {
+@@ -4270,12 +4393,12 @@ impl FnGen<'_, '_> {
                      let _ = writeln!(self.out, "    lust_panic_lit(&{s}, {loc});\n  }}");
                  }
                  if let Some(Unw::Goto(b)) = self.unw
@@ -3664,7 +3705,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                      self.out.push_str("  __builtin_unreachable();\n");
                  }
              }
-@@ -4449,6 +4553,23 @@ impl FnGen<'_, '_> {
+@@ -4449,6 +4572,23 @@ impl FnGen<'_, '_> {
          }
      }
  
@@ -3688,7 +3729,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
      fn call_value(&mut self, target: CallTarget, args: &[Operand], dest_cty: &CTy, loc: &str, post: &mut Vec<String>) -> String {
          // Release C defines only what a unit holds by value or projects from
          // (`type_decls_with`): a builtin may size or open what its operands and result
-@@ -4463,6 +4584,23 @@ impl FnGen<'_, '_> {
+@@ -4463,6 +4603,23 @@ impl FnGen<'_, '_> {
              }
          }
          match target {
@@ -3712,7 +3753,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
              CallTarget::Fn(f) => {
                  self.note_callee(f);
                  let info = self.p.fn_info(f);
-@@ -4775,7 +4913,7 @@ impl FnGen<'_, '_> {
+@@ -4775,7 +4932,7 @@ impl FnGen<'_, '_> {
      /// here, and only the panic path calls the fn, with a copy. `args` are the call's C
      /// arguments (with the caller location); None for any other call.
      fn unwrap_inline(&mut self, f: LocalDefId, ops: &[Operand], args: &[String]) -> Option<String> {
@@ -3721,7 +3762,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
              return None;
          }
          let def = self.p.fn_info(f).def(&self.p.ast);
-@@ -5118,7 +5256,7 @@ impl FnGen<'_, '_> {
+@@ -5118,7 +5275,7 @@ impl FnGen<'_, '_> {
                  // Unwind tables: a capacity overflow panic never returns. The frame still owns
                  // the moved value (its drop flag clears at the end of the statement), so the
                  // frame's cleanup drops it.
@@ -3730,7 +3771,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                      // A capacity overflow panic returns here under panic=unwind:
                      // fill nothing, drop the value, and unwind.
                      let _ = writeln!(self.out, "    if ({} < {i}_n) {i}_n = 0;", vec_cap(&et, &format!("&{t}")));
-@@ -5264,6 +5402,18 @@ impl FnGen<'_, '_> {
+@@ -5264,6 +5421,18 @@ impl FnGen<'_, '_> {
                      _ => "0".into(),
                  }
              }
@@ -3749,7 +3790,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
              Rvalue::ItemShim(item, ty) => {
                  let t = cty(&self.body.tys, *ty);
                  self.note_fn_sig(&t);
-@@ -6048,7 +6198,7 @@ impl FnGen<'_, '_> {
+@@ -6048,7 +6217,7 @@ impl FnGen<'_, '_> {
          let TyKind::FnPtr(sig) = tys.kind(fp_ty) else { unreachable!("ItemShim to a non fn pointer type") };
          let sig = tys.sig(sig).value;
          let ins: Vec<Ty> = tys.tys_of(sig.inputs).to_vec();
@@ -3758,7 +3799,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
          let mut locals = vec![decl(sig.output)];
          locals.extend(ins.iter().map(|&t| decl(t)));
          let body = Body {
-@@ -6079,7 +6229,7 @@ impl FnGen<'_, '_> {
+@@ -6079,7 +6248,7 @@ impl FnGen<'_, '_> {
          // The shim's params have no drop flags: the builtin takes each by
          // a plain read (a by-value one, `drop`'s, is consumed there).
          let ops: Vec<Operand> = (1..=ins.len()).map(|i| Operand::Copy(Place::local(i as Local))).collect();
@@ -3767,7 +3808,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
          let mut post: Vec<String> = Vec::new();
          let value = if b == Builtin::PrimFromCast {
              g.rvalue(&Rvalue::Cast(ops[0].clone(), sig.output), &loc, &mut post)
-@@ -6107,7 +6257,7 @@ impl FnGen<'_, '_> {
+@@ -6107,7 +6276,7 @@ impl FnGen<'_, '_> {
              let params = if decls.is_empty() { "void".to_string() } else { decls.join(", ") };
              (format!("static {rt} {name}({params})"), "return r;".to_string())
          };
@@ -3776,7 +3817,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
          let _ = writeln!(
              self.prelude,
              "{}{head} {{{exc}{inits}\n{}  {rt} r = {value};\n{}  {tail}\n}}",
-@@ -6530,7 +6680,7 @@ impl FnGen<'_, '_> {
+@@ -6530,7 +6699,7 @@ impl FnGen<'_, '_> {
              B::FromStrRadix(it) => {
                  // core panics on a radix outside 2..=36 before parsing,
                  // at its `from_str_radix` line for the type's sign.
@@ -3785,7 +3826,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                  let _ = writeln!(self.out, "    lust_radix_check({}, {sloc});", vals[1]);
                  self.parse_int_c(it, &str_of(&vals[0], &tys[0]), &vals[1])
              }
-@@ -7224,9 +7374,9 @@ impl FnGen<'_, '_> {
+@@ -7224,9 +7393,9 @@ impl FnGen<'_, '_> {
                  let (d, n, t) = (self.tmp(), self.tmp(), self.tmp());
                  let dt = ctype(&tys[1]);
                  let (helper, sloc) = if b == B::CharEncodeUtf8 {
@@ -3797,7 +3838,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                  };
                  let _ = writeln!(
                      self.out,
-@@ -7252,7 +7402,7 @@ impl FnGen<'_, '_> {
+@@ -7252,7 +7421,7 @@ impl FnGen<'_, '_> {
                  format!("(((*{0} >= '0' && *{0} <= '9') || ((*{0} | 32) >= 'a' && (*{0} | 32) <= 'f')))", vals[0])
              }
              B::CharIsAsciiControl => format!("(*{0} < 32u || *{0} == 127u)", vals[0]),
@@ -3806,7 +3847,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
              // `abs` and `pow` inherit the caller's overflow checks
              // (`#[rustc_inherit_overflow_checks]`): off, they wrap.
              B::Abs if !self.p.overflow_checks => {
-@@ -7336,8 +7486,13 @@ impl FnGen<'_, '_> {
+@@ -7336,8 +7505,13 @@ impl FnGen<'_, '_> {
              // check of a panic left pending by the range check; elsewhere a panic never returns.
              B::VecDrain | B::StringDrain => {
                  let f = if matches!(b, B::VecDrain) { "lust_vec_drain" } else { "lust_string_drain" };
@@ -3822,7 +3863,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
              }
              B::VecDrainLen => format!("({0}->back - {0}->front)", vals[0]),
              B::VecDrainNext | B::VecDrainNextBack => {
-@@ -7530,8 +7685,8 @@ impl FnGen<'_, '_> {
+@@ -7530,8 +7704,8 @@ impl FnGen<'_, '_> {
                      rt = ctype(&rc),
                      et = ctype(e),
                      // `swap` is not track_caller: its two `borrow_mut`s panic in cell.rs.
@@ -3833,7 +3874,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                  );
                  "((lust_Unit){})".into()
              }
-@@ -7562,7 +7717,7 @@ impl FnGen<'_, '_> {
+@@ -7562,7 +7736,7 @@ impl FnGen<'_, '_> {
                          ctype(cell),
                          vals[0],
                          // `take` is not track_caller: its `replace` panics in cell.rs.
@@ -3842,7 +3883,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                      );
                  } else {
                      let _ = writeln!(self.out, "    {et}* {c} = {}; {et} {old} = *{c}; *{c} = {def};", vals[0]);
-@@ -8034,7 +8189,7 @@ impl FnGen<'_, '_> {
+@@ -8034,7 +8208,7 @@ impl FnGen<'_, '_> {
                  // Read the index and the value before the shift: both can
                  // read the Vec itself, as in `v.insert(0, v[1])`.
                  let _ = writeln!(self.out, "    uint64_t {ti} = {i}; {et} {tx} = {x};");
@@ -3851,7 +3892,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                      // A bad index panics with the value still owned by `insert`: a guard
                      // drops it as the panic unwinds.
                      let (gd, gdis) = self.zc_guard(&tx, e);
-@@ -8044,14 +8199,14 @@ impl FnGen<'_, '_> {
+@@ -8044,14 +8218,14 @@ impl FnGen<'_, '_> {
                      );
                      return "((lust_Unit){})".into();
                  }
@@ -3868,7 +3909,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                      let _ = writeln!(self.out, "    }}");
                  }
                  "((lust_Unit){})".into()
-@@ -8094,7 +8249,7 @@ impl FnGen<'_, '_> {
+@@ -8094,7 +8268,7 @@ impl FnGen<'_, '_> {
                  let _ = writeln!(
                      self.out,
                      "    if ({i} >= {vv}->len) lust_panic_nn(\"swap_remove index (is \", {i}, \") should be < len (is \", {vv}->len, \")\", {});\n    {et} {t} = (({et}*){vv}->ptr)[{i}];\n    (({et}*){vv}->ptr)[{i}] = (({et}*){vv}->ptr)[{vv}->len - 1];\n    {vv}->len--;",
@@ -3877,7 +3918,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                  );
                  t
              }
-@@ -8168,11 +8323,11 @@ impl FnGen<'_, '_> {
+@@ -8168,11 +8342,11 @@ impl FnGen<'_, '_> {
                      );
                  }
                  let _ = writeln!(self.out, "    if ({n} <= {vv}->len) {{ {vv}->len = {n}; }} else {{");
@@ -3891,7 +3932,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                      // After a capacity overflow panic (panic=unwind) the Vec is
                      // unchanged and the value is dropped; `(void)` keeps
                      // `wrap_calls` from unwinding before that drop (the
-@@ -8194,7 +8349,7 @@ impl FnGen<'_, '_> {
+@@ -8194,7 +8368,7 @@ impl FnGen<'_, '_> {
                          mangle(e)
                      );
                  }
@@ -3900,7 +3941,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                      if needs_drop_c(self.p, e) {
                          self.want(Glue::Drop, e);
                          // The frame holds the exception while the drop runs.
-@@ -8237,7 +8392,7 @@ impl FnGen<'_, '_> {
+@@ -8237,7 +8411,7 @@ impl FnGen<'_, '_> {
                  let f = self.adapter_callee(&ops[1]);
                  let (w, r, c) = (self.tmp(), self.tmp(), self.tmp());
                  let mut body = String::new();
@@ -3909,7 +3950,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                  let rg = if zc { self.tmp() } else { String::new() };
                  if zc {
                      body.push_str("    {\n");
-@@ -8264,7 +8419,7 @@ impl FnGen<'_, '_> {
+@@ -8264,7 +8438,7 @@ impl FnGen<'_, '_> {
                  // removed. Either way the rest moves down behind the kept
                  // ones (std's `BackshiftOnDrop`), so nothing is lost.
                  let mine = "lust_unw_pending && lust_unw_mine()";
@@ -3918,7 +3959,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                      let _ = writeln!(body, "      if ({mine}) break;");
                  }
                  // A removed element drops as soon as it is rejected,
-@@ -8275,7 +8430,7 @@ impl FnGen<'_, '_> {
+@@ -8275,7 +8449,7 @@ impl FnGen<'_, '_> {
                          // The element counts removed while its drop runs.
                          format!("{r}++; drop_{}(&(({et}*){vv}->ptr)[{r} - 1]); {r}--; ", mangle(e))
                      } else {
@@ -3927,7 +3968,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                          format!("(void)(drop_{}(&(({et}*){vv}->ptr)[{r}]), 0);{after} ", mangle(e))
                      }
                  } else {
-@@ -8288,7 +8443,7 @@ impl FnGen<'_, '_> {
+@@ -8288,7 +8462,7 @@ impl FnGen<'_, '_> {
                  let _ = writeln!(body, "    }}");
                  if zc {
                      let _ = writeln!(body, "    {rg}.armed = 0; {vv}->len = {w};");
@@ -3936,7 +3977,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                      let n = self.tmp();
                      let _ = writeln!(body, "    uint64_t {n} = {vv}->len - {r}; {vv}->len = {w} + {n};");
                      let _ = writeln!(body, "    if ({n} && {w} != {r}) lust_memmove((({et}*){vv}->ptr) + {w}, (({et}*){vv}->ptr) + {r}, {n} * sizeof({et}));");
-@@ -8299,7 +8454,7 @@ impl FnGen<'_, '_> {
+@@ -8299,7 +8473,7 @@ impl FnGen<'_, '_> {
                      self.want(Glue::Drop, &tys[1]);
                      if zc {
                          let _ = writeln!(body, "   {env_disarm} drop_{}(&{c});", mangle(&tys[1]));
@@ -3945,7 +3986,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                          let drop_c = self.unw_cleanup_drop(&c, &tys[1]);
                          let _ = writeln!(body, "    if ({mine}) {{{drop_c} }} else drop_{}(&{c});", mangle(&tys[1]));
                      } else {
-@@ -8592,7 +8747,7 @@ impl FnGen<'_, '_> {
+@@ -8592,7 +8766,7 @@ impl FnGen<'_, '_> {
                      "    {{ uint32_t d = lust_digit({}, {}, {}); if (d != 0xFFFFFFFFu) {{ {field} = d;{some} }} }}",
                      vals[0],
                      vals[1],
@@ -3954,7 +3995,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                  );
                  t
              }
-@@ -8735,8 +8890,8 @@ impl FnGen<'_, '_> {
+@@ -8735,8 +8909,8 @@ impl FnGen<'_, '_> {
                  let op = if b == B::WrappingDiv { 3 } else { 4 };
                  let (o, rc) = checked_call(self, &ua, &ub, op);
                  let msg = div0(b);
@@ -3965,7 +4006,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
                  let _ = writeln!(self.out, "    if ({rc} < 0) lust_panic_cstr(\"{msg}\", {at});");
                  format!("(({ct}){o})")
              }
-@@ -9063,8 +9218,8 @@ impl FnGen<'_, '_> {
+@@ -9063,8 +9237,8 @@ impl FnGen<'_, '_> {
              let (o, rc) = (self.tmp(), self.tmp());
              let _ = writeln!(self.out, "    uint64_t {o}; int {rc} = lust_checked_op({ua}, {ub}, {bits}, {}, {op}, &{o});", sgn as i32);
              let div0msg = if op == 4 { "attempt to calculate the remainder with a divisor of zero" } else { "attempt to divide by zero" };
@@ -3976,7 +4017,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
              let _ = writeln!(self.out, "    if ({rc} < 0) lust_panic_cstr(\"{div0msg}\", {at});");
              if matches!(b, B::SaturatingAdd | B::SaturatingSub | B::SaturatingMul | B::SaturatingDiv) {
                  // Clamp to the endpoint the true result passes.
-@@ -10355,6 +10510,38 @@ fn strip_impl_blocks(src: &str) -> String {
+@@ -10355,6 +10529,38 @@ fn strip_impl_blocks(src: &str) -> String {
  /// (`runtime_decls`), from the compiler's predefined types.
  const INT_TYPEDEFS: &str = "typedef signed char int8_t; typedef unsigned char uint8_t; typedef short int16_t; typedef unsigned short uint16_t;\ntypedef int int32_t; typedef unsigned int uint32_t;\n#ifdef __INT64_TYPE__\ntypedef __INT64_TYPE__ int64_t; typedef unsigned __INT64_TYPE__ uint64_t;\n#else\ntypedef long long int64_t; typedef unsigned long long uint64_t;\n#endif\n#ifdef __SIZE_TYPE__\ntypedef __SIZE_TYPE__ size_t; typedef __PTRDIFF_TYPE__ ptrdiff_t; typedef __UINTPTR_TYPE__ uintptr_t; typedef __INTPTR_TYPE__ intptr_t;\n#else\ntypedef unsigned long size_t; typedef long ptrdiff_t; typedef unsigned long uintptr_t; typedef long intptr_t;\n#endif\n#define INT64_MIN (-9223372036854775807LL-1)\n#ifndef NULL\n#define NULL ((void*)0)\n#endif\n";
  
@@ -4015,7 +4056,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
  fn runtime_decls() -> &'static str {
      static DECLS: std::sync::OnceLock<String> = std::sync::OnceLock::new();
      DECLS.get_or_init(|| {
-@@ -10444,6 +10631,8 @@ pub struct UnwindInit {
+@@ -10444,6 +10650,8 @@ pub struct UnwindInit {
      pub tables: bool,
      pub ids: [u64; 4],
      pub hook_runner: Option<u32>,
@@ -4024,7 +4065,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
  }
  
  /// The `main_unit` argument for `p` (`slot_of` maps a fn to its slot).
-@@ -10461,7 +10650,11 @@ pub fn unwind_init(p: &Program, slot_of: impl Fn(LocalDefId) -> u32) -> Option<U
+@@ -10461,7 +10669,11 @@ pub fn unwind_init(p: &Program, slot_of: impl Fn(LocalDefId) -> u32) -> Option<U
          .map(|i| slot_of(LocalDefId(i as u32)));
      let (a, b) = crate::check::any::type_id_words(p, &p.tys, REF_STR);
      let (c, d) = crate::check::any::type_id_words(p, &p.tys, STRING);
@@ -4037,7 +4078,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
  }
  
  /// The location unit: the per-slot line and file tables and
-@@ -10503,11 +10696,21 @@ pub fn loc_unit(files: &SlotFiles, slot_lines: &[u32]) -> String {
+@@ -10503,11 +10715,21 @@ pub fn loc_unit(files: &SlotFiles, slot_lines: &[u32]) -> String {
  /// sets up the runtime's panic payloads and hook runner; under
  /// panic=unwind a `main` that ends by a panic exits 101.
  pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -> String {
@@ -4060,7 +4101,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
              format!("\n  lust_unw_init({}, {a}ull, {b}ull, {c}ull, {d}ull);", if unwind && tables { 2 } else { unwind as u8 }),
              hook_runner.map_or(String::new(), |s| {
                  // Release C names the runner directly (only its address is taken here).
-@@ -10518,20 +10721,32 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
+@@ -10518,20 +10740,32 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
      };
      let mut c = unit_header();
      c.push_str("void lust_loc_init(void);\nvoid lust_kstatics_init(void);\n");
@@ -4099,7 +4140,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
          // Main runs under a catch point (std's lang_start catches its panic).
          let _ = writeln!(
              c,
-@@ -10550,6 +10765,11 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
+@@ -10550,6 +10784,11 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
      if !runner.is_empty() {
          c.push('\n');
      }
@@ -4111,7 +4152,62 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
      if tables {
          c.push_str("  int rc = 0;\n  if (lust_unw_try(lust_main_thunk, &rc)) rc = lust_unw_main_caught();\n  lust_tls_exit();\n  lust_flush();\n  return rc;\n}\n");
          return c;
-@@ -12044,7 +12264,7 @@ pub fn fn_unit_parts(
+@@ -10582,6 +10821,45 @@ pub fn table_unit(capacity: usize, fn_units: &[usize]) -> String {
+     c
+ }
+ 
++fn emit_termination_entry(c: &mut String, p: &Program, m: LocalDefId, idx: u32, entry: &str, linkage: &str) {
++    let ret = p.fn_info(m).ret;
++    let rc = cty(&p.tys, ret);
++    let rt = ctype(&rc);
++    let cast = fn_ptr_cast(p, m);
++    // Main's body is in this unit: release C calls it by name.
++    let target = if names::release() { names::body(idx) } else { format!("lust_fns[{idx}]") };
++    let _ = writeln!(c, "{linkage}int {entry}(void) {{");
++    if ret_is_large(p, m) {
++        let _ = writeln!(c, "  {rt} r; ({cast}{target})(&r);");
++    } else {
++        let _ = writeln!(c, "  {rt} r = ({cast}{target})();");
++    }
++    if p.unwind {
++        let _ = writeln!(c, "  if (lust_unw_pending && lust_unw_mine()) return 0;");
++    }
++    match p.tys.result_args(ret) {
++        Some((ok_t, err_t)) => {
++            let disc = disc_call(p, &rc, "(&r)");
++            let field = variant_field(p, &rc, "r", 1, 0);
++            let ec = cty(&p.tys, err_t);
++            let ok = if p.tys.is_exit_code(ok_t) { format!(" else {{ rc = {}; }}", variant_field(p, &rc, "r", 0, 0)) } else { String::new() };
++            let _ = writeln!(c, "  int rc = 0;");
++            let _ = writeln!(
++                c,
++                "  if ({disc}) {{ lust_sink k; lust_print_begin(&k, 1); lust_Formatter f; lust_f_init(&f, &k); lust_f_write(&f, \"Error: \", 7); (void)dbg_{}(&f, &{field}); lust_f_write(&f, \"\\n\", 1); lust_print_end(1); rc = 1; }}{ok}",
++                mangle(&ec)
++            );
++        }
++        None => {
++            let _ = writeln!(c, "  int rc = r;");
++        }
++    }
++    if needs_drop_c(p, &rc) {
++        let _ = writeln!(c, "  drop_{}(&r);", mangle(&rc));
++    }
++    let _ = writeln!(c, "  return rc;\n}}");
++}
++
+ /// The shared glue unit. With a frozen shared set it holds only those keys; the rest of the
+ /// glue is static in the function units (see `GlueSet`).
+ pub fn glue_unit(p: &Program, g: &GlueSet) -> String {
+@@ -12032,7 +12310,7 @@ pub fn fn_unit_parts(
+         let f = &fns[s];
+         let m = c.len();
+         // An LLVM fn's C is its C ABI wrapper and trampoline: kept only when a text names them.
+-        match (c_refs, f.ll.is_empty(), names::fn_tag_opt(s as u32)) {
++        match (c_refs.filter(|_| !f.test_termination), f.ll.is_empty(), names::fn_tag_opt(s as u32)) {
+             (Some(r), false, Some(id)) => c.push_str(&r.c_body(text_of(s), &id)),
+             (_, _, Some(id)) if copy_hot.is_some_and(|h| !is_hot(&h.hot, &id)) => c.push_str(&cold_cleanup(text_of(s), &id)),
+             _ => c.push_str(text_of(s)),
+@@ -12044,46 +12322,11 @@ pub fn fn_unit_parts(
      // table; on Err print `Error: {err:?}` to stderr and exit 1, as
      // Rust does; an `ExitCode` is the exit status. Registered below
      // in `lust_main_entry_p`, which the main unit prefers over the
@@ -4120,7 +4216,47 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
      // by main's own FnOut (see `gen_fn`).
      let entry_at = c.len();
      if let Some((m, idx)) = term_main {
-@@ -13126,7 +13346,7 @@ fn glue_def_value(
+-        let ret = p.fn_info(m).ret;
+-        let rc = cty(&p.tys, ret);
+-        let rt = ctype(&rc);
+-        let cast = fn_ptr_cast(p, m);
+-        // Main's body is in this unit: release C calls it by name.
+-        let target = if names::release() { names::body(idx) } else { format!("lust_fns[{idx}]") };
+-        let _ = writeln!(c, "static int lust_main_entry_impl(void) {{");
+-        if ret_is_large(p, m) {
+-            let _ = writeln!(c, "  {rt} r; ({cast}{target})(&r);");
+-        } else {
+-            let _ = writeln!(c, "  {rt} r = ({cast}{target})();");
+-        }
+-        if p.unwind {
+-            let _ = writeln!(c, "  if (lust_unw_pending && lust_unw_mine()) return 0;");
+-        }
+-        match p.tys.result_args(ret) {
+-            Some((ok_t, err_t)) => {
+-                let disc = disc_call(p, &rc, "(&r)");
+-                let field = variant_field(p, &rc, "r", 1, 0);
+-                let ec = cty(&p.tys, err_t);
+-                let ok = if p.tys.is_exit_code(ok_t) { format!(" else {{ rc = {}; }}", variant_field(p, &rc, "r", 0, 0)) } else { String::new() };
+-                let _ = writeln!(c, "  int rc = 0;");
+-                let _ = writeln!(
+-                    c,
+-                    "  if ({disc}) {{ lust_sink k; lust_print_begin(&k, 1); lust_Formatter f; lust_f_init(&f, &k); lust_f_write(&f, \"Error: \", 7); (void)dbg_{}(&f, &{field}); lust_f_write(&f, \"\\n\", 1); lust_print_end(1); rc = 1; }}{ok}",
+-                    mangle(&ec)
+-                );
+-            }
+-            None => {
+-                let _ = writeln!(c, "  int rc = r;");
+-            }
+-        }
+-        if needs_drop_c(p, &rc) {
+-            let _ = writeln!(c, "  drop_{}(&r);", mangle(&rc));
+-        }
+-        let _ = writeln!(c, "  return rc;\n}}");
++        emit_termination_entry(&mut c, p, m, idx, "lust_main_entry_impl", "static ");
+     }
+     record::piece(record::Kind::Entry, 0, &c[entry_at..]);
+     let register_at = c.len();
+@@ -13126,7 +13369,7 @@ fn glue_def_value(
      match g {
          Glue::CloneFrom => unreachable!("clonefrom glue returns above"),
          Glue::Drop => {
@@ -4129,7 +4265,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
              match t {
                  CTy::String => body.push_str("  lust_string_drop(p);\n"),
                  CTy::Hash(k, _) if hash::is_table(*k) => body.push_str(&hash::drop_body(p, t, &mut need)),
-@@ -13364,7 +13584,7 @@ fn glue_def_value(
+@@ -13364,7 +13607,7 @@ fn glue_def_value(
              } else {
                  body = body.replace(UNW_DSTEP, "").replace("UNW_DSTEP ", "");
              }
@@ -4138,7 +4274,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
          }
          Glue::Clone => {
              let _ = writeln!(protos, "{ct} clone_{m}({ct} *p);");
-@@ -14261,7 +14481,7 @@ mod tests {
+@@ -14261,7 +14504,7 @@ mod tests {
          let span = Span::new(FileId(0), 0, 0);
          let elems = body.tys.intern_tys(&[STRING, int(IntTy::U8)]);
          let tuple_ty = body.tys.intern(TyKind::Tuple(elems));
@@ -4147,7 +4283,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
          body.locals = vec![local(UNIT), local(tuple_ty), local(STRING)];
          body.blocks = vec![BlockData {
              stmts: vec![Stmt {
-@@ -14781,9 +15001,9 @@ mod tests {
+@@ -14781,9 +15024,9 @@ mod tests {
              let shards = names::glue_shards(&program, &glue, &outs, 1);
              let drop_hooks = format!("void drop_{}_(", ctype(&CTy::Adt(hooks)));
              let shard = shards.iter().find(|s| s.lines().any(|l| l.starts_with(&drop_hooks) && l.ends_with('{'))).expect("a shard defines the struct's drop glue");
@@ -4159,7 +4295,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
              let keys = names::glue_shard_keys(&glue, &outs, 1);
              let made = names::glue_shard_texts(&program, &glue, &keys, &[], true);
              assert_eq!(made.iter().map(|(c, _)| c.as_str()).collect::<Vec<_>>(), shards, "a record does not change a shard");
-@@ -14898,7 +15118,7 @@ mod tests {
+@@ -14898,7 +15141,7 @@ mod tests {
          let inputs = body.tys.intern_tys(&[i64_ty]);
          let sig = body.tys.intern_sig(Binder::plain(FnSig::plain(inputs, i64_ty)));
          let fnptr_ty = body.tys.intern(TyKind::FnPtr(sig));
@@ -4169,7 +4305,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..06d087bc3358ee4547d2ac43de947fb4
          // locals 8.. hold &l2, &l5, &l6, &l7 for the four prints.
          let ref_i64 = body.tys.mk_ref(false, i64_ty);
 diff --git a/src/cgen/ll.rs b/src/cgen/ll.rs
-index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..2065d9de0a3d7d31b58748ae7588af3309c344cb 100644
+index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..f80aa98de534828b7f81010560a5c49712c35791 100644
 --- a/src/cgen/ll.rs
 +++ b/src/cgen/ll.rs
 @@ -19,6 +19,7 @@
@@ -4180,7 +4316,15 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..2065d9de0a3d7d31b58748ae7588af33
  use super::unwind::{is_ident, skip_lit};
  use super::*;
  
-@@ -459,11 +460,12 @@ impl FnGen<'_, '_> {
+@@ -253,6 +254,7 @@ struct Ll {
+     statics: Vec<bool>,
+     /// The cleanup blocks each landing pad enters.
+     pads: BTreeSet<u32>,
++    resumes: bool,
+     decls: BTreeSet<String>,
+     body: String,
+     /// The number of continuation blocks made so far.
+@@ -459,11 +461,12 @@ impl FnGen<'_, '_> {
      /// Generates fn `fl_<id>` and its C side (helpers, the C ABI wrapper `f_<id>`, the
      /// trampoline) into `self.out`. Returns the LLVM definition and declarations, or an
      /// internal error.
@@ -4194,12 +4338,25 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..2065d9de0a3d7d31b58748ae7588af33
          let n = self.body.blocks.len();
          let mut reachable = vec![false; n];
          let mut stack = vec![0usize];
-@@ -510,25 +512,45 @@ impl FnGen<'_, '_> {
+@@ -490,6 +493,7 @@ impl FnGen<'_, '_> {
+             n_helpers: 0,
+             statics,
+             pads: BTreeSet::new(),
++            resumes: false,
+             decls: BTreeSet::new(),
+             body: String::new(),
+             conts: 0,
+@@ -508,27 +512,46 @@ impl FnGen<'_, '_> {
+             let block = self.body.block(Bb(bi as u32));
+             let cleanup = self.cleanup.get(bi).copied().unwrap_or(false);
              let _ = writeln!(ll.body, "bb{bi}:");
++            if let Some(debug) = &mut debug {
++                debug.enter_block(&mut ll.body, bi, cleanup);
++            }
              for (si, s) in block.stmts.iter().enumerate() {
                  if matches!(s.kind, StmtKind::StorageDead(_) | StmtKind::FakeRead(_)) {
 +                    if !cleanup && let (Some(debug), StmtKind::StorageDead(local)) = (&mut debug, &s.kind) {
-+                        debug.dead(*local)?;
++                        debug.dead(&mut ll.body, *local);
 +                    }
                      continue;
                  }
@@ -4238,16 +4395,12 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..2065d9de0a3d7d31b58748ae7588af33
 +            let start = ll.body.len();
              self.ll_term(&mut ll, bi, cleanup, term_unwind.filter(|_| p.unwind));
 +            if !cleanup && let Some(debug) = &mut debug {
-+                if let Terminator::Call { dest, .. } = &block.term
-+                    && dest.local as usize > self.body.arg_count && debug.has_binding(dest.local) {
-+                    return Err("Rust debug locations for directly assigned call results are not represented".into());
-+                }
 +                debug.mark(self, &mut ll.body, start, block.term_span);
 +            }
          }
          if let Some(e) = ll.error.take() {
              return Err(e);
-@@ -544,7 +566,10 @@ impl FnGen<'_, '_> {
+@@ -544,7 +567,10 @@ impl FnGen<'_, '_> {
          // that holds strs adds literals and an entry write to the entry helper.
          let kdecls: Vec<Option<String>> = (0..self.local_cty.len()).map(|i| if ll.statics[i] { self.kstatic_decl(i) } else { None }).collect();
          let kstr_init = self.ll_kstr_init(&mut ll);
@@ -4259,7 +4412,15 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..2065d9de0a3d7d31b58748ae7588af33
          // The C sides: the helpers with the macros and statics they read; then the C ABI
          // wrapper and the trampoline, which stay in the unit's plain C. A fn with no helpers
          // (and no literal or constant prologue) has no helper side: nothing in C reads its
-@@ -686,7 +711,7 @@ impl FnGen<'_, '_> {
+@@ -645,6 +671,7 @@ impl FnGen<'_, '_> {
+                 _ => ll.body.push_str("  ret void\n"),
+             },
+             Terminator::Unreachable | Terminator::MatchExhausted if cleanup && self.p.unwind => {
++                ll.resumes = true;
+                 ll.conts += 1;
+                 let _ = writeln!(ll.body, "  %v{0} = load {{ ptr, i32 }}, ptr %exn\n  resume {{ ptr, i32 }} %v{0}", ll.conts);
+             }
+@@ -686,7 +713,7 @@ impl FnGen<'_, '_> {
      }
  
      /// The LLVM definition of `fl_<id>`.
@@ -4268,7 +4429,28 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..2065d9de0a3d7d31b58748ae7588af33
          let p = self.p;
          let fid = self.body.fn_id;
          let info = p.fn_info(fid);
-@@ -841,6 +866,12 @@ impl FnGen<'_, '_> {
+@@ -811,9 +838,10 @@ impl FnGen<'_, '_> {
+                 }
+             }
+         }
+-        // The exception slot: landing pads store it, ladder ends load it (a cleanup block
+-        // whose every entry became native code stays, unreachable, and still names it).
+-        if !ll.pads.is_empty() || self.cleanup.iter().any(|&c| c) {
++        // A retained cleanup block can resume even if native lowering eliminated
++        // all landing pads that used to reach it. LLVM still requires a personality.
++        let exception_cleanup = !ll.pads.is_empty() || ll.resumes;
++        if exception_cleanup {
+             allocas.push_str("  %exn = alloca { ptr, i32 }\n");
+         }
+         allocas.push_str(&ll.allocas);
+@@ -835,12 +863,18 @@ impl FnGen<'_, '_> {
+             attrs.push_str(" uwtable");
+             // The C personality, as the helpers' cleanup guards have it: every landing pad
+             // here only cleans up, and LLVM inlines no fn of another personality.
+-            if !ll.pads.is_empty() {
++            if exception_cleanup {
+                 attrs.push_str(" personality ptr @__gcc_personality_v0");
+             }
          } else {
              attrs.push_str(" nounwind");
          }
@@ -4281,7 +4463,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..2065d9de0a3d7d31b58748ae7588af33
          let id = names::fn_tag(self.slots.of(fid));
          let mut d = String::new();
          let _ = writeln!(d, "; {}", p.display_path(info.name).replace('\n', " "));
-@@ -2939,7 +2970,7 @@ fn source_fn_attrs(p: &Program, f: LocalDefId) -> String {
+@@ -2939,7 +2973,7 @@ fn source_fn_attrs(p: &Program, f: LocalDefId) -> String {
                  if let crate::ast::AttrInput::List(_, trees) = &a.input {
                      for t in trees {
                          if let TokenTree::Token(t) = t
@@ -4290,7 +4472,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..2065d9de0a3d7d31b58748ae7588af33
                          {
                              match p.name(n) {
                                  "always" => how = " alwaysinline",
-@@ -3387,8 +3418,24 @@ pub fn ll_unit(fns: &[FnOut], slots: &[usize], inl: &[usize], triple: &str) -> S
+@@ -3387,8 +3421,24 @@ pub fn ll_unit(fns: &[FnOut], slots: &[usize], inl: &[usize], triple: &str) -> S
          out.push('\n');
      }
      out.push('\n');
@@ -4318,17 +4500,19 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..2065d9de0a3d7d31b58748ae7588af33
      // as release C's static copies are, so a training build counts each unit's copy in its
 diff --git a/src/cgen/ll_debug.rs b/src/cgen/ll_debug.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..06e13da763218619da37ff2dc2aaebf1799674ec
+index 0000000000000000000000000000000000000000..f81b4d3134b83723c7ce889cb624331a9a839d8c
 --- /dev/null
 +++ b/src/cgen/ll_debug.rs
-@@ -0,0 +1,258 @@
+@@ -0,0 +1,655 @@
 +// Rust source debug records for the LLVM emitter. The native checker and
 +// lowerer supply bindings and types; LLVM resolves instruction and frame
 +// locations to the addresses in the emitted object.
-+use super::{FnGen, LocalDecl, Span, Ty, TyKind};
-+use crate::ir::{Local, Terminator};
-+use crate::ty::{FloatTy, Mut, TyIntern};
-+use std::collections::{BTreeMap, HashMap};
++use super::{CTy, FnGen, Layout, LocalDecl, Span, VariantShape, c_layout, cty, ty_name};
++use crate::ir::{Body, Local, StmtKind, Terminator};
++use crate::ty::fmt::{FmtTy, fmt_kind};
++use crate::ty::layout::{self, EnumTag, Repr, ReprKind, niche_tag_value};
++use crate::ty::{FloatTy, IntTy, Mut, Ty, TyIntern, TyKind, USIZE, int};
++use std::collections::{BTreeMap, HashMap, VecDeque};
 +use std::fmt::Write;
 +
 +pub(super) struct DebugFn {
@@ -4340,6 +4524,8 @@ index 0000000000000000000000000000000000000000..06e13da763218619da37ff2dc2aaebf1
 +    subprogram: usize,
 +    active: Vec<(Local, usize)>,
 +    bindings: BTreeMap<Local, (usize, u32, u32, usize, String)>,
++    scopes: BTreeMap<(Local, usize), (usize, usize)>,
++    entry_locals: Vec<Option<Vec<Local>>>,
 +}
 +
 +impl DebugFn {
@@ -4353,6 +4539,8 @@ index 0000000000000000000000000000000000000000..06e13da763218619da37ff2dc2aaebf1
 +            subprogram: 0,
 +            active: Vec::new(),
 +            bindings: BTreeMap::new(),
++            scopes: BTreeMap::new(),
++            entry_locals: Vec::new(),
 +        };
 +        let def = function.p.fn_def(function.body.fn_id);
 +        let (file, line, _) = debug.source(function, def.name_span).ok_or("Rust debug function has no source location")?;
@@ -4361,7 +4549,11 @@ index 0000000000000000000000000000000000000000..06e13da763218619da37ff2dc2aaebf1
 +        );
 +        let name = function.p.display_path(function.p.fn_info(function.body.fn_id).name);
 +        let mut types = Vec::new();
-+        for local in &function.body.locals[..=function.body.arg_count] {
++        let closure = function.p.gx.closure_fns.contains_key(&function.body.fn_id);
++        for (i, local) in function.body.locals[..=function.body.arg_count].iter().enumerate() {
++            if closure && i == 1 {
++                continue;
++            }
 +            let ty = if matches!(function.body.tys.kind(local.ty), TyKind::Unit | TyKind::Never) {
 +                "null".into()
 +            } else {
@@ -4380,14 +4572,7 @@ index 0000000000000000000000000000000000000000..06e13da763218619da37ff2dc2aaebf1
 +            let ty = debug.ty(function, *ty)?;
 +            debug.bindings.insert(i as Local, (file, line, column, ty, quote(name)));
 +        }
-+        // The scalar path models initialized lexical bindings by their actual
-+        // stores and StorageDead markers. A branching body with user locals
-+        // needs a control-flow join of those states before it can use this path.
-+        if debug.bindings.keys().any(|&i| i as usize > function.body.arg_count)
-+            && function.body.blocks.iter().any(|b| matches!(b.term, Terminator::If(..) | Terminator::Switch(..)))
-+        {
-+            return Err("Rust debug locations for local bindings in branching bodies are not represented".into());
-+        }
++        debug.entry_locals = incoming_locals(function.body, |local| local as usize > function.body.arg_count && debug.has_binding(local));
 +        Ok(debug)
 +    }
 +
@@ -4410,22 +4595,338 @@ index 0000000000000000000000000000000000000000..06e13da763218619da37ff2dc2aaebf1
 +            TyKind::Char => basic_type("char", 32, "DW_ATE_UTF"),
 +            TyKind::Float(float) => basic_type(float.name(), if float == FloatTy::F32 { 32 } else { 64 }, "DW_ATE_float"),
 +            TyKind::Ref(_, m, base) | TyKind::RawPtr(m, base) => {
-+                let target = self.ty(function, base)?;
 +                let prefix = match (function.body.tys.kind(ty), m) {
 +                    (TyKind::Ref(..), Mut::Shared) => "&",
 +                    (TyKind::Ref(..), Mut::Mut) => "&mut ",
 +                    (_, Mut::Shared) => "*const ",
 +                    (_, Mut::Mut) => "*mut ",
 +                };
++                let element = match function.body.tys.kind(base) {
++                    TyKind::Str => Some((int(IntTy::U8), true)),
++                    TyKind::Slice(element) => Some((element, false)),
++                    _ => None,
++                };
++                if let Some((element, string)) = element {
++                    return self.slice(function, ty, prefix, element, string);
++                }
++                if matches!(function.body.tys.kind(base), TyKind::Dyn(..)) {
++                    return self.trait_pointer(function, ty);
++                }
++                let target = self.ty(function, base)?;
 +                let name = format!("{prefix}{}", self.types[&base].1);
 +                let entry = format!("!DIDerivedType(tag: DW_TAG_pointer_type, name: {}, baseType: !%{target}, size: 64)", quote(&name));
 +                (name, entry)
 +            }
 +            TyKind::Unit => basic_type("()", 0, "DW_ATE_unsigned"),
-+            _ => return Err("Rust debug type is not represented by the native scalar emitter".into()),
++            TyKind::Never => basic_type("!", 0, "DW_ATE_unsigned"),
++            TyKind::FnPtr(signature) => {
++                let signature = function.body.tys.sig(signature).value;
++                let shape = debug_layout(function, ty)?;
++                let name = ty_name(function.p, &function.body.tys, ty);
++                let id = self.reserve_type(ty, &name);
++                let mut types = Vec::new();
++                let result = match function.body.tys.kind(signature.output) {
++                    TyKind::Unit | TyKind::Never => "null".to_owned(),
++                    _ => format!("!%{}", self.ty(function, signature.output)?),
++                };
++                types.push(result);
++                for &input in function.body.tys.tys_of(signature.inputs).iter() {
++                    types.push(format!("!%{}", self.ty(function, input)?));
++                }
++                let signature = self.push(format!("!DISubroutineType(types: !{{{}}})", types.join(", ")));
++                self.entries[id] = format!(
++                    "!DIDerivedType(tag: DW_TAG_pointer_type, name: {}, baseType: !%{signature}, size: {})",
++                    quote(&name),
++                    shape.size * 8
++                );
++                return Ok(id);
++            }
++            TyKind::Adt(..)
++                if let CTy::Adt(adt) = cty(&function.body.tys, ty)
++                    && !function.p.adt(adt).is_enum =>
++            {
++                let definition = function.p.adt(adt);
++                let name = function.p.display_path(definition.name);
++                let variant = &definition.variants[0];
++                let fields = variant
++                    .fields
++                    .iter()
++                    .enumerate()
++                    .map(|(i, field)| {
++                        let name =
++                            if variant.shape == VariantShape::Named { function.p.name(field.name).to_owned() } else { format!("__{i}") };
++                        (name, field.ty)
++                    })
++                    .collect::<Vec<_>>();
++                return self.aggregate(function, ty, name, &fields, debug_layout(function, ty)?);
++            }
++            TyKind::Tuple(elements) => {
++                let elements = function.body.tys.tys_of(elements);
++                let mut names = Vec::new();
++                let mut fields = Vec::new();
++                for (i, &element) in elements.iter().enumerate() {
++                    self.ty(function, element)?;
++                    names.push(self.types[&element].1.clone());
++                    fields.push((format!("__{i}"), element));
++                }
++                let comma = if elements.len() == 1 { "," } else { "" };
++                return self.aggregate(function, ty, format!("({}{comma})", names.join(", ")), &fields, debug_layout(function, ty)?);
++            }
++            TyKind::Array(element, _) if let CTy::Array(_, count) = cty(&function.body.tys, ty) => {
++                let base = self.ty(function, element)?;
++                let shape = debug_layout(function, ty)?;
++                let name = format!("[{}; {count}]", self.types[&element].1);
++                let count = self.push(format!("!DISubrange(count: {count})"));
++                let elements = self.push(format!("!{{!%{count}}}"));
++                let entry = format!(
++                    "!DICompositeType(tag: DW_TAG_array_type, baseType: !%{base}, size: {}, align: {}, elements: !%{elements})",
++                    shape.size * 8,
++                    shape.align * 8
++                );
++                (name, entry)
++            }
++            TyKind::Adt(..) if let Some((ok, error)) = function.body.tys.result_args(ty) => {
++                return self.variants(function, ty, &[("Ok", Some(ok)), ("Err", Some(error))]);
++            }
++            TyKind::Adt(..) if let Some(value) = function.body.tys.option_elem(ty) => {
++                return self.variants(function, ty, &[("None", None), ("Some", Some(value))]);
++            }
++            TyKind::Adt(..) if matches!(cty(&function.body.tys, ty), CTy::BoxDyn) => return self.trait_pointer(function, ty),
++            TyKind::Adt(..) if function.body.tys.is_exit_code(ty) => {
++                let shape = debug_layout(function, ty)?;
++                let word = debug_layout(function, int(IntTy::U8))?;
++                if shape.size != word.size || shape.align != word.align {
++                    return Err("Rust ExitCode does not have the native status-byte layout".into());
++                }
++                let id = self.reserve_type(ty, "ExitCode");
++                let byte = self.ty(function, int(IntTy::U8))?;
++                let code = self.field(id, "__0", byte, word.size, word.align, 0);
++                self.structure(id, "ExitCode", &shape, &[code]);
++                return Ok(id);
++            }
++            TyKind::Adt(..) if matches!(cty(&function.body.tys, ty), CTy::String | CTy::Vec(_)) => {
++                let element = function.body.tys.vec_elem(ty).unwrap_or_else(|| int(IntTy::U8));
++                return self.buffer(function, ty, element);
++            }
++            TyKind::Adt(..) if fmt_kind(&function.body.tys, ty) == Some(FmtTy::Formatter) => {
++                return self.formatter(function, ty);
++            }
++            TyKind::Dyn(..) => return self.trait_pointer(function, ty),
++            kind => {
++                return Err(format!(
++                    "Rust debug type {} ({kind:?}) in {} is not represented",
++                    ty_name(function.p, &function.body.tys, ty),
++                    function.p.display_path(function.p.fn_info(function.body.fn_id).name)
++                ));
++            }
 +        };
 +        let id = self.push(entry);
 +        self.types.insert(ty, (id, name));
++        Ok(id)
++    }
++
++    fn reserve_type(&mut self, ty: Ty, name: &str) -> usize {
++        let id = self.push(String::new());
++        self.types.insert(ty, (id, name.to_owned()));
++        id
++    }
++
++    fn structure(&mut self, id: usize, name: &str, shape: &Layout, members: &[usize]) {
++        let elements = self.push(format!("!{{{}}}", members.iter().map(|field| format!("!%{field}")).collect::<Vec<_>>().join(", ")));
++        self.entries[id] = format!(
++            "distinct !DICompositeType(tag: DW_TAG_structure_type, name: {}, size: {}, align: {}, elements: !%{elements})",
++            quote(name),
++            shape.size * 8,
++            shape.align * 8
++        );
++    }
++
++    fn field(&mut self, scope: usize, name: &str, ty: usize, size: u64, align: u64, offset: u64) -> usize {
++        self.push(format!(
++            "!DIDerivedType(tag: DW_TAG_member, name: {}, scope: !%{scope}, baseType: !%{ty}, size: {}, align: {}, offset: {})",
++            quote(name),
++            size * 8,
++            align * 8,
++            offset * 8
++        ))
++    }
++
++    fn aggregate(
++        &mut self,
++        function: &FnGen<'_, '_>,
++        ty: Ty,
++        name: String,
++        fields: &[(String, Ty)],
++        shape: Layout,
++    ) -> Result<usize, String> {
++        if fields.len() != shape.field_offsets.len() {
++            return Err(format!("Rust debug layout for {name} has a mismatched field list"));
++        }
++        let id = self.reserve_type(ty, &name);
++        let mut members = Vec::new();
++        for ((name, ty), &offset) in fields.iter().zip(&shape.field_offsets) {
++            let base = self.ty(function, *ty)?;
++            let field = debug_layout(function, *ty)?;
++            members.push(self.field(id, name, base, field.size, field.align.min(shape.align), offset));
++        }
++        self.structure(id, &name, &shape, &members);
++        Ok(id)
++    }
++
++    fn slice(&mut self, function: &FnGen<'_, '_>, ty: Ty, prefix: &str, element: Ty, string: bool) -> Result<usize, String> {
++        let base = self.ty(function, element)?;
++        let width = self.ty(function, USIZE)?;
++        let element_name = &self.types[&element].1;
++        let element_type = if string { "str".into() } else { format!("[{element_name}]") };
++        let name = format!("{prefix}{element_type}");
++        let pointer = self.push(format!(
++            "!DIDerivedType(tag: DW_TAG_pointer_type, name: {}, baseType: !%{base}, size: 64)",
++            quote(&format!("*const {element_name}"))
++        ));
++        let shape = debug_layout(function, ty)?;
++        let word = debug_layout(function, USIZE)?;
++        if shape.size != 2 * word.size || shape.align != word.align {
++            return Err(format!("Rust debug layout for {name} is not a two-word slice reference"));
++        }
++        let id = self.reserve_type(ty, &name);
++        let data = self.field(id, "data_ptr", pointer, word.size, word.align, 0);
++        let length = self.field(id, "length", width, word.size, word.align, word.size);
++        self.structure(id, &name, &shape, &[data, length]);
++        Ok(id)
++    }
++
++    fn trait_pointer(&mut self, function: &FnGen<'_, '_>, ty: Ty) -> Result<usize, String> {
++        let name = ty_name(function.p, &function.body.tys, ty);
++        let shape = debug_layout(function, ty)?;
++        let word = debug_layout(function, USIZE)?;
++        if shape.size != 2 * word.size || shape.align != word.align {
++            return Err(format!("Rust debug layout for {name} is not a two-word trait pointer"));
++        }
++        let id = self.reserve_type(ty, &name);
++        let pointer = self.push(format!("!DIDerivedType(tag: DW_TAG_pointer_type, baseType: null, size: {})", word.size * 8));
++        let data = self.field(id, "pointer", pointer, word.size, word.align, 0);
++        let metadata = self.field(id, "vtable", pointer, word.size, word.align, word.size);
++        self.structure(id, &name, &shape, &[data, metadata]);
++        Ok(id)
++    }
++
++    fn buffer(&mut self, function: &FnGen<'_, '_>, ty: Ty, element: Ty) -> Result<usize, String> {
++        let name = ty_name(function.p, &function.body.tys, ty);
++        let shape = debug_layout(function, ty)?;
++        let word = debug_layout(function, USIZE)?;
++        let [ptr_at, len_at, cap_at] = shape.field_offsets[..] else {
++            return Err(format!("Rust debug layout for {name} does not have the native buffer fields"));
++        };
++        let id = self.reserve_type(ty, &name);
++        let base = self.ty(function, element)?;
++        let usize_type = self.ty(function, USIZE)?;
++        let pointer = self.push(format!("!DIDerivedType(tag: DW_TAG_pointer_type, baseType: !%{base}, size: {})", word.size * 8));
++        let ptr = self.field(id, "ptr", pointer, word.size, word.align, ptr_at);
++        let len = self.field(id, "len", usize_type, word.size, word.align, len_at);
++        let cap = self.field(id, "cap", usize_type, word.size, word.align, cap_at);
++        self.structure(id, &name, &shape, &[ptr, len, cap]);
++        Ok(id)
++    }
++
++    fn formatter(&mut self, function: &FnGen<'_, '_>, ty: Ty) -> Result<usize, String> {
++        let name = "std::fmt::Formatter";
++        // These private fields describe the native Formatter in runtime/fmt.h.
++        let pointer = layout::ptr_layout();
++        let fields = [
++            ("fill", IntTy::U32),
++            ("align", IntTy::U8),
++            ("flags", IntTy::U8),
++            ("width", IntTy::U16),
++            ("prec", IntTy::U16),
++        ];
++        let layouts: Vec<_> = std::iter::once(pointer.clone())
++            .chain(fields.iter().map(|&(_, ty)| layout::int_layout(ty)))
++            .collect();
++        let shape = layout::struct_layout(&layouts, Repr { kind: ReprKind::C, ..Repr::default() })
++            .map_err(|error| format!("Rust debug layout for {name}: {error:?}"))?;
++        let native = debug_layout(function, ty)?;
++        if (shape.size, shape.align) != (native.size, native.align) {
++            return Err(format!("Rust debug layout for {name} differs from the native runtime"));
++        }
++        let id = self.reserve_type(ty, name);
++        let sink = self.push(format!("!DIDerivedType(tag: DW_TAG_pointer_type, baseType: null, size: {})", pointer.size * 8));
++        let mut members = vec![self.field(id, "buf", sink, pointer.size, pointer.align, shape.field_offsets[0])];
++        for ((name, ty), (field, &offset)) in fields.into_iter().zip(layouts[1..].iter().zip(&shape.field_offsets[1..])) {
++            let base = self.ty(function, int(ty))?;
++            members.push(self.field(id, name, base, field.size, field.align, offset));
++        }
++        self.structure(id, name, &shape, &members);
++        Ok(id)
++    }
++
++    fn variants(&mut self, function: &FnGen<'_, '_>, ty: Ty, variants: &[(&str, Option<Ty>)]) -> Result<usize, String> {
++        let name = ty_name(function.p, &function.body.tys, ty);
++        let layout = debug_layout(function, ty)?;
++        let kind = layout.enum_tag.ok_or("native enum debug layout has no tag form")?;
++        if layout.variant_offsets.len() != variants.len() {
++            return Err(format!("native enum debug layout for {name} has a mismatched variant list"));
++        }
++        let id = self.reserve_type(ty, &name);
++        let part = self.push(String::new());
++        let tag = match kind {
++            EnumTag::Explicit { size, signed } => Some((0, size, signed)),
++            EnumTag::NicheFilled { niche, .. } => Some((niche.offset, niche.scalar_size, false)),
++            EnumTag::None(_) => None,
++        };
++        let discriminator = if let Some((offset, size, signed)) = tag {
++            let integer = IntTy::ALL
++                .iter()
++                .copied()
++                .find(|t| u64::from(t.bits()) == size * 8 && t.signed() == signed)
++                .ok_or("native debug enum uses an unrepresented tag width")?;
++            let base = self.ty(function, int(integer))?;
++            let entry = self.push(format!(
++                "!DIDerivedType(tag: DW_TAG_member, scope: !%{id}, baseType: !%{base}, size: {}, offset: {}, flags: DIFlagArtificial)",
++                size * 8,
++                offset * 8
++            ));
++            format!(", discriminator: !%{entry}")
++        } else {
++            String::new()
++        };
++        let mut members = Vec::new();
++        for (index, (variant, payload)) in variants.iter().enumerate() {
++            if matches!(kind, EnumTag::None(single) if single != index) {
++                continue;
++            }
++            let fields = &layout.variant_offsets[index];
++            let variant_id = self.push(String::new());
++            let payload = if let Some(payload) = payload {
++                let offset = fields.first().copied().ok_or("native enum debug layout lacks a payload offset")?;
++                let member = self.ty(function, *payload)?;
++                let shape = debug_layout(function, *payload)?;
++                vec![self.field(variant_id, "__0", member, shape.size, shape.align, offset)]
++            } else {
++                Vec::new()
++            };
++            self.structure(variant_id, variant, &layout, &payload);
++            let value = match kind {
++                EnumTag::Explicit { .. } => Some(index as u128),
++                EnumTag::NicheFilled { variant: data, niche, first, last, start } if index != data && (first..=last).contains(&index) => {
++                    Some(niche_tag_value(niche, first, start, index))
++                }
++                _ => None,
++            };
++            let value = value.map_or_else(String::new, |value| format!(", extraData: i{} {value}", tag.unwrap().1 * 8));
++            members.push(self.push(format!(
++                "!DIDerivedType(tag: DW_TAG_member, name: {}, scope: !%{part}, baseType: !%{variant_id}, size: {}, align: {}{value})",
++                quote(variant),
++                layout.size * 8,
++                layout.align * 8
++            )));
++        }
++        let list = self.push(format!("!{{{}}}", members.iter().map(|member| format!("!%{member}")).collect::<Vec<_>>().join(", ")));
++        self.entries[part] = format!(
++            "!DICompositeType(tag: DW_TAG_variant_part, scope: !%{id}, size: {}, align: {}, elements: !%{list}{discriminator})",
++            layout.size * 8,
++            layout.align * 8
++        );
++        self.structure(id, &name, &layout, &[part]);
 +        Ok(id)
 +    }
 +
@@ -4503,16 +5004,25 @@ index 0000000000000000000000000000000000000000..06e13da763218619da37ff2dc2aaebf1
 +        if self.active.iter().any(|&(l, _)| l == local) {
 +            return;
 +        }
-+        let mut scope = self.subprogram;
-+        let arg = if argument {
-+            format!(", arg: {local}")
++        let parent = if argument { self.subprogram } else { self.scope() };
++        let (scope, node) = if let Some(&nodes) = self.scopes.get(&(local, parent)) {
++            nodes
 +        } else {
-+            let parent = self.scope();
-+            scope = self.push(format!("distinct !DILexicalBlock(scope: !%{parent}, file: !%{file}, line: {line}, column: {column})"));
-+            self.active.push((local, scope));
-+            String::new()
++            let mut scope = parent;
++            let arg = if argument {
++                format!(", arg: {local}")
++            } else {
++                scope = self.push(format!("distinct !DILexicalBlock(scope: !%{parent}, file: !%{file}, line: {line}, column: {column})"));
++                String::new()
++            };
++            let node =
++                self.push(format!("!DILocalVariable(name: {name}{arg}, scope: !%{scope}, file: !%{file}, line: {line}, type: !%{ty})"));
++            self.scopes.insert((local, parent), (scope, node));
++            (scope, node)
 +        };
-+        let node = self.push(format!("!DILocalVariable(name: {name}{arg}, scope: !%{scope}, file: !%{file}, line: {line}, type: !%{ty})"));
++        if !argument {
++            self.active.push((local, scope));
++        }
 +        let location = self.location(scope, line, column);
 +        let _ = writeln!(
 +            body,
@@ -4520,15 +5030,23 @@ index 0000000000000000000000000000000000000000..06e13da763218619da37ff2dc2aaebf1
 +        );
 +    }
 +
-+    pub(super) fn dead(&mut self, local: Local) -> Result<(), String> {
++    pub(super) fn dead(&mut self, body: &mut String, local: Local) {
 +        let Some(index) = self.active.iter().position(|&(l, _)| l == local) else {
-+            return Ok(());
++            return;
 +        };
-+        if index + 1 != self.active.len() {
-+            return Err("Rust debug locations for overlapping lexical bindings are not represented".into());
++        let inner = self.active.split_off(index);
++        for (alive, _) in inner.into_iter().skip(1) {
++            self.declare(body, alive, false);
 +        }
-+        self.active.pop();
-+        Ok(())
++    }
++
++    pub(super) fn enter_block(&mut self, body: &mut String, block: usize, cleanup: bool) {
++        self.active.clear();
++        if !cleanup && let Some(locals) = self.entry_locals[block].clone() {
++            for local in locals {
++                self.declare(body, local, false);
++            }
++        }
 +    }
 +
 +    pub(super) fn has_binding(&self, local: Local) -> bool {
@@ -4544,6 +5062,67 @@ index 0000000000000000000000000000000000000000..06e13da763218619da37ff2dc2aaebf1
 +            let _ = writeln!(output, "!%{index} = {entry}");
 +        }
 +    }
++}
++
++/// Local storage known initialized on every normal predecessor. A call's
++/// destination becomes live on its normal edge, never on its unwind edge.
++fn incoming_locals(body: &Body, tracked: impl Fn(Local) -> bool) -> Vec<Option<Vec<Local>>> {
++    let mut incoming = vec![None; body.blocks.len()];
++    incoming[0] = Some(Vec::new());
++    let mut queue = VecDeque::from([0]);
++    while let Some(block_id) = queue.pop_front() {
++        let block = &body.blocks[block_id];
++        let mut locals = incoming[block_id].clone().expect("reachable block");
++        let initialize = |locals: &mut Vec<Local>, local| {
++            if tracked(local)
++                && let Err(index) = locals.binary_search(&local)
++            {
++                locals.insert(index, local);
++            }
++        };
++        for stmt in &block.stmts {
++            match &stmt.kind {
++                StmtKind::Assign(place, _) if place.proj.is_empty() => initialize(&mut locals, place.local),
++                StmtKind::StorageDead(local) => {
++                    if let Ok(index) = locals.binary_search(local) {
++                        locals.remove(index);
++                    }
++                }
++                _ => {}
++            }
++        }
++        let successors = match &block.term {
++            Terminator::Goto(next) => vec![*next],
++            Terminator::If(_, yes, no) => vec![*yes, *no],
++            Terminator::Switch(_, cases, other) => cases.iter().map(|(_, next)| *next).chain([*other]).collect(),
++            Terminator::Call { dest, next, .. } => {
++                if dest.proj.is_empty() {
++                    initialize(&mut locals, dest.local);
++                }
++                vec![*next]
++            }
++            _ => Vec::new(),
++        };
++        for next in successors {
++            let next = next.0 as usize;
++            let changed = if let Some(old) = &mut incoming[next] {
++                let before = old.len();
++                old.retain(|local| locals.binary_search(local).is_ok());
++                old.len() != before
++            } else {
++                incoming[next] = Some(locals.clone());
++                true
++            };
++            if changed {
++                queue.push_back(next);
++            }
++        }
++    }
++    incoming
++}
++
++fn debug_layout(function: &FnGen<'_, '_>, ty: Ty) -> Result<Layout, String> {
++    c_layout(function.p, &cty(&function.body.tys, ty)).ok_or_else(|| "Rust debug type has no native layout".into())
 +}
 +
 +fn basic_type(name: &str, size: u32, encoding: &str) -> (String, String) {
@@ -4665,15 +5244,15 @@ index 9af753d072e083f9d1f669abc64d3bf898b0a44d..773988cb611c3317ec3370fd8266e291
  /// The byte offset of the value inside a `Mutex` whose value's vtable is
 diff --git a/src/cgen/rust_tests.rs b/src/cgen/rust_tests.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..6e26fd46e83ab8fa809b3dddbab5cbe9a3d5ba86
+index 0000000000000000000000000000000000000000..3dca94c6546bdf82b4c12e0102ca724aba2898fd
 --- /dev/null
 +++ b/src/cgen/rust_tests.rs
-@@ -0,0 +1,140 @@
+@@ -0,0 +1,159 @@
 +// Cargo test descriptors and native entry thunks. The installed Rust libtest
 +// adapter owns scheduling, filtering, reporting and result classification.
 +use super::{Program, SourceMap, c_string_lit, names};
 +use crate::ast::{Ast, AttrInput, Expr};
-+use crate::check::collect::FnLoc;
++use crate::check::collect::{FnLoc, has_native_termination};
 +use crate::def::LocalDefId;
 +use crate::lexer::{Tok, TokenTree};
 +use crate::ty::UNIT;
@@ -4688,6 +5267,7 @@ index 0000000000000000000000000000000000000000..6e26fd46e83ab8fa809b3dddbab5cbe9
 +    column: u32,
 +    ignored: Option<Option<String>>,
 +    panic: Option<Option<String>>,
++    reports_status: bool,
 +}
 +
 +pub(crate) fn collect(program: &Program, map: &SourceMap, cwd: &Path) -> Result<Vec<NativeTest>, String> {
@@ -4697,7 +5277,10 @@ index 0000000000000000000000000000000000000000..6e26fd46e83ab8fa809b3dddbab5cbe9
 +        if !def.is_test {
 +            continue;
 +        }
-+        if !matches!(function.loc, FnLoc::Item(_)) || !function.params.is_empty() || function.ret != UNIT || !def.generics.params.is_empty()
++        if !matches!(function.loc, FnLoc::Item(_))
++            || !function.params.is_empty()
++            || !has_native_termination(program, function.ret)
++            || !def.generics.params.is_empty()
 +        {
 +            return Err(format!("native Cargo harness does not represent the signature of {}", program.display_path(function.name)));
 +        }
@@ -4715,10 +5298,14 @@ index 0000000000000000000000000000000000000000..6e26fd46e83ab8fa809b3dddbab5cbe9
 +            }
 +        }
 +        let name = program.display_path(function.name);
++        let reports_status = function.ret != UNIT;
++        if reports_status && panic.is_some() {
++            return Err(format!("test {name} must return () to use #[should_panic]"));
++        }
 +        if [&ignored, &panic].iter().any(|text| text.as_ref().and_then(|value| value.as_ref()).is_some_and(|value| value.contains('\0'))) {
 +            return Err(format!("native Cargo test attribute in {name} contains a NUL byte"));
 +        }
-+        tests.push(NativeTest { id: LocalDefId(index as u32), name, file, line, column, ignored, panic });
++        tests.push(NativeTest { id: LocalDefId(index as u32), name, file, line, column, ignored, panic, reports_status });
 +    }
 +    Ok(tests)
 +}
@@ -4755,12 +5342,18 @@ index 0000000000000000000000000000000000000000..6e26fd46e83ab8fa809b3dddbab5cbe9
 +        int lustr_test_main(int argc, char **argv, size_t count, const lust_test_descriptor*);\n",
 +    );
 +    for (i, test) in tests.iter().enumerate() {
-+        let symbol = names::body(slots[test.id.0 as usize]);
++        let slot = slots[test.id.0 as usize];
++        if test.reports_status {
++            let symbol = termination_entry(slot);
++            let _ = writeln!(out, "int {symbol}(void);\nstatic void lust_test_body_{i}(void *result) {{ *(int*)result = {symbol}(); }}");
++        } else {
++            let symbol = names::body(slot);
++            let _ =
++                writeln!(out, "lust_Unit {symbol}(void);\nstatic void lust_test_body_{i}(void *unused) {{ (void)unused; {symbol}(); }}");
++        }
 +        let _ = writeln!(
 +            out,
-+            "lust_Unit {symbol}(void);\n\
-+             static void lust_test_body_{i}(void *unused) {{ (void)unused; {symbol}(); }}\n\
-+             static int lust_test_run_{i}(void *ctx, lust_test_report report) {{\n\
++            "static int lust_test_run_{i}(void *ctx, lust_test_report report) {{\n\
 +               return lust_test_invoke(lust_test_body_{i}, ctx, report);\n\
 +             }}"
 +        );
@@ -4785,12 +5378,17 @@ index 0000000000000000000000000000000000000000..6e26fd46e83ab8fa809b3dddbab5cbe9
 +    out.push_str("};\n");
 +}
 +
++pub(super) fn termination_entry(slot: u32) -> String {
++    format!("lust_test_termination_{}", names::fn_tag(slot))
++}
++
 +/// Joins the original native catch to the Rust libtest adapter. Copy the
 +/// message while its native payload is alive, then drop it on the native side.
 +pub(crate) const CATCH_ADAPTER: &str = "
 +int lust_test_invoke(void (*body)(void*), void *ctx,
 +                      void (*report)(void*, const uint8_t*, size_t)) {
-+    if (!lust_unw_try(body, 0)) return 0;
++    int status = 0;
++    if (!lust_unw_try(body, &status)) return status ? 256 + status : 0;
 +    lust_exc exc;
 +    lust_unw_take_any(&exc);
 +    lust_unw_get()->count--;
@@ -5191,7 +5789,7 @@ index b345e1ed639e2ee95c51087067b2cda839893c6b..6138dc1153b080c82941d059232dbc0d
          }
          let mut t = self.resolve(ct);
 diff --git a/src/check/collect.rs b/src/check/collect.rs
-index 2e10c71e2e73daf3132cabc36ffaa591a37f755d..25b19948cd11f6d6a432640e7fa608c83f678a84 100644
+index 2e10c71e2e73daf3132cabc36ffaa591a37f755d..1f3a7b8121155b69f6dcdab897fc1bf3e9f64c80 100644
 --- a/src/check/collect.rs
 +++ b/src/check/collect.rs
 @@ -398,6 +398,9 @@ pub struct Program {
@@ -5339,7 +5937,30 @@ index 2e10c71e2e73daf3132cabc36ffaa591a37f755d..25b19948cd11f6d6a432640e7fa608c8
                  {
                      errs.push(Diag::new(
                          "L0616",
-@@ -8394,7 +8469,10 @@ impl<'a> crate::ty::consteval::ConstCx<'a> for CollectCx<'a> {
+@@ -5645,9 +5720,7 @@ pub fn collect_reuse(
+ pub(crate) fn check_main_termination(p: &Program, errs: &mut Vec<Diag>) {
+     let Some(main) = p.main else { return };
+     let f = p.fn_info(main);
+-    let term = |t: Ty| t == UNIT || p.tys.is_exit_code(t);
+-    let ret_ok = term(f.ret) || matches!(p.tys.result_args(f.ret), Some((ok, e)) if term(ok) && has_debug(p, &p.tys, e));
+-    if !f.params.is_empty() || !ret_ok {
++    if !f.params.is_empty() || !has_native_termination(p, f.ret) {
+         errs.push(Diag::new(
+             "L0110",
+             f.def(&p.ast).name_span,
+@@ -5657,6 +5730,11 @@ pub(crate) fn check_main_termination(p: &Program, errs: &mut Vec<Diag>) {
+     }
+ }
+ 
++pub(crate) fn has_native_termination(p: &Program, ty: Ty) -> bool {
++    let term = |t: Ty| t == UNIT || p.tys.is_exit_code(t);
++    term(ty) || matches!(p.tys.result_args(ty), Some((ok, e)) if term(ok) && has_debug(p, &p.tys, e))
++}
++
+ /// The parts of field type `fty` of Adt `id` that rustc's derive bounds
+ /// on top of `T: Trait` per type param: every path type whose first
+ /// segment names a type param, with more segments (`T::Item`, also inside
+@@ -8394,7 +8472,10 @@ impl<'a> crate::ty::consteval::ConstCx<'a> for CollectCx<'a> {
                  // A body const or static of this name shadows any
                  // module fn: the call names no fn here.
                  Some(_) => return CallTarget::Unknown,
@@ -5351,7 +5972,7 @@ index 2e10c71e2e73daf3132cabc36ffaa591a37f755d..25b19948cd11f6d6a432640e7fa608c8
              }
          } else if segs.len() == 2 {
              // `Self::f(..)` names the impl type `Self` means here.
-@@ -10514,13 +10592,13 @@ impl crate::ty::layout::AdtShapes for UserLayout<'_> {
+@@ -10514,13 +10595,13 @@ impl crate::ty::layout::AdtShapes for UserLayout<'_> {
          // `OnceCell<T>` is std's `UnsafeCell<Option<T>>`: its source
          // fields (the `Option<T>` and a `PhantomData`) with the niche
          // hidden.
@@ -8421,7 +9042,7 @@ index da28835400f894866adb85f436e2cbdf109797d7..c2a8d6a10a776fba1df984670ff8b994
          assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
          assert!(decode_response(b"short").is_none());
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd8537bb0745f 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a8cff26eb95e768a767a5b1befb3c4fc193040a6 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
 @@ -59,6 +59,7 @@ fn expand_tokens(
@@ -8655,7 +9276,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
  ) -> Result<(SourceMap, Vec<usize>, Vec<usize>, bool, usize, &'static str, Vec<u32>, Vec<u64>, Option<std::sync::Arc<crate::resolve::imports::ResolvedTables>>), Response> {
      use crate::resolve::cargo::{self, GraphRequest};
      use crate::resolve::cfg::CfgEnv;
-@@ -2081,8 +2176,48 @@ fn resolved_setup(
+@@ -2081,8 +2176,54 @@ fn resolved_setup(
          front.display_root = Some(graph.workspace_root.clone());
          let pre_env = CfgEnv::new(&key.target_triple, &key.features, key.krate.test, key.profile);
          let unit =
@@ -8686,8 +9307,14 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
 +                }),
 +                _ => false,
 +            }};
-+            if !unit.target.kind.iter().any(|kind| kind == library.target_kind() || !library.is_executable() && kind == "rlib")
-+                || unit.target.name != key.krate.target_name || !matched_dependencies
++            let target_matches = if key.krate.test {
++                unit.target.test_flag && unit.target.kind.iter().any(|kind| matches!(kind.as_str(), "bin" | "lib" | "rlib"))
++                    && library.matches_target_name(&unit.target.name)
++            } else {
++                unit.target.kind.iter().any(|kind| kind == library.target_kind() || !library.is_executable() && kind == "rlib")
++                    && unit.target.name == key.krate.target_name
++            };
++            if !target_matches || !matched_dependencies
 +                // Cargo metadata names the actual script target in every
 +                // build mode; UnitInfo's planned script is product-only.
 +                || unit.package.targets.iter().any(|target|target.kind.iter().any(|kind|kind=="custom-build"))
@@ -8705,7 +9332,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
          let root_text = std::fs::read_to_string(&unit.target.src_path)
              .map_err(|e| code2(format!("cannot read {}: {e}", unit.target.src_path.display())))?;
          // Edition and lint gates for the selected unit (section 1.1),
-@@ -2095,21 +2230,29 @@ fn resolved_setup(
+@@ -2095,21 +2236,29 @@ fn resolved_setup(
              }
          }
          let mut env = CfgEnv::new(&key.target_triple, &unit.features, key.krate.test, key.profile);
@@ -8741,7 +9368,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
              for c in &out.rustc_cfg {
                  env.add_rustc_cfg(c);
              }
-@@ -2117,10 +2260,13 @@ fn resolved_setup(
+@@ -2117,10 +2266,13 @@ fn resolved_setup(
                  env.add_check_cfg(c);
              }
          }
@@ -8758,7 +9385,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
          t.lap("build script outputs");
          // Cargo runs rustc from the workspace root, so `file!` shows member paths relative to it.
          front.client.shown_root = Some((graph.workspace_root.clone(), PathBuf::new()));
-@@ -2131,8 +2277,9 @@ fn resolved_setup(
+@@ -2131,8 +2283,9 @@ fn resolved_setup(
          (unit.target.src_path.clone(), root_text, ids, env, deps, unit.package.name.replace('-', "_"), cargo_env)
      } else {
          front.display_root = None;
@@ -8770,7 +9397,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
          (key.krate.root.clone(), user_src.to_string(), crate_ids_default, env, Vec::new(), stem, Vec::new())
      };
      // Body patch (driver/patch.rs): when every edit since the last full
-@@ -2153,8 +2300,22 @@ fn resolved_setup(
+@@ -2153,8 +2306,22 @@ fn resolved_setup(
      // PatchBase below asks `macro_scope::dep_macros_shut`).
      let patch_expand = (env.clone(), crate_name.clone());
      let has_deps = !externs.is_empty();
@@ -8795,7 +9422,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      if super::resolve_oracle::on()
          && let Ok(p) = &patched
      {
-@@ -2165,22 +2326,8 @@ fn resolved_setup(
+@@ -2165,22 +2332,8 @@ fn resolved_setup(
      match patched {
          // Nothing changed since the last check of this same request:
          // its answer stands (`check_fingerprint`).
@@ -8820,7 +9447,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
          }
          // An item patch (sigedit P1.3): the new item scans take the
          // resolve path's slot update, in signatures mode with the edited
-@@ -2321,7 +2468,20 @@ fn resolved_setup(
+@@ -2321,7 +2474,20 @@ fn resolved_setup(
          // The cache's final chunks are parts of the session's merged Ast: the resolve takes
          // its hits out of it, and lets go of it before any patch writes it.
          front.resolve_cache.set_merged(front.ast.clone(), front.ast_gen);
@@ -8842,7 +9469,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
          front.resolve_cache.clear_merged();
          if super::item_oracle::on() || super::resolve_oracle::on() {
              oracle_input = Some(super::item_oracle::ColdInput { input: input.clone(), platform: plan.platform });
-@@ -2379,6 +2539,7 @@ fn resolved_setup(
+@@ -2379,6 +2545,7 @@ fn resolved_setup(
      let old_kept = std::mem::take(&mut front.kept);
      let old_ast = std::mem::replace(&mut front.ast, Arc::new(ast));
      front.ast_gen = generation;
@@ -8850,7 +9477,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      front.fresh_exprs = front.ast.exprs.len();
      if (old_ast.exprs.len() > 20_000 || old_kept.iter().any(Option::is_some)) && caches.persistent {
          // Nested token trees in the Ast drop recursively; use the
-@@ -2552,10 +2713,337 @@ fn location_path(p: &str, library: &Path, display_root: Option<&Path>, client: &
+@@ -2552,10 +2719,337 @@ fn location_path(p: &str, library: &Path, display_root: Option<&Path>, client: &
  }
  
  pub fn compile(req: &Request, session: &mut Session) -> Response {
@@ -9189,7 +9816,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
              stderr: format!(
                  "error: internal: request routed to the wrong session\n  request: {}\n  session: {}\n",
                  req.session.describe(),
-@@ -2563,16 +3051,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2563,16 +3057,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              ),
              code: 3,
              ..Default::default()
@@ -9218,7 +9845,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      }
      // Lust links for the host target only (tcc). A named non-host triple
      // is a clear error for a link, not a host binary under a foreign
-@@ -2591,23 +3087,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2591,23 +3093,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // product; no link runs).
      let cc_build = req.cc && (triple.is_empty() || crate::resolve::cfg::CfgEnv::is_release_target(triple));
      if foreign && !foreign_check && !cc_build && req.emit_c.is_none() {
@@ -9246,7 +9873,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      let crate_ids = session.crate_ids();
      // Open the disk cache once per session and seed slot assignment from
      // the stored manifest, so a restarted daemon gives every fn the slot
-@@ -2670,7 +3167,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2670,7 +3173,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      } else {
          crate::resolve::worklist::route_root_std(&src, &front.interner, true)
      };
@@ -9255,7 +9882,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      let route_std_mods = req.session.krate.manifest_path.is_none().then_some(std_mods);
      if front.resolved_crate && !wants_resolver {
          front.ast = Arc::default();
-@@ -2719,16 +3216,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2719,16 +3222,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      if needs.any() {
          match splice_std(&mut src, std_cache, needs) {
              Ok(sp) => (std_ranges, std_routes, std_methods) = (sp.ranges, sp.routes, sp.methods),
@@ -9277,7 +9904,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
          }
      } else {
      // Lex and scan in chunks of whole items, in parallel. Only the region an edit touched is
-@@ -2873,7 +3372,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2873,7 +3378,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // A macro error in a chunk is the answer, not a lexing fallback.
      if let Some(Err(d)) = fresh.iter().find(|l| matches!(l, Err(d) if d.code.starts_with("L08"))) {
          let mut d = d.clone();
@@ -9286,7 +9913,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      }
      let split_inner_attr = ranges.len() > 1
          && (reused.iter().flatten().any(|c| c.inner_attr) || fresh.iter().flatten().any(|&(_, _, _, inner_attr)| inner_attr));
-@@ -2889,7 +3388,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2889,7 +3394,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          // file has an inner attribute (`has_inner_attr`): lex the whole file. Its error is the
          // answer; if it lexes, compile as one chunk. Never panic.
          match lexer::lex(&src, ROOT_FILE, 0, &front.interner).and_then(|l| expand_tokens(front, l, &req.file, &src, test_mode, req.session.profile, &req.session)) {
@@ -9295,7 +9922,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
              Ok((whole, deps)) => {
                  let mut sc = scan::scan(&whole);
                  fold_fn_text(&mut sc, &whole, &src);
-@@ -3072,7 +3571,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3072,7 +3577,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                      front.chunks[fn_at[i].0].items = None;
                  }
                  front.chunks_blanked = true;
@@ -9304,7 +9931,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
              }
              for (&i, (body_ast, body, exprs, pats)) in changed.iter().zip(parsed) {
                  let before = (front.ast.exprs.len() as u32, front.ast.pats.len() as u32, front.ast.blocks.len() as u32);
-@@ -3145,7 +3644,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3145,7 +3650,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          if let Some(Err(d)) = parsed.iter().find(|p| p.is_err()) {
              let d = d.clone();
              front.chunks_blanked = old_len > 0;
@@ -9313,7 +9940,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
          }
          let mut new_asts: FxMap<usize, Ast> = todo.iter().copied().zip(parsed.into_iter().map(|p| p.unwrap())).collect();
          // Splice every per-chunk list in chunk order: a re-parsed chunk
-@@ -3221,7 +3720,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3221,7 +3726,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              Ok(c) => c,
              Err(e) => {
                  front.env_hash = None;
@@ -9322,7 +9949,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
              }
          }
      } else {
-@@ -3255,14 +3754,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3255,14 +3760,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                      Ok((w, _deps)) => w,
                      Err(mut d) => {
                          front.env_hash = None;
@@ -9339,7 +9966,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
                  }
              }
          };
-@@ -3273,7 +3772,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3273,7 +3778,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              Ok(c) => c,
              Err(e) => {
                  front.env_hash = None;
@@ -9348,7 +9975,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
              }
          }
      };
-@@ -3567,6 +4066,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3567,6 +4072,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // Template check errors from the kept program are collect's errors
      // (`gen_reuse.template_errors` counts them).
      let collect = |front: &mut Front, caches: &mut Caches| {
@@ -9363,7 +9990,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
          collect::collect_reuse(
              front.ast.clone(),
              front.interner.clone(),
-@@ -3666,7 +4173,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3666,7 +4179,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              front.last_visits.clear();
              visits.render(&mut front.last_visits);
              log_visits(&front.last_visits);
@@ -9372,7 +9999,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
          }
      };
      // Every body of a generic program rechecks when the trait system
-@@ -3735,7 +4242,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3735,7 +4248,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // catch_unwind would return Ok after a panic (rel-opt).
      let tables_env = std::env::var("LUST_UNWIND_TABLES").ok();
      program.unwind_tables = program.unwind
@@ -9383,7 +10010,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
              tables_env.as_deref() != Some("0")
          } else {
              !caches.persistent && req.emit_c.is_some() && tables_env.as_deref() == Some("1")
-@@ -3757,11 +4266,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3757,11 +4272,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
                  None => {
                      front.env_hash = None;
@@ -9397,7 +10024,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
                  }
              }
          }
-@@ -3772,7 +4281,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3772,7 +4287,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      if program.fns.len() < fn_count {
          // The scanner and the parser disagree (only possible with unusual syntax). Start over.
          front.env_hash = None;
@@ -9406,7 +10033,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      }
      // Mono instance slots (docs/ARCH.md section 4.2; W-TRAITS-CORE
      // through W-DRIVER): collect appends materialized instances
-@@ -3790,7 +4299,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3790,7 +4305,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              let disk = program.disk_id(LocalDefId(i as u32));
              if let Err(c) = def::insert_path(&mut front.slot_paths, disk, &format!("instance#{}", disk.hash.0)) {
                  front.env_hash = None;
@@ -9415,7 +10042,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
              }
              let slot = match front.slot_of.get(&disk) {
                  Some(&slot) => slot,
-@@ -4040,7 +4549,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4040,7 +4555,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  continue;
              }
              let s = slot(i);
@@ -9424,7 +10051,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
                  continue;
              }
              let Some(Some(cached)) = caches.slot_ir.get(s) else {
-@@ -4054,12 +4563,15 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4054,12 +4569,15 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              };
              let moved = cached.slot_at_gen != s as u32
                  || cached.used_at_gen.iter().any(|(disk, at_gen)| front.slot_of.get(disk) != Some(at_gen));
@@ -9443,7 +10070,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
                  super::ir_cache::rebuild(&program, cached, LocalDefId(i as u32))
              } else {
                  None
-@@ -4068,6 +4580,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4068,6 +4586,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  Some(body) if super::ir_cache::ir_fingerprint(&program, &body, &map, scan_of(front, i).1) == cached.ir_fp => {
                      reemit.push((i, body))
                  }
@@ -9454,7 +10081,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
                  _ => reemit_failed.push(i),
              }
          }
-@@ -4081,9 +4597,13 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4081,9 +4603,13 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // switches, debug info, unwind tables) makes every slot's C again, as a one-shot build
      // does: its slot cache holds C of the other form (a front image saved by a tcc build,
      // then a release driver build). A check makes no C and keeps the key.
@@ -9470,7 +10097,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
          if caches.codegen_key != key {
              caches.codegen_key = key;
              caches.has_out.iter_mut().for_each(|h| *h = false);
-@@ -4091,12 +4611,26 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4091,12 +4617,26 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              caches.glue = GlueSet::default();
              caches.objects = None;
          }
@@ -9498,7 +10125,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      }
      // The instance Adt ids this build generates C under, and whether one
      // names another instance than in the C made since the last full
-@@ -4285,7 +4819,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4285,7 +4825,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // A one-shot check needs no IR after borrowck: dropping each body on
      // its worker lets the allocator reuse the memory for the next body,
      // instead of touching fresh pages for every function.
@@ -9507,7 +10134,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      // `lust check` skips std platform bodies (`Program::check_skips`).
      // A skipped slot keeps its last marks; one that needed a check lost
      // its C above, so the next build checks it.
-@@ -4296,17 +4830,45 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4296,17 +4836,45 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          super::item_oracle::check(front, caches, Ok(&program), &work, fn_count, hashes, lines, visits.path, crate_ids, build, tables);
          t.lap("item oracle");
      }
@@ -9553,7 +10180,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
              (Some(body), errs)
          });
          let body = body.filter(|_| keep_bodies).map(|mut b| {
-@@ -4315,6 +4877,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4315,6 +4883,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          });
          (body, errs)
      });
@@ -9564,7 +10191,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      let mut diags: Vec<Diag> = Vec::new();
      for (k, &i) in work.iter().enumerate() {
          caches.ok[slot(i)] = results[k].1.is_empty();
-@@ -4350,6 +4916,13 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4350,6 +4922,13 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              stored.verified[mode_at] = verified;
              caches.slot_reads[slot(i)] = Some(stored);
          }
@@ -9578,7 +10205,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
          diags.extend(results[k].1.iter().cloned());
      }
      // rustc stops before monomorphization once a pre-mono check fails, so an
-@@ -4366,10 +4939,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4366,10 +4945,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // A lust file is a bin crate, so check needs `main` too, as `rustc --emit=metadata`
      // does. `lust test` sets `harness`: it adds a generated `main` after this check.
      // A Cargo lib target (`--lib`) is a lib crate: rustc needs no `main` there.
@@ -9591,7 +10218,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      // A one-shot process (`leak_at_exit`) exits right after this call. Freeing the IR and
      // program arenas, mostly built on worker threads, costs about 10 ms on a 31k-line crate,
      // so leak them on every return below and let the OS reclaim the memory at exit. A
-@@ -4396,10 +4970,121 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4396,10 +4976,121 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
              }
          }
@@ -9715,7 +10342,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
          // The answer, before the timing and stats lines, for a no-op
          // check of the same request to reuse.
          if let Some(fp) = check_fp {
-@@ -4446,10 +5131,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4446,10 +5137,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          return resp;
      }
  
@@ -9740,7 +10367,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      // Each fn's base line: cgen stores its line numbers relative to it
      // and the main unit adds each slot's base back, so a reused body's
      // C stays right when its source text moves. An instance's base is
-@@ -4471,7 +5170,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4471,7 +5176,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let line_base_of = |_: &Front, i: usize| -> u32 { line_bases.get(i).copied().unwrap_or(0) };
      // Release C (driver/release_c.rs): content-addressed names, set as cgen's naming
      // context around every step that prints C.
@@ -9749,7 +10376,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      let rn = rnames.as_ref();
      // A release C build to the release driver streams its cc step (`cc::Stream`): each unit the
      // assembly makes compiles from the time its text exists. Not with --emit-c nor LLVM units.
-@@ -4498,7 +5197,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4498,7 +5203,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let (outs, cg_noted): (Vec<_>, Vec<_>) = par_map(&bodies, |(i, b)| {
          check::derive_delta::scoped(program.record_reads, || {
              cgen::in_layout_phase(layout_tag, || {
@@ -9769,7 +10396,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
              })
          })
      })
-@@ -4519,7 +5229,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4519,7 +5235,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // Cached IR serves only the slot-moved re-emit, which runs only in a
      // program with no generics: a generic program caches none (on tsgo it
      // was 1.5 GB of a daemon session, made serially per generated body).
@@ -9778,7 +10405,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      // The stable id of each fn whose slot the new C prints (`FnOut::used`),
      // by slot: the pairs below are the next renumber's re-emit trigger.
      let mut wanted = vec![false; if keep_ir { front.slot_of.len() } else { 0 }];
-@@ -4552,10 +5262,22 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4552,10 +5268,22 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          caches.out[s] = out;
          caches.has_out[s] = true;
          dirty_slots.push(s);
@@ -9802,7 +10429,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      // LUST_CHECK_GENREUSE=1 (genreuse_oracle.rs): every concrete body a release C build keeps
      // is checked, lowered and generated again without reuse (nothing stored), and its C must
      // equal the kept C. Release C names are content-addressed; dev C names a vtable by a
-@@ -4681,6 +5403,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4681,6 +5409,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      }
      let glue_changed = shared_changed || regenerated || statics_changed;
      t.lap("codegen (par)");
@@ -9817,7 +10444,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      // Nothing reads the IR after codegen. A one-shot build leaks it at exit
      // (`leak_at_exit`), but on a large program it is the largest block
      // alive at the peak (ts-rust's bins: about 2.4 GB of 9.4 GB, through
-@@ -4718,7 +5448,19 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4718,7 +5454,19 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      const SHARD_RECORD: &str = "glue shard ";
      let fn_units: Vec<usize> = (0..groups.len()).map(|g| g + FIRST_FN_UNIT).collect();
      let dirty_fn_units: Vec<usize> = (0..groups.len()).filter(|&g| dirty_groups[g]).map(|g| g + FIRST_FN_UNIT).collect();
@@ -9838,7 +10465,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      // Instance slots take their template's line: cgen stores an
      // instance's panic lines relative to it (see `line_base_of`).
      let mut slot_lines = vec![0u32; n_slots];
-@@ -4751,7 +5493,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4751,7 +5499,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // rebuilds and the base
      // relinks over the existing unit objects. Unrelated units keep
      // their objects, in the session and in the disk unit cache.
@@ -9854,7 +10481,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      let cap_grown = n_slots > caches.table_cap;
      if fresh_base || cap_grown {
          caches.table_cap = n_slots * 2 + 64;
-@@ -4760,7 +5509,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4760,7 +5515,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          caches.base_units = groups.len();
      }
      let table_dirty = cap_grown || groups.len() != caches.base_units;
@@ -9865,7 +10492,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      let dir = caches.obj_dir.clone();
      let base_obj = |u: usize| dir.join(format!("u{u}.o"));
      let overlay_obj = |u: usize| dir.join(format!("o{u}.o"));
-@@ -4842,9 +5593,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4842,9 +5599,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          super::release_c::groups(&caches.out, names, &file, &line)
      };
      let gen_unit = |u: usize, overlay: bool| match u {
@@ -9877,7 +10504,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
          3 => cgen::table_unit(caches.table_cap, &fn_units),
          LOC_UNIT => cgen::loc_unit(&files, &slot_lines),
          g => {
-@@ -4853,7 +5604,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4853,7 +5610,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
      };
      // Release C: whether fn bodies are LLVM IR (cgen/ll.rs), and B1's switches.
@@ -9886,7 +10513,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      // B1 (`cgen::record`): each C fn unit records the pieces it is made of and what it
      // read, and the next build sets the record against its program
      // (`Caches::unit_records`). A session that keeps its caches (a daemon, a front
-@@ -5007,7 +5758,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5007,7 +5764,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              let assemble = |u: usize, inl: &[Vec<usize>], c_refs: Option<&cgen::ll::CRefs>, copy_hot: Option<&cgen::CopyHot>| {
                  let t = Instant::now();
                  let (c, helpers) = cgen::in_layout_phase(asm_tag, || cgen::names::with(rn, || match u {
@@ -9895,7 +10522,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
                      1 => match super::release_c::statics_bytes() {
                          0 => (adapt(cgen::names::statics_unit(&program, &caches.glue), &Default::default()), String::new()),
                          target => {
-@@ -5023,7 +5774,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5023,7 +5780,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                              (adapt(index, &Default::default()), String::new())
                          }
                      },
@@ -9904,7 +10531,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
                      3 => {
                          let rg = rg_cell.get().expect("the fn units are cut before unit 3");
                          (super::release_c::table_unit(&rg.iter().filter(|(_, s)| s.contains(&(main_slot as usize))).map(|(r, _)| r.clone()).collect::<Vec<_>>()), String::new())
-@@ -5291,7 +6042,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5291,7 +6048,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                          if k < n_early {
                              Ok(assemble(first[k], &[], None, None))
                          } else {
@@ -9915,7 +10542,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
                          }
                      })
                      .into_iter()
-@@ -5617,7 +6370,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5617,7 +6376,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      };
      let rgroups = rg_cell.into_inner();
      // The LLVM backend (cgen/ll.rs) wrote `.ll` companions: only cc.rs builds them.
@@ -9924,7 +10551,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      // The units the link takes after 1..4: release C has its own fn units, glue shards and
      // statics parts.
      let link_fn_units: Vec<usize> = match &rgroups {
-@@ -5656,7 +6409,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5656,7 +6415,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              return Response { code: 0, ..Default::default() };
          }
      }
@@ -9933,7 +10560,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
          return Response {
              stderr: "error: LUST_RELEASE_BACKEND=llvm builds through the release driver (`lust build --release --target <triple>`) or with --emit-c\n".into(),
              code: 2,
-@@ -5671,7 +6424,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5671,7 +6430,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // frozen, so a clean unit's C is the same as last time and its object
      // comes from the cache. Overlays do not exist here: every build emits
      // the base form of each unit.
@@ -9942,7 +10569,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
          // The release driver returns before the visits line at the end: its log line is here
          // (front-check's path coverage).
          front.last_visits.clear();
-@@ -5688,7 +6441,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5688,7 +6447,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
              }
          }
@@ -9954,7 +10581,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
              // Release C (`LUST_RELEASE_C=1`) already holds the content-addressed units.
              let mut all: Vec<(String, String)> = if rgroups.is_some() {
                  // An LLVM companion keeps its `.ll` name (cc.rs pairs it with its C unit). The
-@@ -5807,6 +6563,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5807,6 +6569,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // this check keeps that a pin, not a hope.
      if let Some(run_args) = &req.run_args
          && !caches.persistent
@@ -9962,7 +10589,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
          && fresh_base
          && groups.len() == 1
          && !req.debug
-@@ -5837,7 +6594,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5837,7 +6600,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
      }
      // Disk unit objects key on each unit's full C text (see cache.rs):
@@ -9971,7 +10598,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      // compiler, so a hit can never serve an object whose C differs. The
      // C is already built here for every unit in `todo`, so the key costs
      // one hash per unit.
-@@ -5847,7 +6604,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5847,7 +6610,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
      }
      let keys: Vec<Option<String>> = match &disk_cache {
@@ -9980,7 +10607,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
          None => vec![None; units.len()],
      };
      // The units move into the miss list, and their C is freed before the
-@@ -5866,7 +6623,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5866,7 +6629,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              miss_keys.push(key);
          }
      }
@@ -9989,7 +10616,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
          caches.objects = None;
          return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
      }
-@@ -5883,10 +6640,23 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5883,10 +6646,23 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      caches.objects = Some(req.debug);
      t.lap("tcc compile");
      let all_base: Vec<PathBuf> = [1, 2, 3, LOC_UNIT].into_iter().chain(link_fn_units.iter().copied()).map(base_obj).collect();
@@ -10015,7 +10642,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      } else {
          // The base library lives in a persistent dir under a content name
          // (see `resolve_base_dir`): the executable loads it by absolute
-@@ -5901,18 +6671,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5901,18 +6677,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
          let base = if rebuild_base {
              caches.base_gen += 1;
@@ -10056,7 +10683,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
                      install_base(&tmp, &base_dir.join(&soname))?;
                      if !caches.base_files.contains(&soname) {
                          caches.base_files.push_back(soname);
-@@ -5922,24 +6705,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5922,24 +6711,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              if built.is_err() {
                  let _ = std::fs::remove_file(&tmp);
              }
@@ -10088,7 +10715,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
              built
          } else {
              Ok(())
-@@ -5958,8 +6742,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5958,8 +6748,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // a small grace count while no known output file still references them. A binary the user
      // kept keeps its base; one that was overwritten or deleted does not. A running program
      // keeps its mapped copy after unlink.
@@ -10099,7 +10726,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
          if let Some(base_dir) = caches.base_dir.clone() {
              record_base_user(&base_dir, &soname, &req.out);
          }
-@@ -6058,6 +6842,66 @@ mod tests {
+@@ -6058,6 +6848,66 @@ mod tests {
          panic!("{}: still busy", bin.display())
      }
  
@@ -10166,7 +10793,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7005db90ffd54f94a9c98d86030cd853
      /// The base sweep never deletes a live owner's base (it may be a live
      /// session's current base, found by fuzz seed 7 multi when a guard
      /// session's first-build sweep deleted the warm session's base), but
-@@ -6417,10 +7261,547 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
+@@ -6417,10 +7267,547 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
              max_errors: 20,
              run_args: None,
              harness: false, cc: false,
@@ -14681,7 +15308,7 @@ index c4b23e007d746b984e392919dcf1bc9bc87a265e..47bb8992d04e52e8ba9774e3e865ddf1
              _ => return None,
          }
 diff --git a/src/protocol.rs b/src/protocol.rs
-index 504b467a9d240272c85f999b59f57a5d52b3cd4e..1a03fe3c163688163b7b830b355b8daa8ed28c67 100644
+index 504b467a9d240272c85f999b59f57a5d52b3cd4e..da67a958bcf3f815f90fe42969afac538d802a43 100644
 --- a/src/protocol.rs
 +++ b/src/protocol.rs
 @@ -6,7 +6,7 @@
@@ -14900,7 +15527,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..1a03fe3c163688163b7b830b355b8daa
                  client: Client::current(&typed),
              });
          }
-@@ -791,6 +880,28 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -791,6 +880,30 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
      if let Some(on) = debug_assertions {
          session.profile.debug_assertions = on;
      }
@@ -14923,13 +15550,15 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..1a03fe3c163688163b7b830b355b8daa
 +        if executable_test && (session.profile.panic_abort
 +            || !key.executable_dependencies.as_ref().is_some_and(Vec::is_empty)) { return None; }
 +        session.krate.test = executable_test;
-+        session.krate.target_explicit = true;
++        // Cargo gives a bin name for binary unit tests. Library unit
++        // tests supply their source and crate name, with no --crate-type.
++        session.krate.target_explicit = !executable_test || std::env::var_os("CARGO_BIN_NAME").is_some();
 +        session.library = Some(key);
 +    }
      let req = Request {
          cmd: if cmd == "check" { Cmd::Check } else { Cmd::Build },
          session,
-@@ -803,6 +914,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -803,6 +916,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
          max_errors,
          run_args: if run { Some(run_args.clone()) } else { None },
          harness: false, cc: false,
@@ -14937,7 +15566,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..1a03fe3c163688163b7b830b355b8daa
          client: Client::current(&typed),
      };
      Some(Invocation::Compile { req, run, args: run_args })
-@@ -909,8 +1021,41 @@ pub fn encode(r: &Request) -> Vec<u8> {
+@@ -909,8 +1023,41 @@ pub fn encode(r: &Request) -> Vec<u8> {
      path_field(&mut out, s.krate.manifest_path.as_deref());
      put_field(&mut out, s.krate.target_kind.as_bytes());
      put_field(&mut out, s.krate.target_name.as_bytes());
@@ -14979,7 +15608,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..1a03fe3c163688163b7b830b355b8daa
      for f in &s.features {
          put_field(&mut out, f.as_bytes());
      }
-@@ -951,8 +1096,46 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -951,8 +1098,46 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
      let manifest = get_field(r)?;
      let target_kind = text(get_field(r)?)?;
      let target_name = text(get_field(r)?)?;
@@ -15026,7 +15655,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..1a03fe3c163688163b7b830b355b8daa
      // A feature count this large is a bad request, not a loop to run.
      let n_features: usize = f[11].parse().ok()?;
      if n_features > 4096 {
-@@ -982,11 +1165,13 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -982,11 +1167,13 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
      Some(Request {
          cmd: if f[0] == "check" { Cmd::Check } else { Cmd::Build },
          session: SessionKey {
@@ -15040,7 +15669,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..1a03fe3c163688163b7b830b355b8daa
                  root,
                  test: f[5] == "1",
              },
-@@ -1006,12 +1191,17 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -1006,12 +1193,17 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
          max_errors: f[4].parse().ok()?,
          run_args: None,
          harness: false, cc: false,
@@ -15059,7 +15688,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..1a03fe3c163688163b7b830b355b8daa
  }
  
  /// The whole answer to a request of another build: a head no client takes
-@@ -1020,37 +1210,78 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
+@@ -1020,37 +1212,78 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
      write!(w, "- - - {}\n", build_id())
  }
  
@@ -15167,7 +15796,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..1a03fe3c163688163b7b830b355b8daa
  }
  
  /// Prints a response. For `run`, runs the program after a successful build. Never returns.
-@@ -1331,9 +1562,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
+@@ -1331,9 +1564,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
      Some(PathBuf::from(text[at..end].replace("\\\\", "\\")))
  }
  
@@ -15217,7 +15846,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..1a03fe3c163688163b7b830b355b8daa
  pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug: bool, net: CargoNet) -> ! {
      let profile = profile.unwrap_or("release");
      let dev = profile == "dev";
-@@ -1408,12 +1679,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
+@@ -1408,12 +1681,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
      exit_with(status);
  }
  
@@ -15236,7 +15865,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..1a03fe3c163688163b7b830b355b8daa
  pub fn run_rustc_check(file: &Path) -> ! {
      let obj = std::env::temp_dir().join(format!("lust-rustc-check-{}.o", std::process::id()));
      eprintln!("lust: checking with rustc (oracle): rustc --edition 2024 --emit=obj {}", file.display());
-@@ -1461,6 +1738,150 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
+@@ -1461,6 +1740,150 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
  mod tests {
      use super::*;
  
@@ -15387,7 +16016,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..1a03fe3c163688163b7b830b355b8daa
      fn args(list: &[&str]) -> Vec<String> {
          list.iter().map(|s| s.to_string()).collect()
      }
-@@ -1486,6 +1907,23 @@ mod tests {
+@@ -1486,6 +1909,23 @@ mod tests {
          assert_ne!(k, SessionKey::synthetic(Path::new("/tmp/x/other.rs"), false), "file differs");
      }
  
