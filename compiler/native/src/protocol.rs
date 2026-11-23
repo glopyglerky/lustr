@@ -899,7 +899,9 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
         if executable_test && (session.profile.panic_abort
             || !key.executable_dependencies.as_ref().is_some_and(Vec::is_empty)) { return None; }
         session.krate.test = executable_test;
-        session.krate.target_explicit = true;
+        // Cargo gives a bin name for binary unit tests. Library unit
+        // tests supply their source and crate name, with no --crate-type.
+        session.krate.target_explicit = !executable_test || std::env::var_os("CARGO_BIN_NAME").is_some();
         session.library = Some(key);
     }
     let req = Request {

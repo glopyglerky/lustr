@@ -2202,8 +2202,14 @@ fn resolved_setup(
                 }),
                 _ => false,
             }};
-            if !unit.target.kind.iter().any(|kind| kind == library.target_kind() || !library.is_executable() && kind == "rlib")
-                || unit.target.name != key.krate.target_name || !matched_dependencies
+            let target_matches = if key.krate.test {
+                unit.target.test_flag && unit.target.kind.iter().any(|kind| matches!(kind.as_str(), "bin" | "lib" | "rlib"))
+                    && library.matches_target_name(&unit.target.name)
+            } else {
+                unit.target.kind.iter().any(|kind| kind == library.target_kind() || !library.is_executable() && kind == "rlib")
+                    && unit.target.name == key.krate.target_name
+            };
+            if !target_matches || !matched_dependencies
                 // Cargo metadata names the actual script target in every
                 // build mode; UnitInfo's planned script is product-only.
                 || unit.package.targets.iter().any(|target|target.kind.iter().any(|kind|kind=="custom-build"))
