@@ -141,7 +141,8 @@ pub(super) fn encode_family(
     let mut definitions = Vec::from([
         named(RECEIVER, 0, 2, receiver, &family.receiver),
         Definition { index: CONSTRUCTOR, parent: RECEIVER, key: 11, kind: 37,
-            hash: unit_constructor_hash(receiver), name: None, span: family.receiver.span, ident_span: None },
+            hash: unit_constructor_hash(receiver), name: None, span: family.receiver.span,
+            ident_span: Some(family.receiver.name_span) },
         named(FAMILY, 0, 6, trait_hash, &family.family),
         named(ITEM, FAMILY, 10, item_hash, &family.item),
         lifetime(DECLARATION_LIFETIME, ITEM, &family.lifetime, family.lifetime_span, lifetime_path_hash(item_hash, &family.lifetime)),
@@ -163,6 +164,12 @@ pub(super) fn encode_family(
         }
         definition.write(cx);
     }
+    for index in [RECEIVER, FAMILY].into_iter().chain(family.implementation.iter().map(|_| IMPLEMENTATION)) {
+        cx.fact("expn_that_defined", index as usize, |cx| {
+            cx.opaque.emit_u32(0);
+            cx.opaque.emit_u32(0);
+        });
+    }
     children.extend([RECEIVER, CONSTRUCTOR, FAMILY]);
     for index in [RECEIVER, CONSTRUCTOR, FAMILY, ITEM] { public(cx, index); }
     // Fingerprint::to_smaller_hash used by TyCtxt::repr_options_of, with
@@ -172,6 +179,7 @@ pub(super) fn encode_family(
         cx.fact("generics_of", index as usize, empty_generics);
         cx.fact("explicit_clauses_of", index as usize, |cx| cx.opaque.emit_raw_bytes(&[0, 0]));
         cx.fact("type_of", index as usize, |cx| unit_type(cx, &family.receiver.name, seed));
+        cx.array_fact::<()>("variances_of", index as usize, &[], |_, _| unreachable!());
     }
     cx.fact("repr_options", RECEIVER as usize, |cx| unit_repr(cx, seed));
     cx.fact("params_in_repr", RECEIVER as usize, |cx| cx.opaque.emit_raw_bytes(&[0, 0]));
@@ -181,7 +189,6 @@ pub(super) fn encode_family(
         cx.opaque.emit_u8(0);
     });
     cx.array_fact::<()>("associated_item_or_field_def_ids", RECEIVER as usize, &[], |_, _| unreachable!());
-    cx.array_fact::<()>("variances_of", RECEIVER as usize, &[], |_, _| unreachable!());
     cx.array_fact("associated_item_or_field_def_ids", FAMILY as usize, &[ITEM], |cx, id| cx.local_def(*id));
     cx.array_fact("module_children_non_reexports", FAMILY as usize, &[ITEM], |cx, id| cx.local_def(*id));
     cx.fact("generics_of", FAMILY as usize, |cx| {
@@ -196,6 +203,9 @@ pub(super) fn encode_family(
         cx.def(FAMILY);
         cx.opaque.emit_raw_bytes(&[0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
     });
+    // The trait's Self type has no own lifetime bound. The associated
+    // item's separate Self outlives clause does not define this default.
+    cx.fact("object_lifetime_default", FAMILY as usize, |cx| cx.opaque.emit_u8(0));
     cx.fact("explicit_clauses_of", FAMILY as usize, |cx| {
         cx.opaque.emit_raw_bytes(&[0, 1]);
         size_bound(cx, meta_sized, family, false);

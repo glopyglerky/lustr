@@ -797,6 +797,17 @@
       "adaptation": "Encode the original pinned metadata record layouts from the one completed native provider declaration inventory.",
       "semantic_owner": "checked projection provider metadata",
       "necessity": "Record the real unit receiver, trait, associated bounds, implementation and early lifetimes for original Rust consumers and the native retained resolver."
+    },
+    {
+      "destination": "src/encode_projection.rs",
+      "source": "compiler/rustc_hir_analysis/src/collect/resolve_bound_vars.rs",
+      "source_sha256": "874c20e0aff400cd3390f5a6f1a99c0eb98c94433b211f16adae4d9d928ca450",
+      "sections": [
+        "object_lifetime_default"
+      ],
+      "adaptation": "Encode Empty for the actual checked trait Self with no trait-wide outlives predicate.",
+      "semantic_owner": "checked projection provider metadata",
+      "necessity": "Independent Rust lifetime resolution requires the trait-wide default while reading a qualified associated type."
     }
   ],
   "dependencies": [
@@ -1067,7 +1078,7 @@
   },
   "adapted_sources_sha256": {
     "src/encode.rs": "75b8b167642f6d90460f4d4652f7b824d5f4a18959c0a8f0db5e4fb874675a62",
-    "src/encode_projection.rs": "afbd9518a2617db1a89795e55eed1a4ae206ba82508a1d183de0f956160da030",
+    "src/encode_projection.rs": "dba5ded78f7c0c31873648800f5cf9c26072191972f4462b30db818b431d85dc",
     "src/extern_metadata.rs": "178a2974be4780d1bab8acaa215e3c2ae26c5e0433b8633624df8c94d0f90c0a",
     "src/identity.rs": "4d153100f5cfe9de796082d708518bd0d2cb4180fd17fffa9a84bd9b6b389f9f",
     "src/lib.rs": "2940d9f99bdf3b5f93cb25826bc16ce6d019f8dceb494d919ff6221ad8cd9f37",
