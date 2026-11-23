@@ -153,7 +153,9 @@ impl Owner {
                 debug_assertions:req.session.profile.debug_assertions,panic_abort:req.session.profile.panic_abort}};
         let artifacts=Service::new(installed.sdk.clone(),installed.root.clone(),context)?;
         let executable = if let Some(dependencies) = &key.executable_dependencies {
-            if req.session.krate.manifest_path.is_none() { return Err("executable artifacts require the actual Cargo unit".into()); }
+            if req.session.krate.manifest_path.is_none() && !key.standalone {
+                return Err("Cargo executable artifacts require the selected unit".into());
+            }
             Some(executable::ExecutableImports::open(dependencies, &key.search_paths, &installed.sdk,
                 installed.standard.as_deref(), req.session.profile.panic_abort)?)
         } else { None };
@@ -428,9 +430,18 @@ impl Owner {
             let key = req.session.library.as_ref().ok_or("executable context absent")?;
             let check = req.cmd == driver::Cmd::Check;
             let emit = if check { "metadata" } else { "link" };
-            let [dependencies, output] = key.executable_outputs(&req.out, check).ok_or("executable output plan changed")?;
+            let (dependencies, output) = key.executable_outputs(&req.out, check).ok_or("executable output plan changed")?;
             let filename = output.file_name().ok_or("executable output filename absent")?;
             let parent = output.parent().ok_or("executable output parent absent")?;
+            if key.standalone {
+                let destination = parent.canonicalize().map_err(|error| format!("resolve executable output directory: {error}"))?.join(filename);
+                let imports = key.executable_dependencies.as_deref().unwrap_or_default();
+                let inputs = std::iter::once(req.file.as_path()).chain(
+                    imports.iter().flat_map(|input| std::iter::once(input.metadata.artifact.as_path()).chain(input.archive.as_deref())));
+                if inputs.filter_map(|input| input.canonicalize().ok()).any(|input| input == destination) {
+                    return Err("executable output is also a compiler input".into());
+                }
+            }
             let stage = parent.join(format!(".lustr-executable-{}-{serial}", std::process::id()));
             let staged_output = stage.join(filename);
             fs::create_dir(&stage).map_err(|error| format!("stage native executable: {error}"))?;
@@ -490,22 +501,26 @@ impl Owner {
                     let bytes = fs::read(&staged.out).map_err(|error|error.to_string())?.into();
                     Some(BinaryArtifact { source, debug: req.library_options.debug, module_sources, environment: environment.clone(), shown:req.client.shown.clone(), mode, bytes })
                 } else { None };
-                let paths = [dependencies, output];
-                let dep = stage.join(key.dep_info_name());
-                write_new(&dep, &dep_info(&paths, &inputs, &environment)?)?;
-                match publication::replace_set(&[(&dep, &paths[0]), (&staged.out, &paths[1])])
-                    .map_err(|error| format!("replace Cargo executable: {error}"))? {
+                let published = if let Some(dependencies) = &dependencies {
+                    let dep = stage.join(key.dep_info_name());
+                    write_new(&dep, &dep_info(&[dependencies.clone(), output.clone()], &inputs, &environment)?)?;
+                    publication::replace_set(&[(&dep, dependencies), (&staged.out, &output)])
+                } else {
+                    publication::replace_set(&[(&staged.out, &output)])
+                };
+                match published.map_err(|error| format!("replace native executable: {error}"))? {
                     publication::Replacement::Durable => {}
                     publication::Replacement::Incomplete { replaced, error } => return Err(format!("executable publication stopped after {replaced} files: {error}")),
                     publication::Replacement::DurabilityUnknown(error) => return Err(format!("executable publication durability unknown: {error}")),
                 }
+                let outputs = dependencies.iter().map(|path| (path, "dep-info")).chain([(&output, emit)]);
                 if let Some(completed) = completed { self.binary_output = Some(completed); }
                 if req.json {
                     if req.library_options.force_warn_unused_crate_dependencies {
                         response.stderr.push_str(&format!("{}\n", json!({"$message_type":"unused_extern",
                             "lint_level":"force-warn", "unused_extern_names":unused})));
                     }
-                    for (artifact, emit) in paths.iter().zip(["dep-info", emit]) {
+                    for (artifact, emit) in outputs.clone() {
                         response.stderr.push_str(&format!("{}\n", json!({"$message_type":"artifact","artifact":artifact,"emit":emit})));
                     }
                 }
@@ -517,7 +532,7 @@ impl Owner {
                     write_new(&report.join("report.json"), &serde_json::to_vec_pretty(&json!({
                         "schema":"lustr-public-executable-v1", "owner_pid":std::process::id(), "status":0,
                         "source_path":req.file, "checked_bodies":checked, "artifact_reused":reused,
-                        "outputs":paths, "emit":emit, "unused_extern_names":unused,
+                        "outputs":outputs.map(|(path, _)| path).collect::<Vec<_>>(), "emit":emit, "unused_extern_names":unused,
                     })).map_err(|error| error.to_string())?)?;
                 }
                 Ok(response)

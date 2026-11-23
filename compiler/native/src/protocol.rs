@@ -685,6 +685,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     let (mut library_cfg, mut library_check_cfg, mut library_search) = (Vec::new(),Vec::new(),Vec::new());
     let mut library_external = None;
     let mut executable_artifacts = false;
+    let mut standalone = false;
     let mut executable_test = false;
     let mut custom_test = false;
     let mut executable_dependencies = Vec::new();
@@ -727,6 +728,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
             "--lustr-library-search" => library_search.push(PathBuf::from(it.next()?)),
             "--lustr-library-extern-metadata" if library_external.is_none() => library_external = Some(ExternMetadata::parse(it.next()?)?),
             "--lustr-executable-artifacts" if !executable_artifacts => executable_artifacts = true,
+            "--lustr-standalone-executable" if !standalone => standalone = true,
             "--lustr-executable-test" if !executable_test && !custom_test => executable_test = true,
             "--lustr-custom-test" if !executable_test && !custom_test => custom_test = true,
             "--lustr-executable-extern" => executable_dependencies.push(ExecutableExtern::parse(it.next()?, it.next()?)?),
@@ -783,7 +785,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     }
     let library_supplied = library_name.is_some() || library_metadata.is_some() || library_extra.is_some() || library_cwd.is_some()
         || !library_cfg.is_empty() || !library_check_cfg.is_empty() || !library_search.is_empty() || library_external.is_some()
-        || executable_artifacts || executable_test || custom_test || !executable_dependencies.is_empty()
+        || executable_artifacts || standalone || executable_test || custom_test || !executable_dependencies.is_empty()
         || library_debug_supplied || library_opt.is_some() || library_options != LibraryOptions::default();
     if library_supplied && (rustc || release || profile.is_some()) { return None; }
     let abs = |p: &Path| std::path::absolute(p).unwrap_or_else(|_| p.to_path_buf());
@@ -887,13 +889,16 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
         let key = LibraryKey {crate_name:library_name?, metadata:library_metadata?, extra_filename:library_extra?,
             source_path:file.clone(), working_directory:library_cwd?, cfg:library_cfg, check_cfg:library_check_cfg, search_paths:library_search, external:library_external,
             executable_dependencies:executable_artifacts.then_some(executable_dependencies),
-            optimization:library_opt.unwrap_or_default(), custom_test,
+            standalone, optimization:library_opt.unwrap_or_default(), custom_test,
             sdk_receipt:library_contract::SDK_RECEIPT.into()};
         if !key.valid() || !matches!(cmd.as_str(), "build" | "check") || session.krate.target_kind != key.target_kind()
             || session.target_triple != library_contract::TARGET
             || debug || emit_c.is_some() || !run_args.is_empty()
             || !key.valid_output(&abs(&out), cmd == "check", library_options) { return None; }
-        if key.is_executable() {
+        if key.standalone {
+            if session.krate.manifest_path.is_some() || executable_test || custom_test { return None; }
+            session.krate.target_name = key.crate_name.clone();
+        } else if key.is_executable() {
             if !key.matches_target_name(&session.krate.target_name) { return None; }
         } else {
             session.krate.target_name = key.crate_name.clone();
@@ -1028,6 +1033,7 @@ pub fn encode(r: &Request) -> Vec<u8> {
     path_field(&mut out, Some(&s.krate.root));
     put_field(&mut out, s.target_triple.as_bytes());
     put_field(&mut out, match &s.library {
+        Some(library) if library.standalone => b"5",
         Some(library) if library.custom_test => b"4",
         Some(library) if library.is_executable() => b"3",
         Some(library) if library.external.is_some() => b"2",
@@ -1113,7 +1119,7 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
     let mut library_options = LibraryOptions::default();
     let library = match get_field(r)?.as_slice() {
         b"0" => None,
-        mode @ (b"1" | b"2" | b"3" | b"4") => {
+        mode @ (b"1" | b"2" | b"3" | b"4" | b"5") => {
             let crate_name=text(get_field(r)?)?; let metadata=text(get_field(r)?)?;
             let extra_filename=text(get_field(r)?)?; let sdk_receipt=text(get_field(r)?)?;
             let source_path=path(get_field(r)?); let working_directory=path(get_field(r)?);
@@ -1126,7 +1132,7 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
             let external = if mode == b"2" {
                 Some(ExternMetadata { alias: text(get_field(r)?)?, artifact: path(get_field(r)?) })
             } else { None };
-            let executable_dependencies = if matches!(mode, b"3" | b"4") {
+            let executable_dependencies = if matches!(mode, b"3" | b"4" | b"5") {
                 let count:usize = text(get_field(r)?)?.parse().ok()?;
                 if count > 4096 { return None; }
                 Some((0..count).map(|_| Some(ExecutableExtern {
@@ -1139,8 +1145,10 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
             library_options.debug=DebugOptions::decode(&get_field(r)?)?;
             let optimization=OptLevel::parse(&text(get_field(r)?)?)?;
             let custom_test = mode == b"4";
+            let standalone = mode == b"5";
             if custom_test && f[5] != "1" { return None; }
-            let library=LibraryKey{crate_name,metadata,extra_filename,source_path,working_directory,cfg,check_cfg,search_paths,external,executable_dependencies,optimization,custom_test,sdk_receipt};
+            if standalone && (f[5] == "1" || !manifest.is_empty()) { return None; }
+            let library=LibraryKey{crate_name,metadata,extra_filename,source_path,working_directory,cfg,check_cfg,search_paths,external,executable_dependencies,standalone,optimization,custom_test,sdk_receipt};
             if !library.valid() || !library.valid_output(&out, f[0] == "check", library_options) || library.source_path!=file
                 || target_triple!=library_contract::TARGET || target_kind!=library.target_kind()
                 || !library.matches_target_name(&target_name) || !matches!(f[0], "build" | "check") {return None;}

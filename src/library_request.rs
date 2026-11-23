@@ -20,6 +20,8 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     let mut edition = None;
     let mut target = None;
     let mut out_dir = None;
+    let mut output_file = None;
+    let mut no_color = false;
     let mut emits = None;
     let mut error_format = None;
     let mut json = None;
@@ -57,6 +59,11 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
         else if arg == "--edition" || arg.starts_with("--edition=") { unique(&mut edition,"--edition")?; }
         else if arg == "--target" || arg.starts_with("--target=") { unique(&mut target,"--target")?; }
         else if arg == "--out-dir" || arg.starts_with("--out-dir=") { unique(&mut out_dir,"--out-dir")?; }
+        else if arg == "-o" && output_file.is_none() { i += 1; output_file = Some(args.get(i)?.clone()); }
+        else if arg == "--color" || arg.starts_with("--color=") {
+            if no_color || value("--color")? != "never" { return None; }
+            no_color = true;
+        }
         else if arg == "--emit" || arg.starts_with("--emit=") { unique(&mut emits,"--emit")?; }
         else if arg == "--error-format" || arg.starts_with("--error-format=") { unique(&mut error_format,"--error-format")?; }
         else if arg == "--json" || arg.starts_with("--json=") { unique(&mut json,"--json")?; }
@@ -101,14 +108,17 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     }
     let custom_test = custom_test && !test;
     let test_target = test || custom_test;
-    let binary = test_target || kind.as_deref() == Some("bin");
-    let represented_kind = if test_target { matches!(kind.as_deref(), None | Some("bin")) }
+    let standalone = !test_target && !externs.is_empty() && matches!(kind.as_deref(), None | Some("bin"))
+        && matches!(emits.as_deref(), None | Some("link"));
+    let binary = standalone || test_target || kind.as_deref() == Some("bin");
+    let represented_kind = if standalone || test_target { matches!(kind.as_deref(), None | Some("bin")) }
         else { matches!(kind.as_deref(), Some("bin" | "lib" | "rlib")) };
     if !represented_kind || (allow_dead_code_pub_in_binary && !test_target) || edition.as_deref() != Some("2024")
         || target.as_deref().is_some_and(|v| v != TARGET) { return None; }
-    let emit = emits?;
+    let emit = if standalone { "link".into() } else { emits? };
     let fields = emit.split(',').collect::<Vec<_>>();
     let check = match (fields.len(), fields.into_iter().collect::<BTreeSet<_>>()) {
+        (1, _) if standalone => false,
         (2, fields) if binary && fields == BTreeSet::from(["dep-info", "link"]) => false,
         (2, fields) if fields == BTreeSet::from(["dep-info", "metadata"]) => true,
         (3, fields) if !binary && fields == BTreeSet::from(["dep-info", "metadata", "link"]) => false,
@@ -125,7 +135,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
         },
         _ => return None,
     };
-    let metadata = codegen.remove("metadata")?;
+    let metadata = if standalone { codegen.remove("metadata").unwrap_or_default() } else { codegen.remove("metadata")? };
     let extra_filename = codegen.remove("extra-filename").unwrap_or_default();
     let panic = match codegen.remove("panic").as_deref() {
         Some("abort") => "panic=abort",
@@ -134,7 +144,11 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     };
     // Rust defaults to embedded LLVM bitcode for an rlib; this native scalar
     // artifact contract requires the caller's explicit no-bitcode selection.
-    if !matches!(codegen.remove("embed-bitcode").as_deref(),Some("no"|"off"|"false"|"n")) {return None;}
+    match codegen.remove("embed-bitcode").as_deref() {
+        Some("no"|"off"|"false"|"n") => {}
+        None if standalone => {}
+        _ => return None,
+    }
     let optimization = match codegen.remove("opt-level") {
         Some(value) => OptLevel::parse(&value)?,
         None => OptLevel::None,
@@ -151,6 +165,11 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     }
     let source = source?;
     let source_path = std::path::absolute(&source).ok()?;
+    let name = match name {
+        Some(name) => name,
+        None if standalone => source_path.file_stem()?.to_str()?.replace('-', "_"),
+        None => return None,
+    };
     let (external, executable_dependencies) = if binary {
         (None, Some(executable_externs(externs, check)?))
     } else {
@@ -160,18 +179,29 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
             _ => return None,
         }
     };
-    let context = LibraryKey { crate_name:name?, metadata, extra_filename, source_path,
+    let context = LibraryKey { crate_name:name, metadata, extra_filename, source_path,
         working_directory: std::env::current_dir().ok()?, cfg: cfg.into_iter().collect(), check_cfg, search_paths, external, executable_dependencies,
-        optimization, custom_test, sdk_receipt:SDK_RECEIPT.into() };
+        standalone, optimization, custom_test, sdk_receipt:SDK_RECEIPT.into() };
     if test && panic != "panic=unwind" { return None; }
     if !context.valid() { return None; }
-    if std::env::var("CARGO_CRATE_NAME").is_ok_and(|v|v != context.crate_name) { return None; }
-    let out_dir = std::path::absolute(out_dir?).ok()?;
-    let output = out_dir.join(if check { context.metadata_name() } else if binary { context.binary_name() } else { context.archive_name() });
+    if !standalone && std::env::var("CARGO_CRATE_NAME").is_ok_and(|v|v != context.crate_name) { return None; }
+    let output = if standalone {
+        match (output_file, out_dir) {
+            (Some(path), None) if path != "-" => std::path::absolute(path).ok()?,
+            (None, dir) => std::path::absolute(dir.unwrap_or_else(|| ".".into())).ok()?.join(context.binary_name()),
+            (Some(_), _) => return None,
+        }
+    } else {
+        if output_file.is_some() { return None; }
+        let out_dir = std::path::absolute(out_dir?).ok()?;
+        out_dir.join(if check { context.metadata_name() } else if binary { context.binary_name() } else { context.archive_name() })
+    };
     if !context.valid_output(&output, check, options) { return None; }
     let mut native = vec![(if check { "check" } else { "build" }).into(),source,"-o".into(),output.to_str()?.into(),
         "--target".into(),TARGET.into(),"-C".into(),panic.into()];
-    if binary {
+    if standalone {
+        native.push("--lustr-standalone-executable".into());
+    } else if binary {
         let target = std::env::var("CARGO_BIN_NAME").unwrap_or_else(|_| context.crate_name.clone());
         if !context.matches_target_name(&target) { return None; }
         native.extend(["--bin".into(), target]);
@@ -194,7 +224,12 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     let manifest = cargo_manifest.or_else(|| {
         std::env::var_os("CARGO_MANIFEST_DIR").map(|directory| PathBuf::from(directory).join("Cargo.toml"))
     });
-    if let Some(manifest) = manifest {
+    if standalone {
+        native.push("--no-default-features".into());
+        if !features.is_empty() {
+            native.extend(["--features".into(), features.into_iter().collect::<Vec<_>>().join(",")]);
+        }
+    } else if let Some(manifest) = manifest {
         native.extend(["--manifest-path".into(),std::path::absolute(manifest).ok()?.to_str()?.into()]);
         // The outer Cargo invocation has already resolved this package.
         // Internal graph queries must neither fetch inputs nor change its lockfile.

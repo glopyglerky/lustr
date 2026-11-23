@@ -307,9 +307,9 @@ fn read_public_transport_request(
     let present = read_public_transport_field(reader)?;
     match (present.as_slice(), expected_library) {
         (b"0", None) => {}
-        (mode @ (b"1" | b"2" | b"3" | b"4"), Some((library, options))) => {
-            if (mode == b"2") != library.external.is_some() || matches!(mode, b"3" | b"4") != library.is_executable()
-                || (mode == b"4") != library.custom_test {
+        (mode @ (b"1" | b"2" | b"3" | b"4" | b"5"), Some((library, options))) => {
+            if (mode == b"2") != library.external.is_some() || matches!(mode, b"3" | b"4" | b"5") != library.is_executable()
+                || (mode == b"4") != library.custom_test || (mode == b"5") != library.standalone {
                 return Err("public library dependency presence changed".into());
             }
             if !fixed[2].is_empty() || fixed[5].as_slice() != library.target_kind().as_bytes() || fixed[6].as_slice() != library.crate_name.as_bytes()
@@ -388,7 +388,7 @@ fn read_public_transport_request(
                 return Err("public library request changed its optimization level".into());
             }
         }
-        (b"0" | b"1" | b"2" | b"3", _) => return Err("public request changed its artifact context presence".into()),
+        (b"0" | b"1" | b"2" | b"3" | b"4" | b"5", _) => return Err("public request changed its artifact context presence".into()),
         _ => return Err("invalid public library discriminator".into()),
     }
     for _ in 0..features { read_public_transport_field(reader)?; }
@@ -470,6 +470,7 @@ fn transport_peer_validates_library_values_and_counted_vectors() {
         search_paths: vec![PathBuf::from("/native-transport/deps-one"), PathBuf::from("/native-transport/deps-two")],
         external: None,
         executable_dependencies: None,
+        standalone: false,
         optimization: transport_protocol::OptLevel::None,
         custom_test: false,
     };
@@ -1309,6 +1310,30 @@ fn main() {
         assert_eq!(ran.stdout, b"42\n");
         assert!(!f.root.join("libprovider.rmeta").exists());
     }
+
+    let plain = f.source("src/plain-tool.rs", r#"
+fn main() {
+    let answer = provider_alias::doubled(21);
+    println!("{}:{answer}", module_path!());
+}
+"#);
+    for (label, mut command) in [("native", f.command("rustc")), ("original", oracle_command())] {
+        let directory = f.root.join(format!("{label} direct"));
+        std::fs::create_dir(&directory).unwrap();
+        let out = directory.join("tool with spaces");
+        command.env("CARGO_MANIFEST_PATH", &manifest)
+            .args(["--edition=2024", "--color=never", "src/plain-tool.rs", "--extern"])
+            .arg(format!("provider_alias={}", archive.display())).arg("-o").arg(&out);
+        f.succeeds(&format!("{label}-direct"), &mut command);
+        assert_eq!(std::fs::read_dir(&directory).unwrap().count(), 1);
+        assert_eq!(f.succeeds(&format!("{label}-direct-run"), &mut Command::new(out)).stdout, b"plain_tool:42\n");
+    }
+    let plain_bytes = std::fs::read(&plain).unwrap();
+    let collision = f.invoke("native-direct-output-alias", f.command("rustc")
+        .args(["--edition=2024", "src/plain-tool.rs", "--extern"])
+        .arg(format!("provider_alias={}", archive.display())).args(["-o", "src/../src/plain-tool.rs"]));
+    assert!(!collision.status.success());
+    assert_eq!(std::fs::read(&plain).unwrap(), plain_bytes);
 
     let executable = target(false).join("debug/application");
     let before = std::fs::read(&executable).unwrap();

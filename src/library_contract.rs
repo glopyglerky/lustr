@@ -279,6 +279,8 @@ pub struct LibraryKey {
     pub search_paths: Vec<PathBuf>,
     pub external: Option<ExternMetadata>,
     pub executable_dependencies: Option<Vec<ExecutableExtern>>,
+    /// A direct rustc file request with one user-selected binary output.
+    pub standalone: bool,
     pub optimization: OptLevel,
     /// Cargo supplies cfg(test), and the crate supplies its own main.
     pub custom_test: bool,
@@ -287,7 +289,7 @@ pub struct LibraryKey {
 impl LibraryKey {
     pub fn valid(&self) -> bool {
         supported_host() && identifier(&self.crate_name)
-            && !self.metadata.is_empty() && self.metadata.len() <= 128
+            && (self.standalone || !self.metadata.is_empty()) && self.metadata.len() <= 128
             && self.metadata.bytes().all(|c| c.is_ascii_alphanumeric() || c == b'_')
             && (self.extra_filename.is_empty() || self.extra_filename.starts_with('-'))
             && self.extra_filename.len() <= 128
@@ -305,6 +307,8 @@ impl LibraryKey {
                     && dependencies.windows(2).all(|pair| pair[0].metadata.alias < pair[1].metadata.alias)
             })
             && (!self.custom_test || self.is_executable())
+            && (!self.standalone || (!self.custom_test
+                && self.executable_dependencies.as_ref().is_some_and(|inputs| !inputs.is_empty())))
             && self.sdk_receipt == SDK_RECEIPT
     }
     pub fn archive_name(&self) -> String { format!("lib{}{}.rlib", self.crate_name, self.extra_filename) }
@@ -322,10 +326,19 @@ impl LibraryKey {
         }
     }
 
-    pub fn executable_outputs(&self, output: &Path, check: bool) -> Option<[PathBuf; 2]> {
+    pub fn executable_outputs(&self, output: &Path, check: bool) -> Option<(Option<PathBuf>, PathBuf)> {
+        if self.standalone {
+            let valid = !check && output.is_absolute() && output.file_name().is_some()
+                && output.to_str().is_some_and(|path| !path.contains(['\0', '\n', '\r']))
+                && output != self.source_path
+                && self.executable_dependencies.as_ref().is_some_and(|inputs| inputs.iter().all(|input| {
+                    output != input.metadata.artifact && input.archive.as_deref() != Some(output)
+                }));
+            return valid.then(|| (None, output.to_owned()));
+        }
         let name = if check { self.metadata_name() } else { self.binary_name() };
         let parent = output_parent(output, &name)?;
-        Some([parent.join(self.dep_info_name()), output.to_owned()])
+        Some((Some(parent.join(self.dep_info_name())), output.to_owned()))
     }
     pub fn outputs(&self, archive: &Path) -> Option<[PathBuf;3]> {
         let parent = output_parent(archive, &self.archive_name())?;
