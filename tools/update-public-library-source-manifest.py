@@ -34,6 +34,7 @@ FILES=[
  "tools/build-native-toolchain.rs","tools/native-test-runtime.rs","tools/install-native-metadata-sdk.py","tools/check-exclusive-coverage.py",
  "tools/update-public-library-source-manifest.py","upstream/metadata-artifact-tools.json","upstream/metadata-dependency-closure.json",
  "upstream/rustdoc-test-builders.patch",
+ "tools/host-proc-macro.rs","upstream/complement-imports.json",
  "docs/compiler-set/evidence/metadata-sdk-receipt-20261120/receipt.json",
  "docs/compiler-set/evidence/metadata-sdk-receipt-20261120/standard-receipt.json",
 ]

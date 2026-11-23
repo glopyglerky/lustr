@@ -1630,6 +1630,54 @@ pub fn flip(value: u64) -> u64 { value ^ 1 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn cargo_builds_a_host_proc_macro_with_the_pinned_compiler() {
+    let f = Fixture::new("cargo-host-proc-macro");
+    f.source("Cargo.toml", "[workspace]\nresolver=\"3\"\nmembers=[\"provider\"]\n");
+    f.source("provider/Cargo.toml", "[package]\nname=\"host_macro\"\nversion=\"0.1.0\"\nedition=\"2024\"\n[lib]\nproc-macro=true\n");
+    f.source("provider/src/lib.rs", r#"
+use proc_macro::TokenStream;
+#[proc_macro]
+pub fn add_one(mut input: TokenStream) -> TokenStream {
+    input.extend("+ 1".parse::<TokenStream>().unwrap());
+    input
+}
+"#);
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let build = f.succeeds("cargo-host-macro", f.command("cargo").args([
+        "build", "--frozen", "-p", "host_macro", "--message-format=json",
+    ]));
+    let dylib = build.stdout.split(|&byte| byte == b'\n').find_map(|line| {
+        let record = serde_json::from_slice::<serde_json::Value>(line).ok()?;
+        if record["reason"] != "compiler-artifact" || record["target"]["name"] != "host_macro" {
+            return None;
+        }
+        record["filenames"].as_array()?.iter().filter_map(|path| path.as_str())
+            .find(|path| path.ends_with(".so")).map(PathBuf::from)
+    }).expect("actual Cargo proc-macro artifact");
+    let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
+    assert!(trace.lines().any(|line| serde_json::from_str::<serde_json::Value>(line).is_ok_and(|record|
+        record["engine"] == "pinned-rust" && record["entry"] == "host-proc-macro")), "{trace}");
+
+    let consumer = f.source("consumer.rs", "fn main() { println!(\"{}\", host_macro::add_one!(41)); }\n");
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let executable = f.root.join("original-consumer");
+    f.succeeds("original-macro-consumer", Command::new(oracle).current_dir(&f.root)
+        .env_remove("LD_LIBRARY_PATH").args(["--edition=2024", "--extern"])
+        .arg(format!("host_macro={}", dylib.display())).arg(&consumer).arg("-o").arg(&executable));
+    assert_eq!(f.succeeds("original-consumer-run", &mut Command::new(executable)).stdout, b"42\n");
+
+    let compiler = f.package.join("libexec/lustr-host-proc-macro/bin/lustr-rustc-host-proc-macro");
+    let regular = f.source("regular.rs", "fn main() {}\n");
+    let output = f.root.join("non-macro");
+    let refused = f.invoke("host-role-refuses-binary", Command::new(compiler).env_remove("LD_LIBRARY_PATH")
+        .args(["--edition=2024", "--crate-type=bin"]).arg(regular).arg("-o").arg(&output));
+    assert_eq!(refused.status.code(), Some(1));
+    assert!(!output.exists());
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
 fn ordinary_cargo_resolves_a_renamed_dependency_feature() {
     let f = Fixture::new("cargo-dependency-feature");

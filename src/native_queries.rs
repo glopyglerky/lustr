@@ -2,7 +2,15 @@
 //!
 //! This is deliberately smaller than rustc's query surface. It reports native
 //! capabilities. Library filenames describe only the packaged scalar-library contract.
-use std::{ffi::OsString, io::Read, path::Path, process::Command};
+use std::{ffi::OsString, io::Read, path::{Path, PathBuf}, process::Command};
+
+pub fn host_proc_macro_compiler(bin: &Path, host: &str) -> Option<PathBuf> {
+    if host != "x86_64-unknown-linux-gnu" {
+        return None;
+    }
+    let compiler = bin.parent()?.join("libexec/lustr-host-proc-macro/bin/lustr-rustc-host-proc-macro");
+    compiler.is_file().then_some(compiler)
+}
 
 pub fn answer(args: &[OsString], bin: &Path, host: &str) -> Option<Result<(), String>> {
     if args == ["-vV"] || args == ["--version", "--verbose"] {
@@ -105,6 +113,8 @@ fn query(args: &[OsString], bin: &Path, host: &str) -> Result<(), String> {
                         && host == "x86_64-unknown-linux-gnu"
                         && bin.parent().is_some_and(|root|root.join("lib/lustr-metadata/sdk-receipt.json").is_file()) {
                         println!("lib{name}.rlib");
+                    } else if *kind == "proc-macro" && host_proc_macro_compiler(bin, host).is_some() {
+                        println!("lib{name}.so");
                     } else {
                         // Cargo's pinned target_info parser skips a type with
                         // this warning without consuming a filename for it.

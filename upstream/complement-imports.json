@@ -254,6 +254,54 @@
         "complete rustc driver"
       ],
       "qualification": "Ordinary dependency-free binary cargo test and test --no-run passed. Existing libtest runs native tests with ignored tests and expected string panic matching. Extended output capture is covered by the installed compiler contract. General Rust return types, dependent test targets and full diagnostic parity remain open."
+    },
+    {
+      "id": "host-proc-macro-compiler",
+      "missing_capability": "Cargo's executable host procedural macro crate artifacts",
+      "status": "implemented-partial",
+      "owner": "Pinned Rust host procedural macro compiler",
+      "semantic_boundary": "Actual host-target ProcMacro compilation, validated on parsed Rust options before source compilation",
+      "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "upstream_paths": {
+        "compiler/rustc/src/main.rs": "569fe611f1bb59109dea96f0206ae9d87675b533d0f5e7a47980764195e0076a",
+        "compiler/rustc_driver_impl/src/lib.rs": "28d3ed858c3db58e159cfe6a6e6e47fa15b64fe354e565a7c94ef24b563c7b44",
+        "compiler/rustc_interface/src/interface.rs": "374372a8fa5c5b46ad6d98db08c4b3791808618495ab93f4ed2a34b0719b9cc2"
+      },
+      "dependency_edges": [
+        [
+          "host-proc-macro-compiler",
+          "rustc_driver"
+        ],
+        [
+          "host-proc-macro-compiler",
+          "rustc_interface"
+        ],
+        [
+          "host-proc-macro-compiler",
+          "rustc_session"
+        ],
+        [
+          "host-proc-macro-compiler",
+          "rustc_structures"
+        ],
+        [
+          "rustc_driver",
+          "matching LLVM and Rust SDK sysroot"
+        ]
+      ],
+      "targets": "x86_64-unknown-linux-gnu host",
+      "features": [
+        "rustc_private in the separate host tool"
+      ],
+      "adapter": "tools/host-proc-macro.rs",
+      "licenses": [
+        "MIT",
+        "Apache-2.0"
+      ],
+      "excluded_duplicate_phases": [
+        "ordinary native consumer compilation uses Lust"
+      ],
+      "qualification": "Cargo provider artifact, independent pinned Rust consumer execution, and rejection of a regular binary in the host tool"
     }
   ],
   "research_components": [

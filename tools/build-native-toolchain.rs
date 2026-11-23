@@ -223,6 +223,7 @@ fn main() {
             "tools/build-native-toolchain.rs",
             "tools/selection-toolchain-receipt.rs",
             "tools/host-sdk.rs",
+            "tools/host-proc-macro.rs",
             "tools/lust-upstream-check.rs",
             "tools/check-exclusive-coverage.py",
         ]),
@@ -318,6 +319,33 @@ fn main() {
     selection_toolchain::write(&package, source, host);
     let mut runtime_identities = Vec::new();
     if host == "x86_64-unknown-linux-gnu" {
+        let component = package.join("libexec/lustr-host-proc-macro");
+        let bin = component.join("bin");
+        fs::create_dir_all(&bin).unwrap();
+        symlink(sdk.join("lib"), component.join("lib")).unwrap();
+        let compiler = bin.join("lustr-rustc-host-proc-macro");
+        let mut native_libs = std::ffi::OsString::from("-Lnative=");
+        native_libs.push(sdk.join("lib"));
+        checked("host-proc-macro-build", Command::new(sdk.join("bin/rustc"))
+            .args(["--edition=2024", "-Clink-arg=-Wl,-rpath,$ORIGIN/../lib"])
+            .arg(native_libs).arg(repo.join("tools/host-proc-macro.rs")).arg("-o").arg(&compiler), &logs);
+        let companion_version = checked("host-proc-macro-version", Command::new(&compiler).arg("-vV"), &logs);
+        assert_eq!(companion_version, version, "the macro compiler must use the declared SDK");
+        let licenses = component.join("licenses");
+        fs::create_dir(&licenses).unwrap();
+        for name in ["LICENSE-MIT", "LICENSE-APACHE"] {
+            copy(&repo.join("crates/lustr-metadata-encoder").join(name), &licenses.join(name));
+        }
+        let notice = component.join("SOURCE.txt");
+        record(&notice, format!(
+            "https://github.com/rust-lang/rust\nRevision {source}\nPinned Rust driver for host procedural macro crates\n",
+        ).as_bytes());
+        fs::File::open(&compiler).unwrap().sync_all().unwrap();
+        for path in [licenses, bin, component, package.join("libexec")] {
+            fs::File::open(path).unwrap().sync_all().unwrap();
+        }
+        runtime_identities.push(checked("hash-host-proc-macro",
+            host_runtime::sha256_command().arg(&compiler).arg(notice), &logs));
         checked("metadata-sdk-package", Command::new("python3").arg(repo.join("tools/install-native-metadata-sdk.py"))
             .arg(&repo).arg(&sdk).arg(&package), &logs);
         for tool in ["llvm-ar","llvm-objcopy"] {
@@ -407,7 +435,11 @@ fn main() {
             fs::File::open(path).unwrap().sync_all().unwrap();
         }
     }
-    let mixed_route = "exclusive native Lust; complementary compilation unavailable";
+    let mixed_route = if host == "x86_64-unknown-linux-gnu" {
+        "native Lust and the pinned Rust host proc-macro compiler; general complementary compilation unavailable"
+    } else {
+        "exclusive native Lust; complementary compilation unavailable"
+    };
     record(&output.join("NATIVE-BUILD-RECEIPT.txt"), native_output.as_bytes());
     let mut manifest = format!(
         "Partial native development build; complementary compilation and full-replacement release are unavailable.\nReferenced source={}, SDK={}, TinyCC={}\nNative build={}\nCargo artifact profile={}\nHost={}\nRoute={}\nSDK receipt={}\n",

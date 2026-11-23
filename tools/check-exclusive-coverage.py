@@ -490,7 +490,7 @@ def check(root):
     require(inventory["rust_source"] == unicode["rust_source"], "import inventory and native Unicode contract disagree")
     imports = {item["id"]: item for item in inventory["imports"]}
     require(set(imports) == {"identifier-normalization", "declared-sdk-unicode-data", "native-scalar-metadata",
-                            "native-scalar-artifact-host", "native-libtest-runtime"},
+                            "native-scalar-artifact-host", "native-libtest-runtime", "host-proc-macro-compiler"},
             "new imports require source and ownership declarations")
     normalization = imports.get("identifier-normalization", {})
     expected_dependencies = {name: unicode["compiler_dependencies"][name]

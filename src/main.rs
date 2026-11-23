@@ -224,6 +224,18 @@ fn main() -> ExitCode {
             Err(error) => incomplete_integration(&error),
         };
     }
+    if compiler_mode
+        && (args.iter().any(|arg| arg == "--crate-type=proc-macro")
+            || args.windows(2).any(|pair| pair[0] == "--crate-type" && pair[1] == "proc-macro"))
+        && let Some(compiler) = native_queries::host_proc_macro_compiler(&parent, lust::host_triple())
+    {
+        // The upstream driver verifies the parsed kind and host target before
+        // compiling. This role supplies Cargo's executable macro provider.
+        trace_entry("pinned-rust", "host-proc-macro");
+        let error = Command::new(compiler).args(&args).exec();
+        eprintln!("cannot execute the host procedural macro compiler: {error}");
+        return ExitCode::from(2);
+    }
     if !compiler_mode && args == ["--lustr-prime-selection-tools"] {
         return match lust::prime_selection_tools(&parent) {
             Ok(()) => ExitCode::SUCCESS,

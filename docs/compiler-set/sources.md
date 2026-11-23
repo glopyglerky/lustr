@@ -43,6 +43,16 @@ The [Lust review](upstream-lust-review-2026-11-19.md) and
 bounded review scopes. Source identity is not proof of a source-built artifact,
 whole-program correctness or performance.
 
+## Host procedural macros
+
+The Linux x86_64 development package builds Cargo's procedural-macro
+provider crates with the pinned Rust driver in a separate host tool. The
+adapter checks the parsed crate kind and target before compilation. Cargo gets
+the provider's normal shared library and dependency information. The SDK
+receipt binds the driver and LLVM identities, and the package records the
+provider tool's source and licenses. Native consumers still need the
+procedural-macro expansion interface.
+
 ## Source-built Rustdoc
 
 On Linux x86_64, pass `--rustdoc-source PINNED_RUST_REPOSITORY` after the
