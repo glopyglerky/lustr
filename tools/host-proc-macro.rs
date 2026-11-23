@@ -16,6 +16,13 @@ extern crate rustc_session;
 extern crate rustc_structures;
 extern crate rustc_target;
 
+#[cfg(feature = "upstream-semantic")]
+include!("../crates/lustr-native-core/src/lib.rs");
+
+#[cfg(feature = "upstream-semantic")]
+#[link(name = "tcc", kind = "static")]
+unsafe extern "C" {}
+
 use rustc_session::{EarlyDiagCtxt, config};
 use rustc_structures::CrateType;
 use std::process::ExitCode;

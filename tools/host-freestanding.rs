@@ -23,6 +23,7 @@ use std::{
     any::Any,
     fs,
     io::{self, Write},
+    ops::Range,
     os::unix::fs::DirBuilderExt,
     path::{Path, PathBuf},
     process::{Command, ExitCode, Stdio},
@@ -129,26 +130,64 @@ impl Composition {
         let metadata = format!("{name}/{:?}/{:?}", sess.opts.crate_types, sess.opts.cg.metadata);
         let digest = SourceFileHash::new_in_memory(SourceFileHashAlgorithm::Sha256, &metadata).to_string();
         let metadata = digest.strip_prefix("sha256=").ok_or("unexpected native crate digest encoding")?;
-        let mut command = Command::new(&self.producer);
-        command.arg(if link { "link" } else { "check" });
-        command.arg(if no_std { "no-std" } else { "std" });
+        let mut extents = Vec::with_capacity(items.len());
         for item in items {
             sess.source_map().span_to_snippet(item.span)
                 .map_err(|error| format!("cannot select the original item: {error:?}"))?;
-            command.args([
-                file.relative_position(item.span.lo()).0.to_string(),
-                file.relative_position(item.span.hi()).0.to_string(),
-            ]);
+            extents.push(file.relative_position(item.span.lo()).0..file.relative_position(item.span.hi()).0);
         }
-        let mut child = command
-            .args(["--", "--crate-name", name, "--edition=2024", "--crate-type=lib", "--emit=obj"])
-            .args(["--target=x86_64-unknown-linux-gnu", "-Cpanic=abort", "-Copt-level=0", "-Cdebuginfo=0"])
-            .args([
-                format!("-Cmetadata={metadata}"),
-                format!("-Coverflow-checks={}", setting(sess.overflow_checks())),
-                format!("-Cdebug-assertions={}", setting(sess.opts.debug_assertions)),
-            ])
-            .arg(input).arg("-o").arg(&object)
+        let args = [
+            "--crate-name".to_owned(), name.to_owned(), "--edition=2024".into(), "--crate-type=lib".into(),
+            "--emit=obj".into(), "--target=x86_64-unknown-linux-gnu".into(), "-Cpanic=abort".into(),
+            "-Copt-level=0".into(), "-Cdebuginfo=0".into(), format!("-Cmetadata={metadata}"),
+            format!("-Coverflow-checks={}", setting(sess.overflow_checks())),
+            format!("-Cdebug-assertions={}", setting(sess.opts.debug_assertions)),
+            input.to_str().ok_or("native item source path must be UTF-8")?.to_owned(), "-o".into(),
+            object.to_str().ok_or("native item output path must be UTF-8")?.to_owned(),
+        ];
+        let report = sess.time("lustr_native_items", || self.native_items(&args, source, &extents, link, no_std))?;
+        if report.len() != items.len() {
+            return Err("native object does not cover every selected definition".into());
+        }
+        let mut symbols = Vec::with_capacity(items.len());
+        for (item, (name, symbol)) in items.iter().zip(report) {
+            let ItemKind::Fn(function) = &item.kind else { unreachable!() };
+            if name != function.ident.name.as_str()
+                || !symbol.starts_with("f_")
+                || !symbol.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_')
+                || symbols.contains(&symbol)
+            {
+                return Err("invalid native object symbol binding".into());
+            }
+            symbols.push(symbol);
+        }
+        if object.is_file() != link {
+            return Err("native compiler produced the wrong artifact for this request".into());
+        }
+        Ok((link.then_some(object), symbols))
+    }
+
+    #[cfg(feature = "upstream-semantic")]
+    fn native_items(&self, args: &[String], source: &str, extents: &[Range<u32>], link: bool, no_std: bool)
+        -> Result<Vec<(String, String)>, String>
+    {
+        if !crate::embedding_environment_supported() {
+            return Err("the Rust host cannot use a native front arena".into());
+        }
+        crate::native_object::complete_items(args, source, extents, link, no_std)
+    }
+
+    #[cfg(not(feature = "upstream-semantic"))]
+    fn native_items(&self, args: &[String], source: &str, extents: &[Range<u32>], link: bool, no_std: bool)
+        -> Result<Vec<(String, String)>, String>
+    {
+        let mut command = Command::new(&self.producer);
+        command.arg(if link { "link" } else { "check" });
+        command.arg(if no_std { "no-std" } else { "std" });
+        for extent in extents {
+            command.args([extent.start.to_string(), extent.end.to_string()]);
+        }
+        let mut child = command.arg("--").args(args)
             .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped())
             .spawn().map_err(|error| format!("cannot start native item compiler: {error}"))?;
         let sent = child.stdin.take().unwrap().write_all(source.as_bytes());
@@ -157,29 +196,10 @@ impl Composition {
             return Err(String::from_utf8_lossy(&result.stderr).into_owned());
         }
         sent.map_err(|error| format!("cannot send original source to native compiler: {error}"))?;
-        let report = std::str::from_utf8(&result.stdout).map_err(|error| error.to_string())?;
-        let mut report = report.lines();
-        let mut symbols = Vec::with_capacity(items.len());
-        for item in items {
-            let ItemKind::Fn(function) = &item.kind else { unreachable!() };
-            let (name, symbol) = report.next().and_then(|line| line.split_once(' '))
-                .ok_or("missing native object symbol")?;
-            if name != function.ident.name.as_str()
-                || !symbol.starts_with("f_")
-                || !symbol.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_')
-                || symbols.iter().any(|previous| previous == symbol)
-            {
-                return Err("invalid native object symbol binding".into());
-            }
-            symbols.push(symbol.to_owned());
-        }
-        if report.next().is_some() {
-            return Err("unexpected additional native symbol binding".into());
-        }
-        if object.is_file() != link {
-            return Err("native compiler produced the wrong artifact for this request".into());
-        }
-        Ok((link.then_some(object), symbols))
+        std::str::from_utf8(&result.stdout).map_err(|error| error.to_string())?.lines().map(|line| {
+            line.split_once(' ').map(|(name, symbol)| (name.to_owned(), symbol.to_owned()))
+                .ok_or_else(|| "invalid native object symbol response".to_owned())
+        }).collect()
     }
 }
 
