@@ -633,6 +633,40 @@ fn main() {
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn ordinary_cargo_links_a_transitive_native_library() {
+    let f = Fixture::new("transitive-native-link");
+    f.source("Cargo.toml", "[workspace]\nmembers = [\"provider\", \"middle\", \"application\"]\nresolver = \"3\"\n");
+    f.source("provider/Cargo.toml", "[package]\nname = \"value-provider\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    f.source("provider/src/lib.rs", "#![no_std]\npub fn encode(value: u32) -> u32 { (value ^ 3) ^ 10 }\n");
+    f.source("middle/Cargo.toml", "[package]\nname = \"value-mapping\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\nupstream_value = { package = \"value-provider\", path = \"../provider\" }\n");
+    f.source("middle/src/lib.rs", "#![no_std]\npub fn map(value: u32) -> u32 { upstream_value::encode(value) ^ 6 }\n");
+    f.source("application/Cargo.toml", "[package]\nname = \"value-display\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\nvalue-mapping = { path = \"../middle\" }\n");
+    let application = "fn main() { let mapped = value_mapping::map(12); println!(\"{mapped}\"); }\n";
+    f.source("application/src/main.rs", application);
+
+    f.succeeds("check", f.command("cargo").args(["check", "--offline", "--workspace"]));
+    let run = ["run", "--offline", "--quiet", "-p", "value-display"];
+    let cold = f.succeeds("run", f.command("cargo").args(run));
+    assert_eq!(cold.stdout, b"3\n");
+    let binary = f.root.join("target/debug/value-display");
+    let initial = std::fs::read(&binary).unwrap();
+
+    f.source("application/src/main.rs", "fn main() { let mapped = value_provider::encode(12); println!(\"{mapped}\"); }\n");
+    let rejected = f.invoke("hidden-extern", f.command("cargo").args(run));
+    assert_eq!(rejected.status.code(), Some(101));
+    assert!(String::from_utf8_lossy(&rejected.stderr).contains("value_provider"));
+    assert!(rejected.stdout.is_empty());
+    assert_eq!(std::fs::read(&binary).unwrap(), initial);
+
+    f.source("application/src/main.rs", application);
+    f.source("provider/src/lib.rs", "#![no_std]\npub fn encode(value: u32) -> u32 { (value ^ 3) ^ 11 }\n");
+    let edited = f.succeeds("transitive-edit", f.command("cargo").args(run));
+    assert_eq!(edited.stdout, b"2\n");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
 fn default_debug_cargo_preserves_unwind_behavior() {
     let f = Fixture::new("debug-panic");
     f.source("Cargo.toml", "[package]\nname = \"debug-panic\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");

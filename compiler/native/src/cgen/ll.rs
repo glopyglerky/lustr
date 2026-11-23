@@ -649,6 +649,13 @@ impl FnGen<'_, '_> {
             {
                 let _ = writeln!(ll.body, "  br label %bb{}", next.0);
             }
+            #[cfg(feature = "exclusive-native")]
+            Terminator::Call { target: CallTarget::NativeFn(def), args, dest, next, unwind: call_unwind }
+                if native_on() && self.ll_imported_scalar_call(ll, *def, args, dest,
+                    if cleanup || !self.unwind { None } else { call_unwind.map(|u| u.0) }) =>
+            {
+                let _ = writeln!(ll.body, "  br label %bb{}", next.0);
+            }
             Terminator::Call { target: CallTarget::Builtin(b), args, dest, next, .. } if native_on() && self.ll_native_builtin(ll, *b, args, dest) => {
                 let _ = writeln!(ll.body, "  br label %bb{}", next.0);
             }
@@ -1962,6 +1969,45 @@ impl FnGen<'_, '_> {
                 let _ = writeln!(ll.body, "  store i8 1, ptr %m{dl}_{k}");
             }
         }
+        true
+    }
+
+    /// An independently checked Rust scalar signature has the already
+    /// qualified direct integer ABI. The symbol comes from its actual
+    /// imported definition, and lands in a normal LLVM relocation.
+    #[cfg(feature = "exclusive-native")]
+    fn ll_imported_scalar_call(
+        &mut self, ll: &mut Ll, def: crate::def::DefId, args: &[Operand], dest: &Place, unwind: Option<u32>,
+    ) -> bool {
+        let program = self.p;
+        let Some((parameters, result, link)) = program.native_fn(def) else { return false; };
+        let scalar = |ty| {
+            let ty::TyKind::Int(kind) = program.tys.kind(ty) else { return None; };
+            if !crate::driver::library::completion::has_direct_integer_abi(kind) { return None; }
+            let native = cty(&program.tys, ty);
+            match pass_of(program, &native) {
+                Pass::Scalar(llvm, "") => Some((native, llvm)),
+                _ => None,
+            }
+        };
+        let Some((result_ty, ret)) = scalar(result) else { return false; };
+        let Some(dp) = self.ll_plan(ll, dest) else { return false; };
+        if dp.ty != result_ty || args.len() != parameters.len() { return false; }
+        let Some(parameters) = parameters.iter().copied().map(scalar).collect::<Option<Vec<_>>>() else { return false; };
+        if args.iter().zip(&parameters).any(|(argument, (expected, _))| {
+            self.ll_scalar_ok(ll, argument).is_none_or(|(actual, _)| actual != *expected)
+        }) {
+            return false;
+        }
+        let proto = parameters.iter().map(|&(_, llvm)| llvm).collect::<Vec<_>>().join(", ");
+        let values = args.iter().zip(&parameters).map(|(argument, (_, llvm))| {
+            format!("{llvm} {}", self.ll_scalar_operand_value(ll, argument))
+        }).collect::<Vec<_>>().join(", ");
+        ll.decls.insert(format!("declare {ret} @{}({proto})", link.symbol));
+        let value = self.ll_call(ll, &(link.symbol.clone(), ret.into(), values), unwind)
+            .expect("direct integer return has a value");
+        let (address, alignment) = self.ll_addr(ll, &dp);
+        let _ = writeln!(ll.body, "  store {ret} {value}, ptr {address}, align {alignment}");
         true
     }
 

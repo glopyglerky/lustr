@@ -889,7 +889,6 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
             executable_dependencies:executable_artifacts.then_some(executable_dependencies), custom_test,
             sdk_receipt:library_contract::SDK_RECEIPT.into()};
         if !key.valid() || !matches!(cmd.as_str(), "build" | "check") || session.krate.target_kind != key.target_kind()
-            || cmd == "build" && !key.supports_link_profile(session.profile.panic_abort)
             || session.target_triple != library_contract::TARGET
             || debug || emit_c.is_some() || !run_args.is_empty()
             || !key.valid_output(&abs(&out), cmd == "check", library_options) { return None; }

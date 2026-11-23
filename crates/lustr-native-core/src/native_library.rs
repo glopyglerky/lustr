@@ -128,7 +128,6 @@ pub(crate) fn request_supported(req: &Request) -> bool {
         && key.matches_target_name(&req.session.krate.target_name)
         && (!key.custom_test || req.session.krate.test)
         && (!req.session.krate.test || (key.is_executable() && (key.custom_test || !req.session.profile.panic_abort)))
-        && (req.cmd == crate::protocol::Cmd::Check || key.supports_link_profile(req.session.profile.panic_abort))
         && req.session.target_triple == crate::protocol::library_contract::TARGET
         && crate::protocol::host_triple() == crate::protocol::library_contract::TARGET
         && !req.debug && !req.cc && !req.harness && req.emit_c.is_none() && req.run_args.is_none()

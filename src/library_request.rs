@@ -150,7 +150,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
         working_directory: std::env::current_dir().ok()?, check_cfg, search_paths, external, executable_dependencies,
         custom_test, sdk_receipt:SDK_RECEIPT.into() };
     if test && panic != "panic=unwind" { return None; }
-    if !context.valid() || !check && !context.supports_link_profile(panic == "panic=abort") { return None; }
+    if !context.valid() { return None; }
     if std::env::var("CARGO_CRATE_NAME").is_ok_and(|v|v != context.crate_name) { return None; }
     let out_dir = std::path::absolute(out_dir?).ok()?;
     let output = out_dir.join(if check { context.metadata_name() } else if binary { context.binary_name() } else { context.archive_name() });
