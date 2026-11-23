@@ -1762,7 +1762,7 @@ def main():
               "functional_passed": False, "exec_trace_qualified": False, "retained_public_integration": False,
               "full_compiler_qualification": False, "full_rust_coverage": False, "performance_qualified": False,
               "socket_independent": False, "commands": [], "observed_history": [], "original_consumers": [],
-              "refusals": [], "checked_runtime_results": 0,
+              "checked_runtime_results": 0,
               "native_work_evidence": "source-bound work instrumentation corroborated by immutable object generations; not an independent TinyCC profiler",
               "unqualified_scope": ["general --extern consumer ingestion",
                     "non-scalar declarations", "other profiles/targets", "full Cargo graphs", "no_std compiler", "socket-free retained host"]}
@@ -2544,44 +2544,8 @@ def main():
                                          daemon_argv, daemon_trace, prefixes, owner, report)
         seal_reports()
         save()
-        # A direct archive passed where Cargo normally passes full metadata is refused.
-        for label, extra in (
-            ("external-crate", ["rustc", "--lib", "--", "--extern", "unused_external=" + str(saved_outputs["second"]["link"])]),
-        ):
-            target = root / "cases" / label
-            target.mkdir()
-            project = projects["first"]
-            env = dict(environment, CARGO_TARGET_DIR=str(target / "target"), CARGO_BUILD_BUILD_DIR=str(target / "intermediates"))
-            cargo_args = [package / "bin/cargo", *extra[:2], "--offline", "--message-format=json", *extra[2:]]
-            before_reports = set((root / "observations").glob("*/report.json"))
-            before_files = {unit: file_snapshot(paths) for unit, paths in saved_outputs.items()}
-            stdout, stderr, trace = commands.run(label, cargo_args, project["root"], env, expected=101, traced=True)
-            parsed_client = trace_events(trace.read_bytes(), project["root"])
-            observed = inspect_processes(parsed_client, package, package / "bin/cargo", cargo_args, projects)
-            require(len(observed["compiles"]) == 1 and parsed_client["exits"].get(parsed_client["root_pid"]) == 101,
-                    "unsupported operation did not reach one actual public compiler refusal")
-            require(set((root / "observations").glob("*/report.json")) == before_reports,
-                    "unrepresented request was admitted to native library compilation")
-            require(not list(target.rglob("*.rlib")) and not list(target.rglob("*.rmeta")),
-                    "unrepresented request published an artifact")
-            require(all(file_snapshot(saved_outputs[unit]) == before_files[unit] for unit in saved_outputs),
-                    "unrepresented request replaced a prior successful artifact")
-            messages = [json.loads(line) for line in stdout.splitlines() if line]
-            require(not any(row.get("reason") == "compiler-artifact" for row in messages),
-                    "Cargo reported an artifact for a refused request")
-            require(b"incomplete" in stdout.lower() + stderr.lower() or b"unintegrated" in stdout.lower() + stderr.lower(),
-                    "refusal did not identify the integration gap")
-            prefix = daemon_trace.read_bytes()
-            frozen_prefix(prefixes[-1]["bytes"], prefix)
-            owner_commands = inspect_processes(trace_events(prefix, root), package, Path(daemon_argv[0]), daemon_argv, projects, daemon=True)
-            require(len(owner_commands["artifacts"]) == prefixes[-1]["artifact_count"], "unrepresented request triggered artifact work")
-            prefixes.append({"name": label, "bytes": prefix, "artifact_count": len(owner_commands["artifacts"])})
-            require(not trap_log.exists() and process_identity(owner[0], package / "bin/lust-core") == owner,
-                    "refusal invoked another compiler or replaced the retained owner")
-            report["refusals"].append({"case": label, "scope": "valid unintegrated request; no compilation coverage claimed",
-                                        "invocation": observed["compiles"][0]})
-            seal_reports()
-            save()
+        # The compiler contract now verifies valid direct archive input through
+        # the installed Rust component and an independent linked consumer.
         unwind_binary_start = prefixes[-1]["artifact_count"]
         qualify_unwind_executable(root, package, sdk, commands, environment, oracle_env, projects,
                                    daemon_argv, daemon_trace, prefixes, owner, report, unwind_binary_start)

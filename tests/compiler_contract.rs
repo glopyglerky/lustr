@@ -2856,3 +2856,46 @@ fn observed_test_body() { assert_eq!(6 * 7, 42); }
         assert!(String::from_utf8_lossy(&result.stdout).contains("test observed_test_body ... ok"));
     }
 }
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn cargo_library_accepts_an_explicit_rust_archive() {
+    let f = Fixture::new("cargo-explicit-rust-archive");
+    let original = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let provider = f.source("provider.rs", "#![no_std]\npub fn twice(value: u64) -> u64 { value.wrapping_mul(2) }\n");
+    let archive = f.root.join("libprovider.rlib");
+    f.succeeds("lustr-provider", f.command("rustc").args([
+        "--crate-name", "provider", "--crate-type=rlib", "--edition=2024",
+        "-Zembed-metadata=yes", "-Cembed-bitcode=no", "--emit=link",
+    ]).arg(&provider).arg("-o").arg(&archive));
+    let published = std::fs::read(&archive).unwrap();
+    assert!(!f.root.join("libprovider.rmeta").exists());
+
+    f.source("Cargo.toml", "[package]\nname=\"archive_consumer\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    f.source("src/lib.rs", "#![no_std]\npub fn run(value: u64) -> u64 { external::twice(value) }\n");
+    let main = f.source("main.rs", "fn main() { println!(\"{}\", archive_consumer::run(21)); }\n");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let dependency = format!("external={}", archive.display());
+    for (lane, oracle) in [("lustr", false), ("original", true)] {
+        let output = f.root.join(lane);
+        let mut cargo = f.command("cargo");
+        cargo.args(["rustc", "--lib", "--frozen", "--", "--extern", &dependency, "-Zembed-metadata=yes"])
+            .env("CARGO_TARGET_DIR", &output);
+        if oracle { cargo.env("RUSTC", &original); }
+        f.succeeds(&format!("{lane}-consumer"), &mut cargo);
+        let library = output.join("debug/libarchive_consumer.rlib");
+        assert!(library.is_file());
+        let application = output.join("application");
+        f.succeeds(&format!("{lane}-app-link"), Command::new(&original)
+            .current_dir(&f.root).env_remove("LD_LIBRARY_PATH")
+            .arg("--edition=2024").arg(&main).arg("--extern")
+            .arg(format!("archive_consumer={}", library.display()))
+            .arg("-L").arg(format!("dependency={}", f.root.display()))
+            .arg("-o").arg(&application));
+        assert_eq!(f.succeeds(&format!("{lane}-app"), &mut Command::new(application)).stdout, b"42\n");
+        assert_eq!(std::fs::read(&archive).unwrap(), published);
+    }
+    let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
+    assert!(trace.contains("\"entry\":\"rust-request\""), "{trace}");
+}
