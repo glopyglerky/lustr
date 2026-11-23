@@ -453,6 +453,21 @@ reject a disabled import, an unqualified std-only macro and an unqualified
 fails when Cargo launches it. Freestanding executable compilation and the
 broader no-std target and runtime matrix remain unfinished.
 
+Source `d5772a23` carries build-script configuration into the actual Cargo
+unit. Pinned Rust and Lustr agree on Boolean flags, multiple values of one
+flag, inactive declarations, changes that enable a different function and
+rejection that preserves the previous executable. Source `25f75c32` also
+accepts these represented options during Cargo target discovery and native
+compilation when supplied through `CARGO_ENCODED_RUSTFLAGS`.
+
+At `f8353d49`, Cargo and direct Rust requests can link a native application
+to the represented genuine Rust archive using its embedded metadata. The
+independent SDK built the `#![no_std]` provider. Both compilers ran the
+application and produced 42. Lustr preserved the previous executable when
+the archive was replaced by a stub-only or corrupt file. Direct requests
+preserve the selected output path and accept either a source file or stdin.
+The stdin tests also preserve Rustdoc source coordinates when supplied.
+
 The coordinator owns this register, shared-interface decisions and final
 integration. Worker A starts P1/P2; worker B starts P3; worker C starts P4 and
 the runtime prerequisites it exposes. Use isolated worktrees and non-overlapping
