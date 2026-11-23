@@ -1520,6 +1520,7 @@ pub struct ResolveCx<'x> {
 /// One concrete receiver's lifetime-generic projection established upstream.
 /// A result of `None` records that the imported trait has no matching impl.
 pub struct ImportedProjection {
+    pub definition: crate::def::DiskDefId,
     pub receiver: Sym,
     pub item: Sym,
     pub shared_integer_referent: Option<IntTy>,

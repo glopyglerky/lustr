@@ -661,6 +661,91 @@
       "adaptation": "Keep the macro's generated order and bind its deferred CFG_RELEASE to the pinned SDK value 1.102.0-nightly.",
       "semantic_owner": "Pinned scalar metadata reader",
       "necessity": "Metadata symbol indices must identify the same string as the original Rust compiler even when a crate describes a function named by the predefined table."
+    },
+    {
+      "destination": "src/extern_metadata.rs",
+      "source": "compiler/rustc_attr_ir/src/lang_items.rs",
+      "source_sha256": "f1aae4e6441ad2cf7958eac9298472d905e56751efc95f92b821d4fbb3763056",
+      "sections": [
+        "LangItem::Sized",
+        "LangItem::MetaSized"
+      ],
+      "adaptation": "Decode these pinned Rust metadata records into the existing native projection interface without depending on TyCtxt.",
+      "semantic_owner": "pinned Rust metadata reader",
+      "necessity": "Resolve size trait definition identities from the authenticated core artifact."
+    },
+    {
+      "destination": "src/extern_metadata.rs",
+      "source": "compiler/rustc_type_ir/src/region_kind.rs",
+      "source_sha256": "143509bd6aa7768eb48e400a3e12f7c66d58d585f16cbaa76110de233e83eef5",
+      "sections": [
+        "RegionKind::ReEarlyParam"
+      ],
+      "adaptation": "Decode these pinned Rust metadata records into the existing native projection interface without depending on TyCtxt.",
+      "semantic_owner": "pinned Rust metadata reader",
+      "necessity": "Read the real early-bound lifetime index and symbol of the selected associated value."
+    },
+    {
+      "destination": "src/extern_metadata.rs",
+      "source": "compiler/rustc_type_ir/src/ty_kind.rs",
+      "source_sha256": "8973a42d1f7f600090e57a78a8aa5ad5e5a219741dc9d78f318c6083246c69f4",
+      "sections": [
+        "TyKind::Ref",
+        "TyKind::Alias",
+        "AliasTyKind::Projection"
+      ],
+      "adaptation": "Decode these pinned Rust metadata records into the existing native projection interface without depending on TyCtxt.",
+      "semantic_owner": "pinned Rust metadata reader",
+      "necessity": "Recognize the declared projection and shared integer reference in its original metadata representation."
+    },
+    {
+      "destination": "src/extern_metadata.rs",
+      "source": "compiler/rustc_type_ir/src/predicate_kind.rs",
+      "source_sha256": "a43dd7bd5855b3ab011e99190cc4900c69f2a93d76715c17401b8cc672dbe9bf",
+      "sections": [
+        "ClauseKind::TypeOutlives",
+        "ClauseKind::Trait"
+      ],
+      "adaptation": "Decode these pinned Rust metadata records into the existing native projection interface without depending on TyCtxt.",
+      "semantic_owner": "pinned Rust metadata reader",
+      "necessity": "Validate the declared Self outlives clause and implicit size bounds before the native resolver reads a projection."
+    },
+    {
+      "destination": "src/extern_metadata.rs",
+      "source": "compiler/rustc_middle/src/ty/generics.rs",
+      "source_sha256": "50af849cd9489f758d8dbe3e9b49f71c1603280652eb38fb09831ee667980c8a",
+      "sections": [
+        "Generics",
+        "GenericParamDef",
+        "GenericParamDefKind::Lifetime"
+      ],
+      "adaptation": "Decode these pinned Rust metadata records into the existing native projection interface without depending on TyCtxt.",
+      "semantic_owner": "pinned Rust metadata reader",
+      "necessity": "Join the associated declaration and assignment with their distinct parent-relative lifetime slots."
+    },
+    {
+      "destination": "src/extern_metadata.rs",
+      "source": "compiler/rustc_middle/src/ty/assoc.rs",
+      "source_sha256": "1f4255a3ad1874107d7e484f1508ccddd879a2e5b07ce95caccf8cd070d7ed34",
+      "sections": [
+        "AssocContainer"
+      ],
+      "adaptation": "Decode these pinned Rust metadata records into the existing native projection interface without depending on TyCtxt.",
+      "semantic_owner": "pinned Rust metadata reader",
+      "necessity": "Validate the associated assignment's exact original trait-item identity."
+    },
+    {
+      "destination": "src/extern_metadata.rs",
+      "source": "compiler/rustc_middle/src/ty/mod.rs",
+      "source_sha256": "3be9c99d7f701a865fbfb455db084d209fdda6662aee56910f43dba012dd117a",
+      "sections": [
+        "ImplTraitHeader",
+        "VariantDef",
+        "VariantDiscr"
+      ],
+      "adaptation": "Decode these pinned Rust metadata records into the existing native projection interface without depending on TyCtxt.",
+      "semantic_owner": "pinned Rust metadata reader",
+      "necessity": "Read the positive concrete impl and its unit receiver from the pinned original representation."
     }
   ],
   "dependencies": [
@@ -931,10 +1016,10 @@
   },
   "adapted_sources_sha256": {
     "src/encode.rs": "624762920995d36cddd5d23042f53e6594076353590f0d77d6de6c5758066304",
-    "src/extern_metadata.rs": "5afdd36ff037965a0bb045b35f2eed3ccb70154cd146b2783fb780402d7400d4",
+    "src/extern_metadata.rs": "178a2974be4780d1bab8acaa215e3c2ae26c5e0433b8633624df8c94d0f90c0a",
     "src/identity.rs": "995799a9938d78fd5c800a1d28af4039f4e5868cea71536d0f70b2fc3643724d",
-    "src/lib.rs": "2cd47fab157755311d9135d24648b483a7e75b1d6ecc5ccaef8a5c51a9291bca",
-    "src/sdk.rs": "52a6b3042c8191bb81ff240a70d90894d2e3b81aae6ccf4a4cf1fca43173ce7b",
+    "src/lib.rs": "74e1a26ae7822ec7acbfcc17ebea058aabdc9ba61fb216c33e9a769b8e02c506",
+    "src/sdk.rs": "bcb43af0564553d2e2636f25a7aa6c06f81a8eb19997f4a2324c3071b1fb025f",
     "src/table.rs": "5ad2fa46decc550bfd5f7d23cc051c7087d4ef1f5b361b154630c122097c92bb",
     "src/upstream/codec.rs": "916922c930d3dc46c7003d65d920b6c84efa780ac5b0c06eec1586ead0216a7a",
     "src/upstream/int_overflow.rs": "bf1667be8b077b770ecc1850c3bc141dc685f4b3f2470009dc2e062ef08ca0ae",

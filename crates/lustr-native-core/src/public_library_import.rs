@@ -4,17 +4,18 @@ use std::{path::Path, sync::Arc};
 
 use crate::{
     borrowck::RegionSig,
-    check::collect::Program,
+    check::{collect::Program, generics::ImportedProjection},
     def,
     diag::{Diag, Span},
     driver,
+    driver::graph::Namespace,
     driver::imports::{ScalarDefinitions, ScalarFunction},
-    intern::Interner,
+    intern::{Interner, Sym},
     protocol::ExternMetadata,
     resolve::imports::{Bind, DefInfo, ExternInfo, InsertOut, ResKind, ResolvedTables, Target, VisKind},
     ty::{self, TyIntern},
 };
-use lustr_metadata_encoder::{IntegerType, Sdk, read_link_crate, read_scalar_crate};
+use lustr_metadata_encoder::{IntegerType, Sdk, read_check_crate, read_link_crate, read_scalar_crate};
 
 use super::{Stamp, stamp};
 
@@ -51,20 +52,35 @@ pub(super) struct Import {
     artifact_identity: String,
     pub(super) metadata: Arc<[u8]>,
     pub(super) sdk: Sdk,
+    projection: Option<Projection>,
+}
+
+struct Projection {
+    receiver: (String, def::DefPathHash),
+    family: (String, def::DefPathHash),
+    item: (String, def::DefPathHash),
+    referent: Option<ty::IntTy>,
 }
 
 impl Import {
     pub(super) fn open(request: &ExternMetadata, sdk: &Sdk) -> Result<Self, String> {
-        Self::read(request, sdk, None, def::CrateId(1), false)
+        Self::read(request, sdk, None, def::CrateId(1), false, false)
     }
 
-    pub(super) fn read(request: &ExternMetadata, sdk: &Sdk, standard: Option<&Sdk>, index: def::CrateId, executable: bool) -> Result<Self, String> {
+    pub(super) fn read(
+        request: &ExternMetadata, sdk: &Sdk, standard: Option<&Sdk>, index: def::CrateId,
+        executable: bool, metadata_only: bool,
+    ) -> Result<Self, String> {
         let path = &request.artifact;
         let before = stamp(path)?;
         let data = std::fs::read(path).map_err(|e| format!("read extern metadata {}: {e}", path.display()))?;
-        let leaf = (if executable { read_link_crate(&data, sdk) } else { read_scalar_crate(&data, sdk) })
-            .or_else(|| standard.and_then(|context| read_link_crate(&data, context)))
-            .ok_or("extern artifact does not represent a pinned scalar library")?;
+        let (leaf, projection) = match (executable, metadata_only) {
+            (true, true) => read_check_crate(&data, sdk),
+            (true, false) => read_link_crate(&data, sdk).map(|leaf| (leaf, None)),
+            (false, _) => read_scalar_crate(&data, sdk).map(|leaf| (leaf, None)),
+        }
+        .or_else(|| standard.and_then(|context| read_link_crate(&data, context)).map(|leaf| (leaf, None)))
+        .ok_or("extern artifact has no represented interface in the pinned SDK")?;
         let expected = format!("lib{}{}.rmeta", leaf.name, leaf.filename_suffix);
         if path.file_name().is_none_or(|name| name != expected.as_str()) || stamp(path)? != before {
             return Err("extern metadata filename or generation changed".into());
@@ -94,6 +110,15 @@ impl Import {
             index,
             functions,
         });
+        let projection = projection.map(|item| {
+            let definition = |(name, hash): (&str, u64)| (name.into(), def::DefPathHash(hash));
+            Projection {
+                receiver: definition(item.receiver),
+                family: definition(item.family),
+                item: definition(item.item),
+                referent: item.referent.map(native_integer_type),
+            }
+        });
         Ok(Self {
                 facts,
                 stamp: before,
@@ -103,6 +128,7 @@ impl Import {
                 artifact_identity: path.to_str().ok_or("extern metadata path is not Unicode")?.into(),
                 metadata: data.into(),
                 sdk: context,
+                projection,
         })
     }
 
@@ -124,6 +150,25 @@ impl Import {
 
     pub(super) fn exported_symbols(&self) -> impl Iterator<Item = &str> {
         self.facts.functions.iter().map(|function| function.symbol.as_str())
+    }
+
+    pub(super) fn is_scalar(&self) -> bool {
+        self.projection.is_none()
+    }
+
+    fn flat_definition(&self, interner: &Interner, hash: def::DefPathHash) -> Sym {
+        interner.intern(&format!("$lustr$extern${:016x}${:016x}", self.facts.stable.0, hash.0))
+    }
+
+    fn projection_fact(&self, interner: &Interner, projection: &Projection) -> (Sym, ImportedProjection) {
+        let family = self.flat_definition(interner, projection.family.1);
+        let fact = ImportedProjection {
+            definition: def::DiskDefId { krate: self.facts.stable, hash: projection.item.1 },
+            receiver: self.flat_definition(interner, projection.receiver.1),
+            item: interner.intern(&projection.item.0),
+            shared_integer_referent: projection.referent,
+        };
+        (family, fact)
     }
 
     fn failure(message: &str) -> Diag {
@@ -149,25 +194,33 @@ impl driver::imports::Definitions for Import {
             root_module: Some(root),
             unsupported: None,
         });
-        for function in &self.facts.functions {
-            let id = def::DefId { krate: self.facts.index, hash: function.hash };
-            let flat = interner.intern(&format!("$lustr$extern${:016x}${:016x}", self.facts.stable.0, function.hash.0));
-            let info = DefInfo { kind: ResKind::Fn, flat, module: root, vis: VisKind::Pub };
+        let mut bind = |name: &str, hash, kind, namespace, namespace_index: usize| {
+            let id = def::DefId { krate: self.facts.index, hash };
+            let flat = self.flat_definition(interner, hash);
+            let info = DefInfo { kind, flat, module: root, vis: VisKind::Pub };
             if tables.def_info.insert(id, info).is_some()
-                || tables.flat[1].insert(flat, id).is_some()
+                || tables.flat[namespace_index].insert(flat, id).is_some()
                 || !matches!(
                     tables.insert(
                         root,
-                        driver::graph::Namespace::Value,
-                        interner.intern(&function.name),
+                        namespace,
+                        interner.intern(name),
                         Bind { target: Target::Def(id), vis: VisKind::Pub, rank: 2, def_module: root }
                     ),
                     InsertOut::Changed
                 )
             {
-                return Err(Self::failure("extern function identity conflicts with an existing binding"));
+                return Err(Self::failure("extern definition identity conflicts with an existing binding"));
             }
-            tables.display_names.insert(flat, interner.intern(&format!("{}::{}", self.facts.alias, function.name)));
+            tables.display_names.insert(flat, interner.intern(&format!("{}::{name}", self.facts.alias)));
+            Ok(())
+        };
+        for function in &self.facts.functions {
+            bind(&function.name, function.hash, ResKind::Fn, Namespace::Value, 1)?;
+        }
+        if let Some(projection) = &self.projection {
+            bind(&projection.receiver.0, projection.receiver.1, ResKind::Adt, Namespace::Type, 0)?;
+            bind(&projection.family.0, projection.family.1, ResKind::Trait, Namespace::Type, 0)?;
         }
         Ok(())
     }
@@ -212,6 +265,10 @@ impl driver::imports::Definitions for Import {
                 },
             );
         }
+        if let Some(projection) = &self.projection {
+            let (family, fact) = self.projection_fact(&program.interner, projection);
+            program.gx.imported_projections.get_or_insert_with(Default::default).entry(family).or_default().push(fact);
+        }
         self.validate_checked(program).map_err(|reason| vec![Self::failure(&reason)])
     }
 
@@ -230,6 +287,16 @@ impl driver::imports::Definitions for Import {
                 || linkage.symbol != function.symbol
             {
                 return Err("checked extern signature or linkage changed".into());
+            }
+        }
+        if let Some(projection) = &self.projection {
+            let (family, expected) = self.projection_fact(&program.interner, projection);
+            if !program.gx.imported_projections.as_ref().and_then(|map| map.get(&family)).is_some_and(|facts| {
+                facts.iter().any(|fact| fact.definition == expected.definition
+                    && fact.receiver == expected.receiver && fact.item == expected.item
+                    && fact.shared_integer_referent == expected.shared_integer_referent)
+            }) {
+                return Err("checked projection differs from the imported definition".into());
             }
         }
         Ok(())

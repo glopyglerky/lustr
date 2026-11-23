@@ -24,6 +24,7 @@ pub struct Sdk {
     pub(crate) receipt_hash: [u8; 32],
     pub(crate) dependency_functions: BTreeSet<NativeId>,
     pub(crate) standard: bool,
+    pub(crate) core_size_traits: Option<[usize; 2]>,
 }
 
 impl Sdk {
@@ -47,7 +48,15 @@ impl Sdk {
                 return Err("metadata SDK dependency facts differ from the qualified scope".into());
             }
         }
-        Ok(Self { cfg_version, dependencies, receipt_hash, dependency_functions: BTreeSet::new(), standard: false })
+        Ok(Self { cfg_version, dependencies, receipt_hash, dependency_functions: BTreeSet::new(), standard: false, core_size_traits: None })
+    }
+
+    /// Keep the language-item identities recorded by the authenticated core
+    /// artifact, whose exact digest the host checked before this call.
+    pub fn with_core_metadata(mut self, artifact: &[u8]) -> Self {
+        self.core_size_traits = self.dependencies.iter().find(|dependency| dependency.name == "core")
+            .and_then(|core| crate::extern_metadata::read_core_size_traits(artifact, &self.cfg_version, &core.hash));
+        self
     }
 
     /// A separate construction-qualified std prelude and runtime dependency
@@ -67,7 +76,7 @@ impl Sdk {
         {
             return Err("standard metadata SDK facts differ from the pinned dependency closure".into());
         }
-        Ok(Self { cfg_version, dependencies, receipt_hash, dependency_functions: BTreeSet::new(), standard: true })
+        Ok(Self { cfg_version, dependencies, receipt_hash, dependency_functions: BTreeSet::new(), standard: true, core_size_traits: None })
     }
 
     /// Join an actual direct leaf dependency to the observed pinned Cargo library closure.

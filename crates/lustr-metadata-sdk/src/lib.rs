@@ -87,6 +87,7 @@ fn open_bytes(bytes: &[u8], sysroot: &Path) -> Result<Sdk, String> {
         return Err("metadata SDK dependency closure is not the qualified core/builtins pair".into());
     }
     let mut dependencies = Vec::new();
+    let mut core_metadata = None;
     for (index, dep) in records.iter().enumerate() {
         if dep.get("crate_num").and_then(Value::as_u64) != Some((index + 1) as u64) {
             return Err("metadata SDK dependency numbering is not complete and ordered".into());
@@ -131,9 +132,13 @@ fn open_bytes(bytes: &[u8], sysroot: &Path) -> Result<Sdk, String> {
         if root < 40 || root >= unhashed || unhashed >= artifact.len() as u64 {
             return Err("metadata SDK metadata root positions are invalid".into());
         }
+        if name == "core" {
+            core_metadata = Some(artifact);
+        }
         dependencies.push(SdkDependency { name, hash, host_hash, kind: kind as u8, is_private, extra_filename });
     }
-    Sdk::from_facts(cfg_version, dependencies, Sha256::digest(bytes).into())
+    let sdk = Sdk::from_facts(cfg_version, dependencies, Sha256::digest(bytes).into())?;
+    Ok(sdk.with_core_metadata(core_metadata.as_deref().ok_or("verified core metadata is missing")?))
 }
 fn read_artifact(dep: &Value, field: &str, sysroot: &Path, name: &str, suffix: &str, extension: &str) -> Result<Vec<u8>, String> {
     let artifact = dep.get(field).ok_or_else(|| format!("metadata SDK dependency {field} is absent"))?;

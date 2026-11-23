@@ -41,7 +41,7 @@ impl ExecutableImports {
         let linking = inputs.first().is_some_and(|input| input.archive.is_some());
         for input in inputs {
             let index = crate_index(crates.len())?;
-            let definitions = Import::read(&input.metadata, sdk, standard, index, true)?;
+            let definitions = Import::read(&input.metadata, sdk, standard, index, true, !linking)?;
             if indices.insert(definitions.identity.clone(), crates.len()).is_some() {
                 return Err("duplicate Cargo extern crate identity".into());
             }
@@ -165,7 +165,7 @@ fn find_dependency(
         searched.push((path.clone(), before));
         if !present { continue; }
         let metadata = ExternMetadata { alias: dependency.name.clone(), artifact: path.clone() };
-        let Ok(definitions) = Import::read(&metadata, sdk, standard, index, true) else { continue; };
+        let Ok(definitions) = Import::read(&metadata, sdk, standard, index, true, !linking) else { continue; };
         if &definitions.identity != dependency { continue; }
         if found.is_some() {
             return Err(format!("multiple Cargo metadata files match {}", dependency.name));
@@ -272,7 +272,8 @@ impl Definitions for ExecutableImports {
     }
 
     fn scalar_definitions(&self) -> Option<Vec<Arc<ScalarDefinitions>>> {
-        Some(self.direct_crates().iter().map(|item| item.definitions.facts.clone()).collect())
+        self.direct_crates().iter().all(|item| item.definitions.is_scalar())
+            .then(|| self.direct_crates().iter().map(|item| item.definitions.facts.clone()).collect())
     }
 
     fn take_emission(&self) -> Result<Box<dyn Emission + 'static>, String> {

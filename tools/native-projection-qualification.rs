@@ -132,7 +132,7 @@ impl Definitions for Projection {
         let item = program.interner.intern("View");
         program.imported_crates.insert(self.root.krate, self.item.krate);
         program.gx.imported_projections.get_or_insert_with(Default::default).entry(family).or_default().push(
-            ImportedProjection { receiver, item, shared_integer_referent: self.referent });
+            ImportedProjection { definition: self.item, receiver, item, shared_integer_referent: self.referent });
         Ok(())
     }
 
@@ -142,7 +142,7 @@ impl Definitions for Projection {
         let item = program.interner.intern("View");
         if program.imported_crates.get(&self.root.krate) == Some(&self.item.krate)
             && program.gx.imported_projections.as_ref().and_then(|map| map.get(&family)).is_some_and(|facts| {
-                facts.iter().any(|fact| fact.receiver == receiver && fact.item == item
+                facts.iter().any(|fact| fact.definition == self.item && fact.receiver == receiver && fact.item == item
                     && fact.shared_integer_referent == self.referent)
             })
         {

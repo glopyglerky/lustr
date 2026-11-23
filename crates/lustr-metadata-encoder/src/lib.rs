@@ -34,7 +34,10 @@ mod upstream {
 
 use alloc::{collections::{BTreeMap, BTreeSet}, string::String, vec::Vec};
 
-pub use extern_metadata::{ScalarCrate, archive_metadata_matches, archive_object_members, read_link_crate, read_scalar_crate};
+pub use extern_metadata::{
+    ProjectionDefinitions, ScalarCrate, archive_metadata_matches, archive_object_members,
+    read_check_crate, read_link_crate, read_scalar_crate,
+};
 pub use sdk::{Sdk, SdkDependency};
 
 pub const RUST_REVISION: &str = "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494";
