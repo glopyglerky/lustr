@@ -30,6 +30,13 @@ produced the same output for the failing result and explicit exit-code cases.
 The default-profile unwind gate separately exercises destructor order,
 `catch_unwind`, resumption, and a joined thread's panic payload.
 
-General `Termination` implementations, integration targets, dev-dependencies,
-doctests, custom harnesses, and captured backtrace parity remain open.
+The next development package also selected and executed a dependency-free
+integration test from `tests/behavior.rs`. Cargo built the normal application
+and supplied its `CARGO_BIN_EXE_*` value to the independent test crate.
+The installed gate exercised `cargo test --test behavior --no-run`, followed
+by the actual test and a separate run of the original application.
+
+General `Termination` implementations, dependent integration targets,
+dev-dependencies, doctests, custom harnesses, and captured backtrace parity
+remain open.
 No complete-work speed comparison was run.

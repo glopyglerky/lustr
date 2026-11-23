@@ -2,12 +2,29 @@
 // lowerer supply bindings and types; LLVM resolves instruction and frame
 // locations to the addresses in the emitted object.
 use super::{CTy, FnGen, Layout, LocalDecl, Span, VariantShape, c_layout, cty, ty_name};
+use crate::check::collect::Variant;
 use crate::ir::{Body, Local, StmtKind, Terminator};
 use crate::ty::fmt::{FmtTy, fmt_kind};
 use crate::ty::layout::{self, EnumTag, Repr, ReprKind, niche_tag_value};
 use crate::ty::{FloatTy, IntTy, Mut, Ty, TyIntern, TyKind, USIZE, int};
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::fmt::Write;
+
+struct DebugVariant {
+    name: String,
+    discriminant: i128,
+    fields: Vec<(String, Ty)>,
+}
+
+impl DebugVariant {
+    fn builtin(name: &str, discriminant: i128, payload: Option<Ty>) -> Self {
+        Self {
+            name: name.into(),
+            discriminant,
+            fields: payload.into_iter().map(|ty| ("__0".into(), ty)).collect(),
+        }
+    }
+}
 
 pub(super) struct DebugFn {
     entries: Vec<String>,
@@ -106,10 +123,13 @@ impl DebugFn {
                 if matches!(function.body.tys.kind(base), TyKind::Dyn(..)) {
                     return self.trait_pointer(function, ty);
                 }
+                let name = ty_name(function.p, &function.body.tys, ty);
+                let id = self.reserve_type(ty, &name);
                 let target = self.ty(function, base)?;
-                let name = format!("{prefix}{}", self.types[&base].1);
-                let entry = format!("!DIDerivedType(tag: DW_TAG_pointer_type, name: {}, baseType: !%{target}, size: 64)", quote(&name));
-                (name, entry)
+                let size = debug_layout(function, ty)?.size * 8;
+                self.entries[id] =
+                    format!("!DIDerivedType(tag: DW_TAG_pointer_type, name: {}, baseType: !%{target}, size: {size})", quote(&name));
+                return Ok(id);
             }
             TyKind::Unit => basic_type("()", 0, "DW_ATE_unsigned"),
             TyKind::Never => basic_type("!", 0, "DW_ATE_unsigned"),
@@ -135,23 +155,18 @@ impl DebugFn {
                 );
                 return Ok(id);
             }
-            TyKind::Adt(..)
-                if let CTy::Adt(adt) = cty(&function.body.tys, ty)
-                    && !function.p.adt(adt).is_enum =>
-            {
+            TyKind::Adt(..) if let CTy::Adt(adt) = cty(&function.body.tys, ty) => {
                 let definition = function.p.adt(adt);
+                if definition.is_enum {
+                    let variants = definition.variants.iter().map(|variant| DebugVariant {
+                        name: function.p.name(variant.name).into(),
+                        discriminant: variant.disc,
+                        fields: variant_fields(function, variant),
+                    }).collect::<Vec<_>>();
+                    return self.variants(function, ty, &variants);
+                }
                 let name = function.p.display_path(definition.name);
-                let variant = &definition.variants[0];
-                let fields = variant
-                    .fields
-                    .iter()
-                    .enumerate()
-                    .map(|(i, field)| {
-                        let name =
-                            if variant.shape == VariantShape::Named { function.p.name(field.name).to_owned() } else { format!("__{i}") };
-                        (name, field.ty)
-                    })
-                    .collect::<Vec<_>>();
+                let fields = variant_fields(function, &definition.variants[0]);
                 return self.aggregate(function, ty, name, &fields, debug_layout(function, ty)?);
             }
             TyKind::Tuple(elements) => {
@@ -180,10 +195,16 @@ impl DebugFn {
                 (name, entry)
             }
             TyKind::Adt(..) if let Some((ok, error)) = function.body.tys.result_args(ty) => {
-                return self.variants(function, ty, &[("Ok", Some(ok)), ("Err", Some(error))]);
+                return self.variants(function, ty, &[
+                    DebugVariant::builtin("Ok", 0, Some(ok)),
+                    DebugVariant::builtin("Err", 1, Some(error)),
+                ]);
             }
             TyKind::Adt(..) if let Some(value) = function.body.tys.option_elem(ty) => {
-                return self.variants(function, ty, &[("None", None), ("Some", Some(value))]);
+                return self.variants(function, ty, &[
+                    DebugVariant::builtin("None", 0, None),
+                    DebugVariant::builtin("Some", 1, Some(value)),
+                ]);
             }
             TyKind::Adt(..) if matches!(cty(&function.body.tys, ty), CTy::BoxDyn) => return self.trait_pointer(function, ty),
             TyKind::Adt(..) if function.body.tys.is_exit_code(ty) => {
@@ -353,14 +374,18 @@ impl DebugFn {
         Ok(id)
     }
 
-    fn variants(&mut self, function: &FnGen<'_, '_>, ty: Ty, variants: &[(&str, Option<Ty>)]) -> Result<usize, String> {
+    fn variants(&mut self, function: &FnGen<'_, '_>, ty: Ty, variants: &[DebugVariant]) -> Result<usize, String> {
         let name = ty_name(function.p, &function.body.tys, ty);
         let layout = debug_layout(function, ty)?;
+        let id = self.reserve_type(ty, &name);
+        if layout.uninhabited {
+            self.structure(id, &name, &layout, &[]);
+            return Ok(id);
+        }
         let kind = layout.enum_tag.ok_or("native enum debug layout has no tag form")?;
         if layout.variant_offsets.len() != variants.len() {
             return Err(format!("native enum debug layout for {name} has a mismatched variant list"));
         }
-        let id = self.reserve_type(ty, &name);
         let part = self.push(String::new());
         let tag = match kind {
             EnumTag::Explicit { size, signed } => Some((0, size, signed)),
@@ -384,32 +409,36 @@ impl DebugFn {
             String::new()
         };
         let mut members = Vec::new();
-        for (index, (variant, payload)) in variants.iter().enumerate() {
+        for (index, variant) in variants.iter().enumerate() {
             if matches!(kind, EnumTag::None(single) if single != index) {
                 continue;
             }
-            let fields = &layout.variant_offsets[index];
+            let offsets = &layout.variant_offsets[index];
+            if offsets.len() != variant.fields.len() {
+                return Err(format!("native enum debug layout for {name}::{} has a mismatched field list", variant.name));
+            }
             let variant_id = self.push(String::new());
-            let payload = if let Some(payload) = payload {
-                let offset = fields.first().copied().ok_or("native enum debug layout lacks a payload offset")?;
-                let member = self.ty(function, *payload)?;
-                let shape = debug_layout(function, *payload)?;
-                vec![self.field(variant_id, "__0", member, shape.size, shape.align, offset)]
-            } else {
-                Vec::new()
-            };
-            self.structure(variant_id, variant, &layout, &payload);
+            let mut payload = Vec::new();
+            for ((field, ty), &offset) in variant.fields.iter().zip(offsets) {
+                let member = self.ty(function, *ty)?;
+                let shape = debug_layout(function, *ty)?;
+                payload.push(self.field(variant_id, field, member, shape.size, shape.align.min(layout.align), offset));
+            }
+            self.structure(variant_id, &variant.name, &layout, &payload);
             let value = match kind {
-                EnumTag::Explicit { .. } => Some(index as u128),
-                EnumTag::NicheFilled { variant: data, niche, first, last, start } if index != data && (first..=last).contains(&index) => {
-                    Some(niche_tag_value(niche, first, start, index))
+                EnumTag::Explicit { size, signed } => {
+                    // LLVM's constant has the same bit width as the stored tag.
+                    let repr = if signed { variant.discriminant.to_string() } else { (variant.discriminant as u128).to_string() };
+                    format!(", extraData: i{} {repr}", size * 8)
                 }
-                _ => None,
+                EnumTag::NicheFilled { variant: data, niche, first, last, start } if index != data && (first..=last).contains(&index) => {
+                    format!(", extraData: i{} {}", niche.scalar_size * 8, niche_tag_value(niche, first, start, index))
+                }
+                _ => String::new(),
             };
-            let value = value.map_or_else(String::new, |value| format!(", extraData: i{} {value}", tag.unwrap().1 * 8));
             members.push(self.push(format!(
                 "!DIDerivedType(tag: DW_TAG_member, name: {}, scope: !%{part}, baseType: !%{variant_id}, size: {}, align: {}{value})",
-                quote(variant),
+                quote(&variant.name),
                 layout.size * 8,
                 layout.align * 8
             )));
@@ -617,6 +646,13 @@ fn incoming_locals(body: &Body, tracked: impl Fn(Local) -> bool) -> Vec<Option<V
 
 fn debug_layout(function: &FnGen<'_, '_>, ty: Ty) -> Result<Layout, String> {
     c_layout(function.p, &cty(&function.body.tys, ty)).ok_or_else(|| "Rust debug type has no native layout".into())
+}
+
+fn variant_fields(function: &FnGen<'_, '_>, variant: &Variant) -> Vec<(String, Ty)> {
+    variant.fields.iter().enumerate().map(|(i, field)| {
+        let name = if variant.shape == VariantShape::Named { function.p.name(field.name).to_owned() } else { format!("__{i}") };
+        (name, field.ty)
+    }).collect()
 }
 
 fn basic_type(name: &str, size: u32, encoding: &str) -> (String, String) {

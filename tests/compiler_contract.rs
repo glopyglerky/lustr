@@ -515,6 +515,49 @@ fn ordinary_cargo_links_rust_debug_information() {
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, Clang and ELF tools"]
+fn default_cargo_debug_records_native_enum_variants() {
+    let f = Fixture::new("debug-enum");
+    f.source("Cargo.toml", "[package]\nname = \"debug-enum\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    f.source("src/main.rs", r#"
+#[repr(i8)]
+enum Event {
+    Idle = -7,
+    Value { code: u32, delta: i16 } = 3,
+    Tuple(i64) = 11,
+}
+enum Link<'a> {
+    End,
+    Next(&'a Link<'a>),
+}
+fn observe(event: &Event, link: &Link<'_>) -> i64 {
+    let selected = match *event {
+        Event::Idle => -7,
+        Event::Value { code, delta } => i64::from(code) + i64::from(delta),
+        Event::Tuple(value) => value,
+    };
+    selected + match link { Link::End => 0, Link::Next(_) => 1 }
+}
+fn main() {
+    let end = Link::End;
+    let next = Link::Next(&end);
+    println!("{}", observe(&Event::Idle, &end));
+    println!("{}", observe(&Event::Value { code: 43, delta: -2 }, &next));
+    println!("{}", observe(&Event::Tuple(11), &end));
+}
+"#);
+    let ran = f.succeeds("run", f.command("cargo").args(["run", "--offline", "--quiet"]).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    assert_eq!(ran.stdout, b"-7\n42\n11\n");
+    let executable = f.root.join("target/debug/debug-enum");
+    let dwarf = f.succeeds("dwarf", Command::new("readelf").arg("--debug-dump=info").arg(executable));
+    let dwarf = String::from_utf8_lossy(&dwarf.stdout);
+    for required in ["DW_TAG_variant_part", "): Idle", "): Value", "): Tuple", "): code", "): delta", "): Next"] {
+        assert!(dwarf.contains(required), "missing Rust DWARF evidence {required}");
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
 fn default_debug_cargo_preserves_unwind_behavior() {
     let f = Fixture::new("debug-panic");
@@ -657,6 +700,31 @@ mod tests {
     let stdout = String::from_utf8_lossy(&ran.stdout);
     assert!(stdout.contains("tests::calls_library_code ... ok"), "{stdout}");
     assert!(stdout.contains("1 passed; 0 failed"), "{stdout}");
+}
+
+#[test]
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn cargo_runs_a_selected_integration_test_target() {
+    let f = Fixture::new("integration-test-target");
+    f.source("Cargo.toml", "[package]\nname = \"integration-test-target\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    f.source("src/main.rs", "fn main() { println!(\"original application\"); }\n");
+    f.source("tests/behavior.rs", r#"
+#[test]
+fn checks_application() {
+    let application = env!("CARGO_BIN_EXE_integration-test-target");
+    assert!(!application.is_empty());
+    assert_eq!(4_u32 * 9, 36);
+}
+"#);
+    let compiled = f.succeeds("compile", f.command("cargo").args(["test", "--offline", "--test", "behavior", "--no-run"]));
+    assert!(compiled.stdout.is_empty());
+    let tested = f.succeeds("run", f.command("cargo").args(["test", "--offline", "--test", "behavior"]));
+    let stdout = String::from_utf8_lossy(&tested.stdout);
+    assert!(stdout.contains("checks_application ... ok"), "{stdout}");
+    assert!(stdout.contains("1 passed; 0 failed"), "{stdout}");
+    let binary = f.root.join("target/debug/integration-test-target");
+    assert_eq!(f.succeeds("application", &mut Command::new(binary)).stdout, b"original application\n");
 }
 
 #[test]

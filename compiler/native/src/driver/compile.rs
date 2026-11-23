@@ -2203,7 +2203,7 @@ fn resolved_setup(
                 _ => false,
             }};
             let target_matches = if key.krate.test {
-                unit.target.test_flag && unit.target.kind.iter().any(|kind| matches!(kind.as_str(), "bin" | "lib" | "rlib"))
+                unit.target.test_flag && unit.target.kind.iter().any(|kind| matches!(kind.as_str(), "bin" | "lib" | "rlib" | "test"))
                     && library.matches_target_name(&unit.target.name)
             } else {
                 unit.target.kind.iter().any(|kind| kind == library.target_kind() || !library.is_executable() && kind == "rlib")
@@ -5077,7 +5077,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
         }
     } else { None };
     let mut resp = Response::default();
-    let tests = match cargo_test.map(|key| cgen::rust_tests::collect(&program, &map, &key.working_directory)).transpose() {
+    let tests = match cargo_test.map(|key| cgen::rust_tests::collect(&program, &map, &key.working_directory, &key.source_path)).transpose() {
         Ok(tests) => tests,
         Err(error) => {
             drop(results); drop(reemit);

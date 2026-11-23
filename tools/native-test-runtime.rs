@@ -113,6 +113,12 @@ unsafe fn descriptor(t: &Test) -> Option<TestDescAndFn> {
     } else {
         ShouldPanic::YesWithMessage(unsafe { text(t.expected) }?)
     };
+    let test_type = match t.flags >> 2 {
+        0 => TestType::Unknown,
+        1 => TestType::UnitTest,
+        2 => TestType::IntegrationTest,
+        _ => return None,
+    };
     Some(TestDescAndFn {
         desc: TestDesc {
             name: TestName::StaticTestName(name),
@@ -126,7 +132,7 @@ unsafe fn descriptor(t: &Test) -> Option<TestDescAndFn> {
             should_panic,
             compile_fail: false,
             no_run: false,
-            test_type: TestType::UnitTest,
+            test_type,
         },
         testfn: runnable(t.run),
     })

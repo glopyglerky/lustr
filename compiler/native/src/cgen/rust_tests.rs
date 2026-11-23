@@ -18,9 +18,17 @@ pub(crate) struct NativeTest {
     ignored: Option<Option<String>>,
     panic: Option<Option<String>>,
     reports_status: bool,
+    kind: u8,
 }
 
-pub(crate) fn collect(program: &Program, map: &SourceMap, cwd: &Path) -> Result<Vec<NativeTest>, String> {
+pub(crate) fn collect(program: &Program, map: &SourceMap, cwd: &Path, source: &Path) -> Result<Vec<NativeTest>, String> {
+    // Pinned rustc_builtin_macros/src/test.rs classifies by the source
+    // root's final directory component, including custom Cargo target paths.
+    let kind = match source.parent().and_then(Path::file_name).and_then(|name| name.to_str()) {
+        Some("src") => 1,
+        Some("tests") => 2,
+        _ => 0,
+    };
     let mut tests = Vec::new();
     for (index, function) in program.fns.iter().enumerate() {
         let def = function.def(&program.ast);
@@ -55,7 +63,7 @@ pub(crate) fn collect(program: &Program, map: &SourceMap, cwd: &Path) -> Result<
         if [&ignored, &panic].iter().any(|text| text.as_ref().and_then(|value| value.as_ref()).is_some_and(|value| value.contains('\0'))) {
             return Err(format!("native Cargo test attribute in {name} contains a NUL byte"));
         }
-        tests.push(NativeTest { id: LocalDefId(index as u32), name, file, line, column, ignored, panic, reports_status });
+        tests.push(NativeTest { id: LocalDefId(index as u32), name, file, line, column, ignored, panic, reports_status, kind });
     }
     Ok(tests)
 }
@@ -113,7 +121,7 @@ pub(super) fn main_declarations(out: &mut String, tests: &[NativeTest], slots: &
         let opt_string = |value: &Option<Option<String>>| {
             value.as_ref().and_then(|text| text.as_ref()).map_or_else(|| "0".into(), |text| c_string_lit(text.as_bytes()))
         };
-        let flags = u8::from(test.ignored.is_some()) | (u8::from(test.panic.is_some()) << 1);
+        let flags = u8::from(test.ignored.is_some()) | (u8::from(test.panic.is_some()) << 1) | (test.kind << 2);
         let _ = writeln!(
             out,
             "  {{ {}, {}, {}, {}, {}, {}, {flags}, lust_test_run_{i} }},",
