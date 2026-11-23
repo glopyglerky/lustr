@@ -234,7 +234,7 @@ fn installed_cargo_runtime_dir() -> Option<PathBuf> {
 #[cfg(feature = "exclusive-native")]
 pub(crate) fn prime_cargo_runtime() -> Result<(), String> {
     if crate::protocol::host_triple() != "x86_64-unknown-linux-gnu"
-        || !on_path("clang") || !on_path("clang++") {
+        || !on_path("clang") || !on_path("clang++") || cargo_runtime_driver_overridden() {
         return Ok(());
     }
     let directory = installed_cargo_runtime_dir().ok_or("cannot locate the toolchain runtime directory")?;
@@ -248,6 +248,8 @@ pub(crate) fn prime_cargo_runtime() -> Result<(), String> {
         let preprocessed = preprocessed(&text, &spec.cmd, &flags_text, false)
             .ok_or("could not preprocess the native Cargo runtime")?;
         let key = unit_key(&text, Some(&preprocessed), &spec, false, None, false);
+        let recipe = cargo_runtime_recipe(&spec.cmd, &key)
+            .ok_or("could not identify the native Cargo runtime compiler options")?;
         let object = directory.join(format!("unit-{key}.o"));
         std::fs::write(&source, text).map_err(|error| format!("stage native Cargo runtime: {error}"))?;
         let output = unit_command(&spec.cmd, &flags, &object, Some(&key), None, &source)
@@ -258,8 +260,8 @@ pub(crate) fn prime_cargo_runtime() -> Result<(), String> {
         }
         let bytes = std::fs::read(&object).map_err(|error| format!("read native Cargo runtime object: {error}"))?;
         let digest = cargo_runtime_digest(&bytes);
-        std::fs::write(object.with_extension("sha256"), digest).map_err(|error| format!("record native Cargo runtime object: {error}"))?;
-        println!("{}", object.display());
+        std::fs::write(object.with_extension("receipt"), format!("{digest}\n{recipe}\n"))
+            .map_err(|error| format!("record native Cargo runtime object: {error}"))?;
     }
     Ok(())
 }
@@ -271,9 +273,33 @@ fn cargo_runtime_digest(bytes: &[u8]) -> String {
 }
 
 #[cfg(feature = "exclusive-native")]
-fn reuse_cargo_runtime(directory: &Path, key: &str, destination: &Path) -> bool {
+fn cargo_runtime_driver_overridden() -> bool {
+    std::env::vars_os().any(|(name, _)| name.as_encoded_bytes().starts_with(b"CCC_"))
+}
+
+/// Clang can add its default configuration without changing preprocessed
+/// text. Bind the effective compiler invocation independently of file paths.
+#[cfg(feature = "exclusive-native")]
+fn cargo_runtime_recipe(words: &[String], key: &str) -> Option<String> {
+    let output = cc_command(&words[0]).args(&words[1..])
+        .args(cflags(false).split_whitespace())
+        .arg(format!("-DLUST_UNIT_KEY={key}"))
+        // There is no C debug info or coverage in these runtime objects.
+        .args(["-fdebug-compilation-dir=.", "-fcoverage-compilation-dir=."])
+        .args(["-###", "-x", "c", "-c", "-", "-o", "u2.o"])
+        .env("LC_ALL", "C")
+        .stdin(std::process::Stdio::null()).output().ok()?;
+    let diagnostics = std::str::from_utf8(&output.stderr).ok()?;
+    (output.status.success() && !diagnostics.lines().any(|line| line.starts_with("Configuration file:")))
+        .then(|| cargo_runtime_digest(&output.stderr))
+}
+
+#[cfg(feature = "exclusive-native")]
+fn reuse_cargo_runtime(directory: &Path, compiler: &[String], key: &str, destination: &Path) -> bool {
     let source = directory.join(format!("unit-{key}.o"));
-    let Ok(digest) = std::fs::read_to_string(source.with_extension("sha256")) else { return false; };
+    let Ok(receipt) = std::fs::read_to_string(source.with_extension("receipt")) else { return false; };
+    let Some((digest, recipe)) = receipt.trim_end().split_once('\n') else { return false; };
+    if cargo_runtime_recipe(compiler, key).as_deref() != Some(recipe) { return false; }
     let Ok(bytes) = std::fs::read(source) else { return false; };
     if cargo_runtime_digest(&bytes) != digest { return false; }
     let _ = std::fs::remove_file(destination);
@@ -1081,7 +1107,9 @@ pub fn build_with(
     let limit = crate::pool::threads().max(1).min(units.len().max(1));
     let t_compile = std::time::Instant::now();
     #[cfg(feature = "exclusive-native")]
-    let installed_runtime = if !pgo_on && (spec.rust_debug || spec.test_runtime.is_some()) {
+    let installed_runtime = if !pgo_on && !debug && (spec.rust_debug || spec.test_runtime.is_some())
+        && !cargo_runtime_driver_overridden()
+    {
         installed_cargo_runtime_dir()
     } else {
         None
@@ -1126,7 +1154,7 @@ pub fn build_with(
                 #[cfg(feature = "exclusive-native")]
                 if name == "u2" && pre_of(i).is_some()
                     && let (Some(directory), Some(cache), Some(key)) = (&installed_runtime, cache, &keys[i])
-                    && reuse_cargo_runtime(directory, key, obj)
+                    && reuse_cargo_runtime(directory, &spec.cmd, key, obj)
                 {
                     cache.store_unit_object(key, obj);
                     hits.fetch_add(1, std::sync::atomic::Ordering::Relaxed);

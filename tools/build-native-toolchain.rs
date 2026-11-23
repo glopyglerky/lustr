@@ -40,17 +40,27 @@ fn record(path: &Path, bytes: &[u8]) {
     file.write_all(bytes).unwrap();
     file.sync_all().unwrap();
 }
-fn observe(label: &str, command: &mut Command, logs: &Path) -> std::process::Output {
+fn observe(label: &str, command: &mut Command, logs: &Path) -> std::io::Result<std::process::Output> {
     record(&logs.join(format!("{label}.command")), format!("{command:?}\n").as_bytes());
-    let output = command.env_remove("LD_LIBRARY_PATH").output().unwrap();
-    record(&logs.join(format!("{label}.stdout")), &output.stdout);
-    record(&logs.join(format!("{label}.stderr")), &output.stderr);
-    record(&logs.join(format!("{label}.status")), format!("{}\n", output.status).as_bytes());
-    println!("{label}: {}", output.status);
+    let output = command.env_remove("LD_LIBRARY_PATH").output();
+    let status = match &output {
+        Ok(output) => {
+            record(&logs.join(format!("{label}.stdout")), &output.stdout);
+            record(&logs.join(format!("{label}.stderr")), &output.stderr);
+            output.status.to_string()
+        }
+        Err(error) => {
+            record(&logs.join(format!("{label}.stdout")), &[]);
+            record(&logs.join(format!("{label}.stderr")), error.to_string().as_bytes());
+            "unlaunched".into()
+        }
+    };
+    record(&logs.join(format!("{label}.status")), format!("{status}\n").as_bytes());
+    println!("{label}: {status}");
     output
 }
 fn checked(label: &str, command: &mut Command, logs: &Path) -> Vec<u8> {
-    let output = observe(label, command, logs);
+    let output = observe(label, command, logs).unwrap();
     assert!(output.status.success(), "{label}: {}", String::from_utf8_lossy(&output.stderr));
     output.stdout
 }
@@ -307,22 +317,25 @@ fn main() {
         assert!(!runtime_directory.exists());
         let runtime_build = observe("prime-cargo-runtime",
             Command::new(package.join("bin/lust-core")).arg("--lustr-prime-cargo-runtime"), &logs);
-        if !runtime_build.status.success() && runtime_directory.is_dir() {
-            fs::remove_dir_all(&runtime_directory).unwrap();
-        }
-        let objects: &[_] = if runtime_build.status.success() { &runtime_build.stdout } else { &[] };
-        for (index, object) in std::str::from_utf8(objects).unwrap().lines().enumerate() {
-            let object = Path::new(object);
-            assert_eq!(object.parent(), Some(runtime_directory.as_path()));
-            let receipt = object.with_extension("sha256");
-            for path in [object, &receipt] {
-                fs::File::open(path).unwrap().sync_all().unwrap();
-            }
-            runtime_identities.push(checked(&format!("hash-cargo-runtime-{index}"),
-                host_runtime::sha256_command().arg(object).arg(receipt), &logs));
-        }
         if runtime_directory.is_dir() {
-            fs::File::open(runtime_directory).unwrap().sync_all().unwrap();
+            if runtime_build.is_ok_and(|output| output.status.success()) {
+                let mut objects: Vec<_> = fs::read_dir(&runtime_directory).unwrap()
+                    .map(|entry| entry.unwrap().path())
+                    .filter(|path| path.extension().is_some_and(|ext| ext == "o")).collect();
+                objects.sort();
+                assert_eq!(objects.len(), 2);
+                for (index, object) in objects.iter().enumerate() {
+                    let receipt = object.with_extension("receipt");
+                    for path in [object, &receipt] {
+                        fs::File::open(path).unwrap().sync_all().unwrap();
+                    }
+                    runtime_identities.push(checked(&format!("hash-cargo-runtime-{index}"),
+                        host_runtime::sha256_command().arg(object).arg(receipt), &logs));
+                }
+                fs::File::open(runtime_directory).unwrap().sync_all().unwrap();
+            } else {
+                fs::remove_dir_all(&runtime_directory).unwrap();
+            }
         }
         let licenses = package.join("lib/lustr-test-licenses");
         fs::create_dir(&licenses).unwrap();
