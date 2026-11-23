@@ -1043,27 +1043,6 @@ fn crate_name_facts(tokens: &[Token], ctx: &ExpandCtx, root: bool) -> (Vec<Sym>,
     (shadowed, alloc_extern)
 }
 
-/// An unconditional, original `extern crate std;` at the crate root.
-pub(crate) fn root_explicit_std(tokens: &[Token], interner: &Interner) -> bool {
-    let mut depth = 0u32;
-    for (index, token) in tokens.iter().enumerate() {
-        match token.tok {
-            Tok::LBrace | Tok::LParen | Tok::LBracket => depth += 1,
-            Tok::RBrace | Tok::RParen | Tok::RBracket => depth = depth.saturating_sub(1),
-            Tok::Extern if depth == 0 && (index < 1 || tokens[index - 1].tok != Tok::RBracket) => {
-                if let Some([krate, name, end]) = tokens.get(index + 1..index + 4)
-                    && krate.tok == Tok::Crate && end.tok == Tok::Semi
-                    && matches!(name.tok, Tok::Ident(s, _) if interner.get(s) == "std")
-                {
-                    return true;
-                }
-            }
-            _ => {}
-        }
-    }
-    false
-}
-
 pub fn needs_expansion(tokens: &[Token], interner: &Interner) -> bool {
     let macro_rules = interner.intern("macro_rules");
     for (i, t) in tokens.iter().enumerate() {
@@ -4674,6 +4653,9 @@ impl<'a> Expander<'a> {
     /// that name (`std::vec`, `core::panic`).
     fn std_builtin_macro(&self, segs: &[Seg]) -> Option<Sym> {
         let path: Vec<&str> = segs.iter().map(|s| s.text.as_str()).collect();
+        if self.ctx.cfg.core_prelude && !self.ctx.cfg.explicit_std && path.first() == Some(&"std") {
+            return None;
+        }
         if crate::ty::lang::std_path_kind(&path) != Some(crate::ty::lang::StdPathKind::Macro) {
             return None;
         }
@@ -4871,7 +4853,7 @@ impl<'a> Expander<'a> {
             Some(canon) => self.ctx.interner.get(canon).to_string(),
             None => call.name_text().to_string(),
         };
-        if self.builtin_call_path(&call.segs, call.leading_colon) {
+        if alias.is_some() || self.builtin_call_path(&call.segs, call.leading_colon) {
             // A builtin counts depth as rustc's expansion of it does (see
             // `builtin::rustc_depth`): its arguments expand `args` levels
             // down, so a token builtin's own one-level-down expansions

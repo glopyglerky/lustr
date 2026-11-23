@@ -1344,6 +1344,65 @@ fn expansion_env_hash(menv: &MacroEnv, job: &CrateJob, input: &OneInput, client:
     h.finish()
 }
 
+/// Read explicit std visibility before expansion using the existing item
+/// parser and the selected Cargo cfg. A nested or disabled declaration does
+/// not put std into the crate's extern prelude.
+fn explicit_root_std(lexed: &lexer::Lexed, env: &CfgEnv, interner: &Interner, known: &Known) -> bool {
+    use crate::lexer::Tok;
+    let tokens = &lexed.tokens;
+    let opening = |end: usize, open: Tok, close: Tok| {
+        let mut depth = 0u32;
+        for index in (0..end).rev() {
+            let tok = tokens[index].tok;
+            if tok == close { depth += 1; }
+            if tok == open {
+                depth -= 1;
+                if depth == 0 { return Some(index); }
+            }
+        }
+        None
+    };
+    let mut depth = 0u32;
+    for (index, token) in tokens.iter().enumerate() {
+        match token.tok {
+            Tok::LBrace | Tok::LParen | Tok::LBracket => depth += 1,
+            Tok::RBrace | Tok::RParen | Tok::RBracket => depth = depth.saturating_sub(1),
+            Tok::Extern if depth == 0 && tokens.get(index + 1).is_some_and(|token| token.tok == Tok::Crate) => {
+                let Some(end) = tokens[index..].iter().position(|token| token.tok == Tok::Semi) else { continue; };
+                let preceding = |index: usize| index.checked_sub(1).map(|index| tokens[index].tok);
+                let mut start = index;
+                if preceding(start) == Some(Tok::RParen)
+                    && let Some(open) = opening(start, Tok::LParen, Tok::RParen)
+                    && preceding(open) == Some(Tok::Pub)
+                {
+                    start = open;
+                }
+                if preceding(start) == Some(Tok::Pub) { start -= 1; }
+                while preceding(start) == Some(Tok::RBracket)
+                    && let Some(open) = opening(start, Tok::LBracket, Tok::RBracket)
+                    && preceding(open) == Some(Tok::Pound)
+                {
+                    start = open - 1;
+                }
+                let Ok(parsed) = parser::parse_items(lexed, start..index + end + 1, interner, known) else { continue; };
+                let [item] = parsed.items.as_slice() else { continue; };
+                let ItemKind::ExternCrate(external) = &item.kind else { continue; };
+                if interner.get(external.name) != "std" || interner.get(external.rename.unwrap_or(external.name)) != "std" {
+                    continue;
+                }
+                let mut attrs = item.attrs.clone();
+                if cfg::expand_cfg_attr(env, &mut attrs, &parsed.strings, interner).is_ok()
+                    && cfg::attrs_enabled(env, &attrs, &parsed.strings, interner).is_ok_and(|enabled| enabled)
+                {
+                    return true;
+                }
+            }
+            _ => {}
+        }
+    }
+    false
+}
+
 fn seed_hash(h: &mut crate::intern::FxHasher, s: &crate::expand::MacroSeed) {
     use std::hash::{Hash, Hasher};
     s.path.iter().for_each(|p| h.write_u64(p.0 as u64));
@@ -3600,7 +3659,7 @@ fn resolve_one(
         tables.core_prelude_roots.push(job.root_module);
     }
     let explicit_std = core_prelude && discs[0].lexed.as_ref()
-        .is_some_and(|lexed| crate::expand::root_explicit_std(&lexed.tokens, interner));
+        .is_some_and(|lexed| explicit_root_std(lexed, &input.env, interner, known));
     let parse_test_root = |lexed: &lexer::Lexed, interner: &Interner, known: &Known| {
         crate::driver::library::parse_root(lexed, interner, known, false)
     };

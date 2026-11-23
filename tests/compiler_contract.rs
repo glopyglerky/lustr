@@ -537,6 +537,66 @@ fn default_cargo_links_debug_from_a_native_standard_provider() {
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn cargo_tests_a_no_std_library_with_the_core_prelude() {
+    let f = Fixture::new("no-std-library-tests");
+    f.source("Cargo.toml", "[package]\nname = \"no-std-tests\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    let source = r#"#![no_std]
+
+pub fn transform(value: u32) -> u32 { value ^ 3 }
+
+#[cfg(test)]
+extern crate std;
+
+#[cfg(test)]
+mod tests {
+    use super::transform;
+
+    #[test]
+    fn exercises_core_prelude() {
+        let value: Option<u32> = Some(transform(17));
+        assert_eq!(value, Some(18));
+        std::println!("core prelude result");
+    }
+}
+"#;
+    f.source("src/lib.rs", source);
+    let build = ["test", "--offline", "--workspace", "--no-run"];
+    let native = || f.command("cargo");
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let original = || {
+        let mut command = f.command("cargo");
+        command.env("RUSTC", &oracle).env("CARGO_TARGET_DIR", f.root.join("original-target"));
+        command
+    };
+    f.succeeds("native-compile", native().args(build));
+    f.succeeds("original-compile", original().args(build));
+    let run = ["test", "--offline", "--workspace", "--lib", "--", "--nocapture"];
+    for (label, mut command) in [("native-runtime", native()), ("original-runtime", original())] {
+        let out = f.succeeds(label, command.args(run));
+        let output = String::from_utf8_lossy(&out.stdout);
+        assert!(output.contains("core prelude result"));
+        assert!(output.contains("1 passed; 0 failed"));
+    }
+    let cases = [
+        ("disabled-std", source.replace("#[cfg(test)]\nextern crate std;", "#[cfg(any())]\npub extern crate std;"), "std"),
+        ("unqualified-macro", source.replace("std::println!", "println!"), "println"),
+        ("unqualified-type", source.replace("let value: Option<u32>", "let value: Vec<u32>"), "Vec"),
+    ];
+    for (name, invalid, missing) in cases {
+        f.source("src/lib.rs", &invalid);
+        for (compiler, mut command) in [("native", native()), ("original", original())] {
+            let out = f.invoke(&format!("{compiler}-{name}"), command.args(build));
+            assert_eq!(out.status.code(), Some(101));
+            assert!(String::from_utf8_lossy(&out.stderr).contains(missing));
+        }
+    }
+    f.source("src/lib.rs", source);
+    f.succeeds("native-repair", native().args(build));
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
 fn ordinary_cargo_checks_and_links_associated_lifetimes_across_native_crates() {
     assert_associated_lifetime_workspace("associated-lifetime-workspace", "", "*input", b"17\n");
 }
