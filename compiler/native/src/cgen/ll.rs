@@ -85,6 +85,15 @@ pub(super) fn pass_of(p: &Program, t: &CTy) -> Pass {
     }
 }
 
+fn scalar_library_pass(p: &Program, ty: &CTy, scalar_library: bool) -> Pass {
+    match pass_of(p, ty) {
+        // rustc_target::callconv::FnAbi::adjust_for_rust_abi leaves integers
+        // unextended on x86-64. This export contract contains only integers.
+        Pass::Scalar(llvm, _) if scalar_library => Pass::Scalar(llvm, ""),
+        pass => pass,
+    }
+}
+
 /// True unless `LUST_LL_PAIR=0` (16-byte aggregates by pointer, to measure `Pass::Pair`).
 fn pair_on() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
@@ -462,12 +471,11 @@ impl FnGen<'_, '_> {
     /// Generates fn `fl_<id>` and its C side (helpers, the C ABI wrapper `f_<id>`, the
     /// trampoline) into `self.out`. Returns the LLVM definition and declarations, or an
     /// internal error.
-    pub(super) fn function_ll(&mut self, rust_debug: bool) -> Result<LlFn, String> {
+    pub(super) fn function_ll(&mut self, rust_debug: bool, scalar_export: bool) -> Result<LlFn, String> {
         let p = self.p;
         let fid = self.body.fn_id;
         let slot = self.slots.of(fid);
         let tag = names::fn_tag(slot);
-        let scalar_export = rust_debug && self.nounwind;
         let linkage = body_symbol(&tag, scalar_export);
         // Archive publication can rename the scalar object symbol. Its source
         // subprogram must not advertise the pre-publication linkage name.
@@ -741,7 +749,7 @@ impl FnGen<'_, '_> {
         let mut params: Vec<String> = Vec::new();
         let mut entry = String::new();
         let mut is_param = vec![false; self.local_cty.len()];
-        let ret_pass = pass_of(p, &self.local_cty[0]);
+        let ret_pass = scalar_library_pass(p, &self.local_cty[0], ll.scalar_export);
         let (ret_size, ret_align) = c_size_align(p, &self.local_cty[0]);
         let ret_ll = match ret_pass {
             Pass::Scalar("ptr", _) => {
@@ -768,7 +776,7 @@ impl FnGen<'_, '_> {
         for i in 1..=self.body.arg_count.min(self.local_cty.len() - 1) {
             let t = &self.local_cty[i];
             let (size, align) = c_size_align(p, t);
-            match pass_of(p, t) {
+            match scalar_library_pass(p, t, ll.scalar_export) {
                 Pass::Skip => {}
                 Pass::Scalar(ty, ext) => {
                     let mut ext = if ext.is_empty() { String::new() } else { format!("{ext} ") };
@@ -1785,7 +1793,7 @@ impl FnGen<'_, '_> {
         let id = names::fn_tag(self.slots.of(f));
         self.ll_note_proto(f, &id);
         let symbol = body_symbol(&id, ll.scalar_export);
-        ll.decls.insert(ll_decl(p, f, &symbol));
+        ll.decls.insert(ll_decl(p, f, &symbol, ll.scalar_export));
         ll.conts += 1;
         let k = ll.conts;
         let mut vals: Vec<String> = Vec::new();
@@ -1794,7 +1802,7 @@ impl FnGen<'_, '_> {
         let mut temps: Vec<(String, u64)> = Vec::new();
         ll.decls.insert("declare void @llvm.lifetime.start.p0(i64, ptr)".into());
         ll.decls.insert("declare void @llvm.lifetime.end.p0(i64, ptr)".into());
-        let rp = pass_of(p, &rt);
+        let rp = scalar_library_pass(p, &rt, ll.scalar_export);
         // A moved whole local passed by pointer goes as itself: the caller never reads it
         // again (its flag is clear), so the callee may own that memory, as rustc does.
         let direct: Vec<bool> = args
@@ -1828,7 +1836,7 @@ impl FnGen<'_, '_> {
             }
         }
         for (j, (a, pt)) in args.iter().zip(&pts).enumerate() {
-            match pass_of(p, pt) {
+            match scalar_library_pass(p, pt, ll.scalar_export) {
                 Pass::Skip => {}
                 Pass::Scalar(t, ext) => {
                     let v = self.ll_scalar_operand_value(ll, a);
@@ -3196,11 +3204,11 @@ fn body_symbol(tag: &str, scalar_export: bool) -> String {
     format!("{prefix}_{tag}")
 }
 
-fn ll_decl(p: &Program, f: LocalDefId, symbol: &str) -> String {
+fn ll_decl(p: &Program, f: LocalDefId, symbol: &str, scalar_library: bool) -> String {
     let info = p.fn_info(f);
     let rt = cty(&p.tys, info.ret);
     let mut params: Vec<String> = Vec::new();
-    let ret = match pass_of(p, &rt) {
+    let ret = match scalar_library_pass(p, &rt, scalar_library) {
         Pass::Scalar(t, ext) => {
             if ext.is_empty() {
                 t.to_string()
@@ -3217,7 +3225,7 @@ fn ll_decl(p: &Program, f: LocalDefId, symbol: &str) -> String {
         Pass::Skip => "void".into(),
     };
     for &t in &info.params {
-        match pass_of(p, &cty(&p.tys, t)) {
+        match scalar_library_pass(p, &cty(&p.tys, t), scalar_library) {
             Pass::Skip => {}
             Pass::Scalar(t, ext) => params.push(if ext.is_empty() { t.to_string() } else { format!("{t} {ext}") }),
             Pass::Bits(n) => params.push(bits_types(n).0.into()),

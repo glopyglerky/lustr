@@ -171,7 +171,9 @@
       "upstream_paths": [
         "compiler/rustc_codegen_ssa/src/back/metadata.rs",
         "compiler/rustc_interface/src/passes.rs",
-        "compiler/rustc_errors/src/json.rs"
+        "compiler/rustc_errors/src/json.rs",
+        "compiler/rustc_target/src/callconv/mod.rs",
+        "compiler/rustc_ty_utils/src/abi.rs"
       ],
       "dependency_edges": [
         [

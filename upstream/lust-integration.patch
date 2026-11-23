@@ -3188,7 +3188,7 @@ index 019e079ad31611c7eba4ad0fe3a7a4d60b71cc17..155b2a5ce50e86f428703c7ae797c73b
              match fit {
                  Fit::Yes => {
 diff --git a/src/cc.rs b/src/cc.rs
-index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..5cd531ee8a702e2bce6725ed690e990228fa27b9 100644
+index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073e93d3bb3 100644
 --- a/src/cc.rs
 +++ b/src/cc.rs
 @@ -19,6 +19,7 @@
@@ -3264,9 +3264,9 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..5cd531ee8a702e2bce6725ed690e9902
 +}
 +
 +pub(crate) fn compile_scalar_cargo_object(
-+    path: &Path, text: &str, rust_debug: bool, unwind: bool, optimization: crate::protocol::OptLevel,
++    path: &Path, text: &str, uses_llvm: bool, unwind: bool, optimization: crate::protocol::OptLevel,
 +) -> Result<(), String> {
-+    let input = path.with_extension(if rust_debug { "ll" } else { "c" });
++    let input = path.with_extension(if uses_llvm { "ll" } else { "c" });
 +    let mut source = std::fs::File::options().write(true).create_new(true).open(&input)
 +        .map_err(|error| format!("stage native scalar object input: {error}"))?;
 +    source.write_all(text.as_bytes()).map_err(|error| format!("write native scalar object input: {error}"))?;
@@ -3274,7 +3274,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..5cd531ee8a702e2bce6725ed690e9902
 +    let mut command = cc_command("clang");
 +    command.arg("--target=x86_64-unknown-linux-gnu");
 +    let level = format!("-O{}", optimization.value());
-+    if rust_debug {
++    if uses_llvm {
 +        command.arg("-Wno-override-module").arg(level).args(["-x", "ir"]);
 +    } else {
 +        let flags = cflags(false).replacen("-O2", &level, 1);
@@ -3603,7 +3603,7 @@ index dcf8c8e922873b5f8c8d8c3c7ebe5299f9b246e2..1ba7cc3683554ef5f9e6e736fc274cb5
  
  /// The LLVM major version of a clang command; an error for another compiler (gcc writes
 diff --git a/src/cgen.rs b/src/cgen.rs
-index ac6965592d3f4cc6ea1969df299fe33c974056b0..6ecdc4de716101ef9c79c928ef6adbe0c7f1ffb7 100644
+index ac6965592d3f4cc6ea1969df299fe33c974056b0..84cd39df06d506d41785646feabb5c8071e1d79d 100644
 --- a/src/cgen.rs
 +++ b/src/cgen.rs
 @@ -26,6 +26,8 @@ pub mod record;
@@ -3739,20 +3739,20 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..6ecdc4de716101ef9c79c928ef6adbe0
  /// Generates C for one function body. `base_line` is the line of its `fn` keyword, in the
  /// file that defines it; `slots` maps every LocalDefId to its slot in `lust_fns`.
  pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32]) -> FnOut {
-+    gen_fn_policy(p, body, map, base_line, slots, false, false)
++    gen_fn_policy(p, body, map, base_line, slots, false, false, false)
 +}
 +
 +/// Generate a body already proved total by the mixed object boundary.
 +pub fn gen_fn_total(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32]) -> FnOut {
-+    gen_fn_policy(p, body, map, base_line, slots, true, false)
++    gen_fn_policy(p, body, map, base_line, slots, true, false, false)
 +}
 +
-+pub(crate) fn gen_fn_rust_debug(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32], scalar_library: bool) -> FnOut {
-+    let source = rust_debug_source(p, body.fn_id, map);
-+    if source.is_none() && !shipped_debug_body(p, body.fn_id) {
++pub(crate) fn gen_fn_cargo_llvm(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32], rust_debug: bool, scalar_library: bool) -> FnOut {
++    let source = rust_debug.then(|| rust_debug_source(p, body.fn_id, map)).flatten();
++    if rust_debug && source.is_none() && !shipped_debug_body(p, body.fn_id) {
 +        return FnOut { error: Some("Rust debug function source cannot be bound to the native body".into()), ..Default::default() };
 +    }
-+    let mut output = gen_fn_policy(p, body, map, base_line, slots, scalar_library, true);
++    let mut output = gen_fn_policy(p, body, map, base_line, slots, scalar_library, rust_debug, scalar_library);
 +    output.rust_debug_source = source;
 +    output
 +}
@@ -3776,7 +3776,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..6ecdc4de716101ef9c79c928ef6adbe0
 +    p.std_source_span(p.fn_def(id).name_span) || p.fn_shipped_crate(id).is_some()
 +}
 +
-+fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32], nounwind: bool, rust_debug: bool) -> FnOut {
++fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32], nounwind: bool, rust_debug: bool, scalar_library: bool) -> FnOut {
      if !has_generated_body(p, body.fn_id) {
          return FnOut { error: Some(no_body_error(p, body, body.fn_id)), ..Default::default() };
      }
@@ -3794,11 +3794,11 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..6ecdc4de716101ef9c79c928ef6adbe0
      let mut llfn = None;
 -    if ll::on(p) {
 -        match g.function_ll() {
-+    if rust_debug || ll::on(p) {
++    if rust_debug || scalar_library || ll::on(p) {
 +        // Only the requested Rust crate has a debug source contract.
 +        // The text of shipped std shims is not part of that crate's file.
 +        let debug = rust_debug && !shipped_debug_body(p, body.fn_id);
-+        match g.function_ll(debug) {
++        match g.function_ll(debug, scalar_library) {
              Ok(f) => llfn = Some(f),
              Err(e) => return FnOut { error: Some(e), ..Default::default() },
          }
@@ -4472,11 +4472,11 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..6ecdc4de716101ef9c79c928ef6adbe0
 +    Some(unit)
 +}
 +
-+pub(crate) fn native_scalar_debug_unit(outputs: &[FnOut], slot: usize, triple: &str) -> Option<String> {
++pub(crate) fn native_scalar_llvm_unit(outputs: &[FnOut], slot: usize, triple: &str, rust_debug: bool) -> Option<String> {
 +    let output = &outputs[slot];
 +    if !output.mixed_total || output.ll.is_empty() || !output.ll_c.is_empty()
 +        || !output.glue.is_empty() || !output.types.is_empty() || !output.named.is_empty()
-+        || output.rust_debug_source.is_none()
++        || rust_debug && output.rust_debug_source.is_none()
 +    {
 +        return None;
 +    }
@@ -4751,7 +4751,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..6ecdc4de716101ef9c79c928ef6adbe0
          // locals 8.. hold &l2, &l5, &l6, &l7 for the four prints.
          let ref_i64 = body.tys.mk_ref(false, i64_ty);
 diff --git a/src/cgen/ll.rs b/src/cgen/ll.rs
-index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb75665e98092d 100644
+index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..edacff6724bf8d27fe5ec551af686d0b67989741 100644
 --- a/src/cgen/ll.rs
 +++ b/src/cgen/ll.rs
 @@ -19,6 +19,7 @@
@@ -4762,7 +4762,23 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
  use super::unwind::{is_ident, skip_lit};
  use super::*;
  
-@@ -246,6 +247,7 @@ pub struct LlFn {
+@@ -84,6 +85,15 @@ pub(super) fn pass_of(p: &Program, t: &CTy) -> Pass {
+     }
+ }
+ 
++fn scalar_library_pass(p: &Program, ty: &CTy, scalar_library: bool) -> Pass {
++    match pass_of(p, ty) {
++        // rustc_target::callconv::FnAbi::adjust_for_rust_abi leaves integers
++        // unextended on x86-64. This export contract contains only integers.
++        Pass::Scalar(llvm, _) if scalar_library => Pass::Scalar(llvm, ""),
++        pass => pass,
++    }
++}
++
+ /// True unless `LUST_LL_PAIR=0` (16-byte aggregates by pointer, to measure `Pass::Pair`).
+ fn pair_on() -> bool {
+     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+@@ -246,6 +256,7 @@ pub struct LlFn {
  /// The per-fn state of LLVM emission.
  struct Ll {
      tag: String,
@@ -4770,7 +4786,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
      /// Helper definitions (C), in order.
      helpers: String,
      n_helpers: usize,
-@@ -253,6 +255,7 @@ struct Ll {
+@@ -253,6 +264,7 @@ struct Ll {
      statics: Vec<bool>,
      /// The cleanup blocks each landing pad enters.
      pads: BTreeSet<u32>,
@@ -4778,17 +4794,16 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
      decls: BTreeSet<String>,
      body: String,
      /// The number of continuation blocks made so far.
-@@ -459,11 +462,16 @@ impl FnGen<'_, '_> {
+@@ -459,11 +471,15 @@ impl FnGen<'_, '_> {
      /// Generates fn `fl_<id>` and its C side (helpers, the C ABI wrapper `f_<id>`, the
      /// trampoline) into `self.out`. Returns the LLVM definition and declarations, or an
      /// internal error.
 -    pub(super) fn function_ll(&mut self) -> Result<LlFn, String> {
-+    pub(super) fn function_ll(&mut self, rust_debug: bool) -> Result<LlFn, String> {
++    pub(super) fn function_ll(&mut self, rust_debug: bool, scalar_export: bool) -> Result<LlFn, String> {
          let p = self.p;
          let fid = self.body.fn_id;
          let slot = self.slots.of(fid);
          let tag = names::fn_tag(slot);
-+        let scalar_export = rust_debug && self.nounwind;
 +        let linkage = body_symbol(&tag, scalar_export);
 +        // Archive publication can rename the scalar object symbol. Its source
 +        // subprogram must not advertise the pre-publication linkage name.
@@ -4796,7 +4811,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
          let n = self.body.blocks.len();
          let mut reachable = vec![false; n];
          let mut stack = vec![0usize];
-@@ -471,8 +479,14 @@ impl FnGen<'_, '_> {
+@@ -471,8 +487,14 @@ impl FnGen<'_, '_> {
              if std::mem::replace(&mut reachable[b], true) {
                  continue;
              }
@@ -4813,7 +4828,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
          }
          let order: Vec<usize> = (0..n).filter(|&b| reachable[b]).collect();
          let cost = order
-@@ -486,10 +500,12 @@ impl FnGen<'_, '_> {
+@@ -486,10 +508,12 @@ impl FnGen<'_, '_> {
              .collect();
          let mut ll = Ll {
              tag: tag.clone(),
@@ -4826,7 +4841,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
              decls: BTreeSet::new(),
              body: String::new(),
              conts: 0,
-@@ -508,27 +524,46 @@ impl FnGen<'_, '_> {
+@@ -508,27 +532,46 @@ impl FnGen<'_, '_> {
              let block = self.body.block(Bb(bi as u32));
              let cleanup = self.cleanup.get(bi).copied().unwrap_or(false);
              let _ = writeln!(ll.body, "bb{bi}:");
@@ -4883,7 +4898,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
          }
          if let Some(e) = ll.error.take() {
              return Err(e);
-@@ -544,7 +579,10 @@ impl FnGen<'_, '_> {
+@@ -544,7 +587,10 @@ impl FnGen<'_, '_> {
          // that holds strs adds literals and an entry write to the entry helper.
          let kdecls: Vec<Option<String>> = (0..self.local_cty.len()).map(|i| if ll.statics[i] { self.kstatic_decl(i) } else { None }).collect();
          let kstr_init = self.ll_kstr_init(&mut ll);
@@ -4895,7 +4910,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
          // The C sides: the helpers with the macros and statics they read; then the C ABI
          // wrapper and the trampoline, which stay in the unit's plain C. A fn with no helpers
          // (and no literal or constant prologue) has no helper side: nothing in C reads its
-@@ -562,8 +600,10 @@ impl FnGen<'_, '_> {
+@@ -562,8 +608,10 @@ impl FnGen<'_, '_> {
              self.kstrs.clear();
              String::new()
          };
@@ -4908,7 +4923,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
          ll.decls.insert("declare i32 @__gcc_personality_v0(...)".into());
          // The inline cost on a comment line above the fn, for reading the IR.
          let def = format!("; cost {cost}\n{def}");
-@@ -604,11 +644,18 @@ impl FnGen<'_, '_> {
+@@ -604,11 +652,18 @@ impl FnGen<'_, '_> {
                  if native_on() && {
                      let dest_clear = !ll.flags_at_term[bi][dest.local as usize];
                      let span = self.body.blocks[bi].term_span;
@@ -4928,7 +4943,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
              Terminator::Call { target: CallTarget::Builtin(b), args, dest, next, .. } if native_on() && self.ll_native_builtin(ll, *b, args, dest) => {
                  let _ = writeln!(ll.body, "  br label %bb{}", next.0);
              }
-@@ -620,7 +667,7 @@ impl FnGen<'_, '_> {
+@@ -620,7 +675,7 @@ impl FnGen<'_, '_> {
                  self.unw = None;
                  let text = std::mem::replace(&mut self.out, saved);
                  let h = self.ll_helper(ll, &text, None);
@@ -4937,7 +4952,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
                  self.ll_call(ll, &h, u);
                  let _ = writeln!(ll.body, "  br label %bb{}", next.0);
              }
-@@ -644,7 +691,8 @@ impl FnGen<'_, '_> {
+@@ -644,7 +699,8 @@ impl FnGen<'_, '_> {
                  }
                  _ => ll.body.push_str("  ret void\n"),
              },
@@ -4947,7 +4962,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
                  ll.conts += 1;
                  let _ = writeln!(ll.body, "  %v{0} = load {{ ptr, i32 }}, ptr %exn\n  resume {{ ptr, i32 }} %v{0}", ll.conts);
              }
-@@ -686,7 +734,7 @@ impl FnGen<'_, '_> {
+@@ -686,14 +742,14 @@ impl FnGen<'_, '_> {
      }
  
      /// The LLVM definition of `fl_<id>`.
@@ -4956,7 +4971,24 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
          let p = self.p;
          let fid = self.body.fn_id;
          let info = p.fn_info(fid);
-@@ -731,7 +779,11 @@ impl FnGen<'_, '_> {
+         let mut params: Vec<String> = Vec::new();
+         let mut entry = String::new();
+         let mut is_param = vec![false; self.local_cty.len()];
+-        let ret_pass = pass_of(p, &self.local_cty[0]);
++        let ret_pass = scalar_library_pass(p, &self.local_cty[0], ll.scalar_export);
+         let (ret_size, ret_align) = c_size_align(p, &self.local_cty[0]);
+         let ret_ll = match ret_pass {
+             Pass::Scalar("ptr", _) => {
+@@ -720,7 +776,7 @@ impl FnGen<'_, '_> {
+         for i in 1..=self.body.arg_count.min(self.local_cty.len() - 1) {
+             let t = &self.local_cty[i];
+             let (size, align) = c_size_align(p, t);
+-            match pass_of(p, t) {
++            match scalar_library_pass(p, t, ll.scalar_export) {
+                 Pass::Skip => {}
+                 Pass::Scalar(ty, ext) => {
+                     let mut ext = if ext.is_empty() { String::new() } else { format!("{ext} ") };
+@@ -731,7 +787,11 @@ impl FnGen<'_, '_> {
                          }
                      }
                      params.push(format!("{ty} {ext}noundef %p{i}"));
@@ -4969,7 +5001,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
                      is_param[i] = true;
                  }
                  // No `noundef`: an aggregate's bits may hold padding or an inactive variant's
-@@ -811,9 +863,10 @@ impl FnGen<'_, '_> {
+@@ -811,9 +871,10 @@ impl FnGen<'_, '_> {
                  }
              }
          }
@@ -4983,7 +5015,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
              allocas.push_str("  %exn = alloca { ptr, i32 }\n");
          }
          allocas.push_str(&ll.allocas);
-@@ -831,20 +884,29 @@ impl FnGen<'_, '_> {
+@@ -831,20 +892,29 @@ impl FnGen<'_, '_> {
          } else {
              attrs.push_str(&source_fn_attrs(p, fid));
          }
@@ -5018,17 +5050,35 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
          d.push_str(&allocas);
          d.push_str(&entry);
          d.push_str(&flags);
-@@ -1722,7 +1784,8 @@ impl FnGen<'_, '_> {
+@@ -1722,7 +1792,8 @@ impl FnGen<'_, '_> {
          self.note_callee(f);
          let id = names::fn_tag(self.slots.of(f));
          self.ll_note_proto(f, &id);
 -        ll.decls.insert(ll_decl(p, f, &id));
 +        let symbol = body_symbol(&id, ll.scalar_export);
-+        ll.decls.insert(ll_decl(p, f, &symbol));
++        ll.decls.insert(ll_decl(p, f, &symbol, ll.scalar_export));
          ll.conts += 1;
          let k = ll.conts;
          let mut vals: Vec<String> = Vec::new();
-@@ -1830,7 +1893,7 @@ impl FnGen<'_, '_> {
+@@ -1731,7 +1802,7 @@ impl FnGen<'_, '_> {
+         let mut temps: Vec<(String, u64)> = Vec::new();
+         ll.decls.insert("declare void @llvm.lifetime.start.p0(i64, ptr)".into());
+         ll.decls.insert("declare void @llvm.lifetime.end.p0(i64, ptr)".into());
+-        let rp = pass_of(p, &rt);
++        let rp = scalar_library_pass(p, &rt, ll.scalar_export);
+         // A moved whole local passed by pointer goes as itself: the caller never reads it
+         // again (its flag is clear), so the callee may own that memory, as rustc does.
+         let direct: Vec<bool> = args
+@@ -1765,7 +1836,7 @@ impl FnGen<'_, '_> {
+             }
+         }
+         for (j, (a, pt)) in args.iter().zip(&pts).enumerate() {
+-            match pass_of(p, pt) {
++            match scalar_library_pass(p, pt, ll.scalar_export) {
+                 Pass::Skip => {}
+                 Pass::Scalar(t, ext) => {
+                     let v = self.ll_scalar_operand_value(ll, a);
+@@ -1830,7 +1901,7 @@ impl FnGen<'_, '_> {
              _ => "void".into(),
          };
          let assign = if ret_ty == "void" { String::new() } else { format!("%v{k} = ") };
@@ -5037,7 +5087,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
          match unwind {
              Some(u) => {
                  ll.pads.insert(u);
-@@ -1909,6 +1972,45 @@ impl FnGen<'_, '_> {
+@@ -1909,6 +1980,45 @@ impl FnGen<'_, '_> {
          true
      }
  
@@ -5083,7 +5133,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
      /// For each block, the locals whose drop flag may be set at its terminator: a write to a
      /// local (an assign to it or a part, a call result) may set its flag; a move of the whole
      /// local or its drop clears it. A move this does not model counts as still set, so a
-@@ -2620,9 +2722,8 @@ impl FnGen<'_, '_> {
+@@ -2620,9 +2730,8 @@ impl FnGen<'_, '_> {
          true
      }
  
@@ -5095,7 +5145,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
      fn ll_native_builtin(&mut self, ll: &mut Ll, b: Builtin, args: &[Operand], dest: &Place) -> bool {
          use Builtin as B;
          let p = self.p;
-@@ -2630,10 +2731,34 @@ impl FnGen<'_, '_> {
+@@ -2630,10 +2739,34 @@ impl FnGen<'_, '_> {
              return false;
          }
          let Some(dp) = self.ll_plan(ll, dest) else { return false };
@@ -5131,7 +5181,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
          let usize_dest = dp.ty == CTy::Int(IntTy::Usize);
          let bool_dest = dp.ty == CTy::Bool;
          // The value: `Word(i64 value)` or `Str(ptr, len)`.
-@@ -2939,7 +3064,7 @@ fn source_fn_attrs(p: &Program, f: LocalDefId) -> String {
+@@ -2939,7 +3072,7 @@ fn source_fn_attrs(p: &Program, f: LocalDefId) -> String {
                  if let crate::ast::AttrInput::List(_, trees) = &a.input {
                      for t in trees {
                          if let TokenTree::Token(t) = t
@@ -5140,7 +5190,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
                          {
                              match p.name(n) {
                                  "always" => how = " alwaysinline",
-@@ -3066,7 +3191,12 @@ fn ll_proto(p: &Program, f: LocalDefId, id: &str) -> String {
+@@ -3066,11 +3199,16 @@ fn ll_proto(p: &Program, f: LocalDefId, id: &str) -> String {
  
  /// The LLVM declaration of written fn `f`'s internal ABI entry `fl_<id>`: the types and
  /// extension attributes of its definition (`FnGen::ll_define`).
@@ -5150,11 +5200,25 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
 +    format!("{prefix}_{tag}")
 +}
 +
-+fn ll_decl(p: &Program, f: LocalDefId, symbol: &str) -> String {
++fn ll_decl(p: &Program, f: LocalDefId, symbol: &str, scalar_library: bool) -> String {
      let info = p.fn_info(f);
      let rt = cty(&p.tys, info.ret);
      let mut params: Vec<String> = Vec::new();
-@@ -3098,7 +3228,7 @@ fn ll_decl(p: &Program, f: LocalDefId, id: &str) -> String {
+-    let ret = match pass_of(p, &rt) {
++    let ret = match scalar_library_pass(p, &rt, scalar_library) {
+         Pass::Scalar(t, ext) => {
+             if ext.is_empty() {
+                 t.to_string()
+@@ -3087,7 +3225,7 @@ fn ll_decl(p: &Program, f: LocalDefId, id: &str) -> String {
+         Pass::Skip => "void".into(),
+     };
+     for &t in &info.params {
+-        match pass_of(p, &cty(&p.tys, t)) {
++        match scalar_library_pass(p, &cty(&p.tys, t), scalar_library) {
+             Pass::Skip => {}
+             Pass::Scalar(t, ext) => params.push(if ext.is_empty() { t.to_string() } else { format!("{t} {ext}") }),
+             Pass::Bits(n) => params.push(bits_types(n).0.into()),
+@@ -3098,7 +3236,7 @@ fn ll_decl(p: &Program, f: LocalDefId, id: &str) -> String {
      if crate::check::caller::is_track_caller(p, f) {
          params.push("ptr, i64".into());
      }
@@ -5163,7 +5227,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
  }
  
  /// The line that ends an LLVM unit's plain C prelude (only its wrappers' types): what
-@@ -3351,6 +3481,11 @@ impl Adapters {
+@@ -3351,6 +3489,11 @@ impl Adapters {
  /// The `.ll` text of one release fn unit: the declarations its fns name (each once) and
  /// their definitions, then an `available_externally` copy of each fn in `inl`
  /// (`ll_inline_set`). Empty when no fn of the unit has LLVM IR.
@@ -5175,7 +5239,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb7566
  pub fn ll_unit(fns: &[FnOut], slots: &[usize], inl: &[usize], triple: &str) -> String {
      if slots.iter().all(|&s| fns[s].ll.is_empty()) {
          return String::new();
-@@ -3371,24 +3506,37 @@ pub fn ll_unit(fns: &[FnOut], slots: &[usize], inl: &[usize], triple: &str) -> S
+@@ -3371,24 +3514,37 @@ pub fn ll_unit(fns: &[FnOut], slots: &[usize], inl: &[usize], triple: &str) -> S
          .iter()
          .chain(inl)
          .filter_map(|&s| {
@@ -10908,7 +10972,7 @@ index da28835400f894866adb85f436e2cbdf109797d7..c2a8d6a10a776fba1df984670ff8b994
          assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
          assert!(decode_response(b"short").is_none());
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a5969f431a4b 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..0c01e8d1555d2098d2da969e761a80b1b558c44e 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
 @@ -30,7 +30,7 @@ use crate::check::collect::{self, LocalDefId};
@@ -12391,7 +12455,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
 +        match super::library::complete(&program, &map, &src, front, caches, verified)
 +            .and_then(|definitions| {
 +                if req.cmd != Cmd::Check {
-+                    super::library::completion::require_direct_integer_abi(&definitions.functions)?;
++                    super::library::completion::require_library_integer_abi(&definitions.functions)?;
 +                }
 +                Ok(definitions)
 +            }) {
@@ -12479,15 +12543,22 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
      let rn = rnames.as_ref();
      // A release C build to the release driver streams its cc step (`cc::Stream`): each unit the
      // assembly makes compiles from the time its text exists. Not with --emit-c nor LLVM units.
-@@ -4498,7 +5380,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4495,10 +5377,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+     // FnOuts share their extern declarations.
+     let layout_tag = cgen::layout_phase();
+     cgen::clear_extern_pool();
++    let library_llvm = library_functions.as_deref().map_or_else(Default::default, |functions| {
++        super::library::completion::llvm_scalar_bodies(functions)
++    });
      let (outs, cg_noted): (Vec<_>, Vec<_>) = par_map(&bodies, |(i, b)| {
          check::derive_delta::scoped(program.record_reads, || {
              cgen::in_layout_phase(layout_tag, || {
 -                cgen::names::with(rn, || cgen::gen_fn(&program, b, &map, line_base_of(front, *i), &front.fn_slot))
 +                cgen::names::with(rn, || {
 +                    let total = library_functions.is_some() || mixed && super::mixed::total(b);
-+                    let mut output = if rust_debug {
-+                        cgen::gen_fn_rust_debug(&program, b, &map, line_base_of(front, *i), &front.fn_slot, library_functions.is_some())
++                    let mut output = if rust_debug || library_llvm.contains(&b.fn_id) {
++                        cgen::gen_fn_cargo_llvm(&program, b, &map, line_base_of(front, *i),
++                            &front.fn_slot, rust_debug, library_functions.is_some())
 +                    } else if total {
 +                        cgen::gen_fn_total(&program, b, &map, line_base_of(front, *i), &front.fn_slot)
 +                    } else {
@@ -12499,7 +12570,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
              })
          })
      })
-@@ -4519,7 +5412,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4519,7 +5416,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // Cached IR serves only the slot-moved re-emit, which runs only in a
      // program with no generics: a generic program caches none (on tsgo it
      // was 1.5 GB of a daemon session, made serially per generated body).
@@ -12508,7 +12579,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
      // The stable id of each fn whose slot the new C prints (`FnOut::used`),
      // by slot: the pairs below are the next renumber's re-emit trigger.
      let mut wanted = vec![false; if keep_ir { front.slot_of.len() } else { 0 }];
-@@ -4552,10 +5445,22 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4552,10 +5449,22 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          caches.out[s] = out;
          caches.has_out[s] = true;
          dirty_slots.push(s);
@@ -12523,7 +12594,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
 +    if let Some(functions) = library_functions {
 +        let generated: Vec<_> = bodies.iter().map(|(i, _)| *i).collect();
 +        let response = super::library::finish(req, &program, front, caches, functions,
-+            rn.expect("native libraries use stable names"), &generated);
++            rn.expect("native libraries use stable names"), &generated, &library_llvm);
 +        drop(bodies);
 +        program.verified = verified; super::patch::keep(front, program);
 +        cgen::clear_extern_pool();
@@ -12532,7 +12603,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
      // LUST_CHECK_GENREUSE=1 (genreuse_oracle.rs): every concrete body a release C build keeps
      // is checked, lowered and generated again without reuse (nothing stored), and its C must
      // equal the kept C. Release C names are content-addressed; dev C names a vtable by a
-@@ -4602,7 +5507,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4602,7 +5511,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // a daemon keeps units smaller, about four per core, so a warm
      // edit recompiles little code.
      let covered = caches.groups.last().map_or(0, |g| g.end);
@@ -12544,7 +12615,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
          let sizes: Vec<usize> = caches.out.iter().map(FnOut::code_len).collect();
          if caches.unit_bytes == 0 {
              let cores = crate::pool::threads().max(1);
-@@ -4681,6 +5589,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4681,6 +5593,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      }
      let glue_changed = shared_changed || regenerated || statics_changed;
      t.lap("codegen (par)");
@@ -12559,7 +12630,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
      // Nothing reads the IR after codegen. A one-shot build leaks it at exit
      // (`leak_at_exit`), but on a large program it is the largest block
      // alive at the peak (ts-rust's bins: about 2.4 GB of 9.4 GB, through
-@@ -4718,7 +5634,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4718,7 +5638,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      const SHARD_RECORD: &str = "glue shard ";
      let fn_units: Vec<usize> = (0..groups.len()).map(|g| g + FIRST_FN_UNIT).collect();
      let dirty_fn_units: Vec<usize> = (0..groups.len()).filter(|&g| dirty_groups[g]).map(|g| g + FIRST_FN_UNIT).collect();
@@ -12573,7 +12644,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
      // Instance slots take their template's line: cgen stores an
      // instance's panic lines relative to it (see `line_base_of`).
      let mut slot_lines = vec![0u32; n_slots];
-@@ -4751,7 +5672,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4751,7 +5676,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // rebuilds and the base
      // relinks over the existing unit objects. Unrelated units keep
      // their objects, in the session and in the disk unit cache.
@@ -12589,7 +12660,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
      let cap_grown = n_slots > caches.table_cap;
      if fresh_base || cap_grown {
          caches.table_cap = n_slots * 2 + 64;
-@@ -4760,7 +5688,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4760,7 +5692,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          caches.base_units = groups.len();
      }
      let table_dirty = cap_grown || groups.len() != caches.base_units;
@@ -12600,7 +12671,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
      let dir = caches.obj_dir.clone();
      let base_obj = |u: usize| dir.join(format!("u{u}.o"));
      let overlay_obj = |u: usize| dir.join(format!("o{u}.o"));
-@@ -4842,9 +5772,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4842,9 +5776,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          super::release_c::groups(&caches.out, names, &file, &line)
      };
      let gen_unit = |u: usize, overlay: bool| match u {
@@ -12612,7 +12683,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
          3 => cgen::table_unit(caches.table_cap, &fn_units),
          LOC_UNIT => cgen::loc_unit(&files, &slot_lines),
          g => {
-@@ -4853,7 +5783,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4853,7 +5787,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
      };
      // Release C: whether fn bodies are LLVM IR (cgen/ll.rs), and B1's switches.
@@ -12621,7 +12692,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
      // B1 (`cgen::record`): each C fn unit records the pieces it is made of and what it
      // read, and the next build sets the record against its program
      // (`Caches::unit_records`). A session that keeps its caches (a daemon, a front
-@@ -5007,7 +5937,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5007,7 +5941,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              let assemble = |u: usize, inl: &[Vec<usize>], c_refs: Option<&cgen::ll::CRefs>, copy_hot: Option<&cgen::CopyHot>| {
                  let t = Instant::now();
                  let (c, helpers) = cgen::in_layout_phase(asm_tag, || cgen::names::with(rn, || match u {
@@ -12630,7 +12701,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
                      1 => match super::release_c::statics_bytes() {
                          0 => (adapt(cgen::names::statics_unit(&program, &caches.glue), &Default::default()), String::new()),
                          target => {
-@@ -5023,7 +5953,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5023,7 +5957,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                              (adapt(index, &Default::default()), String::new())
                          }
                      },
@@ -12639,7 +12710,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
                      3 => {
                          let rg = rg_cell.get().expect("the fn units are cut before unit 3");
                          (super::release_c::table_unit(&rg.iter().filter(|(_, s)| s.contains(&(main_slot as usize))).map(|(r, _)| r.clone()).collect::<Vec<_>>()), String::new())
-@@ -5291,7 +6221,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5291,7 +6225,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                          if k < n_early {
                              Ok(assemble(first[k], &[], None, None))
                          } else {
@@ -12650,7 +12721,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
                          }
                      })
                      .into_iter()
-@@ -5617,7 +6549,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5617,7 +6553,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      };
      let rgroups = rg_cell.into_inner();
      // The LLVM backend (cgen/ll.rs) wrote `.ll` companions: only cc.rs builds them.
@@ -12659,7 +12730,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
      // The units the link takes after 1..4: release C has its own fn units, glue shards and
      // statics parts.
      let link_fn_units: Vec<usize> = match &rgroups {
-@@ -5656,7 +6588,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5656,7 +6592,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              return Response { code: 0, ..Default::default() };
          }
      }
@@ -12668,7 +12739,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
          return Response {
              stderr: "error: LUST_RELEASE_BACKEND=llvm builds through the release driver (`lust build --release --target <triple>`) or with --emit-c\n".into(),
              code: 2,
-@@ -5671,7 +6603,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5671,7 +6607,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // frozen, so a clean unit's C is the same as last time and its object
      // comes from the cache. Overlays do not exist here: every build emits
      // the base form of each unit.
@@ -12677,7 +12748,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
          // The release driver returns before the visits line at the end: its log line is here
          // (front-check's path coverage).
          front.last_visits.clear();
-@@ -5688,7 +6620,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5688,7 +6624,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
              }
          }
@@ -12689,7 +12760,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
              // Release C (`LUST_RELEASE_C=1`) already holds the content-addressed units.
              let mut all: Vec<(String, String)> = if rgroups.is_some() {
                  // An LLVM companion keeps its `.ll` name (cc.rs pairs it with its C unit). The
-@@ -5749,8 +6684,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5749,8 +6688,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          {
              let _ = writeln!(resp.stderr, "b1: {l}");
          }
@@ -12703,7 +12774,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
              // A build that leaks at exit leaks the unit texts too (they moved out of `units`).
              if leak_at_exit {
                  std::mem::forget(all);
-@@ -5807,6 +6746,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5807,6 +6750,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // this check keeps that a pin, not a hope.
      if let Some(run_args) = &req.run_args
          && !caches.persistent
@@ -12711,7 +12782,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
          && fresh_base
          && groups.len() == 1
          && !req.debug
-@@ -5837,7 +6777,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5837,7 +6781,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
      }
      // Disk unit objects key on each unit's full C text (see cache.rs):
@@ -12720,7 +12791,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
      // compiler, so a hit can never serve an object whose C differs. The
      // C is already built here for every unit in `todo`, so the key costs
      // one hash per unit.
-@@ -5847,7 +6787,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5847,7 +6791,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
      }
      let keys: Vec<Option<String>> = match &disk_cache {
@@ -12729,7 +12800,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
          None => vec![None; units.len()],
      };
      // The units move into the miss list, and their C is freed before the
-@@ -5866,7 +6806,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5866,7 +6810,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              miss_keys.push(key);
          }
      }
@@ -12738,7 +12809,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
          caches.objects = None;
          return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
      }
-@@ -5883,10 +6823,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5883,10 +6827,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      caches.objects = Some(req.debug);
      t.lap("tcc compile");
      let all_base: Vec<PathBuf> = [1, 2, 3, LOC_UNIT].into_iter().chain(link_fn_units.iter().copied()).map(base_obj).collect();
@@ -12759,7 +12830,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
      } else {
          // The base library lives in a persistent dir under a content name
          // (see `resolve_base_dir`): the executable loads it by absolute
-@@ -5901,18 +6849,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5901,18 +6853,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
          let base = if rebuild_base {
              caches.base_gen += 1;
@@ -12800,7 +12871,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
                      install_base(&tmp, &base_dir.join(&soname))?;
                      if !caches.base_files.contains(&soname) {
                          caches.base_files.push_back(soname);
-@@ -5922,24 +6883,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5922,24 +6887,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              if built.is_err() {
                  let _ = std::fs::remove_file(&tmp);
              }
@@ -12832,7 +12903,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
              built
          } else {
              Ok(())
-@@ -5958,8 +6920,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5958,8 +6924,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // a small grace count while no known output file still references them. A binary the user
      // kept keeps its base; one that was overwritten or deleted does not. A running program
      // keeps its mapped copy after unlink.
@@ -12843,7 +12914,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
          if let Some(base_dir) = caches.base_dir.clone() {
              record_base_user(&base_dir, &soname, &req.out);
          }
-@@ -6034,7 +6996,7 @@ mod tests {
+@@ -6034,7 +7000,7 @@ mod tests {
      /// is installed, and a workspace file relative to the workspace root.
      #[test]
      fn location_paths_do_not_hold_the_install_path() {
@@ -12852,7 +12923,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
          let at = |lust: &str, p: &str| location_path(&format!("{lust}{p}"), &Path::new(lust).join("library"), Some(Path::new("/ws")), &client);
          for lust in ["/opt/lust", "/home/u/tools/lust-0.2"] {
              assert_eq!(at(lust, "/library/deps/bumpalo/src/lib.rs"), "library/deps/bumpalo/src/lib.rs");
-@@ -6058,6 +7020,66 @@ mod tests {
+@@ -6058,6 +7024,66 @@ mod tests {
          panic!("{}: still busy", bin.display())
      }
  
@@ -12919,7 +12990,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..7a4f63c5bd0a58b7d642f8f20930a596
      /// The base sweep never deletes a live owner's base (it may be a live
      /// session's current base, found by fuzz seed 7 multi when a guard
      /// session's first-build sweep deleted the warm session's base), but
-@@ -6417,10 +7439,547 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
+@@ -6417,10 +7443,547 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
              max_errors: 20,
              run_args: None,
              harness: false, cc: false,

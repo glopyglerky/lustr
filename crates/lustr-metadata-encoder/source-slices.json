@@ -1083,7 +1083,7 @@
     "src/encode_projection.rs": "15864ab3bf6aca54020e503cfb5b782bbd1a16d66f45bc84111ae4fa64116d48",
     "src/extern_metadata.rs": "fba900b9d714e3fdab380c363f5b532269d8bff385f75cea34d50d73a5fd910a",
     "src/identity.rs": "4d153100f5cfe9de796082d708518bd0d2cb4180fd17fffa9a84bd9b6b389f9f",
-    "src/lib.rs": "0dc5a07c4e4636ab43f2c4bbd04b7d079ad567e4353383c9aee97057ae5b180c",
+    "src/lib.rs": "5c5ab393f769dcca10c78b1a223f25d901fbd93c80e922dca9b3522d57a3219e",
     "src/sdk.rs": "1ca10fbf946d09bc2af225c18b287d31ddd84b7162148d4339293970db0dc930",
     "src/table.rs": "5ad2fa46decc550bfd5f7d23cc051c7087d4ef1f5b361b154630c122097c92bb",
     "src/upstream/codec.rs": "916922c930d3dc46c7003d65d920b6c84efa780ac5b0c06eec1586ead0216a7a",

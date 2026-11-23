@@ -2969,6 +2969,80 @@ fn cargo_native_library_keeps_crlf_source_and_rust_metadata() {
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn cargo_native_library_exports_narrow_rust_integers() {
+    let f = Fixture::new("cargo-native-narrow-library");
+    f.source("Cargo.toml", "[package]\nname=\"native_narrow\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    f.source("src/lib.rs", r#"#![no_std]
+
+fn flip(value: u8) -> u8 { value ^ 7 }
+pub fn identity(value: u8) -> u8 { flip(value) ^ 7 }
+pub fn signed_byte(value: i8) -> i8 { value ^ -7 }
+pub fn signed_word(value: i16) -> i16 { value ^ -7 }
+pub fn unsigned_word(value: u16) -> u16 { value ^ 7 }
+pub fn wide(value: u64) -> u64 {
+    let _small = flip(255);
+    value ^ 7
+}
+pub fn stack(a: u8, b: u8, c: u8, d: u8, e: u8, f: u8, g: u8, h: u8) -> u8 {
+    a ^ b ^ c ^ d ^ e ^ f ^ g ^ h
+}
+"#);
+    let reader = f.source("consumer.rs", r#"use native_narrow::*;
+use std::hint::black_box;
+
+fn main() {
+    for bits in 0..=u16::MAX {
+        let bits = black_box(bits);
+        assert_eq!(identity(bits as u8), bits as u8);
+        assert_eq!(signed_byte(bits as i8), (bits as i8) ^ -7);
+        assert_eq!(signed_word(bits as i16), (bits as i16) ^ -7);
+        assert_eq!(unsigned_word(bits), bits ^ 7);
+        assert_eq!(wide(u64::from(bits)), u64::from(bits) ^ 7);
+        let byte = bits as u8;
+        assert_eq!(stack(2, 3, 4, 5, 6, 7, byte, 255), 2 ^ 3 ^ 4 ^ 5 ^ 6 ^ 7 ^ byte ^ 255);
+    }
+}
+"#);
+    let original = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    for lane in ["dev", "dev-abort", "release"] {
+        let mut command = f.command("cargo");
+        command.args(["build", "--frozen", "--message-format=json"])
+            .env("CARGO_TARGET_DIR", f.root.join(lane));
+        match lane {
+            "release" => { command.arg("--release"); }
+            "dev-abort" => { command.env("CARGO_PROFILE_DEV_DEBUG", "0").env("CARGO_PROFILE_DEV_PANIC", "abort"); }
+            _ => {}
+        }
+        let output = f.succeeds(lane, &mut command);
+        assert_eq!(f.engine(), "lust");
+        let archive = output.stdout.split(|&byte| byte == b'\n').find_map(|line| {
+            let record: serde_json::Value = serde_json::from_slice(line).ok()?;
+            if record["reason"] != "compiler-artifact" || record["target"]["name"] != "native_narrow" {
+                return None;
+            }
+            record["filenames"].as_array()?.iter().filter_map(|filename| filename.as_str())
+                .find(|path| path.ends_with(".rlib")).map(PathBuf::from)
+        }).expect("Cargo reported the native archive");
+        let program = f.root.join(format!("{lane}-reader"));
+        let mut command = Command::new(&original);
+        command.current_dir(&f.root).env_remove("LD_LIBRARY_PATH")
+            .args(["--edition=2024", "-O", "--extern"])
+            .arg(format!("native_narrow={}", archive.display())).arg(&reader).arg("-o").arg(&program);
+        if archive.with_extension("rmeta").is_file() {
+            command.arg("--extern").arg(format!("native_narrow={}", archive.with_extension("rmeta").display()));
+        }
+        if lane == "dev-abort" {
+            command.arg("-Cpanic=abort");
+        }
+        f.succeeds(&format!("{lane}-original-reader"), &mut command);
+        f.succeeds(&format!("{lane}-original-run"), &mut Command::new(program));
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
 fn cargo_library_accepts_an_explicit_rust_archive() {
     let f = Fixture::new("cargo-explicit-rust-archive");
     let original = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");

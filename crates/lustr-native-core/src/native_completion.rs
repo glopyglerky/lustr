@@ -571,6 +571,34 @@ pub(crate) fn require_direct_integer_abi(functions: &[Function]) -> Result<(), E
     Ok(())
 }
 
+pub(crate) fn require_library_integer_abi(functions: &[Function]) -> Result<(), Error> {
+    if !cfg!(feature = "exclusive-native") {
+        return require_direct_integer_abi(functions);
+    }
+    if functions.iter().any(|function| {
+        !matches!(function.result.bits(), 8 | 16 | 32 | 64)
+            || function.parameters.iter().any(|param| !matches!(param.ty.bits(), 8 | 16 | 32 | 64))
+    }) {
+        return Err(Error::Unintegrated("unrepresented linked integer ABI"));
+    }
+    Ok(())
+}
+
+/// Rust and C use different integer extension attributes for narrow values
+/// on the represented x86-64 host. Emit both these definitions and their
+/// immediate native callers through the existing LLVM scalar library path.
+pub(crate) fn llvm_scalar_bodies(functions: &[Function]) -> BTreeSet<def::LocalDefId> {
+    let narrow: BTreeSet<_> = functions.iter().filter(|function| {
+        function.result.bits() < 32 || function.parameters.iter().any(|param| param.ty.bits() < 32)
+    }).map(Function::definition).collect();
+    if narrow.is_empty() {
+        return BTreeSet::new();
+    }
+    functions.iter().filter(|function| {
+        narrow.contains(&function.definition) || function.calls.iter().any(|call| narrow.contains(call))
+    }).map(Function::local).collect()
+}
+
 #[derive(Default)]
 struct BodyReads {
     expressions: BTreeSet<u32>,

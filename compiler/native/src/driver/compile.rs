@@ -5217,7 +5217,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
         match super::library::complete(&program, &map, &src, front, caches, verified)
             .and_then(|definitions| {
                 if req.cmd != Cmd::Check {
-                    super::library::completion::require_direct_integer_abi(&definitions.functions)?;
+                    super::library::completion::require_library_integer_abi(&definitions.functions)?;
                 }
                 Ok(definitions)
             }) {
@@ -5377,13 +5377,17 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
     // FnOuts share their extern declarations.
     let layout_tag = cgen::layout_phase();
     cgen::clear_extern_pool();
+    let library_llvm = library_functions.as_deref().map_or_else(Default::default, |functions| {
+        super::library::completion::llvm_scalar_bodies(functions)
+    });
     let (outs, cg_noted): (Vec<_>, Vec<_>) = par_map(&bodies, |(i, b)| {
         check::derive_delta::scoped(program.record_reads, || {
             cgen::in_layout_phase(layout_tag, || {
                 cgen::names::with(rn, || {
                     let total = library_functions.is_some() || mixed && super::mixed::total(b);
-                    let mut output = if rust_debug {
-                        cgen::gen_fn_rust_debug(&program, b, &map, line_base_of(front, *i), &front.fn_slot, library_functions.is_some())
+                    let mut output = if rust_debug || library_llvm.contains(&b.fn_id) {
+                        cgen::gen_fn_cargo_llvm(&program, b, &map, line_base_of(front, *i),
+                            &front.fn_slot, rust_debug, library_functions.is_some())
                     } else if total {
                         cgen::gen_fn_total(&program, b, &map, line_base_of(front, *i), &front.fn_slot)
                     } else {
@@ -5455,7 +5459,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
     if let Some(functions) = library_functions {
         let generated: Vec<_> = bodies.iter().map(|(i, _)| *i).collect();
         let response = super::library::finish(req, &program, front, caches, functions,
-            rn.expect("native libraries use stable names"), &generated);
+            rn.expect("native libraries use stable names"), &generated, &library_llvm);
         drop(bodies);
         program.verified = verified; super::patch::keep(front, program);
         cgen::clear_extern_pool();

@@ -120,7 +120,7 @@ impl IntegerType {
     ];
 
     fn has_direct_native_abi(self) -> bool {
-        matches!(self, Self::Isize | Self::I32 | Self::I64 | Self::Usize | Self::U32 | Self::U64)
+        !matches!(self, Self::I128 | Self::U128)
     }
 
     pub fn from_rust_name(name: &str) -> Option<Self> {

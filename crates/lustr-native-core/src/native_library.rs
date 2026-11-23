@@ -23,7 +23,7 @@ pub(crate) struct Object {
     pub definition: def::DiskDefId,
     pub symbol: String,
     pub source_text: Arc<str>,
-    pub rust_debug: bool,
+    pub uses_llvm: bool,
     pub compiled_with_clang: bool,
     pub bytes: Arc<Vec<u8>>,
     pub serial: u64,
@@ -447,11 +447,11 @@ pub(super) fn finish_declaration_only(caches: &mut Caches, rust_debug: bool) -> 
 }
 
 pub(super) fn finish(req: &Request, p: &check::collect::Program, front: &Front, caches: &mut Caches,
-    functions:Arc<Vec<Function>>, names:&cgen::names::Names, generated:&[usize]) -> Response {
+    functions:Arc<Vec<Function>>, names:&cgen::names::Names, generated:&[usize],
+    llvm_bodies: &BTreeSet<def::LocalDefId>) -> Response {
     let state=caches.library.as_mut().unwrap();
     let rust_debug = req.library_options.debug.native_rust();
     let optimization = req.session.library.as_ref().map_or(crate::protocol::OptLevel::None, |key| key.optimization);
-    let compiled_with_clang = rust_debug || optimization != crate::protocol::OptLevel::None;
     state.current(functions.iter().map(Function::definition));
     // Generated C may already be current when a later TinyCC operation fails.
     // Invalidate old definition-to-object joins before any fallible emission;
@@ -480,6 +480,8 @@ pub(super) fn finish(req: &Request, p: &check::collect::Program, front: &Front, 
         }
         let mut objects=Vec::new();
         for f in functions.iter() {
+            let uses_llvm = rust_debug || llvm_bodies.contains(&f.local());
+            let compiled_with_clang = uses_llvm || optimization != crate::protocol::OptLevel::None;
             let slot=front.fn_slot[f.local().0 as usize] as usize;
             let output=&caches.out[slot];
             if !caches.has_out[slot] { return Err("native library function has no current generated body".into()); }
@@ -493,12 +495,14 @@ pub(super) fn finish(req: &Request, p: &check::collect::Program, front: &Front, 
             let unchanged=!generated_set.contains(&(f.local().0 as usize));
             let code_generation=*state.code_generation.get(&f.definition()).ok_or("missing current native C generation")?;
             if unchanged && let Some((bound_generation,object))=state.by_definition.get(&f.definition()) {
-                if *bound_generation!=code_generation || object.symbol!=symbol { return Err("retained native object symbol context changed".into()); }
+                if *bound_generation!=code_generation || object.symbol!=symbol || object.uses_llvm!=uses_llvm {
+                    return Err("retained native object symbol or ABI context changed".into());
+                }
                 state.reused_objects+=1; objects.push((object.clone(),true));continue;
             }
             let unwind_tables = !req.session.profile.panic_abort;
-            let text=if rust_debug {
-                cgen::native_scalar_debug_unit(&caches.out, slot, &req.session.target_triple)
+            let text=if uses_llvm {
+                cgen::native_scalar_llvm_unit(&caches.out, slot, &req.session.target_triple, rust_debug)
             } else {
                 cgen::native_scalar_unit(output, unwind_tables)
             }
@@ -513,13 +517,13 @@ pub(super) fn finish(req: &Request, p: &check::collect::Program, front: &Front, 
             let path=caches.obj_dir.join(format!("native-library-{}.o",state.next_object));
             // A fresh path preserves previous object generations on failure.
             if compiled_with_clang {
-                crate::cc::compile_scalar_cargo_object(&path, &text, rust_debug, unwind_tables, optimization)?;
+                crate::cc::compile_scalar_cargo_object(&path, &text, uses_llvm, unwind_tables, optimization)?;
             } else {
                 crate::tcc::compile_scalar_object(&path, &text, unwind_tables)?;
             }
             let bytes=std::fs::read(&path).map_err(|e|format!("native object bytes: {e}"))?;
             std::fs::remove_file(&path).map_err(|e|format!("native object staging cleanup: {e}"))?;
-            let object=Arc::new(Object {definition:f.definition(),symbol,source_text:Arc::from(text.as_str()),rust_debug,compiled_with_clang,bytes:Arc::new(bytes),serial:state.next_object});
+            let object=Arc::new(Object {definition:f.definition(),symbol,source_text:Arc::from(text.as_str()),uses_llvm,compiled_with_clang,bytes:Arc::new(bytes),serial:state.next_object});
             state.objects.insert(text,object.clone()); state.by_definition.insert(f.definition(),(code_generation,object.clone()));
             state.compiled_objects+=1; objects.push((object,false));
         }

@@ -218,9 +218,9 @@ pub(crate) fn spec_for_native_cargo(
 }
 
 pub(crate) fn compile_scalar_cargo_object(
-    path: &Path, text: &str, rust_debug: bool, unwind: bool, optimization: crate::protocol::OptLevel,
+    path: &Path, text: &str, uses_llvm: bool, unwind: bool, optimization: crate::protocol::OptLevel,
 ) -> Result<(), String> {
-    let input = path.with_extension(if rust_debug { "ll" } else { "c" });
+    let input = path.with_extension(if uses_llvm { "ll" } else { "c" });
     let mut source = std::fs::File::options().write(true).create_new(true).open(&input)
         .map_err(|error| format!("stage native scalar object input: {error}"))?;
     source.write_all(text.as_bytes()).map_err(|error| format!("write native scalar object input: {error}"))?;
@@ -228,7 +228,7 @@ pub(crate) fn compile_scalar_cargo_object(
     let mut command = cc_command("clang");
     command.arg("--target=x86_64-unknown-linux-gnu");
     let level = format!("-O{}", optimization.value());
-    if rust_debug {
+    if uses_llvm {
         command.arg("-Wno-override-module").arg(level).args(["-x", "ir"]);
     } else {
         let flags = cflags(false).replacen("-O2", &level, 1);

@@ -284,7 +284,7 @@ fn check_unwind_frame(file: &object::File<'_>, body_name: &str, compiled_with_cl
 fn check_object(object:&NativeObject, snapshot:&Snapshot, panic_abort:bool)->Result<Original,String> {
     let symbols=unit_object::symbols(&object.bytes)?;
     let function=snapshot.functions.iter().find(|f|f.definition()==object.definition).ok_or("object has no completed definition")?;
-    let helpers: Vec<_> = (panic_abort && !object.rust_debug).then(|| object.symbol.replacen("f_","tramp_",1)).into_iter().collect();
+    let helpers: Vec<_> = (panic_abort && !object.uses_llvm).then(|| object.symbol.replacen("f_","tramp_",1)).into_iter().collect();
     let definitions = std::iter::once(&object.symbol).chain(&helpers)
         .map(|name| name.as_bytes().to_vec()).collect::<BTreeSet<_>>();
     let expected_calls:BTreeSet<Vec<u8>>=function.calls().iter().map(|id| {
@@ -430,7 +430,7 @@ impl Service {
             for (object,object_reused) in &snapshot.objects {
                 let member=format!("{}_{:016x}.o",self.context.crate_name,object.definition.hash.0);
                 let original_name=format!("native_{:016x}.o",object.definition.hash.0);
-                let extension = if object.rust_debug { "ll" } else { "c" };
+                let extension = if object.uses_llvm { "ll" } else { "c" };
                 let source_name=format!("native_{:016x}.{extension}",object.definition.hash.0);
                 files.insert(original_name.clone(),object.bytes.clone());
                 files.insert(source_name.clone(),Arc::new(object.source_text.as_bytes().to_vec()));
@@ -462,7 +462,7 @@ impl Service {
                     "native_id":id_value(object.definition),"native_symbol":object.symbol,"rust_symbol":mapping[&object.symbol],"member":member,
                     "original_sha256":self.originals[&object.serial].hash,"renamed_sha256":renamed.hash,"reused":object_reused,
                     "native_object_serial":object.serial,"original_path":format!("staging/{original_name}"),"renamed_path":format!("staging/{member}")});
-                record[if object.rust_debug { "llvm_ir_path" } else { "c_path" }] = json!(format!("staging/{source_name}"));
+                record[if object.uses_llvm { "llvm_ir_path" } else { "c_path" }] = json!(format!("staging/{source_name}"));
                 object_records.push(record);
             }
             for (name,bytes) in &files { if !stage.join(name).exists(){put(&stage.join(name),bytes)?;} }
