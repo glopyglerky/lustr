@@ -282,6 +282,7 @@ pub struct LibraryKey {
     /// A direct rustc file request with one user-selected binary output.
     pub standalone: bool,
     pub optimization: OptLevel,
+    pub single_codegen_unit: bool,
     /// Cargo supplies cfg(test), and the crate supplies its own main.
     pub custom_test: bool,
     pub sdk_receipt: String,
@@ -309,6 +310,7 @@ impl LibraryKey {
             && (!self.custom_test || self.is_executable())
             && (!self.standalone || (!self.custom_test
                 && self.executable_dependencies.as_ref().is_some_and(|inputs| !inputs.is_empty())))
+            && (!self.single_codegen_unit || (self.standalone && self.optimization == OptLevel::None))
             && self.sdk_receipt == SDK_RECEIPT
     }
     pub fn archive_name(&self) -> String { format!("lib{}{}.rlib", self.crate_name, self.extra_filename) }
@@ -352,6 +354,9 @@ impl LibraryKey {
 
     pub fn valid_output(&self, path: &Path, check: bool, options: LibraryOptions) -> bool {
         let native_debug = options.debug.native_rust();
+        if self.single_codegen_unit && options.debug != DebugOptions::default() {
+            return false;
+        }
         if !(options.debug.supported(check) || native_debug) {
             return false;
         }

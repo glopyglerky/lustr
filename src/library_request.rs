@@ -32,6 +32,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     let mut externs = Vec::new();
     let mut codegen = BTreeMap::new();
     let mut options = LibraryOptions::default();
+    let mut unstable_options = false;
     let mut i = 0;
     while i < args.len() {
         let arg = args[i].to_str()?;
@@ -89,12 +90,16 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
             }
         } else if arg == "-Z" || arg.starts_with("-Z") {
             let value = if arg == "-Z" { i += 1; args.get(i)?.to_str()? } else { &arg[2..] };
-            if options.embed_metadata.is_some() { return None; }
-            options.embed_metadata = Some(match value.strip_prefix("embed-metadata=")? {
-                "y" | "yes" | "on" | "true" => true,
-                "n" | "no" | "off" | "false" => false,
-                _ => return None,
-            });
+            if value == "unstable-options" && !unstable_options {
+                unstable_options = true;
+            } else {
+                if options.embed_metadata.is_some() { return None; }
+                options.embed_metadata = Some(match value.strip_prefix("embed-metadata=")? {
+                    "y" | "yes" | "on" | "true" => true,
+                    "n" | "no" | "off" | "false" => false,
+                    _ => return None,
+                });
+            }
         } else if arg == "--force-warn" || arg.starts_with("--force-warn=") {
             if options.force_warn_unused_crate_dependencies || value("--force-warn")? != "unused_crate_dependencies" { return None; }
             options.force_warn_unused_crate_dependencies = true;
@@ -110,6 +115,9 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     let test_target = test || custom_test;
     let standalone = !test_target && !externs.is_empty() && matches!(kind.as_deref(), None | Some("bin"))
         && matches!(emits.as_deref(), None | Some("link"));
+    if unstable_options && (!standalone || std::env::var_os("RUSTC_BOOTSTRAP").is_some_and(|value| value == "-1")) {
+        return None;
+    }
     let binary = standalone || test_target || kind.as_deref() == Some("bin");
     let represented_kind = if standalone || test_target { matches!(kind.as_deref(), None | Some("bin")) }
         else { matches!(kind.as_deref(), Some("bin" | "lib" | "rlib")) };
@@ -153,6 +161,11 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
         Some(value) => OptLevel::parse(&value)?,
         None => OptLevel::None,
     };
+    let single_codegen_unit = match codegen.remove("codegen-units").as_deref() {
+        None => false,
+        Some("1") if standalone => true,
+        _ => return None,
+    };
     for (key,value) in &codegen {
         let represented = match key.as_str() {
             // Cargo provides an optional on-disk incremental cache location.
@@ -185,7 +198,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     };
     let context = LibraryKey { crate_name:name, metadata, extra_filename, source_path,
         working_directory: std::env::current_dir().ok()?, cfg: cfg.into_iter().collect(), check_cfg, search_paths, external, executable_dependencies,
-        standalone, optimization, custom_test, sdk_receipt:SDK_RECEIPT.into() };
+        standalone, optimization, single_codegen_unit, custom_test, sdk_receipt:SDK_RECEIPT.into() };
     if test && panic != "panic=unwind" { return None; }
     if !context.valid() { return None; }
     if !standalone && std::env::var("CARGO_CRATE_NAME").is_ok_and(|v|v != context.crate_name) { return None; }
@@ -263,6 +276,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     if optimization != OptLevel::None {
         native.extend(["--lustr-opt-level".into(), optimization.value().into()]);
     }
+    if single_codegen_unit { native.push("--lustr-single-codegen-unit".into()); }
     for (flag,value) in [("--lustr-library-name",context.crate_name.as_str()),
         ("--lustr-library-metadata",context.metadata.as_str()),("--lustr-library-extra-filename",context.extra_filename.as_str()),
         ("--lustr-library-cwd",context.working_directory.to_str()?)] {

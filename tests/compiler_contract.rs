@@ -387,6 +387,9 @@ fn read_public_transport_request(
             if read_public_transport_field(reader)?.as_slice() != library.optimization.value().as_bytes() {
                 return Err("public library request changed its optimization level".into());
             }
+            if read_public_transport_field(reader)?.as_slice() != if library.single_codegen_unit { b"1" } else { b"0" } {
+                return Err("public library request changed its codegen unit choice".into());
+            }
         }
         (b"0" | b"1" | b"2" | b"3" | b"4" | b"5", _) => return Err("public request changed its artifact context presence".into()),
         _ => return Err("invalid public library discriminator".into()),
@@ -472,6 +475,7 @@ fn transport_peer_validates_library_values_and_counted_vectors() {
         executable_dependencies: None,
         standalone: false,
         optimization: transport_protocol::OptLevel::None,
+        single_codegen_unit: false,
         custom_test: false,
     };
     req.session.krate.target_kind = "lib".into();
@@ -504,7 +508,7 @@ fn transport_peer_validates_library_values_and_counted_vectors() {
         read_public_transport_field(&mut cursor).unwrap();
         fields.push((start, cursor.position() as usize));
     }
-    assert_eq!(fields.len(), 36, "library schema/options plus two features and two environment pairs");
+    assert_eq!(fields.len(), 37, "library schema/options plus two features and two environment pairs");
     let replace_field = |index: usize, bytes: &[u8]| {
         let (start, end) = fields[index];
         let mut changed = encoded[..start].to_vec();
@@ -526,13 +530,14 @@ fn transport_peer_validates_library_values_and_counted_vectors() {
         (26, b"2"), (26, b"0"), // malformed or different forced-lint choice
         (27, b"102"), (27, b"00"), (27, b"999"), // changed, truncated or unknown debug output choices
         (28, b"3"), (28, b"9"), (28, b"00"), // different, unknown or malformed optimization level
+        (29, b"1"), (29, b"2"), // different or invalid codegen unit selection
     ];
     for &(index, bytes) in wrong_fields {
         let changed = replace_field(index, bytes);
         assert!(read_public_transport_request(&mut Cursor::new(&changed), identity, &req.file, &req.out, true, Some((&library, req.library_options))).is_err(),
                 "changed library field {index} was accepted");
     }
-    for index in [18, 21, 24, 25, 26, 27, 28, 35] {
+    for index in [18, 21, 24, 25, 26, 27, 28, 29, 36] {
         let truncated = &encoded[..fields[index].1 - 1];
         assert!(read_public_transport_request(&mut Cursor::new(truncated), identity, &req.file, &req.out, true, Some((&library, req.library_options))).is_err(),
                 "truncated vector, request option or final environment field {index} was accepted");
@@ -1359,6 +1364,27 @@ fn main() {
         }
     }
     assert!(!f.root.join("<anon>").exists());
+
+    let doctest = f.source("doc-example.rs", r#"
+#![doc(test(no_crate_inject))]
+/// An example linked with the independently compiled provider.
+///
+/// ```standalone_crate
+/// assert_eq!(provider_alias::doubled(21), 42);
+/// ```
+pub fn example() {}
+"#);
+    let rustdoc = PathBuf::from(&oracle).with_file_name("rustdoc");
+    let trace = f.root.join("rustdoc-builder-trace.jsonl");
+    let result = f.succeeds("pinned-rustdoc-native-builder", Command::new(rustdoc).current_dir(&f.root)
+        .env_remove("LD_LIBRARY_PATH").env_remove("RUSTC_BOOTSTRAP").env("LUSTR_TRACE_PATH", &trace)
+        .args(["--test", "--edition=2024", "-Zunstable-options", "--test-builder"])
+        .arg(f.package.join("bin/rustc")).arg("--extern")
+        .arg(format!("provider_alias={}", archive.display())).arg(&doctest));
+    assert!(String::from_utf8_lossy(&result.stdout).contains("1 passed"));
+    let trace = std::fs::read_to_string(trace).unwrap();
+    assert!(trace.lines().any(|line| line == r#"{"engine":"lust","entry":"stdin"}"#));
+    assert!(trace.lines().all(|line| !line.contains("integration-unimplemented")));
 
     let executable = target(false).join("debug/application");
     let before = std::fs::read(&executable).unwrap();

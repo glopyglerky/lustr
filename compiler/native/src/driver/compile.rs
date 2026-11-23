@@ -5472,7 +5472,10 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
     // a daemon keeps units smaller, about four per core, so a warm
     // edit recompiles little code.
     let covered = caches.groups.last().map_or(0, |g| g.end);
-    if caches.groups.is_empty() || covered > n_slots || caches.objects != Some(req.debug) || !caches.persistent {
+    if req.session.library.as_ref().is_some_and(|key| key.single_codegen_unit) {
+        caches.groups.clear();
+        caches.groups.extend((n_slots != 0).then_some(0..n_slots));
+    } else if caches.groups.is_empty() || covered > n_slots || caches.objects != Some(req.debug) || !caches.persistent {
         let sizes: Vec<usize> = caches.out.iter().map(FnOut::code_len).collect();
         if caches.unit_bytes == 0 {
             let cores = crate::pool::threads().max(1);

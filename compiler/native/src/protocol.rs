@@ -686,6 +686,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     let mut library_external = None;
     let mut executable_artifacts = false;
     let mut standalone = false;
+    let mut single_codegen_unit = false;
     let mut executable_test = false;
     let mut custom_test = false;
     let mut executable_dependencies = Vec::new();
@@ -729,6 +730,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
             "--lustr-library-extern-metadata" if library_external.is_none() => library_external = Some(ExternMetadata::parse(it.next()?)?),
             "--lustr-executable-artifacts" if !executable_artifacts => executable_artifacts = true,
             "--lustr-standalone-executable" if !standalone => standalone = true,
+            "--lustr-single-codegen-unit" if !single_codegen_unit => single_codegen_unit = true,
             "--lustr-executable-test" if !executable_test && !custom_test => executable_test = true,
             "--lustr-custom-test" if !executable_test && !custom_test => custom_test = true,
             "--lustr-executable-extern" => executable_dependencies.push(ExecutableExtern::parse(it.next()?, it.next()?)?),
@@ -785,7 +787,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     }
     let library_supplied = library_name.is_some() || library_metadata.is_some() || library_extra.is_some() || library_cwd.is_some()
         || !library_cfg.is_empty() || !library_check_cfg.is_empty() || !library_search.is_empty() || library_external.is_some()
-        || executable_artifacts || standalone || executable_test || custom_test || !executable_dependencies.is_empty()
+        || executable_artifacts || standalone || single_codegen_unit || executable_test || custom_test || !executable_dependencies.is_empty()
         || library_debug_supplied || library_opt.is_some() || library_options != LibraryOptions::default();
     if library_supplied && (rustc || release || profile.is_some()) { return None; }
     let abs = |p: &Path| std::path::absolute(p).unwrap_or_else(|_| p.to_path_buf());
@@ -889,7 +891,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
         let key = LibraryKey {crate_name:library_name?, metadata:library_metadata?, extra_filename:library_extra?,
             source_path:file.clone(), working_directory:library_cwd?, cfg:library_cfg, check_cfg:library_check_cfg, search_paths:library_search, external:library_external,
             executable_dependencies:executable_artifacts.then_some(executable_dependencies),
-            standalone, optimization:library_opt.unwrap_or_default(), custom_test,
+            standalone, optimization:library_opt.unwrap_or_default(), single_codegen_unit, custom_test,
             sdk_receipt:library_contract::SDK_RECEIPT.into()};
         if !key.valid() || !matches!(cmd.as_str(), "build" | "check") || session.krate.target_kind != key.target_kind()
             || session.target_triple != library_contract::TARGET
@@ -1068,6 +1070,7 @@ pub fn encode(r: &Request) -> Vec<u8> {
         put_field(&mut out,if r.library_options.force_warn_unused_crate_dependencies {b"1"} else {b"0"});
         put_field(&mut out,&r.library_options.debug.encode());
         put_field(&mut out,library.optimization.value().as_bytes());
+        put_field(&mut out, if library.single_codegen_unit { b"1" } else { b"0" });
     }
     for f in &s.features {
         put_field(&mut out, f.as_bytes());
@@ -1144,11 +1147,12 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
             library_options.force_warn_unused_crate_dependencies=match get_field(r)?.as_slice() {b"0"=>false,b"1"=>true,_=>return None};
             library_options.debug=DebugOptions::decode(&get_field(r)?)?;
             let optimization=OptLevel::parse(&text(get_field(r)?)?)?;
+            let single_codegen_unit = match get_field(r)?.as_slice() { b"1" => true, b"0" => false, _ => return None };
             let custom_test = mode == b"4";
             let standalone = mode == b"5";
             if custom_test && f[5] != "1" { return None; }
             if standalone && (f[5] == "1" || !manifest.is_empty()) { return None; }
-            let library=LibraryKey{crate_name,metadata,extra_filename,source_path,working_directory,cfg,check_cfg,search_paths,external,executable_dependencies,standalone,optimization,custom_test,sdk_receipt};
+            let library=LibraryKey{crate_name,metadata,extra_filename,source_path,working_directory,cfg,check_cfg,search_paths,external,executable_dependencies,standalone,optimization,single_codegen_unit,custom_test,sdk_receipt};
             if !library.valid() || !library.valid_output(&out, f[0] == "check", library_options) || library.source_path!=file
                 || target_triple!=library_contract::TARGET || target_kind!=library.target_kind()
                 || !library.matches_target_name(&target_name) || !matches!(f[0], "build" | "check") {return None;}
