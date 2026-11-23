@@ -1,6 +1,6 @@
 //! Retained scalar library handoff from the native driver. This owns neither a
 //! second frontend nor Rust metadata. The caller receives completed native facts
-//! and actual per-function TinyCC objects from the same Session.
+//! and per-function objects from the same Session.
 #[path = "native_completion.rs"]
 pub(crate) mod completion;
 #[path = "library_history.rs"]
@@ -18,13 +18,15 @@ struct StoredBody { body_hash: u64, head_hash: u64, origin: Option<diag::Span>, 
 pub(crate) struct Object {
     pub definition: def::DiskDefId,
     pub symbol: String,
-    pub c_source: Arc<str>,
+    pub source_text: Arc<str>,
+    pub rust_debug: bool,
     pub bytes: Arc<Vec<u8>>,
     pub serial: u64,
 }
 #[derive(Clone)]
 pub(crate) struct Snapshot {
     pub generation: u64,
+    pub rust_debug: bool,
     pub source: Arc<str>,
     pub functions: Arc<Vec<Function>>,
     pub objects: Vec<(Arc<Object>, bool)>,
@@ -105,7 +107,8 @@ impl Session {
     /// claimed pre-publication failure.
     pub(crate) fn library_published(&mut self) {
         if let Some(state)=&mut self.caches.library {
-            if state.published.as_ref().map(|s|s.generation)!=state.snapshot.as_ref().map(|s|s.generation) {
+            let identity = |snapshot: &Snapshot| (snapshot.generation, snapshot.rust_debug);
+            if state.published.as_ref().map(identity) != state.snapshot.as_ref().map(identity) {
                 state.published=state.snapshot.clone();state.history_dirty=true;
             }
         }
@@ -120,8 +123,7 @@ pub(crate) fn request_supported(req: &Request) -> bool {
         && key.valid_output(&req.out, req.cmd == crate::protocol::Cmd::Check, req.library_options)
         && req.session.krate.target_kind == key.target_kind()
         && key.matches_target_name(&req.session.krate.target_name)
-        && (!req.session.krate.test || (!req.session.profile.panic_abort
-            && key.executable_dependencies.as_ref().is_some_and(Vec::is_empty)))
+        && (!req.session.krate.test || (!req.session.profile.panic_abort && key.is_executable()))
         && (req.cmd == crate::protocol::Cmd::Check || key.supports_link_profile(req.session.profile.panic_abort))
         && req.session.target_triple == crate::protocol::library_contract::TARGET
         && crate::protocol::host_triple() == crate::protocol::library_contract::TARGET
@@ -165,7 +167,7 @@ impl State {
         }
         for id in &self.current_definitions {self.identity_used.insert(*id,self.generation);}
         for serial in &protected_objects {self.object_used.insert(*serial,self.generation);}
-        let object_bytes=|key:&String,object:&Object|key.capacity()+object.c_source.len()+object.bytes.capacity()+object.symbol.capacity()+std::mem::size_of::<Object>();
+        let object_bytes=|key:&String,object:&Object|key.capacity()+object.source_text.len()+object.bytes.capacity()+object.symbol.capacity()+std::mem::size_of::<Object>();
         let inactive:Vec<_>=self.objects.iter().filter(|(_,o)|!protected_objects.contains(&o.serial))
             .map(|(key,o)|(key.clone(),*self.object_used.get(&o.serial).unwrap_or(&0),object_bytes(key,o))).collect();
         for key in history::victims(inactive,self.history_policy) {
@@ -353,6 +355,7 @@ pub(super) fn remember(caches: &mut Caches, functions: Arc<Vec<Function>>) {
 pub(super) fn finish(req: &Request, p: &check::collect::Program, front: &Front, caches: &mut Caches,
     functions:Arc<Vec<Function>>, names:&cgen::names::Names, generated:&[usize]) -> Response {
     let state=caches.library.as_mut().unwrap();
+    let rust_debug = req.library_options.debug.native_rust();
     state.current(functions.iter().map(Function::definition));
     // Generated C may already be current when a later TinyCC operation fails.
     // Invalidate old definition-to-object joins before any fallible emission;
@@ -398,7 +401,11 @@ pub(super) fn finish(req: &Request, p: &check::collect::Program, front: &Front, 
                 state.reused_objects+=1; objects.push((object.clone(),true));continue;
             }
             let unwind_tables = !req.session.profile.panic_abort;
-            let text=cgen::native_scalar_unit(output, unwind_tables)
+            let text=if rust_debug {
+                cgen::native_scalar_debug_unit(&caches.out, slot, &req.session.target_triple)
+            } else {
+                cgen::native_scalar_unit(output, unwind_tables)
+            }
                 .ok_or("native library function requires unrepresented runtime/glue")?;
             if let Some(object)=state.objects.get(&text) {
                 if object.definition!=f.definition() || object.symbol!=symbol { return Err("native object cache owner differs".into()); }
@@ -409,14 +416,18 @@ pub(super) fn finish(req: &Request, p: &check::collect::Program, front: &Front, 
             std::fs::create_dir_all(&caches.obj_dir).map_err(|e|format!("native object staging: {e}"))?;
             let path=caches.obj_dir.join(format!("native-library-{}.o",state.next_object));
             // A fresh path preserves previous object generations on failure.
-            crate::tcc::compile_scalar_object(&path, &text, unwind_tables)?;
+            if rust_debug {
+                crate::cc::compile_scalar_debug_object(&path, &text)?;
+            } else {
+                crate::tcc::compile_scalar_object(&path, &text, unwind_tables)?;
+            }
             let bytes=std::fs::read(&path).map_err(|e|format!("native object bytes: {e}"))?;
             std::fs::remove_file(&path).map_err(|e|format!("native object staging cleanup: {e}"))?;
-            let object=Arc::new(Object {definition:f.definition(),symbol,c_source:Arc::from(text.as_str()),bytes:Arc::new(bytes),serial:state.next_object});
+            let object=Arc::new(Object {definition:f.definition(),symbol,source_text:Arc::from(text.as_str()),rust_debug,bytes:Arc::new(bytes),serial:state.next_object});
             state.objects.insert(text,object.clone()); state.by_definition.insert(f.definition(),(code_generation,object.clone()));
             state.compiled_objects+=1; objects.push((object,false));
         }
-        Ok(Snapshot { generation:state.generation,source:state.source.clone(),functions,
+        Ok(Snapshot { generation:state.generation,rust_debug,source:state.source.clone(),functions,
             objects,extern_symbols,checked:state.checked.clone(),generated:generated.iter().map(|&n|p.disk_id(def::LocalDefId(n as u32))).collect() })
     })();
     match result { Ok(snapshot)=>{state.snapshot=Some(snapshot);prune(front,caches);Response::default()},

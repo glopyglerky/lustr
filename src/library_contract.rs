@@ -118,7 +118,7 @@ impl DebugOptions {
         check || (self.info == DebugInfo::None && self.split == SplitDebug::Off && self.strip != Strip::Symbols)
     }
 
-    pub fn native_executable(self) -> bool {
+    pub fn native_rust(self) -> bool {
         self == (Self { info: DebugInfo::Full, split: SplitDebug::Off, strip: Strip::None })
     }
 }
@@ -208,7 +208,6 @@ impl LibraryKey {
 
     pub fn supports_link_profile(&self, panic_abort: bool) -> bool {
         panic_abort || self.external.is_none()
-            && self.executable_dependencies.as_ref().is_none_or(Vec::is_empty)
     }
 
     pub fn matches_target_name(&self, target: &str) -> bool {
@@ -235,9 +234,8 @@ impl LibraryKey {
     }
 
     pub fn valid_output(&self, path: &Path, check: bool, options: LibraryOptions) -> bool {
-        let executable_debug = options.debug.native_executable()
-            && self.executable_dependencies.as_ref().is_some_and(Vec::is_empty);
-        if !(options.debug.supported(check) || executable_debug) {
+        let native_debug = options.debug.native_rust() && self.external.is_none();
+        if !(options.debug.supported(check) || native_debug) {
             return false;
         }
         if let Some(dependencies) = &self.executable_dependencies {

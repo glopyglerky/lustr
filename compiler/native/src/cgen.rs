@@ -2480,12 +2480,12 @@ pub fn gen_fn_total(p: &Program, body: &Body, map: &SourceMap, base_line: u32, s
     gen_fn_policy(p, body, map, base_line, slots, true, false)
 }
 
-pub(crate) fn gen_fn_rust_debug(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32]) -> FnOut {
+pub(crate) fn gen_fn_rust_debug(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32], scalar_library: bool) -> FnOut {
     let source = rust_debug_source(p, body.fn_id, map);
     if source.is_none() && !shipped_debug_body(p, body.fn_id) {
         return FnOut { error: Some("Rust debug function source cannot be bound to the native body".into()), ..Default::default() };
     }
-    let mut output = gen_fn_policy(p, body, map, base_line, slots, false, true);
+    let mut output = gen_fn_policy(p, body, map, base_line, slots, scalar_library, true);
     output.rust_debug_source = source;
     output
 }
@@ -10559,6 +10559,17 @@ pub fn native_scalar_unit(output: &FnOut, unwind_tables: bool) -> Option<String>
         unit.push_str(&code);
     }
     Some(unit)
+}
+
+pub(crate) fn native_scalar_debug_unit(outputs: &[FnOut], slot: usize, triple: &str) -> Option<String> {
+    let output = &outputs[slot];
+    if !output.mixed_total || output.ll.is_empty() || !output.ll_c.is_empty()
+        || !output.glue.is_empty() || !output.types.is_empty() || !output.named.is_empty()
+        || output.rust_debug_source.is_none()
+    {
+        return None;
+    }
+    Some(ll::ll_unit(outputs, &[slot], &[], triple))
 }
 
 fn runtime_decls() -> &'static str {

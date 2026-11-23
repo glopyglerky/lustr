@@ -36,7 +36,12 @@ and supplied its `CARGO_BIN_EXE_*` value to the independent test crate.
 The installed gate exercised `cargo test --test behavior --no-run`, followed
 by the actual test and a separate run of the original application.
 
-General `Termination` implementations, dependent integration targets,
-dev-dependencies, doctests, custom harnesses, and captured backtrace parity
-remain open.
+The installed test gate also links a native `no_std` path dev dependency.
+Cargo's test unit graph identifies both the Rust library and the ordinary
+application built for `CARGO_BIN_EXE_*`. The compiler imports the library's
+genuine metadata and links its emitted objects. The compiled test verifies
+the library call and both Cargo-provided environment values.
+
+Broader dependency graphs, general `Termination` implementations, doctests,
+custom harnesses, and captured backtrace parity remain open.
 No complete-work speed comparison was run.

@@ -29,7 +29,7 @@ pub(super) struct ExecutableImports {
 }
 
 impl ExecutableImports {
-    pub(super) fn open(inputs: &[ExecutableExtern], sdk: &Sdk) -> Result<Self, String> {
+    pub(super) fn open(inputs: &[ExecutableExtern], sdk: &Sdk, panic_abort: bool) -> Result<Self, String> {
         let mut crates = Vec::new();
         let mut objects = Vec::new();
         let mut defined = BTreeSet::new();
@@ -41,8 +41,8 @@ impl ExecutableImports {
                 if !definitions.has_direct_integer_abi() {
                     return Err("unrepresented linked integer ABI in Cargo extern metadata".into());
                 }
-                if !definitions.requires_abort {
-                    return Err("executable linking requires the represented abort-profile archive".into());
+                if definitions.requires_abort && !panic_abort {
+                    return Err("Cargo archive requires panic=abort but its executable uses panic=unwind".into());
                 }
                 let before = stamp(path)?;
                 let bytes: Arc<[u8]> =

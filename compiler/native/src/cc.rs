@@ -19,6 +19,7 @@
 // the compiler identity, the flag string, the Rust target triple, and with
 // PGO (`cc/pgo.rs`) the unit's own part of the profile; an object is a
 // function of those alone.
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -203,6 +204,22 @@ pub(crate) fn spec_for_native_cargo(triple: &str, rust_debug: bool, test: bool) 
         triple: triple.into(), cmd: vec!["clang".into()], cxx: vec!["clang++".into()],
         statik: false, exe_suffix: "", rust_debug, test_runtime,
     })
+}
+
+pub(crate) fn compile_scalar_debug_object(path: &Path, text: &str) -> Result<(), String> {
+    let input = path.with_extension("ll");
+    let mut source = std::fs::File::options().write(true).create_new(true).open(&input)
+        .map_err(|error| format!("stage native scalar LLVM IR: {error}"))?;
+    source.write_all(text.as_bytes()).map_err(|error| format!("write native scalar LLVM IR: {error}"))?;
+    drop(source);
+    let built = cc_command("clang").args(["--target=x86_64-unknown-linux-gnu", "-Wno-override-module", "-O0", "-x", "ir", "-c"])
+        .arg(&input).arg("-o").arg(path).output();
+    std::fs::remove_file(&input).map_err(|error| format!("remove native scalar LLVM IR: {error}"))?;
+    let result = built.map_err(|error| format!("run Clang for a native scalar debug object: {error}"))?;
+    if !result.status.success() {
+        return Err(format!("Clang rejected native scalar LLVM IR ({}): {}", result.status, String::from_utf8_lossy(&result.stderr)));
+    }
+    Ok(())
 }
 
 /// The C flags of every unit, one string so the cache key and the command
@@ -761,7 +778,7 @@ pub fn memo_misses(units: &[UnitIn], spec: &CcSpec, debug: bool, cache: Option<&
 /// units to pass again with text (an LLVM unit's three parts come with text or without as
 /// one). Returns a one-line summary, or the compiler's error text.
 pub fn build(units: &[UnitIn], spec: &CcSpec, out: &Path, debug: bool, cache: Option<&crate::driver::cache::Cache>, work: &Path) -> Result<String, CcError> {
-    build_with(units, spec, out, debug, cache, work, None)
+    build_with(units, spec, out, debug, cache, work, None, &[])
 }
 
 /// `build`, with the units a `Stream` took while they assembled: for each, the stream's key,
@@ -774,6 +791,7 @@ pub fn build_with(
     cache: Option<&crate::driver::cache::Cache>,
     work: &Path,
     stream: Option<Stream>,
+    imported_objects: &[PathBuf],
 ) -> Result<String, CcError> {
     // The streamed units compile on from here, `jobs` at once, while this prepares the rest.
     if let Some(s) = &stream {
@@ -1149,6 +1167,7 @@ pub fn build_with(
         let link = if units.iter().any(|u| is_cxx(&u.name)) { &spec.cxx } else { &spec.cmd };
         let mut cmd = cc_command(&link[0]);
         cmd.args(&link[1..]).args(ldflags(spec, debug)).args(pgo.as_ref().map(pgo::Mode::link_flags).unwrap_or_default()).args(&objs);
+        cmd.args(imported_objects);
         if let Some(runtime) = &spec.test_runtime {
             cmd.arg(runtime).args(["-ldl", "-lm", "-pthread"]);
         }
@@ -1239,7 +1258,7 @@ mod tests {
         // Apple ld includes the output filename in its required ad-hoc code
         // signature. Hold that filename fixed while comparing the two paths;
         // no signature or executable bytes are stripped from this assertion.
-        let r = super::build_with(&units(), &spec, &root.join("a"), false, Some(&streamed), &root.join("w2"), Some(stream)).unwrap();
+        let r = super::build_with(&units(), &spec, &root.join("a"), false, Some(&streamed), &root.join("w2"), Some(stream), &[]).unwrap();
         assert!(r.contains("3 units (1 from cache"), "u2 hit, u1 compiled by the stream, u0 by build: {r}");
         assert_eq!(plain_bytes, std::fs::read(root.join("a")).unwrap(), "the same binary");
         assert_eq!(std::process::Command::new(root.join("a")).status().ok().and_then(|s| s.code()), Some(7));

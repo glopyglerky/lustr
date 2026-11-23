@@ -3069,7 +3069,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
     if !super::library::request_supported(req) {
         return Preparation::Failed(Response {code:3, stderr:"public library request context is not represented\n".into(), ..Default::default()});
     }
-    let rust_debug = req.cmd == Cmd::Build && req.library_options.debug.native_executable();
+    let rust_debug = req.cmd == Cmd::Build && req.library_options.debug.native_rust();
     let cargo_test = req.session.library.is_some() && req.session.krate.test;
     if session.caches.library.is_some() && (req.cc || req.debug || req.emit_c.is_some() || req.harness || req.run_args.is_some()) {
         return Preparation::Failed(Response {code:3, stderr:"native library output context changed\n".into(), ..Default::default()});
@@ -5020,8 +5020,20 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
     Preparation::Ready(PreparedRequest { request: req, session, state: Some(state) })
 }
 
+fn stage_imported_objects(dir: &Path, objects: &[Arc<[u8]>]) -> Result<Vec<PathBuf>, String> {
+    if !objects.is_empty() {
+        std::fs::create_dir_all(dir).map_err(|error| format!("create imported object scope: {error}"))?;
+    }
+    objects.iter().enumerate().map(|(index, bytes)| {
+        // The supplied immutable bytes were bound during preparation.
+        let path = dir.join(format!("imported-{index}.o"));
+        std::fs::write(&path, bytes).map_err(|error| format!("materialize imported object: {error}"))?;
+        Ok(path)
+    }).collect()
+}
+
 fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> Response {
-    let rust_debug = req.cmd == Cmd::Build && req.library_options.debug.native_executable();
+    let rust_debug = req.cmd == Cmd::Build && req.library_options.debug.native_rust();
     let cargo_test = req.session.library.as_ref().filter(|_| req.session.krate.test);
     let CheckedRequest {
         mut program, results, reemit, map, source: src, path, work, fn_count, fn_lines_all, body_hashes_all,
@@ -5213,7 +5225,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
                 cgen::names::with(rn, || {
                     let total = library_functions.is_some() || mixed && super::mixed::total(b);
                     let mut output = if rust_debug {
-                        cgen::gen_fn_rust_debug(&program, b, &map, line_base_of(front, *i), &front.fn_slot)
+                        cgen::gen_fn_rust_debug(&program, b, &map, line_base_of(front, *i), &front.fn_slot, library_functions.is_some())
                     } else if total {
                         cgen::gen_fn_total(&program, b, &map, line_base_of(front, *i), &front.fn_slot)
                     } else {
@@ -6518,8 +6530,12 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
         {
             let _ = writeln!(resp.stderr, "b1: {l}");
         }
+        let imported = match stage_imported_objects(&dir, &imported_objects) {
+            Ok(paths) => paths,
+            Err(error) => return Response { code: 3, stderr: format!("error: {error}\n"), ..Default::default() },
+        };
         let job = move || {
-            let built = crate::cc::build_with(&all, &spec, &out, debug, cache.as_ref(), &cc_dir, stream).map_err(|e| e.to_string());
+            let built = crate::cc::build_with(&all, &spec, &out, debug, cache.as_ref(), &cc_dir, stream, &imported).map_err(|e| e.to_string());
             // A build that leaks at exit leaks the unit texts too (they moved out of `units`).
             if leak_at_exit {
                 std::mem::forget(all);
@@ -6656,14 +6672,9 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
     let linked = if standalone {
         let mut objs = vec![base_obj(0)];
         objs.extend(all_base);
-        // The imported provider supplied immutable snapshots, so a dependency
-        // path changing after prepare cannot substitute code at emission.
-        for (index, bytes) in imported_objects.iter().enumerate() {
-            let path = caches.obj_dir.join(format!("imported-{index}.o"));
-            if let Err(error) = std::fs::write(&path, bytes) {
-                return Response { code: 3, stderr: format!("error: cannot materialize imported object: {error}\n"), ..Default::default() };
-            }
-            objs.push(path);
+        match stage_imported_objects(&caches.obj_dir, &imported_objects) {
+            Ok(paths) => objs.extend(paths),
+            Err(error) => return Response { code: 3, stderr: format!("error: {error}\n"), ..Default::default() },
         }
         if unwind_frames {
             crate::tcc::link_with_frames(&objs, &req.out, req.debug, true)

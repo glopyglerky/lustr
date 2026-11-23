@@ -40,7 +40,7 @@ pub(super) struct DebugFn {
 }
 
 impl DebugFn {
-    pub(super) fn new(function: &FnGen<'_, '_>, linkage: &str) -> Result<Self, String> {
+    pub(super) fn new(function: &FnGen<'_, '_>, linkage: Option<&str>) -> Result<Self, String> {
         let mut debug = Self {
             entries: vec![String::new()],
             files: BTreeMap::new(),
@@ -73,9 +73,10 @@ impl DebugFn {
             types.push(ty);
         }
         let signature = debug.push(format!("!DISubroutineType(types: !{{{}}})", types.join(", ")));
+        let linkage = linkage.map_or_else(String::new, |name| format!(", linkageName: {}", quote(name)));
         debug.subprogram = debug.push(format!(
-            "distinct !DISubprogram(name: {}, linkageName: {}, scope: !%{file}, file: !%{file}, line: {line}, type: !%{signature}, scopeLine: {line}, spFlags: DISPFlagDefinition, unit: !%0)",
-            quote(&name), quote(linkage)
+            "distinct !DISubprogram(name: {}{linkage}, scope: !%{file}, file: !%{file}, line: {line}, type: !%{signature}, scopeLine: {line}, spFlags: DISPFlagDefinition, unit: !%0)",
+            quote(&name)
         ));
         for (i, local) in function.body.locals.iter().enumerate().skip(1) {
             let LocalDecl { name: Some(name), binding_span: Some(span), ty, .. } = local else { continue };
@@ -520,12 +521,10 @@ impl DebugFn {
         }
     }
 
-    pub(super) fn declare(&mut self, body: &mut String, local: Local, argument: bool) {
-        let Some((file, line, column, ty, name)) = self.bindings.get(&local).cloned() else {
-            return;
-        };
+    fn binding(&mut self, local: Local, argument: bool) -> Option<(usize, usize)> {
+        let (file, line, column, ty, name) = self.bindings.get(&local).cloned()?;
         if self.active.iter().any(|&(l, _)| l == local) {
-            return;
+            return None;
         }
         let parent = if argument { self.subprogram } else { self.scope() };
         let (scope, node) = if let Some(&nodes) = self.scopes.get(&(local, parent)) {
@@ -546,11 +545,35 @@ impl DebugFn {
         if !argument {
             self.active.push((local, scope));
         }
-        let location = self.location(scope, line, column);
+        Some((node, self.location(scope, line, column)))
+    }
+
+    pub(super) fn declare(&mut self, body: &mut String, local: Local, argument: bool) {
+        let Some((node, location)) = self.binding(local, argument) else { return };
         let _ = writeln!(
             body,
             "  call void @llvm.dbg.declare(metadata ptr %l{local}, metadata !%{node}, metadata !DIExpression()), !dbg !%{location}"
         );
+    }
+
+    pub(super) fn scalar_argument(&mut self, entry: &mut String, local: Local, ty: &str, align: u64) {
+        let _ = writeln!(entry, "  %l{local} = alloca {ty}, align {align}");
+        let binding = self.binding(local, true);
+        if let Some((node, location)) = binding {
+            let _ = writeln!(
+                entry,
+                "  call void @llvm.dbg.value(metadata {ty} %p{local}, metadata !%{node}, metadata !DIExpression()), !dbg !%{location}"
+            );
+        }
+        let _ = writeln!(entry, "  store {ty} %p{local}, ptr %l{local}");
+        if let Some((node, location)) = binding {
+            // Before the spill the incoming SSA value owns the location.
+            // Afterward the variable can be read and changed in its stack slot.
+            let _ = writeln!(
+                entry,
+                "  call void @llvm.dbg.value(metadata ptr %l{local}, metadata !%{node}, metadata !DIExpression(DW_OP_deref)), !dbg !%{location}"
+            );
+        }
     }
 
     pub(super) fn dead(&mut self, body: &mut String, local: Local) {

@@ -142,8 +142,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     let context = LibraryKey { crate_name:name?, metadata, extra_filename, source_path,
         working_directory: std::env::current_dir().ok()?, check_cfg, search_paths, external, executable_dependencies,
         sdk_receipt:SDK_RECEIPT.into() };
-    if test && (panic != "panic=unwind"
-        || !context.executable_dependencies.as_ref().is_some_and(Vec::is_empty)) { return None; }
+    if test && panic != "panic=unwind" { return None; }
     if !context.valid() || !check && !context.supports_link_profile(panic == "panic=abort") { return None; }
     if std::env::var("CARGO_CRATE_NAME").is_ok_and(|v|v != context.crate_name) { return None; }
     let out_dir = std::path::absolute(out_dir?).ok()?;

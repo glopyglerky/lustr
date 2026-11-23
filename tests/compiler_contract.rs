@@ -515,6 +515,50 @@ fn ordinary_cargo_links_rust_debug_information() {
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE, Clang and ELF tools"]
+fn default_cargo_links_debug_from_a_native_no_std_provider() {
+    let f = Fixture::new("debug-workspace");
+    f.source("Cargo.toml", "[workspace]\nmembers = [\"provider\", \"application\"]\nresolver = \"3\"\n");
+    f.source("provider/Cargo.toml", "[package]\nname = \"debug-provider\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    f.source("provider/src/lib.rs", "#![no_std]\nfn shift(input: u32) -> u32 { input ^ 3 }\npub fn evaluate(input: u32) -> u32 { shift(input) ^ 10 }\n");
+    f.source("application/Cargo.toml", "[package]\nname = \"debug-application\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\ndebug-provider = { path = \"../provider\" }\n");
+    let source = f.source("application/src/main.rs", "fn main() { let answer = debug_provider::evaluate(12); println!(\"{answer}\"); }\n");
+    f.succeeds("check", f.command("cargo").args(["check", "--offline", "-p", "debug-application"]).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    let build = f.succeeds("build", f.command("cargo").args(["build", "--offline", "-p", "debug-application", "--message-format=json"]).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    let mut artifacts = std::collections::BTreeMap::new();
+    for line in build.stdout.split(|&byte| byte == b'\n') {
+        let Ok(record) = serde_json::from_slice::<serde_json::Value>(line) else { continue };
+        if record["reason"] == "compiler-artifact" && record["target"]["name"] == "debug_provider" {
+            for path in record["filenames"].as_array().unwrap().iter().filter_map(|value| value.as_str()) {
+                let path = PathBuf::from(path);
+                if let Some(extension) = path.extension().and_then(|ext| ext.to_str()) {
+                    artifacts.insert(extension.to_owned(), path);
+                }
+            }
+        }
+    }
+    let native = f.root.join("target/debug/debug-application");
+    let ran = f.succeeds("run", f.command("cargo").args(["run", "--offline", "--quiet", "-p", "debug-application"]).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    assert_eq!(ran.stdout, b"5\n");
+    let dwarf = f.succeeds("dwarf", Command::new("readelf").arg("--debug-dump=info").arg(native));
+    let dwarf = String::from_utf8_lossy(&dwarf.stdout);
+    for required in ["provider/src/lib.rs", "): evaluate", "): shift", "): input"] {
+        assert!(dwarf.contains(required), "missing Rust library DWARF evidence {required}");
+    }
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let independently_linked = f.root.join("independent-rust-consumer");
+    let mut command = Command::new(oracle);
+    command.env_remove("LD_LIBRARY_PATH").current_dir(&f.root).args(["--edition=2024", "--crate-name", "consumer"])
+        .arg(source).arg("-o").arg(&independently_linked);
+    for kind in ["rlib", "rmeta"] {
+        command.arg("--extern").arg(format!("debug_provider={}", artifacts[kind].display()));
+    }
+    f.succeeds("independent-link", &mut command);
+    assert_eq!(f.succeeds("independent-run", &mut Command::new(independently_linked)).stdout, ran.stdout);
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, Clang and ELF tools"]
 fn default_cargo_debug_records_native_enum_variants() {
     let f = Fixture::new("debug-enum");
@@ -725,6 +769,35 @@ fn checks_application() {
     assert!(stdout.contains("1 passed; 0 failed"), "{stdout}");
     let binary = f.root.join("target/debug/integration-test-target");
     assert_eq!(f.succeeds("application", &mut Command::new(binary)).stdout, b"original application\n");
+}
+
+#[test]
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn cargo_test_links_a_native_dev_dependency() {
+    let f = Fixture::new("integration-dev-dep");
+    f.source("Cargo.toml", "[workspace]\nmembers = [\"provider\", \"application\"]\nresolver = \"3\"\n");
+    f.source("provider/Cargo.toml", "[package]\nname = \"test-provider\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    f.source("provider/src/lib.rs", "#![no_std]\npub fn evaluate(input: u32) -> u32 { input ^ 9 }\n");
+    f.source("application/Cargo.toml", "[package]\nname = \"with-dev-dep\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dev-dependencies]\ntest-provider = { path = \"../provider\" }\n");
+    f.source("application/src/main.rs", "fn main() { println!(\"ordinary executable\"); }\n");
+    f.source("application/tests/behavior.rs", r#"
+#[test]
+fn crosses_a_native_crate_boundary() {
+    assert_eq!(test_provider::evaluate(12), 5);
+    assert!(!env!("CARGO_BIN_EXE_with-dev-dep").is_empty());
+    assert!(!env!("CARGO_TARGET_TMPDIR").is_empty());
+}
+"#);
+    let args = ["test", "--offline", "-p", "with-dev-dep", "--test", "behavior"];
+    let compiled = f.succeeds("compile", f.command("cargo").args(args).arg("--no-run"));
+    assert!(compiled.stdout.is_empty());
+    let tested = f.succeeds("run", f.command("cargo").args(args));
+    let stdout = String::from_utf8_lossy(&tested.stdout);
+    assert!(stdout.contains("crosses_a_native_crate_boundary ... ok"), "{stdout}");
+    assert!(stdout.contains("1 passed; 0 failed"), "{stdout}");
+    let binary = f.root.join("target/debug/with-dev-dep");
+    assert_eq!(f.succeeds("application", &mut Command::new(binary)).stdout, b"ordinary executable\n");
 }
 
 #[test]

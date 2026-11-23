@@ -175,7 +175,8 @@ fn configuration_supported(req: &GraphRequest) -> Result<(), String> {
 
 fn injected_compiler_setting(name: &str) -> bool {
     matches!(name, "RUSTFLAGS" | "CARGO_ENCODED_RUSTFLAGS" | "CARGO_BUILD_RUSTFLAGS")
-        || (name.starts_with("CARGO_TARGET_") && name != "CARGO_TARGET_DIR")
+        // Cargo sets TMPDIR for integration-test source and runtime inputs.
+        || (name.starts_with("CARGO_TARGET_") && !matches!(name, "CARGO_TARGET_DIR" | "CARGO_TARGET_TMPDIR"))
         || name.starts_with("CARGO_PROFILE_")
         || name.starts_with("CARGO_UNSTABLE_")
         || matches!(name, "CARGO_BUILD_TARGET" | "CARGO_BUILD_RUSTC" | "CARGO_BUILD_RUSTC_WRAPPER" | "CARGO_BUILD_RUSTC_WORKSPACE_WRAPPER")
@@ -231,6 +232,8 @@ pub(super) fn select(
         cmd.args(["--bin", &target.name]);
     } else if target.kind.iter().any(|kind| kind == "lib" || kind == "rlib") {
         cmd.arg("--lib");
+    } else if test && target.kind == ["test"] {
+        cmd.args(["--test", &target.name]);
     } else {
         return Err("native Cargo unit planning does not yet represent this root target kind".into());
     }
@@ -344,6 +347,7 @@ fn decode(
         return Err("Cargo unit graph must select exactly one root".into());
     }
     let root = index(&roots[0])?;
+    let expected_profile = if mode == "test" { "test" } else { "dev" };
     let mut units = Vec::new();
     for row in array(field(json, "units")?)? {
         let id = string(field(row, "pkg_id")?)?;
@@ -380,7 +384,7 @@ fn decode(
             return Err("Cargo unit activates a feature absent from its package".into());
         }
         let p = field(row, "profile")?;
-        if string(field(p, "name")?)? != "dev" {
+        if string(field(p, "name")?)? != expected_profile {
             return Err("native Cargo unit profile integration is incomplete".into());
         }
         let panic_abort = match string(field(p, "panic")?)? {
@@ -510,6 +514,13 @@ fn dependencies(
                 cargo_env: package_cargo_env(host.package, host.target),
                 planning_key,
             });
+        } else if unit.mode == "test" && unit.target.kind == ["test"]
+            && dep.mode == "build" && dep.target.kind == ["bin"] && dep.package.id_repr == unit.package.id_repr
+            && name.bytes().eq(dep.target.name.bytes().map(|byte| if byte == b'-' { b'_' } else { byte }))
+        {
+            // Cargo builds same-package executables for CARGO_BIN_EXE_*.
+            // They participate in the plan but are not Rust extern crates.
+            dependencies(*to, units, graph, req, planned_profile, actual_profile, planning_key, active, visited, bindings)?;
         } else {
             let expected_mode = if unit.mode == "test" { "build" } else { unit.mode.as_str() };
             if dep.mode != expected_mode || !dep.target.kind.iter().any(|kind| kind == "lib" || kind == "rlib") {

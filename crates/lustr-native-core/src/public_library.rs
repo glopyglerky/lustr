@@ -141,7 +141,7 @@ impl Owner {
         let artifacts=Service::new(installed.sdk.clone(),installed.root.clone(),context)?;
         let executable = if let Some(dependencies) = &key.executable_dependencies {
             if req.session.krate.manifest_path.is_none() { return Err("executable artifacts require the actual Cargo unit".into()); }
-            Some(executable::ExecutableImports::open(dependencies, &installed.sdk)?)
+            Some(executable::ExecutableImports::open(dependencies, &installed.sdk, req.session.profile.panic_abort)?)
         } else { None };
         Ok(Self{installed,artifacts,identity:hash(req.session.describe().as_bytes()),imported,executable,binary_output:None})
     }

@@ -96,6 +96,7 @@ impl Original {
 struct Renamed { bytes: Arc<Vec<u8>>, hash: String }
 pub(crate) struct Artifact {
     pub generation: u64,
+    rust_debug: bool,
     pub files: BTreeMap<String,Arc<Vec<u8>>>,
     pub fields: Value,
     pub archive: Arc<Vec<u8>>,
@@ -221,8 +222,8 @@ fn mapped_functions(functions:&[Function])->Vec<metadata::Function> {
         result:metadata::IntegerType::from_rust_name(f.result().name()).expect("completed result type"),
         calls:f.calls().iter().copied().map(native_id).collect() }).collect()
 }
-/// Check the x86-64 TinyCC FDE for the one body in this unwind unit.
-fn check_unwind_frame(file: &object::File<'_>, body_name: &str) -> Result<(), String> {
+/// Check the x86-64 FDE for the one body in this unwind unit.
+fn check_unwind_frame(file: &object::File<'_>, body_name: &str, rust_debug: bool) -> Result<(), String> {
     let error = "native scalar object lacks a valid unwind range";
     let body = file.symbols().find(|symbol| symbol.name().is_ok_and(|name| name == body_name)).ok_or(error)?;
     let frames = file.section_by_name(".eh_frame").ok_or(error)?;
@@ -247,8 +248,10 @@ fn check_unwind_frame(file: &object::File<'_>, body_name: &str) -> Result<(), St
         .map(|word| u32::from_le_bytes(word.try_into().unwrap()));
     let [length, cie, pc, range] = std::array::from_fn(|_| fields.next().unwrap());
     let fde_end = start.checked_add(4).and_then(|start| start.checked_add(length as usize)).ok_or(error)?;
+    // TinyCC ends the section with a terminator; LLVM ends at the FDE.
+    let end_marker: &[u8] = if rust_debug { &[] } else { &[0; 4] };
     if start == 0 || cie as usize != start + 4 || pc != 0 || range == 0 || u64::from(range) != body.size()
-        || fde_end < end || bytes.get(fde_end..) != Some(&[0; 4]) {
+        || fde_end < end || bytes.get(fde_end..) != Some(end_marker) {
         return Err(error.into());
     }
     Ok(())
@@ -257,7 +260,7 @@ fn check_unwind_frame(file: &object::File<'_>, body_name: &str) -> Result<(), St
 fn check_object(object:&NativeObject, snapshot:&Snapshot, panic_abort:bool)->Result<Original,String> {
     let symbols=unit_object::symbols(&object.bytes)?;
     let function=snapshot.functions.iter().find(|f|f.definition()==object.definition).ok_or("object has no completed definition")?;
-    let helpers: Vec<_> = panic_abort.then(|| object.symbol.replacen("f_","tramp_",1)).into_iter().collect();
+    let helpers: Vec<_> = (panic_abort && !object.rust_debug).then(|| object.symbol.replacen("f_","tramp_",1)).into_iter().collect();
     let definitions = std::iter::once(&object.symbol).chain(&helpers)
         .map(|name| name.as_bytes().to_vec()).collect::<BTreeSet<_>>();
     let expected_calls:BTreeSet<Vec<u8>>=function.calls().iter().map(|id| {
@@ -268,11 +271,11 @@ fn check_object(object:&NativeObject, snapshot:&Snapshot, panic_abort:bool)->Res
     if symbols.defined!=definitions || symbols.functions!=definitions || symbols.undefined!=expected_calls {
         return Err("per-function native ELF definition/call ownership differs from the completed graph".into());
     }
-    // TinyCC's actual x64 call relocations must name exactly the completed
+    // Actual x64 call relocations must name exactly the completed
     // source callees. Section/local relocations are not external dependencies.
     let file=object::File::parse(object.bytes.as_slice()).map_err(|e|e.to_string())?;
     if !panic_abort {
-        check_unwind_frame(&file, &object.symbol)?;
+        check_unwind_frame(&file, &object.symbol, object.rust_debug)?;
     }
     let mut used=BTreeSet::new();
     for section in file.sections() {
@@ -349,7 +352,8 @@ impl Service {
         embed_metadata:Option<bool>, dependency_context:Option<&metadata::Sdk>)->Result<Arc<Artifact>,String> {
         let stage=step.join("staging");
         report["phase"]=json!("staging");
-        let cached=self.variants.get(&embed_metadata).filter(|a|a.generation==snapshot.generation).cloned();
+        let same_emission = |artifact: &Artifact| artifact.generation == snapshot.generation && artifact.rust_debug == snapshot.rust_debug;
+        let cached=self.variants.get(&embed_metadata).filter(|a|same_emission(a)).cloned();
         let reused=cached.is_some();
         if !reused || materialize { std::fs::create_dir(&stage).map_err(|e|format!("create owned staging: {e}"))?; }
         if !reused {
@@ -387,9 +391,10 @@ impl Service {
             for (object,object_reused) in &snapshot.objects {
                 let member=format!("{}_{:016x}.o",self.context.crate_name,object.definition.hash.0);
                 let original_name=format!("native_{:016x}.o",object.definition.hash.0);
-                let c_name=format!("native_{:016x}.c",object.definition.hash.0);
+                let extension = if object.rust_debug { "ll" } else { "c" };
+                let source_name=format!("native_{:016x}.{extension}",object.definition.hash.0);
                 files.insert(original_name.clone(),object.bytes.clone());
-                files.insert(c_name.clone(),Arc::new(object.c_source.as_bytes().to_vec()));
+                files.insert(source_name.clone(),Arc::new(object.source_text.as_bytes().to_vec()));
                 put(&stage.join(&original_name),&object.bytes)?;
                 // Only names actually present in this object can change it.
                 // Adding an unrelated declaration must not rename every object.
@@ -414,11 +419,12 @@ impl Service {
                 };
                 if !stage.join(&member).exists() {put(&stage.join(&member),&renamed.bytes)?;}
                 files.insert(member.clone(),renamed.bytes.clone());
-                object_records.push(json!({"name":snapshot.functions.iter().find(|f|f.definition()==object.definition).unwrap().name(),
+                let mut record = json!({"name":snapshot.functions.iter().find(|f|f.definition()==object.definition).unwrap().name(),
                     "native_id":id_value(object.definition),"native_symbol":object.symbol,"rust_symbol":mapping[&object.symbol],"member":member,
                     "original_sha256":self.originals[&object.serial].hash,"renamed_sha256":renamed.hash,"reused":object_reused,
-                    "native_object_serial":object.serial,"original_path":format!("staging/{original_name}"),"renamed_path":format!("staging/{member}"),
-                    "c_path":format!("staging/{c_name}")}));
+                    "native_object_serial":object.serial,"original_path":format!("staging/{original_name}"),"renamed_path":format!("staging/{member}")});
+                record[if object.rust_debug { "llvm_ir_path" } else { "c_path" }] = json!(format!("staging/{source_name}"));
+                object_records.push(record);
             }
             for (name,bytes) in &files { if !stage.join(name).exists(){put(&stage.join(name),bytes)?;} }
             let mut members=vec!["lib.rmeta".to_owned(),"lib.rmeta-link".to_owned()];
@@ -438,11 +444,11 @@ impl Service {
                 "functions":functions.iter().map(|f|json!({"name":f.name,"native_id":[f.definition.krate,f.definition.path],"public":f.public,
                     "name_span":[f.name_span.lo,f.name_span.hi],"span":[f.span.lo,f.span.hi],"parameters":f.parameters.iter().map(|p|json!({"name":p.name,"span":[p.span.lo,p.span.hi]})).collect::<Vec<_>>(),
                     "calls":f.calls.iter().map(|id|json!([id.krate,id.path])).collect::<Vec<_>>()})).collect::<Vec<_>>()});
-            let artifact=Arc::new(Artifact{generation:snapshot.generation,files,fields,archive:Arc::new(bytes),
+            let artifact=Arc::new(Artifact{generation:snapshot.generation,rust_debug:snapshot.rust_debug,files,fields,archive:Arc::new(bytes),
                 native_serials:snapshot.objects.iter().map(|(object,_)|object.serial).collect(),rename_keys});
             // Replace variant history only after construction succeeds. The last
             // durable publication remains protected even across generations.
-            self.variants.retain(|_,a|a.generation==snapshot.generation);
+            self.variants.retain(|_,a|same_emission(a));
             self.variants.insert(embed_metadata,artifact.clone());
             self.artifact=Some(artifact);
             self.prune();

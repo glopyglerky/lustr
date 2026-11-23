@@ -896,8 +896,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
         } else {
             session.krate.target_name = key.crate_name.clone();
         }
-        if executable_test && (session.profile.panic_abort
-            || !key.executable_dependencies.as_ref().is_some_and(Vec::is_empty)) { return None; }
+        if executable_test && (session.profile.panic_abort || !key.is_executable()) { return None; }
         session.krate.test = executable_test;
         // Cargo gives a bin name for binary unit tests. Library unit
         // tests supply their source and crate name, with no --crate-type.
