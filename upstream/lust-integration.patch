@@ -3416,7 +3416,7 @@ index dcf8c8e922873b5f8c8d8c3c7ebe5299f9b246e2..4a1769fcb2fde1bb27ed7aeca057eb2e
  
  /// The LLVM major version of a clang command; an error for another compiler (gcc writes
 diff --git a/src/cgen.rs b/src/cgen.rs
-index ac6965592d3f4cc6ea1969df299fe33c974056b0..2fc8f0b4ab6323588726161bd071c9f10053e89f 100644
+index ac6965592d3f4cc6ea1969df299fe33c974056b0..4bc18fefd99859e5e8736ae86e9bb59881b60c60 100644
 --- a/src/cgen.rs
 +++ b/src/cgen.rs
 @@ -26,6 +26,8 @@ pub mod record;
@@ -3495,7 +3495,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..2fc8f0b4ab6323588726161bd071c9f1
 +    /// code retains this result with the body it describes.
 +    pub mixed_total: bool,
 +    /// This body keeps its C ABI wrapper for its test Termination entry.
-+    test_termination: bool,
++    pub(crate) test_termination: bool,
      /// The fn's C text (`code_text`, `code_len`, `has_code`).
      pub text: CText,
      pub glue: HashSet<(Glue, CTy)>,
