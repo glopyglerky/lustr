@@ -236,6 +236,7 @@ fn main() {
             "tools/host-proc-macro.rs",
             "tools/host-crate-interface.rs",
             "tools/host-freestanding.rs",
+            "tools/host-retained-link.rs",
             "tools/lust-upstream-check.rs",
             "tools/check-exclusive-coverage.py",
         ]),

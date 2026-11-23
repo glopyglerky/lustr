@@ -7,6 +7,7 @@ extern crate rustc_attr_ir;
 extern crate rustc_codegen_llvm;
 extern crate rustc_codegen_ssa;
 extern crate rustc_driver;
+extern crate rustc_errors;
 extern crate rustc_feature;
 extern crate rustc_hir;
 extern crate rustc_interface;
@@ -30,6 +31,8 @@ use std::process::ExitCode;
 mod host_crate_interface;
 #[path = "host-freestanding.rs"]
 mod host_freestanding;
+#[path = "host-retained-link.rs"]
+mod host_retained_link;
 
 rustc_driver::override_c_allocator_in_binary!();
 

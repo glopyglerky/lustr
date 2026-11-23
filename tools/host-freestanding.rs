@@ -1,5 +1,6 @@
 //! Compose Lust objects with the pinned Rust compiler for host artifacts.
 //! The original Rust driver validates and emits the rest of the original crate.
+use crate::host_retained_link;
 use rustc_ast::{
     AttrStyle, BinOpKind, BindingMode, BlockCheckMode, Expr, ExprKind, FnRetTy,
     ForeignItemKind, ForeignMod, Item, ItemKind, PatKind, Safety, Stmt, StmtKind, StrLit,
@@ -54,12 +55,14 @@ pub(crate) enum Artifact {
     CargoUnit,
 }
 
-struct Composition {
+struct Composition<'a> {
     artifact: Artifact,
+    args: &'a [String],
     native_codegen: bool,
     input: Option<PathBuf>,
     output: Option<PathBuf>,
     object: Arc<OnceLock<PathBuf>>,
+    retained_link: Arc<OnceLock<host_retained_link::Cache>>,
     bindings: Vec<(Symbol, String)>,
     scratch: Option<Scratch>,
 }
@@ -151,7 +154,7 @@ fn native_function(item: &Item) -> Option<&rustc_ast::Fn> {
         .then_some(function)
 }
 
-impl Composition {
+impl Composition<'_> {
     fn complete_items(
         &self, sess: &Session, input: &Path, items: &[&Item], directory: &Path, no_std: Option<Span>,
     ) -> Result<(Option<PathBuf>, Vec<String>), String> {
@@ -256,7 +259,7 @@ fn bind(sess: &Session, item: &mut Item, symbol: &str, artifact: Artifact) -> Sy
     local
 }
 
-impl Callbacks for Composition {
+impl Callbacks for Composition<'_> {
     fn config(&mut self, config: &mut Config) {
         let early = EarlyDiagCtxt::new(ErrorOutputType::default());
         let host = config.opts.target_triple.tuple() == HOST;
@@ -285,9 +288,11 @@ impl Callbacks for Composition {
         self.input = Some(input.clone());
         self.output = Some(output);
         let object = Arc::clone(&self.object);
+        let retained_link = Arc::clone(&self.retained_link);
         config.make_codegen_backend = Some(Box::new(move |_| Box::new(Backend {
             original: rustc_codegen_llvm::LlvmCodegenBackend::new(),
             object,
+            retained_link,
         })));
     }
 
@@ -334,13 +339,39 @@ impl Callbacks for Composition {
             let items: Vec<_> = selected.iter().map(|(_, item)| *item).collect();
             let (object, symbols) = self.complete_items(sess, input, &items, &directory.0, no_std_attr.map(|attr| attr.span))
                 .unwrap_or_else(|error| sess.dcx().span_fatal(first.span, error));
+            if let Some(object) = object {
+                self.object.set(object).expect("one native object per invocation");
+                if matches!(self.artifact, Artifact::Freestanding) {
+                    let file = sess.source_map().lookup_source_file(first.span.lo());
+                    let bodies = items.iter().map(|item| {
+                        let span = native_function(item).unwrap().body.as_ref().unwrap().span;
+                        file.relative_position(span.lo()).0..file.relative_position(span.hi()).0
+                    }).collect::<Vec<_>>();
+                    if let Some(cache) = file.src.as_ref().and_then(|source|
+                        host_retained_link::Cache::open(sess, self.output.as_deref().unwrap(), self.args, source, &bodies, &symbols))
+                    {
+                        if let Some(saved) = cache.load(sess, &directory.0) {
+                            if sess.opts.json_artifact_notifications {
+                                sess.dcx().emit_artifact_notification(&saved.dep_info, "dep-info");
+                            }
+                            compiler.codegen_backend.link(sess, saved.modules, saved.info, saved.metadata, &saved.outputs);
+                            if let Some(path) = std::env::var_os("LUSTR_TRACE_PATH")
+                                && let Ok(mut file) = fs::OpenOptions::new().create(true).append(true).open(path)
+                            {
+                                use io::Write;
+                                let _ = file.write_all(b"{\"engine\":\"lustr\",\"entry\":\"retained-rust-link\"}\n");
+                            }
+                            return Compilation::Stop;
+                        }
+                        cache.track_diagnostics();
+                        let _ = self.retained_link.set(cache);
+                    }
+                }
+            }
             let indices: Vec<_> = selected.into_iter().map(|(index, _)| index).collect();
             for (index, symbol) in indices.into_iter().zip(symbols) {
                 let name = bind(sess, &mut krate.items[index], &symbol, self.artifact);
                 self.bindings.push((name, symbol));
-            }
-            if let Some(object) = object {
-                self.object.set(object).expect("one native object per invocation");
             }
             self.scratch = Some(directory);
         }
@@ -375,6 +406,7 @@ impl Callbacks for Composition {
 struct Backend {
     original: Box<dyn CodegenBackend>,
     object: Arc<OnceLock<PathBuf>>,
+    retained_link: Arc<OnceLock<host_retained_link::Cache>>,
 }
 
 impl CodegenBackend for Backend {
@@ -396,6 +428,8 @@ impl CodegenBackend for Backend {
         &self, sess: &Session, mut modules: CompiledModules, info: CrateInfo,
         metadata: EncodedMetadata, outputs: &OutputFilenames,
     ) {
+        let pending = self.retained_link.get().and_then(|cache|
+            cache.capture(sess, &modules, &info, &metadata, outputs));
         if let Some(object) = self.object.get() {
             modules.modules.push(CompiledModule {
                 name: "lustr-native-items".into(), kind: ModuleKind::Regular, object: Some(object.clone()),
@@ -403,6 +437,9 @@ impl CodegenBackend for Backend {
             });
         }
         self.original.link(sess, modules, info, metadata, outputs);
+        if let Some(pending) = pending {
+            pending.publish();
+        }
     }
 }
 
@@ -420,9 +457,9 @@ pub(crate) fn run(artifact: Artifact, program: &str, args: &[String]) -> ExitCod
             driver.extend(["--sysroot".to_owned(), sysroot.to_owned()]);
         }
         let mut callbacks = Composition {
-            artifact, native_codegen: represents_native_codegen(args),
+            artifact, args, native_codegen: represents_native_codegen(args),
             input: None, output: None,
-            object: Arc::default(), bindings: Vec::new(), scratch: None,
+            object: Arc::default(), retained_link: Arc::default(), bindings: Vec::new(), scratch: None,
         };
         rustc_driver::compiler_entrypoint(&driver, &mut callbacks);
     })

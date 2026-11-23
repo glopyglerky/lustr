@@ -1353,6 +1353,42 @@ fn panic(_: &PanicInfo<'_>) -> ! {
         assert!(stderr.contains(diagnostic), "{stderr}");
         assert!(!f.root.join(edit).join("debug/freestanding").exists());
     }
+
+    let trace_path = f.root.join("trace.jsonl");
+    let binary = f.root.join("mixed/debug/freestanding");
+    let build_edit = |name: &str, edited: &str, expected: i32, reused: bool| {
+        f.source("src/main.rs", edited);
+        let prior = std::fs::read(&trace_path).unwrap();
+        let build = f.succeeds(name, cargo("mixed", false).args(["build", "--frozen"]));
+        assert_eq!(f.invoke(&format!("{name}-run"), &mut Command::new(&binary)).status.code(), Some(expected));
+        let after = std::fs::read(&trace_path).unwrap();
+        let added = String::from_utf8_lossy(after.strip_prefix(prior.as_slice()).unwrap());
+        assert_eq!(added.contains("\"entry\":\"retained-rust-link\""), reused, "{name}: {added}");
+        build
+    };
+    let edited = source.replace("n ^ 19", "n ^ 18");
+    build_edit("native-body-edit", &edited, 43, true);
+    let previous = std::fs::read(&binary).unwrap();
+    f.source("src/main.rs", &edited.replace("n ^ 18", "n ^ false"));
+    let invalid = f.invoke("retained-invalid", cargo("mixed", false).args(["build", "--frozen"]));
+    assert_eq!(invalid.status.code(), Some(101));
+    assert_eq!(std::fs::read(&binary).unwrap(), previous);
+
+    let signature = edited.replace("fn apply_mask(n: u64) -> u64 { n ^ 18 }",
+        "fn apply_mask(n: u64, mask: u64) -> u64 { n ^ mask }")
+        .replace("fn(u64) -> u64", "fn(u64, u64) -> u64")
+        .replace("transform(57)", "transform(57, 18)");
+    build_edit("signature-edit", &signature, 43, false);
+    build_edit("next-native-body-edit", &signature.replace("n & 63", "n & 31"), 11, true);
+
+    let warnings = source.replace("let status =", "let unused = 1;\n    let status =");
+    for (name, body, value) in [
+        ("warnings", warnings.clone(), 42),
+        ("warnings-native-edit", warnings.replace("n ^ 19", "n ^ 18"), 43),
+    ] {
+        let output = build_edit(name, &body, value, false);
+        assert!(String::from_utf8_lossy(&output.stderr).contains("unused variable"));
+    }
 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
