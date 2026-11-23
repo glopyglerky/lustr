@@ -1401,7 +1401,7 @@ fn main() { assert_eq!(evaluate(57), 42); }
     };
     f.succeeds("lockfile", cargo("mixed", false, "0").args(["generate-lockfile", "--offline"]));
     f.succeeds("default-check", cargo("default", false, "2").args(["check", "--frozen"]));
-    let extended = format!("{source}\nmod extra {{\u{{000b}}pub fn original_whitespace() {{}} }}\n/*{}*/\n",
+    let extended = format!("{source}\nmod extra {{\x0bpub fn original_whitespace() {{}} }}\n/*{}*/\n",
         ".".repeat(2 * 1024 * 1024));
     for (name, original, debug, expected, contents) in [
         ("mixed", false, "0", 1, source),
