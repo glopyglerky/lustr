@@ -1,5 +1,5 @@
 diff --git a/src/librustdoc/config.rs b/src/librustdoc/config.rs
-index 9acf150b3b3545246fa0eb875521676a5c5ac45a..379006b46e71ee7ebaac2c6cd017d52d0f491305 100644
+index 9acf150b3b3545246fa0eb875521676a5c5ac45a..19d408b9f446c4633d87b0722530a345c63b9b7e 100644
 --- a/src/librustdoc/config.rs
 +++ b/src/librustdoc/config.rs
 @@ -138,6 +138,9 @@ pub(crate) struct Options {
@@ -20,20 +20,22 @@ index 9acf150b3b3545246fa0eb875521676a5c5ac45a..379006b46e71ee7ebaac2c6cd017d52d
              .field("test_builder_wrappers", &self.test_builder_wrappers)
              .field("remap-file-prefix", &self.remap_path_prefix)
              .field("remap-file-scope", &self.remap_path_scope)
-@@ -859,7 +863,11 @@ pub(crate) fn from_matches(
-         let static_root_path = matches.opt_str("static-root-path");
+@@ -860,6 +864,14 @@ pub(crate) fn from_matches(
          let test_run_directory = matches.opt_str("test-run-directory").map(PathBuf::from);
          let persist_doctests = matches.opt_str("persist-doctests").map(PathBuf::from);
--        let test_builder = matches.opt_str("test-builder").map(PathBuf::from);
-+        let default_builders = lustr_documentation_builders();
-+        let test_builder = matches.opt_str("test-builder").map(PathBuf::from)
-+            .or_else(|| default_builders.as_ref().map(|(native, _)| native.clone()));
+         let test_builder = matches.opt_str("test-builder").map(PathBuf::from);
++        let default_builders = if test_builder.is_none() {
++            lustr_documentation_builders()
++        } else {
++            None
++        };
++        let test_builder = test_builder.or_else(|| default_builders.as_ref().map(|(native, _)| native.clone()));
 +        let compile_fail_test_builder = matches.opt_str("compile-fail-test-builder").map(PathBuf::from)
 +            .or_else(|| default_builders.map(|(_, validator)| validator));
          let codegen_options_strs = matches.opt_strs("C");
          let unstable_opts_strs = matches.opt_strs("Z");
          let lib_strs = matches.opt_strs("L");
-@@ -937,6 +945,7 @@ pub(crate) fn from_matches(
+@@ -937,6 +949,7 @@ pub(crate) fn from_matches(
              test_runtool,
              test_runtool_args,
              test_builder,
@@ -41,7 +43,7 @@ index 9acf150b3b3545246fa0eb875521676a5c5ac45a..379006b46e71ee7ebaac2c6cd017d52d
              run_check,
              no_run,
              test_builder_wrappers,
-@@ -1144,3 +1153,20 @@ fn parse_merge_doctests(
+@@ -1144,3 +1157,20 @@ fn parse_merge_doctests(
          }
      }
  }

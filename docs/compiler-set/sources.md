@@ -58,9 +58,11 @@ Cargo finds the resulting `bin/rustdoc` on the toolchain's `PATH`. Rustdoc
 collects the documentation examples through the pinned Rust frontend.
 Runnable and `no_run` standalone examples use Lustr. Rustdoc sends
 `compile_fail` examples to its pinned embedded driver so a native coverage gap
-cannot count as a Rust error. The compiler entry for normal Cargo compilation
-continues to use its existing native request path. Merged doctest coverage
-and end-to-end performance remain separate qualification work.
+cannot count as a Rust error. An explicit `--test-builder` keeps its upstream
+behavior. The optional `--compile-fail-test-builder` selects a separate
+validator. The compiler entry for normal Cargo compilation uses the native
+request path. Merged doctest coverage and end-to-end performance remain
+separate qualification work.
 
 ## Import inventory requirements
 

@@ -317,7 +317,7 @@
     "tools/update-public-library-source-manifest.py": "3386a1af0cad58ffd4eac62395ef595a1bedf54c698a0d0b31467d440e3b1ecf",
     "upstream/metadata-artifact-tools.json": "d1bd48f3b362645dce89172ce862f66189a1847c26e443f1861f9222021af9ff",
     "upstream/metadata-dependency-closure.json": "a5b2d8cccb4594fa2bfe56c33d202c4e6a1f88a1e09105bac8c4f1ab1e0ca32e",
-    "upstream/rustdoc-test-builders.patch": "f66f429b7af682d57172834bdd93dcc80d3502072dc08faf4fe572cf68780ad3",
+    "upstream/rustdoc-test-builders.patch": "4be4ebb9006f3e31b1c831d242a10c321b540a8888c752760f6400f305997ca7",
     "docs/compiler-set/evidence/metadata-sdk-receipt-20261120/receipt.json": "4e400b263bf9923616dea44ead2d77213703177d3bfaf6becd6a19a4c5a657a7",
     "docs/compiler-set/evidence/metadata-sdk-receipt-20261120/standard-receipt.json": "fa35ba66edb2400611692c9c64a7575e0658b9876a03b0be0531aa4ed6658e9d"
   }
