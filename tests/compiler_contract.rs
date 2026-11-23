@@ -2671,3 +2671,43 @@ fn main() { println!("{}", mask(Counter(57).value())); }
     let after = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
     assert!(!after[trace.len()..].contains("\"entry\":\"rust-complement\""));
 }
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn installed_rust_driver_handles_ordinary_cargo_options_outside_the_native_adapter() {
+    let f = Fixture::new("cargo-ordinary-rust-options");
+    f.source("Cargo.toml", "[package]\nname=\"edition_fixture\"\nversion=\"0.1.0\"\nedition=\"2021\"\n");
+    let source = f.source("src/main.rs", r#"
+fn main() {
+    let answer = [1, 2, 3].into_iter().map(|n| n * 7).sum::<u32>();
+    println!("{answer}");
+}
+"#);
+    let original = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    for (name, oracle) in [("lustr", false), ("original", true)] {
+        let cargo = || {
+            let mut command = f.command("cargo");
+            command.env("CARGO_TARGET_DIR", f.root.join(name));
+            if oracle { command.env("RUSTC", &original); }
+            command
+        };
+        f.succeeds(&format!("{name}-check"), cargo().args(["check", "--frozen"]));
+        let response = f.succeeds(&format!("{name}-run"), cargo().args(["run", "--frozen"]));
+        assert_eq!(response.stdout, b"42\n");
+    }
+    let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
+    assert!(trace.contains("\"entry\":\"rust-request\""), "{trace}");
+
+    let object = f.root.join("result.o");
+    f.succeeds("object", f.command("rustc").args(["--edition=2021", "--emit=obj"])
+        .arg(&source).arg("-o").arg(&object));
+    assert_eq!(&std::fs::read(object).unwrap()[..4], b"\x7fELF");
+    f.source("src/main.rs", "fn main() { let _: u64 = false; }\n");
+    let response = f.invoke("invalid", f.command("cargo").args(["check", "--frozen"])
+        .env("CARGO_TARGET_DIR", f.root.join("invalid")));
+    assert_eq!(response.status.code(), Some(101));
+    assert!(String::from_utf8_lossy(&response.stderr).contains("E0308"));
+    assert!(!f.root.join("invalid/debug/edition_fixture").exists());
+}

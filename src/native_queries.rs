@@ -127,7 +127,9 @@ fn query(args: &[OsString], bin: &Path, host: &str) -> Result<(), String> {
                         && host == "x86_64-unknown-linux-gnu"
                         && bin.parent().is_some_and(|root|root.join("lib/lustr-metadata/sdk-receipt.json").is_file()) {
                         println!("lib{name}.rlib");
-                    } else if *kind == "proc-macro" && host_proc_macro_compiler(bin, host).is_some() {
+                    } else if matches!(*kind, "proc-macro" | "cdylib" | "dylib")
+                        && host_proc_macro_compiler(bin, host).is_some()
+                    {
                         println!("lib{name}.so");
                     } else if *kind == "staticlib" && host_proc_macro_compiler(bin, host).is_some() {
                         println!("lib{name}.a");

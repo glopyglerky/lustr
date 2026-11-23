@@ -51,7 +51,6 @@ impl Drop for Scratch {
 #[derive(Clone, Copy)]
 pub(crate) enum Artifact {
     Freestanding,
-    StaticLibrary,
     CargoUnit,
 }
 
@@ -195,7 +194,7 @@ fn bind(sess: &Session, item: &mut Item, symbol: &str, artifact: Artifact) -> Sy
     });
     let abi = Symbol::intern(match artifact {
         Artifact::Freestanding => "Rust",
-        Artifact::StaticLibrary | Artifact::CargoUnit => "C",
+        Artifact::CargoUnit => "C",
     });
     let foreign = ItemKind::ForeignMod(ForeignMod {
         extern_span: span, safety: Safety::Unsafe(span),
@@ -222,17 +221,15 @@ fn bind(sess: &Session, item: &mut Item, symbol: &str, artifact: Artifact) -> Sy
 impl Callbacks for Composition {
     fn config(&mut self, config: &mut Config) {
         let early = EarlyDiagCtxt::new(ErrorOutputType::default());
-        let represented = match self.artifact {
-            Artifact::Freestanding => config.opts.crate_types == [CrateType::Executable],
-            Artifact::StaticLibrary => config.opts.crate_types == [CrateType::StaticLib],
-            Artifact::CargoUnit => matches!(config.opts.crate_types.as_slice(),
-                [] | [CrateType::Executable | CrateType::Rlib]),
-        };
-        if config.opts.target_triple.tuple() != HOST || !represented
+        let host = config.opts.target_triple.tuple() == HOST;
+        if matches!(self.artifact, Artifact::Freestanding)
+            && (!host || config.opts.crate_types != [CrateType::Executable])
         {
             early.early_fatal("the parsed request does not match the selected host artifact");
         }
-        if !self.native_codegen || !crate::embedding_environment_supported()
+        let native_artifact = matches!(config.opts.crate_types.as_slice(),
+            [] | [CrateType::Executable | CrateType::Rlib | CrateType::StaticLib]);
+        if !host || !native_artifact || !self.native_codegen || !crate::embedding_environment_supported()
             || config.opts.test || config.opts.output_types.keys().any(|kind|
             !matches!(kind, OutputType::Exe | OutputType::Metadata | OutputType::DepInfo))
         {
@@ -269,7 +266,7 @@ impl Callbacks for Composition {
         let plain_policy = match self.artifact {
             Artifact::Freestanding => matches!(krate.attrs.as_slice(), [first, second]
                 if first.has_name(sym::no_std) && second.has_name(sym::no_main)),
-            Artifact::StaticLibrary | Artifact::CargoUnit => krate.attrs.is_empty()
+            Artifact::CargoUnit => krate.attrs.is_empty()
                 || matches!(krate.attrs.as_slice(), [attr] if no_std && attr.has_name(sym::no_std)),
         };
         if self.input.is_none() || !plain_policy

@@ -240,16 +240,6 @@ fn main() -> ExitCode {
         eprintln!("cannot execute the host procedural macro compiler: {error}");
         return ExitCode::from(2);
     }
-    if compiler_mode
-        && (args.iter().any(|arg| arg == "--crate-type=staticlib")
-            || args.windows(2).any(|pair| pair == ["--crate-type", "staticlib"]))
-        && let Some(compiler) = native_queries::host_proc_macro_compiler(&parent, lust::host_triple())
-    {
-        trace_entry("lustr", "static-library");
-        let error = Command::new(compiler).arg("--lustr-build-static-library").args(&args).exec();
-        eprintln!("cannot execute the static library compiler: {error}");
-        return ExitCode::from(2);
-    }
     if !compiler_mode && args == ["--lustr-prime-selection-tools"] {
         return match lust::prime_selection_tools(&parent) {
             Ok(()) => ExitCode::SUCCESS,
@@ -265,12 +255,16 @@ fn main() -> ExitCode {
     }
     let rust = (!native_cli).then(|| lustr_compiler::native_request(&args)).flatten();
     if compiler_mode && rust.is_none()
-        && lustr_compiler::freestanding_request(&args)
         && let Some(compiler) = native_queries::host_proc_macro_compiler(&parent, lust::host_triple())
     {
-        trace_entry("lustr", "freestanding");
-        let error = Command::new(compiler).arg("--lustr-build-freestanding").args(&args).exec();
-        eprintln!("cannot execute the freestanding compiler: {error}");
+        let (operation, entry) = if lustr_compiler::freestanding_request(&args) {
+            ("--lustr-build-freestanding", "freestanding")
+        } else {
+            ("--lustr-build-rust-unit", "rust-request")
+        };
+        trace_entry("lustr", entry);
+        let error = Command::new(compiler).arg(operation).args(&args).exec();
+        eprintln!("cannot execute the Rust compiler component: {error}");
         return ExitCode::from(2);
     }
     if let Some(request) = rust.as_ref().filter(|request| request.stdin) {
