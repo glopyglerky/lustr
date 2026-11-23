@@ -115,9 +115,11 @@ impl DebugOptions {
     }
 
     fn supported(self, check: bool) -> bool {
-        // Metadata-only requests emit no machine code or debug sidecars.
-        // Linked artifacts still require the implemented debug-free policy.
         check || (self.info == DebugInfo::None && self.split == SplitDebug::Off && self.strip != Strip::Symbols)
+    }
+
+    pub fn native_executable(self) -> bool {
+        self == (Self { info: DebugInfo::Full, split: SplitDebug::Off, strip: Strip::None })
     }
 }
 
@@ -233,7 +235,9 @@ impl LibraryKey {
     }
 
     pub fn valid_output(&self, path: &Path, check: bool, options: LibraryOptions) -> bool {
-        if !options.debug.supported(check) {
+        let executable_debug = options.debug.native_executable()
+            && self.executable_dependencies.as_ref().is_some_and(Vec::is_empty);
+        if !(options.debug.supported(check) || executable_debug) {
             return false;
         }
         if let Some(dependencies) = &self.executable_dependencies {

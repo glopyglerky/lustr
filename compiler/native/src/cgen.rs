@@ -26,6 +26,7 @@ pub mod record;
 mod slices;
 mod kconst;
 pub mod ll;
+mod ll_debug;
 use unwind::Unw;
 
 /// A body-independent type, so glue can be shared across functions.
@@ -1070,6 +1071,8 @@ pub struct FnOut {
     /// names; `ll_c` holds its helpers' C (with the prelude and statics they read), and
     /// `text` only the C ABI wrapper and the trampoline. Empty for C bodies.
     pub ll: String,
+    /// Source anchor of a function whose LLVM records carry absolute positions.
+    pub(crate) rust_debug_source: Option<(u64, u64)>,
     pub ll_decls: BTreeSet<String>,
     pub ll_c: String,
     /// The LLVM backend: the fn's size for cross-unit inlining (`ll::LlFn::cost`).
@@ -2466,15 +2469,38 @@ fn trampoline(p: &Program, f: LocalDefId, slot: u32) -> String {
 /// Generates C for one function body. `base_line` is the line of its `fn` keyword, in the
 /// file that defines it; `slots` maps every LocalDefId to its slot in `lust_fns`.
 pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32]) -> FnOut {
-    gen_fn_policy(p, body, map, base_line, slots, false)
+    gen_fn_policy(p, body, map, base_line, slots, false, false)
 }
 
 /// Generate a body already proved total by the mixed object boundary.
 pub fn gen_fn_total(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32]) -> FnOut {
-    gen_fn_policy(p, body, map, base_line, slots, true)
+    gen_fn_policy(p, body, map, base_line, slots, true, false)
 }
 
-fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32], nounwind: bool) -> FnOut {
+pub(crate) fn gen_fn_rust_debug(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32]) -> FnOut {
+    let Some(source) = rust_debug_source(p, body.fn_id, map) else {
+        return FnOut { error: Some("Rust debug function source cannot be bound to the native body".into()), ..Default::default() };
+    };
+    let mut output = gen_fn_policy(p, body, map, base_line, slots, false, true);
+    output.rust_debug_source = Some(source);
+    output
+}
+
+pub(crate) fn rust_debug_source(p: &Program, id: LocalDefId, map: &SourceMap) -> Option<(u64, u64)> {
+    let item = p.fn_def(id);
+    let name = map.call_site(item.name_span);
+    let body = map.call_site(p.ast.block(item.body?).span);
+    let text = map.text(name.file)?;
+    let (line, column) = map.line_col(name);
+    if name.file != body.file { return None; }
+    let source = text.get(name.lo as usize..body.hi as usize)?;
+    Some(crate::driver::cache::hash128(
+        &[map.path(name.file).as_bytes(), &line.to_le_bytes(), &column.to_le_bytes(), source.as_bytes()],
+        91,
+    ))
+}
+
+fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32], nounwind: bool, rust_debug: bool) -> FnOut {
     if !has_generated_body(p, body.fn_id) {
         return FnOut { error: Some(no_body_error(p, body, body.fn_id)), ..Default::default() };
     }
@@ -2507,8 +2533,8 @@ fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slot
     }
     // The LLVM backend writes the C side (prelude and trampoline included) itself.
     let mut llfn = None;
-    if ll::on(p) {
-        match g.function_ll() {
+    if rust_debug || ll::on(p) {
+        match g.function_ll(rust_debug) {
             Ok(f) => llfn = Some(f),
             Err(e) => return FnOut { error: Some(e), ..Default::default() },
         }
@@ -2601,6 +2627,7 @@ fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slot
         externs,
         named,
         ll,
+        rust_debug_source: None,
         ll_decls,
         ll_c,
         ll_cost,
@@ -6170,7 +6197,7 @@ impl FnGen<'_, '_> {
         let TyKind::FnPtr(sig) = tys.kind(fp_ty) else { unreachable!("ItemShim to a non fn pointer type") };
         let sig = tys.sig(sig).value;
         let ins: Vec<Ty> = tys.tys_of(sig.inputs).to_vec();
-        let decl = |ty: Ty| crate::ir::LocalDecl { ty, mutable: false, name: None };
+        let decl = |ty: Ty| crate::ir::LocalDecl { ty, mutable: false, name: None, binding_span: None };
         let mut locals = vec![decl(sig.output)];
         locals.extend(ins.iter().map(|&t| decl(t)));
         let body = Body {
@@ -14436,7 +14463,7 @@ mod tests {
         let span = Span::new(FileId(0), 0, 0);
         let elems = body.tys.intern_tys(&[STRING, int(IntTy::U8)]);
         let tuple_ty = body.tys.intern(TyKind::Tuple(elems));
-        let local = |ty: Ty| LocalDecl { ty, mutable: false, name: None };
+        let local = |ty: Ty| LocalDecl { ty, mutable: false, name: None, binding_span: None };
         body.locals = vec![local(UNIT), local(tuple_ty), local(STRING)];
         body.blocks = vec![BlockData {
             stmts: vec![Stmt {
@@ -15073,7 +15100,7 @@ mod tests {
         let inputs = body.tys.intern_tys(&[i64_ty]);
         let sig = body.tys.intern_sig(Binder::plain(FnSig::plain(inputs, i64_ty)));
         let fnptr_ty = body.tys.intern(TyKind::FnPtr(sig));
-        let local = |ty: Ty| LocalDecl { ty, mutable: false, name: None };
+        let local = |ty: Ty| LocalDecl { ty, mutable: false, name: None, binding_span: None };
         // Print args hold a reference to the value, as lower emits them:
         // locals 8.. hold &l2, &l5, &l6, &l7 for the four prints.
         let ref_i64 = body.tys.mk_ref(false, i64_ty);

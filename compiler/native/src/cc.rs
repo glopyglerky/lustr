@@ -44,6 +44,7 @@ pub struct CcSpec {
     pub statik: bool,
     /// File name suffix of the output (".exe" on Windows triples).
     pub exe_suffix: &'static str,
+    rust_debug: bool,
 }
 
 /// The zig target spelling of a Rust triple. The front end keeps the Rust
@@ -163,12 +164,12 @@ pub fn spec_for(triple: &str) -> Result<CcSpec, String> {
             cmd.extend(["-target".into(), zt.into()]);
         }
         let cxx = cxx_for(&cmd);
-        return Ok(CcSpec { triple: triple.into(), cmd, cxx, statik, exe_suffix });
+        return Ok(CcSpec { triple: triple.into(), cmd, cxx, statik, exe_suffix, rust_debug: false });
     }
     if on_path("zig") {
         let cmd: Vec<String> = vec!["zig".into(), "cc".into(), "-target".into(), zt.into()];
         let cxx = cxx_for(&cmd);
-        return Ok(CcSpec { triple: triple.into(), cmd, cxx, statik, exe_suffix });
+        return Ok(CcSpec { triple: triple.into(), cmd, cxx, statik, exe_suffix, rust_debug: false });
     }
     let (arch, os) = (triple.split('-').next().unwrap_or(""), triple);
     let host_like = arch == std::env::consts::ARCH
@@ -179,11 +180,21 @@ pub fn spec_for(triple: &str) -> Result<CcSpec, String> {
         // musl toolchain, which the link error will name).
         let cmd = vec!["cc".to_string()];
         let cxx = cxx_for(&cmd);
-        return Ok(CcSpec { triple: triple.into(), cmd, cxx, statik, exe_suffix });
+        return Ok(CcSpec { triple: triple.into(), cmd, cxx, statik, exe_suffix, rust_debug: false });
     }
     Err(format!(
         "no C compiler for target `{triple}`: install zig (zig cc cross-compiles it) or set LUST_CC to a cross compiler command"
     ))
+}
+
+pub(crate) fn spec_for_rust_debug(triple: &str) -> Result<CcSpec, String> {
+    if triple != "x86_64-unknown-linux-gnu" || !on_path("clang") || !on_path("clang++") {
+        return Err("native Rust debug emission needs clang and clang++ for x86_64 Linux GNU".into());
+    }
+    Ok(CcSpec {
+        triple: triple.into(), cmd: vec!["clang".into()], cxx: vec!["clang++".into()],
+        statik: false, exe_suffix: "", rust_debug: true,
+    })
 }
 
 /// The C flags of every unit, one string so the cache key and the command
@@ -237,7 +248,7 @@ fn ldflags(spec: &CcSpec, debug: bool) -> Vec<String> {
     if spec.statik {
         v.push("-static".into());
     }
-    if !debug {
+    if !debug && !spec.rust_debug {
         v.push("-s".into());
     } else {
         v.push("-g".into());
@@ -485,6 +496,10 @@ pub fn llflags(debug: bool) -> String {
     if debug { format!("{base} -g") } else { base }
 }
 
+fn unit_llflags(spec: &CcSpec, debug: bool) -> String {
+    if spec.rust_debug { "-O0 -w -fexceptions".into() } else { llflags(debug) }
+}
+
 /// Compiles one LLVM backend unit into `obj`: the C unit `src` and the helpers' C `hc` to
 /// bitcode with the C flags (no LLVM passes yet), then the IR `ll` with both linked in, so
 /// the optimizer sees one module (cgen/ll.rs: the C helpers inline into the LLVM fns). The
@@ -565,7 +580,7 @@ fn compile_pair(
     // A relative compiler path must not resolve against the work dir (PGO compiles there).
     let prog = if words[0].contains('/') { std::fs::canonicalize(&words[0]).unwrap_or_else(|_| PathBuf::from(&words[0])) } else { PathBuf::from(&words[0]) };
     let mut cmd = cc_command(prog);
-    cmd.args(&words[1..]).args(llflags(debug).split_whitespace()).arg("-c");
+    cmd.args(&words[1..]).args(unit_llflags(spec, debug).split_whitespace()).arg("-c");
     if nopre {
         cmd.args(["-mllvm", "-disable-preinline"]);
     }
@@ -666,7 +681,7 @@ fn memo_tag(spec: &CcSpec, debug: bool, work: &Path) -> String {
             spec.triple.as_bytes(),
             compiler_id(&spec.cmd).as_bytes(),
             cflags(debug).as_bytes(),
-            llflags(debug).as_bytes(),
+            unit_llflags(spec, debug).as_bytes(),
             pgo_env.join(" ").as_bytes(),
             profile.as_bytes(),
         ],
@@ -912,7 +927,7 @@ pub fn build_with(
             keyed.then(|| match ll_of.get(unit.as_str()) {
                 Some(ll) => {
                     let hc = hc_of.get(unit.as_str()).copied().unwrap_or("");
-                    ll_unit_key(c, ll, hc, &format!("{} {nopre} rtinl {rt_digest}", llflags(debug)), spec, debug, part.as_deref())
+                    ll_unit_key(c, ll, hc, &format!("{} {nopre} rtinl {rt_digest}", unit_llflags(spec, debug)), spec, debug, part.as_deref())
                 }
                 None => unit_key(c, pre_of(i), spec, debug, part.as_deref(), is_cxx(&names[i])),
             })
@@ -1310,7 +1325,7 @@ mod tests {
 
     fn zig_spec(target: &str) -> super::CcSpec {
         let cmd: Vec<String> = ["zig", "cc", "-target", target].into_iter().map(str::to_string).collect();
-        super::CcSpec { triple: String::new(), cxx: super::cxx_for(&cmd), cmd, statik: true, exe_suffix: "" }
+        super::CcSpec { triple: String::new(), cxx: super::cxx_for(&cmd), cmd, statik: true, exe_suffix: "", rust_debug: false }
     }
 
     #[test]
@@ -1466,7 +1481,7 @@ mod tests {
     /// begins (the parts are hashed with their lengths).
     #[test]
     fn an_llvm_unit_key_moves_with_each_text() {
-        let spec = super::CcSpec { triple: "x86_64-unknown-linux-musl".into(), cxx: vec!["c++".into()], cmd: vec!["cc".into()], statik: false, exe_suffix: "" };
+        let spec = super::CcSpec { triple: "x86_64-unknown-linux-musl".into(), cxx: vec!["c++".into()], cmd: vec!["cc".into()], statik: false, exe_suffix: "", rust_debug: false };
         let key = |c: &str, ll: &str, hc: &str, extra: &str| super::ll_unit_key(c, ll, hc, extra, &spec, false, None);
         let base = key("c", "ll", "hc", "x");
         for other in [key("c2", "ll", "hc", "x"), key("c", "ll2", "hc", "x"), key("c", "ll", "hc2", "x"), key("c", "ll", "hc", "y"), key("cl", "l", "hc", "x")] {
@@ -1479,7 +1494,7 @@ mod tests {
     fn unit_key_moves_with_every_input() {
         let spec = |triple: &str, cmd: &str| {
             let cmd: Vec<String> = cmd.split_whitespace().map(str::to_string).collect();
-            super::CcSpec { triple: triple.into(), cxx: super::cxx_for(&cmd), cmd, statik: false, exe_suffix: "" }
+            super::CcSpec { triple: triple.into(), cxx: super::cxx_for(&cmd), cmd, statik: false, exe_suffix: "", rust_debug: false }
         };
         let key = |text: &str, triple: &str, cmd: &str, debug: bool, profile: Option<&str>, cxx: bool| super::unit_key(text, None, &spec(triple, cmd), debug, profile, cxx);
         let base = key("int f(void);", "aarch64-unknown-linux-musl", "zig cc", false, None, false);

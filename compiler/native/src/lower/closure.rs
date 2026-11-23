@@ -166,6 +166,7 @@ pub fn lower_closure<'p>(p: &'p Program, fid: LocalDefId, mut ck: Checked<'p>) -
     lw.pop_scope(span);
     lw.terminate(Terminator::Return, span);
     lw.map_annotations();
+    lw.bind_debug_spans();
     lw.rewrite_upvars();
     lw.mark_opaque_locals();
     lw.body
@@ -311,7 +312,7 @@ impl<'p> Lower<'p> {
                 let mut pl = Place::local(*l);
                 if rewrite_place(&up, &mut pl, true) {
                     let ty = self.body.locals[*l as usize].ty;
-                    self.body.locals.push(LocalDecl { ty, mutable: true, name: None });
+                    self.body.locals.push(LocalDecl { ty, mutable: true, name: None, binding_span: None });
                     let t = self.body.locals.len() as Local - 1;
                     b.stmts.push(crate::ir::Stmt { kind: StmtKind::Assign(Place::local(t), Rvalue::Use(Operand::Copy(pl))), span });
                     *l = t;

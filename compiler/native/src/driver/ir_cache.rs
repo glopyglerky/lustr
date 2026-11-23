@@ -507,7 +507,7 @@ pub(crate) struct CachedBody {
     pub ir_fp: u64,
     arg_count: usize,
     tys: Vec<TyTree>,
-    locals: Vec<(u32, bool, Option<String>)>,
+    locals: Vec<(u32, bool, Option<String>, Option<Span>)>,
     blocks: Vec<CachedBlock>,
     stmt_unwind: Vec<(Bb, u32, Bb)>,
     promoted: Vec<Local>,
@@ -938,7 +938,7 @@ fn cache_rvalue(b: &mut TreeBuilder, p: &Program, r: &Rvalue) -> CachedRvalue {
 /// pairs each slot its C prints (`FnOut::used`) with that slot's fn.
 pub(crate) fn cache_body(p: &Program, body: &Body, file_hash: u64, slot: u32, used_at_gen: Vec<(DiskDefId, u32)>, ir_fp: u64) -> CachedBody {
     let mut b = TreeBuilder { tys: &body.tys, memo: FxMap::default(), out: Vec::new() };
-    let locals = body.locals.iter().map(|l| (b.ty(l.ty), l.mutable, l.name.clone())).collect();
+    let locals = body.locals.iter().map(|l| (b.ty(l.ty), l.mutable, l.name.clone(), l.binding_span)).collect();
     let blocks = body
         .blocks
         .iter()
@@ -998,8 +998,8 @@ pub(crate) fn rebuild<'p>(p: &'p Program, cached: &CachedBody, fn_id: LocalDefId
     let mut tys = Tys::new(&p.tys);
     let mut intern = TreeIntern { trees: &cached.tys, memo: vec![None; cached.tys.len()] };
     let mut locals = Vec::with_capacity(cached.locals.len());
-    for (ty, mutable, name) in &cached.locals {
-        locals.push(LocalDecl { ty: intern.ty(&mut tys, *ty)?, mutable: *mutable, name: name.clone() });
+    for (ty, mutable, name, binding_span) in &cached.locals {
+        locals.push(LocalDecl { ty: intern.ty(&mut tys, *ty)?, mutable: *mutable, name: name.clone(), binding_span: *binding_span });
     }
     let mut strings: FxMap<&str, u32> = FxMap::default();
     for (i, s) in p.ast.strings.iter().enumerate() {

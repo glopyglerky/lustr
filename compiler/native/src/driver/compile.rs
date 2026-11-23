@@ -3056,6 +3056,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
     if !super::library::request_supported(req) {
         return Preparation::Failed(Response {code:3, stderr:"public library request context is not represented\n".into(), ..Default::default()});
     }
+    let rust_debug = req.cmd == Cmd::Build && req.library_options.debug.native_executable();
     if session.caches.library.is_some() && (req.cc || req.debug || req.emit_c.is_some() || req.harness || req.run_args.is_some()) {
         return Preparation::Failed(Response {code:3, stderr:"native library output context changed\n".into(), ..Default::default()});
     }
@@ -4240,7 +4241,9 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
     // catch_unwind would return Ok after a panic (rel-opt).
     let tables_env = std::env::var("LUST_UNWIND_TABLES").ok();
     program.unwind_tables = program.unwind
-        && if req.cc {
+        && if rust_debug {
+            true
+        } else if req.cc {
             tables_env.as_deref() != Some("0")
         } else {
             !caches.persistent && req.emit_c.is_some() && tables_env.as_deref() == Some("1")
@@ -4595,16 +4598,26 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
     // then a release driver build). A check makes no C and keeps the key.
     let mixed = req.session.krate.target_kind == "lustr-mixed-native";
     let library = caches.library.is_some();
-    let release = library || mixed || super::release_c::on(caches.persistent, req.cc);
+    let release = rust_debug || library || mixed || super::release_c::on(caches.persistent, req.cc);
     if req.cmd == Cmd::Build {
         let key = super::release_c::codegen_key(release, req.debug, program.unwind_tables)
-            ^ if library { 0x6c69_622d_746f_7461 } else { 0 };
+            ^ if library { 0x6c69_622d_746f_7461 } else { 0 }
+            ^ if rust_debug { 0x7275_7374_6462_7567 } else { 0 };
         if caches.codegen_key != key {
             caches.codegen_key = key;
             caches.has_out.iter_mut().for_each(|h| *h = false);
             caches.out.iter_mut().for_each(|o| *o = FnOut::default());
             caches.glue = GlueSet::default();
             caches.objects = None;
+        }
+        if rust_debug {
+            for (i, &s) in front.fn_slot.iter().enumerate() {
+                let s = s as usize;
+                if caches.has_out[s] && i < program.fns.len()
+                    && caches.out[s].rust_debug_source != cgen::rust_debug_source(&program, LocalDefId(i as u32), &map) {
+                    caches.has_out[s] = false;
+                }
+            }
         }
     }
     // Front end for the functions that need it. A build also needs IR for functions with no C yet.
@@ -4994,6 +5007,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
 }
 
 fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> Response {
+    let rust_debug = req.cmd == Cmd::Build && req.library_options.debug.native_executable();
     let CheckedRequest {
         mut program, results, reemit, map, source: src, path, work, fn_count, fn_lines_all, body_hashes_all,
         inst_ids, mode, check_fp, verified, reads_reused, reads_invalidated, reemitted, mixed, release,
@@ -5174,7 +5188,9 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
             cgen::in_layout_phase(layout_tag, || {
                 cgen::names::with(rn, || {
                     let total = library_functions.is_some() || mixed && super::mixed::total(b);
-                    let mut output = if total {
+                    let mut output = if rust_debug {
+                        cgen::gen_fn_rust_debug(&program, b, &map, line_base_of(front, *i), &front.fn_slot)
+                    } else if total {
                         cgen::gen_fn_total(&program, b, &map, line_base_of(front, *i), &front.fn_slot)
                     } else {
                         cgen::gen_fn(&program, b, &map, line_base_of(front, *i), &front.fn_slot)
@@ -5565,7 +5581,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
         }
     };
     // Release C: whether fn bodies are LLVM IR (cgen/ll.rs), and B1's switches.
-    let llvm_on = cgen::names::with(rn, || cgen::ll::on(&program));
+    let llvm_on = rust_debug || cgen::names::with(rn, || cgen::ll::on(&program));
     // B1 (`cgen::record`): each C fn unit records the pieces it is made of and what it
     // read, and the next build sets the record against its program
     // (`Caches::unit_records`). A session that keeps its caches (a daemon, a front
@@ -6003,7 +6019,9 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
                         if k < n_early {
                             Ok(assemble(first[k], &[], None, None))
                         } else {
-                            Err(cgen::ll::ll_inline_set(&caches.out, &rg[first[k]].1, &slot_of, hot.as_ref()))
+                            Err(if rust_debug { Vec::new() } else {
+                                cgen::ll::ll_inline_set(&caches.out, &rg[first[k]].1, &slot_of, hot.as_ref())
+                            })
                         }
                     })
                     .into_iter()
@@ -6329,7 +6347,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
     };
     let rgroups = rg_cell.into_inner();
     // The LLVM backend (cgen/ll.rs) wrote `.ll` companions: only cc.rs builds them.
-    let llvm = rgroups.is_some() && cgen::names::with(rn, || cgen::ll::on(&program));
+    let llvm = rgroups.is_some() && llvm_on;
     // The units the link takes after 1..4: release C has its own fn units, glue shards and
     // statics parts.
     let link_fn_units: Vec<usize> = match &rgroups {
@@ -6368,7 +6386,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
             return Response { code: 0, ..Default::default() };
         }
     }
-    if llvm && !req.cc {
+    if llvm && !req.cc && !rust_debug {
         return Response {
             stderr: "error: LUST_RELEASE_BACKEND=llvm builds through the release driver (`lust build --release --target <triple>`) or with --emit-c\n".into(),
             code: 2,
@@ -6383,7 +6401,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
     // frozen, so a clean unit's C is the same as last time and its object
     // comes from the cache. Overlays do not exist here: every build emits
     // the base form of each unit.
-    if req.cc {
+    if req.cc || rust_debug {
         // The release driver returns before the visits line at the end: its log line is here
         // (front-check's path coverage).
         front.last_visits.clear();
@@ -6400,7 +6418,8 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
                 }
             }
         }
-        let prepared = crate::cc::spec_for(triple).and_then(|spec| {
+        let spec = if rust_debug { crate::cc::spec_for_rust_debug(triple) } else { crate::cc::spec_for(triple) };
+        let prepared = spec.and_then(|spec| {
             // Release C (`LUST_RELEASE_C=1`) already holds the content-addressed units.
             let mut all: Vec<(String, String)> = if rgroups.is_some() {
                 // An LLVM companion keeps its `.ll` name (cc.rs pairs it with its C unit). The

@@ -288,6 +288,9 @@ pub struct LocalDecl {
     pub mutable: bool,
     /// User-visible name, for error messages. Temporaries have none.
     pub name: Option<String>,
+    /// Declaration in the checked Rust source. Synthetic locals have none,
+    /// even when lowering assigns them a name.
+    pub binding_span: Option<Span>,
 }
 
 /// Local 0 is the return value. Locals `1..=arg_count` are the parameters.

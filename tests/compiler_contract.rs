@@ -489,6 +489,30 @@ fn native_file_tests_preserve_single_execution() {
     assert_eq!(f.engine(), "lust-native-command");
 }
 
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, Clang and ELF tools"]
+fn ordinary_cargo_links_rust_debug_information() {
+    let f = Fixture::new("rust-debug");
+    f.source("Cargo.toml", "[package]\nname = \"debug-leaf\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    f.source("src/main.rs", "fn total(input: u32) -> u32 {\n    let sum = input + 5;\n    sum + 1\n}\nfn main() { println!(\"{}\", total(7)); }\n");
+    f.succeeds("check", f.command("cargo").args(["check", "--offline"]).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    f.succeeds("build", f.command("cargo").args(["build", "--offline"]).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    let ran = f.succeeds("run", f.command("cargo").args(["run", "--offline", "--quiet"]).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    assert_eq!(ran.stdout, b"13\n");
+    let executable = f.root.join("target/debug/debug-leaf");
+    let dwarf = f.succeeds("dwarf", Command::new("readelf").arg("--debug-dump=info").arg(&executable));
+    let dwarf = String::from_utf8_lossy(&dwarf.stdout);
+    for required in ["(Rust)", "): input", "): sum", "): u32", "DW_TAG_lexical_block"] {
+        assert!(dwarf.contains(required), "missing Rust DWARF evidence {required}: {dwarf}");
+    }
+    let good = std::fs::read(&executable).unwrap();
+    f.source("src/main.rs", "fn main() { let _: u32 = \"bad\"; }\n");
+    let invalid = f.invoke("invalid", f.command("cargo").args(["build", "--offline"]).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    assert_eq!(invalid.status.code(), Some(101));
+    assert_eq!(std::fs::read(executable).unwrap(), good, "a rejected edit replaced the last good executable");
+}
+
 #[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT"]
 fn native_output_failure_does_not_become_success() {

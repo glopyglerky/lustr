@@ -244,12 +244,14 @@ mod tests {
     }
 
     #[test]
-    fn linked_nonzero_debug_and_unimplemented_output_modes_are_refused() {
+    fn native_full_executable_debug_and_unimplemented_output_modes() {
         let link = "dep-info,link";
         assert!(request(link, &[]).is_some());
         let no_debug = ["-g", "-Cdebuginfo=0", "-Csplit-debuginfo=off", "-Cstrip=debuginfo"];
         assert_eq!(sent_options(request(link, &no_debug).unwrap()), *b"001");
-        for unsupported in ["-g", "-Cdebuginfo=line-tables-only", "-Cdebuginfo=1", "-Cdebuginfo=2", "-Csplit-debuginfo=packed", "-Cstrip=symbols"] {
+        assert_eq!(sent_options(request(link, &["-g"]).unwrap()), *b"400");
+        assert_eq!(sent_options(request(link, &["-Cdebuginfo=2"]).unwrap()), *b"400");
+        for unsupported in ["-Cdebuginfo=line-tables-only", "-Cdebuginfo=1", "-Csplit-debuginfo=packed", "-Cstrip=symbols"] {
             assert!(request(link, &[unsupported]).is_none(), "linked mode {unsupported}");
         }
     }

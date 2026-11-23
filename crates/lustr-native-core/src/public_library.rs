@@ -115,6 +115,7 @@ pub(crate) struct Owner {
 
 struct BinaryArtifact {
     source: Arc<str>,
+    debug: crate::protocol::library_contract::DebugOptions,
     module_sources: diag::SourceMap,
     environment: BTreeMap<String, Option<String>>,
     shown: Option<PathBuf>,
@@ -411,6 +412,7 @@ impl Owner {
                         } else if !observed.has_include
                             && let Some(cached) = &self.binary_output
                             && cached.source.as_ref() == prepared.source() && cached.shown == req.client.shown
+                            && cached.debug == req.library_options.debug
                             && cached.module_sources.same_sources(prepared.source_map())
                             && cached.environment == environment {
                             write_new(&staged.out, &cached.bytes)?;
@@ -439,7 +441,7 @@ impl Owner {
                 let completed = if let Some((source, module_sources)) = source {
                     let mode = fs::metadata(&staged.out).map_err(|error|error.to_string())?.mode() & 0o777;
                     let bytes = fs::read(&staged.out).map_err(|error|error.to_string())?.into();
-                    Some(BinaryArtifact { source, module_sources, environment: environment.clone(), shown:req.client.shown.clone(), mode, bytes })
+                    Some(BinaryArtifact { source, debug: req.library_options.debug, module_sources, environment: environment.clone(), shown:req.client.shown.clone(), mode, bytes })
                 } else { None };
                 let paths = [dependencies, output];
                 let dep = stage.join(key.dep_info_name());
