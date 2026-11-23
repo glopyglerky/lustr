@@ -1414,6 +1414,8 @@ pub struct Scope {
     /// annotations set it; nested types (`Scope::erased`) and bounds
     /// clear it, so the form is L0203 there.
     pub fn_ptr_free: bool,
+    /// A top-level parameter or return type being resolved from a signature.
+    pub(crate) imported_fn_type: Option<ast::TyId>,
     /// The regioned types of an impl's header (Self and the trait's type
     /// args): their outlives requirements are implied bounds of the impl
     /// and its methods (`check::outlives`).
@@ -1500,6 +1502,8 @@ pub struct ResolveCx<'x> {
     pub adt_lifetimes: &'x FxMap<DefId, Vec<Sym>>,
     /// User trait name to its def. Lang traits answer after it.
     pub trait_names: &'x crate::driver::read_cover::NameMap<DefId>,
+    /// Authoritative external projection results, keyed by resolved trait name.
+    pub imported_projections: Option<&'x FxMap<Sym, Vec<ImportedProjection>>>,
     /// Type aliases by name (collect pass 1.5). A generic alias's target
     /// is over its own params (`Param(i)`).
     pub aliases: &'x crate::driver::read_cover::NameMap<Ty>,
@@ -1511,6 +1515,14 @@ pub struct ResolveCx<'x> {
     pub item_index: &'x FxMap<Sym, u32>,
     /// `GenTables::anon_wants`; None for std source.
     pub(crate) anon_wants: Option<&'x AnonWants>,
+}
+
+/// One concrete receiver's lifetime-generic projection established upstream.
+/// A result of `None` records that the imported trait has no matching impl.
+pub struct ImportedProjection {
+    pub receiver: Sym,
+    pub item: Sym,
+    pub shared_integer_referent: Option<IntTy>,
 }
 
 /// The anonymous consts (`ast::Ast::anon_consts`) that collect met in
@@ -3625,6 +3637,33 @@ pub fn resolve_scoped(
             Ok(tys.intern(TyKind::FnPtr(sig)))
         }
         TyExpr::QPath { self_ty, trait_path, segs } => {
+            if let [trait_seg] = trait_path.as_slice()
+                && let Some(imported) = cx.imported_projections.and_then(|items| items.get(&trait_seg.name))
+            {
+                if scope.imported_fn_type != Some(id) {
+                    return Err(not_yet("L0621", span, "imported associated types outside direct function parameters and returns"));
+                }
+                // The resolver rewrites these names using the actual imported
+                // definition bindings. Do not match the user's path spelling.
+                if let TyExpr::Path(receiver) = ast.ty(*self_ty)
+                    && let ([receiver], [item]) = (receiver.as_slice(), segs.as_slice())
+                    && !trait_seg.has_args() && !receiver.has_args()
+                    && let GenericArgs::Angle(args) = &item.args
+                    && let [AstArg::Lifetime(lifetime)] = args.as_slice()
+                    && let Some(fact) = imported.iter().find(|fact| fact.receiver == receiver.name && fact.item == item.name)
+                {
+                    let region = scope_region(interner, scope, Some(*lifetime), span)?;
+                    let Some(referent) = fact.shared_integer_referent else {
+                        return Err(Diag::new(
+                            "L0110", span, "the imported associated type has no matching trait implementation",
+                            "Use a type that implements the trait, or add the required implementation.",
+                        ));
+                    };
+                    let referent = tys.intern(TyKind::Int(referent));
+                    return Ok(tys.intern(TyKind::Ref(region, Mut::Shared, referent)));
+                }
+                return Err(not_yet("L0621", span, "this imported associated type application"));
+            }
             let base = resolve_scoped(ast, interner, known, cx, tys, *self_ty, scope)?;
             if trait_path.is_empty() {
                 return assoc_projection(cx, tys, scope, base, segs, span, interner);
@@ -5593,6 +5632,7 @@ pub struct GenTables {
     pub lang: LangTraits,
     pub index: ImplIndex,
     pub trait_names: crate::driver::read_cover::NameMap<DefId>,
+    pub imported_projections: Option<FxMap<Sym, Vec<ImportedProjection>>>,
     pub trait_scopes: FxMap<DefId, Scope>,
     pub trait_methods: FxMap<DefId, TraitMethodTemplate>,
     /// Signatures of the lang trait methods, by method def
@@ -5860,6 +5900,7 @@ impl Default for GenTables {
             lang: LangTraits::new(),
             index: ImplIndex::new(),
             trait_names: crate::driver::read_cover::NameMap::new("trait"),
+            imported_projections: None,
             trait_scopes: FxMap::default(),
             trait_methods: FxMap::default(),
             lang_method_sigs: FxMap::default(),
@@ -5959,6 +6000,7 @@ impl GenTables {
             adt_generics: &self.adt_generics,
             adt_lifetimes: &self.adt_lifetimes,
             trait_names: &NO_DEFS,
+            imported_projections: None,
             aliases: &NO_TYS,
             generic_aliases: &NO_ALIASES,
             index: &self.index,
@@ -5975,6 +6017,7 @@ impl GenTables {
             adt_generics: &self.adt_generics,
             adt_lifetimes: &self.adt_lifetimes,
             trait_names: &self.trait_names,
+            imported_projections: self.imported_projections.as_ref(),
             aliases,
             generic_aliases: &self.generic_aliases,
             index: &self.index,
@@ -6183,6 +6226,25 @@ fn valid_receiver(tys: &impl TyIntern, t: Ty, self_ty: Ty) -> bool {
     }
 }
 
+/// Resolve the projection only at a signature position whose type and
+/// region signature participate in the native dependency fingerprints.
+fn resolve_signature_ty(
+    ast: &Ast,
+    interner: &Interner,
+    known: &Known,
+    cx: &ResolveCx,
+    tys: &mut impl TyIntern,
+    id: ast::TyId,
+    scope: &Scope,
+) -> Result<Ty, Diag> {
+    if cx.imported_projections.is_some() && matches!(ast.ty(id), TyExpr::QPath { .. }) {
+        let mut direct = scope.clone();
+        direct.imported_fn_type = Some(id);
+        return resolve_scoped(ast, interner, known, cx, tys, id, &direct);
+    }
+    resolve_scoped(ast, interner, known, cx, tys, id, scope)
+}
+
 /// Resolves one fn signature in template form: self parameter,
 /// params, and return, under the combined scope. Handles
 /// `impl Trait` argument sugar by growing the generics. Returns
@@ -6265,7 +6327,7 @@ pub fn resolve_fn_sig(
             let lhs = apit_param(ast, interner, known, cx, tys, &mut generics, &mut scope, bounds, ast.ty_span(n), errs);
             scope.apit.push((n, lhs));
         }
-        match resolve_scoped(ast, interner, known, cx, tys, param.ty, &scope) {
+        match resolve_signature_ty(ast, interner, known, cx, tys, param.ty, &scope) {
             // No Sized check here: a declaration with no body may
             // name unsized params (rustc allows it). The value
             // positions of a fn with a body are `check_written_wf`'s.
@@ -6337,7 +6399,7 @@ pub fn resolve_fn_sig(
                 }
             }
         }
-        (Some(t), _) => resolve_scoped(ast, interner, known, cx, tys, t, &scope).unwrap_or_else(|d| {
+        (Some(t), _) => resolve_signature_ty(ast, interner, known, cx, tys, t, &scope).unwrap_or_else(|d| {
             errs.push(d);
             ERROR
         }),
@@ -6609,7 +6671,7 @@ fn region_sig(
         let t = if let TyExpr::ImplTrait { .. } = ast.ty(param.ty) {
             *params.get(skip + i)?
         } else {
-            resolve_scoped(ast, interner, known, cx, tys, param.ty, &ks).ok()?
+            resolve_signature_ty(ast, interner, known, cx, tys, param.ty, &ks).ok()?
         };
         for _ in names.len()..counter.load(Ordering::Relaxed) as usize {
             names.push(format!("the lifetime of parameter {}", i + 1));
@@ -6644,7 +6706,7 @@ fn region_sig(
         // goes to `RegionTables::opaque_sigs`, whose rules never read
         // the return.
         Some(t) if opaque_caps.is_some() || matches!(ast.ty(t), TyExpr::ImplTrait { .. }) => UNIT,
-        Some(t) => match resolve_scoped(ast, interner, known, cx, tys, t, &rs) {
+        Some(t) => match resolve_signature_ty(ast, interner, known, cx, tys, t, &rs) {
             Ok(t) => t,
             Err(d) => {
                 if d.code == "L0202" {

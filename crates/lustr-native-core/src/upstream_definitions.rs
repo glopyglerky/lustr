@@ -148,7 +148,7 @@ fn native_type(program: &check::collect::Program, id: def::DefId) -> Result<ty::
     program.tys.get(ty::TyKind::Adt(id, ty::EMPTY_ARGS)).ok_or_else(|| "missing imported nominal type".into())
 }
 
-fn integer(actual: upstream::Ty<'_>) -> Option<ty::IntTy> {
+pub(super) fn integer(actual: upstream::Ty<'_>) -> Option<ty::IntTy> {
     use ty::IntTy as N;
     Some(match actual.kind() {
         upstream::Int(upstream::IntTy::I8) => N::I8,
@@ -221,7 +221,7 @@ impl Value {
     }
 }
 
-fn ids(tcx: TyCtxt<'_>, original: DefId) -> (def::DefId, def::DiskDefId) {
+pub(super) fn ids(tcx: TyCtxt<'_>, original: DefId) -> (def::DefId, def::DiskDefId) {
     let hash = tcx.def_path_hash(original);
     let disk = def::DiskDefId {
         krate: def::StableCrateHash(hash.stable_crate_id().as_u64()),

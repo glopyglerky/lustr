@@ -529,9 +529,23 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Qualify genuine provider definitions and native consumer semantics
+        id: shared_definitions
         if: ${{ !cancelled() }}
         run: |
           python3 tools/qualify-shared-upstream.py --cargo "$(rustup which cargo)" --rustc "$(rustup which rustc)" --tcc "$RUNNER_TEMP/lustr-tinycc/install" --output "$RUNNER_TEMP/lustr-shared-upstream"
+      - name: Qualify retained native checks against an upstream associated type
+        if: ${{ !cancelled() && steps.shared_definitions.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          sdk="$(rustc --print sysroot)"
+          export LD_LIBRARY_PATH="$sdk/lib"
+          export LUST_NO_CACHE=1 LUST_NO_DAEMON=1 LUST_LIBRARY="$GITHUB_WORKSPACE/compiler/native/library"
+          evaluator="$RUNNER_TEMP/test-native-projection-retention"
+          qualifier="$RUNNER_TEMP/lustr-shared-upstream/target/debug/examples/native-upstream-qualification"
+          "$sdk/bin/rustc" --edition=2024 tools/test-native-projection-retention.rs -o "$evaluator"
+          sha256sum "$evaluator" "$qualifier" tools/test-native-projection-retention.rs tools/native-projection-qualification.rs > "$RUNNER_TEMP/native-projection-inputs.sha256"
+          "$evaluator" "$sdk/bin/cargo" "$sdk/bin/rustc" "$qualifier" "$RUNNER_TEMP/native-projection-retention"
+          sha256sum --check "$RUNNER_TEMP/native-projection-inputs.sha256"
       - name: Qualify owned imported emission and failure preservation
         if: ${{ !cancelled() }}
         run: |
@@ -583,6 +597,10 @@ jobs:
             ${{ runner.temp }}/lustr-shared-upstream/*.stdout
             ${{ runner.temp }}/lustr-shared-upstream/*.stderr
             ${{ runner.temp }}/lustr-shared-upstream/campaign
+            ${{ runner.temp }}/native-projection-inputs.sha256
+            ${{ runner.temp }}/native-projection-retention/*.stdout
+            ${{ runner.temp }}/native-projection-retention/*.stderr
+            ${{ runner.temp }}/native-projection-retention/*.status
             ${{ runner.temp }}/lustr-import-emission/verification.json
             ${{ runner.temp }}/lustr-import-emission/*.stdout
             ${{ runner.temp }}/lustr-import-emission/*.stderr

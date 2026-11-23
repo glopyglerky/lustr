@@ -104,6 +104,7 @@ fn shift_gen_tables(gx: &mut GenTables, sp: &mut dyn FnMut(&mut Span)) {
         lang: _,
         index,
         trait_names: _,
+        imported_projections: _, // no consumer spans
         trait_scopes: _,
         trait_methods,
         lang_method_sigs: _,

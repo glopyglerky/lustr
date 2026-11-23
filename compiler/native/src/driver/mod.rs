@@ -73,6 +73,9 @@ pub fn prepare_imported<'a>(req: &'a Request, session: &'a mut Session, definiti
     compile::prepare_imported(req, session, definitions)
 }
 
+#[cfg(feature = "upstream-semantic")]
+pub(crate) use compile::prepare_projection_import;
+
 /// An optional, call-borrowed view of the actual body-checking phase. Early
 /// parse/collect failures and cached check answers produce no phase events.
 /// Observations do not grant acceptance or establish cross-request reuse.

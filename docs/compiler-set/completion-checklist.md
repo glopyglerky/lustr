@@ -114,6 +114,23 @@ analysis, redesign the failing identity/query/typed-body adapter and re-run the
 same fixture before widening admission. A compiler fallback or unrelated scalar
 pass cannot close the failed boundary.
 
+The [associated-type qualification](../../tools/test-native-projection-retention.rs)
+builds genuine dependency metadata with pinned Cargo and Rust. Lust uses the
+upstream projection result in direct function parameter and return types and
+compiles the original consumer into a runnable native executable. Only the
+dependency metadata goes to the upstream query. The test rejects a changed
+referent type, a missing impl and a lifetime escape. The same native session
+rechecks only the function and caller affected by the dependency type edit and
+repair. The unchanged request invokes neither upstream normalization nor
+native body checking. Rejected requests preserve the last executable.
+
+This is a standalone research entry for one lifetime-generic associated type.
+It uses a pinned SDK to load metadata and prove a shared integer reference
+whose lifetime is the supplied argument. It does not admit arbitrary
+projections or enable the mixed operation through the ordinary Cargo driver.
+The qualifier records query and native request durations. The results do not
+qualify complete-work performance or establish that the SDK closure is minimal.
+
 Complete the remaining macro/proc-macro, trait/projection, region/move,
 const-evaluation, unsafe/FFI and async/coroutine obligations through justified
 upstream reuse. A feature is not complete until its declarations, checking,

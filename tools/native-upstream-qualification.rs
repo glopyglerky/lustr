@@ -15,6 +15,8 @@ extern crate rustc_trait_selection;
 include!("../crates/lustr-native-core/src/lib.rs");
 #[path = "../crates/lustr-native-core/src/upstream_definitions.rs"]
 mod upstream_definitions;
+#[path = "native-projection-qualification.rs"]
+mod native_projection_qualification;
 
 #[link(name = "tcc", kind = "static")]
 unsafe extern "C" {}
@@ -147,6 +149,9 @@ mod qualification {
 
     pub fn run() -> u8 {
         let arguments: Vec<_> = std::env::args_os().skip(1).collect();
+        if arguments.first().is_some_and(|arg| arg == "--projection") {
+            return native_projection_qualification::run(&arguments[1..]);
+        }
         if arguments.first().is_some_and(|argument| argument == "--front-image-control") {
             unsafe extern "C" fn unused_sink(_: *mut std::ffi::c_void, _: i32, _: *const u8, _: usize) { panic!("refused entry called the sink") }
             assert!(!embedding_environment_supported());

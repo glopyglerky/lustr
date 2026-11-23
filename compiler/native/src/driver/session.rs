@@ -452,9 +452,11 @@ pub struct Session {
     /// "not opened yet" from "cache is off".
     pub(crate) disk_cache: Option<crate::driver::cache::Cache>,
     pub(crate) cache_tried: bool,
-    /// The first imported-definition seam owns one fresh request only. No
-    /// ordinary or imported request may reuse its unkeyed retained state.
+    /// Ordinary requests cannot consume a session's imported state.
     pub(crate) imported_request: bool,
+    /// Metadata-only research imports have no code objects. Their snapshots
+    /// determine when native signatures and the existing body reads must refresh.
+    pub(crate) projection_inputs: Option<Vec<super::imports::Dependency>>,
 }
 
 impl Front {
@@ -595,6 +597,7 @@ impl Session {
             disk_cache: None,
             cache_tried: artifact_mode,
             imported_request: false,
+            projection_inputs: None,
         }
     }
     pub fn obj_dir(&self) -> &Path {
