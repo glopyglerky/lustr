@@ -10191,7 +10191,7 @@ index da28835400f894866adb85f436e2cbdf109797d7..c2a8d6a10a776fba1df984670ff8b994
          assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
          assert!(decode_response(b"short").is_none());
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..441c412fbe77d97499cf8ee63d6bcd44574fedfe 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..5be2b9b81e45962402f1868534ebe67a45b99632 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
 @@ -59,6 +59,7 @@ fn expand_tokens(
@@ -10907,7 +10907,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..441c412fbe77d97499cf8ee63d6bcd44
 +    session: &'a mut Session,
 +    definitions: &dyn super::imports::Definitions,
 +) -> Result<Preparation<'a>, super::imports::Unintegrated> {
-+    let previous = session.imported_inputs.as_ref();
++    let previous = session.imported_generation.as_ref();
 +    if req.session != session.key || !session.caches.persistent || session.caches.output != super::OutputKind::Standalone
 +        || previous.is_none() && (session.imported_request || session.front.env_hash.is_some()
 +            || !session.front.src.is_empty() || !session.front.slot_of.is_empty())
@@ -10924,12 +10924,12 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..441c412fbe77d97499cf8ee63d6bcd44
 +/// slots and emitted objects survive; their normal full-mode replay determines
 +/// which results still hold. Only validated providers enter this boundary.
 +fn update_imported_generation(session: &mut Session, definitions: &dyn super::imports::Definitions) {
-+    let inputs = definitions.dependencies();
-+    if let Some(previous) = &session.imported_inputs
-+        && !(inputs.len() == previous.len() && inputs.iter().zip(previous).all(|(a, b)| {
-+            a.identity == b.identity && a.contents == b.contents
-+        }))
-+    {
++    use super::imports::Generation;
++    let generation = match definitions.scalar_definitions() {
++        Some(facts) => Generation::Scalar(facts),
++        None => Generation::Inputs(definitions.dependencies()),
++    };
++    if session.imported_generation.as_ref().is_some_and(|previous| *previous != generation) {
 +        // Recollect signatures from the new metadata. Keep the slots, types,
 +        // and read sets: the normal full-mode walk reuses bodies whose
 +        // signature and other dependencies still hold.
@@ -10940,7 +10940,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..441c412fbe77d97499cf8ee63d6bcd44
 +        super::patch::drop_kept(&mut session.front, &mut session.caches);
 +    }
 +    session.imported_request = true;
-+    session.imported_inputs = Some(inputs);
++    session.imported_generation = Some(generation);
 +    session.cache_tried = true;
 +    session.disk_cache = None;
 +}
@@ -11639,7 +11639,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..441c412fbe77d97499cf8ee63d6bcd44
 -    let fresh_base = caches.objects != Some(req.debug) || !caches.persistent;
 +    let standalone = caches.output == super::session::OutputKind::Standalone;
 +    let retain_standalone = req.session.library.as_ref().is_some_and(|key| key.is_executable())
-+        || session.imported_inputs.is_some();
++        || session.imported_generation.is_some();
 +    // Cargo's dependency-free unwind binaries use the existing native panic
 +    // propagation. TinyCC's own linker also preserves its multi-body frame
 +    // relocations, which cannot be passed to another linker in this form.
@@ -12690,26 +12690,55 @@ index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..8e8b82887f98f91af2e5d696eff62b10
                  }
 diff --git a/src/driver/imports.rs b/src/driver/imports.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..f209cd0b93f8d263f35aa33e17802e6720634061
+index 0000000000000000000000000000000000000000..2945efaed1e2410acdd8f15beea4a88275b2b489
 --- /dev/null
 +++ b/src/driver/imports.rs
-@@ -0,0 +1,46 @@
+@@ -0,0 +1,78 @@
 +//! Imported semantic definitions for one owned native request.
 +//!
 +//! The provider installs resolved definitions before collection checks any
 +//! initializer or body. It supplies actual compiler facts, never declarations
-+//! generated as source. Retained owners bind exact validated dependency bytes
-+//! to declaration refresh and native read replay. Disk-cache restoration of
-+//! imported generations remains unavailable.
++//! generated as source. Retained owners bind validated declaration inputs to
++//! native read replay and keep the exact dependency bytes for artifact use.
++//! Disk-cache restoration of imported generations remains unavailable.
 +
-+use crate::{check::collect::Program, diag::Diag, intern::Interner, resolve::imports::ResolvedTables};
++use std::sync::Arc;
 +
-+/// An immutable input to the imported semantic service. The provider records
-+/// the real metadata/compiler/object identity it consumed; native checking's
-+/// definition reads remain attached to the imported definitions themselves.
++use crate::{check::collect::Program, def, diag::Diag, intern::Interner, resolve::imports::ResolvedTables, ty};
++
++/// An immutable metadata, compiler, or object input consumed by the provider.
++#[derive(PartialEq, Eq)]
 +pub struct Dependency {
 +    pub identity: String,
-+    pub contents: std::sync::Arc<[u8]>,
++    pub contents: Arc<[u8]>,
++}
++
++/// The full set of native declarations exposed by the scalar metadata reader.
++/// It does not expose implementation bodies, inlining, or const evaluation.
++#[derive(PartialEq, Eq)]
++pub struct ScalarDefinitions {
++    pub alias: String,
++    pub crate_name: String,
++    pub stable: def::StableCrateHash,
++    pub index: def::CrateId,
++    pub functions: Vec<ScalarFunction>,
++}
++
++#[derive(PartialEq, Eq)]
++pub struct ScalarFunction {
++    pub name: String,
++    pub hash: def::DefPathHash,
++    pub parameters: Vec<ty::IntTy>,
++    pub result: ty::IntTy,
++    pub symbol: String,
++}
++
++/// Inputs that affect the current checked declarations. Providers without a
++/// complete representation of their facts conservatively use exact bytes.
++#[derive(PartialEq, Eq)]
++pub(crate) enum Generation {
++    Inputs(Vec<Dependency>),
++    Scalar(Vec<Arc<ScalarDefinitions>>),
 +}
 +
 +/// Native-supported work whose joined context/profile is not implemented by
@@ -12736,6 +12765,9 @@ index 0000000000000000000000000000000000000000..f209cd0b93f8d263f35aa33e17802e67
 +    /// Validate the installed semantic facts without executing an emitter.
 +    fn validate_checked(&self, program: &Program) -> Result<(), String>;
 +    fn dependencies(&self) -> Vec<Dependency>;
++    /// Executables use only admitted scalar declarations in checking. Their
++    /// raw metadata and archive inputs remain bound to artifact publication.
++    fn scalar_definitions(&self) -> Option<Vec<Arc<ScalarDefinitions>>> { None }
 +    /// Transfer the immutable, single-use plan after semantic validation.
 +    /// Constructing or taking the plan must not emit code or materialize objects.
 +    fn take_emission(&self) -> Result<Box<dyn Emission + 'static>, String>;
@@ -13375,7 +13407,7 @@ index a42971cf10bbbdd13511f51c07aef68556044221..dd3db440164d3a25122502b96d4caf00
      /// parameter to `dyn` checks the template again on the kept program
      /// as collect does (before mono, so no concrete vtable is asked for).
 diff --git a/src/driver/session.rs b/src/driver/session.rs
-index 8eabf97640455036f5f7c895cd034b98f4c5b9d3..7b0d2ba658b6e724c3b0841bc2c55cd0038934c0 100644
+index 8eabf97640455036f5f7c895cd034b98f4c5b9d3..02bbca06f2f6264ebef6067a3f01e4c0397c04ab 100644
 --- a/src/driver/session.rs
 +++ b/src/driver/session.rs
 @@ -274,6 +274,10 @@ pub(crate) struct Caches {
@@ -13423,9 +13455,9 @@ index 8eabf97640455036f5f7c895cd034b98f4c5b9d3..7b0d2ba658b6e724c3b0841bc2c55cd0
      pub(crate) cache_tried: bool,
 +    /// Ordinary requests cannot consume a session's imported state.
 +    pub(crate) imported_request: bool,
-+    /// Exact validated imported inputs for the retained generation. Changed
-+    /// bytes force declaration refresh and replay of native semantic reads.
-+    pub(crate) imported_inputs: Option<Vec<super::imports::Dependency>>,
++    /// Validated facts for the retained imported generation. Changed facts
++    /// force declaration refresh and replay of native semantic reads.
++    pub(crate) imported_generation: Option<super::imports::Generation>,
  }
  
  impl Front {
@@ -13462,7 +13494,7 @@ index 8eabf97640455036f5f7c895cd034b98f4c5b9d3..7b0d2ba658b6e724c3b0841bc2c55cd0
 -            cache_tried: false,
 +            cache_tried: artifact_mode,
 +            imported_request: false,
-+            imported_inputs: None,
++            imported_generation: None,
          }
      }
      pub fn obj_dir(&self) -> &Path {
