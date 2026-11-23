@@ -5671,22 +5671,24 @@ pub struct ImplAssociatedType {
 
 fn associated_identity_arguments(
     tys: &mut impl TyIntern, syntax: &ast::Generics, own: &Generics, own_scope: &Scope, shift: u32,
-) -> Vec<GenericArg> {
+) -> Option<Vec<GenericArg>> {
     let mut lifetimes = own_scope.lifetimes.iter();
     let mut parameters = own.params.iter().enumerate();
-    syntax.params.iter().map(|parameter| match parameter {
+    // Collection reports and discards invalid or duplicate lifetime names.
+    // An incomplete binder must never be recorded with shifted identities.
+    syntax.params.iter().map(|parameter| Some(match parameter {
         ast::GenericParam::Lifetime { .. } => GenericArg::Lifetime(Region::Param(
-            lifetimes.next().expect("collected own lifetime").1,
+            lifetimes.next()?.1,
         )),
         ast::GenericParam::Type { .. } => {
-            let (index, _) = parameters.next().expect("collected own type parameter");
+            let (index, _) = parameters.next()?;
             GenericArg::Ty(tys.intern(TyKind::Param(ParamId(shift + index as u32))))
         }
         ast::GenericParam::Const { .. } => {
-            let (index, _) = parameters.next().expect("collected own const parameter");
+            let (index, _) = parameters.next()?;
             GenericArg::Const(tys.intern_const(ConstKind::Param(shift + index as u32)))
         }
-    }).collect()
+    })).collect()
 }
 
 #[cfg(test)]
@@ -7515,7 +7517,9 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
                 region_scope.param_tys.extend_from_slice(&own_scope.param_tys);
                 region_scope.assoc_srcs.extend_from_slice(&own_scope.assoc_srcs);
                 region_scope.region_facts.extend_from_slice(&own_scope.region_facts);
-                let arguments = associated_identity_arguments(&mut p.tys, &at_params, &own, &own_scope, generics.params.len() as u32);
+                let Some(arguments) = associated_identity_arguments(&mut p.tys, &at_params, &own, &own_scope, generics.params.len() as u32) else {
+                    continue;
+                };
                 let (_, region_predicates) = regioned_bound_preds(
                     &p.ast, &p.interner, &p.known, &cx, &mut p.tys,
                     &region_scope, &at_params, &at_where, &[],
@@ -7941,6 +7945,9 @@ pub fn finish_trait_impl(
             );
             (own, own_scope, region_predicates)
         };
+        let Some(arguments) = associated_identity_arguments(&mut p.tys, &at.generics, &own, &own_scope, impl_generics.params.len() as u32) else {
+            continue;
+        };
         match at.default {
             Some(d) => {
                 // An assoc type's value elides no lifetime (rustc E0637);
@@ -7958,7 +7965,6 @@ pub fn finish_trait_impl(
                 region_scope.regions = RegionMode::Keep { next: None, elided: Some(Region::Bound(0)) };
                 match resolve_scoped(&p.ast, &p.interner, &p.known, &cx, &mut p.tys, d, &region_scope) {
                     Ok(value) => {
-                        let arguments = associated_identity_arguments(&mut p.tys, &at.generics, &own, &own_scope, impl_generics.params.len() as u32);
                         let mut required = regioned_bound_tys(
                             &p.ast, &p.interner, &p.known, &cx, &mut p.tys,
                             &item_scope, &at.generics, &at.where_clause, &[],

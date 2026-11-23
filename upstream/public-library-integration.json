@@ -185,7 +185,7 @@
     "compiler/native/src/resolve/worklist.rs": "b0ea3e230eead9da344ee2635b5fe4cabd1ed8da44f5390b3833dbd7ed80a445",
     "compiler/native/src/resolve/imports.rs": "345edb79150c9b067af677d4b13d1758e427e630bda1770ae27cf245cf1c5af3",
     "compiler/native/src/driver/graph.rs": "60e83bdea08e4121a59047085834df3e159af534d96d86399b123b86456d81ff",
-    "compiler/native/src/check/generics.rs": "476c08d07aa92c3cc9dd9ccf848a42cb17fbf216187193510ec9e304e1ad3c81",
+    "compiler/native/src/check/generics.rs": "547231faba64ab788a88175f0bc2ac189e801a1655fd5b3e4f3a9f3d5473fd44",
     "compiler/native/src/check/prog_shift.rs": "0fe7537435bba542ac120788e3f21e244f99a38915822db9c99e07475287139d",
     "compiler/native/src/check/delta_audit.rs": "bec9286307deb8ac21700809a8984e152001895590f2ebbb7805682d2826212b",
     "compiler/native/src/borrowck/regions/supers.rs": "8412451ceccfb5272a91f918fc2470c6e26d736ba3fba823b13375ac13ffc2f1",
