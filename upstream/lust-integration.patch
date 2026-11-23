@@ -4548,7 +4548,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..4bc18fefd99859e5e8736ae86e9bb598
          // locals 8.. hold &l2, &l5, &l6, &l7 for the four prints.
          let ref_i64 = body.tys.mk_ref(false, i64_ty);
 diff --git a/src/cgen/ll.rs b/src/cgen/ll.rs
-index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..5fae364f3ce4c011fe49a9d669b248fdd9d58e9a 100644
+index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..3609a1583b5b4dc6be01e547ae358c5daf17db20 100644
 --- a/src/cgen/ll.rs
 +++ b/src/cgen/ll.rs
 @@ -19,6 +19,7 @@
@@ -4848,7 +4848,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..5fae364f3ce4c011fe49a9d669b248fd
 +        let program = self.p;
 +        let Some((parameters, result, link)) = program.native_fn(def) else { return false; };
 +        let scalar = |ty| {
-+            let ty::TyKind::Int(kind) = program.tys.kind(ty) else { return None; };
++            let crate::ty::TyKind::Int(kind) = program.tys.kind(ty) else { return None; };
 +            if !crate::driver::library::completion::has_direct_integer_abi(kind) { return None; }
 +            let native = cty(&program.tys, ty);
 +            match pass_of(program, &native) {
