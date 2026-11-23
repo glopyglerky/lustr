@@ -2722,9 +2722,8 @@ impl FnGen<'_, '_> {
         true
     }
 
-    /// A call of a builtin that only reads its argument's fields (a length, a capacity,
-    /// emptiness, `String::as_str`, `Cell::get`), lowered natively as cgen's builtin forms
-    /// write it. False (nothing emitted) for any other builtin or shape.
+    /// Field reads and wrapping integer operations lowered with the same semantics as
+    /// cgen's builtin forms. False (nothing emitted) for any other builtin or shape.
     fn ll_native_builtin(&mut self, ll: &mut Ll, b: Builtin, args: &[Operand], dest: &Place) -> bool {
         use Builtin as B;
         let p = self.p;
@@ -2732,10 +2731,34 @@ impl FnGen<'_, '_> {
             return false;
         }
         let Some(dp) = self.ll_plan(ll, dest) else { return false };
-        let [a] = args else { return false };
         if needs_drop_c(p, &dp.ty) {
             return false;
         }
+        let wrapping_opcode = match b {
+            B::WrappingAdd => Some("add"),
+            B::WrappingSub => Some("sub"),
+            B::WrappingMul => Some("mul"),
+            _ => None,
+        };
+        if let Some(opcode) = wrapping_opcode {
+            let [left, right] = args else { return false };
+            let CTy::Int(int) = dp.ty else { return false };
+            if is128(int)
+                || !self.ll_scalar_ok(ll, left).is_some_and(|(ty, _)| ty == dp.ty)
+                || !self.ll_scalar_ok(ll, right).is_some_and(|(ty, _)| ty == dp.ty)
+            {
+                return false;
+            }
+            let Pass::Scalar(ty, _) = pass_of(p, &dp.ty) else { return false };
+            let left = self.ll_scalar(ll, left);
+            let right = self.ll_scalar(ll, right);
+            let (addr, align) = self.ll_addr(ll, &dp);
+            ll.conts += 1;
+            let value = ll.conts;
+            let _ = writeln!(ll.body, "  %bw{value} = {opcode} {ty} {left}, {right}\n  store {ty} %bw{value}, ptr {addr}, align {align}");
+            return true;
+        }
+        let [a] = args else { return false };
         let usize_dest = dp.ty == CTy::Int(IntTy::Usize);
         let bool_dest = dp.ty == CTy::Bool;
         // The value: `Word(i64 value)` or `Str(ptr, len)`.

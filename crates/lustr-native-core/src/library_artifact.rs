@@ -218,6 +218,7 @@ fn mapped_functions(functions:&[Function])->Vec<metadata::Function> {
     functions.iter().map(|f|metadata::Function {definition:native_id(f.definition()),name:f.name().into(),
         name_span:span(f.name_span()),span:span(f.span()),public:f.visibility()==crate::driver::library::completion::Visibility::Public,
         docs:f.docs().iter().map(|doc|metadata::DocComment{span:span(doc.span),text:doc.text.clone(),block:doc.block}).collect(),
+        inline_never:f.inline_never(),
         parameters:f.parameters().iter().map(|p|metadata::Parameter{name:p.name().into(),span:span(p.span()),
             ty:metadata::IntegerType::from_rust_name(p.ty().name()).expect("completed parameter type")}).collect(),
         result:metadata::IntegerType::from_rust_name(f.result().name()).expect("completed result type"),

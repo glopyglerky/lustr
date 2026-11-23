@@ -4751,7 +4751,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..6ecdc4de716101ef9c79c928ef6adbe0
          // locals 8.. hold &l2, &l5, &l6, &l7 for the four prints.
          let ref_i64 = body.tys.mk_ref(false, i64_ty);
 diff --git a/src/cgen/ll.rs b/src/cgen/ll.rs
-index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..3609a1583b5b4dc6be01e547ae358c5daf17db20 100644
+index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..da140132c9ede6eaea8023d528fb75665e98092d 100644
 --- a/src/cgen/ll.rs
 +++ b/src/cgen/ll.rs
 @@ -19,6 +19,7 @@
@@ -5083,7 +5083,55 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..3609a1583b5b4dc6be01e547ae358c5d
      /// For each block, the locals whose drop flag may be set at its terminator: a write to a
      /// local (an assign to it or a part, a call result) may set its flag; a move of the whole
      /// local or its drop clears it. A move this does not model counts as still set, so a
-@@ -2939,7 +3041,7 @@ fn source_fn_attrs(p: &Program, f: LocalDefId) -> String {
+@@ -2620,9 +2722,8 @@ impl FnGen<'_, '_> {
+         true
+     }
+ 
+-    /// A call of a builtin that only reads its argument's fields (a length, a capacity,
+-    /// emptiness, `String::as_str`, `Cell::get`), lowered natively as cgen's builtin forms
+-    /// write it. False (nothing emitted) for any other builtin or shape.
++    /// Field reads and wrapping integer operations lowered with the same semantics as
++    /// cgen's builtin forms. False (nothing emitted) for any other builtin or shape.
+     fn ll_native_builtin(&mut self, ll: &mut Ll, b: Builtin, args: &[Operand], dest: &Place) -> bool {
+         use Builtin as B;
+         let p = self.p;
+@@ -2630,10 +2731,34 @@ impl FnGen<'_, '_> {
+             return false;
+         }
+         let Some(dp) = self.ll_plan(ll, dest) else { return false };
+-        let [a] = args else { return false };
+         if needs_drop_c(p, &dp.ty) {
+             return false;
+         }
++        let wrapping_opcode = match b {
++            B::WrappingAdd => Some("add"),
++            B::WrappingSub => Some("sub"),
++            B::WrappingMul => Some("mul"),
++            _ => None,
++        };
++        if let Some(opcode) = wrapping_opcode {
++            let [left, right] = args else { return false };
++            let CTy::Int(int) = dp.ty else { return false };
++            if is128(int)
++                || !self.ll_scalar_ok(ll, left).is_some_and(|(ty, _)| ty == dp.ty)
++                || !self.ll_scalar_ok(ll, right).is_some_and(|(ty, _)| ty == dp.ty)
++            {
++                return false;
++            }
++            let Pass::Scalar(ty, _) = pass_of(p, &dp.ty) else { return false };
++            let left = self.ll_scalar(ll, left);
++            let right = self.ll_scalar(ll, right);
++            let (addr, align) = self.ll_addr(ll, &dp);
++            ll.conts += 1;
++            let value = ll.conts;
++            let _ = writeln!(ll.body, "  %bw{value} = {opcode} {ty} {left}, {right}\n  store {ty} %bw{value}, ptr {addr}, align {align}");
++            return true;
++        }
++        let [a] = args else { return false };
+         let usize_dest = dp.ty == CTy::Int(IntTy::Usize);
+         let bool_dest = dp.ty == CTy::Bool;
+         // The value: `Word(i64 value)` or `Str(ptr, len)`.
+@@ -2939,7 +3064,7 @@ fn source_fn_attrs(p: &Program, f: LocalDefId) -> String {
                  if let crate::ast::AttrInput::List(_, trees) = &a.input {
                      for t in trees {
                          if let TokenTree::Token(t) = t
@@ -5092,7 +5140,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..3609a1583b5b4dc6be01e547ae358c5d
                          {
                              match p.name(n) {
                                  "always" => how = " alwaysinline",
-@@ -3066,7 +3168,12 @@ fn ll_proto(p: &Program, f: LocalDefId, id: &str) -> String {
+@@ -3066,7 +3191,12 @@ fn ll_proto(p: &Program, f: LocalDefId, id: &str) -> String {
  
  /// The LLVM declaration of written fn `f`'s internal ABI entry `fl_<id>`: the types and
  /// extension attributes of its definition (`FnGen::ll_define`).
@@ -5106,7 +5154,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..3609a1583b5b4dc6be01e547ae358c5d
      let info = p.fn_info(f);
      let rt = cty(&p.tys, info.ret);
      let mut params: Vec<String> = Vec::new();
-@@ -3098,7 +3205,7 @@ fn ll_decl(p: &Program, f: LocalDefId, id: &str) -> String {
+@@ -3098,7 +3228,7 @@ fn ll_decl(p: &Program, f: LocalDefId, id: &str) -> String {
      if crate::check::caller::is_track_caller(p, f) {
          params.push("ptr, i64".into());
      }
@@ -5115,7 +5163,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..3609a1583b5b4dc6be01e547ae358c5d
  }
  
  /// The line that ends an LLVM unit's plain C prelude (only its wrappers' types): what
-@@ -3351,6 +3458,11 @@ impl Adapters {
+@@ -3351,6 +3481,11 @@ impl Adapters {
  /// The `.ll` text of one release fn unit: the declarations its fns name (each once) and
  /// their definitions, then an `available_externally` copy of each fn in `inl`
  /// (`ll_inline_set`). Empty when no fn of the unit has LLVM IR.
@@ -5127,7 +5175,7 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..3609a1583b5b4dc6be01e547ae358c5d
  pub fn ll_unit(fns: &[FnOut], slots: &[usize], inl: &[usize], triple: &str) -> String {
      if slots.iter().all(|&s| fns[s].ll.is_empty()) {
          return String::new();
-@@ -3371,24 +3483,37 @@ pub fn ll_unit(fns: &[FnOut], slots: &[usize], inl: &[usize], triple: &str) -> S
+@@ -3371,24 +3506,37 @@ pub fn ll_unit(fns: &[FnOut], slots: &[usize], inl: &[usize], triple: &str) -> S
          .iter()
          .chain(inl)
          .filter_map(|&s| {

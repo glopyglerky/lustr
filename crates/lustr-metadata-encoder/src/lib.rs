@@ -158,6 +158,7 @@ pub struct Function {
     pub span: Span,
     pub public: bool,
     pub docs: Vec<DocComment>,
+    pub inline_never: bool,
     pub parameters: Vec<Parameter>,
     pub result: IntegerType,
     pub calls: Vec<NativeId>,

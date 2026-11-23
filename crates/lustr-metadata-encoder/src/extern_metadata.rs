@@ -650,7 +650,10 @@ fn read_scalar_function<'a>(krate: &IndexedCrate<'a>, index: usize) -> Option<Op
         && krate.record("generics_of", index)?.take(7)? == [0; 7]
         && krate.record("explicit_clauses_of", index)?.take(2)? == [0; 2]).then_some(())?;
     let mut codegen = krate.record("codegen_fn_attrs", index)?;
-    (codegen.take(13)? == [0; 13] && codegen.byte()? == 2 && codegen.take(6)? == [0; 6]).then_some(())?;
+    // Both the default and InlineAttr::Never use the existing out-of-line call.
+    (codegen.byte()? == 0 && matches!(codegen.byte()?, 0 | 3)
+        && codegen.take(11)? == [0; 11] && codegen.byte()? == 2
+        && codegen.take(6)? == [0; 6]).then_some(())?;
     let mut signature = krate.record("fn_sig", index)?;
     (signature.leb()? == 0).then_some(())?;
     let count = signature.leb()?;

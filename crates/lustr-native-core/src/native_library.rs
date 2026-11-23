@@ -257,14 +257,28 @@ pub(crate) fn parse_root(l: &lexer::Lexed, i: &intern::Interner, k: &intern::Kno
     Ok(a)
 }
 
+fn wrapping_arithmetic(builtin: check::Builtin) -> bool {
+    matches!(builtin, check::Builtin::WrappingAdd | check::Builtin::WrappingSub | check::Builtin::WrappingMul)
+}
+
 pub(super) fn capture(p: &check::collect::Program, id: def::LocalDefId, checked: &check::Checked<'_>) -> AcceptedBody {
-    let expressions = checked.expr_res.iter().map(|resolution| match resolution {
+    let expressions = checked.expr_res.iter().enumerate().map(|(offset, resolution)| match resolution {
         check::Res::None => Resolution::None,
         check::Res::Local(local) => checked.param_locals.iter().position(|param|param==local).map_or(Resolution::Local(*local),Resolution::Parameter),
         check::Res::Fn(function) if (function.0 as usize)<p.fns.len() => Resolution::Function(p.disk_id(*function)),
         check::Res::NativeFn(definition) => p.native_fn(*definition)
             .map_or(Resolution::Other, |(_, _, linkage)| Resolution::ImportedFunction(linkage.id)),
         check::Res::Bin { ld:0,rd:0 } => Resolution::PrimitiveOperands,
+        check::Res::BuiltinMethod { b, derefs: 0, autoref: check::Autoref::None }
+            if wrapping_arithmetic(*b) =>
+        {
+            match p.ast.exprs.get(checked.expr_base as usize + offset) {
+                Some(ast::Expr::MethodCall { recv, .. })
+                    if matches!(checked.tys.kind(checked.ty(*recv)), crate::ty::TyKind::Int(ty) if ty.bits() <= 64)
+                    => Resolution::PrimitiveWrapping,
+                _ => Resolution::Other,
+            }
+        }
         _ => Resolution::Other,
     }).collect();
     let bindings = checked.pat_res.iter().zip(&checked.pat_ty).map(|(resolution, ty)| match resolution {
@@ -286,6 +300,9 @@ pub(super) fn lowered(p: &check::collect::Program, facts: &mut AcceptedBody, bod
                         if let Some(edges) = &mut calls { edges.insert(linkage.id); }
                     } else { calls = None; }
                 }
+                // These operations lower to integer expressions in the native
+                // emitter. They add no source-function edge to the archive.
+                ir::CallTarget::Builtin(builtin) if wrapping_arithmetic(builtin) => {}
                 _ => calls = None,
             }
         }

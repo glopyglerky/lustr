@@ -229,7 +229,7 @@ pub(crate) fn encode(
             cx.opaque.emit_u8(if function.public { 0 } else { 1 });
             if !function.public { cx.local_def(0); }
         });
-        cx.fact("codegen_fn_attrs", index, codegen_attrs);
+        cx.fact("codegen_fn_attrs", index, |cx| codegen_attrs(cx, function.inline_never));
         cx.array_fact::<()>("variances_of", index, &[], |_, _| unreachable!());
         cx.fact("fn_sig", index, |cx| {
             cx.opaque.emit_usize(0); // Binder bound vars, original order.
@@ -438,11 +438,11 @@ pub(crate) fn encode(
     Ok(Encoded { metadata, metadata_stub, stable_crate_id: stable_id, crate_hash, symbols: mappings })
 }
 
-fn codegen_attrs(cx: &mut Context) {
+fn codegen_attrs(cx: &mut Context, inline_never: bool) {
     // Original CodegenFnAttrs::new for the admitted ordinary function/profile:
     // every field follows the original struct's derived serialization order.
     cx.opaque.emit_u32(0); // flags
-    cx.opaque.emit_u8(0); // inline None
+    cx.opaque.emit_u8(if inline_never { 3 } else { 0 }); // InlineAttr::Never or None.
     cx.opaque.emit_u8(0); // optimize Default
     cx.opaque.emit_u8(0); // symbol_name None: preserve original v0 mangling
     cx.opaque.emit_usize(0); // foreign_item_symbol_aliases

@@ -203,6 +203,7 @@ fn compile(source: &Path, root: &Path, receipt: &Path, sysroot: &Path, report: &
                 text: doc.text.clone(),
                 block: doc.block,
             }).collect(),
+            inline_never: function.inline_never(),
             parameters: function
                 .parameters()
                 .iter()

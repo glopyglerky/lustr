@@ -27,10 +27,10 @@
     "Cargo.toml": "87f7c20309227c01fc37fb39c6432a9c34419982dcfd3ab0daa8ae62240c6dc2",
     "Cargo.lock": "09697cd80e7e931f04618b99b8e4a801fbfc4644cec4056c5edf036254de80d2",
     "build.rs": "cc4b2c326c5ade8942c432c5b8fcdad38f74ff7a960cb76a46ca6dc7fdc0b7f3",
-    "src/main.rs": "b90bbab324df4a0b4f39e6a09a9041dcaa2cb5beae5fb6f8e2f74108aba7c447",
+    "src/main.rs": "0f5b0578fbbf3c19c685d715338fa0ad1bd266dad0550b82b57020a608ae9939",
     "src/retained.rs": "c91dadb872aa17df7a9e171427557c01144592def10c397abaa66912e107b527",
     "../lustr-native-core/src/library_history.rs": "b9b5599d739bd221cfcdb59280f456c2556859d0dc400b8b1afe57407678354f",
-    "../lustr-native-core/src/library_artifact.rs": "a3a386c92fb497269dc14e4856e29e3d21ea447d0448c1dbc8525f5013664f90",
+    "../lustr-native-core/src/library_artifact.rs": "399eb100ca5786f6f8fcf6e6dfbdde5fb36c161433d9988bc0235d42486c568d",
     "../lustr-native-core/src/metadata_archive.rs": "4906cce455716560344bdb329c3bcbc563da21e8c615c357583c038a90e11dfa",
     "../lustr-native-core/src/unit_object.rs": "d43929971c980ec395913ce5f6cb13955e012e72ef2fcddcd14a24adaea1bd24",
     "../lustr-native-core/src/unit_publication.rs": "035ee3f6a763a9562348f50476815bd24e7b6bc67a1a14a69edcd2fe8f44ae05"

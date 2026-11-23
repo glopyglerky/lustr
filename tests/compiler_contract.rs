@@ -710,7 +710,7 @@ fn ordinary_cargo_links_rust_debug_information() {
 #[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE, Clang and ELF tools"]
 fn default_cargo_links_debug_from_a_native_no_std_provider() {
-    assert_linked_provider_workspace("debug-workspace", "#![no_std]\nfn shift(input: u32) -> u32 { input ^ 3 }\npub fn evaluate(input: u32) -> u32 { shift(input) ^ 10 }\n");
+    assert_linked_provider_workspace("debug-workspace", "#![no_std]\nfn shift(input: u32) -> u32 { input.wrapping_mul(1_073_741_824) ^ 15 }\n#[inline(never)]\npub fn evaluate(input: u32) -> u32 { shift(input) ^ 10 }\n");
 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]

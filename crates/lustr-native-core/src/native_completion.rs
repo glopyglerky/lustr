@@ -158,6 +158,7 @@ pub(crate) struct Function {
     span: diag::Span,
     visibility: Visibility,
     docs: Vec<DocComment>,
+    inline_never: bool,
     parameters: Vec<Parameter>,
     result: ty::IntTy,
     calls: BTreeSet<def::DiskDefId>,
@@ -184,6 +185,9 @@ impl Function {
     }
     pub(crate) fn docs(&self) -> &[DocComment] {
         &self.docs
+    }
+    pub(crate) fn inline_never(&self) -> bool {
+        self.inline_never
     }
     pub(crate) fn parameters(&self) -> &[Parameter] {
         &self.parameters
@@ -223,6 +227,7 @@ pub(crate) enum ExpressionResolution {
     Function(def::DiskDefId),
     ImportedFunction(def::DiskDefId),
     PrimitiveOperands,
+    PrimitiveWrapping,
     Other,
 }
 
@@ -333,7 +338,18 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool, family: Option<&Fami
             ast::Vis::Private => Visibility::Private,
             ast::Vis::Restricted { .. } => return Err(Error::Unintegrated("restricted visibility metadata")),
         };
-        let docs = function.attrs.iter().map(|attr| doc_comment(p, prepared.source(), attr)).collect::<Result<Vec<_>, _>>()?;
+        let mut docs = Vec::new();
+        let mut inline_never = false;
+        for attr in &function.attrs {
+            if inline_never_attribute(p, attr) {
+                if inline_never {
+                    return Err(Error::Unintegrated("duplicate inlining attribute lint diagnostics"));
+                }
+                inline_never = true;
+            } else {
+                docs.push(doc_comment(p, prepared.source(), attr)?);
+            }
+        }
         if info.params.len() != function.params.len()
             || function.params.len() > 64
             || function.ret.is_none()
@@ -412,6 +428,7 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool, family: Option<&Fami
             span: item.span,
             visibility,
             docs,
+            inline_never,
             parameters,
             result,
             calls,
@@ -480,6 +497,17 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool, family: Option<&Fami
         return Err(Error::Unintegrated("empty exported graph"));
     }
     Ok(functions)
+}
+
+fn inline_never_attribute(program: &check::collect::Program, attr: &ast::Attr) -> bool {
+    use crate::lexer::{Delim, Tok, TokenTree};
+    let [name] = attr.path.as_slice() else { return false; };
+    let ast::AttrInput::List(Delim::Paren, tokens) = &attr.input else { return false; };
+    let [TokenTree::Token(value)] = tokens.as_slice() else { return false; };
+    matches!(attr.style, ast::AttrStyle::Outer)
+        && attr.span.file == diag::FileId(0) && attr.span.ctxt == diag::CtxtId::ROOT
+        && program.interner.get(name.name) == "inline"
+        && matches!(value.tok, Tok::Ident(symbol, false) if program.interner.get(symbol) == "never")
 }
 
 fn doc_comment(program: &check::collect::Program, source: &str, attr: &ast::Attr) -> Result<DocComment, Error> {
@@ -582,6 +610,12 @@ fn expression(
         {
             expression(p, body, *lhs, depth + 1, true, reads)?;
             expression(p, body, *rhs, depth + 1, true, reads)?;
+        }
+        ast::Expr::MethodCall { recv, generic_args, args, .. }
+            if actual == Resolution::PrimitiveWrapping && generic_args.is_empty() && args.len() == 1 =>
+        {
+            expression(p, body, *recv, depth + 1, false, reads)?;
+            expression(p, body, args[0], depth + 1, false, reads)?;
         }
         ast::Expr::Call { callee, args } => {
             if !reads.expressions.insert(callee.0) {
