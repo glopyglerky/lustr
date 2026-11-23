@@ -1,9 +1,9 @@
 //! Host procedural macros are compile-time inputs to native expansion.
 use std::{
     collections::{BTreeMap, BTreeSet},
-    fs, io::Read,
+    fs, io::{self, BufRead, BufReader, Read, Write},
     path::{Path, PathBuf},
-    process::{Command, Stdio},
+    process::{Child, ChildStdin, ChildStdout, Command, Stdio},
     sync::{Arc, Mutex},
 };
 
@@ -58,6 +58,69 @@ pub(super) struct HostMacros {
     cwd: PathBuf,
     artifacts: BTreeMap<String, HostArtifact>,
     used: Mutex<BTreeSet<String>>,
+    worker: Mutex<Option<Worker>>,
+}
+
+struct Worker {
+    child: Child,
+    input: Option<ChildStdin>,
+    output: BufReader<ChildStdout>,
+}
+
+impl Worker {
+    fn start(client: &Path, server: &Path) -> io::Result<Self> {
+        let mut child = Command::new(client).arg(server).env_clear()
+            .env("RUST_ANALYZER_USE_POSTCARD", "1")
+            .stdin(Stdio::piped()).stdout(Stdio::piped()).spawn()?;
+        let input = child.stdin.take().expect("procedural macro client stdin was piped");
+        let output = child.stdout.take().expect("procedural macro client stdout was piped");
+        Ok(Self { child, input: Some(input), output: BufReader::new(output) })
+    }
+
+    fn expand(&mut self, request: &Value) -> Result<Value, Box<dyn std::error::Error>> {
+        let input = self.input.as_mut().expect("procedural macro client is active");
+        serde_json::to_writer(&mut *input, request)?;
+        input.write_all(b"\n")?;
+        let mut reply = String::new();
+        if self.output.read_line(&mut reply)? == 0 {
+            return Err("procedural macro client exited without a reply".into());
+        }
+        let reply: Value = serde_json::from_str(&reply)?;
+        if let Some(error) = reply["error"].as_str() {
+            return Err(error.to_owned().into());
+        }
+        Ok(reply)
+    }
+
+    fn finish(&mut self) -> io::Result<()> {
+        drop(self.input.take());
+        let status = self.child.wait()?;
+        if !status.success() {
+            return Err(io::Error::other(format!("procedural macro client terminated with {status}")));
+        }
+        Ok(())
+    }
+}
+
+impl Drop for Worker {
+    fn drop(&mut self) {
+        let _ = self.finish();
+    }
+}
+
+pub(super) struct MacroRequest<'a>(&'a HostMacros);
+
+impl MacroRequest<'_> {
+    pub(super) fn finish(&self) -> io::Result<()> {
+        let worker = self.0.worker.lock().unwrap().take();
+        worker.map_or(Ok(()), |mut worker| worker.finish())
+    }
+}
+
+impl Drop for MacroRequest<'_> {
+    fn drop(&mut self) {
+        let _ = self.finish();
+    }
 }
 
 impl HostMacros {
@@ -80,7 +143,7 @@ impl HostMacros {
         if !client.is_file() || !server.is_file() {
             return Err("host procedural macro expansion is unavailable in this installation".into());
         }
-        Ok(Some(Arc::new(Self { client, server, cwd: cwd.into(), artifacts, used: Mutex::default() })))
+        Ok(Some(Arc::new(Self { client, server, cwd: cwd.into(), artifacts, used: Mutex::default(), worker: Mutex::default() })))
     }
 
     pub(super) fn unchanged<'a>(&self, inputs: impl Iterator<Item = &'a ExecutableExtern>) -> bool {
@@ -111,8 +174,9 @@ impl HostMacros {
         })
     }
 
-    pub(super) fn clear_uses(&self) {
+    pub(super) fn begin_request(&self) -> MacroRequest<'_> {
         self.used.lock().unwrap().clear();
+        MacroRequest(self)
     }
 
     pub(super) fn unused(&self) -> Vec<&str> {
@@ -220,7 +284,7 @@ impl HostMacros {
         };
         environment.extend(ctx.cargo_env.iter().cloned());
         let request = json!({
-            "server": self.server, "dylib": artifact.input.metadata.artifact,
+            "dylib": artifact.input.metadata.artifact,
             "macro_name": call.name_text(), "working_directory": self.cwd,
             "definition": {"start": definition.start, "end": definition.end},
             "provider_file": definition.filename,
@@ -232,15 +296,13 @@ impl HostMacros {
             "call": {"start": call.span.lo, "end": call.span.hi},
             "arguments": {"start": group.lo + 1, "end": group.hi - 1},
         });
-        let mut child = Command::new(&self.client).env_clear().env("RUST_ANALYZER_USE_POSTCARD", "1")
-            .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn()?;
-        let sent = serde_json::to_writer(child.stdin.take().unwrap(), &request);
-        let reply = child.wait_with_output()?;
-        sent?;
-        if !reply.status.success() {
-            return Err(String::from_utf8_lossy(&reply.stderr).into_owned().into());
-        }
-        let report: Value = serde_json::from_slice(&reply.stdout)?;
+        let report = {
+            let mut worker = self.worker.lock().unwrap();
+            if worker.is_none() {
+                *worker = Some(Worker::start(&self.client, &self.server)?);
+            }
+            worker.as_mut().expect("procedural macro client started").expand(&request)?
+        };
         let returned = report["tokens"].as_array().ok_or("missing procedural macro tokens")?;
         let tokens = returned_tokens(returned, call, ctx, strings)?;
         let environment = serde_json::from_value(report["environment"].clone())?;

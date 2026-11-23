@@ -16,7 +16,7 @@ use crate::{
     resolve::imports::ResolvedTables,
 };
 
-use super::{Stamp, imports::{Identity, Import}, macros::HostMacros, stamp};
+use super::{Stamp, imports::{Identity, Import}, macros::{HostMacros, MacroRequest}, stamp};
 
 struct ExecutableCrate {
     input: ExecutableExtern,
@@ -150,10 +150,8 @@ impl ExecutableImports {
         self.macros.is_some()
     }
 
-    pub(super) fn clear_macro_uses(&self) {
-        if let Some(macros) = &self.macros {
-            macros.clear_uses();
-        }
+    pub(super) fn macro_request(&self) -> Option<MacroRequest<'_>> {
+        self.macros.as_deref().map(HostMacros::begin_request)
     }
 
     pub(super) fn unused_externs(&self, used: &BTreeSet<def::CrateId>) -> Vec<&str> {

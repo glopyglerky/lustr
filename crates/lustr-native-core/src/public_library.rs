@@ -467,8 +467,12 @@ impl Owner {
                 let mut inputs = vec![req.client.shown.as_deref().unwrap_or(&req.file).to_owned()];
                 let mut environment = BTreeMap::new();
                 let mut unused = Vec::new();
-                executable.clear_macro_uses();
-                let mut response = match driver::prepare_library_import(&staged, session, executable, stdin) {
+                let macro_request = executable.macro_request();
+                let preparation = driver::prepare_library_import(&staged, session, executable, stdin);
+                if let Some(macro_request) = macro_request {
+                    macro_request.finish().map_err(|error| error.to_string())?;
+                }
+                let mut response = match preparation {
                     driver::Preparation::Ready(mut prepared) => {
                         let observed = prepared.executable_source_inputs()?;
                         inputs.extend(observed.files);

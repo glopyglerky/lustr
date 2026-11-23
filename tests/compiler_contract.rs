@@ -1706,6 +1706,14 @@ proc-macro = true
 #![feature(proc_macro_diagnostic, proc_macro_tracked_env, proc_macro_tracked_path)]
 
 use proc_macro::{Diagnostic, Level, TokenStream, TokenTree, tracked};
+use std::sync::atomic::{AtomicU32, Ordering};
+
+static NEXT: AtomicU32 = AtomicU32::new(1);
+
+#[proc_macro]
+pub fn step(_: TokenStream) -> TokenStream {
+    NEXT.fetch_add(1, Ordering::Relaxed).to_string().parse().unwrap()
+}
 
 #[proc_macro]
 pub fn explicit_error(_: TokenStream) -> TokenStream {
@@ -1742,6 +1750,8 @@ pub fn value(input: TokenStream) -> TokenStream {
 "##);
     f.source("src/main.rs", r#"
 fn independent() -> u32 {
+    assert_eq!(host_macro::step!(), 1);
+    assert_eq!(host_macro::step!(), 2);
     let (shifted, indexed, text) = host_macro::structured!();
     assert_eq!(shifted, 42);
     assert_eq!(indexed, 42);

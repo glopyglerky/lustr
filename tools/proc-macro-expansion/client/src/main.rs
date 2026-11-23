@@ -9,7 +9,7 @@ use span::{
 };
 use std::cell::RefCell;
 use std::error::Error;
-use std::io;
+use std::io::{self, BufRead, Write};
 use tt::{DelimSpan, Delimiter, DelimiterKind, Leaf, LitKind, Spacing, TokenTree, TopSubtree, TtElement, TtIter};
 
 #[derive(Deserialize, Serialize)]
@@ -28,7 +28,6 @@ enum Token {
 
 #[derive(Deserialize)]
 struct Request {
-    server: String,
     dylib: String,
     macro_name: String,
     working_directory: String,
@@ -140,16 +139,8 @@ fn output_tokens(
     Ok(output)
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let mut request: Request = serde_json::from_reader(io::stdin().lock())?;
-    let server = AbsPathBuf::try_from(request.server.as_str()).map_err(|_| "server path is not absolute")?;
+fn expand(client: &ProcMacroClient, mut request: Request) -> Result<serde_json::Value, Box<dyn Error>> {
     let dylib = AbsPathBuf::try_from(request.dylib.as_str()).map_err(|_| "artifact path is not absolute")?;
-    let version = semver::Version::parse("1.102.0-nightly")?;
-    // The client switch selects the transport. The worker obtains the user's
-    // environment from the expansion request, just before executing the macro.
-    let client = ProcMacroClient::spawn(
-        &server, [("RUST_ANALYZER_USE_POSTCARD", &None::<String>)], Some(&version), 1,
-    )?;
     let macros = client.load_dylib(MacroDylib::new(dylib)).map_err(|error| error.to_string())?;
     let expansion = macros.iter().find(|candidate| {
         candidate.name() == request.macro_name && candidate.kind() == ProcMacroKind::Bang
@@ -212,8 +203,31 @@ fn main() -> Result<(), Box<dyn Error>> {
         .map_err(|error| format!("procedural macro expansion failed: {error}"))?;
     let tokens = output_tokens(expanded.view().strip_invisible().iter(), &request, consumer)?;
     let observed = observed.into_inner().ok_or("missing procedural macro dependency report")?;
-    serde_json::to_writer(io::stdout().lock(), &serde_json::json!({
+    Ok(serde_json::json!({
         "tokens": tokens, "environment": observed.environment, "paths": observed.paths,
-    }))?;
+    }))
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let arg = std::env::args().nth(1).ok_or("missing procedural macro server path")?;
+    let server = AbsPathBuf::try_from(arg.as_str()).map_err(|_| "server path is not absolute")?;
+    let version = semver::Version::parse("1.102.0-nightly")?;
+    // Keep the host dylibs in one process for this compiler invocation.
+    // Each expansion still receives the actual caller's environment.
+    let client = ProcMacroClient::spawn(
+        &server, [("RUST_ANALYZER_USE_POSTCARD", &None::<String>)], Some(&version), 1,
+    );
+    let mut output = io::BufWriter::new(io::stdout().lock());
+    for line in io::stdin().lock().lines() {
+        let line = line?;
+        let result = match &client {
+            Ok(client) => serde_json::from_str(&line).map_err(Into::into).and_then(|request| expand(client, request)),
+            Err(error) => Err(error.to_string().into()),
+        };
+        let reply = result.unwrap_or_else(|error| serde_json::json!({"error": error.to_string()}));
+        serde_json::to_writer(&mut output, &reply)?;
+        output.write_all(b"\n")?;
+        output.flush()?;
+    }
     Ok(())
 }
