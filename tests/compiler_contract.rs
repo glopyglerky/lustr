@@ -1214,6 +1214,46 @@ fn main() {
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and Clang"]
+fn ordinary_cargo_uses_the_same_cfg_flags_for_discovery_and_compilation() {
+    let f = Fixture::new("cargo-cfg-discovery");
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let flags = ["--cfg", "from_cargo_flags", "--cfg=chosen_mode=\"fast\"",
+        "--check-cfg", "cfg(from_cargo_flags)", "--check-cfg=cfg(chosen_mode, values(\"fast\"))"];
+    for (name, mut compiler) in [("native", f.command("rustc")), ("original", Command::new(&oracle))] {
+        let facts = f.succeeds(&format!("{name}-query"), compiler.current_dir(&f.root)
+            .env_remove("LD_LIBRARY_PATH").args(["--print", "cfg"]).args(flags)).stdout;
+        let facts = std::str::from_utf8(&facts).unwrap();
+        assert!(facts.lines().any(|line| line == "from_cargo_flags"));
+        assert!(facts.lines().any(|line| line == "chosen_mode=\"fast\""));
+    }
+    for (name, mut compiler) in [("native", f.command("rustc")), ("original", Command::new(&oracle))] {
+        let output = f.invoke(&format!("{name}-invalid-query"), compiler.current_dir(&f.root)
+            .env_remove("LD_LIBRARY_PATH").args(["--print", "sysroot", "--print", "cfg", "--cfg", "chosen_mode=bare"]));
+        assert!(!output.status.success());
+        assert!(output.stdout.is_empty());
+    }
+    f.source("Cargo.toml", "[package]\nname=\"cfg-discovery\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    f.source("src/main.rs", r#"
+#[cfg(all(from_cargo_flags, chosen_mode = "fast"))]
+fn main() { println!("effective cfg"); }
+#[cfg(not(all(from_cargo_flags, chosen_mode = "fast")))]
+fn main() { let _: i32 = "active cfg flags were lost"; }
+"#);
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    for (name, original) in [("native", false), ("original", true)] {
+        let mut cargo = f.command("cargo");
+        cargo.args(["run", "--quiet", "--frozen"])
+            .env("CARGO_ENCODED_RUSTFLAGS", flags.join("\u{1f}"));
+        if original {
+            cargo.env("RUSTC", &oracle).env("CARGO_TARGET_DIR", f.root.join("original-target"));
+        }
+        assert_eq!(f.succeeds(&format!("{name}-run"), &mut cargo).stdout, b"effective cfg\n");
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
 fn ordinary_cargo_resolves_a_renamed_dependency_feature() {
     let f = Fixture::new("cargo-dependency-feature");

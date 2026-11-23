@@ -1,6 +1,6 @@
 # Exact candidate source identities; this does not admit a release.
 reference_revision = "240e08d91d4aed0299639f6f11fd522912b248f9"
 reference_tree = "0ab1b09815802894e6078de0af59273cbdf46cb0"
-patch_blob = "ff629b12482c4b2db3632ea29e7a902432ff9624"
-integrated_tree = "795d65b3ac6ff350ee85e18d8231ebc519a366f3"
-qualification_blob = "b6030b561f33ac5908dc2b39f2b3642259ec1601"
+patch_blob = "978e82555a0a1042c32c21771e0a88d6ad9b0b39"
+integrated_tree = "38b366a70c35dad35cd856afb15cc71aeee4ccbf"
+qualification_blob = "5d9f280ff0bc96f55dd020f38beb1bcb05e1faf6"

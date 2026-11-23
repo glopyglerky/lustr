@@ -15,7 +15,7 @@ pub(crate) fn cargo_feature_name(literal: &str) -> Option<&str> {
         .then_some(name)
 }
 
-fn cargo_check_cfg(value: &str) -> bool {
+pub(crate) fn cargo_check_cfg(value: &str) -> bool {
     if value == "cfg(docsrs,test)" {
         return true;
     }
@@ -31,6 +31,23 @@ fn cargo_check_cfg(value: &str) -> bool {
     };
     name_allowed(name.trim()) && (values.is_empty()
         || values.split(',').all(|literal| cargo_feature_name(literal.trim()).is_some()))
+}
+
+pub(crate) enum CompilerCfg<'a> {
+    Test,
+    Feature(&'a str),
+    Custom(&'a str),
+}
+
+pub(crate) fn classify_cfg(spec: &str) -> Option<CompilerCfg<'_>> {
+    let spec = spec.trim();
+    if spec == "test" {
+        Some(CompilerCfg::Test)
+    } else if let Some((_, literal)) = spec.split_once('=').filter(|(name, _)| name.trim() == "feature") {
+        cargo_feature_name(literal.trim()).map(CompilerCfg::Feature)
+    } else {
+        Some(CompilerCfg::Custom(spec))
+    }
 }
 
 /// This artifact adapter has only the actual Linux GNU x64 host implementation.

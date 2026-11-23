@@ -9034,7 +9034,7 @@ index 8ca2afbab14918fd47873db9af4de91a790ae0a1..3984b5ed9a90d9bb6611789edcc8814a
                              v.hash(h);
                              suf.map(|s| s as u8).hash(h);
 diff --git a/src/driver/buildscript.rs b/src/driver/buildscript.rs
-index cf100a227987f3903e88c8cc9a5684db93dce243..a58ee9a616c01a87d774816f96aab11068e601d4 100644
+index cf100a227987f3903e88c8cc9a5684db93dce243..4e1e9166c62246f61f7f813c9ec4a72d74e92f2f 100644
 --- a/src/driver/buildscript.rs
 +++ b/src/driver/buildscript.rs
 @@ -1,4 +1,8 @@
@@ -9056,7 +9056,7 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..a58ee9a616c01a87d774816f96aab110
 +#[cfg(feature = "exclusive-native")]
 +pub use native::outputs as outputs_native;
 +#[cfg(feature = "exclusive-native")]
-+pub(super) use native::cfg_directive;
++pub(crate) use native::cfg_directive;
 +
  /// The env a build script check runs under: the requesting client's
  /// whole env (`protocol::Client::env`), or None for this process's own
@@ -9314,7 +9314,7 @@ index cf100a227987f3903e88c8cc9a5684db93dce243..a58ee9a616c01a87d774816f96aab110
          let _ = std::fs::remove_dir_all(&root);
 diff --git a/src/driver/buildscript/native.rs b/src/driver/buildscript/native.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..42a5fdfbb641f40c2157d6962d3693c8f60e685c
+index 0000000000000000000000000000000000000000..6ad5cb44ffb414633ccfe91013f8a83c7107a4b7
 --- /dev/null
 +++ b/src/driver/buildscript/native.rs
 @@ -0,0 +1,1393 @@
@@ -9759,7 +9759,7 @@ index 0000000000000000000000000000000000000000..42a5fdfbb641f40c2157d6962d3693c8
 +/// grammar, but admit only the custom forms the downstream cfg service can
 +/// preserve. Its existing string consumer does not decode escaped/raw values
 +/// or alter the separately owned Cargo feature/test/builtin configuration.
-+pub(in crate::driver) fn cfg_directive(kind: &str, value: &str) -> Result<String, String> {
++pub(crate) fn cfg_directive(kind: &str, value: &str) -> Result<String, String> {
 +    use crate::lexer::Tok;
 +    let unsupported = || format!("native build-script integration does not yet represent `{kind}={value}`");
 +    let interner = crate::intern::Interner::default();
@@ -16975,7 +16975,7 @@ index 5a8d06b853ee2f1f83e6f8e37f315b032a4eaa78..0602ea58e0aaf79551162b5088ceb69a
              self.drop_local(g);
          } else {
 diff --git a/src/main.rs b/src/main.rs
-index 20f43a0f0b85fac8b27e4569d433f3cf101f05eb..d5ae92da8bdacab95fddb96484ac98d78b029455 100644
+index 20f43a0f0b85fac8b27e4569d433f3cf101f05eb..da64f72c5e0e0cccaa3a864a4d4623c40878cc5a 100644
 --- a/src/main.rs
 +++ b/src/main.rs
 @@ -17,6 +17,12 @@ mod cgen;
@@ -16999,7 +16999,7 @@ index 20f43a0f0b85fac8b27e4569d433f3cf101f05eb..d5ae92da8bdacab95fddb96484ac98d7
  
  use protocol::Invocation;
  
-@@ -368,10 +375,33 @@ fn image_run(reqs: &[driver::Request], dir: &std::path::Path) -> Vec<driver::Res
+@@ -368,10 +375,32 @@ fn image_run(reqs: &[driver::Request], dir: &std::path::Path) -> Vec<driver::Res
  }
  
  fn main() {
@@ -17014,16 +17014,15 @@ index 20f43a0f0b85fac8b27e4569d433f3cf101f05eb..d5ae92da8bdacab95fddb96484ac98d7
 +        return;
 +    }
 +    #[cfg(feature = "exclusive-native")]
-+    if std::env::args_os().skip(1).eq([std::ffi::OsString::from("--lustr-print-cfg")]) {
-+        // Cargo's read-only compiler query uses the same target/profile facts
-+        // as native compilation. The product entry admits only this host mode.
-+        let cfg = resolve::cfg::CfgEnv::new(protocol::host_triple(), &[], false, protocol::ProfileFlags::DEV_UNWIND);
-+        let mut lines: Vec<String> = cfg.flags.into_iter().collect();
-+        lines.extend(cfg.pairs.into_iter().map(|(name, value)| format!("{name}={value:?}")));
-+        lines.sort();
-+        lines.dedup();
-+        for line in lines { println!("{line}"); }
-+        return;
++    {
++        let mut args = std::env::args_os().skip(1);
++        if args.next().as_deref() == Some(std::ffi::OsStr::new("--lustr-print-cfg")) {
++            if let Err(error) = print_compiler_cfg(args) {
++                eprintln!("error: {error}");
++                std::process::exit(2);
++            }
++            return;
++        }
 +    }
      // A re-executed image process (src/image.rs) runs with randomization
      // off and an arena variable: its children get neither.
@@ -17033,7 +17032,7 @@ index 20f43a0f0b85fac8b27e4569d433f3cf101f05eb..d5ae92da8bdacab95fddb96484ac98d7
      if let Some(code) = resolve::probe::wrapper_main() {
          std::process::exit(code);
      }
-@@ -385,6 +415,8 @@ fn main() {
+@@ -385,6 +414,8 @@ fn main() {
          Some("explain") => std::process::exit(explain::run(&args[1..])),
          Some("capabilities") => std::process::exit(capabilities::run(&args[1..])),
          Some("expand") => std::process::exit(expand::run_expand(&args[1..])),
@@ -17042,10 +17041,43 @@ index 20f43a0f0b85fac8b27e4569d433f3cf101f05eb..d5ae92da8bdacab95fddb96484ac98d7
          _ => {}
      }
      // A CI job may check its sources out while lust restores its front image
-@@ -526,3 +558,55 @@ fn main() {
+@@ -526,3 +557,88 @@ fn main() {
          }
      }
  }
++
++#[cfg(feature = "exclusive-native")]
++fn print_compiler_cfg(mut args: impl Iterator<Item = std::ffi::OsString>) -> Result<(), String> {
++    use protocol::library_contract::{CompilerCfg, cargo_check_cfg, classify_cfg};
++
++    // Cargo discovery uses the same target/profile facts and validates the
++    // same user cfg values as the native compiler request.
++    let mut cfg = resolve::cfg::CfgEnv::new(protocol::host_triple(), &[], false, protocol::ProfileFlags::DEV_UNWIND);
++    while let Some(flag) = args.next() {
++        let value = args.next().and_then(|value| value.into_string().ok())
++            .ok_or("missing or non-Unicode native cfg argument")?;
++        match flag.to_str() {
++            Some("--cfg") => match classify_cfg(&value).ok_or("unrepresented Cargo feature cfg")? {
++                CompilerCfg::Test => { cfg.flags.insert("test".into()); }
++                CompilerCfg::Feature(name) => { cfg.features.insert(name.into()); }
++                CompilerCfg::Custom(spec) => {
++                    let value = driver::buildscript::cfg_directive("rustc-cfg", spec)?;
++                    cfg.add_rustc_cfg(&value);
++                }
++            },
++            Some("--check-cfg") if cargo_check_cfg(&value) => {}
++            Some("--check-cfg") => return Err(format!("unrepresented check-cfg argument {value:?}")),
++            _ => return Err(format!("invalid native cfg option {flag:?}")),
++        }
++    }
++    let mut lines: Vec<_> = cfg.flags.into_iter().collect();
++    lines.extend(cfg.pairs.into_iter().map(|(name, value)| format!("{name}={value:?}")));
++    lines.extend(cfg.features.into_iter().map(|name| format!("feature={name:?}")));
++    lines.sort();
++    lines.dedup();
++    for line in lines { println!("{line}"); }
++    Ok(())
++}
 +
 +#[cfg(feature = "exclusive-native")]
 +fn compile_stdin_source(args: &[String]) -> ! {

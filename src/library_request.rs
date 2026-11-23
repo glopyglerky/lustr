@@ -4,7 +4,7 @@ use crate::{
     Native,
     library_contract::{
         DebugInfo, ExecutableExtern, ExternMetadata, LibraryKey, LibraryOptions,
-        OptLevel, SDK_RECEIPT, SplitDebug, Strip, TARGET, cargo_feature_name,
+        CompilerCfg, OptLevel, SDK_RECEIPT, SplitDebug, Strip, TARGET, classify_cfg,
     },
 };
 use std::{collections::{BTreeMap,BTreeSet}, ffi::OsString, path::PathBuf};
@@ -48,13 +48,10 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
             test = true;
         }
         else if arg == "--cfg" || arg.starts_with("--cfg=") {
-            let spec = value("--cfg")?.trim();
-            if spec == "test" {
-                custom_test = true;
-            } else if let Some((_, literal)) = spec.split_once('=').filter(|(name, _)| name.trim() == "feature") {
-                features.insert(cargo_feature_name(literal.trim())?);
-            } else {
-                cfg.insert(spec.to_owned());
+            match classify_cfg(value("--cfg")?)? {
+                CompilerCfg::Test => custom_test = true,
+                CompilerCfg::Feature(name) => { features.insert(name); }
+                CompilerCfg::Custom(spec) => { cfg.insert(spec.to_owned()); }
             }
         }
         else if arg == "--edition" || arg.starts_with("--edition=") { unique(&mut edition,"--edition")?; }

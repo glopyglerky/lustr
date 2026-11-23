@@ -27,6 +27,7 @@ fn query(args: &[OsString], bin: &Path, host: &str) -> Result<(), String> {
     let mut name = None;
     let mut target = None;
     let mut stdin = false;
+    let mut cfg_options = Vec::new();
     let mut args = args.into_iter();
     while let Some(arg) = args.next() {
         let mut value = |flag: &str| args.next().ok_or_else(|| format!("missing value for {flag}"));
@@ -36,6 +37,7 @@ fn query(args: &[OsString], bin: &Path, host: &str) -> Result<(), String> {
             "--crate-type" => crate_types.extend(value(arg)?.split(',')),
             "--crate-name" if name.is_none() => name = Some(value(arg)?),
             "--target" if target.is_none() => target = Some(value(arg)?),
+            "--cfg" | "--check-cfg" => cfg_options.extend([arg, value(arg)?]),
             // Cargo's target discovery sets this diagnostic level. Compilation
             // and profile flags are never silently discarded.
             "-Wwarnings" => {}
@@ -43,6 +45,8 @@ fn query(args: &[OsString], bin: &Path, host: &str) -> Result<(), String> {
             arg if arg.starts_with("--crate-type=") => crate_types.extend(arg[13..].split(',')),
             arg if arg.starts_with("--crate-name=") && name.is_none() => name = Some(&arg[13..]),
             arg if arg.starts_with("--target=") && target.is_none() => target = Some(&arg[9..]),
+            arg if arg.starts_with("--cfg=") => cfg_options.extend(["--cfg", &arg[6..]]),
+            arg if arg.starts_with("--check-cfg=") => cfg_options.extend(["--check-cfg", &arg[12..]]),
             _ => return Err(format!("the native information query does not represent argument {arg:?}")),
         }
     }
@@ -77,9 +81,10 @@ fn query(args: &[OsString], bin: &Path, host: &str) -> Result<(), String> {
     }
     // Resolve fallible inputs before output. The native compiler owns cfg;
     // the entry does not copy SDK target tables or execute an SDK compiler.
-    let cfg = if prints.contains(&"cfg") {
+    let cfg = if prints.contains(&"cfg") || !cfg_options.is_empty() {
         let output = Command::new(bin.join("lust-core"))
             .arg("--lustr-print-cfg")
+            .args(cfg_options)
             .output()
             .map_err(|error| format!("cannot query native target facts: {error}"))?;
         if !output.status.success() {

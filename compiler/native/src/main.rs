@@ -386,16 +386,15 @@ fn main() {
         return;
     }
     #[cfg(feature = "exclusive-native")]
-    if std::env::args_os().skip(1).eq([std::ffi::OsString::from("--lustr-print-cfg")]) {
-        // Cargo's read-only compiler query uses the same target/profile facts
-        // as native compilation. The product entry admits only this host mode.
-        let cfg = resolve::cfg::CfgEnv::new(protocol::host_triple(), &[], false, protocol::ProfileFlags::DEV_UNWIND);
-        let mut lines: Vec<String> = cfg.flags.into_iter().collect();
-        lines.extend(cfg.pairs.into_iter().map(|(name, value)| format!("{name}={value:?}")));
-        lines.sort();
-        lines.dedup();
-        for line in lines { println!("{line}"); }
-        return;
+    {
+        let mut args = std::env::args_os().skip(1);
+        if args.next().as_deref() == Some(std::ffi::OsStr::new("--lustr-print-cfg")) {
+            if let Err(error) = print_compiler_cfg(args) {
+                eprintln!("error: {error}");
+                std::process::exit(2);
+            }
+            return;
+        }
     }
     // A re-executed image process (src/image.rs) runs with randomization
     // off and an arena variable: its children get neither.
@@ -557,6 +556,39 @@ fn main() {
             std::process::exit(2);
         }
     }
+}
+
+#[cfg(feature = "exclusive-native")]
+fn print_compiler_cfg(mut args: impl Iterator<Item = std::ffi::OsString>) -> Result<(), String> {
+    use protocol::library_contract::{CompilerCfg, cargo_check_cfg, classify_cfg};
+
+    // Cargo discovery uses the same target/profile facts and validates the
+    // same user cfg values as the native compiler request.
+    let mut cfg = resolve::cfg::CfgEnv::new(protocol::host_triple(), &[], false, protocol::ProfileFlags::DEV_UNWIND);
+    while let Some(flag) = args.next() {
+        let value = args.next().and_then(|value| value.into_string().ok())
+            .ok_or("missing or non-Unicode native cfg argument")?;
+        match flag.to_str() {
+            Some("--cfg") => match classify_cfg(&value).ok_or("unrepresented Cargo feature cfg")? {
+                CompilerCfg::Test => { cfg.flags.insert("test".into()); }
+                CompilerCfg::Feature(name) => { cfg.features.insert(name.into()); }
+                CompilerCfg::Custom(spec) => {
+                    let value = driver::buildscript::cfg_directive("rustc-cfg", spec)?;
+                    cfg.add_rustc_cfg(&value);
+                }
+            },
+            Some("--check-cfg") if cargo_check_cfg(&value) => {}
+            Some("--check-cfg") => return Err(format!("unrepresented check-cfg argument {value:?}")),
+            _ => return Err(format!("invalid native cfg option {flag:?}")),
+        }
+    }
+    let mut lines: Vec<_> = cfg.flags.into_iter().collect();
+    lines.extend(cfg.pairs.into_iter().map(|(name, value)| format!("{name}={value:?}")));
+    lines.extend(cfg.features.into_iter().map(|name| format!("feature={name:?}")));
+    lines.sort();
+    lines.dedup();
+    for line in lines { println!("{line}"); }
+    Ok(())
 }
 
 #[cfg(feature = "exclusive-native")]
