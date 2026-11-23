@@ -26,11 +26,111 @@ mod qualification {
     use rustc_driver::{Callbacks, Compilation};
     use rustc_interface::interface;
     use rustc_middle::ty::TyCtxt;
-    use std::path::PathBuf;
+    use rustc_session::config::Input;
+    use rustc_span::FileName;
+    use std::{ffi::OsString, path::PathBuf, sync::Arc};
 
     enum Imported {
         Archive(upstream_definitions::Archive),
         Metadata(upstream_definitions::BoundFile),
+    }
+
+    struct MetadataQuery<'a> {
+        alias: &'a str,
+        file: &'a upstream_definitions::BoundFile,
+        answer: Option<Result<upstream_definitions::Provider, upstream_definitions::Error>>,
+    }
+
+    impl Callbacks for MetadataQuery<'_> {
+        fn config(&mut self, config: &mut interface::Config) {
+            config.input = Input::Str {
+                name: FileName::anon_source_code("lustr_metadata_client"),
+                input: format!("extern crate {};", self.alias),
+            };
+            config.override_queries = Some(|_, providers| {
+                providers.queries.typeck_root = |_, _| panic!("metadata client attempted body typechecking");
+                providers.queries.analysis = |_, _| panic!("metadata client attempted crate analysis");
+            });
+        }
+
+        fn after_expansion<'tcx>(&mut self, _: &interface::Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
+            self.answer = Some(upstream_definitions::Provider::capture_metadata(tcx, self.alias, self.file));
+            Compilation::Stop
+        }
+    }
+
+    fn obtain_metadata(alias: &str, file: &upstream_definitions::BoundFile) -> Result<upstream_definitions::Provider, String> {
+        let args = vec!["rustc".into(), file.path().to_string_lossy().into_owned(),
+            "--edition=2024".into(), "--crate-name=lustr_metadata_client".into(),
+            "--crate-type=lib".into(), "--emit=metadata".into(),
+            "--sysroot".into(), env!("LUSTR_IMPORTED_SYSROOT").into(),
+            "--extern".into(), format!("{alias}={}", file.path().display())];
+        let mut query = MetadataQuery { alias, file, answer: None };
+        let status = rustc_driver::catch_with_exit_code(|| rustc_driver::compiler_entrypoint(&args, &mut query));
+        if status != std::process::ExitCode::SUCCESS {
+            return Err("upstream metadata loading failed".into());
+        }
+        query.answer.ok_or("upstream metadata query was not run")?.map_err(|error| format!("{error:?}"))
+    }
+
+    fn metadata_history(args: &[OsString]) -> Result<u8, String> {
+        let [alias, source, scratch, metadata @ ..] = args else {
+            return Err("usage: --metadata-history CRATE SOURCE NEW_SCRATCH RMETA [RMETA ...]".into());
+        };
+        let alias = alias.to_str().filter(|name| {
+            !name.is_empty() && name.bytes().enumerate().all(|(index, byte)| {
+                byte == b'_' || byte.is_ascii_alphabetic() || index != 0 && byte.is_ascii_digit()
+            })
+        }).ok_or("invalid crate alias")?;
+        if metadata.is_empty() { return Err("no metadata requests supplied".into()); }
+        let source = PathBuf::from(source).canonicalize().map_err(|error| error.to_string())?;
+        let scratch = PathBuf::from(scratch);
+        std::fs::create_dir(&scratch).map_err(|error| error.to_string())?;
+        let mut key = driver::SessionKey::synthetic(&source, false);
+        key.profile.panic_abort = false;
+        let mut session = driver::Session::new(scratch.join("native-state"), true, key.clone());
+        session.set_output(driver::OutputKind::Standalone);
+        let request = driver::Request {
+            cmd: driver::Cmd::Check, session: key, file: source, out: scratch.join("program"),
+            json: false, timings: false, debug: false, emit_c: None, max_errors: 0,
+            run_args: None, harness: false, cc: false, library_options: Default::default(), client: Default::default(),
+        };
+        let mut current: Option<(upstream_definitions::BoundFile, upstream_definitions::Provider)> = None;
+        let mut status = 0;
+        for (step, path) in metadata.iter().enumerate() {
+            let bytes: Arc<[u8]> = std::fs::read(path).map_err(|error| error.to_string())?.into();
+            let refresh = current.as_ref().is_none_or(|(file, _)| file.contents() != bytes.as_ref());
+            if refresh {
+                let staging = scratch.join(format!("metadata-{step}"));
+                std::fs::create_dir(&staging).map_err(|error| error.to_string())?;
+                let name = std::path::Path::new(path).file_name().ok_or("missing metadata filename")?;
+                let file = upstream_definitions::BoundFile::snapshot_bytes(bytes, &staging.join(name))?;
+                let provider = obtain_metadata(alias, &file)?;
+                current = Some((file, provider));
+            }
+            let (file, provider) = current.as_ref().unwrap();
+            let response = match driver::prepare_projection_import(&request, &mut session, provider) {
+                Ok(driver::Preparation::Ready(prepared)) => {
+                    let program = prepared.program();
+                    let checked: Vec<_> = prepared.checked_functions().iter().map(|&id| {
+                        program.interner.get(program.fn_def(def::LocalDefId(id as u32)).name)
+                    }).collect();
+                    assert_eq!(prepared.imported_dependencies()[0].contents.as_ref(), file.contents());
+                    eprintln!("step={step} checked={checked:?}");
+                    prepared.emit()
+                }
+                Ok(driver::Preparation::Complete(response) | driver::Preparation::Rejected(response)
+                    | driver::Preparation::Failed(response) | driver::Preparation::IntegrationIncomplete(response)) => response,
+                Err(error) => return Err(error.0.into()),
+            };
+            status = response.code as u8;
+            eprint!("{}", response.stderr);
+            eprintln!("step={step} upstream-queries={} native-status={status} {}",
+                u8::from(refresh), session.front.last_visits);
+            if request.out.exists() { return Err("metadata check produced an executable".into()); }
+            if status > 1 { return Ok(status); }
+        }
+        Ok(status)
     }
 
     struct Compile {
@@ -172,6 +272,12 @@ mod qualification {
         let arguments: Vec<_> = std::env::args_os().skip(1).collect();
         if arguments.first().is_some_and(|arg| arg == "--projection") {
             return native_projection_qualification::run(&arguments[1..]);
+        }
+        if arguments.first().is_some_and(|arg| arg == "--metadata-history") {
+            return metadata_history(&arguments[1..]).unwrap_or_else(|error| {
+                eprintln!("metadata history: {error}");
+                3
+            });
         }
         if arguments.first().is_some_and(|argument| argument == "--front-image-control") {
             unsafe extern "C" fn unused_sink(_: *mut std::ffi::c_void, _: i32, _: *const u8, _: usize) { panic!("refused entry called the sink") }

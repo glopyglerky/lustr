@@ -31,8 +31,12 @@ pub(super) struct BoundFile {
 
 impl BoundFile {
     pub(super) fn snapshot(input: &std::path::Path, path: &std::path::Path) -> Result<Self, String> {
-        use std::io::Write;
         let contents: Arc<[u8]> = std::fs::read(input).map_err(|e| format!("read imported artifact: {e}"))?.into();
+        Self::snapshot_bytes(contents, path)
+    }
+
+    pub(super) fn snapshot_bytes(contents: Arc<[u8]>, path: &std::path::Path) -> Result<Self, String> {
+        use std::io::Write;
         let mut output = std::fs::OpenOptions::new().write(true).create_new(true).open(path)
             .map_err(|e| format!("create imported snapshot: {e}"))?;
         output.write_all(&contents).map_err(|e| format!("write imported snapshot: {e}"))?;
@@ -98,12 +102,10 @@ pub enum Error {
 
 fn missing(reason: &str) -> Error { Error::Unintegrated(reason.into()) }
 
-struct Nominal<'tcx> {
-    original: DefId,
+struct Nominal {
     native: def::DefId,
     disk: def::DiskDefId,
     name: String,
-    ty: upstream::Ty<'tcx>,
     field: ty::IntTy,
     layout: ty::layout::Layout,
 }
@@ -129,14 +131,13 @@ struct Function {
     output: Value,
 }
 
-/// Call-borrowed upstream context plus immutable code/metadata snapshots.
-/// No Rust arena pointer is stored in the native Program or retained Session.
-pub struct Provider<'tcx> {
-    tcx: TyCtxt<'tcx>,
+/// Checked declarations and immutable inputs owned independently of the
+/// upstream compiler session.
+pub struct Provider {
     alias: String,
     root: def::DefId,
     stable: def::StableCrateHash,
-    nominals: Vec<Nominal<'tcx>>,
+    nominals: Vec<Nominal>,
     functions: Vec<Function>,
     dependencies: Vec<(String, Arc<[u8]>)>,
     emission: RefCell<Option<OwnedEmission>>,
@@ -181,9 +182,9 @@ pub(super) fn integer(actual: upstream::Ty<'_>) -> Option<ty::IntTy> {
 }
 
 impl Value {
-    fn capture<'tcx>(tcx: TyCtxt<'tcx>, actual: upstream::Ty<'tcx>, nominals: &[Nominal<'tcx>]) -> Result<Self, Error> {
+    fn capture<'tcx>(tcx: TyCtxt<'tcx>, actual: upstream::Ty<'tcx>, nominal_types: &[upstream::Ty<'tcx>]) -> Result<Self, Error> {
         let kind = if let Some(value) = integer(actual) { ValueKind::Integer(value) }
-            else { ValueKind::Nominal(nominals.iter().position(|n| n.ty == actual)
+            else { ValueKind::Nominal(nominal_types.iter().position(|&ty| ty == actual)
                 .ok_or_else(|| missing("external signature type requires additional shared semantic records"))?) };
         let layout = tcx.layout_of(TypingEnv::fully_monomorphized().as_query_input(actual))
             .map_err(|e| Error::Failed(format!("upstream signature layout failed: {e:?}")))?;
@@ -193,14 +194,14 @@ impl Value {
         Ok(Self { kind, size: layout.size.bytes(), align: layout.align.bytes() })
     }
 
-    fn install(&self, program: &mut check::collect::Program, nominals: &[Nominal<'_>]) -> Result<ty::Ty, String> {
+    fn install(&self, program: &mut check::collect::Program, nominals: &[Nominal]) -> Result<ty::Ty, String> {
         match self.kind {
             ValueKind::Integer(value) => Ok(program.tys.intern(ty::TyKind::Int(value))),
             ValueKind::Nominal(index) => native_type(program, nominals[index].native),
         }
     }
 
-    fn verify(&self, program: &check::collect::Program, nominals: &[Nominal<'_>]) -> Result<ty::Ty, String> {
+    fn verify(&self, program: &check::collect::Program, nominals: &[Nominal]) -> Result<ty::Ty, String> {
         let native = match self.kind {
             ValueKind::Integer(value) => program.tys.get(ty::TyKind::Int(value)).ok_or("missing imported integer type")?,
             ValueKind::Nominal(index) => native_type(program, nominals[index].native)?,
@@ -212,7 +213,7 @@ impl Value {
         Ok(native)
     }
 
-    fn matches_backend(&self, repr: rustc_abi::BackendRepr, nominals: &[Nominal<'_>]) -> bool {
+    fn matches_backend(&self, repr: rustc_abi::BackendRepr, nominals: &[Nominal]) -> bool {
         let field = match self.kind { ValueKind::Integer(field) => field, ValueKind::Nominal(index) => nominals[index].field };
         matches!(repr, rustc_abi::BackendRepr::Scalar(scalar)
             if matches!(scalar.primitive(), rustc_abi::Primitive::Int(integer, signed)
@@ -245,17 +246,17 @@ pub(super) fn ids(tcx: TyCtxt<'_>, original: DefId) -> (def::DefId, def::DiskDef
     (def::DefId { krate: def::CrateId(1), hash: disk.hash }, disk)
 }
 
-impl<'tcx> Provider<'tcx> {
+impl Provider {
     /// Consume only a privately constructed, complete archive generation.
-    pub(super) fn capture(tcx: TyCtxt<'tcx>, alias: &str, archive: &Archive, adapter_control: abi::Control) -> Result<Self, Error> {
+    pub(super) fn capture(tcx: TyCtxt<'_>, alias: &str, archive: &Archive, adapter_control: abi::Control) -> Result<Self, Error> {
         Self::capture_from(tcx, alias, &archive.file, Some((archive, adapter_control)))
     }
 
-    pub(super) fn capture_metadata(tcx: TyCtxt<'tcx>, alias: &str, file: &BoundFile) -> Result<Self, Error> {
+    pub(super) fn capture_metadata(tcx: TyCtxt<'_>, alias: &str, file: &BoundFile) -> Result<Self, Error> {
         Self::capture_from(tcx, alias, file, None)
     }
 
-    fn capture_from(tcx: TyCtxt<'tcx>, alias: &str, file: &BoundFile, link: Option<(&Archive, abi::Control)>) -> Result<Self, Error> {
+    fn capture_from(tcx: TyCtxt<'_>, alias: &str, file: &BoundFile, link: Option<(&Archive, abi::Control)>) -> Result<Self, Error> {
         if tcx.sess.target.llvm_target.as_ref() != "x86_64-unknown-linux-gnu"
             || link.is_some() && tcx.sess.panic_strategy().unwinds() {
             return Err(missing("this semantic import requires x86_64 Linux; executable emission requires an explicit abort profile"));
@@ -274,6 +275,7 @@ impl<'tcx> Provider<'tcx> {
         let root = DefId { krate: *krate, index: CRATE_DEF_INDEX };
         let environment = TypingEnv::fully_monomorphized();
         let mut nominals = Vec::new();
+        let mut nominal_types = Vec::new();
         let children = tcx.module_children(root);
         for child in children {
             if !child.vis.is_public() { continue; }
@@ -317,8 +319,9 @@ impl<'tcx> Provider<'tcx> {
                 }
             }
             let (native, disk) = ids(tcx, id);
+            nominal_types.push(actual);
             nominals.push(Nominal {
-                original: id, native, disk, name: child.ident.name.to_string(), ty: actual, field: field_integer,
+                native, disk, name: child.ident.name.to_string(), field: field_integer,
                 layout: ty::layout::Layout { size: layout.size.bytes(), align: layout.align.bytes(), field_offsets: vec![layout.fields.offset(0).bytes()], variant_offsets: Vec::new(),
                     niche: None, enum_tag: None, uninhabited: false },
             });
@@ -361,8 +364,8 @@ impl<'tcx> Provider<'tcx> {
                 || signature.c_variadic() {
                 return Err(missing("external function qualifier/signature is outside this call boundary"));
             }
-            let inputs: Vec<_> = signature.inputs().iter().map(|&actual| Value::capture(tcx, actual, &nominals)).collect::<Result<_, _>>()?;
-            let output = Value::capture(tcx, signature.output(), &nominals)?;
+            let inputs: Vec<_> = signature.inputs().iter().map(|&actual| Value::capture(tcx, actual, &nominal_types)).collect::<Result<_, _>>()?;
+            let output = Value::capture(tcx, signature.output(), &nominal_types)?;
             let (native, disk) = ids(tcx, id);
             let symbol = tcx.symbol_name(instance).name;
             if link.is_none() {
@@ -431,7 +434,7 @@ impl<'tcx> Provider<'tcx> {
         } else {
             (None, 0)
         };
-        Ok(Self { tcx, alias: alias.into(), root: ids(tcx, root).0, stable: ids(tcx, root).1.krate, nominals, functions,
+        Ok(Self { alias: alias.into(), root: ids(tcx, root).0, stable: ids(tcx, root).1.krate, nominals, functions,
             dependencies, adapter_count, emission: RefCell::new(emission), metadata_only: link.is_none() })
     }
 
@@ -450,8 +453,7 @@ impl<'tcx> Provider<'tcx> {
             if abi.size != layout.size || abi.align != layout.align || abi.param_dropped || abi.param_by_ptr || abi.ret_by_out {
                 return Err("native emitted C passing mode differs from the admitted upstream ABI".into());
             }
-            if ids(self.tcx, nominal.original).1 != nominal.disk
-                || driver::graph::def_crate_hash(program, nominal.native) != nominal.disk.krate.0 {
+            if driver::graph::def_crate_hash(program, nominal.native) != nominal.disk.krate.0 {
                 return Err("imported definition identity changed".into());
             }
         }
@@ -475,8 +477,33 @@ impl<'tcx> Provider<'tcx> {
     }
 }
 
-impl driver::imports::Definitions for Provider<'_> {
+impl driver::imports::Definitions for Provider {
     fn metadata_only(&self) -> bool { self.metadata_only }
+
+    fn cargo_definitions(&self) -> Option<Vec<Arc<driver::imports::CargoDefinitions>>> {
+        if !self.metadata_only || !self.nominals.is_empty() {
+            return None;
+        }
+        let integer = |value: &Value| match value.kind {
+            ValueKind::Integer(kind) => Some(kind),
+            ValueKind::Nominal(_) => None,
+        };
+        let functions = self.functions.iter().map(|function| Some(driver::imports::ScalarFunction {
+            name: function.name.clone(),
+            hash: function.disk.hash,
+            parameters: function.inputs.iter().map(integer).collect::<Option<Vec<_>>>()?,
+            result: integer(&function.output)?,
+            symbol: function.symbol.clone(),
+        })).collect::<Option<Vec<_>>>()?;
+        Some(vec![Arc::new(driver::imports::CargoDefinitions {
+            alias: self.alias.clone(),
+            crate_name: self.alias.clone(),
+            stable: self.stable,
+            index: self.root.krate,
+            functions,
+            projection: None,
+        })])
+    }
 
     fn mount(&self, tables: &mut resolve::imports::ResolvedTables, interner: &intern::Interner) -> Result<(), diag::Diag> {
         use resolve::imports::{Bind, DefInfo, ExternInfo, InsertOut, ResKind, Target, VisKind};
@@ -576,6 +603,6 @@ impl driver::imports::Definitions for Provider<'_> {
     }
 }
 
-impl Provider<'_> {
+impl Provider {
     pub(super) fn adapter_count(&self) -> usize { self.adapter_count }
 }

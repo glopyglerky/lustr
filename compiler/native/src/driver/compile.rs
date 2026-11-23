@@ -3088,7 +3088,8 @@ pub(crate) fn prepare_projection_import<'a>(
         || previous.is_none() && (session.imported_request || session.front.env_hash.is_some()
             || !session.front.src.is_empty() || !session.front.slot_of.is_empty())
         || req.session.krate.manifest_path.is_some() || req.session.krate.target_kind != "bin"
-        || !req.session.profile.panic_abort || req.run_args.is_some() || req.harness || req.cc || req.emit_c.is_some()
+        || (!definitions.metadata_only() && !req.session.profile.panic_abort)
+        || req.run_args.is_some() || req.harness || req.cc || req.emit_c.is_some()
         || crate::image::state_dir().is_some() || std::env::var_os("LUST_FRONT_ARENA").is_some() {
         return Err(super::imports::Unintegrated("projection imports require a standalone retained research session"));
     }
