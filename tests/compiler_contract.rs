@@ -1415,6 +1415,59 @@ pub fn example() {}
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and Clang"]
+fn rustc_resolves_transitive_rust_archives_without_metadata_sidecars() {
+    let f = Fixture::new("transitive-embedded-extern");
+    let dependencies = f.root.join("deps");
+    std::fs::create_dir(&dependencies).unwrap();
+    f.source("leaf.rs", "#![no_std]\npub fn doubled(x: u64) -> u64 { x.wrapping_mul(2) }\n");
+    f.source("provider.rs", "#![no_std]\npub fn run(x: u64) -> u64 { leaf::doubled(x) }\n");
+    f.source("main.rs", "fn main() { let value = provider::run(21); println!(\"{value}\"); }\n");
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let original = || {
+        let mut command = Command::new(&oracle);
+        command.current_dir(&f.root).env_remove("LD_LIBRARY_PATH");
+        command
+    };
+    let library = |name: &str| {
+        let mut command = original();
+        command.args(["--crate-name", name, "--crate-type=rlib", "--edition=2024",
+            "-Cembed-bitcode=no", "-Zembed-metadata=yes", "--emit=link", "-o"])
+            .arg(dependencies.join(format!("lib{name}.rlib"))).arg(format!("{name}.rs"));
+        command
+    };
+    let leaf = format!("leaf={}", dependencies.join("libleaf.rlib").display());
+    let provider = format!("provider={}", dependencies.join("libprovider.rlib").display());
+    f.succeeds("original-leaf", &mut library("leaf"));
+    f.succeeds("original-provider", library("provider").args(["--extern", &leaf]));
+    assert!(!dependencies.join("libprovider.rmeta").exists());
+    assert!(!dependencies.join("libleaf.rmeta").exists());
+
+    let executable = |upstream: bool, output: &Path| {
+        let mut command = if upstream { original() } else { f.command("rustc") };
+        command.args(["--edition=2024", "main.rs", "--extern", &provider, "-L"])
+            .arg(format!("dependency={}", dependencies.display())).arg("-o").arg(output);
+        command
+    };
+    for (label, upstream) in [("native", false), ("original", true)] {
+        let output = f.root.join(label);
+        f.succeeds(&format!("{label}-link"), &mut executable(upstream, &output));
+        assert_eq!(f.succeeds(&format!("{label}-app"), &mut Command::new(output)).stdout, b"42\n");
+    }
+
+    f.source("leaf.rs", "#![no_std]\npub fn doubled(x: u64) -> u64 { x.wrapping_mul(3) }\n");
+    f.succeeds("original-changed-leaf", &mut library("leaf"));
+    for (label, upstream) in [("native", false), ("original", true)] {
+        let output = f.root.join(label);
+        let before = std::fs::read(&output).unwrap();
+        let response = f.invoke(&format!("{label}-stale-leaf"), &mut executable(upstream, &output));
+        assert!(!response.status.success());
+        assert_eq!(std::fs::read(&output).unwrap(), before);
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
 fn ordinary_cargo_resolves_a_renamed_dependency_feature() {
     let f = Fixture::new("cargo-dependency-feature");

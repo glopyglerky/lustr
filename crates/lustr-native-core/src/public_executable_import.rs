@@ -156,24 +156,30 @@ fn find_dependency(
     if !dependency.suffix.bytes().all(|byte| byte.is_ascii_alphanumeric() || b"_-".contains(&byte)) {
         return Err("invalid Cargo dependency metadata filename".into());
     }
-    let filename = format!("lib{}{}.rmeta", dependency.name, dependency.suffix);
+    let stem = format!("lib{}{}", dependency.name, dependency.suffix);
     let mut found: Option<ExecutableCrate> = None;
     let mut directories = BTreeSet::new();
     for directory in search_paths {
         if !directories.insert(directory) { continue; }
-        let path = directory.join(&filename);
-        let before = search_stamp(&path)?;
-        let present = before.is_some();
-        searched.push((path.clone(), before));
-        if !present { continue; }
-        let metadata = ExternMetadata { alias: dependency.name.clone(), artifact: path.clone() };
-        let Ok(definitions) = Import::read(&metadata, sdk, standard, index, true) else { continue; };
-        if &definitions.identity != dependency { continue; }
-        if found.is_some() {
-            return Err(format!("multiple Cargo metadata files match {}", dependency.name));
+        // Prefer the ordinary full metadata file. An archive may also be
+        // a complete source of metadata, and missing paths still affect
+        // future lookup of this exact recorded crate identity.
+        for extension in ["rmeta", "rlib"] {
+            let path = directory.join(format!("{stem}.{extension}"));
+            let before = search_stamp(&path)?;
+            let present = before.is_some();
+            searched.push((path.clone(), before));
+            if !present { continue; }
+            let metadata = ExternMetadata { alias: dependency.name.clone(), artifact: path.clone() };
+            let Ok(definitions) = Import::read(&metadata, sdk, standard, index, true) else { continue; };
+            if &definitions.identity != dependency { continue; }
+            if found.is_some() {
+                return Err(format!("multiple Cargo metadata files match {}", dependency.name));
+            }
+            let input = ExecutableExtern { metadata, archive: linking.then(|| path.with_extension("rlib")) };
+            found = Some(ExecutableCrate { input, definitions, archive: None });
+            break;
         }
-        let input = ExecutableExtern { metadata, archive: linking.then(|| path.with_extension("rlib")) };
-        found = Some(ExecutableCrate { input, definitions, archive: None });
     }
     found.ok_or_else(|| format!("no matching Cargo metadata for transitive crate {}", dependency.name))
 }
