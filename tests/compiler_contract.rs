@@ -1382,7 +1382,7 @@ pub extern "C" fn evaluate(input: u64) -> u64 {
     }
 }
 "#;
-    let lib = f.source("src/lib.rs", source);
+    let source_path = f.source("src/lib.rs", source);
     let consumer = f.source("consumer.rs", r#"
 #[link(name = "entrypoints", kind = "static")]
 unsafe extern "C" {
@@ -1426,7 +1426,7 @@ fn main() { assert_eq!(evaluate(57), 42); }
             .current_dir(&f.root).env_remove("LD_LIBRARY_PATH").arg("--edition=2024")
             .arg(&consumer).arg("-L").arg(format!("native={}", dir.display())).arg("-o").arg(&exe));
         f.succeeds(&format!("{name}-run"), &mut Command::new(exe));
-        assert_eq!(std::fs::read_to_string(&lib).unwrap(), contents);
+        assert_eq!(std::fs::read_to_string(&source_path).unwrap(), contents);
     }
     for (name, invalid, diagnostic) in [
         ("native-error", source.replace("input ^ 19", "input ^ false"), "src/lib.rs:4:"),
