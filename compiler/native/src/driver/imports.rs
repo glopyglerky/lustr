@@ -85,6 +85,8 @@ pub trait Definitions {
     fn cargo_definitions(&self) -> Option<Vec<Arc<CargoDefinitions>>> { None }
     /// Optional procedural macro service for the selected input crate.
     fn procedural_macros(&self) -> Option<Arc<dyn crate::expand::ProceduralMacros>> { None }
+    /// The provider validated declarations without loading executable objects.
+    fn metadata_only(&self) -> bool { false }
     /// Transfer the immutable, single-use plan after semantic validation.
     /// Constructing or taking the plan must not emit code or materialize objects.
     fn take_emission(&self) -> Result<Box<dyn Emission + 'static>, String>;

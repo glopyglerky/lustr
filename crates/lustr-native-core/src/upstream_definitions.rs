@@ -4,8 +4,9 @@
 //! structs and safe Rust functions with represented integer/nominal signatures.
 //! Every definition retains Rust's full stable crate/path identity. Native
 //! bodies are checked once against these facts; Rust never checks those bodies.
-//! Wider types, obligations, modules, unwind and retained generations remain
-//! unintegrated, rather than being guessed or reclassified as invalid Rust.
+//! Standalone metadata supplies declarations without an executable plan.
+//! Wider types, obligations, modules, linked unwind and retained generations
+//! still require their shared records.
 
 use crate::{check, def, diag, driver, intern, resolve, ty};
 use rustc_abi::{CanonAbi, ExternAbi};
@@ -21,27 +22,48 @@ use ty::TyIntern;
 #[path = "upstream_abi.rs"]
 pub(super) mod abi;
 
-/// One archive generation. Its private fields bind every object to the same
-/// bytes supplied to Rust's metadata loader; callers cannot supply unrelated
-/// metadata and code vectors. This is an internal service, not a wire format.
-pub(super) struct Archive {
+/// One immutable import generation, read from the same snapshot used by
+/// the original Rust metadata loader.
+pub(super) struct BoundFile {
     path: std::path::PathBuf,
     contents: Arc<[u8]>,
-    objects: Vec<Arc<[u8]>>,
 }
 
-impl Archive {
+impl BoundFile {
     pub(super) fn snapshot(input: &std::path::Path, path: &std::path::Path) -> Result<Self, String> {
         use std::io::Write;
-        let contents: Arc<[u8]> = std::fs::read(input).map_err(|e| format!("read imported archive: {e}"))?.into();
+        let contents: Arc<[u8]> = std::fs::read(input).map_err(|e| format!("read imported artifact: {e}"))?.into();
         let mut output = std::fs::OpenOptions::new().write(true).create_new(true).open(path)
             .map_err(|e| format!("create imported snapshot: {e}"))?;
         output.write_all(&contents).map_err(|e| format!("write imported snapshot: {e}"))?;
         drop(output);
         let path = path.canonicalize().map_err(|e| format!("resolve imported snapshot: {e}"))?;
+        Ok(Self { path, contents })
+    }
+
+    pub(super) fn path(&self) -> &std::path::Path { &self.path }
+    pub(super) fn contents(&self) -> &[u8] { &self.contents }
+
+    fn verify(&self) -> Result<(), String> {
+        if std::fs::read(&self.path).map_err(|e| format!("verify imported snapshot: {e}"))?.as_slice() != self.contents.as_ref() {
+            return Err("imported artifact changed during the shared request".into());
+        }
+        Ok(())
+    }
+}
+
+/// An archive binds its objects to the exact bytes Rust reads for metadata.
+pub(super) struct Archive {
+    file: BoundFile,
+    objects: Vec<Arc<[u8]>>,
+}
+
+impl Archive {
+    pub(super) fn snapshot(input: &std::path::Path, path: &std::path::Path) -> Result<Self, String> {
+        let file = BoundFile::snapshot(input, path)?;
         let extract = |operation: &str, member: Option<&str>| -> Result<Vec<u8>, String> {
             let mut command = std::process::Command::new("ar");
-            command.arg(operation).arg(&path);
+            command.arg(operation).arg(file.path());
             if let Some(member) = member { command.arg(member); }
             let result = command.output().map_err(|e| format!("start imported archive reader: {e}"))?;
             if !result.status.success() {
@@ -60,20 +82,12 @@ impl Archive {
             objects.push(extract("p", Some(name))?.into());
         }
         if objects.is_empty() { return Err("imported archive contains no object code".into()); }
-        let archive = Self { path, contents, objects };
-        archive.verify_snapshot()?;
-        Ok(archive)
+        file.verify()?;
+        Ok(Self { file, objects })
     }
 
-    pub(super) fn path(&self) -> &std::path::Path { &self.path }
-    pub(super) fn contents(&self) -> &[u8] { &self.contents }
-
-    fn verify_snapshot(&self) -> Result<(), String> {
-        if std::fs::read(&self.path).map_err(|e| format!("verify imported archive: {e}"))?.as_slice() != self.contents.as_ref() {
-            return Err("imported archive changed during the shared request".into());
-        }
-        Ok(())
-    }
+    pub(super) fn path(&self) -> &std::path::Path { self.file.path() }
+    pub(super) fn contents(&self) -> &[u8] { self.file.contents() }
 }
 
 #[derive(Debug)]
@@ -126,6 +140,7 @@ pub struct Provider<'tcx> {
     functions: Vec<Function>,
     dependencies: Vec<(String, Arc<[u8]>)>,
     emission: RefCell<Option<OwnedEmission>>,
+    metadata_only: bool,
     adapter_count: usize,
 }
 
@@ -233,17 +248,27 @@ pub(super) fn ids(tcx: TyCtxt<'_>, original: DefId) -> (def::DefId, def::DiskDef
 impl<'tcx> Provider<'tcx> {
     /// Consume only a privately constructed, complete archive generation.
     pub(super) fn capture(tcx: TyCtxt<'tcx>, alias: &str, archive: &Archive, adapter_control: abi::Control) -> Result<Self, Error> {
+        Self::capture_from(tcx, alias, &archive.file, Some((archive, adapter_control)))
+    }
+
+    pub(super) fn capture_metadata(tcx: TyCtxt<'tcx>, alias: &str, file: &BoundFile) -> Result<Self, Error> {
+        Self::capture_from(tcx, alias, file, None)
+    }
+
+    fn capture_from(tcx: TyCtxt<'tcx>, alias: &str, file: &BoundFile, link: Option<(&Archive, abi::Control)>) -> Result<Self, Error> {
         if tcx.sess.target.llvm_target.as_ref() != "x86_64-unknown-linux-gnu"
-            || tcx.sess.panic_strategy().unwinds() {
-            return Err(missing("this semantic import requires x86_64 Linux and an explicit abort profile"));
+            || link.is_some() && tcx.sess.panic_strategy().unwinds() {
+            return Err(missing("this semantic import requires x86_64 Linux; executable emission requires an explicit abort profile"));
         }
         let candidates: Vec<_> = tcx.crates(()).iter().copied().filter(|&c| tcx.crate_name(c).as_str() == alias).collect();
         let [krate] = candidates.as_slice() else { return Err(missing("one unaliased external crate is required")) };
-        archive.verify_snapshot().map_err(Error::Failed)?;
-        if tcx.used_crate_source(*krate).rlib.as_deref() != Some(archive.path()) {
-            return Err(Error::Failed("upstream metadata came from a different archive generation".into()));
+        file.verify().map_err(Error::Failed)?;
+        let source = tcx.used_crate_source(*krate);
+        let actual = if link.is_some() { &source.rlib } else { &source.rmeta };
+        if actual.as_deref() != Some(file.path()) {
+            return Err(Error::Failed("upstream metadata came from a different artifact generation".into()));
         }
-        if tcx.required_panic_strategy(*krate) != Some(rustc_target::spec::PanicStrategy::Abort) {
+        if link.is_some() && tcx.required_panic_strategy(*krate) != Some(rustc_target::spec::PanicStrategy::Abort) {
             return Err(missing("the imported object must declare its abort strategy in genuine Rust metadata"));
         }
         let root = DefId { krate: *krate, index: CRATE_DEF_INDEX };
@@ -308,7 +333,7 @@ impl<'tcx> Provider<'tcx> {
         let mut available_functions = std::collections::BTreeSet::new();
         let mut available_definitions = std::collections::BTreeSet::new();
         let mut required_definitions = std::collections::BTreeSet::new();
-        for object in &archive.objects {
+        for object in link.iter().flat_map(|(archive, _)| &archive.objects) {
             let symbols = crate::unit_object::symbols(object)
                 .map_err(|e| Error::Failed(format!("invalid imported definition object: {e}")))?;
             available_functions.extend(symbols.functions);
@@ -338,6 +363,12 @@ impl<'tcx> Provider<'tcx> {
             }
             let inputs: Vec<_> = signature.inputs().iter().map(|&actual| Value::capture(tcx, actual, &nominals)).collect::<Result<_, _>>()?;
             let output = Value::capture(tcx, signature.output(), &nominals)?;
+            let (native, disk) = ids(tcx, id);
+            let symbol = tcx.symbol_name(instance).name;
+            if link.is_none() {
+                functions.push(Function { native, disk, name: child.ident.name.to_string(), symbol: symbol.to_owned(), inputs, output });
+                continue;
+            }
             let rust_abi = tcx.fn_abi_of_instance(environment.as_query_input((instance, upstream::List::empty())))
                 .map_err(|e| Error::Failed(format!("upstream Rust FnAbi failed: {e:?}")))?;
             let argument = |value: &Value, actual| -> Result<_, Error> {
@@ -364,14 +395,12 @@ impl<'tcx> Provider<'tcx> {
                 || !output.matches_backend(rust_abi.ret.layout.backend_repr, &nominals) {
                 return Err(missing("integer call lowering differs from the authoritative signature representation"));
             }
-            let symbol = tcx.symbol_name(instance).name;
             if symbol.is_empty() || !symbol.bytes().enumerate().all(|(index, byte)| byte == b'_' || byte.is_ascii_alphabetic() || index != 0 && byte.is_ascii_digit()) {
                 return Err(missing("the actual imported symbol needs a quoted linkage representation"));
             }
             if !available_functions.contains(symbol.as_bytes()) {
                 return Err(Error::Unintegrated(format!("imported instance {} requires complementary body materialization", tcx.def_path_str(id))));
             }
-            let (native, disk) = ids(tcx, id);
             let symbol = if rust_abi.args.iter().zip(&c_abi.args).all(|(a, b)| direct(&a.mode, &b.mode))
                 && direct(&rust_abi.ret.mode, &c_abi.ret.mode) { symbol.to_owned() }
             else {
@@ -393,12 +422,17 @@ impl<'tcx> Provider<'tcx> {
         for id in nominals.iter().map(|n| n.disk).chain(functions.iter().map(|f| f.disk)) {
             if !identities.insert(id) { return Err(Error::Failed("duplicate upstream definition identity".into())); }
         }
-        let adapters = abi::Module::capture(&adapters, adapter_control)?;
-        let adapter_count = adapters.as_ref().map_or(0, |module| module.count());
-        let dependencies = std::iter::once((format!("rust:{}:{:?}", env!("LUSTR_IMPORTED_COMMIT"), tcx.crate_hash(*krate)), archive.contents.clone()))
-            .chain(adapters.iter().flat_map(|module| module.dependencies())).collect();
+        let mut dependencies = vec![(format!("rust:{}:{:?}", env!("LUSTR_IMPORTED_COMMIT"), tcx.crate_hash(*krate)), file.contents.clone())];
+        let (emission, adapter_count) = if let Some((archive, control)) = link {
+            let adapters = abi::Module::capture(&adapters, control)?;
+            dependencies.extend(adapters.iter().flat_map(|module| module.dependencies()));
+            let count = adapters.as_ref().map_or(0, |module| module.count());
+            (Some(OwnedEmission { objects: archive.objects.clone(), adapters }), count)
+        } else {
+            (None, 0)
+        };
         Ok(Self { tcx, alias: alias.into(), root: ids(tcx, root).0, stable: ids(tcx, root).1.krate, nominals, functions,
-            dependencies, adapter_count, emission: RefCell::new(Some(OwnedEmission { objects: archive.objects.clone(), adapters })) })
+            dependencies, adapter_count, emission: RefCell::new(emission), metadata_only: link.is_none() })
     }
 
     fn verify(&self, program: &check::collect::Program) -> Result<(), String> {
@@ -442,6 +476,8 @@ impl<'tcx> Provider<'tcx> {
 }
 
 impl driver::imports::Definitions for Provider<'_> {
+    fn metadata_only(&self) -> bool { self.metadata_only }
+
     fn mount(&self, tables: &mut resolve::imports::ResolvedTables, interner: &intern::Interner) -> Result<(), diag::Diag> {
         use resolve::imports::{Bind, DefInfo, ExternInfo, InsertOut, ResKind, Target, VisKind};
         if tables.module_defs.iter().chain(tables.def_info.keys()).any(|definition| definition.krate == self.root.krate) {

@@ -28,12 +28,17 @@ mod qualification {
     use rustc_middle::ty::TyCtxt;
     use std::path::PathBuf;
 
+    enum Imported {
+        Archive(upstream_definitions::Archive),
+        Metadata(upstream_definitions::BoundFile),
+    }
+
     struct Compile {
         source: PathBuf,
         output: PathBuf,
         scratch: PathBuf,
         alias: String,
-        archive: upstream_definitions::Archive,
+        input: Imported,
         completed: bool,
         status: u8,
     }
@@ -49,7 +54,9 @@ mod qualification {
         }
 
         fn after_expansion<'tcx>(&mut self, _: &interface::Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
-            let action = std::env::var("LUSTR_QUALIFICATION_ACTION").unwrap_or_else(|_| "build".into());
+            let metadata = matches!(&self.input, Imported::Metadata(_));
+            let action = std::env::var("LUSTR_QUALIFICATION_ACTION")
+                .unwrap_or_else(|_| if metadata { "check" } else { "build" }.into());
             assert!(matches!(action.as_str(), "build" | "check" | "abandon"));
             eprintln!("shared-action={action}");
             let adapter_control = match std::env::var("LUSTR_QUALIFICATION_ADAPTER_FAILURE").as_deref() {
@@ -60,7 +67,17 @@ mod qualification {
                 Err(_) => upstream_definitions::abi::Control::Normal,
                 _ => panic!("unknown adapter qualification control"),
             };
-            let provider = match upstream_definitions::Provider::capture(tcx, &self.alias, &self.archive, adapter_control) {
+            let (provider, input_path, input_bytes) = match &self.input {
+                Imported::Archive(archive) => (
+                    upstream_definitions::Provider::capture(tcx, &self.alias, archive, adapter_control),
+                    archive.path(), archive.contents(),
+                ),
+                Imported::Metadata(file) => (
+                    upstream_definitions::Provider::capture_metadata(tcx, &self.alias, file),
+                    file.path(), file.contents(),
+                ),
+            };
+            let provider = match provider {
                 Ok(provider) => provider,
                 Err(error) => {
                     eprintln!("import outcome: {error:?}");
@@ -90,13 +107,17 @@ mod qualification {
                 Ok(driver::Preparation::Ready(prepared)) => {
                     assert!(!prepared.checked_functions().is_empty());
                     assert_eq!(prepared.imported_dependencies().len(), if provider.adapter_count() == 0 { 1 } else { 3 });
-                    assert_eq!(prepared.imported_dependencies()[0].contents.as_ref(), self.archive.contents());
-                    assert!(driver::imports::Definitions::take_emission(&provider).is_err(), "the owned code plan cannot be transferred twice");
+                    assert_eq!(prepared.imported_dependencies()[0].contents.as_ref(), input_bytes);
+                    assert!(driver::imports::Definitions::take_emission(&provider).is_err(), "no owned code plan remains in the provider");
                     let current = driver::imports::Definitions::dependencies(&provider);
                     assert_eq!(prepared.imported_dependencies().len(), current.len());
                     assert!(prepared.imported_dependencies().iter().zip(&current).all(|(owned, current)|
                         owned.identity == current.identity && owned.contents == current.contents));
-                    eprintln!("imported-emission-transfer=once dependencies=preserved");
+                    if metadata {
+                        eprintln!("imported-emission-transfer=none dependencies=preserved");
+                    } else {
+                        eprintln!("imported-emission-transfer=once dependencies=preserved");
+                    }
                     eprintln!("imported-generation={}", prepared.imported_dependencies()[0].identity);
                     let upstream_source = tcx.sess.source_map().files().iter()
                         .find_map(|file| file.src.as_ref().filter(|source| source.as_str() == prepared.source()))
@@ -112,7 +133,7 @@ mod qualification {
                         std::fs::create_dir_all(self.scratch.join("native-state/imported-0.o")).unwrap();
                     }
                     if std::env::var_os("LUSTR_QUALIFICATION_REMOVE_SNAPSHOT").is_some() {
-                        std::fs::remove_file(self.archive.path()).unwrap();
+                        std::fs::remove_file(input_path).unwrap();
                     }
                     if action == "abandon" {
                         drop(prepared);
@@ -161,33 +182,53 @@ mod qualification {
             eprintln!("front-image object entry guard: passed");
             return 0;
         }
-        assert!(arguments.len() == 4, "SOURCE RLIB OUTPUT NEW_SCRATCH");
+        let (metadata, alias, arguments) = if arguments.first().is_some_and(|arg| arg == "--metadata") {
+            assert!(arguments.len() == 6, "--metadata CRATE SOURCE RMETA OUTPUT NEW_SCRATCH");
+            (true, arguments[1].to_str().expect("Rust crate name").to_owned(), &arguments[2..])
+        } else {
+            assert!(arguments.len() == 4, "SOURCE RLIB OUTPUT NEW_SCRATCH");
+            (false, "peer".into(), arguments.as_slice())
+        };
         let source = PathBuf::from(&arguments[0]).canonicalize().unwrap();
         let output_path = PathBuf::from(&arguments[2]);
         let scratch = PathBuf::from(&arguments[3]);
         std::fs::create_dir(&scratch).unwrap();
         // Both the upstream loader and object extraction consume this one
         // owned snapshot, never independently reread a mutable dependency.
-        let archive = match upstream_definitions::Archive::snapshot(std::path::Path::new(&arguments[1]), &scratch.join("libpeer.rlib")) {
-            Ok(archive) => archive,
+        let supplied = std::path::Path::new(&arguments[1]);
+        let snapshot = if metadata {
+            let filename = supplied.file_name().expect("Rust metadata filename");
+            upstream_definitions::BoundFile::snapshot(supplied, &scratch.join(filename)).map(Imported::Metadata)
+        } else {
+            upstream_definitions::Archive::snapshot(supplied, &scratch.join("libpeer.rlib")).map(Imported::Archive)
+        };
+        let input = match snapshot {
+            Ok(input) => input,
             Err(reason) => {
                 eprintln!("import outcome: Failed({reason})");
                 return 3;
             }
         };
-        let library = archive.path().to_owned();
+        let library = match &input {
+            Imported::Archive(archive) => archive.path(),
+            Imported::Metadata(file) => file.path(),
+        }.to_owned();
         let mut callbacks = Compile {
-            source: source.clone(), output: output_path, scratch, alias: "peer".into(),
-            archive, completed: false, status: 3,
+            source: source.clone(), output: output_path, scratch, alias: alias.clone(),
+            input, completed: false, status: 3,
         };
         // These are the declared qualification profile, not a routing change
         // to a user's existing request. Unwind is exercised separately below.
-        let panic = std::env::var("LUSTR_QUALIFICATION_PANIC").unwrap_or_else(|_| "abort".into());
+        let panic = std::env::var("LUSTR_QUALIFICATION_PANIC")
+            .unwrap_or_else(|_| if metadata { "unwind" } else { "abort" }.into());
         assert!(matches!(panic.as_str(), "abort" | "unwind"));
-        let args = vec!["rustc".into(), source.to_str().unwrap().into(), "--edition=2024".into(),
+        let mut args = vec!["rustc".into(), source.to_str().unwrap().into(), "--edition=2024".into(),
             "--crate-name=consumer".into(), "--sysroot".into(), env!("LUSTR_IMPORTED_SYSROOT").into(),
-            "--extern".into(), format!("peer={}", library.display()), "-Copt-level=0".into(),
+            "--extern".into(), format!("{alias}={}", library.display()), "-Copt-level=0".into(),
             "-Cdebug-assertions=yes".into(), "-Coverflow-checks=yes".into(), format!("-Cpanic={panic}")];
+        if metadata {
+            args.push("--emit=metadata".into());
+        }
         let upstream_status = rustc_driver::catch_with_exit_code(|| rustc_driver::compiler_entrypoint(&args, &mut callbacks));
         if upstream_status != std::process::ExitCode::SUCCESS || !callbacks.completed { return 3; }
         callbacks.status

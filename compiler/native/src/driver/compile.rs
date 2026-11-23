@@ -3032,10 +3032,11 @@ pub(crate) struct StdinSource {
 }
 
 pub(super) fn prepare_imported<'a>(req: &'a Request, session: &'a mut Session, definitions: &dyn super::imports::Definitions) -> Result<Preparation<'a>, super::imports::Unintegrated> {
+    let metadata_only = definitions.metadata_only();
     if session.imported_request || session.caches.persistent || session.front.env_hash.is_some()
         || !session.front.src.is_empty() || !session.front.slot_of.is_empty()
         || req.session.krate.manifest_path.is_some() || req.session.krate.target_kind != "bin"
-        || !req.session.profile.panic_abort || req.run_args.is_some() || req.harness || req.cc || req.emit_c.is_some()
+        || (!metadata_only && !req.session.profile.panic_abort) || req.run_args.is_some() || req.harness || req.cc || req.emit_c.is_some()
         || session.caches.output != super::OutputKind::Standalone || crate::image::state_dir().is_some()
         || std::env::var_os("LUST_FRONT_ARENA").is_some() {
         return Err(super::imports::Unintegrated("imported definitions require a fresh standalone abort-profile native request"));
@@ -3062,6 +3063,7 @@ pub(super) fn prepare_imported<'a>(req: &'a Request, session: &'a mut Session, d
         fn procedural_macros(&self) -> Option<Arc<dyn crate::expand::ProceduralMacros>> {
             self.inner.procedural_macros()
         }
+        fn metadata_only(&self) -> bool { self.inner.metadata_only() }
         fn take_emission(&self) -> Result<Box<dyn super::imports::Emission + 'static>, String> { self.inner.take_emission() }
     }
     let guard = Guard { inner: definitions, failed: std::cell::Cell::new(false) };
@@ -3139,6 +3141,11 @@ fn cargo_codegen(req: &Request) -> Option<(crate::protocol::OptLevel, crate::pro
 fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, observer: Option<&dyn super::PhaseObserver>,
     imports: Option<&dyn super::imports::Definitions>, stdin_source: Option<StdinSource>,
 ) -> Preparation<'a> {
+    if imports.is_some_and(|provider| provider.metadata_only()) && req.cmd != Cmd::Check {
+        return Preparation::IntegrationIncomplete(Response {
+            code: 4, stderr: "error: metadata-only imports require a check request\n".into(), ..Default::default()
+        });
+    }
     // A public library key belongs only to the product owner. Refuse it before
     // entering research graph selection, which retains its original probe.
     // The separate retained research library uses no public LibraryKey.
@@ -5120,7 +5127,8 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
         }),
     };
     let imported_dependencies = imports.map_or_else(Vec::new, |i| i.dependencies());
-    let imported_emission = match imports.filter(|_| req.session.library.as_ref().is_none_or(|key| key.is_executable() && req.cmd == Cmd::Build))
+    let imported_emission = match imports.filter(|provider| !provider.metadata_only()
+        && req.session.library.as_ref().is_none_or(|key| key.is_executable() && req.cmd == Cmd::Build))
         .map(|i| i.take_emission()).transpose() {
         Ok(emission) => emission,
         Err(error) => return Preparation::Failed(Response {
