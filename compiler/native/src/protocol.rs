@@ -339,8 +339,8 @@ impl Client {
     }
 }
 
-/// A Cargo unit reached a native parser feature limit before semantic checking
-/// or emission. The caller may assign the unresolved work to its Rust engine.
+/// A Cargo unit reached a native parser or declaration-import capability limit
+/// before semantic checking or emission.
 pub const RUST_COMPLEMENT_REQUIRED: i32 = 5;
 
 #[derive(Clone, Default)]

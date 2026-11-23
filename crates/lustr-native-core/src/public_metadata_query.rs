@@ -2,7 +2,7 @@
 use crate::{def, driver::imports::ScalarFunction, ty::IntTy};
 use std::{collections::{BTreeMap, BTreeSet}, fs, path::{Path, PathBuf}, process::Command};
 
-use super::{Stamp, hash, stamp};
+use super::{ImportFailure, Stamp, hash, stamp};
 
 pub(super) struct Interface {
     pub name: String,
@@ -89,7 +89,7 @@ fn decode(output: &[u8], artifact: &[u8], mut sdk_inputs: BTreeMap<PathBuf, Stam
     Some(Interface { name: name.into(), suffix: suffix.into(), stable, svh, requires_abort, functions, inputs })
 }
 
-pub(super) fn read(installation: &Path, alias: &str, path: &Path, bytes: &[u8]) -> Result<Interface, String> {
+pub(super) fn read(installation: &Path, alias: &str, path: &Path, bytes: &[u8]) -> Result<Interface, ImportFailure> {
     let root = installation.join("libexec/lustr-host-proc-macro");
     let compiler = root.join("bin/lustr-rustc-host-proc-macro");
     let receipt = root.join("metadata-interface.id");
@@ -115,8 +115,20 @@ pub(super) fn read(installation: &Path, alias: &str, path: &Path, bytes: &[u8]) 
     }
     let answer = Command::new(&compiler).arg("--lustr-read-crate-interface").arg(alias).arg(path)
         .env_remove("LD_LIBRARY_PATH").output().map_err(|error| format!("start Rust metadata reader: {error}"))?;
+    if answer.status.code() == Some(crate::protocol::RUST_COMPLEMENT_REQUIRED) {
+        let expected = format!("lustr-extern-requires-rust-v1\0sha256={}", hash(bytes));
+        if answer.stdout != expected.as_bytes() || !answer.stderr.is_empty() {
+            return Err("invalid Rust metadata capability response".into());
+        }
+        for (file, prior) in owned.into_iter().zip(&before) {
+            if stamp(file)? != *prior {
+                return Err("installed metadata reader changed during import".into());
+            }
+        }
+        return Err(ImportFailure::RequiresRust("the original Rust dependency requires its compiler context"));
+    }
     if !answer.status.success() {
-        return Err(format!("Rust metadata reader did not represent the extern: {}", String::from_utf8_lossy(&answer.stderr).trim_end()));
+        return Err(format!("Rust metadata reader did not represent the extern: {}", String::from_utf8_lossy(&answer.stderr).trim_end()).into());
     }
     let mut interface = decode(&answer.stdout, bytes, sdk_inputs).ok_or("invalid installed Rust metadata response")?;
     for (file, prior) in owned.into_iter().zip(before) {

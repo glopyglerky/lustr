@@ -8479,7 +8479,7 @@ index 136b1f4aa7efc99f8e5bd2b23446fad2578f1851..5a9cfb3f385dc3bbd827935e7afddde2
              // No daemon answered: start one for the next command, answer this one cold.
              maybe_autostart(&sock, &req.file, &core);
 diff --git a/src/daemon.rs b/src/daemon.rs
-index db807083aa56d24a804b47f7ffd31e33c563ad52..5318bb83da928d25ff29c4213e618969af4df5d3 100644
+index db807083aa56d24a804b47f7ffd31e33c563ad52..642aab0d70d65f77af683da69dc21c4c285e229e 100644
 --- a/src/daemon.rs
 +++ b/src/daemon.rs
 @@ -23,6 +23,10 @@
@@ -8620,7 +8620,7 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..5318bb83da928d25ff29c4213e618969
  struct Entry {
      session: Session,
 +    #[cfg(feature="exclusive-native")]
-+    library: Option<Result<crate::public_library::Owner,String>>,
++    library: Option<Result<crate::public_library::Owner,crate::public_library::ImportFailure>>,
      /// Directory stem for this crate's sessions; fresh sessions get "<dir>r<n>".
      dir: PathBuf,
      resets: u64,
@@ -17999,7 +17999,7 @@ index c4b23e007d746b984e392919dcf1bc9bc87a265e..47bb8992d04e52e8ba9774e3e865ddf1
              _ => return None,
          }
 diff --git a/src/protocol.rs b/src/protocol.rs
-index 504b467a9d240272c85f999b59f57a5d52b3cd4e..8c8ed924c5cc4ba87ee3e62e1b03ebb2251af54c 100644
+index 504b467a9d240272c85f999b59f57a5d52b3cd4e..f312cd2b9d0b309185e5072bbebd7ab122c42bac 100644
 --- a/src/protocol.rs
 +++ b/src/protocol.rs
 @@ -6,7 +6,7 @@
@@ -18112,8 +18112,8 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..8c8ed924c5cc4ba87ee3e62e1b03ebb2
      }
  }
  
-+/// A Cargo unit reached a native parser feature limit before semantic checking
-+/// or emission. The caller may assign the unresolved work to its Rust engine.
++/// A Cargo unit reached a native parser or declaration-import capability limit
++/// before semantic checking or emission.
 +pub const RUST_COMPLEMENT_REQUIRED: i32 = 5;
 +
  #[derive(Clone, Default)]

@@ -8,7 +8,12 @@ struct Request {
     alias: String,
     artifact: PathBuf,
     sdk_lib: PathBuf,
-    interface: Option<Vec<u8>>,
+    interface: Option<Interface>,
+}
+
+enum Interface {
+    Scalar(Vec<u8>),
+    RequiresRust,
 }
 
 fn integer(ty: ty::Ty<'_>) -> Option<u8> {
@@ -36,13 +41,13 @@ fn artifact_hash(artifact: &Path) -> io::Result<rustc_span::SourceFileHash> {
 }
 
 impl Request {
-    fn read(&self, tcx: TyCtxt<'_>) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    fn read(&self, tcx: TyCtxt<'_>) -> Result<Interface, Box<dyn std::error::Error>> {
         use rustc_hir::def::{DefKind, Res};
         let mut owner = None;
         let mut dependencies = BTreeSet::new();
         for &krate in tcx.crates(()) {
             let source = tcx.used_crate_source(krate);
-            if source.rmeta.as_ref().is_some_and(|path| path == &self.artifact) {
+            if [source.rmeta.as_ref(), source.rlib.as_ref()].into_iter().flatten().any(|path| path == &self.artifact) {
                 if owner.replace(krate).is_some() {
                     return Err("ambiguous upstream metadata identity".into());
                 }
@@ -58,7 +63,7 @@ impl Request {
         }
         let krate = owner.ok_or("Rust did not load the requested metadata")?;
         if !tcx.trait_impls_in_crate(krate).is_empty() {
-            return Err("external trait implementations require shared obligation records".into());
+            return Ok(Interface::RequiresRust);
         }
         let root = DefId { krate, index: CRATE_DEF_INDEX };
         let mut functions = Vec::new();
@@ -67,28 +72,31 @@ impl Request {
                 continue;
             }
             let Res::Def(DefKind::Fn, def) = child.res else {
-                return Err("nonfunction exports require additional semantic records".into());
+                return Ok(Interface::RequiresRust);
             };
             if !child.reexport_chain.is_empty() || tcx.generics_of(def).count() != 0
                 || !tcx.param_env(def).is_empty() || tcx.is_const_fn(def)
             {
-                return Err("external function requires additional definition or obligation records".into());
+                return Ok(Interface::RequiresRust);
             }
             let signature = tcx.normalize_erasing_regions(TypingEnv::fully_monomorphized(), tcx.fn_sig(def).instantiate_identity());
             if !signature.bound_vars().is_empty() {
-                return Err("external function requires its bound regions".into());
+                return Ok(Interface::RequiresRust);
             }
             let signature = signature.skip_binder();
             if !signature.fn_sig_kind.is_safe() || !matches!(signature.abi(), rustc_abi::ExternAbi::Rust)
                 || signature.c_variadic()
             {
-                return Err("external function ABI or safety is outside the represented interface".into());
+                return Ok(Interface::RequiresRust);
             }
-            let parameters = signature.inputs().iter().map(|&ty| integer(ty)).collect::<Option<Vec<_>>>()
-                .ok_or("external parameter needs additional type records")?;
-            let result = integer(signature.output()).ok_or("external return type needs additional type records")?;
+            let Some(parameters) = signature.inputs().iter().map(|&ty| integer(ty)).collect::<Option<Vec<_>>>() else {
+                return Ok(Interface::RequiresRust);
+            };
+            let Some(result) = integer(signature.output()) else {
+                return Ok(Interface::RequiresRust);
+            };
             if parameters.len() > 64 {
-                return Err("external parameter inventory exceeds the represented interface".into());
+                return Ok(Interface::RequiresRust);
             }
             let mut row = Vec::new();
             super::write_string(&mut row, child.ident.name.as_str())?;
@@ -100,7 +108,7 @@ impl Request {
             functions.push(row);
         }
         if functions.is_empty() || functions.len() > 65_535 || dependencies.len() > 512 {
-            return Err("external declaration inventory is outside the represented interface".into());
+            return Ok(Interface::RequiresRust);
         }
         let mut out = b"lustr-external-scalar-v1\0".to_vec();
         super::write_string(&mut out, &artifact_hash(&self.artifact)?.to_string())?;
@@ -117,7 +125,7 @@ impl Request {
         for row in functions {
             out.write_all(&row)?;
         }
-        Ok(out)
+        Ok(Interface::Scalar(out))
     }
 }
 
@@ -150,8 +158,8 @@ fn inspect(args: &[String]) -> Result<ExitCode, Box<dyn std::error::Error>> {
         return Err("invalid extern name".into());
     }
     let artifact = Path::new(path).canonicalize()?;
-    if artifact.extension().is_none_or(|ext| ext != "rmeta") {
-        return Err("extern selection requires standalone Rust metadata".into());
+    if !matches!(artifact.extension().and_then(|ext| ext.to_str()), Some("rmeta" | "rlib")) {
+        return Err("extern selection requires a Rust metadata file or archive".into());
     }
     let hash = artifact_hash(&artifact)?;
     let exe = std::env::current_exe()?;
@@ -169,8 +177,18 @@ fn inspect(args: &[String]) -> Result<ExitCode, Box<dyn std::error::Error>> {
     if artifact_hash(&request.artifact)? != hash {
         return Err("extern input changed while Rust was reading it".into());
     }
-    io::stdout().lock().write_all(&request.interface.ok_or("no upstream interface produced")?)?;
-    Ok(ExitCode::SUCCESS)
+    let mut output = io::stdout().lock();
+    match request.interface.ok_or("no upstream interface produced")? {
+        Interface::Scalar(bytes) => {
+            output.write_all(&bytes)?;
+            Ok(ExitCode::SUCCESS)
+        }
+        Interface::RequiresRust => {
+            output.write_all(b"lustr-extern-requires-rust-v1\0")?;
+            write!(output, "{hash}")?;
+            Ok(ExitCode::from(crate::protocol::RUST_COMPLEMENT_REQUIRED as u8))
+        }
+    }
 }
 
 pub(super) fn run(args: &[String]) -> ExitCode {

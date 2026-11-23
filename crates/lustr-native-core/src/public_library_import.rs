@@ -67,18 +67,20 @@ impl Import {
         executable: bool,
     ) -> Result<Self, String> {
         Self::read_with_interface(request, sdk, standard, index, executable, None)
+            .map_err(|error| error.message().to_owned())
     }
 
-    pub(super) fn read_for_check(
+    pub(super) fn read_for_cargo(
         request: &ExternMetadata, sdk: &Sdk, standard: Option<&Sdk>, index: def::CrateId, installation: &Path,
-    ) -> Result<Self, String> {
-        Self::read_with_interface(request, sdk, standard, index, true, Some(installation))
+        linking: bool,
+    ) -> Result<Self, super::ImportFailure> {
+        Self::read_with_interface(request, sdk, standard, index, true, Some((installation, linking)))
     }
 
     fn read_with_interface(
         request: &ExternMetadata, sdk: &Sdk, standard: Option<&Sdk>, index: def::CrateId,
-        executable: bool, installation: Option<&Path>,
-    ) -> Result<Self, String> {
+        executable: bool, installation: Option<(&Path, bool)>,
+    ) -> Result<Self, super::ImportFailure> {
         let path = &request.artifact;
         let before = stamp(path)?;
         let bytes: Arc<[u8]> = std::fs::read(path).map_err(|e| format!("read extern input {}: {e}", path.display()))?.into();
@@ -91,13 +93,21 @@ impl Import {
         }
         .or_else(|| standard.and_then(|context| read_link_crate(data, context)).map(|leaf| (leaf, None)));
         let Some((leaf, projection)) = local else {
-            let Some(installation) = installation.filter(|_| path.extension().is_some_and(|ext| ext == "rmeta")) else {
+            let Some((installation, linking)) = installation else {
                 return Err("extern artifact has no represented interface in the pinned SDK".into());
             };
-            let interface = super::metadata_query::read(installation, &request.alias, path, &bytes)?;
-            let filename = format!("lib{}{}.rmeta", interface.name, interface.suffix);
-            if path.file_name().is_none_or(|name| name != filename.as_str()) || stamp(path)? != before {
+            let interface = super::metadata_query::read(installation, &request.alias, path, &bytes);
+            if stamp(path)? != before {
+                return Err("extern metadata generation changed during the Rust query".into());
+            }
+            let interface = interface?;
+            let extension = if from_archive { "rlib" } else { "rmeta" };
+            let filename = format!("lib{}{}.{extension}", interface.name, interface.suffix);
+            if path.file_name().is_none_or(|name| name != filename.as_str()) {
                 return Err("extern metadata filename or generation changed".into());
+            }
+            if linking {
+                return Err(super::ImportFailure::RequiresRust("the original Rust archive requires its linker context"));
             }
             let facts = Arc::new(CargoDefinitions {
                 alias: request.alias.clone(), crate_name: interface.name.clone(), stable: interface.stable,

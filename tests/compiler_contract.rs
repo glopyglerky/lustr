@@ -2611,3 +2611,63 @@ fn main() {
     let later = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
     assert!(!later[traces.len()..].contains("\"entry\":\"rust-complement\""), "{later}");
 }
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and binutils"]
+fn ordinary_cargo_uses_the_rust_context_for_unrepresented_dependencies() {
+    let f = Fixture::new("cargo-rust-dependency-context");
+    f.source("Cargo.toml", "[workspace]\nmembers=[\"producer\",\"app\"]\nresolver=\"3\"\n");
+    f.source("producer/Cargo.toml", "[package]\nname=\"producer\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    f.source("app/Cargo.toml", "[package]\nname=\"app\"\nversion=\"0.1.0\"\nedition=\"2024\"\n\n[dependencies]\nproducer={path=\"../producer\"}\n");
+    f.source("producer/src/lib.rs", r#"
+pub struct Counter(pub u64);
+pub trait Value { fn value(&self) -> u64; }
+impl Value for Counter { fn value(&self) -> u64 { self.0 } }
+pub async fn preserve(input: Counter) -> u64 { input.value() }
+"#);
+    let program = r#"
+use producer::{Counter, Value};
+
+fn mask(input: u64) -> u64 { input ^ 19 }
+
+fn main() { println!("{}", mask(Counter(57).value())); }
+"#;
+    let source = f.source("app/src/main.rs", program);
+    let rust = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    for (name, original) in [("mixed", false), ("original", true)] {
+        let cargo = || {
+            let mut command = f.command("cargo");
+            command.env("CARGO_TARGET_DIR", f.root.join(name)).env("CARGO_PROFILE_DEV_DEBUG", "0");
+            if original { command.env("RUSTC", &rust); }
+            command
+        };
+        if !original {
+            f.succeeds("lockfile", cargo().args(["generate-lockfile", "--offline"]));
+        }
+        f.succeeds(&format!("{name}-check"), cargo().args(["check", "--workspace", "--frozen"]));
+        let run = f.succeeds(&format!("{name}-run"), cargo().args(["run", "-p", "app", "--frozen"]));
+        assert_eq!(run.stdout, b"42\n");
+        let exe = f.root.join(name).join("debug/app");
+        let symbols = f.succeeds(&format!("{name}-symbols"), Command::new("nm").arg(exe));
+        let symbols = String::from_utf8(symbols.stdout).unwrap();
+        let native = symbols.lines().filter(|line| line.split_whitespace().last()
+            .and_then(|name| name.strip_prefix("f_")).is_some_and(|suffix| {
+                suffix.len() == 16 && suffix.bytes().all(|byte| byte.is_ascii_hexdigit())
+            })).count();
+        assert_eq!(native, usize::from(!original));
+    }
+    assert_eq!(std::fs::read_to_string(&source).unwrap(), program);
+    let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
+    assert!(trace.matches("\"entry\":\"rust-complement\"").count() >= 4, "{trace}");
+
+    let invalid = f.source("libbroken.rmeta", "invalid Rust metadata\n");
+    let simple = f.source("invalid-import.rs", "extern crate broken; fn main() {}\n");
+    let response = f.invoke("malformed-metadata", f.command("rustc").args([
+        "--crate-name", "invalid_import", "--edition=2024", "--emit=metadata", "--extern",
+    ]).arg(format!("broken={}", invalid.display())).arg(simple).arg("-o").arg(f.root.join("failed.rmeta")));
+    assert!(!response.status.success());
+    assert!(!f.root.join("failed.rmeta").exists());
+    let after = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
+    assert!(!after[trace.len()..].contains("\"entry\":\"rust-complement\""));
+}

@@ -16,7 +16,7 @@ use crate::{
     resolve::imports::ResolvedTables,
 };
 
-use super::{Stamp, imports::{Identity, Import}, macros::{HostMacros, MacroRequest}, stamp};
+use super::{ImportFailure, Stamp, imports::{Identity, Import}, macros::{HostMacros, MacroRequest}, stamp};
 
 struct ExecutableCrate {
     input: ExecutableExtern,
@@ -36,7 +36,7 @@ impl ExecutableImports {
     pub(super) fn open(
         inputs: &[ExecutableExtern], search_paths: &[PathBuf], sdk: &Sdk, standard: Option<&Sdk>,
         linking: bool, panic_abort: bool, installation: &Path, cwd: &Path,
-    ) -> Result<Self, String> {
+    ) -> Result<Self, ImportFailure> {
         let mut crates = Vec::new();
         let mut indices = BTreeMap::new();
         let mut searched = Vec::new();
@@ -45,14 +45,10 @@ impl ExecutableImports {
             if let Some(archive) = &input.archive
                 && !archive.is_file()
             {
-                return Err(format!("Cargo extern archive is not a file: {}", archive.display()));
+                return Err(format!("Cargo extern archive is not a file: {}", archive.display()).into());
             }
             let index = crate_index(crates.len())?;
-            let definitions = if linking {
-                Import::read(&input.metadata, sdk, standard, index, true)?
-            } else {
-                Import::read_for_check(&input.metadata, sdk, standard, index, installation)?
-            };
+            let definitions = Import::read_for_cargo(&input.metadata, sdk, standard, index, installation, linking)?;
             if indices.insert(definitions.identity.clone(), crates.len()).is_some() {
                 return Err("duplicate Cargo extern crate identity".into());
             }

@@ -331,7 +331,7 @@
       "missing_capability": "Freestanding and static library linking, and Rust coroutine analysis and lowering for ordinary Cargo units",
       "status": "implemented-partial",
       "owner": "Lust native item compiler and pinned Rust executable driver",
-      "semantic_boundary": "Lust checks and emits closed u64 bodies from original source spans in one object. The original Rust driver handles complementary source, metadata, dependency info and link. Ordinary Cargo compilation can select this composition after the native parser reports its async capability limit.",
+      "semantic_boundary": "Lust checks and emits closed u64 bodies from original source spans in one object. The original Rust driver handles complementary source, metadata, dependency info and link. Cargo can select this composition after a native parser capability limit or a verified Rust dependency requiring additional declaration or linker semantics.",
       "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
       "upstream_paths": {
         "compiler/rustc_driver_impl/src/lib.rs": "28d3ed858c3db58e159cfe6a6e6e47fa15b64fe354e565a7c94ef24b563c7b44",

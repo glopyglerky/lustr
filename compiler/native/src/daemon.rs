@@ -422,7 +422,7 @@ fn refresh_key(key: &SessionKey, env: Option<&[(String, String)]>) -> u64 {
 struct Entry {
     session: Session,
     #[cfg(feature="exclusive-native")]
-    library: Option<Result<crate::public_library::Owner,String>>,
+    library: Option<Result<crate::public_library::Owner,crate::public_library::ImportFailure>>,
     /// Directory stem for this crate's sessions; fresh sessions get "<dir>r<n>".
     dir: PathBuf,
     resets: u64,

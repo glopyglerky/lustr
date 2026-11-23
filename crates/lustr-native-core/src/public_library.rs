@@ -22,6 +22,28 @@ static SDK_LOADS:AtomicU64=AtomicU64::new(0);
 static OWNER_START:OnceLock<Option<String>>=OnceLock::new();
 static INSTALLED:OnceLock<Result<Arc<Installed>,String>>=OnceLock::new();
 
+pub(crate) enum ImportFailure {
+    Invalid(String),
+    RequiresRust(&'static str),
+}
+
+impl From<String> for ImportFailure {
+    fn from(error: String) -> Self { Self::Invalid(error) }
+}
+
+impl From<&str> for ImportFailure {
+    fn from(error: &str) -> Self { Self::Invalid(error.to_owned()) }
+}
+
+impl ImportFailure {
+    fn message(&self) -> &str {
+        match self {
+            Self::Invalid(error) => error,
+            Self::RequiresRust(error) => error,
+        }
+    }
+}
+
 fn hash(bytes:&[u8])->String {Sha256::digest(bytes).iter().map(|b|format!("{b:02x}")).collect()}
 fn write_new(path:&Path,bytes:&[u8])->Result<(),String>{
     let mut file=fs::OpenOptions::new().write(true).create_new(true).open(path).map_err(|e|format!("create {}: {e}",path.display()))?;
@@ -142,7 +164,7 @@ struct BinaryArtifact {
     bytes: Arc<[u8]>,
 }
 impl Owner {
-    pub(crate) fn new(req:&driver::Request)->Result<Self,String>{
+    pub(crate) fn new(req:&driver::Request)->Result<Self,ImportFailure>{
         let key=req.session.library.as_ref().ok_or("library identity absent")?;
         if !driver::library::request_supported(req){return Err("public library request context is not represented".into());}
         let installed=INSTALLED.get_or_init(Installed::load).clone()?;
@@ -178,7 +200,7 @@ impl Owner {
             _ => false,
         }
     }
-    pub(crate) fn refresh_imports(&mut self, req: &driver::Request) -> Result<(), String> {
+    pub(crate) fn refresh_imports(&mut self, req: &driver::Request) -> Result<(), ImportFailure> {
         self.installed.unchanged()?;
         if self.import_is_current(req) { return Ok(()); }
         let key = req.session.library.as_ref().ok_or("library identity absent")?;
@@ -636,7 +658,11 @@ fn normalize_failure(req:&driver::Request,response:&mut driver::Response){
     }
     response.stdout.clear();response.stderr=diagnostics;
 }
-pub(crate) fn failed(req:&driver::Request,error:&str)->driver::Response {
-    let mut response=driver::Response{code:3,stderr:format!("error: {error}\n"),..Default::default()};
+pub(crate) fn failed(req:&driver::Request,error:&ImportFailure)->driver::Response {
+    let code = match error {
+        ImportFailure::Invalid(_) => 3,
+        ImportFailure::RequiresRust(_) => protocol::RUST_COMPLEMENT_REQUIRED,
+    };
+    let mut response=driver::Response{code,stderr:format!("error: {}\n",error.message()),..Default::default()};
     normalize_failure(req,&mut response);response
 }
