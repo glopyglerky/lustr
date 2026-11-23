@@ -2627,9 +2627,12 @@ fn main() {
     println!("{value}");
 }
 
-#[test]
-fn native_value_in_the_rust_test_harness() {
-    assert_eq!(apply_mask(57), 42);
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn native_value_in_the_rust_test_harness() {
+        assert_eq!(super::apply_mask(57), 42);
+    }
 }
 "#;
     let path = f.source("src/main.rs", source);
@@ -2694,8 +2697,8 @@ fn native_value_in_the_rust_test_harness() {
             .is_some_and(|name| name.len() == 16 && name.bytes().all(|byte| byte.is_ascii_hexdigit()))
     }));
     let result = f.succeeds("test-run", cargo("tests", false, false).args(["test", "--frozen",
-        "--", "--exact", "native_value_in_the_rust_test_harness"]));
-    assert!(String::from_utf8_lossy(&result.stdout).contains("native_value_in_the_rust_test_harness ... ok"));
+        "--", "--exact", "tests::native_value_in_the_rust_test_harness"]));
+    assert!(String::from_utf8_lossy(&result.stdout).contains("tests::native_value_in_the_rust_test_harness ... ok"));
     assert_eq!(std::fs::read_to_string(&path).unwrap(), source);
     let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
     assert!(trace.contains("\"entry\":\"rust-complement\""), "{trace}");

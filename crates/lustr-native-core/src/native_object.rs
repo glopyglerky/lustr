@@ -266,7 +266,13 @@ fn prepare_request(r: Request, artifact: bool, capture: bool, items: Option<Item
     let source_limit = if selected_items.is_some() { u32::MAX as usize } else { SOURCE_LIMIT };
     if source.len() > source_limit { return Err("native object source exceeds current bound".into()); }
     let i = Arc::new(intern::Interner::default()); let k = Arc::new(intern::Known::new(&i));
-    let mut map = diag::SourceMap::default(); let file = map.add_file(&r.source.to_string_lossy(), &source);
+    let mut map = diag::SourceMap::default();
+    let source_path = r.source.to_string_lossy();
+    let file = if selected_items.and_then(|items| items.codegen).is_some_and(|codegen| codegen.rust_debug) {
+        map.add_file_with_text(&source_path, &source)
+    } else {
+        map.add_file(&source_path, &source)
+    };
     if items.is_some_and(|selected| selected.source != source) {
         return Err("the original source changed since the item was selected".into());
     }
