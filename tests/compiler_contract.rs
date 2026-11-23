@@ -2962,3 +2962,47 @@ fn cargo_std_library_retains_a_native_no_std_dependency() {
     let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
     assert!(!trace.contains("\"entry\":\"rust-complement\""), "{trace}");
 }
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and binutils"]
+fn cargo_generic_library_uses_rust_metadata_and_lust_scalar_code() {
+    let f = Fixture::new("cargo-generic-library");
+    f.source("Cargo.toml", "[workspace]\nmembers=[\"app\",\"provider\"]\nresolver=\"3\"\n");
+    f.source("app/Cargo.toml", "[package]\nname=\"app\"\nversion=\"0.1.0\"\nedition=\"2024\"\n\n[dependencies]\nprovider={path=\"../provider\"}\n");
+    f.source("provider/Cargo.toml", "[package]\nname=\"provider\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    let provider = r#"
+#![no_std]
+pub struct Pair<T> { pub left: T, pub right: T }
+pub fn pair<T>(left: T, right: T) -> Pair<T> { Pair { left, right } }
+pub fn mask(value: u64) -> u64 { value ^ 19 }
+"#;
+    f.source("provider/src/lib.rs", provider);
+    f.source("app/src/main.rs", "fn main() { let pair = provider::pair(57_u64, 2); println!(\"{}\", provider::mask(pair.left)); }\n");
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let cargo = |lane: &str, original: bool| {
+        let mut command = f.command("cargo");
+        command.env("CARGO_TARGET_DIR", f.root.join(lane)).env("CARGO_PROFILE_DEV_DEBUG", "0");
+        if original { command.env("RUSTC", &oracle); }
+        command
+    };
+    for (lane, original) in [("lustr", false), ("original", true)] {
+        f.succeeds(&format!("{lane}-check"), cargo(lane, original).args(["check", "--workspace", "--frozen"]));
+        let run = f.succeeds(&format!("{lane}-run"), cargo(lane, original).args(["run", "-p", "app", "--frozen"]));
+        assert_eq!(run.stdout, b"42\n");
+        let symbols = f.succeeds(&format!("{lane}-symbols"),
+            Command::new("nm").arg(f.root.join(lane).join("debug/app")));
+        let native = String::from_utf8_lossy(&symbols.stdout).lines().filter(|line|
+            line.split_whitespace().last().and_then(|name| name.strip_prefix("f_"))
+                .is_some_and(|id| id.len() == 16 && id.bytes().all(|byte| byte.is_ascii_hexdigit()))).count();
+        assert_eq!(native, usize::from(!original));
+    }
+    f.source("provider/src/lib.rs", &provider.replace("Pair { left, right }", "Pair { left: 0, right }"));
+    for (lane, original) in [("lustr-invalid", false), ("original-invalid", true)] {
+        let rejected = f.invoke(lane, cargo(lane, original).args(["build", "--workspace", "--frozen"]));
+        assert_eq!(rejected.status.code(), Some(101));
+        assert!(String::from_utf8_lossy(&rejected.stderr).contains("E0308"));
+        assert!(!f.root.join(lane).join("debug/app").exists());
+    }
+}

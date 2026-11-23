@@ -292,7 +292,7 @@
     "crates/lustr-native-core/Cargo.toml": "c3de56d1b2130ac0510c2d9e9e87ecf2a86ec5193a5b163a3841b56aa7b705ce",
     "crates/lustr-native-core/Cargo.lock": "bc7c64836b4b04b12031fdeb3a3bb90b9a723a40208b39379f8cd54ba96b4372",
     "crates/lustr-native-core/src/library_history.rs": "b9b5599d739bd221cfcdb59280f456c2556859d0dc400b8b1afe57407678354f",
-    "crates/lustr-native-core/src/native_library.rs": "f90694ff1aa887d7d0e578f4ad2b1e06bc07623aa4f241c64f76eeb1b251c89a",
+    "crates/lustr-native-core/src/native_library.rs": "3f3b15c580992390c9236ab1b6311cef82399ff2e00bd9a201fe1149b8f70dfb",
     "crates/lustr-native-core/src/native_completion.rs": "a95fb19be8b27ee432ff8db93b92063511991691cd2ea44215ed947b74003190",
     "crates/lustr-native-core/src/library_artifact.rs": "399eb100ca5786f6f8fcf6e6dfbdde5fb36c161433d9988bc0235d42486c568d",
     "crates/lustr-native-core/src/metadata_archive.rs": "4906cce455716560344bdb329c3bcbc563da21e8c615c357583c038a90e11dfa",

@@ -45,12 +45,19 @@ paths and run these commands from the Lustr checkout.
 
 ```sh
 "$sdk/bin/rustc" --edition=2024 tools/build-native-toolchain.rs -o "$work/constructor"
-"$work/constructor" "$PWD" "$sdk" "$tinycc" "$work/lustr" --debug --proc-macro-source "$bluefe"
+"$work/constructor" "$PWD" "$sdk" "$tinycc" "$work/lustr" --debug \
+  --proc-macro-source "$bluefe" --rustdoc-source "$bluefe"
 ```
 
-Set `RUSTC` to `$work/lustr/toolchain/bin/rustc` for regular Cargo commands in
-your project. The constructor records the exact source and runtime dependencies
-in its output directory.
+Use the installed compiler and Rustdoc for regular Cargo commands in your
+project. The constructor records the source and runtime dependencies in its
+output directory.
+
+```sh
+export RUSTC="$work/lustr/toolchain/bin/rustc"
+export RUSTDOC="$work/lustr/toolchain/bin/rustdoc"
+"$work/lustr/toolchain/bin/cargo" test
+```
 
 ### Source-built procedural macro support
 

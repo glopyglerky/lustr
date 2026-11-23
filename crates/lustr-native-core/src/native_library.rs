@@ -246,18 +246,28 @@ fn prune(front:&Front,caches:&mut Caches) {
 /// and kept in the AST with its original span.
 pub(crate) fn parse_root(l: &lexer::Lexed, i: &intern::Interner, k: &intern::Known, standard: bool) -> Result<ast::Ast, diag::Diag> {
     let t = &l.tokens;
-    if standard && !(t.first().is_some_and(|token| token.tok == lexer::Tok::Pound)
-        && t.get(1).is_some_and(|token| token.tok == lexer::Tok::Bang)) {
-        return crate::parser::parse_items(l, 0..t.len(), i, k);
-    }
-    let Some(no_std) = crate::parser::leading_no_std(l, i) else {
-        let message = if standard { "native library does not represent this crate attribute" }
-            else { "native library requires its original #![no_std] root policy" };
-        return Err(diag::Diag::new("L0508", t.first().map_or(diag::Span::default(),|t|t.span), message, "Retain the original crate policy."));
+    let ast = if standard && !(t.first().is_some_and(|token| token.tok == lexer::Tok::Pound)
+        && t.get(1).is_some_and(|token| token.tok == lexer::Tok::Bang))
+    {
+        crate::parser::parse_items(l, 0..t.len(), i, k)?
+    } else {
+        let Some(no_std) = crate::parser::leading_no_std(l, i) else {
+            let message = if standard { "native library does not represent this crate attribute" }
+                else { "native library requires its original #![no_std] root policy" };
+            return Err(diag::Diag::new("L0508", t.first().map_or(diag::Span::default(),|t|t.span), message, "Retain the original crate policy."));
+        };
+        let mut ast = crate::parser::parse_items(l, 5..t.len(), i, k)?;
+        ast.inner_attrs.insert(0, no_std);
+        ast
     };
-    let mut a = crate::parser::parse_items(l, 5..t.len(), i, k)?;
-    a.inner_attrs.insert(0, no_std);
-    Ok(a)
+    // The native artifact writer represents closed function declarations.
+    // Let Rust own generic declarations before native bodies are checked.
+    if standard && let Some(item) = ast.items.iter().find(|item| matches!(&item.kind,
+        ast::ItemKind::Fn(function) if !function.generics.params.is_empty()))
+    {
+        return Err(diag::not_yet("L0614", item.span, "generic library metadata").requiring_rust_complement());
+    }
+    Ok(ast)
 }
 
 fn wrapping_arithmetic(builtin: check::Builtin) -> bool {
