@@ -2158,9 +2158,33 @@ fn resolved_setup(
     let request_start = std::time::SystemTime::now();
     let key = &req.session;
     let code2 = |msg: String| Response { stderr: format!("error: {msg}\n"), code: 2, ..Default::default() };
-    // Crate selection: through the Cargo graph when a manifest names the
-    // crate, else the synthetic one-file package of the session key.
-    let (root_path, mut root_text, crate_ids, env, externs, crate_name, cargo_env) = if let Some(manifest) = &key.krate.manifest_path {
+    let supplied_unit = key.library.as_ref().filter(|artifact| {
+        let (Some(manifest), Some(environment)) = (&key.krate.manifest_path, &req.client.env) else {
+            return false;
+        };
+        environment.iter().any(|(name, value)| name == "CARGO_MANIFEST_PATH" && Path::new(value) == manifest)
+            && environment.iter().any(|(name, value)| name == "CARGO_CRATE_NAME" && value == &artifact.crate_name)
+    });
+    // A public rustc-compatible request already carries Cargo's selected
+    // source, features, environment and extern artifacts. Starting Cargo
+    // again against a path dependency's manifest resolves a different graph.
+    let (root_path, mut root_text, crate_ids, env, externs, crate_name, cargo_env) = if let Some(artifact) = supplied_unit {
+        if (artifact.is_executable() || artifact.external.is_some()) != imports.is_some() {
+            return Err(code2("Cargo compiler request is missing its selected artifact inputs".into()));
+        }
+        let cwd = &artifact.working_directory;
+        let relative = req.client.shown.as_ref().is_some_and(|path| path.is_relative());
+        front.display_root = relative.then(|| cwd.clone());
+        front.client.shown_root = Some((cwd.clone(), if relative { PathBuf::new() } else { cwd.clone() }));
+        let mut env = CfgEnv::new(&key.target_triple, &key.features, key.krate.test, key.profile);
+        for cfg in &artifact.check_cfg {
+            env.add_check_cfg(cfg);
+        }
+        t.lap("Cargo compiler request");
+        // The resolver reads env! from the original client's environment.
+        // Imported crates are mounted from their actual metadata by the owner.
+        (req.file.clone(), user_src.to_owned(), crate_ids_default, env, Vec::new(), artifact.crate_name.clone(), Vec::new())
+    } else if let Some(manifest) = &key.krate.manifest_path {
         let greq = GraphRequest {
             manifest_path: manifest.clone(),
             package: None,

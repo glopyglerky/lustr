@@ -673,6 +673,40 @@ fn ordinary_cargo_links_a_transitive_native_library() {
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn ordinary_cargo_uses_the_outer_lock_for_path_dependencies() {
+    let f = Fixture::new("cargo-outer-lock");
+    f.source("Cargo.toml", r#"
+[package]
+name = "outer-lock"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+locked-provider = { path = "provider" }
+"#);
+    f.source("provider/Cargo.toml", r#"
+[package]
+name = "locked-provider"
+version = "0.1.0"
+edition = "2024"
+"#);
+    f.source("provider/src/lib.rs", "#![no_std]\npub fn value(input: u32) -> u32 { input ^ 15 }\n");
+    f.source("src/main.rs", "fn main() { let value = locked_provider::value(12); println!(\"{value}\"); }\n");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let lock = f.root.join("Cargo.lock");
+    let initial = std::fs::read(&lock).unwrap();
+    assert!(!f.root.join("provider/Cargo.lock").exists());
+
+    f.succeeds("frozen-check", f.command("cargo").args(["check", "--frozen"]));
+    let built = f.succeeds("frozen-run", f.command("cargo").args(["run", "--frozen", "--quiet"]));
+    assert_eq!(built.stdout, b"3\n");
+    assert_eq!(std::fs::read(lock).unwrap(), initial);
+    assert!(!f.root.join("provider/Cargo.lock").exists());
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
 fn ordinary_cargo_preserves_resolved_features() {
     let f = Fixture::new("resolved-cargo-features");
     f.source("Cargo.toml", r#"
