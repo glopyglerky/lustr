@@ -1297,7 +1297,8 @@ fn select_bits(n: u64) -> u64 { n & 63 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() -> ! {
-    let status = select_bits(apply_mask(57));
+    let transform = core::hint::black_box(apply_mask as fn(u64) -> u64);
+    let status = select_bits(transform(57));
     unsafe {
         asm!("syscall", in("rax") 60_u64, in("rdi") status, options(noreturn));
     }

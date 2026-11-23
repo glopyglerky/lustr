@@ -331,7 +331,7 @@
       "missing_capability": "Core inline assembly, panic entry and final linking of freestanding Cargo executables",
       "status": "implemented-partial",
       "owner": "Lust native item compiler and pinned Rust executable driver",
-      "semantic_boundary": "Lust checks and emits closed u64 bodies from original source spans. The original Rust driver binds their actual object symbols at direct calls and handles the complementary source, metadata, dependency info and link.",
+      "semantic_boundary": "Lust checks and emits closed u64 bodies from original source spans in one object. The original Rust driver preserves function-item identities with ordinary forwarding bodies and handles the complementary source, metadata, dependency info and link.",
       "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
       "upstream_paths": {
         "compiler/rustc_driver_impl/src/lib.rs": "28d3ed858c3db58e159cfe6a6e6e47fa15b64fe354e565a7c94ef24b563c7b44",
@@ -343,7 +343,7 @@
       "dependency_edges": [
         ["freestanding-executable-composition", "existing host Rust driver component"],
         ["existing host Rust driver component", "matching LLVM and Rust SDK sysroot"],
-        ["freestanding-executable-composition", "native-freestanding-item via original Lust semantics and Clang"]
+        ["freestanding-executable-composition", "native-freestanding-item via original Lust semantics and TinyCC"]
       ],
       "targets": "x86_64-unknown-linux-gnu host and target",
       "features": ["Cargo binary, no_std, no_main, panic=abort, static relocation and explicit freestanding link"],

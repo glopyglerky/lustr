@@ -2,14 +2,13 @@
 //! The original Rust driver validates and emits the rest of the original crate.
 use rustc_ast::{
     AttrStyle, BinOpKind, BindingMode, BlockCheckMode, Expr, ExprKind, FnRetTy,
-    ForeignItemKind, ForeignMod, Item, ItemKind, PatKind, Safety, StmtKind, StrLit,
-    StrStyle, Ty, TyKind, VisibilityKind, token::LitKind,
+    ForeignItemKind, ForeignMod, Item, ItemKind, PatKind, Safety, Stmt, StmtKind, StrLit,
+    StrStyle, Ty, TyKind, Visibility, VisibilityKind, token::LitKind,
 };
 use rustc_codegen_ssa::{
     CompiledModule, CompiledModules, CrateInfo, ModuleKind, TargetConfig, traits::CodegenBackend,
 };
 use rustc_driver::{Callbacks, Compilation};
-use rustc_hir::{self as hir, def::Res, def_id::DefId, intravisit::{self, Visitor}};
 use rustc_interface::interface::{Compiler, Config};
 use rustc_metadata::EncodedMetadata;
 use rustc_middle::{dep_graph::WorkProductMap, ty::{self, Instance, TyCtxt, TypingEnv}, util::Providers};
@@ -17,7 +16,7 @@ use rustc_session::{
     CodegenBackendInit, EarlyDiagCtxt, EarlySession, IncrCompSession, Session,
     config::{DebugInfo, ErrorOutputType, Input, OptLevel, OutputFilenames, OutputType},
 };
-use rustc_span::{Symbol, edition::Edition, sym};
+use rustc_span::{Ident, Symbol, edition::Edition, sym};
 use rustc_structures::CrateType;
 use rustc_target::callconv::{ArgAbi, PassMode};
 use std::{
@@ -27,7 +26,7 @@ use std::{
     os::unix::fs::DirBuilderExt,
     path::{Path, PathBuf},
     process::{Command, ExitCode, Stdio},
-    sync::{Arc, Mutex},
+    sync::{Arc, OnceLock},
 };
 
 const HOST: &str = "x86_64-unknown-linux-gnu";
@@ -48,19 +47,12 @@ impl Drop for Scratch {
     }
 }
 
-struct NativeItem {
-    name: Symbol,
-    symbol: String,
-    object: PathBuf,
-}
-
-type NativeItems = Arc<Mutex<Vec<NativeItem>>>;
-
 struct Freestanding {
     input: Option<PathBuf>,
     output: Option<PathBuf>,
     producer: PathBuf,
-    items: NativeItems,
+    object: Arc<OnceLock<PathBuf>>,
+    bindings: Vec<(Symbol, String)>,
     scratch: Option<Scratch>,
 }
 
@@ -115,22 +107,29 @@ fn native_function(item: &Item) -> Option<&rustc_ast::Fn> {
 }
 
 impl Freestanding {
-    fn emit(&self, sess: &Session, input: &Path, item: &Item, directory: &Path) -> Result<NativeItem, String> {
-        let ItemKind::Fn(function) = &item.kind else { unreachable!() };
-        let file = sess.source_map().lookup_source_file(item.span.lo());
+    fn complete_items(
+        &self, sess: &Session, input: &Path, items: &[&Item], directory: &Path,
+    ) -> Result<(Option<PathBuf>, Vec<String>), String> {
+        let file = sess.source_map().lookup_source_file(items[0].span.lo());
         let source = file.src.as_ref().ok_or("missing original source snapshot")?;
-        sess.source_map().span_to_snippet(item.span)
-            .map_err(|error| format!("cannot select the original item: {error:?}"))?;
-        let start = file.relative_position(item.span.lo()).0;
-        let end = file.relative_position(item.span.hi()).0;
-        let object = directory.join(format!("{start}.o"));
+        let object = directory.join("native-items.o");
         let setting = |value| if value { "on" } else { "off" };
-        let mut child = Command::new(&self.producer)
-            .args([start.to_string(), end.to_string()])
-            .args(["--crate-name", "lustr_freestanding", "--edition=2024", "--crate-type=lib", "--emit=obj"])
+        let link = sess.opts.output_types.contains_key(&OutputType::Exe);
+        let mut command = Command::new(&self.producer);
+        command.arg(if link { "link" } else { "check" });
+        for item in items {
+            sess.source_map().span_to_snippet(item.span)
+                .map_err(|error| format!("cannot select the original item: {error:?}"))?;
+            command.args([
+                file.relative_position(item.span.lo()).0.to_string(),
+                file.relative_position(item.span.hi()).0.to_string(),
+            ]);
+        }
+        let mut child = command
+            .args(["--", "--crate-name", "lustr_freestanding", "--edition=2024", "--crate-type=lib", "--emit=obj"])
             .args(["--target=x86_64-unknown-linux-gnu", "-Cpanic=abort", "-Copt-level=0", "-Cdebuginfo=0"])
             .args([
-                format!("-Cmetadata=item_{start}"),
+                "-Cmetadata=native_items".to_owned(),
                 format!("-Coverflow-checks={}", setting(sess.overflow_checks())),
                 format!("-Cdebug-assertions={}", setting(sess.opts.debug_assertions)),
             ])
@@ -143,40 +142,77 @@ impl Freestanding {
             return Err(String::from_utf8_lossy(&result.stderr).into_owned());
         }
         sent.map_err(|error| format!("cannot send original source to native compiler: {error}"))?;
-        let symbol = std::str::from_utf8(&result.stdout).map_err(|error| error.to_string())?
-            .strip_suffix('\n').filter(|symbol| {
-                symbol.starts_with("f_") && symbol.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_')
-            }).ok_or("invalid native object symbol")?;
-        if !object.is_file() {
-            return Err("native compiler did not publish an object".into());
+        let report = std::str::from_utf8(&result.stdout).map_err(|error| error.to_string())?;
+        let mut report = report.lines();
+        let mut symbols = Vec::with_capacity(items.len());
+        for item in items {
+            let ItemKind::Fn(function) = &item.kind else { unreachable!() };
+            let (name, symbol) = report.next().and_then(|line| line.split_once(' '))
+                .ok_or("missing native object symbol")?;
+            if name != function.ident.name.as_str()
+                || !symbol.starts_with("f_")
+                || !symbol.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_')
+                || symbols.iter().any(|previous| previous == symbol)
+            {
+                return Err("invalid native object symbol binding".into());
+            }
+            symbols.push(symbol.to_owned());
         }
-        Ok(NativeItem { name: function.ident.name, symbol: symbol.to_owned(), object })
+        if report.next().is_some() {
+            return Err("unexpected additional native symbol binding".into());
+        }
+        if object.is_file() != link {
+            return Err("native compiler produced the wrong artifact for this request".into());
+        }
+        Ok((link.then_some(object), symbols))
     }
 }
 
-// Use Rust's own foreign-item lowering, resolution and calling convention.
-// The signature and visibility come from the original function.
-fn bind(sess: &Session, item: &mut Item, native: &NativeItem) {
+// Preserve Rust's function-item identity. Rust lowers only the forwarding
+// call and keeps its ordinary function values, coercions and symbol rules.
+fn bind(sess: &Session, item: &mut Item, symbol: &str) -> Symbol {
     let span = item.span;
-    let ItemKind::Fn(function) = &item.kind else { unreachable!() };
+    let ItemKind::Fn(function) = &mut item.kind else { unreachable!() };
+    let PatKind::Ident(_, parameter, None) = function.sig.decl.inputs[0].pat.kind
+        else { unreachable!() };
+    let mut local = Symbol::intern(symbol);
+    if local == parameter.name {
+        local = Symbol::intern(&format!("_{symbol}"));
+    }
+    let id = Ident::new(local, span);
+    let private = Visibility { kind: VisibilityKind::Inherited, span, tokens: None };
     let mut declaration = function.clone();
+    declaration.ident = id;
     declaration.body = None;
     declaration.sig.header.safety = Safety::Safe(span);
     let link_name = rustc_ast::attr::mk_attr_name_value_str(
-        &sess.psess.attr_id_generator, AttrStyle::Outer, sym::link_name, Symbol::intern(&native.symbol), span,
+        &sess.psess.attr_id_generator, AttrStyle::Outer, sym::link_name, Symbol::intern(symbol), span,
     );
     let foreign = Box::new(Item {
         attrs: [link_name].into_iter().collect(), id: rustc_ast::DUMMY_NODE_ID,
-        span, vis: item.vis.clone(), kind: ForeignItemKind::Fn(declaration), tokens: None,
+        span, vis: private.clone(), kind: ForeignItemKind::Fn(declaration), tokens: None,
     });
     let abi = Symbol::intern("Rust");
-    item.kind = ItemKind::ForeignMod(ForeignMod {
+    let foreign = ItemKind::ForeignMod(ForeignMod {
         extern_span: span, safety: Safety::Unsafe(span),
         abi: Some(StrLit { symbol: abi, suffix: None, symbol_unescaped: abi, style: StrStyle::Cooked, span }),
         items: [foreign].into_iter().collect(),
     });
-    item.vis.kind = VisibilityKind::Inherited;
+    let import = Box::new(Item {
+        attrs: Default::default(), id: rustc_ast::DUMMY_NODE_ID,
+        span, vis: private, kind: foreign, tokens: None,
+    });
+    let expr = |kind| Box::new(Expr {
+        id: rustc_ast::DUMMY_NODE_ID, kind, span, attrs: Default::default(), tokens: None,
+    });
+    let path = |ident| expr(ExprKind::Path(None, rustc_ast::Path::from_ident(ident)));
+    let call = expr(ExprKind::Call(path(id), [path(parameter)].into_iter().collect()));
+    function.body.as_mut().unwrap().stmts = [
+        Stmt { id: rustc_ast::DUMMY_NODE_ID, kind: StmtKind::Item(import), span },
+        Stmt { id: rustc_ast::DUMMY_NODE_ID, kind: StmtKind::Expr(call), span },
+    ].into_iter().collect();
     item.tokens = None;
+    local
 }
 
 impl Callbacks for Freestanding {
@@ -200,10 +236,10 @@ impl Callbacks for Freestanding {
         };
         self.input = Some(input.clone());
         self.output = Some(output.clone());
-        let items = Arc::clone(&self.items);
+        let object = Arc::clone(&self.object);
         config.make_codegen_backend = Some(Box::new(move |_| Box::new(Backend {
             original: rustc_codegen_llvm::LlvmCodegenBackend::new(),
-            items,
+            object,
         })));
     }
 
@@ -223,41 +259,39 @@ impl Callbacks for Freestanding {
         {
             return Compilation::Continue;
         }
-        for item in &mut krate.items {
-            if native_function(item).is_none() {
-                continue;
-            }
-            let source = sess.source_map().lookup_source_file(item.span.lo());
-            if !source.normalized_pos.is_empty() {
-                continue;
-            }
-            if self.scratch.is_none() {
-                self.scratch = Some(Scratch::create(self.output.as_deref().unwrap())
-                    .unwrap_or_else(|error| sess.dcx().fatal(format!("cannot create native item work directory: {error}"))));
-            }
+        let selected: Vec<_> = krate.items.iter().enumerate().filter(|(_, item)| {
+            native_function(item).is_some()
+                && sess.source_map().lookup_source_file(item.span.lo()).normalized_pos.is_empty()
+        }).map(|(index, item)| (index, item.as_ref())).collect();
+        if let Some((_, first)) = selected.first() {
+            let directory = Scratch::create(self.output.as_deref().unwrap())
+                .unwrap_or_else(|error| sess.dcx().fatal(format!("cannot create native item work directory: {error}")));
             let input = self.input.as_deref().unwrap();
-            let native = self.emit(sess, input, item, &self.scratch.as_ref().unwrap().0)
-                .unwrap_or_else(|error| sess.dcx().span_fatal(item.span, error));
-            bind(sess, item, &native);
-            self.items.lock().unwrap().push(native);
+            let items: Vec<_> = selected.iter().map(|(_, item)| *item).collect();
+            let (object, symbols) = self.complete_items(sess, input, &items, &directory.0)
+                .unwrap_or_else(|error| sess.dcx().span_fatal(first.span, error));
+            let indices: Vec<_> = selected.into_iter().map(|(index, _)| index).collect();
+            for (index, symbol) in indices.into_iter().zip(symbols) {
+                let name = bind(sess, &mut krate.items[index], &symbol);
+                self.bindings.push((name, symbol));
+            }
+            if let Some(object) = object {
+                self.object.set(object).expect("one native object per invocation");
+            }
+            self.scratch = Some(directory);
         }
         Compilation::Continue
     }
 
     fn after_expansion(&mut self, _: &Compiler, tcx: TyCtxt<'_>) -> Compilation {
-        let items = self.items.lock().unwrap();
-        if items.is_empty() {
-            return Compilation::Continue;
-        }
-        let mut bindings = Vec::with_capacity(items.len());
-        for native in &*items {
+        for (name, symbol) in &self.bindings {
             let foreign = tcx.hir_crate_items(()).foreign_items().find_map(|id| {
                 let item = tcx.hir_foreign_item(id);
-                if item.ident.name != native.name {
+                if item.ident.name != *name {
                     return None;
                 }
                 let instance = Instance::mono(tcx, item.owner_id.def_id.to_def_id());
-                (tcx.symbol_name(instance).name == native.symbol).then_some(instance)
+                (tcx.symbol_name(instance).name == *symbol).then_some(instance)
             }).unwrap_or_else(|| tcx.dcx().fatal("the native declaration did not resolve to its object symbol"));
             let abi = tcx.fn_abi_of_instance(TypingEnv::fully_monomorphized().as_query_input((foreign, ty::List::empty())))
                 .unwrap_or_else(|error| tcx.dcx().fatal(format!("cannot read the original call ABI: {error:?}")));
@@ -269,41 +303,14 @@ impl Callbacks for Freestanding {
             if abi.can_unwind || abi.args.len() != 1 || !scalar(&abi.args[0]) || !scalar(&abi.ret) {
                 tcx.dcx().fatal("the original call ABI differs from the native object");
             }
-            bindings.push(foreign.def_id());
-        }
-        let mut calls = DirectCalls { tcx, bindings: &bindings };
-        for owner in tcx.hir_body_owners() {
-            calls.visit_body(tcx.hir_body_owned_by(owner));
         }
         Compilation::Continue
     }
 }
 
-/// A foreign declaration may have a different function-item identity. Use
-/// this bridge only for direct calls until native function values are shared.
-struct DirectCalls<'a, 'tcx> {
-    tcx: TyCtxt<'tcx>,
-    bindings: &'a [DefId],
-}
-
-impl<'tcx> Visitor<'tcx> for DirectCalls<'_, 'tcx> {
-    fn visit_expr(&mut self, expr: &'tcx hir::Expr<'tcx>) {
-        if let hir::ExprKind::Path(hir::QPath::Resolved(_, path)) = expr.kind
-            && let Res::Def(_, definition) = path.res
-            && self.bindings.contains(&definition)
-            && !matches!(self.tcx.hir_node(self.tcx.parent_hir_id(expr.hir_id)),
-                hir::Node::Expr(parent) if matches!(parent.kind, hir::ExprKind::Call(callee, _)
-                    if callee.hir_id == expr.hir_id))
-        {
-            self.tcx.dcx().span_fatal(expr.span, "native function values are not yet supported by this link interface");
-        }
-        intravisit::walk_expr(self, expr);
-    }
-}
-
 struct Backend {
     original: Box<dyn CodegenBackend>,
-    items: NativeItems,
+    object: Arc<OnceLock<PathBuf>>,
 }
 
 impl CodegenBackend for Backend {
@@ -325,10 +332,12 @@ impl CodegenBackend for Backend {
         &self, sess: &Session, mut modules: CompiledModules, info: CrateInfo,
         metadata: EncodedMetadata, outputs: &OutputFilenames,
     ) {
-        modules.modules.extend(self.items.lock().unwrap().iter().map(|native| CompiledModule {
-            name: native.symbol.clone(), kind: ModuleKind::Regular, object: Some(native.object.clone()),
-            global_asm_object: None, dwarf_object: None, bytecode: None, assembly: None, llvm_ir: None,
-        }));
+        if let Some(object) = self.object.get() {
+            modules.modules.push(CompiledModule {
+                name: "lustr-native-items".into(), kind: ModuleKind::Regular, object: Some(object.clone()),
+                global_asm_object: None, dwarf_object: None, bytecode: None, assembly: None, llvm_ir: None,
+            });
+        }
         self.original.link(sess, modules, info, metadata, outputs);
     }
 }
@@ -346,7 +355,7 @@ pub(crate) fn run(program: &str, args: &[String]) -> ExitCode {
         driver.extend(["--sysroot".to_owned(), sysroot.to_owned()]);
         let mut callbacks = Freestanding {
             input: None, output: None, producer: bin.join("native-freestanding-item"),
-            items: Arc::default(), scratch: None,
+            object: Arc::default(), bindings: Vec::new(), scratch: None,
         };
         rustc_driver::compiler_entrypoint(&driver, &mut callbacks);
     })

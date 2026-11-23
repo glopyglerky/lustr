@@ -151,41 +151,61 @@ pub(crate) fn prepare(args: &[String]) -> Result<PreparedUnit, String> {
 /// The enclosing compiler has already assigned the other items to their
 /// owners. Keep the full original source and positions for this native item.
 pub(crate) fn prepare_item(args: &[String], source: &str, span: Range<u32>) -> Result<PreparedUnit, String> {
-    prepare_request(request(args)?, false, true, Some((source, span)))
+    prepare_request(request(args)?, false, true, Some((source, &[span])))
 }
 
-/// Publish a checked original item and return its actual emitted symbol.
-pub(crate) fn emit_item(args: &[String], source: &str, span: Range<u32>) -> Result<String, String> {
-    let emitted = emit(prepare_item(args, source, span)?)?;
-    let [function] = emitted.functions() else {
-        return Err("expected one emitted native function".into());
-    };
-    let symbol = std::str::from_utf8(function.symbol()).map_err(|error| error.to_string())?;
+/// Check the original items in one native unit. A link request also emits and
+/// publishes the object containing the checked symbols.
+pub(crate) fn complete_items(
+    args: &[String], source: &str, spans: &[Range<u32>], link: bool,
+) -> Result<Vec<(String, String)>, String> {
+    let prepared = prepare_request(request(args)?, false, true, Some((source, spans)))?;
+    let program = prepared.program();
+    let mut bindings = Vec::with_capacity(spans.len());
+    if prepared.names.fns.len() != spans.len() {
+        return Err("native unit does not cover every selected definition".into());
+    }
+    for (index, symbol) in prepared.names.fns.iter().enumerate() {
+        let id = def::LocalDefId(index as u32);
+        let name = program.interner.get(program.fn_def(id).name).to_string();
+        let symbol = symbol.as_ref().ok_or("missing checked native function symbol")?;
+        bindings.push((name, format!("f_{symbol}")));
+    }
+    if !link {
+        return Ok(bindings);
+    }
+    let emitted = emit_with_backend(prepared, ObjectBackend::TinyCc)?;
     match emitted.publish_object()? {
-        super::unit_publication::Publication::Durable => Ok(symbol.to_owned()),
+        super::unit_publication::Publication::Durable => Ok(bindings),
         super::unit_publication::Publication::DurabilityUnknown(error) => {
             Err(format!("native object publication durability unknown: {error}"))
         }
     }
 }
 
-fn item_tokens(mut lexed: lexer::Lexed, extent: Range<u32>) -> Result<lexer::Lexed, String> {
+fn item_tokens(mut lexed: lexer::Lexed, extents: &[Range<u32>]) -> Result<lexer::Lexed, String> {
     let tokens = &lexed.tokens;
     let policy = tokens.get(..5).ok_or("missing original crate policy")?;
-    let start = tokens.partition_point(|token| token.span.hi <= extent.start);
-    let end = tokens.partition_point(|token| token.span.lo < extent.end);
-    let item = tokens.get(start..end).ok_or("native item range is out of order")?;
-    if !item.first().is_some_and(|token| token.span.lo == extent.start)
-        || !item.last().is_some_and(|token| token.span.hi == extent.end)
-        || start < policy.len()
-    {
-        return Err("native item range does not match whole original tokens".into());
+    let mut selected = policy.to_vec();
+    let mut previous_end = policy.len();
+    for extent in extents {
+        let start = tokens.partition_point(|token| token.span.hi <= extent.start);
+        let end = tokens.partition_point(|token| token.span.lo < extent.end);
+        let item = tokens.get(start..end).ok_or("native item range is out of order")?;
+        if start < previous_end
+            || !item.first().is_some_and(|token| token.span.lo == extent.start)
+            || !item.last().is_some_and(|token| token.span.hi == extent.end)
+        {
+            return Err("native item range does not match whole original tokens".into());
+        }
+        selected.extend_from_slice(item);
+        previous_end = end;
     }
-    lexed.tokens = policy.iter().chain(item).cloned().collect();
+    lexed.tokens = selected;
     Ok(lexed)
 }
 
-fn prepare_request(r: Request, artifact: bool, capture: bool, item: Option<(&str, Range<u32>)>) -> Result<PreparedUnit, String> {
+fn prepare_request(r: Request, artifact: bool, capture: bool, items: Option<(&str, &[Range<u32>])>) -> Result<PreparedUnit, String> {
     if r.output.exists() { return Err("object output already exists; use a fresh path".into()); }
     let working_directory = capture.then(std::env::current_dir).transpose()
         .map_err(|error| format!("cannot retain native request working directory: {error}"))?;
@@ -193,12 +213,11 @@ fn prepare_request(r: Request, artifact: bool, capture: bool, item: Option<(&str
     if source.len() > SOURCE_LIMIT { return Err("native object source exceeds current bound".into()); }
     let i = Arc::new(intern::Interner::default()); let k = Arc::new(intern::Known::new(&i));
     let mut map = diag::SourceMap::default(); let file = map.add_file(&r.source.to_string_lossy(), &source);
-    if item.as_ref().is_some_and(|(expected, _)| *expected != source) {
+    if items.is_some_and(|(expected, _)| expected != source) {
         return Err("the original source changed since the item was selected".into());
     }
     let lexed = lexer::lex(&source,file,0,&i).map_err(|e| diag::render(&mut vec![e], &map, &source, false, 20))?;
-    let selected = item.is_some();
-    let lexed = match item {
+    let lexed = match items {
         Some((_, extent)) => item_tokens(lexed, extent)?,
         None => lexed,
     };
@@ -238,8 +257,11 @@ fn prepare_request(r: Request, artifact: bool, capture: bool, item: Option<(&str
     } else {
         let mut a=parser::parse_items(&lexed,5..t.len(),&i,&k).map_err(|e|diag::render(&mut vec![e],&map,&source,false,20))?;a.inner_attrs.insert(0,attr);(a,None)
     };
-    if selected && !matches!(a.items.as_slice(), [ast::Item { kind: ast::ItemKind::Fn(_), .. }]) {
-        return Err("the selected native item must be one function definition".into());
+    if let Some((_, selected)) = items
+        && (selected.is_empty() || a.items.len() != selected.len()
+            || a.items.iter().any(|item| !matches!(item.kind, ast::ItemKind::Fn(_))))
+    {
+        return Err("each selected native item must be one function definition".into());
     }
     if a.items.iter().chain(&a.stmt_items).any(|item|(!artifact&&matches!(item.vis,ast::Vis::Restricted{..})) || !matches!(item.kind,ast::ItemKind::Fn(_)|ast::ItemKind::Const(_)) && !(artifact && matches!(item.kind,ast::ItemKind::Struct(_)|ast::ItemKind::Enum(_))))
         || a.exprs.iter().any(|e|matches!(e,ast::Expr::Macro{..}|ast::Expr::MacroCall(_)))
@@ -333,10 +355,20 @@ fn prepare_request(r: Request, artifact: bool, capture: bool, item: Option<(&str
 }
 
 pub(crate) fn emit(prepared: PreparedUnit) -> Result<EmittedUnit, String> {
-    emit_with_backend(prepared, None)
+    emit_with_backend(prepared, ObjectBackend::Clang)
 }
 
-fn emit_with_backend(prepared: PreparedUnit, artifact: Option<(&crate::native_crate::Generation,&crate::native_crate::Backend)>) -> Result<EmittedUnit, String> {
+enum ObjectBackend<'a> {
+    Clang,
+    TinyCc,
+    Artifact(&'a crate::native_crate::Generation, &'a crate::native_crate::Backend),
+}
+
+fn emit_with_backend(prepared: PreparedUnit, backend: ObjectBackend<'_>) -> Result<EmittedUnit, String> {
+    let artifact = match backend {
+        ObjectBackend::Artifact(generation, backend) => Some((generation, backend)),
+        _ => None,
+    };
     if prepared.artifact != artifact.is_some() { return Err("prepared native unit has a different artifact/backend contract".into()); }
     let (r, p, map, names, out) = (&prepared.request, &prepared.program, &prepared.map, &prepared.names, &prepared.generated);
     let slots: Vec<u32> = (0..p.fns.len()).map(|n|n as u32).collect();
@@ -354,21 +386,25 @@ fn emit_with_backend(prepared: PreparedUnit, artifact: Option<(&crate::native_cr
     let object=scratch.join("unit.o");
     // Compile the original generated unit once using an explicit freestanding
     // backend. Referenced symbols must pass the independent ELF closure gate.
-    let input=scratch.join("unit.c");fs::write(&input,text).map_err(|e|e.to_string())?;
-    if let Some((generation,backend))=artifact {backend.verify(generation)?;}
-    let backend=artifact.map_or_else(||std::path::Path::new("clang"),|(_,backend)|backend.executable());
-    let mut command=Command::new(backend);
-    if prepared.capture {command.args(["--no-default-config","-fno-stack-protector"]);}
-    command.args(["--target=x86_64-unknown-linux-gnu","-x","c","-std=gnu11","-ffreestanding","-fno-builtin","-fno-strict-aliasing","-fwrapv","-fno-asynchronous-unwind-tables","-O0","-c"]).arg(&input).arg("-o").arg(&object);
-    if prepared.capture {fs::write(scratch.join("backend.command"),format!("{command:?}\n")).map_err(|e|e.to_string())?;}
-    let result=command.output().map_err(|e|format!("cannot start explicit native object C backend: {e}"))?;
-    if prepared.capture {
-        fs::write(scratch.join("backend.stdout"),&result.stdout).map_err(|e|e.to_string())?;
-        fs::write(scratch.join("backend.stderr"),&result.stderr).map_err(|e|e.to_string())?;
-        fs::write(scratch.join("backend.status"),format!("{}\n",result.status)).map_err(|e|e.to_string())?;
+    let input=scratch.join("unit.c");fs::write(&input,&text).map_err(|e|e.to_string())?;
+    if matches!(backend, ObjectBackend::TinyCc) {
+        crate::tcc::compile_scalar_object(&object, &text, false)?;
+    } else {
+        if let Some((generation,backend))=artifact {backend.verify(generation)?;}
+        let backend=artifact.map_or_else(||std::path::Path::new("clang"),|(_,backend)|backend.executable());
+        let mut command=Command::new(backend);
+        if prepared.capture {command.args(["--no-default-config","-fno-stack-protector"]);}
+        command.args(["--target=x86_64-unknown-linux-gnu","-x","c","-std=gnu11","-ffreestanding","-fno-builtin","-fno-strict-aliasing","-fwrapv","-fno-asynchronous-unwind-tables","-O0","-c"]).arg(&input).arg("-o").arg(&object);
+        if prepared.capture {fs::write(scratch.join("backend.command"),format!("{command:?}\n")).map_err(|e|e.to_string())?;}
+        let result=command.output().map_err(|e|format!("cannot start explicit native object C backend: {e}"))?;
+        if prepared.capture {
+            fs::write(scratch.join("backend.stdout"),&result.stdout).map_err(|e|e.to_string())?;
+            fs::write(scratch.join("backend.stderr"),&result.stderr).map_err(|e|e.to_string())?;
+            fs::write(scratch.join("backend.status"),format!("{}\n",result.status)).map_err(|e|e.to_string())?;
+        }
+        if !result.status.success(){return Err(format!("native object C backend {}: {}",result.status,String::from_utf8_lossy(&result.stderr)));}
+        if prepared.capture && (!result.stdout.is_empty() || !result.stderr.is_empty()) {return Err("native metadata object backend produced unexpected output; exact streams retained".into());}
     }
-    if !result.status.success(){return Err(format!("native object C backend {}: {}",result.status,String::from_utf8_lossy(&result.stderr)));}
-    if prepared.capture && (!result.stdout.is_empty() || !result.stderr.is_empty()) {return Err("native metadata object backend produced unexpected output; exact streams retained".into());}
     if let Some((generation,backend))=artifact {backend.verify(generation)?;}
     // Only a native semantic artifact consumes the runtime source/location
     // record. A freestanding object must have no undefined symbols below;
@@ -398,7 +434,11 @@ fn emit_with_backend(prepared: PreparedUnit, artifact: Option<(&crate::native_cr
 
 fn compile(r: Request, artifact: Option<(&crate::native_crate::Generation,&crate::native_crate::Backend)>) -> Result<Completion, String> {
     let prepared = prepare_request(r, artifact.is_some(), false, None)?;
-    let EmittedUnit { prepared, object, scratch, bytes, runtime, .. } = emit_with_backend(prepared, artifact)?;
+    let backend = match artifact {
+        Some((generation, backend)) => ObjectBackend::Artifact(generation, backend),
+        None => ObjectBackend::Clang,
+    };
+    let EmittedUnit { prepared, object, scratch, bytes, runtime, .. } = emit_with_backend(prepared, backend)?;
     let PreparedUnit { request: r, source, program: p, names, .. } = prepared;
     // A real object only. Do not emit an empty rmeta/rlib or report Cargo
     // metadata support until the typed producer/consumer contract exists.
