@@ -1464,7 +1464,7 @@ fn main() { assert_eq!(evaluate(57), 42); }
     for (name, original, debug, expected, contents) in [
         ("mixed", false, "0", 1, source),
         ("original", true, "0", 0, source),
-        ("default", false, "2", 0, source),
+        ("default", false, "2", 1, source),
         ("mixed-extended", false, "0", 1, extended.as_str()),
         ("original-extended", true, "0", 0, extended.as_str()),
     ] {
@@ -2626,6 +2626,11 @@ fn main() {
     let Poll::Ready(value) = task.as_mut().poll(&mut context) else { unreachable!() };
     println!("{value}");
 }
+
+#[test]
+fn native_value_in_the_rust_test_harness() {
+    assert_eq!(apply_mask(57), 42);
+}
 "#;
     let path = f.source("src/main.rs", source);
     let rust = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
@@ -2642,18 +2647,55 @@ fn main() {
     };
     f.succeeds("lockfile", cargo("default", false, false).args(["generate-lockfile", "--offline"]));
     f.succeeds("default-check", cargo("default", false, false).args(["check", "--frozen"]));
-    for (name, original, mixed) in [("default", false, false), ("mixed", false, true), ("original", true, true)] {
-        let result = f.succeeds(&format!("{name}-run"), cargo(name, original, mixed).args(["run", "--frozen"]));
+    for (name, original, debug_zero) in [("default", false, false), ("mixed", false, true),
+        ("release", false, false), ("original", true, true)] {
+        let mut command = cargo(name, original, debug_zero);
+        command.args(["run", "--frozen"]);
+        let profile = if name == "release" { command.arg("--release"); "release" } else { "debug" };
+        let result = f.succeeds(&format!("{name}-run"), &mut command);
         assert_eq!(result.stdout, b"42\n");
-        let exe = f.root.join(name).join("debug/async_program");
-        let symbols = f.succeeds(&format!("{name}-symbols"), Command::new("nm").arg(exe));
+        let exe = f.root.join(name).join(profile).join("async_program");
+        let symbols = f.succeeds(&format!("{name}-symbols"), Command::new("nm").arg(&exe));
         let symbols = String::from_utf8(symbols.stdout).unwrap();
-        let native = symbols.lines().filter(|line| line.split_whitespace().last()
+        let native: Vec<_> = symbols.lines().filter(|line| line.split_whitespace().last()
             .and_then(|name| name.strip_prefix("f_")).is_some_and(|suffix| {
                 suffix.len() == 16 && suffix.bytes().all(|byte| byte.is_ascii_hexdigit())
-            })).count();
-        assert_eq!(native, usize::from(mixed && !original), "{name}");
+            })).collect();
+        assert_eq!(native.len(), usize::from(!original), "{name}");
+        if name == "default" {
+            let debug = f.succeeds("native-debug-records",
+                Command::new("readelf").args(["--debug-dump=info", "--wide"]).arg(&exe));
+            let info = String::from_utf8_lossy(&debug.stdout);
+            let native_unit = info.split("Compilation Unit @").find(|unit|
+                unit.lines().any(|line| line.contains("DW_AT_producer") && line.contains("Lustr")))
+                .expect("Lust produced a Rust debug compilation unit");
+            let address = u64::from_str_radix(native[0].split_whitespace().next().unwrap(), 16).unwrap();
+            assert!(native_unit.lines().any(|line| line.contains("DW_AT_language") && line.contains("(Rust)"))
+                && native_unit.contains("apply_mask")
+                && native_unit.contains("src/main.rs"), "{native_unit}");
+            assert!(native_unit.lines().filter(|line| line.contains("DW_AT_low_pc")).any(|line| {
+                line.split_whitespace().last().and_then(|hex| hex.strip_prefix("0x"))
+                    .and_then(|hex| u64::from_str_radix(hex, 16).ok()) == Some(address)
+            }), "{native_unit}");
+        }
     }
+    let artifact = f.succeeds("test-build", cargo("tests", false, false)
+        .args(["test", "--no-run", "--frozen", "--message-format=json"]));
+    let test = artifact.stdout.split(|&byte| byte == b'\n').find_map(|line| {
+        let record: serde_json::Value = serde_json::from_slice(line).ok()?;
+        if record["reason"] != "compiler-artifact" || record["profile"]["test"] != true {
+            return None;
+        }
+        record["executable"].as_str().map(PathBuf::from)
+    }).expect("Cargo reported the real test executable");
+    let symbols = f.succeeds("test-symbols", Command::new("nm").arg(&test));
+    assert!(String::from_utf8_lossy(&symbols.stdout).lines().any(|line| {
+        line.split_whitespace().last().and_then(|name| name.strip_prefix("f_"))
+            .is_some_and(|name| name.len() == 16 && name.bytes().all(|byte| byte.is_ascii_hexdigit()))
+    }));
+    let result = f.succeeds("test-run", cargo("tests", false, false).args(["test", "--frozen",
+        "--", "--exact", "native_value_in_the_rust_test_harness"]));
+    assert!(String::from_utf8_lossy(&result.stdout).contains("native_value_in_the_rust_test_harness ... ok"));
     assert_eq!(std::fs::read_to_string(&path).unwrap(), source);
     let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
     assert!(trace.contains("\"entry\":\"rust-complement\""), "{trace}");

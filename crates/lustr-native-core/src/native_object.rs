@@ -152,7 +152,7 @@ pub(crate) fn prepare(args: &[String]) -> Result<PreparedUnit, String> {
 /// owners. Keep the full original source and positions for this native item.
 pub(crate) fn prepare_item(args: &[String], source: &str, span: Range<u32>) -> Result<PreparedUnit, String> {
     prepare_request(request(args)?, false, true, Some(ItemSelection {
-        source, spans: &[span], total_scalars: false, policy_span: None,
+        source, spans: &[span], total_scalars: false, policy_span: None, codegen: None,
     }))
 }
 
@@ -162,15 +162,30 @@ struct ItemSelection<'a> {
     spans: &'a [Range<u32>],
     total_scalars: bool,
     policy_span: Option<&'a Range<u32>>,
+    codegen: Option<ItemCodegen>,
+}
+
+#[derive(Clone, Copy)]
+pub(crate) struct ItemCodegen {
+    pub(crate) optimization: crate::protocol::OptLevel,
+    pub(crate) rust_debug: bool,
+    pub(crate) unwind_tables: bool,
+}
+
+impl ItemCodegen {
+    fn uses_llvm(self) -> bool {
+        self.rust_debug || self.optimization != crate::protocol::OptLevel::None
+    }
 }
 
 /// Check the original items in one native unit. A link request also emits and
 /// publishes the object containing the checked symbols.
 pub(crate) fn complete_items(
     args: &[String], source: &str, spans: &[Range<u32>], link: bool, policy_span: Option<Range<u32>>,
+    codegen: ItemCodegen,
 ) -> Result<Vec<(String, String)>, String> {
     let prepared = prepare_request(request(args)?, false, true, Some(ItemSelection {
-        source, spans, total_scalars: true, policy_span: policy_span.as_ref(),
+        source, spans, total_scalars: true, policy_span: policy_span.as_ref(), codegen: link.then_some(codegen),
     }))?;
     let program = prepared.program();
     let mut bindings = Vec::with_capacity(spans.len());
@@ -186,7 +201,8 @@ pub(crate) fn complete_items(
     if !link {
         return Ok(bindings);
     }
-    let emitted = emit_with_backend(prepared, ObjectBackend::TinyCc)?;
+    let backend = if codegen.uses_llvm() { ObjectBackend::Llvm(codegen) } else { ObjectBackend::TinyCc };
+    let emitted = emit_with_backend(prepared, backend)?;
     // The original linker owns the final artifact. Its private input needs a
     // complete file at an exclusive name for this invocation.
     fs::hard_link(&emitted.object, emitted.prepared.output())
@@ -333,6 +349,12 @@ fn prepare_request(r: Request, artifact: bool, capture: bool, items: Option<Item
     let mut order=check::collect::DefOrder::default();
     let mut p = check::collect::collect_with_order_resolved(Arc::new(a),i,k,ids,false,&mut order,tables).map_err(report)?;
     p.unwind = false; p.overflow_checks = r.overflow; p.debug_assertions = r.debug; p.unwind_tables = false;
+    let llvm_codegen = selected_items.and_then(|items| items.codegen).filter(|codegen| codegen.uses_llvm());
+    if let Some(codegen) = llvm_codegen {
+        // The selected bodies are proved total below. Their frame policy
+        // still follows the enclosing compiler request.
+        p.unwind = codegen.unwind_tables;
+    }
     if artifact{crate::native_crate::prepare_declared_types(&mut p)?;}
     let mut errors = Vec::new();
     if artifact{crate::native_crate::check_initializers(&mut p,&mut errors);}else{check::const_body::check_all(&mut p,&mut errors);}
@@ -391,7 +413,9 @@ fn prepare_request(r: Request, artifact: bool, capture: bool, items: Option<Item
             return Err("the checked native body needs an unrepresented runtime operation".into());
         }
         let mut generated = cgen::names::with(Some(&names), || {
-            if total {
+            if let Some(codegen) = llvm_codegen {
+                cgen::gen_fn_cargo_llvm(&p, &body, &map, first_line, &slots, codegen.rust_debug, true)
+            } else if total {
                 cgen::gen_fn_total(&p, &body, &map, first_line, &slots)
             } else {
                 cgen::gen_fn(&p, &body, &map, first_line, &slots)
@@ -431,6 +455,7 @@ pub(crate) fn emit(prepared: PreparedUnit) -> Result<EmittedUnit, String> {
 enum ObjectBackend<'a> {
     Clang,
     TinyCc,
+    Llvm(ItemCodegen),
     Artifact(&'a crate::native_crate::Generation, &'a crate::native_crate::Backend),
 }
 
@@ -441,17 +466,22 @@ fn emit_with_backend(prepared: PreparedUnit, backend: ObjectBackend<'_>) -> Resu
     };
     if prepared.artifact != artifact.is_some() { return Err("prepared native unit has a different artifact/backend contract".into()); }
     let (r, p, map, names, out) = (&prepared.request, &prepared.program, &prepared.map, &prepared.names, &prepared.generated);
-    let text = if matches!(backend, ObjectBackend::TinyCc) {
-        out.iter().map(|output| cgen::native_scalar_unit(output, false)
+    let text = match backend {
+        ObjectBackend::TinyCc => out.iter().map(|output| cgen::native_scalar_unit(output, false)
             .ok_or("native scalar code needs an unrepresented runtime operation"))
-            .collect::<Result<Vec<_>, _>>()?.join("\n")
-    } else {
-        let slots: Vec<u32> = (0..p.fns.len()).map(|n|n as u32).collect();
-        let mut glue = cgen::GlueSet::default();
-        glue.add(&p,&slots,out.iter().flat_map(|f|f.glue.iter()));
-        let indexes: Vec<usize> = (0..out.len()).collect();
-        let register = format!("lustr_unit_register_{:016x}",p.stable_crate.0);
-        cgen::names::with(Some(&names),||cgen::fn_unit(&p,&out,&indexes,&glue,&register,None))
+            .collect::<Result<Vec<_>, _>>()?.join("\n"),
+        ObjectBackend::Llvm(codegen) => {
+            cgen::native_scalar_llvm_objects(out, "x86_64-unknown-linux-gnu", codegen.rust_debug)
+                .ok_or("native scalar LLVM needs an unrepresented runtime or debug operation")?
+        }
+        _ => {
+            let slots: Vec<u32> = (0..p.fns.len()).map(|n|n as u32).collect();
+            let mut glue = cgen::GlueSet::default();
+            glue.add(&p,&slots,out.iter().flat_map(|f|f.glue.iter()));
+            let indexes: Vec<usize> = (0..out.len()).collect();
+            let register = format!("lustr_unit_register_{:016x}",p.stable_crate.0);
+            cgen::names::with(Some(&names),||cgen::fn_unit(&p,&out,&indexes,&glue,&register,None))
+        }
     };
     let parent = r.output.parent().ok_or("object output parent required")?;
     static NEXT:std::sync::atomic::AtomicU64=std::sync::atomic::AtomicU64::new(0);
@@ -464,6 +494,8 @@ fn emit_with_backend(prepared: PreparedUnit, backend: ObjectBackend<'_>) -> Resu
     // backend. Referenced symbols must pass the independent ELF closure gate.
     if matches!(backend, ObjectBackend::TinyCc) {
         crate::tcc::compile_scalar_object(&object, &text, false)?;
+    } else if let ObjectBackend::Llvm(codegen) = backend {
+        crate::cc::compile_scalar_cargo_object(&object, &text, true, codegen.unwind_tables, codegen.optimization)?;
     } else {
         let input = scratch.join("unit.c");
         fs::write(&input, &text).map_err(|error| error.to_string())?;

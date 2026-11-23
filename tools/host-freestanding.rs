@@ -159,6 +159,7 @@ fn native_function(item: &Item) -> Option<&rustc_ast::Fn> {
 impl Composition<'_> {
     fn complete_items(
         &self, sess: &Session, input: &Path, items: &[&Item], directory: &Path, no_std: Option<Span>,
+        codegen: crate::native_object::ItemCodegen,
     ) -> Result<(Option<PathBuf>, Vec<String>), String> {
         let file = sess.source_map().lookup_source_file(items[0].span.lo());
         let source = file.src.as_ref().ok_or("missing original source snapshot")?;
@@ -186,7 +187,7 @@ impl Composition<'_> {
             object.to_str().ok_or("native item output path must be UTF-8")?.to_owned(),
         ];
         let report = sess.time("lustr_native_items", || {
-            crate::native_object::complete_items(&args, source, &extents, link, policy_span)
+            crate::native_object::complete_items(&args, source, &extents, link, policy_span, codegen)
         })?;
         if report.len() != items.len() {
             return Err("native object does not cover every selected definition".into());
@@ -274,7 +275,8 @@ impl Callbacks for Composition<'_> {
             [] | [CrateType::Executable | CrateType::Rlib | CrateType::StaticLib]);
         if !host || !native_artifact || !self.native_codegen || config.opts.cg.embed_bitcode
             || !crate::embedding_environment_supported()
-            || config.opts.test || config.opts.output_types.keys().any(|kind|
+            || config.opts.test && matches!(self.artifact, Artifact::Freestanding)
+            || config.opts.output_types.keys().any(|kind|
             !matches!(kind, OutputType::Exe | OutputType::Metadata | OutputType::DepInfo))
         {
             return;
@@ -318,13 +320,30 @@ impl Callbacks for Composition<'_> {
             Artifact::CargoUnit => krate.attrs.is_empty()
                 || matches!(krate.attrs.as_slice(), [attr] if no_std && attr.has_name(sym::no_std)),
         };
+        let rust_debug = match sess.opts.debuginfo {
+            DebugInfo::None => false,
+            DebugInfo::Full => true,
+            _ => return Compilation::Continue,
+        };
         if self.input.is_none() || !plain_policy
-            || sess.opts.optimize != OptLevel::No || sess.opts.debuginfo != DebugInfo::None
+            || matches!(self.artifact, Artifact::Freestanding) && (sess.opts.optimize != OptLevel::No || rust_debug)
+            || rust_debug && sess.opts.optimize != OptLevel::No
             || sess.opts.edition != Edition::Edition2024 || sess.opts.crate_name.is_none()
             || sess.opts.lint_opts.iter().any(|(lint, _)| lint != "unused_crate_dependencies")
         {
             return Compilation::Continue;
         }
+        let optimization = match sess.opts.optimize {
+            OptLevel::No => crate::protocol::OptLevel::None,
+            OptLevel::Less => crate::protocol::OptLevel::Less,
+            OptLevel::More => crate::protocol::OptLevel::More,
+            OptLevel::Aggressive => crate::protocol::OptLevel::Aggressive,
+            OptLevel::Size => crate::protocol::OptLevel::Size,
+            OptLevel::SizeMin => crate::protocol::OptLevel::MinSize,
+        };
+        let codegen = crate::native_object::ItemCodegen {
+            optimization, rust_debug, unwind_tables: sess.must_emit_unwind_tables(),
+        };
         // The native body uses the primitive ABI. Keep the original Rust
         // body if expansion or resolution could rebind the unqualified type.
         if sess.opts.externs.get("u64").is_some_and(|external| external.add_prelude)
@@ -341,7 +360,7 @@ impl Callbacks for Composition<'_> {
                 .unwrap_or_else(|error| sess.dcx().fatal(format!("cannot create native item work directory: {error}")));
             let input = self.input.as_deref().unwrap();
             let items: Vec<_> = selected.iter().map(|(_, item)| *item).collect();
-            let (object, symbols) = self.complete_items(sess, input, &items, &directory.0, no_std_attr.map(|attr| attr.span))
+            let (object, symbols) = self.complete_items(sess, input, &items, &directory.0, no_std_attr.map(|attr| attr.span), codegen)
                 .unwrap_or_else(|error| sess.dcx().span_fatal(first.span, error));
             if let Some(object) = object {
                 self.object.set(object).expect("one native object per invocation");

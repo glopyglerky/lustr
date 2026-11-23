@@ -3603,7 +3603,7 @@ index dcf8c8e922873b5f8c8d8c3c7ebe5299f9b246e2..1ba7cc3683554ef5f9e6e736fc274cb5
  
  /// The LLVM major version of a clang command; an error for another compiler (gcc writes
 diff --git a/src/cgen.rs b/src/cgen.rs
-index ac6965592d3f4cc6ea1969df299fe33c974056b0..84cd39df06d506d41785646feabb5c8071e1d79d 100644
+index ac6965592d3f4cc6ea1969df299fe33c974056b0..c521b73c92f170caad64c14167fb5721db3ed83e 100644
 --- a/src/cgen.rs
 +++ b/src/cgen.rs
 @@ -26,6 +26,8 @@ pub mod record;
@@ -4436,7 +4436,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..84cd39df06d506d41785646feabb5c80
              let _ = writeln!(self.out, "    if ({rc} < 0) lust_panic_cstr(\"{div0msg}\", {at});");
              if matches!(b, B::SaturatingAdd | B::SaturatingSub | B::SaturatingMul | B::SaturatingDiv) {
                  // Clamp to the endpoint the true result passes.
-@@ -10355,6 +10529,49 @@ fn strip_impl_blocks(src: &str) -> String {
+@@ -10355,6 +10529,59 @@ fn strip_impl_blocks(src: &str) -> String {
  /// (`runtime_decls`), from the compiler's predefined types.
  const INT_TYPEDEFS: &str = "typedef signed char int8_t; typedef unsigned char uint8_t; typedef short int16_t; typedef unsigned short uint16_t;\ntypedef int int32_t; typedef unsigned int uint32_t;\n#ifdef __INT64_TYPE__\ntypedef __INT64_TYPE__ int64_t; typedef unsigned __INT64_TYPE__ uint64_t;\n#else\ntypedef long long int64_t; typedef unsigned long long uint64_t;\n#endif\n#ifdef __SIZE_TYPE__\ntypedef __SIZE_TYPE__ size_t; typedef __PTRDIFF_TYPE__ ptrdiff_t; typedef __UINTPTR_TYPE__ uintptr_t; typedef __INTPTR_TYPE__ intptr_t;\n#else\ntypedef unsigned long size_t; typedef long ptrdiff_t; typedef unsigned long uintptr_t; typedef long intptr_t;\n#endif\n#define INT64_MIN (-9223372036854775807LL-1)\n#ifndef NULL\n#define NULL ((void*)0)\n#endif\n";
  
@@ -4473,20 +4473,30 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..84cd39df06d506d41785646feabb5c80
 +}
 +
 +pub(crate) fn native_scalar_llvm_unit(outputs: &[FnOut], slot: usize, triple: &str, rust_debug: bool) -> Option<String> {
-+    let output = &outputs[slot];
-+    if !output.mixed_total || output.ll.is_empty() || !output.ll_c.is_empty()
-+        || !output.glue.is_empty() || !output.types.is_empty() || !output.named.is_empty()
-+        || rust_debug && output.rust_debug_source.is_none()
-+    {
++    if !scalar_llvm_output(&outputs[slot], rust_debug) {
 +        return None;
 +    }
 +    Some(ll::ll_unit(outputs, &[slot], &[], triple))
 +}
 +
++pub(crate) fn native_scalar_llvm_objects(outputs: &[FnOut], triple: &str, rust_debug: bool) -> Option<String> {
++    if outputs.is_empty() || !outputs.iter().all(|output| scalar_llvm_output(output, rust_debug)) {
++        return None;
++    }
++    let slots: Vec<_> = (0..outputs.len()).collect();
++    Some(ll::ll_unit(outputs, &slots, &[], triple))
++}
++
++fn scalar_llvm_output(output: &FnOut, rust_debug: bool) -> bool {
++    output.mixed_total && !output.ll.is_empty() && output.ll_c.is_empty()
++        && output.glue.is_empty() && output.types.is_empty() && output.named.is_empty()
++        && (!rust_debug || output.rust_debug_source.is_some())
++}
++
  fn runtime_decls() -> &'static str {
      static DECLS: std::sync::OnceLock<String> = std::sync::OnceLock::new();
      DECLS.get_or_init(|| {
-@@ -10427,6 +10644,15 @@ pub fn runtime_unit() -> String {
+@@ -10427,6 +10654,15 @@ pub fn runtime_unit() -> String {
      format!("#define LUST_IMPL 1\n{}", runtime_source(true))
  }
  
@@ -4502,7 +4512,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..84cd39df06d506d41785646feabb5c80
  /// The source files panic locations name: every file's path (index 0 is
  /// the crate root) and each slot's file index.
  pub struct SlotFiles<'a> {
-@@ -10444,6 +10670,8 @@ pub struct UnwindInit {
+@@ -10444,6 +10680,8 @@ pub struct UnwindInit {
      pub tables: bool,
      pub ids: [u64; 4],
      pub hook_runner: Option<u32>,
@@ -4511,7 +4521,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..84cd39df06d506d41785646feabb5c80
  }
  
  /// The `main_unit` argument for `p` (`slot_of` maps a fn to its slot).
-@@ -10461,7 +10689,11 @@ pub fn unwind_init(p: &Program, slot_of: impl Fn(LocalDefId) -> u32) -> Option<U
+@@ -10461,7 +10699,11 @@ pub fn unwind_init(p: &Program, slot_of: impl Fn(LocalDefId) -> u32) -> Option<U
          .map(|i| slot_of(LocalDefId(i as u32)));
      let (a, b) = crate::check::any::type_id_words(p, &p.tys, REF_STR);
      let (c, d) = crate::check::any::type_id_words(p, &p.tys, STRING);
@@ -4524,7 +4534,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..84cd39df06d506d41785646feabb5c80
  }
  
  /// The location unit: the per-slot line and file tables and
-@@ -10503,11 +10735,21 @@ pub fn loc_unit(files: &SlotFiles, slot_lines: &[u32]) -> String {
+@@ -10503,11 +10745,21 @@ pub fn loc_unit(files: &SlotFiles, slot_lines: &[u32]) -> String {
  /// sets up the runtime's panic payloads and hook runner; under
  /// panic=unwind a `main` that ends by a panic exits 101.
  pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -> String {
@@ -4547,7 +4557,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..84cd39df06d506d41785646feabb5c80
              format!("\n  lust_unw_init({}, {a}ull, {b}ull, {c}ull, {d}ull);", if unwind && tables { 2 } else { unwind as u8 }),
              hook_runner.map_or(String::new(), |s| {
                  // Release C names the runner directly (only its address is taken here).
-@@ -10518,20 +10760,32 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
+@@ -10518,20 +10770,32 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
      };
      let mut c = unit_header();
      c.push_str("void lust_loc_init(void);\nvoid lust_kstatics_init(void);\n");
@@ -4586,7 +4596,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..84cd39df06d506d41785646feabb5c80
          // Main runs under a catch point (std's lang_start catches its panic).
          let _ = writeln!(
              c,
-@@ -10550,6 +10804,11 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
+@@ -10550,6 +10814,11 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
      if !runner.is_empty() {
          c.push('\n');
      }
@@ -4598,7 +4608,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..84cd39df06d506d41785646feabb5c80
      if tables {
          c.push_str("  int rc = 0;\n  if (lust_unw_try(lust_main_thunk, &rc)) rc = lust_unw_main_caught();\n  lust_tls_exit();\n  lust_flush();\n  return rc;\n}\n");
          return c;
-@@ -10582,6 +10841,45 @@ pub fn table_unit(capacity: usize, fn_units: &[usize]) -> String {
+@@ -10582,6 +10851,45 @@ pub fn table_unit(capacity: usize, fn_units: &[usize]) -> String {
      c
  }
  
@@ -4644,7 +4654,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..84cd39df06d506d41785646feabb5c80
  /// The shared glue unit. With a frozen shared set it holds only those keys; the rest of the
  /// glue is static in the function units (see `GlueSet`).
  pub fn glue_unit(p: &Program, g: &GlueSet) -> String {
-@@ -12032,7 +12330,7 @@ pub fn fn_unit_parts(
+@@ -12032,7 +12340,7 @@ pub fn fn_unit_parts(
          let f = &fns[s];
          let m = c.len();
          // An LLVM fn's C is its C ABI wrapper and trampoline: kept only when a text names them.
@@ -4653,7 +4663,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..84cd39df06d506d41785646feabb5c80
              (Some(r), false, Some(id)) => c.push_str(&r.c_body(text_of(s), &id)),
              (_, _, Some(id)) if copy_hot.is_some_and(|h| !is_hot(&h.hot, &id)) => c.push_str(&cold_cleanup(text_of(s), &id)),
              _ => c.push_str(text_of(s)),
-@@ -12044,46 +12342,11 @@ pub fn fn_unit_parts(
+@@ -12044,46 +12352,11 @@ pub fn fn_unit_parts(
      // table; on Err print `Error: {err:?}` to stderr and exit 1, as
      // Rust does; an `ExitCode` is the exit status. Registered below
      // in `lust_main_entry_p`, which the main unit prefers over the
@@ -4702,7 +4712,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..84cd39df06d506d41785646feabb5c80
      }
      record::piece(record::Kind::Entry, 0, &c[entry_at..]);
      let register_at = c.len();
-@@ -13126,7 +13389,7 @@ fn glue_def_value(
+@@ -13126,7 +13399,7 @@ fn glue_def_value(
      match g {
          Glue::CloneFrom => unreachable!("clonefrom glue returns above"),
          Glue::Drop => {
@@ -4711,7 +4721,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..84cd39df06d506d41785646feabb5c80
              match t {
                  CTy::String => body.push_str("  lust_string_drop(p);\n"),
                  CTy::Hash(k, _) if hash::is_table(*k) => body.push_str(&hash::drop_body(p, t, &mut need)),
-@@ -13364,7 +13627,7 @@ fn glue_def_value(
+@@ -13364,7 +13637,7 @@ fn glue_def_value(
              } else {
                  body = body.replace(UNW_DSTEP, "").replace("UNW_DSTEP ", "");
              }
@@ -4720,7 +4730,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..84cd39df06d506d41785646feabb5c80
          }
          Glue::Clone => {
              let _ = writeln!(protos, "{ct} clone_{m}({ct} *p);");
-@@ -14261,7 +14524,7 @@ mod tests {
+@@ -14261,7 +14534,7 @@ mod tests {
          let span = Span::new(FileId(0), 0, 0);
          let elems = body.tys.intern_tys(&[STRING, int(IntTy::U8)]);
          let tuple_ty = body.tys.intern(TyKind::Tuple(elems));
@@ -4729,7 +4739,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..84cd39df06d506d41785646feabb5c80
          body.locals = vec![local(UNIT), local(tuple_ty), local(STRING)];
          body.blocks = vec![BlockData {
              stmts: vec![Stmt {
-@@ -14781,9 +15044,9 @@ mod tests {
+@@ -14781,9 +15054,9 @@ mod tests {
              let shards = names::glue_shards(&program, &glue, &outs, 1);
              let drop_hooks = format!("void drop_{}_(", ctype(&CTy::Adt(hooks)));
              let shard = shards.iter().find(|s| s.lines().any(|l| l.starts_with(&drop_hooks) && l.ends_with('{'))).expect("a shard defines the struct's drop glue");
@@ -4741,7 +4751,7 @@ index ac6965592d3f4cc6ea1969df299fe33c974056b0..84cd39df06d506d41785646feabb5c80
              let keys = names::glue_shard_keys(&glue, &outs, 1);
              let made = names::glue_shard_texts(&program, &glue, &keys, &[], true);
              assert_eq!(made.iter().map(|(c, _)| c.as_str()).collect::<Vec<_>>(), shards, "a record does not change a shard");
-@@ -14898,7 +15161,7 @@ mod tests {
+@@ -14898,7 +15171,7 @@ mod tests {
          let inputs = body.tys.intern_tys(&[i64_ty]);
          let sig = body.tys.intern_sig(Binder::plain(FnSig::plain(inputs, i64_ty)));
          let fnptr_ty = body.tys.intern(TyKind::FnPtr(sig));

@@ -10562,14 +10562,24 @@ pub fn native_scalar_unit(output: &FnOut, unwind_tables: bool) -> Option<String>
 }
 
 pub(crate) fn native_scalar_llvm_unit(outputs: &[FnOut], slot: usize, triple: &str, rust_debug: bool) -> Option<String> {
-    let output = &outputs[slot];
-    if !output.mixed_total || output.ll.is_empty() || !output.ll_c.is_empty()
-        || !output.glue.is_empty() || !output.types.is_empty() || !output.named.is_empty()
-        || rust_debug && output.rust_debug_source.is_none()
-    {
+    if !scalar_llvm_output(&outputs[slot], rust_debug) {
         return None;
     }
     Some(ll::ll_unit(outputs, &[slot], &[], triple))
+}
+
+pub(crate) fn native_scalar_llvm_objects(outputs: &[FnOut], triple: &str, rust_debug: bool) -> Option<String> {
+    if outputs.is_empty() || !outputs.iter().all(|output| scalar_llvm_output(output, rust_debug)) {
+        return None;
+    }
+    let slots: Vec<_> = (0..outputs.len()).collect();
+    Some(ll::ll_unit(outputs, &slots, &[], triple))
+}
+
+fn scalar_llvm_output(output: &FnOut, rust_debug: bool) -> bool {
+    output.mixed_total && !output.ll.is_empty() && output.ll_c.is_empty()
+        && output.glue.is_empty() && output.types.is_empty() && output.named.is_empty()
+        && (!rust_debug || output.rust_debug_source.is_some())
 }
 
 fn runtime_decls() -> &'static str {
