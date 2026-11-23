@@ -637,6 +637,29 @@ fn exit_code() -> std::process::ExitCode { std::process::ExitCode::from(17) }
 }
 
 #[test]
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn cargo_selects_library_unit_test_source() {
+    let f = Fixture::new("library-unit-test");
+    f.source("Cargo.toml", "[package]\nname = \"library-unit-test\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[lib]\nname = \"selected_library\"\npath = \"lib/entry.rs\"\n");
+    f.source("lib/entry.rs", r#"
+fn calculate(input: u32) -> u32 { input + 9 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn calls_library_code() { assert_eq!(super::calculate(4), 13); }
+}
+"#);
+    let compiled = f.succeeds("compile", f.command("cargo").args(["test", "--offline", "--lib", "--no-run"]));
+    assert!(compiled.stdout.is_empty());
+    let ran = f.succeeds("run", f.command("cargo").args(["test", "--offline", "--lib"]));
+    let stdout = String::from_utf8_lossy(&ran.stdout);
+    assert!(stdout.contains("tests::calls_library_code ... ok"), "{stdout}");
+    assert!(stdout.contains("1 passed; 0 failed"), "{stdout}");
+}
+
+#[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT"]
 fn native_output_failure_does_not_become_success() {
     use std::os::fd::OwnedFd;
