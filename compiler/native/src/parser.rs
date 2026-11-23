@@ -26,10 +26,12 @@ const C_CORE: &str = "L0820"; // core expression, pattern, and statement forms
 
 fn unsafe_error(span: Span) -> Diag {
     Diag::new("L0404", span, "`unsafe` is not supported", "Remove the unsafe code.")
+        .requiring_rust_complement()
 }
 
 fn async_error(span: Span) -> Diag {
     Diag::new("L0405", span, "`async` is not supported", "Use std::thread and channels.")
+        .requiring_rust_complement()
 }
 
 type PResult<T> = Result<T, Diag>;

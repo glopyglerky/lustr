@@ -347,7 +347,7 @@
         ["freestanding-executable-composition", "in-process Lust semantics and TinyCC"]
       ],
       "targets": "x86_64-unknown-linux-gnu host and target",
-      "features": ["Freestanding Cargo binary with no_std, no_main, panic=abort and explicit static relocation and link", "Cargo static library with Rust semantics and an independently linkable C entry", "Native parser capability handoff for ordinary Cargo units that use async"],
+      "features": ["Freestanding Cargo binary with no_std, no_main, panic=abort and explicit static relocation and link", "Cargo static library with Rust semantics and an independently linkable C entry", "Typed native parser capability handoff for ordinary Cargo units that use async or unsafe"],
       "adapter": "tools/host-freestanding.rs",
       "licenses": ["MIT", "Apache-2.0"],
       "excluded_duplicate_phases": ["Rust analysis and code generation of selected native bodies"],

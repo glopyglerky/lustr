@@ -1344,7 +1344,7 @@ fn errors(diags: &mut [Diag], map: &SourceMap, src: &str, req: &Request) -> Resp
     let n = diag::dedup_exact(diags, map);
     let diags = &mut diags[..n];
     let code = if cfg!(feature = "exclusive-native") && req.session.library.is_some()
-        && !diags.is_empty() && diags.iter().all(|diagnostic| diagnostic.code == "L0405")
+        && !diags.is_empty() && diags.iter().all(|diagnostic| diagnostic.rust_complement)
     {
         crate::protocol::RUST_COMPLEMENT_REQUIRED
     } else {

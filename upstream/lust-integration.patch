@@ -8946,10 +8946,28 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..642aab0d70d65f77af683da69dc21c4c
          assert!(client_gone(ours.as_raw_fd()));
      }
 diff --git a/src/diag.rs b/src/diag.rs
-index cc2181be23026dbf2ac0d57720504941c02be9c8..02ac62f5b7432ef967dee33fcd351a1b2fd358ab 100644
+index cc2181be23026dbf2ac0d57720504941c02be9c8..adbe3e70d23994184001cd23f388d38aaac217b9 100644
 --- a/src/diag.rs
 +++ b/src/diag.rs
-@@ -560,6 +560,7 @@ pub fn text_hash(src: &str) -> u64 {
+@@ -114,11 +114,16 @@ pub struct Diag {
+     pub fix: String,
+     pub labels: Vec<Label>,
+     pub edits: Vec<Edit>,
++    pub(crate) rust_complement: bool,
+ }
+ 
+ impl Diag {
+     pub fn new(code: &'static str, span: Span, message: impl Into<String>, fix: impl Into<String>) -> Diag {
+-        Diag { code, severity: "error", message: message.into(), span, fix: fix.into(), labels: Vec::new(), edits: Vec::new() }
++        Diag { code, severity: "error", message: message.into(), span, fix: fix.into(), labels: Vec::new(), edits: Vec::new(), rust_complement: false }
++    }
++    pub(crate) fn requiring_rust_complement(mut self) -> Diag {
++        self.rust_complement = true;
++        self
+     }
+     /// Adds a labeled secondary span.
+     pub fn with_label(mut self, span: Span, text: impl Into<String>) -> Diag {
+@@ -560,6 +565,7 @@ pub fn text_hash(src: &str) -> u64 {
  pub struct SourceMap {
      files: Vec<std::sync::Arc<SourceFile>>,
      expansions: std::sync::Arc<Vec<Expansion>>,
@@ -8957,7 +8975,7 @@ index cc2181be23026dbf2ac0d57720504941c02be9c8..02ac62f5b7432ef967dee33fcd351a1b
  }
  
  impl SourceMap {
-@@ -594,6 +595,12 @@ impl SourceMap {
+@@ -594,6 +600,12 @@ impl SourceMap {
      pub fn file_count(&self) -> usize {
          self.files.len()
      }
@@ -8970,7 +8988,7 @@ index cc2181be23026dbf2ac0d57720504941c02be9c8..02ac62f5b7432ef967dee33fcd351a1b
      /// The text of `file`, when the map keeps it (multi-file crates).
      pub fn text(&self, file: FileId) -> Option<&str> {
          self.files.get(file.0 as usize).and_then(|f| f.text.as_deref())
-@@ -634,6 +641,15 @@ impl SourceMap {
+@@ -634,6 +646,15 @@ impl SourceMap {
      pub fn line_col(&self, span: Span) -> (u32, u32) {
          self.lines(span.file).line_col(span.lo)
      }
@@ -8986,7 +9004,7 @@ index cc2181be23026dbf2ac0d57720504941c02be9c8..02ac62f5b7432ef967dee33fcd351a1b
      /// 1-based line and display column of a span's first byte (panic
      /// locations; see `LineIndex::line_display_col`). No token starts on
      /// a newline, so a span that does is lowering's gap from an index
-@@ -683,6 +699,8 @@ impl SourceMap {
+@@ -683,6 +704,8 @@ impl SourceMap {
  fn span_json(map: &SourceMap, span: Span) -> String {
      let (line, col) = map.line_col(span);
      let (end_line, end_col) = map.line_col_at(span.file, span.hi);
@@ -8995,7 +9013,7 @@ index cc2181be23026dbf2ac0d57720504941c02be9c8..02ac62f5b7432ef967dee33fcd351a1b
      format!(
          "{{\"start\":{},\"end\":{},\"line\":{},\"col\":{},\"end_line\":{},\"end_col\":{}}}",
          span.lo, span.hi, line, col, end_line, end_col
-@@ -804,6 +822,7 @@ pub fn render(diags: &mut [Diag], map: &SourceMap, src: &str, json: bool, max_er
+@@ -804,6 +827,7 @@ pub fn render(diags: &mut [Diag], map: &SourceMap, src: &str, json: bool, max_er
          let span = map.call_site(d.span);
          let path = map.path(span.file);
          let (line, col) = map.line_col(span);
@@ -9003,7 +9021,7 @@ index cc2181be23026dbf2ac0d57720504941c02be9c8..02ac62f5b7432ef967dee33fcd351a1b
          if json {
              let mut labels = String::new();
              for (i, l) in d.labels.iter().enumerate() {
-@@ -813,6 +832,8 @@ pub fn render(diags: &mut [Diag], map: &SourceMap, src: &str, json: bool, max_er
+@@ -813,6 +837,8 @@ pub fn render(diags: &mut [Diag], map: &SourceMap, src: &str, json: bool, max_er
                  let ls = map.call_site(l.span);
                  let (ll, lc) = map.line_col(ls);
                  let (el, ec) = map.line_col_at(ls.file, ls.hi);
@@ -9012,7 +9030,7 @@ index cc2181be23026dbf2ac0d57720504941c02be9c8..02ac62f5b7432ef967dee33fcd351a1b
                  let _ = write!(
                      labels,
                      "{{\"start\":{},\"end\":{},\"line\":{},\"col\":{},\"end_line\":{},\"end_col\":{},\"label\":{}}}",
-@@ -860,6 +881,7 @@ pub fn render(diags: &mut [Diag], map: &SourceMap, src: &str, json: bool, max_er
+@@ -860,6 +886,7 @@ pub fn render(diags: &mut [Diag], map: &SourceMap, src: &str, json: bool, max_er
              for l in &d.labels {
                  let ls = map.call_site(l.span);
                  let (ll, lc) = map.line_col(ls);
@@ -9020,7 +9038,7 @@ index cc2181be23026dbf2ac0d57720504941c02be9c8..02ac62f5b7432ef967dee33fcd351a1b
                  let lpath = map.path(ls.file);
                  let _ = writeln!(out, "  ::: {lpath}:{ll}:{lc}");
                  push_snippet(&mut out, map.text(ls.file).unwrap_or(src), map, ls, Some(&l.text));
-@@ -1025,3 +1047,55 @@ mod tests {
+@@ -1025,3 +1052,55 @@ mod tests {
          assert!(out.contains(r#""span":{"start":3,"end":4,"line":2,"col":2,"end_line":2,"end_col":3}"#), "{out}");
      }
  }
@@ -10890,7 +10908,7 @@ index da28835400f894866adb85f436e2cbdf109797d7..c2a8d6a10a776fba1df984670ff8b994
          assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
          assert!(decode_response(b"short").is_none());
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..00e3f105773b51e4a950bcac4c2c8493cc1789da 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..ef950e26d5a716e28a319cd42157e3a264763910 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
 @@ -30,7 +30,7 @@ use crate::check::collect::{self, LocalDefId};
@@ -11127,7 +11145,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..00e3f105773b51e4a950bcac4c2c8493
      let n = diag::dedup_exact(diags, map);
      let diags = &mut diags[..n];
 +    let code = if cfg!(feature = "exclusive-native") && req.session.library.is_some()
-+        && !diags.is_empty() && diags.iter().all(|diagnostic| diagnostic.code == "L0405")
++        && !diags.is_empty() && diags.iter().all(|diagnostic| diagnostic.rust_complement)
 +    {
 +        crate::protocol::RUST_COMPLEMENT_REQUIRED
 +    } else {
@@ -17351,10 +17369,20 @@ index 20f43a0f0b85fac8b27e4569d433f3cf101f05eb..8ddcb8d417d43921a731c2fe3a7ba346
 +    protocol::finish(result, false, &req.out, &run_args)
 +}
 diff --git a/src/parser.rs b/src/parser.rs
-index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df72e5cbcc8 100644
+index 804532cf1694c50fff28771d72bde34d998afb59..57eba27334bf70d36bb4a8046236d67fca7861e0 100644
 --- a/src/parser.rs
 +++ b/src/parser.rs
-@@ -34,6 +34,20 @@ fn async_error(span: Span) -> Diag {
+@@ -26,14 +26,30 @@ const C_CORE: &str = "L0820"; // core expression, pattern, and statement forms
+ 
+ fn unsafe_error(span: Span) -> Diag {
+     Diag::new("L0404", span, "`unsafe` is not supported", "Remove the unsafe code.")
++        .requiring_rust_complement()
+ }
+ 
+ fn async_error(span: Span) -> Diag {
+     Diag::new("L0405", span, "`async` is not supported", "Use std::thread and channels.")
++        .requiring_rust_complement()
+ }
  
  type PResult<T> = Result<T, Diag>;
  
@@ -17375,7 +17403,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
  mod attrs;
  mod hrtb;
  
-@@ -746,7 +760,7 @@ fn parse_fmt_spec(fmt: &str) -> Result<(FmtSpec, Option<FmtCount>, Option<FmtCou
+@@ -746,7 +762,7 @@ fn parse_fmt_spec(fmt: &str) -> Result<(FmtSpec, Option<FmtCount>, Option<FmtCou
      // A count from an argument: `name$` or `N$`, with its end.
      let count_arg = |cs: &[char], j: usize| -> Option<(FmtCount, usize)> {
          let mut k = j;
@@ -17384,7 +17412,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
              k += 1;
          }
          if k == j || cs.get(k) != Some(&'$') {
-@@ -887,7 +901,7 @@ fn is_allow(attr: &Attr, known: &Known) -> bool {
+@@ -887,7 +903,7 @@ fn is_allow(attr: &Attr, known: &Known) -> bool {
  fn tok_name(t: Tok) -> &'static str {
      use Tok::*;
      match t {
@@ -17393,7 +17421,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
          Reserved(_) => "reserved keyword",
          Int(..) => "integer literal",
          Float(_) => "float literal",
-@@ -896,7 +910,7 @@ fn tok_name(t: Tok) -> &'static str {
+@@ -896,7 +912,7 @@ fn tok_name(t: Tok) -> &'static str {
          ByteStr(_) => "byte string literal",
          ByteChar(_) => "byte char literal",
          Char(..) => "char literal",
@@ -17402,7 +17430,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
          As => "`as`",
          Break => "`break`",
          Const => "`const`",
-@@ -1100,13 +1114,13 @@ impl<'a> Parser<'a> {
+@@ -1100,13 +1116,13 @@ impl<'a> Parser<'a> {
      }
      fn ident(&mut self) -> PResult<(Sym, Span)> {
          match self.peek() {
@@ -17419,7 +17447,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
              t => Err(syntax(self.span(), format!("expected identifier, found {}", tok_name(t)))),
          }
      }
-@@ -1155,7 +1169,7 @@ impl<'a> Parser<'a> {
+@@ -1155,7 +1171,7 @@ impl<'a> Parser<'a> {
      /// True when the current token is the identifier `name` (for weak keywords
      /// such as `union`, `macro_rules`, and `raw`).
      fn at_ident(&self, name: &str) -> bool {
@@ -17428,7 +17456,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
      }
  
      /// True at a macro call head: a path of one or more segments ending in `!`
-@@ -1164,7 +1178,7 @@ impl<'a> Parser<'a> {
+@@ -1164,7 +1180,7 @@ impl<'a> Parser<'a> {
          let mut j = self.pos;
          loop {
              match self.toks.get(j).map(|t| t.tok) {
@@ -17437,7 +17465,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                  _ => return false,
              }
              match self.toks.get(j).map(|t| t.tok) {
-@@ -1188,7 +1202,7 @@ impl<'a> Parser<'a> {
+@@ -1188,7 +1204,7 @@ impl<'a> Parser<'a> {
          }
          match self.toks.get(j + 1).map(|t| t.tok) {
              Some(Tok::LBrace) => true,
@@ -17446,7 +17474,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
              _ => false,
          }
      }
-@@ -1227,7 +1241,7 @@ impl<'a> Parser<'a> {
+@@ -1227,7 +1243,7 @@ impl<'a> Parser<'a> {
          let mut path = Vec::new();
          loop {
              match self.bump().tok {
@@ -17455,7 +17483,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                  Tok::Crate => path.push(PathSeg::plain(self.interner.intern("crate"))),
                  Tok::Super => path.push(PathSeg::plain(self.interner.intern("super"))),
                  Tok::SelfLower => path.push(PathSeg::plain(self.known.self_value)),
-@@ -1695,7 +1709,7 @@ impl<'a> Parser<'a> {
+@@ -1695,7 +1711,7 @@ impl<'a> Parser<'a> {
              let mut bi = 0usize;
              while let Some(t) = body.get(bi) {
                  match t.tok {
@@ -17464,7 +17492,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                          path.push(PathSeg::plain(s));
                          bi += 1;
                          if body.get(bi).map(|t| t.tok) == Some(Tok::PathSep) {
-@@ -1722,7 +1736,7 @@ impl<'a> Parser<'a> {
+@@ -1722,7 +1738,7 @@ impl<'a> Parser<'a> {
              // no unsafe code, so none of them is supported yet.
              if path.is_empty() && body.first().map(|t| t.tok) == Some(Tok::Unsafe) && body.get(1).map(|t| t.tok) == Some(Tok::LParen) {
                  let inner = match body.get(2).map(|t| t.tok) {
@@ -17473,7 +17501,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                      _ => "..".to_string(),
                  };
                  return Err(not_yet(C_ATTR, start, &format!("the `#[unsafe({inner})]` attribute")));
-@@ -1808,7 +1822,7 @@ impl<'a> Parser<'a> {
+@@ -1808,7 +1824,7 @@ impl<'a> Parser<'a> {
                      }
                      for t in &body[bi + 1..] {
                          match t.tok {
@@ -17482,7 +17510,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                              Tok::Comma | Tok::PathSep => {}
                              Tok::RParen => break,
                              _ => return Err(syntax(t.span, "expected a trait name in `derive`")),
-@@ -1915,7 +1929,7 @@ impl<'a> Parser<'a> {
+@@ -1915,7 +1931,7 @@ impl<'a> Parser<'a> {
              i += 1;
          }
          loop {
@@ -17491,7 +17519,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                  return Err(syntax(if i < hi { self.toks[i].span } else { start }, "expected an attribute name"));
              }
              i += 1;
-@@ -2048,7 +2062,7 @@ impl<'a> Parser<'a> {
+@@ -2048,7 +2064,7 @@ impl<'a> Parser<'a> {
          let vis_span = if vis == Vis::Private { vis_start } else { vis_start.to(self.prev_span()) };
          // A `const` item (`const NAME: Ty = ...;`), told apart from a
          // `const fn` qualifier by the name and colon after it.
@@ -17500,7 +17528,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
              let kind = ItemKind::Const(self.const_def()?);
              self.check_derive_test(&parsed, false, false)?;
              attrs::check_target(&parsed.attrs, "constants", 0, self.interner)?;
-@@ -2144,7 +2158,7 @@ impl<'a> Parser<'a> {
+@@ -2144,7 +2160,7 @@ impl<'a> Parser<'a> {
              _ if qual.is_const => return Err(not_yet(C_CONST, start, "const and static items")),
              _ if qual.is_async => return Err(async_error(start)),
              _ if qual.is_unsafe => return Err(unsafe_error(start)),
@@ -17509,7 +17537,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                  self.bump(); // `union`
                  let (name, name_span) = self.ident()?;
                  let generics = self.generics(true)?;
-@@ -2159,16 +2173,16 @@ impl<'a> Parser<'a> {
+@@ -2159,16 +2175,16 @@ impl<'a> Parser<'a> {
                      derives: derives.clone(),
                  })
              }
@@ -17529,7 +17557,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                  return Err(macro_error(start));
              }
              Tok::Reserved(_) => return Err(self.reserved_error(start)),
-@@ -2221,7 +2235,7 @@ impl<'a> Parser<'a> {
+@@ -2221,7 +2237,7 @@ impl<'a> Parser<'a> {
          let mut prefix = Vec::new();
          loop {
              let name = match self.peek() {
@@ -17538,7 +17566,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                  Tok::SelfLower => {
                      self.bump();
                      self.known.self_value
-@@ -2291,7 +2305,7 @@ impl<'a> Parser<'a> {
+@@ -2291,7 +2307,7 @@ impl<'a> Parser<'a> {
                      let _generics = self.generics(true)?;
                      self.expect(Tok::Semi, "`;`")?;
                  }
@@ -17547,7 +17575,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                      self.skip_macro_invocation()?;
                      self.eat(Tok::Semi);
                  }
-@@ -2488,9 +2502,9 @@ impl<'a> Parser<'a> {
+@@ -2488,9 +2504,9 @@ impl<'a> Parser<'a> {
      /// One written lifetime ('a, 'static, '_) at the current token.
      fn lifetime_here(&mut self) -> PResult<Lifetime> {
          match self.peek() {
@@ -17559,7 +17587,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                  Ok(Lifetime { name, span })
              }
              t => Err(syntax(self.span(), format!("expected a lifetime, found {}", tok_name(t)))),
-@@ -2502,9 +2516,9 @@ impl<'a> Parser<'a> {
+@@ -2502,9 +2518,9 @@ impl<'a> Parser<'a> {
      /// on, as in rustc, so the error is deferred: fragment probes, which
      /// ignore deferred errors, read such names the way rustc's parser does.
      /// Added for fx-lex-small (W-CORELANG owns the parser).
@@ -17571,7 +17599,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
              self.defer(d);
          }
      }
-@@ -2527,7 +2541,7 @@ impl<'a> Parser<'a> {
+@@ -2527,7 +2543,7 @@ impl<'a> Parser<'a> {
              }
              let pattrs = self.part_attributes("type parameters", 0)?;
              match self.peek() {
@@ -17580,7 +17608,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                      if !allow_lifetimes {
                          return Err(lifetime_error(self.span()));
                      }
-@@ -2539,7 +2553,7 @@ impl<'a> Parser<'a> {
+@@ -2539,7 +2555,7 @@ impl<'a> Parser<'a> {
                              if !self.eat(Tok::Plus) {
                                  break;
                              }
@@ -17589,7 +17617,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                                  break;
                              }
                          }
-@@ -2554,7 +2568,7 @@ impl<'a> Parser<'a> {
+@@ -2554,7 +2570,7 @@ impl<'a> Parser<'a> {
                      let default = if self.eat(Tok::Eq) { Some(self.const_arg_expr()?) } else { None };
                      params.push(GenericParam::Const { name, span, ty, default, attrs: pattrs.attrs });
                  }
@@ -17598,7 +17626,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                      let (name, span) = self.ident()?;
                      let bounds = if self.eat(Tok::Colon) { self.bounds()? } else { Vec::new() };
                      let default = if self.eat(Tok::Eq) { Some(self.ty()?) } else { None };
-@@ -2619,7 +2633,7 @@ impl<'a> Parser<'a> {
+@@ -2619,7 +2635,7 @@ impl<'a> Parser<'a> {
      fn trait_bound(&mut self) -> PResult<TraitBound> {
          let binder = self.opt_binder()?;
          let maybe = self.eat(Tok::Question);
@@ -17607,7 +17635,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
              return Ok(TraitBound::Lifetime(self.lifetime_here()?));
          }
          // The legacy `~const` and `async` bound modifiers are not
-@@ -2686,7 +2700,7 @@ impl<'a> Parser<'a> {
+@@ -2686,7 +2702,7 @@ impl<'a> Parser<'a> {
          let mut args = Vec::new();
          while self.peek() != Tok::Gt {
              match self.peek() {
@@ -17616,7 +17644,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                      let lt = self.lifetime_here()?;
                      if self.interner.get(lt.name) == "static" {
                          return Err(syntax(lt.span, "expected lifetime parameter in `use<...>` precise captures list, found `'static`"));
-@@ -2717,7 +2731,7 @@ impl<'a> Parser<'a> {
+@@ -2717,7 +2733,7 @@ impl<'a> Parser<'a> {
              if matches!(self.peek(), Tok::LBrace | Tok::Semi) {
                  break;
              }
@@ -17625,7 +17653,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                  let lt = self.lifetime_here()?;
                  self.expect(Tok::Colon, "`:`")?;
                  let mut bounds = Vec::new();
-@@ -2726,7 +2740,7 @@ impl<'a> Parser<'a> {
+@@ -2726,7 +2742,7 @@ impl<'a> Parser<'a> {
                      if !self.eat(Tok::Plus) {
                          break;
                      }
@@ -17634,7 +17662,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                          break;
                      }
                  }
-@@ -2788,10 +2802,10 @@ impl<'a> Parser<'a> {
+@@ -2788,10 +2804,10 @@ impl<'a> Parser<'a> {
                  (Tok::Mut, Tok::SelfLower, _, _) => Some((SelfKind::Value, true, 2, None)),
                  (Tok::Amp, Tok::SelfLower, _, _) => Some((SelfKind::Ref, false, 2, None)),
                  (Tok::Amp, Tok::Mut, Tok::SelfLower, _) => Some((SelfKind::RefMut, false, 3, None)),
@@ -17647,7 +17675,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                      Some((SelfKind::RefMut, false, 4, Some(Lifetime { name: lt, span: self.toks[self.pos + 1].span })))
                  }
                  _ => None,
-@@ -2799,7 +2813,7 @@ impl<'a> Parser<'a> {
+@@ -2799,7 +2815,7 @@ impl<'a> Parser<'a> {
          };
          if let Some((kind, mutable, n, lifetime)) = self_form {
              if let Some(lt) = lifetime {
@@ -17656,7 +17684,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
              }
              for _ in 0..n {
                  self.bump();
-@@ -2829,12 +2843,12 @@ impl<'a> Parser<'a> {
+@@ -2829,12 +2845,12 @@ impl<'a> Parser<'a> {
              // The plain `name: Ty` and `mut name: Ty` forms keep
              // the exact name span: hygiene reads the name token's
              // context as the binding's context (ARCH 6.3).
@@ -17672,7 +17700,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                      Tok::Reserved(_) => return Err(self.reserved_error(self.span())),
                      _ => unreachable!(),
                  };
-@@ -3096,7 +3110,7 @@ impl<'a> Parser<'a> {
+@@ -3096,7 +3112,7 @@ impl<'a> Parser<'a> {
                      fns.push(def);
                  }
                  Tok::Type => types.push(self.assoc_type()?),
@@ -17681,7 +17709,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                  Tok::Const | Tok::Unsafe | Tok::Async | Tok::Extern if self.cfg_syntax => {
                      while matches!(self.peek(), Tok::Const | Tok::Unsafe | Tok::Async) {
                          self.bump();
-@@ -3121,11 +3135,11 @@ impl<'a> Parser<'a> {
+@@ -3121,11 +3137,11 @@ impl<'a> Parser<'a> {
                  Tok::Const => return Err(self.reject(C_CONST, "const functions")),
                  Tok::Unsafe => return Err(unsafe_error(self.span())),
                  Tok::Async => return Err(async_error(self.span())),
@@ -17695,7 +17723,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                  t => return Err(syntax(self.span(), format!("expected a trait item, found {}", tok_name(t)))),
              }
              self.scope_allows.truncate(item_mark);
-@@ -3159,7 +3173,7 @@ impl<'a> Parser<'a> {
+@@ -3159,7 +3175,7 @@ impl<'a> Parser<'a> {
          // `::` (`impl crate::a::Trait for T`): `path` reads the anchor as
          // a first segment and the resolver rewrites it, as in a bound.
          // An inherent impl's Self type may start the same way.
@@ -17704,7 +17732,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
          let (trait_ref, self_ty) = if path_start {
              let header_start = self.span();
              let path = self.trait_path()?;
-@@ -3211,7 +3225,7 @@ impl<'a> Parser<'a> {
+@@ -3211,7 +3227,7 @@ impl<'a> Parser<'a> {
                  }
                  Tok::Type if trait_ref.is_some() || self.cfg_syntax => types.push(self.assoc_type()?),
                  Tok::Type => return Err(self.reject(C_ASSOC, "associated types in inherent impls")),
@@ -17713,7 +17741,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                      let mut def = self.assoc_const()?;
                      def.vis = vis;
                      consts.push(def);
-@@ -3247,11 +3261,11 @@ impl<'a> Parser<'a> {
+@@ -3247,11 +3263,11 @@ impl<'a> Parser<'a> {
                  Tok::Const => return Err(self.reject(C_CONST, "const functions")),
                  Tok::Unsafe => return Err(unsafe_error(self.span())),
                  Tok::Async => return Err(async_error(self.span())),
@@ -17727,7 +17755,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                  t => return Err(syntax(self.span(), format!("expected an impl item, found {}", tok_name(t)))),
              }
          }
-@@ -3299,7 +3313,7 @@ impl<'a> Parser<'a> {
+@@ -3299,7 +3315,7 @@ impl<'a> Parser<'a> {
                  // Written lifetimes are recorded; regions are erased
                  // in this milestone, and collect decides which
                  // written forms the subset accepts.
@@ -17736,7 +17764,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                      let lt = self.lifetime_here()?;
                      Some(lt)
                  } else {
-@@ -3408,8 +3422,8 @@ impl<'a> Parser<'a> {
+@@ -3408,8 +3424,8 @@ impl<'a> Parser<'a> {
                          break;
                      }
                      let pstart = self.span();
@@ -17747,7 +17775,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                          self.bump();
                          Some(n)
                      } else {
-@@ -3502,11 +3516,11 @@ impl<'a> Parser<'a> {
+@@ -3502,11 +3518,11 @@ impl<'a> Parser<'a> {
                  Ok(t)
              }
              Tok::For => Err(not_yet(C_TRAIT, start, "higher-ranked (`for<..>`) types and bounds")),
@@ -17761,7 +17789,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
              _ => {
                  let path = self.path(true)?;
                  Ok(self.push_ty(TyExpr::Path(path), start.to(self.prev_span())))
-@@ -3540,7 +3554,7 @@ impl<'a> Parser<'a> {
+@@ -3540,7 +3556,7 @@ impl<'a> Parser<'a> {
          match self.peek() {
              Tok::Minus => self.prefix(false),
              Tok::LBrace => self.block_like_expr(false),
@@ -17770,7 +17798,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                  self.primary(false, false)
              }
              // A token that starts no expression is a grammar error, also
-@@ -3560,8 +3574,8 @@ impl<'a> Parser<'a> {
+@@ -3560,8 +3576,8 @@ impl<'a> Parser<'a> {
          let mut args = Vec::new();
          while self.peek() != Tok::Gt {
              match self.peek() {
@@ -17781,7 +17809,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                      let span = self.span();
                      self.bump();
                      self.bump();
-@@ -3573,7 +3587,7 @@ impl<'a> Parser<'a> {
+@@ -3573,7 +3589,7 @@ impl<'a> Parser<'a> {
                      };
                      args.push(GenericArg::Binding { name, span, kind });
                  }
@@ -17790,7 +17818,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                      let span = self.span();
                      self.bump();
                      self.bump();
-@@ -3631,7 +3645,7 @@ impl<'a> Parser<'a> {
+@@ -3631,7 +3647,7 @@ impl<'a> Parser<'a> {
              };
              segs.push(PathSeg { name, args });
              if self.peek() == Tok::PathSep
@@ -17799,7 +17827,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
              {
                  self.bump();
              } else {
-@@ -3707,7 +3721,7 @@ impl<'a> Parser<'a> {
+@@ -3707,7 +3723,7 @@ impl<'a> Parser<'a> {
              Some(Tok::Fn | Tok::Struct | Tok::Enum | Tok::Impl | Tok::Mod | Tok::Trait | Tok::Static | Tok::Type | Tok::Extern) => true,
              Some(Tok::Const) => self.toks.get(j + 1).map(|t| t.tok) != Some(Tok::LBrace),
              // `union` is a contextual keyword: an item only when a name follows.
@@ -17808,7 +17836,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
              _ => false,
          }
      }
-@@ -3865,7 +3879,7 @@ impl<'a> Parser<'a> {
+@@ -3865,7 +3881,7 @@ impl<'a> Parser<'a> {
                  stmts.push(Stmt::Let { pat, ty, init, els, attrs: stmt_attrs.attrs, span: s.to(self.prev_span()) });
                  continue;
              }
@@ -17817,7 +17845,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
              // An inline `const { .. }` block is block-like too: as a
              // statement it needs no `;` and ends at its `}` (rustc).
              let const_block = self.peek() == Tok::Const && self.peek_at(1) == Tok::LBrace;
-@@ -4014,7 +4028,7 @@ impl<'a> Parser<'a> {
+@@ -4014,7 +4030,7 @@ impl<'a> Parser<'a> {
      /// `at_bound_start` at lookahead `n`.
      fn at_bound_start_at(&self, n: usize) -> bool {
          self.at_literal_start_at(n)
@@ -17826,7 +17854,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
      }
  
      /// Parses one range pattern bound: a literal (possibly negated) or
-@@ -4025,7 +4039,7 @@ impl<'a> Parser<'a> {
+@@ -4025,7 +4041,7 @@ impl<'a> Parser<'a> {
              let (self_ty, trait_path, segs) = self.qpath_parts()?;
              let span = start.to(self.prev_span());
              Ok(self.push_expr(Expr::QPath { self_ty, trait_path, segs }, span))
@@ -17835,7 +17863,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
              let path = self.path(false)?;
              let span = start.to(self.prev_span());
              Ok(self.push_expr(Expr::Path(path), span))
-@@ -4113,15 +4127,15 @@ impl<'a> Parser<'a> {
+@@ -4113,15 +4129,15 @@ impl<'a> Parser<'a> {
                      Pat::QPath { self_ty, trait_path, segs }
                  }
              }
@@ -17854,7 +17882,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                  let anchored = matches!(self.peek(), Tok::Crate | Tok::Super | Tok::SelfLower | Tok::PathSep);
                  let path = self.path(false)?;
                  if self.peek() == Tok::DotDotEq || self.peek() == Tok::DotDot {
-@@ -4982,7 +4996,7 @@ impl<'a> Parser<'a> {
+@@ -4982,7 +4998,7 @@ impl<'a> Parser<'a> {
                      // `match`, a loop, `const { .. }`) ends the arm at its
                      // `}` and needs no `,`, as in rustc; a `.` or `?`
                      // after it continues one expression that does.
@@ -17863,7 +17891,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                      let const_block = self.peek() == Tok::Const && self.peek_at(1) == Tok::LBrace;
                      let mut block_body =
                          labeled || const_block || matches!(self.peek(), Tok::LBrace | Tok::If | Tok::Match | Tok::While | Tok::Loop | Tok::For);
-@@ -5233,10 +5247,10 @@ impl<'a> Parser<'a> {
+@@ -5233,10 +5249,10 @@ impl<'a> Parser<'a> {
                  let val = if self.can_start_expr() { Some(self.expr()?) } else { None };
                  Expr::Return(val)
              }
@@ -17876,7 +17904,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                  self.expect(Tok::Colon, "`:` after a label")?;
                  let label = Label { name, span };
                  return self.block_like_labeled(Some(label), inner_ok);
-@@ -5309,7 +5323,7 @@ impl<'a> Parser<'a> {
+@@ -5309,7 +5325,7 @@ impl<'a> Parser<'a> {
                  self.bump();
                  Expr::Underscore
              }
@@ -17885,7 +17913,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                  if self.peek_at(1) == Tok::Bang {
                      return self.macro_call();
                  }
-@@ -5353,10 +5367,10 @@ impl<'a> Parser<'a> {
+@@ -5353,10 +5369,10 @@ impl<'a> Parser<'a> {
      /// An optional label after `break` or `continue` (no colon follows it there).
      fn break_label(&mut self) -> Option<Label> {
          match self.peek() {
@@ -17898,7 +17926,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                  Some(Label { name, span })
              }
              _ => None,
-@@ -5460,7 +5474,7 @@ impl<'a> Parser<'a> {
+@@ -5460,7 +5476,7 @@ impl<'a> Parser<'a> {
      /// True at a `std::mem::offset_of!` or `core::mem::offset_of!` path call.
      fn at_offset_of_path(&self) -> bool {
          let name_at = |j: usize| match self.toks.get(j).map(|t| t.tok) {
@@ -17907,7 +17935,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
              _ => None,
          };
          matches!(name_at(self.pos), Some("std" | "core"))
-@@ -5482,7 +5496,7 @@ impl<'a> Parser<'a> {
+@@ -5482,7 +5498,7 @@ impl<'a> Parser<'a> {
          let mut last_text = String::new();
          loop {
              match self.peek() {
@@ -17916,7 +17944,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                      last_text = self.interner.get(s).to_string();
                      self.bump();
                  }
-@@ -5497,7 +5511,7 @@ impl<'a> Parser<'a> {
+@@ -5497,7 +5513,7 @@ impl<'a> Parser<'a> {
          }
          self.expect(Tok::Bang, "`!` after a macro name")?;
          // A definition names the macro before its group.
@@ -17925,7 +17953,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
              self.bump();
          }
          let close_of = |t: Tok| match t {
-@@ -5642,7 +5656,7 @@ impl<'a> Parser<'a> {
+@@ -5642,7 +5658,7 @@ impl<'a> Parser<'a> {
                      if self.peek() == close {
                          break;
                      }
@@ -17934,7 +17962,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df7
                          && self.peek_at(1) == Tok::Eq
                      {
                          let name_span = self.bump().span;
-@@ -5894,16 +5908,21 @@ mod tests {
+@@ -5894,16 +5910,21 @@ mod tests {
      /// the error is L9001, not a parser stack overflow (fx-parsehang).
      #[test]
      fn right_recursion_depth_cap() {

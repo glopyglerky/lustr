@@ -2785,3 +2785,47 @@ fn installed_rust_reports_the_requested_non_host_target() {
     let answer = f.succeeds("lustr-target-list", f.command("rustc").args(["--print", "target-list"]));
     assert_eq!(answer.stdout, original.stdout);
 }
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and binutils"]
+fn ordinary_cargo_checks_unsafe_in_the_pinned_rust_compiler() {
+    let f = Fixture::new("cargo-unsafe-composition");
+    f.source("Cargo.toml", "[package]\nname=\"unsafe_composition\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    let source = r#"
+fn mask(value: u64) -> u64 { value ^ 19 }
+unsafe fn load(pointer: *const u64) -> u64 { unsafe { *pointer } }
+fn main() {
+    let value = unsafe { load(&57) };
+    println!("{}", mask(value));
+}
+"#;
+    let path = f.source("src/main.rs", source);
+    let original = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let cargo = |lane: &str, oracle: bool| {
+        let mut command = f.command("cargo");
+        command.env("CARGO_PROFILE_DEV_DEBUG", "0").env("CARGO_TARGET_DIR", f.root.join(lane));
+        if oracle { command.env("RUSTC", &original); }
+        command
+    };
+    for (lane, oracle) in [("lustr", false), ("original", true)] {
+        f.succeeds(&format!("{lane}-check"), cargo(lane, oracle).args(["check", "--frozen"]));
+        let run = f.succeeds(&format!("{lane}-run"), cargo(lane, oracle).args(["run", "--frozen"]));
+        assert_eq!(run.stdout, b"42\n");
+    }
+    assert_eq!(std::fs::read_to_string(path).unwrap(), source);
+    let binary = f.root.join("lustr/debug/unsafe_composition");
+    let symbols = f.succeeds("native-symbols", Command::new("nm").arg(binary));
+    assert!(String::from_utf8_lossy(&symbols.stdout).lines().any(|line|
+        line.split_whitespace().last().and_then(|name| name.strip_prefix("f_"))
+            .is_some_and(|id| id.len() == 16 && id.bytes().all(|byte| byte.is_ascii_hexdigit()))));
+
+    f.source("src/main.rs", &source.replace("unsafe { load(&57) }", "load(&57)"));
+    for (lane, oracle) in [("lustr-invalid", false), ("original-invalid", true)] {
+        let response = f.invoke(lane, cargo(lane, oracle).args(["build", "--frozen"]));
+        assert_eq!(response.status.code(), Some(101));
+        assert!(String::from_utf8_lossy(&response.stderr).contains("E0133"));
+        assert!(!f.root.join(lane).join("debug/unsafe_composition").exists());
+    }
+}

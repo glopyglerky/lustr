@@ -114,11 +114,16 @@ pub struct Diag {
     pub fix: String,
     pub labels: Vec<Label>,
     pub edits: Vec<Edit>,
+    pub(crate) rust_complement: bool,
 }
 
 impl Diag {
     pub fn new(code: &'static str, span: Span, message: impl Into<String>, fix: impl Into<String>) -> Diag {
-        Diag { code, severity: "error", message: message.into(), span, fix: fix.into(), labels: Vec::new(), edits: Vec::new() }
+        Diag { code, severity: "error", message: message.into(), span, fix: fix.into(), labels: Vec::new(), edits: Vec::new(), rust_complement: false }
+    }
+    pub(crate) fn requiring_rust_complement(mut self) -> Diag {
+        self.rust_complement = true;
+        self
     }
     /// Adds a labeled secondary span.
     pub fn with_label(mut self, span: Span, text: impl Into<String>) -> Diag {
