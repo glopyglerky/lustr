@@ -637,7 +637,7 @@ fn ordinary_cargo_links_a_transitive_native_library() {
     let f = Fixture::new("transitive-native-link");
     f.source("Cargo.toml", "[workspace]\nmembers = [\"provider\", \"middle\", \"application\"]\nresolver = \"3\"\n");
     f.source("provider/Cargo.toml", "[package]\nname = \"value-provider\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
-    f.source("provider/src/lib.rs", "#![no_std]\npub fn encode(value: u32) -> u32 { (value ^ 3) ^ 10 }\n");
+    f.source("provider/src/lib.rs", "#![no_std]\npub fn encode(value: u32) -> u32 {\n    let offset = value ^ 3;\n    offset ^ 10\n}\n");
     f.source("middle/Cargo.toml", "[package]\nname = \"value-mapping\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\nupstream_value = { package = \"value-provider\", path = \"../provider\" }\n");
     f.source("middle/src/lib.rs", "#![no_std]\npub fn map(value: u32) -> u32 { upstream_value::encode(value) ^ 6 }\n");
     f.source("application/Cargo.toml", "[package]\nname = \"value-display\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\nvalue-mapping = { path = \"../middle\" }\n");
@@ -659,7 +659,7 @@ fn ordinary_cargo_links_a_transitive_native_library() {
     assert_eq!(std::fs::read(&binary).unwrap(), initial);
 
     f.source("application/src/main.rs", application);
-    f.source("provider/src/lib.rs", "#![no_std]\npub fn encode(value: u32) -> u32 { (value ^ 3) ^ 11 }\n");
+    f.source("provider/src/lib.rs", "#![no_std]\npub fn encode(value: u32) -> u32 {\n    let offset = value ^ 3;\n    offset ^ 11\n}\n");
     let edited = f.succeeds("transitive-edit", f.command("cargo").args(run));
     assert_eq!(edited.stdout, b"2\n");
 }
