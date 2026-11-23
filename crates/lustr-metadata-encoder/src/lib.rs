@@ -36,7 +36,7 @@ use alloc::{collections::{BTreeMap, BTreeSet}, string::String, vec::Vec};
 
 pub use extern_metadata::{
     ProjectionDefinitions, ScalarCrate, archive_metadata_matches, archive_object_members,
-    read_check_crate, read_link_crate, read_scalar_crate,
+    read_executable_crate, read_link_crate, read_scalar_crate,
 };
 pub use sdk::{Sdk, SdkDependency};
 
@@ -227,11 +227,15 @@ pub fn encode_projection_check(input: &Input<'_>, sdk: &Sdk, family: &Projection
     Ok(encode::encode(input, sdk, false, Some(family))?.metadata)
 }
 
+pub fn encode_projection_archive(input: &Input<'_>, sdk: &Sdk, family: &ProjectionFamily) -> Result<Encoded, String> {
+    validate(input, sdk, true, Some(family))?;
+    encode::encode(input, sdk, true, Some(family))
+}
+
 /// Original `RmetaLink::encode` for the actual Rust object members of the
 /// admitted library. The completed scope has no native library declarations;
 /// an empty member list cannot stand in for the emitted object inventory.
 pub fn encode_rlib_link(object_members: &[&str]) -> Result<Vec<u8>, String> {
-    use upstream::codec::Encoder;
     let mut seen = BTreeSet::new();
     if object_members.is_empty() || object_members.len() > 65_535 {
         return Err("rlib link metadata requires the actual nonempty object member inventory".into());
@@ -244,13 +248,24 @@ pub fn encode_rlib_link(object_members: &[&str]) -> Result<Vec<u8>, String> {
             return Err("rlib object member name is malformed or duplicated".into());
         }
     }
+    Ok(encode_link_inventory(object_members))
+}
+
+/// The checked provider consists entirely of type declarations. Its original
+/// link inventory has no function bodies, object members or native libraries.
+pub fn encode_projection_link() -> Vec<u8> {
+    encode_link_inventory(&[])
+}
+
+fn encode_link_inventory(object_members: &[&str]) -> Vec<u8> {
+    use upstream::codec::Encoder;
     let mut encoder = upstream::mem_encoder::MemEncoder::new();
     encoder.emit_usize(object_members.len());
     for name in object_members { encoder.emit_str(name); }
     encoder.emit_usize(0); // Native libraries are absent in the completed scope.
     let mut bytes = encoder.finish();
     bytes.extend_from_slice(b"rust-end-file");
-    Ok(bytes)
+    bytes
 }
 
 fn identifier(name: &str) -> bool {
@@ -296,7 +311,7 @@ fn validate(input: &Input<'_>, sdk: &Sdk, link: bool, projection: Option<&Projec
         };
         let lifetime = |name: &str, span: Span| name.strip_prefix('\'').is_some_and(identifier)
             && input.source.get(span.lo as usize..span.hi as usize) == Some(name);
-        if link || sdk.standard || sdk.dependencies.len() != 2 || sdk.core_size_traits.is_none() || !input.functions.is_empty()
+        if sdk.standard || sdk.dependencies.len() != 2 || sdk.core_size_traits.is_none() || !input.functions.is_empty()
             || family.receiver.name == family.family.name
             || ![&family.receiver, &family.family, &family.item].into_iter().all(named)
             || !lifetime(&family.lifetime, family.lifetime_span)
@@ -348,9 +363,9 @@ fn validate(input: &Input<'_>, sdk: &Sdk, link: bool, projection: Option<&Projec
             }
         }
     }
-    if link {
+    if link && projection.is_none() {
         validate_emission(input, &definitions)?;
-    } else if input.embed_metadata.is_some() || !input.emitted.is_empty()
+    } else if (!link && input.embed_metadata.is_some()) || !input.emitted.is_empty()
         || !input.objects.is_empty() || !input.backend_helpers.is_empty()
     {
         return Err(failure("metadata-only check has link or embedding inputs"));

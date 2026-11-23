@@ -15,7 +15,7 @@ use crate::{
     resolve::imports::{Bind, DefInfo, ExternInfo, InsertOut, ResKind, ResolvedTables, Target, VisKind},
     ty::{self, TyIntern},
 };
-use lustr_metadata_encoder::{IntegerType, Sdk, read_check_crate, read_link_crate, read_scalar_crate};
+use lustr_metadata_encoder::{IntegerType, Sdk, read_executable_crate, read_link_crate, read_scalar_crate};
 
 use super::{Stamp, stamp};
 
@@ -64,20 +64,20 @@ struct Projection {
 
 impl Import {
     pub(super) fn open(request: &ExternMetadata, sdk: &Sdk) -> Result<Self, String> {
-        Self::read(request, sdk, None, def::CrateId(1), false, false)
+        Self::read(request, sdk, None, def::CrateId(1), false)
     }
 
     pub(super) fn read(
         request: &ExternMetadata, sdk: &Sdk, standard: Option<&Sdk>, index: def::CrateId,
-        executable: bool, metadata_only: bool,
+        executable: bool,
     ) -> Result<Self, String> {
         let path = &request.artifact;
         let before = stamp(path)?;
         let data = std::fs::read(path).map_err(|e| format!("read extern metadata {}: {e}", path.display()))?;
-        let (leaf, projection) = match (executable, metadata_only) {
-            (true, true) => read_check_crate(&data, sdk),
-            (true, false) => read_link_crate(&data, sdk).map(|leaf| (leaf, None)),
-            (false, _) => read_scalar_crate(&data, sdk).map(|leaf| (leaf, None)),
+        let (leaf, projection) = if executable {
+            read_executable_crate(&data, sdk)
+        } else {
+            read_scalar_crate(&data, sdk).map(|leaf| (leaf, None))
         }
         .or_else(|| standard.and_then(|context| read_link_crate(&data, context)).map(|leaf| (leaf, None)))
         .ok_or("extern artifact has no represented interface in the pinned SDK")?;

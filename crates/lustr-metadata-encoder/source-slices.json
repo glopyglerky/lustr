@@ -1079,9 +1079,9 @@
   "adapted_sources_sha256": {
     "src/encode.rs": "75b8b167642f6d90460f4d4652f7b824d5f4a18959c0a8f0db5e4fb874675a62",
     "src/encode_projection.rs": "dba5ded78f7c0c31873648800f5cf9c26072191972f4462b30db818b431d85dc",
-    "src/extern_metadata.rs": "178a2974be4780d1bab8acaa215e3c2ae26c5e0433b8633624df8c94d0f90c0a",
+    "src/extern_metadata.rs": "4fbe8e783f540716947bb6ce4693f1d9588c5547f65dd2139fd4f0ab4629c2a5",
     "src/identity.rs": "4d153100f5cfe9de796082d708518bd0d2cb4180fd17fffa9a84bd9b6b389f9f",
-    "src/lib.rs": "2940d9f99bdf3b5f93cb25826bc16ce6d019f8dceb494d919ff6221ad8cd9f37",
+    "src/lib.rs": "c93ba831524ad6ef91e5773705f970a5ed3044df9615d75506286352cf327785",
     "src/sdk.rs": "bcb43af0564553d2e2636f25a7aa6c06f81a8eb19997f4a2324c3071b1fb025f",
     "src/table.rs": "5ad2fa46decc550bfd5f7d23cc051c7087d4ef1f5b361b154630c122097c92bb",
     "src/upstream/codec.rs": "916922c930d3dc46c7003d65d920b6c84efa780ac5b0c06eec1586ead0216a7a",

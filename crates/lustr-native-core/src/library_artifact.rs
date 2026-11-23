@@ -391,11 +391,16 @@ impl Service {
             objects.sort_by(|a,b|a.member.cmp(&b.member));
             let helpers:Vec<_>=snapshot.objects.iter().flat_map(|(o,_)|self.originals[&o.serial].helpers.clone()).collect();
             report["phase"]=json!("source-owned-encode");report["counts"]["metadata_encodes"]=json!(1);
-            let encoded=metadata::encode(&metadata::Input {crate_name:&self.context.crate_name,metadata:&self.context.metadata,extra_filename:&self.context.extra_filename,embed_metadata,
+            let input = metadata::Input {crate_name:&self.context.crate_name,metadata:&self.context.metadata,extra_filename:&self.context.extra_filename,embed_metadata,
                 source_path:self.context.source.to_str().ok_or("source path is not Unicode")?,working_directory:&self.context.cwd,
                 source:&snapshot.source,root_span:metadata::Span{lo:0,hi:snapshot.source.len() as u32},
-                profile:self.context.profile,functions:&functions,emitted:&instances,backend_helpers:&helpers,objects:&objects},
-                dependency_context.unwrap_or(&self.sdk))?;
+                profile:self.context.profile,functions:&functions,emitted:&instances,backend_helpers:&helpers,objects:&objects};
+            let sdk = dependency_context.unwrap_or(&self.sdk);
+            let encoded = if let Some(family) = &snapshot.family {
+                metadata::encode_projection_archive(&input, sdk, &mapped_family(family))?
+            } else {
+                metadata::encode(&input, sdk)?
+            };
             let mapping:BTreeMap<_,_>=encoded.symbols.iter().map(|s|(s.native_symbol.clone(),s.rust_symbol.clone())).collect();
             let rename_text:String=mapping.iter().map(|(native,rust)|format!("{native} {rust}\n")).collect();
             let mut files:BTreeMap<String,Arc<Vec<u8>>>=BTreeMap::new();
@@ -403,7 +408,11 @@ impl Service {
             files.insert(format!("{}.rmeta",self.context.crate_name),Arc::new(encoded.metadata.clone()));
             files.insert("lib.rmeta".into(),Arc::new(archive::wrapper(b".rmeta",encoded.metadata_stub.as_deref().unwrap_or(&encoded.metadata))?));
             let member_names:Vec<_>=objects.iter().map(|o|o.member.as_str()).collect();
-            let link=metadata::encode_rlib_link(&member_names)?;
+            let link = if snapshot.family.is_some() {
+                metadata::encode_projection_link()
+            } else {
+                metadata::encode_rlib_link(&member_names)?
+            };
             files.insert("lib.rmeta-link".into(),Arc::new(archive::wrapper(b".rmeta-link",&link)?));
             put(&stage.join("symbols.map"),rename_text.as_bytes())?;
             let mut object_records=Vec::new();

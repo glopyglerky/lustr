@@ -5160,9 +5160,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
                 if req.cmd != Cmd::Check {
                     match &definitions {
                         super::library::Completed::Functions(functions) => super::library::completion::require_direct_integer_abi(functions)?,
-                        super::library::Completed::Family(_) => return Err(super::library::completion::Error::Unintegrated(
-                            "linked artifacts for projection provider declarations",
-                        )),
+                        super::library::Completed::Family(_) => {}
                     }
                 }
                 Ok(definitions)
@@ -5241,6 +5239,16 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
             program.verified = verified;
             super::patch::keep(front, program);
         }
+        return resp;
+    }
+
+    // A completed type-only provider has no bodies or native code to emit.
+    // Its archive and metadata are published together by the same library owner.
+    if super::library::finish_family(caches, req.library_options.debug.native_rust()) {
+        drop(results);
+        drop(reemit);
+        program.verified = verified;
+        super::patch::keep(front, program);
         return resp;
     }
 

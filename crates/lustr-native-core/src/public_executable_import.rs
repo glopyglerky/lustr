@@ -41,7 +41,7 @@ impl ExecutableImports {
         let linking = inputs.first().is_some_and(|input| input.archive.is_some());
         for input in inputs {
             let index = crate_index(crates.len())?;
-            let definitions = Import::read(&input.metadata, sdk, standard, index, true, !linking)?;
+            let definitions = Import::read(&input.metadata, sdk, standard, index, true)?;
             if indices.insert(definitions.identity.clone(), crates.len()).is_some() {
                 return Err("duplicate Cargo extern crate identity".into());
             }
@@ -165,7 +165,7 @@ fn find_dependency(
         searched.push((path.clone(), before));
         if !present { continue; }
         let metadata = ExternMetadata { alias: dependency.name.clone(), artifact: path.clone() };
-        let Ok(definitions) = Import::read(&metadata, sdk, standard, index, true, !linking) else { continue; };
+        let Ok(definitions) = Import::read(&metadata, sdk, standard, index, true) else { continue; };
         if &definitions.identity != dependency { continue; }
         if found.is_some() {
             return Err(format!("multiple Cargo metadata files match {}", dependency.name));
@@ -215,6 +215,9 @@ fn archive_objects<'a>(bytes: &'a [u8], definitions: &Import) -> Result<Vec<&'a 
     }
     let links = section(b"lib.rmeta-link", ".rmeta-link")?;
     let names = archive_object_members(links).ok_or("original Rust link metadata inventory is not represented")?;
+    if names.is_empty() == definitions.is_scalar() {
+        return Err("Rust link metadata object inventory does not match the checked provider");
+    }
     let mut objects = Vec::new();
     let mut seen = BTreeSet::new();
     for name in names {
@@ -224,8 +227,8 @@ fn archive_objects<'a>(bytes: &'a [u8], definitions: &Import) -> Result<Vec<&'a 
         }
         objects.push(member.data(bytes).map_err(|e| e.to_string())?);
     }
-    if objects.is_empty() || members.next().is_some() {
-        return Err("Cargo archive has empty or unrepresented object inventory".into());
+    if members.next().is_some() {
+        return Err("Cargo archive has unrepresented object inventory".into());
     }
     Ok(objects)
 }

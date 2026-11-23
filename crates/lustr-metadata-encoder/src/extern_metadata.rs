@@ -572,10 +572,9 @@ fn read_crate<'a>(bytes: &'a [u8], sdk: &Sdk, link: bool) -> Option<ScalarCrate<
     read_scalar_index(read_index(bytes, sdk, link)?, sdk)
 }
 
-/// Read an actual metadata-only Cargo extern. Projection records are available
-/// here because checking a concrete associated type requires no archive or
-/// linking proposition about the type's provider.
-pub fn read_check_crate<'a>(
+/// Read an actual Cargo extern for an executable. The caller verifies any
+/// archive against the returned interface and its required object inventory.
+pub fn read_executable_crate<'a>(
     bytes: &'a [u8], sdk: &Sdk,
 ) -> Option<(ScalarCrate<'a>, Option<ProjectionDefinitions<'a>>)> {
     let index = read_index(bytes, sdk, true)?;

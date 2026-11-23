@@ -31,6 +31,7 @@ pub(crate) struct Snapshot {
     pub rust_debug: bool,
     pub source: Arc<str>,
     pub functions: Arc<Vec<Function>>,
+    pub family: Option<Arc<completion::Family>>,
     pub objects: Vec<(Arc<Object>, bool)>,
     pub extern_symbols: BTreeMap<def::DiskDefId, String>,
     pub checked: Vec<def::DiskDefId>,
@@ -391,6 +392,24 @@ pub(super) fn remember(caches: &mut Caches, definitions: Completed, standard: bo
     state.standard = standard;
 }
 
+pub(super) fn finish_family(caches: &mut Caches, rust_debug: bool) -> bool {
+    let Some(state) = &mut caches.library else { return false; };
+    let Some((generation, Completed::Family(family))) = &state.completed else { return false; };
+    if *generation != state.generation { return false; }
+    state.snapshot = Some(Snapshot {
+        generation: state.generation,
+        rust_debug,
+        source: state.source.clone(),
+        functions: Arc::new(Vec::new()),
+        family: Some(family.clone()),
+        objects: Vec::new(),
+        extern_symbols: BTreeMap::new(),
+        checked: Vec::new(),
+        generated: Vec::new(),
+    });
+    true
+}
+
 pub(super) fn finish(req: &Request, p: &check::collect::Program, front: &Front, caches: &mut Caches,
     functions:Arc<Vec<Function>>, names:&cgen::names::Names, generated:&[usize]) -> Response {
     let state=caches.library.as_mut().unwrap();
@@ -468,7 +487,7 @@ pub(super) fn finish(req: &Request, p: &check::collect::Program, front: &Front, 
             state.objects.insert(text,object.clone()); state.by_definition.insert(f.definition(),(code_generation,object.clone()));
             state.compiled_objects+=1; objects.push((object,false));
         }
-        Ok(Snapshot { generation:state.generation,rust_debug,source:state.source.clone(),functions,
+        Ok(Snapshot { generation:state.generation,rust_debug,source:state.source.clone(),functions,family:None,
             objects,extern_symbols,checked:state.checked.clone(),generated:generated.iter().map(|&n|p.disk_id(def::LocalDefId(n as u32))).collect() })
     })();
     match result { Ok(snapshot)=>{state.snapshot=Some(snapshot);prune(front,caches);Response::default()},
