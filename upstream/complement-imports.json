@@ -337,6 +337,7 @@
       "upstream_paths": {
         "compiler/rustc_driver_impl/src/lib.rs": "28d3ed858c3db58e159cfe6a6e6e47fa15b64fe354e565a7c94ef24b563c7b44",
         "compiler/rustc_ast_lowering/src/item.rs": "6a7af08a9f408c2d1bd864b2e099775581a4df23ab1d16cbaa68399bb55bb3be",
+        "compiler/rustc_feature/src/builtin_attrs.rs": "e8c1ca1a554fbdf37ab6af86c59419c99c6437549f1698fc32986b5c5eb9fdcc",
         "compiler/rustc_codegen_ssa/src/traits/backend.rs": "ac80cf5b0725433dd731359b2b306f7b0b2502694c88aef9105078e0b43b8e44",
         "compiler/rustc_codegen_ssa/src/back/link.rs": "0cfbc38cf0c66133b3f7dc10bd558d1fb4773fc1c09054c48a32bc694902a191",
         "compiler/rustc_codegen_llvm/src/lib.rs": "c45084d828a300d94700752fb3f523c3fc1411e0def9eccaf3672479dc548c13"

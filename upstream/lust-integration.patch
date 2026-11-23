@@ -17375,7 +17375,7 @@ index 20f43a0f0b85fac8b27e4569d433f3cf101f05eb..8ddcb8d417d43921a731c2fe3a7ba346
 +    protocol::finish(result, false, &req.out, &run_args)
 +}
 diff --git a/src/parser.rs b/src/parser.rs
-index 804532cf1694c50fff28771d72bde34d998afb59..57eba27334bf70d36bb4a8046236d67fca7861e0 100644
+index 804532cf1694c50fff28771d72bde34d998afb59..e971fdead68aadda24762d30aa9716e89119e0cb 100644
 --- a/src/parser.rs
 +++ b/src/parser.rs
 @@ -26,14 +26,30 @@ const C_CORE: &str = "L0820"; // core expression, pattern, and statement forms
@@ -17548,8 +17548,9 @@ index 804532cf1694c50fff28771d72bde34d998afb59..57eba27334bf70d36bb4a8046236d67f
                  })
              }
 -            Tok::Ident(_) if self.at_ident("union") && matches!(self.peek_at(1), Tok::Ident(_)) => {
+-                return Err(not_yet(C_TY, start, "unions"));
 +            Tok::Ident(_, _) if self.at_ident("union") && matches!(self.peek_at(1), Tok::Ident(_, _)) => {
-                 return Err(not_yet(C_TY, start, "unions"));
++                return Err(not_yet(C_TY, start, "unions").requiring_rust_complement());
              }
 -            Tok::Ident(_) | Tok::SelfUpper | Tok::Crate | Tok::Super if self.cfg_syntax && self.at_path_macro_call() => {
 +            Tok::Ident(_, _) | Tok::SelfUpper | Tok::Crate | Tok::Super if self.cfg_syntax && self.at_path_macro_call() => {

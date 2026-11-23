@@ -3005,6 +3005,23 @@ pub fn mask(value: u64) -> u64 { value ^ 19 }
         assert!(String::from_utf8_lossy(&rejected.stderr).contains("E0308"));
         assert!(!f.root.join(lane).join("debug/app").exists());
     }
+    f.source("app/src/main.rs", "fn main() { let pair = provider::pair(57_u32, 2); println!(\"{}\", provider::mask(pair.left)); }\n");
+    for (name, alias) in [
+        ("alias", "#[allow(non_camel_case_types)] type u64 = u32;"),
+        ("import", "type Word = u32; use crate::{Word as u64};"),
+        ("macro", "macro_rules! word { () => { #[allow(non_camel_case_types)] type u64 = u32; }; } word!();"),
+    ] {
+        f.source("provider/src/lib.rs", &format!("{provider}\n{alias}\n"));
+        for (lane, original) in [(format!("lustr-{name}"), false), (format!("original-{name}"), true)] {
+            let run = f.succeeds(&lane, cargo(&lane, original).args(["run", "-p", "app", "--frozen"]));
+            assert_eq!(run.stdout, b"42\n");
+            let symbols = f.succeeds(&format!("{lane}-symbols"),
+                Command::new("nm").arg(f.root.join(&lane).join("debug/app")));
+            assert!(!String::from_utf8_lossy(&symbols.stdout).lines().any(|line|
+                line.split_whitespace().last().and_then(|name| name.strip_prefix("f_"))
+                    .is_some_and(|id| id.len() == 16 && id.bytes().all(|byte| byte.is_ascii_hexdigit()))));
+        }
+    }
 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
@@ -3053,4 +3070,48 @@ fn main() {
     let updated = std::fs::read(trace_path).unwrap();
     assert!(updated.starts_with(&trace));
     assert_eq!(&updated[trace.len()..], b"{\"engine\":\"lust-failed\",\"entry\":\"daemon\"}\n");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn cargo_preserves_unions_crate_policies_and_target_features() {
+    let f = Fixture::new("cargo-original-rust-capabilities");
+    f.source("Cargo.toml", "[package]\nname=\"capabilities\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    f.source(".cargo/config.toml", "[build]\nrustflags = [\"-C\", \"target-feature=+aes\"]\n");
+    f.source("src/main.rs", "fn main() { assert!(cfg!(target_feature = \"aes\")); println!(\"{}\", capabilities::size()); }\n");
+    let declaration = "#[repr(C)]\npub union Word { pub bytes: [u8; 8], pub integer: u64 }\n";
+    let source = format!("{declaration}pub fn size() -> usize {{ core::mem::size_of::<Word>() }}\n");
+    f.source("src/lib.rs", &source);
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let cargo = |lane: &str, original: bool| {
+        let mut command = f.command("cargo");
+        command.env("CARGO_TARGET_DIR", f.root.join(lane));
+        if original { command.env("RUSTC", &oracle); }
+        command
+    };
+    for (lane, original) in [("lustr", false), ("original", true)] {
+        let run = f.succeeds(&format!("{lane}-target-features"), cargo(lane, original).args(["run", "--frozen"]));
+        assert_eq!(run.stdout, b"8\n");
+    }
+
+    std::fs::remove_file(f.root.join(".cargo/config.toml")).unwrap();
+    for (phase, policy) in [
+        ("union", "#![no_std]\n"),
+        ("initial-lint", "#![forbid(unsafe_code)]\n#![no_std]\n"),
+        ("later-lint", "#![no_std]\n#![forbid(unsafe_code)]\n"),
+    ] {
+        f.source("src/lib.rs", &format!("{policy}{source}"));
+        for (lane, original) in [("lustr", false), ("original", true)] {
+            f.succeeds(&format!("{lane}-{phase}"), cargo(lane, original).args(["check", "--lib", "--frozen"]));
+        }
+    }
+    f.source("src/lib.rs", &format!("#![no_std]\n#![forbid(unsafe_code)]\n{declaration}pub fn size() -> usize {{ unsafe {{ core::ptr::read(&8) }} }}\n"));
+    for (lane, original) in [("lustr-invalid", false), ("original-invalid", true)] {
+        let rejected = f.invoke(lane, cargo(lane, original).args(["build", "--lib", "--frozen"]));
+        assert_eq!(rejected.status.code(), Some(101));
+        assert!(String::from_utf8_lossy(&rejected.stderr).contains("usage of an `unsafe` block"));
+        assert!(!f.root.join(lane).join("debug/libcapabilities.rlib").exists());
+    }
 }

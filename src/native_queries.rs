@@ -27,9 +27,14 @@ pub fn needs_rust_query(args: &[OsString], host: &str) -> bool {
     args.windows(2).any(|pair| {
         pair[0] == "--target" && pair[1] != host
             || pair[0] == "--print" && pair[1].to_str().is_none_or(|kind| !native_print(kind))
+            || matches!(pair[0].to_str(), Some("-C" | "--codegen"))
+                && pair[1].to_str().is_none_or(|option| discovery_codegen_option(option).is_err())
     }) || args.iter().filter_map(|arg| arg.to_str()).any(|arg| {
         arg.strip_prefix("--target=").is_some_and(|target| target != host)
             || arg.strip_prefix("--print=").is_some_and(|kind| !native_print(kind))
+            || arg.strip_prefix("-C").filter(|option| !option.is_empty())
+                .or_else(|| arg.strip_prefix("--codegen="))
+                .is_some_and(|option| discovery_codegen_option(option).is_err())
     })
 }
 

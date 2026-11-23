@@ -7,6 +7,7 @@ extern crate rustc_attr_ir;
 extern crate rustc_codegen_llvm;
 extern crate rustc_codegen_ssa;
 extern crate rustc_driver;
+extern crate rustc_feature;
 extern crate rustc_hir;
 extern crate rustc_interface;
 extern crate rustc_metadata;

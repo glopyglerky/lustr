@@ -2176,7 +2176,7 @@ impl<'a> Parser<'a> {
                 })
             }
             Tok::Ident(_, _) if self.at_ident("union") && matches!(self.peek_at(1), Tok::Ident(_, _)) => {
-                return Err(not_yet(C_TY, start, "unions"));
+                return Err(not_yet(C_TY, start, "unions").requiring_rust_complement());
             }
             Tok::Ident(_, _) | Tok::SelfUpper | Tok::Crate | Tok::Super if self.cfg_syntax && self.at_path_macro_call() => {
                 self.skip_macro_invocation()?;

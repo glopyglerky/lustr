@@ -3,7 +3,7 @@
 use rustc_ast::{
     AttrStyle, BinOpKind, BindingMode, BlockCheckMode, Expr, ExprKind, FnRetTy,
     ForeignItemKind, ForeignMod, Item, ItemKind, PatKind, Safety, Stmt, StmtKind, StrLit,
-    StrStyle, Ty, TyKind, Visibility, VisibilityKind, token::LitKind,
+    StrStyle, Ty, TyKind, UseTree, UseTreeKind, Visibility, VisibilityKind, token::LitKind,
 };
 use rustc_codegen_ssa::{
     CompiledModule, CompiledModules, CrateInfo, ModuleKind, TargetConfig, traits::CodegenBackend,
@@ -16,7 +16,7 @@ use rustc_session::{
     CodegenBackendInit, EarlyDiagCtxt, EarlySession, IncrCompSession, Session,
     config::{DebugInfo, ErrorOutputType, Input, OptLevel, OutFileName, OutputFilenames, OutputType},
 };
-use rustc_span::{Ident, SourceFileHash, SourceFileHashAlgorithm, Symbol, edition::Edition, sym};
+use rustc_span::{Ident, SourceFileHash, SourceFileHashAlgorithm, Symbol, edition::Edition, kw, sym};
 use rustc_structures::CrateType;
 use rustc_target::callconv::{ArgAbi, PassMode};
 use std::{
@@ -64,10 +64,47 @@ struct Composition {
     scratch: Option<Scratch>,
 }
 
-fn builtin_u64(ty: &Ty) -> bool {
+fn unqualified_u64(ty: &Ty) -> bool {
     matches!(&ty.kind, TyKind::Path(None, path)
         if matches!(path.segments.as_slice(), [segment]
             if segment.ident.name == sym::u64 && segment.args.is_none()))
+}
+
+fn imports_u64(tree: &UseTree, parent: Option<Symbol>) -> bool {
+    match &tree.kind {
+        UseTreeKind::Glob(_) => true,
+        UseTreeKind::Simple(_) => match tree.ident().name {
+            kw::SelfLower => parent == Some(sym::u64),
+            name => name == sym::u64,
+        },
+        UseTreeKind::Nested { items, .. } => {
+            let parent = tree.prefix.segments.last().map(|segment| segment.ident.name).or(parent);
+            items.iter().any(|item| imports_u64(&item.inner, parent))
+        }
+    }
+}
+
+fn may_expand(attr: &rustc_ast::Attribute) -> bool {
+    !attr.is_doc_comment() && attr.name().is_none_or(|name| {
+        !rustc_feature::is_builtin_attr_name(name)
+            || matches!(name, sym::cfg_attr | sym::derive | sym::prelude_import)
+    })
+}
+
+fn may_shadow_u64(item: &Item) -> bool {
+    if item.attrs.iter().any(may_expand) {
+        return true;
+    }
+    match &item.kind {
+        ItemKind::Use(tree) => imports_u64(tree, None),
+        ItemKind::MacCall(_) | ItemKind::DelegationMac(_) => true,
+        ItemKind::ForeignMod(module) => module.items.iter().any(|item| {
+            matches!(item.kind, ForeignItemKind::MacCall(_))
+                || item.kind.ident().is_some_and(|ident| ident.name == sym::u64)
+                || item.attrs.iter().any(may_expand)
+        }),
+        kind => kind.ident().is_some_and(|ident| ident.name == sym::u64),
+    }
 }
 
 /// Select only a closed expression in the currently shared value domain.
@@ -104,7 +141,7 @@ fn native_function(item: &Item) -> Option<&rustc_ast::Fn> {
     let [parameter] = function.sig.decl.inputs.as_slice() else { return None };
     let FnRetTy::Ty(result) = &function.sig.decl.output else { return None };
     let PatKind::Ident(BindingMode::NONE, name, None) = parameter.pat.kind else { return None };
-    if !parameter.attrs.is_empty() || !builtin_u64(&parameter.ty) || !builtin_u64(result) {
+    if !parameter.attrs.is_empty() || !unqualified_u64(&parameter.ty) || !unqualified_u64(result) {
         return None;
     }
     let body = function.body.as_ref()?;
@@ -229,7 +266,8 @@ impl Callbacks for Composition {
         }
         let native_artifact = matches!(config.opts.crate_types.as_slice(),
             [] | [CrateType::Executable | CrateType::Rlib | CrateType::StaticLib]);
-        if !host || !native_artifact || !self.native_codegen || !crate::embedding_environment_supported()
+        if !host || !native_artifact || !self.native_codegen || config.opts.cg.embed_bitcode
+            || !crate::embedding_environment_supported()
             || config.opts.test || config.opts.output_types.keys().any(|kind|
             !matches!(kind, OutputType::Exe | OutputType::Metadata | OutputType::DepInfo))
         {
@@ -273,6 +311,13 @@ impl Callbacks for Composition {
             || sess.opts.optimize != OptLevel::No || sess.opts.debuginfo != DebugInfo::None
             || sess.opts.edition != Edition::Edition2024 || sess.opts.crate_name.is_none()
             || sess.opts.lint_opts.iter().any(|(lint, _)| lint != "unused_crate_dependencies")
+        {
+            return Compilation::Continue;
+        }
+        // The native body uses the primitive ABI. Keep the original Rust
+        // body if expansion or resolution could rebind the unqualified type.
+        if sess.opts.externs.get("u64").is_some_and(|external| external.add_prelude)
+            || krate.items.iter().any(|item| may_shadow_u64(item))
         {
             return Compilation::Continue;
         }
@@ -399,14 +444,11 @@ fn represents_native_codegen(args: &[String]) -> bool {
             arg.strip_prefix("-C").or_else(|| arg.strip_prefix("--codegen="))
         };
         if let Some(option) = codegen {
-            let (key, value) = option.split_once('=').unwrap_or((option, ""));
+            let key = option.split_once('=').map_or(option, |(key, _)| key);
             if !matches!(key, "embed-bitcode" | "embed-metadata" | "debuginfo" | "metadata" | "extra-filename"
                 | "incremental" | "panic" | "strip" | "opt-level" | "overflow-checks"
                 | "debug-assertions" | "link-arg" | "relocation-model")
             {
-                return false;
-            }
-            if key == "embed-bitcode" && !matches!(value, "no" | "off" | "false" | "n") {
                 return false;
             }
         }

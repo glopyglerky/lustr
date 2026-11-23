@@ -246,16 +246,25 @@ fn prune(front:&Front,caches:&mut Caches) {
 /// and kept in the AST with its original span.
 pub(crate) fn parse_root(l: &lexer::Lexed, i: &intern::Interner, k: &intern::Known, standard: bool) -> Result<ast::Ast, diag::Diag> {
     let t = &l.tokens;
-    let ast = if standard && !(t.first().is_some_and(|token| token.tok == lexer::Tok::Pound)
-        && t.get(1).is_some_and(|token| token.tok == lexer::Tok::Bang))
-    {
+    let inner_attr = |at| matches!(t.get(at..), Some([pound, bang, ..])
+        if pound.tok == lexer::Tok::Pound && bang.tok == lexer::Tok::Bang);
+    let complement_attr = |at: usize| {
+        diag::not_yet("L0508", t[at].span, "this library's crate attribute").requiring_rust_complement()
+    };
+    let ast = if standard && !inner_attr(0) {
         crate::parser::parse_items(l, 0..t.len(), i, k)?
     } else {
         let Some(no_std) = crate::parser::leading_no_std(l, i) else {
-            let message = if standard { "native library does not represent this crate attribute" }
-                else { "native library requires its original #![no_std] root policy" };
-            return Err(diag::Diag::new("L0508", t.first().map_or(diag::Span::default(),|t|t.span), message, "Retain the original crate policy."));
+            return Err(if standard {
+                complement_attr(0)
+            } else {
+                diag::Diag::new("L0508", t.first().map_or(diag::Span::default(), |token| token.span),
+                    "native library requires its original #![no_std] root policy", "Retain the original crate policy.")
+            });
         };
+        if standard && inner_attr(5) {
+            return Err(complement_attr(5));
+        }
         let mut ast = crate::parser::parse_items(l, 5..t.len(), i, k)?;
         ast.inner_attrs.insert(0, no_std);
         ast
