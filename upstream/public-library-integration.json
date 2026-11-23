@@ -155,7 +155,7 @@
     "src/main.rs": "4fb5ec2c0d2fdffab03f94ec3cd20dba559446e883885a1434f40a76e00fc565",
     "src/native_queries.rs": "805c995a5c51a5af0e544a573cb2f3000b45e0b92baf6f98ff53871d1e4d4864",
     "src/library_contract.rs": "3e12e43b38aafb93be9fb7c41a734f642f1756d67c3cdc4a173f5551bf2f365c",
-    "src/library_request.rs": "698efe653eb26e9c5f1fb4d09ecb25ebb71295dbb331c6b367bc3f3c5d0137fa",
+    "src/library_request.rs": "2ba86457c77377d1d9c84e1bd3328aeca6cff1bf936d2a7be403ef0363db93a7",
     "compiler/native/Cargo.toml": "022fce40408d543c29550f7b03de3e622a5e01a08c82ea642d30537f61f93891",
     "compiler/native/Cargo.lock": "d46a58d499b1cfa163f5e2a23f10c0e69e077638f7a84e38e13332875a52f181",
     "compiler/native/build.rs": "044e0595531dd5468cf4df3dcfb21e1f43592fbada278c63b461d6dcb6a8b946",
