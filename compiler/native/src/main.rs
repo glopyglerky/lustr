@@ -378,6 +378,14 @@ fn main() {
     protocol::reject_internal_probe();
     if protocol::product_identity_query() { return; }
     #[cfg(feature = "exclusive-native")]
+    if std::env::args_os().skip(1).eq([std::ffi::OsString::from("--lustr-prime-cargo-runtime")]) {
+        if let Err(error) = cc::prime_cargo_runtime() {
+            eprintln!("error: {error}");
+            std::process::exit(1);
+        }
+        return;
+    }
+    #[cfg(feature = "exclusive-native")]
     if std::env::args_os().skip(1).eq([std::ffi::OsString::from("--lustr-print-cfg")]) {
         // Cargo's read-only compiler query uses the same target/profile facts
         // as native compilation. The product entry admits only this host mode.

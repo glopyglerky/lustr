@@ -40,14 +40,18 @@ fn record(path: &Path, bytes: &[u8]) {
     file.write_all(bytes).unwrap();
     file.sync_all().unwrap();
 }
-fn checked(label: &str, command: &mut Command, logs: &Path) -> Vec<u8> {
+fn observe(label: &str, command: &mut Command, logs: &Path) -> std::process::Output {
     record(&logs.join(format!("{label}.command")), format!("{command:?}\n").as_bytes());
     let output = command.env_remove("LD_LIBRARY_PATH").output().unwrap();
     record(&logs.join(format!("{label}.stdout")), &output.stdout);
     record(&logs.join(format!("{label}.stderr")), &output.stderr);
     record(&logs.join(format!("{label}.status")), format!("{}\n", output.status).as_bytes());
-    assert!(output.status.success(), "{label}: {}", String::from_utf8_lossy(&output.stderr));
     println!("{label}: {}", output.status);
+    output
+}
+fn checked(label: &str, command: &mut Command, logs: &Path) -> Vec<u8> {
+    let output = observe(label, command, logs);
+    assert!(output.status.success(), "{label}: {}", String::from_utf8_lossy(&output.stderr));
     output.stdout
 }
 fn copy(source: &Path, target: &Path) {
@@ -285,7 +289,7 @@ fn main() {
     let identity = std::str::from_utf8(&identity).unwrap().split_whitespace().next().unwrap();
     record(&package.join("lib/lustr-native.id"), format!("{identity}\n").as_bytes());
     selection_toolchain::write(&package, source, host);
-    let mut test_runtime_identity = None;
+    let mut runtime_identities = Vec::new();
     if host == "x86_64-unknown-linux-gnu" {
         checked("metadata-sdk-package", Command::new("python3").arg(repo.join("tools/install-native-metadata-sdk.py"))
             .arg(&repo).arg(&sdk).arg(&package), &logs);
@@ -298,7 +302,28 @@ fn main() {
             .env_remove("LD_LIBRARY_PATH")
             .args(["--edition=2024", "--crate-type=staticlib", "-Cpanic=unwind", "-Copt-level=2", "--crate-name=lustr_test_runtime"])
             .arg(repo.join("tools/native-test-runtime.rs")).arg("-o").arg(&runtime), &logs);
-        test_runtime_identity = Some(checked("hash-native-test-runtime", host_runtime::sha256_command().arg(runtime), &logs));
+        runtime_identities.push(checked("hash-native-test-runtime", host_runtime::sha256_command().arg(runtime), &logs));
+        let runtime_directory = package.join("lib/lustr-cargo-runtime");
+        assert!(!runtime_directory.exists());
+        let runtime_build = observe("prime-cargo-runtime",
+            Command::new(package.join("bin/lust-core")).arg("--lustr-prime-cargo-runtime"), &logs);
+        if !runtime_build.status.success() && runtime_directory.is_dir() {
+            fs::remove_dir_all(&runtime_directory).unwrap();
+        }
+        let objects: &[_] = if runtime_build.status.success() { &runtime_build.stdout } else { &[] };
+        for (index, object) in std::str::from_utf8(objects).unwrap().lines().enumerate() {
+            let object = Path::new(object);
+            assert_eq!(object.parent(), Some(runtime_directory.as_path()));
+            let receipt = object.with_extension("sha256");
+            for path in [object, &receipt] {
+                fs::File::open(path).unwrap().sync_all().unwrap();
+            }
+            runtime_identities.push(checked(&format!("hash-cargo-runtime-{index}"),
+                host_runtime::sha256_command().arg(object).arg(receipt), &logs));
+        }
+        if runtime_directory.is_dir() {
+            fs::File::open(runtime_directory).unwrap().sync_all().unwrap();
+        }
         let licenses = package.join("lib/lustr-test-licenses");
         fs::create_dir(&licenses).unwrap();
         for name in ["LICENSE-MIT", "LICENSE-APACHE"] {
@@ -323,7 +348,7 @@ fn main() {
         let result = checked(&format!("hash-{name}"), host_runtime::sha256_command().arg(package.join("bin").join(name)), &logs);
         manifest.push_str(std::str::from_utf8(&result).unwrap());
     }
-    if let Some(result) = test_runtime_identity {
+    for result in runtime_identities {
         manifest.push_str(std::str::from_utf8(&result).unwrap());
     }
     record(&output.join("COMPONENTS.txt"), manifest.as_bytes());

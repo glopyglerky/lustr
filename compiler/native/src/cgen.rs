@@ -10644,6 +10644,15 @@ pub fn runtime_unit() -> String {
     format!("#define LUST_IMPL 1\n{}", runtime_source(true))
 }
 
+pub(crate) fn cargo_runtime_unit(test: bool) -> String {
+    let mut source = runtime_unit();
+    if test {
+        source.insert_str(0, "#define LUST_LIBTEST_CAPTURE 1\n");
+        source.push_str(rust_tests::CATCH_ADAPTER);
+    }
+    source
+}
+
 /// The source files panic locations name: every file's path (index 0 is
 /// the crate root) and each slot's file index.
 pub struct SlotFiles<'a> {

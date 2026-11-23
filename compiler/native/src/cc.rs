@@ -222,6 +222,64 @@ pub(crate) fn compile_scalar_debug_object(path: &Path, text: &str) -> Result<(),
     Ok(())
 }
 
+#[cfg(feature = "exclusive-native")]
+fn installed_cargo_runtime_dir() -> Option<PathBuf> {
+    let executable = std::env::current_exe().ok()?;
+    let root = executable.parent()?.parent()?;
+    Some(root.join("lib/lustr-cargo-runtime"))
+}
+
+/// Build the invariant runtime units during toolchain construction with the
+/// same compiler, options and headers as an ordinary native Cargo build.
+#[cfg(feature = "exclusive-native")]
+pub(crate) fn prime_cargo_runtime() -> Result<(), String> {
+    if crate::protocol::host_triple() != "x86_64-unknown-linux-gnu"
+        || !on_path("clang") || !on_path("clang++") {
+        return Ok(());
+    }
+    let directory = installed_cargo_runtime_dir().ok_or("cannot locate the toolchain runtime directory")?;
+    std::fs::create_dir(&directory).map_err(|error| format!("create runtime object directory: {error}"))?;
+    let spec = spec_for_native_cargo(crate::protocol::host_triple(), true, false)?;
+    let flags_text = cflags(false);
+    let flags: Vec<_> = flags_text.split_whitespace().map(str::to_owned).collect();
+    let source = directory.join("u2.c");
+    for test in [false, true] {
+        let text = crate::cgen::cargo_runtime_unit(test);
+        let preprocessed = preprocessed(&text, &spec.cmd, &flags_text, false)
+            .ok_or("could not preprocess the native Cargo runtime")?;
+        let key = unit_key(&text, Some(&preprocessed), &spec, false, None, false);
+        let object = directory.join(format!("unit-{key}.o"));
+        std::fs::write(&source, text).map_err(|error| format!("stage native Cargo runtime: {error}"))?;
+        let output = unit_command(&spec.cmd, &flags, &object, Some(&key), None, &source)
+            .output().map_err(|error| format!("compile native Cargo runtime: {error}"))?;
+        std::fs::remove_file(&source).map_err(|error| format!("remove native Cargo runtime source: {error}"))?;
+        if !output.status.success() {
+            return Err(format!("native Cargo runtime compilation failed: {}", String::from_utf8_lossy(&output.stderr)));
+        }
+        let bytes = std::fs::read(&object).map_err(|error| format!("read native Cargo runtime object: {error}"))?;
+        let digest = cargo_runtime_digest(&bytes);
+        std::fs::write(object.with_extension("sha256"), digest).map_err(|error| format!("record native Cargo runtime object: {error}"))?;
+        println!("{}", object.display());
+    }
+    Ok(())
+}
+
+#[cfg(feature = "exclusive-native")]
+fn cargo_runtime_digest(bytes: &[u8]) -> String {
+    use sha2::Digest;
+    sha2::Sha256::digest(bytes).iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+#[cfg(feature = "exclusive-native")]
+fn reuse_cargo_runtime(directory: &Path, key: &str, destination: &Path) -> bool {
+    let source = directory.join(format!("unit-{key}.o"));
+    let Ok(digest) = std::fs::read_to_string(source.with_extension("sha256")) else { return false; };
+    let Ok(bytes) = std::fs::read(source) else { return false; };
+    if cargo_runtime_digest(&bytes) != digest { return false; }
+    let _ = std::fs::remove_file(destination);
+    std::fs::write(destination, bytes).is_ok()
+}
+
 /// The C flags of every unit, one string so the cache key and the command
 /// line can never disagree.
 pub fn cflags(debug: bool) -> String {
@@ -1022,6 +1080,12 @@ pub fn build_with(
     let lost = std::sync::Mutex::new(Vec::new());
     let limit = crate::pool::threads().max(1).min(units.len().max(1));
     let t_compile = std::time::Instant::now();
+    #[cfg(feature = "exclusive-native")]
+    let installed_runtime = if !pgo_on && (spec.rust_debug || spec.test_runtime.is_some()) {
+        installed_cargo_runtime_dir()
+    } else {
+        None
+    };
     std::thread::scope(|scope| {
         for _ in 0..limit {
             scope.spawn(|| loop {
@@ -1056,6 +1120,15 @@ pub fn build_with(
                 if let (Some(cache), Some(key)) = (cache, &keys[i])
                     && cache.unit_object(key, obj)
                 {
+                    hits.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    continue;
+                }
+                #[cfg(feature = "exclusive-native")]
+                if name == "u2" && pre_of(i).is_some()
+                    && let (Some(directory), Some(cache), Some(key)) = (&installed_runtime, cache, &keys[i])
+                    && reuse_cargo_runtime(directory, key, obj)
+                {
+                    cache.store_unit_object(key, obj);
                     hits.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                     continue;
                 }

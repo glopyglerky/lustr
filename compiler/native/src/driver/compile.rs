@@ -5522,14 +5522,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
         main_slot, overlays, cgen::unwind_init(&program, |f| front.fn_slot[f.0 as usize]),
         tests.as_deref().map(|tests| (tests, front.fn_slot.as_slice())),
     );
-    let runtime_unit = || {
-        let mut unit = cgen::runtime_unit();
-        if tests.is_some() {
-            unit.insert_str(0, "#define LUST_LIBTEST_CAPTURE 1\n");
-            unit.push_str(cgen::rust_tests::CATCH_ADAPTER);
-        }
-        unit
-    };
+    let runtime_unit = || cgen::cargo_runtime_unit(tests.is_some());
     // Instance slots take their template's line: cgen stores an
     // instance's panic lines relative to it (see `line_base_of`).
     let mut slot_lines = vec![0u32; n_slots];
