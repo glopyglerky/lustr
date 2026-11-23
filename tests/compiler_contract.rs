@@ -1480,15 +1480,20 @@ pub fn flip(value: u64) -> u64 { value ^ 1 }
 "#);
     f.source("src/main.rs", "fn main() { let value = documented::flip(42); println!(\"{value}\"); }\n");
     f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let build = f.succeeds("native-build", f.command("cargo").args([
+        "build", "--frozen", "--message-format=json",
+    ]));
+    let metadata_path = build.stdout.split(|&byte| byte == b'\n').find_map(|line| {
+        let record = serde_json::from_slice::<serde_json::Value>(line).ok()?;
+        if record["reason"] != "compiler-artifact" || record["target"]["name"] != "documented" {
+            return None;
+        }
+        record["filenames"].as_array()?.iter().filter_map(|path| path.as_str())
+            .find(|path| path.ends_with(".rmeta")).map(PathBuf::from)
+    }).expect("actual documented library metadata");
     let app = f.succeeds("native-app", f.command("cargo").args(["run", "--frozen", "--quiet"]));
     assert_eq!(app.stdout, b"43\n");
 
-    let mut metadata = std::fs::read_dir(f.root.join("target/debug/deps")).unwrap()
-        .map(|entry| entry.unwrap().path())
-        .filter(|path| path.file_name().and_then(|name| name.to_str())
-            .is_some_and(|name| name.starts_with("libdocumented-") && name.ends_with(".rmeta")));
-    let metadata_path = metadata.next().expect("actual documented library metadata");
-    assert!(metadata.next().is_none());
     let exported = f.source("reexport.rs", "pub use documented::flip;\n");
     let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
     let docs = f.root.join("rendered");
