@@ -33,7 +33,7 @@ Each qualification record applies to its recorded source, package and workload.
 | Linux x86-64 native unwind | Native executable and library tests cover frame walking, panic propagation, destructor cleanup and catching in represented configurations. |
 | Imported associated types | Cargo provider and consumer tests exercise lifetime-generic associated types through native checking and linking. |
 | Default Cargo profiles | Represented programs have native check, build, run and test paths. Native Rust debug information covers the types and locations exercised by the debugger tests. |
-| Mixed host compilation | Pinned Rust supplies async semantics and the linker while Lust emits selected closed functions. Tests cover ordinary executables, static Rust libraries and freestanding `no_std` ELF executables. |
+| Mixed host compilation | Pinned Rust supplies async semantics and the linker while Lust emits selected closed functions. Tests cover ordinary executables, static Rust libraries and freestanding `no_std` ELF executables. Compatible freestanding body edits reuse the Rust linker inputs through Cargo. |
 | Full language, ecosystem and platforms | Wider native artifacts, selective complementary semantics, real dependency/proc-macro graphs and the full target/profile matrix remain open. |
 | Performance and release | Scoped timing results include both gains and slower edits. Overall speed and release qualification remain open. |
 

@@ -342,6 +342,9 @@
         "compiler/rustc_codegen_ssa/src/lib.rs": "553ea81c827f9493025c7987114323f7292e992acfe05878e0a6415e0b7a969c",
         "compiler/rustc_errors/src/lib.rs": "01f82a2a6a608485cb93ac78cfd3bc6aad9f2aa3ae154d74c31fa43504bfde93",
         "compiler/rustc_interface/src/callbacks.rs": "535bbcb8285b434a21cc5ed25c2bda3d3638161e1bc9e780b6dac4b7f270923d",
+        "compiler/rustc_interface/src/queries.rs": "895925b776a1d68985faaf77f335e6956f0d4dc09c9d39332351da5bc7bdb8eb",
+        "compiler/rustc_interface/src/util.rs": "a72d09c63337f969f489d5ef4f8ac4266c0516c6126603b34be05500dbf6f90e",
+        "compiler/rustc_builtin_macros/src/source_util.rs": "800e0f9277ade2a55cf35bae7b42276d4ea5e8d1e33da9b94064ace8586f2b48",
         "compiler/rustc_codegen_ssa/src/back/link.rs": "0cfbc38cf0c66133b3f7dc10bd558d1fb4773fc1c09054c48a32bc694902a191",
         "compiler/rustc_codegen_llvm/src/lib.rs": "c45084d828a300d94700752fb3f523c3fc1411e0def9eccaf3672479dc548c13"
       },
@@ -354,8 +357,8 @@
       "features": ["Freestanding Cargo binary with no_std, no_main, panic=abort and explicit static relocation and link", "Cargo static library with Rust semantics and an independently linkable C entry", "Typed native parser capability handoff for unrepresented Rust syntax, including async, unsafe and FFI"],
       "adapter": "tools/host-freestanding.rs",
       "licenses": ["MIT", "Apache-2.0"],
-      "excluded_duplicate_phases": ["Rust analysis and code generation of selected native bodies"],
-      "qualification": "Installed Cargo test compares compiler status, generated ELF, original-source diagnostics and actual program exit with pinned Rust. Mixed body selection is limited to O0 without debug information. Mixed retention and elapsed-time qualification remain open."
+      "excluded_duplicate_phases": ["Rust analysis and code generation of selected native bodies", "Rust expansion, semantic analysis and emission on verified closed freestanding body edits"],
+      "qualification": "Installed Cargo tests compare compiler status, generated ELF, original-source diagnostics and actual program exit with pinned Rust. The retained freestanding test exercises successful reuse, signature invalidation, native rejection, diagnostics, corrupt snapshots and reads of root source bytes. Mixed body selection is limited to O0 without debug information. Lust checks and emits the selected bodies on each request and the original linker still runs."
     },
     {
       "id": "proc-macro-expansion",

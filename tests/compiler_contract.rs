@@ -1381,6 +1381,28 @@ fn panic(_: &PanicInfo<'_>) -> ! {
     build_edit("signature-edit", &signature, 43, false);
     build_edit("next-native-body-edit", &signature.replace("n & 63", "n & 31"), 11, true);
 
+    // A damaged Rust snapshot must take a fresh compilation. The next
+    // compatible edit can reuse the replacement created by that build.
+    let unit_dirs = f.root.join("mixed/debug/build/freestanding");
+    let rlink = std::fs::read_dir(unit_dirs).unwrap().find_map(|unit| {
+        std::fs::read_dir(unit.unwrap().path()).ok()?.find_map(|entry| {
+            let link = entry.unwrap().path().join("rust.rlink");
+            link.is_file().then_some(link)
+        })
+    }).expect("retained Rust link input");
+    std::fs::write(&rlink, b"corrupt snapshot").unwrap();
+    build_edit("corrupt-link-input", &signature.replace("n & 63", "n & 15"), 11, false);
+    build_edit("repaired-link-input", &signature.replace("n & 63", "n & 47"), 43, true);
+
+    // An include of the root source can observe the changed bytes even
+    // though it does not introduce a second real SourceMap file.
+    let offset = source.find("n ^ 19").unwrap() + "n ^ 1".len();
+    let source_dependency = source.replace("let status =",
+        &format!("const SOURCE_STATUS: u64 = (include_bytes!(\"main.rs\")[{offset}] as u64) << 1;\n    let status ="))
+        .replace("select_bits(transform(57));", "select_bits(transform(57)) ^ SOURCE_STATUS;");
+    build_edit("source-byte-dependency", &source_dependency, 88, false);
+    build_edit("source-byte-dependency-edit", &source_dependency.replace("n ^ 19", "n ^ 18"), 91, false);
+
     let warnings = source.replace("let status =", "let unused = 1;\n    let status =");
     for (name, body, value) in [
         ("warnings", warnings.clone(), 42),

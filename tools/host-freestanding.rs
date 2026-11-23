@@ -63,6 +63,8 @@ struct Composition<'a> {
     output: Option<PathBuf>,
     object: Arc<OnceLock<PathBuf>>,
     retained_link: Arc<OnceLock<host_retained_link::Cache>>,
+    pending_link: Arc<OnceLock<host_retained_link::Pending>>,
+    reused_link: bool,
     bindings: Vec<(Symbol, String)>,
     scratch: Option<Scratch>,
 }
@@ -289,10 +291,12 @@ impl Callbacks for Composition<'_> {
         self.output = Some(output);
         let object = Arc::clone(&self.object);
         let retained_link = Arc::clone(&self.retained_link);
+        let pending_link = Arc::clone(&self.pending_link);
         config.make_codegen_backend = Some(Box::new(move |_| Box::new(Backend {
             original: rustc_codegen_llvm::LlvmCodegenBackend::new(),
             object,
             retained_link,
+            pending_link,
         })));
     }
 
@@ -350,17 +354,15 @@ impl Callbacks for Composition<'_> {
                     if let Some(cache) = file.src.as_ref().and_then(|source|
                         host_retained_link::Cache::open(sess, self.output.as_deref().unwrap(), self.args, source, &bodies, &symbols))
                     {
-                        if let Some(saved) = cache.load(sess, &directory.0) {
+                        let outputs = rustc_interface::util::build_output_filenames(&krate.attrs, sess);
+                        if let OutFileName::Real(deps) = outputs.path(OutputType::DepInfo)
+                            && let Some(saved) = cache.load(sess, &outputs, &directory.0)
+                        {
                             if sess.opts.json_artifact_notifications {
-                                sess.dcx().emit_artifact_notification(&saved.dep_info, "dep-info");
+                                sess.dcx().emit_artifact_notification(&deps, "dep-info");
                             }
-                            compiler.codegen_backend.link(sess, saved.modules, saved.info, saved.metadata, &saved.outputs);
-                            if let Some(path) = std::env::var_os("LUSTR_TRACE_PATH")
-                                && let Ok(mut file) = fs::OpenOptions::new().create(true).append(true).open(path)
-                            {
-                                use io::Write;
-                                let _ = file.write_all(b"{\"engine\":\"lustr\",\"entry\":\"retained-rust-link\"}\n");
-                            }
+                            compiler.codegen_backend.link(sess, saved.modules, saved.info, saved.metadata, &outputs);
+                            self.reused_link = true;
                             return Compilation::Stop;
                         }
                         cache.track_diagnostics();
@@ -407,6 +409,7 @@ struct Backend {
     original: Box<dyn CodegenBackend>,
     object: Arc<OnceLock<PathBuf>>,
     retained_link: Arc<OnceLock<host_retained_link::Cache>>,
+    pending_link: Arc<OnceLock<host_retained_link::Pending>>,
 }
 
 impl CodegenBackend for Backend {
@@ -438,7 +441,7 @@ impl CodegenBackend for Backend {
         }
         self.original.link(sess, modules, info, metadata, outputs);
         if let Some(pending) = pending {
-            pending.publish();
+            let _ = self.pending_link.set(pending);
         }
     }
 }
@@ -459,9 +462,18 @@ pub(crate) fn run(artifact: Artifact, program: &str, args: &[String]) -> ExitCod
         let mut callbacks = Composition {
             artifact, args, native_codegen: represents_native_codegen(args),
             input: None, output: None,
-            object: Arc::default(), retained_link: Arc::default(), bindings: Vec::new(), scratch: None,
+            object: Arc::default(), retained_link: Arc::default(), pending_link: Arc::default(),
+            reused_link: false, bindings: Vec::new(), scratch: None,
         };
         rustc_driver::compiler_entrypoint(&driver, &mut callbacks);
+        // Only retain successful Rust analysis and code generation. The
+        // original linker runs on every request, including its diagnostics.
+        if let Some(pending) = Arc::get_mut(&mut callbacks.pending_link).and_then(OnceLock::take) {
+            pending.publish();
+        }
+        if callbacks.reused_link {
+            host_retained_link::trace("retained-rust-link");
+        }
     })
 }
 
