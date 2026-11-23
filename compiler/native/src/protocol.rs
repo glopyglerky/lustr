@@ -33,7 +33,7 @@ use std::path::{Path, PathBuf};
 pub mod host_runtime;
 #[path = "../../../src/library_contract.rs"]
 pub mod library_contract;
-pub use library_contract::{DebugOptions, ExecutableExtern, ExternMetadata, LibraryKey, LibraryOptions};
+pub use library_contract::{DebugOptions, ExecutableExtern, ExternMetadata, LibraryKey, LibraryOptions, OptLevel};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Cmd {
@@ -690,6 +690,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     let mut executable_dependencies = Vec::new();
     let mut library_options = LibraryOptions::default();
     let mut library_debug_supplied = false;
+    let mut library_opt = None;
     // Every --target named, in order. One builds a session; several are
     // the release driver's list and build one session each.
     let mut targets: Vec<String> = Vec::new();
@@ -737,6 +738,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
                 library_options.debug = DebugOptions::decode(it.next()?.as_bytes())?;
                 library_debug_supplied = true;
             }
+            "--lustr-opt-level" if library_opt.is_none() => library_opt = Some(OptLevel::parse(it.next()?)?),
             "--json" => json = true,
             "--timings" => timings = true,
             "-g" => debug = true,
@@ -784,7 +786,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     let library_supplied = library_name.is_some() || library_metadata.is_some() || library_extra.is_some() || library_cwd.is_some()
         || !library_cfg.is_empty() || !library_search.is_empty() || library_external.is_some()
         || executable_artifacts || executable_test || custom_test || !executable_dependencies.is_empty()
-        || library_debug_supplied || library_options != LibraryOptions::default();
+        || library_debug_supplied || library_opt.is_some() || library_options != LibraryOptions::default();
     if library_supplied && (rustc || release || profile.is_some()) { return None; }
     let abs = |p: &Path| std::path::absolute(p).unwrap_or_else(|_| p.to_path_buf());
     // Release and the rustc oracle are build/check-only, with no extra lust flags.
@@ -886,7 +888,8 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
         if !executable_artifacts && !executable_dependencies.is_empty() { return None; }
         let key = LibraryKey {crate_name:library_name?, metadata:library_metadata?, extra_filename:library_extra?,
             source_path:file.clone(), working_directory:library_cwd?, check_cfg:library_cfg, search_paths:library_search, external:library_external,
-            executable_dependencies:executable_artifacts.then_some(executable_dependencies), custom_test,
+            executable_dependencies:executable_artifacts.then_some(executable_dependencies),
+            optimization:library_opt.unwrap_or_default(), custom_test,
             sdk_receipt:library_contract::SDK_RECEIPT.into()};
         if !key.valid() || !matches!(cmd.as_str(), "build" | "check") || session.krate.target_kind != key.target_kind()
             || session.target_triple != library_contract::TARGET
@@ -1058,6 +1061,7 @@ pub fn encode(r: &Request) -> Vec<u8> {
         put_field(&mut out,match r.library_options.embed_metadata {None=>b"-",Some(true)=>b"1",Some(false)=>b"0"});
         put_field(&mut out,if r.library_options.force_warn_unused_crate_dependencies {b"1"} else {b"0"});
         put_field(&mut out,&r.library_options.debug.encode());
+        put_field(&mut out,library.optimization.value().as_bytes());
     }
     for f in &s.features {
         put_field(&mut out, f.as_bytes());
@@ -1131,9 +1135,10 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
             library_options.embed_metadata=match get_field(r)?.as_slice() {b"-"=>None,b"1"=>Some(true),b"0"=>Some(false),_=>return None};
             library_options.force_warn_unused_crate_dependencies=match get_field(r)?.as_slice() {b"0"=>false,b"1"=>true,_=>return None};
             library_options.debug=DebugOptions::decode(&get_field(r)?)?;
+            let optimization=OptLevel::parse(&text(get_field(r)?)?)?;
             let custom_test = mode == b"4";
             if custom_test && f[5] != "1" { return None; }
-            let library=LibraryKey{crate_name,metadata,extra_filename,source_path,working_directory,check_cfg,search_paths,external,executable_dependencies,custom_test,sdk_receipt};
+            let library=LibraryKey{crate_name,metadata,extra_filename,source_path,working_directory,check_cfg,search_paths,external,executable_dependencies,optimization,custom_test,sdk_receipt};
             if !library.valid() || !library.valid_output(&out, f[0] == "check", library_options) || library.source_path!=file
                 || target_triple!=library_contract::TARGET || target_kind!=library.target_kind()
                 || !library.matches_target_name(&target_name) || !matches!(f[0], "build" | "check") {return None;}

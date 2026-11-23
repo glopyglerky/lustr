@@ -93,6 +93,43 @@ pub enum Strip {
     Symbols,
 }
 
+/// Rust's compiler optimization levels, also supported by host Clang.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum OptLevel {
+    #[default]
+    None,
+    Less,
+    More,
+    Aggressive,
+    Size,
+    MinSize,
+}
+
+impl OptLevel {
+    pub(crate) fn parse(value: &str) -> Option<Self> {
+        Some(match value {
+            "0" => Self::None,
+            "1" => Self::Less,
+            "2" => Self::More,
+            "3" => Self::Aggressive,
+            "s" => Self::Size,
+            "z" => Self::MinSize,
+            _ => return None,
+        })
+    }
+
+    pub(crate) fn value(self) -> &'static str {
+        match self {
+            Self::None => "0",
+            Self::Less => "1",
+            Self::More => "2",
+            Self::Aggressive => "3",
+            Self::Size => "s",
+            Self::MinSize => "z",
+        }
+    }
+}
+
 impl Strip {
     pub(crate) fn parse(value: &str) -> Option<Self> {
         Some(match value {
@@ -195,6 +232,7 @@ pub struct LibraryKey {
     pub search_paths: Vec<PathBuf>,
     pub external: Option<ExternMetadata>,
     pub executable_dependencies: Option<Vec<ExecutableExtern>>,
+    pub optimization: OptLevel,
     /// Cargo supplies cfg(test), and the crate supplies its own main.
     pub custom_test: bool,
     pub sdk_receipt: String,
@@ -262,7 +300,7 @@ impl LibraryKey {
         } else if check {
             options.embed_metadata.is_none() && output_parent(path, &self.metadata_name()).is_some()
         } else {
-            output_parent(path, &self.archive_name()).is_some()
+            self.optimization == OptLevel::None && output_parent(path, &self.archive_name()).is_some()
         }
     }
 }

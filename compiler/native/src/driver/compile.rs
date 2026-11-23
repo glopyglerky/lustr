@@ -3098,6 +3098,12 @@ pub(crate) fn prepare_library_import<'a>(req: &'a Request, session: &'a mut Sess
     prepare_with_definitions(req, session, None, Some(definitions))
 }
 
+fn cargo_codegen(req: &Request) -> Option<(crate::protocol::OptLevel, crate::protocol::library_contract::Strip)> {
+    let key = req.session.library.as_ref()?;
+    (req.cmd == Cmd::Build && key.is_executable() && key.optimization != crate::protocol::OptLevel::None)
+        .then_some((key.optimization, req.library_options.debug.strip))
+}
+
 fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, observer: Option<&dyn super::PhaseObserver>, imports: Option<&dyn super::imports::Definitions>) -> Preparation<'a> {
     // A public library key belongs only to the product owner. Refuse it before
     // entering research graph selection, which retains its original probe.
@@ -3125,6 +3131,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
         return Preparation::Failed(Response {code:3, stderr:"public library request context is not represented\n".into(), ..Default::default()});
     }
     let rust_debug = req.cmd == Cmd::Build && req.library_options.debug.native_rust();
+    let cargo_optimized = cargo_codegen(req).is_some();
     let public_executable = req.session.library.as_ref().is_some_and(|key| key.is_executable());
     let cargo_test = req.session.krate.test && req.session.library.as_ref().is_some_and(|key| !key.custom_test);
     if session.caches.library.is_some() && (req.cc || req.debug || req.emit_c.is_some() || req.harness || req.run_args.is_some()) {
@@ -4311,7 +4318,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
     // catch_unwind would return Ok after a panic (rel-opt).
     let tables_env = std::env::var("LUST_UNWIND_TABLES").ok();
     program.unwind_tables = program.unwind
-        && if rust_debug || cargo_test {
+        && if rust_debug || cargo_test || cargo_optimized {
             true
         } else if req.cc {
             tables_env.as_deref() != Some("0")
@@ -4670,7 +4677,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
     // then a release driver build). A check makes no C and keeps the key.
     let mixed = req.session.krate.target_kind == "lustr-mixed-native";
     let library = caches.library.is_some();
-    let release = rust_debug || cargo_test || library || mixed || super::release_c::on(caches.persistent, req.cc);
+    let release = rust_debug || cargo_test || cargo_optimized || library || mixed || super::release_c::on(caches.persistent, req.cc);
     if req.cmd == Cmd::Build {
         let key = super::release_c::codegen_key(release, req.debug, program.unwind_tables)
             ^ if library { 0x6c69_622d_746f_7461 } else { 0 }
@@ -5100,6 +5107,7 @@ fn stage_imported_objects(dir: &Path, objects: &[Arc<[u8]>]) -> Result<Vec<PathB
 
 fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> Response {
     let rust_debug = req.cmd == Cmd::Build && req.library_options.debug.native_rust();
+    let cargo_codegen = cargo_codegen(req);
     let cargo_test = req.session.library.as_ref().filter(|key| req.session.krate.test && !key.custom_test);
     let CheckedRequest {
         mut program, results, reemit, map, source: src, path, work, fn_count, fn_lines_all, body_hashes_all,
@@ -6496,7 +6504,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
             return Response { code: 0, ..Default::default() };
         }
     }
-    if llvm && !req.cc && !rust_debug && tests.is_none() {
+    if llvm && !req.cc && !rust_debug && tests.is_none() && cargo_codegen.is_none() {
         return Response {
             stderr: "error: LUST_RELEASE_BACKEND=llvm builds through the release driver (`lust build --release --target <triple>`) or with --emit-c\n".into(),
             code: 2,
@@ -6511,7 +6519,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
     // frozen, so a clean unit's C is the same as last time and its object
     // comes from the cache. Overlays do not exist here: every build emits
     // the base form of each unit.
-    if req.cc || rust_debug || tests.is_some() {
+    if req.cc || rust_debug || tests.is_some() || cargo_codegen.is_some() {
         // The release driver returns before the visits line at the end: its log line is here
         // (front-check's path coverage).
         front.last_visits.clear();
@@ -6528,8 +6536,8 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
                 }
             }
         }
-        let spec = if rust_debug || tests.is_some() {
-            crate::cc::spec_for_native_cargo(triple, rust_debug, tests.is_some())
+        let spec = if rust_debug || tests.is_some() || cargo_codegen.is_some() {
+            crate::cc::spec_for_native_cargo(triple, rust_debug, tests.is_some(), cargo_codegen)
         } else { crate::cc::spec_for(triple) };
         let prepared = spec.and_then(|spec| {
             // Release C (`LUST_RELEASE_C=1`) already holds the content-addressed units.

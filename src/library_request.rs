@@ -4,7 +4,7 @@ use crate::{
     Native,
     library_contract::{
         DebugInfo, ExecutableExtern, ExternMetadata, LibraryKey, LibraryOptions,
-        SDK_RECEIPT, SplitDebug, Strip, TARGET, cargo_feature_name,
+        OptLevel, SDK_RECEIPT, SplitDebug, Strip, TARGET, cargo_feature_name,
     },
 };
 use std::{collections::{BTreeMap,BTreeSet}, ffi::OsString, path::PathBuf};
@@ -136,9 +136,12 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     // Rust defaults to embedded LLVM bitcode for an rlib; this native scalar
     // artifact contract requires the caller's explicit no-bitcode selection.
     if !matches!(codegen.remove("embed-bitcode").as_deref(),Some("no"|"off"|"false"|"n")) {return None;}
+    let optimization = match codegen.remove("opt-level") {
+        Some(value) => OptLevel::parse(&value)?,
+        None => OptLevel::None,
+    };
     for (key,value) in &codegen {
         let represented = match key.as_str() {
-            "opt-level" => value == "0" || check && matches!(value.as_str(), "1" | "2" | "3" | "s" | "z"),
             // Cargo provides an optional on-disk incremental cache location.
             // Reuse belongs to the native session rather than Rust's on-disk cache.
             "incremental" => (check || panic == "panic=unwind") && std::path::Path::new(value).is_absolute(),
@@ -160,7 +163,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     };
     let context = LibraryKey { crate_name:name?, metadata, extra_filename, source_path,
         working_directory: std::env::current_dir().ok()?, check_cfg, search_paths, external, executable_dependencies,
-        custom_test, sdk_receipt:SDK_RECEIPT.into() };
+        optimization, custom_test, sdk_receipt:SDK_RECEIPT.into() };
     if test && panic != "panic=unwind" { return None; }
     if !context.valid() { return None; }
     if std::env::var("CARGO_CRATE_NAME").is_ok_and(|v|v != context.crate_name) { return None; }
@@ -181,8 +184,8 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     // inherit the effective debug assertion setting (Session::overflow_checks),
     // including an explicit override. The actual Rust request owns both values;
     // the native Cargo profile must not substitute its defaults afterwards.
-    let unoptimized = codegen.get("opt-level").is_none_or(|value| value == "0");
-    let debug = codegen.get("debug-assertions").map_or(if unoptimized { "on" } else { "off" }, String::as_str);
+    let debug = codegen.get("debug-assertions")
+        .map_or(if optimization == OptLevel::None { "on" } else { "off" }, String::as_str);
     let overflow = codegen.get("overflow-checks").map_or(debug, String::as_str);
     for (key, value) in [("overflow-checks", overflow), ("debug-assertions", debug)] {
         native.extend(["-C".into(),format!("{key}={value}")]);
@@ -218,6 +221,9 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     }
     if options.debug != Default::default() {
         native.extend(["--lustr-library-debug-options".into(), String::from_utf8(options.debug.encode().to_vec()).ok()?]);
+    }
+    if optimization != OptLevel::None {
+        native.extend(["--lustr-opt-level".into(), optimization.value().into()]);
     }
     for (flag,value) in [("--lustr-library-name",context.crate_name.as_str()),
         ("--lustr-library-metadata",context.metadata.as_str()),("--lustr-library-extra-filename",context.extra_filename.as_str()),

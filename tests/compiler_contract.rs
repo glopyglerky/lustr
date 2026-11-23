@@ -206,6 +206,9 @@ fn read_public_transport_request(
             if read_public_transport_field(reader)?.as_slice() != options.debug.encode() {
                 return Err("public library request changed its debug output options".into());
             }
+            if read_public_transport_field(reader)?.as_slice() != library.optimization.value().as_bytes() {
+                return Err("public library request changed its optimization level".into());
+            }
         }
         (b"0" | b"1" | b"2" | b"3", _) => return Err("public request changed its artifact context presence".into()),
         _ => return Err("invalid public library discriminator".into()),
@@ -288,6 +291,7 @@ fn transport_peer_validates_library_values_and_counted_vectors() {
         search_paths: vec![PathBuf::from("/native-transport/deps-one"), PathBuf::from("/native-transport/deps-two")],
         external: None,
         executable_dependencies: None,
+        optimization: transport_protocol::OptLevel::None,
         custom_test: false,
     };
     req.session.krate.target_kind = "lib".into();
@@ -880,6 +884,25 @@ fn main() { println!("{}", value()); }
     assert!(String::from_utf8_lossy(&rejected.stderr).contains("mismatched types"));
     f.source("src/main.rs", source);
     f.succeeds("release-repair", f.command("cargo").args(release));
+
+    let run = ["run", "--offline", "--release", "--quiet"];
+    let optimized = f.succeeds("optimized-run", f.command("cargo").args(run));
+    assert_eq!(optimized.stdout, b"7\n");
+    let no_op = f.succeeds("optimized-noop", f.command("cargo").args(run));
+    assert_eq!(no_op.stdout, optimized.stdout);
+    let binary = f.root.join("target/release/release-check");
+    let prior = std::fs::read(&binary).unwrap();
+    f.source("src/main.rs", &source.replace("{ 7 }", "{ \"release-only invalid type\" }"));
+    let invalid = f.invoke("invalid-optimized", f.command("cargo").args(run));
+    assert_eq!(invalid.status.code(), Some(101));
+    assert!(invalid.stdout.is_empty());
+    assert_eq!(std::fs::read(binary).unwrap(), prior);
+    f.source("src/main.rs", source);
+    let smaller = f.succeeds(
+        "size-optimized-run",
+        f.command("cargo").args(run).args(["--config", "profile.release.opt-level=\"s\""]),
+    );
+    assert_eq!(smaller.stdout, optimized.stdout);
 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
@@ -914,6 +937,8 @@ fn main() {
 "#);
     let ran = f.succeeds("runtime", f.command("cargo").args(["run", "--offline", "--quiet"]));
     assert_eq!(ran.stdout, b"drop:leaf\ndrop:middle\ncaught, resumed, joined\ndrop:outer\n");
+    let optimized = f.succeeds("runtime-release", f.command("cargo").args(["run", "--offline", "--release", "--quiet"]));
+    assert_eq!(optimized.stdout, ran.stdout);
     f.source("src/main.rs", "fn main() { panic!(\"uncaught native default debug\"); }\n");
     let failed = f.invoke("uncaught", f.command("cargo").args(["run", "--offline", "--quiet"]));
     assert_eq!(failed.status.code(), Some(101));
