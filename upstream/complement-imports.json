@@ -308,7 +308,7 @@
       "missing_capability": "Execute a selected host procedural macro and pass its tokens to native checking",
       "status": "implemented-partial",
       "owner": "Pinned Rust Analyzer worker with Lustr's native expansion context",
-      "semantic_boundary": "Cargo-selected host artifact, original definition span, original source token trees, represented literal and punctuation output, and observed Cargo dependency inputs",
+      "semantic_boundary": "Cargo-selected host artifact, original definition span, original source token trees, represented literals, punctuation spacing and visible output groups, and observed Cargo dependency inputs",
       "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
       "upstream_paths": {
         "src/tools/rust-analyzer/crates/proc-macro-api/src/lib.rs": "2e2dceb85444dd2e07377183855e7c47e4e2eae2b87280fc8417e4f1e8e33a87",

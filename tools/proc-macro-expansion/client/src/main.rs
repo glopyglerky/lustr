@@ -10,7 +10,7 @@ use span::{
 use std::cell::RefCell;
 use std::error::Error;
 use std::io;
-use tt::{DelimSpan, Delimiter, DelimiterKind, Leaf, LitKind, Spacing, TokenTree, TopSubtree};
+use tt::{DelimSpan, Delimiter, DelimiterKind, Leaf, LitKind, Spacing, TokenTree, TopSubtree, TtElement, TtIter};
 
 #[derive(Deserialize, Serialize)]
 struct Range {
@@ -19,10 +19,11 @@ struct Range {
 }
 
 #[derive(Serialize)]
-struct Token {
-    text: String,
-    range: Range,
-    punctuation: bool,
+#[serde(tag = "kind", rename_all = "snake_case")]
+enum Token {
+    Literal { text: String, range: Range },
+    Punctuation { text: char, joint: bool, range: Range },
+    Delimiter { text: char, range: Range },
 }
 
 #[derive(Deserialize)]
@@ -84,6 +85,59 @@ fn arguments(request: &Request, call: Span) -> Result<TopSubtree, &'static str> 
         input = TopSubtree::from_token_trees(Delimiter::invisible_spanned(call), input.as_token_trees());
     }
     Ok(input)
+}
+
+fn output_range(request: &Request, consumer: EditionedFileId, span: Span) -> Result<Range, &'static str> {
+    if span.anchor.file_id != consumer
+        || span.anchor.ast_id != ROOT_ERASED_FILE_AST_ID
+        || span.ctx != SyntaxContext::root(Edition::Edition2024)
+    {
+        return Err("unrepresented returned span");
+    }
+    let range = Range { start: span.range.start().into(), end: span.range.end().into() };
+    if snapshot_slice(&request.consumer_source, &range).is_none()
+        || range.start < request.call.start || range.end > request.call.end
+    {
+        return Err("returned span is outside the consumer call");
+    }
+    Ok(range)
+}
+
+fn output_tokens(
+    tokens: TtIter<'_>, request: &Request, consumer: EditionedFileId,
+) -> Result<Vec<Token>, &'static str> {
+    let range = |span| output_range(request, consumer, span);
+    let mut pending = vec![(tokens, None)];
+    let mut output = Vec::new();
+    while let Some((tokens, _)) = pending.last_mut() {
+        let Some(tree) = tokens.next() else {
+            if let Some((_, Some(close))) = pending.pop() {
+                output.push(close);
+            }
+            continue;
+        };
+        let token = match tree {
+            TtElement::Leaf(Leaf::Literal(literal)) if !matches!(literal.kind, LitKind::Err(_)) => {
+                Token::Literal { text: literal.to_string(), range: range(literal.span)? }
+            }
+            TtElement::Leaf(Leaf::Punct(token)) => {
+                Token::Punctuation { text: token.char, joint: token.spacing == Spacing::Joint, range: range(token.span)? }
+            }
+            TtElement::Subtree(group, inner) => {
+                let (open, close) = match group.delimiter.kind {
+                    DelimiterKind::Parenthesis => ('(', ')'),
+                    DelimiterKind::Bracket => ('[', ']'),
+                    DelimiterKind::Brace => ('{', '}'),
+                    DelimiterKind::Invisible => return Err("unrepresented invisible procedural macro group"),
+                };
+                pending.push((inner, Some(Token::Delimiter { text: close, range: range(group.delimiter.close)? })));
+                Token::Delimiter { text: open, range: range(group.delimiter.open)? }
+            }
+            _ => return Err("unrepresented returned procedural macro token"),
+        };
+        output.push(token);
+    }
+    Ok(output)
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -155,30 +209,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     let expanded = expanded.map_err(|error| error.to_string())?
         .map_err(|error| format!("procedural macro expansion failed: {error}"))?;
-    let tokens = expanded.view().strip_invisible().iter_flat_tokens().map(|token| {
-        let (text, span, punctuation) = match token {
-            TokenTree::Leaf(Leaf::Literal(literal)) if literal.kind == LitKind::Integer => {
-                (literal.to_string(), literal.span, false)
-            }
-            TokenTree::Leaf(Leaf::Punct(token)) if token.spacing == Spacing::Alone => {
-                (token.char.to_string(), token.span, true)
-            }
-            _ => return Err("unrepresented returned procedural macro token"),
-        };
-        if span.anchor.file_id != consumer
-            || span.anchor.ast_id != ROOT_ERASED_FILE_AST_ID
-            || span.ctx != SyntaxContext::root(Edition::Edition2024)
-        {
-            return Err("unrepresented returned value or span");
-        }
-        let range = Range { start: span.range.start().into(), end: span.range.end().into() };
-        if snapshot_slice(&request.consumer_source, &range).is_none()
-            || range.start < request.call.start || range.end > request.call.end
-        {
-            return Err("returned span is outside the consumer call");
-        }
-        Ok(Token { text, range, punctuation })
-    }).collect::<Result<Vec<_>, _>>()?;
+    let tokens = output_tokens(expanded.view().strip_invisible().iter(), &request, consumer)?;
     let observed = observed.into_inner().ok_or("missing procedural macro dependency report")?;
     serde_json::to_writer(io::stdout().lock(), &serde_json::json!({
         "tokens": tokens, "environment": observed.environment, "paths": observed.paths,

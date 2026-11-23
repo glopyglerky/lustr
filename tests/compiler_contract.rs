@@ -1702,7 +1702,7 @@ edition = "2024"
 [lib]
 proc-macro = true
 "#);
-    f.source("provider/src/lib.rs", r#"
+    f.source("provider/src/lib.rs", r##"
 #![feature(proc_macro_diagnostic, proc_macro_tracked_env, proc_macro_tracked_path)]
 
 use proc_macro::{Diagnostic, Level, TokenStream, TokenTree, tracked};
@@ -1720,6 +1720,11 @@ pub fn increment(mut input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
+pub fn structured(_: TokenStream) -> TokenStream {
+    r#"((168u32 >> 2), { [0, 42][1] }, "macro output")"#.parse().unwrap()
+}
+
+#[proc_macro]
 pub fn value(input: TokenStream) -> TokenStream {
     let Some(TokenTree::Group(group)) = input.into_iter().next() else { panic!("expected a group") };
     assert_eq!(group.span_open().source_text().as_deref(), Some("("));
@@ -1734,9 +1739,15 @@ pub fn value(input: TokenStream) -> TokenStream {
     let asset = std::fs::read_to_string("asset.txt").unwrap().trim().parse::<u32>().unwrap();
     (42 + offset + asset).to_string().parse().unwrap()
 }
-"#);
+"##);
     f.source("src/main.rs", r#"
-fn independent() -> u32 { host_macro::increment!(16) }
+fn independent() -> u32 {
+    let (shifted, indexed, text) = host_macro::structured!();
+    assert_eq!(shifted, 42);
+    assert_eq!(indexed, 42);
+    assert_eq!(text, "macro output");
+    host_macro::increment!(16)
+}
 fn expanded() -> u32 { host_macro::value!((0x2a)) }
 fn main() { println!("{} {}", independent(), expanded()); }
 "#);

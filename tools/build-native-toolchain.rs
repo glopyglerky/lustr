@@ -454,7 +454,7 @@ fn main() {
         record(&notice, format!(concat!(
             "https://github.com/rust-lang/rust\nRevision {source}\n",
             "Rust Analyzer procedural macro worker and client with upstream/proc-macro-expansion.patch\n",
-            "The native adapter represents direct function-like calls with source token trees and integer-literal or single-punctuation expansion output.\n",
+            "The native adapter represents direct function-like calls with source token trees and expansion output containing represented literals, punctuation and visible delimiter groups.\n",
         ), source = source).as_bytes());
         runtime_identities.push(checked("hash-proc-macro-expansion", host_runtime::sha256_command()
             .arg(server).arg(client).arg(&patch).arg(notice), &logs));

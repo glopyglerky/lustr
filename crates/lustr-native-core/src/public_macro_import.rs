@@ -12,7 +12,7 @@ use serde_json::{Value, json};
 use crate::{
     diag::{CtxtId, Diag, Span},
     driver::imports::Dependency,
-    expand::{Call, ExpandCtx, ProceduralExpansion, ProceduralMacros, Tt},
+    expand::{Call, ExpandCtx, ProceduralExpansion, ProceduralMacros, Tt, tt_from_tree},
     lexer::{Delim, Tok, Token},
     protocol::ExecutableExtern,
 };
@@ -242,8 +242,7 @@ impl HostMacros {
         }
         let report: Value = serde_json::from_slice(&reply.stdout)?;
         let returned = report["tokens"].as_array().ok_or("missing procedural macro tokens")?;
-        let tokens = returned.iter().map(|value| returned_token(value, call, ctx, strings))
-            .collect::<Result<Vec<_>, _>>()?;
+        let tokens = returned_tokens(returned, call, ctx, strings)?;
         let environment = serde_json::from_value(report["environment"].clone())?;
         let paths: Vec<PathBuf> = serde_json::from_value(report["paths"].clone())?;
         let paths = paths.into_iter().map(|path| self.cwd.join(path)).collect();
@@ -251,37 +250,101 @@ impl HostMacros {
     }
 }
 
-fn returned_token(
-    value: &Value, call: &Call, ctx: &ExpandCtx<'_>, strings: &mut Vec<String>,
-) -> Result<Tt, Box<dyn std::error::Error>> {
-    let text = value["text"].as_str().ok_or("missing procedural macro token text")?;
+fn returned_span(value: &Value, call: &Call) -> Result<Span, Box<dyn std::error::Error>> {
     let offset = |field| -> Result<u32, Box<dyn std::error::Error>> {
-        Ok(value["range"][field].as_u64().ok_or("invalid procedural macro span")?.try_into()?)
+        Ok(value[field].as_u64().ok_or("invalid procedural macro span")?.try_into()?)
     };
     let lo = offset("start")?;
     let hi = offset("end")?;
     if lo > hi || lo < call.span.lo || hi > call.span.hi {
         return Err("procedural macro token span is outside its call".into());
     }
-    let lexed = crate::lexer::lex(text, call.span.file, 0, ctx.interner)
-        .map_err(|error| format!("{error:?}"))?;
-    let [token, end] = lexed.tokens.as_slice() else {
-        return Err("procedural macro returned an unrepresented token spelling".into());
-    };
-    let punctuation = value["punctuation"].as_bool().ok_or("missing procedural macro token kind")?;
-    let mut token_kind = token.tok;
-    if punctuation {
-        if text.len() != 1 || !text.as_bytes()[0].is_ascii_punctuation() {
-            return Err("unrepresented procedural macro punctuation".into());
+    Ok(Span::new(call.span.file, lo, hi))
+}
+
+fn returned_tokens(
+    mut values: &[Value], call: &Call, ctx: &ExpandCtx<'_>, strings: &mut Vec<String>,
+) -> Result<Vec<Tt>, Box<dyn std::error::Error>> {
+    let mut tokens: Vec<Token> = Vec::with_capacity(values.len());
+    while let Some((value, rest)) = values.split_first() {
+        let span = returned_span(&value["range"], call)?;
+        let text = value["text"].as_str().ok_or("missing procedural macro token text")?;
+        let (token, tail) = match value["kind"].as_str() {
+            Some("punctuation") => returned_punctuation(values, call, ctx)?,
+            Some("delimiter") => {
+                let tok = match text {
+                    "(" => Tok::LParen, ")" => Tok::RParen,
+                    "[" => Tok::LBracket, "]" => Tok::RBracket,
+                    "{" => Tok::LBrace, "}" => Tok::RBrace,
+                    _ => return Err("invalid procedural macro delimiter".into()),
+                };
+                (Token { tok, span }, rest)
+            }
+            Some("literal") => {
+                let lexed = crate::lexer::lex(text, call.span.file, 0, ctx.interner)
+                    .map_err(|error| format!("{error:?}"))?;
+                let [token, end] = lexed.tokens.as_slice() else {
+                    return Err("procedural macro returned an unrepresented literal spelling".into());
+                };
+                let mut tok = token.tok;
+                if end.tok != Tok::Eof || !matches!(tok, Tok::Int(..) | Tok::Str(..) | Tok::Char(..)
+                    | Tok::Float(..) | Tok::ByteStr(..) | Tok::ByteChar(..))
+                {
+                    return Err("procedural macro returned an unrepresented literal kind".into());
+                }
+                tok.shift_strings(strings.len() as u32);
+                strings.extend(lexed.strings);
+                (Token { tok, span }, rest)
+            }
+            _ => return Err("invalid procedural macro token kind".into()),
+        };
+        if tokens.last().is_some_and(|previous| previous.tok == Tok::Gt && previous.span.hi == token.span.lo)
+            && matches!(token.tok, Tok::Gt | Tok::Ge)
+        {
+            return Err("procedural macro punctuation spacing conflicts with its source ranges".into());
         }
-    } else if !matches!(token_kind, Tok::Int(..)) {
-        return Err("procedural macro returned an unrepresented literal kind".into());
+        tokens.push(token);
+        values = tail;
     }
-    if end.tok != Tok::Eof {
-        return Err("procedural macro returned trailing tokens".into());
+    let (trees, balanced) = crate::lexer::build_trees(&tokens);
+    if !balanced {
+        return Err("unbalanced procedural macro output".into());
     }
-    token_kind.shift_strings(strings.len() as u32);
-    strings.extend(lexed.strings);
-    let span = Span::new(call.span.file, lo, hi);
-    Ok(Tt::Tok(Token { tok: token_kind, span }))
+    Ok(trees.iter().map(tt_from_tree).collect())
+}
+
+fn returned_punctuation<'a>(
+    values: &'a [Value], call: &Call, ctx: &ExpandCtx<'_>,
+) -> Result<(Token, &'a [Value]), Box<dyn std::error::Error>> {
+    let mut bytes = [0; 3]; // Longest native punctuators are three ASCII bytes.
+    let mut span = returned_span(&values[0]["range"], call)?;
+    let mut best = None;
+    for (index, value) in values.iter().take(bytes.len()).enumerate() {
+        if value["kind"] != "punctuation" { break; }
+        let Some([byte]) = value["text"].as_str().map(str::as_bytes) else {
+            return Err("invalid procedural macro punctuation".into());
+        };
+        if !byte.is_ascii_punctuation() || b"()[]{}".contains(byte) {
+            return Err("invalid procedural macro punctuator".into());
+        }
+        bytes[index] = *byte;
+        let text = std::str::from_utf8(&bytes[..=index])?;
+        span = span.to(returned_span(&value["range"], call)?);
+        let tok = match text {
+            ">>" => Some(Tok::Shr),
+            ">>=" => Some(Tok::ShrEq),
+            "<-" => return Err("unrepresented left-arrow procedural macro punctuator".into()),
+            _ => crate::lexer::lex(text, call.span.file, 0, ctx.interner).ok().and_then(|lexed| {
+                match lexed.tokens.as_slice() {
+                    [token, end] if end.tok == Tok::Eof && token.span.hi as usize == text.len() => Some(token.tok),
+                    _ => None,
+                }
+            }),
+        };
+        if let Some(tok) = tok {
+            best = Some((Token { tok, span }, &values[index + 1..]));
+        }
+        if value["joint"].as_bool() != Some(true) { break; }
+    }
+    best.ok_or_else(|| "unrepresented procedural macro punctuation".into())
 }
