@@ -180,6 +180,62 @@ index 926633df628dfbfceb45a89c7c7e79c8a37a2560..a03fd82b789b8162e1cbc50697fa5e2f
  
      let mut stdin = std::io::BufReader::new(std::io::stdin());
      let mut stdout = std::io::stdout();
+diff --git a/src/tools/rust-analyzer/crates/proc-macro-srv-cli/src/main_loop.rs b/src/tools/rust-analyzer/crates/proc-macro-srv-cli/src/main_loop.rs
+index 6697b6380dd2093d0eb1fb5d390148d9992614b3..483521998bb658cd86f1139c9a26b978556647ad 100644
+--- a/src/tools/rust-analyzer/crates/proc-macro-srv-cli/src/main_loop.rs
++++ b/src/tools/rust-analyzer/crates/proc-macro-srv-cli/src/main_loop.rs
+@@ -448,6 +448,12 @@ fn handle_expand_ra(
+             &mut tracked_env,
+             Some(&mut ProcMacroClientHandle { stdin, stdout, buf }),
+         )
++        .map_err(|error| legacy::PanicMessage(error.into_string().unwrap_or_default()));
++    let res = if tracked_env.errors.is_empty() {
++        res
++    } else {
++        Err(legacy::PanicMessage(tracked_env.errors.join("\n")))
++    }
+         .map(|it| {
+             (
+                 legacy::FlatTree::from_tokenstream(
+@@ -464,8 +470,7 @@ fn handle_expand_ra(
+             span_data_table,
+             tracked_env_vars: tracked_env.env_vars,
+             tracked_paths: tracked_env.paths,
+-        })
+-        .map_err(|e| legacy::PanicMessage(e.into_string().unwrap_or_default()));
++        });
+ 
+     send_response(stdout, bidirectional::Response::ExpandMacro(res))
+ }
+diff --git a/src/tools/rust-analyzer/crates/proc-macro-srv/src/lib.rs b/src/tools/rust-analyzer/crates/proc-macro-srv/src/lib.rs
+index e38d2ac11bce836fd62a455da38be2244cee15b6..36ba55f430c66a48b615019b709d66506e3a9a54 100644
+--- a/src/tools/rust-analyzer/crates/proc-macro-srv/src/lib.rs
++++ b/src/tools/rust-analyzer/crates/proc-macro-srv/src/lib.rs
+@@ -229,6 +229,7 @@ fn expander(&self, path: &Utf8Path) -> Result<Arc<dylib::Expander>, String> {
+ pub struct TrackedEnv {
+     pub env_vars: FxHashMap<Box<str>, Option<Box<str>>>,
+     pub paths: FxHashSet<Box<str>>,
++    pub errors: Vec<String>,
+ }
+ 
+ pub trait ProcMacroSrvSpan: Copy + Send + Sync {
+diff --git a/src/tools/rust-analyzer/crates/proc-macro-srv/src/server_impl/rust_analyzer_span.rs b/src/tools/rust-analyzer/crates/proc-macro-srv/src/server_impl/rust_analyzer_span.rs
+index 188d24abcc67b8e1576c10298eb8116aad7de7b1..6adaa1644016f1aa01d669c82c0607076fdf808e 100644
+--- a/src/tools/rust-analyzer/crates/proc-macro-srv/src/server_impl/rust_analyzer_span.rs
++++ b/src/tools/rust-analyzer/crates/proc-macro-srv/src/server_impl/rust_analyzer_span.rs
+@@ -58,8 +58,10 @@ fn literal_from_str(&mut self, s: &str) -> Result<Literal<Self::Span>, String> {
+             .map_err(|()| "cannot parse string into literal".to_string())
+     }
+ 
+-    fn emit_diagnostic(&mut self, _: Diagnostic<Self::Span>) {
+-        // FIXME handle diagnostic
++    fn emit_diagnostic(&mut self, diagnostic: Diagnostic<Self::Span>) {
++        if matches!(diagnostic.level, rustc_proc_macro::bridge::Level::Error) {
++            self.tracked_env.errors.push(diagnostic.message);
++        }
+     }
+ 
+     fn ts_drop(&mut self, stream: Self::TokenStream) {
 diff --git a/src/tools/rust-analyzer/crates/proc-macro-srv/src/token_stream.rs b/src/tools/rust-analyzer/crates/proc-macro-srv/src/token_stream.rs
 index 7038152ac2651c3ab40df66f7b0d1c3ff0e1af16..d6b18fe06732963ade343997e17247580bb37b99 100644
 --- a/src/tools/rust-analyzer/crates/proc-macro-srv/src/token_stream.rs

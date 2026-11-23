@@ -32,8 +32,11 @@ struct Request {
     macro_name: String,
     working_directory: String,
     definition: Range,
+    provider_file: String,
     provider_source: Option<String>,
     call: Range,
+    consumer_file: String,
+    consumer_local_file: String,
     consumer_source: String,
     environment: Vec<(String, String)>,
     arguments: Range,
@@ -97,8 +100,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let expansion = macros.iter().find(|candidate| {
         candidate.name() == request.macro_name && candidate.kind() == ProcMacroKind::Bang
     }).ok_or("unresolved function-like procedural macro")?;
-    let provider = EditionedFileId::new(FileId::from_raw(1), Edition::Edition2024);
-    let consumer = EditionedFileId::new(FileId::from_raw(2), Edition::Edition2024);
+    let provider_file = FileId::from_raw(1);
+    let consumer_file = FileId::from_raw(2);
+    let provider = EditionedFileId::new(provider_file, Edition::Edition2024);
+    let consumer = EditionedFileId::new(consumer_file, Edition::Edition2024);
     if request.definition.start > request.definition.end
         || snapshot_slice(&request.consumer_source, &request.call).is_none()
     {
@@ -107,6 +112,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let def_site = root_span(provider, &request.definition);
     let call_site = root_span(consumer, &request.call);
     let input = arguments(&request, call_site)?;
+    let unsupported = RefCell::new(None::<String>);
+    let reject = |request_kind| reject_subrequests(request_kind).inspect_err(|error| {
+        unsupported.borrow_mut().get_or_insert_with(|| error.to_string());
+    });
     let callback = |request_kind| match request_kind {
         SubRequest::SourceText { file_id, ast_id, start, end }
             if ast_id == ROOT_ERASED_FILE_AST_ID.into_raw() =>
@@ -116,20 +125,36 @@ fn main() -> Result<(), Box<dyn Error>> {
             } else if file_id == provider.as_u32() {
                 request.provider_source.as_deref()
             } else {
-                return reject_subrequests(request_kind);
+                return reject(request_kind);
             };
             let text = source.and_then(|source| snapshot_slice(source, &Range { start, end })).map(str::to_owned);
             Ok(SubResponse::SourceTextResult { text })
         }
-        other => reject_subrequests(other),
+        SubRequest::FilePath { file_id } if file_id == consumer_file.index() => {
+            Ok(SubResponse::FilePathResult { name: request.consumer_file.clone() })
+        }
+        SubRequest::FilePath { file_id } if file_id == provider_file.index() => {
+            Ok(SubResponse::FilePathResult { name: request.provider_file.clone() })
+        }
+        SubRequest::LocalFilePath { file_id } if file_id == consumer_file.index() => {
+            Ok(SubResponse::LocalFilePathResult { name: Some(request.consumer_local_file.clone()) })
+        }
+        SubRequest::LocalFilePath { file_id } if file_id == provider_file.index() => {
+            Ok(SubResponse::LocalFilePathResult { name: None })
+        }
+        other => reject(other),
     };
     let observed = RefCell::<Option<ExpansionInputs>>::new(None);
     let note = |inputs| assert!(observed.replace(Some(inputs)).is_none());
     let expanded = expansion.expand_with_inputs(
         input.view(), None, request.environment, def_site, call_site, call_site,
         request.working_directory.clone(), &callback, &note,
-    ).map_err(|error| error.to_string())?
-        .map_err(|error| format!("procedural macro panicked: {error}"))?;
+    );
+    if let Some(error) = unsupported.take() {
+        return Err(error.into());
+    }
+    let expanded = expanded.map_err(|error| error.to_string())?
+        .map_err(|error| format!("procedural macro expansion failed: {error}"))?;
     let tokens = expanded.view().strip_invisible().iter_flat_tokens().map(|token| {
         let (text, span, punctuation) = match token {
             TokenTree::Leaf(Leaf::Literal(literal)) if literal.kind == LitKind::Integer => {

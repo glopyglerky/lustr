@@ -316,7 +316,10 @@
         "src/tools/rust-analyzer/crates/proc-macro-api/src/bidirectional_protocol.rs": "6885548c53940fe944c75a3f8ea4255862b161abe3c3ab9c37996a252a66ed80",
         "src/tools/rust-analyzer/crates/proc-macro-api/src/bidirectional_protocol/msg.rs": "41c453c9992fd0a62ea83eefc6159cec83f49c88bed6292284e62e27d66e27f0",
         "src/tools/rust-analyzer/crates/proc-macro-srv/src/token_stream.rs": "ce142608f7ad9bbd1380e425d3284c91a7a504f9ee5d5760dde87fde2286d4d1",
+        "src/tools/rust-analyzer/crates/proc-macro-srv/src/lib.rs": "e27065d259e94c20a309347eb133b81677041907d014bbee1d75afc09c5fa104",
+        "src/tools/rust-analyzer/crates/proc-macro-srv/src/server_impl/rust_analyzer_span.rs": "467f2140fa1ed0b81d4b848b72616ec1d6b21086a81671982088966edafc6576",
         "src/tools/rust-analyzer/crates/proc-macro-srv-cli/src/main.rs": "6c580ce94a71f9cb1e7b506d260d28532757f07ea252bf1b0044737b2ff9677c",
+        "src/tools/rust-analyzer/crates/proc-macro-srv-cli/src/main_loop.rs": "d06832759b1135dca3ad1b5139a1850283d6c1b335f2ac831e7ca2daa5c8ef0f",
         "src/tools/rust-analyzer/crates/syntax-bridge/src/lib.rs": "9c41440ff557f40f0480397375f1d0d2b357cb288c1c30f203e7b1b881b2094a",
         "compiler/rustc_expand/src/proc_macro_server.rs": "af97126cf80003d963f231e87da36a35df63eaba355366393178f8ac3dc50a72",
         "compiler/rustc_metadata/src/rmeta/encoder.rs": "7f740fbaf9e81f4d518a95eeab485059c4f1a88c636df3104af03ec2817f5b73"
@@ -338,7 +341,7 @@
       "excluded_duplicate_phases": ["consumer parsing, resolution, checking, code generation and link remain native"],
       "qualification": "Default Cargo check and run with an observed source-reading function-like macro, and tracked input, failure and repair histories. Wider token, hygiene, macro forms and elapsed performance remain open.",
       "closure_sha256": {
-        "upstream/proc-macro-expansion.patch": "93637fe6bcfe94113178ae87f41281a78c820a1c562671babab76d38a57dafa7",
+        "upstream/proc-macro-expansion.patch": "f49d9f4ed27ff2f6bda79f9611b8b1d74dcb59d337e5772e36ae8b80df65992a",
         "tools/proc-macro-expansion/client/Cargo.toml": "e29dc1b0b694f174165744795bf3c3c436c4af52843d3e41a50cf6edc568d2c9",
         "tools/proc-macro-expansion/client/Cargo.lock": "29c454cf78102050615d752a7f662d766159e2ee553af1f1494c97383908619d",
         "tools/proc-macro-expansion/server/Cargo.toml": "204413094ed7bc3abf672d35902583a948801ead82c323799ce80e92490d2753",

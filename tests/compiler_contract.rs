@@ -1703,9 +1703,15 @@ edition = "2024"
 proc-macro = true
 "#);
     f.source("provider/src/lib.rs", r#"
-#![feature(proc_macro_tracked_env, proc_macro_tracked_path)]
+#![feature(proc_macro_diagnostic, proc_macro_tracked_env, proc_macro_tracked_path)]
 
-use proc_macro::{TokenStream, TokenTree, tracked};
+use proc_macro::{Diagnostic, Level, TokenStream, TokenTree, tracked};
+
+#[proc_macro]
+pub fn explicit_error(_: TokenStream) -> TokenStream {
+    Diagnostic::new(Level::Error, "explicit compiler macro diagnostic").emit();
+    "42".parse().unwrap()
+}
 
 #[proc_macro]
 pub fn increment(mut input: TokenStream) -> TokenStream {
@@ -1720,6 +1726,7 @@ pub fn value(input: TokenStream) -> TokenStream {
     assert_eq!(group.span_close().source_text().as_deref(), Some(")"));
     let token = group.stream().into_iter().next().unwrap();
     assert_eq!(token.span().source_text().as_deref(), Some("0x2a"));
+    assert!(token.span().file().ends_with("src/main.rs"));
     assert!(std::env::var_os("RUST_ANALYZER_USE_POSTCARD").is_none());
     assert!(std::env::var_os("RUST_ANALYZER_INTERNALS_DO_NOT_USE").is_none());
     let offset = tracked::env_var("LUSTR_TEST_MACRO_OFFSET").unwrap().parse::<u32>().unwrap();
@@ -1768,6 +1775,13 @@ fn main() { println!("{} {}", independent(), expanded()); }
     let report = std::fs::read_dir(&reports).unwrap().next().unwrap().unwrap().path().join("report.json");
     let report: serde_json::Value = serde_json::from_slice(&std::fs::read(report).unwrap()).unwrap();
     assert_eq!(report["unused_extern_names"], serde_json::json!(["host_macro"]));
+
+    let repaired = std::fs::read(&binary).unwrap();
+    f.source("src/main.rs", "fn main() { let _ = host_macro::explicit_error!(); }\n");
+    let diagnosed = f.invoke("emitted-macro-error", &mut cargo("build", "3"));
+    assert_eq!(diagnosed.status.code(), Some(101));
+    assert!(String::from_utf8_lossy(&diagnosed.stderr).contains("explicit compiler macro diagnostic"));
+    assert_eq!(std::fs::read(&binary).unwrap(), repaired);
 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
