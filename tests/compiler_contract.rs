@@ -1705,7 +1705,7 @@ proc-macro = true
     f.source("provider/src/lib.rs", r##"
 #![feature(proc_macro_diagnostic, proc_macro_tracked_env, proc_macro_tracked_path)]
 
-use proc_macro::{Diagnostic, Level, TokenStream, TokenTree, tracked};
+use proc_macro::{Diagnostic, Ident, Level, Span, TokenStream, TokenTree, tracked};
 use std::sync::atomic::{AtomicU32, Ordering};
 
 static NEXT: AtomicU32 = AtomicU32::new(1);
@@ -1713,6 +1713,16 @@ static NEXT: AtomicU32 = AtomicU32::new(1);
 #[proc_macro]
 pub fn step(_: TokenStream) -> TokenStream {
     NEXT.fetch_add(1, Ordering::Relaxed).to_string().parse().unwrap()
+}
+
+#[proc_macro]
+pub fn call_site(_: TokenStream) -> TokenStream {
+    "answer + 1".parse().unwrap()
+}
+
+#[proc_macro]
+pub fn mixed_site(_: TokenStream) -> TokenStream {
+    std::iter::once(TokenTree::Ident(Ident::new("answer", Span::mixed_site()))).collect()
 }
 
 #[proc_macro]
@@ -1750,6 +1760,8 @@ pub fn value(input: TokenStream) -> TokenStream {
 "##);
     f.source("src/main.rs", r#"
 fn independent() -> u32 {
+    let answer = 16u32;
+    assert_eq!(host_macro::call_site!(), 17);
     assert_eq!(host_macro::step!(), 1);
     assert_eq!(host_macro::step!(), 2);
     let (shifted, indexed, text) = host_macro::structured!();
@@ -1802,6 +1814,11 @@ fn main() { println!("{} {}", independent(), expanded()); }
     let diagnosed = f.invoke("emitted-macro-error", &mut cargo("build", "3"));
     assert_eq!(diagnosed.status.code(), Some(101));
     assert!(String::from_utf8_lossy(&diagnosed.stderr).contains("explicit compiler macro diagnostic"));
+    assert_eq!(std::fs::read(&binary).unwrap(), repaired);
+    f.source("src/main.rs", "fn main() { let answer = 42; let _ = host_macro::mixed_site!(); }\n");
+    let refused = f.invoke("non-call-site-macro-output", &mut cargo("build", "3"));
+    assert_eq!(refused.status.code(), Some(101));
+    assert!(String::from_utf8_lossy(&refused.stderr).contains("unrepresented returned span"));
     assert_eq!(std::fs::read(&binary).unwrap(), repaired);
 }
 

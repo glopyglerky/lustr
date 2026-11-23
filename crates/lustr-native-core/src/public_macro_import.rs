@@ -342,17 +342,17 @@ fn returned_tokens(
                 };
                 (Token { tok, span }, rest)
             }
-            Some("literal") => {
+            Some(kind @ ("identifier" | "literal")) => {
                 let lexed = crate::lexer::lex(text, call.span.file, 0, ctx.interner)
                     .map_err(|error| format!("{error:?}"))?;
                 let [token, end] = lexed.tokens.as_slice() else {
-                    return Err("procedural macro returned an unrepresented literal spelling".into());
+                    return Err("procedural macro returned an unrepresented token spelling".into());
                 };
                 let mut tok = token.tok;
-                if end.tok != Tok::Eof || !matches!(tok, Tok::Int(..) | Tok::Str(..) | Tok::Char(..)
-                    | Tok::Float(..) | Tok::ByteStr(..) | Tok::ByteChar(..))
+                if end.tok != Tok::Eof || (kind == "literal" && !matches!(tok, Tok::Int(..) | Tok::Str(..) | Tok::Char(..)
+                    | Tok::Float(..) | Tok::ByteStr(..) | Tok::ByteChar(..)))
                 {
-                    return Err("procedural macro returned an unrepresented literal kind".into());
+                    return Err("procedural macro returned an unrepresented token kind".into());
                 }
                 tok.shift_strings(strings.len() as u32);
                 strings.extend(lexed.strings);

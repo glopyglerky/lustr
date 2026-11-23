@@ -49,9 +49,9 @@ toolchain. Ordinary Cargo commands then use the pinned Rust implementation to
 build the host macro crate and Lust to check and link its consumer.
 
 The current adapter covers directly qualified function-like calls with source
-token trees and expansions containing represented literals, punctuation and
-visible delimiter groups. Expansions share a host worker for each native
-compilation. Source-text and filename queries, tracked inputs, and emitted
+token trees and expansions containing call-site identifiers, represented
+literals, punctuation and visible delimiter groups. Expansions share a host
+worker for each native compilation. Source-text and filename queries, tracked inputs, and emitted
 errors work through this path. General expansion output, attribute and derive
 macros, additional span and hygiene operations, and performance qualification remain open.
 
