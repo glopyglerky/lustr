@@ -285,7 +285,9 @@ fn cargo_runtime_recipe(words: &[String], key: &str) -> Option<String> {
         .args(cflags(false).split_whitespace())
         .arg(format!("-DLUST_UNIT_KEY={key}"))
         // There is no C debug info or coverage in these runtime objects.
+        // Diagnostic color only changes the driver's reported options.
         .args(["-fdebug-compilation-dir=.", "-fcoverage-compilation-dir=."])
+        .arg("-fno-color-diagnostics")
         .args(["-###", "-x", "c", "-c", "-", "-o", "u2.o"])
         .env("LC_ALL", "C")
         .stdin(std::process::Stdio::null()).output().ok()?;
