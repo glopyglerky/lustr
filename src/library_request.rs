@@ -174,7 +174,8 @@ pub(crate) fn parse(args: &[OsString], invalid_metadata_option: &mut bool) -> Op
         let represented = match key.as_str() {
             // Cargo provides an optional on-disk incremental cache location.
             // Reuse belongs to the native session rather than Rust's on-disk cache.
-            "incremental" => (check || panic == "panic=unwind") && std::path::Path::new(value).is_absolute(),
+            "incremental" => (check || !binary || panic == "panic=unwind")
+                && std::path::Path::new(value).is_absolute(),
             "overflow-checks" | "debug-assertions" => matches!(value.as_str(),"yes"|"no"|"on"|"off"|"true"|"false"|"y"|"n"),
             _ => false,
         };
