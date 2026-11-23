@@ -40,7 +40,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
             test = true;
         }
         else if arg == "--cfg" || arg.starts_with("--cfg=") {
-            if custom_test || value("--cfg")? != "test" { return None; }
+            if value("--cfg")? != "test" { return None; }
             custom_test = true;
         }
         else if arg == "--edition" || arg.starts_with("--edition=") { unique(&mut edition,"--edition")?; }
@@ -88,7 +88,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
         else { return None; }
         i += 1;
     }
-    if test && custom_test { return None; }
+    let custom_test = custom_test && !test;
     let test_target = test || custom_test;
     let binary = test_target || kind.as_deref() == Some("bin");
     let represented_kind = if test_target { matches!(kind.as_deref(), None | Some("bin")) }
