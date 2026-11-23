@@ -851,6 +851,40 @@ fn main() { println!("{}", result()); }
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn ordinary_cargo_checks_release_profile_cfg() {
+    let f = Fixture::new("cargo-release-check");
+    f.source("Cargo.toml", "[package]\nname = \"release-check\"\nedition = \"2024\"\nversion = \"0.1.0\"\n");
+    let source = r#"
+#[cfg(debug_assertions)]
+fn value() -> u32 { "debug-only invalid type" }
+#[cfg(not(debug_assertions))]
+fn value() -> u32 { 7 }
+fn main() { println!("{}", value()); }
+"#;
+    f.source("src/main.rs", source);
+    let release = ["check", "--offline", "--release"];
+    f.succeeds("release-check", f.command("cargo").args(release));
+    assert!(!f.root.join("target/release/release-check").exists());
+
+    for (label, args) in [
+        ("dev", &["check", "--offline"][..]),
+        ("forced-debug", &["check", "--offline", "--release", "--config", "profile.release.debug-assertions=true"][..]),
+    ] {
+        let rejected = f.invoke(label, f.command("cargo").args(args));
+        assert_eq!(rejected.status.code(), Some(101));
+        assert!(String::from_utf8_lossy(&rejected.stderr).contains("mismatched types"));
+    }
+    f.source("src/main.rs", &source.replace("{ 7 }", "{ \"release-only invalid type\" }"));
+    let rejected = f.invoke("invalid-release", f.command("cargo").args(release));
+    assert_eq!(rejected.status.code(), Some(101));
+    assert!(String::from_utf8_lossy(&rejected.stderr).contains("mismatched types"));
+    f.source("src/main.rs", source);
+    f.succeeds("release-repair", f.command("cargo").args(release));
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
 fn default_debug_cargo_preserves_unwind_behavior() {
     let f = Fixture::new("debug-panic");
     f.source("Cargo.toml", "[package]\nname = \"debug-panic\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");

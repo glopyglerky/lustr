@@ -138,7 +138,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     if !matches!(codegen.remove("embed-bitcode").as_deref(),Some("no"|"off"|"false"|"n")) {return None;}
     for (key,value) in &codegen {
         let represented = match key.as_str() {
-            "opt-level" => value == "0",
+            "opt-level" => value == "0" || check && matches!(value.as_str(), "1" | "2" | "3" | "s" | "z"),
             // Cargo provides an optional on-disk incremental cache location.
             // Reuse belongs to the native session rather than Rust's on-disk cache.
             "incremental" => (check || panic == "panic=unwind") && std::path::Path::new(value).is_absolute(),
@@ -177,11 +177,12 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     else { native.push("--lib".into()); }
     if test { native.push("--lustr-executable-test".into()); }
     if custom_test { native.push("--lustr-custom-test".into()); }
-    // At O0 Rust enables debug assertions by default. Omitted overflow checks
+    // Rust enables debug assertions by default only at O0. Omitted overflow checks
     // inherit the effective debug assertion setting (Session::overflow_checks),
     // including an explicit override. The actual Rust request owns both values;
     // the native Cargo profile must not substitute its defaults afterwards.
-    let debug = codegen.get("debug-assertions").map_or("on", String::as_str);
+    let unoptimized = codegen.get("opt-level").is_none_or(|value| value == "0");
+    let debug = codegen.get("debug-assertions").map_or(if unoptimized { "on" } else { "off" }, String::as_str);
     let overflow = codegen.get("overflow-checks").map_or(debug, String::as_str);
     for (key, value) in [("overflow-checks", overflow), ("debug-assertions", debug)] {
         native.extend(["-C".into(),format!("{key}={value}")]);
