@@ -3110,12 +3110,14 @@ fn update_imported_generation(session: &mut Session, definitions: &dyn super::im
 }
 
 #[cfg(feature = "exclusive-native")]
-pub(crate) fn prepare_library_import<'a>(req: &'a Request, session: &'a mut Session, definitions: &dyn super::imports::Definitions) -> Preparation<'a> {
+pub(crate) fn prepare_library_import<'a>(req: &'a Request, session: &'a mut Session, definitions: &dyn super::imports::Definitions,
+    stdin: Option<StdinSource>,
+) -> Preparation<'a> {
     // The owner has validated the exact current metadata/archive bytes. Refresh
     // actual readers without discarding unrelated bodies on an import edit.
     // General disk-cache keys do not yet encode this imported generation.
     update_imported_generation(session, definitions);
-    prepare_with_definitions(req, session, None, Some(definitions), None)
+    prepare_with_definitions(req, session, None, Some(definitions), stdin)
 }
 
 fn cargo_codegen(req: &Request) -> Option<(crate::protocol::OptLevel, crate::protocol::library_contract::Strip)> {

@@ -102,7 +102,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
             // Cargo gives library test executables the pinned Rust lint's
             // default Allow level. No dead-code lint is enabled by this request.
             allow_dead_code_pub_in_binary = true;
-        } else if !arg.starts_with('-') && arg.ends_with(".rs") && source.is_none() { source = Some(arg.to_owned()); }
+        } else if (arg == "-" || !arg.starts_with('-') && arg.ends_with(".rs")) && source.is_none() { source = Some(arg.to_owned()); }
         else { return None; }
         i += 1;
     }
@@ -164,9 +164,13 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
         if !represented { return None; }
     }
     let source = source?;
+    let stdin = source == "-";
+    if stdin && !standalone { return None; }
+    let source = if stdin { "<anon>".to_owned() } else { source };
     let source_path = std::path::absolute(&source).ok()?;
     let name = match name {
         Some(name) => name,
+        None if stdin => "rust_out".into(),
         None if standalone => source_path.file_stem()?.to_str()?.replace('-', "_"),
         None => return None,
     };
@@ -279,7 +283,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
                 archive.into()]);
         }
     }
-    Some(Native {args:native,output,stdin:false})
+    Some(Native {args:native,output,stdin})
 }
 
 fn executable_externs(arguments: Vec<&str>, check: bool) -> Option<Vec<ExecutableExtern>> {

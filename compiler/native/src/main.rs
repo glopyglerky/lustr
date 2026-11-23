@@ -604,13 +604,15 @@ fn compile_stdin_source(args: &[String]) -> ! {
             eprintln!("error: invalid native stdin compiler request");
             std::process::exit(2);
         };
-    if req.session.library.is_some() || req.session.krate.manifest_path.is_some() || req.cc
+    if req.session.library.as_ref().is_some_and(|key| !key.standalone) || req.session.krate.manifest_path.is_some() || req.cc
         || req.emit_c.is_some() || req.file.file_name().is_none_or(|name| name != "<anon>")
     {
         eprintln!("error: stdin requires a standalone native Rust request");
         std::process::exit(2);
     }
-    req.session.krate.target_name = "rust_out".into();
+    if req.session.library.is_none() {
+        req.session.krate.target_name = "rust_out".into();
+    }
     let (display, doctest_offset) = if let Ok(path) = std::env::var("UNSTABLE_RUSTDOC_TEST_PATH") {
         let Some(offset) = std::env::var("UNSTABLE_RUSTDOC_TEST_LINE").ok().and_then(|line| line.parse::<isize>().ok()) else {
             eprintln!("error: UNSTABLE_RUSTDOC_TEST_LINE must be an integer");
@@ -623,6 +625,9 @@ fn compile_stdin_source(args: &[String]) -> ! {
         req.client.shown = Some(path.as_str().into());
         req.file = file;
         req.session.krate.root = req.file.clone();
+        if let Some(key) = &mut req.session.library {
+            key.source_path = req.file.clone();
+        }
         (path, Some(offset))
     } else {
         ("<anon>".to_owned(), None)
@@ -637,7 +642,13 @@ fn compile_stdin_source(args: &[String]) -> ! {
     let mut session = driver::Session::new(dir, false, req.session.clone());
     session.cache_tried = true;
     session.caches.leak_at_exit = true;
-    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| driver::compile_stdin(&req, &mut session, source)));
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        if req.session.library.is_some() {
+            public_library::Owner::compile_stdin(&req, &mut session, source)
+        } else {
+            driver::compile_stdin(&req, &mut session, source)
+        }
+    }));
     remove_obj_dir(session.obj_dir());
     let result = result.unwrap_or_else(|payload| std::panic::resume_unwind(payload));
     protocol::finish(result, false, &req.out, &run_args)

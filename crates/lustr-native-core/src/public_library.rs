@@ -199,7 +199,7 @@ impl Owner {
     pub(crate) fn compile(&mut self,req:&driver::Request,session:&mut driver::Session)->driver::Response {
         let serial=REQUESTS.fetch_add(1,Ordering::Relaxed)+1;
         if self.executable.is_some() {
-            return self.compile_executable(req, session, serial);
+            return self.compile_executable(req, session, serial, None);
         }
         self.artifacts.begin_request();
         session.configure_library_history(self.artifacts.policy());
@@ -256,7 +256,7 @@ impl Owner {
             let native_start=observed.then(std::time::Instant::now);
             response = {
                 let prepared = if let Some(imported) = &self.imported {
-                    driver::prepare_library_import(req, session, imported)
+                    driver::prepare_library_import(req, session, imported, None)
                 } else { driver::prepare(req, session) };
                 match prepared {
                     driver::Preparation::Ready(prepared)=>prepared.emit(),
@@ -422,7 +422,16 @@ impl Owner {
         response
     }
 
-    fn compile_executable(&mut self, req: &driver::Request, session: &mut driver::Session, serial: u64) -> driver::Response {
+    pub(crate) fn compile_stdin(req: &driver::Request, session: &mut driver::Session, source: driver::StdinSource) -> driver::Response {
+        match Self::new(req) {
+            Ok(mut owner) => owner.compile_executable(req, session, REQUESTS.fetch_add(1, Ordering::Relaxed) + 1, Some(source)),
+            Err(error) => failed(req, &error),
+        }
+    }
+
+    fn compile_executable(&mut self, req: &driver::Request, session: &mut driver::Session, serial: u64,
+        stdin: Option<driver::StdinSource>,
+    ) -> driver::Response {
         let result = (|| -> Result<driver::Response, String> {
             let executable = self.executable.as_ref().expect("the executable request has bound inputs");
             self.installed.unchanged()?;
@@ -454,7 +463,7 @@ impl Owner {
                 let mut inputs = vec![req.client.shown.as_deref().unwrap_or(&req.file).to_owned()];
                 let mut environment = BTreeMap::new();
                 let mut unused = Vec::new();
-                let mut response = match driver::prepare_library_import(&staged, session, executable) {
+                let mut response = match driver::prepare_library_import(&staged, session, executable, stdin) {
                     driver::Preparation::Ready(mut prepared) => {
                         let observed = prepared.executable_source_inputs()?;
                         inputs.extend(observed.files);
