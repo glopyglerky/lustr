@@ -91,6 +91,8 @@ fn main() {}
 
 Pinned Rust rejects it with E0478; the source-bound candidate above returns
 success. The original paired streams and failed evaluator result are retained.
+The original operation record SHA256 is
+`6e27c4c77bc06c9d2437d442a5c87b7b1f23f3e987a7bebadf02167c79871d64`.
 The corresponding `&'a u8` condition is valid, as is the stricter spelling when
 the impl actually declares `'a: 'static`.
 
@@ -102,4 +104,16 @@ checks retain their existing trait-side frame. This is native correctness work,
 with no upstream import or GAT gate change. Nine focused tests pass, and all
 27 pinned reference expectations pass before candidate comparison. The public
 qualifier adds six retained region-condition edit/rejection/repair states.
-Installed execution of the follow-up is pending.
+The installed follow-up at compiler source
+`11a456378317334a11aa29278e83c4575335f4f8` passes all 27 fresh comparisons
+and 16 retained states, 86 compiler operations. The new six-state sequence
+checks `2, 0, rejected, 0, 1, 0` bodies for its initial source, no-op,
+stricter condition, repair, body edit and final no-op. Rejection still occurs
+when the relevant bodies would otherwise be reused. Its 38-operation scalar
+Cargo/import regression also passes on the same package. All executable hashes
+match the construction receipts. See
+[`region-verification.json`](region-verification.json) and
+[`region-import-verification.json`](region-import-verification.json).
+The preceding package remains the failure witness and a scoped rollback; its
+22-case evidence is unchanged. GAT service/admission and metadata integration
+remain unfinished.

@@ -345,9 +345,13 @@ the same package: an item's `T: Gate<&'static u8>` was incorrectly accepted
 under an impl-wide `T: Gate<&'a u8>` assumption. Pinned Rust rejects it. The
 native region proof now distinguishes impl-side goals from trait-item allowed
 assumptions and preserves their frames; no item condition becomes a whole-impl
-fact. Nine focused tests and 27 independently fixed reference cases pass;
-installed qualification of this follow-up is pending. Original failed and
-passing records remain source-bound in the same repair evidence.
+fact. Compiler source `11a45637` passes nine focused and 32 retained patch tests,
+27 fresh pinned/native cases, 16 retained states (86 operations), and the
+38-operation installed scalar Cargo/import regression. Original failed and
+passing records remain source-bound in the same repair evidence. Next, carry
+every associated binder and regioned bound into the typed P1/P2 declaration
+boundary; keep provider admission gated until the selective service and metadata
+consumer join are actually checked.
 
 23 November implementation continuation: P2's imported-generation update is
 ACTIVE on the `3507c74d` base. The public owner validates replacement metadata
