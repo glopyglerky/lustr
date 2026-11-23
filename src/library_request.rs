@@ -9,6 +9,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     let mut name = None;
     let mut kind = None;
     let mut test = false;
+    let mut allow_dead_code_pub_in_binary = false;
     let mut edition = None;
     let mut target = None;
     let mut out_dir = None;
@@ -74,6 +75,10 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
         } else if arg == "--force-warn" || arg.starts_with("--force-warn=") {
             if options.force_warn_unused_crate_dependencies || value("--force-warn")? != "unused_crate_dependencies" { return None; }
             options.force_warn_unused_crate_dependencies = true;
+        } else if arg == "-Adead_code_pub_in_binary" {
+            // Cargo gives library test executables the pinned Rust lint's
+            // default Allow level. No dead-code lint is enabled by this request.
+            allow_dead_code_pub_in_binary = true;
         } else if !arg.starts_with('-') && arg.ends_with(".rs") && source.is_none() { source = Some(arg.to_owned()); }
         else { return None; }
         i += 1;
@@ -81,7 +86,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     let binary = test || kind.as_deref() == Some("bin");
     let represented_kind = if test { matches!(kind.as_deref(), None | Some("bin")) }
         else { matches!(kind.as_deref(), Some("bin" | "lib" | "rlib")) };
-    if !represented_kind || edition.as_deref() != Some("2024")
+    if !represented_kind || (allow_dead_code_pub_in_binary && !test) || edition.as_deref() != Some("2024")
         || target.as_deref().is_some_and(|v| v != TARGET) { return None; }
     let emit = emits?;
     let fields = emit.split(',').collect::<Vec<_>>();

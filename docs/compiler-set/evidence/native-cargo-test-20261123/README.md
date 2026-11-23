@@ -1,4 +1,4 @@
-# Native Cargo binary unit tests
+# Native Cargo unit tests
 
 The public compiler forwards Cargo's `--test` request as a retained test
 session. Lust checks and lowers the original `cfg(test)` source. Its object
@@ -16,6 +16,20 @@ The development candidate passed the seven entry tests and all 33 installed
 compiler contract tests.
 
 The observed fixture uses Linux x86-64 GNU, edition 2024, unwind, no dependent
-crates and unit-returning tests. General `Termination`, integration targets,
-dev-dependencies, doctests, custom harnesses, and captured backtrace parity
-remain open. No complete-work speed comparison was run.
+crates and unit-returning tests. A subsequent development package also passed
+ordinary `cargo test --lib --no-run` and `cargo test --lib` for a library with
+a custom target name and source path. Cargo supplies the source and crate name
+for this target and explicitly allows the pinned compiler's
+`dead_code_pub_in_binary` lint, whose default level is already Allow.
+
+The default-profile binary harness exercises the native `Result` and
+`ExitCode` return forms. An error result prints its original Rust Debug
+representation. The pinned libtest runtime reports nonzero termination as a
+failed test and exits with 101. Both the pinned Rust and Lustr artifacts
+produced the same output for the failing result and explicit exit-code cases.
+The default-profile unwind gate separately exercises destructor order,
+`catch_unwind`, resumption, and a joined thread's panic payload.
+
+General `Termination` implementations, integration targets, dev-dependencies,
+doctests, custom harnesses, and captured backtrace parity remain open.
+No complete-work speed comparison was run.
