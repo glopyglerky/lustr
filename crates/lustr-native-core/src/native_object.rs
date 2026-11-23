@@ -152,7 +152,7 @@ pub(crate) fn prepare(args: &[String]) -> Result<PreparedUnit, String> {
 /// owners. Keep the full original source and positions for this native item.
 pub(crate) fn prepare_item(args: &[String], source: &str, span: Range<u32>) -> Result<PreparedUnit, String> {
     prepare_request(request(args)?, false, true, Some(ItemSelection {
-        source, spans: &[span], total_scalars: false,
+        source, spans: &[span], total_scalars: false, no_std: true,
     }))
 }
 
@@ -161,15 +161,16 @@ struct ItemSelection<'a> {
     source: &'a str,
     spans: &'a [Range<u32>],
     total_scalars: bool,
+    no_std: bool,
 }
 
 /// Check the original items in one native unit. A link request also emits and
 /// publishes the object containing the checked symbols.
 pub(crate) fn complete_items(
-    args: &[String], source: &str, spans: &[Range<u32>], link: bool,
+    args: &[String], source: &str, spans: &[Range<u32>], link: bool, no_std: bool,
 ) -> Result<Vec<(String, String)>, String> {
     let prepared = prepare_request(request(args)?, false, true, Some(ItemSelection {
-        source, spans, total_scalars: true,
+        source, spans, total_scalars: true, no_std,
     }))?;
     let program = prepared.program();
     let mut bindings = Vec::with_capacity(spans.len());
@@ -194,9 +195,9 @@ pub(crate) fn complete_items(
     }
 }
 
-fn item_tokens(mut lexed: lexer::Lexed, extents: &[Range<u32>]) -> Result<lexer::Lexed, String> {
+fn item_tokens(mut lexed: lexer::Lexed, extents: &[Range<u32>], policy_len: usize) -> Result<lexer::Lexed, String> {
     let tokens = &lexed.tokens;
-    let policy = tokens.get(..5).ok_or("missing original crate policy")?;
+    let policy = tokens.get(..policy_len).ok_or("missing original crate policy")?;
     let mut selected = policy.to_vec();
     let mut previous_end = policy.len();
     for extent in extents {
@@ -228,28 +229,43 @@ fn prepare_request(r: Request, artifact: bool, capture: bool, items: Option<Item
         return Err("the original source changed since the item was selected".into());
     }
     let lexed = lexer::lex(&source,file,0,&i).map_err(|e| diag::render(&mut vec![e], &map, &source, false, 20))?;
+    let policy_len = if items.is_none_or(|selected| selected.no_std) { 5 } else { 0 };
     let lexed = match items {
-        Some(selected) => item_tokens(lexed, selected.spans)?,
+        Some(selected) => item_tokens(lexed, selected.spans, policy_len)?,
         None => lexed,
     };
     // This boundary consumes a real crate attribute and carries its policy
     // into a freestanding object pipeline. Other root attributes still need
     // their native policy interface; none are silently discarded.
     let t = &lexed.tokens;
-    let pattern = [lexer::Tok::Pound, lexer::Tok::Bang, lexer::Tok::LBracket];
-    if t.len() < 6 || t[..3].iter().map(|t|t.tok).ne(pattern)
-        || !matches!(t[3].tok,lexer::Tok::Ident(s, _) if i.get(s)=="no_std") || t[4].tok != lexer::Tok::RBracket
-    { return Err("native freestanding object requires a complete original #![no_std] crate attribute".into()); }
-    let attr = ast::Attr { style: ast::AttrStyle::Inner, path: vec![ast::PathSeg::plain(i.intern("no_std"))], input: ast::AttrInput::None, span: t[0].span.to(t[4].span) };
+    let attr = if policy_len != 0 {
+        let pattern = [lexer::Tok::Pound, lexer::Tok::Bang, lexer::Tok::LBracket];
+        if t.len() < 6 || t[..3].iter().map(|t| t.tok).ne(pattern)
+            || !matches!(t[3].tok, lexer::Tok::Ident(s, _) if i.get(s) == "no_std")
+            || t[4].tok != lexer::Tok::RBracket
+        {
+            return Err("native freestanding object requires a complete original #![no_std] crate attribute".into());
+        }
+        Some(ast::Attr {
+            style: ast::AttrStyle::Inner, path: vec![ast::PathSeg::plain(i.intern("no_std"))],
+            input: ast::AttrInput::None, span: t[0].span.to(t[4].span),
+        })
+    } else {
+        None
+    };
     // The artifact route uses the shared native resolver below. The bare
     // object route retains its qualified-path refusal. Additional attributes
     // need policy/input records at both boundaries; they are never discarded.
-    if t[5..].iter().any(|t|matches!(t.tok,lexer::Tok::Pound)||!artifact&&t.tok==lexer::Tok::PathSep) {
+    if t[policy_len..].iter().any(|t|matches!(t.tok,lexer::Tok::Pound)||!artifact&&t.tok==lexer::Tok::PathSep) {
         return Err("native unit resolution is required for attributes and qualified paths".into());
     }
-    let identity = format!("lustr-native-object-v1/{}/{}/x86_64-unknown-linux-gnu/abort/opt0/debug0/overflow{}/assert{}",r.name,r.metadata,r.overflow,r.debug);
+    let mut identity = format!("lustr-native-object-v1/{}/{}/x86_64-unknown-linux-gnu/abort/opt0/debug0/overflow{}/assert{}",r.name,r.metadata,r.overflow,r.debug);
+    if policy_len == 0 {
+        identity.push_str("/std");
+    }
     let ids = def::CrateIds { local: def::LOCAL_CRATE, stable: def::stable_crate_hash(&identity,"lib",&r.name,false) };
     let (a,tables) = if artifact {
+        let attr = attr.ok_or("native semantic artifacts require an original no_std policy")?;
         // Macro effects and additional files need explicit input/expansion
         // generations. Refuse them before treating this closed image as deps0.
         if t.windows(2).any(|w|matches!(w[0].tok,lexer::Tok::Ident(_, _))&&w[1].tok==lexer::Tok::Bang){return Err("native producer needs macro semantic/input records".into());}
@@ -266,7 +282,10 @@ fn prepare_request(r: Request, artifact: bool, capture: bool, items: Option<Item
         if resolved.map.file_count()!=1||!resolved.expand_deps.is_empty(){return Err("native producer needs additional source/expansion input records".into());}
         map=resolved.map;(resolved.ast,Some(Arc::new(resolved.tables)))
     } else {
-        let mut a=parser::parse_items(&lexed,5..t.len(),&i,&k).map_err(|e|diag::render(&mut vec![e],&map,&source,false,20))?;a.inner_attrs.insert(0,attr);(a,None)
+        let mut a = parser::parse_items(&lexed, policy_len..t.len(), &i, &k)
+            .map_err(|e| diag::render(&mut vec![e], &map, &source, false, 20))?;
+        a.inner_attrs.extend(attr);
+        (a, None)
     };
     if let Some(selected) = items
         && (selected.spans.is_empty() || a.items.len() != selected.spans.len()

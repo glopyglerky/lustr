@@ -359,7 +359,7 @@ fn main() {
         }
         let notice = component.join("SOURCE.txt");
         record(&notice, format!(
-            "https://github.com/rust-lang/rust\nRevision {source}\nPinned Rust driver for host procedural macro crates, external declaration queries and freestanding executable composition\n",
+            "https://github.com/rust-lang/rust\nRevision {source}\nPinned Rust driver for host procedural macro crates, external declaration queries, freestanding executables and static libraries\n",
         ).as_bytes());
         let identity = checked("hash-host-proc-macro",
             host_runtime::sha256_command().arg(&compiler).arg(&native_item).arg(notice), &logs);

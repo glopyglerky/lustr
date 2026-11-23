@@ -1,4 +1,4 @@
-//! Compose Lust objects with the pinned Rust compiler for a freestanding unit.
+//! Compose Lust objects with the pinned Rust compiler for host artifacts.
 //! The original Rust driver validates and emits the rest of the original crate.
 use rustc_ast::{
     AttrStyle, BinOpKind, BindingMode, BlockCheckMode, Expr, ExprKind, FnRetTy,
@@ -14,9 +14,9 @@ use rustc_metadata::EncodedMetadata;
 use rustc_middle::{dep_graph::WorkProductMap, ty::{self, Instance, TyCtxt, TypingEnv}, util::Providers};
 use rustc_session::{
     CodegenBackendInit, EarlyDiagCtxt, EarlySession, IncrCompSession, Session,
-    config::{DebugInfo, ErrorOutputType, Input, OptLevel, OutputFilenames, OutputType},
+    config::{DebugInfo, ErrorOutputType, Input, OptLevel, OutFileName, OutputFilenames, OutputType},
 };
-use rustc_span::{Ident, Symbol, edition::Edition, sym};
+use rustc_span::{Ident, SourceFileHash, SourceFileHashAlgorithm, Symbol, edition::Edition, sym};
 use rustc_structures::CrateType;
 use rustc_target::callconv::{ArgAbi, PassMode};
 use std::{
@@ -35,6 +35,7 @@ struct Scratch(PathBuf);
 
 impl Scratch {
     fn create(output: &Path) -> io::Result<Self> {
+        fs::create_dir_all(output)?;
         let root = output.join(format!(".lustr-freestanding-{}", std::process::id()));
         fs::DirBuilder::new().mode(0o700).create(&root)?;
         Ok(Self(root))
@@ -47,7 +48,15 @@ impl Drop for Scratch {
     }
 }
 
-struct Freestanding {
+#[derive(Clone, Copy)]
+pub(crate) enum Artifact {
+    Freestanding,
+    StaticLibrary,
+}
+
+struct Composition {
+    artifact: Artifact,
+    native_codegen: bool,
     input: Option<PathBuf>,
     output: Option<PathBuf>,
     producer: PathBuf,
@@ -106,17 +115,21 @@ fn native_function(item: &Item) -> Option<&rustc_ast::Fn> {
         .then_some(function)
 }
 
-impl Freestanding {
+impl Composition {
     fn complete_items(
-        &self, sess: &Session, input: &Path, items: &[&Item], directory: &Path,
+        &self, sess: &Session, input: &Path, items: &[&Item], directory: &Path, no_std: bool,
     ) -> Result<(Option<PathBuf>, Vec<String>), String> {
         let file = sess.source_map().lookup_source_file(items[0].span.lo());
         let source = file.src.as_ref().ok_or("missing original source snapshot")?;
         let object = directory.join("native-items.o");
         let setting = |value| if value { "on" } else { "off" };
         let link = sess.opts.output_types.contains_key(&OutputType::Exe);
+        let name = sess.opts.crate_name.as_deref().ok_or("missing original native crate name")?;
+        let metadata = format!("{name}/{:?}/{:?}", sess.opts.crate_types, sess.opts.cg.metadata);
+        let metadata = SourceFileHash::new_in_memory(SourceFileHashAlgorithm::Sha256, &metadata);
         let mut command = Command::new(&self.producer);
         command.arg(if link { "link" } else { "check" });
+        command.arg(if no_std { "no-std" } else { "std" });
         for item in items {
             sess.source_map().span_to_snippet(item.span)
                 .map_err(|error| format!("cannot select the original item: {error:?}"))?;
@@ -126,10 +139,10 @@ impl Freestanding {
             ]);
         }
         let mut child = command
-            .args(["--", "--crate-name", "lustr_freestanding", "--edition=2024", "--crate-type=lib", "--emit=obj"])
+            .args(["--", "--crate-name", name, "--edition=2024", "--crate-type=lib", "--emit=obj"])
             .args(["--target=x86_64-unknown-linux-gnu", "-Cpanic=abort", "-Copt-level=0", "-Cdebuginfo=0"])
             .args([
-                "-Cmetadata=native_items".to_owned(),
+                format!("-Cmetadata={metadata}"),
                 format!("-Coverflow-checks={}", setting(sess.overflow_checks())),
                 format!("-Cdebug-assertions={}", setting(sess.opts.debug_assertions)),
             ])
@@ -170,7 +183,7 @@ impl Freestanding {
 
 // Preserve Rust's function-item identity. Rust lowers only the forwarding
 // call and keeps its ordinary function values, coercions and symbol rules.
-fn bind(sess: &Session, item: &mut Item, symbol: &str) -> Symbol {
+fn bind(sess: &Session, item: &mut Item, symbol: &str, artifact: Artifact) -> Symbol {
     let span = item.span;
     let ItemKind::Fn(function) = &mut item.kind else { unreachable!() };
     let PatKind::Ident(_, parameter, None) = function.sig.decl.inputs[0].pat.kind
@@ -192,7 +205,10 @@ fn bind(sess: &Session, item: &mut Item, symbol: &str) -> Symbol {
         attrs: [link_name].into_iter().collect(), id: rustc_ast::DUMMY_NODE_ID,
         span, vis: private.clone(), kind: ForeignItemKind::Fn(declaration), tokens: None,
     });
-    let abi = Symbol::intern("Rust");
+    let abi = Symbol::intern(match artifact {
+        Artifact::Freestanding => "Rust",
+        Artifact::StaticLibrary => "C",
+    });
     let foreign = ItemKind::ForeignMod(ForeignMod {
         extern_span: span, safety: Safety::Unsafe(span),
         abi: Some(StrLit { symbol: abi, suffix: None, symbol_unescaped: abi, style: StrStyle::Cooked, span }),
@@ -215,27 +231,32 @@ fn bind(sess: &Session, item: &mut Item, symbol: &str) -> Symbol {
     local
 }
 
-impl Callbacks for Freestanding {
+impl Callbacks for Composition {
     fn config(&mut self, config: &mut Config) {
         let early = EarlyDiagCtxt::new(ErrorOutputType::default());
-        if config.opts.target_triple.tuple() != HOST
-            || config.opts.crate_types != [CrateType::Executable]
-            || config.opts.test || config.opts.edition != Edition::Edition2024
-            || !(config.opts.output_types.contains_key(&OutputType::Exe)
-                || config.opts.output_types.contains_key(&OutputType::Metadata))
-            || !config.opts.output_types.contains_key(&OutputType::DepInfo)
-            || config.opts.output_types.len() != 2
-        {
-            early.early_fatal("expected a host freestanding Cargo executable request");
-        }
-        let Input::File(input) = &config.input else {
-            early.early_fatal("expected an original source file");
+        let crate_type = match self.artifact {
+            Artifact::Freestanding => CrateType::Executable,
+            Artifact::StaticLibrary => CrateType::StaticLib,
         };
-        let Some(output) = &config.output_dir else {
-            early.early_fatal("expected a Cargo output directory");
+        if config.opts.target_triple.tuple() != HOST || config.opts.crate_types != [crate_type]
+        {
+            early.early_fatal("the parsed request does not match the selected host artifact");
+        }
+        if !self.native_codegen || config.opts.test || config.opts.output_types.keys().any(|kind|
+            !matches!(kind, OutputType::Exe | OutputType::Metadata | OutputType::DepInfo))
+        {
+            return;
+        }
+        let Input::File(input) = &config.input else { return };
+        let output = match (&config.output_dir, &config.output_file) {
+            (Some(output), _) => output.clone(),
+            (None, Some(OutFileName::Real(file))) => file.parent()
+                .filter(|path| !path.as_os_str().is_empty()).unwrap_or(Path::new(".")).to_owned(),
+            (None, None) => PathBuf::from("."),
+            (None, Some(OutFileName::Stdout)) => return,
         };
         self.input = Some(input.clone());
-        self.output = Some(output.clone());
+        self.output = Some(output);
         let object = Arc::clone(&self.object);
         config.make_codegen_backend = Some(Box::new(move |_| Box::new(Backend {
             original: rustc_codegen_llvm::LlvmCodegenBackend::new(),
@@ -245,16 +266,24 @@ impl Callbacks for Freestanding {
 
     fn after_crate_root_parsing(&mut self, compiler: &Compiler, krate: &mut rustc_ast::Crate) -> Compilation {
         let sess = &compiler.sess;
-        if sess.panic_strategy().unwinds()
-            || !krate.attrs.iter().any(|attr| attr.is_word() && attr.has_name(sym::no_std))
-            || !krate.attrs.iter().any(|attr| attr.is_word() && attr.has_name(sym::no_main))
+        let no_std = krate.attrs.iter().any(|attr| attr.is_word() && attr.has_name(sym::no_std));
+        if matches!(self.artifact, Artifact::Freestanding)
+            && (sess.panic_strategy().unwinds() || !no_std
+                || !krate.attrs.iter().any(|attr| attr.is_word() && attr.has_name(sym::no_main)))
         {
             sess.dcx().fatal("the freestanding compiler requires no_std, no_main and panic=abort");
         }
         // Source-level lint directives and other crate policies can affect a
         // body independently of its value. Keep those bodies with Rust.
-        if sess.opts.optimize != OptLevel::No || sess.opts.debuginfo != DebugInfo::None
-            || !matches!(krate.attrs.as_slice(), [first, second] if first.has_name(sym::no_std) && second.has_name(sym::no_main))
+        let plain_policy = match self.artifact {
+            Artifact::Freestanding => matches!(krate.attrs.as_slice(), [first, second]
+                if first.has_name(sym::no_std) && second.has_name(sym::no_main)),
+            Artifact::StaticLibrary => krate.attrs.is_empty()
+                || matches!(krate.attrs.as_slice(), [attr] if no_std && attr.has_name(sym::no_std)),
+        };
+        if self.input.is_none() || !plain_policy
+            || sess.opts.optimize != OptLevel::No || sess.opts.debuginfo != DebugInfo::None
+            || sess.opts.edition != Edition::Edition2024 || sess.opts.crate_name.is_none()
             || sess.opts.lint_opts.iter().any(|(lint, _)| lint != "unused_crate_dependencies")
         {
             return Compilation::Continue;
@@ -268,11 +297,11 @@ impl Callbacks for Freestanding {
                 .unwrap_or_else(|error| sess.dcx().fatal(format!("cannot create native item work directory: {error}")));
             let input = self.input.as_deref().unwrap();
             let items: Vec<_> = selected.iter().map(|(_, item)| *item).collect();
-            let (object, symbols) = self.complete_items(sess, input, &items, &directory.0)
+            let (object, symbols) = self.complete_items(sess, input, &items, &directory.0, no_std)
                 .unwrap_or_else(|error| sess.dcx().span_fatal(first.span, error));
             let indices: Vec<_> = selected.into_iter().map(|(index, _)| index).collect();
             for (index, symbol) in indices.into_iter().zip(symbols) {
-                let name = bind(sess, &mut krate.items[index], &symbol);
+                let name = bind(sess, &mut krate.items[index], &symbol, self.artifact);
                 self.bindings.push((name, symbol));
             }
             if let Some(object) = object {
@@ -342,7 +371,7 @@ impl CodegenBackend for Backend {
     }
 }
 
-pub(crate) fn run(program: &str, args: &[String]) -> ExitCode {
+pub(crate) fn run(artifact: Artifact, program: &str, args: &[String]) -> ExitCode {
     rustc_driver::catch_with_exit_code(|| {
         let early = EarlyDiagCtxt::new(ErrorOutputType::default());
         let executable = std::env::current_exe().unwrap_or_else(|error| early.early_fatal(error.to_string()));
@@ -352,11 +381,41 @@ pub(crate) fn run(program: &str, args: &[String]) -> ExitCode {
         };
         let mut driver = vec![program.to_owned()];
         driver.extend_from_slice(args);
-        driver.extend(["--sysroot".to_owned(), sysroot.to_owned()]);
-        let mut callbacks = Freestanding {
+        if !args.iter().any(|arg| arg == "--sysroot" || arg.starts_with("--sysroot=")) {
+            driver.extend(["--sysroot".to_owned(), sysroot.to_owned()]);
+        }
+        let mut callbacks = Composition {
+            artifact, native_codegen: represents_native_codegen(args),
             input: None, output: None, producer: bin.join("native-freestanding-item"),
             object: Arc::default(), bindings: Vec::new(), scratch: None,
         };
         rustc_driver::compiler_entrypoint(&driver, &mut callbacks);
     })
+}
+
+fn represents_native_codegen(args: &[String]) -> bool {
+    let mut rest = args.iter().map(String::as_str);
+    while let Some(arg) = rest.next() {
+        if arg.starts_with("-Z") {
+            return false;
+        }
+        let codegen = if matches!(arg, "-C" | "--codegen") {
+            rest.next()
+        } else {
+            arg.strip_prefix("-C").or_else(|| arg.strip_prefix("--codegen="))
+        };
+        if let Some(option) = codegen {
+            let (key, value) = option.split_once('=').unwrap_or((option, ""));
+            if !matches!(key, "embed-bitcode" | "debuginfo" | "metadata" | "extra-filename"
+                | "incremental" | "panic" | "strip" | "opt-level" | "overflow-checks"
+                | "debug-assertions" | "link-arg" | "relocation-model")
+            {
+                return false;
+            }
+            if key == "embed-bitcode" && !matches!(value, "no" | "off" | "false" | "n") {
+                return false;
+            }
+        }
+    }
+    true
 }

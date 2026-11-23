@@ -129,6 +129,8 @@ fn query(args: &[OsString], bin: &Path, host: &str) -> Result<(), String> {
                         println!("lib{name}.rlib");
                     } else if *kind == "proc-macro" && host_proc_macro_compiler(bin, host).is_some() {
                         println!("lib{name}.so");
+                    } else if *kind == "staticlib" && host_proc_macro_compiler(bin, host).is_some() {
+                        println!("lib{name}.a");
                     } else {
                         // Cargo's pinned target_info parser skips a type with
                         // this warning without consuming a filename for it.

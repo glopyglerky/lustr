@@ -144,7 +144,10 @@ fn main() -> ExitCode {
     rustc_driver::install_ice_hook(rustc_driver::DEFAULT_BUG_REPORT_URL, |_| ());
     rustc_driver::install_ctrlc_handler();
     if args.get(1).is_some_and(|arg| arg == "--lustr-build-freestanding") {
-        return host_freestanding::run(&args[0], &args[2..]);
+        return host_freestanding::run(host_freestanding::Artifact::Freestanding, &args[0], &args[2..]);
+    }
+    if args.get(1).is_some_and(|arg| arg == "--lustr-build-static-library") {
+        return host_freestanding::run(host_freestanding::Artifact::StaticLibrary, &args[0], &args[2..]);
     }
     let record_spans = std::env::current_exe().ok().is_some_and(|path| {
         path.ancestors().nth(3).is_some_and(|directory| {

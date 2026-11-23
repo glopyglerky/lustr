@@ -1304,6 +1304,85 @@ pub extern "C" fn _start() -> ! {
     }
 }
 
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and binutils"]
+fn cargo_static_library_combines_native_objects_with_rust_async_code() {
+    let f = Fixture::new("cargo-mixed-static-library");
+    f.source("Cargo.toml", "[package]\nname=\"entrypoints\"\nedition=\"2024\"\nversion=\"0.1.0\"\n\n[lib]\ncrate-type=[\"staticlib\"]\n");
+    let source = r#"
+use std::{future::Future, pin::pin, task::{Context, Poll, Waker}};
+
+fn apply_mask(input: u64) -> u64 { input ^ 19 }
+
+async fn compute(input: u64) -> u64 {
+    let apply = std::hint::black_box(apply_mask as fn(u64) -> u64);
+    let value = std::future::ready(input).await;
+    apply(value)
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn evaluate(input: u64) -> u64 {
+    let mut task = pin!(compute(input));
+    let mut context = Context::from_waker(Waker::noop());
+    match task.as_mut().poll(&mut context) {
+        Poll::Ready(value) => value,
+        Poll::Pending => unreachable!(),
+    }
+}
+"#;
+    let lib = f.source("src/lib.rs", source);
+    let consumer = f.source("consumer.rs", r#"
+#[link(name = "entrypoints", kind = "static")]
+unsafe extern "C" {
+    safe fn evaluate(input: u64) -> u64;
+}
+fn main() { assert_eq!(evaluate(57), 42); }
+"#);
+    let rust = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let cargo = |name: &str, original: bool, debug: &str| {
+        let mut command = f.command("cargo");
+        command.env("CARGO_TARGET_DIR", f.root.join(name)).env("CARGO_PROFILE_DEV_DEBUG", debug);
+        if original {
+            command.env("RUSTC", &rust);
+        }
+        command
+    };
+    f.succeeds("lockfile", cargo("mixed", false, "0").args(["generate-lockfile", "--offline"]));
+    f.succeeds("default-check", cargo("default", false, "2").args(["check", "--frozen"]));
+    for (name, original, debug, expected) in [
+        ("mixed", false, "0", 1), ("original", true, "0", 0), ("default", false, "2", 0),
+    ] {
+        f.succeeds(&format!("{name}-build"), cargo(name, original, debug).args(["build", "--frozen"]));
+        let dir = f.root.join(name).join("debug");
+        let lib = dir.join("libentrypoints.a");
+        let symbols = f.succeeds(&format!("{name}-symbols"), Command::new("nm").arg("--defined-only").arg(&lib));
+        let symbols = String::from_utf8(symbols.stdout).unwrap();
+        let native = symbols.lines().filter(|line| line.split_whitespace().last()
+            .and_then(|name| name.strip_prefix("f_")).is_some_and(|suffix| {
+                suffix.len() == 16 && suffix.bytes().all(|byte| byte.is_ascii_hexdigit())
+            })).count();
+        assert_eq!(native, expected);
+        let exe = f.root.join(format!("{name}-consumer"));
+        f.succeeds(&format!("{name}-consumer"), Command::new(&rust)
+            .current_dir(&f.root).env_remove("LD_LIBRARY_PATH").arg("--edition=2024")
+            .arg(&consumer).arg("-L").arg(format!("native={}", dir.display())).arg("-o").arg(&exe));
+        f.succeeds(&format!("{name}-run"), &mut Command::new(exe));
+    }
+    assert_eq!(std::fs::read_to_string(&lib).unwrap(), source);
+    for (name, invalid, diagnostic) in [
+        ("native-error", source.replace("input ^ 19", "input ^ false"), "src/lib.rs:4:"),
+        ("rust-error", source.replace("-> u64 {\n    let apply", "-> u32 {\n    let apply"), "E0308"),
+    ] {
+        f.source("src/lib.rs", &invalid);
+        let result = f.invoke(name, cargo(name, false, "0").args(["build", "--frozen"]));
+        assert_eq!(result.status.code(), Some(101));
+        let stderr = String::from_utf8(result.stderr).unwrap();
+        assert!(stderr.contains(diagnostic), "{stderr}");
+        assert!(!f.root.join(name).join("debug/libentrypoints.a").exists());
+    }
+}
+
 #[panic_handler]
 fn panic(_: &PanicInfo<'_>) -> ! {
     loop { core::hint::spin_loop(); }

@@ -15,6 +15,11 @@ fn run() -> Result<(), String> {
         Some("link") => true,
         _ => return Err("missing native item operation".into()),
     };
+    let no_std = match args.next().as_deref() {
+        Some("no-std") => true,
+        Some("std") => false,
+        _ => return Err("missing original crate policy".into()),
+    };
     let mut extents = Vec::new();
     loop {
         let start = args.next().ok_or("missing native item offset or argument separator")?;
@@ -32,7 +37,7 @@ fn run() -> Result<(), String> {
     if snapshot.len() > native_object::SOURCE_LIMIT {
         return Err("native object source exceeds current bound".into());
     }
-    let bindings = native_object::complete_items(&args.collect::<Vec<_>>(), &snapshot, &extents, link)?;
+    let bindings = native_object::complete_items(&args.collect::<Vec<_>>(), &snapshot, &extents, link, no_std)?;
     for (name, symbol) in bindings {
         println!("{name} {symbol}");
     }

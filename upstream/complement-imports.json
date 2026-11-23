@@ -328,7 +328,7 @@
     },
     {
       "id": "freestanding-executable-composition",
-      "missing_capability": "Core inline assembly, panic entry and final linking of freestanding Cargo executables",
+      "missing_capability": "Final linking of freestanding Cargo executables and host Rust static library archives",
       "status": "implemented-partial",
       "owner": "Lust native item compiler and pinned Rust executable driver",
       "semantic_boundary": "Lust checks and emits closed u64 bodies from original source spans in one object. The original Rust driver preserves function-item identities with ordinary forwarding bodies and handles the complementary source, metadata, dependency info and link.",
@@ -346,7 +346,7 @@
         ["freestanding-executable-composition", "native-freestanding-item via original Lust semantics and TinyCC"]
       ],
       "targets": "x86_64-unknown-linux-gnu host and target",
-      "features": ["Cargo binary, no_std, no_main, panic=abort, static relocation and explicit freestanding link"],
+      "features": ["Freestanding Cargo binary with no_std, no_main, panic=abort and explicit static relocation and link", "Cargo static library with Rust semantics and an independently linkable C entry"],
       "adapter": "tools/host-freestanding.rs",
       "licenses": ["MIT", "Apache-2.0"],
       "excluded_duplicate_phases": ["Rust analysis and code generation of selected native bodies"],

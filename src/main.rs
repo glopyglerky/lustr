@@ -236,6 +236,16 @@ fn main() -> ExitCode {
         eprintln!("cannot execute the host procedural macro compiler: {error}");
         return ExitCode::from(2);
     }
+    if compiler_mode
+        && (args.iter().any(|arg| arg == "--crate-type=staticlib")
+            || args.windows(2).any(|pair| pair == ["--crate-type", "staticlib"]))
+        && let Some(compiler) = native_queries::host_proc_macro_compiler(&parent, lust::host_triple())
+    {
+        trace_entry("lustr", "static-library");
+        let error = Command::new(compiler).arg("--lustr-build-static-library").args(&args).exec();
+        eprintln!("cannot execute the static library compiler: {error}");
+        return ExitCode::from(2);
+    }
     if !compiler_mode && args == ["--lustr-prime-selection-tools"] {
         return match lust::prime_selection_tools(&parent) {
             Ok(()) => ExitCode::SUCCESS,
