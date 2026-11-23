@@ -510,10 +510,13 @@ impl FnGen<'_, '_> {
             let block = self.body.block(Bb(bi as u32));
             let cleanup = self.cleanup.get(bi).copied().unwrap_or(false);
             let _ = writeln!(ll.body, "bb{bi}:");
+            if let Some(debug) = &mut debug {
+                debug.enter_block(&mut ll.body, bi, cleanup);
+            }
             for (si, s) in block.stmts.iter().enumerate() {
                 if matches!(s.kind, StmtKind::StorageDead(_) | StmtKind::FakeRead(_)) {
                     if !cleanup && let (Some(debug), StmtKind::StorageDead(local)) = (&mut debug, &s.kind) {
-                        debug.dead(*local)?;
+                        debug.dead(&mut ll.body, *local);
                     }
                     continue;
                 }
@@ -545,10 +548,6 @@ impl FnGen<'_, '_> {
             let start = ll.body.len();
             self.ll_term(&mut ll, bi, cleanup, term_unwind.filter(|_| p.unwind));
             if !cleanup && let Some(debug) = &mut debug {
-                if let Terminator::Call { dest, .. } = &block.term
-                    && dest.local as usize > self.body.arg_count && debug.has_binding(dest.local) {
-                    return Err("Rust debug locations for directly assigned call results are not represented".into());
-                }
                 debug.mark(self, &mut ll.body, start, block.term_span);
             }
         }

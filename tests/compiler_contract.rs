@@ -516,6 +516,45 @@ fn ordinary_cargo_links_rust_debug_information() {
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn default_debug_cargo_preserves_unwind_behavior() {
+    let f = Fixture::new("debug-panic");
+    f.source("Cargo.toml", "[package]\nname = \"debug-panic\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    f.source("src/main.rs", r#"
+struct Mark(&'static str);
+impl Drop for Mark {
+    fn drop(&mut self) { println!("drop:{}", self.0); }
+}
+fn leaf() {
+    let _frame = Mark("leaf");
+    panic!("original payload");
+}
+fn main() {
+    std::panic::set_hook(Box::new(|_| {}));
+    let _outer = Mark("outer");
+    let recovered = std::panic::catch_unwind(|| {
+        let _middle = Mark("middle");
+        leaf();
+    });
+    let payload = recovered.unwrap_err();
+    let resumed = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::panic::resume_unwind(payload)));
+    assert_eq!(resumed.unwrap_err().downcast_ref::<&'static str>(), Some(&"original payload"));
+    let joined = std::thread::spawn(|| panic!("thread payload")).join();
+    assert_eq!(joined.unwrap_err().downcast_ref::<&'static str>(), Some(&"thread payload"));
+    println!("caught, resumed, joined");
+}
+"#);
+    let ran = f.succeeds("runtime", f.command("cargo").args(["run", "--offline", "--quiet"]));
+    assert_eq!(ran.stdout, b"drop:leaf\ndrop:middle\ncaught, resumed, joined\ndrop:outer\n");
+    f.source("src/main.rs", "fn main() { panic!(\"uncaught native default debug\"); }\n");
+    let failed = f.invoke("uncaught", f.command("cargo").args(["run", "--offline", "--quiet"]));
+    assert_eq!(failed.status.code(), Some(101));
+    let stderr = String::from_utf8_lossy(&failed.stderr);
+    assert!(stderr.contains("panicked at") && stderr.contains("uncaught native default debug"), "{stderr}");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
 fn ordinary_cargo_executes_native_tests_with_libtest() {
     let f = Fixture::new("rust-test");
     f.source("Cargo.toml", "[package]\nname = \"test-leaf\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");

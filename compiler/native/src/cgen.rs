@@ -2479,16 +2479,18 @@ pub fn gen_fn_total(p: &Program, body: &Body, map: &SourceMap, base_line: u32, s
 }
 
 pub(crate) fn gen_fn_rust_debug(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32]) -> FnOut {
-    let Some(source) = rust_debug_source(p, body.fn_id, map) else {
+    let source = rust_debug_source(p, body.fn_id, map);
+    if source.is_none() && !p.std_source_span(p.fn_def(body.fn_id).name_span) {
         return FnOut { error: Some("Rust debug function source cannot be bound to the native body".into()), ..Default::default() };
-    };
+    }
     let mut output = gen_fn_policy(p, body, map, base_line, slots, false, true);
-    output.rust_debug_source = Some(source);
+    output.rust_debug_source = source;
     output
 }
 
 pub(crate) fn rust_debug_source(p: &Program, id: LocalDefId, map: &SourceMap) -> Option<(u64, u64)> {
     let item = p.fn_def(id);
+    if p.std_source_span(item.name_span) { return None; }
     let name = map.call_site(item.name_span);
     let body = map.call_site(p.ast.block(item.body?).span);
     let text = map.text(name.file)?;
@@ -2535,7 +2537,10 @@ fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slot
     // The LLVM backend writes the C side (prelude and trampoline included) itself.
     let mut llfn = None;
     if rust_debug || ll::on(p) {
-        match g.function_ll(rust_debug) {
+        // Only the requested Rust crate has a debug source contract.
+        // The text of shipped std shims is not part of that crate's file.
+        let debug = rust_debug && !p.std_source_span(p.fn_def(body.fn_id).name_span);
+        match g.function_ll(debug) {
             Ok(f) => llfn = Some(f),
             Err(e) => return FnOut { error: Some(e), ..Default::default() },
         }
