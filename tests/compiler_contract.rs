@@ -11,6 +11,45 @@ struct Fixture {
     root: PathBuf,
     package: PathBuf,
 }
+
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn rustc_reads_line_based_argument_files_before_handling_requests() {
+    let f = Fixture::new("rustc-argument-files");
+    f.source("dir with spaces/main.rs", "fn main() { println!(\"{}\", 42); }\n");
+    let request = |name: &str, output: &str| {
+        f.source(name, &format!("--edition=2024\r\ndir with spaces/main.rs\r\n-o\r\n{output}\r\n"));
+        format!("@{name}")
+    };
+    let native = request("native args", "dir with spaces/native");
+    let original = request("original args", "dir with spaces/original");
+    f.succeeds("native-build", f.command("rustc").arg(native));
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let original_command = || {
+        let mut command = Command::new(&oracle);
+        command.current_dir(&f.root).env_remove("LD_LIBRARY_PATH");
+        command
+    };
+    f.succeeds("original-build", original_command().arg(original));
+    for binary in ["native", "original"] {
+        let out = f.succeeds(binary, &mut Command::new(f.root.join("dir with spaces").join(binary)));
+        assert_eq!(out.stdout, b"42\n");
+    }
+
+    f.source("query", "--version\n");
+    let query = f.succeeds("query", f.command("rustc").arg("@query"));
+    assert_eq!(query.stdout, f.succeeds("direct-query", f.command("rustc").arg("--version")).stdout);
+    std::fs::write(f.root.join("bad encoding"), [0xff]).unwrap();
+    let failures = ["@not present", "@bad encoding"];
+    for (label, mut command) in [("native-bad-argfiles", f.command("rustc")), ("original-bad-argfiles", original_command())] {
+        let failure = f.invoke(label, command.args(failures));
+        assert_eq!(failure.status.code(), Some(1));
+        let message = String::from_utf8_lossy(&failure.stderr);
+        assert!(message.contains("not present"));
+        assert!(message.contains("UTF-8 error in bad encoding"));
+    }
+}
+
 impl Fixture {
     fn new(scope: &str) -> Self {
         let f = Self {

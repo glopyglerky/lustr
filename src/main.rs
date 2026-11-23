@@ -192,6 +192,18 @@ fn main() -> ExitCode {
     if std::env::var_os("LUST_PROBE_FAKE_DIR").is_some() {
         return incomplete_integration("an externally selected internal compiler-probe mode");
     }
+    let compiler_mode = program.is_some_and(|a| std::path::Path::new(&a).file_name().is_some_and(|n| n == "rustc"));
+    let args = if compiler_mode && args.iter().any(|arg| arg.as_encoded_bytes().starts_with(b"@")) {
+        match lustr_compiler::expand_compiler_argfiles(args) {
+            Ok(args) => args,
+            Err(errors) => {
+                for error in errors { eprintln!("error: {error}"); }
+                return ExitCode::from(1);
+            }
+        }
+    } else {
+        args
+    };
     if args == ["--lustr-version"] {
         println!(
             "lustr-compiler {} (declared Rust source {}; complementary integration incomplete)",
@@ -212,7 +224,6 @@ fn main() -> ExitCode {
             Err(error) => incomplete_integration(&error),
         };
     }
-    let compiler_mode = program.is_some_and(|a| std::path::Path::new(&a).file_name().is_some_and(|n| n == "rustc"));
     if !compiler_mode && args == ["--lustr-prime-selection-tools"] {
         return match lust::prime_selection_tools(&parent) {
             Ok(()) => ExitCode::SUCCESS,

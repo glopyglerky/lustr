@@ -30,6 +30,13 @@
     {
       "repository": "rust-lang/rust",
       "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_driver_impl/src/args.rs",
+      "sha256": "0a22c186ea65003951856d1ef0b44e5e9b9136e9b248d483dc64de936144e33f",
+      "role": "Line-based compiler response-file expansion and early diagnostics at the Rust entry; no shell-style argument files are admitted"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
       "path": "compiler/rustc_session/src/options.rs",
       "sha256": "9ac7d7de14cbef1624c9998593b081000dcd496413d2bb3643aac2bd1c9c7e69",
       "role": "Pinned debug, split and strip option value parsing; separate embedding options, excluded lint crate-hash state and untracked JSON response mode"
@@ -151,8 +158,8 @@
     "Cargo.toml": "3cbe194c029ff28d35f7ae2d5c8ad9a5406c50a36101757637e0d0d5d33ce547",
     "Cargo.lock": "ad33e3260c84791c32381d5d42f710457dcb4f0241d0b167f3659baf78b6fac0",
     "build.rs": "209664ecbac600246cb18a83a91c46d474062ebb6d6b4236b1e42cb16544e39a",
-    "src/lib.rs": "11b8360857f8fa15460ddbb287c9e01e51a2d117ede2a3f6c071d06672335eb0",
-    "src/main.rs": "4fb5ec2c0d2fdffab03f94ec3cd20dba559446e883885a1434f40a76e00fc565",
+    "src/lib.rs": "55b1e87ed456144cfbcb21b2d98357719c1ff242ffa31b5c52759b75dc8138df",
+    "src/main.rs": "ad202524b60c4319156357af359744d1896022ec7739623e38ba9dd04bdb5026",
     "src/native_queries.rs": "805c995a5c51a5af0e544a573cb2f3000b45e0b92baf6f98ff53871d1e4d4864",
     "src/library_contract.rs": "c8c4ee0da94c6e12e3d0284e7a86b6e261b85396db762453d38f687c55bf7b65",
     "src/library_request.rs": "70d2baaa02b0e8033e38346d1f77541bf21729c370ba6b62be4f9b41c4fd7358",
@@ -216,7 +223,7 @@
     "tools/native-test-runtime.rs": "928a07c0e01caaa520b6bdb6e0746e5c047f34e47a7574fc416d70ed30685ed7",
     "tools/install-native-metadata-sdk.py": "6a5e8f7728888dfb7e24ab05389ce0675a0ebbb8cd22f7a7582c9e467717b0e2",
     "tools/check-exclusive-coverage.py": "fca596f1b08f7517de13e9f77035afb4fbaeb21578992d383b905df9ad0c88b3",
-    "tools/update-public-library-source-manifest.py": "1a38f3ae55e35d6fe395c5a077a6b31a5f4cccced064d81effe2c50e5ae9c5f2",
+    "tools/update-public-library-source-manifest.py": "0bc02c5e1d7d981eab8e591cf2a777f6a9ed499fe47bccc794fc0313defde60d",
     "upstream/metadata-artifact-tools.json": "d1bd48f3b362645dce89172ce862f66189a1847c26e443f1861f9222021af9ff",
     "upstream/metadata-dependency-closure.json": "a5b2d8cccb4594fa2bfe56c33d202c4e6a1f88a1e09105bac8c4f1ab1e0ca32e",
     "docs/compiler-set/evidence/metadata-sdk-receipt-20261120/receipt.json": "4e400b263bf9923616dea44ead2d77213703177d3bfaf6becd6a19a4c5a657a7",

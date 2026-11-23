@@ -13,6 +13,34 @@ pub struct Native {
     pub output: PathBuf,
 }
 
+/// Line-based Rust argument files, adapted from rustc_driver_impl/src/args.rs
+/// at Rust 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494 (MIT OR Apache-2.0).
+/// A line contributes one argument without recursive expansion or word splitting.
+pub fn expand_compiler_argfiles(args: Vec<OsString>) -> Result<Vec<OsString>, Vec<String>> {
+    let mut errors: Vec<_> = args.iter().enumerate().filter(|(_, arg)| arg.to_str().is_none())
+        .map(|(index, arg)| format!("argument {} is not valid Unicode: {arg:?}", index + 1)).collect();
+    if !errors.is_empty() { return Err(errors); }
+    let mut expanded = Vec::with_capacity(args.len());
+    for arg in args {
+        let Some(path) = arg.to_str().and_then(|text| text.strip_prefix('@')) else {
+            expanded.push(arg);
+            continue;
+        };
+        match std::fs::read_to_string(path) {
+            Ok(contents) => expanded.extend(contents.lines().map(OsString::from)),
+            Err(error) => {
+                let reason = if error.kind() == std::io::ErrorKind::InvalidData {
+                    format!("UTF-8 error in {path}")
+                } else {
+                    format!("IO error: {path}: {error}")
+                };
+                errors.push(format!("failed to load argument file: {reason}"));
+            }
+        }
+    }
+    if errors.is_empty() { Ok(expanded) } else { Err(errors) }
+}
+
 /// This recognizes compiler requests, not source keywords. Requests requiring
 /// Rust metadata or an unrepresented option expose an integration gap. They do
 /// not establish that the underlying work lies outside Lust's coverage.
