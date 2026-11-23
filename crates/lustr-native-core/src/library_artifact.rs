@@ -3,7 +3,7 @@
 //! is consumed only as the already checked snapshot; no frontend enters here.
 use crate::{def,diag};
 use crate::driver::library::{Object as NativeObject,Snapshot,history};
-use crate::driver::library::completion::Function;
+use crate::driver::library::completion::{Family, FamilyDefinition, Function};
 use lustr_metadata_encoder as metadata;
 use object::{Object as _, ObjectSection as _, ObjectSymbol as _};
 use serde_json::{Value,json};
@@ -222,6 +222,21 @@ fn mapped_functions(functions:&[Function])->Vec<metadata::Function> {
         result:metadata::IntegerType::from_rust_name(f.result().name()).expect("completed result type"),
         calls:f.calls().iter().copied().map(native_id).collect() }).collect()
 }
+
+fn mapped_family(family: &Family) -> metadata::ProjectionFamily {
+    let definition = |item: &FamilyDefinition| metadata::NamedDefinition {
+        name: item.name.clone(), name_span: span(item.name_span), span: span(item.span),
+    };
+    metadata::ProjectionFamily {
+        receiver: definition(&family.receiver), family: definition(&family.family), item: definition(&family.item),
+        lifetime: family.lifetime.name.clone(), lifetime_span: span(family.lifetime.span),
+        implementation: family.implementation.as_ref().map(|implementation| metadata::ProjectionImplementation {
+            span: span(implementation.span), item: definition(&implementation.item),
+            lifetime: implementation.lifetime.name.clone(), lifetime_span: span(implementation.lifetime.span),
+            referent: metadata::IntegerType::from_rust_name(implementation.referent.name()).expect("completed associated integer type"),
+        }),
+    }
+}
 /// Check the x86-64 FDE for the one body in this unwind unit.
 fn check_unwind_frame(file: &object::File<'_>, body_name: &str, compiled_with_clang: bool) -> Result<(), String> {
     let error = "native scalar object lacks a valid unwind range";
@@ -315,7 +330,7 @@ fn verify_members(bytes:&[u8],files:&BTreeMap<String,Arc<Vec<u8>>>,members:&[Str
 }
 impl Service {
     pub(crate) fn check_metadata(
-        &mut self, generation: u64, source: &str, functions: &[Function],
+        &mut self, generation: u64, source: &str, functions: &[Function], family: Option<&Family>,
         dependency_context: Option<&metadata::Sdk>, report: &mut Value,
     ) -> Result<Arc<Vec<u8>>, String> {
         if let Some((cached, bytes)) = &self.check_metadata
@@ -326,7 +341,7 @@ impl Service {
         }
         report["phase"] = json!("source-owned-encode");
         report["counts"]["metadata_encodes"] = json!(1);
-        let bytes = Arc::new(metadata::encode_check(&metadata::Input {
+        let input = metadata::Input {
             crate_name: &self.context.crate_name,
             metadata: &self.context.metadata,
             extra_filename: &self.context.extra_filename,
@@ -340,7 +355,13 @@ impl Service {
             emitted: &[],
             backend_helpers: &[],
             objects: &[],
-        }, dependency_context.unwrap_or(&self.sdk))?);
+        };
+        let sdk = dependency_context.unwrap_or(&self.sdk);
+        let bytes = Arc::new(if let Some(family) = family {
+            metadata::encode_projection_check(&input, sdk, &mapped_family(family))?
+        } else {
+            metadata::encode_check(&input, sdk)?
+        });
         self.check_metadata = Some((generation, bytes.clone()));
         Ok(bytes)
     }

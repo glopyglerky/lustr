@@ -16,6 +16,103 @@ pub(crate) enum Error {
     Failed(&'static str),
 }
 
+pub(crate) struct FamilyDefinition {
+    pub name: String,
+    pub name_span: diag::Span,
+    pub span: diag::Span,
+}
+
+pub(crate) struct Family {
+    pub receiver: FamilyDefinition,
+    pub family: FamilyDefinition,
+    pub item: FamilyDefinition,
+    pub lifetime: FamilyDefinition,
+    pub implementation: Option<FamilyImplementation>,
+}
+
+pub(crate) struct FamilyImplementation {
+    pub span: diag::Span,
+    pub item: FamilyDefinition,
+    pub lifetime: FamilyDefinition,
+    pub referent: ty::IntTy,
+}
+
+pub(crate) fn complete_family(p: &check::collect::Program, map: &diag::SourceMap, source: &str) -> Result<Family, Error> {
+    let unsupported = Error::Unintegrated("projection provider does not have the represented checked declaration inventory");
+    let fail = Error::Failed("native projection provider identities do not join checked declarations");
+    let items = p.ast.items.as_slice();
+    if !p.fns.is_empty() || !p.imported_crates.is_empty() || !p.ast.stmt_items.is_empty()
+        || map.file_count() != 1 || !source.is_ascii() || source.as_bytes().contains(&b'\r')
+        || items.len() < 2 || items.len() > 3 || items.iter().any(|item| !item.attrs.is_empty())
+        || !matches!(p.ast.inner_attrs.as_slice(), [attr]
+            if attr.path.as_slice().first().is_some_and(|segment| p.interner.get(segment.name) == "no_std"))
+    {
+        return Err(unsupported);
+    }
+    let [receiver, family, tail @ ..] = items else { return Err(unsupported); };
+    let (ast::ItemKind::Struct(receiver_ast), ast::ItemKind::Trait(trait_ast)) = (&receiver.kind, &family.kind) else {
+        return Err(unsupported);
+    };
+    if receiver.vis != ast::Vis::Public || family.vis != ast::Vis::Public
+        || !matches!(receiver_ast.fields, ast::VariantFields::Unit)
+        || !receiver_ast.generics.params.is_empty() || !receiver_ast.where_clause.preds.is_empty()
+        || !receiver_ast.derives.is_empty() || !trait_ast.inner_attrs.is_empty()
+        || trait_ast.is_unsafe || trait_ast.is_auto || !trait_ast.generics.params.is_empty()
+        || !trait_ast.where_clause.preds.is_empty() || !trait_ast.bounds.is_empty()
+        || !trait_ast.fns.is_empty() || !trait_ast.consts.is_empty()
+    {
+        return Err(unsupported);
+    }
+    let [item] = trait_ast.types.as_slice() else { return Err(unsupported); };
+    if !item.attrs.is_empty() || item.default.is_some() { return Err(unsupported); }
+    let named = |name, name_span, span| FamilyDefinition { name: p.interner.get(name).into(), name_span, span };
+    let lifetime = |generics: &ast::Generics| match generics.params.as_slice() {
+        [ast::GenericParam::Lifetime { lt, bounds, .. }] if bounds.is_empty() => Some(FamilyDefinition {
+            name: format!("'{}", p.interner.get(lt.name)), span: lt.span, name_span: lt.span,
+        }),
+        _ => None,
+    };
+    let Some(trait_lifetime) = lifetime(&item.generics) else { return Err(unsupported); };
+    let Some(&trait_id) = p.gx.trait_names.get(&trait_ast.name) else { return Err(fail); };
+    let Some(trait_record) = p.gx.index.trait_record(trait_id) else { return Err(fail); };
+    let Some(associated) = trait_record.assoc_by_name(item.name) else { return Err(fail); };
+    let Some(declared) = p.gx.trait_assoc_generics.get(&associated) else { return Err(fail); };
+    if declared.reference_family_lifetime(&p.tys, p.gx.lang.sized).is_none() { return Err(fail); }
+    let implementation = match tail {
+        [] if p.gx.index.impls_of_trait(trait_id).is_empty() => None,
+        [source_impl] => {
+            let ast::ItemKind::Impl(implementation) = &source_impl.kind else { return Err(unsupported); };
+            let [value] = implementation.types.as_slice() else { return Err(unsupported); };
+            if implementation.is_unsafe || implementation.is_negative || implementation.in_body
+                || !implementation.generics.params.is_empty() || !implementation.where_clause.preds.is_empty()
+                || !implementation.inner_attrs.is_empty() || !implementation.fns.is_empty() || !implementation.consts.is_empty()
+                || !value.attrs.is_empty() || !value.where_clause.preds.is_empty()
+            {
+                return Err(unsupported);
+            }
+            let Some(impl_lifetime) = lifetime(&value.generics) else { return Err(unsupported); };
+            let [id] = p.gx.index.impls_of_trait(trait_id) else { return Err(fail); };
+            let record = p.gx.index.peek(*id);
+            let Some(assignment) = p.gx.impl_assoc_generics.get(&(record.def, associated)) else { return Err(fail); };
+            let Some(region) = assignment.declaration.single_lifetime() else { return Err(fail); };
+            let ty::TyKind::Ref(actual, ty::Mut::Shared, inner) = p.tys.kind(assignment.value) else { return Err(fail); };
+            if actual != region { return Err(fail); }
+            Some(FamilyImplementation {
+                span: implementation.span, item: named(value.name, value.name_span, value.span),
+                lifetime: impl_lifetime, referent: integer_type(p.tys.kind(inner))?,
+            })
+        }
+        _ => return Err(unsupported),
+    };
+    Ok(Family {
+        receiver: named(receiver_ast.name, receiver_ast.name_span, receiver.span),
+        family: named(trait_ast.name, trait_ast.name_span, family.span),
+        item: named(item.name, item.name_span, item.span),
+        lifetime: trait_lifetime,
+        implementation,
+    })
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Visibility {
     Public,

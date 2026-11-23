@@ -5156,13 +5156,24 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
     } else { None };
     let library_functions = if caches.library.is_some() {
         match super::library::complete(&program, &map, &src, front, caches, verified)
-            .and_then(|functions| {
-                if req.cmd != Cmd::Check { super::library::completion::require_direct_integer_abi(&functions)?; }
-                Ok(functions)
+            .and_then(|definitions| {
+                if req.cmd != Cmd::Check {
+                    match &definitions {
+                        super::library::Completed::Functions(functions) => super::library::completion::require_direct_integer_abi(functions)?,
+                        super::library::Completed::Family(_) => return Err(super::library::completion::Error::Unintegrated(
+                            "linked artifacts for projection provider declarations",
+                        )),
+                    }
+                }
+                Ok(definitions)
             }) {
-            Ok(functions) => {
-                super::library::remember(caches, functions.clone(), program.ast.inner_attrs.is_empty());
-                Some(functions)
+            Ok(definitions) => {
+                let functions = match &definitions {
+                    super::library::Completed::Functions(functions) => Some(functions.clone()),
+                    super::library::Completed::Family(_) => None,
+                };
+                super::library::remember(caches, definitions, program.ast.inner_attrs.is_empty());
+                functions
             }
             Err(error) => {
                 let code = match error { super::library::completion::Error::Unintegrated(_) => 4, _ => 3 };

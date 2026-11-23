@@ -14,6 +14,8 @@ use crate::upstream::codec::Encoder;
 use crate::upstream::mem_encoder::MemEncoder;
 use crate::upstream::schema::{METADATA_HEADER, ROOT_FIELDS, TABLE_FIELDS};
 use crate::{Encoded, Input, Sdk, Span, SymbolMapping};
+#[path = "encode_projection.rs"]
+mod projection;
 
 // Ordinal from the pinned rustc_attr_ir language_item_table.
 const EH_PERSONALITY_LANG_ITEM: u8 = 151;
@@ -136,7 +138,9 @@ impl Context {
     }
 }
 
-pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk, link: bool) -> Result<Encoded, String> {
+pub(crate) fn encode(
+    input: &Input<'_>, sdk: &Sdk, link: bool, family: Option<&crate::ProjectionFamily>,
+) -> Result<Encoded, String> {
     let stable_id = stable_crate_id(input.crate_name, input.metadata, &sdk.cfg_version);
     let mut path_map = crate::upstream::odht_writer::HashTableOwned::default();
     path_map.insert(&stable_id, &0);
@@ -196,7 +200,12 @@ pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk, link: bool) -> Result<Encoded
             cx.opaque.emit_u32(0);
         });
     }
-    let children: Vec<u32> = definitions.iter().map(|&(index, _)| index).collect();
+    let mut children: Vec<u32> = definitions.iter().map(|&(index, _)| index).collect();
+    let (traits, impls) = if let Some(family) = family {
+        projection::encode_family(&mut cx, sdk, stable_id, &mut path_map, &mut children, family)?
+    } else {
+        (Array::EMPTY, Array::EMPTY)
+    };
     cx.array_fact("module_children_non_reexports", 0, &children, |cx, &id| cx.local_def(id));
     cx.table("def_kind").set(0, &[1]); // FixedSizeEncoding: Mod + 1.
     cx.fact("def_span", 0, |cx| cx.span(input.root_span));
@@ -361,9 +370,13 @@ pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk, link: bool) -> Result<Encoded
         field("lang_items_missing", &mut |cx| cx.array_ref(missing_lang_items));
         for name in [
             "stripped_cfg_items", "diagnostic_items", "canonical_symbols", "fake_doc_items", "native_libraries", "foreign_modules",
-            "traits", "impls", "incoherent_impls", "interpret_alloc_index"] {
+            ] {
             field(name, &mut |cx| cx.array_ref(Array::EMPTY));
         }
+        field("traits", &mut |cx| cx.array_ref(traits));
+        field("impls", &mut |cx| cx.array_ref(impls));
+        field("incoherent_impls", &mut |cx| cx.array_ref(Array::EMPTY));
+        field("interpret_alloc_index", &mut |cx| cx.array_ref(Array::EMPTY));
         field("proc_macro_data", &mut |cx| cx.opaque.emit_u8(0));
         field("tables", &mut |cx| for table in &tables { cx.table_ref(*table); });
         for name in ["debugger_visualizers", "exportable_items", "stable_order_of_exportable_impls"] {

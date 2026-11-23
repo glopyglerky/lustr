@@ -39,7 +39,7 @@ pub(crate) struct Snapshot {
 #[derive(Default)]
 pub(crate) struct State {
     bodies: BTreeMap<def::DiskDefId, StoredBody>,
-    completed: Option<(u64, Arc<Vec<Function>>)>,
+    completed: Option<(u64, Completed)>,
     objects: BTreeMap<String, Arc<Object>>,
     by_definition: BTreeMap<def::DiskDefId, (u64, Arc<Object>)>,
     code_generation: BTreeMap<def::DiskDefId, u64>,
@@ -64,6 +64,12 @@ pub(crate) struct State {
     pub snapshot: Option<Snapshot>,
     pub(crate) dependency_lint_ready: bool,
     pub(crate) extern_used_on_error: bool,
+}
+
+#[derive(Clone)]
+pub(crate) enum Completed {
+    Functions(Arc<Vec<Function>>),
+    Family(Arc<completion::Family>),
 }
 
 #[derive(Default)]
@@ -136,12 +142,17 @@ pub(crate) fn request_supported(req: &Request) -> bool {
 }
 impl State {
     pub(crate) fn completed_functions(&self) -> Option<&[Function]> {
-        let (generation, functions) = self.completed.as_ref()?;
+        let (generation, Completed::Functions(functions)) = self.completed.as_ref()? else { return None; };
         (*generation == self.generation).then_some(functions.as_slice())
     }
 
+    pub(crate) fn completed_family(&self) -> Option<&completion::Family> {
+        let (generation, Completed::Family(family)) = self.completed.as_ref()? else { return None; };
+        (*generation == self.generation).then_some(family)
+    }
+
     pub(crate) fn function_name(&self, id:def::DiskDefId)->Option<&str> {
-        self.checked_names.get(&id).map(String::as_str).or_else(||self.completed.as_ref()?.1.iter().find(|f|f.definition()==id).map(|f|f.name()))
+        self.checked_names.get(&id).map(String::as_str).or_else(||self.completed_functions()?.iter().find(|f|f.definition()==id).map(|f|f.name()))
     }
     pub(super) fn begin(&mut self, source: &str) {
         self.source = Arc::from(source);
@@ -327,8 +338,14 @@ pub(super) fn rebuild<'p>(p:&'p check::collect::Program, id:def::LocalDefId, fro
 }
 
 pub(super) fn complete(p: &check::collect::Program, map: &diag::SourceMap, source: &str, front: &Front, caches: &Caches, verified: u64)
-    -> Result<Arc<Vec<Function>>, completion::Error> {
+    -> Result<Completed, completion::Error> {
     let state=caches.library.as_ref().ok_or(completion::Error::Failed("missing library session"))?;
+    if !p.gx.generic_associated.is_empty() {
+        if let Some((generation, Completed::Family(family))) = &state.completed && *generation == state.generation {
+            return Ok(Completed::Family(family.clone()));
+        }
+        return completion::complete_family(p, map, source).map(|family| Completed::Family(Arc::new(family)));
+    }
     let mut bodies=Vec::with_capacity(p.fns.len());
     for (n,f) in p.fns.iter().enumerate() {
         let id=def::LocalDefId(n as u32); let disk=p.disk_id(id); let slot=front.fn_slot[n] as usize;
@@ -351,7 +368,9 @@ pub(super) fn complete(p: &check::collect::Program, map: &diag::SourceMap, sourc
         current.pat_base=f.pats.0;
         bodies.push(current);
     }
-    if let Some((generation,functions))=&state.completed && *generation==state.generation { return Ok(functions.clone()); }
+    if let Some((generation, Completed::Functions(functions)))=&state.completed && *generation==state.generation {
+        return Ok(Completed::Functions(functions.clone()));
+    }
     // The original parser starts a plain parameter's span at its name token
     // (parser.rs: plain parameter branch), retaining that token's context.
     // Completion excludes patterns, attributes, mutation and non-ASCII source.
@@ -362,12 +381,13 @@ pub(super) fn complete(p: &check::collect::Program, map: &diag::SourceMap, sourc
         (hi<=span.hi && source.get(span.lo as usize..hi as usize)==Some(name))
             .then_some(diag::Span {hi,..span})
     };
-    completion::complete(completion::View {program:p,source,map,bodies:&bodies,identifier:&identifier},false).map(Arc::new)
+    completion::complete(completion::View {program:p,source,map,bodies:&bodies,identifier:&identifier},false)
+        .map(|functions| Completed::Functions(Arc::new(functions)))
 }
 
-pub(super) fn remember(caches: &mut Caches, functions: Arc<Vec<Function>>, standard: bool) {
+pub(super) fn remember(caches: &mut Caches, definitions: Completed, standard: bool) {
     let state=caches.library.as_mut().unwrap();
-    state.completed=Some((state.generation,functions));
+    state.completed=Some((state.generation,definitions));
     state.standard = standard;
 }
 

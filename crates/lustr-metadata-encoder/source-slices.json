@@ -746,6 +746,57 @@
       "adaptation": "Decode these pinned Rust metadata records into the existing native projection interface without depending on TyCtxt.",
       "semantic_owner": "pinned Rust metadata reader",
       "necessity": "Read the positive concrete impl and its unit receiver from the pinned original representation."
+    },
+    {
+      "destination": "src/encode_projection.rs",
+      "source": "compiler/rustc_metadata/src/rmeta/encoder.rs",
+      "source_sha256": "7f740fbaf9e81f4d518a95eeab485059c4f1a88c636df3104af03ec2817f5b73",
+      "sections": [
+        "encode_def_ids",
+        "encode_info_for_adt",
+        "encode_info_for_assoc_item",
+        "encode_traits",
+        "encode_impls"
+      ],
+      "adaptation": "Encode the original pinned metadata record layouts from the one completed native provider declaration inventory.",
+      "semantic_owner": "checked projection provider metadata",
+      "necessity": "Record the real unit receiver, trait, associated bounds, implementation and early lifetimes for original Rust consumers and the native retained resolver."
+    },
+    {
+      "destination": "src/encode_projection.rs",
+      "source": "compiler/rustc_middle/src/ty/mod.rs",
+      "source_sha256": "3be9c99d7f701a865fbfb455db084d209fdda6662aee56910f43dba012dd117a",
+      "sections": [
+        "TyCtxt::repr_options_of",
+        "ImplTraitHeader",
+        "VariantDef"
+      ],
+      "adaptation": "Encode the original pinned metadata record layouts from the one completed native provider declaration inventory.",
+      "semantic_owner": "checked projection provider metadata",
+      "necessity": "Record the real unit receiver, trait, associated bounds, implementation and early lifetimes for original Rust consumers and the native retained resolver."
+    },
+    {
+      "destination": "src/encode_projection.rs",
+      "source": "compiler/rustc_data_structures/src/fingerprint.rs",
+      "source_sha256": "b34cbc70955dd34efe762559bf5704908a4f93a3f9d6efb88de2f91c9a26127f",
+      "sections": [
+        "Fingerprint::to_smaller_hash"
+      ],
+      "adaptation": "Encode the original pinned metadata record layouts from the one completed native provider declaration inventory.",
+      "semantic_owner": "checked projection provider metadata",
+      "necessity": "Record the real unit receiver, trait, associated bounds, implementation and early lifetimes for original Rust consumers and the native retained resolver."
+    },
+    {
+      "destination": "src/encode_projection.rs",
+      "source": "compiler/rustc_hir_id/src/definitions.rs",
+      "source_sha256": "c7671deb7d71875550849144d257d9a2ef5bde6ed2dad57b9dbdfab999e21913",
+      "sections": [
+        "DefPathData",
+        "DefKey::compute_stable_hash"
+      ],
+      "adaptation": "Encode the original pinned metadata record layouts from the one completed native provider declaration inventory.",
+      "semantic_owner": "checked projection provider metadata",
+      "necessity": "Record the real unit receiver, trait, associated bounds, implementation and early lifetimes for original Rust consumers and the native retained resolver."
     }
   ],
   "dependencies": [
@@ -1015,10 +1066,11 @@
     "production_source_authored": true
   },
   "adapted_sources_sha256": {
-    "src/encode.rs": "624762920995d36cddd5d23042f53e6594076353590f0d77d6de6c5758066304",
+    "src/encode.rs": "75b8b167642f6d90460f4d4652f7b824d5f4a18959c0a8f0db5e4fb874675a62",
+    "src/encode_projection.rs": "afbd9518a2617db1a89795e55eed1a4ae206ba82508a1d183de0f956160da030",
     "src/extern_metadata.rs": "178a2974be4780d1bab8acaa215e3c2ae26c5e0433b8633624df8c94d0f90c0a",
-    "src/identity.rs": "995799a9938d78fd5c800a1d28af4039f4e5868cea71536d0f70b2fc3643724d",
-    "src/lib.rs": "74e1a26ae7822ec7acbfcc17ebea058aabdc9ba61fb216c33e9a769b8e02c506",
+    "src/identity.rs": "4d153100f5cfe9de796082d708518bd0d2cb4180fd17fffa9a84bd9b6b389f9f",
+    "src/lib.rs": "2940d9f99bdf3b5f93cb25826bc16ce6d019f8dceb494d919ff6221ad8cd9f37",
     "src/sdk.rs": "bcb43af0564553d2e2636f25a7aa6c06f81a8eb19997f4a2324c3071b1fb025f",
     "src/table.rs": "5ad2fa46decc550bfd5f7d23cc051c7087d4ef1f5b361b154630c122097c92bb",
     "src/upstream/codec.rs": "916922c930d3dc46c7003d65d920b6c84efa780ac5b0c06eec1586ead0216a7a",

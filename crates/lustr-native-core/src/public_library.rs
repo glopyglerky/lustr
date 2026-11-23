@@ -283,7 +283,9 @@ impl Owner {
                 return Ok(());
             }
             let artifact_start=observed.then(std::time::Instant::now);
-            let functions = state.completed_functions().ok_or("native library returned no completed functions")?;
+            let family = state.completed_family();
+            let functions = state.completed_functions().or_else(|| family.map(|_| &[][..]))
+                .ok_or("native library returned no completed declarations")?;
             let used = self.imported.as_ref().filter(|imported| functions.iter().flat_map(|function| function.calls())
                 .any(|id| imported.owns(*id)));
             import_used = used.is_some();
@@ -295,7 +297,7 @@ impl Owner {
             };
             let (linked, checked_metadata) = if check {
                 (None, Some(self.artifacts.check_metadata(
-                    state.generation, &state.source, functions, metadata_context,
+                    state.generation, &state.source, functions, family, metadata_context,
                     &mut report,
                 )?))
             } else {

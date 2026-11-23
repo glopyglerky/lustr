@@ -63,6 +63,33 @@ pub struct Parameter {
     pub ty: IntegerType,
 }
 
+/// Declarations from one native-checked projection provider.
+#[derive(Clone, Debug)]
+pub struct ProjectionFamily {
+    pub receiver: NamedDefinition,
+    pub family: NamedDefinition,
+    pub item: NamedDefinition,
+    pub lifetime: String,
+    pub lifetime_span: Span,
+    pub implementation: Option<ProjectionImplementation>,
+}
+
+#[derive(Clone, Debug)]
+pub struct NamedDefinition {
+    pub name: String,
+    pub name_span: Span,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug)]
+pub struct ProjectionImplementation {
+    pub span: Span,
+    pub item: NamedDefinition,
+    pub lifetime: String,
+    pub lifetime_span: Span,
+    pub referent: IntegerType,
+}
+
 /// Primitive integer identities in the pinned Rust TyKind and IntTy/UintTy orders.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u8)]
@@ -184,15 +211,20 @@ pub struct Encoded {
 }
 
 pub fn encode(input: &Input<'_>, sdk: &Sdk) -> Result<Encoded, String> {
-    validate(input, sdk, true)?;
-    encode::encode(input, sdk, true)
+    validate(input, sdk, true, None)?;
+    encode::encode(input, sdk, true, None)
 }
 
 /// Encode metadata for a checked library. Checked definitions and signatures
 /// remain visible, while the pinned Rust export providers return no symbols.
 pub fn encode_check(input: &Input<'_>, sdk: &Sdk) -> Result<Vec<u8>, String> {
-    validate(input, sdk, false)?;
-    Ok(encode::encode(input, sdk, false)?.metadata)
+    validate(input, sdk, false, None)?;
+    Ok(encode::encode(input, sdk, false, None)?.metadata)
+}
+
+pub fn encode_projection_check(input: &Input<'_>, sdk: &Sdk, family: &ProjectionFamily) -> Result<Vec<u8>, String> {
+    validate(input, sdk, false, Some(family))?;
+    Ok(encode::encode(input, sdk, false, Some(family))?.metadata)
 }
 
 /// Original `RmetaLink::encode` for the actual Rust object members of the
@@ -228,7 +260,7 @@ fn identifier(name: &str) -> bool {
         })
 }
 
-fn validate(input: &Input<'_>, sdk: &Sdk, link: bool) -> Result<(), String> {
+fn validate(input: &Input<'_>, sdk: &Sdk, link: bool, projection: Option<&ProjectionFamily>) -> Result<(), String> {
     let failure = |reason: &str| format!("native metadata completion: {reason}");
     if !identifier(input.crate_name)
         || input.metadata.is_empty()
@@ -254,7 +286,29 @@ fn validate(input: &Input<'_>, sdk: &Sdk, link: bool) -> Result<(), String> {
     {
         return Err(failure("source normalization/span context is unrepresented"));
     }
-    if input.functions.is_empty() || input.functions.len() > 65_535 {
+    if let Some(family) = projection {
+        let named = |item: &NamedDefinition| {
+            identifier(&item.name)
+                && item.span.lo <= item.name_span.lo
+                && item.name_span.hi <= item.span.hi
+                && input.source.get(item.span.lo as usize..item.span.hi as usize).is_some()
+                && input.source.get(item.name_span.lo as usize..item.name_span.hi as usize) == Some(item.name.as_str())
+        };
+        let lifetime = |name: &str, span: Span| name.strip_prefix('\'').is_some_and(identifier)
+            && input.source.get(span.lo as usize..span.hi as usize) == Some(name);
+        if link || sdk.standard || sdk.dependencies.len() != 2 || sdk.core_size_traits.is_none() || !input.functions.is_empty()
+            || family.receiver.name == family.family.name
+            || ![&family.receiver, &family.family, &family.item].into_iter().all(named)
+            || !lifetime(&family.lifetime, family.lifetime_span)
+            || family.implementation.as_ref().is_some_and(|implementation| {
+                !named(&implementation.item) || implementation.item.name != family.item.name
+                    || !lifetime(&implementation.lifetime, implementation.lifetime_span)
+                    || input.source.get(implementation.span.lo as usize..implementation.span.hi as usize).is_none()
+            })
+        {
+            return Err(failure("unrepresented projection declaration inventory"));
+        }
+    } else if input.functions.is_empty() || input.functions.len() > 65_535 {
         return Err(failure("a nonempty bounded completed function inventory is required"));
     }
     let mut definitions = BTreeMap::new();

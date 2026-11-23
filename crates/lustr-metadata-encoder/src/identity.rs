@@ -40,10 +40,32 @@ enum DefPathData<'a> {
 }
 
 pub(crate) fn function_path_hash(root_hash: u64, name: &str) -> u64 {
+    child_path_hash(root_hash, DefPathData::ValueNs(name))
+}
+
+pub(crate) fn type_path_hash(parent: u64, name: &str) -> u64 {
+    child_path_hash(parent, DefPathData::TypeNs(name))
+}
+
+pub(crate) fn lifetime_path_hash(parent: u64, name: &str) -> u64 {
+    child_path_hash(parent, DefPathData::LifetimeNs(name))
+}
+
+pub(crate) fn unit_constructor_hash(parent: u64) -> u64 {
+    child_path_hash(parent, DefPathData::Ctor)
+}
+
+pub(crate) fn sole_impl_hash(parent: u64) -> u64 {
+    child_path_hash(parent, DefPathData::Impl)
+}
+
+fn child_path_hash(parent: u64, data: DefPathData<'_>) -> u64 {
     let mut hasher = StableSipHasher128::new();
-    Hash64(root_hash).hash(&mut hasher);
-    core::mem::discriminant(&DefPathData::ValueNs(name)).hash(&mut hasher);
-    name.hash(&mut hasher);
+    Hash64(parent).hash(&mut hasher);
+    core::mem::discriminant(&data).hash(&mut hasher);
+    if let DefPathData::TypeNs(name) | DefPathData::ValueNs(name) | DefPathData::LifetimeNs(name) = data {
+        name.hash(&mut hasher);
+    }
     0u32.hash(&mut hasher); // No duplicate declaration survived completion.
     hasher.finish::<Hash64>().0
 }
