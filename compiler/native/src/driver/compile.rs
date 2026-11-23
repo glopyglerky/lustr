@@ -5133,7 +5133,7 @@ fn stage_imported_objects(dir: &Path, objects: &[Arc<[u8]>]) -> Result<Vec<PathB
     objects.iter().enumerate().map(|(index, bytes)| {
         // The supplied immutable bytes were bound during preparation.
         let path = dir.join(format!("imported-{index}.o"));
-        std::fs::write(&path, bytes).map_err(|error| format!("materialize imported object: {error}"))?;
+        std::fs::write(&path, bytes).map_err(|error| format!("cannot materialize imported object: {error}"))?;
         Ok(path)
     }).collect()
 }

@@ -277,7 +277,7 @@
     "compiler/native/src/runtime/panic.c": "ee2d42c84186b650046fe3c639124ed8a4fa2bb25184a6916889af695a9ac266",
     "compiler/native/src/driver/mod.rs": "d176c245ac4974c2c82a4d8d97e0cacf1e2a7a43b05123759bed1ea2d8043ccf",
     "compiler/native/src/driver/cache.rs": "60025e108f3dfb944e9fb8a2266c0c02da8eae071cec883434f7d7a8079cdb18",
-    "compiler/native/src/driver/compile.rs": "930d457a48fe6bf2e3e1e656fa869c375120f29e7534c385e15a76f6725c1dcb",
+    "compiler/native/src/driver/compile.rs": "234b977956e7f9bb8df25c3238aef8572139761d96033b10403975699bbeee3c",
     "compiler/native/src/driver/session.rs": "350ae82752934e1604c13551a39c71f0551e43c7e42519f58a93c1394c520e4f",
     "compiler/native/src/driver/imports.rs": "dbec1a49b6271644436753dc9695cd68ae991d92bae9e8ae0e3edf61b1bba82b",
     "compiler/native/src/resolve/worklist.rs": "5cc94bb1ef6b85ecaeb7687c6582b75e9f34b754802a631ba73907147c938092",
