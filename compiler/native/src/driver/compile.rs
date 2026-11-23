@@ -2509,7 +2509,8 @@ fn resolved_setup(
         } else if let Some(imports) = imports {
             let mut mount = |tables: &mut crate::resolve::imports::ResolvedTables| imports.mount(tables, &front.interner);
             if key.library.as_ref().is_some_and(|key| key.is_executable()) {
-                worklist::resolve_native_executable(&input, &front.interner, &front.known, &mut front.resolve_cache, plan.platform, &mut mount)
+                worklist::resolve_native_executable(&input, &front.interner, &front.known, &mut front.resolve_cache,
+                    plan.platform, &mut mount, key.krate.test)
             } else {
                 worklist::resolve_crate_with_imports(&input, &front.interner, &front.known, plan.platform, &mut mount)
             }

@@ -7964,8 +7964,48 @@ index 0544ba342bdc147bba19d765d8d24117a89aa03f..2d741d645ee2d520fc8cb20ee4c29d18
                  let o = self.tys.mk_option(item);
                  (if n == "min_by_key" { B::IterMinByKey } else { B::IterMaxByKey }, vec![f], o)
              }
+diff --git a/src/check/method.rs b/src/check/method.rs
+index 44fc562364c245ec0789e8b5ecf02b3ce889d8d1..704232efe84a66e8dc2a5a6df93bdd26dfd274f4 100644
+--- a/src/check/method.rs
++++ b/src/check/method.rs
+@@ -132,6 +132,7 @@ fn trait_in_scope(cx: &mut Ctx, trait_def: DefId) -> bool {
+         return true;
+     }
+     let lang = &p.gx.lang;
++    let core_prelude = p.resolved.as_ref().is_some_and(|tables| tables.uses_core_prelude(cx.module));
+     // Display and Debug are in scope as in rustc: a `use` of the std
+     // path or the impl's own trait (W-STD-B, check/fmt.rs); bounds below.
+     if (trait_def == lang.display && cx.fmt_trait_in_scope(crate::ast::FmtKind::Display))
+@@ -163,7 +164,6 @@ fn trait_in_scope(cx: &mut Ctx, trait_def: DefId) -> bool {
+         lang.exact_size_iterator,
+         lang.double_ended_iterator,
+         lang.extend,
+-        lang.from_str,
+         lang.from,
+         lang.into,
+         // Prelude since Rust 2021 (fx-tryfrom).
+@@ -172,13 +172,17 @@ fn trait_in_scope(cx: &mut Ctx, trait_def: DefId) -> bool {
+         // Prelude conversion traits (W-STD-B).
+         lang.as_ref,
+         lang.as_mut,
+-        lang.to_owned,
+-        lang.to_string,
+     ]
+     .contains(&trait_def)
+     {
+         return true;
+     }
++    if (trait_def == lang.to_owned && (!core_prelude || cx.std_trait_imported("borrow", "ToOwned")))
++        || (trait_def == lang.to_string && (!core_prelude || cx.std_trait_imported("string", "ToString")))
++        || (trait_def == lang.from_str && (!core_prelude || cx.std_trait_imported("str", "FromStr")))
++    {
++        return true;
++    }
+     // The operator traits, `Deref`, and `Index` are not in the prelude: a
+     // method call by name (`1i32.add(2)`, `s.deref()`) needs the trait
+     // imported, by name or by a glob of `std::ops`. Operator syntax does
 diff --git a/src/check/mod.rs b/src/check/mod.rs
-index 87ea220eacbf1765bd853a0afe6c1deb3a405988..ab274549e4058b1e0feb7edc619fd4c0c04b6045 100644
+index 87ea220eacbf1765bd853a0afe6c1deb3a405988..88b7b0df08c9aabe8787914f4e3e6d9dd3afb7bf 100644
 --- a/src/check/mod.rs
 +++ b/src/check/mod.rs
 @@ -1367,6 +1367,8 @@ pub enum Res {
@@ -8059,7 +8099,15 @@ index 87ea220eacbf1765bd853a0afe6c1deb3a405988..ab274549e4058b1e0feb7edc619fd4c0
      /// An inherent fn as a value through a qualified path (`<W<u16>>::get`):
      /// a generic impl's fn instantiates as on a plain path, with the
      /// written Self type fixing the impl's params.
-@@ -4528,7 +4555,11 @@ impl<'p> Ctx<'p> {
+@@ -4327,6 +4354,7 @@ impl<'p> Ctx<'p> {
+             }
+             _ => return None,
+         };
++        if !self.string_trait_builtin_in_scope(name) { return None; }
+         let recv = match autoref {
+             Autoref::None => self_ty,
+             Autoref::Ref => self.tys.mk_ref(false, self_ty),
+@@ -4528,7 +4556,11 @@ impl<'p> Ctx<'p> {
                      let params = fields.into_iter().map(|t| self.subst_settled(t, &adt_args)).collect();
                      Some((params, self.tys.mk_adt(def, &adt_args)))
                  } else {
@@ -8072,7 +8120,7 @@ index 87ea220eacbf1765bd853a0afe6c1deb3a405988..ab274549e4058b1e0feb7edc619fd4c0
                      let fargs: Vec<GenericArg> = self.tys.args(args).to_vec();
                      match p.sig_of(&mut self.out.reads, def) {
                          SigOf::Fn(info) if fargs.is_empty() => Some((info.params.clone(), p.ret_view(f))).map(|(ps, r)| (ps, self.callee_ret(r))),
-@@ -4680,7 +4711,7 @@ impl<'p> Ctx<'p> {
+@@ -4680,7 +4712,7 @@ impl<'p> Ctx<'p> {
      /// The free fn a value binding names, if it names one.
      fn binding_fn(&mut self, name: Sym) -> Option<LocalDefId> {
          match self.binding(Namespace::Value, name) {
@@ -8081,7 +8129,7 @@ index 87ea220eacbf1765bd853a0afe6c1deb3a405988..ab274549e4058b1e0feb7edc619fd4c0
              _ => None,
          }
      }
-@@ -12117,12 +12148,15 @@ impl<'p> Ctx<'p> {
+@@ -12117,12 +12149,15 @@ impl<'p> Ctx<'p> {
              let bound = self.binding(Namespace::Value, name);
              if let BindingRes::Def(def) = bound
                  && p.binding_kind(def) == Some(DefsKind::Fn)
@@ -8098,7 +8146,7 @@ index 87ea220eacbf1765bd853a0afe6c1deb3a405988..ab274549e4058b1e0feb7edc619fd4c0
                  match p.binding_kind(def) {
                      Some(DefsKind::Const) => {
                          if let Some(idx) = p.const_by_def(def) {
-@@ -12262,7 +12296,7 @@ impl<'p> Ctx<'p> {
+@@ -12262,7 +12297,7 @@ impl<'p> Ctx<'p> {
              }
              if self.name(segs[1].name) == "UNICODE_VERSION" {
                  use crate::ty::consteval::ConstValue;
@@ -8107,7 +8155,7 @@ index 87ea220eacbf1765bd853a0afe6c1deb3a405988..ab274549e4058b1e0feb7edc619fd4c0
                  let u8t = int(IntTy::U8);
                  let ts = self.tys.intern_tys(&[u8t, u8t, u8t]);
                  let ty = self.tys.intern(TyKind::Tuple(ts));
-@@ -14195,7 +14229,8 @@ impl<'p> Ctx<'p> {
+@@ -14195,7 +14230,8 @@ impl<'p> Ctx<'p> {
                      .builtin_item_res(def, cargs)
                      .or_else(|| self.prim_item_res(def, cargs))
                      .map(|(r, _, _)| r)
@@ -8117,7 +8165,7 @@ index 87ea220eacbf1765bd853a0afe6c1deb3a405988..ab274549e4058b1e0feb7edc619fd4c0
              },
              _ => None,
          }
-@@ -14464,6 +14499,23 @@ impl<'p> Ctx<'p> {
+@@ -14464,6 +14500,23 @@ impl<'p> Ctx<'p> {
          if is_value {
              return self.value_call(e, callee, args, span);
          }
@@ -8141,7 +8189,37 @@ index 87ea220eacbf1765bd853a0afe6c1deb3a405988..ab274549e4058b1e0feb7edc619fd4c0
          // `std::mem::drop(value)`: move the value and drop it now.
          // A user fn or body item named `drop` shadows the prelude
          // name, so the one-segment form checks those first.
-@@ -24947,8 +24999,8 @@ impl<'p> Ctx<'p> {
+@@ -17542,7 +17595,7 @@ impl<'p> Ctx<'p> {
+             (_, TyKind::Error) => return ERROR,
+             _ => None,
+         };
+-        match found {
++        match found.filter(|_| self.string_trait_builtin_in_scope(name)) {
+             Some((b, autoref, params, ret)) => {
+                 if autoref != Autoref::None {
+                     self.check_packed_borrow(recv, name_span);
+@@ -17635,6 +17688,20 @@ impl<'p> Ctx<'p> {
+     /// predicates, encoding; TRIAGE T8/T12). The receiver form
+     /// follows std: ASCII predicates and case maps take `&self`,
+     /// the Unicode predicates take `self`.
++    fn string_trait_builtin_in_scope(&mut self, name: Sym) -> bool {
++        if name != self.p.known.to_owned && name != self.p.known.to_string {
++            return true;
++        }
++        if !self.p.resolved.as_ref().is_some_and(|tables| tables.uses_core_prelude(self.module)) {
++            return true;
++        }
++        if name == self.p.known.to_owned {
++            self.std_trait_imported("borrow", "ToOwned")
++        } else {
++            self.std_trait_imported("string", "ToString")
++        }
++    }
++
+     fn char_method(&mut self, name: Sym) -> Option<(Builtin, Autoref, Vec<Ty>, Ty)> {
+         use Builtin as B;
+         let k = &*self.p.known;
+@@ -24947,8 +25014,8 @@ impl<'p> Ctx<'p> {
                  self.err(
                      "L0640",
                      span,
@@ -8152,7 +8230,7 @@ index 87ea220eacbf1765bd853a0afe6c1deb3a405988..ab274549e4058b1e0feb7edc619fd4c0
                  );
              }
          }
-@@ -25536,7 +25588,14 @@ impl<'p> crate::ty::consteval::ConstCx<'p> for CheckCx<'_, 'p> {
+@@ -25536,7 +25603,14 @@ impl<'p> crate::ty::consteval::ConstCx<'p> for CheckCx<'_, 'p> {
                  // A body const or static of this name shadows any
                  // module fn: the call names no fn here.
                  Some(_) => return CallTarget::Unknown,
@@ -10695,7 +10773,7 @@ index da28835400f894866adb85f436e2cbdf109797d7..c2a8d6a10a776fba1df984670ff8b994
          assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
          assert!(decode_response(b"short").is_none());
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee548954ea9 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..8bf611cbbca4e7ec9469d199ff0911c773bec7b0 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
 @@ -30,7 +30,7 @@ use crate::check::collect::{self, LocalDefId};
@@ -11147,7 +11225,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
          }
          // An item patch (sigedit P1.3): the new item scans take the
          // resolve path's slot update, in signatures mode with the edited
-@@ -2321,7 +2499,23 @@ fn resolved_setup(
+@@ -2321,7 +2499,24 @@ fn resolved_setup(
          // The cache's final chunks are parts of the session's merged Ast: the resolve takes
          // its hits out of it, and lets go of it before any patch writes it.
          front.resolve_cache.set_merged(front.ast.clone(), front.ast_gen);
@@ -11162,7 +11240,8 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
 +        } else if let Some(imports) = imports {
 +            let mut mount = |tables: &mut crate::resolve::imports::ResolvedTables| imports.mount(tables, &front.interner);
 +            if key.library.as_ref().is_some_and(|key| key.is_executable()) {
-+                worklist::resolve_native_executable(&input, &front.interner, &front.known, &mut front.resolve_cache, plan.platform, &mut mount)
++                worklist::resolve_native_executable(&input, &front.interner, &front.known, &mut front.resolve_cache,
++                    plan.platform, &mut mount, key.krate.test)
 +            } else {
 +                worklist::resolve_crate_with_imports(&input, &front.interner, &front.known, plan.platform, &mut mount)
 +            }
@@ -11172,7 +11251,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
          front.resolve_cache.clear_merged();
          if super::item_oracle::on() || super::resolve_oracle::on() {
              oracle_input = Some(super::item_oracle::ColdInput { input: input.clone(), platform: plan.platform });
-@@ -2379,6 +2573,7 @@ fn resolved_setup(
+@@ -2379,6 +2574,7 @@ fn resolved_setup(
      let old_kept = std::mem::take(&mut front.kept);
      let old_ast = std::mem::replace(&mut front.ast, Arc::new(ast));
      front.ast_gen = generation;
@@ -11180,7 +11259,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
      front.fresh_exprs = front.ast.exprs.len();
      if (old_ast.exprs.len() > 20_000 || old_kept.iter().any(Option::is_some)) && caches.persistent {
          // Nested token trees in the Ast drop recursively; use the
-@@ -2552,10 +2747,377 @@ fn location_path(p: &str, library: &Path, display_root: Option<&Path>, client: &
+@@ -2552,10 +2748,377 @@ fn location_path(p: &str, library: &Path, display_root: Option<&Path>, client: &
  }
  
  pub fn compile(req: &Request, session: &mut Session) -> Response {
@@ -11559,7 +11638,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
              stderr: format!(
                  "error: internal: request routed to the wrong session\n  request: {}\n  session: {}\n",
                  req.session.describe(),
-@@ -2563,16 +3125,26 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2563,16 +3126,26 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              ),
              code: 3,
              ..Default::default()
@@ -11590,7 +11669,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
      }
      // Lust links for the host target only (tcc). A named non-host triple
      // is a clear error for a link, not a host binary under a foreign
-@@ -2591,23 +3163,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2591,23 +3164,24 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // product; no link runs).
      let cc_build = req.cc && (triple.is_empty() || crate::resolve::cfg::CfgEnv::is_release_target(triple));
      if foreign && !foreign_check && !cc_build && req.emit_c.is_none() {
@@ -11618,7 +11697,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
      let crate_ids = session.crate_ids();
      // Open the disk cache once per session and seed slot assignment from
      // the stored manifest, so a restarted daemon gives every fn the slot
-@@ -2670,7 +3243,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2670,7 +3244,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      } else {
          crate::resolve::worklist::route_root_std(&src, &front.interner, true)
      };
@@ -11627,7 +11706,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
      let route_std_mods = req.session.krate.manifest_path.is_none().then_some(std_mods);
      if front.resolved_crate && !wants_resolver {
          front.ast = Arc::default();
-@@ -2719,16 +3292,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2719,16 +3293,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      if needs.any() {
          match splice_std(&mut src, std_cache, needs) {
              Ok(sp) => (std_ranges, std_routes, std_methods) = (sp.ranges, sp.routes, sp.methods),
@@ -11649,7 +11728,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
          }
      } else {
      // Lex and scan in chunks of whole items, in parallel. Only the region an edit touched is
-@@ -2873,7 +3448,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2873,7 +3449,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // A macro error in a chunk is the answer, not a lexing fallback.
      if let Some(Err(d)) = fresh.iter().find(|l| matches!(l, Err(d) if d.code.starts_with("L08"))) {
          let mut d = d.clone();
@@ -11658,7 +11737,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
      }
      let split_inner_attr = ranges.len() > 1
          && (reused.iter().flatten().any(|c| c.inner_attr) || fresh.iter().flatten().any(|&(_, _, _, inner_attr)| inner_attr));
-@@ -2889,7 +3464,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2889,7 +3465,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          // file has an inner attribute (`has_inner_attr`): lex the whole file. Its error is the
          // answer; if it lexes, compile as one chunk. Never panic.
          match lexer::lex(&src, ROOT_FILE, 0, &front.interner).and_then(|l| expand_tokens(front, l, &req.file, &src, test_mode, req.session.profile, &req.session)) {
@@ -11667,7 +11746,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
              Ok((whole, deps)) => {
                  let mut sc = scan::scan(&whole);
                  fold_fn_text(&mut sc, &whole, &src);
-@@ -3072,7 +3647,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3072,7 +3648,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                      front.chunks[fn_at[i].0].items = None;
                  }
                  front.chunks_blanked = true;
@@ -11676,7 +11755,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
              }
              for (&i, (body_ast, body, exprs, pats)) in changed.iter().zip(parsed) {
                  let before = (front.ast.exprs.len() as u32, front.ast.pats.len() as u32, front.ast.blocks.len() as u32);
-@@ -3145,7 +3720,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3145,7 +3721,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          if let Some(Err(d)) = parsed.iter().find(|p| p.is_err()) {
              let d = d.clone();
              front.chunks_blanked = old_len > 0;
@@ -11685,7 +11764,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
          }
          let mut new_asts: FxMap<usize, Ast> = todo.iter().copied().zip(parsed.into_iter().map(|p| p.unwrap())).collect();
          // Splice every per-chunk list in chunk order: a re-parsed chunk
-@@ -3221,7 +3796,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3221,7 +3797,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              Ok(c) => c,
              Err(e) => {
                  front.env_hash = None;
@@ -11694,7 +11773,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
              }
          }
      } else {
-@@ -3255,14 +3830,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3255,14 +3831,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                      Ok((w, _deps)) => w,
                      Err(mut d) => {
                          front.env_hash = None;
@@ -11711,7 +11790,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
                  }
              }
          };
-@@ -3273,7 +3848,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3273,7 +3849,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              Ok(c) => c,
              Err(e) => {
                  front.env_hash = None;
@@ -11720,7 +11799,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
              }
          }
      };
-@@ -3567,6 +4142,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3567,6 +4143,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // Template check errors from the kept program are collect's errors
      // (`gen_reuse.template_errors` counts them).
      let collect = |front: &mut Front, caches: &mut Caches| {
@@ -11735,7 +11814,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
          collect::collect_reuse(
              front.ast.clone(),
              front.interner.clone(),
-@@ -3666,7 +4249,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3666,7 +4250,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              front.last_visits.clear();
              visits.render(&mut front.last_visits);
              log_visits(&front.last_visits);
@@ -11744,7 +11823,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
          }
      };
      // Every body of a generic program rechecks when the trait system
-@@ -3735,7 +4318,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3735,7 +4319,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // catch_unwind would return Ok after a panic (rel-opt).
      let tables_env = std::env::var("LUST_UNWIND_TABLES").ok();
      program.unwind_tables = program.unwind
@@ -11755,7 +11834,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
              tables_env.as_deref() != Some("0")
          } else {
              !caches.persistent && req.emit_c.is_some() && tables_env.as_deref() == Some("1")
-@@ -3757,11 +4342,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3757,11 +4343,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
                  None => {
                      front.env_hash = None;
@@ -11769,7 +11848,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
                  }
              }
          }
-@@ -3772,7 +4357,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3772,7 +4358,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      if program.fns.len() < fn_count {
          // The scanner and the parser disagree (only possible with unusual syntax). Start over.
          front.env_hash = None;
@@ -11778,7 +11857,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
      }
      // Mono instance slots (docs/ARCH.md section 4.2; W-TRAITS-CORE
      // through W-DRIVER): collect appends materialized instances
-@@ -3790,7 +4375,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3790,7 +4376,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              let disk = program.disk_id(LocalDefId(i as u32));
              if let Err(c) = def::insert_path(&mut front.slot_paths, disk, &format!("instance#{}", disk.hash.0)) {
                  front.env_hash = None;
@@ -11787,7 +11866,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
              }
              let slot = match front.slot_of.get(&disk) {
                  Some(&slot) => slot,
-@@ -4040,7 +4625,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4040,7 +4626,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  continue;
              }
              let s = slot(i);
@@ -11798,7 +11877,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
                  continue;
              }
              let Some(Some(cached)) = caches.slot_ir.get(s) else {
-@@ -4054,12 +4641,15 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4054,12 +4642,15 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              };
              let moved = cached.slot_at_gen != s as u32
                  || cached.used_at_gen.iter().any(|(disk, at_gen)| front.slot_of.get(disk) != Some(at_gen));
@@ -11817,7 +11896,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
                  super::ir_cache::rebuild(&program, cached, LocalDefId(i as u32))
              } else {
                  None
-@@ -4068,6 +4658,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4068,6 +4659,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  Some(body) if super::ir_cache::ir_fingerprint(&program, &body, &map, scan_of(front, i).1) == cached.ir_fp => {
                      reemit.push((i, body))
                  }
@@ -11828,7 +11907,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
                  _ => reemit_failed.push(i),
              }
          }
-@@ -4081,9 +4675,13 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4081,9 +4676,13 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // switches, debug info, unwind tables) makes every slot's C again, as a one-shot build
      // does: its slot cache holds C of the other form (a front image saved by a tcc build,
      // then a release driver build). A check makes no C and keeps the key.
@@ -11844,7 +11923,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
          if caches.codegen_key != key {
              caches.codegen_key = key;
              caches.has_out.iter_mut().for_each(|h| *h = false);
-@@ -4091,12 +4689,26 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4091,12 +4690,26 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              caches.glue = GlueSet::default();
              caches.objects = None;
          }
@@ -11872,7 +11951,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
      }
      // The instance Adt ids this build generates C under, and whether one
      // names another instance than in the C made since the last full
-@@ -4285,28 +4897,64 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4285,28 +4898,64 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // A one-shot check needs no IR after borrowck: dropping each body on
      // its worker lets the allocator reuse the memory for the next body,
      // instead of touching fresh pages for every function.
@@ -11938,7 +12017,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
              (Some(body), errs)
          });
          let body = body.filter(|_| keep_bodies).map(|mut b| {
-@@ -4315,6 +4963,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4315,6 +4964,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          });
          (body, errs)
      });
@@ -11949,7 +12028,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
      let mut diags: Vec<Diag> = Vec::new();
      for (k, &i) in work.iter().enumerate() {
          caches.ok[slot(i)] = results[k].1.is_empty();
-@@ -4350,6 +5002,13 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4350,6 +5003,13 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              stored.verified[mode_at] = verified;
              caches.slot_reads[slot(i)] = Some(stored);
          }
@@ -11963,7 +12042,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
          diags.extend(results[k].1.iter().cloned());
      }
      // rustc stops before monomorphization once a pre-mono check fails, so an
-@@ -4366,10 +5025,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4366,10 +5026,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // A lust file is a bin crate, so check needs `main` too, as `rustc --emit=metadata`
      // does. `lust test` sets `harness`: it adds a generated `main` after this check.
      // A Cargo lib target (`--lib`) is a lib crate: rustc needs no `main` there.
@@ -11976,7 +12055,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
      // A one-shot process (`leak_at_exit`) exits right after this call. Freeing the IR and
      // program arenas, mostly built on worker threads, costs about 10 ms on a 31k-line crate,
      // so leak them on every return below and let the OS reclaim the memory at exit. A
-@@ -4396,10 +5056,140 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4396,10 +5057,140 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
              }
          }
@@ -12118,7 +12197,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
          // The answer, before the timing and stats lines, for a no-op
          // check of the same request to reuse.
          if let Some(fp) = check_fp {
-@@ -4446,10 +5236,34 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4446,10 +5237,34 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          return resp;
      }
  
@@ -12153,7 +12232,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
      // Each fn's base line: cgen stores its line numbers relative to it
      // and the main unit adds each slot's base back, so a reused body's
      // C stays right when its source text moves. An instance's base is
-@@ -4471,7 +5285,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4471,7 +5286,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let line_base_of = |_: &Front, i: usize| -> u32 { line_bases.get(i).copied().unwrap_or(0) };
      // Release C (driver/release_c.rs): content-addressed names, set as cgen's naming
      // context around every step that prints C.
@@ -12162,7 +12241,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
      let rn = rnames.as_ref();
      // A release C build to the release driver streams its cc step (`cc::Stream`): each unit the
      // assembly makes compiles from the time its text exists. Not with --emit-c nor LLVM units.
-@@ -4498,7 +5312,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4498,7 +5313,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let (outs, cg_noted): (Vec<_>, Vec<_>) = par_map(&bodies, |(i, b)| {
          check::derive_delta::scoped(program.record_reads, || {
              cgen::in_layout_phase(layout_tag, || {
@@ -12182,7 +12261,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
              })
          })
      })
-@@ -4519,7 +5344,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4519,7 +5345,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // Cached IR serves only the slot-moved re-emit, which runs only in a
      // program with no generics: a generic program caches none (on tsgo it
      // was 1.5 GB of a daemon session, made serially per generated body).
@@ -12191,7 +12270,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
      // The stable id of each fn whose slot the new C prints (`FnOut::used`),
      // by slot: the pairs below are the next renumber's re-emit trigger.
      let mut wanted = vec![false; if keep_ir { front.slot_of.len() } else { 0 }];
-@@ -4552,10 +5377,22 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4552,10 +5378,22 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          caches.out[s] = out;
          caches.has_out[s] = true;
          dirty_slots.push(s);
@@ -12215,7 +12294,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
      // LUST_CHECK_GENREUSE=1 (genreuse_oracle.rs): every concrete body a release C build keeps
      // is checked, lowered and generated again without reuse (nothing stored), and its C must
      // equal the kept C. Release C names are content-addressed; dev C names a vtable by a
-@@ -4681,6 +5518,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4681,6 +5519,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      }
      let glue_changed = shared_changed || regenerated || statics_changed;
      t.lap("codegen (par)");
@@ -12230,7 +12309,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
      // Nothing reads the IR after codegen. A one-shot build leaks it at exit
      // (`leak_at_exit`), but on a large program it is the largest block
      // alive at the peak (ts-rust's bins: about 2.4 GB of 9.4 GB, through
-@@ -4718,7 +5563,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4718,7 +5564,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      const SHARD_RECORD: &str = "glue shard ";
      let fn_units: Vec<usize> = (0..groups.len()).map(|g| g + FIRST_FN_UNIT).collect();
      let dirty_fn_units: Vec<usize> = (0..groups.len()).filter(|&g| dirty_groups[g]).map(|g| g + FIRST_FN_UNIT).collect();
@@ -12244,7 +12323,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
      // Instance slots take their template's line: cgen stores an
      // instance's panic lines relative to it (see `line_base_of`).
      let mut slot_lines = vec![0u32; n_slots];
-@@ -4751,7 +5601,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4751,7 +5602,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // rebuilds and the base
      // relinks over the existing unit objects. Unrelated units keep
      // their objects, in the session and in the disk unit cache.
@@ -12260,7 +12339,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
      let cap_grown = n_slots > caches.table_cap;
      if fresh_base || cap_grown {
          caches.table_cap = n_slots * 2 + 64;
-@@ -4760,7 +5617,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4760,7 +5618,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          caches.base_units = groups.len();
      }
      let table_dirty = cap_grown || groups.len() != caches.base_units;
@@ -12271,7 +12350,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
      let dir = caches.obj_dir.clone();
      let base_obj = |u: usize| dir.join(format!("u{u}.o"));
      let overlay_obj = |u: usize| dir.join(format!("o{u}.o"));
-@@ -4842,9 +5701,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4842,9 +5702,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          super::release_c::groups(&caches.out, names, &file, &line)
      };
      let gen_unit = |u: usize, overlay: bool| match u {
@@ -12283,7 +12362,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
          3 => cgen::table_unit(caches.table_cap, &fn_units),
          LOC_UNIT => cgen::loc_unit(&files, &slot_lines),
          g => {
-@@ -4853,7 +5712,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4853,7 +5713,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
      };
      // Release C: whether fn bodies are LLVM IR (cgen/ll.rs), and B1's switches.
@@ -12292,7 +12371,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
      // B1 (`cgen::record`): each C fn unit records the pieces it is made of and what it
      // read, and the next build sets the record against its program
      // (`Caches::unit_records`). A session that keeps its caches (a daemon, a front
-@@ -5007,7 +5866,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5007,7 +5867,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              let assemble = |u: usize, inl: &[Vec<usize>], c_refs: Option<&cgen::ll::CRefs>, copy_hot: Option<&cgen::CopyHot>| {
                  let t = Instant::now();
                  let (c, helpers) = cgen::in_layout_phase(asm_tag, || cgen::names::with(rn, || match u {
@@ -12301,7 +12380,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
                      1 => match super::release_c::statics_bytes() {
                          0 => (adapt(cgen::names::statics_unit(&program, &caches.glue), &Default::default()), String::new()),
                          target => {
-@@ -5023,7 +5882,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5023,7 +5883,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                              (adapt(index, &Default::default()), String::new())
                          }
                      },
@@ -12310,7 +12389,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
                      3 => {
                          let rg = rg_cell.get().expect("the fn units are cut before unit 3");
                          (super::release_c::table_unit(&rg.iter().filter(|(_, s)| s.contains(&(main_slot as usize))).map(|(r, _)| r.clone()).collect::<Vec<_>>()), String::new())
-@@ -5291,7 +6150,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5291,7 +6151,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                          if k < n_early {
                              Ok(assemble(first[k], &[], None, None))
                          } else {
@@ -12321,7 +12400,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
                          }
                      })
                      .into_iter()
-@@ -5617,7 +6478,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5617,7 +6479,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      };
      let rgroups = rg_cell.into_inner();
      // The LLVM backend (cgen/ll.rs) wrote `.ll` companions: only cc.rs builds them.
@@ -12330,7 +12409,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
      // The units the link takes after 1..4: release C has its own fn units, glue shards and
      // statics parts.
      let link_fn_units: Vec<usize> = match &rgroups {
-@@ -5656,7 +6517,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5656,7 +6518,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              return Response { code: 0, ..Default::default() };
          }
      }
@@ -12339,7 +12418,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
          return Response {
              stderr: "error: LUST_RELEASE_BACKEND=llvm builds through the release driver (`lust build --release --target <triple>`) or with --emit-c\n".into(),
              code: 2,
-@@ -5671,7 +6532,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5671,7 +6533,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // frozen, so a clean unit's C is the same as last time and its object
      // comes from the cache. Overlays do not exist here: every build emits
      // the base form of each unit.
@@ -12348,7 +12427,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
          // The release driver returns before the visits line at the end: its log line is here
          // (front-check's path coverage).
          front.last_visits.clear();
-@@ -5688,7 +6549,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5688,7 +6550,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
              }
          }
@@ -12360,7 +12439,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
              // Release C (`LUST_RELEASE_C=1`) already holds the content-addressed units.
              let mut all: Vec<(String, String)> = if rgroups.is_some() {
                  // An LLVM companion keeps its `.ll` name (cc.rs pairs it with its C unit). The
-@@ -5749,8 +6613,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5749,8 +6614,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          {
              let _ = writeln!(resp.stderr, "b1: {l}");
          }
@@ -12374,7 +12453,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
              // A build that leaks at exit leaks the unit texts too (they moved out of `units`).
              if leak_at_exit {
                  std::mem::forget(all);
-@@ -5807,6 +6675,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5807,6 +6676,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // this check keeps that a pin, not a hope.
      if let Some(run_args) = &req.run_args
          && !caches.persistent
@@ -12382,7 +12461,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
          && fresh_base
          && groups.len() == 1
          && !req.debug
-@@ -5837,7 +6706,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5837,7 +6707,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
      }
      // Disk unit objects key on each unit's full C text (see cache.rs):
@@ -12391,7 +12470,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
      // compiler, so a hit can never serve an object whose C differs. The
      // C is already built here for every unit in `todo`, so the key costs
      // one hash per unit.
-@@ -5847,7 +6716,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5847,7 +6717,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
      }
      let keys: Vec<Option<String>> = match &disk_cache {
@@ -12400,7 +12479,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
          None => vec![None; units.len()],
      };
      // The units move into the miss list, and their C is freed before the
-@@ -5866,7 +6735,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5866,7 +6736,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              miss_keys.push(key);
          }
      }
@@ -12409,7 +12488,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
          caches.objects = None;
          return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
      }
-@@ -5883,10 +6752,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5883,10 +6753,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      caches.objects = Some(req.debug);
      t.lap("tcc compile");
      let all_base: Vec<PathBuf> = [1, 2, 3, LOC_UNIT].into_iter().chain(link_fn_units.iter().copied()).map(base_obj).collect();
@@ -12430,7 +12509,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
      } else {
          // The base library lives in a persistent dir under a content name
          // (see `resolve_base_dir`): the executable loads it by absolute
-@@ -5901,18 +6778,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5901,18 +6779,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
          let base = if rebuild_base {
              caches.base_gen += 1;
@@ -12471,7 +12550,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
                      install_base(&tmp, &base_dir.join(&soname))?;
                      if !caches.base_files.contains(&soname) {
                          caches.base_files.push_back(soname);
-@@ -5922,24 +6812,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5922,24 +6813,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              if built.is_err() {
                  let _ = std::fs::remove_file(&tmp);
              }
@@ -12503,7 +12582,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
              built
          } else {
              Ok(())
-@@ -5958,8 +6849,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5958,8 +6850,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // a small grace count while no known output file still references them. A binary the user
      // kept keeps its base; one that was overwritten or deleted does not. A running program
      // keeps its mapped copy after unlink.
@@ -12514,7 +12593,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
          if let Some(base_dir) = caches.base_dir.clone() {
              record_base_user(&base_dir, &soname, &req.out);
          }
-@@ -6058,6 +6949,66 @@ mod tests {
+@@ -6058,6 +6950,66 @@ mod tests {
          panic!("{}: still busy", bin.display())
      }
  
@@ -12581,7 +12660,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..206ae3bdf47c242720a5b8d5c07ccee5
      /// The base sweep never deletes a live owner's base (it may be a live
      /// session's current base, found by fuzz seed 7 multi when a guard
      /// session's first-build sweep deleted the warm session's base), but
-@@ -6417,10 +7368,547 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
+@@ -6417,10 +7369,547 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
              max_errors: 20,
              run_args: None,
              harness: false, cc: false,
@@ -14437,10 +14516,33 @@ index b375f1074e9c6af71d7f579fe355c581e93f4c9c..511f99c057b197cdd85a8c361ade78fa
              (Some(Tok::Dot), _) if !punct(next) => false,
              (Some(Tok::Dollar), Some(t)) if ident_like(t) && !next_nt => false,
 diff --git a/src/expand/builtin.rs b/src/expand/builtin.rs
-index 397c31b7e94269e9ad303414dabe115fbb3cd42c..a33ffe93aff05c7d62084db19765b6614e95c5d2 100644
+index 397c31b7e94269e9ad303414dabe115fbb3cd42c..a7bfcdb87db65ed953b30e8c718aa7326fdd28cf 100644
 --- a/src/expand/builtin.rs
 +++ b/src/expand/builtin.rs
-@@ -377,36 +377,16 @@ fn read_include(st: &mut Expander, rel: &str, span: Span) -> Result<(std::path::
+@@ -86,6 +86,13 @@ pub fn is_prelude_macro(name: &str) -> bool {
+         || matches!(name, "const_format_args" | "log_syntax" | "trace_macros" | "concat_bytes" | "cfg_select" | "type_ascribe" | "deref")
+ }
+ 
++/// Implementation of the macro names the pinned core prelude reexports.
++/// Module-only macros still require their qualified path.
++pub fn is_core_prelude_macro(name: &str) -> bool {
++    std_macro_path(&["core", name])
++        || matches!(name, "const_format_args" | "log_syntax" | "trace_macros" | "concat_bytes" | "cfg_select" | "type_ascribe" | "deref")
++}
++
+ /// Macros this file expands at token level.
+ pub fn is_token_builtin(name: &str) -> bool {
+     matches!(
+@@ -187,6 +194,8 @@ pub struct CfgEnv {
+     /// The panic strategy is unwind (`-C panic=unwind`): `cfg(panic)`
+     /// in the host facts below.
+     pub panic_unwind: bool,
++    pub core_prelude: bool,
++    pub explicit_std: bool,
+ }
+ 
+ impl CfgEnv {
+@@ -377,36 +386,16 @@ fn read_include(st: &mut Expander, rel: &str, span: Span) -> Result<(std::path::
      }
  }
  
@@ -14485,7 +14587,7 @@ index 397c31b7e94269e9ad303414dabe115fbb3cd42c..a33ffe93aff05c7d62084db19765b661
  }
  
  /// The value of `name` in this process's env (ARCH 6.4): what `env!` reads when the request
-@@ -503,7 +483,7 @@ pub fn stringify_trees(st: &Expander, trees: &[Tt]) -> String {
+@@ -503,7 +492,7 @@ pub fn stringify_trees(st: &Expander, trees: &[Tt]) -> String {
                      prev.kind,
                      Kind::Close(_)
                          | Kind::Tok(
@@ -14494,7 +14596,7 @@ index 397c31b7e94269e9ad303414dabe115fbb3cd42c..a33ffe93aff05c7d62084db19765b661
                                  | Tok::Reserved(_)
                                  | Tok::SelfUpper
                                  | Tok::SelfLower
-@@ -981,10 +961,10 @@ fn thread_local_macro(st: &mut Expander, call: &Call, depth: u32) -> Result<Vec<
+@@ -981,10 +970,10 @@ fn thread_local_macro(st: &mut Expander, call: &Call, depth: u32) -> Result<Vec<
          }
          i += 1;
          let name_tok = match trees.get(i).map(|t| unwrap_frag(std::slice::from_ref(t))) {
@@ -14507,7 +14609,7 @@ index 397c31b7e94269e9ad303414dabe115fbb3cd42c..a33ffe93aff05c7d62084db19765b661
          i += 1;
          if tok_at(trees, i).map(|t| t.tok) != Some(Tok::Colon) {
              return Err(shape("statics need a type"));
-@@ -1033,7 +1013,7 @@ fn thread_local_macro(st: &mut Expander, call: &Call, depth: u32) -> Result<Vec<
+@@ -1033,7 +1022,7 @@ fn thread_local_macro(st: &mut Expander, call: &Call, depth: u32) -> Result<Vec<
          }
          let marker = if const_block.is_some() { crate::parser::TLS_CONST_ATTR } else { crate::parser::TLS_ATTR };
          let init_name = format!("{}#init", st.ctx.interner.get(name));
@@ -14856,7 +14958,7 @@ index eca21eee99e20a7497754158516c42a8ed50ef06..1bcfa9836f71eff0998f871c3165447e
                      Some(Tok::Plus) => {
                          out.pop();
 diff --git a/src/expand/mod.rs b/src/expand/mod.rs
-index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6204f2831 100644
+index 618adcd9383382846b7ac027b4f257a55c3d1d37..a44d0eaf5bbf3627fd4601ff5654b64124c714c6 100644
 --- a/src/expand/mod.rs
 +++ b/src/expand/mod.rs
 @@ -226,7 +226,8 @@ pub fn hash_token(h: &mut impl Hasher, tok: &Token, strings: &[String]) {
@@ -14926,6 +15028,15 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
                  && tok_at(trees, i + 1).map(|n| n.tok) == Some(Tok::Bang)
          }
          Tt::Delim(_, inner, _) => template_pos_sensitive(inner, interner),
+@@ -710,7 +712,7 @@ impl<'a> ExpandCtx<'a> {
+             real_path: file_path.to_path_buf(),
+             cargo_env: Vec::new(),
+             src,
+-            cfg: builtin::CfgEnv { test, debug_assertions: true, facts: Vec::new(), panic_unwind: false },
++            cfg: builtin::CfgEnv { test, debug_assertions: true, facts: Vec::new(), panic_unwind: false, core_prelude: false, explicit_std: false },
+             module_path: Vec::new(),
+             crate_name: None,
+             extern_crates: Vec::new(),
 @@ -1017,11 +1019,11 @@ fn crate_name_facts(tokens: &[Token], ctx: &ExpandCtx, root: bool) -> (Vec<Sym>,
          match t.tok {
              Tok::LBrace | Tok::LParen | Tok::LBracket => depth += 1,
@@ -14940,7 +15051,32 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
                      || (prev == Some(Tok::PathSep) && matches!(next, Some(Tok::Semi | Tok::Comma | Tok::RBrace)) && in_use_tree(tokens, i));
                  if binds && !shadowed.contains(&s) {
                      shadowed.push(s);
-@@ -1045,10 +1047,10 @@ pub fn needs_expansion(tokens: &[Token], interner: &Interner) -> bool {
+@@ -1041,14 +1043,35 @@ fn crate_name_facts(tokens: &[Token], ctx: &ExpandCtx, root: bool) -> (Vec<Sym>,
+     (shadowed, alloc_extern)
+ }
+ 
++/// An unconditional, original `extern crate std;` at the crate root.
++pub(crate) fn root_explicit_std(tokens: &[Token], interner: &Interner) -> bool {
++    let mut depth = 0u32;
++    for (index, token) in tokens.iter().enumerate() {
++        match token.tok {
++            Tok::LBrace | Tok::LParen | Tok::LBracket => depth += 1,
++            Tok::RBrace | Tok::RParen | Tok::RBracket => depth = depth.saturating_sub(1),
++            Tok::Extern if depth == 0 && (index < 1 || tokens[index - 1].tok != Tok::RBracket) => {
++                if let Some([krate, name, end]) = tokens.get(index + 1..index + 4)
++                    && krate.tok == Tok::Crate && end.tok == Tok::Semi
++                    && matches!(name.tok, Tok::Ident(s, _) if interner.get(s) == "std")
++                {
++                    return true;
++                }
++            }
++            _ => {}
++        }
++    }
++    false
++}
++
+ pub fn needs_expansion(tokens: &[Token], interner: &Interner) -> bool {
      let macro_rules = interner.intern("macro_rules");
      for (i, t) in tokens.iter().enumerate() {
          match t.tok {
@@ -14953,7 +15089,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
                  if builtin::is_passthrough(interner.get(s))
                      && i > 0
                      && (tokens[i - 1].tok == Tok::As
-@@ -1093,7 +1095,7 @@ fn in_use_tree(tokens: &[Token], i: usize) -> bool {
+@@ -1093,7 +1116,7 @@ fn in_use_tree(tokens: &[Token], i: usize) -> bool {
      for j in (0..i).rev() {
          match tokens[j].tok {
              Tok::Use => return tokens.get(j + 1).is_none_or(|t| t.tok != Tok::Lt),
@@ -14962,7 +15098,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
              Tok::SelfLower | Tok::Underscore => {}
              _ => return false,
          }
-@@ -1103,9 +1105,9 @@ fn in_use_tree(tokens: &[Token], i: usize) -> bool {
+@@ -1103,9 +1126,9 @@ fn in_use_tree(tokens: &[Token], i: usize) -> bool {
  
  /// The name a worklist seed defines (`macro_rules! name`), if it reads.
  fn seed_name(seed: &MacroSeed, interner: &Interner) -> Option<Sym> {
@@ -14974,7 +15110,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
          _ => None,
      }
  }
-@@ -1425,7 +1427,7 @@ impl<'a> Expander<'a> {
+@@ -1425,7 +1448,7 @@ impl<'a> Expander<'a> {
  
      /// An identifier tree for `name` at `span`.
      pub fn ident_tree(&mut self, name: &str, span: Span) -> Tt {
@@ -14983,7 +15119,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
      }
  
      /// Folds one dependency read into the running deps hash.
-@@ -1552,7 +1554,7 @@ pub fn splice_placeholders(trees: Vec<Tt>, name: &str, replacement: &[Tt], inter
+@@ -1552,7 +1575,7 @@ pub fn splice_placeholders(trees: Vec<Tt>, name: &str, replacement: &[Tt], inter
      let mut out = Vec::new();
      for tree in trees {
          match tree {
@@ -14992,7 +15128,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
              Tt::Delim(d, inner, span) => out.push(Tt::Delim(d, splice_placeholders(inner, name, replacement, interner), span)),
              other => out.push(other),
          }
-@@ -1707,7 +1709,7 @@ impl SeedReach {
+@@ -1707,7 +1730,7 @@ impl SeedReach {
          let mut always = Vec::new();
          for (i, seed) in seeds.iter().enumerate() {
              for w in seed.tokens.windows(3) {
@@ -15001,7 +15137,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
                      && m == macro_rules
                  {
                      let text = interner.get(n);
-@@ -1727,7 +1729,7 @@ pub fn stream_idents(toks: &[Token], interner: &Interner) -> Option<Vec<Sym>> {
+@@ -1727,7 +1750,7 @@ pub fn stream_idents(toks: &[Token], interner: &Interner) -> Option<Vec<Sym>> {
      let include = interner.intern("include");
      let mut out: Vec<Sym> = Vec::new();
      for t in toks {
@@ -15010,7 +15146,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
              if s == include {
                  return None;
              }
-@@ -1756,7 +1758,7 @@ pub fn reach_seeds<'s>(lists: [&SeedReach; 2], own: &[Token], sources: impl Into
+@@ -1756,7 +1779,7 @@ pub fn reach_seeds<'s>(lists: [&SeedReach; 2], own: &[Token], sources: impl Into
      let mut seen: FxMap<Sym, ()> = FxMap::default();
      let mut todo: Vec<Sym> = Vec::new();
      for t in own {
@@ -15019,7 +15155,19 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
              if s == include {
                  return every();
              }
-@@ -1950,7 +1952,7 @@ fn atomic_shaped(trees: &[Tt]) -> bool {
+@@ -1795,7 +1818,10 @@ fn expand_macros(lexed: Lexed, ctx: &ExpandCtx, seeds: &[MacroSeed], extra: &[Ma
+     if let Some(d) = delimiter_error(&lexed.tokens) {
+         return Err(d);
+     }
+-    if !needs_expansion(&lexed.tokens, ctx.interner) && !seeds_bind_parser_name(&lexed.tokens, seeds, extra, ctx.interner) {
++    // Parser-handled macros still need normal name resolution in core's prelude.
++    if !ctx.cfg.core_prelude && !needs_expansion(&lexed.tokens, ctx.interner)
++        && !seeds_bind_parser_name(&lexed.tokens, seeds, extra, ctx.interner)
++    {
+         return Ok((lexed, Vec::new()));
+     }
+     let (trees, _) = build_trees(&lexed.tokens);
+@@ -1950,7 +1976,7 @@ fn atomic_shaped(trees: &[Tt]) -> bool {
      fn place_tok(tok: Tok) -> bool {
          matches!(
              tok,
@@ -15028,7 +15176,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
                  | Tok::SelfUpper
                  | Tok::SelfLower
                  | Tok::Crate
-@@ -1962,7 +1964,7 @@ fn atomic_shaped(trees: &[Tt]) -> bool {
+@@ -1962,7 +1988,7 @@ fn atomic_shaped(trees: &[Tt]) -> bool {
                  | Tok::Lt
                  | Tok::Gt
                  | Tok::Comma
@@ -15037,7 +15185,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
          )
      }
      // A call or index shape: place tokens, then one trailing group.
-@@ -1974,7 +1976,7 @@ fn atomic_shaped(trees: &[Tt]) -> bool {
+@@ -1974,7 +2000,7 @@ fn atomic_shaped(trees: &[Tt]) -> bool {
          return true;
      }
      trees.iter().all(|t| match t {
@@ -15046,7 +15194,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
          Tt::Delim(Delim::Bracket, _, _) => true,
          _ => false,
      })
-@@ -2037,7 +2039,7 @@ fn flatten_final(trees: &[Tt], out: &mut Vec<Token>) {
+@@ -2037,7 +2063,7 @@ fn flatten_final(trees: &[Tt], out: &mut Vec<Token>) {
  impl builtin::CfgRead for Expander<'_> {
      fn ident_text(&self, tok: Tok) -> Option<String> {
          match tok {
@@ -15055,7 +15203,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
              _ => seg_text(tok, self.ctx.interner),
          }
      }
-@@ -2121,7 +2123,7 @@ impl<'a> Expander<'a> {
+@@ -2121,7 +2147,7 @@ impl<'a> Expander<'a> {
                  exported = false;
                  cfg_off = false;
                  if tok_at(trees, i).map(|t| t.tok) == Some(Tok::Mod)
@@ -15064,7 +15212,49 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
                      && matches!(trees.get(i + 2), Some(Tt::Delim(Delim::Brace, _, _)))
                  {
                      let sym = tok_at(trees, i + 1).and_then(|t| seg_sym(t.tok, st.ctx.interner));
-@@ -3021,7 +3023,7 @@ pub fn macro_rules_at(trees: &[Tt], i: usize, interner: &Interner) -> Option<Def
+@@ -2408,7 +2434,7 @@ impl<'a> Expander<'a> {
+         let gdepth = globs.iter().map(|&(_, d, _)| d).max();
+         let module_idx = self.module_imports.get(&(self.module.clone(), name)).copied();
+         let exported_idx = if self.module.is_empty() { self.exported.get(&name).copied() } else { None };
+-        let std_outer = builtin::is_prelude_macro(name_text);
++        let std_outer = self.prelude_macro(name_text);
+         let def_expn = |i: u32| self.def_expn.get(i as usize).copied().unwrap_or(0);
+         // rustc reads textual scope first: a textual definition is the
+         // answer whenever there is one, and a different macro a `use` or
+@@ -2531,7 +2557,7 @@ impl<'a> Expander<'a> {
+                     // input is in the prescan's root table before its
+                     // expansion runs: the call found X itself, and X may
+                     // not shadow the std macro from outside its expansion.
+-                    if c.def == x.def && x.expn != 0 && !self.expn_within(c.expn, x.expn) && builtin::is_prelude_macro(text) {
++                    if c.def == x.def && x.expn != 0 && !self.expn_within(c.expn, x.expn) && self.prelude_macro(text) {
+                         return Err(Diag::new(
+                             "L0507",
+                             c.span,
+@@ -2645,15 +2671,21 @@ impl<'a> Expander<'a> {
+     /// extern crate `println` (E0433).
+     fn builtin_call_path(&self, segs: &[Seg], leading_colon: bool) -> bool {
+         if segs.len() == 1 {
+-            return !leading_colon;
++            return !leading_colon && (!self.ctx.cfg.core_prelude || builtin::is_core_prelude_macro(&segs[0].text));
+         }
+         let texts: Vec<&str> = segs.iter().map(|s| s.text.as_str()).collect();
+-        if self.shadowed_crates.contains(&segs[0].sym) || (texts[0] == "alloc" && !self.alloc_extern) {
++        if self.shadowed_crates.contains(&segs[0].sym) || (texts[0] == "alloc" && !self.alloc_extern)
++            || (texts[0] == "std" && self.ctx.cfg.core_prelude && !self.ctx.cfg.explicit_std)
++        {
+             return false;
+         }
+         builtin::std_macro_path(&texts)
+     }
+ 
++    fn prelude_macro(&self, name: &str) -> bool {
++        if self.ctx.cfg.core_prelude { builtin::is_core_prelude_macro(name) } else { builtin::is_prelude_macro(name) }
++    }
++
+     /// Resolves a macro call path to a definition index. This is the
+     /// single macro lookup entry point: today it reads this single
+     /// file's textual scope, imports, and path tables. S7's frozen
+@@ -3021,7 +3053,7 @@ pub fn macro_rules_at(trees: &[Tt], i: usize, interner: &Interner) -> Option<Def
          return None;
      }
      let name_tok = tok_at(trees, i + 2)?;
@@ -15073,7 +15263,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
      match trees.get(i + 3) {
          Some(Tt::Delim(d, _, group_span)) => {
              let mut end = i + 4;
-@@ -3140,7 +3142,7 @@ fn starts_item(trees: &[Tt], interner: &Interner) -> bool {
+@@ -3140,7 +3172,7 @@ fn starts_item(trees: &[Tt], interner: &Interner) -> bool {
              }
              Some(Tok::Const) => {
                  // `const fn` is a qualified fn; `const NAME` is the item.
@@ -15082,7 +15272,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
                      return true;
                  }
                  i += 1;
-@@ -3475,7 +3477,7 @@ fn ends_operand(out: &[Tt]) -> bool {
+@@ -3475,7 +3507,7 @@ fn ends_operand(out: &[Tt]) -> bool {
          Some(Tt::Delim(d, _, _)) => *d != Delim::Brace,
          Some(Tt::Frag(k, _, _)) => matches!(k, FragKind::Expr | FragKind::Expr2021 | FragKind::Path | FragKind::Literal | FragKind::Ty),
          Some(Tt::Tok(t)) => match t.tok {
@@ -15091,7 +15281,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
              | Tok::Int(..)
              | Tok::Float(_)
              | Tok::Str(..)
-@@ -3520,7 +3522,7 @@ fn decl_params(out: &[Tt]) -> bool {
+@@ -3520,7 +3552,7 @@ fn decl_params(out: &[Tt]) -> bool {
          let Some(open) = open else { return false };
          e = open;
      }
@@ -15100,7 +15290,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
  }
  
  /// True when the top level of `trees[s..]` has `tok`.
-@@ -3611,10 +3613,10 @@ fn generics_open(out: &[Tt], interner: &Interner) -> bool {
+@@ -3611,10 +3643,10 @@ fn generics_open(out: &[Tt], interner: &Interner) -> bool {
      let n = out.len();
      match tok_at(out, n.wrapping_sub(1)).map(|t| t.tok) {
          Some(Tok::Impl | Tok::For) => true,
@@ -15113,7 +15303,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
              _ => false,
          },
          _ => false,
-@@ -3655,7 +3657,7 @@ fn block_like_start(trees: &[Tt], s: usize) -> bool {
+@@ -3655,7 +3687,7 @@ fn block_like_start(trees: &[Tt], s: usize) -> bool {
          Some(Tt::Tok(t)) => match t.tok {
              Tok::If | Tok::Match | Tok::Loop | Tok::While | Tok::For => true,
              Tok::Unsafe | Tok::Const => brace_at(s + 1),
@@ -15122,7 +15312,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
              _ => false,
          },
          _ => false,
-@@ -3675,7 +3677,7 @@ fn block_like_end(trees: &[Tt], s: usize) -> Option<usize> {
+@@ -3675,7 +3707,7 @@ fn block_like_end(trees: &[Tt], s: usize) -> Option<usize> {
      }
      match tok_at(trees, s)?.tok {
          Tok::Unsafe | Tok::Const | Tok::Loop => brace_at(s + 1).then_some(s + 2),
@@ -15131,7 +15321,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
          Tok::Match | Tok::While => Some(body_brace(trees, s + 1)? + 1),
          Tok::For => {
              // The pattern runs to the first top-level `in`.
-@@ -3717,7 +3719,7 @@ fn body_brace(trees: &[Tt], mut j: usize) -> Option<usize> {
+@@ -3717,7 +3749,7 @@ fn body_brace(trees: &[Tt], mut j: usize) -> Option<usize> {
                      j = (j + 1..trees.len()).find(|&k| trees[k].is_tok(Tok::Eq))? + 1;
                      operand = true;
                  }
@@ -15140,7 +15330,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
                      if operand && block_like_start(trees, j) =>
                  {
                      j = block_like_end(trees, j)?;
-@@ -3732,7 +3734,7 @@ fn body_brace(trees: &[Tt], mut j: usize) -> Option<usize> {
+@@ -3732,7 +3764,7 @@ fn body_brace(trees: &[Tt], mut j: usize) -> Option<usize> {
                      j = generics_end(trees, j + 1, trees.len())?;
                      operand = false;
                  }
@@ -15149,7 +15339,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
                  | Tok::Reserved(_)
                  | Tok::Int(..)
                  | Tok::Float(_)
-@@ -3740,7 +3742,7 @@ fn body_brace(trees: &[Tt], mut j: usize) -> Option<usize> {
+@@ -3740,7 +3772,7 @@ fn body_brace(trees: &[Tt], mut j: usize) -> Option<usize> {
                  | Tok::ByteStr(_)
                  | Tok::ByteChar(_)
                  | Tok::Char(..)
@@ -15158,7 +15348,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
                  | Tok::True
                  | Tok::False
                  | Tok::SelfLower
-@@ -3802,7 +3804,7 @@ fn expr_stmt_has_top_op(trees: &[Tt], s: usize, e: usize, mut operand: bool) ->
+@@ -3802,7 +3834,7 @@ fn expr_stmt_has_top_op(trees: &[Tt], s: usize, e: usize, mut operand: bool) ->
              Tt::Delim(..) | Tt::Frag(..) => operand = false,
              Tt::Tok(t) => match t.tok {
                  Tok::Return | Tok::Break | Tok::Pipe | Tok::OrOr | Tok::Move | Tok::Async | Tok::Static if operand => return false,
@@ -15167,7 +15357,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
                      if operand && block_like_start(trees, j) =>
                  {
                      let Some(end) = block_like_end(trees, j) else { return true };
-@@ -3954,7 +3956,7 @@ impl<'a> Expander<'a> {
+@@ -3954,7 +3986,7 @@ impl<'a> Expander<'a> {
              }
              // An inline module: its body is its own macro scope and path.
              if tok_at(&trees, i).map(|t| t.tok) == Some(Tok::Mod)
@@ -15176,7 +15366,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
                  && matches!(trees.get(i + 2), Some(Tt::Delim(Delim::Brace, _, _)))
              {
                  let (name_sym, name_ok) = match tok_at(&trees, i + 1) {
-@@ -4006,7 +4008,7 @@ impl<'a> Expander<'a> {
+@@ -4006,7 +4038,7 @@ impl<'a> Expander<'a> {
              // the worklist passes it written definitions only.
              if item_list
                  && tok_at(&trees, i).map(|t| t.tok) == Some(Tok::Mod)
@@ -15185,7 +15375,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
                  && tok_at(&trees, i + 2).map(|t| t.tok) == Some(Tok::Semi)
                  && let Some(span) = self.expanded_textual_span()
              {
-@@ -4866,9 +4868,9 @@ impl<'a> Expander<'a> {
+@@ -4866,9 +4898,9 @@ impl<'a> Expander<'a> {
                  // the parser owns only the plain builtin spellings.
                  if let Some(canon) = alias
                      && let Some(Tt::Tok(tok)) = out.first_mut()
@@ -15197,7 +15387,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..5eeab04fbd3ac1c7d8bf496908011ce6
                  }
                  let written_lit = is_str_lit_arg(&call.inner);
                  let msg = if name == "assert" { builtin::assert_message(self, &call.inner, call.span)? } else { Vec::new() };
-@@ -5319,7 +5321,7 @@ mod tests {
+@@ -5319,7 +5351,7 @@ mod tests {
          let ctx = ExpandCtx::for_file(&interner, &known, std::path::Path::new("test.rs"), src, false);
          let out = expand_lexed(lexed, &ctx).expect("expansion");
          let tmps: Vec<CtxtId> =
@@ -16653,10 +16843,31 @@ index 20f43a0f0b85fac8b27e4569d433f3cf101f05eb..f71895124fd1d19987f9092e14e261d2
          std::process::exit(code);
      }
 diff --git a/src/parser.rs b/src/parser.rs
-index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17be869f1c 100644
+index 804532cf1694c50fff28771d72bde34d998afb59..9cf37ff66762b0c9cc68fbe3aea64df72e5cbcc8 100644
 --- a/src/parser.rs
 +++ b/src/parser.rs
-@@ -746,7 +746,7 @@ fn parse_fmt_spec(fmt: &str) -> Result<(FmtSpec, Option<FmtCount>, Option<FmtCou
+@@ -34,6 +34,20 @@ fn async_error(span: Span) -> Diag {
+ 
+ type PResult<T> = Result<T, Diag>;
+ 
++/// The crate attribute consumed by the native artifact root parser.
++pub(crate) fn leading_no_std(lexed: &Lexed, interner: &Interner) -> Option<Attr> {
++    let [pound, bang, open, name, close, ..] = lexed.tokens.as_slice() else { return None; };
++    let Tok::Ident(symbol, _) = name.tok else { return None; };
++    if pound.tok != Tok::Pound || bang.tok != Tok::Bang || open.tok != Tok::LBracket
++        || interner.get(symbol) != "no_std"
++        || close.tok != Tok::RBracket
++    {
++        return None;
++    }
++    Some(Attr { style: AttrStyle::Inner, path: vec![PathSeg::plain(symbol)],
++        input: AttrInput::None, span: pound.span.to(close.span) })
++}
++
+ mod attrs;
+ mod hrtb;
+ 
+@@ -746,7 +760,7 @@ fn parse_fmt_spec(fmt: &str) -> Result<(FmtSpec, Option<FmtCount>, Option<FmtCou
      // A count from an argument: `name$` or `N$`, with its end.
      let count_arg = |cs: &[char], j: usize| -> Option<(FmtCount, usize)> {
          let mut k = j;
@@ -16665,7 +16876,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
              k += 1;
          }
          if k == j || cs.get(k) != Some(&'$') {
-@@ -887,7 +887,7 @@ fn is_allow(attr: &Attr, known: &Known) -> bool {
+@@ -887,7 +901,7 @@ fn is_allow(attr: &Attr, known: &Known) -> bool {
  fn tok_name(t: Tok) -> &'static str {
      use Tok::*;
      match t {
@@ -16674,7 +16885,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
          Reserved(_) => "reserved keyword",
          Int(..) => "integer literal",
          Float(_) => "float literal",
-@@ -896,7 +896,7 @@ fn tok_name(t: Tok) -> &'static str {
+@@ -896,7 +910,7 @@ fn tok_name(t: Tok) -> &'static str {
          ByteStr(_) => "byte string literal",
          ByteChar(_) => "byte char literal",
          Char(..) => "char literal",
@@ -16683,7 +16894,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
          As => "`as`",
          Break => "`break`",
          Const => "`const`",
-@@ -1100,13 +1100,13 @@ impl<'a> Parser<'a> {
+@@ -1100,13 +1114,13 @@ impl<'a> Parser<'a> {
      }
      fn ident(&mut self) -> PResult<(Sym, Span)> {
          match self.peek() {
@@ -16700,7 +16911,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
              t => Err(syntax(self.span(), format!("expected identifier, found {}", tok_name(t)))),
          }
      }
-@@ -1155,7 +1155,7 @@ impl<'a> Parser<'a> {
+@@ -1155,7 +1169,7 @@ impl<'a> Parser<'a> {
      /// True when the current token is the identifier `name` (for weak keywords
      /// such as `union`, `macro_rules`, and `raw`).
      fn at_ident(&self, name: &str) -> bool {
@@ -16709,7 +16920,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
      }
  
      /// True at a macro call head: a path of one or more segments ending in `!`
-@@ -1164,7 +1164,7 @@ impl<'a> Parser<'a> {
+@@ -1164,7 +1178,7 @@ impl<'a> Parser<'a> {
          let mut j = self.pos;
          loop {
              match self.toks.get(j).map(|t| t.tok) {
@@ -16718,7 +16929,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                  _ => return false,
              }
              match self.toks.get(j).map(|t| t.tok) {
-@@ -1188,7 +1188,7 @@ impl<'a> Parser<'a> {
+@@ -1188,7 +1202,7 @@ impl<'a> Parser<'a> {
          }
          match self.toks.get(j + 1).map(|t| t.tok) {
              Some(Tok::LBrace) => true,
@@ -16727,7 +16938,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
              _ => false,
          }
      }
-@@ -1227,7 +1227,7 @@ impl<'a> Parser<'a> {
+@@ -1227,7 +1241,7 @@ impl<'a> Parser<'a> {
          let mut path = Vec::new();
          loop {
              match self.bump().tok {
@@ -16736,7 +16947,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                  Tok::Crate => path.push(PathSeg::plain(self.interner.intern("crate"))),
                  Tok::Super => path.push(PathSeg::plain(self.interner.intern("super"))),
                  Tok::SelfLower => path.push(PathSeg::plain(self.known.self_value)),
-@@ -1695,7 +1695,7 @@ impl<'a> Parser<'a> {
+@@ -1695,7 +1709,7 @@ impl<'a> Parser<'a> {
              let mut bi = 0usize;
              while let Some(t) = body.get(bi) {
                  match t.tok {
@@ -16745,7 +16956,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                          path.push(PathSeg::plain(s));
                          bi += 1;
                          if body.get(bi).map(|t| t.tok) == Some(Tok::PathSep) {
-@@ -1722,7 +1722,7 @@ impl<'a> Parser<'a> {
+@@ -1722,7 +1736,7 @@ impl<'a> Parser<'a> {
              // no unsafe code, so none of them is supported yet.
              if path.is_empty() && body.first().map(|t| t.tok) == Some(Tok::Unsafe) && body.get(1).map(|t| t.tok) == Some(Tok::LParen) {
                  let inner = match body.get(2).map(|t| t.tok) {
@@ -16754,7 +16965,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                      _ => "..".to_string(),
                  };
                  return Err(not_yet(C_ATTR, start, &format!("the `#[unsafe({inner})]` attribute")));
-@@ -1808,7 +1808,7 @@ impl<'a> Parser<'a> {
+@@ -1808,7 +1822,7 @@ impl<'a> Parser<'a> {
                      }
                      for t in &body[bi + 1..] {
                          match t.tok {
@@ -16763,7 +16974,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                              Tok::Comma | Tok::PathSep => {}
                              Tok::RParen => break,
                              _ => return Err(syntax(t.span, "expected a trait name in `derive`")),
-@@ -1915,7 +1915,7 @@ impl<'a> Parser<'a> {
+@@ -1915,7 +1929,7 @@ impl<'a> Parser<'a> {
              i += 1;
          }
          loop {
@@ -16772,7 +16983,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                  return Err(syntax(if i < hi { self.toks[i].span } else { start }, "expected an attribute name"));
              }
              i += 1;
-@@ -2048,7 +2048,7 @@ impl<'a> Parser<'a> {
+@@ -2048,7 +2062,7 @@ impl<'a> Parser<'a> {
          let vis_span = if vis == Vis::Private { vis_start } else { vis_start.to(self.prev_span()) };
          // A `const` item (`const NAME: Ty = ...;`), told apart from a
          // `const fn` qualifier by the name and colon after it.
@@ -16781,7 +16992,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
              let kind = ItemKind::Const(self.const_def()?);
              self.check_derive_test(&parsed, false, false)?;
              attrs::check_target(&parsed.attrs, "constants", 0, self.interner)?;
-@@ -2144,7 +2144,7 @@ impl<'a> Parser<'a> {
+@@ -2144,7 +2158,7 @@ impl<'a> Parser<'a> {
              _ if qual.is_const => return Err(not_yet(C_CONST, start, "const and static items")),
              _ if qual.is_async => return Err(async_error(start)),
              _ if qual.is_unsafe => return Err(unsafe_error(start)),
@@ -16790,7 +17001,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                  self.bump(); // `union`
                  let (name, name_span) = self.ident()?;
                  let generics = self.generics(true)?;
-@@ -2159,16 +2159,16 @@ impl<'a> Parser<'a> {
+@@ -2159,16 +2173,16 @@ impl<'a> Parser<'a> {
                      derives: derives.clone(),
                  })
              }
@@ -16810,7 +17021,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                  return Err(macro_error(start));
              }
              Tok::Reserved(_) => return Err(self.reserved_error(start)),
-@@ -2221,7 +2221,7 @@ impl<'a> Parser<'a> {
+@@ -2221,7 +2235,7 @@ impl<'a> Parser<'a> {
          let mut prefix = Vec::new();
          loop {
              let name = match self.peek() {
@@ -16819,7 +17030,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                  Tok::SelfLower => {
                      self.bump();
                      self.known.self_value
-@@ -2291,7 +2291,7 @@ impl<'a> Parser<'a> {
+@@ -2291,7 +2305,7 @@ impl<'a> Parser<'a> {
                      let _generics = self.generics(true)?;
                      self.expect(Tok::Semi, "`;`")?;
                  }
@@ -16828,7 +17039,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                      self.skip_macro_invocation()?;
                      self.eat(Tok::Semi);
                  }
-@@ -2488,9 +2488,9 @@ impl<'a> Parser<'a> {
+@@ -2488,9 +2502,9 @@ impl<'a> Parser<'a> {
      /// One written lifetime ('a, 'static, '_) at the current token.
      fn lifetime_here(&mut self) -> PResult<Lifetime> {
          match self.peek() {
@@ -16840,7 +17051,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                  Ok(Lifetime { name, span })
              }
              t => Err(syntax(self.span(), format!("expected a lifetime, found {}", tok_name(t)))),
-@@ -2502,9 +2502,9 @@ impl<'a> Parser<'a> {
+@@ -2502,9 +2516,9 @@ impl<'a> Parser<'a> {
      /// on, as in rustc, so the error is deferred: fragment probes, which
      /// ignore deferred errors, read such names the way rustc's parser does.
      /// Added for fx-lex-small (W-CORELANG owns the parser).
@@ -16852,7 +17063,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
              self.defer(d);
          }
      }
-@@ -2527,7 +2527,7 @@ impl<'a> Parser<'a> {
+@@ -2527,7 +2541,7 @@ impl<'a> Parser<'a> {
              }
              let pattrs = self.part_attributes("type parameters", 0)?;
              match self.peek() {
@@ -16861,7 +17072,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                      if !allow_lifetimes {
                          return Err(lifetime_error(self.span()));
                      }
-@@ -2539,7 +2539,7 @@ impl<'a> Parser<'a> {
+@@ -2539,7 +2553,7 @@ impl<'a> Parser<'a> {
                              if !self.eat(Tok::Plus) {
                                  break;
                              }
@@ -16870,7 +17081,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                                  break;
                              }
                          }
-@@ -2554,7 +2554,7 @@ impl<'a> Parser<'a> {
+@@ -2554,7 +2568,7 @@ impl<'a> Parser<'a> {
                      let default = if self.eat(Tok::Eq) { Some(self.const_arg_expr()?) } else { None };
                      params.push(GenericParam::Const { name, span, ty, default, attrs: pattrs.attrs });
                  }
@@ -16879,7 +17090,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                      let (name, span) = self.ident()?;
                      let bounds = if self.eat(Tok::Colon) { self.bounds()? } else { Vec::new() };
                      let default = if self.eat(Tok::Eq) { Some(self.ty()?) } else { None };
-@@ -2619,7 +2619,7 @@ impl<'a> Parser<'a> {
+@@ -2619,7 +2633,7 @@ impl<'a> Parser<'a> {
      fn trait_bound(&mut self) -> PResult<TraitBound> {
          let binder = self.opt_binder()?;
          let maybe = self.eat(Tok::Question);
@@ -16888,7 +17099,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
              return Ok(TraitBound::Lifetime(self.lifetime_here()?));
          }
          // The legacy `~const` and `async` bound modifiers are not
-@@ -2686,7 +2686,7 @@ impl<'a> Parser<'a> {
+@@ -2686,7 +2700,7 @@ impl<'a> Parser<'a> {
          let mut args = Vec::new();
          while self.peek() != Tok::Gt {
              match self.peek() {
@@ -16897,7 +17108,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                      let lt = self.lifetime_here()?;
                      if self.interner.get(lt.name) == "static" {
                          return Err(syntax(lt.span, "expected lifetime parameter in `use<...>` precise captures list, found `'static`"));
-@@ -2717,7 +2717,7 @@ impl<'a> Parser<'a> {
+@@ -2717,7 +2731,7 @@ impl<'a> Parser<'a> {
              if matches!(self.peek(), Tok::LBrace | Tok::Semi) {
                  break;
              }
@@ -16906,7 +17117,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                  let lt = self.lifetime_here()?;
                  self.expect(Tok::Colon, "`:`")?;
                  let mut bounds = Vec::new();
-@@ -2726,7 +2726,7 @@ impl<'a> Parser<'a> {
+@@ -2726,7 +2740,7 @@ impl<'a> Parser<'a> {
                      if !self.eat(Tok::Plus) {
                          break;
                      }
@@ -16915,7 +17126,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                          break;
                      }
                  }
-@@ -2788,10 +2788,10 @@ impl<'a> Parser<'a> {
+@@ -2788,10 +2802,10 @@ impl<'a> Parser<'a> {
                  (Tok::Mut, Tok::SelfLower, _, _) => Some((SelfKind::Value, true, 2, None)),
                  (Tok::Amp, Tok::SelfLower, _, _) => Some((SelfKind::Ref, false, 2, None)),
                  (Tok::Amp, Tok::Mut, Tok::SelfLower, _) => Some((SelfKind::RefMut, false, 3, None)),
@@ -16928,7 +17139,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                      Some((SelfKind::RefMut, false, 4, Some(Lifetime { name: lt, span: self.toks[self.pos + 1].span })))
                  }
                  _ => None,
-@@ -2799,7 +2799,7 @@ impl<'a> Parser<'a> {
+@@ -2799,7 +2813,7 @@ impl<'a> Parser<'a> {
          };
          if let Some((kind, mutable, n, lifetime)) = self_form {
              if let Some(lt) = lifetime {
@@ -16937,7 +17148,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
              }
              for _ in 0..n {
                  self.bump();
-@@ -2829,12 +2829,12 @@ impl<'a> Parser<'a> {
+@@ -2829,12 +2843,12 @@ impl<'a> Parser<'a> {
              // The plain `name: Ty` and `mut name: Ty` forms keep
              // the exact name span: hygiene reads the name token's
              // context as the binding's context (ARCH 6.3).
@@ -16953,7 +17164,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                      Tok::Reserved(_) => return Err(self.reserved_error(self.span())),
                      _ => unreachable!(),
                  };
-@@ -3096,7 +3096,7 @@ impl<'a> Parser<'a> {
+@@ -3096,7 +3110,7 @@ impl<'a> Parser<'a> {
                      fns.push(def);
                  }
                  Tok::Type => types.push(self.assoc_type()?),
@@ -16962,7 +17173,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                  Tok::Const | Tok::Unsafe | Tok::Async | Tok::Extern if self.cfg_syntax => {
                      while matches!(self.peek(), Tok::Const | Tok::Unsafe | Tok::Async) {
                          self.bump();
-@@ -3121,11 +3121,11 @@ impl<'a> Parser<'a> {
+@@ -3121,11 +3135,11 @@ impl<'a> Parser<'a> {
                  Tok::Const => return Err(self.reject(C_CONST, "const functions")),
                  Tok::Unsafe => return Err(unsafe_error(self.span())),
                  Tok::Async => return Err(async_error(self.span())),
@@ -16976,7 +17187,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                  t => return Err(syntax(self.span(), format!("expected a trait item, found {}", tok_name(t)))),
              }
              self.scope_allows.truncate(item_mark);
-@@ -3159,7 +3159,7 @@ impl<'a> Parser<'a> {
+@@ -3159,7 +3173,7 @@ impl<'a> Parser<'a> {
          // `::` (`impl crate::a::Trait for T`): `path` reads the anchor as
          // a first segment and the resolver rewrites it, as in a bound.
          // An inherent impl's Self type may start the same way.
@@ -16985,7 +17196,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
          let (trait_ref, self_ty) = if path_start {
              let header_start = self.span();
              let path = self.trait_path()?;
-@@ -3211,7 +3211,7 @@ impl<'a> Parser<'a> {
+@@ -3211,7 +3225,7 @@ impl<'a> Parser<'a> {
                  }
                  Tok::Type if trait_ref.is_some() || self.cfg_syntax => types.push(self.assoc_type()?),
                  Tok::Type => return Err(self.reject(C_ASSOC, "associated types in inherent impls")),
@@ -16994,7 +17205,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                      let mut def = self.assoc_const()?;
                      def.vis = vis;
                      consts.push(def);
-@@ -3247,11 +3247,11 @@ impl<'a> Parser<'a> {
+@@ -3247,11 +3261,11 @@ impl<'a> Parser<'a> {
                  Tok::Const => return Err(self.reject(C_CONST, "const functions")),
                  Tok::Unsafe => return Err(unsafe_error(self.span())),
                  Tok::Async => return Err(async_error(self.span())),
@@ -17008,7 +17219,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                  t => return Err(syntax(self.span(), format!("expected an impl item, found {}", tok_name(t)))),
              }
          }
-@@ -3299,7 +3299,7 @@ impl<'a> Parser<'a> {
+@@ -3299,7 +3313,7 @@ impl<'a> Parser<'a> {
                  // Written lifetimes are recorded; regions are erased
                  // in this milestone, and collect decides which
                  // written forms the subset accepts.
@@ -17017,7 +17228,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                      let lt = self.lifetime_here()?;
                      Some(lt)
                  } else {
-@@ -3408,8 +3408,8 @@ impl<'a> Parser<'a> {
+@@ -3408,8 +3422,8 @@ impl<'a> Parser<'a> {
                          break;
                      }
                      let pstart = self.span();
@@ -17028,7 +17239,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                          self.bump();
                          Some(n)
                      } else {
-@@ -3502,11 +3502,11 @@ impl<'a> Parser<'a> {
+@@ -3502,11 +3516,11 @@ impl<'a> Parser<'a> {
                  Ok(t)
              }
              Tok::For => Err(not_yet(C_TRAIT, start, "higher-ranked (`for<..>`) types and bounds")),
@@ -17042,7 +17253,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
              _ => {
                  let path = self.path(true)?;
                  Ok(self.push_ty(TyExpr::Path(path), start.to(self.prev_span())))
-@@ -3540,7 +3540,7 @@ impl<'a> Parser<'a> {
+@@ -3540,7 +3554,7 @@ impl<'a> Parser<'a> {
          match self.peek() {
              Tok::Minus => self.prefix(false),
              Tok::LBrace => self.block_like_expr(false),
@@ -17051,7 +17262,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                  self.primary(false, false)
              }
              // A token that starts no expression is a grammar error, also
-@@ -3560,8 +3560,8 @@ impl<'a> Parser<'a> {
+@@ -3560,8 +3574,8 @@ impl<'a> Parser<'a> {
          let mut args = Vec::new();
          while self.peek() != Tok::Gt {
              match self.peek() {
@@ -17062,7 +17273,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                      let span = self.span();
                      self.bump();
                      self.bump();
-@@ -3573,7 +3573,7 @@ impl<'a> Parser<'a> {
+@@ -3573,7 +3587,7 @@ impl<'a> Parser<'a> {
                      };
                      args.push(GenericArg::Binding { name, span, kind });
                  }
@@ -17071,7 +17282,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                      let span = self.span();
                      self.bump();
                      self.bump();
-@@ -3631,7 +3631,7 @@ impl<'a> Parser<'a> {
+@@ -3631,7 +3645,7 @@ impl<'a> Parser<'a> {
              };
              segs.push(PathSeg { name, args });
              if self.peek() == Tok::PathSep
@@ -17080,7 +17291,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
              {
                  self.bump();
              } else {
-@@ -3707,7 +3707,7 @@ impl<'a> Parser<'a> {
+@@ -3707,7 +3721,7 @@ impl<'a> Parser<'a> {
              Some(Tok::Fn | Tok::Struct | Tok::Enum | Tok::Impl | Tok::Mod | Tok::Trait | Tok::Static | Tok::Type | Tok::Extern) => true,
              Some(Tok::Const) => self.toks.get(j + 1).map(|t| t.tok) != Some(Tok::LBrace),
              // `union` is a contextual keyword: an item only when a name follows.
@@ -17089,7 +17300,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
              _ => false,
          }
      }
-@@ -3865,7 +3865,7 @@ impl<'a> Parser<'a> {
+@@ -3865,7 +3879,7 @@ impl<'a> Parser<'a> {
                  stmts.push(Stmt::Let { pat, ty, init, els, attrs: stmt_attrs.attrs, span: s.to(self.prev_span()) });
                  continue;
              }
@@ -17098,7 +17309,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
              // An inline `const { .. }` block is block-like too: as a
              // statement it needs no `;` and ends at its `}` (rustc).
              let const_block = self.peek() == Tok::Const && self.peek_at(1) == Tok::LBrace;
-@@ -4014,7 +4014,7 @@ impl<'a> Parser<'a> {
+@@ -4014,7 +4028,7 @@ impl<'a> Parser<'a> {
      /// `at_bound_start` at lookahead `n`.
      fn at_bound_start_at(&self, n: usize) -> bool {
          self.at_literal_start_at(n)
@@ -17107,7 +17318,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
      }
  
      /// Parses one range pattern bound: a literal (possibly negated) or
-@@ -4025,7 +4025,7 @@ impl<'a> Parser<'a> {
+@@ -4025,7 +4039,7 @@ impl<'a> Parser<'a> {
              let (self_ty, trait_path, segs) = self.qpath_parts()?;
              let span = start.to(self.prev_span());
              Ok(self.push_expr(Expr::QPath { self_ty, trait_path, segs }, span))
@@ -17116,7 +17327,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
              let path = self.path(false)?;
              let span = start.to(self.prev_span());
              Ok(self.push_expr(Expr::Path(path), span))
-@@ -4113,15 +4113,15 @@ impl<'a> Parser<'a> {
+@@ -4113,15 +4127,15 @@ impl<'a> Parser<'a> {
                      Pat::QPath { self_ty, trait_path, segs }
                  }
              }
@@ -17135,7 +17346,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                  let anchored = matches!(self.peek(), Tok::Crate | Tok::Super | Tok::SelfLower | Tok::PathSep);
                  let path = self.path(false)?;
                  if self.peek() == Tok::DotDotEq || self.peek() == Tok::DotDot {
-@@ -4982,7 +4982,7 @@ impl<'a> Parser<'a> {
+@@ -4982,7 +4996,7 @@ impl<'a> Parser<'a> {
                      // `match`, a loop, `const { .. }`) ends the arm at its
                      // `}` and needs no `,`, as in rustc; a `.` or `?`
                      // after it continues one expression that does.
@@ -17144,7 +17355,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                      let const_block = self.peek() == Tok::Const && self.peek_at(1) == Tok::LBrace;
                      let mut block_body =
                          labeled || const_block || matches!(self.peek(), Tok::LBrace | Tok::If | Tok::Match | Tok::While | Tok::Loop | Tok::For);
-@@ -5233,10 +5233,10 @@ impl<'a> Parser<'a> {
+@@ -5233,10 +5247,10 @@ impl<'a> Parser<'a> {
                  let val = if self.can_start_expr() { Some(self.expr()?) } else { None };
                  Expr::Return(val)
              }
@@ -17157,7 +17368,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                  self.expect(Tok::Colon, "`:` after a label")?;
                  let label = Label { name, span };
                  return self.block_like_labeled(Some(label), inner_ok);
-@@ -5309,7 +5309,7 @@ impl<'a> Parser<'a> {
+@@ -5309,7 +5323,7 @@ impl<'a> Parser<'a> {
                  self.bump();
                  Expr::Underscore
              }
@@ -17166,7 +17377,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                  if self.peek_at(1) == Tok::Bang {
                      return self.macro_call();
                  }
-@@ -5353,10 +5353,10 @@ impl<'a> Parser<'a> {
+@@ -5353,10 +5367,10 @@ impl<'a> Parser<'a> {
      /// An optional label after `break` or `continue` (no colon follows it there).
      fn break_label(&mut self) -> Option<Label> {
          match self.peek() {
@@ -17179,7 +17390,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                  Some(Label { name, span })
              }
              _ => None,
-@@ -5460,7 +5460,7 @@ impl<'a> Parser<'a> {
+@@ -5460,7 +5474,7 @@ impl<'a> Parser<'a> {
      /// True at a `std::mem::offset_of!` or `core::mem::offset_of!` path call.
      fn at_offset_of_path(&self) -> bool {
          let name_at = |j: usize| match self.toks.get(j).map(|t| t.tok) {
@@ -17188,7 +17399,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
              _ => None,
          };
          matches!(name_at(self.pos), Some("std" | "core"))
-@@ -5482,7 +5482,7 @@ impl<'a> Parser<'a> {
+@@ -5482,7 +5496,7 @@ impl<'a> Parser<'a> {
          let mut last_text = String::new();
          loop {
              match self.peek() {
@@ -17197,7 +17408,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                      last_text = self.interner.get(s).to_string();
                      self.bump();
                  }
-@@ -5497,7 +5497,7 @@ impl<'a> Parser<'a> {
+@@ -5497,7 +5511,7 @@ impl<'a> Parser<'a> {
          }
          self.expect(Tok::Bang, "`!` after a macro name")?;
          // A definition names the macro before its group.
@@ -17206,7 +17417,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
              self.bump();
          }
          let close_of = |t: Tok| match t {
-@@ -5642,7 +5642,7 @@ impl<'a> Parser<'a> {
+@@ -5642,7 +5656,7 @@ impl<'a> Parser<'a> {
                      if self.peek() == close {
                          break;
                      }
@@ -17215,7 +17426,7 @@ index 804532cf1694c50fff28771d72bde34d998afb59..fb4c6f26f19d3521ac5cf5487a08de17
                          && self.peek_at(1) == Tok::Eq
                      {
                          let name_span = self.bump().span;
-@@ -5894,16 +5894,21 @@ mod tests {
+@@ -5894,16 +5908,21 @@ mod tests {
      /// the error is L9001, not a parser stack overflow (fx-parsehang).
      #[test]
      fn right_recursion_depth_cap() {
@@ -19334,7 +19545,7 @@ index 55a9c568452cde1f283fc02894b4d304b14891cb..93c4de7c8f979e11b76bf9737f8b3fdb
  
      #[test]
 diff --git a/src/resolve/imports.rs b/src/resolve/imports.rs
-index 05fa1af6472a45f59b544080121faf48c73f55eb..ef4b6cfe01547950ff7e6ad0fe72fc6b07be6b1e 100644
+index 05fa1af6472a45f59b544080121faf48c73f55eb..184669eafbbe4d4dacf7e9ff0b47ebe91e0872d0 100644
 --- a/src/resolve/imports.rs
 +++ b/src/resolve/imports.rs
 @@ -22,7 +22,7 @@ use crate::diag::{Diag, Span};
@@ -19355,7 +19566,18 @@ index 05fa1af6472a45f59b544080121faf48c73f55eb..ef4b6cfe01547950ff7e6ad0fe72fc6b
      /// Adt def -> associated fn name -> (vis, defining module).
      pub assoc_vis: FxMap<DefId, FxMap<Sym, (VisKind, ModuleId)>>,
      /// Adt def -> (field name -> vis) plus the defining module, for the
-@@ -495,6 +497,7 @@ impl ResolvedTables {
+@@ -411,6 +413,10 @@ pub struct ResolvedTables {
+     /// only there (and in shipped std source) does `alloc` name the
+     /// alloc crate, as in rustc edition 2024 (`extern_in_scope`).
+     pub alloc_roots: Vec<ModuleId>,
++    /// A crate with its original `#![no_std]` root policy uses core's prelude.
++    pub core_prelude_roots: Vec<ModuleId>,
++    /// Explicit root std imports can restore the crate name under that policy.
++    pub explicit_std_roots: Vec<ModuleId>,
+     /// The file each `mod name;` without `#[path]` did not take:
+     /// `name/mod.rs` beside the `name.rs` it loaded, or the reverse. Once
+     /// one appears a cold resolve rejects that module (L0502); the body
+@@ -495,6 +501,7 @@ impl ResolvedTables {
              glob_log: Vec::new(),
              ambiguous_keys: FxMap::default(),
              externs: Vec::new(),
@@ -19363,7 +19585,16 @@ index 05fa1af6472a45f59b544080121faf48c73f55eb..ef4b6cfe01547950ff7e6ad0fe72fc6b
              assoc_vis: FxMap::default(),
              field_vis: FxMap::default(),
              tuple_field_vis: FxMap::default(),
-@@ -795,7 +798,7 @@ impl ResolvedTables {
+@@ -525,6 +532,8 @@ impl ResolvedTables {
+             std_splice_lo: None,
+             std_ranges: Vec::new(),
+             alloc_roots: Vec::new(),
++            core_prelude_roots: Vec::new(),
++            explicit_std_roots: Vec::new(),
+             module_alts: Vec::new(),
+             module_index: std::sync::OnceLock::new(),
+         }
+@@ -795,7 +804,7 @@ impl ResolvedTables {
  
      /// True when the region of `vis` (at `def_module`) is inside the
      /// region of `outer` (at `outer_module`).
@@ -19372,7 +19603,74 @@ index 05fa1af6472a45f59b544080121faf48c73f55eb..ef4b6cfe01547950ff7e6ad0fe72fc6b
          let (ra, ma) = self.vis_region(vis, def_module, interner);
          let (rb, mb) = self.vis_region(outer, outer_module, interner);
          if rb == 2 {
-@@ -1993,6 +1996,18 @@ impl ResolvedTables {
+@@ -1472,6 +1481,12 @@ impl ResolvedTables {
+         for m in &self.alloc_roots {
+             fold!(0x49, |h: &mut crate::intern::FxHasher| h.write_u64(m.0 as u64));
+         }
++        for m in &self.core_prelude_roots {
++            fold!(0x68, |h: &mut crate::intern::FxHasher| h.write_u64(m.0 as u64));
++        }
++        for m in &self.explicit_std_roots {
++            fold!(0x69, |h: &mut crate::intern::FxHasher| h.write_u64(m.0 as u64));
++        }
+         for (name, m) in &self.std_modules {
+             fold!(0x48, |h: &mut crate::intern::FxHasher| {
+                 h.write_u64(name.0 as u64);
+@@ -1720,6 +1735,19 @@ pub fn in_std_prelude(name: &str, ns: Namespace) -> bool {
+     }
+ }
+ 
++/// Supported type and value names from the pinned core 2024 prelude.
++fn in_core_prelude(name: &str, ns: Namespace) -> bool {
++    match ns {
++        Namespace::Type => matches!(name,
++            "Option" | "Result" | "Copy" | "Clone" | "Default" | "Eq" | "PartialEq" | "Ord" | "PartialOrd"
++            | "Iterator" | "IntoIterator" | "From" | "Into" | "Send" | "Sync" | "Sized" | "Drop" | "Unpin"
++            | "Fn" | "FnMut" | "FnOnce" | "AsRef" | "AsMut" | "TryFrom" | "TryInto" | "FromIterator"
++            | "DoubleEndedIterator" | "ExactSizeIterator" | "Extend" | "Future" | "IntoFuture"),
++        Namespace::Value => STD_PRELUDE_VALUES.contains(&name),
++        Namespace::Macro => false,
++    }
++}
++
+ /// The canonical path (after the crate root) of one std prelude name:
+ /// what `std::prelude` re-exports it from. Import resolution reads
+ /// it to tell a glob-brought re-export of the prelude item itself
+@@ -1815,6 +1843,9 @@ impl ResolvedTables {
+     /// modules of the splice (rustc E0433 otherwise).
+     fn extern_in_scope(&self, from: ModuleId, name: &str) -> Option<u32> {
+         let i = self.extern_by_name(from, name)?;
++        if name == "std" && self.externs[i as usize].is_std_lib && self.std_out_of_scope(from) {
++            return None;
++        }
+         if name != "alloc" || !self.externs[i as usize].is_std_lib {
+             return Some(i);
+         }
+@@ -1832,6 +1863,23 @@ impl ResolvedTables {
+         None
+     }
+ 
++    pub(crate) fn uses_core_prelude(&self, from: ModuleId) -> bool {
++        self.core_prelude_roots.contains(&self.root_of(from))
++    }
++
++    pub(crate) fn std_out_of_scope(&self, from: ModuleId) -> bool {
++        self.uses_core_prelude(from) && !self.explicit_std_roots.contains(&self.root_of(from))
++    }
++
++    pub(crate) fn outside_core_prelude(&self, from: ModuleId, name: &str) -> bool {
++        self.uses_core_prelude(from) && in_std_prelude(name, Namespace::Type) && !in_core_prelude(name, Namespace::Type)
++    }
++
++    fn in_prelude(&self, from: ModuleId, name: &str, ns: Namespace) -> bool {
++        !self.modules[from.0 as usize].no_prelude
++            && if self.uses_core_prelude(from) { in_core_prelude(name, ns) } else { in_std_prelude(name, ns) }
++    }
++
+     /// True when `alloc` is a std extern of `from`'s crate that paths
+     /// written in `from` cannot name (no root `extern crate alloc;`).
+     pub fn alloc_out_of_scope(&self, from: ModuleId) -> bool {
+@@ -1993,6 +2041,18 @@ impl ResolvedTables {
          }
      }
  
@@ -19391,7 +19689,25 @@ index 05fa1af6472a45f59b544080121faf48c73f55eb..ef4b6cfe01547950ff7e6ad0fe72fc6b
      /// Looks up one first segment and checks visibility from `from`.
      /// Checks `from` itself, then the extern prelude, then the std
      /// prelude. Both modes read only `from`: as in rustc, items of a
-@@ -2529,14 +2544,18 @@ pub fn run_imports(tables: &mut ResolvedTables, imports: &[Import], interner: &I
+@@ -2012,7 +2072,7 @@ impl ResolvedTables {
+         if let Some(i) = self.extern_in_scope(from, name_str) {
+             return PathRes::Done(self.extern_target(i));
+         }
+-        if !self.modules[from.0 as usize].no_prelude && in_std_prelude(name_str, ns) {
++        if self.in_prelude(from, name_str, ns) {
+             return PathRes::Prelude;
+         }
+         PathRes::Absent
+@@ -2046,7 +2106,7 @@ impl ResolvedTables {
+         // different item is ambiguous with either.
+         let outer: Option<SegBind> = if let Some(i) = self.extern_in_scope(from, name_str) {
+             Some(SegBind::Extern(i))
+-        } else if !self.modules[from.0 as usize].no_prelude && in_std_prelude(name_str, ns) {
++        } else if self.in_prelude(from, name_str, ns) {
+             Some(SegBind::Prelude(name))
+         } else {
+             None
+@@ -2529,14 +2589,18 @@ pub fn run_imports(tables: &mut ResolvedTables, imports: &[Import], interner: &I
      {
          let mut seen: FxMap<(crate::diag::Span, Sym), ()> = FxMap::default();
          for imp in imports {
@@ -19413,7 +19729,7 @@ index 05fa1af6472a45f59b544080121faf48c73f55eb..ef4b6cfe01547950ff7e6ad0fe72fc6b
              if matches!(interner.get(first), "crate" | "self" | "super" | "Self") || tables.crate_magic.contains_key(&first) {
                  continue;
              }
-@@ -2553,6 +2572,13 @@ pub fn run_imports(tables: &mut ResolvedTables, imports: &[Import], interner: &I
+@@ -2553,6 +2617,13 @@ pub fn run_imports(tables: &mut ResolvedTables, imports: &[Import], interner: &I
                  if info.glob && matches!(info.bind, SegBind::Ambiguous) && seen.insert((imp.span, first), ()).is_none() {
                      diags.push(ambiguous_diag(interner.get(first), imp.span));
                  }
@@ -19427,6 +19743,32 @@ index 05fa1af6472a45f59b544080121faf48c73f55eb..ef4b6cfe01547950ff7e6ad0fe72fc6b
              }
          }
      }
+diff --git a/src/resolve/mdr.rs b/src/resolve/mdr.rs
+index 7abe96646bb2c10026168228f9b6b747f135cf15..fe8f6488541c6878320af70eeb932afb4a3ee4d1 100644
+--- a/src/resolve/mdr.rs
++++ b/src/resolve/mdr.rs
+@@ -322,6 +322,10 @@ pub fn structure(t: &ResolvedTables, files: &[&str]) -> u64 {
+     sum.get().hash(&mut h);
+     (t.std_modules.iter().map(|(s, m)| (s.0, m.0)).collect::<Vec<_>>(), t.std_platform.map(|(m, s)| (m.0, s.0)), t.std_splice_lo).hash(&mut h);
+     t.alloc_roots.iter().map(|m| m.0).collect::<Vec<_>>().hash(&mut h);
++    if !t.core_prelude_roots.is_empty() {
++        t.core_prelude_roots.iter().map(|m| m.0).collect::<Vec<_>>().hash(&mut h);
++        t.explicit_std_roots.iter().map(|m| m.0).collect::<Vec<_>>().hash(&mut h);
++    }
+     files.hash(&mut h);
+     h.finish()
+ }
+@@ -662,6 +666,10 @@ pub fn build(t: &ResolvedTables, map: &SourceMap, parts: Vec<CratePart>) -> Mdr
+     magic.sort_unstable();
+     (magic, &t.std_modules.iter().map(|(s, m)| (s.0, m.0)).collect::<Vec<_>>(), t.std_platform.map(|(m, s)| (m.0, s.0))).hash(&mut global);
+     t.alloc_roots.iter().map(|m| m.0).collect::<Vec<_>>().hash(&mut global);
++    if !t.core_prelude_roots.is_empty() {
++        t.core_prelude_roots.iter().map(|m| m.0).collect::<Vec<_>>().hash(&mut global);
++        t.explicit_std_roots.iter().map(|m| m.0).collect::<Vec<_>>().hash(&mut global);
++    }
+     // Without event positions: they move with any text shift in their own
+     // file, and only that file (rewritten anyway) reads them; other files
+     // see what it passes on (`inherited`) and the order of `mod`s (`tree`).
 diff --git a/src/resolve/mod.rs b/src/resolve/mod.rs
 index fc01334135114510c734e64d61334ecbfc3ce108..247c3b8dcf032bdc1f57382d0112f4a6ebd99cf1 100644
 --- a/src/resolve/mod.rs
@@ -19440,7 +19782,7 @@ index fc01334135114510c734e64d61334ecbfc3ce108..247c3b8dcf032bdc1f57382d0112f4a6
  pub mod stdpaths;
  pub mod worklist;
 diff --git a/src/resolve/worklist.rs b/src/resolve/worklist.rs
-index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc76415cda6a5c 100644
+index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..18ef1c7d6e0ad4c8c5acc67c69483ba55ce8e809 100644
 --- a/src/resolve/worklist.rs
 +++ b/src/resolve/worklist.rs
 @@ -353,7 +353,7 @@ fn starts_item(toks: &[lexer::Token], i: usize, union: Sym) -> bool {
@@ -19540,7 +19882,17 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
                      if self.stack.iter().any(|&(body, _)| body) && self.stack.last().is_some_and(|&(_, g)| g) {
                          return true;
                      }
-@@ -594,10 +594,10 @@ pub(crate) fn check_cfg_names(lexed: &lexer::Lexed, env: &CfgEnv, interner: &Int
+@@ -576,7 +576,8 @@ pub(crate) fn expand_cfg(env: &CfgEnv) -> crate::expand::builtin::CfgEnv {
+     for f in &env.features {
+         facts.push(("feature".to_string(), Some(f.clone())));
+     }
+-    crate::expand::builtin::CfgEnv { test: env.flags.contains("test"), debug_assertions: env.flags.contains("debug_assertions"), facts, panic_unwind: false }
++    crate::expand::builtin::CfgEnv { test: env.flags.contains("test"), debug_assertions: env.flags.contains("debug_assertions"),
++        facts, panic_unwind: false, core_prelude: false, explicit_std: false }
+ }
+ 
+ /// Evaluates every `#[cfg]`/`#[cfg_attr]` predicate and `cfg!` call in
+@@ -594,10 +595,10 @@ pub(crate) fn check_cfg_names(lexed: &lexer::Lexed, env: &CfgEnv, interner: &Int
      let mut i = 0;
      while i < toks.len() {
          // Skip a macro_rules body (one delimited group after the name).
@@ -19553,7 +19905,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
                  i += 1;
              }
              if let Some(open) = toks.get(i).map(|t| t.tok) {
-@@ -632,7 +632,7 @@ pub(crate) fn check_cfg_names(lexed: &lexer::Lexed, env: &CfgEnv, interner: &Int
+@@ -632,7 +633,7 @@ pub(crate) fn check_cfg_names(lexed: &lexer::Lexed, env: &CfgEnv, interner: &Int
                  j += 1;
              }
              if toks.get(j).map(|t| t.tok) == Some(Tok::LBracket) {
@@ -19562,7 +19914,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
                      let name = interner.get(s);
                      if (name == "cfg" || name == "cfg_attr") && toks.get(j + 2).map(|t| t.tok) == Some(Tok::LParen) {
                          // Trees inside the parens; for cfg_attr only
-@@ -667,7 +667,7 @@ pub(crate) fn check_cfg_names(lexed: &lexer::Lexed, env: &CfgEnv, interner: &Int
+@@ -667,7 +668,7 @@ pub(crate) fn check_cfg_names(lexed: &lexer::Lexed, env: &CfgEnv, interner: &Int
              }
          }
          // `cfg!(...)` in expression position.
@@ -19571,7 +19923,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
              && toks.get(i + 1).map(|t| t.tok) == Some(Tok::Bang)
              && toks.get(i + 2).map(|t| t.tok) == Some(Tok::LParen)
          {
-@@ -855,7 +855,7 @@ fn blank_bodies(lexed: lexer::Lexed, blank: &[(u32, u32)], text: &str) -> lexer:
+@@ -855,7 +856,7 @@ fn blank_bodies(lexed: lexer::Lexed, blank: &[(u32, u32)], text: &str) -> lexer:
      for (i, t) in toks.iter().enumerate() {
          match t.tok {
              Tok::LParen | Tok::LBracket | Tok::LBrace => {
@@ -19580,7 +19932,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
                  open.push((i, call));
              }
              Tok::RParen | Tok::RBracket | Tok::RBrace => {
-@@ -1300,7 +1300,7 @@ fn hash_tokens(tokens: &[crate::lexer::Token], strings: &[String]) -> u64 {
+@@ -1300,7 +1301,7 @@ fn hash_tokens(tokens: &[crate::lexer::Token], strings: &[String]) -> u64 {
      for t in tokens {
          std::mem::discriminant(&t.tok).hash(&mut h);
          match t.tok {
@@ -19589,11 +19941,25 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
              Tok::Int(v, suffix, _) => {
                  h.write_u128(v);
                  std::mem::discriminant(&suffix).hash(&mut h);
-@@ -1784,6 +1784,64 @@ pub fn resolve_crate_with(
+@@ -1325,10 +1326,12 @@ fn hash_tokens(tokens: &[crate::lexer::Token], strings: &[String]) -> u64 {
+ /// crate names, the crate's `$crate` magic, name, Cargo env, display
+ /// root, and the client's shown root (`file!`). The cfg environment
+ /// keys the whole `ResolveCache` already.
+-fn expansion_env_hash(menv: &MacroEnv, job: &CrateJob, input: &OneInput, client: &crate::expand::ClientView, interner: &Interner) -> u64 {
++fn expansion_env_hash(menv: &MacroEnv, job: &CrateJob, input: &OneInput, client: &crate::expand::ClientView,
++    interner: &Interner, core_prelude: bool, explicit_std: bool) -> u64 {
+     use std::hash::{Hash, Hasher};
+     let mut h = crate::intern::FxHasher::default();
+     "expansion-env-v2".hash(&mut h);
++    if core_prelude { ("core prelude", explicit_std).hash(&mut h); }
+     crate::expand::parser_name_facts(&menv.seeds, interner).hash(&mut h);
+     let mut externs: Vec<&String> = menv.dep_owned.keys().collect();
+     externs.sort_unstable();
+@@ -1784,6 +1787,66 @@ pub fn resolve_crate_with(
      cache: &mut ResolveCache,
      with_platform: bool,
  ) -> Result<ResolvedCrate, ResolveError> {
-+    resolve_crate_seeded(input, interner, known, cache, with_platform, None, None)
++    resolve_crate_seeded(input, interner, known, cache, with_platform, None, None, false)
 +}
 +
 +/// Fresh resolution with caller-owned semantic imports installed before any
@@ -19608,7 +19974,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
 +    imports: &mut dyn FnMut(&mut ResolvedTables) -> Result<(), Diag>,
 +) -> Result<ResolvedCrate, ResolveError> {
 +    let mut cache = ResolveCache::new(true);
-+    resolve_crate_seeded(input, interner, known, &mut cache, with_platform, Some(imports), None)
++    resolve_crate_seeded(input, interner, known, &mut cache, with_platform, Some(imports), None, false)
 +}
 +
 +/// Original-root syntax supplied by a semantic entry's parser. The callback
@@ -19622,7 +19988,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
 +    known: &Known,
 +    parse: &RootParser<'_>,
 +) -> Result<ResolvedCrate, ResolveError> {
-+    resolve_crate_seeded(input, interner, known, &mut ResolveCache::new(true), false, None, Some(parse))
++    resolve_crate_seeded(input, interner, known, &mut ResolveCache::new(true), false, None, Some(parse), false)
 +}
 +
 +/// The retained native-library Session fixes its root parser before any cache
@@ -19632,14 +19998,15 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
 +    parse: &RootParser<'_>,
 +    imports: Option<&mut dyn FnMut(&mut ResolvedTables) -> Result<(), Diag>>,
 +) -> Result<ResolvedCrate, ResolveError> {
-+    resolve_crate_seeded(input, interner, known, cache, false, imports, Some(parse))
++    resolve_crate_seeded(input, interner, known, cache, false, imports, Some(parse), false)
 +}
 +
 +pub(crate) fn resolve_native_executable(
 +    input: &CrateInput, interner: &Interner, known: &Known, cache: &mut ResolveCache, with_platform: bool,
 +    imports: &mut dyn FnMut(&mut ResolvedTables) -> Result<(), Diag>,
++    cargo_test: bool,
 +) -> Result<ResolvedCrate, ResolveError> {
-+    resolve_crate_seeded(input, interner, known, cache, with_platform, Some(imports), None)
++    resolve_crate_seeded(input, interner, known, cache, with_platform, Some(imports), None, cargo_test)
 +}
 +
 +fn resolve_crate_seeded(
@@ -19650,11 +20017,12 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
 +    with_platform: bool,
 +    imports: Option<&mut dyn FnMut(&mut ResolvedTables) -> Result<(), Diag>>,
 +    root_parser: Option<&RootParser<'_>>,
++    cargo_test: bool,
 +) -> Result<ResolvedCrate, ResolveError> {
      cache.begin(input);
      let mut tables = ResolvedTables::new(interner.intern(&input.crate_name));
      tables.std_splice_lo = input.std_splice_lo;
-@@ -1859,6 +1917,9 @@ pub fn resolve_crate_with(
+@@ -1859,6 +1922,9 @@ pub fn resolve_crate_with(
              }
          }
      }
@@ -19664,16 +20032,17 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
      // After the extern preludes: the splice job's root module has the
      // selected crate's prelude already.
      let std_job = input.std_splice_lo.map(|lo| add_std_splice_job(input, lo, &mut jobs));
-@@ -1959,7 +2020,7 @@ pub fn resolve_crate_with(
+@@ -1959,7 +2025,8 @@ pub fn resolve_crate_with(
                  dep_exports.push((interner.get(jobs[d].magic).to_string(), sources.clone()));
              }
          }
 -        match resolve_one(&jobs[j], &mut tables, &mut shared, cache, &dep_exports, &input.client, interner, known) {
-+        match resolve_one(&jobs[j], &mut tables, &mut shared, cache, &dep_exports, &input.client, interner, known, if j==0 {root_parser}else{None}) {
++        match resolve_one(&jobs[j], &mut tables, &mut shared, cache, &dep_exports, &input.client,
++            interner, known, if j == 0 { root_parser } else { None }, j == 0 && cargo_test) {
              Ok(out) => {
                  if let Some(exact_layout) = &jobs[j].adapter {
                      tables.adapters.push(super::imports::AdapterCrate {
-@@ -2479,7 +2540,7 @@ struct UseSite {
+@@ -2479,7 +2546,7 @@ struct UseSite {
  fn use_seg_sym(tok: crate::lexer::Tok, interner: &Interner) -> Option<Sym> {
      use crate::lexer::Tok;
      Some(match tok {
@@ -19682,7 +20051,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
          Tok::SelfLower => interner.intern("self"),
          Tok::Super => interner.intern("super"),
          Tok::Crate => interner.intern("crate"),
-@@ -2562,7 +2623,7 @@ fn parse_use_trees(
+@@ -2562,7 +2629,7 @@ fn parse_use_trees(
              }
              Some(Tok::As) => {
                  match tok(i + 1) {
@@ -19691,7 +20060,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
                      Some(Tok::Underscore) => underscore = true,
                      _ => return,
                  }
-@@ -2663,7 +2724,7 @@ fn restricted_vis(inner: &[crate::lexer::TokenTree], module: &[Sym]) -> Option<V
+@@ -2663,7 +2730,7 @@ fn restricted_vis(inner: &[crate::lexer::TokenTree], module: &[Sym]) -> Option<V
              Tok::Super => {
                  out.pop();
              }
@@ -19700,7 +20069,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
              _ => return Some(module.to_vec()),
          }
      }
-@@ -2687,7 +2748,7 @@ fn rewrite_dollar_crate(tokens: &[crate::lexer::Token], magic: Sym) -> Vec<crate
+@@ -2687,7 +2754,7 @@ fn rewrite_dollar_crate(tokens: &[crate::lexer::Token], magic: Sym) -> Vec<crate
                      TokenTree::Token(t) => t.span,
                      _ => unreachable!(),
                  };
@@ -19709,7 +20078,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
                  i += 2;
                  continue;
              }
-@@ -2740,10 +2801,10 @@ fn rewrite_dollar_crate(tokens: &[crate::lexer::Token], magic: Sym) -> Vec<crate
+@@ -2740,10 +2807,10 @@ fn rewrite_dollar_crate(tokens: &[crate::lexer::Token], magic: Sym) -> Vec<crate
  fn rename_macro_token(tokens: &mut [crate::lexer::Token], alias: Sym) {
      use crate::lexer::Tok;
      if let Some(t) = tokens.get_mut(2)
@@ -19722,7 +20091,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
      }
  }
  
-@@ -2900,7 +2961,7 @@ impl MacroEnv {
+@@ -2900,7 +2967,7 @@ impl MacroEnv {
                  collect(&disc.outline, orig, &mut owned);
              }
              if let Some(Some(exp)) = expanded.get(di)
@@ -19731,15 +20100,70 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
              {
                  // Only `outline.macros` feeds this collect, and a
                  // macro definition needs a `macro_rules`
-@@ -3488,6 +3549,7 @@ fn resolve_one(
+@@ -3329,8 +3396,13 @@ impl MacroEnv {
+                     .collect();
+                 names.sort_by(|a, b| interner.get(a.0).cmp(interner.get(b.0)));
+                 for (name, src_idx) in names {
+-                    let amb = ambiguous.contains_key(&(target.clone(), name))
+-                        || crate::expand::builtin::is_std_macro_name(interner.get(name));
++                    let macro_name = interner.get(name);
++                    let prelude = if tables.uses_core_prelude(job.root_module) {
++                        crate::expand::builtin::is_core_prelude_macro(macro_name)
++                    } else {
++                        crate::expand::builtin::is_std_macro_name(macro_name)
++                    };
++                    let amb = ambiguous.contains_key(&(target.clone(), name)) || prelude;
+                     let key = (site.module.clone(), name);
+                     match found.iter_mut().find(|(k, _)| *k == key) {
+                         Some((_, (_, s, a))) => *a |= amb || *s != src_idx,
+@@ -3488,6 +3560,8 @@ fn resolve_one(
      client: &crate::expand::ClientView,
      interner: &Interner,
      known: &Known,
 +    root_parser: Option<&RootParser<'_>>,
++    cargo_test: bool,
  ) -> Result<CrateOut, OneError> {
      let input = &job.input;
      let mut timings: Vec<(&'static str, f64)> = Vec::new();
-@@ -3691,7 +3753,7 @@ fn resolve_one(
+@@ -3520,6 +3594,17 @@ fn resolve_one(
+     if !diags.is_empty() {
+         return Err(OneError { diags, seen: seen_of(&discs), std_asks });
+     }
++    let core_prelude = (cargo_test || root_parser.is_some()) && discs[0].lexed.as_ref()
++        .is_some_and(|lexed| parser::leading_no_std(lexed, interner).is_some());
++    if core_prelude {
++        tables.core_prelude_roots.push(job.root_module);
++    }
++    let explicit_std = core_prelude && discs[0].lexed.as_ref()
++        .is_some_and(|lexed| crate::expand::root_explicit_std(&lexed.tokens, interner));
++    let parse_test_root = |lexed: &lexer::Lexed, interner: &Interner, known: &Known| {
++        crate::driver::library::parse_root(lexed, interner, known, false)
++    };
++    let root_parser = if cargo_test && core_prelude { Some(&parse_test_root as &RootParser<'_>) } else { root_parser };
+     lap!("resolve: discovery");
+     // Unknown cfg names (L0520) are checked on the original tokens of
+     // every file before expansion can strip the item that carries one, on
+@@ -3566,7 +3651,9 @@ fn resolve_one(
+         // the `include!` family) comes back only while each of those reads
+         // reads the same (`expand::deps_stale_in`).
+         let keep = !cache.one_shot;
+-        let env_hash = if keep { expansion_env_hash(&menv, job, input, client, interner) } else { 0 };
++        let env_hash = if keep {
++            expansion_env_hash(&menv, job, input, client, interner, core_prelude, explicit_std)
++        } else { 0 };
+         // Each macro source's hash and the seeds it names, and each file's reachable seeds
+         // (`MacroEnv::reach`) and key, on the pool.
+         let seed_index = keep.then(|| crate::expand::SeedReach::new(&menv.seeds, interner));
+@@ -3625,7 +3712,7 @@ fn resolve_one(
+                 real_path: path.clone(),
+                 cargo_env: input.cargo_env.clone(),
+                 src: &text,
+-                cfg: expand_cfg(&input.env),
++                cfg: crate::expand::builtin::CfgEnv { core_prelude, explicit_std, ..expand_cfg(&input.env) },
+                 module_path: module_paths[di].clone(),
+                 crate_name: Some(input.crate_name.clone()),
+                 extern_crates: menv.extern_crates(interner),
+@@ -3691,7 +3778,7 @@ fn resolve_one(
          let macro_rules = interner.intern("macro_rules");
          let outlines = par_map(&indices, |&di| {
              let exp = expanded[di].as_ref()?;
@@ -19748,7 +20172,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
                  true => scan::outline(exp, interner),
                  false => scan::Outline::default(),
              })
-@@ -3792,7 +3854,9 @@ fn resolve_one(
+@@ -3792,7 +3879,9 @@ fn resolve_one(
          // its missing `;` ends at the cut), and the answer must be the
          // one-piece answer.
          let segments = if keep { vec![0..lexed.tokens.len()] } else { item_segments(&lexed.tokens, interner) };
@@ -19759,7 +20183,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
              vec![parser::parse(&lexed, interner, known)?]
          } else {
              // Later segments start under the file's inner allows, as
-@@ -4428,7 +4492,7 @@ fn extern_macro_use_events(lexed: &lexer::Lexed, interner: &Interner) -> Vec<(u3
+@@ -4428,7 +4517,7 @@ fn extern_macro_use_events(lexed: &lexer::Lexed, interner: &Interner) -> Vec<(u3
                      j += 1;
                  }
                  if toks.get(j).map(|t| t.tok) == Some(Tok::LBracket) {
@@ -19768,7 +20192,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
                          && interner.get(s) == "macro_use"
                      {
                          pending = true;
-@@ -4455,7 +4519,7 @@ fn extern_macro_use_events(lexed: &lexer::Lexed, interner: &Interner) -> Vec<(u3
+@@ -4455,7 +4544,7 @@ fn extern_macro_use_events(lexed: &lexer::Lexed, interner: &Interner) -> Vec<(u3
              Tok::Extern if depth == 0 => {
                  if pending
                      && toks.get(i + 1).map(|t| t.tok) == Some(Tok::Crate)
@@ -19777,7 +20201,18 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
                  {
                      out.push((toks[i].span.lo, interner.get(name).to_string()));
                  }
-@@ -5289,6 +5353,9 @@ fn register_items(
+@@ -5284,11 +5373,20 @@ fn register_items(
+                 {
+                     tables.alloc_roots.push(module);
+                 }
++                if module == tables.root_of(module) && tables.uses_core_prelude(module)
++                    && interner.get(bind_name) == "std" && interner.get(e.name) == "std"
++                    && !tables.explicit_std_roots.contains(&module)
++                {
++                    tables.explicit_std_roots.push(module);
++                }
+                 let target = if e.name == interner.intern("self") {
+                     Some(Target::Module(tables.root_of(module)))
                  } else {
                      tables.extern_by_name(module, interner.get(e.name)).map(|i| tables.extern_target(i))
                  };
@@ -19787,7 +20222,29 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
                  if e.name == interner.intern("self") && e.rename.is_none() {
                      diags.push(Diag::new(
                          "L0001",
-@@ -8802,7 +8869,7 @@ mod tests {
+@@ -6318,6 +6416,21 @@ impl Rewrite<'_> {
+     /// path's own span for diagnostics; `ns` and `scopes` are the
+     /// namespace and frames the checker will read the rewritten path in.
+     fn apply(&mut self, segs: &mut Vec<PathSeg>, res: PathRes, span: Span, module: ModuleId, ns: Namespace, scopes: &[Frame]) {
++        if res == PathRes::Absent && self.tables.uses_core_prelude(module) {
++            let mut path = segs.iter().map(|segment| self.interner.get(segment.name));
++            if let Some(first) = path.next().filter(|first| *first != "::").or_else(|| path.next()) {
++                let qualified = path.next().is_some();
++                if first == "std" && qualified && self.tables.std_out_of_scope(module) {
++                    self.diags.push(extern_crate_not_found(first, span));
++                    return;
++                }
++                if (ns == Namespace::Type || qualified) && self.tables.outside_core_prelude(module, first) {
++                    self.diags.push(Diag::new("L0102", span, format!("cannot find type `{first}` in this scope"),
++                        "Import the type from an available crate."));
++                    return;
++                }
++            }
++        }
+         match res {
+             PathRes::Done(Target::Def(def)) => {
+                 if let Some(info) = self.tables.def_info.get(&def) {
+@@ -8802,7 +8915,7 @@ mod tests {
          let interner = Interner::default();
          let src = "fn a() { \"x\"; 1.5; }\nmacro_rules! m { () => { (\"y\", 2.5, 'c') } }\nfn b() { \"z\"; }";
          let lexed = lexer::lex(src, FileId(0), 0, &interner).unwrap();
@@ -19796,7 +20253,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..be7fc8698500fa37c003ca2c7bfc7641
          let (lo, hi) = macro_tok_range(&lexed.tokens, at);
          let (toks, strings) = own_def_strings(&lexed.tokens[lo..hi], &lexed.strings);
          assert!(strings.len() < lexed.strings.len(), "{strings:?} vs {:?}", lexed.strings);
-@@ -9382,6 +9449,8 @@ mod tests {
+@@ -9382,6 +9495,8 @@ mod tests {
              build_check_cfgs: Vec::new(),
              features: Vec::new(),
              deps: Vec::new(),

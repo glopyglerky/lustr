@@ -86,6 +86,13 @@ pub fn is_prelude_macro(name: &str) -> bool {
         || matches!(name, "const_format_args" | "log_syntax" | "trace_macros" | "concat_bytes" | "cfg_select" | "type_ascribe" | "deref")
 }
 
+/// Implementation of the macro names the pinned core prelude reexports.
+/// Module-only macros still require their qualified path.
+pub fn is_core_prelude_macro(name: &str) -> bool {
+    std_macro_path(&["core", name])
+        || matches!(name, "const_format_args" | "log_syntax" | "trace_macros" | "concat_bytes" | "cfg_select" | "type_ascribe" | "deref")
+}
+
 /// Macros this file expands at token level.
 pub fn is_token_builtin(name: &str) -> bool {
     matches!(
@@ -187,6 +194,8 @@ pub struct CfgEnv {
     /// The panic strategy is unwind (`-C panic=unwind`): `cfg(panic)`
     /// in the host facts below.
     pub panic_unwind: bool,
+    pub core_prelude: bool,
+    pub explicit_std: bool,
 }
 
 impl CfgEnv {

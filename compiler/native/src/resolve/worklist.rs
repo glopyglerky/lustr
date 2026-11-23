@@ -576,7 +576,8 @@ pub(crate) fn expand_cfg(env: &CfgEnv) -> crate::expand::builtin::CfgEnv {
     for f in &env.features {
         facts.push(("feature".to_string(), Some(f.clone())));
     }
-    crate::expand::builtin::CfgEnv { test: env.flags.contains("test"), debug_assertions: env.flags.contains("debug_assertions"), facts, panic_unwind: false }
+    crate::expand::builtin::CfgEnv { test: env.flags.contains("test"), debug_assertions: env.flags.contains("debug_assertions"),
+        facts, panic_unwind: false, core_prelude: false, explicit_std: false }
 }
 
 /// Evaluates every `#[cfg]`/`#[cfg_attr]` predicate and `cfg!` call in
@@ -1325,10 +1326,12 @@ fn hash_tokens(tokens: &[crate::lexer::Token], strings: &[String]) -> u64 {
 /// crate names, the crate's `$crate` magic, name, Cargo env, display
 /// root, and the client's shown root (`file!`). The cfg environment
 /// keys the whole `ResolveCache` already.
-fn expansion_env_hash(menv: &MacroEnv, job: &CrateJob, input: &OneInput, client: &crate::expand::ClientView, interner: &Interner) -> u64 {
+fn expansion_env_hash(menv: &MacroEnv, job: &CrateJob, input: &OneInput, client: &crate::expand::ClientView,
+    interner: &Interner, core_prelude: bool, explicit_std: bool) -> u64 {
     use std::hash::{Hash, Hasher};
     let mut h = crate::intern::FxHasher::default();
     "expansion-env-v2".hash(&mut h);
+    if core_prelude { ("core prelude", explicit_std).hash(&mut h); }
     crate::expand::parser_name_facts(&menv.seeds, interner).hash(&mut h);
     let mut externs: Vec<&String> = menv.dep_owned.keys().collect();
     externs.sort_unstable();
@@ -1784,7 +1787,7 @@ pub fn resolve_crate_with(
     cache: &mut ResolveCache,
     with_platform: bool,
 ) -> Result<ResolvedCrate, ResolveError> {
-    resolve_crate_seeded(input, interner, known, cache, with_platform, None, None)
+    resolve_crate_seeded(input, interner, known, cache, with_platform, None, None, false)
 }
 
 /// Fresh resolution with caller-owned semantic imports installed before any
@@ -1799,7 +1802,7 @@ pub fn resolve_crate_with_imports(
     imports: &mut dyn FnMut(&mut ResolvedTables) -> Result<(), Diag>,
 ) -> Result<ResolvedCrate, ResolveError> {
     let mut cache = ResolveCache::new(true);
-    resolve_crate_seeded(input, interner, known, &mut cache, with_platform, Some(imports), None)
+    resolve_crate_seeded(input, interner, known, &mut cache, with_platform, Some(imports), None, false)
 }
 
 /// Original-root syntax supplied by a semantic entry's parser. The callback
@@ -1813,7 +1816,7 @@ pub fn resolve_crate_with_root_parser(
     known: &Known,
     parse: &RootParser<'_>,
 ) -> Result<ResolvedCrate, ResolveError> {
-    resolve_crate_seeded(input, interner, known, &mut ResolveCache::new(true), false, None, Some(parse))
+    resolve_crate_seeded(input, interner, known, &mut ResolveCache::new(true), false, None, Some(parse), false)
 }
 
 /// The retained native-library Session fixes its root parser before any cache
@@ -1823,14 +1826,15 @@ pub(crate) fn resolve_native_library(
     parse: &RootParser<'_>,
     imports: Option<&mut dyn FnMut(&mut ResolvedTables) -> Result<(), Diag>>,
 ) -> Result<ResolvedCrate, ResolveError> {
-    resolve_crate_seeded(input, interner, known, cache, false, imports, Some(parse))
+    resolve_crate_seeded(input, interner, known, cache, false, imports, Some(parse), false)
 }
 
 pub(crate) fn resolve_native_executable(
     input: &CrateInput, interner: &Interner, known: &Known, cache: &mut ResolveCache, with_platform: bool,
     imports: &mut dyn FnMut(&mut ResolvedTables) -> Result<(), Diag>,
+    cargo_test: bool,
 ) -> Result<ResolvedCrate, ResolveError> {
-    resolve_crate_seeded(input, interner, known, cache, with_platform, Some(imports), None)
+    resolve_crate_seeded(input, interner, known, cache, with_platform, Some(imports), None, cargo_test)
 }
 
 fn resolve_crate_seeded(
@@ -1841,6 +1845,7 @@ fn resolve_crate_seeded(
     with_platform: bool,
     imports: Option<&mut dyn FnMut(&mut ResolvedTables) -> Result<(), Diag>>,
     root_parser: Option<&RootParser<'_>>,
+    cargo_test: bool,
 ) -> Result<ResolvedCrate, ResolveError> {
     cache.begin(input);
     let mut tables = ResolvedTables::new(interner.intern(&input.crate_name));
@@ -2020,7 +2025,8 @@ fn resolve_crate_seeded(
                 dep_exports.push((interner.get(jobs[d].magic).to_string(), sources.clone()));
             }
         }
-        match resolve_one(&jobs[j], &mut tables, &mut shared, cache, &dep_exports, &input.client, interner, known, if j==0 {root_parser}else{None}) {
+        match resolve_one(&jobs[j], &mut tables, &mut shared, cache, &dep_exports, &input.client,
+            interner, known, if j == 0 { root_parser } else { None }, j == 0 && cargo_test) {
             Ok(out) => {
                 if let Some(exact_layout) = &jobs[j].adapter {
                     tables.adapters.push(super::imports::AdapterCrate {
@@ -3390,8 +3396,13 @@ impl MacroEnv {
                     .collect();
                 names.sort_by(|a, b| interner.get(a.0).cmp(interner.get(b.0)));
                 for (name, src_idx) in names {
-                    let amb = ambiguous.contains_key(&(target.clone(), name))
-                        || crate::expand::builtin::is_std_macro_name(interner.get(name));
+                    let macro_name = interner.get(name);
+                    let prelude = if tables.uses_core_prelude(job.root_module) {
+                        crate::expand::builtin::is_core_prelude_macro(macro_name)
+                    } else {
+                        crate::expand::builtin::is_std_macro_name(macro_name)
+                    };
+                    let amb = ambiguous.contains_key(&(target.clone(), name)) || prelude;
                     let key = (site.module.clone(), name);
                     match found.iter_mut().find(|(k, _)| *k == key) {
                         Some((_, (_, s, a))) => *a |= amb || *s != src_idx,
@@ -3550,6 +3561,7 @@ fn resolve_one(
     interner: &Interner,
     known: &Known,
     root_parser: Option<&RootParser<'_>>,
+    cargo_test: bool,
 ) -> Result<CrateOut, OneError> {
     let input = &job.input;
     let mut timings: Vec<(&'static str, f64)> = Vec::new();
@@ -3582,6 +3594,17 @@ fn resolve_one(
     if !diags.is_empty() {
         return Err(OneError { diags, seen: seen_of(&discs), std_asks });
     }
+    let core_prelude = (cargo_test || root_parser.is_some()) && discs[0].lexed.as_ref()
+        .is_some_and(|lexed| parser::leading_no_std(lexed, interner).is_some());
+    if core_prelude {
+        tables.core_prelude_roots.push(job.root_module);
+    }
+    let explicit_std = core_prelude && discs[0].lexed.as_ref()
+        .is_some_and(|lexed| crate::expand::root_explicit_std(&lexed.tokens, interner));
+    let parse_test_root = |lexed: &lexer::Lexed, interner: &Interner, known: &Known| {
+        crate::driver::library::parse_root(lexed, interner, known, false)
+    };
+    let root_parser = if cargo_test && core_prelude { Some(&parse_test_root as &RootParser<'_>) } else { root_parser };
     lap!("resolve: discovery");
     // Unknown cfg names (L0520) are checked on the original tokens of
     // every file before expansion can strip the item that carries one, on
@@ -3628,7 +3651,9 @@ fn resolve_one(
         // the `include!` family) comes back only while each of those reads
         // reads the same (`expand::deps_stale_in`).
         let keep = !cache.one_shot;
-        let env_hash = if keep { expansion_env_hash(&menv, job, input, client, interner) } else { 0 };
+        let env_hash = if keep {
+            expansion_env_hash(&menv, job, input, client, interner, core_prelude, explicit_std)
+        } else { 0 };
         // Each macro source's hash and the seeds it names, and each file's reachable seeds
         // (`MacroEnv::reach`) and key, on the pool.
         let seed_index = keep.then(|| crate::expand::SeedReach::new(&menv.seeds, interner));
@@ -3687,7 +3712,7 @@ fn resolve_one(
                 real_path: path.clone(),
                 cargo_env: input.cargo_env.clone(),
                 src: &text,
-                cfg: expand_cfg(&input.env),
+                cfg: crate::expand::builtin::CfgEnv { core_prelude, explicit_std, ..expand_cfg(&input.env) },
                 module_path: module_paths[di].clone(),
                 crate_name: Some(input.crate_name.clone()),
                 extern_crates: menv.extern_crates(interner),
@@ -5348,6 +5373,12 @@ fn register_items(
                 {
                     tables.alloc_roots.push(module);
                 }
+                if module == tables.root_of(module) && tables.uses_core_prelude(module)
+                    && interner.get(bind_name) == "std" && interner.get(e.name) == "std"
+                    && !tables.explicit_std_roots.contains(&module)
+                {
+                    tables.explicit_std_roots.push(module);
+                }
                 let target = if e.name == interner.intern("self") {
                     Some(Target::Module(tables.root_of(module)))
                 } else {
@@ -6385,6 +6416,21 @@ impl Rewrite<'_> {
     /// path's own span for diagnostics; `ns` and `scopes` are the
     /// namespace and frames the checker will read the rewritten path in.
     fn apply(&mut self, segs: &mut Vec<PathSeg>, res: PathRes, span: Span, module: ModuleId, ns: Namespace, scopes: &[Frame]) {
+        if res == PathRes::Absent && self.tables.uses_core_prelude(module) {
+            let mut path = segs.iter().map(|segment| self.interner.get(segment.name));
+            if let Some(first) = path.next().filter(|first| *first != "::").or_else(|| path.next()) {
+                let qualified = path.next().is_some();
+                if first == "std" && qualified && self.tables.std_out_of_scope(module) {
+                    self.diags.push(extern_crate_not_found(first, span));
+                    return;
+                }
+                if (ns == Namespace::Type || qualified) && self.tables.outside_core_prelude(module, first) {
+                    self.diags.push(Diag::new("L0102", span, format!("cannot find type `{first}` in this scope"),
+                        "Import the type from an available crate."));
+                    return;
+                }
+            }
+        }
         match res {
             PathRes::Done(Target::Def(def)) => {
                 if let Some(info) = self.tables.def_info.get(&def) {

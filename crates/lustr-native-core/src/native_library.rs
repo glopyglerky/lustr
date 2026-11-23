@@ -240,24 +240,19 @@ fn prune(front:&Front,caches:&mut Caches) {
 
 /// Parse the original crate. An explicit no_std policy is consumed as syntax
 /// and kept in the AST with its original span.
-pub(super) fn parse_root(l: &lexer::Lexed, i: &intern::Interner, k: &intern::Known, standard: bool) -> Result<ast::Ast, diag::Diag> {
+pub(crate) fn parse_root(l: &lexer::Lexed, i: &intern::Interner, k: &intern::Known, standard: bool) -> Result<ast::Ast, diag::Diag> {
     let t = &l.tokens;
     if standard && !(t.first().is_some_and(|token| token.tok == lexer::Tok::Pound)
         && t.get(1).is_some_and(|token| token.tok == lexer::Tok::Bang)) {
         return crate::parser::parse_items(l, 0..t.len(), i, k);
     }
-    if t.len() < 6 || t[0].tok != lexer::Tok::Pound || t[1].tok != lexer::Tok::Bang
-        || t[2].tok != lexer::Tok::LBracket
-        || !matches!(t[3].tok, lexer::Tok::Ident(s, _) if i.get(s)=="no_std")
-        || t[4].tok != lexer::Tok::RBracket {
+    let Some(no_std) = crate::parser::leading_no_std(l, i) else {
         let message = if standard { "native library does not represent this crate attribute" }
             else { "native library requires its original #![no_std] root policy" };
         return Err(diag::Diag::new("L0508", t.first().map_or(diag::Span::default(),|t|t.span), message, "Retain the original crate policy."));
-    }
+    };
     let mut a = crate::parser::parse_items(l, 5..t.len(), i, k)?;
-    a.inner_attrs.insert(0, ast::Attr { style:ast::AttrStyle::Inner,
-        path:vec![ast::PathSeg::plain(i.intern("no_std"))], input:ast::AttrInput::None,
-        span:t[0].span.to(t[4].span) });
+    a.inner_attrs.insert(0, no_std);
     Ok(a)
 }
 

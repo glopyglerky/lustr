@@ -712,7 +712,7 @@ impl<'a> ExpandCtx<'a> {
             real_path: file_path.to_path_buf(),
             cargo_env: Vec::new(),
             src,
-            cfg: builtin::CfgEnv { test, debug_assertions: true, facts: Vec::new(), panic_unwind: false },
+            cfg: builtin::CfgEnv { test, debug_assertions: true, facts: Vec::new(), panic_unwind: false, core_prelude: false, explicit_std: false },
             module_path: Vec::new(),
             crate_name: None,
             extern_crates: Vec::new(),
@@ -1041,6 +1041,27 @@ fn crate_name_facts(tokens: &[Token], ctx: &ExpandCtx, root: bool) -> (Vec<Sym>,
         }
     }
     (shadowed, alloc_extern)
+}
+
+/// An unconditional, original `extern crate std;` at the crate root.
+pub(crate) fn root_explicit_std(tokens: &[Token], interner: &Interner) -> bool {
+    let mut depth = 0u32;
+    for (index, token) in tokens.iter().enumerate() {
+        match token.tok {
+            Tok::LBrace | Tok::LParen | Tok::LBracket => depth += 1,
+            Tok::RBrace | Tok::RParen | Tok::RBracket => depth = depth.saturating_sub(1),
+            Tok::Extern if depth == 0 && (index < 1 || tokens[index - 1].tok != Tok::RBracket) => {
+                if let Some([krate, name, end]) = tokens.get(index + 1..index + 4)
+                    && krate.tok == Tok::Crate && end.tok == Tok::Semi
+                    && matches!(name.tok, Tok::Ident(s, _) if interner.get(s) == "std")
+                {
+                    return true;
+                }
+            }
+            _ => {}
+        }
+    }
+    false
 }
 
 pub fn needs_expansion(tokens: &[Token], interner: &Interner) -> bool {
@@ -1797,7 +1818,10 @@ fn expand_macros(lexed: Lexed, ctx: &ExpandCtx, seeds: &[MacroSeed], extra: &[Ma
     if let Some(d) = delimiter_error(&lexed.tokens) {
         return Err(d);
     }
-    if !needs_expansion(&lexed.tokens, ctx.interner) && !seeds_bind_parser_name(&lexed.tokens, seeds, extra, ctx.interner) {
+    // Parser-handled macros still need normal name resolution in core's prelude.
+    if !ctx.cfg.core_prelude && !needs_expansion(&lexed.tokens, ctx.interner)
+        && !seeds_bind_parser_name(&lexed.tokens, seeds, extra, ctx.interner)
+    {
         return Ok((lexed, Vec::new()));
     }
     let (trees, _) = build_trees(&lexed.tokens);
@@ -2410,7 +2434,7 @@ impl<'a> Expander<'a> {
         let gdepth = globs.iter().map(|&(_, d, _)| d).max();
         let module_idx = self.module_imports.get(&(self.module.clone(), name)).copied();
         let exported_idx = if self.module.is_empty() { self.exported.get(&name).copied() } else { None };
-        let std_outer = builtin::is_prelude_macro(name_text);
+        let std_outer = self.prelude_macro(name_text);
         let def_expn = |i: u32| self.def_expn.get(i as usize).copied().unwrap_or(0);
         // rustc reads textual scope first: a textual definition is the
         // answer whenever there is one, and a different macro a `use` or
@@ -2533,7 +2557,7 @@ impl<'a> Expander<'a> {
                     // input is in the prescan's root table before its
                     // expansion runs: the call found X itself, and X may
                     // not shadow the std macro from outside its expansion.
-                    if c.def == x.def && x.expn != 0 && !self.expn_within(c.expn, x.expn) && builtin::is_prelude_macro(text) {
+                    if c.def == x.def && x.expn != 0 && !self.expn_within(c.expn, x.expn) && self.prelude_macro(text) {
                         return Err(Diag::new(
                             "L0507",
                             c.span,
@@ -2647,13 +2671,19 @@ impl<'a> Expander<'a> {
     /// extern crate `println` (E0433).
     fn builtin_call_path(&self, segs: &[Seg], leading_colon: bool) -> bool {
         if segs.len() == 1 {
-            return !leading_colon;
+            return !leading_colon && (!self.ctx.cfg.core_prelude || builtin::is_core_prelude_macro(&segs[0].text));
         }
         let texts: Vec<&str> = segs.iter().map(|s| s.text.as_str()).collect();
-        if self.shadowed_crates.contains(&segs[0].sym) || (texts[0] == "alloc" && !self.alloc_extern) {
+        if self.shadowed_crates.contains(&segs[0].sym) || (texts[0] == "alloc" && !self.alloc_extern)
+            || (texts[0] == "std" && self.ctx.cfg.core_prelude && !self.ctx.cfg.explicit_std)
+        {
             return false;
         }
         builtin::std_macro_path(&texts)
+    }
+
+    fn prelude_macro(&self, name: &str) -> bool {
+        if self.ctx.cfg.core_prelude { builtin::is_core_prelude_macro(name) } else { builtin::is_prelude_macro(name) }
     }
 
     /// Resolves a macro call path to a definition index. This is the

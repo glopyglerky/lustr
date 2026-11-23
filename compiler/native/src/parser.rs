@@ -34,6 +34,20 @@ fn async_error(span: Span) -> Diag {
 
 type PResult<T> = Result<T, Diag>;
 
+/// The crate attribute consumed by the native artifact root parser.
+pub(crate) fn leading_no_std(lexed: &Lexed, interner: &Interner) -> Option<Attr> {
+    let [pound, bang, open, name, close, ..] = lexed.tokens.as_slice() else { return None; };
+    let Tok::Ident(symbol, _) = name.tok else { return None; };
+    if pound.tok != Tok::Pound || bang.tok != Tok::Bang || open.tok != Tok::LBracket
+        || interner.get(symbol) != "no_std"
+        || close.tok != Tok::RBracket
+    {
+        return None;
+    }
+    Some(Attr { style: AttrStyle::Inner, path: vec![PathSeg::plain(symbol)],
+        input: AttrInput::None, span: pound.span.to(close.span) })
+}
+
 mod attrs;
 mod hrtb;
 

@@ -4354,6 +4354,7 @@ impl<'p> Ctx<'p> {
             }
             _ => return None,
         };
+        if !self.string_trait_builtin_in_scope(name) { return None; }
         let recv = match autoref {
             Autoref::None => self_ty,
             Autoref::Ref => self.tys.mk_ref(false, self_ty),
@@ -17594,7 +17595,7 @@ impl<'p> Ctx<'p> {
             (_, TyKind::Error) => return ERROR,
             _ => None,
         };
-        match found {
+        match found.filter(|_| self.string_trait_builtin_in_scope(name)) {
             Some((b, autoref, params, ret)) => {
                 if autoref != Autoref::None {
                     self.check_packed_borrow(recv, name_span);
@@ -17687,6 +17688,20 @@ impl<'p> Ctx<'p> {
     /// predicates, encoding; TRIAGE T8/T12). The receiver form
     /// follows std: ASCII predicates and case maps take `&self`,
     /// the Unicode predicates take `self`.
+    fn string_trait_builtin_in_scope(&mut self, name: Sym) -> bool {
+        if name != self.p.known.to_owned && name != self.p.known.to_string {
+            return true;
+        }
+        if !self.p.resolved.as_ref().is_some_and(|tables| tables.uses_core_prelude(self.module)) {
+            return true;
+        }
+        if name == self.p.known.to_owned {
+            self.std_trait_imported("borrow", "ToOwned")
+        } else {
+            self.std_trait_imported("string", "ToString")
+        }
+    }
+
     fn char_method(&mut self, name: Sym) -> Option<(Builtin, Autoref, Vec<Ty>, Ty)> {
         use Builtin as B;
         let k = &*self.p.known;

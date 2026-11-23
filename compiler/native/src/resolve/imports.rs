@@ -413,6 +413,10 @@ pub struct ResolvedTables {
     /// only there (and in shipped std source) does `alloc` name the
     /// alloc crate, as in rustc edition 2024 (`extern_in_scope`).
     pub alloc_roots: Vec<ModuleId>,
+    /// A crate with its original `#![no_std]` root policy uses core's prelude.
+    pub core_prelude_roots: Vec<ModuleId>,
+    /// Explicit root std imports can restore the crate name under that policy.
+    pub explicit_std_roots: Vec<ModuleId>,
     /// The file each `mod name;` without `#[path]` did not take:
     /// `name/mod.rs` beside the `name.rs` it loaded, or the reverse. Once
     /// one appears a cold resolve rejects that module (L0502); the body
@@ -528,6 +532,8 @@ impl ResolvedTables {
             std_splice_lo: None,
             std_ranges: Vec::new(),
             alloc_roots: Vec::new(),
+            core_prelude_roots: Vec::new(),
+            explicit_std_roots: Vec::new(),
             module_alts: Vec::new(),
             module_index: std::sync::OnceLock::new(),
         }
@@ -1475,6 +1481,12 @@ impl ResolvedTables {
         for m in &self.alloc_roots {
             fold!(0x49, |h: &mut crate::intern::FxHasher| h.write_u64(m.0 as u64));
         }
+        for m in &self.core_prelude_roots {
+            fold!(0x68, |h: &mut crate::intern::FxHasher| h.write_u64(m.0 as u64));
+        }
+        for m in &self.explicit_std_roots {
+            fold!(0x69, |h: &mut crate::intern::FxHasher| h.write_u64(m.0 as u64));
+        }
         for (name, m) in &self.std_modules {
             fold!(0x48, |h: &mut crate::intern::FxHasher| {
                 h.write_u64(name.0 as u64);
@@ -1723,6 +1735,19 @@ pub fn in_std_prelude(name: &str, ns: Namespace) -> bool {
     }
 }
 
+/// Supported type and value names from the pinned core 2024 prelude.
+fn in_core_prelude(name: &str, ns: Namespace) -> bool {
+    match ns {
+        Namespace::Type => matches!(name,
+            "Option" | "Result" | "Copy" | "Clone" | "Default" | "Eq" | "PartialEq" | "Ord" | "PartialOrd"
+            | "Iterator" | "IntoIterator" | "From" | "Into" | "Send" | "Sync" | "Sized" | "Drop" | "Unpin"
+            | "Fn" | "FnMut" | "FnOnce" | "AsRef" | "AsMut" | "TryFrom" | "TryInto" | "FromIterator"
+            | "DoubleEndedIterator" | "ExactSizeIterator" | "Extend" | "Future" | "IntoFuture"),
+        Namespace::Value => STD_PRELUDE_VALUES.contains(&name),
+        Namespace::Macro => false,
+    }
+}
+
 /// The canonical path (after the crate root) of one std prelude name:
 /// what `std::prelude` re-exports it from. Import resolution reads
 /// it to tell a glob-brought re-export of the prelude item itself
@@ -1818,6 +1843,9 @@ impl ResolvedTables {
     /// modules of the splice (rustc E0433 otherwise).
     fn extern_in_scope(&self, from: ModuleId, name: &str) -> Option<u32> {
         let i = self.extern_by_name(from, name)?;
+        if name == "std" && self.externs[i as usize].is_std_lib && self.std_out_of_scope(from) {
+            return None;
+        }
         if name != "alloc" || !self.externs[i as usize].is_std_lib {
             return Some(i);
         }
@@ -1833,6 +1861,23 @@ impl ResolvedTables {
             m = self.modules[cur.0 as usize].parent;
         }
         None
+    }
+
+    pub(crate) fn uses_core_prelude(&self, from: ModuleId) -> bool {
+        self.core_prelude_roots.contains(&self.root_of(from))
+    }
+
+    pub(crate) fn std_out_of_scope(&self, from: ModuleId) -> bool {
+        self.uses_core_prelude(from) && !self.explicit_std_roots.contains(&self.root_of(from))
+    }
+
+    pub(crate) fn outside_core_prelude(&self, from: ModuleId, name: &str) -> bool {
+        self.uses_core_prelude(from) && in_std_prelude(name, Namespace::Type) && !in_core_prelude(name, Namespace::Type)
+    }
+
+    fn in_prelude(&self, from: ModuleId, name: &str, ns: Namespace) -> bool {
+        !self.modules[from.0 as usize].no_prelude
+            && if self.uses_core_prelude(from) { in_core_prelude(name, ns) } else { in_std_prelude(name, ns) }
     }
 
     /// True when `alloc` is a std extern of `from`'s crate that paths
@@ -2027,7 +2072,7 @@ impl ResolvedTables {
         if let Some(i) = self.extern_in_scope(from, name_str) {
             return PathRes::Done(self.extern_target(i));
         }
-        if !self.modules[from.0 as usize].no_prelude && in_std_prelude(name_str, ns) {
+        if self.in_prelude(from, name_str, ns) {
             return PathRes::Prelude;
         }
         PathRes::Absent
@@ -2061,7 +2106,7 @@ impl ResolvedTables {
         // different item is ambiguous with either.
         let outer: Option<SegBind> = if let Some(i) = self.extern_in_scope(from, name_str) {
             Some(SegBind::Extern(i))
-        } else if !self.modules[from.0 as usize].no_prelude && in_std_prelude(name_str, ns) {
+        } else if self.in_prelude(from, name_str, ns) {
             Some(SegBind::Prelude(name))
         } else {
             None

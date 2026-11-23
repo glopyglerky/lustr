@@ -132,6 +132,7 @@ fn trait_in_scope(cx: &mut Ctx, trait_def: DefId) -> bool {
         return true;
     }
     let lang = &p.gx.lang;
+    let core_prelude = p.resolved.as_ref().is_some_and(|tables| tables.uses_core_prelude(cx.module));
     // Display and Debug are in scope as in rustc: a `use` of the std
     // path or the impl's own trait (W-STD-B, check/fmt.rs); bounds below.
     if (trait_def == lang.display && cx.fmt_trait_in_scope(crate::ast::FmtKind::Display))
@@ -163,7 +164,6 @@ fn trait_in_scope(cx: &mut Ctx, trait_def: DefId) -> bool {
         lang.exact_size_iterator,
         lang.double_ended_iterator,
         lang.extend,
-        lang.from_str,
         lang.from,
         lang.into,
         // Prelude since Rust 2021 (fx-tryfrom).
@@ -172,10 +172,14 @@ fn trait_in_scope(cx: &mut Ctx, trait_def: DefId) -> bool {
         // Prelude conversion traits (W-STD-B).
         lang.as_ref,
         lang.as_mut,
-        lang.to_owned,
-        lang.to_string,
     ]
     .contains(&trait_def)
+    {
+        return true;
+    }
+    if (trait_def == lang.to_owned && (!core_prelude || cx.std_trait_imported("borrow", "ToOwned")))
+        || (trait_def == lang.to_string && (!core_prelude || cx.std_trait_imported("string", "ToString")))
+        || (trait_def == lang.from_str && (!core_prelude || cx.std_trait_imported("str", "FromStr")))
     {
         return true;
     }
