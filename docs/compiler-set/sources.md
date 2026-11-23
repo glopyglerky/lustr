@@ -45,19 +45,19 @@ whole-program correctness or performance.
 
 ## Source-built Rustdoc
 
-On Linux x86_64, pass \`--rustdoc-source PINNED_RUST_REPOSITORY\` after the
+On Linux x86_64, pass `--rustdoc-source PINNED_RUST_REPOSITORY` after the
 optional build profile when running the native toolchain constructor. The
 constructor checks out the same revision as the selected SDK in its build
 directory, applies [the Rustdoc patch](../../upstream/rustdoc-test-builders.patch),
-and builds \`rustdoc-tool\` with the upstream lockfile. It retains the Rust
+and builds `rustdoc-tool` with the upstream lockfile. It retains the Rust
 copyright, dual MIT/Apache-2.0 licenses, lockfile, patch identity and binary
 identity in the development build. The documentation component depends on the
 matching SDK libraries at runtime.
 
-Cargo finds the resulting \`bin/rustdoc\` on the toolchain's \`PATH\`. Rustdoc
+Cargo finds the resulting `bin/rustdoc` on the toolchain's `PATH`. Rustdoc
 collects the documentation examples through the pinned Rust frontend.
-Runnable and \`no_run\` standalone examples use Lustr. Rustdoc sends
-\`compile_fail\` examples to its pinned embedded driver so a native coverage gap
+Runnable and `no_run` standalone examples use Lustr. Rustdoc sends
+`compile_fail` examples to its pinned embedded driver so a native coverage gap
 cannot count as a Rust error. The compiler entry for normal Cargo compilation
 continues to use its existing native request path. Merged doctest coverage
 and end-to-end performance remain separate qualification work.
