@@ -55,6 +55,8 @@ pub fn native_request(args: &[OsString]) -> Option<Native> {
     let mut edition = false;
     let mut crate_type = false;
     let mut emit = false;
+    let mut target = false;
+    let mut color = false;
     let mut index = 0;
     while index < args.len() {
         let arg = args[index].to_str()?;
@@ -82,6 +84,18 @@ pub fn native_request(args: &[OsString]) -> Option<Native> {
                 return None;
             }
             crate_type = true;
+        } else if arg == "--target" || arg.starts_with("--target=") {
+            if target {
+                return None;
+            }
+            settings.extend(["--target".to_owned(), value("--target")?.to_owned()]);
+            target = true;
+        } else if arg == "--color" || arg.starts_with("--color=") {
+            if color || value("--color")? != "never" {
+                return None;
+            }
+            // The native human diagnostic renderer emits no terminal color.
+            color = true;
         } else if arg == "--crate-name" || arg.starts_with("--crate-name=") {
             return None;
         } else if arg == "--emit" || arg.starts_with("--emit=") {

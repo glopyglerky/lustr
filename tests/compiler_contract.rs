@@ -50,6 +50,34 @@ fn rustc_reads_line_based_argument_files_before_handling_requests() {
     }
 }
 
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn rustc_preserves_an_explicit_host_target_and_uncolored_diagnostics() {
+    let f = Fixture::new("rustc-host-options");
+    let source = f.source("main.rs", "fn main() { println!(\"{}\", cfg!(target_arch = \"x86_64\") && cfg!(target_os = \"linux\")); }\n");
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let original = || {
+        let mut command = Command::new(&oracle);
+        command.current_dir(&f.root).env_remove("LD_LIBRARY_PATH");
+        command
+    };
+    let options = ["--edition=2024", "--target", "x86_64-unknown-linux-gnu", "--color", "never"];
+    for (name, mut command) in [("native", f.command("rustc")), ("original", original())] {
+        let output = f.root.join(name);
+        f.succeeds(&format!("{name}-build"), command.args(options).arg(&source).arg("-o").arg(&output));
+        assert_eq!(f.succeeds(name, &mut Command::new(output)).stdout, b"true\n");
+    }
+    f.source("main.rs", "fn main() { let _value: u32 = \"invalid\"; }\n");
+    for (name, mut command) in [("native", f.command("rustc")), ("original", original())] {
+        let output = f.root.join(format!("{name}-invalid"));
+        let response = f.invoke(&format!("{name}-invalid"), command.args(options).arg(&source).arg("-o").arg(&output));
+        assert_eq!(response.status.code(), Some(1));
+        assert!(!response.stderr.contains(&27), "unexpected escape sequence");
+        assert!(!output.exists());
+    }
+}
+
 impl Fixture {
     fn new(scope: &str) -> Self {
         let f = Self {
