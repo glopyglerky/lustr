@@ -584,7 +584,7 @@ impl Owner {
             cleanup?;
             Ok(response)
         })();
-        let mut response = result.unwrap_or_else(|error| failed(req, &error));
+        let mut response = result.unwrap_or_else(|error| failed(req, &ImportFailure::Invalid(error)));
         normalize_failure(req, &mut response);
         response
     }
