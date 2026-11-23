@@ -53,7 +53,7 @@ pub fn freestanding_request(args: &[OsString]) -> bool {
         if flags != [true; 3] {
             return None;
         }
-        let native = library_request::parse(&ordinary)?;
+        let native = library_request::parse(&ordinary, &mut false)?;
         Some(!native.stdin && native.args.iter().any(|arg| arg == "--bin")
             && native.args.iter().any(|arg| arg == "panic=abort")
             && !native.args.iter().any(|arg| matches!(arg.as_str(),
@@ -90,12 +90,16 @@ pub fn expand_compiler_argfiles(args: Vec<OsString>) -> Result<Vec<OsString>, Ve
     if errors.is_empty() { Ok(expanded) } else { Err(errors) }
 }
 
-/// This recognizes compiler requests, not source keywords. Requests requiring
-/// Rust metadata or an unrepresented option expose an integration gap. They do
-/// not establish that the underlying work lies outside Lust's coverage.
-/// Returning None is never permission to invoke a complete second compiler.
+/// Recognize requests the native entry can prepare from their actual options.
 pub fn native_request(args: &[OsString]) -> Option<Native> {
-    if let Some(request) = library_request::parse(args) { return Some(request); }
+    native_request_with_diagnostics(args, &mut false)
+}
+
+pub fn native_request_with_diagnostics(
+    args: &[OsString], invalid_metadata_option: &mut bool,
+) -> Option<Native> {
+    if let Some(request) = library_request::parse(args, invalid_metadata_option) { return Some(request); }
+    if *invalid_metadata_option { return None; }
     let mut input = None;
     let mut output = None;
     let mut settings = Vec::new();

@@ -2799,6 +2799,33 @@ fn main() {
     let value = unsafe { load(&57) };
     println!("{}", mask(value));
 }
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn cargo_runs_proc_macro_unit_tests_with_the_matching_rust_runtime() {
+    let f = Fixture::new("cargo-proc-macro-test-runtime");
+    f.source("Cargo.toml", "[package]\nname=\"macro_unit_test\"\nversion=\"0.1.0\"\nedition=\"2024\"\n\n[lib]\nproc-macro=true\n");
+    f.source("src/lib.rs", r#"
+extern crate proc_macro;
+use proc_macro::TokenStream;
+
+#[proc_macro]
+pub fn preserve(input: TokenStream) -> TokenStream { input }
+
+#[test]
+fn observed_test_body() { assert_eq!(6 * 7, 42); }
+"#);
+    let original = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    for (lane, oracle) in [("lustr", false), ("original", true)] {
+        let mut cargo = f.command("cargo");
+        cargo.args(["test", "--frozen", "--lib"]).env("CARGO_TARGET_DIR", f.root.join(lane));
+        if oracle { cargo.env("RUSTC", &original); }
+        let result = f.succeeds(lane, &mut cargo);
+        assert!(String::from_utf8_lossy(&result.stdout).contains("test observed_test_body ... ok"));
+    }
+}
 "#;
     let path = f.source("src/main.rs", source);
     let original = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");

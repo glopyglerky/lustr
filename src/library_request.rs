@@ -9,7 +9,7 @@ use crate::{
 };
 use std::{collections::{BTreeMap,BTreeSet}, ffi::OsString, path::PathBuf};
 
-pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
+pub(crate) fn parse(args: &[OsString], invalid_metadata_option: &mut bool) -> Option<Native> {
     if !crate::library_contract::supported_host() {return None;}
     let mut source = None;
     let mut name = None;
@@ -93,12 +93,16 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
             if value == "unstable-options" && !unstable_options {
                 unstable_options = true;
             } else {
-                if options.embed_metadata.is_some() { return None; }
-                options.embed_metadata = Some(match value.strip_prefix("embed-metadata=")? {
+                let setting = match value.strip_prefix("embed-metadata=")? {
                     "y" | "yes" | "on" | "true" => true,
                     "n" | "no" | "off" | "false" => false,
-                    _ => return None,
-                });
+                    _ => {
+                        *invalid_metadata_option = true;
+                        return None;
+                    }
+                };
+                if options.embed_metadata.is_some() { return None; }
+                options.embed_metadata = Some(setting);
             }
         } else if arg == "--force-warn" || arg.starts_with("--force-warn=") {
             if options.force_warn_unused_crate_dependencies || value("--force-warn")? != "unused_crate_dependencies" { return None; }
@@ -340,7 +344,7 @@ mod tests {
             "--out-dir", "/tmp/lustr-levels", "-Cmetadata=peer", "-Cembed-bitcode=no", "--emit", emit, "main.rs",
         ];
         args.extend(extra);
-        parse(&args.into_iter().map(OsString::from).collect::<Vec<_>>())
+        parse(&args.into_iter().map(OsString::from).collect::<Vec<_>>(), &mut false)
     }
 
     fn sent_options(request: Native) -> [u8; 3] {

@@ -137,7 +137,12 @@ fn query(args: &[OsString], bin: &Path, host: &str) -> Result<(), String> {
     } else {
         None
     };
-    let sysroot = bin.parent().and_then(|root| root.to_str()).ok_or("native package root is not UTF-8")?;
+    // Cargo adds the reported target library directory to the loader search
+    // path for its programs and tests. It must include the Rust component's
+    // matching shared runtime when that component is installed.
+    let rust_driver = host_proc_macro_compiler(bin, host);
+    let sysroot = rust_driver.as_deref().and_then(Path::parent).and_then(Path::parent)
+        .or_else(|| bin.parent()).and_then(Path::to_str).ok_or("compiler sysroot is not UTF-8")?;
     for print in prints {
         match print {
             "file-names" => {

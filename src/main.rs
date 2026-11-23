@@ -262,7 +262,11 @@ fn main() -> ExitCode {
     if !compiler_mode && !native_cli && lustr_compiler::cargo_command(&args) {
         return incomplete_integration("Cargo compilation and alternate compiler selection");
     }
-    let rust = (!native_cli).then(|| lustr_compiler::native_request(&args)).flatten();
+    let mut invalid_metadata_option = false;
+    let rust = (!native_cli).then(|| lustr_compiler::native_request_with_diagnostics(&args, &mut invalid_metadata_option)).flatten();
+    if compiler_mode && invalid_metadata_option {
+        return incomplete_integration("an invalid value for the native metadata option");
+    }
     if compiler_mode && rust.is_none()
         && let Some(compiler) = native_queries::host_proc_macro_compiler(&parent, lust::host_triple())
     {
