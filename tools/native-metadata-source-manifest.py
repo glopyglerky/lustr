@@ -25,6 +25,7 @@ INPUTS = [
     "tools/test-native-unwind-frames-controls.py", "upstream/public-library-integration.json",
     "upstream/metadata-artifact-tools.json", "upstream/metadata-dependency-closure.json",
     "upstream/bluefe-core.pin", ".github/workflows/compiler-set.yml",
+    "docs/compiler-set/evidence/metadata-sdk-receipt-20261120/standard-receipt.json",
 ]
 
 

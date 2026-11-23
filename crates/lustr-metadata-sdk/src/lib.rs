@@ -24,6 +24,46 @@ pub fn open_bound(receipt: &Path, sysroot: &Path, expected_sha256: &str) -> Resu
     open_bytes(&bytes, sysroot)
 }
 
+pub const STANDARD_RECEIPT_PATH: &str = "lib/lustr-metadata/standard-sdk-receipt.json";
+
+/// The constructor authenticates the SDK archives before installing these
+/// passive facts. A scalar std-root archive needs no SDK code to be emitted
+/// by the native compiler.
+pub fn open_standard(receipt: &Path) -> Result<Sdk, String> {
+    let bytes = fs::read(receipt).map_err(|error| format!("read standard metadata SDK receipt: {error}"))?;
+    if bytes != include_bytes!("../../../docs/compiler-set/evidence/metadata-sdk-receipt-20261120/standard-receipt.json") {
+        return Err("standard metadata SDK receipt differs from its pinned bytes".into());
+    }
+    let value: Value = serde_json::from_slice(&bytes).map_err(|error| format!("decode standard metadata SDK receipt: {error}"))?;
+    if string(&value, "schema")? != "lustr-native-standard-metadata-sdk-v1"
+        || string(&value, "rust_revision")? != lustr_metadata_encoder::RUST_REVISION
+        || string(&value, "target")? != lustr_metadata_encoder::TARGET
+        || value.get("metadata_version").and_then(Value::as_u64) != Some(12)
+    {
+        return Err("standard metadata SDK identity differs from the pinned compiler".into());
+    }
+    let rows = value["dependencies"].as_array().ok_or("standard metadata SDK dependencies missing")?;
+    let dependencies = rows.iter().enumerate().map(|(index, row)| {
+        if row["crate_num"].as_u64() != Some((index + 1) as u64) || !row["host_hash_le_hex"].is_null() {
+            return Err("unexpected standard dependency ordinal or host hash".into());
+        }
+        let kind = match (string(row, "kind")?, row["kind_ordinal"].as_u64()) {
+            ("Unconditional", Some(2)) => 2,
+            ("Conditional", Some(1)) => 1,
+            _ => return Err("unexpected standard dependency kind".into()),
+        };
+        Ok(SdkDependency {
+            name: string(row, "name")?.to_owned(),
+            hash: hex::<16>(string(row, "svh_le_hex")?)?,
+            host_hash: None,
+            kind,
+            is_private: row["is_private"].as_bool().ok_or("standard dependency privacy missing")?,
+            extra_filename: string(row, "extra_filename")?.to_owned(),
+        })
+    }).collect::<Result<Vec<_>, String>>()?;
+    Sdk::from_standard_facts(string(&value, "cfg_version")?.into(), dependencies, Sha256::digest(&bytes).into())
+}
+
 fn open_bytes(bytes: &[u8], sysroot: &Path) -> Result<Sdk, String> {
     let value: Value = serde_json::from_slice(bytes).map_err(|e| format!("decode metadata SDK receipt: {e}"))?;
     if string(&value, "schema")? != "lustr-native-metadata-sdk-v1"

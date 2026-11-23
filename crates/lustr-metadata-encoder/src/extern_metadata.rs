@@ -240,7 +240,7 @@ fn read_crate<'a>(bytes: &'a [u8], sdk: &Sdk, link: bool) -> Option<ScalarCrate<
     (matched == sdk_dependencies.len()).then_some(())?;
     for field in &schema::ROOT_FIELDS[11..26] {
         let (at, len) = r.array()?;
-        if *field == "lang_items_missing" {
+        if *field == "lang_items_missing" && !sdk.standard {
             (len == 1 && data.get(at) == Some(&151)).then_some(())?;
         } else {
             (len == 0).then_some(())?;
@@ -270,7 +270,7 @@ fn read_crate<'a>(bytes: &'a [u8], sdk: &Sdk, link: bool) -> Option<ScalarCrate<
     let (children_at, child_count) = read_interleaved(value("module_children_non_reexports", 0)?)?;
     (child_count > 0
         && child_count <= 65_535
-        && only_implicit_core_reexport(data, value("module_children_reexports", 0)?)?
+        && only_implicit_prelude_reexport(data, value("module_children_reexports", 0)?, if sdk.standard { "std" } else { "core" })?
         && array_len("ambig_module_children", 0)? == 0
         && array_len("attributes", 0)? == 0)
         .then_some(())?;
@@ -313,19 +313,19 @@ fn read_crate<'a>(bytes: &'a [u8], sdk: &Sdk, link: bool) -> Option<ScalarCrate<
     Some(ScalarCrate { name, stable_id, svh, filename_suffix, requires_abort, functions, dependencies })
 }
 
-fn only_implicit_core_reexport(data: &[u8], value: [u8; 16]) -> Option<bool> {
+fn only_implicit_prelude_reexport(data: &[u8], value: [u8; 16], dependency: &str) -> Option<bool> {
     let (offset, count) = read_interleaved(value)?;
     match count {
         0 => Some(true),
         1 => {
             let mut child = Read::new(data, offset);
-            (child.symbol()? == "core").then_some(())?;
+            (child.symbol()? == dependency).then_some(())?;
             // Discard the observed indirect span without using it as semantic authority.
             let tag = child.byte()?;
             let width = usize::from(tag >> 3);
             (tag & 3 == 3 && (1..=8).contains(&width)).then_some(())?;
             child.take(width)?;
-            // Res::Def(Mod, core:root), restricted to current root, one ExternCrate def.
+            // Res::Def(Mod, dependency:root), restricted to current root, one ExternCrate def.
             Some(child.take(9)? == [0, 0, 1, 0, 1, 0, 0, 1, 2] && child.leb()? == 0 && child.leb()? != 0)
         }
         _ => Some(false),

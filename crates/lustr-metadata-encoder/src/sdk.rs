@@ -23,6 +23,7 @@ pub struct Sdk {
     pub(crate) dependencies: Vec<SdkDependency>,
     pub(crate) receipt_hash: [u8; 32],
     pub(crate) dependency_functions: BTreeSet<NativeId>,
+    pub(crate) standard: bool,
 }
 
 impl Sdk {
@@ -46,7 +47,27 @@ impl Sdk {
                 return Err("metadata SDK dependency facts differ from the qualified scope".into());
             }
         }
-        Ok(Self { cfg_version, dependencies, receipt_hash, dependency_functions: BTreeSet::new() })
+        Ok(Self { cfg_version, dependencies, receipt_hash, dependency_functions: BTreeSet::new(), standard: false })
+    }
+
+    /// A separate construction-qualified std prelude and runtime dependency
+    /// inventory. The host must authenticate the receipt before supplying it.
+    pub fn from_standard_facts(cfg_version: String, dependencies: Vec<SdkDependency>, receipt_hash: [u8; 32]) -> Result<Self, String> {
+        let names: BTreeSet<_> = dependencies.iter().map(|dependency| dependency.name.as_str()).collect();
+        if cfg_version != "1.102.0-nightly (5b7b37aef 2026-11-08)"
+            || dependencies.len() != 19 || names.len() != dependencies.len()
+            || dependencies[0].name != "std" || dependencies[0].is_private
+            || dependencies[1].name != "core" || dependencies[1].is_private
+            || dependencies[18].name != "panic_unwind" || !dependencies[18].is_private
+            || dependencies.iter().enumerate().any(|(index, dep)| {
+                dep.kind != if index == 18 { 1 } else { 2 } || dep.host_hash.is_some()
+                    || dep.extra_filename.len() != 17 || !dep.extra_filename.starts_with('-')
+                    || !dep.extra_filename.as_bytes()[1..].iter().all(u8::is_ascii_hexdigit)
+            })
+        {
+            return Err("standard metadata SDK facts differ from the pinned dependency closure".into());
+        }
+        Ok(Self { cfg_version, dependencies, receipt_hash, dependency_functions: BTreeSet::new(), standard: true })
     }
 
     /// Join an actual direct leaf dependency to the observed pinned Cargo library closure.

@@ -7,6 +7,7 @@ pub(crate) mod completion;
 pub(crate) mod history;
 use crate::{ast, check, cgen, def, diag, intern, ir, lexer};
 use crate::driver::{Request, Response, Session, SessionKey};
+use crate::ty::TyIntern;
 use super::session::{Caches, Front};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
@@ -57,6 +58,7 @@ pub(crate) struct State {
     pub(crate) generated: Vec<def::DiskDefId>,
     pub source: Arc<str>,
     pub checked: Vec<def::DiskDefId>,
+    pub(crate) standard: bool,
     pub(crate) checked_names: BTreeMap<def::DiskDefId,String>,
     pub snapshot: Option<Snapshot>,
     pub(crate) dependency_lint_ready: bool,
@@ -72,6 +74,7 @@ pub(crate) struct History {
 impl StoredBody {
     fn bytes(&self)->usize {
         std::mem::size_of::<Self>()+self.facts.expressions.capacity()*std::mem::size_of::<Resolution>()
+            +std::mem::size_of_val(&*self.facts.bindings)
             +(self.facts.lowered_calls.as_ref().map_or(0,BTreeSet::len)+self.facts.generated_uses.as_ref().map_or(0,BTreeSet::len))*std::mem::size_of::<def::DiskDefId>()
     }
 }
@@ -221,16 +224,21 @@ fn prune(front:&Front,caches:&mut Caches) {
     }
 }
 
-/// The native resolver's ordinary original-root parser, with the one admitted
-/// root policy consumed as syntax. It is called once at the normal parse point
-/// and keeps original tokens/spans; body patches remain native body patches.
-pub(super) fn parse_root(l: &lexer::Lexed, i: &intern::Interner, k: &intern::Known) -> Result<ast::Ast, diag::Diag> {
+/// Parse the original crate. An explicit no_std policy is consumed as syntax
+/// and kept in the AST with its original span.
+pub(super) fn parse_root(l: &lexer::Lexed, i: &intern::Interner, k: &intern::Known, standard: bool) -> Result<ast::Ast, diag::Diag> {
     let t = &l.tokens;
+    if standard && !(t.first().is_some_and(|token| token.tok == lexer::Tok::Pound)
+        && t.get(1).is_some_and(|token| token.tok == lexer::Tok::Bang)) {
+        return crate::parser::parse_items(l, 0..t.len(), i, k);
+    }
     if t.len() < 6 || t[0].tok != lexer::Tok::Pound || t[1].tok != lexer::Tok::Bang
         || t[2].tok != lexer::Tok::LBracket
         || !matches!(t[3].tok, lexer::Tok::Ident(s, _) if i.get(s)=="no_std")
         || t[4].tok != lexer::Tok::RBracket {
-        return Err(diag::Diag::new("L0508", t.first().map_or(diag::Span::default(),|t|t.span), "native library requires its original #![no_std] root policy", "Retain the original crate policy."));
+        let message = if standard { "native library does not represent this crate attribute" }
+            else { "native library requires its original #![no_std] root policy" };
+        return Err(diag::Diag::new("L0508", t.first().map_or(diag::Span::default(),|t|t.span), message, "Retain the original crate policy."));
     }
     let mut a = crate::parser::parse_items(l, 5..t.len(), i, k)?;
     a.inner_attrs.insert(0, ast::Attr { style:ast::AttrStyle::Inner,
@@ -242,15 +250,20 @@ pub(super) fn parse_root(l: &lexer::Lexed, i: &intern::Interner, k: &intern::Kno
 pub(super) fn capture(p: &check::collect::Program, id: def::LocalDefId, checked: &check::Checked<'_>) -> AcceptedBody {
     let expressions = checked.expr_res.iter().map(|resolution| match resolution {
         check::Res::None => Resolution::None,
-        check::Res::Local(local) => checked.param_locals.iter().position(|param|param==local).map_or(Resolution::Other,Resolution::Parameter),
+        check::Res::Local(local) => checked.param_locals.iter().position(|param|param==local).map_or(Resolution::Local(*local),Resolution::Parameter),
         check::Res::Fn(function) if (function.0 as usize)<p.fns.len() => Resolution::Function(p.disk_id(*function)),
         check::Res::NativeFn(definition) => p.native_fn(*definition)
             .map_or(Resolution::Other, |(_, _, linkage)| Resolution::ImportedFunction(linkage.id)),
         check::Res::Bin { ld:0,rd:0 } => Resolution::PrimitiveOperands,
         _ => Resolution::Other,
     }).collect();
+    let bindings = checked.pat_res.iter().zip(&checked.pat_ty).map(|(resolution, ty)| match resolution {
+        check::PatRes::Binding { local, mode: check::BindMode::Move }
+            if matches!(checked.tys.kind(*ty), crate::ty::TyKind::Int(_)) => Some(*local),
+        _ => None,
+    }).collect();
     AcceptedBody { local:id,definition:p.disk_id(id),body:p.fn_def(id).body.unwrap(),expr_base:checked.expr_base,
-        expressions:Arc::new(expressions),lowered_calls:None,generated_uses:None }
+        expressions:Arc::new(expressions),pat_base:checked.pat_base,bindings,lowered_calls:None,generated_uses:None }
 }
 pub(super) fn lowered(p: &check::collect::Program, facts: &mut AcceptedBody, body: &ir::Body<'_>) {
     let mut calls = Some(BTreeSet::new());
@@ -328,9 +341,13 @@ pub(super) fn complete(p: &check::collect::Program, map: &diag::SourceMap, sourc
         if stored.facts.expressions.len()!=f.exprs.1.saturating_sub(f.exprs.0) as usize {
             return Err(completion::Error::Failed("native retained expression range changed without a check"));
         }
+        if stored.facts.bindings.len()!=f.pats.1.saturating_sub(f.pats.0) as usize {
+            return Err(completion::Error::Failed("native retained pattern range changed without a check"));
+        }
         let mut current=stored.facts.clone(); current.local=id;
         current.body=f.body.ok_or(completion::Error::Unintegrated("bodyless function metadata"))?;
         current.expr_base=f.exprs.0;
+        current.pat_base=f.pats.0;
         bodies.push(current);
     }
     if let Some((generation,functions))=&state.completed && *generation==state.generation { return Ok(functions.clone()); }
@@ -347,9 +364,10 @@ pub(super) fn complete(p: &check::collect::Program, map: &diag::SourceMap, sourc
     completion::complete(completion::View {program:p,source,map,bodies:&bodies,identifier:&identifier},false).map(Arc::new)
 }
 
-pub(super) fn remember(caches: &mut Caches, functions: Arc<Vec<Function>>) {
+pub(super) fn remember(caches: &mut Caches, functions: Arc<Vec<Function>>, standard: bool) {
     let state=caches.library.as_mut().unwrap();
     state.completed=Some((state.generation,functions));
+    state.standard = standard;
 }
 
 pub(super) fn finish(req: &Request, p: &check::collect::Program, front: &Front, caches: &mut Caches,

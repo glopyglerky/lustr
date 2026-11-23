@@ -65,14 +65,15 @@ pub(super) struct Import {
 
 impl Import {
     pub(super) fn open(request: &ExternMetadata, sdk: &Sdk) -> Result<Self, String> {
-        Self::read(request, sdk, def::CrateId(1), false)
+        Self::read(request, sdk, None, def::CrateId(1), false)
     }
 
-    pub(super) fn read(request: &ExternMetadata, sdk: &Sdk, index: def::CrateId, executable: bool) -> Result<Self, String> {
+    pub(super) fn read(request: &ExternMetadata, sdk: &Sdk, standard: Option<&Sdk>, index: def::CrateId, executable: bool) -> Result<Self, String> {
         let path = &request.artifact;
         let before = stamp(path)?;
         let data = std::fs::read(path).map_err(|e| format!("read extern metadata {}: {e}", path.display()))?;
-        let leaf = if executable { read_link_crate(&data, sdk) } else { read_scalar_crate(&data, sdk) }
+        let leaf = (if executable { read_link_crate(&data, sdk) } else { read_scalar_crate(&data, sdk) })
+            .or_else(|| standard.and_then(|context| read_link_crate(&data, context)))
             .ok_or("extern artifact does not represent a pinned scalar library")?;
         let expected = format!("lib{}{}.rmeta", leaf.name, leaf.filename_suffix);
         if path.file_name().is_none_or(|name| name != expected.as_str()) || stamp(path)? != before {
