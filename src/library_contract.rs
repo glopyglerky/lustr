@@ -279,7 +279,7 @@ pub struct LibraryKey {
     pub search_paths: Vec<PathBuf>,
     pub external: Option<ExternMetadata>,
     pub executable_dependencies: Option<Vec<ExecutableExtern>>,
-    /// A direct rustc file request with one user-selected binary output.
+    /// A direct rustc executable request with one selected output.
     pub standalone: bool,
     pub optimization: OptLevel,
     pub single_codegen_unit: bool,
@@ -330,7 +330,7 @@ impl LibraryKey {
 
     pub fn executable_outputs(&self, output: &Path, check: bool) -> Option<(Option<PathBuf>, PathBuf)> {
         if self.standalone {
-            let valid = !check && output.is_absolute() && output.file_name().is_some()
+            let valid = output.is_absolute() && output.file_name().is_some()
                 && output.to_str().is_some_and(|path| !path.contains(['\0', '\n', '\r']))
                 && output != self.source_path
                 && self.executable_dependencies.as_ref().is_some_and(|inputs| inputs.iter().all(|input| {

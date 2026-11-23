@@ -1372,6 +1372,11 @@ fn main() {
 /// ```standalone_crate
 /// assert_eq!(provider_alias::doubled(21), 42);
 /// ```
+///
+/// ```no_run,standalone_crate
+/// let _ = provider_alias::doubled(21);
+/// panic!("a no_run example must not execute");
+/// ```
 pub fn example() {}
 "#);
     let rustdoc = PathBuf::from(&oracle).with_file_name("rustdoc");
@@ -1381,9 +1386,9 @@ pub fn example() {}
         .args(["--test", "--edition=2024", "-Zunstable-options", "--test-builder"])
         .arg(f.package.join("bin/rustc")).arg("--extern")
         .arg(format!("provider_alias={}", archive.display())).arg(&doctest));
-    assert!(String::from_utf8_lossy(&result.stdout).contains("1 passed"));
+    assert!(String::from_utf8_lossy(&result.stdout).contains("2 passed"));
     let trace = std::fs::read_to_string(trace).unwrap();
-    assert!(trace.lines().any(|line| line == r#"{"engine":"lust","entry":"stdin"}"#));
+    assert_eq!(trace.lines().filter(|line| *line == r#"{"engine":"lust","entry":"stdin"}"#).count(), 2);
     assert!(trace.lines().all(|line| !line.contains("integration-unimplemented")));
 
     let executable = target(false).join("debug/application");

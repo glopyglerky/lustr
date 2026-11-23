@@ -114,7 +114,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     let custom_test = custom_test && !test;
     let test_target = test || custom_test;
     let standalone = !test_target && !externs.is_empty() && matches!(kind.as_deref(), None | Some("bin"))
-        && matches!(emits.as_deref(), None | Some("link"));
+        && matches!(emits.as_deref(), None | Some("link" | "metadata"));
     if unstable_options && (!standalone || std::env::var_os("RUSTC_BOOTSTRAP").is_some_and(|value| value == "-1")) {
         return None;
     }
@@ -123,10 +123,10 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
         else { matches!(kind.as_deref(), Some("bin" | "lib" | "rlib")) };
     if !represented_kind || (allow_dead_code_pub_in_binary && !test_target) || edition.as_deref() != Some("2024")
         || target.as_deref().is_some_and(|v| v != TARGET) { return None; }
-    let emit = if standalone { "link".into() } else { emits? };
+    let emit = if standalone { emits.unwrap_or_else(|| "link".into()) } else { emits? };
     let fields = emit.split(',').collect::<Vec<_>>();
     let check = match (fields.len(), fields.into_iter().collect::<BTreeSet<_>>()) {
-        (1, _) if standalone => false,
+        (1, fields) if standalone => fields.contains("metadata"),
         (2, fields) if binary && fields == BTreeSet::from(["dep-info", "link"]) => false,
         (2, fields) if fields == BTreeSet::from(["dep-info", "metadata"]) => true,
         (3, fields) if !binary && fields == BTreeSet::from(["dep-info", "metadata", "link"]) => false,
@@ -205,7 +205,8 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     let output = if standalone {
         match (output_file, out_dir) {
             (Some(path), None) if path != "-" => std::path::absolute(path).ok()?,
-            (None, dir) => std::path::absolute(dir.unwrap_or_else(|| ".".into())).ok()?.join(context.binary_name()),
+            (None, dir) => std::path::absolute(dir.unwrap_or_else(|| ".".into())).ok()?
+                .join(if check { context.metadata_name() } else { context.binary_name() }),
             (Some(_), _) => return None,
         }
     } else {
