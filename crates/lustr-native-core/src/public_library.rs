@@ -166,7 +166,7 @@ impl Owner {
         // generation intact, and fails this request without compiler retry.
         let imported = key.external.as_ref().map(|input| imports::Import::open(input, &self.installed.sdk)).transpose()?;
         let executable = key.executable_dependencies.as_ref()
-            .map(|inputs| executable::ExecutableImports::open(inputs, &self.installed.sdk)).transpose()?;
+            .map(|inputs| executable::ExecutableImports::open(inputs, &self.installed.sdk, req.session.profile.panic_abort)).transpose()?;
         if imported.as_ref().is_some_and(|value| !value.unchanged(&key.external.as_ref().unwrap().artifact))
             || executable.as_ref().is_some_and(|value| !value.unchanged(key.executable_dependencies.as_ref().unwrap())) {
             return Err("extern inputs changed during generation refresh".into());

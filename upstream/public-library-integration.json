@@ -198,7 +198,7 @@
     "crates/lustr-native-core/src/native_completion.rs": "91c2c7fde2ecb54264a2cfb31812013f92f1ee54b482d4a64eff8d9fb2857723",
     "crates/lustr-native-core/src/library_artifact.rs": "7bcf2bd9200f27ccd6f806a838298837ac408d98fe7ac94ab492e907f8cb0d82",
     "crates/lustr-native-core/src/metadata_archive.rs": "4906cce455716560344bdb329c3bcbc563da21e8c615c357583c038a90e11dfa",
-    "crates/lustr-native-core/src/public_library.rs": "2721eab4e6abdf49a50afc7c359a0f516a055e5756e403c0eb8523846d98d808",
+    "crates/lustr-native-core/src/public_library.rs": "97950d8422e7ac7b9f6e97db81a181d433720e45ee15a94d7c8d362b89aba669",
     "crates/lustr-native-core/src/public_library_import.rs": "c554f4ce7302f0d5498bd77aff16da81c42675bd1954fde56103ec982173d1a1",
     "crates/lustr-native-core/src/public_executable_import.rs": "657e81ae5af6249fe74991c0138c8e981db78effa9296453ee69bb12af0220d0",
     "crates/lustr-native-core/src/unit_object.rs": "d43929971c980ec395913ce5f6cb13955e012e72ef2fcddcd14a24adaea1bd24",
