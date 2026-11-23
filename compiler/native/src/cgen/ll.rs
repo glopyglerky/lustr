@@ -1982,7 +1982,7 @@ impl FnGen<'_, '_> {
         let program = self.p;
         let Some((parameters, result, link)) = program.native_fn(def) else { return false; };
         let scalar = |ty| {
-            let ty::TyKind::Int(kind) = program.tys.kind(ty) else { return None; };
+            let crate::ty::TyKind::Int(kind) = program.tys.kind(ty) else { return None; };
             if !crate::driver::library::completion::has_direct_integer_abi(kind) { return None; }
             let native = cty(&program.tys, ty);
             match pass_of(program, &native) {
