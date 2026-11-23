@@ -10773,7 +10773,7 @@ index da28835400f894866adb85f436e2cbdf109797d7..c2a8d6a10a776fba1df984670ff8b994
          assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
          assert!(decode_response(b"short").is_none());
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..57d995e5ac55c3cd61ac724dbaa7a352ad9cc1a6 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d8a3dab03 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
 @@ -30,7 +30,7 @@ use crate::check::collect::{self, LocalDefId};
@@ -11715,7 +11715,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..57d995e5ac55c3cd61ac724dbaa7a352
 +        None => match std::fs::read_to_string(&req.file) {
 +            Ok(source) => source,
 +            Err(error) => return Preparation::finished(Response {
-+                stderr: format!("error: cannot read {path}: {error}\n"), code: 2, ..Default::default(),
++                stderr: format!("error: cannot read {path}: {error}\n"), code: 2, ..Default::default()
 +            }),
 +        },
      };

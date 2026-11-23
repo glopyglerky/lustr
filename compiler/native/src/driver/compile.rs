@@ -3191,7 +3191,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
         None => match std::fs::read_to_string(&req.file) {
             Ok(source) => source,
             Err(error) => return Preparation::finished(Response {
-                stderr: format!("error: cannot read {path}: {error}\n"), code: 2, ..Default::default(),
+                stderr: format!("error: cannot read {path}: {error}\n"), code: 2, ..Default::default()
             }),
         },
     };
