@@ -676,13 +676,20 @@ pub struct ClientView {
     /// the shown dir joined with the rest, as rustc shows paths relative
     /// to the root path it was given. None shows paths as they are.
     pub shown_root: Option<(std::path::PathBuf, std::path::PathBuf)>,
-    /// The lexical root used for module lookup when the source arrived on stdin.
-    pub anonymous_root: Option<std::path::PathBuf>,
+    pub stdin_origin: Option<std::sync::Arc<StdinOrigin>>,
+}
+
+/// Keep the path used for module lookup separate from the reported source name.
+#[derive(Debug)]
+pub struct StdinOrigin {
+    pub root: std::path::PathBuf,
+    pub display: String,
+    pub doctest_offset: Option<isize>,
 }
 
 impl ClientView {
     /// This process's env, paths shown as they are.
-    pub const PROCESS: ClientView = ClientView { env: None, shown_root: None, anonymous_root: None };
+    pub const PROCESS: ClientView = ClientView { env: None, shown_root: None, stdin_origin: None };
 
     /// The value of env var `name` for `env!` and `option_env!`.
     pub fn env_var(&self, name: &str) -> Option<String> {
@@ -1382,8 +1389,8 @@ impl<'a> Expander<'a> {
             module: ctx.module_path.clone(),
             cur_file: ctx.file_path.clone(),
             cur_real: ctx.real_path.clone(),
-            cur_anonymous: ctx.module_path.is_empty()
-                && ctx.client.anonymous_root.as_deref() == Some(ctx.real_path.as_path()),
+            cur_anonymous: ctx.module_path.is_empty() && ctx.client.stdin_origin.as_ref()
+                .is_some_and(|origin| origin.doctest_offset.is_none() && origin.root == ctx.real_path),
             cur_src: ctx.src.to_string(),
             root_file: None,
             shadowed_crates: Vec::new(),

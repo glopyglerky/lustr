@@ -138,6 +138,50 @@ fn main() {
     assert!(!f.root.join("<anon>").exists());
 }
 
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn rustc_preserves_doctest_stdin_paths_and_diagnostic_lines() {
+    use std::process::Stdio;
+
+    let f = Fixture::new("rustdoc-stdin-origin");
+    let path = f.source("docs/source.rs", "// The generated input arrives on stdin.\n");
+    f.source("docs/value.txt", "absolute document directory\n");
+    let input = f.source("stdin.txt", r#"fn main() {
+    println!("{}:{}", file!(), line!());
+    print!("{}", include_str!("value.txt"));
+}
+"#);
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let commands = || [("native", f.command("rustc")), ("original", Command::new(&oracle))];
+    let request = |command: &mut Command, output: &Path, offset: &str| {
+        command.current_dir(&f.root).env_remove("LD_LIBRARY_PATH")
+            .env("UNSTABLE_RUSTDOC_TEST_PATH", &path)
+            .env("UNSTABLE_RUSTDOC_TEST_LINE", offset)
+            .args(["--edition", "2024", "--crate-type", "bin", "-"]).arg("-o").arg(output)
+            .stdin(Stdio::from(std::fs::File::open(&input).unwrap()));
+    };
+    for (name, mut command) in commands() {
+        let output = f.root.join(name);
+        request(&mut command, &output, "24");
+        f.succeeds(&format!("{name}-build"), &mut command);
+        let expected = format!("{}:2\nabsolute document directory\n", path.display());
+        assert_eq!(f.succeeds(name, &mut Command::new(output)).stdout, expected.as_bytes());
+    }
+    f.source("stdin.txt", "fn main() {\n    let _: i32 = \"wrong\";\n}\n");
+    for (offset, line) in [("24", 26), ("-1", 1)] {
+        for (compiler, mut command) in commands() {
+            let name = format!("{compiler}-invalid-offset{offset}");
+            let output = f.root.join(&name);
+            request(&mut command, &output, offset);
+            let response = f.invoke(&name, &mut command);
+            assert_eq!(response.status.code(), Some(1));
+            let diagnostic = String::from_utf8_lossy(&response.stderr);
+            assert!(diagnostic.contains(&format!("{}:{line}:", path.display())), "{diagnostic}");
+            assert!(!output.exists());
+        }
+    }
+}
+
 impl Fixture {
     fn new(scope: &str) -> Self {
         let f = Self {

@@ -163,7 +163,7 @@ fn client_view(req: &Request) -> expand::ClientView {
         (Some(typed), None) => req.file.parent().zip(typed.parent()).map(|(abs, shown)| (abs.to_path_buf(), shown.to_path_buf())),
         _ => None,
     };
-    expand::ClientView { env: req.client.env.clone().map(std::sync::Arc::new), shown_root, anonymous_root: None }
+    expand::ClientView { env: req.client.env.clone().map(std::sync::Arc::new), shown_root, stdin_origin: None }
 }
 
 /// Wall time per stage.
@@ -3006,12 +3006,17 @@ pub(super) fn prepare_observed<'a>(req: &'a Request, session: &'a mut Session, o
 }
 
 #[cfg(feature = "exclusive-native")]
-pub(crate) fn compile_stdin(req: &Request, session: &mut Session, source: String) -> Response {
+pub(crate) fn compile_stdin(req: &Request, session: &mut Session, source: StdinSource) -> Response {
     match prepare_with_definitions(req, session, None, None, Some(source)) {
         Preparation::Ready(prepared) => prepared.emit(),
         Preparation::Complete(response) | Preparation::Rejected(response)
         | Preparation::Failed(response) | Preparation::IntegrationIncomplete(response) => response,
     }
+}
+
+pub(crate) struct StdinSource {
+    pub text: String,
+    pub origin: Arc<expand::StdinOrigin>,
 }
 
 pub(super) fn prepare_imported<'a>(req: &'a Request, session: &'a mut Session, definitions: &dyn super::imports::Definitions) -> Result<Preparation<'a>, super::imports::Unintegrated> {
@@ -3115,7 +3120,7 @@ fn cargo_codegen(req: &Request) -> Option<(crate::protocol::OptLevel, crate::pro
 }
 
 fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, observer: Option<&dyn super::PhaseObserver>,
-    imports: Option<&dyn super::imports::Definitions>, stdin_source: Option<String>,
+    imports: Option<&dyn super::imports::Definitions>, stdin_source: Option<StdinSource>,
 ) -> Preparation<'a> {
     // A public library key belongs only to the product owner. Refuse it before
     // entering research graph selection, which retains its original probe.
@@ -3184,12 +3189,11 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
             ..Default::default()
         });
     }
-    let anonymous = stdin_source.is_some();
-    let path = if anonymous { "<anon>".to_owned() } else { req.file.to_string_lossy().into_owned() };
-    let mut src = match stdin_source {
-        Some(source) => source,
+    let path = stdin_source.as_ref().map_or_else(|| req.file.to_string_lossy().into_owned(), |source| source.origin.display.clone());
+    let (mut src, stdin_origin) = match stdin_source {
+        Some(source) => (source.text, Some(source.origin)),
         None => match std::fs::read_to_string(&req.file) {
-            Ok(source) => source,
+            Ok(source) => (source, None),
             Err(error) => return Preparation::finished(Response {
                 stderr: format!("error: cannot read {path}: {error}\n"), code: 2, ..Default::default()
             }),
@@ -3234,7 +3238,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
     }
     let session_key = session.key.clone();
     session.front.client = client_view(req);
-    if anonymous { session.front.client.anonymous_root = Some(req.file.clone()); }
+    session.front.client.stdin_origin = stdin_origin;
     let Session { front, caches, std_cache, disk_cache, .. } = session;
     // The last check's answer, kept only for this same request (a no-op
     // check reuses it on the resolver path; anything else recomputes).
@@ -3442,6 +3446,9 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
         let lines =
             if old_len == 0 { LineIndex::new(&src) } else { map.lines(ROOT_FILE).splice(&src, region_start, region_end_old, region_end) };
         map.set_file(ROOT_FILE, &path, lines, &src);
+    }
+    if let Some(offset) = front.client.stdin_origin.as_ref().and_then(|origin| origin.doctest_offset) {
+        map.set_doctest_offset(ROOT_FILE, offset);
     }
     let mut ranges: Vec<(usize, usize)> = kept_front.iter().map(|c| (c.start, c.start + c.text.len())).collect();
     let headers = if region_start == 0 && region_end == src.len() { fresh_headers.as_deref() } else { None };

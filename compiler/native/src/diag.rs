@@ -560,6 +560,7 @@ pub fn text_hash(src: &str) -> u64 {
 pub struct SourceMap {
     files: Vec<std::sync::Arc<SourceFile>>,
     expansions: std::sync::Arc<Vec<Expansion>>,
+    doctest: Option<(FileId, isize)>,
 }
 
 impl SourceMap {
@@ -640,6 +641,15 @@ impl SourceMap {
     pub fn line_col(&self, span: Span) -> (u32, u32) {
         self.lines(span.file).line_col(span.lo)
     }
+    /// Apply Rustdoc's offset when reporting diagnostics for its generated source.
+    /// Snippets, source macros and emitted code still use the original line index.
+    pub(crate) fn set_doctest_offset(&mut self, file: FileId, offset: isize) {
+        self.doctest = Some((file, offset));
+    }
+    fn diagnostic_line(&self, file: FileId, line: u32) -> usize {
+        let offset = self.doctest.filter(|&(id, _)| id == file).map_or(0, |(_, offset)| offset);
+        (line as usize).saturating_add_signed(offset)
+    }
     /// 1-based line and display column of a span's first byte (panic
     /// locations; see `LineIndex::line_display_col`). No token starts on
     /// a newline, so a span that does is lowering's gap from an index
@@ -689,6 +699,8 @@ impl SourceMap {
 fn span_json(map: &SourceMap, span: Span) -> String {
     let (line, col) = map.line_col(span);
     let (end_line, end_col) = map.line_col_at(span.file, span.hi);
+    let line = map.diagnostic_line(span.file, line);
+    let end_line = map.diagnostic_line(span.file, end_line);
     format!(
         "{{\"start\":{},\"end\":{},\"line\":{},\"col\":{},\"end_line\":{},\"end_col\":{}}}",
         span.lo, span.hi, line, col, end_line, end_col
@@ -810,6 +822,7 @@ pub fn render(diags: &mut [Diag], map: &SourceMap, src: &str, json: bool, max_er
         let span = map.call_site(d.span);
         let path = map.path(span.file);
         let (line, col) = map.line_col(span);
+        let line = map.diagnostic_line(span.file, line);
         if json {
             let mut labels = String::new();
             for (i, l) in d.labels.iter().enumerate() {
@@ -819,6 +832,8 @@ pub fn render(diags: &mut [Diag], map: &SourceMap, src: &str, json: bool, max_er
                 let ls = map.call_site(l.span);
                 let (ll, lc) = map.line_col(ls);
                 let (el, ec) = map.line_col_at(ls.file, ls.hi);
+                let ll = map.diagnostic_line(ls.file, ll);
+                let el = map.diagnostic_line(ls.file, el);
                 let _ = write!(
                     labels,
                     "{{\"start\":{},\"end\":{},\"line\":{},\"col\":{},\"end_line\":{},\"end_col\":{},\"label\":{}}}",
@@ -866,6 +881,7 @@ pub fn render(diags: &mut [Diag], map: &SourceMap, src: &str, json: bool, max_er
             for l in &d.labels {
                 let ls = map.call_site(l.span);
                 let (ll, lc) = map.line_col(ls);
+                let ll = map.diagnostic_line(ls.file, ll);
                 let lpath = map.path(ls.file);
                 let _ = writeln!(out, "  ::: {lpath}:{ll}:{lc}");
                 push_snippet(&mut out, map.text(ls.file).unwrap_or(src), map, ls, Some(&l.text));

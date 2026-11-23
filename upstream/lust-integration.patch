@@ -8889,10 +8889,18 @@ index db807083aa56d24a804b47f7ffd31e33c563ad52..78117d94243896ec54f171c57078f2b6
          assert!(client_gone(ours.as_raw_fd()));
      }
 diff --git a/src/diag.rs b/src/diag.rs
-index cc2181be23026dbf2ac0d57720504941c02be9c8..914994aecd97ea429b5575a586a2f8c99d518d76 100644
+index cc2181be23026dbf2ac0d57720504941c02be9c8..02ac62f5b7432ef967dee33fcd351a1b2fd358ab 100644
 --- a/src/diag.rs
 +++ b/src/diag.rs
-@@ -594,6 +594,12 @@ impl SourceMap {
+@@ -560,6 +560,7 @@ pub fn text_hash(src: &str) -> u64 {
+ pub struct SourceMap {
+     files: Vec<std::sync::Arc<SourceFile>>,
+     expansions: std::sync::Arc<Vec<Expansion>>,
++    doctest: Option<(FileId, isize)>,
+ }
+ 
+ impl SourceMap {
+@@ -594,6 +595,12 @@ impl SourceMap {
      pub fn file_count(&self) -> usize {
          self.files.len()
      }
@@ -8905,7 +8913,57 @@ index cc2181be23026dbf2ac0d57720504941c02be9c8..914994aecd97ea429b5575a586a2f8c9
      /// The text of `file`, when the map keeps it (multi-file crates).
      pub fn text(&self, file: FileId) -> Option<&str> {
          self.files.get(file.0 as usize).and_then(|f| f.text.as_deref())
-@@ -1025,3 +1031,55 @@ mod tests {
+@@ -634,6 +641,15 @@ impl SourceMap {
+     pub fn line_col(&self, span: Span) -> (u32, u32) {
+         self.lines(span.file).line_col(span.lo)
+     }
++    /// Apply Rustdoc's offset when reporting diagnostics for its generated source.
++    /// Snippets, source macros and emitted code still use the original line index.
++    pub(crate) fn set_doctest_offset(&mut self, file: FileId, offset: isize) {
++        self.doctest = Some((file, offset));
++    }
++    fn diagnostic_line(&self, file: FileId, line: u32) -> usize {
++        let offset = self.doctest.filter(|&(id, _)| id == file).map_or(0, |(_, offset)| offset);
++        (line as usize).saturating_add_signed(offset)
++    }
+     /// 1-based line and display column of a span's first byte (panic
+     /// locations; see `LineIndex::line_display_col`). No token starts on
+     /// a newline, so a span that does is lowering's gap from an index
+@@ -683,6 +699,8 @@ impl SourceMap {
+ fn span_json(map: &SourceMap, span: Span) -> String {
+     let (line, col) = map.line_col(span);
+     let (end_line, end_col) = map.line_col_at(span.file, span.hi);
++    let line = map.diagnostic_line(span.file, line);
++    let end_line = map.diagnostic_line(span.file, end_line);
+     format!(
+         "{{\"start\":{},\"end\":{},\"line\":{},\"col\":{},\"end_line\":{},\"end_col\":{}}}",
+         span.lo, span.hi, line, col, end_line, end_col
+@@ -804,6 +822,7 @@ pub fn render(diags: &mut [Diag], map: &SourceMap, src: &str, json: bool, max_er
+         let span = map.call_site(d.span);
+         let path = map.path(span.file);
+         let (line, col) = map.line_col(span);
++        let line = map.diagnostic_line(span.file, line);
+         if json {
+             let mut labels = String::new();
+             for (i, l) in d.labels.iter().enumerate() {
+@@ -813,6 +832,8 @@ pub fn render(diags: &mut [Diag], map: &SourceMap, src: &str, json: bool, max_er
+                 let ls = map.call_site(l.span);
+                 let (ll, lc) = map.line_col(ls);
+                 let (el, ec) = map.line_col_at(ls.file, ls.hi);
++                let ll = map.diagnostic_line(ls.file, ll);
++                let el = map.diagnostic_line(ls.file, el);
+                 let _ = write!(
+                     labels,
+                     "{{\"start\":{},\"end\":{},\"line\":{},\"col\":{},\"end_line\":{},\"end_col\":{},\"label\":{}}}",
+@@ -860,6 +881,7 @@ pub fn render(diags: &mut [Diag], map: &SourceMap, src: &str, json: bool, max_er
+             for l in &d.labels {
+                 let ls = map.call_site(l.span);
+                 let (ll, lc) = map.line_col(ls);
++                let ll = map.diagnostic_line(ls.file, ll);
+                 let lpath = map.path(ls.file);
+                 let _ = writeln!(out, "  ::: {lpath}:{ll}:{lc}");
+                 push_snippet(&mut out, map.text(ls.file).unwrap_or(src), map, ls, Some(&l.text));
+@@ -1025,3 +1047,55 @@ mod tests {
          assert!(out.contains(r#""span":{"start":3,"end":4,"line":2,"col":2,"end_line":2,"end_col":3}"#), "{out}");
      }
  }
@@ -10773,7 +10831,7 @@ index da28835400f894866adb85f436e2cbdf109797d7..c2a8d6a10a776fba1df984670ff8b994
          assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
          assert!(decode_response(b"short").is_none());
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d8a3dab03 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f7b5e6de1ba09b6e41c1a946583fb8e8f6bfb049 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
 @@ -30,7 +30,7 @@ use crate::check::collect::{self, LocalDefId};
@@ -10866,7 +10924,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
          _ => None,
      };
 -    expand::ClientView { env: req.client.env.clone().map(std::sync::Arc::new), shown_root }
-+    expand::ClientView { env: req.client.env.clone().map(std::sync::Arc::new), shown_root, anonymous_root: None }
++    expand::ClientView { env: req.client.env.clone().map(std::sync::Arc::new), shown_root, stdin_origin: None }
  }
  
  /// Wall time per stage.
@@ -11268,7 +11326,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
      front.fresh_exprs = front.ast.exprs.len();
      if (old_ast.exprs.len() > 20_000 || old_kept.iter().any(Option::is_some)) && caches.persistent {
          // Nested token trees in the Ast drop recursively; use the
-@@ -2552,10 +2748,388 @@ fn location_path(p: &str, library: &Path, display_root: Option<&Path>, client: &
+@@ -2552,10 +2748,393 @@ fn location_path(p: &str, library: &Path, display_root: Option<&Path>, client: &
  }
  
  pub fn compile(req: &Request, session: &mut Session) -> Response {
@@ -11530,12 +11588,17 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
 +}
 +
 +#[cfg(feature = "exclusive-native")]
-+pub(crate) fn compile_stdin(req: &Request, session: &mut Session, source: String) -> Response {
++pub(crate) fn compile_stdin(req: &Request, session: &mut Session, source: StdinSource) -> Response {
 +    match prepare_with_definitions(req, session, None, None, Some(source)) {
 +        Preparation::Ready(prepared) => prepared.emit(),
 +        Preparation::Complete(response) | Preparation::Rejected(response)
 +        | Preparation::Failed(response) | Preparation::IntegrationIncomplete(response) => response,
 +    }
++}
++
++pub(crate) struct StdinSource {
++    pub text: String,
++    pub origin: Arc<expand::StdinOrigin>,
 +}
 +
 +pub(super) fn prepare_imported<'a>(req: &'a Request, session: &'a mut Session, definitions: &dyn super::imports::Definitions) -> Result<Preparation<'a>, super::imports::Unintegrated> {
@@ -11639,7 +11702,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
 +}
 +
 +fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, observer: Option<&dyn super::PhaseObserver>,
-+    imports: Option<&dyn super::imports::Definitions>, stdin_source: Option<String>,
++    imports: Option<&dyn super::imports::Definitions>, stdin_source: Option<StdinSource>,
 +) -> Preparation<'a> {
 +    // A public library key belongs only to the product owner. Refuse it before
 +    // entering research graph selection, which retains its original probe.
@@ -11658,7 +11721,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
              stderr: format!(
                  "error: internal: request routed to the wrong session\n  request: {}\n  session: {}\n",
                  req.session.describe(),
-@@ -2563,16 +3137,26 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2563,16 +3142,26 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              ),
              code: 3,
              ..Default::default()
@@ -11689,7 +11752,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
      }
      // Lust links for the host target only (tcc). A named non-host triple
      // is a clear error for a link, not a host binary under a foreign
-@@ -2591,23 +3175,30 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2591,23 +3180,29 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // product; no link runs).
      let cc_build = req.cc && (triple.is_empty() || crate::resolve::cfg::CfgEnv::is_release_target(triple));
      if foreign && !foreign_check && !cc_build && req.emit_c.is_none() {
@@ -11708,12 +11771,11 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
 -    let mut src = match std::fs::read_to_string(&req.file) {
 -        Ok(s) => s,
 -        Err(e) => return Response { stderr: format!("error: cannot read {path}: {e}\n"), code: 2, ..Default::default() },
-+    let anonymous = stdin_source.is_some();
-+    let path = if anonymous { "<anon>".to_owned() } else { req.file.to_string_lossy().into_owned() };
-+    let mut src = match stdin_source {
-+        Some(source) => source,
++    let path = stdin_source.as_ref().map_or_else(|| req.file.to_string_lossy().into_owned(), |source| source.origin.display.clone());
++    let (mut src, stdin_origin) = match stdin_source {
++        Some(source) => (source.text, Some(source.origin)),
 +        None => match std::fs::read_to_string(&req.file) {
-+            Ok(source) => source,
++            Ok(source) => (source, None),
 +            Err(error) => return Preparation::finished(Response {
 +                stderr: format!("error: cannot read {path}: {error}\n"), code: 2, ..Default::default()
 +            }),
@@ -11726,15 +11788,15 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
      let crate_ids = session.crate_ids();
      // Open the disk cache once per session and seed slot assignment from
      // the stored manifest, so a restarted daemon gives every fn the slot
-@@ -2643,6 +3234,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2643,6 +3238,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      }
      let session_key = session.key.clone();
      session.front.client = client_view(req);
-+    if anonymous { session.front.client.anonymous_root = Some(req.file.clone()); }
++    session.front.client.stdin_origin = stdin_origin;
      let Session { front, caches, std_cache, disk_cache, .. } = session;
      // The last check's answer, kept only for this same request (a no-op
      // check reuses it on the resolver path; anything else recomputes).
-@@ -2670,7 +3262,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2670,7 +3266,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      } else {
          crate::resolve::worklist::route_root_std(&src, &front.interner, true)
      };
@@ -11743,7 +11805,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
      let route_std_mods = req.session.krate.manifest_path.is_none().then_some(std_mods);
      if front.resolved_crate && !wants_resolver {
          front.ast = Arc::default();
-@@ -2719,16 +3311,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2719,16 +3315,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      if needs.any() {
          match splice_std(&mut src, std_cache, needs) {
              Ok(sp) => (std_ranges, std_routes, std_methods) = (sp.ranges, sp.routes, sp.methods),
@@ -11765,7 +11827,17 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
          }
      } else {
      // Lex and scan in chunks of whole items, in parallel. Only the region an edit touched is
-@@ -2873,7 +3467,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2849,6 +3447,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+             if old_len == 0 { LineIndex::new(&src) } else { map.lines(ROOT_FILE).splice(&src, region_start, region_end_old, region_end) };
+         map.set_file(ROOT_FILE, &path, lines, &src);
+     }
++    if let Some(offset) = front.client.stdin_origin.as_ref().and_then(|origin| origin.doctest_offset) {
++        map.set_doctest_offset(ROOT_FILE, offset);
++    }
+     let mut ranges: Vec<(usize, usize)> = kept_front.iter().map(|c| (c.start, c.start + c.text.len())).collect();
+     let headers = if region_start == 0 && region_end == src.len() { fresh_headers.as_deref() } else { None };
+     let middle =
+@@ -2873,7 +3474,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // A macro error in a chunk is the answer, not a lexing fallback.
      if let Some(Err(d)) = fresh.iter().find(|l| matches!(l, Err(d) if d.code.starts_with("L08"))) {
          let mut d = d.clone();
@@ -11774,7 +11846,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
      }
      let split_inner_attr = ranges.len() > 1
          && (reused.iter().flatten().any(|c| c.inner_attr) || fresh.iter().flatten().any(|&(_, _, _, inner_attr)| inner_attr));
-@@ -2889,7 +3483,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -2889,7 +3490,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          // file has an inner attribute (`has_inner_attr`): lex the whole file. Its error is the
          // answer; if it lexes, compile as one chunk. Never panic.
          match lexer::lex(&src, ROOT_FILE, 0, &front.interner).and_then(|l| expand_tokens(front, l, &req.file, &src, test_mode, req.session.profile, &req.session)) {
@@ -11783,7 +11855,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
              Ok((whole, deps)) => {
                  let mut sc = scan::scan(&whole);
                  fold_fn_text(&mut sc, &whole, &src);
-@@ -3072,7 +3666,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3072,7 +3673,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                      front.chunks[fn_at[i].0].items = None;
                  }
                  front.chunks_blanked = true;
@@ -11792,7 +11864,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
              }
              for (&i, (body_ast, body, exprs, pats)) in changed.iter().zip(parsed) {
                  let before = (front.ast.exprs.len() as u32, front.ast.pats.len() as u32, front.ast.blocks.len() as u32);
-@@ -3145,7 +3739,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3145,7 +3746,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          if let Some(Err(d)) = parsed.iter().find(|p| p.is_err()) {
              let d = d.clone();
              front.chunks_blanked = old_len > 0;
@@ -11801,7 +11873,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
          }
          let mut new_asts: FxMap<usize, Ast> = todo.iter().copied().zip(parsed.into_iter().map(|p| p.unwrap())).collect();
          // Splice every per-chunk list in chunk order: a re-parsed chunk
-@@ -3221,7 +3815,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3221,7 +3822,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              Ok(c) => c,
              Err(e) => {
                  front.env_hash = None;
@@ -11810,7 +11882,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
              }
          }
      } else {
-@@ -3255,14 +3849,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3255,14 +3856,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                      Ok((w, _deps)) => w,
                      Err(mut d) => {
                          front.env_hash = None;
@@ -11827,7 +11899,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
                  }
              }
          };
-@@ -3273,7 +3867,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3273,7 +3874,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              Ok(c) => c,
              Err(e) => {
                  front.env_hash = None;
@@ -11836,7 +11908,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
              }
          }
      };
-@@ -3567,6 +4161,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3567,6 +4168,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // Template check errors from the kept program are collect's errors
      // (`gen_reuse.template_errors` counts them).
      let collect = |front: &mut Front, caches: &mut Caches| {
@@ -11851,7 +11923,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
          collect::collect_reuse(
              front.ast.clone(),
              front.interner.clone(),
-@@ -3666,7 +4268,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3666,7 +4275,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              front.last_visits.clear();
              visits.render(&mut front.last_visits);
              log_visits(&front.last_visits);
@@ -11860,7 +11932,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
          }
      };
      // Every body of a generic program rechecks when the trait system
-@@ -3735,7 +4337,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3735,7 +4344,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // catch_unwind would return Ok after a panic (rel-opt).
      let tables_env = std::env::var("LUST_UNWIND_TABLES").ok();
      program.unwind_tables = program.unwind
@@ -11871,7 +11943,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
              tables_env.as_deref() != Some("0")
          } else {
              !caches.persistent && req.emit_c.is_some() && tables_env.as_deref() == Some("1")
-@@ -3757,11 +4361,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3757,11 +4368,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
                  None => {
                      front.env_hash = None;
@@ -11885,7 +11957,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
                  }
              }
          }
-@@ -3772,7 +4376,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3772,7 +4383,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      if program.fns.len() < fn_count {
          // The scanner and the parser disagree (only possible with unusual syntax). Start over.
          front.env_hash = None;
@@ -11894,7 +11966,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
      }
      // Mono instance slots (docs/ARCH.md section 4.2; W-TRAITS-CORE
      // through W-DRIVER): collect appends materialized instances
-@@ -3790,7 +4394,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -3790,7 +4401,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              let disk = program.disk_id(LocalDefId(i as u32));
              if let Err(c) = def::insert_path(&mut front.slot_paths, disk, &format!("instance#{}", disk.hash.0)) {
                  front.env_hash = None;
@@ -11903,7 +11975,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
              }
              let slot = match front.slot_of.get(&disk) {
                  Some(&slot) => slot,
-@@ -4040,7 +4644,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4040,7 +4651,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  continue;
              }
              let s = slot(i);
@@ -11914,7 +11986,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
                  continue;
              }
              let Some(Some(cached)) = caches.slot_ir.get(s) else {
-@@ -4054,12 +4660,15 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4054,12 +4667,15 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              };
              let moved = cached.slot_at_gen != s as u32
                  || cached.used_at_gen.iter().any(|(disk, at_gen)| front.slot_of.get(disk) != Some(at_gen));
@@ -11933,7 +12005,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
                  super::ir_cache::rebuild(&program, cached, LocalDefId(i as u32))
              } else {
                  None
-@@ -4068,6 +4677,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4068,6 +4684,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  Some(body) if super::ir_cache::ir_fingerprint(&program, &body, &map, scan_of(front, i).1) == cached.ir_fp => {
                      reemit.push((i, body))
                  }
@@ -11944,7 +12016,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
                  _ => reemit_failed.push(i),
              }
          }
-@@ -4081,9 +4694,13 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4081,9 +4701,13 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // switches, debug info, unwind tables) makes every slot's C again, as a one-shot build
      // does: its slot cache holds C of the other form (a front image saved by a tcc build,
      // then a release driver build). A check makes no C and keeps the key.
@@ -11960,7 +12032,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
          if caches.codegen_key != key {
              caches.codegen_key = key;
              caches.has_out.iter_mut().for_each(|h| *h = false);
-@@ -4091,12 +4708,26 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4091,12 +4715,26 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              caches.glue = GlueSet::default();
              caches.objects = None;
          }
@@ -11988,7 +12060,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
      }
      // The instance Adt ids this build generates C under, and whether one
      // names another instance than in the C made since the last full
-@@ -4285,28 +4916,64 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4285,28 +4923,64 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // A one-shot check needs no IR after borrowck: dropping each body on
      // its worker lets the allocator reuse the memory for the next body,
      // instead of touching fresh pages for every function.
@@ -12054,7 +12126,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
              (Some(body), errs)
          });
          let body = body.filter(|_| keep_bodies).map(|mut b| {
-@@ -4315,6 +4982,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4315,6 +4989,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          });
          (body, errs)
      });
@@ -12065,7 +12137,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
      let mut diags: Vec<Diag> = Vec::new();
      for (k, &i) in work.iter().enumerate() {
          caches.ok[slot(i)] = results[k].1.is_empty();
-@@ -4350,6 +5021,13 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4350,6 +5028,13 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              stored.verified[mode_at] = verified;
              caches.slot_reads[slot(i)] = Some(stored);
          }
@@ -12079,7 +12151,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
          diags.extend(results[k].1.iter().cloned());
      }
      // rustc stops before monomorphization once a pre-mono check fails, so an
-@@ -4366,10 +5044,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4366,10 +5051,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // A lust file is a bin crate, so check needs `main` too, as `rustc --emit=metadata`
      // does. `lust test` sets `harness`: it adds a generated `main` after this check.
      // A Cargo lib target (`--lib`) is a lib crate: rustc needs no `main` there.
@@ -12092,7 +12164,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
      // A one-shot process (`leak_at_exit`) exits right after this call. Freeing the IR and
      // program arenas, mostly built on worker threads, costs about 10 ms on a 31k-line crate,
      // so leak them on every return below and let the OS reclaim the memory at exit. A
-@@ -4396,10 +5075,140 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4396,10 +5082,140 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
              }
          }
@@ -12234,7 +12306,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
          // The answer, before the timing and stats lines, for a no-op
          // check of the same request to reuse.
          if let Some(fp) = check_fp {
-@@ -4446,10 +5255,34 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4446,10 +5262,34 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          return resp;
      }
  
@@ -12269,7 +12341,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
      // Each fn's base line: cgen stores its line numbers relative to it
      // and the main unit adds each slot's base back, so a reused body's
      // C stays right when its source text moves. An instance's base is
-@@ -4471,7 +5304,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4471,7 +5311,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let line_base_of = |_: &Front, i: usize| -> u32 { line_bases.get(i).copied().unwrap_or(0) };
      // Release C (driver/release_c.rs): content-addressed names, set as cgen's naming
      // context around every step that prints C.
@@ -12278,7 +12350,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
      let rn = rnames.as_ref();
      // A release C build to the release driver streams its cc step (`cc::Stream`): each unit the
      // assembly makes compiles from the time its text exists. Not with --emit-c nor LLVM units.
-@@ -4498,7 +5331,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4498,7 +5338,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      let (outs, cg_noted): (Vec<_>, Vec<_>) = par_map(&bodies, |(i, b)| {
          check::derive_delta::scoped(program.record_reads, || {
              cgen::in_layout_phase(layout_tag, || {
@@ -12298,7 +12370,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
              })
          })
      })
-@@ -4519,7 +5363,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4519,7 +5370,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // Cached IR serves only the slot-moved re-emit, which runs only in a
      // program with no generics: a generic program caches none (on tsgo it
      // was 1.5 GB of a daemon session, made serially per generated body).
@@ -12307,7 +12379,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
      // The stable id of each fn whose slot the new C prints (`FnOut::used`),
      // by slot: the pairs below are the next renumber's re-emit trigger.
      let mut wanted = vec![false; if keep_ir { front.slot_of.len() } else { 0 }];
-@@ -4552,10 +5396,22 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4552,10 +5403,22 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          caches.out[s] = out;
          caches.has_out[s] = true;
          dirty_slots.push(s);
@@ -12331,7 +12403,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
      // LUST_CHECK_GENREUSE=1 (genreuse_oracle.rs): every concrete body a release C build keeps
      // is checked, lowered and generated again without reuse (nothing stored), and its C must
      // equal the kept C. Release C names are content-addressed; dev C names a vtable by a
-@@ -4681,6 +5537,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4681,6 +5544,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      }
      let glue_changed = shared_changed || regenerated || statics_changed;
      t.lap("codegen (par)");
@@ -12346,7 +12418,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
      // Nothing reads the IR after codegen. A one-shot build leaks it at exit
      // (`leak_at_exit`), but on a large program it is the largest block
      // alive at the peak (ts-rust's bins: about 2.4 GB of 9.4 GB, through
-@@ -4718,7 +5582,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4718,7 +5589,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      const SHARD_RECORD: &str = "glue shard ";
      let fn_units: Vec<usize> = (0..groups.len()).map(|g| g + FIRST_FN_UNIT).collect();
      let dirty_fn_units: Vec<usize> = (0..groups.len()).filter(|&g| dirty_groups[g]).map(|g| g + FIRST_FN_UNIT).collect();
@@ -12360,7 +12432,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
      // Instance slots take their template's line: cgen stores an
      // instance's panic lines relative to it (see `line_base_of`).
      let mut slot_lines = vec![0u32; n_slots];
-@@ -4751,7 +5620,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4751,7 +5627,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // rebuilds and the base
      // relinks over the existing unit objects. Unrelated units keep
      // their objects, in the session and in the disk unit cache.
@@ -12376,7 +12448,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
      let cap_grown = n_slots > caches.table_cap;
      if fresh_base || cap_grown {
          caches.table_cap = n_slots * 2 + 64;
-@@ -4760,7 +5636,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4760,7 +5643,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          caches.base_units = groups.len();
      }
      let table_dirty = cap_grown || groups.len() != caches.base_units;
@@ -12387,7 +12459,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
      let dir = caches.obj_dir.clone();
      let base_obj = |u: usize| dir.join(format!("u{u}.o"));
      let overlay_obj = |u: usize| dir.join(format!("o{u}.o"));
-@@ -4842,9 +5720,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4842,9 +5727,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          super::release_c::groups(&caches.out, names, &file, &line)
      };
      let gen_unit = |u: usize, overlay: bool| match u {
@@ -12399,7 +12471,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
          3 => cgen::table_unit(caches.table_cap, &fn_units),
          LOC_UNIT => cgen::loc_unit(&files, &slot_lines),
          g => {
-@@ -4853,7 +5731,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -4853,7 +5738,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
      };
      // Release C: whether fn bodies are LLVM IR (cgen/ll.rs), and B1's switches.
@@ -12408,7 +12480,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
      // B1 (`cgen::record`): each C fn unit records the pieces it is made of and what it
      // read, and the next build sets the record against its program
      // (`Caches::unit_records`). A session that keeps its caches (a daemon, a front
-@@ -5007,7 +5885,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5007,7 +5892,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              let assemble = |u: usize, inl: &[Vec<usize>], c_refs: Option<&cgen::ll::CRefs>, copy_hot: Option<&cgen::CopyHot>| {
                  let t = Instant::now();
                  let (c, helpers) = cgen::in_layout_phase(asm_tag, || cgen::names::with(rn, || match u {
@@ -12417,7 +12489,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
                      1 => match super::release_c::statics_bytes() {
                          0 => (adapt(cgen::names::statics_unit(&program, &caches.glue), &Default::default()), String::new()),
                          target => {
-@@ -5023,7 +5901,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5023,7 +5908,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                              (adapt(index, &Default::default()), String::new())
                          }
                      },
@@ -12426,7 +12498,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
                      3 => {
                          let rg = rg_cell.get().expect("the fn units are cut before unit 3");
                          (super::release_c::table_unit(&rg.iter().filter(|(_, s)| s.contains(&(main_slot as usize))).map(|(r, _)| r.clone()).collect::<Vec<_>>()), String::new())
-@@ -5291,7 +6169,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5291,7 +6176,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                          if k < n_early {
                              Ok(assemble(first[k], &[], None, None))
                          } else {
@@ -12437,7 +12509,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
                          }
                      })
                      .into_iter()
-@@ -5617,7 +6497,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5617,7 +6504,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      };
      let rgroups = rg_cell.into_inner();
      // The LLVM backend (cgen/ll.rs) wrote `.ll` companions: only cc.rs builds them.
@@ -12446,7 +12518,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
      // The units the link takes after 1..4: release C has its own fn units, glue shards and
      // statics parts.
      let link_fn_units: Vec<usize> = match &rgroups {
-@@ -5656,7 +6536,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5656,7 +6543,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              return Response { code: 0, ..Default::default() };
          }
      }
@@ -12455,7 +12527,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
          return Response {
              stderr: "error: LUST_RELEASE_BACKEND=llvm builds through the release driver (`lust build --release --target <triple>`) or with --emit-c\n".into(),
              code: 2,
-@@ -5671,7 +6551,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5671,7 +6558,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // frozen, so a clean unit's C is the same as last time and its object
      // comes from the cache. Overlays do not exist here: every build emits
      // the base form of each unit.
@@ -12464,7 +12536,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
          // The release driver returns before the visits line at the end: its log line is here
          // (front-check's path coverage).
          front.last_visits.clear();
-@@ -5688,7 +6568,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5688,7 +6575,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                  }
              }
          }
@@ -12476,7 +12548,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
              // Release C (`LUST_RELEASE_C=1`) already holds the content-addressed units.
              let mut all: Vec<(String, String)> = if rgroups.is_some() {
                  // An LLVM companion keeps its `.ll` name (cc.rs pairs it with its C unit). The
-@@ -5749,8 +6632,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5749,8 +6639,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          {
              let _ = writeln!(resp.stderr, "b1: {l}");
          }
@@ -12490,7 +12562,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
              // A build that leaks at exit leaks the unit texts too (they moved out of `units`).
              if leak_at_exit {
                  std::mem::forget(all);
-@@ -5807,6 +6694,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5807,6 +6701,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // this check keeps that a pin, not a hope.
      if let Some(run_args) = &req.run_args
          && !caches.persistent
@@ -12498,7 +12570,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
          && fresh_base
          && groups.len() == 1
          && !req.debug
-@@ -5837,7 +6725,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5837,7 +6732,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
      }
      // Disk unit objects key on each unit's full C text (see cache.rs):
@@ -12507,7 +12579,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
      // compiler, so a hit can never serve an object whose C differs. The
      // C is already built here for every unit in `todo`, so the key costs
      // one hash per unit.
-@@ -5847,7 +6735,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5847,7 +6742,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
      }
      let keys: Vec<Option<String>> = match &disk_cache {
@@ -12516,7 +12588,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
          None => vec![None; units.len()],
      };
      // The units move into the miss list, and their C is freed before the
-@@ -5866,7 +6754,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5866,7 +6761,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              miss_keys.push(key);
          }
      }
@@ -12525,7 +12597,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
          caches.objects = None;
          return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
      }
-@@ -5883,10 +6771,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5883,10 +6778,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      caches.objects = Some(req.debug);
      t.lap("tcc compile");
      let all_base: Vec<PathBuf> = [1, 2, 3, LOC_UNIT].into_iter().chain(link_fn_units.iter().copied()).map(base_obj).collect();
@@ -12546,7 +12618,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
      } else {
          // The base library lives in a persistent dir under a content name
          // (see `resolve_base_dir`): the executable loads it by absolute
-@@ -5901,18 +6797,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5901,18 +6804,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
          }
          let base = if rebuild_base {
              caches.base_gen += 1;
@@ -12587,7 +12659,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
                      install_base(&tmp, &base_dir.join(&soname))?;
                      if !caches.base_files.contains(&soname) {
                          caches.base_files.push_back(soname);
-@@ -5922,24 +6831,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5922,24 +6838,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
              if built.is_err() {
                  let _ = std::fs::remove_file(&tmp);
              }
@@ -12619,7 +12691,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
              built
          } else {
              Ok(())
-@@ -5958,8 +6868,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
+@@ -5958,8 +6875,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
      // a small grace count while no known output file still references them. A binary the user
      // kept keeps its base; one that was overwritten or deleted does not. A running program
      // keeps its mapped copy after unlink.
@@ -12630,7 +12702,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
          if let Some(base_dir) = caches.base_dir.clone() {
              record_base_user(&base_dir, &soname, &req.out);
          }
-@@ -6034,7 +6944,7 @@ mod tests {
+@@ -6034,7 +6951,7 @@ mod tests {
      /// is installed, and a workspace file relative to the workspace root.
      #[test]
      fn location_paths_do_not_hold_the_install_path() {
@@ -12639,7 +12711,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
          let at = |lust: &str, p: &str| location_path(&format!("{lust}{p}"), &Path::new(lust).join("library"), Some(Path::new("/ws")), &client);
          for lust in ["/opt/lust", "/home/u/tools/lust-0.2"] {
              assert_eq!(at(lust, "/library/deps/bumpalo/src/lib.rs"), "library/deps/bumpalo/src/lib.rs");
-@@ -6058,6 +6968,66 @@ mod tests {
+@@ -6058,6 +6975,66 @@ mod tests {
          panic!("{}: still busy", bin.display())
      }
  
@@ -12706,7 +12778,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f243cae20f5df00b983ae04378f9f88d
      /// The base sweep never deletes a live owner's base (it may be a live
      /// session's current base, found by fuzz seed 7 multi when a guard
      /// session's first-build sweep deleted the warm session's base), but
-@@ -6417,10 +7387,547 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
+@@ -6417,10 +7394,547 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
              max_errors: 20,
              run_args: None,
              harness: false, cc: false,
@@ -13741,7 +13813,7 @@ index bab64be43909404e5ceb7b7fc52b70869ed0bf4b..d29476f42ba539f0a9f67484dd5c0641
                          _ => return None,
                      }
 diff --git a/src/driver/mod.rs b/src/driver/mod.rs
-index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..015a2419be97c704467fd1ff44cdbc75286b7cf8 100644
+index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..79f27ed0e759d76aeaac9896cc00ef8e2a28aee2 100644
 --- a/src/driver/mod.rs
 +++ b/src/driver/mod.rs
 @@ -7,6 +7,9 @@ mod ir_cache;
@@ -13779,7 +13851,7 @@ index 30aaf66ad48a596b97d2b4b92b9cce4b35cfa5a2..015a2419be97c704467fd1ff44cdbc75
 +
 +pub use compile::{Preparation, PreparedRequest};
 +#[cfg(feature = "exclusive-native")]
-+pub(crate) use compile::compile_stdin;
++pub(crate) use compile::{StdinSource, compile_stdin};
 +
 +/// Prepare an ordinary native request without generating C, objects or a link.
 +/// The owned continuation retains the actual checked program and body arenas.
@@ -15030,7 +15102,7 @@ index eca21eee99e20a7497754158516c42a8ed50ef06..1bcfa9836f71eff0998f871c3165447e
                      Some(Tok::Plus) => {
                          out.pop();
 diff --git a/src/expand/mod.rs b/src/expand/mod.rs
-index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e86447f8df 100644
+index 618adcd9383382846b7ac027b4f257a55c3d1d37..a8e2e801006b7647eddcc2a9901fbb87a76a5008 100644
 --- a/src/expand/mod.rs
 +++ b/src/expand/mod.rs
 @@ -226,7 +226,8 @@ pub fn hash_token(h: &mut impl Hasher, tok: &Token, strings: &[String]) {
@@ -15100,22 +15172,29 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
                  && tok_at(trees, i + 1).map(|n| n.tok) == Some(Tok::Bang)
          }
          Tt::Delim(_, inner, _) => template_pos_sensitive(inner, interner),
-@@ -674,11 +676,13 @@ pub struct ClientView {
+@@ -674,11 +676,20 @@ pub struct ClientView {
      /// the shown dir joined with the rest, as rustc shows paths relative
      /// to the root path it was given. None shows paths as they are.
      pub shown_root: Option<(std::path::PathBuf, std::path::PathBuf)>,
-+    /// The lexical root used for module lookup when the source arrived on stdin.
-+    pub anonymous_root: Option<std::path::PathBuf>,
++    pub stdin_origin: Option<std::sync::Arc<StdinOrigin>>,
++}
++
++/// Keep the path used for module lookup separate from the reported source name.
++#[derive(Debug)]
++pub struct StdinOrigin {
++    pub root: std::path::PathBuf,
++    pub display: String,
++    pub doctest_offset: Option<isize>,
  }
  
  impl ClientView {
      /// This process's env, paths shown as they are.
 -    pub const PROCESS: ClientView = ClientView { env: None, shown_root: None };
-+    pub const PROCESS: ClientView = ClientView { env: None, shown_root: None, anonymous_root: None };
++    pub const PROCESS: ClientView = ClientView { env: None, shown_root: None, stdin_origin: None };
  
      /// The value of env var `name` for `env!` and `option_env!`.
      pub fn env_var(&self, name: &str) -> Option<String> {
-@@ -710,7 +714,7 @@ impl<'a> ExpandCtx<'a> {
+@@ -710,7 +721,7 @@ impl<'a> ExpandCtx<'a> {
              real_path: file_path.to_path_buf(),
              cargo_env: Vec::new(),
              src,
@@ -15124,7 +15203,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
              module_path: Vec::new(),
              crate_name: None,
              extern_crates: Vec::new(),
-@@ -1017,11 +1021,11 @@ fn crate_name_facts(tokens: &[Token], ctx: &ExpandCtx, root: bool) -> (Vec<Sym>,
+@@ -1017,11 +1028,11 @@ fn crate_name_facts(tokens: &[Token], ctx: &ExpandCtx, root: bool) -> (Vec<Sym>,
          match t.tok {
              Tok::LBrace | Tok::LParen | Tok::LBracket => depth += 1,
              Tok::RBrace | Tok::RParen | Tok::RBracket => depth = depth.saturating_sub(1),
@@ -15138,7 +15217,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
                      || (prev == Some(Tok::PathSep) && matches!(next, Some(Tok::Semi | Tok::Comma | Tok::RBrace)) && in_use_tree(tokens, i));
                  if binds && !shadowed.contains(&s) {
                      shadowed.push(s);
-@@ -1045,10 +1049,10 @@ pub fn needs_expansion(tokens: &[Token], interner: &Interner) -> bool {
+@@ -1045,10 +1056,10 @@ pub fn needs_expansion(tokens: &[Token], interner: &Interner) -> bool {
      let macro_rules = interner.intern("macro_rules");
      for (i, t) in tokens.iter().enumerate() {
          match t.tok {
@@ -15151,7 +15230,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
                  if builtin::is_passthrough(interner.get(s))
                      && i > 0
                      && (tokens[i - 1].tok == Tok::As
-@@ -1093,7 +1097,7 @@ fn in_use_tree(tokens: &[Token], i: usize) -> bool {
+@@ -1093,7 +1104,7 @@ fn in_use_tree(tokens: &[Token], i: usize) -> bool {
      for j in (0..i).rev() {
          match tokens[j].tok {
              Tok::Use => return tokens.get(j + 1).is_none_or(|t| t.tok != Tok::Lt),
@@ -15160,7 +15239,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
              Tok::SelfLower | Tok::Underscore => {}
              _ => return false,
          }
-@@ -1103,9 +1107,9 @@ fn in_use_tree(tokens: &[Token], i: usize) -> bool {
+@@ -1103,9 +1114,9 @@ fn in_use_tree(tokens: &[Token], i: usize) -> bool {
  
  /// The name a worklist seed defines (`macro_rules! name`), if it reads.
  fn seed_name(seed: &MacroSeed, interner: &Interner) -> Option<Sym> {
@@ -15172,7 +15251,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
          _ => None,
      }
  }
-@@ -1235,6 +1239,7 @@ pub struct Expander<'a> {
+@@ -1235,6 +1246,7 @@ pub struct Expander<'a> {
      /// `include!` swaps these.
      cur_file: String,
      cur_real: std::path::PathBuf,
@@ -15180,16 +15259,16 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
      cur_src: String,
      /// The file id of the tokens being expanded (the first input token's),
      /// so `assert_msg` can tell a macro body in this file from one in
-@@ -1377,6 +1382,8 @@ impl<'a> Expander<'a> {
+@@ -1377,6 +1389,8 @@ impl<'a> Expander<'a> {
              module: ctx.module_path.clone(),
              cur_file: ctx.file_path.clone(),
              cur_real: ctx.real_path.clone(),
-+            cur_anonymous: ctx.module_path.is_empty()
-+                && ctx.client.anonymous_root.as_deref() == Some(ctx.real_path.as_path()),
++            cur_anonymous: ctx.module_path.is_empty() && ctx.client.stdin_origin.as_ref()
++                .is_some_and(|origin| origin.doctest_offset.is_none() && origin.root == ctx.real_path),
              cur_src: ctx.src.to_string(),
              root_file: None,
              shadowed_crates: Vec::new(),
-@@ -1425,7 +1432,7 @@ impl<'a> Expander<'a> {
+@@ -1425,7 +1439,7 @@ impl<'a> Expander<'a> {
  
      /// An identifier tree for `name` at `span`.
      pub fn ident_tree(&mut self, name: &str, span: Span) -> Tt {
@@ -15198,7 +15277,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
      }
  
      /// Folds one dependency read into the running deps hash.
-@@ -1457,6 +1464,7 @@ impl<'a> Expander<'a> {
+@@ -1457,6 +1471,7 @@ impl<'a> Expander<'a> {
  
      /// The current file as `file!` shows it, recorded as a `Dep::Shown`.
      pub fn read_dep_shown(&mut self) -> String {
@@ -15206,7 +15285,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
          let path = self.cur_file.clone();
          let shown = self.ctx.client.shown(&path);
          self.fold_dep("shown", shown.as_bytes());
-@@ -1552,7 +1560,7 @@ pub fn splice_placeholders(trees: Vec<Tt>, name: &str, replacement: &[Tt], inter
+@@ -1552,7 +1567,7 @@ pub fn splice_placeholders(trees: Vec<Tt>, name: &str, replacement: &[Tt], inter
      let mut out = Vec::new();
      for tree in trees {
          match tree {
@@ -15215,7 +15294,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
              Tt::Delim(d, inner, span) => out.push(Tt::Delim(d, splice_placeholders(inner, name, replacement, interner), span)),
              other => out.push(other),
          }
-@@ -1707,7 +1715,7 @@ impl SeedReach {
+@@ -1707,7 +1722,7 @@ impl SeedReach {
          let mut always = Vec::new();
          for (i, seed) in seeds.iter().enumerate() {
              for w in seed.tokens.windows(3) {
@@ -15224,7 +15303,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
                      && m == macro_rules
                  {
                      let text = interner.get(n);
-@@ -1727,7 +1735,7 @@ pub fn stream_idents(toks: &[Token], interner: &Interner) -> Option<Vec<Sym>> {
+@@ -1727,7 +1742,7 @@ pub fn stream_idents(toks: &[Token], interner: &Interner) -> Option<Vec<Sym>> {
      let include = interner.intern("include");
      let mut out: Vec<Sym> = Vec::new();
      for t in toks {
@@ -15233,7 +15312,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
              if s == include {
                  return None;
              }
-@@ -1756,7 +1764,7 @@ pub fn reach_seeds<'s>(lists: [&SeedReach; 2], own: &[Token], sources: impl Into
+@@ -1756,7 +1771,7 @@ pub fn reach_seeds<'s>(lists: [&SeedReach; 2], own: &[Token], sources: impl Into
      let mut seen: FxMap<Sym, ()> = FxMap::default();
      let mut todo: Vec<Sym> = Vec::new();
      for t in own {
@@ -15242,7 +15321,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
              if s == include {
                  return every();
              }
-@@ -1795,7 +1803,10 @@ fn expand_macros(lexed: Lexed, ctx: &ExpandCtx, seeds: &[MacroSeed], extra: &[Ma
+@@ -1795,7 +1810,10 @@ fn expand_macros(lexed: Lexed, ctx: &ExpandCtx, seeds: &[MacroSeed], extra: &[Ma
      if let Some(d) = delimiter_error(&lexed.tokens) {
          return Err(d);
      }
@@ -15254,7 +15333,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
          return Ok((lexed, Vec::new()));
      }
      let (trees, _) = build_trees(&lexed.tokens);
-@@ -1950,7 +1961,7 @@ fn atomic_shaped(trees: &[Tt]) -> bool {
+@@ -1950,7 +1968,7 @@ fn atomic_shaped(trees: &[Tt]) -> bool {
      fn place_tok(tok: Tok) -> bool {
          matches!(
              tok,
@@ -15263,7 +15342,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
                  | Tok::SelfUpper
                  | Tok::SelfLower
                  | Tok::Crate
-@@ -1962,7 +1973,7 @@ fn atomic_shaped(trees: &[Tt]) -> bool {
+@@ -1962,7 +1980,7 @@ fn atomic_shaped(trees: &[Tt]) -> bool {
                  | Tok::Lt
                  | Tok::Gt
                  | Tok::Comma
@@ -15272,7 +15351,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
          )
      }
      // A call or index shape: place tokens, then one trailing group.
-@@ -1974,7 +1985,7 @@ fn atomic_shaped(trees: &[Tt]) -> bool {
+@@ -1974,7 +1992,7 @@ fn atomic_shaped(trees: &[Tt]) -> bool {
          return true;
      }
      trees.iter().all(|t| match t {
@@ -15281,7 +15360,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
          Tt::Delim(Delim::Bracket, _, _) => true,
          _ => false,
      })
-@@ -2037,7 +2048,7 @@ fn flatten_final(trees: &[Tt], out: &mut Vec<Token>) {
+@@ -2037,7 +2055,7 @@ fn flatten_final(trees: &[Tt], out: &mut Vec<Token>) {
  impl builtin::CfgRead for Expander<'_> {
      fn ident_text(&self, tok: Tok) -> Option<String> {
          match tok {
@@ -15290,7 +15369,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
              _ => seg_text(tok, self.ctx.interner),
          }
      }
-@@ -2121,7 +2132,7 @@ impl<'a> Expander<'a> {
+@@ -2121,7 +2139,7 @@ impl<'a> Expander<'a> {
                  exported = false;
                  cfg_off = false;
                  if tok_at(trees, i).map(|t| t.tok) == Some(Tok::Mod)
@@ -15299,7 +15378,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
                      && matches!(trees.get(i + 2), Some(Tt::Delim(Delim::Brace, _, _)))
                  {
                      let sym = tok_at(trees, i + 1).and_then(|t| seg_sym(t.tok, st.ctx.interner));
-@@ -2408,7 +2419,7 @@ impl<'a> Expander<'a> {
+@@ -2408,7 +2426,7 @@ impl<'a> Expander<'a> {
          let gdepth = globs.iter().map(|&(_, d, _)| d).max();
          let module_idx = self.module_imports.get(&(self.module.clone(), name)).copied();
          let exported_idx = if self.module.is_empty() { self.exported.get(&name).copied() } else { None };
@@ -15308,7 +15387,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
          let def_expn = |i: u32| self.def_expn.get(i as usize).copied().unwrap_or(0);
          // rustc reads textual scope first: a textual definition is the
          // answer whenever there is one, and a different macro a `use` or
-@@ -2531,7 +2542,7 @@ impl<'a> Expander<'a> {
+@@ -2531,7 +2549,7 @@ impl<'a> Expander<'a> {
                      // input is in the prescan's root table before its
                      // expansion runs: the call found X itself, and X may
                      // not shadow the std macro from outside its expansion.
@@ -15317,7 +15396,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
                          return Err(Diag::new(
                              "L0507",
                              c.span,
-@@ -2645,15 +2656,21 @@ impl<'a> Expander<'a> {
+@@ -2645,15 +2663,21 @@ impl<'a> Expander<'a> {
      /// extern crate `println` (E0433).
      fn builtin_call_path(&self, segs: &[Seg], leading_colon: bool) -> bool {
          if segs.len() == 1 {
@@ -15341,7 +15420,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
      /// Resolves a macro call path to a definition index. This is the
      /// single macro lookup entry point: today it reads this single
      /// file's textual scope, imports, and path tables. S7's frozen
-@@ -3021,7 +3038,7 @@ pub fn macro_rules_at(trees: &[Tt], i: usize, interner: &Interner) -> Option<Def
+@@ -3021,7 +3045,7 @@ pub fn macro_rules_at(trees: &[Tt], i: usize, interner: &Interner) -> Option<Def
          return None;
      }
      let name_tok = tok_at(trees, i + 2)?;
@@ -15350,7 +15429,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
      match trees.get(i + 3) {
          Some(Tt::Delim(d, _, group_span)) => {
              let mut end = i + 4;
-@@ -3140,7 +3157,7 @@ fn starts_item(trees: &[Tt], interner: &Interner) -> bool {
+@@ -3140,7 +3164,7 @@ fn starts_item(trees: &[Tt], interner: &Interner) -> bool {
              }
              Some(Tok::Const) => {
                  // `const fn` is a qualified fn; `const NAME` is the item.
@@ -15359,7 +15438,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
                      return true;
                  }
                  i += 1;
-@@ -3475,7 +3492,7 @@ fn ends_operand(out: &[Tt]) -> bool {
+@@ -3475,7 +3499,7 @@ fn ends_operand(out: &[Tt]) -> bool {
          Some(Tt::Delim(d, _, _)) => *d != Delim::Brace,
          Some(Tt::Frag(k, _, _)) => matches!(k, FragKind::Expr | FragKind::Expr2021 | FragKind::Path | FragKind::Literal | FragKind::Ty),
          Some(Tt::Tok(t)) => match t.tok {
@@ -15368,7 +15447,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
              | Tok::Int(..)
              | Tok::Float(_)
              | Tok::Str(..)
-@@ -3520,7 +3537,7 @@ fn decl_params(out: &[Tt]) -> bool {
+@@ -3520,7 +3544,7 @@ fn decl_params(out: &[Tt]) -> bool {
          let Some(open) = open else { return false };
          e = open;
      }
@@ -15377,7 +15456,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
  }
  
  /// True when the top level of `trees[s..]` has `tok`.
-@@ -3611,10 +3628,10 @@ fn generics_open(out: &[Tt], interner: &Interner) -> bool {
+@@ -3611,10 +3635,10 @@ fn generics_open(out: &[Tt], interner: &Interner) -> bool {
      let n = out.len();
      match tok_at(out, n.wrapping_sub(1)).map(|t| t.tok) {
          Some(Tok::Impl | Tok::For) => true,
@@ -15390,7 +15469,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
              _ => false,
          },
          _ => false,
-@@ -3655,7 +3672,7 @@ fn block_like_start(trees: &[Tt], s: usize) -> bool {
+@@ -3655,7 +3679,7 @@ fn block_like_start(trees: &[Tt], s: usize) -> bool {
          Some(Tt::Tok(t)) => match t.tok {
              Tok::If | Tok::Match | Tok::Loop | Tok::While | Tok::For => true,
              Tok::Unsafe | Tok::Const => brace_at(s + 1),
@@ -15399,7 +15478,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
              _ => false,
          },
          _ => false,
-@@ -3675,7 +3692,7 @@ fn block_like_end(trees: &[Tt], s: usize) -> Option<usize> {
+@@ -3675,7 +3699,7 @@ fn block_like_end(trees: &[Tt], s: usize) -> Option<usize> {
      }
      match tok_at(trees, s)?.tok {
          Tok::Unsafe | Tok::Const | Tok::Loop => brace_at(s + 1).then_some(s + 2),
@@ -15408,7 +15487,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
          Tok::Match | Tok::While => Some(body_brace(trees, s + 1)? + 1),
          Tok::For => {
              // The pattern runs to the first top-level `in`.
-@@ -3717,7 +3734,7 @@ fn body_brace(trees: &[Tt], mut j: usize) -> Option<usize> {
+@@ -3717,7 +3741,7 @@ fn body_brace(trees: &[Tt], mut j: usize) -> Option<usize> {
                      j = (j + 1..trees.len()).find(|&k| trees[k].is_tok(Tok::Eq))? + 1;
                      operand = true;
                  }
@@ -15417,7 +15496,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
                      if operand && block_like_start(trees, j) =>
                  {
                      j = block_like_end(trees, j)?;
-@@ -3732,7 +3749,7 @@ fn body_brace(trees: &[Tt], mut j: usize) -> Option<usize> {
+@@ -3732,7 +3756,7 @@ fn body_brace(trees: &[Tt], mut j: usize) -> Option<usize> {
                      j = generics_end(trees, j + 1, trees.len())?;
                      operand = false;
                  }
@@ -15426,7 +15505,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
                  | Tok::Reserved(_)
                  | Tok::Int(..)
                  | Tok::Float(_)
-@@ -3740,7 +3757,7 @@ fn body_brace(trees: &[Tt], mut j: usize) -> Option<usize> {
+@@ -3740,7 +3764,7 @@ fn body_brace(trees: &[Tt], mut j: usize) -> Option<usize> {
                  | Tok::ByteStr(_)
                  | Tok::ByteChar(_)
                  | Tok::Char(..)
@@ -15435,7 +15514,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
                  | Tok::True
                  | Tok::False
                  | Tok::SelfLower
-@@ -3802,7 +3819,7 @@ fn expr_stmt_has_top_op(trees: &[Tt], s: usize, e: usize, mut operand: bool) ->
+@@ -3802,7 +3826,7 @@ fn expr_stmt_has_top_op(trees: &[Tt], s: usize, e: usize, mut operand: bool) ->
              Tt::Delim(..) | Tt::Frag(..) => operand = false,
              Tt::Tok(t) => match t.tok {
                  Tok::Return | Tok::Break | Tok::Pipe | Tok::OrOr | Tok::Move | Tok::Async | Tok::Static if operand => return false,
@@ -15444,7 +15523,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
                      if operand && block_like_start(trees, j) =>
                  {
                      let Some(end) = block_like_end(trees, j) else { return true };
-@@ -3954,7 +3971,7 @@ impl<'a> Expander<'a> {
+@@ -3954,7 +3978,7 @@ impl<'a> Expander<'a> {
              }
              // An inline module: its body is its own macro scope and path.
              if tok_at(&trees, i).map(|t| t.tok) == Some(Tok::Mod)
@@ -15453,7 +15532,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
                  && matches!(trees.get(i + 2), Some(Tt::Delim(Delim::Brace, _, _)))
              {
                  let (name_sym, name_ok) = match tok_at(&trees, i + 1) {
-@@ -4006,7 +4023,7 @@ impl<'a> Expander<'a> {
+@@ -4006,7 +4030,7 @@ impl<'a> Expander<'a> {
              // the worklist passes it written definitions only.
              if item_list
                  && tok_at(&trees, i).map(|t| t.tok) == Some(Tok::Mod)
@@ -15462,7 +15541,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
                  && tok_at(&trees, i + 2).map(|t| t.tok) == Some(Tok::Semi)
                  && let Some(span) = self.expanded_textual_span()
              {
-@@ -4642,6 +4659,9 @@ impl<'a> Expander<'a> {
+@@ -4642,6 +4666,9 @@ impl<'a> Expander<'a> {
      /// that name (`std::vec`, `core::panic`).
      fn std_builtin_macro(&self, segs: &[Seg]) -> Option<Sym> {
          let path: Vec<&str> = segs.iter().map(|s| s.text.as_str()).collect();
@@ -15472,7 +15551,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
          if crate::ty::lang::std_path_kind(&path) != Some(crate::ty::lang::StdPathKind::Macro) {
              return None;
          }
-@@ -4839,7 +4859,7 @@ impl<'a> Expander<'a> {
+@@ -4839,7 +4866,7 @@ impl<'a> Expander<'a> {
              Some(canon) => self.ctx.interner.get(canon).to_string(),
              None => call.name_text().to_string(),
          };
@@ -15481,7 +15560,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
              // A builtin counts depth as rustc's expansion of it does (see
              // `builtin::rustc_depth`): its arguments expand `args` levels
              // down, so a token builtin's own one-level-down expansions
-@@ -4866,9 +4886,9 @@ impl<'a> Expander<'a> {
+@@ -4866,9 +4893,9 @@ impl<'a> Expander<'a> {
                  // the parser owns only the plain builtin spellings.
                  if let Some(canon) = alias
                      && let Some(Tt::Tok(tok)) = out.first_mut()
@@ -15493,7 +15572,7 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..32cf13fe508145a44009241ec333b0e8
                  }
                  let written_lit = is_str_lit_arg(&call.inner);
                  let msg = if name == "assert" { builtin::assert_message(self, &call.inner, call.span)? } else { Vec::new() };
-@@ -5319,7 +5339,7 @@ mod tests {
+@@ -5319,7 +5346,7 @@ mod tests {
          let ctx = ExpandCtx::for_file(&interner, &known, std::path::Path::new("test.rs"), src, false);
          let out = expand_lexed(lexed, &ctx).expect("expansion");
          let tmps: Vec<CtxtId> =
@@ -16890,7 +16969,7 @@ index 5a8d06b853ee2f1f83e6f8e37f315b032a4eaa78..0602ea58e0aaf79551162b5088ceb69a
              self.drop_local(g);
          } else {
 diff --git a/src/main.rs b/src/main.rs
-index 20f43a0f0b85fac8b27e4569d433f3cf101f05eb..8e0058b58932960de9163a9e8835fda6e1cc89eb 100644
+index 20f43a0f0b85fac8b27e4569d433f3cf101f05eb..d5ae92da8bdacab95fddb96484ac98d78b029455 100644
 --- a/src/main.rs
 +++ b/src/main.rs
 @@ -17,6 +17,12 @@ mod cgen;
@@ -16957,7 +17036,7 @@ index 20f43a0f0b85fac8b27e4569d433f3cf101f05eb..8e0058b58932960de9163a9e8835fda6
          _ => {}
      }
      // A CI job may check its sources out while lust restores its front image
-@@ -526,3 +558,39 @@ fn main() {
+@@ -526,3 +558,55 @@ fn main() {
          }
      }
  }
@@ -16969,10 +17048,6 @@ index 20f43a0f0b85fac8b27e4569d433f3cf101f05eb..8e0058b58932960de9163a9e8835fda6
 +    if std::io::stdin().read_to_string(&mut source).is_err() {
 +        eprintln!("error: couldn't read from stdin, as it did not contain valid UTF-8");
 +        std::process::exit(1);
-+    }
-+    if std::env::var_os("UNSTABLE_RUSTDOC_TEST_PATH").is_some() {
-+        eprintln!("lustr: Rustdoc source coordinates are not integrated");
-+        std::process::exit(2);
 +    }
 +    let Some(Invocation::Compile { mut req, run: false, args: run_args }) = protocol::parse_args(args)
 +        else {
@@ -16986,8 +17061,28 @@ index 20f43a0f0b85fac8b27e4569d433f3cf101f05eb..8e0058b58932960de9163a9e8835fda6
 +        std::process::exit(2);
 +    }
 +    req.session.krate.target_name = "rust_out".into();
++    let (display, doctest_offset) = if let Ok(path) = std::env::var("UNSTABLE_RUSTDOC_TEST_PATH") {
++        let Some(offset) = std::env::var("UNSTABLE_RUSTDOC_TEST_LINE").ok().and_then(|line| line.parse::<isize>().ok()) else {
++            eprintln!("error: UNSTABLE_RUSTDOC_TEST_LINE must be an integer");
++            std::process::exit(2);
++        };
++        let Ok(file) = std::path::absolute(std::path::Path::new(&path)) else {
++            eprintln!("error: invalid Rustdoc source path");
++            std::process::exit(2);
++        };
++        req.client.shown = Some(path.as_str().into());
++        req.file = file;
++        req.session.krate.root = req.file.clone();
++        (path, Some(offset))
++    } else {
++        ("<anon>".to_owned(), None)
++    };
++    let source = driver::StdinSource {
++        text: source,
++        origin: std::sync::Arc::new(expand::StdinOrigin { root: req.file.clone(), display, doctest_offset }),
++    };
 +    own_env(&mut req);
-+    if source.len() < BIG_FILE as usize { tcc::set_huge_pages(false); } else { pool::small_pages_in_parallel(); }
++    if source.text.len() < BIG_FILE as usize { tcc::set_huge_pages(false); } else { pool::small_pages_in_parallel(); }
 +    let dir = std::env::temp_dir().join(format!("lust-{}-stdin", std::process::id()));
 +    let mut session = driver::Session::new(dir, false, req.session.clone());
 +    session.cache_tried = true;
@@ -19938,9 +20033,18 @@ index fc01334135114510c734e64d61334ecbfc3ce108..247c3b8dcf032bdc1f57382d0112f4a6
  pub mod stdpaths;
  pub mod worklist;
 diff --git a/src/resolve/worklist.rs b/src/resolve/worklist.rs
-index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd14b06124 100644
+index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..b4fba903d0aa3659d8c6003ee9497d6bf8f01a71 100644
 --- a/src/resolve/worklist.rs
 +++ b/src/resolve/worklist.rs
+@@ -32,7 +32,7 @@ use crate::driver::graph::Namespace;
+ use crate::intern::{FxMap, Interner, Known, Sym};
+ use crate::stdload::StdPlan;
+ use crate::ty::defs::{ModuleId, ROOT_MODULE};
+-use crate::{lexer, parser, scan};
++use crate::{expand, lexer, parser, scan};
+ use std::path::PathBuf;
+ 
+ /// The selected crate to resolve: its root file and text (with any std
 @@ -353,7 +353,7 @@ fn starts_item(toks: &[lexer::Token], i: usize, union: Sym) -> bool {
          | Tok::Unsafe
          | Tok::Async => true,
@@ -20084,21 +20188,32 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
  /// gets an empty file, and of two triples with one id the map keeps the first (the text
  /// keeps both). The files' line indexes are made on the pool (`SourceMap::with_texts`).
 -fn make_map(seen: &[(PathBuf, String, FileId)]) -> (SourceMap, String) {
-+fn make_map(seen: &[(PathBuf, String, FileId)], anonymous: Option<FileId>) -> (SourceMap, String) {
++fn make_map(seen: &[(PathBuf, String, FileId)], origin: Option<(FileId, &expand::StdinOrigin)>) -> (SourceMap, String) {
      let mut sorted: Vec<&(PathBuf, String, FileId)> = seen.iter().collect();
      sorted.sort_by_key(|(_, _, f)| f.0);
      let mut files: Vec<(String, &str)> = Vec::with_capacity(sorted.len());
-@@ -708,7 +709,8 @@ fn make_map(seen: &[(PathBuf, String, FileId)]) -> (SourceMap, String) {
+@@ -708,12 +709,18 @@ fn make_map(seen: &[(PathBuf, String, FileId)]) -> (SourceMap, String) {
              files.push((String::new(), ""));
          }
          if files.len() as u32 == file_id.0 {
 -            files.push((path.to_string_lossy().into_owned(), text));
-+            let name = if Some(*file_id) == anonymous { "<anon>".to_owned() } else { path.to_string_lossy().into_owned() };
++            let name = origin.filter(|(id, _)| id == file_id)
++                .map_or_else(|| path.to_string_lossy().into_owned(), |(_, origin)| origin.display.clone());
 +            files.push((name, text));
          }
          all.push_str(text);
          all.push('\n');
-@@ -855,7 +857,7 @@ fn blank_bodies(lexed: lexer::Lexed, blank: &[(u32, u32)], text: &str) -> lexer:
+     }
+-    (SourceMap::with_texts(&files), all)
++    let mut map = SourceMap::with_texts(&files);
++    if let Some((file, origin)) = origin && let Some(offset) = origin.doctest_offset {
++        map.set_doctest_offset(file, offset);
++    }
++    (map, all)
+ }
+ 
+ /// Per-file front-end cache for one crate session (W-DRIVER phase 2):
+@@ -855,7 +862,7 @@ fn blank_bodies(lexed: lexer::Lexed, blank: &[(u32, u32)], text: &str) -> lexer:
      for (i, t) in toks.iter().enumerate() {
          match t.tok {
              Tok::LParen | Tok::LBracket | Tok::LBrace => {
@@ -20107,7 +20222,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
                  open.push((i, call));
              }
              Tok::RParen | Tok::RBracket | Tok::RBrace => {
-@@ -1300,7 +1302,7 @@ fn hash_tokens(tokens: &[crate::lexer::Token], strings: &[String]) -> u64 {
+@@ -1300,7 +1307,7 @@ fn hash_tokens(tokens: &[crate::lexer::Token], strings: &[String]) -> u64 {
      for t in tokens {
          std::mem::discriminant(&t.tok).hash(&mut h);
          match t.tok {
@@ -20116,7 +20231,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
              Tok::Int(v, suffix, _) => {
                  h.write_u128(v);
                  std::mem::discriminant(&suffix).hash(&mut h);
-@@ -1325,10 +1327,12 @@ fn hash_tokens(tokens: &[crate::lexer::Token], strings: &[String]) -> u64 {
+@@ -1325,10 +1332,12 @@ fn hash_tokens(tokens: &[crate::lexer::Token], strings: &[String]) -> u64 {
  /// crate names, the crate's `$crate` magic, name, Cargo env, display
  /// root, and the client's shown root (`file!`). The cfg environment
  /// keys the whole `ResolveCache` already.
@@ -20130,7 +20245,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
      crate::expand::parser_name_facts(&menv.seeds, interner).hash(&mut h);
      let mut externs: Vec<&String> = menv.dep_owned.keys().collect();
      externs.sort_unstable();
-@@ -1341,6 +1345,65 @@ fn expansion_env_hash(menv: &MacroEnv, job: &CrateJob, input: &OneInput, client:
+@@ -1341,6 +1350,65 @@ fn expansion_env_hash(menv: &MacroEnv, job: &CrateJob, input: &OneInput, client:
      h.finish()
  }
  
@@ -20196,7 +20311,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
  fn seed_hash(h: &mut crate::intern::FxHasher, s: &crate::expand::MacroSeed) {
      use std::hash::{Hash, Hasher};
      s.path.iter().for_each(|p| h.write_u64(p.0 as u64));
-@@ -1784,6 +1847,66 @@ pub fn resolve_crate_with(
+@@ -1784,6 +1852,66 @@ pub fn resolve_crate_with(
      cache: &mut ResolveCache,
      with_platform: bool,
  ) -> Result<ResolvedCrate, ResolveError> {
@@ -20263,17 +20378,17 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
      cache.begin(input);
      let mut tables = ResolvedTables::new(interner.intern(&input.crate_name));
      tables.std_splice_lo = input.std_splice_lo;
-@@ -1817,7 +1940,8 @@ pub fn resolve_crate_with(
+@@ -1817,7 +1945,8 @@ pub fn resolve_crate_with(
      // that cannot be read, a non-2024 source dependency): the selected
      // crate's root file at the span's default file id.
      let build_err = |d: Diag| -> ResolveError {
 -        let (map, all_text) = make_map(&[(input.root_path.clone(), input.root_text.clone(), FileId(0))]);
 +        let (map, all_text) = make_map(&[(input.root_path.clone(), input.root_text.clone(), FileId(0))],
-+            input.client.anonymous_root.as_ref().map(|_| FileId(0)));
++            input.client.stdin_origin.as_deref().map(|origin| (FileId(0), origin)));
          ResolveError { map, all_text, std_asks: StdPlan::default(), platform_asks: None, diags: vec![d] }
      };
      let mut by_key: FxMap<String, usize> = FxMap::default();
-@@ -1859,6 +1983,9 @@ pub fn resolve_crate_with(
+@@ -1859,6 +1988,9 @@ pub fn resolve_crate_with(
              }
          }
      }
@@ -20283,15 +20398,15 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
      // After the extern preludes: the splice job's root module has the
      // selected crate's prelude already.
      let std_job = input.std_splice_lo.map(|lo| add_std_splice_job(input, lo, &mut jobs));
-@@ -1886,6 +2013,7 @@ pub fn resolve_crate_with(
+@@ -1886,6 +2018,7 @@ pub fn resolve_crate_with(
          order.insert(at, sj);
      }
      let mut shared = SharedFiles::default();
-+    let anonymous = input.client.anonymous_root.as_ref().map(|path| shared.file_id(path, ROOT_MODULE));
++    let origin = input.client.stdin_origin.as_deref().map(|origin| (shared.file_id(&origin.root, ROOT_MODULE), origin));
      // Every file an earlier resolve canonicalized, read again now in
      // parallel: discovery walks the module tree one file at a time and
      // finds these texts here (a CI checkout is not in the page cache, and
-@@ -1959,7 +2087,8 @@ pub fn resolve_crate_with(
+@@ -1959,7 +2092,8 @@ pub fn resolve_crate_with(
                  dep_exports.push((interner.get(jobs[d].magic).to_string(), sources.clone()));
              }
          }
@@ -20301,25 +20416,25 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
              Ok(out) => {
                  if let Some(exact_layout) = &jobs[j].adapter {
                      tables.adapters.push(super::imports::AdapterCrate {
-@@ -2002,7 +2131,7 @@ pub fn resolve_crate_with(
+@@ -2002,7 +2136,7 @@ pub fn resolve_crate_with(
                  add_asks(j, e.std_asks);
                  all_seen.extend(seen_whole(e.seen, j, std_job, input));
                  cache.unpacked.clear();
 -                let (map, all_text) = make_map(&all_seen);
-+                let (map, all_text) = make_map(&all_seen, anonymous);
++                let (map, all_text) = make_map(&all_seen, origin);
                  return Err(ResolveError { map, all_text, std_asks, platform_asks, diags: e.diags });
              }
          }
-@@ -2015,7 +2144,7 @@ pub fn resolve_crate_with(
+@@ -2015,7 +2149,7 @@ pub fn resolve_crate_with(
      // The source map builds beside the merged Ast (each 10-70 ms on tsgo).
      let old = cache.merged.as_ref().map(|m| &*m.0);
      let ((map, all_text), (ast, spans)) = std::thread::scope(|s| {
 -        let map = s.spawn(|| make_map(&all_seen));
-+        let map = s.spawn(|| make_map(&all_seen, anonymous));
++        let map = s.spawn(|| make_map(&all_seen, origin));
          let ast = Ast::concat_parts(chunks, old);
          (map.join().unwrap_or_else(|p| std::panic::resume_unwind(p)), ast)
      });
-@@ -2479,7 +2608,7 @@ struct UseSite {
+@@ -2479,7 +2613,7 @@ struct UseSite {
  fn use_seg_sym(tok: crate::lexer::Tok, interner: &Interner) -> Option<Sym> {
      use crate::lexer::Tok;
      Some(match tok {
@@ -20328,7 +20443,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
          Tok::SelfLower => interner.intern("self"),
          Tok::Super => interner.intern("super"),
          Tok::Crate => interner.intern("crate"),
-@@ -2562,7 +2691,7 @@ fn parse_use_trees(
+@@ -2562,7 +2696,7 @@ fn parse_use_trees(
              }
              Some(Tok::As) => {
                  match tok(i + 1) {
@@ -20337,7 +20452,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
                      Some(Tok::Underscore) => underscore = true,
                      _ => return,
                  }
-@@ -2663,7 +2792,7 @@ fn restricted_vis(inner: &[crate::lexer::TokenTree], module: &[Sym]) -> Option<V
+@@ -2663,7 +2797,7 @@ fn restricted_vis(inner: &[crate::lexer::TokenTree], module: &[Sym]) -> Option<V
              Tok::Super => {
                  out.pop();
              }
@@ -20346,7 +20461,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
              _ => return Some(module.to_vec()),
          }
      }
-@@ -2687,7 +2816,7 @@ fn rewrite_dollar_crate(tokens: &[crate::lexer::Token], magic: Sym) -> Vec<crate
+@@ -2687,7 +2821,7 @@ fn rewrite_dollar_crate(tokens: &[crate::lexer::Token], magic: Sym) -> Vec<crate
                      TokenTree::Token(t) => t.span,
                      _ => unreachable!(),
                  };
@@ -20355,7 +20470,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
                  i += 2;
                  continue;
              }
-@@ -2740,10 +2869,10 @@ fn rewrite_dollar_crate(tokens: &[crate::lexer::Token], magic: Sym) -> Vec<crate
+@@ -2740,10 +2874,10 @@ fn rewrite_dollar_crate(tokens: &[crate::lexer::Token], magic: Sym) -> Vec<crate
  fn rename_macro_token(tokens: &mut [crate::lexer::Token], alias: Sym) {
      use crate::lexer::Tok;
      if let Some(t) = tokens.get_mut(2)
@@ -20368,7 +20483,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
      }
  }
  
-@@ -2900,7 +3029,7 @@ impl MacroEnv {
+@@ -2900,7 +3034,7 @@ impl MacroEnv {
                  collect(&disc.outline, orig, &mut owned);
              }
              if let Some(Some(exp)) = expanded.get(di)
@@ -20377,7 +20492,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
              {
                  // Only `outline.macros` feeds this collect, and a
                  // macro definition needs a `macro_rules`
-@@ -3329,8 +3458,13 @@ impl MacroEnv {
+@@ -3329,8 +3463,13 @@ impl MacroEnv {
                      .collect();
                  names.sort_by(|a, b| interner.get(a.0).cmp(interner.get(b.0)));
                  for (name, src_idx) in names {
@@ -20393,7 +20508,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
                      let key = (site.module.clone(), name);
                      match found.iter_mut().find(|(k, _)| *k == key) {
                          Some((_, (_, s, a))) => *a |= amb || *s != src_idx,
-@@ -3488,6 +3622,8 @@ fn resolve_one(
+@@ -3488,6 +3627,8 @@ fn resolve_one(
      client: &crate::expand::ClientView,
      interner: &Interner,
      known: &Known,
@@ -20402,7 +20517,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
  ) -> Result<CrateOut, OneError> {
      let input = &job.input;
      let mut timings: Vec<(&'static str, f64)> = Vec::new();
-@@ -3520,6 +3656,17 @@ fn resolve_one(
+@@ -3520,6 +3661,17 @@ fn resolve_one(
      if !diags.is_empty() {
          return Err(OneError { diags, seen: seen_of(&discs), std_asks });
      }
@@ -20420,7 +20535,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
      lap!("resolve: discovery");
      // Unknown cfg names (L0520) are checked on the original tokens of
      // every file before expansion can strip the item that carries one, on
-@@ -3566,7 +3713,9 @@ fn resolve_one(
+@@ -3566,7 +3718,9 @@ fn resolve_one(
          // the `include!` family) comes back only while each of those reads
          // reads the same (`expand::deps_stale_in`).
          let keep = !cache.one_shot;
@@ -20431,7 +20546,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
          // Each macro source's hash and the seeds it names, and each file's reachable seeds
          // (`MacroEnv::reach`) and key, on the pool.
          let seed_index = keep.then(|| crate::expand::SeedReach::new(&menv.seeds, interner));
-@@ -3625,7 +3774,7 @@ fn resolve_one(
+@@ -3625,7 +3779,7 @@ fn resolve_one(
                  real_path: path.clone(),
                  cargo_env: input.cargo_env.clone(),
                  src: &text,
@@ -20440,7 +20555,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
                  module_path: module_paths[di].clone(),
                  crate_name: Some(input.crate_name.clone()),
                  extern_crates: menv.extern_crates(interner),
-@@ -3691,7 +3840,7 @@ fn resolve_one(
+@@ -3691,7 +3845,7 @@ fn resolve_one(
          let macro_rules = interner.intern("macro_rules");
          let outlines = par_map(&indices, |&di| {
              let exp = expanded[di].as_ref()?;
@@ -20449,7 +20564,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
                  true => scan::outline(exp, interner),
                  false => scan::Outline::default(),
              })
-@@ -3792,7 +3941,9 @@ fn resolve_one(
+@@ -3792,7 +3946,9 @@ fn resolve_one(
          // its missing `;` ends at the cut), and the answer must be the
          // one-piece answer.
          let segments = if keep { vec![0..lexed.tokens.len()] } else { item_segments(&lexed.tokens, interner) };
@@ -20460,7 +20575,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
              vec![parser::parse(&lexed, interner, known)?]
          } else {
              // Later segments start under the file's inner allows, as
-@@ -4428,7 +4579,7 @@ fn extern_macro_use_events(lexed: &lexer::Lexed, interner: &Interner) -> Vec<(u3
+@@ -4428,7 +4584,7 @@ fn extern_macro_use_events(lexed: &lexer::Lexed, interner: &Interner) -> Vec<(u3
                      j += 1;
                  }
                  if toks.get(j).map(|t| t.tok) == Some(Tok::LBracket) {
@@ -20469,7 +20584,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
                          && interner.get(s) == "macro_use"
                      {
                          pending = true;
-@@ -4455,7 +4606,7 @@ fn extern_macro_use_events(lexed: &lexer::Lexed, interner: &Interner) -> Vec<(u3
+@@ -4455,7 +4611,7 @@ fn extern_macro_use_events(lexed: &lexer::Lexed, interner: &Interner) -> Vec<(u3
              Tok::Extern if depth == 0 => {
                  if pending
                      && toks.get(i + 1).map(|t| t.tok) == Some(Tok::Crate)
@@ -20478,7 +20593,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
                  {
                      out.push((toks[i].span.lo, interner.get(name).to_string()));
                  }
-@@ -5284,11 +5435,20 @@ fn register_items(
+@@ -5284,11 +5440,20 @@ fn register_items(
                  {
                      tables.alloc_roots.push(module);
                  }
@@ -20499,7 +20614,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
                  if e.name == interner.intern("self") && e.rename.is_none() {
                      diags.push(Diag::new(
                          "L0001",
-@@ -6318,6 +6478,21 @@ impl Rewrite<'_> {
+@@ -6318,6 +6483,21 @@ impl Rewrite<'_> {
      /// path's own span for diagnostics; `ns` and `scopes` are the
      /// namespace and frames the checker will read the rewritten path in.
      fn apply(&mut self, segs: &mut Vec<PathSeg>, res: PathRes, span: Span, module: ModuleId, ns: Namespace, scopes: &[Frame]) {
@@ -20521,7 +20636,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
          match res {
              PathRes::Done(Target::Def(def)) => {
                  if let Some(info) = self.tables.def_info.get(&def) {
-@@ -8802,7 +8977,7 @@ mod tests {
+@@ -8802,7 +8982,7 @@ mod tests {
          let interner = Interner::default();
          let src = "fn a() { \"x\"; 1.5; }\nmacro_rules! m { () => { (\"y\", 2.5, 'c') } }\nfn b() { \"z\"; }";
          let lexed = lexer::lex(src, FileId(0), 0, &interner).unwrap();
@@ -20530,7 +20645,7 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..6599029f567e2d6f7a4e1f2caecc33dd
          let (lo, hi) = macro_tok_range(&lexed.tokens, at);
          let (toks, strings) = own_def_strings(&lexed.tokens[lo..hi], &lexed.strings);
          assert!(strings.len() < lexed.strings.len(), "{strings:?} vs {:?}", lexed.strings);
-@@ -9382,6 +9557,8 @@ mod tests {
+@@ -9382,6 +9562,8 @@ mod tests {
              build_check_cfgs: Vec::new(),
              features: Vec::new(),
              deps: Vec::new(),

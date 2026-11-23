@@ -567,10 +567,6 @@ fn compile_stdin_source(args: &[String]) -> ! {
         eprintln!("error: couldn't read from stdin, as it did not contain valid UTF-8");
         std::process::exit(1);
     }
-    if std::env::var_os("UNSTABLE_RUSTDOC_TEST_PATH").is_some() {
-        eprintln!("lustr: Rustdoc source coordinates are not integrated");
-        std::process::exit(2);
-    }
     let Some(Invocation::Compile { mut req, run: false, args: run_args }) = protocol::parse_args(args)
         else {
             eprintln!("error: invalid native stdin compiler request");
@@ -583,8 +579,28 @@ fn compile_stdin_source(args: &[String]) -> ! {
         std::process::exit(2);
     }
     req.session.krate.target_name = "rust_out".into();
+    let (display, doctest_offset) = if let Ok(path) = std::env::var("UNSTABLE_RUSTDOC_TEST_PATH") {
+        let Some(offset) = std::env::var("UNSTABLE_RUSTDOC_TEST_LINE").ok().and_then(|line| line.parse::<isize>().ok()) else {
+            eprintln!("error: UNSTABLE_RUSTDOC_TEST_LINE must be an integer");
+            std::process::exit(2);
+        };
+        let Ok(file) = std::path::absolute(std::path::Path::new(&path)) else {
+            eprintln!("error: invalid Rustdoc source path");
+            std::process::exit(2);
+        };
+        req.client.shown = Some(path.as_str().into());
+        req.file = file;
+        req.session.krate.root = req.file.clone();
+        (path, Some(offset))
+    } else {
+        ("<anon>".to_owned(), None)
+    };
+    let source = driver::StdinSource {
+        text: source,
+        origin: std::sync::Arc::new(expand::StdinOrigin { root: req.file.clone(), display, doctest_offset }),
+    };
     own_env(&mut req);
-    if source.len() < BIG_FILE as usize { tcc::set_huge_pages(false); } else { pool::small_pages_in_parallel(); }
+    if source.text.len() < BIG_FILE as usize { tcc::set_huge_pages(false); } else { pool::small_pages_in_parallel(); }
     let dir = std::env::temp_dir().join(format!("lust-{}-stdin", std::process::id()));
     let mut session = driver::Session::new(dir, false, req.session.clone());
     session.cache_tried = true;
