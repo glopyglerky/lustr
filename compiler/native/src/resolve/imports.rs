@@ -1864,7 +1864,8 @@ impl ResolvedTables {
     }
 
     pub(crate) fn uses_core_prelude(&self, from: ModuleId) -> bool {
-        self.core_prelude_roots.contains(&self.root_of(from))
+        !self.core_prelude_roots.is_empty() && from != crate::ty::defs::STD_MODULE
+            && self.core_prelude_roots.contains(&self.root_of(from))
     }
 
     pub(crate) fn std_out_of_scope(&self, from: ModuleId) -> bool {

@@ -183,7 +183,7 @@
     "compiler/native/src/driver/session.rs": "350ae82752934e1604c13551a39c71f0551e43c7e42519f58a93c1394c520e4f",
     "compiler/native/src/driver/imports.rs": "dbec1a49b6271644436753dc9695cd68ae991d92bae9e8ae0e3edf61b1bba82b",
     "compiler/native/src/resolve/worklist.rs": "c3286f2feb8fe7161d105ce330d1b0c2b5b3602863ffc03427fb66fb27ad8974",
-    "compiler/native/src/resolve/imports.rs": "7a720eabaf3ea141ef2c149d75f24bc9faa4383ee13c914f044e0cf3ecf9854c",
+    "compiler/native/src/resolve/imports.rs": "e2e6546c43ded19e5425a0b57c2f9489335512ec60d4e82f5d5a8afeaf4ff7b6",
     "compiler/native/src/driver/graph.rs": "60e83bdea08e4121a59047085834df3e159af534d96d86399b123b86456d81ff",
     "compiler/native/src/check/generics.rs": "aa4ed8d1dae1757c058a065b49f4d5deefc400b59919e900305e813e893157c5",
     "compiler/native/src/check/prog_shift.rs": "b0d6db3ba022e74c41d589a0e897860f3b2004191dc9a2782f8f30ff585c16ea",

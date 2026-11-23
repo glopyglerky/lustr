@@ -19539,7 +19539,7 @@ index 55a9c568452cde1f283fc02894b4d304b14891cb..93c4de7c8f979e11b76bf9737f8b3fdb
  
      #[test]
 diff --git a/src/resolve/imports.rs b/src/resolve/imports.rs
-index 05fa1af6472a45f59b544080121faf48c73f55eb..184669eafbbe4d4dacf7e9ff0b47ebe91e0872d0 100644
+index 05fa1af6472a45f59b544080121faf48c73f55eb..20cfb8db38335450bb02909dee8f28beba5aec1d 100644
 --- a/src/resolve/imports.rs
 +++ b/src/resolve/imports.rs
 @@ -22,7 +22,7 @@ use crate::diag::{Diag, Span};
@@ -19640,12 +19640,13 @@ index 05fa1af6472a45f59b544080121faf48c73f55eb..184669eafbbe4d4dacf7e9ff0b47ebe9
          if name != "alloc" || !self.externs[i as usize].is_std_lib {
              return Some(i);
          }
-@@ -1832,6 +1863,23 @@ impl ResolvedTables {
+@@ -1832,6 +1863,24 @@ impl ResolvedTables {
          None
      }
  
 +    pub(crate) fn uses_core_prelude(&self, from: ModuleId) -> bool {
-+        self.core_prelude_roots.contains(&self.root_of(from))
++        !self.core_prelude_roots.is_empty() && from != crate::ty::defs::STD_MODULE
++            && self.core_prelude_roots.contains(&self.root_of(from))
 +    }
 +
 +    pub(crate) fn std_out_of_scope(&self, from: ModuleId) -> bool {
@@ -19664,7 +19665,7 @@ index 05fa1af6472a45f59b544080121faf48c73f55eb..184669eafbbe4d4dacf7e9ff0b47ebe9
      /// True when `alloc` is a std extern of `from`'s crate that paths
      /// written in `from` cannot name (no root `extern crate alloc;`).
      pub fn alloc_out_of_scope(&self, from: ModuleId) -> bool {
-@@ -1993,6 +2041,18 @@ impl ResolvedTables {
+@@ -1993,6 +2042,18 @@ impl ResolvedTables {
          }
      }
  
@@ -19683,7 +19684,7 @@ index 05fa1af6472a45f59b544080121faf48c73f55eb..184669eafbbe4d4dacf7e9ff0b47ebe9
      /// Looks up one first segment and checks visibility from `from`.
      /// Checks `from` itself, then the extern prelude, then the std
      /// prelude. Both modes read only `from`: as in rustc, items of a
-@@ -2012,7 +2072,7 @@ impl ResolvedTables {
+@@ -2012,7 +2073,7 @@ impl ResolvedTables {
          if let Some(i) = self.extern_in_scope(from, name_str) {
              return PathRes::Done(self.extern_target(i));
          }
@@ -19692,7 +19693,7 @@ index 05fa1af6472a45f59b544080121faf48c73f55eb..184669eafbbe4d4dacf7e9ff0b47ebe9
              return PathRes::Prelude;
          }
          PathRes::Absent
-@@ -2046,7 +2106,7 @@ impl ResolvedTables {
+@@ -2046,7 +2107,7 @@ impl ResolvedTables {
          // different item is ambiguous with either.
          let outer: Option<SegBind> = if let Some(i) = self.extern_in_scope(from, name_str) {
              Some(SegBind::Extern(i))
@@ -19701,7 +19702,7 @@ index 05fa1af6472a45f59b544080121faf48c73f55eb..184669eafbbe4d4dacf7e9ff0b47ebe9
              Some(SegBind::Prelude(name))
          } else {
              None
-@@ -2529,14 +2589,18 @@ pub fn run_imports(tables: &mut ResolvedTables, imports: &[Import], interner: &I
+@@ -2529,14 +2590,18 @@ pub fn run_imports(tables: &mut ResolvedTables, imports: &[Import], interner: &I
      {
          let mut seen: FxMap<(crate::diag::Span, Sym), ()> = FxMap::default();
          for imp in imports {
@@ -19723,7 +19724,7 @@ index 05fa1af6472a45f59b544080121faf48c73f55eb..184669eafbbe4d4dacf7e9ff0b47ebe9
              if matches!(interner.get(first), "crate" | "self" | "super" | "Self") || tables.crate_magic.contains_key(&first) {
                  continue;
              }
-@@ -2553,6 +2617,13 @@ pub fn run_imports(tables: &mut ResolvedTables, imports: &[Import], interner: &I
+@@ -2553,6 +2618,13 @@ pub fn run_imports(tables: &mut ResolvedTables, imports: &[Import], interner: &I
                  if info.glob && matches!(info.bind, SegBind::Ambiguous) && seen.insert((imp.span, first), ()).is_none() {
                      diags.push(ambiguous_diag(interner.get(first), imp.span));
                  }
