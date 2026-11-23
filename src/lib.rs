@@ -299,7 +299,7 @@ mod tests {
         for tail in [
             vec!["--emit=metadata"],
             vec!["--emit=dep-info,link"],
-            vec!["--extern", "dep=libdep.rlib"],
+            vec!["--extern", "dep=libdep.rmeta"],
             vec!["--test"],
             vec!["-Copt-level=3"],
             vec!["--cfg", "custom"],
@@ -310,6 +310,13 @@ mod tests {
         }
         assert!(native_request(&args(&["main.rs"])).is_none());
         assert!(native_request(&args(&["--edition=2021", "main.rs"])).is_none());
+        if public_library_host_supported() {
+            let request = args(&["--edition=2024", "main.rs", "--extern", "dep=libdep.rlib"]);
+            let native = native_request(&request).expect("supported direct extern request");
+            assert!(native.args.iter().any(|arg| arg == "--lustr-standalone-executable"));
+            assert!(native.args.windows(2).any(|pair| pair[0] == "--lustr-executable-extern"
+                && pair[1].starts_with("dep=") && pair[1].ends_with("/libdep.rlib")));
+        }
     }
 
     #[test]
