@@ -3188,7 +3188,7 @@ index 019e079ad31611c7eba4ad0fe3a7a4d60b71cc17..155b2a5ce50e86f428703c7ae797c73b
              match fit {
                  Fit::Yes => {
 diff --git a/src/cc.rs b/src/cc.rs
-index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..a59dff2257be4c405f26668c5c83470ab9b626c9 100644
+index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..1753eba38038dfcf51aa08eaecbd8bf02e51bb56 100644
 --- a/src/cc.rs
 +++ b/src/cc.rs
 @@ -19,6 +19,7 @@
@@ -3223,7 +3223,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..a59dff2257be4c405f26668c5c83470a
      }
      let (arch, os) = (triple.split('-').next().unwrap_or(""), triple);
      let host_like = arch == std::env::consts::ARCH
-@@ -179,13 +182,104 @@ pub fn spec_for(triple: &str) -> Result<CcSpec, String> {
+@@ -179,13 +182,130 @@ pub fn spec_for(triple: &str) -> Result<CcSpec, String> {
          // musl toolchain, which the link error will name).
          let cmd = vec!["cc".to_string()];
          let cxx = cxx_for(&cmd);
@@ -3280,7 +3280,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..a59dff2257be4c405f26668c5c83470a
 +#[cfg(feature = "exclusive-native")]
 +pub(crate) fn prime_cargo_runtime() -> Result<(), String> {
 +    if crate::protocol::host_triple() != "x86_64-unknown-linux-gnu"
-+        || !on_path("clang") || !on_path("clang++") {
++        || !on_path("clang") || !on_path("clang++") || cargo_runtime_driver_overridden() {
 +        return Ok(());
 +    }
 +    let directory = installed_cargo_runtime_dir().ok_or("cannot locate the toolchain runtime directory")?;
@@ -3294,6 +3294,8 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..a59dff2257be4c405f26668c5c83470a
 +        let preprocessed = preprocessed(&text, &spec.cmd, &flags_text, false)
 +            .ok_or("could not preprocess the native Cargo runtime")?;
 +        let key = unit_key(&text, Some(&preprocessed), &spec, false, None, false);
++        let recipe = cargo_runtime_recipe(&spec.cmd, &key)
++            .ok_or("could not identify the native Cargo runtime compiler options")?;
 +        let object = directory.join(format!("unit-{key}.o"));
 +        std::fs::write(&source, text).map_err(|error| format!("stage native Cargo runtime: {error}"))?;
 +        let output = unit_command(&spec.cmd, &flags, &object, Some(&key), None, &source)
@@ -3304,8 +3306,8 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..a59dff2257be4c405f26668c5c83470a
 +        }
 +        let bytes = std::fs::read(&object).map_err(|error| format!("read native Cargo runtime object: {error}"))?;
 +        let digest = cargo_runtime_digest(&bytes);
-+        std::fs::write(object.with_extension("sha256"), digest).map_err(|error| format!("record native Cargo runtime object: {error}"))?;
-+        println!("{}", object.display());
++        std::fs::write(object.with_extension("receipt"), format!("{digest}\n{recipe}\n"))
++            .map_err(|error| format!("record native Cargo runtime object: {error}"))?;
 +    }
 +    Ok(())
 +}
@@ -3317,9 +3319,33 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..a59dff2257be4c405f26668c5c83470a
 +}
 +
 +#[cfg(feature = "exclusive-native")]
-+fn reuse_cargo_runtime(directory: &Path, key: &str, destination: &Path) -> bool {
++fn cargo_runtime_driver_overridden() -> bool {
++    std::env::vars_os().any(|(name, _)| name.as_encoded_bytes().starts_with(b"CCC_"))
++}
++
++/// Clang can add its default configuration without changing preprocessed
++/// text. Bind the effective compiler invocation independently of file paths.
++#[cfg(feature = "exclusive-native")]
++fn cargo_runtime_recipe(words: &[String], key: &str) -> Option<String> {
++    let output = cc_command(&words[0]).args(&words[1..])
++        .args(cflags(false).split_whitespace())
++        .arg(format!("-DLUST_UNIT_KEY={key}"))
++        // There is no C debug info or coverage in these runtime objects.
++        .args(["-fdebug-compilation-dir=.", "-fcoverage-compilation-dir=."])
++        .args(["-###", "-x", "c", "-c", "-", "-o", "u2.o"])
++        .env("LC_ALL", "C")
++        .stdin(std::process::Stdio::null()).output().ok()?;
++    let diagnostics = std::str::from_utf8(&output.stderr).ok()?;
++    (output.status.success() && !diagnostics.lines().any(|line| line.starts_with("Configuration file:")))
++        .then(|| cargo_runtime_digest(&output.stderr))
++}
++
++#[cfg(feature = "exclusive-native")]
++fn reuse_cargo_runtime(directory: &Path, compiler: &[String], key: &str, destination: &Path) -> bool {
 +    let source = directory.join(format!("unit-{key}.o"));
-+    let Ok(digest) = std::fs::read_to_string(source.with_extension("sha256")) else { return false; };
++    let Ok(receipt) = std::fs::read_to_string(source.with_extension("receipt")) else { return false; };
++    let Some((digest, recipe)) = receipt.trim_end().split_once('\n') else { return false; };
++    if cargo_runtime_recipe(compiler, key).as_deref() != Some(recipe) { return false; }
 +    let Ok(bytes) = std::fs::read(source) else { return false; };
 +    if cargo_runtime_digest(&bytes) != digest { return false; }
 +    let _ = std::fs::remove_file(destination);
@@ -3329,7 +3355,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..a59dff2257be4c405f26668c5c83470a
  /// The C flags of every unit, one string so the cache key and the command
  /// line can never disagree.
  pub fn cflags(debug: bool) -> String {
-@@ -237,7 +331,7 @@ fn ldflags(spec: &CcSpec, debug: bool) -> Vec<String> {
+@@ -237,7 +357,7 @@ fn ldflags(spec: &CcSpec, debug: bool) -> Vec<String> {
      if spec.statik {
          v.push("-static".into());
      }
@@ -3338,7 +3364,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..a59dff2257be4c405f26668c5c83470a
          v.push("-s".into());
      } else {
          v.push("-g".into());
-@@ -485,6 +579,10 @@ pub fn llflags(debug: bool) -> String {
+@@ -485,6 +605,10 @@ pub fn llflags(debug: bool) -> String {
      if debug { format!("{base} -g") } else { base }
  }
  
@@ -3349,7 +3375,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..a59dff2257be4c405f26668c5c83470a
  /// Compiles one LLVM backend unit into `obj`: the C unit `src` and the helpers' C `hc` to
  /// bitcode with the C flags (no LLVM passes yet), then the IR `ll` with both linked in, so
  /// the optimizer sees one module (cgen/ll.rs: the C helpers inline into the LLVM fns). The
-@@ -565,7 +663,7 @@ fn compile_pair(
+@@ -565,7 +689,7 @@ fn compile_pair(
      // A relative compiler path must not resolve against the work dir (PGO compiles there).
      let prog = if words[0].contains('/') { std::fs::canonicalize(&words[0]).unwrap_or_else(|_| PathBuf::from(&words[0])) } else { PathBuf::from(&words[0]) };
      let mut cmd = cc_command(prog);
@@ -3358,7 +3384,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..a59dff2257be4c405f26668c5c83470a
      if nopre {
          cmd.args(["-mllvm", "-disable-preinline"]);
      }
-@@ -666,7 +764,7 @@ fn memo_tag(spec: &CcSpec, debug: bool, work: &Path) -> String {
+@@ -666,7 +790,7 @@ fn memo_tag(spec: &CcSpec, debug: bool, work: &Path) -> String {
              spec.triple.as_bytes(),
              compiler_id(&spec.cmd).as_bytes(),
              cflags(debug).as_bytes(),
@@ -3367,7 +3393,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..a59dff2257be4c405f26668c5c83470a
              pgo_env.join(" ").as_bytes(),
              profile.as_bytes(),
          ],
-@@ -738,7 +836,7 @@ pub fn memo_misses(units: &[UnitIn], spec: &CcSpec, debug: bool, cache: Option<&
+@@ -738,7 +862,7 @@ pub fn memo_misses(units: &[UnitIn], spec: &CcSpec, debug: bool, cache: Option<&
  /// units to pass again with text (an LLVM unit's three parts come with text or without as
  /// one). Returns a one-line summary, or the compiler's error text.
  pub fn build(units: &[UnitIn], spec: &CcSpec, out: &Path, debug: bool, cache: Option<&crate::driver::cache::Cache>, work: &Path) -> Result<String, CcError> {
@@ -3376,7 +3402,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..a59dff2257be4c405f26668c5c83470a
  }
  
  /// `build`, with the units a `Stream` took while they assembled: for each, the stream's key,
-@@ -751,6 +849,7 @@ pub fn build_with(
+@@ -751,6 +875,7 @@ pub fn build_with(
      cache: Option<&crate::driver::cache::Cache>,
      work: &Path,
      stream: Option<Stream>,
@@ -3384,7 +3410,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..a59dff2257be4c405f26668c5c83470a
  ) -> Result<String, CcError> {
      // The streamed units compile on from here, `jobs` at once, while this prepares the rest.
      if let Some(s) = &stream {
-@@ -912,7 +1011,7 @@ pub fn build_with(
+@@ -912,7 +1037,7 @@ pub fn build_with(
              keyed.then(|| match ll_of.get(unit.as_str()) {
                  Some(ll) => {
                      let hc = hc_of.get(unit.as_str()).copied().unwrap_or("");
@@ -3393,12 +3419,14 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..a59dff2257be4c405f26668c5c83470a
                  }
                  None => unit_key(c, pre_of(i), spec, debug, part.as_deref(), is_cxx(&names[i])),
              })
-@@ -981,6 +1080,12 @@ pub fn build_with(
+@@ -981,6 +1106,14 @@ pub fn build_with(
      let lost = std::sync::Mutex::new(Vec::new());
      let limit = crate::pool::threads().max(1).min(units.len().max(1));
      let t_compile = std::time::Instant::now();
 +    #[cfg(feature = "exclusive-native")]
-+    let installed_runtime = if !pgo_on && (spec.rust_debug || spec.test_runtime.is_some()) {
++    let installed_runtime = if !pgo_on && !debug && (spec.rust_debug || spec.test_runtime.is_some())
++        && !cargo_runtime_driver_overridden()
++    {
 +        installed_cargo_runtime_dir()
 +    } else {
 +        None
@@ -3406,14 +3434,14 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..a59dff2257be4c405f26668c5c83470a
      std::thread::scope(|scope| {
          for _ in 0..limit {
              scope.spawn(|| loop {
-@@ -1018,6 +1123,15 @@ pub fn build_with(
+@@ -1018,6 +1151,15 @@ pub fn build_with(
                      hits.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                      continue;
                  }
 +                #[cfg(feature = "exclusive-native")]
 +                if name == "u2" && pre_of(i).is_some()
 +                    && let (Some(directory), Some(cache), Some(key)) = (&installed_runtime, cache, &keys[i])
-+                    && reuse_cargo_runtime(directory, key, obj)
++                    && reuse_cargo_runtime(directory, &spec.cmd, key, obj)
 +                {
 +                    cache.store_unit_object(key, obj);
 +                    hits.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
@@ -3422,7 +3450,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..a59dff2257be4c405f26668c5c83470a
                  if entries[i].is_some() {
                      lost.lock().unwrap_or_else(|e| e.into_inner()).push(units[i].name.clone());
                      continue;
-@@ -1125,7 +1239,12 @@ pub fn build_with(
+@@ -1125,7 +1267,12 @@ pub fn build_with(
          // A build with a C++ unit links with the C++ driver (its runtime and personality).
          let link = if units.iter().any(|u| is_cxx(&u.name)) { &spec.cxx } else { &spec.cmd };
          let mut cmd = cc_command(&link[0]);
@@ -3436,7 +3464,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..a59dff2257be4c405f26668c5c83470a
          match cmd.output() {
              Ok(o) if o.status.success() => Ok(format!(
                  "{} units ({} from cache, clang {:.2}s, {}link {:.2}s{}), linked {}",
-@@ -1199,6 +1318,8 @@ mod tests {
+@@ -1199,6 +1346,8 @@ mod tests {
          let units = || vec![UnitIn::text("u0", main.into()), UnitIn::text("u1", f.into()), UnitIn::text("u2", g.into())];
          let plain = crate::driver::cache::Cache::at(&root.join("c1"));
          super::build(&units(), &spec, &root.join("a"), false, Some(&plain), &root.join("w1")).unwrap();
@@ -3445,7 +3473,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..a59dff2257be4c405f26668c5c83470a
          // The stream's cache already holds g's object (a build of another main and g): u2 is a
          // hit, u1 a miss the stream compiles, u0 a miss build compiles.
          let streamed = crate::driver::cache::Cache::at(&root.join("c2"));
-@@ -1207,10 +1328,13 @@ mod tests {
+@@ -1207,10 +1356,13 @@ mod tests {
          let Some(stream) = super::Stream::start(&spec.triple, false, Some(crate::driver::cache::Cache::at(&root.join("c2"))), root.join("w2")) else { return };
          stream.add("u1", f);
          stream.add("u2", g);
@@ -3462,7 +3490,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..a59dff2257be4c405f26668c5c83470a
          let _ = std::fs::remove_dir_all(&root);
      }
  
-@@ -1305,7 +1429,7 @@ mod tests {
+@@ -1305,7 +1457,7 @@ mod tests {
  
      fn zig_spec(target: &str) -> super::CcSpec {
          let cmd: Vec<String> = ["zig", "cc", "-target", target].into_iter().map(str::to_string).collect();
@@ -3471,7 +3499,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..a59dff2257be4c405f26668c5c83470a
      }
  
      #[test]
-@@ -1461,7 +1585,7 @@ mod tests {
+@@ -1461,7 +1613,7 @@ mod tests {
      /// begins (the parts are hashed with their lengths).
      #[test]
      fn an_llvm_unit_key_moves_with_each_text() {
@@ -3480,7 +3508,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..a59dff2257be4c405f26668c5c83470a
          let key = |c: &str, ll: &str, hc: &str, extra: &str| super::ll_unit_key(c, ll, hc, extra, &spec, false, None);
          let base = key("c", "ll", "hc", "x");
          for other in [key("c2", "ll", "hc", "x"), key("c", "ll2", "hc", "x"), key("c", "ll", "hc2", "x"), key("c", "ll", "hc", "y"), key("cl", "l", "hc", "x")] {
-@@ -1474,7 +1598,7 @@ mod tests {
+@@ -1474,7 +1626,7 @@ mod tests {
      fn unit_key_moves_with_every_input() {
          let spec = |triple: &str, cmd: &str| {
              let cmd: Vec<String> = cmd.split_whitespace().map(str::to_string).collect();
