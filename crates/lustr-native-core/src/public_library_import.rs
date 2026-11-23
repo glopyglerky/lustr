@@ -52,6 +52,7 @@ pub(super) struct Import {
     pub(super) dependencies: Vec<Identity>,
     artifact_identity: String,
     pub(super) metadata: Arc<[u8]>,
+    pub(super) embedded_archive: Option<Arc<[u8]>>,
     pub(super) sdk: Sdk,
 }
 
@@ -66,15 +67,18 @@ impl Import {
     ) -> Result<Self, String> {
         let path = &request.artifact;
         let before = stamp(path)?;
-        let data = std::fs::read(path).map_err(|e| format!("read extern metadata {}: {e}", path.display()))?;
+        let bytes: Arc<[u8]> = std::fs::read(path).map_err(|e| format!("read extern input {}: {e}", path.display()))?.into();
+        let from_archive = executable && path.extension().is_some_and(|ext| ext == "rlib");
+        let data: &[u8] = if from_archive { super::executable::embedded_metadata(&bytes)? } else { &bytes };
         let (leaf, projection) = if executable {
-            read_executable_crate(&data, sdk)
+            read_executable_crate(data, sdk)
         } else {
-            read_scalar_crate(&data, sdk).map(|leaf| (leaf, None))
+            read_scalar_crate(data, sdk).map(|leaf| (leaf, None))
         }
-        .or_else(|| standard.and_then(|context| read_link_crate(&data, context)).map(|leaf| (leaf, None)))
+        .or_else(|| standard.and_then(|context| read_link_crate(data, context)).map(|leaf| (leaf, None)))
         .ok_or("extern artifact has no represented interface in the pinned SDK")?;
-        let expected = format!("lib{}{}.rmeta", leaf.name, leaf.filename_suffix);
+        let extension = if from_archive { "rlib" } else { "rmeta" };
+        let expected = format!("lib{}{}.{extension}", leaf.name, leaf.filename_suffix);
         if path.file_name().is_none_or(|name| name != expected.as_str()) || stamp(path)? != before {
             return Err("extern metadata filename or generation changed".into());
         }
@@ -126,7 +130,8 @@ impl Import {
                 code_free,
                 dependencies,
                 artifact_identity: path.to_str().ok_or("extern metadata path is not Unicode")?.into(),
-                metadata: data.into(),
+                metadata: if from_archive { Arc::from(data) } else { bytes.clone() },
+                embedded_archive: from_archive.then_some(bytes),
                 sdk: context,
         })
     }
@@ -301,7 +306,10 @@ impl driver::imports::Definitions for Import {
         Some(&self.facts.crate_name)
     }
     fn dependencies(&self) -> Vec<driver::imports::Dependency> {
-        vec![driver::imports::Dependency { identity: self.artifact_identity.clone(), contents: self.metadata.clone() }]
+        vec![driver::imports::Dependency {
+            identity: self.artifact_identity.clone(),
+            contents: self.embedded_archive.as_ref().unwrap_or(&self.metadata).clone(),
+        }]
     }
     fn take_emission(&self) -> Result<Box<dyn driver::imports::Emission + 'static>, String> {
         Err("Cargo links the imported library artifacts at their final consumer".into())

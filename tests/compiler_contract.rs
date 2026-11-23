@@ -1254,6 +1254,73 @@ fn main() { let _: i32 = "active cfg flags were lost"; }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and Clang"]
+fn rustc_consumes_a_rust_archive_with_embedded_metadata() {
+    let f = Fixture::new("embedded-extern");
+    f.source("provider.rs", "#![no_std]\npub fn doubled(n: u64) -> u64 { n.wrapping_mul(2) }\n");
+    f.source("main.rs", r#"
+fn main() {
+    let answer = provider_alias::doubled(21);
+    println!("{answer}");
+}
+"#);
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let oracle_command = || {
+        let mut command = Command::new(&oracle);
+        command.current_dir(&f.root).env_remove("LD_LIBRARY_PATH");
+        command
+    };
+    let archive = f.root.join("libprovider.rlib");
+    let provider = |embedding: &str| {
+        let mut command = oracle_command();
+        command.args(["--crate-name", "provider", "--crate-type=rlib", "--edition=2024", "-Cembed-bitcode=no"])
+            .arg(format!("-Zembed-metadata={embedding}")).args(["--emit=link", "provider.rs", "-o"]).arg(&archive);
+        command
+    };
+    f.succeeds("original-provider", &mut provider("yes"));
+    assert!(!f.root.join("libprovider.rmeta").exists());
+
+    let compiler = |original: bool, out: &Path, emit: &str| {
+        let mut command = if original { oracle_command() } else { f.command("rustc") };
+        for key in ["CARGO_MANIFEST_DIR", "CARGO_MANIFEST_PATH", "CARGO_CRATE_NAME", "CARGO_BIN_NAME"] {
+            command.env_remove(key);
+        }
+        command.args(["--crate-name", "application", "--crate-type=bin", "--edition=2024",
+            "-Cmetadata=embedded", "-Cembed-bitcode=no", "--emit", emit, "--out-dir"]).arg(out)
+            .arg("--extern").arg(format!("provider_alias={}", archive.display())).arg("main.rs");
+        command
+    };
+    for (name, original) in [("native", false), ("original", true)] {
+        let out = f.root.join(name);
+        std::fs::create_dir(&out).unwrap();
+        f.succeeds(&format!("{name}-check"), &mut compiler(original, &out, "dep-info,metadata"));
+        assert!(out.join("libapplication.rmeta").is_file());
+        f.succeeds(&format!("{name}-link"), &mut compiler(original, &out, "dep-info,link"));
+        let ran = f.succeeds(&format!("{name}-run"), &mut Command::new(out.join("application")));
+        assert_eq!(ran.stdout, b"42\n");
+        assert!(!f.root.join("libprovider.rmeta").exists());
+    }
+
+    let out = f.root.join("native");
+    let before = std::fs::read(out.join("application")).unwrap();
+    std::fs::rename(&archive, f.root.join("original-provider.rlib")).unwrap();
+    f.succeeds("original-provider-stub", &mut provider("no"));
+    assert!(!f.root.join("libprovider.rmeta").exists());
+    for (label, original) in [("native", false), ("original", true)] {
+        let output = f.invoke(&format!("{label}-missing-embedded-metadata"),
+            &mut compiler(original, &f.root.join(label), "dep-info,link"));
+        assert!(!output.status.success());
+    }
+    assert_eq!(std::fs::read(out.join("application")).unwrap(), before);
+    std::fs::rename(&archive, f.root.join("stub-provider.rlib")).unwrap();
+    std::fs::write(&archive, b"invalid Rust archive").unwrap();
+    let output = f.invoke("native-corrupt-archive", &mut compiler(false, &out, "dep-info,link"));
+    assert!(!output.status.success());
+    assert_eq!(std::fs::read(out.join("application")).unwrap(), before);
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
 fn ordinary_cargo_resolves_a_renamed_dependency_feature() {
     let f = Fixture::new("cargo-dependency-feature");

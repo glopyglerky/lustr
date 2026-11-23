@@ -74,8 +74,10 @@ impl ExecutableImports {
                     return Err("Cargo archive requires panic=abort but its executable uses panic=unwind".into());
                 }
                 let before = stamp(path)?;
-                let bytes: Arc<[u8]> =
-                    std::fs::read(path).map_err(|e| format!("read Cargo archive {}: {e}", path.display()))?.into();
+                let bytes: Arc<[u8]> = match &definitions.embedded_archive {
+                    Some(bytes) => bytes.clone(),
+                    None => std::fs::read(path).map_err(|e| format!("read Cargo archive {}: {e}", path.display()))?.into(),
+                };
                 if before != stamp(path)? || !definitions.unchanged(&input.metadata.artifact) {
                     return Err("Cargo metadata/archive pair changed while loading".into());
                 }
@@ -198,6 +200,20 @@ fn require_acyclic(crates: &[ExecutableCrate], indices: &BTreeMap<Identity, usiz
     Ok(())
 }
 
+fn archive_section<'a>(data: &'a [u8], section: &str) -> Result<&'a [u8], String> {
+    let wrapper = object::File::parse(data).map_err(|e| e.to_string())?;
+    wrapper.section_by_name(section).ok_or("original Rust archive metadata section absent")?.data().map_err(|e| e.to_string())
+}
+
+pub(super) fn embedded_metadata(bytes: &[u8]) -> Result<&[u8], String> {
+    let archive = ArchiveFile::parse(bytes).map_err(|e| e.to_string())?;
+    let member = archive.members().next().ok_or("missing Rust archive metadata member")?.map_err(|e| e.to_string())?;
+    if member.name() != b"lib.rmeta" {
+        return Err("unexpected Rust archive metadata member".into());
+    }
+    archive_section(member.data(bytes).map_err(|e| e.to_string())?, ".rmeta")
+}
+
 fn archive_objects<'a>(bytes: &'a [u8], definitions: &Import) -> Result<Vec<&'a [u8]>, String> {
     let archive = ArchiveFile::parse(bytes).map_err(|e| e.to_string())?;
     let mut members = archive.members();
@@ -206,8 +222,7 @@ fn archive_objects<'a>(bytes: &'a [u8], definitions: &Import) -> Result<Vec<&'a 
         if member.name() != name {
             return Err("unexpected Rust archive metadata member".into());
         }
-        let wrapper = object::File::parse(member.data(bytes).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
-        wrapper.section_by_name(section).ok_or("original Rust archive metadata section absent")?.data().map_err(|e| e.to_string())
+        archive_section(member.data(bytes).map_err(|e| e.to_string())?, section)
     };
     let metadata = section(b"lib.rmeta", ".rmeta")?;
     if !archive_metadata_matches(&definitions.metadata, metadata, &definitions.identity.name) {
@@ -266,7 +281,9 @@ impl Definitions for ExecutableImports {
             .iter()
             .flat_map(|item| {
                 let mut deps = item.definitions.dependencies();
-                if let Some((_, archive)) = &item.archive {
+                if let Some((_, archive)) = &item.archive
+                    && item.input.archive.as_ref() != Some(&item.input.metadata.artifact)
+                {
                     deps.push(Dependency { identity: archive.identity.clone(), contents: archive.contents.clone() });
                 }
                 deps

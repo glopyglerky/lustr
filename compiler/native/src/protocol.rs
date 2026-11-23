@@ -729,10 +729,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
             "--lustr-executable-artifacts" if !executable_artifacts => executable_artifacts = true,
             "--lustr-executable-test" if !executable_test && !custom_test => executable_test = true,
             "--lustr-custom-test" if !executable_test && !custom_test => custom_test = true,
-            "--lustr-executable-extern" => executable_dependencies.push(ExecutableExtern {
-                metadata: ExternMetadata::parse(it.next()?)?,
-                archive: Some(it.next()?).filter(|path| !path.is_empty()).map(PathBuf::from),
-            }),
+            "--lustr-executable-extern" => executable_dependencies.push(ExecutableExtern::parse(it.next()?, it.next()?)?),
             "--lustr-library-embed-metadata" if library_options.embed_metadata.is_none() => library_options.embed_metadata = Some(rustc_bool(it.next()?)?),
             "--lustr-library-force-warn-unused-crate-dependencies" if !library_options.force_warn_unused_crate_dependencies => library_options.force_warn_unused_crate_dependencies = true,
             "--lustr-library-debug-options" if !library_debug_supplied => {

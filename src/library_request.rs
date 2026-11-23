@@ -254,12 +254,18 @@ fn executable_externs(arguments: Vec<&str>, check: bool) -> Option<Vec<Executabl
         let (metadata, archive) = pairs.entry(alias).or_default();
         match PathBuf::from(path).extension()?.to_str()? {
             "rmeta" if metadata.is_none() => *metadata = Some(ExternMetadata::parse(argument)?),
-            "rlib" if !check && archive.is_none() => *archive = Some(std::path::absolute(path).ok()?),
+            "rlib" if archive.is_none() => *archive = Some(std::path::absolute(path).ok()?),
             _ => return None,
         }
     }
-    pairs.into_values().map(|(metadata, archive)| {
-        (archive.is_none() == check).then_some(ExecutableExtern { metadata: metadata?, archive })
+    pairs.into_iter().map(|(alias, (metadata, archive))| {
+        if let Some(metadata) = metadata {
+            (archive.is_none() == check).then_some(ExecutableExtern { metadata, archive })
+        } else {
+            let archive = archive?;
+            let metadata = ExternMetadata { alias: alias.into(), artifact: archive.clone() };
+            Some(ExecutableExtern { metadata, archive: (!check).then_some(archive) })
+        }
     }).collect()
 }
 

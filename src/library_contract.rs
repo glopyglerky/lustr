@@ -212,12 +212,25 @@ pub struct ExternMetadata {
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ExecutableExtern {
+    /// Full metadata supplied directly, or its containing Rust archive.
     pub metadata: ExternMetadata,
     pub archive: Option<PathBuf>,
 }
 
 impl ExecutableExtern {
+    pub(crate) fn parse(metadata: &str, archive: &str) -> Option<Self> {
+        let value = Self {
+            metadata: ExternMetadata::parse_path(metadata)?,
+            archive: (!archive.is_empty()).then(|| std::path::absolute(archive)).transpose().ok()?,
+        };
+        value.valid().then_some(value)
+    }
+
     fn valid(&self) -> bool {
+        if self.metadata.artifact.extension().is_some_and(|ext| ext == "rlib") {
+            return self.metadata.valid_path()
+                && self.archive.as_ref().is_none_or(|archive| archive == &self.metadata.artifact);
+        }
         self.metadata.valid() && self.archive.as_ref().is_none_or(|archive| {
             archive.is_absolute() && archive.extension().is_some_and(|ext| ext == "rlib")
                 && archive.file_stem() == self.metadata.artifact.file_stem()
@@ -228,15 +241,23 @@ impl ExecutableExtern {
 
 impl ExternMetadata {
     pub fn parse(argument: &str) -> Option<Self> {
-        let (alias, artifact) = argument.split_once('=')?;
-        let value = Self { alias: alias.into(), artifact: std::path::absolute(artifact).ok()? };
+        let value = Self::parse_path(argument)?;
         value.valid().then_some(value)
     }
 
+    fn parse_path(argument: &str) -> Option<Self> {
+        let (alias, artifact) = argument.split_once('=')?;
+        Some(Self { alias: alias.into(), artifact: std::path::absolute(artifact).ok()? })
+    }
+
     fn valid(&self) -> bool {
+        self.valid_path() && self.artifact.extension().is_some_and(|ext| ext == "rmeta")
+    }
+
+    fn valid_path(&self) -> bool {
         let alias = self.alias.as_str();
         identifier(alias) && !matches!(alias, "core" | "alloc" | "std" | "compiler_builtins")
-            && self.artifact.is_absolute() && self.artifact.extension().is_some_and(|ext| ext == "rmeta")
+            && self.artifact.is_absolute()
             && self.artifact.to_str().is_some_and(|s| !s.contains(['\0', '\n', '\r']))
     }
 }
