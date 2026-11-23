@@ -122,7 +122,7 @@ fn read_public_transport_request(
     if features > 4096 || environment > 65536 { return Err("request field count exceeds bound".into()); }
     // Ten common fields precede the library discriminator. A library frame
     // carries six values/paths, two counted vectors, optional dependency
-    // records, then two request-only options, features and client context.
+    // records, then the request-only options, features and client context.
     // neither trailing fields nor a substituted compiler identity are ignored.
     let mut fixed = Vec::with_capacity(10);
     for _ in 0..10 { fixed.push(read_public_transport_field(reader)?); }
@@ -202,6 +202,9 @@ fn read_public_transport_request(
             if embedding != options.embed_metadata || force_warn != options.force_warn_unused_crate_dependencies {
                 return Err("public library request changed its metadata or lint options".into());
             }
+            if read_public_transport_field(reader)?.as_slice() != options.debug.encode() {
+                return Err("public library request changed its debug output options".into());
+            }
         }
         (b"0" | b"1" | b"2" | b"3", _) => return Err("public request changed its artifact context presence".into()),
         _ => return Err("invalid public library discriminator".into()),
@@ -213,6 +216,35 @@ fn read_public_transport_request(
         read_public_transport_field(reader)?; // environment value
     }
     Ok(())
+}
+
+#[test]
+#[cfg(all(target_arch = "x86_64", target_os = "linux", target_env = "gnu"))]
+fn public_debug_options_round_trip_without_enabling_linked_debug() {
+    use transport_protocol::library_contract::{DebugInfo, DebugOptions, SplitDebug, Strip};
+    let args: Vec<String> = [
+        "check", "/native-transport/source.rs", "--lib", "--target", "x86_64-unknown-linux-gnu",
+        "-o", "/native-transport/libpeer-wire.rmeta",
+        "--lustr-library-name", "peer", "--lustr-library-cwd", "/native-transport",
+        "--lustr-library-metadata", "wire", "--lustr-library-extra-filename", "-wire",
+        "--lustr-library-debug-options", "422",
+    ].into_iter().map(str::to_owned).collect();
+    let Some(transport_protocol::Invocation::Compile { mut req, .. }) =
+        transport_protocol::parse_args(&args)
+    else {
+        panic!("metadata-only request with full debug options");
+    };
+    let expected = DebugOptions { info: DebugInfo::Full, split: SplitDebug::Unpacked, strip: Strip::Symbols };
+    let frame = transport_protocol::encode(&req);
+    let observed = transport_protocol::read_request(&mut std::io::Cursor::new(frame)).unwrap();
+    assert_eq!(observed.library_options.debug, expected);
+    assert_eq!(observed.session, req.session);
+    assert!(!observed.debug);
+
+    req.cmd = transport_protocol::Cmd::Build;
+    req.out.set_file_name("libpeer-wire.rlib");
+    let frame = transport_protocol::encode(&req);
+    assert!(transport_protocol::read_request(&mut std::io::Cursor::new(frame)).is_err());
 }
 
 #[test]
@@ -264,6 +296,7 @@ fn transport_peer_validates_library_values_and_counted_vectors() {
     req.session.library = Some(library.clone());
     req.library_options = transport_protocol::library_contract::LibraryOptions {
         embed_metadata: Some(false), force_warn_unused_crate_dependencies: true,
+        ..Default::default()
     };
     req.session.features = vec!["one".into(), "two".into()];
     req.client.env = Some(vec![("KEY".into(), "value λ".into()), ("EMPTY".into(), String::new())]);
@@ -285,7 +318,7 @@ fn transport_peer_validates_library_values_and_counted_vectors() {
         read_public_transport_field(&mut cursor).unwrap();
         fields.push((start, cursor.position() as usize));
     }
-    assert_eq!(fields.len(), 32, "library schema/options plus two features and two environment pairs");
+    assert_eq!(fields.len(), 33, "library schema/options plus two features and two environment pairs");
     let replace_field = |index: usize, bytes: &[u8]| {
         let (start, end) = fields[index];
         let mut changed = encoded[..start].to_vec();
@@ -304,13 +337,14 @@ fn transport_peer_validates_library_values_and_counted_vectors() {
         (22, b"/wrong/dependency"),
         (23, b"invalid"), (23, b"-"), (23, b"1"), // malformed, absent or different embedding choice
         (24, b"2"), (24, b"0"), // malformed or different forced-lint choice
+        (25, b"102"), (25, b"00"), (25, b"999"), // changed, truncated or unknown debug output choices
     ];
     for &(index, bytes) in wrong_fields {
         let changed = replace_field(index, bytes);
         assert!(read_public_transport_request(&mut Cursor::new(&changed), identity, &req.file, &req.out, true, Some((&library, req.library_options))).is_err(),
                 "changed library field {index} was accepted");
     }
-    for index in [19, 22, 23, 24, 31] {
+    for index in [19, 22, 23, 24, 25, 32] {
         let truncated = &encoded[..fields[index].1 - 1];
         assert!(read_public_transport_request(&mut Cursor::new(truncated), identity, &req.file, &req.out, true, Some((&library, req.library_options))).is_err(),
                 "truncated vector, request option or final environment field {index} was accepted");
@@ -318,6 +352,7 @@ fn transport_peer_validates_library_values_and_counted_vectors() {
     for (embed_metadata, force_warn_unused_crate_dependencies) in [(None, false), (Some(true), true), (Some(false), true)] {
         req.library_options = transport_protocol::library_contract::LibraryOptions {
             embed_metadata, force_warn_unused_crate_dependencies,
+            ..Default::default()
         };
         let frame = transport_protocol::encode(&req);
         let mut reader = Cursor::new(&frame);

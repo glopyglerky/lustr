@@ -1,6 +1,6 @@
 //! Parse the actual Rust compiler request used by the pinned Cargo leaf unit.
 //! Unsupported options remain refusals; this adapter never reads Rust source.
-use crate::{Native, library_contract::{ExecutableExtern, ExternMetadata, LibraryKey, LibraryOptions, SDK_RECEIPT, TARGET}};
+use crate::{Native, library_contract::{DebugInfo, ExecutableExtern, ExternMetadata, LibraryKey, LibraryOptions, SDK_RECEIPT, SplitDebug, Strip, TARGET}};
 use std::{collections::{BTreeMap,BTreeSet}, ffi::OsString, path::PathBuf};
 
 pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
@@ -45,10 +45,19 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
         else if arg == "-L" || arg.starts_with("-L") {
             let value = if arg == "-L" { i += 1; args.get(i)?.to_str()? } else { &arg[2..] };
             search_paths.push(std::path::absolute(value.strip_prefix("dependency=")?).ok()?);
+        } else if arg == "-g" {
+            options.debug.info = DebugInfo::Full;
         } else if arg == "-C" || arg.starts_with("-C") {
             let value = if arg == "-C" { i += 1; args.get(i)?.to_str()? } else { &arg[2..] };
             let (key,value) = value.split_once('=')?;
-            if codegen.insert(key.to_owned(),value.to_owned()).is_some() { return None; }
+            match key {
+                // Rust resolves -g and the explicit level in argument order.
+                "debuginfo" => options.debug.info = DebugInfo::parse(value)?,
+                "split-debuginfo" => options.debug.split = SplitDebug::parse(value)?,
+                "strip" => options.debug.strip = Strip::parse(value)?,
+                _ if codegen.insert(key.to_owned(),value.to_owned()).is_some() => return None,
+                _ => {}
+            }
         } else if arg == "-Z" || arg.starts_with("-Z") {
             let value = if arg == "-Z" { i += 1; args.get(i)?.to_str()? } else { &arg[2..] };
             if options.embed_metadata.is_some() { return None; }
@@ -99,15 +108,10 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     for (key,value) in &codegen {
         let represented = match key.as_str() {
             "opt-level" => value == "0",
-            "debuginfo" => value == "0" || check && matches!(value.as_str(), "1" | "2"),
             // Cargo provides an optional on-disk incremental cache location.
             // Reuse belongs to the native session rather than Rust's on-disk cache.
             "incremental" => (check || panic == "panic=unwind") && std::path::Path::new(value).is_absolute(),
             "overflow-checks" | "debug-assertions" => matches!(value.as_str(),"yes"|"no"|"on"|"off"|"true"|"false"|"y"|"n"),
-            // This artifact path emits no debug sections (nonzero debuginfo
-            // is refused above). Cargo's standard debug stripping has no
-            // additional work for this request.
-            "strip" => matches!(value.as_str(), "none" | "debuginfo"),
             _ => false,
         };
         if !represented { return None; }
@@ -130,6 +134,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     if std::env::var("CARGO_CRATE_NAME").is_ok_and(|v|v != context.crate_name) { return None; }
     let out_dir = std::path::absolute(out_dir?).ok()?;
     let output = out_dir.join(if check { context.metadata_name() } else if binary { context.binary_name() } else { context.archive_name() });
+    if !context.valid_output(&output, check, options) { return None; }
     let mut native = vec![(if check { "check" } else { "build" }).into(),source,"-o".into(),output.to_str()?.into(),
         "--target".into(),TARGET.into(),"-C".into(),panic.into()];
     if binary {
@@ -157,6 +162,9 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     }
     if options.force_warn_unused_crate_dependencies {
         native.push("--lustr-library-force-warn-unused-crate-dependencies".into());
+    }
+    if options.debug != Default::default() {
+        native.extend(["--lustr-library-debug-options".into(), String::from_utf8(options.debug.encode().to_vec()).ok()?]);
     }
     for (flag,value) in [("--lustr-library-name",context.crate_name.as_str()),
         ("--lustr-library-metadata",context.metadata.as_str()),("--lustr-library-extra-filename",context.extra_filename.as_str()),
@@ -194,4 +202,55 @@ fn executable_externs(arguments: Vec<&str>, check: bool) -> Option<Vec<Executabl
     pairs.into_values().map(|(metadata, archive)| {
         (archive.is_none() == check).then_some(ExecutableExtern { metadata: metadata?, archive })
     }).collect()
+}
+
+#[cfg(all(test, target_arch = "x86_64", target_os = "linux", target_env = "gnu"))]
+mod tests {
+    use super::*;
+
+    fn request(emit: &str, extra: &[&str]) -> Option<Native> {
+        let mut args = vec![
+            "--crate-name", "peer", "--crate-type", "bin", "--edition", "2024",
+            "--out-dir", "/tmp/lustr-levels", "-Cmetadata=peer", "-Cembed-bitcode=no", "--emit", emit, "main.rs",
+        ];
+        args.extend(extra);
+        parse(&args.into_iter().map(OsString::from).collect::<Vec<_>>())
+    }
+
+    fn sent_options(request: Native) -> [u8; 3] {
+        request.args.windows(2)
+            .find(|pair| pair[0] == "--lustr-library-debug-options")
+            .map_or(*b"000", |pair| pair[1].as_bytes().try_into().unwrap())
+    }
+
+    #[test]
+    fn metadata_only_preserves_pinned_debug_levels_and_last_option_precedence() {
+        let check = "dep-info,metadata";
+        for (value, expected) in [
+            ("none", b"000"), ("0", b"000"), ("line-directives-only", b"100"),
+            ("line-tables-only", b"200"), ("1", b"300"), ("limited", b"300"),
+            ("2", b"400"), ("full", b"400"),
+        ] {
+            let arg = format!("-Cdebuginfo={value}");
+            assert_eq!(&sent_options(request(check, &[&arg]).unwrap()), expected, "{value}");
+        }
+        assert_eq!(sent_options(request(check, &["-g", "-C", "debuginfo=1"]).unwrap()), *b"300");
+        assert_eq!(sent_options(request(check, &["-Cdebuginfo=0", "-g"]).unwrap()), *b"400");
+        let split = ["-Csplit-debuginfo=packed", "-Csplit-debuginfo=unpacked", "-Cstrip=debuginfo", "-Cstrip=symbols"];
+        assert_eq!(sent_options(request(check, &split).unwrap()), *b"022");
+        for bad in ["-Cdebuginfo=3", "-Csplit-debuginfo=separate", "-Cstrip=all"] {
+            assert!(request(check, &[bad, "-g"]).is_none(), "malformed flag {bad}");
+        }
+    }
+
+    #[test]
+    fn linked_nonzero_debug_and_unimplemented_output_modes_are_refused() {
+        let link = "dep-info,link";
+        assert!(request(link, &[]).is_some());
+        let no_debug = ["-g", "-Cdebuginfo=0", "-Csplit-debuginfo=off", "-Cstrip=debuginfo"];
+        assert_eq!(sent_options(request(link, &no_debug).unwrap()), *b"001");
+        for unsupported in ["-g", "-Cdebuginfo=line-tables-only", "-Cdebuginfo=1", "-Cdebuginfo=2", "-Csplit-debuginfo=packed", "-Cstrip=symbols"] {
+            assert!(request(link, &[unsupported]).is_none(), "linked mode {unsupported}");
+        }
+    }
 }

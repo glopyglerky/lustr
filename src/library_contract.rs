@@ -20,6 +20,105 @@ pub const fn supported_host()->bool {
 pub struct LibraryOptions {
     pub embed_metadata: Option<bool>,
     pub force_warn_unused_crate_dependencies: bool,
+    pub debug: DebugOptions,
+}
+
+/// The pinned Rust debug levels. Limited and line tables are distinct.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum DebugInfo {
+    #[default]
+    None,
+    LineDirectivesOnly,
+    LineTablesOnly,
+    Limited,
+    Full,
+}
+
+impl DebugInfo {
+    pub(crate) fn parse(value: &str) -> Option<Self> {
+        Some(match value {
+            "0" | "none" => Self::None,
+            "line-directives-only" => Self::LineDirectivesOnly,
+            "line-tables-only" => Self::LineTablesOnly,
+            "1" | "limited" => Self::Limited,
+            "2" | "full" => Self::Full,
+            _ => return None,
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum SplitDebug {
+    #[default]
+    Off,
+    Packed,
+    Unpacked,
+}
+
+impl SplitDebug {
+    pub(crate) fn parse(value: &str) -> Option<Self> {
+        Some(match value {
+            "off" => Self::Off,
+            "packed" => Self::Packed,
+            "unpacked" => Self::Unpacked,
+            _ => return None,
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Strip {
+    #[default]
+    None,
+    DebugInfo,
+    Symbols,
+}
+
+impl Strip {
+    pub(crate) fn parse(value: &str) -> Option<Self> {
+        Some(match value {
+            "none" => Self::None,
+            "debuginfo" => Self::DebugInfo,
+            "symbols" => Self::Symbols,
+            _ => return None,
+        })
+    }
+}
+
+/// Output policy for this request, independent of its semantic session.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct DebugOptions {
+    pub info: DebugInfo,
+    pub split: SplitDebug,
+    pub strip: Strip,
+}
+
+impl DebugOptions {
+    const LEVELS: [DebugInfo; 5] = [
+        DebugInfo::None, DebugInfo::LineDirectivesOnly, DebugInfo::LineTablesOnly,
+        DebugInfo::Limited, DebugInfo::Full,
+    ];
+    const SPLIT: [SplitDebug; 3] = [SplitDebug::Off, SplitDebug::Packed, SplitDebug::Unpacked];
+    const STRIP: [Strip; 3] = [Strip::None, Strip::DebugInfo, Strip::Symbols];
+
+    pub fn encode(self) -> [u8; 3] {
+        [b'0' + self.info as u8, b'0' + self.split as u8, b'0' + self.strip as u8]
+    }
+
+    pub(crate) fn decode(value: &[u8]) -> Option<Self> {
+        let [level, split, strip] = *value else { return None };
+        Some(Self {
+            info: *Self::LEVELS.get(level.checked_sub(b'0')? as usize)?,
+            split: *Self::SPLIT.get(split.checked_sub(b'0')? as usize)?,
+            strip: *Self::STRIP.get(strip.checked_sub(b'0')? as usize)?,
+        })
+    }
+
+    fn supported(self, check: bool) -> bool {
+        // Metadata-only requests emit no machine code or debug sidecars.
+        // Linked artifacts still require the implemented debug-free policy.
+        check || (self.info == DebugInfo::None && self.split == SplitDebug::Off && self.strip != Strip::Symbols)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -134,6 +233,9 @@ impl LibraryKey {
     }
 
     pub fn valid_output(&self, path: &Path, check: bool, options: LibraryOptions) -> bool {
+        if !options.debug.supported(check) {
+            return false;
+        }
         if let Some(dependencies) = &self.executable_dependencies {
             options.embed_metadata.is_none() && self.executable_outputs(path, check).is_some()
                 && dependencies.iter().all(|dependency| dependency.archive.is_none() == check)
