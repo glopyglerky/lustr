@@ -324,7 +324,7 @@ fn transport_peer_validates_library_values_and_counted_vectors() {
         read_public_transport_field(&mut cursor).unwrap();
         fields.push((start, cursor.position() as usize));
     }
-    assert_eq!(fields.len(), 33, "library schema/options plus two features and two environment pairs");
+    assert_eq!(fields.len(), 34, "library schema/options plus two features and two environment pairs");
     let replace_field = |index: usize, bytes: &[u8]| {
         let (start, end) = fields[index];
         let mut changed = encoded[..start].to_vec();
@@ -344,13 +344,14 @@ fn transport_peer_validates_library_values_and_counted_vectors() {
         (23, b"invalid"), (23, b"-"), (23, b"1"), // malformed, absent or different embedding choice
         (24, b"2"), (24, b"0"), // malformed or different forced-lint choice
         (25, b"102"), (25, b"00"), (25, b"999"), // changed, truncated or unknown debug output choices
+        (26, b"3"), (26, b"9"), (26, b"00"), // different, unknown or malformed optimization level
     ];
     for &(index, bytes) in wrong_fields {
         let changed = replace_field(index, bytes);
         assert!(read_public_transport_request(&mut Cursor::new(&changed), identity, &req.file, &req.out, true, Some((&library, req.library_options))).is_err(),
                 "changed library field {index} was accepted");
     }
-    for index in [19, 22, 23, 24, 25, 32] {
+    for index in [19, 22, 23, 24, 25, 26, 33] {
         let truncated = &encoded[..fields[index].1 - 1];
         assert!(read_public_transport_request(&mut Cursor::new(truncated), identity, &req.file, &req.out, true, Some((&library, req.library_options))).is_err(),
                 "truncated vector, request option or final environment field {index} was accepted");
