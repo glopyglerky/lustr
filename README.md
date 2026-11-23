@@ -21,23 +21,36 @@ is the canonical direction.
 
 ## Current status
 
-**The full replacement is unfinished. The next work is ordinary Cargo integration,
-Rust debugging and Cargo tests; complete-work speed is still unqualified.**
+**The installed toolchain compiles native and mixed Rust workloads through Cargo.
+Full Rust coverage and overall performance qualification are still in progress.**
 
-The implementation lane is [PR #33](https://github.com/glopyglerky/lustr/pull/33),
-reviewed at [`bc38dece`](https://github.com/glopyglerky/lustr/tree/bc38dece7a734b97c0108582b7f61f98ccb819db).
-Refresh its live head before continuing. While it remains unmerged, documentation
-on `next` does not establish inclusion of its compiler source. After an authorized
-merge, verify the correction in the integration source and continue there.
+The implementation lane is [PR #33](https://github.com/glopyglerky/lustr/pull/33).
+Each qualification record applies to its recorded source, package and workload.
 
-| Capability | Actual state at the planning baseline |
+| Capability | Implemented and exercised scope |
 | --- | --- |
 | Public scalar Cargo path | Genuine metadata, libraries, checks, represented dependencies and executable artifacts through the retained native owner. |
-| Linux x86-64 native unwind | Leaf libraries and dependency-free executables with debug information disabled; source-bound runtime and frame evidence has specific limits. Dependency-bearing unwind remains unfinished. |
-| Imported associated-type fact | A standalone retained qualifier now supplies a real metadata-derived lifetime-generic associated type to Lust. Provider edits invalidate affected consumers and retain unrelated work. It is not yet ordinary Cargo support or a justified minimal product service. |
-| Normal default-profile operations | Metadata-only checking works for represented cases. Linked builds still refuse full debug information; `--test` is not yet a supported public artifact mode. |
+| Linux x86-64 native unwind | Native executable and library tests cover frame walking, panic propagation, destructor cleanup and catching in represented configurations. |
+| Imported associated types | Cargo provider and consumer tests exercise lifetime-generic associated types through native checking and linking. |
+| Default Cargo profiles | Represented programs have native check, build, run and test paths. Native Rust debug information covers the types and locations exercised by the debugger tests. |
+| Mixed host compilation | Pinned Rust supplies async semantics and the linker while Lust emits selected closed functions. Tests cover ordinary executables, static Rust libraries and freestanding `no_std` ELF executables. |
 | Full language, ecosystem and platforms | Wider native artifacts, selective complementary semantics, real dependency/proc-macro graphs and the full target/profile matrix remain open. |
-| Performance and release | No current package has qualified full Rust coverage and matched overall speedup. Reuse counts are mechanism evidence, not a measured latency result. |
+| Performance and release | Scoped timing results include both gains and slower edits. Overall speed and release qualification remain open. |
+
+### Build and use the toolchain
+
+On Linux x86-64, use the Rust SDK identified by `upstream/bluefe-core.pin` and
+the pinned TinyCC build. Set `sdk`, `tinycc`, `bluefe` and `work` to their
+paths and run these commands from the Lustr checkout.
+
+```sh
+"$sdk/bin/rustc" --edition=2024 tools/build-native-toolchain.rs -o "$work/constructor"
+"$work/constructor" "$PWD" "$sdk" "$tinycc" "$work/lustr" --debug --proc-macro-source "$bluefe"
+```
+
+Set `RUSTC` to `$work/lustr/toolchain/bin/rustc` for regular Cargo commands in
+your project. The constructor records the exact source and runtime dependencies
+in its output directory.
 
 ### Source-built procedural macro support
 
@@ -72,12 +85,12 @@ A green prior-source job, research qualifier or refusal-only release guard canno
 qualify later source or the complete compiler. Historical previews remain evidence,
 not recommended packages for the current replacement.
 
-Lust owns all work its pinned implementation covers. A missing bridge does not
-transfer ownership to rustc. The normal frontend and retained-state update must
-select required operations from real semantic facts; no scanner, trial compiler,
-second complete frontend or native-fail/rustc retry is a product route. The full
-Rust source stays in blueFe, and every imported slice needs a justified caller,
-source/dependency closure, shared identity and correctness evidence.
+Represented requests use Lust's retained compiler. The installed Rust component
+handles additional request options and operations identified by the native
+parser or verified declaration loader. Mixed units use original Rust analysis
+and linking for the complementary code. Lust checks and emits its selected
+bodies once from the original source. The full Rust source stays in blueFe, with
+the imported component's pinned source and dependencies recorded in the package.
 
 The public host still uses `std` and Unix sockets, and its archive/object tools
 retain a substantial LLVM shared-library dependency. Those portability and size
