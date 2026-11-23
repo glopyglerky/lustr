@@ -328,7 +328,9 @@ provider body/type edits, type repair and renamed-definition failure/repair,
 then exposed a malformed-input recovery regression: status 3 reset a session
 even though validation had not entered native preparation. Its repair keeps
 input failures separate from failures after compilation starts. Qualification
-of that repair is pending. This is a P2 prerequisite, not admission
+of that repair passed on `3eae63d837195cf454e9ad8b611bc805bf11a47c`:
+the complete scalar history, including malformed-input repair, passed with
+zero unrelated-body checks. This is a P2 prerequisite, not admission
 of the P1 GAT service or completion of P2. Next: construct this exact candidate,
 run the valid/type-change/malformed-input/repair histories and pinned Rust
 metadata consumer, then continue the native declaration/predicate service.
@@ -341,6 +343,10 @@ predicates separately from trait-wide bounds. Ordinary provider assignments
 consume those predicates in native impl validation. GATs remain unadmitted;
 their original rejection is preserved while the service's necessary facts are
 retained. Focused predicate and fingerprint controls are being run. The next
+slice preserves regioned associated-item predicates and checks their actual
+impl-header lifetimes, avoiding erased-reference false acceptance/rejection.
+Named-lifetime traits with associated types retain their separate preexisting
+gate; they remain open coverage. The next
 integration step remains the selective upstream normalization/WF/region service
 and genuine provider metadata; these prerequisites do not close P1 or P2.
 

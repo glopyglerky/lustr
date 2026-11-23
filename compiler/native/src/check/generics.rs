@@ -5639,6 +5639,7 @@ pub struct AssociatedTypeGenerics {
     pub generics: Generics,
     pub lifetimes: Vec<(Sym, u32)>,
     pub region_facts: Vec<(u32, u32)>,
+    pub region_predicates: Vec<Predicate>,
     pub span: Span,
 }
 
@@ -5691,6 +5692,26 @@ mod associated_item_predicate_tests {
         assert_eq!(item.region_facts, [(0, 1)]);
         assert!(item.generics.predicates.iter().any(|predicate| matches!(predicate,
             Predicate::TypeOutlives(ty, Region::Param(0)) if matches!(program.tys.kind(*ty), TyKind::Param(ParamId(0))))));
+    }
+
+    #[test]
+    fn associated_item_outlives_uses_the_actual_impl_lifetimes() {
+        let source = "trait Family { type View where Self: 'static; } impl<'b> Family for &'b u8 { type View = u32; } fn main() {}";
+        let errors = collect(source).err().expect("the provider's borrow may escape");
+        assert!(errors.iter().any(|diag| diag.code == "L0617"), "{errors:?}");
+        let repaired = source.replace("impl<'b> Family for &'b u8", "impl Family for &'static u8");
+        if let Err(errors) = collect(&repaired) { panic!("valid provider: {errors:?}"); }
+    }
+
+    #[test]
+    fn associated_item_region_facts_and_trait_arguments_are_obligations() {
+        let source = "trait Family { type View where Self: 'static; } impl<T> Family for T { type View = u32; } fn main() {}";
+        assert!(collect(source).is_err());
+        if let Err(errors) = collect(&source.replace("impl<T>", "impl<T: 'static>")) { panic!("valid type outlives bound: {errors:?}"); }
+        let source = "trait Tag<T> {} trait Family { type View where Self: Tag<&'static u8>; } impl<'a> Tag<&'a u8> for &'a u8 {} impl<'b> Family for &'b u8 { type View = u32; } fn main() {}";
+        let errors = collect(source).err().expect("an erased matching impl does not establish its lifetimes");
+        assert!(errors.iter().any(|diag| diag.code == "L0617"), "{errors:?}");
+        if let Err(errors) = collect(&source.replace("impl<'b> Family for &'b u8", "impl Family for &'static u8")) { panic!("valid regioned trait: {errors:?}"); }
     }
 }
 
@@ -7376,12 +7397,18 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
             {
                 let cx = p.gx.resolve_cx(&p.type_names, &p.aliases);
                 let mut seed = scope.clone();
-                // The still-rejected GAT service needs the exact named-region
-                // predicates. Ordinary items keep the native region gate.
-                seed.type_outlives |= !at_params.params.is_empty();
+                seed.type_outlives = true;
                 let (own, own_scope) = build_generics_shifted(
                     &p.ast, &p.interner, &p.known, &cx, &mut p.tys,
                     &at_params, &at_where, generics.params.len() as u32, &seed, errs,
+                );
+                let mut region_scope = seed.clone();
+                region_scope.lifetimes.extend_from_slice(&own_scope.lifetimes);
+                region_scope.type_params.extend_from_slice(&own_scope.type_params);
+                region_scope.const_params.extend_from_slice(&own_scope.const_params);
+                let (_, region_predicates) = regioned_bound_preds(
+                    &p.ast, &p.interner, &p.known, &cx, &mut p.tys,
+                    &region_scope, &at_params, &at_where, &[],
                 );
                 let mut relaxed: Vec<u32> = Vec::new();
                 let mut preds: Vec<Predicate> = Vec::new();
@@ -7415,7 +7442,7 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
                 }
                 p.gx.trait_assoc_generics.insert(assoc_def, AssociatedTypeGenerics {
                     parent: trait_def, generics: own, lifetimes: own_scope.lifetimes,
-                    region_facts: own_scope.region_facts, span: at_span,
+                    region_facts: own_scope.region_facts, region_predicates, span: at_span,
                 });
             }
         }
@@ -13885,7 +13912,12 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
                 // Generic associated items still fail their declaration gate;
                 // do not erase a binder to pretend they are ordinary types.
                 if item.generics.params.is_empty() && item.lifetimes.is_empty() {
-                    predicates.extend_from_slice(&item.generics.predicates);
+                    // Item outlives predicates are proved below the native
+                    // region boundary against the actual impl header. The
+                    // erased `self_ty` cannot distinguish &'static T from
+                    // a borrow of another lifetime.
+                    predicates.extend(item.generics.predicates.iter().copied()
+                        .filter(|predicate| !matches!(predicate, Predicate::TypeOutlives(..) | Predicate::Outlives(..))));
                 }
             }
         }

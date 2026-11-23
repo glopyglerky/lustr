@@ -12,6 +12,7 @@ FILES=[
  "compiler/native/src/driver/imports.rs","compiler/native/src/resolve/worklist.rs","compiler/native/src/resolve/imports.rs",
  "compiler/native/src/driver/graph.rs","compiler/native/src/check/generics.rs",
  "compiler/native/src/check/prog_shift.rs","compiler/native/src/check/delta_audit.rs",
+ "compiler/native/src/borrowck/regions/supers.rs",
  "crates/lustr-native-core/Cargo.toml","crates/lustr-native-core/Cargo.lock",
  "crates/lustr-native-core/src/library_history.rs","crates/lustr-native-core/src/native_library.rs","crates/lustr-native-core/src/native_completion.rs",
  "crates/lustr-native-core/src/library_artifact.rs","crates/lustr-native-core/src/metadata_archive.rs",

@@ -2997,6 +2997,95 @@ index f93372da15847f0d714ccd376706c74d8ac17099..366d6587fb96d7d7f50fe276151e172b
          let Some(dst) = self.ptr_nodes(ptr, free, true, 0) else { return };
          let Some(src) = self.fn_nodes(&sig, &ins, s.output) else {
              if s.free_slots != 0 {
+diff --git a/src/borrowck/regions/supers.rs b/src/borrowck/regions/supers.rs
+index 019e079ad31611c7eba4ad0fe3a7a4d60b71cc17..dfd7ef0d9d51641078e5930b6d1fcc5fa306686b 100644
+--- a/src/borrowck/regions/supers.rs
++++ b/src/borrowck/regions/supers.rs
+@@ -105,14 +105,25 @@ struct Cx<'p> {
+ /// the file comment). Runs once collect has every impl and trait table.
+ pub fn check_impl_supers(p: &Program) -> Vec<Diag> {
+     let mut errs = Vec::new();
+-    if p.regions.trait_preds.is_empty() {
++    if p.regions.trait_preds.is_empty() && p.gx.trait_assoc_generics.values()
++        .all(|item| item.region_predicates.is_empty() && item.region_facts.is_empty()) {
+         return errs;
+     }
+     for (_, rec) in p.gx.index.all_impls() {
+         if !rec.local || rec.synthetic != crate::traits::index::Synthetic::None {
+             continue;
+         }
+-        let Some(preds) = p.regions.trait_preds.get(&rec.trait_def) else { continue };
++        let mut preds = p.regions.trait_preds.get(&rec.trait_def).cloned().unwrap_or_default();
++        for &(assoc, _) in &rec.assoc_tys {
++            if let Some(item) = p.gx.trait_assoc_generics.get(&assoc)
++                && item.generics.params.is_empty() && item.lifetimes.is_empty() {
++                preds.extend_from_slice(&item.region_predicates);
++                preds.extend(item.region_facts.iter().map(|&(a, b)| Predicate::Outlives(
++                    Region::Param(a), if b == crate::check::generics::STATIC_FACT { Region::Static } else { Region::Param(b) },
++                )));
++            }
++        }
++        if preds.is_empty() { continue; }
+         // An impl with no regions in its header, facts or where-clauses
+         // (collect keeps none): its erased header, for `T: 'static` needs.
+         let plain;
+@@ -124,7 +135,7 @@ pub fn check_impl_supers(p: &Program) -> Vec<Diag> {
+                 &plain
+             }
+         };
+-        if let Some(d) = check_impl(p, rec, ir, preds) {
++        if let Some(d) = check_impl(p, rec, ir, &preds) {
+             errs.push(d);
+         }
+     }
+@@ -185,13 +196,27 @@ fn check_impl(p: &Program, rec: &crate::traits::index::ImplRecord, ir: &ImplRegi
+     let name = |d: DefId| p.gx.index.trait_record(d).map_or_else(|| "?".to_string(), |r| p.display_path(r.name));
+     let mut bad = None;
+     for pred in preds {
+-        let Predicate::Trait(b) = *pred else { continue };
+-        if b.count != 0 || p.gx.lang.is_fn_family(b.value.def) {
+-            continue;
+-        }
+         cx.needs.clear();
+         cx.ty_needs.clear();
+-        cx.oblige(b.value, &frame, 0);
++        let goal = match *pred {
++            Predicate::Trait(b) if b.count == 0 && !p.gx.lang.is_fn_family(b.value.def) => {
++                cx.oblige(b.value, &frame, 0);
++                b.value.def
++            }
++            Predicate::Outlives(a, b) => {
++                cx.needs.push((re_in(a, &Some(frame.clone())), re_in(b, &Some(frame.clone()))));
++                rec.trait_def
++            }
++            Predicate::TypeOutlives(t, r) => {
++                let y = re_in(r, &Some(frame.clone()));
++                let (mut regions, mut params) = (Vec::new(), Vec::new());
++                cx.regions_in(Val(t, Some(frame.clone())), &mut regions, &mut params, 0);
++                cx.needs.extend(regions.into_iter().map(|region| (region, y)));
++                cx.ty_needs.extend(params.into_iter().map(|param| (param, y)));
++                rec.trait_def
++            }
++            _ => continue,
++        };
+         if let Some(g) = cx.ambig {
+             return Some(Diag::new(
+                 "L0610",
+@@ -205,12 +230,12 @@ fn check_impl(p: &Program, rec: &crate::traits::index::ImplRecord, ir: &ImplRegi
+             ));
+         }
+         if let Some(&(_, y)) = cx.needs.iter().find(|&&(x, y)| !holds(&cx.known, x, y)) {
+-            bad = Some((b.value.def, "a lifetime in the impl's header", y));
++            bad = Some((goal, "a lifetime in the impl's header", y));
+             break;
+         }
+         let ty_known = known_ty_facts(p, ir);
+         if let Some(&(_, y)) = cx.ty_needs.iter().find(|&&(j, y)| !ty_holds(&cx.known, &ty_known, j, y)) {
+-            bad = Some((b.value.def, "a type parameter of the impl", y));
++            bad = Some((goal, "a type parameter of the impl", y));
+             break;
+         }
+     }
 diff --git a/src/cc.rs b/src/cc.rs
 index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..5dbdf6c033155477089e366530256df5575e2314 100644
 --- a/src/cc.rs
@@ -4676,7 +4765,7 @@ index f31b8af0e01c3261fd76f2a4e82954e9de656aca..629b1471654155f02430dd628fc2ae12
          })
      }
 diff --git a/src/check/generics.rs b/src/check/generics.rs
-index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80bf78e481259b40712a6365c23514e98cf71e3d 100644
+index 084f420a96af81551cafc7aa39f3f8c23edf4d25..9870e7577a580d28d0b82bdb6ef4792be6185fa7 100644
 --- a/src/check/generics.rs
 +++ b/src/check/generics.rs
 @@ -1414,6 +1414,8 @@ pub struct Scope {
@@ -4793,7 +4882,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80bf78e481259b40712a6365c23514e9
          }
          // Omitted trailing params take their defaults.
          let n_written = gargs.iter().filter(|g| !matches!(g, GenericArg::Lifetime(_))).count();
-@@ -5562,10 +5628,77 @@ pub struct InstanceInfo {
+@@ -5562,10 +5628,98 @@ pub struct InstanceInfo {
  /// by check, mono, and the driver. Parallel vecs are indexed by
  /// the session-local `AdtId` / `LocalDefId` of the compat tables
  /// in `Program`, including the instances mono appends.
@@ -4808,6 +4897,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80bf78e481259b40712a6365c23514e9
 +    pub generics: Generics,
 +    pub lifetimes: Vec<(Sym, u32)>,
 +    pub region_facts: Vec<(u32, u32)>,
++    pub region_predicates: Vec<Predicate>,
 +    pub span: Span,
 +}
 +
@@ -4861,6 +4951,26 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80bf78e481259b40712a6365c23514e9
 +        assert!(item.generics.predicates.iter().any(|predicate| matches!(predicate,
 +            Predicate::TypeOutlives(ty, Region::Param(0)) if matches!(program.tys.kind(*ty), TyKind::Param(ParamId(0))))));
 +    }
++
++    #[test]
++    fn associated_item_outlives_uses_the_actual_impl_lifetimes() {
++        let source = "trait Family { type View where Self: 'static; } impl<'b> Family for &'b u8 { type View = u32; } fn main() {}";
++        let errors = collect(source).err().expect("the provider's borrow may escape");
++        assert!(errors.iter().any(|diag| diag.code == "L0617"), "{errors:?}");
++        let repaired = source.replace("impl<'b> Family for &'b u8", "impl Family for &'static u8");
++        if let Err(errors) = collect(&repaired) { panic!("valid provider: {errors:?}"); }
++    }
++
++    #[test]
++    fn associated_item_region_facts_and_trait_arguments_are_obligations() {
++        let source = "trait Family { type View where Self: 'static; } impl<T> Family for T { type View = u32; } fn main() {}";
++        assert!(collect(source).is_err());
++        if let Err(errors) = collect(&source.replace("impl<T>", "impl<T: 'static>")) { panic!("valid type outlives bound: {errors:?}"); }
++        let source = "trait Tag<T> {} trait Family { type View where Self: Tag<&'static u8>; } impl<'a> Tag<&'a u8> for &'a u8 {} impl<'b> Family for &'b u8 { type View = u32; } fn main() {}";
++        let errors = collect(source).err().expect("an erased matching impl does not establish its lifetimes");
++        assert!(errors.iter().any(|diag| diag.code == "L0617"), "{errors:?}");
++        if let Err(errors) = collect(&source.replace("impl<'b> Family for &'b u8", "impl Family for &'static u8")) { panic!("valid regioned trait: {errors:?}"); }
++    }
 +}
 +
  pub struct GenTables {
@@ -4871,7 +4981,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80bf78e481259b40712a6365c23514e9
      pub trait_scopes: FxMap<DefId, Scope>,
      pub trait_methods: FxMap<DefId, TraitMethodTemplate>,
      /// Signatures of the lang trait methods, by method def
-@@ -5575,6 +5708,7 @@ pub struct GenTables {
+@@ -5575,6 +5729,7 @@ pub struct GenTables {
      /// Associated type defaults from trait definitions, in trait
      /// signature form (over the trait's params, Self at 0).
      pub trait_assoc_defaults: FxMap<DefId, Ty>,
@@ -4879,7 +4989,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80bf78e481259b40712a6365c23514e9
      /// User traits written `unsafe trait`: their impls must be
      /// `unsafe impl`, and no other impl may be.
      pub trait_unsafe: FxMap<DefId, bool>,
-@@ -5833,10 +5967,12 @@ impl Default for GenTables {
+@@ -5833,10 +5988,12 @@ impl Default for GenTables {
              lang: LangTraits::new(),
              index: ImplIndex::new(),
              trait_names: crate::driver::read_cover::NameMap::new("trait"),
@@ -4892,7 +5002,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80bf78e481259b40712a6365c23514e9
              trait_unsafe: FxMap::default(),
              trait_assoc_consts: FxMap::default(),
              wf_headers: Vec::new(),
-@@ -5929,8 +6065,10 @@ impl GenTables {
+@@ -5929,8 +6086,10 @@ impl GenTables {
          ResolveCx {
              type_names: &NO_ADTS,
              adt_info: &self.adt_info,
@@ -4903,7 +5013,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80bf78e481259b40712a6365c23514e9
              aliases: &NO_TYS,
              generic_aliases: &NO_ALIASES,
              index: &self.index,
-@@ -5944,8 +6082,10 @@ impl GenTables {
+@@ -5944,8 +6103,10 @@ impl GenTables {
          ResolveCx {
              type_names,
              adt_info: &self.adt_info,
@@ -4914,7 +5024,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80bf78e481259b40712a6365c23514e9
              aliases,
              generic_aliases: &self.generic_aliases,
              index: &self.index,
-@@ -6154,6 +6294,25 @@ fn valid_receiver(tys: &impl TyIntern, t: Ty, self_ty: Ty) -> bool {
+@@ -6154,6 +6315,25 @@ fn valid_receiver(tys: &impl TyIntern, t: Ty, self_ty: Ty) -> bool {
      }
  }
  
@@ -4940,7 +5050,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80bf78e481259b40712a6365c23514e9
  /// Resolves one fn signature in template form: self parameter,
  /// params, and return, under the combined scope. Handles
  /// `impl Trait` argument sugar by growing the generics. Returns
-@@ -6236,7 +6395,7 @@ pub fn resolve_fn_sig(
+@@ -6236,7 +6416,7 @@ pub fn resolve_fn_sig(
              let lhs = apit_param(ast, interner, known, cx, tys, &mut generics, &mut scope, bounds, ast.ty_span(n), errs);
              scope.apit.push((n, lhs));
          }
@@ -4949,7 +5059,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80bf78e481259b40712a6365c23514e9
              // No Sized check here: a declaration with no body may
              // name unsized params (rustc allows it). The value
              // positions of a fn with a body are `check_written_wf`'s.
-@@ -6308,7 +6467,7 @@ pub fn resolve_fn_sig(
+@@ -6308,7 +6488,7 @@ pub fn resolve_fn_sig(
                  }
              }
          }
@@ -4958,7 +5068,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80bf78e481259b40712a6365c23514e9
              errs.push(d);
              ERROR
          }),
-@@ -6580,7 +6739,7 @@ fn region_sig(
+@@ -6580,7 +6760,7 @@ fn region_sig(
          let t = if let TyExpr::ImplTrait { .. } = ast.ty(param.ty) {
              *params.get(skip + i)?
          } else {
@@ -4967,7 +5077,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80bf78e481259b40712a6365c23514e9
          };
          for _ in names.len()..counter.load(Ordering::Relaxed) as usize {
              names.push(format!("the lifetime of parameter {}", i + 1));
-@@ -6615,7 +6774,7 @@ fn region_sig(
+@@ -6615,7 +6795,7 @@ fn region_sig(
          // goes to `RegionTables::opaque_sigs`, whose rules never read
          // the return.
          Some(t) if opaque_caps.is_some() || matches!(ast.ty(t), TyExpr::ImplTrait { .. }) => UNIT,
@@ -4976,7 +5086,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80bf78e481259b40712a6365c23514e9
              Ok(t) => t,
              Err(d) => {
                  if d.code == "L0202" {
-@@ -7211,9 +7370,19 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
+@@ -7211,9 +7391,25 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
              let proj = p.tys.intern(TyKind::Projection(AssocId(assoc_def), trait_args));
              let at_bounds = at.bounds.clone();
              let at_where = at.where_clause.clone();
@@ -4986,17 +5096,23 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80bf78e481259b40712a6365c23514e9
              {
                  let cx = p.gx.resolve_cx(&p.type_names, &p.aliases);
 +                let mut seed = scope.clone();
-+                // The still-rejected GAT service needs the exact named-region
-+                // predicates. Ordinary items keep the native region gate.
-+                seed.type_outlives |= !at_params.params.is_empty();
++                seed.type_outlives = true;
 +                let (own, own_scope) = build_generics_shifted(
 +                    &p.ast, &p.interner, &p.known, &cx, &mut p.tys,
 +                    &at_params, &at_where, generics.params.len() as u32, &seed, errs,
 +                );
++                let mut region_scope = seed.clone();
++                region_scope.lifetimes.extend_from_slice(&own_scope.lifetimes);
++                region_scope.type_params.extend_from_slice(&own_scope.type_params);
++                region_scope.const_params.extend_from_slice(&own_scope.const_params);
++                let (_, region_predicates) = regioned_bound_preds(
++                    &p.ast, &p.interner, &p.known, &cx, &mut p.tys,
++                    &region_scope, &at_params, &at_where, &[],
++                );
                  let mut relaxed: Vec<u32> = Vec::new();
                  let mut preds: Vec<Predicate> = Vec::new();
                  for b in &at_bounds {
-@@ -7231,7 +7400,6 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
+@@ -7231,7 +7427,6 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
                      preds.push(Predicate::Trait(Binder::plain(TraitRef { def: cx.lang.sized, args, bindings: EMPTY_BINDINGS })));
                  }
                  generics.predicates.extend(preds);
@@ -5004,18 +5120,18 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80bf78e481259b40712a6365c23514e9
                  if at_default.is_some() {
                      // Associated type defaults are unstable in
                      // rustc (E0658); rule zero rejects them.
-@@ -7245,6 +7413,10 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
+@@ -7245,6 +7440,10 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
                          Err(diag) => errs.push(diag),
                      }
                  }
 +                p.gx.trait_assoc_generics.insert(assoc_def, AssociatedTypeGenerics {
 +                    parent: trait_def, generics: own, lifetimes: own_scope.lifetimes,
-+                    region_facts: own_scope.region_facts, span: at_span,
++                    region_facts: own_scope.region_facts, region_predicates, span: at_span,
 +                });
              }
          }
          // Associated consts: resolve and store the type for impl
-@@ -11002,7 +11174,11 @@ fn instance_adt_id(p: &mut Program, def: DefId, args: ArgsId) -> AdtId {
+@@ -11002,7 +11201,11 @@ fn instance_adt_id(p: &mut Program, def: DefId, args: ArgsId) -> AdtId {
      let mut key = p.instance_key_hash(&crate::driver::graph::InstanceKey { def, args }).0;
      let at = loop {
          let at = (p.gx.inst_order.base + p.gx.inst_order.place_of(key)) as usize;
@@ -5028,7 +5144,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80bf78e481259b40712a6365c23514e9
              break at;
          }
          key = key.rotate_left(17) ^ 0x9e37_79b9_7f4a_7c15;
-@@ -13176,6 +13352,12 @@ fn made_among(p: &Program, t: Ty, before: &[AdtId], depth: u32) -> bool {
+@@ -13176,6 +13379,12 @@ fn made_among(p: &Program, t: Ty, before: &[AdtId], depth: u32) -> bool {
  
  /// `ensure_adt_instances_in` for types already in the global
  /// store (signatures and fields at collect time).
@@ -5041,7 +5157,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80bf78e481259b40712a6365c23514e9
  fn ensure_global_adt_instances(p: &mut Program, t: Ty, depth: u32) {
      if depth > 32 {
          return;
-@@ -13697,14 +13879,24 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
+@@ -13697,14 +13906,29 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
          .collect();
      for rec in records {
          let Some(trec) = p.gx.index.trait_record(rec.trait_def).cloned() else { continue };
@@ -5052,7 +5168,12 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80bf78e481259b40712a6365c23514e9
 +                // Generic associated items still fail their declaration gate;
 +                // do not erase a binder to pretend they are ordinary types.
 +                if item.generics.params.is_empty() && item.lifetimes.is_empty() {
-+                    predicates.extend_from_slice(&item.generics.predicates);
++                    // Item outlives predicates are proved below the native
++                    // region boundary against the actual impl header. The
++                    // erased `self_ty` cannot distinguish &'static T from
++                    // a borrow of another lifetime.
++                    predicates.extend(item.generics.predicates.iter().copied()
++                        .filter(|predicate| !matches!(predicate, Predicate::TypeOutlives(..) | Predicate::Outlives(..))));
 +                }
 +            }
 +        }
@@ -9939,7 +10060,7 @@ index a985aebad215015e7099d8f75e73a0f0735078cb..0212059f42297d779ee5f1d4d56eae9b
      // recorded read (check/where_overflow.rs `recursion_limit`), so a change
      // checks every body again.
 diff --git a/src/driver/graph.rs b/src/driver/graph.rs
-index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..4c395733b839a2bfedfa9c6ba8236bb62e4022cf 100644
+index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..d2acc95f30338c6bdfbfe682ca2311cbbdc3e15c 100644
 --- a/src/driver/graph.rs
 +++ b/src/driver/graph.rs
 @@ -494,15 +494,19 @@ impl Reads {
@@ -9965,7 +10086,7 @@ index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..4c395733b839a2bfedfa9c6ba8236bb6
      } else {
          def.krate.0 as u64
      }
-@@ -1401,6 +1405,12 @@ pub(crate) fn resolved_traits_hash(p: &Program) -> u64 {
+@@ -1401,6 +1405,16 @@ pub(crate) fn resolved_traits_hash(p: &Program) -> u64 {
                  hash_ty(&mut h, p, &p.tys, t);
                  has_default.hash(&mut h);
              }
@@ -9974,11 +10095,15 @@ index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..4c395733b839a2bfedfa9c6ba8236bb6
 +                hash_generics(&mut h, p, &item.generics);
 +                item.lifetimes.len().hash(&mut h);
 +                item.region_facts.hash(&mut h);
++                item.region_predicates.len().hash(&mut h);
++                for predicate in &item.region_predicates {
++                    hash_predicate(&mut h, p, &p.tys, predicate);
++                }
 +            }
          }
          (r.methods.len() as u64).hash(&mut h);
          for &(d, n) in &r.methods {
-@@ -2344,7 +2354,14 @@ fn sig_fingerprint(p: &Program, def: DefId) -> Fingerprint {
+@@ -2344,7 +2358,14 @@ fn sig_fingerprint(p: &Program, def: DefId) -> Fingerprint {
          2u8.hash(&mut h);
          // Const and static payloads are found by def; aliases by flat
          // name, which the def record carries.
@@ -9994,7 +10119,7 @@ index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..4c395733b839a2bfedfa9c6ba8236bb6
              0u8.hash(&mut h);
              hash_ty_deep(&mut h, p, &p.tys, item.ty, &mut seen);
              value_fp(p, &item.value, &item.value_fp).hash(&mut h);
-@@ -4121,6 +4138,18 @@ fn main() {}
+@@ -4121,6 +4142,18 @@ fn main() {}
          assert_ne!(a, changed, "a parameter type edit does");
      }
  
@@ -10013,7 +10138,7 @@ index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..4c395733b839a2bfedfa9c6ba8236bb6
      /// Non-generic instance keys hash exactly like today's disk-def slot
      /// keys, and lifetime args never enter the hash (section 4.2).
      #[test]
-@@ -4187,7 +4216,7 @@ fn main() {}
+@@ -4187,7 +4220,7 @@ fn main() {}
                  if let Terminator::Call { target, unwind, .. } = &b.term {
                      assert!(unwind.is_some(), "every call carries a cleanup edge (W-CORELANG)");
                      match target {

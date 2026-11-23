@@ -196,7 +196,7 @@ fn main() {
     test.oracle("original-missing-definition", 1);
     write(&provider, PROVIDER);
     test.run("definition-repair", &mut test.cargo(), 0);
-    test.observe("definition-repair", None);
+    test.observe("definition-repair", Some(&[]));
     test.run("definition-repair-noop", &mut test.replay(), 0);
     test.observe("definition-repair-noop", Some(&[]));
 
@@ -215,6 +215,63 @@ fn main() {
     write(&metadata, valid);
     test.run("malformed-repair", &mut test.replay(), 0);
     test.observe("malformed-repair", Some(&[]));
+
+    // Ordinary associated items remain native-owned. Differential checks run
+    // through the installed public CLI and the independent pinned Rust reader.
+    let copy = "struct Codec; trait Family { type View where Self: Copy; } impl Family for Codec { type View = u32; } fn main() {}";
+    let outlives = "trait Family { type View where Self: 'static; } impl<'b> Family for &'b u8 { type View = u32; } fn main() {}";
+    let region_trait = "trait Tag<T> {} trait Family { type View where Self: Tag<&'static u8>; } impl<'a> Tag<&'a u8> for &'a u8 {} impl<'b> Family for &'b u8 { type View = u32; } fn main() {}";
+    let predicate_source = test.root.join("predicates.rs");
+    for (label, source, status) in [
+        ("copy-invalid", copy.to_owned(), 1),
+        ("copy-valid", copy.replace("struct Codec;", "#[derive(Copy, Clone)] struct Codec;"), 0),
+        ("outlives-invalid", outlives.to_owned(), 1),
+        ("outlives-valid", outlives.replace("impl<'b> Family for &'b u8", "impl Family for &'static u8"), 0),
+        ("region-trait-invalid", region_trait.to_owned(), 1),
+        ("region-trait-valid", region_trait.replace("impl<'b> Family for &'b u8", "impl Family for &'static u8"), 0),
+    ] {
+        write(&predicate_source, source);
+        let mut native = test.command(test.package.join("bin/lustr"));
+        native.arg("check").arg(&predicate_source).arg("-o").arg(test.root.join("predicate-native"));
+        let native_output = test.run(&format!("predicate-{label}-native"), &mut native, status);
+        let mut original = test.command(test.sdk.join("bin/rustc"));
+        original.args(["--edition=2024", "--emit=metadata"]).arg(&predicate_source)
+            .arg("-o").arg(test.root.join("predicate-original.rmeta")).env("LD_LIBRARY_PATH", test.sdk.join("lib"));
+        let original_output = test.run(&format!("predicate-{label}-original"), &mut original, status);
+        if status != 0 {
+            assert!(String::from_utf8_lossy(&native_output).contains(if label == "copy-invalid" { "L0612" } else { "L0617" }));
+            assert!(String::from_utf8_lossy(&original_output).contains("error[E"));
+        }
+    }
+
+    // Separate linked-artifact regression control, explicitly using the
+    // existing abort/debug-disabled link context. This does not qualify an
+    // ordinary default-profile build or run.
+    fs::create_dir_all(test.root.join("linked/src")).unwrap();
+    write(test.root.join("linked/Cargo.toml"), "[package]\nname = \"linked_generation\"\nversion = \"0.0.0\"\nedition = \"2024\"\n[dependencies]\nschema = { path = \"../workspace/provider\" }\n[profile.dev]\npanic = \"abort\"\ndebug = 0\n");
+    write(test.root.join("linked/src/main.rs"), "fn main() { println!(\"{}\", schema::project(255u64)); }\n");
+    test.reports();
+    for (label, mask, expected) in [("cold", "63u64", b"63\n".as_slice()), ("noop", "63u64", b"63\n"), ("provider-edit", "127u64", b"127\n")] {
+        if label != "noop" { write(&provider, PROVIDER.replace("63u64", mask)); }
+        let mut command = test.command(test.package.join("bin/cargo"));
+        command.current_dir(test.root.join("linked")).args(["run", "--offline", "--jobs", "1", "--target-dir"])
+            .arg(test.root.join("linked-target")).arg("--config")
+            .arg(format!("build.build-dir={:?}", test.root.join("linked-intermediates")))
+            .env("RUSTC", test.package.join("bin/rustc"));
+        let label = format!("linked-{label}");
+        test.run(&label, &mut command, 0);
+        assert_eq!(fs::read(test.root.join(format!("{label}.stdout"))).unwrap(), expected);
+        let records = test.reports();
+        let executables: Vec<_> = records.iter().filter(|record|record["schema"] == "lustr-public-executable-v1").collect();
+        if label == "linked-noop" { assert!(records.is_empty()); }
+        else {
+            assert_eq!(executables.len(), 1);
+            assert_eq!(executables[0]["artifact_reused"], false);
+            assert_eq!(executables[0]["checked_bodies"], if label == "linked-cold" { 1 } else { 0 });
+        }
+        test.history.push(json!({"case":label,"records":records}));
+        write(test.root.join("history.json"), serde_json::to_vec_pretty(&test.history).unwrap());
+    }
     write(test.root.join("passed.json"), serde_json::to_vec_pretty(&json!({"passed":true, "scope":"scalar retained metadata generation; GAT service and wider artifacts remain open", "history":test.history})).unwrap());
     println!("default Cargo check and retained imported-generation history passed");
 }

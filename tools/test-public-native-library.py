@@ -990,7 +990,7 @@ def qualify_dependency_checks(root, package, sdk, commands, environment, oracle_
                     and not record["commands"] and not record["objects"], "dependency check performed codegen")
         native = next(record for record in records if record["context"]["crate_name"] == "consumer")
         counts = native["counts"]
-        require(counts["checked_bodies"] == (0 if label == "noop" else 1)
+        require(counts["checked_bodies"] == (0 if label in {"noop", "provider-body"} else 1)
                 and counts["metadata_encodes"] == (0 if label == "noop" or status else 1),
                 "retained dependency check reused stale state or repeated unchanged work")
         commands.run("dependency-" + label + "-original", [sdk / "bin/cargo", *flags],
@@ -1076,9 +1076,9 @@ def qualify_dependency_links(root, package, sdk, commands, environment, oracle_e
             require(row["status"] == 0 and len(row["objects"]) == 1, "native link did not emit exactly its one source body")
         native = next(row for row in records if row["context"]["crate_name"] == "consumer")
         counts = native["counts"]
-        expected_work = 0 if label == "noop" else 1
-        require(all(counts[name] == expected_work for name in ("checked_bodies", "generated_bodies", "compiled_objects",
-                                                               "metadata_encodes", "archive_builds")),
+        expected_work = 0 if label in {"noop", "provider-edit"} else 1
+        require(all(counts[name] == expected_work for name in ("checked_bodies", "generated_bodies", "compiled_objects"))
+                and all(counts[name] == (0 if label == "noop" else 1) for name in ("metadata_encodes", "archive_builds")),
                 "retained dependency link skipped changed work or regenerated unchanged work")
         wanted = [{"argv": command["argv"], "cwd": command["cwd"]} for row in records for command in row["commands"]]
         prefix = daemon_trace.read_bytes()
@@ -1250,7 +1250,7 @@ def qualify_executable(root, package, sdk, commands, environment, oracle_env, pr
             require(record["schema"] == "lustr-public-executable-v1" and record["owner_pid"] == owner[0]
                     and record["emit"] == emit and record["artifact_reused"] is reused and record["unused_extern_names"] == ["provider"],
                     "retained executable artifact state or actual unused-extern result changed")
-            expected_bodies = 0 if label == "noop" else 1 + int(module and label in {"cold", "provider-edit"})
+            expected_bodies = 0 if label in {"noop", "provider-edit"} else 1 + int(module and label == "cold")
             require(record["checked_bodies"] == expected_bodies,
                     "executable did not retain the expected native check work")
             outputs = {kind: Path(filename) for kind, filename in zip(("dep-info", emit), record["outputs"])}

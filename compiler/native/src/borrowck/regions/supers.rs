@@ -105,14 +105,25 @@ struct Cx<'p> {
 /// the file comment). Runs once collect has every impl and trait table.
 pub fn check_impl_supers(p: &Program) -> Vec<Diag> {
     let mut errs = Vec::new();
-    if p.regions.trait_preds.is_empty() {
+    if p.regions.trait_preds.is_empty() && p.gx.trait_assoc_generics.values()
+        .all(|item| item.region_predicates.is_empty() && item.region_facts.is_empty()) {
         return errs;
     }
     for (_, rec) in p.gx.index.all_impls() {
         if !rec.local || rec.synthetic != crate::traits::index::Synthetic::None {
             continue;
         }
-        let Some(preds) = p.regions.trait_preds.get(&rec.trait_def) else { continue };
+        let mut preds = p.regions.trait_preds.get(&rec.trait_def).cloned().unwrap_or_default();
+        for &(assoc, _) in &rec.assoc_tys {
+            if let Some(item) = p.gx.trait_assoc_generics.get(&assoc)
+                && item.generics.params.is_empty() && item.lifetimes.is_empty() {
+                preds.extend_from_slice(&item.region_predicates);
+                preds.extend(item.region_facts.iter().map(|&(a, b)| Predicate::Outlives(
+                    Region::Param(a), if b == crate::check::generics::STATIC_FACT { Region::Static } else { Region::Param(b) },
+                )));
+            }
+        }
+        if preds.is_empty() { continue; }
         // An impl with no regions in its header, facts or where-clauses
         // (collect keeps none): its erased header, for `T: 'static` needs.
         let plain;
@@ -124,7 +135,7 @@ pub fn check_impl_supers(p: &Program) -> Vec<Diag> {
                 &plain
             }
         };
-        if let Some(d) = check_impl(p, rec, ir, preds) {
+        if let Some(d) = check_impl(p, rec, ir, &preds) {
             errs.push(d);
         }
     }
@@ -185,13 +196,27 @@ fn check_impl(p: &Program, rec: &crate::traits::index::ImplRecord, ir: &ImplRegi
     let name = |d: DefId| p.gx.index.trait_record(d).map_or_else(|| "?".to_string(), |r| p.display_path(r.name));
     let mut bad = None;
     for pred in preds {
-        let Predicate::Trait(b) = *pred else { continue };
-        if b.count != 0 || p.gx.lang.is_fn_family(b.value.def) {
-            continue;
-        }
         cx.needs.clear();
         cx.ty_needs.clear();
-        cx.oblige(b.value, &frame, 0);
+        let goal = match *pred {
+            Predicate::Trait(b) if b.count == 0 && !p.gx.lang.is_fn_family(b.value.def) => {
+                cx.oblige(b.value, &frame, 0);
+                b.value.def
+            }
+            Predicate::Outlives(a, b) => {
+                cx.needs.push((re_in(a, &Some(frame.clone())), re_in(b, &Some(frame.clone()))));
+                rec.trait_def
+            }
+            Predicate::TypeOutlives(t, r) => {
+                let y = re_in(r, &Some(frame.clone()));
+                let (mut regions, mut params) = (Vec::new(), Vec::new());
+                cx.regions_in(Val(t, Some(frame.clone())), &mut regions, &mut params, 0);
+                cx.needs.extend(regions.into_iter().map(|region| (region, y)));
+                cx.ty_needs.extend(params.into_iter().map(|param| (param, y)));
+                rec.trait_def
+            }
+            _ => continue,
+        };
         if let Some(g) = cx.ambig {
             return Some(Diag::new(
                 "L0610",
@@ -205,12 +230,12 @@ fn check_impl(p: &Program, rec: &crate::traits::index::ImplRecord, ir: &ImplRegi
             ));
         }
         if let Some(&(_, y)) = cx.needs.iter().find(|&&(x, y)| !holds(&cx.known, x, y)) {
-            bad = Some((b.value.def, "a lifetime in the impl's header", y));
+            bad = Some((goal, "a lifetime in the impl's header", y));
             break;
         }
         let ty_known = known_ty_facts(p, ir);
         if let Some(&(_, y)) = cx.ty_needs.iter().find(|&&(j, y)| !ty_holds(&cx.known, &ty_known, j, y)) {
-            bad = Some((b.value.def, "a type parameter of the impl", y));
+            bad = Some((goal, "a type parameter of the impl", y));
             break;
         }
     }

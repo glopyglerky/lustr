@@ -31,7 +31,14 @@ failure/repair. It then failed the malformed-input repair control: the daemon
 reset the session on status 3 despite import validation having left native
 state untouched. The repair distinguishes those input failures from compilation
 failures and panics, which retain their original terminal-state handling.
-Its installed-path rerun is pending at this checkpoint.
+Its installed-path rerun **passed on `3eae63d837195cf454e9ad8b611bc805bf11a47c`**,
+including malformed-input repair with zero checked consumer bodies. The public
+entry, native client and core hashes for that constructed package are respectively
+`f4023aa0beb7be997cf4967f405171b9c0040f2b6bf24ac1147911f287e8ca8c`,
+`346cbf940bfa31269a5eab24889a8ae2c69d8a6b70bf5cd7d351da2af9765c92`
+and `002de34eb958d8de014e162617cf9a4224f8f8edd5cb6385535460d8f8f7480d`.
+The qualifier source hash at that execution was
+`b37e3358d59dec4407d701bbe915fdcc9c5bd19d86551fe20ecd10dd2401116b`.
 
 The first offline build failed on
 an absent cached dependency; the first source build caught one stale field
@@ -63,6 +70,26 @@ No new complementary implementation is imported. **Three focused tests pass**:
 invalid and valid/conditional ordinary providers, actual binders/predicates of
 a still-rejected GAT, and trait fingerprint changes. This preserves the GAT
 declaration gate rather than claiming normalization/WF/region-service admission.
+
+A subsequent native region slice retains regioned item predicates and checks
+them against the actual impl header. In particular, erasing a reference must
+neither accept a short borrow under a `'static` requirement nor reject a real
+`&'static T`. The native region checker now consumes those requirements using
+its existing header frames, declared and implied facts, and trait-candidate
+region constraints. **Five focused tests pass** on this updated source.
+The earlier named-lifetime-trait fixtures exposed the existing separate
+associated-type gate; their valid cases remain unqualified, and the original
+failed test logs are retained. That gate and the GAT gate remain in place.
+All 32 retained patch tests passed before this subsequent region change; they
+are not transferred as a post-change result.
+
+The installed qualifier now also requires three valid and three invalid ordinary
+associated-item cases to match pinned Rust, and a separate abort/debug-disabled
+linked dependency edit to change actual program output while reusing native
+body checks. Its final-source execution is pending at this checkpoint. The
+linked control does not establish default-profile build/run or Rust debugging.
+Existing broader-campaign count expectations now require zero native work for
+provider-only body edits while still requiring changed metadata/archive work.
 
 GAT provider validation, selective upstream normalization/WF/region service,
 wider metadata and full Cargo/debug/runtime qualification remain unfinished.
