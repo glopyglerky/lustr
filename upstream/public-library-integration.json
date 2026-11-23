@@ -182,7 +182,7 @@
     "src/lib.rs": "0cf6eebcf2c86f7ef6daae2a145045e0b0801a4202558c329553ee3380500d92",
     "src/main.rs": "326c58b714643384bf2cb399a5dcadd0f5153b6c23c21c98c9b1e2dd657b70b4",
     "src/native_queries.rs": "805c995a5c51a5af0e544a573cb2f3000b45e0b92baf6f98ff53871d1e4d4864",
-    "src/library_contract.rs": "17b2ef58b5437e2938eee97d07da7c6e053eb7c7d80b272fc5c277236978c926",
+    "src/library_contract.rs": "b1862b072d42f8617b36ab1da701b12dfbc1cb3950c0ce71f13c21a7fbead41c",
     "src/library_request.rs": "63c3b29102de06aa56826ad8d772abe19d082d78de9b0b2b272eef894970bc52",
     "compiler/native/Cargo.toml": "022fce40408d543c29550f7b03de3e622a5e01a08c82ea642d30537f61f93891",
     "compiler/native/Cargo.lock": "d46a58d499b1cfa163f5e2a23f10c0e69e077638f7a84e38e13332875a52f181",

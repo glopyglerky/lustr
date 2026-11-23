@@ -24,7 +24,7 @@ fn cargo_check_cfg(value: &str) -> bool {
     };
     let name_allowed = |name: &str| identifier(name) && !matches!(name, "_" | "lust_dev");
     let Some((name, values)) = spec.split_once(',') else {
-        return name_allowed(name.trim());
+        return name_allowed(spec.trim());
     };
     let Some(values) = values.trim().strip_prefix("values(").and_then(|values| values.strip_suffix(')')) else {
         return false;
