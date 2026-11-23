@@ -4500,20 +4500,37 @@ index 297b2f25d66a931c0c9a05f8b6ef8c9ae1b278ad..f80aa98de534828b7f81010560a5c497
      // as release C's static copies are, so a training build counts each unit's copy in its
 diff --git a/src/cgen/ll_debug.rs b/src/cgen/ll_debug.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..f81b4d3134b83723c7ce889cb624331a9a839d8c
+index 0000000000000000000000000000000000000000..2f6077297870e78cd4610ac84f08b3cff9a6369c
 --- /dev/null
 +++ b/src/cgen/ll_debug.rs
-@@ -0,0 +1,655 @@
+@@ -0,0 +1,691 @@
 +// Rust source debug records for the LLVM emitter. The native checker and
 +// lowerer supply bindings and types; LLVM resolves instruction and frame
 +// locations to the addresses in the emitted object.
 +use super::{CTy, FnGen, Layout, LocalDecl, Span, VariantShape, c_layout, cty, ty_name};
++use crate::check::collect::Variant;
 +use crate::ir::{Body, Local, StmtKind, Terminator};
 +use crate::ty::fmt::{FmtTy, fmt_kind};
 +use crate::ty::layout::{self, EnumTag, Repr, ReprKind, niche_tag_value};
 +use crate::ty::{FloatTy, IntTy, Mut, Ty, TyIntern, TyKind, USIZE, int};
 +use std::collections::{BTreeMap, HashMap, VecDeque};
 +use std::fmt::Write;
++
++struct DebugVariant {
++    name: String,
++    discriminant: i128,
++    fields: Vec<(String, Ty)>,
++}
++
++impl DebugVariant {
++    fn builtin(name: &str, discriminant: i128, payload: Option<Ty>) -> Self {
++        Self {
++            name: name.into(),
++            discriminant,
++            fields: payload.into_iter().map(|ty| ("__0".into(), ty)).collect(),
++        }
++    }
++}
 +
 +pub(super) struct DebugFn {
 +    entries: Vec<String>,
@@ -4612,10 +4629,13 @@ index 0000000000000000000000000000000000000000..f81b4d3134b83723c7ce889cb624331a
 +                if matches!(function.body.tys.kind(base), TyKind::Dyn(..)) {
 +                    return self.trait_pointer(function, ty);
 +                }
++                let name = ty_name(function.p, &function.body.tys, ty);
++                let id = self.reserve_type(ty, &name);
 +                let target = self.ty(function, base)?;
-+                let name = format!("{prefix}{}", self.types[&base].1);
-+                let entry = format!("!DIDerivedType(tag: DW_TAG_pointer_type, name: {}, baseType: !%{target}, size: 64)", quote(&name));
-+                (name, entry)
++                let size = debug_layout(function, ty)?.size * 8;
++                self.entries[id] =
++                    format!("!DIDerivedType(tag: DW_TAG_pointer_type, name: {}, baseType: !%{target}, size: {size})", quote(&name));
++                return Ok(id);
 +            }
 +            TyKind::Unit => basic_type("()", 0, "DW_ATE_unsigned"),
 +            TyKind::Never => basic_type("!", 0, "DW_ATE_unsigned"),
@@ -4641,23 +4661,18 @@ index 0000000000000000000000000000000000000000..f81b4d3134b83723c7ce889cb624331a
 +                );
 +                return Ok(id);
 +            }
-+            TyKind::Adt(..)
-+                if let CTy::Adt(adt) = cty(&function.body.tys, ty)
-+                    && !function.p.adt(adt).is_enum =>
-+            {
++            TyKind::Adt(..) if let CTy::Adt(adt) = cty(&function.body.tys, ty) => {
 +                let definition = function.p.adt(adt);
++                if definition.is_enum {
++                    let variants = definition.variants.iter().map(|variant| DebugVariant {
++                        name: function.p.name(variant.name).into(),
++                        discriminant: variant.disc,
++                        fields: variant_fields(function, variant),
++                    }).collect::<Vec<_>>();
++                    return self.variants(function, ty, &variants);
++                }
 +                let name = function.p.display_path(definition.name);
-+                let variant = &definition.variants[0];
-+                let fields = variant
-+                    .fields
-+                    .iter()
-+                    .enumerate()
-+                    .map(|(i, field)| {
-+                        let name =
-+                            if variant.shape == VariantShape::Named { function.p.name(field.name).to_owned() } else { format!("__{i}") };
-+                        (name, field.ty)
-+                    })
-+                    .collect::<Vec<_>>();
++                let fields = variant_fields(function, &definition.variants[0]);
 +                return self.aggregate(function, ty, name, &fields, debug_layout(function, ty)?);
 +            }
 +            TyKind::Tuple(elements) => {
@@ -4686,10 +4701,16 @@ index 0000000000000000000000000000000000000000..f81b4d3134b83723c7ce889cb624331a
 +                (name, entry)
 +            }
 +            TyKind::Adt(..) if let Some((ok, error)) = function.body.tys.result_args(ty) => {
-+                return self.variants(function, ty, &[("Ok", Some(ok)), ("Err", Some(error))]);
++                return self.variants(function, ty, &[
++                    DebugVariant::builtin("Ok", 0, Some(ok)),
++                    DebugVariant::builtin("Err", 1, Some(error)),
++                ]);
 +            }
 +            TyKind::Adt(..) if let Some(value) = function.body.tys.option_elem(ty) => {
-+                return self.variants(function, ty, &[("None", None), ("Some", Some(value))]);
++                return self.variants(function, ty, &[
++                    DebugVariant::builtin("None", 0, None),
++                    DebugVariant::builtin("Some", 1, Some(value)),
++                ]);
 +            }
 +            TyKind::Adt(..) if matches!(cty(&function.body.tys, ty), CTy::BoxDyn) => return self.trait_pointer(function, ty),
 +            TyKind::Adt(..) if function.body.tys.is_exit_code(ty) => {
@@ -4859,14 +4880,18 @@ index 0000000000000000000000000000000000000000..f81b4d3134b83723c7ce889cb624331a
 +        Ok(id)
 +    }
 +
-+    fn variants(&mut self, function: &FnGen<'_, '_>, ty: Ty, variants: &[(&str, Option<Ty>)]) -> Result<usize, String> {
++    fn variants(&mut self, function: &FnGen<'_, '_>, ty: Ty, variants: &[DebugVariant]) -> Result<usize, String> {
 +        let name = ty_name(function.p, &function.body.tys, ty);
 +        let layout = debug_layout(function, ty)?;
++        let id = self.reserve_type(ty, &name);
++        if layout.uninhabited {
++            self.structure(id, &name, &layout, &[]);
++            return Ok(id);
++        }
 +        let kind = layout.enum_tag.ok_or("native enum debug layout has no tag form")?;
 +        if layout.variant_offsets.len() != variants.len() {
 +            return Err(format!("native enum debug layout for {name} has a mismatched variant list"));
 +        }
-+        let id = self.reserve_type(ty, &name);
 +        let part = self.push(String::new());
 +        let tag = match kind {
 +            EnumTag::Explicit { size, signed } => Some((0, size, signed)),
@@ -4890,32 +4915,36 @@ index 0000000000000000000000000000000000000000..f81b4d3134b83723c7ce889cb624331a
 +            String::new()
 +        };
 +        let mut members = Vec::new();
-+        for (index, (variant, payload)) in variants.iter().enumerate() {
++        for (index, variant) in variants.iter().enumerate() {
 +            if matches!(kind, EnumTag::None(single) if single != index) {
 +                continue;
 +            }
-+            let fields = &layout.variant_offsets[index];
++            let offsets = &layout.variant_offsets[index];
++            if offsets.len() != variant.fields.len() {
++                return Err(format!("native enum debug layout for {name}::{} has a mismatched field list", variant.name));
++            }
 +            let variant_id = self.push(String::new());
-+            let payload = if let Some(payload) = payload {
-+                let offset = fields.first().copied().ok_or("native enum debug layout lacks a payload offset")?;
-+                let member = self.ty(function, *payload)?;
-+                let shape = debug_layout(function, *payload)?;
-+                vec![self.field(variant_id, "__0", member, shape.size, shape.align, offset)]
-+            } else {
-+                Vec::new()
-+            };
-+            self.structure(variant_id, variant, &layout, &payload);
++            let mut payload = Vec::new();
++            for ((field, ty), &offset) in variant.fields.iter().zip(offsets) {
++                let member = self.ty(function, *ty)?;
++                let shape = debug_layout(function, *ty)?;
++                payload.push(self.field(variant_id, field, member, shape.size, shape.align.min(layout.align), offset));
++            }
++            self.structure(variant_id, &variant.name, &layout, &payload);
 +            let value = match kind {
-+                EnumTag::Explicit { .. } => Some(index as u128),
-+                EnumTag::NicheFilled { variant: data, niche, first, last, start } if index != data && (first..=last).contains(&index) => {
-+                    Some(niche_tag_value(niche, first, start, index))
++                EnumTag::Explicit { size, signed } => {
++                    // LLVM's constant has the same bit width as the stored tag.
++                    let repr = if signed { variant.discriminant.to_string() } else { (variant.discriminant as u128).to_string() };
++                    format!(", extraData: i{} {repr}", size * 8)
 +                }
-+                _ => None,
++                EnumTag::NicheFilled { variant: data, niche, first, last, start } if index != data && (first..=last).contains(&index) => {
++                    format!(", extraData: i{} {}", niche.scalar_size * 8, niche_tag_value(niche, first, start, index))
++                }
++                _ => String::new(),
 +            };
-+            let value = value.map_or_else(String::new, |value| format!(", extraData: i{} {value}", tag.unwrap().1 * 8));
 +            members.push(self.push(format!(
 +                "!DIDerivedType(tag: DW_TAG_member, name: {}, scope: !%{part}, baseType: !%{variant_id}, size: {}, align: {}{value})",
-+                quote(variant),
++                quote(&variant.name),
 +                layout.size * 8,
 +                layout.align * 8
 +            )));
@@ -5125,6 +5154,13 @@ index 0000000000000000000000000000000000000000..f81b4d3134b83723c7ce889cb624331a
 +    c_layout(function.p, &cty(&function.body.tys, ty)).ok_or_else(|| "Rust debug type has no native layout".into())
 +}
 +
++fn variant_fields(function: &FnGen<'_, '_>, variant: &Variant) -> Vec<(String, Ty)> {
++    variant.fields.iter().enumerate().map(|(i, field)| {
++        let name = if variant.shape == VariantShape::Named { function.p.name(field.name).to_owned() } else { format!("__{i}") };
++        (name, field.ty)
++    }).collect()
++}
++
 +fn basic_type(name: &str, size: u32, encoding: &str) -> (String, String) {
 +    (name.to_owned(), format!("!DIBasicType(name: {}, size: {size}, encoding: {encoding})", quote(name)))
 +}
@@ -5244,10 +5280,10 @@ index 9af753d072e083f9d1f669abc64d3bf898b0a44d..773988cb611c3317ec3370fd8266e291
  /// The byte offset of the value inside a `Mutex` whose value's vtable is
 diff --git a/src/cgen/rust_tests.rs b/src/cgen/rust_tests.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..3dca94c6546bdf82b4c12e0102ca724aba2898fd
+index 0000000000000000000000000000000000000000..31da0be34a144527a9debc2a7dd8f0dc9d377311
 --- /dev/null
 +++ b/src/cgen/rust_tests.rs
-@@ -0,0 +1,159 @@
+@@ -0,0 +1,167 @@
 +// Cargo test descriptors and native entry thunks. The installed Rust libtest
 +// adapter owns scheduling, filtering, reporting and result classification.
 +use super::{Program, SourceMap, c_string_lit, names};
@@ -5268,9 +5304,17 @@ index 0000000000000000000000000000000000000000..3dca94c6546bdf82b4c12e0102ca724a
 +    ignored: Option<Option<String>>,
 +    panic: Option<Option<String>>,
 +    reports_status: bool,
++    kind: u8,
 +}
 +
-+pub(crate) fn collect(program: &Program, map: &SourceMap, cwd: &Path) -> Result<Vec<NativeTest>, String> {
++pub(crate) fn collect(program: &Program, map: &SourceMap, cwd: &Path, source: &Path) -> Result<Vec<NativeTest>, String> {
++    // Pinned rustc_builtin_macros/src/test.rs classifies by the source
++    // root's final directory component, including custom Cargo target paths.
++    let kind = match source.parent().and_then(Path::file_name).and_then(|name| name.to_str()) {
++        Some("src") => 1,
++        Some("tests") => 2,
++        _ => 0,
++    };
 +    let mut tests = Vec::new();
 +    for (index, function) in program.fns.iter().enumerate() {
 +        let def = function.def(&program.ast);
@@ -5305,7 +5349,7 @@ index 0000000000000000000000000000000000000000..3dca94c6546bdf82b4c12e0102ca724a
 +        if [&ignored, &panic].iter().any(|text| text.as_ref().and_then(|value| value.as_ref()).is_some_and(|value| value.contains('\0'))) {
 +            return Err(format!("native Cargo test attribute in {name} contains a NUL byte"));
 +        }
-+        tests.push(NativeTest { id: LocalDefId(index as u32), name, file, line, column, ignored, panic, reports_status });
++        tests.push(NativeTest { id: LocalDefId(index as u32), name, file, line, column, ignored, panic, reports_status, kind });
 +    }
 +    Ok(tests)
 +}
@@ -5363,7 +5407,7 @@ index 0000000000000000000000000000000000000000..3dca94c6546bdf82b4c12e0102ca724a
 +        let opt_string = |value: &Option<Option<String>>| {
 +            value.as_ref().and_then(|text| text.as_ref()).map_or_else(|| "0".into(), |text| c_string_lit(text.as_bytes()))
 +        };
-+        let flags = u8::from(test.ignored.is_some()) | (u8::from(test.panic.is_some()) << 1);
++        let flags = u8::from(test.ignored.is_some()) | (u8::from(test.panic.is_some()) << 1) | (test.kind << 2);
 +        let _ = writeln!(
 +            out,
 +            "  {{ {}, {}, {}, {}, {}, {}, {flags}, lust_test_run_{i} }},",
@@ -9042,7 +9086,7 @@ index da28835400f894866adb85f436e2cbdf109797d7..c2a8d6a10a776fba1df984670ff8b994
          assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
          assert!(decode_response(b"short").is_none());
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a8cff26eb95e768a767a5b1befb3c4fc193040a6 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..feb018b60cbeaa59f45fa5a3319fd4a3cafbeda0 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
 @@ -59,6 +59,7 @@ fn expand_tokens(
@@ -9308,7 +9352,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a8cff26eb95e768a767a5b1befb3c4fc
 +                _ => false,
 +            }};
 +            let target_matches = if key.krate.test {
-+                unit.target.test_flag && unit.target.kind.iter().any(|kind| matches!(kind.as_str(), "bin" | "lib" | "rlib"))
++                unit.target.test_flag && unit.target.kind.iter().any(|kind| matches!(kind.as_str(), "bin" | "lib" | "rlib" | "test"))
 +                    && library.matches_target_name(&unit.target.name)
 +            } else {
 +                unit.target.kind.iter().any(|kind| kind == library.target_kind() || !library.is_executable() && kind == "rlib")
@@ -10325,7 +10369,7 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..a8cff26eb95e768a767a5b1befb3c4fc
 +        }
 +    } else { None };
      let mut resp = Response::default();
-+    let tests = match cargo_test.map(|key| cgen::rust_tests::collect(&program, &map, &key.working_directory)).transpose() {
++    let tests = match cargo_test.map(|key| cgen::rust_tests::collect(&program, &map, &key.working_directory, &key.source_path)).transpose() {
 +        Ok(tests) => tests,
 +        Err(error) => {
 +            drop(results); drop(reemit);
