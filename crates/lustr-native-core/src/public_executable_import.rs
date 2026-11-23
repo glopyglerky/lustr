@@ -16,7 +16,7 @@ use crate::{
     resolve::imports::ResolvedTables,
 };
 
-use super::{Stamp, imports::{Identity, Import}, stamp};
+use super::{Stamp, imports::{Identity, Import}, macros::HostMacros, stamp};
 
 struct ExecutableCrate {
     input: ExecutableExtern,
@@ -29,17 +29,19 @@ pub(super) struct ExecutableImports {
     direct: usize,
     searched: Vec<(PathBuf, Option<Stamp>)>,
     objects: Vec<Arc<[u8]>>,
+    macros: Option<Arc<HostMacros>>,
 }
 
 impl ExecutableImports {
     pub(super) fn open(
         inputs: &[ExecutableExtern], search_paths: &[PathBuf], sdk: &Sdk, standard: Option<&Sdk>,
-        linking: bool, panic_abort: bool,
+        linking: bool, panic_abort: bool, installation: &Path, cwd: &Path,
     ) -> Result<Self, String> {
         let mut crates = Vec::new();
         let mut indices = BTreeMap::new();
         let mut searched = Vec::new();
-        for input in inputs {
+        let macros = HostMacros::open(inputs, installation, cwd)?;
+        for input in inputs.iter().filter(|input| !input.is_host_macro()) {
             if let Some(archive) = &input.archive
                 && !archive.is_file()
             {
@@ -52,6 +54,7 @@ impl ExecutableImports {
             }
             crates.push(ExecutableCrate { input: input.clone(), definitions, archive: None });
         }
+        let direct = crates.len();
         let mut index = 0;
         while index < crates.len() {
             for dependency in crates[index].definitions.dependencies.clone() {
@@ -110,14 +113,20 @@ impl ExecutableImports {
         if !required.is_subset(&defined) {
             return Err("the supplied Cargo archives do not close the imported object references".into());
         }
-        let resolved = Self { crates, direct: inputs.len(), searched, objects };
+        let resolved = Self { crates, direct, searched, objects, macros };
         if !resolved.unchanged(inputs, linking) { return Err("Cargo dependencies changed while loading their metadata graph".into()); }
         Ok(resolved)
     }
 
     pub(super) fn unchanged(&self, inputs: &[ExecutableExtern], linking: bool) -> bool {
-        self.direct == inputs.len()
-            && self.direct_crates().iter().zip(inputs).all(|(item, input)| &item.input == input)
+        let mut libraries = inputs.iter().filter(|input| !input.is_host_macro());
+        let mut macros = inputs.iter().filter(|input| input.is_host_macro());
+        self.direct_crates().iter().all(|item| libraries.next() == Some(&item.input))
+            && libraries.next().is_none()
+            && match &self.macros {
+                Some(host) => host.unchanged(macros),
+                None => macros.next().is_none(),
+            }
             && self.crates.iter().all(|item| {
                 let input = &item.input;
                 item.definitions.unchanged(&input.metadata.artifact)
@@ -137,9 +146,24 @@ impl ExecutableImports {
         &self.crates[..self.direct]
     }
 
+    pub(super) fn has_procedural_macros(&self) -> bool {
+        self.macros.is_some()
+    }
+
+    pub(super) fn clear_macro_uses(&self) {
+        if let Some(macros) = &self.macros {
+            macros.clear_uses();
+        }
+    }
+
     pub(super) fn unused_externs(&self, used: &BTreeSet<def::CrateId>) -> Vec<&str> {
-        self.direct_crates().iter().map(|item| &item.definitions.facts)
-            .filter(|facts| !used.contains(&facts.index)).map(|facts| facts.alias.as_str()).collect()
+        let mut unused = self.direct_crates().iter().map(|item| &item.definitions.facts)
+            .filter(|facts| !used.contains(&facts.index)).map(|facts| facts.alias.as_str()).collect::<Vec<_>>();
+        if let Some(macros) = &self.macros {
+            unused.extend(macros.unused());
+            unused.sort_unstable();
+        }
+        unused
     }
 }
 
@@ -302,11 +326,17 @@ impl Definitions for ExecutableImports {
                 }
                 deps
             })
+            .chain(self.macros.iter().flat_map(|macros| macros.dependencies()))
             .collect()
     }
 
     fn cargo_definitions(&self) -> Option<Vec<Arc<CargoDefinitions>>> {
+        if self.macros.is_some() { return None; }
         Some(self.direct_crates().iter().map(|item| item.definitions.facts.clone()).collect())
+    }
+
+    fn procedural_macros(&self) -> Option<Arc<dyn crate::expand::ProceduralMacros>> {
+        self.macros.clone().map(|macros| macros as Arc<dyn crate::expand::ProceduralMacros>)
     }
 
     fn take_emission(&self) -> Result<Box<dyn Emission + 'static>, String> {

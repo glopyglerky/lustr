@@ -1739,6 +1739,7 @@ fn expand_pure(
         crate_name: Some(crate_name.clone()),
         // No dependency macro expands on this path (a user macro gives up).
         extern_crates: Vec::new(),
+        procedural_macros: None,
         client: &front.client,
     };
     // Unknown cfg names reject before expansion, as in the resolver.

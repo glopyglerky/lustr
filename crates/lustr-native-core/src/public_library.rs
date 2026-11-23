@@ -13,6 +13,8 @@ mod publication;
 mod imports;
 #[path="public_executable_import.rs"]
 mod executable;
+#[path="public_macro_import.rs"]
+mod macros;
 static REQUESTS:AtomicU64=AtomicU64::new(0);
 static SDK_LOADS:AtomicU64=AtomicU64::new(0);
 static OWNER_START:OnceLock<Option<String>>=OnceLock::new();
@@ -157,7 +159,8 @@ impl Owner {
                 return Err("Cargo executable artifacts require the selected unit".into());
             }
             Some(executable::ExecutableImports::open(dependencies, &key.search_paths, &installed.sdk,
-                installed.standard.as_deref(), req.cmd != driver::Cmd::Check, req.session.profile.panic_abort)?)
+                installed.standard.as_deref(), req.cmd != driver::Cmd::Check, req.session.profile.panic_abort,
+                &installed.root, &key.working_directory)?)
         } else { None };
         Ok(Self{installed,artifacts,identity:hash(req.session.describe().as_bytes()),imported,executable,binary_output:None})
     }
@@ -183,7 +186,8 @@ impl Owner {
         let imported = key.external.as_ref().map(|input| imports::Import::open(input, &self.installed.sdk)).transpose()?;
         let executable = key.executable_dependencies.as_ref()
             .map(|inputs| executable::ExecutableImports::open(inputs, &key.search_paths, &self.installed.sdk,
-                self.installed.standard.as_deref(), req.cmd != driver::Cmd::Check, req.session.profile.panic_abort))
+                self.installed.standard.as_deref(), req.cmd != driver::Cmd::Check, req.session.profile.panic_abort,
+                &self.installed.root, &key.working_directory))
             .transpose()?;
         if imported.as_ref().is_some_and(|value| !value.unchanged(&key.external.as_ref().unwrap().artifact))
             || executable.as_ref().is_some_and(|value| !value.unchanged(key.executable_dependencies.as_ref().unwrap(), req.cmd != driver::Cmd::Check)) {
@@ -463,6 +467,7 @@ impl Owner {
                 let mut inputs = vec![req.client.shown.as_deref().unwrap_or(&req.file).to_owned()];
                 let mut environment = BTreeMap::new();
                 let mut unused = Vec::new();
+                executable.clear_macro_uses();
                 let mut response = match driver::prepare_library_import(&staged, session, executable, stdin) {
                     driver::Preparation::Ready(mut prepared) => {
                         let observed = prepared.executable_source_inputs()?;
@@ -475,7 +480,7 @@ impl Owner {
                         checked = prepared.checked_functions().len();
                         if check {
                             prepared.emit()
-                        } else if !observed.has_include
+                        } else if !observed.has_include && !executable.has_procedural_macros()
                             && let Some(cached) = &self.binary_output
                             && cached.source.as_ref() == prepared.source() && cached.shown == req.client.shown
                             && cached.debug == req.library_options.debug
@@ -487,7 +492,7 @@ impl Owner {
                             reused = true;
                             driver::Response::default()
                         } else {
-                            if !observed.has_include {
+                            if !observed.has_include && !executable.has_procedural_macros() {
                                 source = Some((Arc::<str>::from(prepared.source()), prepared.source_map().clone()));
                             }
                             prepared.emit()

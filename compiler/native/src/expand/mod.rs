@@ -621,6 +621,18 @@ pub fn compile_ast_macro(def: &MacroRulesDef, exported: bool, strings: &[String]
     compile_macro(def.name, def.name_span, &body, exported, def.span, strings, interner)
 }
 
+/// A procedural macro provider bound to validated host artifacts for this expansion.
+pub trait ProceduralMacros: Send + Sync {
+    fn expand(&self, call: &Call, ctx: &ExpandCtx<'_>, strings: &mut Vec<String>)
+        -> Option<Result<ProceduralExpansion, Diag>>;
+}
+
+pub struct ProceduralExpansion {
+    pub tokens: Vec<Tt>,
+    pub environment: Vec<(String, Option<String>)>,
+    pub paths: Vec<std::path::PathBuf>,
+}
+
 /// The driver facts expansion needs: who interns, which file this is
 /// (for `file!` and relative `include!`), the file's text (for `line!`
 /// and `column!`), and the cfg environment.
@@ -659,6 +671,7 @@ pub struct ExpandCtx<'a> {
     /// resolves only through one of these, as rustc reads `::name` as an
     /// extern crate. Empty off the Cargo path.
     pub extern_crates: Vec<Sym>,
+    pub(crate) procedural_macros: Option<&'a dyn ProceduralMacros>,
     /// The requesting client's env and shown paths (`for_file` gives `ClientView::PROCESS`).
     pub client: &'a ClientView,
 }
@@ -725,6 +738,7 @@ impl<'a> ExpandCtx<'a> {
             module_path: Vec::new(),
             crate_name: None,
             extern_crates: Vec::new(),
+            procedural_macros: None,
             client: &ClientView::PROCESS,
         }
     }
@@ -753,6 +767,9 @@ pub enum Dep {
         path: std::path::PathBuf,
         hash: u64,
     },
+    /// A proc macro explicitly tracked this path. It may name an absent
+    /// entry or a directory, so this record makes no claim about bytes read.
+    TrackedPath(std::path::PathBuf),
     Env {
         name: String,
         value: Option<String>,
@@ -796,6 +813,7 @@ fn dep_bytes_hash(bytes: &[u8]) -> u64 {
 pub fn deps_stale_with(deps: &[Dep], env: &dyn Fn(&str) -> Option<String>) -> bool {
     deps.iter().any(|dep| match dep {
         Dep::File { path, hash } => std::fs::read(path).map_or(true, |bytes| dep_bytes_hash(&bytes) != *hash),
+        Dep::TrackedPath(_) => true,
         Dep::Env { name, value } => env(name) != *value,
         Dep::Position | Dep::Shown { .. } | Dep::Dropped { .. } => false,
     })
@@ -4858,6 +4876,23 @@ impl<'a> Expander<'a> {
         if let Some(idx) = self.lookup_macro(&call.segs, call.leading_colon) {
             let def = self.defs[idx as usize].clone();
             return self.transcribe_call(&def, call, depth);
+        }
+        if let Some(provider) = self.ctx.procedural_macros
+            && let [krate, _] = call.segs.as_slice()
+            && (call.leading_colon || !self.shadowed_crates.contains(&krate.sym))
+            && let Some(result) = provider.expand(call, self.ctx, &mut self.strings)
+        {
+            let expansion = result?;
+            for (name, value) in &expansion.environment {
+                self.read_dep_env(name, value.as_deref());
+            }
+            for path in expansion.paths {
+                let dep = Dep::TrackedPath(path);
+                if !self.deps.contains(&dep) {
+                    self.deps.push(dep);
+                }
+            }
+            return Ok(expansion.tokens);
         }
         // A plain name bound by a std macro import rename expands
         // exactly as the canonical builtin name.

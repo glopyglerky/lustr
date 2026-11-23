@@ -212,7 +212,7 @@ pub struct ExternMetadata {
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ExecutableExtern {
-    /// Full metadata supplied directly, or its containing Rust archive.
+    /// Full metadata, its containing Rust archive, or a host macro artifact.
     pub metadata: ExternMetadata,
     pub archive: Option<PathBuf>,
 }
@@ -226,7 +226,14 @@ impl ExecutableExtern {
         value.valid().then_some(value)
     }
 
+    pub(crate) fn is_host_macro(&self) -> bool {
+        self.metadata.artifact.extension().is_some_and(|ext| ext == "so")
+    }
+
     fn valid(&self) -> bool {
+        if self.is_host_macro() {
+            return self.archive.is_none() && self.metadata.valid_path();
+        }
         if self.metadata.artifact.extension().is_some_and(|ext| ext == "rlib") {
             return self.metadata.valid_path()
                 && self.archive.as_ref().is_none_or(|archive| archive == &self.metadata.artifact);
@@ -362,7 +369,9 @@ impl LibraryKey {
         }
         if let Some(dependencies) = &self.executable_dependencies {
             options.embed_metadata.is_none() && self.executable_outputs(path, check).is_some()
-                && (check || dependencies.iter().all(|dependency| dependency.archive.is_some()))
+                && (check || dependencies.iter().all(|dependency| {
+                    dependency.archive.is_some() || dependency.is_host_macro()
+                }))
         } else if check {
             options.embed_metadata.is_none() && output_parent(path, &self.metadata_name()).is_some()
         } else {

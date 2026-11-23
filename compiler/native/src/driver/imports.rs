@@ -83,6 +83,8 @@ pub trait Definitions {
     /// Validated definitions actually exposed to this executable's checker.
     /// Exact metadata and archive inputs remain bound to artifact publication.
     fn cargo_definitions(&self) -> Option<Vec<Arc<CargoDefinitions>>> { None }
+    /// Optional procedural macro service for the selected input crate.
+    fn procedural_macros(&self) -> Option<Arc<dyn crate::expand::ProceduralMacros>> { None }
     /// Transfer the immutable, single-use plan after semantic validation.
     /// Constructing or taking the plan must not emit code or materialize objects.
     fn take_emission(&self) -> Result<Box<dyn Emission + 'static>, String>;

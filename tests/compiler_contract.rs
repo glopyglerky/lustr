@@ -1678,6 +1678,87 @@ pub fn add_one(mut input: TokenStream) -> TokenStream {
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
+#[ignore = "requires a package built with --proc-macro-source"]
+fn cargo_native_consumer_tracks_a_host_proc_macro() {
+    let f = Fixture::new("cargo-native-proc-macro");
+    if !f.package.join("libexec/lustr-macro-expansion/bin/lustr-expand-proc-macro").is_file() {
+        return;
+    }
+    f.source("Cargo.toml", r#"
+[package]
+name = "macro_consumer"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+host_macro = { path = "provider" }
+"#);
+    f.source("provider/Cargo.toml", r#"
+[package]
+name = "host_macro"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+proc-macro = true
+"#);
+    f.source("provider/src/lib.rs", r#"
+#![feature(proc_macro_tracked_env, proc_macro_tracked_path)]
+
+use proc_macro::{TokenStream, tracked};
+
+#[proc_macro]
+pub fn value(input: TokenStream) -> TokenStream {
+    let token = input.into_iter().next().unwrap();
+    assert_eq!(token.span().source_text().as_deref(), Some("0x2a"));
+    let offset = tracked::env_var("LUSTR_TEST_MACRO_OFFSET").unwrap().parse::<u32>().unwrap();
+    tracked::path("asset.txt");
+    let asset = std::fs::read_to_string("asset.txt").unwrap().trim().parse::<u32>().unwrap();
+    (42 + offset + asset).to_string().parse().unwrap()
+}
+"#);
+    f.source("src/main.rs", r#"
+fn independent() -> u32 { 17 }
+fn expanded() -> u32 { host_macro::value!(0x2a) }
+fn main() { println!("{} {}", independent(), expanded()); }
+"#);
+    f.source("asset.txt", "1\n");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let cargo = |operation: &str, offset: &str| {
+        let mut command = f.command("cargo");
+        command.env("LUSTR_TEST_MACRO_OFFSET", offset)
+            .args([operation, "--frozen", "--jobs", "2"]);
+        command
+    };
+    f.succeeds("check", &mut cargo("check", "0"));
+    assert_eq!(f.succeeds("initial", &mut cargo("run", "0")).stdout, b"17 43\n");
+    f.source("asset.txt", "2\n");
+    assert_eq!(f.succeeds("asset-change", &mut cargo("run", "0")).stdout, b"17 44\n");
+    assert_eq!(f.succeeds("environment-change", &mut cargo("run", "3")).stdout, b"17 47\n");
+    let binary = f.root.join("target/debug/macro_consumer");
+    let original = std::fs::read(&binary).unwrap();
+    f.source("asset.txt", "invalid\n");
+    let refused = f.invoke("invalid", &mut cargo("build", "3"));
+    assert_eq!(refused.status.code(), Some(101));
+    assert!(String::from_utf8_lossy(&refused.stderr).contains("cannot expand procedural macro"));
+    assert_eq!(std::fs::read(&binary).unwrap(), original);
+    f.source("asset.txt", "4\n");
+    assert_eq!(f.succeeds("repair", &mut cargo("run", "3")).stdout, b"17 49\n");
+    let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
+    assert!(trace.contains("\"entry\":\"host-proc-macro\""), "{trace}");
+    assert!(trace.contains("\"engine\":\"lust\""), "{trace}");
+
+    let reports = f.root.join("unused-macro-reports");
+    std::fs::create_dir(&reports).unwrap();
+    f.source("src/main.rs", "fn main() {}\n");
+    f.succeeds("unused-host-macro", cargo("check", "3").env("LUSTR_LIBRARY_REPORT_DIR", &reports));
+    let report = std::fs::read_dir(&reports).unwrap().next().unwrap().unwrap().path().join("report.json");
+    let report: serde_json::Value = serde_json::from_slice(&std::fs::read(report).unwrap()).unwrap();
+    assert_eq!(report["unused_extern_names"], serde_json::json!(["host_macro"]));
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
 fn ordinary_cargo_resolves_a_renamed_dependency_feature() {
     let f = Fixture::new("cargo-dependency-feature");

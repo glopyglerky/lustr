@@ -490,8 +490,18 @@ def check(root):
     require(inventory["rust_source"] == unicode["rust_source"], "import inventory and native Unicode contract disagree")
     imports = {item["id"]: item for item in inventory["imports"]}
     require(set(imports) == {"identifier-normalization", "declared-sdk-unicode-data", "native-scalar-metadata",
-                            "native-scalar-artifact-host", "native-libtest-runtime", "host-proc-macro-compiler"},
+                            "native-scalar-artifact-host", "native-libtest-runtime", "host-proc-macro-compiler",
+                            "proc-macro-expansion"},
             "new imports require source and ownership declarations")
+    macro_expansion = imports.get("proc-macro-expansion", {}).get("closure_sha256", {})
+    require(set(macro_expansion) == {
+        "upstream/proc-macro-expansion.patch",
+        "tools/proc-macro-expansion/client/Cargo.toml", "tools/proc-macro-expansion/client/Cargo.lock",
+        "tools/proc-macro-expansion/server/Cargo.toml", "tools/proc-macro-expansion/server/Cargo.lock",
+    }, "proc-macro expansion requires a pinned source and dependency closure")
+    for path, digest in macro_expansion.items():
+        require(hashlib.sha256((root / path).read_bytes()).hexdigest() == digest,
+                "proc-macro expansion closure identity changed: " + path)
     normalization = imports.get("identifier-normalization", {})
     expected_dependencies = {name: unicode["compiler_dependencies"][name]
                              for name in unicode["native_identifier_normalization"]["dependencies"]}

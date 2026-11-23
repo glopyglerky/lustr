@@ -1,0 +1,19 @@
+[package]
+name = "proc-macro-srv-cli"
+version = "0.0.0"
+edition = "2024"
+
+[lib]
+path = "../rust-source/src/tools/rust-analyzer/crates/proc-macro-srv-cli/src/lib.rs"
+
+[[bin]]
+name = "rust-analyzer-proc-macro-srv"
+path = "../rust-source/src/tools/rust-analyzer/crates/proc-macro-srv-cli/src/main.rs"
+
+[features]
+in-rust-tree = ["proc-macro-srv/in-rust-tree", "proc-macro-api/in-rust-tree"]
+
+[dependencies]
+proc-macro-srv = { path = "../rust-source/src/tools/rust-analyzer/crates/proc-macro-srv" }
+proc-macro-api = { path = "../rust-source/src/tools/rust-analyzer/crates/proc-macro-api" }
+clap = { version = "=4.6.1", default-features = false, features = ["std"] }

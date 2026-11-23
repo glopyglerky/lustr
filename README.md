@@ -39,6 +39,21 @@ merge, verify the correction in the integration source and continue there.
 | Full language, ecosystem and platforms | Wider native artifacts, selective complementary semantics, real dependency/proc-macro graphs and the full target/profile matrix remain open. |
 | Performance and release | No current package has qualified full Rust coverage and matched overall speedup. Reuse counts are mechanism evidence, not a measured latency result. |
 
+### Source-built procedural macro support
+
+On Linux x86-64, pass `--proc-macro-source PINNED_RUST_REPOSITORY` to
+`tools/build-native-toolchain.rs` with a checkout containing the revision in
+`upstream/bluefe-core.pin` and the locked dependencies available to Cargo. The
+constructor builds the expansion worker and includes it in the resulting
+toolchain. Ordinary Cargo commands then use the pinned Rust implementation to
+build the host macro crate and Lust to check and link its consumer.
+
+The current adapter covers directly qualified function-like calls with integer
+input and output tokens. Source-text queries and explicitly tracked file and
+environment reads work through this path. General token trees, attribute and
+derive macros, additional span and hygiene operations, and performance
+qualification remain open.
+
 The [completion checklist](docs/compiler-set/completion-checklist.md#execution-queue)
 is the sole work register. It now includes an ordered execution queue, source
 entry points, dependencies, public acceptance commands, parallel assignments and

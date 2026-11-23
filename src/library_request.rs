@@ -308,13 +308,20 @@ fn executable_externs(arguments: Vec<&str>, check: bool) -> Option<Vec<Executabl
         let (metadata, archive) = pairs.entry(alias).or_default();
         match PathBuf::from(path).extension()?.to_str()? {
             "rmeta" if metadata.is_none() => *metadata = Some(ExternMetadata::parse(argument)?),
+            "so" if metadata.is_none() => *metadata = Some(ExecutableExtern::parse(argument, "")?.metadata),
             "rlib" if archive.is_none() => *archive = Some(std::path::absolute(path).ok()?),
             _ => return None,
         }
     }
     pairs.into_iter().map(|(alias, (metadata, archive))| {
         if let Some(metadata) = metadata {
-            (check || archive.is_some()).then_some(ExecutableExtern { metadata, archive })
+            let has_archive = archive.is_some();
+            let external = ExecutableExtern { metadata, archive };
+            if external.is_host_macro() {
+                (!has_archive).then_some(external)
+            } else {
+                (check || has_archive).then_some(external)
+            }
         } else {
             let archive = archive?;
             let metadata = ExternMetadata { alias: alias.into(), artifact: archive.clone() };
@@ -340,6 +347,19 @@ mod tests {
         request.args.windows(2)
             .find(|pair| pair[0] == "--lustr-library-debug-options")
             .map_or(*b"000", |pair| pair[1].as_bytes().try_into().unwrap())
+    }
+
+    #[test]
+    fn cargo_host_macro_artifact_has_no_link_archive() {
+        let path = "renamed=/tmp/libmacro-4ad.so";
+        for emit in ["dep-info,metadata", "dep-info,link"] {
+            let native = request(emit, &["--extern", path]).unwrap();
+            assert!(native.args.windows(3).any(|fields| {
+                fields[0] == "--lustr-executable-extern" && fields[1] == path && fields[2].is_empty()
+            }));
+            assert!(request(emit, &["--extern", path, "--extern", "renamed=/tmp/libmacro-4ad.rlib"]).is_none());
+            assert!(request(emit, &["--extern", path, "--extern", path]).is_none());
+        }
     }
 
     #[test]

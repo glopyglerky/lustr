@@ -45,6 +45,7 @@ use std::path::PathBuf;
 /// same-crate paths.
 #[derive(Clone)]
 pub struct CrateInput {
+    pub(crate) procedural_macros: Option<std::sync::Arc<dyn expand::ProceduralMacros>>,
     pub root_path: PathBuf,
     pub root_text: String,
     pub env: CfgEnv,
@@ -71,6 +72,7 @@ pub struct CrateInput {
 /// selected crate or one source dependency).
 #[derive(Clone)]
 struct OneInput {
+    pub(crate) procedural_macros: Option<std::sync::Arc<dyn expand::ProceduralMacros>>,
     root_path: PathBuf,
     root_text: String,
     env: CfgEnv,
@@ -952,6 +954,7 @@ impl FileExpander {
             module_path: module_path.clone(),
             crate_name: Some(self.crate_name.clone()),
             extern_crates: self.menv.extern_crates(interner),
+            procedural_macros: None,
             client,
         };
         let spliced = self.menv.splice(*di, lexed, self.magic);
@@ -1798,6 +1801,7 @@ fn add_platform_job(input: &CrateInput, tables: &mut ResolvedTables, jobs: &mut 
     env.allow_lust_dev = true;
     jobs.push(CrateJob {
         input: OneInput {
+            procedural_macros: None,
             root_path: root,
             root_text,
             env,
@@ -1832,7 +1836,7 @@ fn add_std_splice_job(input: &CrateInput, lo: u32, jobs: &mut Vec<CrateJob>) -> 
     text.push_str(&input.root_text[lo..]);
     let root = &jobs[0];
     jobs.push(CrateJob {
-        input: OneInput { root_text: text, ..root.input.clone() },
+        input: OneInput { root_text: text, procedural_macros: None, ..root.input.clone() },
         root_module: root.root_module,
         flat_prefix: root.flat_prefix.clone(),
         magic: root.magic,
@@ -1925,6 +1929,7 @@ fn resolve_crate_seeded(
     };
     let mut jobs: Vec<CrateJob> = vec![CrateJob {
         input: OneInput {
+            procedural_macros: input.procedural_macros.clone(),
             root_path: input.root_path.clone(),
             root_text: user_text,
             env: input.env.clone(),
@@ -2225,6 +2230,7 @@ fn add_dep_job(
     by_key.insert(key, idx);
     jobs.push(CrateJob {
         input: OneInput {
+            procedural_macros: None,
             root_path: root,
             root_text,
             env,
@@ -3717,7 +3723,7 @@ fn resolve_one(
         // file of the crate). An expansion that read outside data (`env!`,
         // the `include!` family) comes back only while each of those reads
         // reads the same (`expand::deps_stale_in`).
-        let keep = !cache.one_shot;
+        let keep = !cache.one_shot && input.procedural_macros.is_none();
         let env_hash = if keep {
             expansion_env_hash(&menv, job, input, client, interner, core_prelude, explicit_std)
         } else { 0 };
@@ -3783,6 +3789,7 @@ fn resolve_one(
                 module_path: module_paths[di].clone(),
                 crate_name: Some(input.crate_name.clone()),
                 extern_crates: menv.extern_crates(interner),
+                procedural_macros: input.procedural_macros.as_deref(),
                 client,
             };
             let spliced = menv.splice(di, orig, job.magic);
@@ -3888,7 +3895,7 @@ fn resolve_one(
         }
     }
     // The local crate's files for its `FileExpander` (stored at the end).
-    let keep_expander = job.root_module == ROOT_MODULE && !job.std_splice && !cache.one_shot;
+    let keep_expander = job.root_module == ROOT_MODULE && !job.std_splice && !cache.one_shot && input.procedural_macros.is_none();
     let seen_files: Vec<(FileId, (usize, Vec<Sym>, PathBuf))> = match keep_expander {
         true => discs.iter().enumerate().map(|(di, d)| (d.file_id, (di, tables.modules[d.module.0 as usize].path.clone(), d.path.clone()))).collect(),
         false => Vec::new(),
@@ -3913,7 +3920,7 @@ fn resolve_one(
     // hashes (0 keys nothing).
     let mut order: Vec<usize> = (0..discs.len()).collect();
     order.sort_by_key(|&di| discs[di].file_id.0);
-    let keep = !cache.one_shot;
+    let keep = !cache.one_shot && input.procedural_macros.is_none();
     let exp_hashes = if keep {
         par_map(&order, |&di| match (exp_known.get(di).copied().flatten(), expanded[di].as_ref(), discs[di].lexed.as_ref()) {
             (Some(h), Some(_), _) => h,
@@ -9123,6 +9130,7 @@ mod tests {
         let root = dir.join("main.rs");
         std::fs::write(&root, text).unwrap();
         let input = CrateInput {
+            procedural_macros: None,
             root_path: root,
             root_text: text.to_string(),
             env: CfgEnv::new("", &[], false, ProfileFlags::DEV),
@@ -9263,6 +9271,7 @@ mod tests {
         let known = Known::new(&interner);
         let root = dir.join("main.rs");
         let input = CrateInput {
+            procedural_macros: None,
             root_path: root.clone(),
             root_text: std::fs::read_to_string(&root).unwrap(),
             env: CfgEnv::new("", &[], false, ProfileFlags::DEV),
@@ -9296,6 +9305,7 @@ mod tests {
         let interner: &'static Interner = Box::leak(Box::new(Interner::default()));
         let known: &'static Known = Box::leak(Box::new(Known::new(interner)));
         let input = |dir: &std::path::Path| CrateInput {
+            procedural_macros: None,
             root_path: dir.join("main.rs"),
             root_text: std::fs::read_to_string(dir.join("main.rs")).unwrap(),
             env: CfgEnv::new("", &[], false, ProfileFlags::DEV),
@@ -9380,6 +9390,7 @@ mod tests {
         let interner: &'static Interner = Box::leak(Box::new(Interner::default()));
         let known: &'static Known = Box::leak(Box::new(Known::new(interner)));
         let input = CrateInput {
+            procedural_macros: None,
             root_path: dir.join("main.rs"),
             root_text: std::fs::read_to_string(dir.join("main.rs")).unwrap(),
             env: CfgEnv::new("", &[], false, ProfileFlags::DEV),
@@ -9429,6 +9440,7 @@ mod tests {
             let root = format!("mod m;\n#[path = \"x.rs\"]\nmod {name};\nfn main() {{ println!(\"{{}}\", {name}::v() + {name}::h!()); }}\n");
             std::fs::write(dir.join("main.rs"), &root).unwrap();
             let input = CrateInput {
+                procedural_macros: None,
                 root_path: dir.join("main.rs"),
                 root_text: root,
                 env: CfgEnv::new("", &[], false, ProfileFlags::DEV),
@@ -9468,6 +9480,7 @@ mod tests {
         let interner: &'static Interner = Box::leak(Box::new(Interner::default()));
         let known: &'static Known = Box::leak(Box::new(Known::new(interner)));
         let input = CrateInput {
+            procedural_macros: None,
             root_path: dir.join("main.rs"),
             root_text: std::fs::read_to_string(dir.join("main.rs")).unwrap(),
             env: CfgEnv::new("", &[], false, ProfileFlags::DEV),
@@ -9508,6 +9521,7 @@ mod tests {
         let interner: &'static Interner = Box::leak(Box::new(Interner::default()));
         let known: &'static Known = Box::leak(Box::new(Known::new(interner)));
         let input = CrateInput {
+            procedural_macros: None,
             root_path: dir.join("main.rs"),
             root_text: std::fs::read_to_string(dir.join("main.rs")).unwrap(),
             env: CfgEnv::new("", &[], false, ProfileFlags::DEV),

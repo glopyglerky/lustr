@@ -537,7 +537,7 @@ fn session_inputs(session: &Session, req: &Request) -> Vec<PathBuf> {
     }
     for chunk in &front.chunks {
         for dep in &chunk.expand_deps {
-            if let crate::expand::Dep::File { path, .. } = dep {
+            if let crate::expand::Dep::File { path, .. } | crate::expand::Dep::TrackedPath(path) = dep {
                 paths.push(path.clone());
             }
         }

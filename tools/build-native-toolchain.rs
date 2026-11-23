@@ -154,7 +154,7 @@ fn cargo(sdk: &Path, repo: &Path, manifest: &str, package: &str, work: &Path, na
 fn main() {
     let mut args = std::env::args_os().skip(1).peekable();
     let repo = PathBuf::from(args.next().expect(
-        "REPOSITORY RUST_SDK TINYCC NEW_OUTPUT [--release|--debug] [--rustdoc-source PINNED_RUST_REPOSITORY]",
+        "REPOSITORY RUST_SDK TINYCC NEW_OUTPUT [--release|--debug] [--rustdoc-source PINNED_RUST_REPOSITORY] [--proc-macro-source PINNED_RUST_REPOSITORY]",
     )).canonicalize().unwrap();
     construction_inputs(&repo).unwrap_or_else(|error| panic!("{error}"));
     let sdk = args.next().unwrap();
@@ -180,11 +180,21 @@ fn main() {
         }
         _ => BuildProfile::Development,
     };
-    let rustdoc_source = args.next().map(|flag| {
-        assert_eq!(flag, "--rustdoc-source", "expected --rustdoc-source");
-        PathBuf::from(args.next().expect("pinned Rust source repository")).canonicalize().unwrap()
-    });
-    assert!(args.next().is_none() && output.is_absolute());
+    let mut rustdoc_source = None;
+    let mut proc_macro_source = None;
+    while let Some(flag) = args.next() {
+        let source = if flag == "--rustdoc-source" {
+            &mut rustdoc_source
+        } else if flag == "--proc-macro-source" {
+            &mut proc_macro_source
+        } else {
+            panic!("unknown source component option {flag:?}");
+        };
+        assert!(source.is_none(), "source component option repeated");
+        *source = Some(PathBuf::from(args.next().expect("pinned Rust source repository"))
+            .canonicalize().unwrap());
+    }
+    assert!(output.is_absolute());
     assert!(!output.exists(), "output must be new; existing data is preserved");
     assert!(!output.parent().unwrap().canonicalize().unwrap().starts_with(&repo), "keep generated output outside source");
     fs::DirBuilder::new().mode(0o700).create(&output).unwrap();
@@ -388,6 +398,69 @@ fn main() {
             copy(&repo.join("crates/lustr-metadata-encoder").join(name), &licenses.join(name));
         }
         record(&licenses.join("SOURCE.txt"), format!("https://github.com/rust-lang/rust\nRevision {source}\nlibrary/test and its standard library runtime dependencies\n").as_bytes());
+    }
+    if let Some(proc_macro_source) = proc_macro_source {
+        assert_eq!(host, "x86_64-unknown-linux-gnu", "the macro artifact adapter requires Linux x86_64");
+        let component_work = work.join("proc-macro-expansion");
+        fs::create_dir(&component_work).unwrap();
+        let checkout = component_work.join("rust-source");
+        checked("proc-macro-source-copy", Command::new("git")
+            .args(["clone", "--local", "--shared", "--no-checkout", "--"])
+            .arg(proc_macro_source).arg(&checkout), &logs);
+        checked("proc-macro-source-pin", Command::new("git").current_dir(&checkout)
+            .args(["checkout", "--detach", source]), &logs);
+        construction_inputs(&checkout).unwrap_or_else(|error| panic!("{error}"));
+        let patch = repo.join("upstream/proc-macro-expansion.patch");
+        checked("proc-macro-patch", Command::new("git").current_dir(&checkout)
+            .arg("apply").arg(&patch), &logs);
+
+        let manifests = repo.join("tools/proc-macro-expansion");
+        for name in ["client", "server"] {
+            let destination = component_work.join(name);
+            fs::create_dir(&destination).unwrap();
+            for file in ["Cargo.toml", "Cargo.lock"] {
+                copy(&manifests.join(name).join(file), &destination.join(file));
+            }
+        }
+        fs::create_dir(component_work.join("client/src")).unwrap();
+        copy(&manifests.join("client/src/main.rs"), &component_work.join("client/src/main.rs"));
+        let mut flags = std::ffi::OsString::from("-Clink-arg=-Wl,-rpath,$ORIGIN/../lib\x1f-Lnative=");
+        flags.push(sdk.join("lib"));
+        checked("proc-macro-server-build", cargo(&sdk, &component_work, "server/Cargo.toml", "proc-macro-srv-cli",
+            &work, "proc-macro-server", profile).args(["--bin", "rust-analyzer-proc-macro-srv", "--features", "in-rust-tree"])
+            .env("CARGO_ENCODED_RUSTFLAGS", &flags).env("LD_LIBRARY_PATH", sdk.join("lib")), &logs);
+        checked("proc-macro-client-build", cargo(&sdk, &component_work, "client/Cargo.toml", "lustr-expand-proc-macro",
+            &work, "proc-macro-client", profile).args(["--bin", "lustr-expand-proc-macro"])
+            .env("CARGO_ENCODED_RUSTFLAGS", &flags).env("LD_LIBRARY_PATH", sdk.join("lib")), &logs);
+
+        let component = package.join("libexec/lustr-macro-expansion");
+        fs::create_dir_all(component.join("bin")).unwrap();
+        symlink(sdk.join("lib"), component.join("lib")).unwrap();
+        let server = component.join("bin/rust-analyzer-proc-macro-srv");
+        let client = component.join("bin/lustr-expand-proc-macro");
+        copy(&work.join("proc-macro-server-target").join(profile.directory()).join("rust-analyzer-proc-macro-srv"), &server);
+        copy(&work.join("proc-macro-client-target").join(profile.directory()).join("lustr-expand-proc-macro"), &client);
+        checked("installed-proc-macro-server", Command::new(&server).arg("--version")
+            .env("RUST_ANALYZER_INTERNALS_DO_NOT_USE", "1"), &logs);
+        let licenses = component.join("licenses");
+        fs::create_dir(&licenses).unwrap();
+        for name in ["COPYRIGHT", "LICENSE-MIT", "LICENSE-APACHE"] {
+            copy(&checkout.join(name), &licenses.join(name));
+        }
+        for name in ["client", "server"] {
+            copy(&manifests.join(name).join("Cargo.lock"), &licenses.join(format!("{name}.Cargo.lock")));
+        }
+        let notice = component.join("SOURCE.txt");
+        record(&notice, format!(concat!(
+            "https://github.com/rust-lang/rust\nRevision {source}\n",
+            "Rust Analyzer procedural macro worker and client with upstream/proc-macro-expansion.patch\n",
+            "The native adapter currently represents source integer tokens in directly qualified function-like calls.\n",
+        ), source = source).as_bytes());
+        runtime_identities.push(checked("hash-proc-macro-expansion", host_runtime::sha256_command()
+            .arg(server).arg(client).arg(&patch).arg(notice), &logs));
+        for path in [licenses, component.join("bin"), component, package.join("libexec")] {
+            fs::File::open(path).unwrap().sync_all().unwrap();
+        }
     }
     if let Some(rustdoc_source) = rustdoc_source {
         let checkout = work.join("rustdoc-source");

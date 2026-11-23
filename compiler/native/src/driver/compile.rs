@@ -2336,8 +2336,14 @@ fn resolved_setup(
     // PatchBase below asks `macro_scope::dep_macros_shut`).
     let patch_expand = (env.clone(), crate_name.clone());
     let has_deps = !externs.is_empty();
+    let procedural_macros = imports.and_then(|provider| provider.procedural_macros());
     let reuse_check = reusable.is_some() && caches.library.is_none() && !super::resolve_oracle::on();
-    let patched = if ast_bloated(front) {
+    let patched = if procedural_macros.is_some() {
+        // A macro may observe external state before reporting its reads.
+        // Re-expand on an actual compiler request; compare the result below
+        // and keep checked work whose native semantic inputs still hold.
+        Err("procedural macro expansion")
+    } else if ast_bloated(front) {
         Err("ast compaction")
     } else {
         super::patch::try_patch(front, caches, inputs, &root_text, request_start, reuse_check)
@@ -2490,6 +2496,7 @@ fn resolved_setup(
             front.resolve_cache.seed_root(&root_path, &root_text, lexed);
         }
         let input = CrateInput {
+            procedural_macros: procedural_macros.clone(),
             root_path: root_path.clone(),
             root_text: root_text.clone(),
             env: env.clone(),
@@ -2897,7 +2904,7 @@ impl PreparedRequest<'_> {
         }
         for dep in self.session.front.chunks.iter().flat_map(|chunk| &chunk.expand_deps) {
             match dep {
-                expand::Dep::File { path, .. } => {
+                expand::Dep::File { path, .. } | expand::Dep::TrackedPath(path) => {
                     if !path.is_absolute() { return Err("unbound executable include file"); }
                     inputs.files.push(path.strip_prefix(cwd).unwrap_or(path).to_path_buf());
                     inputs.has_include = true;
@@ -3052,6 +3059,9 @@ pub(super) fn prepare_imported<'a>(req: &'a Request, session: &'a mut Session, d
         }
         fn validate_checked(&self, program: &collect::Program) -> Result<(), String> { self.inner.validate_checked(program) }
         fn dependencies(&self) -> Vec<super::imports::Dependency> { self.inner.dependencies() }
+        fn procedural_macros(&self) -> Option<Arc<dyn crate::expand::ProceduralMacros>> {
+            self.inner.procedural_macros()
+        }
         fn take_emission(&self) -> Result<Box<dyn super::imports::Emission + 'static>, String> { self.inner.take_emission() }
     }
     let guard = Guard { inner: definitions, failed: std::cell::Cell::new(false) };
