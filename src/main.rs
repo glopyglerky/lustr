@@ -250,6 +250,15 @@ fn main() -> ExitCode {
         return incomplete_integration("Cargo compilation and alternate compiler selection");
     }
     let rust = (!native_cli).then(|| lustr_compiler::native_request(&args)).flatten();
+    if compiler_mode && rust.is_none()
+        && lustr_compiler::freestanding_request(&args)
+        && let Some(compiler) = native_queries::host_proc_macro_compiler(&parent, lust::host_triple())
+    {
+        trace_entry("lustr", "freestanding");
+        let error = Command::new(compiler).arg("--lustr-build-freestanding").args(&args).exec();
+        eprintln!("cannot execute the freestanding compiler: {error}");
+        return ExitCode::from(2);
+    }
     if let Some(request) = rust.as_ref().filter(|request| request.stdin) {
         let mut command = Command::new(parent.join("lust-core"));
         command.arg("--lustr-stdin-source").args(&request.args).stdin(std::process::Stdio::inherit());

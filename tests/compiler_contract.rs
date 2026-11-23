@@ -1283,6 +1283,78 @@ fn cargo_discovery_accepts_freestanding_link_settings() {
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE, Clang and binutils"]
+fn cargo_freestanding_executable_combines_native_objects_and_rust() {
+    let f = Fixture::new("cargo-freestanding-mixed");
+    f.source("Cargo.toml", "[package]\nname=\"freestanding\"\nversion=\"0.1.0\"\nedition=\"2024\"\n\n[profile.dev]\npanic=\"abort\"\n");
+    let source = r#"#![no_std]
+#![no_main]
+
+use core::{arch::asm, panic::PanicInfo};
+
+fn apply_mask(n: u64) -> u64 { n ^ 19 }
+fn select_bits(n: u64) -> u64 { n & 63 }
+
+#[unsafe(no_mangle)]
+pub extern "C" fn _start() -> ! {
+    let status = select_bits(apply_mask(57));
+    unsafe {
+        asm!("syscall", in("rax") 60_u64, in("rdi") status, options(noreturn));
+    }
+}
+
+#[panic_handler]
+fn panic(_: &PanicInfo<'_>) -> ! {
+    loop { core::hint::spin_loop(); }
+}
+"#;
+    let original_source = f.source("src/main.rs", source);
+    let rust = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let flags = ["-Clink-arg=-nostdlib", "-Clink-arg=-static", "-Crelocation-model=static"];
+    let cargo = |target: &str, original| {
+        let mut command = f.command("cargo");
+        command.env("CARGO_ENCODED_RUSTFLAGS", flags.join("\u{1f}"))
+            .env("CARGO_PROFILE_DEV_DEBUG", "0")
+            .env("CARGO_TARGET_DIR", f.root.join(target));
+        if original {
+            command.env("RUSTC", &rust);
+        }
+        command
+    };
+    f.succeeds("lockfile", cargo("mixed", false).args(["generate-lockfile", "--offline"]));
+    f.succeeds("check", cargo("mixed", false).args(["check", "--frozen"]));
+    for (name, original) in [("mixed", false), ("original", true)] {
+        f.succeeds(&format!("{name}-build"), cargo(name, original).args(["build", "--frozen"]));
+        let binary = f.root.join(name).join("debug/freestanding");
+        let out = f.invoke(&format!("{name}-run"), &mut Command::new(&binary));
+        assert_eq!(out.status.code(), Some(42));
+        let elf = f.succeeds(&format!("{name}-elf"), Command::new("readelf").args(["-l", "-d"]).arg(&binary));
+        let elf = String::from_utf8(elf.stdout).unwrap();
+        assert!(!elf.contains("INTERP") && !elf.contains("(NEEDED)"), "{elf}");
+        let symbols = f.succeeds(&format!("{name}-symbols"), Command::new("nm").arg(&binary));
+        let symbols = String::from_utf8(symbols.stdout).unwrap();
+        let native = symbols.lines().filter(|line| line.split_whitespace().last()
+            .and_then(|name| name.strip_prefix("f_")).is_some_and(|suffix| {
+                suffix.len() == 16 && suffix.bytes().all(|byte| byte.is_ascii_hexdigit())
+            })).count();
+        assert_eq!(native, if original { 0 } else { 2 }, "{symbols}");
+    }
+    assert_eq!(std::fs::read_to_string(&original_source).unwrap(), source);
+    for (edit, invalid, diagnostic) in [
+        ("native-error", source.replace("n ^ 19", "n ^ false"), "src/main.rs:6:"),
+        ("rust-error", source.replace("let status =", "let status: u32 ="), "E0308"),
+    ] {
+        f.source("src/main.rs", &invalid);
+        let response = f.invoke(edit, cargo(edit, false).args(["build", "--frozen"]));
+        assert_eq!(response.status.code(), Some(101));
+        let stderr = String::from_utf8(response.stderr).unwrap();
+        assert!(stderr.contains(diagnostic), "{stderr}");
+        assert!(!f.root.join(edit).join("debug/freestanding").exists());
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and Clang"]
 fn rustc_consumes_a_rust_archive_with_embedded_metadata() {
     let f = Fixture::new("embedded-extern");

@@ -2,14 +2,19 @@
 #![feature(rustc_private)]
 
 extern crate rustc_abi;
+extern crate rustc_ast;
 extern crate rustc_attr_ir;
+extern crate rustc_codegen_llvm;
+extern crate rustc_codegen_ssa;
 extern crate rustc_driver;
 extern crate rustc_hir;
 extern crate rustc_interface;
+extern crate rustc_metadata;
 extern crate rustc_middle;
 extern crate rustc_span;
 extern crate rustc_session;
 extern crate rustc_structures;
+extern crate rustc_target;
 
 use rustc_session::{EarlyDiagCtxt, config};
 use rustc_structures::CrateType;
@@ -17,6 +22,8 @@ use std::process::ExitCode;
 
 #[path = "host-crate-interface.rs"]
 mod host_crate_interface;
+#[path = "host-freestanding.rs"]
+mod host_freestanding;
 
 rustc_driver::override_c_allocator_in_binary!();
 
@@ -136,6 +143,9 @@ fn main() -> ExitCode {
     }
     rustc_driver::install_ice_hook(rustc_driver::DEFAULT_BUG_REPORT_URL, |_| ());
     rustc_driver::install_ctrlc_handler();
+    if args.get(1).is_some_and(|arg| arg == "--lustr-build-freestanding") {
+        return host_freestanding::run(&args[0], &args[2..]);
+    }
     let record_spans = std::env::current_exe().ok().is_some_and(|path| {
         path.ancestors().nth(3).is_some_and(|directory| {
             directory.join("lustr-macro-expansion/bin/lustr-expand-proc-macro").is_file()

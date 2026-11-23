@@ -50,6 +50,7 @@ PRODUCT_TARGETS = {
             ("native-phase-qualification", "native-qualification"),
             ("native-crate-qualification", "native-qualification"),
             ("native-consumer-qualification", "native-qualification"),
+            ("native-freestanding-item", "native-qualification"),
         ]},
     },
 }
@@ -491,7 +492,7 @@ def check(root):
     imports = {item["id"]: item for item in inventory["imports"]}
     require(set(imports) == {"identifier-normalization", "declared-sdk-unicode-data", "native-scalar-metadata",
                             "native-scalar-artifact-host", "native-libtest-runtime", "host-proc-macro-compiler",
-                            "proc-macro-expansion", "external-scalar-interface"},
+                            "proc-macro-expansion", "external-scalar-interface", "freestanding-executable-composition"},
             "new imports require source and ownership declarations")
     macro_expansion = imports.get("proc-macro-expansion", {}).get("closure_sha256", {})
     require(set(macro_expansion) == {

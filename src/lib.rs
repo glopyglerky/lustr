@@ -14,6 +14,54 @@ pub struct Native {
     pub stdin: bool,
 }
 
+/// Identify the GNU freestanding link contract using Cargo's actual request.
+/// The original arguments go to the Rust linker and compiler unchanged.
+pub fn freestanding_request(args: &[OsString]) -> bool {
+    fn represented(args: &[OsString]) -> Option<bool> {
+        let mut ordinary = Vec::with_capacity(args.len());
+        let mut flags = [false; 3];
+        let mut rest = args.iter();
+        while let Some(arg) = rest.next() {
+            let raw = arg.to_str()?;
+            let codegen = if matches!(raw, "-C" | "--codegen") {
+                Some(rest.next()?.to_str()?)
+            } else {
+                raw.strip_prefix("-C").or_else(|| raw.strip_prefix("--codegen="))
+            };
+            if let Some(flag) = codegen {
+                let observed = match flag {
+                    "link-arg=-nostdlib" => Some(0),
+                    "link-arg=-static" => Some(1),
+                    "relocation-model=static" => Some(2),
+                    _ => None,
+                };
+                if let Some(index) = observed {
+                    if std::mem::replace(&mut flags[index], true) {
+                        return None;
+                    }
+                    continue;
+                }
+                // The pinned driver owns the incremental cache in this route.
+                if flag.strip_prefix("incremental=").is_some_and(|path| std::path::Path::new(path).is_absolute()) {
+                    continue;
+                }
+                ordinary.push(format!("-C{flag}").into());
+            } else {
+                ordinary.push(arg.clone());
+            }
+        }
+        if flags != [true; 3] {
+            return None;
+        }
+        let native = library_request::parse(&ordinary)?;
+        Some(!native.stdin && native.args.iter().any(|arg| arg == "--bin")
+            && native.args.iter().any(|arg| arg == "panic=abort")
+            && !native.args.iter().any(|arg| matches!(arg.as_str(),
+                "--lustr-executable-test" | "--lustr-custom-test")))
+    }
+    represented(args).unwrap_or(false)
+}
+
 /// Line-based Rust argument files, adapted from rustc_driver_impl/src/args.rs
 /// at Rust 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494 (MIT OR Apache-2.0).
 /// A line contributes one argument without recursive expansion or word splitting.

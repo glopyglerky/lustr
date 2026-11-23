@@ -6,6 +6,8 @@ use crate::{ast, borrowck, cgen, check, def, diag, intern, lexer, lower, parser,
 use std::{collections::BTreeSet, fs, ops::Range, path::PathBuf, process::Command, sync::Arc};
 use ty::TyIntern;
 
+pub(crate) const SOURCE_LIMIT: usize = 2 * 1024 * 1024;
+
 struct Request { source: PathBuf, output: PathBuf, name: String, metadata: String, overflow: bool, debug: bool }
 fn request(args: &[String]) -> Result<Request, String> {
     let mut source = None; let mut output = None; let mut name = None;
@@ -152,6 +154,21 @@ pub(crate) fn prepare_item(args: &[String], source: &str, span: Range<u32>) -> R
     prepare_request(request(args)?, false, true, Some((source, span)))
 }
 
+/// Publish a checked original item and return its actual emitted symbol.
+pub(crate) fn emit_item(args: &[String], source: &str, span: Range<u32>) -> Result<String, String> {
+    let emitted = emit(prepare_item(args, source, span)?)?;
+    let [function] = emitted.functions() else {
+        return Err("expected one emitted native function".into());
+    };
+    let symbol = std::str::from_utf8(function.symbol()).map_err(|error| error.to_string())?;
+    match emitted.publish_object()? {
+        super::unit_publication::Publication::Durable => Ok(symbol.to_owned()),
+        super::unit_publication::Publication::DurabilityUnknown(error) => {
+            Err(format!("native object publication durability unknown: {error}"))
+        }
+    }
+}
+
 fn item_tokens(mut lexed: lexer::Lexed, extent: Range<u32>) -> Result<lexer::Lexed, String> {
     let tokens = &lexed.tokens;
     let policy = tokens.get(..5).ok_or("missing original crate policy")?;
@@ -173,7 +190,7 @@ fn prepare_request(r: Request, artifact: bool, capture: bool, item: Option<(&str
     let working_directory = capture.then(std::env::current_dir).transpose()
         .map_err(|error| format!("cannot retain native request working directory: {error}"))?;
     let source = fs::read_to_string(&r.source).map_err(|e| format!("cannot read source: {e}"))?;
-    if source.len() > 2 * 1024 * 1024 { return Err("native object source exceeds current bound".into()); }
+    if source.len() > SOURCE_LIMIT { return Err("native object source exceeds current bound".into()); }
     let i = Arc::new(intern::Interner::default()); let k = Arc::new(intern::Known::new(&i));
     let mut map = diag::SourceMap::default(); let file = map.add_file(&r.source.to_string_lossy(), &source);
     if item.as_ref().is_some_and(|(expected, _)| *expected != source) {
