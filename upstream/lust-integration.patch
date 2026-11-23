@@ -4765,7 +4765,7 @@ index f31b8af0e01c3261fd76f2a4e82954e9de656aca..629b1471654155f02430dd628fc2ae12
          })
      }
 diff --git a/src/check/generics.rs b/src/check/generics.rs
-index 084f420a96af81551cafc7aa39f3f8c23edf4d25..9870e7577a580d28d0b82bdb6ef4792be6185fa7 100644
+index 084f420a96af81551cafc7aa39f3f8c23edf4d25..3eef73dfeb712ff71d7cbc04c29048e29c068cbf 100644
 --- a/src/check/generics.rs
 +++ b/src/check/generics.rs
 @@ -1414,6 +1414,8 @@ pub struct Scope {
@@ -4882,7 +4882,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..9870e7577a580d28d0b82bdb6ef4792b
          }
          // Omitted trailing params take their defaults.
          let n_written = gargs.iter().filter(|g| !matches!(g, GenericArg::Lifetime(_))).count();
-@@ -5562,10 +5628,98 @@ pub struct InstanceInfo {
+@@ -5562,10 +5628,107 @@ pub struct InstanceInfo {
  /// by check, mono, and the driver. Parallel vecs are indexed by
  /// the session-local `AdtId` / `LocalDefId` of the compat tables
  /// in `Program`, including the instances mono appends.
@@ -4898,6 +4898,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..9870e7577a580d28d0b82bdb6ef4792b
 +    pub lifetimes: Vec<(Sym, u32)>,
 +    pub region_facts: Vec<(u32, u32)>,
 +    pub region_predicates: Vec<Predicate>,
++    pub bounds: Vec<Predicate>,
 +    pub span: Span,
 +}
 +
@@ -4926,6 +4927,14 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..9870e7577a580d28d0b82bdb6ef4792b
 +        // environment; it must not become an unconditional trait superbound.
 +        assert!(collect("trait Family { type View where Self: Copy; } impl<T: Copy> Family for T { type View = u32; } fn main() {}").is_ok());
 +        assert!(collect("trait Family { type View where Self: Copy; } struct NonCopy; fn main() {}").is_ok());
++    }
++
++    #[test]
++    fn associated_item_where_clause_is_a_projection_well_formedness_obligation() {
++        let source = "trait Family { type View where Self: Copy; } fn take<T: Family>(_: T::View) {} fn main() {}";
++        let errors = collect(source).err().expect("the projection must prove its own item predicates");
++        assert!(errors.iter().any(|diag| diag.code == "L0612"), "{errors:?}");
++        if let Err(errors) = collect(&source.replace("T: Family>", "T: Family + Copy>")) { panic!("valid projection: {errors:?}"); }
 +    }
 +
 +    #[test]
@@ -4981,7 +4990,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..9870e7577a580d28d0b82bdb6ef4792b
      pub trait_scopes: FxMap<DefId, Scope>,
      pub trait_methods: FxMap<DefId, TraitMethodTemplate>,
      /// Signatures of the lang trait methods, by method def
-@@ -5575,6 +5729,7 @@ pub struct GenTables {
+@@ -5575,6 +5738,7 @@ pub struct GenTables {
      /// Associated type defaults from trait definitions, in trait
      /// signature form (over the trait's params, Self at 0).
      pub trait_assoc_defaults: FxMap<DefId, Ty>,
@@ -4989,7 +4998,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..9870e7577a580d28d0b82bdb6ef4792b
      /// User traits written `unsafe trait`: their impls must be
      /// `unsafe impl`, and no other impl may be.
      pub trait_unsafe: FxMap<DefId, bool>,
-@@ -5833,10 +5988,12 @@ impl Default for GenTables {
+@@ -5833,10 +5997,12 @@ impl Default for GenTables {
              lang: LangTraits::new(),
              index: ImplIndex::new(),
              trait_names: crate::driver::read_cover::NameMap::new("trait"),
@@ -5002,7 +5011,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..9870e7577a580d28d0b82bdb6ef4792b
              trait_unsafe: FxMap::default(),
              trait_assoc_consts: FxMap::default(),
              wf_headers: Vec::new(),
-@@ -5929,8 +6086,10 @@ impl GenTables {
+@@ -5929,8 +6095,10 @@ impl GenTables {
          ResolveCx {
              type_names: &NO_ADTS,
              adt_info: &self.adt_info,
@@ -5013,7 +5022,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..9870e7577a580d28d0b82bdb6ef4792b
              aliases: &NO_TYS,
              generic_aliases: &NO_ALIASES,
              index: &self.index,
-@@ -5944,8 +6103,10 @@ impl GenTables {
+@@ -5944,8 +6112,10 @@ impl GenTables {
          ResolveCx {
              type_names,
              adt_info: &self.adt_info,
@@ -5024,7 +5033,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..9870e7577a580d28d0b82bdb6ef4792b
              aliases,
              generic_aliases: &self.generic_aliases,
              index: &self.index,
-@@ -6154,6 +6315,25 @@ fn valid_receiver(tys: &impl TyIntern, t: Ty, self_ty: Ty) -> bool {
+@@ -6154,6 +6324,25 @@ fn valid_receiver(tys: &impl TyIntern, t: Ty, self_ty: Ty) -> bool {
      }
  }
  
@@ -5050,7 +5059,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..9870e7577a580d28d0b82bdb6ef4792b
  /// Resolves one fn signature in template form: self parameter,
  /// params, and return, under the combined scope. Handles
  /// `impl Trait` argument sugar by growing the generics. Returns
-@@ -6236,7 +6416,7 @@ pub fn resolve_fn_sig(
+@@ -6236,7 +6425,7 @@ pub fn resolve_fn_sig(
              let lhs = apit_param(ast, interner, known, cx, tys, &mut generics, &mut scope, bounds, ast.ty_span(n), errs);
              scope.apit.push((n, lhs));
          }
@@ -5059,7 +5068,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..9870e7577a580d28d0b82bdb6ef4792b
              // No Sized check here: a declaration with no body may
              // name unsized params (rustc allows it). The value
              // positions of a fn with a body are `check_written_wf`'s.
-@@ -6308,7 +6488,7 @@ pub fn resolve_fn_sig(
+@@ -6308,7 +6497,7 @@ pub fn resolve_fn_sig(
                  }
              }
          }
@@ -5068,7 +5077,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..9870e7577a580d28d0b82bdb6ef4792b
              errs.push(d);
              ERROR
          }),
-@@ -6580,7 +6760,7 @@ fn region_sig(
+@@ -6580,7 +6769,7 @@ fn region_sig(
          let t = if let TyExpr::ImplTrait { .. } = ast.ty(param.ty) {
              *params.get(skip + i)?
          } else {
@@ -5077,7 +5086,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..9870e7577a580d28d0b82bdb6ef4792b
          };
          for _ in names.len()..counter.load(Ordering::Relaxed) as usize {
              names.push(format!("the lifetime of parameter {}", i + 1));
-@@ -6615,7 +6795,7 @@ fn region_sig(
+@@ -6615,7 +6804,7 @@ fn region_sig(
          // goes to `RegionTables::opaque_sigs`, whose rules never read
          // the return.
          Some(t) if opaque_caps.is_some() || matches!(ast.ty(t), TyExpr::ImplTrait { .. }) => UNIT,
@@ -5086,7 +5095,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..9870e7577a580d28d0b82bdb6ef4792b
              Ok(t) => t,
              Err(d) => {
                  if d.code == "L0202" {
-@@ -7211,9 +7391,25 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
+@@ -7211,9 +7400,25 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
              let proj = p.tys.intern(TyKind::Projection(AssocId(assoc_def), trait_args));
              let at_bounds = at.bounds.clone();
              let at_where = at.where_clause.clone();
@@ -5112,26 +5121,28 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..9870e7577a580d28d0b82bdb6ef4792b
                  let mut relaxed: Vec<u32> = Vec::new();
                  let mut preds: Vec<Predicate> = Vec::new();
                  for b in &at_bounds {
-@@ -7231,7 +7427,6 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
+@@ -7230,8 +7435,8 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
+                     let args = p.tys.intern_args(&[GenericArg::Ty(proj)]);
                      preds.push(Predicate::Trait(Binder::plain(TraitRef { def: cx.lang.sized, args, bindings: EMPTY_BINDINGS })));
                  }
++                let item_bounds = preds.clone();
                  generics.predicates.extend(preds);
 -                let _ = at_where;
                  if at_default.is_some() {
                      // Associated type defaults are unstable in
                      // rustc (E0658); rule zero rejects them.
-@@ -7245,6 +7440,10 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
+@@ -7245,6 +7450,10 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
                          Err(diag) => errs.push(diag),
                      }
                  }
 +                p.gx.trait_assoc_generics.insert(assoc_def, AssociatedTypeGenerics {
 +                    parent: trait_def, generics: own, lifetimes: own_scope.lifetimes,
-+                    region_facts: own_scope.region_facts, region_predicates, span: at_span,
++                    region_facts: own_scope.region_facts, region_predicates, bounds: item_bounds, span: at_span,
 +                });
              }
          }
          // Associated consts: resolve and store the type for impl
-@@ -11002,7 +11201,11 @@ fn instance_adt_id(p: &mut Program, def: DefId, args: ArgsId) -> AdtId {
+@@ -11002,7 +11211,11 @@ fn instance_adt_id(p: &mut Program, def: DefId, args: ArgsId) -> AdtId {
      let mut key = p.instance_key_hash(&crate::driver::graph::InstanceKey { def, args }).0;
      let at = loop {
          let at = (p.gx.inst_order.base + p.gx.inst_order.place_of(key)) as usize;
@@ -5144,7 +5155,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..9870e7577a580d28d0b82bdb6ef4792b
              break at;
          }
          key = key.rotate_left(17) ^ 0x9e37_79b9_7f4a_7c15;
-@@ -13176,6 +13379,12 @@ fn made_among(p: &Program, t: Ty, before: &[AdtId], depth: u32) -> bool {
+@@ -13176,6 +13389,12 @@ fn made_among(p: &Program, t: Ty, before: &[AdtId], depth: u32) -> bool {
  
  /// `ensure_adt_instances_in` for types already in the global
  /// store (signatures and fields at collect time).
@@ -5157,7 +5168,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..9870e7577a580d28d0b82bdb6ef4792b
  fn ensure_global_adt_instances(p: &mut Program, t: Ty, depth: u32) {
      if depth > 32 {
          return;
-@@ -13697,14 +13906,29 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
+@@ -13697,14 +13916,29 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
          .collect();
      for rec in records {
          let Some(trec) = p.gx.index.trait_record(rec.trait_def).cloned() else { continue };
@@ -5189,6 +5200,48 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..9870e7577a580d28d0b82bdb6ef4792b
              let pred = subst_predicate(&mut p.tys, pred, &subst_args);
              // `trait Tr: 'static`: the impl's Self type must be `'static`;
              // `type Req: 'static`: the impl's binding of `Req` must be.
+@@ -14472,6 +14706,15 @@ fn wf_goals(p: &mut Program, adt_idx: &FxMap<DefId, usize>, t: Ty, seen: &mut Ve
+             if let Some(def) = p.gx.index.trait_of_assoc(assoc.0) {
+                 out.push(TraitRef { def, args: a, bindings: EMPTY_BINDINGS });
+             }
++            if let Some(item) = p.gx.trait_assoc_generics.get(&assoc.0)
++                && item.generics.params.is_empty() && item.lifetimes.is_empty() {
++                let predicates = item.generics.predicates.clone();
++                let arguments = p.tys.args(a).to_vec();
++                for predicate in predicates {
++                    if let Predicate::Trait(bound) = subst_predicate(&mut p.tys, predicate, &arguments)
++                        && bound.count == 0 { out.push(bound.value); }
++                }
++            }
+             in_args(p, seen, out, sized, a);
+         }
+         TyKind::FnDef(_, a) | TyKind::Closure(_, a) | TyKind::Opaque(_, a) => in_args(p, seen, out, sized, a),
+@@ -14728,6 +14971,25 @@ fn check_written_wf(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&crate:
+             .collect();
+         let args = p.tys.intern_args(&own);
+         generics.predicates.push(Predicate::Trait(Binder::plain(TraitRef { def: rec.def, args, bindings: EMPTY_BINDINGS })));
++        // Associated bounds are checked under that item's own where clause.
++        // Collection appended these exact predicates after the trait-wide
++        // clauses. Remove only their appended occurrences, retaining a
++        // separately written equal trait-wide clause and its original scope.
++        let associated: Vec<_> = rec.assoc_items.iter()
++            .filter_map(|&(assoc, _, is_type)| is_type.then(|| p.gx.trait_assoc_generics.get(&assoc)).flatten().cloned()).collect();
++        for item in &associated {
++            for bound in &item.bounds {
++                if let Some(index) = generics.predicates.iter().rposition(|predicate| predicate == bound) {
++                    generics.predicates.remove(index);
++                }
++            }
++        }
++        for item in associated {
++            let mut item_generics = generics.clone();
++            item_generics.predicates.extend(item.generics.predicates);
++            item_generics.predicates.extend(item.bounds);
++            items.push((Vec::new(), Vec::new(), item_generics, item.span));
++        }
+         // An associated const's written type is a written type of
+         // the trait (`const C: Need<String>` is E0277 with no
+         // impl): the initializer pass alone cannot see a const
 diff --git a/src/check/iter.rs b/src/check/iter.rs
 index 0544ba342bdc147bba19d765d8d24117a89aa03f..2d741d645ee2d520fc8cb20ee4c29d188c6890d7 100644
 --- a/src/check/iter.rs
@@ -10060,7 +10113,7 @@ index a985aebad215015e7099d8f75e73a0f0735078cb..0212059f42297d779ee5f1d4d56eae9b
      // recorded read (check/where_overflow.rs `recursion_limit`), so a change
      // checks every body again.
 diff --git a/src/driver/graph.rs b/src/driver/graph.rs
-index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..d2acc95f30338c6bdfbfe682ca2311cbbdc3e15c 100644
+index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..d945df95fb94ef26dd4cbf71b080e29c88700d5f 100644
 --- a/src/driver/graph.rs
 +++ b/src/driver/graph.rs
 @@ -494,15 +494,19 @@ impl Reads {
@@ -10086,7 +10139,7 @@ index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..d2acc95f30338c6bdfbfe682ca2311cb
      } else {
          def.krate.0 as u64
      }
-@@ -1401,6 +1405,16 @@ pub(crate) fn resolved_traits_hash(p: &Program) -> u64 {
+@@ -1401,6 +1405,18 @@ pub(crate) fn resolved_traits_hash(p: &Program) -> u64 {
                  hash_ty(&mut h, p, &p.tys, t);
                  has_default.hash(&mut h);
              }
@@ -10099,11 +10152,13 @@ index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..d2acc95f30338c6bdfbfe682ca2311cb
 +                for predicate in &item.region_predicates {
 +                    hash_predicate(&mut h, p, &p.tys, predicate);
 +                }
++                item.bounds.len().hash(&mut h);
++                for predicate in &item.bounds { hash_predicate(&mut h, p, &p.tys, predicate); }
 +            }
          }
          (r.methods.len() as u64).hash(&mut h);
          for &(d, n) in &r.methods {
-@@ -2344,7 +2358,14 @@ fn sig_fingerprint(p: &Program, def: DefId) -> Fingerprint {
+@@ -2344,7 +2360,14 @@ fn sig_fingerprint(p: &Program, def: DefId) -> Fingerprint {
          2u8.hash(&mut h);
          // Const and static payloads are found by def; aliases by flat
          // name, which the def record carries.
@@ -10119,7 +10174,7 @@ index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..d2acc95f30338c6bdfbfe682ca2311cb
              0u8.hash(&mut h);
              hash_ty_deep(&mut h, p, &p.tys, item.ty, &mut seen);
              value_fp(p, &item.value, &item.value_fp).hash(&mut h);
-@@ -4121,6 +4142,18 @@ fn main() {}
+@@ -4121,6 +4144,18 @@ fn main() {}
          assert_ne!(a, changed, "a parameter type edit does");
      }
  
@@ -10138,7 +10193,7 @@ index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..d2acc95f30338c6bdfbfe682ca2311cb
      /// Non-generic instance keys hash exactly like today's disk-def slot
      /// keys, and lifetime args never enter the hash (section 4.2).
      #[test]
-@@ -4187,7 +4220,7 @@ fn main() {}
+@@ -4187,7 +4222,7 @@ fn main() {}
                  if let Terminator::Call { target, unwind, .. } = &b.term {
                      assert!(unwind.is_some(), "every call carries a cleanup edge (W-CORELANG)");
                      match target {

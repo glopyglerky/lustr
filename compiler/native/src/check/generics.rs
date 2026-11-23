@@ -5640,6 +5640,7 @@ pub struct AssociatedTypeGenerics {
     pub lifetimes: Vec<(Sym, u32)>,
     pub region_facts: Vec<(u32, u32)>,
     pub region_predicates: Vec<Predicate>,
+    pub bounds: Vec<Predicate>,
     pub span: Span,
 }
 
@@ -5668,6 +5669,14 @@ mod associated_item_predicate_tests {
         // environment; it must not become an unconditional trait superbound.
         assert!(collect("trait Family { type View where Self: Copy; } impl<T: Copy> Family for T { type View = u32; } fn main() {}").is_ok());
         assert!(collect("trait Family { type View where Self: Copy; } struct NonCopy; fn main() {}").is_ok());
+    }
+
+    #[test]
+    fn associated_item_where_clause_is_a_projection_well_formedness_obligation() {
+        let source = "trait Family { type View where Self: Copy; } fn take<T: Family>(_: T::View) {} fn main() {}";
+        let errors = collect(source).err().expect("the projection must prove its own item predicates");
+        assert!(errors.iter().any(|diag| diag.code == "L0612"), "{errors:?}");
+        if let Err(errors) = collect(&source.replace("T: Family>", "T: Family + Copy>")) { panic!("valid projection: {errors:?}"); }
     }
 
     #[test]
@@ -7426,6 +7435,7 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
                     let args = p.tys.intern_args(&[GenericArg::Ty(proj)]);
                     preds.push(Predicate::Trait(Binder::plain(TraitRef { def: cx.lang.sized, args, bindings: EMPTY_BINDINGS })));
                 }
+                let item_bounds = preds.clone();
                 generics.predicates.extend(preds);
                 if at_default.is_some() {
                     // Associated type defaults are unstable in
@@ -7442,7 +7452,7 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
                 }
                 p.gx.trait_assoc_generics.insert(assoc_def, AssociatedTypeGenerics {
                     parent: trait_def, generics: own, lifetimes: own_scope.lifetimes,
-                    region_facts: own_scope.region_facts, region_predicates, span: at_span,
+                    region_facts: own_scope.region_facts, region_predicates, bounds: item_bounds, span: at_span,
                 });
             }
         }
@@ -14696,6 +14706,15 @@ fn wf_goals(p: &mut Program, adt_idx: &FxMap<DefId, usize>, t: Ty, seen: &mut Ve
             if let Some(def) = p.gx.index.trait_of_assoc(assoc.0) {
                 out.push(TraitRef { def, args: a, bindings: EMPTY_BINDINGS });
             }
+            if let Some(item) = p.gx.trait_assoc_generics.get(&assoc.0)
+                && item.generics.params.is_empty() && item.lifetimes.is_empty() {
+                let predicates = item.generics.predicates.clone();
+                let arguments = p.tys.args(a).to_vec();
+                for predicate in predicates {
+                    if let Predicate::Trait(bound) = subst_predicate(&mut p.tys, predicate, &arguments)
+                        && bound.count == 0 { out.push(bound.value); }
+                }
+            }
             in_args(p, seen, out, sized, a);
         }
         TyKind::FnDef(_, a) | TyKind::Closure(_, a) | TyKind::Opaque(_, a) => in_args(p, seen, out, sized, a),
@@ -14952,6 +14971,25 @@ fn check_written_wf(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&crate:
             .collect();
         let args = p.tys.intern_args(&own);
         generics.predicates.push(Predicate::Trait(Binder::plain(TraitRef { def: rec.def, args, bindings: EMPTY_BINDINGS })));
+        // Associated bounds are checked under that item's own where clause.
+        // Collection appended these exact predicates after the trait-wide
+        // clauses. Remove only their appended occurrences, retaining a
+        // separately written equal trait-wide clause and its original scope.
+        let associated: Vec<_> = rec.assoc_items.iter()
+            .filter_map(|&(assoc, _, is_type)| is_type.then(|| p.gx.trait_assoc_generics.get(&assoc)).flatten().cloned()).collect();
+        for item in &associated {
+            for bound in &item.bounds {
+                if let Some(index) = generics.predicates.iter().rposition(|predicate| predicate == bound) {
+                    generics.predicates.remove(index);
+                }
+            }
+        }
+        for item in associated {
+            let mut item_generics = generics.clone();
+            item_generics.predicates.extend(item.generics.predicates);
+            item_generics.predicates.extend(item.bounds);
+            items.push((Vec::new(), Vec::new(), item_generics, item.span));
+        }
         // An associated const's written type is a written type of
         // the trait (`const C: Need<String>` is E0277 with no
         // impl): the initializer pass alone cannot see a const

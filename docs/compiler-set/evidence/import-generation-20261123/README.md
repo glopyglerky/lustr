@@ -91,6 +91,24 @@ linked control does not establish default-profile build/run or Rust debugging.
 Existing broader-campaign count expectations now require zero native work for
 provider-only body edits while still requiring changed metadata/archive work.
 
+The constructed `56441e16` package passed the complete scalar check history and
+all six ordinary predicate differential cases. Its first linked control failed
+before compilation because Cargo requested an unrepresented incremental-link
+context. The separate linked fixture now declares `incremental = false` along
+with its original abort/debug-disabled profile. The default-profile check
+fixture is unchanged. This failure remains separate from the passing checks.
+
+The next native consumer check reproduced a second false acceptance: a generic
+`T::View` use omitted the associated item's `Self: Copy` condition. Pinned Rust
+rejected it with E0277; the preceding installed compiler accepted it. Native WF
+now consumes the ordinary item's trait predicates at its projection. Bound
+provenance is retained so the trait declaration checks each associated bound in
+that item's environment without turning its conditions into supertraits.
+**Six focused tests pass** after the repair. Its initial test exposed the scope
+mistake and remains retained; the repaired valid cases and invalid consumer
+pass their independent expectations. Full projection outlives/environment
+checking and the selective upstream GAT service remain open.
+
 GAT provider validation, selective upstream normalization/WF/region service,
 wider metadata and full Cargo/debug/runtime qualification remain unfinished.
 This slice makes no near-stock or full-replacement performance claim.

@@ -1414,6 +1414,8 @@ pub(crate) fn resolved_traits_hash(p: &Program) -> u64 {
                 for predicate in &item.region_predicates {
                     hash_predicate(&mut h, p, &p.tys, predicate);
                 }
+                item.bounds.len().hash(&mut h);
+                for predicate in &item.bounds { hash_predicate(&mut h, p, &p.tys, predicate); }
             }
         }
         (r.methods.len() as u64).hash(&mut h);

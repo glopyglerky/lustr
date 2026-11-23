@@ -221,10 +221,13 @@ fn main() {
     let copy = "struct Codec; trait Family { type View where Self: Copy; } impl Family for Codec { type View = u32; } fn main() {}";
     let outlives = "trait Family { type View where Self: 'static; } impl<'b> Family for &'b u8 { type View = u32; } fn main() {}";
     let region_trait = "trait Tag<T> {} trait Family { type View where Self: Tag<&'static u8>; } impl<'a> Tag<&'a u8> for &'a u8 {} impl<'b> Family for &'b u8 { type View = u32; } fn main() {}";
+    let projection = "trait Family { type View where Self: Copy; } fn take<T: Family>(_: T::View) {} fn main() {}";
     let predicate_source = test.root.join("predicates.rs");
     for (label, source, status) in [
         ("copy-invalid", copy.to_owned(), 1),
         ("copy-valid", copy.replace("struct Codec;", "#[derive(Copy, Clone)] struct Codec;"), 0),
+        ("projection-invalid", projection.to_owned(), 1),
+        ("projection-valid", projection.replace("T: Family>", "T: Family + Copy>"), 0),
         ("outlives-invalid", outlives.to_owned(), 1),
         ("outlives-valid", outlives.replace("impl<'b> Family for &'b u8", "impl Family for &'static u8"), 0),
         ("region-trait-invalid", region_trait.to_owned(), 1),
@@ -239,7 +242,7 @@ fn main() {
             .arg("-o").arg(test.root.join("predicate-original.rmeta")).env("LD_LIBRARY_PATH", test.sdk.join("lib"));
         let original_output = test.run(&format!("predicate-{label}-original"), &mut original, status);
         if status != 0 {
-            assert!(String::from_utf8_lossy(&native_output).contains(if label == "copy-invalid" { "L0612" } else { "L0617" }));
+            assert!(String::from_utf8_lossy(&native_output).contains(if matches!(label, "copy-invalid" | "projection-invalid") { "L0612" } else { "L0617" }));
             assert!(String::from_utf8_lossy(&original_output).contains("error[E"));
         }
     }
@@ -248,7 +251,7 @@ fn main() {
     // existing abort/debug-disabled link context. This does not qualify an
     // ordinary default-profile build or run.
     fs::create_dir_all(test.root.join("linked/src")).unwrap();
-    write(test.root.join("linked/Cargo.toml"), "[package]\nname = \"linked_generation\"\nversion = \"0.0.0\"\nedition = \"2024\"\n[dependencies]\nschema = { path = \"../workspace/provider\" }\n[profile.dev]\npanic = \"abort\"\ndebug = 0\n");
+    write(test.root.join("linked/Cargo.toml"), "[package]\nname = \"linked_generation\"\nversion = \"0.0.0\"\nedition = \"2024\"\n[dependencies]\nschema = { path = \"../workspace/provider\" }\n[profile.dev]\npanic = \"abort\"\ndebug = 0\nincremental = false\n");
     write(test.root.join("linked/src/main.rs"), "fn main() { println!(\"{}\", schema::project(255u64)); }\n");
     test.reports();
     for (label, mask, expected) in [("cold", "63u64", b"63\n".as_slice()), ("noop", "63u64", b"63\n"), ("provider-edit", "127u64", b"127\n")] {

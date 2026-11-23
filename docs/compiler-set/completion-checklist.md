@@ -350,6 +350,15 @@ gate; they remain open coverage. The next
 integration step remains the selective upstream normalization/WF/region service
 and genuine provider metadata; these prerequisites do not close P1 or P2.
 
+The next owned regression slice also checks an associated item's native trait
+predicates when a generic consumer writes its projection. Pinned Rust rejected
+the missing `Copy` condition with E0277 while the installed preceding source
+accepted it. Associated bounds now retain their collection provenance and are
+checked in the item's own environment; its conditions do not become supertrait
+bounds. Six focused tests pass. Installed differential and linked-control
+qualification of this source is pending. General projection outlives and wider
+environments remain part of P1's required semantic service.
+
 The coordinator owns this register, shared-interface decisions and final
 integration. Worker A starts P1/P2; worker B starts P3; worker C starts P4 and
 the runtime prerequisites it exposes. Use isolated worktrees and non-overlapping
