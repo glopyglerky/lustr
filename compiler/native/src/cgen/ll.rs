@@ -254,6 +254,7 @@ struct Ll {
     statics: Vec<bool>,
     /// The cleanup blocks each landing pad enters.
     pads: BTreeSet<u32>,
+    resumes: bool,
     decls: BTreeSet<String>,
     body: String,
     /// The number of continuation blocks made so far.
@@ -492,6 +493,7 @@ impl FnGen<'_, '_> {
             n_helpers: 0,
             statics,
             pads: BTreeSet::new(),
+            resumes: false,
             decls: BTreeSet::new(),
             body: String::new(),
             conts: 0,
@@ -669,6 +671,7 @@ impl FnGen<'_, '_> {
                 _ => ll.body.push_str("  ret void\n"),
             },
             Terminator::Unreachable | Terminator::MatchExhausted if cleanup && self.p.unwind => {
+                ll.resumes = true;
                 ll.conts += 1;
                 let _ = writeln!(ll.body, "  %v{0} = load {{ ptr, i32 }}, ptr %exn\n  resume {{ ptr, i32 }} %v{0}", ll.conts);
             }
@@ -835,9 +838,10 @@ impl FnGen<'_, '_> {
                 }
             }
         }
-        // The exception slot: landing pads store it, ladder ends load it (a cleanup block
-        // whose every entry became native code stays, unreachable, and still names it).
-        if !ll.pads.is_empty() || self.cleanup.iter().any(|&c| c) {
+        // A retained cleanup block can resume even if native lowering eliminated
+        // all landing pads that used to reach it. LLVM still requires a personality.
+        let exception_cleanup = !ll.pads.is_empty() || ll.resumes;
+        if exception_cleanup {
             allocas.push_str("  %exn = alloca { ptr, i32 }\n");
         }
         allocas.push_str(&ll.allocas);
@@ -859,7 +863,7 @@ impl FnGen<'_, '_> {
             attrs.push_str(" uwtable");
             // The C personality, as the helpers' cleanup guards have it: every landing pad
             // here only cleans up, and LLVM inlines no fn of another personality.
-            if !ll.pads.is_empty() {
+            if exception_cleanup {
                 attrs.push_str(" personality ptr @__gcc_personality_v0");
             }
         } else {

@@ -2482,7 +2482,7 @@ pub fn gen_fn_total(p: &Program, body: &Body, map: &SourceMap, base_line: u32, s
 
 pub(crate) fn gen_fn_rust_debug(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32]) -> FnOut {
     let source = rust_debug_source(p, body.fn_id, map);
-    if source.is_none() && !p.std_source_span(p.fn_def(body.fn_id).name_span) {
+    if source.is_none() && !shipped_debug_body(p, body.fn_id) {
         return FnOut { error: Some("Rust debug function source cannot be bound to the native body".into()), ..Default::default() };
     }
     let mut output = gen_fn_policy(p, body, map, base_line, slots, false, true);
@@ -2491,8 +2491,8 @@ pub(crate) fn gen_fn_rust_debug(p: &Program, body: &Body, map: &SourceMap, base_
 }
 
 pub(crate) fn rust_debug_source(p: &Program, id: LocalDefId, map: &SourceMap) -> Option<(u64, u64)> {
+    if shipped_debug_body(p, id) { return None; }
     let item = p.fn_def(id);
-    if p.std_source_span(item.name_span) { return None; }
     let name = map.call_site(item.name_span);
     let body = map.call_site(p.ast.block(item.body?).span);
     let text = map.text(name.file)?;
@@ -2503,6 +2503,10 @@ pub(crate) fn rust_debug_source(p: &Program, id: LocalDefId, map: &SourceMap) ->
         &[map.path(name.file).as_bytes(), &line.to_le_bytes(), &column.to_le_bytes(), source.as_bytes()],
         91,
     ))
+}
+
+fn shipped_debug_body(p: &Program, id: LocalDefId) -> bool {
+    p.std_source_span(p.fn_def(id).name_span) || p.fn_shipped_crate(id).is_some()
 }
 
 fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32], nounwind: bool, rust_debug: bool) -> FnOut {
@@ -2541,7 +2545,7 @@ fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slot
     if rust_debug || ll::on(p) {
         // Only the requested Rust crate has a debug source contract.
         // The text of shipped std shims is not part of that crate's file.
-        let debug = rust_debug && !p.std_source_span(p.fn_def(body.fn_id).name_span);
+        let debug = rust_debug && !shipped_debug_body(p, body.fn_id);
         match g.function_ll(debug) {
             Ok(f) => llfn = Some(f),
             Err(e) => return FnOut { error: Some(e), ..Default::default() },

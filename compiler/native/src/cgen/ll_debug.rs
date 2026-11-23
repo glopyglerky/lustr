@@ -3,7 +3,8 @@
 // locations to the addresses in the emitted object.
 use super::{CTy, FnGen, Layout, LocalDecl, Span, VariantShape, c_layout, cty, ty_name};
 use crate::ir::{Body, Local, StmtKind, Terminator};
-use crate::ty::layout::{EnumTag, niche_tag_value};
+use crate::ty::fmt::{FmtTy, fmt_kind};
+use crate::ty::layout::{self, EnumTag, Repr, ReprKind, niche_tag_value};
 use crate::ty::{FloatTy, IntTy, Mut, Ty, TyIntern, TyKind, USIZE, int};
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::fmt::Write;
@@ -112,6 +113,28 @@ impl DebugFn {
             }
             TyKind::Unit => basic_type("()", 0, "DW_ATE_unsigned"),
             TyKind::Never => basic_type("!", 0, "DW_ATE_unsigned"),
+            TyKind::FnPtr(signature) => {
+                let signature = function.body.tys.sig(signature).value;
+                let shape = debug_layout(function, ty)?;
+                let name = ty_name(function.p, &function.body.tys, ty);
+                let id = self.reserve_type(ty, &name);
+                let mut types = Vec::new();
+                let result = match function.body.tys.kind(signature.output) {
+                    TyKind::Unit | TyKind::Never => "null".to_owned(),
+                    _ => format!("!%{}", self.ty(function, signature.output)?),
+                };
+                types.push(result);
+                for &input in function.body.tys.tys_of(signature.inputs).iter() {
+                    types.push(format!("!%{}", self.ty(function, input)?));
+                }
+                let signature = self.push(format!("!DISubroutineType(types: !{{{}}})", types.join(", ")));
+                self.entries[id] = format!(
+                    "!DIDerivedType(tag: DW_TAG_pointer_type, name: {}, baseType: !%{signature}, size: {})",
+                    quote(&name),
+                    shape.size * 8
+                );
+                return Ok(id);
+            }
             TyKind::Adt(..)
                 if let CTy::Adt(adt) = cty(&function.body.tys, ty)
                     && !function.p.adt(adt).is_enum =>
@@ -163,14 +186,30 @@ impl DebugFn {
                 return self.variants(function, ty, &[("None", None), ("Some", Some(value))]);
             }
             TyKind::Adt(..) if matches!(cty(&function.body.tys, ty), CTy::BoxDyn) => return self.trait_pointer(function, ty),
+            TyKind::Adt(..) if function.body.tys.is_exit_code(ty) => {
+                let shape = debug_layout(function, ty)?;
+                let word = debug_layout(function, int(IntTy::U8))?;
+                if shape.size != word.size || shape.align != word.align {
+                    return Err("Rust ExitCode does not have the native status-byte layout".into());
+                }
+                let id = self.reserve_type(ty, "ExitCode");
+                let byte = self.ty(function, int(IntTy::U8))?;
+                let code = self.field(id, "__0", byte, word.size, word.align, 0);
+                self.structure(id, "ExitCode", &shape, &[code]);
+                return Ok(id);
+            }
             TyKind::Adt(..) if matches!(cty(&function.body.tys, ty), CTy::String | CTy::Vec(_)) => {
                 let element = function.body.tys.vec_elem(ty).unwrap_or_else(|| int(IntTy::U8));
                 return self.buffer(function, ty, element);
             }
+            TyKind::Adt(..) if fmt_kind(&function.body.tys, ty) == Some(FmtTy::Formatter) => {
+                return self.formatter(function, ty);
+            }
             TyKind::Dyn(..) => return self.trait_pointer(function, ty),
             kind => {
                 return Err(format!(
-                    "Rust debug type {kind:?} in {} is not represented",
+                    "Rust debug type {} ({kind:?}) in {} is not represented",
+                    ty_name(function.p, &function.body.tys, ty),
                     function.p.display_path(function.p.fn_info(function.body.fn_id).name)
                 ));
             }
@@ -280,6 +319,37 @@ impl DebugFn {
         let len = self.field(id, "len", usize_type, word.size, word.align, len_at);
         let cap = self.field(id, "cap", usize_type, word.size, word.align, cap_at);
         self.structure(id, &name, &shape, &[ptr, len, cap]);
+        Ok(id)
+    }
+
+    fn formatter(&mut self, function: &FnGen<'_, '_>, ty: Ty) -> Result<usize, String> {
+        let name = "std::fmt::Formatter";
+        // These private fields describe the native Formatter in runtime/fmt.h.
+        let pointer = layout::ptr_layout();
+        let fields = [
+            ("fill", IntTy::U32),
+            ("align", IntTy::U8),
+            ("flags", IntTy::U8),
+            ("width", IntTy::U16),
+            ("prec", IntTy::U16),
+        ];
+        let layouts: Vec<_> = std::iter::once(pointer.clone())
+            .chain(fields.iter().map(|&(_, ty)| layout::int_layout(ty)))
+            .collect();
+        let shape = layout::struct_layout(&layouts, Repr { kind: ReprKind::C, ..Repr::default() })
+            .map_err(|error| format!("Rust debug layout for {name}: {error:?}"))?;
+        let native = debug_layout(function, ty)?;
+        if (shape.size, shape.align) != (native.size, native.align) {
+            return Err(format!("Rust debug layout for {name} differs from the native runtime"));
+        }
+        let id = self.reserve_type(ty, name);
+        let sink = self.push(format!("!DIDerivedType(tag: DW_TAG_pointer_type, baseType: null, size: {})", pointer.size * 8));
+        let mut members = vec![self.field(id, "buf", sink, pointer.size, pointer.align, shape.field_offsets[0])];
+        for ((name, ty), (field, &offset)) in fields.into_iter().zip(layouts[1..].iter().zip(&shape.field_offsets[1..])) {
+            let base = self.ty(function, int(ty))?;
+            members.push(self.field(id, name, base, field.size, field.align, offset));
+        }
+        self.structure(id, name, &shape, &members);
         Ok(id)
     }
 

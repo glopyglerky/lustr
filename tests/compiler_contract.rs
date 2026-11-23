@@ -600,6 +600,42 @@ mod tests {
     assert!(!stdout.contains("ordinary entry was called"));
 }
 
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn default_cargo_test_reports_native_termination() {
+    let f = Fixture::new("test-result");
+    f.source("Cargo.toml", "[package]\nname = \"test-result\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    f.source("src/main.rs", r#"
+#[test]
+fn result_passes() -> Result<(), &'static str> { Ok(()) }
+
+#[test]
+fn exit_code_passes() -> std::process::ExitCode { std::process::ExitCode::SUCCESS }
+
+#[test]
+#[ignore]
+fn result_fails() -> Result<(), &'static str> { Err("native returned error") }
+
+#[test]
+#[ignore]
+fn exit_code() -> std::process::ExitCode { std::process::ExitCode::from(17) }
+"#);
+    let pass = f.succeeds("pass", f.command("cargo").args(["test", "--offline"]));
+    let stdout = String::from_utf8_lossy(&pass.stdout);
+    assert!(stdout.contains("result_passes ... ok"), "{stdout}");
+    assert!(stdout.contains("exit_code_passes ... ok"), "{stdout}");
+    let failure = f.invoke("failed-result", f.command("cargo").args(["test", "--offline", "--", "--ignored", "result_fails"]));
+    assert_eq!(failure.status.code(), Some(101));
+    let stdout = String::from_utf8_lossy(&failure.stdout);
+    assert!(stdout.contains("Error: \"native returned error\""), "{stdout}");
+    assert!(stdout.contains("result_fails ... FAILED"), "{stdout}");
+    let exit = f.invoke("failed-exit-code", f.command("cargo").args(["test", "--offline", "--", "--ignored", "exit_code"]));
+    assert_eq!(exit.status.code(), Some(101));
+    let stdout = String::from_utf8_lossy(&exit.stdout);
+    assert!(stdout.contains("exit_code ... FAILED"), "{stdout}");
+}
+
 #[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT"]
 fn native_output_failure_does_not_become_success() {
