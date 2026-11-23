@@ -186,9 +186,18 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     for (key, value) in [("overflow-checks", overflow), ("debug-assertions", debug)] {
         native.extend(["-C".into(),format!("{key}={value}")]);
     }
-    if let Some(manifest_dir) = std::env::var_os("CARGO_MANIFEST_DIR") {
-        let manifest = PathBuf::from(manifest_dir).join("Cargo.toml");
+    let cargo_manifest = std::env::var_os("CARGO_MANIFEST_PATH").map(PathBuf::from);
+    let resolved_by_cargo = cargo_manifest.is_some();
+    let manifest = cargo_manifest.or_else(|| {
+        std::env::var_os("CARGO_MANIFEST_DIR").map(|directory| PathBuf::from(directory).join("Cargo.toml"))
+    });
+    if let Some(manifest) = manifest {
         native.extend(["--manifest-path".into(),std::path::absolute(manifest).ok()?.to_str()?.into()]);
+        // The outer Cargo invocation has already resolved this package.
+        // Internal graph queries must neither fetch inputs nor change its lockfile.
+        if resolved_by_cargo {
+            native.push("--frozen".into());
+        }
         // Cargo already resolved the active features, including the literal
         // "default" feature when enabled. Keep that set through planning
         // and prevent Lust's developer config from substituting another set.
