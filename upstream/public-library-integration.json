@@ -303,7 +303,7 @@
     "crates/lustr-native-core/src/public_metadata_query.rs": "d46c6bd3aac2c90fb1010b8cbf68010ec6bdf3ee060d99373cddbceb5a601d2e",
     "crates/lustr-native-core/src/unit_object.rs": "d43929971c980ec395913ce5f6cb13955e012e72ef2fcddcd14a24adaea1bd24",
     "crates/lustr-native-core/src/unit_publication.rs": "035ee3f6a763a9562348f50476815bd24e7b6bc67a1a14a69edcd2fe8f44ae05",
-    "crates/lustr-native-core/src/native_object.rs": "b412b2237ae84d73cfab2c29db07f097d44ddb22704289dd20ed4b4b3864947c",
+    "crates/lustr-native-core/src/native_object.rs": "5164db402243cb713d876390d7781c097f4fdb4be087d163eeee5bb920e718b9",
     "crates/lustr-native-core/src/mixed_unit.rs": "2313855e73b42ebe2bad81817918b6c323896dabebc589ebacc2395afbae7ac1",
     "crates/lustr-native-core/LICENSE-LLVM": "8d85c1057d742e597985c7d4e6320b015a9139385cff4cbae06ffc0ebe89afee",
     "crates/lustr-metadata-encoder/Cargo.toml": "0f63faa420b6c2e1ec91739f61f7ee77ee874233399ed8e744783325168493c2",

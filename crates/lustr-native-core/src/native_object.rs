@@ -187,12 +187,11 @@ pub(crate) fn complete_items(
         return Ok(bindings);
     }
     let emitted = emit_with_backend(prepared, ObjectBackend::TinyCc)?;
-    match emitted.publish_object()? {
-        super::unit_publication::Publication::Durable => Ok(bindings),
-        super::unit_publication::Publication::DurabilityUnknown(error) => {
-            Err(format!("native object publication durability unknown: {error}"))
-        }
-    }
+    // The original linker owns the final artifact. Its private input needs a
+    // complete file at an exclusive name for this invocation.
+    fs::hard_link(&emitted.object, emitted.prepared.output())
+        .map_err(|error| format!("cannot stage the checked native linker input: {error}"))?;
+    Ok(bindings)
 }
 
 fn item_tokens(mut lexed: lexer::Lexed, extents: &[Range<u32>], policy_len: usize) -> Result<lexer::Lexed, String> {
@@ -433,10 +432,11 @@ fn emit_with_backend(prepared: PreparedUnit, backend: ObjectBackend<'_>) -> Resu
     let object=scratch.join("unit.o");
     // Compile the original generated unit once using an explicit freestanding
     // backend. Referenced symbols must pass the independent ELF closure gate.
-    let input=scratch.join("unit.c");fs::write(&input,&text).map_err(|e|e.to_string())?;
     if matches!(backend, ObjectBackend::TinyCc) {
         crate::tcc::compile_scalar_object(&object, &text, false)?;
     } else {
+        let input = scratch.join("unit.c");
+        fs::write(&input, &text).map_err(|error| error.to_string())?;
         if let Some((generation,backend))=artifact {backend.verify(generation)?;}
         let backend=artifact.map_or_else(||std::path::Path::new("clang"),|(_,backend)|backend.executable());
         let mut command=Command::new(backend);
