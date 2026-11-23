@@ -324,7 +324,7 @@
     "upstream/proc-macro-expansion.patch": "a7f4f05d73321d640fd131211e53f532c84c27c13cc7aaba3ba27828d6a1a004",
     "tools/proc-macro-expansion/client/Cargo.toml": "e29dc1b0b694f174165744795bf3c3c436c4af52843d3e41a50cf6edc568d2c9",
     "tools/proc-macro-expansion/client/Cargo.lock": "29c454cf78102050615d752a7f662d766159e2ee553af1f1494c97383908619d",
-    "tools/proc-macro-expansion/client/src/main.rs": "479f126d7dc8ca4a50f8ab63c3111e65ab9414a56c853e85e008e098c542d1a7",
+    "tools/proc-macro-expansion/client/src/main.rs": "fc62f19f684be74ca3da3e4a37d25ab1195bc7bba111757667c81b61177cf2bc",
     "tools/proc-macro-expansion/server/Cargo.toml": "204413094ed7bc3abf672d35902583a948801ead82c323799ce80e92490d2753",
     "tools/proc-macro-expansion/server/Cargo.lock": "d48eddcebfdb746ef0a0e957d6f5cbb7e647798e98c247614b43672ec283ab99",
     "docs/compiler-set/evidence/metadata-sdk-receipt-20261120/receipt.json": "4e400b263bf9923616dea44ead2d77213703177d3bfaf6becd6a19a4c5a657a7",

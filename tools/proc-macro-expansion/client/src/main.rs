@@ -141,7 +141,7 @@ fn output_tokens(
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let request: Request = serde_json::from_reader(io::stdin().lock())?;
+    let mut request: Request = serde_json::from_reader(io::stdin().lock())?;
     let server = AbsPathBuf::try_from(request.server.as_str()).map_err(|_| "server path is not absolute")?;
     let dylib = AbsPathBuf::try_from(request.dylib.as_str()).map_err(|_| "artifact path is not absolute")?;
     let version = semver::Version::parse("1.102.0-nightly")?;
@@ -166,6 +166,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let def_site = root_span(provider, &request.definition);
     let call_site = root_span(consumer, &request.call);
     let input = arguments(&request, call_site)?;
+    let environment = std::mem::take(&mut request.environment);
     let unsupported = RefCell::new(None::<String>);
     let reject = |request_kind| reject_subrequests(request_kind).inspect_err(|error| {
         unsupported.borrow_mut().get_or_insert_with(|| error.to_string());
@@ -201,7 +202,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let observed = RefCell::<Option<ExpansionInputs>>::new(None);
     let note = |inputs| assert!(observed.replace(Some(inputs)).is_none());
     let expanded = expansion.expand_with_inputs(
-        input.view(), None, request.environment, def_site, call_site, call_site,
+        input.view(), None, environment, def_site, call_site, call_site,
         request.working_directory.clone(), &callback, &note,
     );
     if let Some(error) = unsupported.take() {
