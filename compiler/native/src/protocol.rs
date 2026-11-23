@@ -33,7 +33,7 @@ use std::path::{Path, PathBuf};
 pub mod host_runtime;
 #[path = "../../../src/library_contract.rs"]
 pub mod library_contract;
-pub use library_contract::{ExecutableExtern, ExternMetadata, LibraryKey, LibraryOptions};
+pub use library_contract::{DebugOptions, ExecutableExtern, ExternMetadata, LibraryKey, LibraryOptions};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Cmd {
@@ -685,8 +685,10 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     let (mut library_cfg, mut library_search) = (Vec::new(),Vec::new());
     let mut library_external = None;
     let mut executable_artifacts = false;
+    let mut executable_test = false;
     let mut executable_dependencies = Vec::new();
     let mut library_options = LibraryOptions::default();
+    let mut library_debug_supplied = false;
     // Every --target named, in order. One builds a session; several are
     // the release driver's list and build one session each.
     let mut targets: Vec<String> = Vec::new();
@@ -722,12 +724,17 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
             "--lustr-library-search" => library_search.push(PathBuf::from(it.next()?)),
             "--lustr-library-extern-metadata" if library_external.is_none() => library_external = Some(ExternMetadata::parse(it.next()?)?),
             "--lustr-executable-artifacts" if !executable_artifacts => executable_artifacts = true,
+            "--lustr-executable-test" if !executable_test => executable_test = true,
             "--lustr-executable-extern" => executable_dependencies.push(ExecutableExtern {
                 metadata: ExternMetadata::parse(it.next()?)?,
                 archive: Some(it.next()?).filter(|path| !path.is_empty()).map(PathBuf::from),
             }),
             "--lustr-library-embed-metadata" if library_options.embed_metadata.is_none() => library_options.embed_metadata = Some(rustc_bool(it.next()?)?),
             "--lustr-library-force-warn-unused-crate-dependencies" if !library_options.force_warn_unused_crate_dependencies => library_options.force_warn_unused_crate_dependencies = true,
+            "--lustr-library-debug-options" if !library_debug_supplied => {
+                library_options.debug = DebugOptions::decode(it.next()?.as_bytes())?;
+                library_debug_supplied = true;
+            }
             "--json" => json = true,
             "--timings" => timings = true,
             "-g" => debug = true,
@@ -774,7 +781,8 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     }
     let library_supplied = library_name.is_some() || library_metadata.is_some() || library_extra.is_some() || library_cwd.is_some()
         || !library_cfg.is_empty() || !library_search.is_empty() || library_external.is_some()
-        || executable_artifacts || !executable_dependencies.is_empty() || library_options != LibraryOptions::default();
+        || executable_artifacts || executable_test || !executable_dependencies.is_empty()
+        || library_debug_supplied || library_options != LibraryOptions::default();
     if library_supplied && (rustc || release || profile.is_some()) { return None; }
     let abs = |p: &Path| std::path::absolute(p).unwrap_or_else(|_| p.to_path_buf());
     // Release and the rustc oracle are build/check-only, with no extra lust flags.
@@ -888,7 +896,12 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
         } else {
             session.krate.target_name = key.crate_name.clone();
         }
-        session.krate.target_explicit = true;
+        if executable_test && (session.profile.panic_abort
+            || !key.executable_dependencies.as_ref().is_some_and(Vec::is_empty)) { return None; }
+        session.krate.test = executable_test;
+        // Cargo gives a bin name for binary unit tests. Library unit
+        // tests supply their source and crate name, with no --crate-type.
+        session.krate.target_explicit = !executable_test || std::env::var_os("CARGO_BIN_NAME").is_some();
         session.library = Some(key);
     }
     let req = Request {
@@ -1043,6 +1056,7 @@ pub fn encode(r: &Request) -> Vec<u8> {
         }
         put_field(&mut out,match r.library_options.embed_metadata {None=>b"-",Some(true)=>b"1",Some(false)=>b"0"});
         put_field(&mut out,if r.library_options.force_warn_unused_crate_dependencies {b"1"} else {b"0"});
+        put_field(&mut out,&r.library_options.debug.encode());
     }
     for f in &s.features {
         put_field(&mut out, f.as_bytes());
@@ -1115,6 +1129,7 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
             } else { None };
             library_options.embed_metadata=match get_field(r)?.as_slice() {b"-"=>None,b"1"=>Some(true),b"0"=>Some(false),_=>return None};
             library_options.force_warn_unused_crate_dependencies=match get_field(r)?.as_slice() {b"0"=>false,b"1"=>true,_=>return None};
+            library_options.debug=DebugOptions::decode(&get_field(r)?)?;
             let library=LibraryKey{crate_name,metadata,extra_filename,source_path,working_directory,check_cfg,search_paths,external,executable_dependencies,sdk_receipt};
             if !library.valid() || !library.valid_output(&out, f[0] == "check", library_options) || library.source_path!=file
                 || target_triple!=library_contract::TARGET || target_kind!=library.target_kind()

@@ -5725,9 +5725,7 @@ fn collect_with_definitions_inner(
 pub(crate) fn check_main_termination(p: &Program, errs: &mut Vec<Diag>) {
     let Some(main) = p.main else { return };
     let f = p.fn_info(main);
-    let term = |t: Ty| t == UNIT || p.tys.is_exit_code(t);
-    let ret_ok = term(f.ret) || matches!(p.tys.result_args(f.ret), Some((ok, e)) if term(ok) && has_debug(p, &p.tys, e));
-    if !f.params.is_empty() || !ret_ok {
+    if !f.params.is_empty() || !has_native_termination(p, f.ret) {
         errs.push(Diag::new(
             "L0110",
             f.def(&p.ast).name_span,
@@ -5735,6 +5733,11 @@ pub(crate) fn check_main_termination(p: &Program, errs: &mut Vec<Diag>) {
             "Write `fn main() { ... }` or `fn main() -> Result<(), E> { ... }`.",
         ));
     }
+}
+
+pub(crate) fn has_native_termination(p: &Program, ty: Ty) -> bool {
+    let term = |t: Ty| t == UNIT || p.tys.is_exit_code(t);
+    term(ty) || matches!(p.tys.result_args(ty), Some((ok, e)) if term(ok) && has_debug(p, &p.tys, e))
 }
 
 /// The parts of field type `fty` of Adt `id` that rustc's derive bounds

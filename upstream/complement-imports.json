@@ -201,6 +201,59 @@
         "crates/lustr-metadata-encoder/LICENSE-MIT",
         "crates/lustr-metadata-encoder/LICENSE-APACHE"
       ]
+    },
+    {
+      "id": "native-libtest-runtime",
+      "missing_capability": "The real Cargo test harness, including argument handling, filtering, concurrent execution and test output reporting",
+      "owner": "Installed native Cargo test runtime",
+      "semantic_boundary": "Lust parses, checks, lowers and emits the test bodies and captures their native panic payloads. Pinned Rust libtest owns harness execution policy and reporting.",
+      "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "upstream_paths": [
+        "library/test/src/lib.rs",
+        "library/test/src/types.rs",
+        "library/test/src/test_result.rs",
+        "compiler/rustc_builtin_macros/src/test.rs",
+        "compiler/rustc_lint_defs/src/builtin.rs"
+      ],
+      "upstream_source_sha256": {
+        "library/test/src/lib.rs": "89c07ab60c9659523ad524976b7d6a4a4505b9fc68db37b3f6cb3efe0de15a42",
+        "library/test/src/types.rs": "5ab210d47c63884da6a081146f53ada66d3a980f64df2548be2713732ff1f019",
+        "library/test/src/test_result.rs": "0f3a442ae37936a8e1ff3d954113dfa0b95171b33345a8ece71e1e87aefb7368",
+        "compiler/rustc_builtin_macros/src/test.rs": "f26f895561f7143380c03bd3ca58bf7688963b1c0eb79318974ccee75aa64549",
+        "compiler/rustc_lint_defs/src/builtin.rs": "5cca157d1bc6d9dab99f93e193e1ca43d5ad0b715f661acc5c4fd4ebb33679a4"
+      },
+      "dependency_edges": [
+        [
+          "native-test-runtime",
+          "libtest"
+        ],
+        [
+          "libtest",
+          "std"
+        ]
+      ],
+      "targets": [
+        "x86_64-unknown-linux-gnu"
+      ],
+      "features": [
+        "linked only for supported native Cargo unit and integration tests",
+        "panic=unwind"
+      ],
+      "adapter": "tools/native-test-runtime.rs",
+      "licenses": [
+        "crates/lustr-metadata-encoder/LICENSE-MIT",
+        "crates/lustr-metadata-encoder/LICENSE-APACHE"
+      ],
+      "excluded_duplicate_phases": [
+        "Rust parsing",
+        "macro expansion",
+        "name resolution",
+        "type checking",
+        "body lowering",
+        "native function compilation",
+        "complete rustc driver"
+      ],
+      "qualification": "Ordinary dependency-free binary cargo test and test --no-run passed. Existing libtest runs native tests with ignored tests and expected string panic matching. Extended output capture is covered by the installed compiler contract. General Rust return types, dependent test targets and full diagnostic parity remain open."
     }
   ],
   "research_components": [

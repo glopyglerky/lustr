@@ -19,6 +19,7 @@
 // value by pointer to a copy the callee owns; an aggregate result goes through a leading
 // sret pointer. C callers (glue, vtable shims, trampolines, helpers) keep calling
 // `f_<id>` with the C signature: a C wrapper in the unit forwards to `fl_<id>`.
+use super::ll_debug::{self, DebugFn};
 use super::unwind::{is_ident, skip_lit};
 use super::*;
 
@@ -253,6 +254,7 @@ struct Ll {
     statics: Vec<bool>,
     /// The cleanup blocks each landing pad enters.
     pads: BTreeSet<u32>,
+    resumes: bool,
     decls: BTreeSet<String>,
     body: String,
     /// The number of continuation blocks made so far.
@@ -459,11 +461,12 @@ impl FnGen<'_, '_> {
     /// Generates fn `fl_<id>` and its C side (helpers, the C ABI wrapper `f_<id>`, the
     /// trampoline) into `self.out`. Returns the LLVM definition and declarations, or an
     /// internal error.
-    pub(super) fn function_ll(&mut self) -> Result<LlFn, String> {
+    pub(super) fn function_ll(&mut self, rust_debug: bool) -> Result<LlFn, String> {
         let p = self.p;
         let fid = self.body.fn_id;
         let slot = self.slots.of(fid);
         let tag = names::fn_tag(slot);
+        let mut debug = if rust_debug { Some(DebugFn::new(self, &format!("fl_{tag}"))?) } else { None };
         let n = self.body.blocks.len();
         let mut reachable = vec![false; n];
         let mut stack = vec![0usize];
@@ -490,6 +493,7 @@ impl FnGen<'_, '_> {
             n_helpers: 0,
             statics,
             pads: BTreeSet::new(),
+            resumes: false,
             decls: BTreeSet::new(),
             body: String::new(),
             conts: 0,
@@ -508,27 +512,46 @@ impl FnGen<'_, '_> {
             let block = self.body.block(Bb(bi as u32));
             let cleanup = self.cleanup.get(bi).copied().unwrap_or(false);
             let _ = writeln!(ll.body, "bb{bi}:");
+            if let Some(debug) = &mut debug {
+                debug.enter_block(&mut ll.body, bi, cleanup);
+            }
             for (si, s) in block.stmts.iter().enumerate() {
                 if matches!(s.kind, StmtKind::StorageDead(_) | StmtKind::FakeRead(_)) {
+                    if !cleanup && let (Some(debug), StmtKind::StorageDead(local)) = (&mut debug, &s.kind) {
+                        debug.dead(&mut ll.body, *local);
+                    }
                     continue;
                 }
                 let unwind = if cleanup || !p.unwind { None } else { self.stmt_unw.get(&(bi as u32, si as u32)).copied() };
                 self.at = (bi as u32, si as u32);
                 (ll.span, ll.unwind) = (s.span, unwind);
-                if native_on() && self.ll_native_stmt(&mut ll, s, unwind) {
-                    continue;
+                let start = ll.body.len();
+                if !(native_on() && self.ll_native_stmt(&mut ll, s, unwind)) {
+                    let text = self.stmt_text(bi, si, s);
+                    if !text.trim().is_empty() {
+                        let h = self.ll_helper(&mut ll, &text, None);
+                        self.ll_call(&mut ll, &h, unwind);
+                    }
                 }
-                let text = self.stmt_text(bi, si, s);
-                if text.trim().is_empty() {
-                    continue;
+                if !cleanup && let Some(debug) = &mut debug {
+                    debug.mark(self, &mut ll.body, start, s.span);
+                    if let StmtKind::Assign(place, _) = &s.kind
+                        && place.proj.is_empty() && place.local as usize > self.body.arg_count {
+                        if debug.has_binding(place.local) && ll.statics[place.local as usize] {
+                            return Err("Rust debug storage for a promoted binding is not represented".into());
+                        }
+                        debug.declare(&mut ll.body, place.local, false);
+                    }
                 }
-                let h = self.ll_helper(&mut ll, &text, None);
-                self.ll_call(&mut ll, &h, unwind);
             }
             let term_unwind = if cleanup { None } else { self.stmt_unw.get(&(bi as u32, block.stmts.len() as u32)).copied() };
             self.at = (bi as u32, block.stmts.len() as u32);
             (ll.span, ll.unwind) = (block.term_span, term_unwind.filter(|_| p.unwind));
+            let start = ll.body.len();
             self.ll_term(&mut ll, bi, cleanup, term_unwind.filter(|_| p.unwind));
+            if !cleanup && let Some(debug) = &mut debug {
+                debug.mark(self, &mut ll.body, start, block.term_span);
+            }
         }
         if let Some(e) = ll.error.take() {
             return Err(e);
@@ -544,7 +567,10 @@ impl FnGen<'_, '_> {
         // that holds strs adds literals and an entry write to the entry helper.
         let kdecls: Vec<Option<String>> = (0..self.local_cty.len()).map(|i| if ll.statics[i] { self.kstatic_decl(i) } else { None }).collect();
         let kstr_init = self.ll_kstr_init(&mut ll);
-        let def = self.ll_define(&mut ll, kstr_init.as_deref());
+        let mut def = self.ll_define(&mut ll, kstr_init.as_deref(), debug.as_mut());
+        if let Some(debug) = debug {
+            debug.finish(&mut def);
+        }
         // The C sides: the helpers with the macros and statics they read; then the C ABI
         // wrapper and the trampoline, which stay in the unit's plain C. A fn with no helpers
         // (and no literal or constant prologue) has no helper side: nothing in C reads its
@@ -645,6 +671,7 @@ impl FnGen<'_, '_> {
                 _ => ll.body.push_str("  ret void\n"),
             },
             Terminator::Unreachable | Terminator::MatchExhausted if cleanup && self.p.unwind => {
+                ll.resumes = true;
                 ll.conts += 1;
                 let _ = writeln!(ll.body, "  %v{0} = load {{ ptr, i32 }}, ptr %exn\n  resume {{ ptr, i32 }} %v{0}", ll.conts);
             }
@@ -686,7 +713,7 @@ impl FnGen<'_, '_> {
     }
 
     /// The LLVM definition of `fl_<id>`.
-    fn ll_define(&mut self, ll: &mut Ll, kstr_init: Option<&str>) -> String {
+    fn ll_define(&mut self, ll: &mut Ll, kstr_init: Option<&str>, debug: Option<&mut DebugFn>) -> String {
         let p = self.p;
         let fid = self.body.fn_id;
         let info = p.fn_info(fid);
@@ -811,9 +838,10 @@ impl FnGen<'_, '_> {
                 }
             }
         }
-        // The exception slot: landing pads store it, ladder ends load it (a cleanup block
-        // whose every entry became native code stays, unreachable, and still names it).
-        if !ll.pads.is_empty() || self.cleanup.iter().any(|&c| c) {
+        // A retained cleanup block can resume even if native lowering eliminated
+        // all landing pads that used to reach it. LLVM still requires a personality.
+        let exception_cleanup = !ll.pads.is_empty() || ll.resumes;
+        if exception_cleanup {
             allocas.push_str("  %exn = alloca { ptr, i32 }\n");
         }
         allocas.push_str(&ll.allocas);
@@ -835,11 +863,17 @@ impl FnGen<'_, '_> {
             attrs.push_str(" uwtable");
             // The C personality, as the helpers' cleanup guards have it: every landing pad
             // here only cleans up, and LLVM inlines no fn of another personality.
-            if !ll.pads.is_empty() {
+            if exception_cleanup {
                 attrs.push_str(" personality ptr @__gcc_personality_v0");
             }
         } else {
             attrs.push_str(" nounwind");
+        }
+        if let Some(debug) = debug {
+            attrs.push_str(&debug.attribute());
+            for i in 1..=self.body.arg_count {
+                debug.declare(&mut entry, i as Local, true);
+            }
         }
         let id = names::fn_tag(self.slots.of(fid));
         let mut d = String::new();
@@ -3387,8 +3421,24 @@ pub fn ll_unit(fns: &[FnOut], slots: &[usize], inl: &[usize], triple: &str) -> S
         out.push('\n');
     }
     out.push('\n');
+    let mut metadata = 0;
+    let mut compile_units = Vec::new();
     for &s in slots {
-        out.push_str(&fns[s].ll);
+        let function = &fns[s];
+        if function.rust_debug_source.is_some() {
+            ll_debug::append(&mut out, &function.ll, &mut metadata, &mut compile_units);
+        } else {
+            out.push_str(&function.ll);
+        }
+    }
+    if !compile_units.is_empty() {
+        assert!(inl.is_empty(), "Rust debug units are emitted without cross-unit copies");
+        out.push_str("declare void @llvm.dbg.declare(metadata, metadata, metadata)\n");
+        let units = compile_units.iter().map(|id| format!("!{id}")).collect::<Vec<_>>().join(", ");
+        let _ = writeln!(out, "!llvm.dbg.cu = !{{{units}}}");
+        let _ = writeln!(out, "!llvm.module.flags = !{{!{metadata}, !{}}}", metadata + 1);
+        let _ = writeln!(out, "!{metadata} = !{{i32 2, !\"Dwarf Version\", i32 4}}");
+        let _ = writeln!(out, "!{} = !{{i32 2, !\"Debug Info Version\", i32 3}}", metadata + 1);
     }
     // `LUST_LL_COPY=internal` (measurement): copies are the unit's own internal fns instead,
     // as release C's static copies are, so a training build counts each unit's copy in its

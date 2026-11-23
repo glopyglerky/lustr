@@ -326,11 +326,19 @@ void lust_fmt_char_debug(lust_String *out, uint32_t c) LUST_BODY({
 })
 
 /* Stdout goes through Rust's LineWriter model (panic.c); stderr is unbuffered. */
+#ifdef LUST_LIBTEST_CAPTURE
+void lustr_test_write(int32_t to_stderr, const uint8_t *bytes, size_t length);
+void lust_write(int to_stderr, lust_String *s) LUST_BODY({
+    lustr_test_write(to_stderr, s->ptr, s->len);
+    lust_dealloc(s->ptr, s->cap, 1);
+})
+#else
 void lust_write(int to_stderr, lust_String *s) LUST_BODY({
     if (!to_stderr) lust_print_out(s->ptr, s->len);
     else if (s->len) { fwrite(s->ptr, 1, s->len, stderr); fflush(stderr); }
     lust_dealloc(s->ptr, s->cap, 1);
 })
+#endif
 
 void lust_flush(void) LUST_BODY({ lust_print_flush(); })
 

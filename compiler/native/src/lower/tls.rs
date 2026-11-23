@@ -132,7 +132,7 @@ impl Ex<'_, '_> {
     // ---------- IR building ----------
 
     fn local(&mut self, ty: Ty) -> Local {
-        self.body.locals.push(LocalDecl { ty, mutable: true, name: None });
+        self.body.locals.push(LocalDecl { ty, mutable: true, name: None, binding_span: None });
         self.body.locals.len() as Local - 1
     }
     fn block(&mut self) -> Bb {

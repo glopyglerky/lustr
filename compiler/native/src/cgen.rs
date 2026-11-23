@@ -26,6 +26,8 @@ pub mod record;
 mod slices;
 mod kconst;
 pub mod ll;
+mod ll_debug;
+pub(crate) mod rust_tests;
 use unwind::Unw;
 
 /// A body-independent type, so glue can be shared across functions.
@@ -1048,6 +1050,8 @@ pub struct FnOut {
     /// runtime. Used only by the mixed compiler's C boundary. Cached generated
     /// code retains this result with the body it describes.
     pub mixed_total: bool,
+    /// This body keeps its C ABI wrapper for its test Termination entry.
+    test_termination: bool,
     /// The fn's C text (`code_text`, `code_len`, `has_code`).
     pub text: CText,
     pub glue: HashSet<(Glue, CTy)>,
@@ -1070,6 +1074,8 @@ pub struct FnOut {
     /// names; `ll_c` holds its helpers' C (with the prelude and statics they read), and
     /// `text` only the C ABI wrapper and the trampoline. Empty for C bodies.
     pub ll: String,
+    /// Source anchor of a function whose LLVM records carry absolute positions.
+    pub(crate) rust_debug_source: Option<(u64, u64)>,
     pub ll_decls: BTreeSet<String>,
     pub ll_c: String,
     /// The LLVM backend: the fn's size for cross-unit inlining (`ll::LlFn::cost`).
@@ -2466,15 +2472,44 @@ fn trampoline(p: &Program, f: LocalDefId, slot: u32) -> String {
 /// Generates C for one function body. `base_line` is the line of its `fn` keyword, in the
 /// file that defines it; `slots` maps every LocalDefId to its slot in `lust_fns`.
 pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32]) -> FnOut {
-    gen_fn_policy(p, body, map, base_line, slots, false)
+    gen_fn_policy(p, body, map, base_line, slots, false, false)
 }
 
 /// Generate a body already proved total by the mixed object boundary.
 pub fn gen_fn_total(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32]) -> FnOut {
-    gen_fn_policy(p, body, map, base_line, slots, true)
+    gen_fn_policy(p, body, map, base_line, slots, true, false)
 }
 
-fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32], nounwind: bool) -> FnOut {
+pub(crate) fn gen_fn_rust_debug(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32]) -> FnOut {
+    let source = rust_debug_source(p, body.fn_id, map);
+    if source.is_none() && !shipped_debug_body(p, body.fn_id) {
+        return FnOut { error: Some("Rust debug function source cannot be bound to the native body".into()), ..Default::default() };
+    }
+    let mut output = gen_fn_policy(p, body, map, base_line, slots, false, true);
+    output.rust_debug_source = source;
+    output
+}
+
+pub(crate) fn rust_debug_source(p: &Program, id: LocalDefId, map: &SourceMap) -> Option<(u64, u64)> {
+    if shipped_debug_body(p, id) { return None; }
+    let item = p.fn_def(id);
+    let name = map.call_site(item.name_span);
+    let body = map.call_site(p.ast.block(item.body?).span);
+    let text = map.text(name.file)?;
+    let (line, column) = map.line_col(name);
+    if name.file != body.file { return None; }
+    let source = text.get(name.lo as usize..body.hi as usize)?;
+    Some(crate::driver::cache::hash128(
+        &[map.path(name.file).as_bytes(), &line.to_le_bytes(), &column.to_le_bytes(), source.as_bytes()],
+        91,
+    ))
+}
+
+fn shipped_debug_body(p: &Program, id: LocalDefId) -> bool {
+    p.std_source_span(p.fn_def(id).name_span) || p.fn_shipped_crate(id).is_some()
+}
+
+fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32], nounwind: bool, rust_debug: bool) -> FnOut {
     if !has_generated_body(p, body.fn_id) {
         return FnOut { error: Some(no_body_error(p, body, body.fn_id)), ..Default::default() };
     }
@@ -2507,8 +2542,11 @@ fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slot
     }
     // The LLVM backend writes the C side (prelude and trampoline included) itself.
     let mut llfn = None;
-    if ll::on(p) {
-        match g.function_ll() {
+    if rust_debug || ll::on(p) {
+        // Only the requested Rust crate has a debug source contract.
+        // The text of shipped std shims is not part of that crate's file.
+        let debug = rust_debug && !shipped_debug_body(p, body.fn_id);
+        match g.function_ll(debug) {
             Ok(f) => llfn = Some(f),
             Err(e) => return FnOut { error: Some(e), ..Default::default() },
         }
@@ -2530,10 +2568,13 @@ fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slot
         }
         g.out.push_str(&trampoline(p, body.fn_id, slots.of(body.fn_id)));
     }
-    // A `main` returning `Result` gets a Termination entry in its
-    // unit (see `fn_unit`): it needs the error type's Debug glue
-    // and the Result's own drop glue.
-    if Some(body.fn_id) == p.main
+    // A main or Cargo test returning Result needs the error's Debug
+    // glue and the Result's own drop glue for its Termination entry.
+    let test_termination = names::release()
+        && p.fn_def(body.fn_id).is_test
+        && p.fn_info(body.fn_id).ret != UNIT
+        && has_native_termination(p, p.fn_info(body.fn_id).ret);
+    if (Some(body.fn_id) == p.main || test_termination)
         && let Some((_, err_t)) = p.tys.result_args(p.fn_info(body.fn_id).ret)
     {
         let rc = cty(&p.tys, p.fn_info(body.fn_id).ret);
@@ -2541,6 +2582,10 @@ fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slot
         if needs_drop_c(p, &rc) {
             g.want(Glue::Drop, &rc);
         }
+    }
+    if test_termination {
+        let slot = slots.of(body.fn_id);
+        emit_termination_entry(&mut g.out, p, body.fn_id, slot, &rust_tests::termination_entry(slot), "");
     }
     let mut types = std::mem::take(&mut g.sig_types);
     let mut named = std::mem::take(&mut g.sig_named);
@@ -2593,6 +2638,7 @@ fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slot
     let externs = externs.into_iter().map(shared_extern).collect();
     FnOut {
         mixed_total: false,
+        test_termination,
         text: CText::Plain(code),
         glue,
         types,
@@ -2601,6 +2647,7 @@ fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slot
         externs,
         named,
         ll,
+        rust_debug_source: None,
         ll_decls,
         ll_c,
         ll_cost,
@@ -6170,7 +6217,7 @@ impl FnGen<'_, '_> {
         let TyKind::FnPtr(sig) = tys.kind(fp_ty) else { unreachable!("ItemShim to a non fn pointer type") };
         let sig = tys.sig(sig).value;
         let ins: Vec<Ty> = tys.tys_of(sig.inputs).to_vec();
-        let decl = |ty: Ty| crate::ir::LocalDecl { ty, mutable: false, name: None };
+        let decl = |ty: Ty| crate::ir::LocalDecl { ty, mutable: false, name: None, binding_span: None };
         let mut locals = vec![decl(sig.output)];
         locals.extend(ins.iter().map(|&t| decl(t)));
         let body = Body {
@@ -10668,6 +10715,15 @@ pub fn loc_unit(files: &SlotFiles, slot_lines: &[u32]) -> String {
 /// sets up the runtime's panic payloads and hook runner; under
 /// panic=unwind a `main` that ends by a panic exits 101.
 pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -> String {
+    main_unit_with_tests(main_slot, overlays, init, None)
+}
+
+pub(crate) fn main_unit_with_tests(
+    main_slot: u32,
+    overlays: &[usize],
+    init: Option<UnwindInit>,
+    tests: Option<(&[rust_tests::NativeTest], &[u32])>,
+) -> String {
     let unwind = init.as_ref().is_some_and(|i| i.unwind);
     let tables = init.as_ref().is_some_and(|i| i.unwind && i.tables);
     let runner_slot = init.as_ref().and_then(|i| i.hook_runner);
@@ -10690,7 +10746,10 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
             let _ = writeln!(c, "lust_Unit {}(uint8_t);", names::body(s));
         }
     }
-    let main_call = if termination_entry {
+    let main_call = if let Some((tests, slots)) = tests {
+        rust_tests::main_declarations(&mut c, tests, slots);
+        String::new()
+    } else if termination_entry {
         // The body unit must register its typed wrapper. Never declare or call a
         // Result/ExitCode body as a unit-returning function if that invariant fails.
         "abort()".to_string()
@@ -10706,7 +10765,7 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
     for u in overlays {
         let _ = writeln!(c, "void lust_overlay_u{u}(void);");
     }
-    if tables {
+    if tables && tests.is_none() {
         // Main runs under a catch point (std's lang_start catches its panic).
         let _ = writeln!(
             c,
@@ -10724,6 +10783,11 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
     c.push_str(runner.trim_start_matches('\n'));
     if !runner.is_empty() {
         c.push('\n');
+    }
+    if let Some((tests, _)) = tests {
+        let _ = writeln!(c, "  int rc = lustr_test_main(argc, argv, {}, lust_tests);", tests.len());
+        c.push_str("  lust_tls_exit();\n  lust_flush();\n  return rc;\n}\n");
+        return c;
     }
     if tables {
         c.push_str("  int rc = 0;\n  if (lust_unw_try(lust_main_thunk, &rc)) rc = lust_unw_main_caught();\n  lust_tls_exit();\n  lust_flush();\n  return rc;\n}\n");
@@ -10755,6 +10819,45 @@ pub fn table_unit(capacity: usize, fn_units: &[usize]) -> String {
     }
     c.push_str("}\n");
     c
+}
+
+fn emit_termination_entry(c: &mut String, p: &Program, m: LocalDefId, idx: u32, entry: &str, linkage: &str) {
+    let ret = p.fn_info(m).ret;
+    let rc = cty(&p.tys, ret);
+    let rt = ctype(&rc);
+    let cast = fn_ptr_cast(p, m);
+    // Main's body is in this unit: release C calls it by name.
+    let target = if names::release() { names::body(idx) } else { format!("lust_fns[{idx}]") };
+    let _ = writeln!(c, "{linkage}int {entry}(void) {{");
+    if ret_is_large(p, m) {
+        let _ = writeln!(c, "  {rt} r; ({cast}{target})(&r);");
+    } else {
+        let _ = writeln!(c, "  {rt} r = ({cast}{target})();");
+    }
+    if p.unwind {
+        let _ = writeln!(c, "  if (lust_unw_pending && lust_unw_mine()) return 0;");
+    }
+    match p.tys.result_args(ret) {
+        Some((ok_t, err_t)) => {
+            let disc = disc_call(p, &rc, "(&r)");
+            let field = variant_field(p, &rc, "r", 1, 0);
+            let ec = cty(&p.tys, err_t);
+            let ok = if p.tys.is_exit_code(ok_t) { format!(" else {{ rc = {}; }}", variant_field(p, &rc, "r", 0, 0)) } else { String::new() };
+            let _ = writeln!(c, "  int rc = 0;");
+            let _ = writeln!(
+                c,
+                "  if ({disc}) {{ lust_sink k; lust_print_begin(&k, 1); lust_Formatter f; lust_f_init(&f, &k); lust_f_write(&f, \"Error: \", 7); (void)dbg_{}(&f, &{field}); lust_f_write(&f, \"\\n\", 1); lust_print_end(1); rc = 1; }}{ok}",
+                mangle(&ec)
+            );
+        }
+        None => {
+            let _ = writeln!(c, "  int rc = r;");
+        }
+    }
+    if needs_drop_c(p, &rc) {
+        let _ = writeln!(c, "  drop_{}(&r);", mangle(&rc));
+    }
+    let _ = writeln!(c, "  return rc;\n}}");
 }
 
 /// The shared glue unit. With a frozen shared set it holds only those keys; the rest of the
@@ -12207,7 +12310,7 @@ pub fn fn_unit_parts(
         let f = &fns[s];
         let m = c.len();
         // An LLVM fn's C is its C ABI wrapper and trampoline: kept only when a text names them.
-        match (c_refs, f.ll.is_empty(), names::fn_tag_opt(s as u32)) {
+        match (c_refs.filter(|_| !f.test_termination), f.ll.is_empty(), names::fn_tag_opt(s as u32)) {
             (Some(r), false, Some(id)) => c.push_str(&r.c_body(text_of(s), &id)),
             (_, _, Some(id)) if copy_hot.is_some_and(|h| !is_hot(&h.hot, &id)) => c.push_str(&cold_cleanup(text_of(s), &id)),
             _ => c.push_str(text_of(s)),
@@ -12223,42 +12326,7 @@ pub fn fn_unit_parts(
     // by main's own FnOut (see `gen_fn`).
     let entry_at = c.len();
     if let Some((m, idx)) = term_main {
-        let ret = p.fn_info(m).ret;
-        let rc = cty(&p.tys, ret);
-        let rt = ctype(&rc);
-        let cast = fn_ptr_cast(p, m);
-        // Main's body is in this unit: release C calls it by name.
-        let target = if names::release() { names::body(idx) } else { format!("lust_fns[{idx}]") };
-        let _ = writeln!(c, "static int lust_main_entry_impl(void) {{");
-        if ret_is_large(p, m) {
-            let _ = writeln!(c, "  {rt} r; ({cast}{target})(&r);");
-        } else {
-            let _ = writeln!(c, "  {rt} r = ({cast}{target})();");
-        }
-        if p.unwind {
-            let _ = writeln!(c, "  if (lust_unw_pending && lust_unw_mine()) return 0;");
-        }
-        match p.tys.result_args(ret) {
-            Some((ok_t, err_t)) => {
-                let disc = disc_call(p, &rc, "(&r)");
-                let field = variant_field(p, &rc, "r", 1, 0);
-                let ec = cty(&p.tys, err_t);
-                let ok = if p.tys.is_exit_code(ok_t) { format!(" else {{ rc = {}; }}", variant_field(p, &rc, "r", 0, 0)) } else { String::new() };
-                let _ = writeln!(c, "  int rc = 0;");
-                let _ = writeln!(
-                    c,
-                    "  if ({disc}) {{ lust_sink k; lust_print_begin(&k, 1); lust_Formatter f; lust_f_init(&f, &k); lust_f_write(&f, \"Error: \", 7); (void)dbg_{}(&f, &{field}); lust_f_write(&f, \"\\n\", 1); lust_print_end(1); rc = 1; }}{ok}",
-                    mangle(&ec)
-                );
-            }
-            None => {
-                let _ = writeln!(c, "  int rc = r;");
-            }
-        }
-        if needs_drop_c(p, &rc) {
-            let _ = writeln!(c, "  drop_{}(&r);", mangle(&rc));
-        }
-        let _ = writeln!(c, "  return rc;\n}}");
+        emit_termination_entry(&mut c, p, m, idx, "lust_main_entry_impl", "static ");
     }
     record::piece(record::Kind::Entry, 0, &c[entry_at..]);
     let register_at = c.len();
@@ -14436,7 +14504,7 @@ mod tests {
         let span = Span::new(FileId(0), 0, 0);
         let elems = body.tys.intern_tys(&[STRING, int(IntTy::U8)]);
         let tuple_ty = body.tys.intern(TyKind::Tuple(elems));
-        let local = |ty: Ty| LocalDecl { ty, mutable: false, name: None };
+        let local = |ty: Ty| LocalDecl { ty, mutable: false, name: None, binding_span: None };
         body.locals = vec![local(UNIT), local(tuple_ty), local(STRING)];
         body.blocks = vec![BlockData {
             stmts: vec![Stmt {
@@ -15073,7 +15141,7 @@ mod tests {
         let inputs = body.tys.intern_tys(&[i64_ty]);
         let sig = body.tys.intern_sig(Binder::plain(FnSig::plain(inputs, i64_ty)));
         let fnptr_ty = body.tys.intern(TyKind::FnPtr(sig));
-        let local = |ty: Ty| LocalDecl { ty, mutable: false, name: None };
+        let local = |ty: Ty| LocalDecl { ty, mutable: false, name: None, binding_span: None };
         // Print args hold a reference to the value, as lower emits them:
         // locals 8.. hold &l2, &l5, &l6, &l7 for the four prints.
         let ref_i64 = body.tys.mk_ref(false, i64_ty);

@@ -172,7 +172,19 @@ static int32_t lust_first_panic_take(void) {
 static void lust_cur_thread_name(const uint8_t **p, uint64_t *n);
 
 /* The default hook's text (std's default_hook) on the current thread. */
+#ifdef LUST_LIBTEST_CAPTURE
+void lustr_test_panic_message(const uint8_t *msg, size_t len, const char *file,
+                            size_t flen, uint32_t line, uint32_t col, uint64_t tid, int32_t note);
+#endif
 static void lust_default_hook(const uint8_t *msg, uint64_t len, const char *file, uint64_t flen, uint32_t line, uint32_t col, int32_t count) {
+#ifdef LUST_LIBTEST_CAPTURE
+    lust_unw_state *test_state = lust_unw_peek();
+    int32_t test_bt = test_state && test_state->hook_no_backtrace ? 0 : count >= 2 ? 3 : lust_bt_style();
+    if (test_bt <= 1) {
+        lustr_test_panic_message(msg, len, file, flen, line, col, lust_os_tid(), test_bt == 1 && lust_first_panic_take());
+        return;
+    }
+#endif
     const uint8_t *tn;
     uint64_t tl;
     lust_cur_thread_name(&tn, &tl);

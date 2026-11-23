@@ -236,6 +236,14 @@ pub fn lower<'p>(p: &'p Program, fid: LocalDefId, mut ck: Checked<'p>) -> Body<'
     lw.pop_scope(span);
     lw.terminate(Terminator::Return, span);
     lw.map_annotations();
+    lw.bind_debug_spans();
+    let definition = f.def(&p.ast);
+    let first = 1 + usize::from(definition.self_param.is_some());
+    for (local, parameter) in lw.body.locals.iter_mut().skip(first).zip(&definition.params) {
+        if parameter.pat.is_some() || local.name.as_deref() == Some("_") {
+            local.binding_span = None;
+        }
+    }
     lw.mark_opaque_locals();
     check_anon_consts(lw)
 }
@@ -371,7 +379,7 @@ impl<'p> Lower<'p> {
     // ---------- Building blocks ----------
 
     fn new_local(&mut self, ty: Ty, mutable: bool, name: Option<String>) -> Local {
-        self.body.locals.push(LocalDecl { ty, mutable, name });
+        self.body.locals.push(LocalDecl { ty, mutable, name, binding_span: None });
         self.body.locals.len() as Local - 1
     }
     /// A temporary, owned by the innermost scope.
@@ -695,6 +703,12 @@ impl<'p> Lower<'p> {
     /// variable's shadow local takes none: the enclosing body's own `let`
     /// holds that annotation, and the capture's regions are the closure's
     /// captured ones, which its requirements relate there.
+    fn bind_debug_spans(&mut self) {
+        for &(local, checked) in &self.bind_of {
+            self.body.locals[local as usize].binding_span = Some(self.ck.locals[checked as usize].span);
+        }
+    }
+
     fn map_annotations(&mut self) {
         for &(cl, t) in &self.ck.annotations {
             if let Some(&l) = self.local_map.get(cl as usize)
