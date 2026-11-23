@@ -10,7 +10,7 @@
   "product_owner": "crates/lustr-native-core/src/public_library.rs",
   "shared_artifact_service": "crates/lustr-native-core/src/library_artifact.rs",
   "supported_context": "Linux x64, edition 2024, embed-bitcode=no and opt-level=0. Native builds require debuginfo=0. Scalar leaf libraries and executables without Cargo dependencies also link with the unwind panic strategy and actual unwind ranges. Linked artifacts with dependencies require panic=abort. Metadata-only checks also accept the ordinary Cargo dev profile with unwind, debuginfo=2 and the optional incremental cache location. Checked scalar signatures carry every integer type. Linked artifacts require the existing direct ABI for 32-bit, 64-bit and pointer-sized integers. Cargo library checks and builds may use one direct scalar leaf dependency supplied as metadata. Cargo executable checks use a closed scalar metadata graph. Executable builds additionally use the matching archives. Executable dep-info covers source files and actual include and environment reads from the native resolver and expander. The admitted extern lint uses native checked reads.",
-  "request_options": "LibraryOptions is per request, outside native SessionKey and Client. At O0, omitted overflow-checks inherits the effective debug-assertions setting; admitted explicit values take precedence. The direct Rust adapter preserves last-option precedence, while the bounded Cargo artifact adapter still refuses duplicate codegen options. Unstable embedding None/true/false are distinct metadata/SVH variants; effective None/true use full archive metadata and false uses its matching header stub. Force-warn/JSON do not enter the metadata hash. Stable -C embed-metadata remains unrepresented.",
+  "request_options": "LibraryOptions is per request, outside native SessionKey and Client. At O0, omitted overflow-checks inherits the effective debug-assertions setting; admitted explicit values take precedence. The direct Rust adapter preserves last-option precedence, while the bounded Cargo artifact adapter preserves debug level (-g and -C debuginfo), split and strip precedence. Other duplicate codegen options are refused. Debug choices travel on public requests outside the semantic session key; linked debug and split sidecars remain unimplemented. Unstable embedding None/true/false are distinct metadata/SVH variants; effective None/true use full archive metadata and false uses its matching header stub. Force-warn/JSON do not enter the metadata hash. Stable -C embed-metadata remains unrepresented.",
   "artifact_variants": "At most three embedding choices for the current native link snapshot, plus the last durable link publication. The metadata-only cache holds a single checked generation and requires no native object, export, or archive work.",
   "semantic_owner": "One existing native prepare/emit continuation; only existing completed scalar declarations/bodies.",
   "unimplemented": [
@@ -32,7 +32,14 @@
       "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
       "path": "compiler/rustc_session/src/options.rs",
       "sha256": "9ac7d7de14cbef1624c9998593b081000dcd496413d2bb3643aac2bd1c9c7e69",
-      "role": "Separate tracked stable/unstable embedding options, excluded lint crate-hash state and untracked JSON response mode"
+      "role": "Pinned debug, split and strip option value parsing; separate embedding options, excluded lint crate-hash state and untracked JSON response mode"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_session/src/config.rs",
+      "sha256": "20518f46c9a57d05f1353c1fcc2b3f8108b09c99efd87d6f009b71254441dcaf",
+      "role": "select_debuginfo orders -g and -C debuginfo by argument position"
     },
     {
       "repository": "rust-lang/rust",
@@ -147,13 +154,13 @@
     "src/lib.rs": "11b8360857f8fa15460ddbb287c9e01e51a2d117ede2a3f6c071d06672335eb0",
     "src/main.rs": "4fb5ec2c0d2fdffab03f94ec3cd20dba559446e883885a1434f40a76e00fc565",
     "src/native_queries.rs": "805c995a5c51a5af0e544a573cb2f3000b45e0b92baf6f98ff53871d1e4d4864",
-    "src/library_contract.rs": "d76a476169c4b4bd9a41191bd267cd8f8a529e58409b0eb68669336f439fbbe0",
-    "src/library_request.rs": "589b002b4530ff36cf1dcf6c43b5e97676c36cd5e2a3bf226b1273a257ffa5b5",
+    "src/library_contract.rs": "2206953b3c51b756732bac8be9dfcee2a0c4bbf9c13114709a76573fb140f755",
+    "src/library_request.rs": "30d50ac0ccc2df0a01e9eb132e4f43aafef80330c37e4b33b826c2862ff87a13",
     "compiler/native/Cargo.toml": "022fce40408d543c29550f7b03de3e622a5e01a08c82ea642d30537f61f93891",
     "compiler/native/Cargo.lock": "d46a58d499b1cfa163f5e2a23f10c0e69e077638f7a84e38e13332875a52f181",
     "compiler/native/build.rs": "044e0595531dd5468cf4df3dcfb21e1f43592fbada278c63b461d6dcb6a8b946",
     "compiler/native/src/main.rs": "3665631752f66348d057f68e1ec904907f5fa41792218712236f150a3263f68a",
-    "compiler/native/src/protocol.rs": "4fb3eccde5e928f1ac6da7f699c876b123f16fa78d997bb46b3fb31a1a52949f",
+    "compiler/native/src/protocol.rs": "f613f7d7eeee8e160006bce0d59dcf697c48a61ce2278f94ef8937e6f51329d5",
     "compiler/native/src/daemon.rs": "32e17ce050e1ee38617f2b3e9aadbf9950775cbb43ae4a426c9ab761c8f4d66d",
     "compiler/native/src/diag.rs": "2f519633459c37edc99de60331cd4c03f5e29337df088c7f67980cb40006d7e2",
     "compiler/native/src/cgen.rs": "f3b0e184416ce4131a1eaf425b1fd4a61c610bda459d03428090343167862048",
@@ -189,7 +196,7 @@
     "tools/build-native-toolchain.rs": "6a30c0a2884f6df81812a53d658eea28d8f6233692dba7b4af72d196109c9579",
     "tools/install-native-metadata-sdk.py": "c6be8a4c32e9f86274321b282c54a5c461c9672a27e6d54994455948bde496fb",
     "tools/check-exclusive-coverage.py": "a6c24b3901d94daffb8c08aef335c64ea9c09ff7bda408c9c5e80041c2368d61",
-    "tools/update-public-library-source-manifest.py": "4e6f0db780082a45d4f8feec81dff0924220c4e4739314af3c7354e80df8f1f8",
+    "tools/update-public-library-source-manifest.py": "5d8e0807651080b6db577986c47e313585928b604c70fc620e29147c50a9709b",
     "upstream/metadata-artifact-tools.json": "d1bd48f3b362645dce89172ce862f66189a1847c26e443f1861f9222021af9ff",
     "upstream/metadata-dependency-closure.json": "a5b2d8cccb4594fa2bfe56c33d202c4e6a1f88a1e09105bac8c4f1ab1e0ca32e",
     "docs/compiler-set/evidence/metadata-sdk-receipt-20261120/receipt.json": "4e400b263bf9923616dea44ead2d77213703177d3bfaf6becd6a19a4c5a657a7"

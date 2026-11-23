@@ -13598,7 +13598,7 @@ index c4b23e007d746b984e392919dcf1bc9bc87a265e..47bb8992d04e52e8ba9774e3e865ddf1
              _ => return None,
          }
 diff --git a/src/protocol.rs b/src/protocol.rs
-index 504b467a9d240272c85f999b59f57a5d52b3cd4e..35ca055f0346593293b297a8c864e3da0f36c7d9 100644
+index 504b467a9d240272c85f999b59f57a5d52b3cd4e..9c804a67c4fb38e38c24bf84adb446aa09ccdc82 100644
 --- a/src/protocol.rs
 +++ b/src/protocol.rs
 @@ -6,7 +6,7 @@
@@ -13635,7 +13635,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..35ca055f0346593293b297a8c864e3da
 +pub mod host_runtime;
 +#[path = "../../../src/library_contract.rs"]
 +pub mod library_contract;
-+pub use library_contract::{ExecutableExtern, ExternMetadata, LibraryKey, LibraryOptions};
++pub use library_contract::{DebugOptions, ExecutableExtern, ExternMetadata, LibraryKey, LibraryOptions};
 +
  #[derive(Clone, Copy, PartialEq, Eq)]
  pub enum Cmd {
@@ -13756,7 +13756,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..35ca055f0346593293b297a8c864e3da
      let mut features = flags.features;
      sort_features(&mut features);
      key.features = features;
-@@ -625,6 +681,12 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -625,6 +681,13 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
      let (mut release, mut profile, mut rustc) = (false, None, false);
      let mut max_errors = 20usize;
      let mut crate_flags = CrateFlags::default();
@@ -13766,10 +13766,11 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..35ca055f0346593293b297a8c864e3da
 +    let mut executable_artifacts = false;
 +    let mut executable_dependencies = Vec::new();
 +    let mut library_options = LibraryOptions::default();
++    let mut library_debug_supplied = false;
      // Every --target named, in order. One builds a session; several are
      // the release driver's list and build one session each.
      let mut targets: Vec<String> = Vec::new();
-@@ -652,6 +714,20 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -652,6 +715,24 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
      }
      while let Some(a) = it.next() {
          match a.as_str() {
@@ -13787,21 +13788,26 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..35ca055f0346593293b297a8c864e3da
 +            }),
 +            "--lustr-library-embed-metadata" if library_options.embed_metadata.is_none() => library_options.embed_metadata = Some(rustc_bool(it.next()?)?),
 +            "--lustr-library-force-warn-unused-crate-dependencies" if !library_options.force_warn_unused_crate_dependencies => library_options.force_warn_unused_crate_dependencies = true,
++            "--lustr-library-debug-options" if !library_debug_supplied => {
++                library_options.debug = DebugOptions::decode(it.next()?.as_bytes())?;
++                library_debug_supplied = true;
++            }
              "--json" => json = true,
              "--timings" => timings = true,
              "-g" => debug = true,
-@@ -696,6 +772,10 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -696,6 +777,11 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
      if file.as_os_str().is_empty() {
          return None;
      }
 +    let library_supplied = library_name.is_some() || library_metadata.is_some() || library_extra.is_some() || library_cwd.is_some()
 +        || !library_cfg.is_empty() || !library_search.is_empty() || library_external.is_some()
-+        || executable_artifacts || !executable_dependencies.is_empty() || library_options != LibraryOptions::default();
++        || executable_artifacts || !executable_dependencies.is_empty()
++        || library_debug_supplied || library_options != LibraryOptions::default();
 +    if library_supplied && (rustc || release || profile.is_some()) { return None; }
      let abs = |p: &Path| std::path::absolute(p).unwrap_or_else(|_| p.to_path_buf());
      // Release and the rustc oracle are build/check-only, with no extra lust flags.
      // Crate-selection flags are lust dev flags today: reject them there rather
-@@ -756,6 +836,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -756,6 +842,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
                  run_args: None,
                  harness: false,
                  cc: true,
@@ -13809,7 +13815,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..35ca055f0346593293b297a8c864e3da
                  client: Client::current(&typed),
              });
          }
-@@ -791,6 +872,25 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -791,6 +878,25 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
      if let Some(on) = debug_assertions {
          session.profile.debug_assertions = on;
      }
@@ -13835,7 +13841,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..35ca055f0346593293b297a8c864e3da
      let req = Request {
          cmd: if cmd == "check" { Cmd::Check } else { Cmd::Build },
          session,
-@@ -803,6 +903,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
+@@ -803,6 +909,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
          max_errors,
          run_args: if run { Some(run_args.clone()) } else { None },
          harness: false, cc: false,
@@ -13843,7 +13849,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..35ca055f0346593293b297a8c864e3da
          client: Client::current(&typed),
      };
      Some(Invocation::Compile { req, run, args: run_args })
-@@ -909,8 +1010,40 @@ pub fn encode(r: &Request) -> Vec<u8> {
+@@ -909,8 +1016,41 @@ pub fn encode(r: &Request) -> Vec<u8> {
      path_field(&mut out, s.krate.manifest_path.as_deref());
      put_field(&mut out, s.krate.target_kind.as_bytes());
      put_field(&mut out, s.krate.target_name.as_bytes());
@@ -13880,11 +13886,12 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..35ca055f0346593293b297a8c864e3da
 +        }
 +        put_field(&mut out,match r.library_options.embed_metadata {None=>b"-",Some(true)=>b"1",Some(false)=>b"0"});
 +        put_field(&mut out,if r.library_options.force_warn_unused_crate_dependencies {b"1"} else {b"0"});
++        put_field(&mut out,&r.library_options.debug.encode());
 +    }
      for f in &s.features {
          put_field(&mut out, f.as_bytes());
      }
-@@ -951,8 +1084,45 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -951,8 +1091,46 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
      let manifest = get_field(r)?;
      let target_kind = text(get_field(r)?)?;
      let target_name = text(get_field(r)?)?;
@@ -13919,6 +13926,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..35ca055f0346593293b297a8c864e3da
 +            } else { None };
 +            library_options.embed_metadata=match get_field(r)?.as_slice() {b"-"=>None,b"1"=>Some(true),b"0"=>Some(false),_=>return None};
 +            library_options.force_warn_unused_crate_dependencies=match get_field(r)?.as_slice() {b"0"=>false,b"1"=>true,_=>return None};
++            library_options.debug=DebugOptions::decode(&get_field(r)?)?;
 +            let library=LibraryKey{crate_name,metadata,extra_filename,source_path,working_directory,check_cfg,search_paths,external,executable_dependencies,sdk_receipt};
 +            if !library.valid() || !library.valid_output(&out, f[0] == "check", library_options) || library.source_path!=file
 +                || target_triple!=library_contract::TARGET || target_kind!=library.target_kind()
@@ -13930,7 +13938,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..35ca055f0346593293b297a8c864e3da
      // A feature count this large is a bad request, not a loop to run.
      let n_features: usize = f[11].parse().ok()?;
      if n_features > 4096 {
-@@ -982,11 +1152,13 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -982,11 +1160,13 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
      Some(Request {
          cmd: if f[0] == "check" { Cmd::Check } else { Cmd::Build },
          session: SessionKey {
@@ -13944,7 +13952,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..35ca055f0346593293b297a8c864e3da
                  root,
                  test: f[5] == "1",
              },
-@@ -1006,12 +1178,17 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
+@@ -1006,12 +1186,17 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
          max_errors: f[4].parse().ok()?,
          run_args: None,
          harness: false, cc: false,
@@ -13963,7 +13971,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..35ca055f0346593293b297a8c864e3da
  }
  
  /// The whole answer to a request of another build: a head no client takes
-@@ -1020,37 +1197,78 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
+@@ -1020,37 +1205,78 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
      write!(w, "- - - {}\n", build_id())
  }
  
@@ -14071,7 +14079,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..35ca055f0346593293b297a8c864e3da
  }
  
  /// Prints a response. For `run`, runs the program after a successful build. Never returns.
-@@ -1331,9 +1549,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
+@@ -1331,9 +1557,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
      Some(PathBuf::from(text[at..end].replace("\\\\", "\\")))
  }
  
@@ -14121,7 +14129,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..35ca055f0346593293b297a8c864e3da
  pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug: bool, net: CargoNet) -> ! {
      let profile = profile.unwrap_or("release");
      let dev = profile == "dev";
-@@ -1408,12 +1666,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
+@@ -1408,12 +1674,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
      exit_with(status);
  }
  
@@ -14140,7 +14148,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..35ca055f0346593293b297a8c864e3da
  pub fn run_rustc_check(file: &Path) -> ! {
      let obj = std::env::temp_dir().join(format!("lust-rustc-check-{}.o", std::process::id()));
      eprintln!("lust: checking with rustc (oracle): rustc --edition 2024 --emit=obj {}", file.display());
-@@ -1461,6 +1725,150 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
+@@ -1461,6 +1733,150 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
  mod tests {
      use super::*;
  
@@ -14291,7 +14299,7 @@ index 504b467a9d240272c85f999b59f57a5d52b3cd4e..35ca055f0346593293b297a8c864e3da
      fn args(list: &[&str]) -> Vec<String> {
          list.iter().map(|s| s.to_string()).collect()
      }
-@@ -1486,6 +1894,23 @@ mod tests {
+@@ -1486,6 +1902,23 @@ mod tests {
          assert_ne!(k, SessionKey::synthetic(Path::new("/tmp/x/other.rs"), false), "file differs");
      }
  
