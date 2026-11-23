@@ -1504,6 +1504,7 @@ pub struct ResolveCx<'x> {
     pub trait_names: &'x crate::driver::read_cover::NameMap<DefId>,
     /// Authoritative external projection results, keyed by resolved trait name.
     pub imported_projections: Option<&'x FxMap<Sym, Vec<ImportedProjection>>>,
+    pub generic_associated: &'x crate::intern::FxSet<DefId>,
     /// Type aliases by name (collect pass 1.5). A generic alias's target
     /// is over its own params (`Param(i)`).
     pub aliases: &'x crate::driver::read_cover::NameMap<Ty>,
@@ -3411,6 +3412,9 @@ fn resolve_trait_path_args(
                         })?;
                         let bound = match kind {
                             ast::BindingKind::EqTy(t) => {
+                                if cx.generic_associated.contains(&assoc) {
+                                    return Err(not_yet("L0621", *bspan, "generic associated type bindings"));
+                                }
                                 if cx.adt_lifetimes.contains_key(&owner) {
                                     return Err(not_yet("L0203", *bspan, "associated type bindings on traits with lifetime parameters"));
                                 }
@@ -3789,6 +3793,9 @@ fn projection_of(
             "Check the spelling against the trait definition.",
         )
     })?;
+    if cx.generic_associated.contains(&assoc) {
+        return Err(not_yet("L0621", span, "local generic associated type projections"));
+    }
     if cx.adt_lifetimes.contains_key(&tr.def) {
         return Err(not_yet("L0203", span, "associated type projections on traits with lifetime parameters"));
     }
@@ -5670,6 +5677,22 @@ pub struct ImplAssociatedType {
     pub value: Ty,
 }
 
+impl AssociatedTypeGenerics {
+    pub(crate) fn single_lifetime(&self) -> Option<Region> {
+        let [GenericArg::Lifetime(region @ Region::Param(_))] = self.arguments.as_slice() else { return None; };
+        Some(*region)
+    }
+
+    pub(crate) fn reference_family_lifetime(&self, tys: &impl TyIntern, sized: DefId) -> Option<Region> {
+        let region = self.single_lifetime()?;
+        let [Predicate::TypeOutlives(self_ty, actual)] = self.region_predicates.as_slice() else { return None; };
+        let [Predicate::Trait(bound)] = self.declared_bounds.as_slice() else { return None; };
+        (self.region_facts.is_empty() && self.generics.params.is_empty()
+            && tys.kind(*self_ty) == TyKind::Param(ParamId(0)) && *actual == region
+            && bound.count == 0 && bound.value.def == sized).then_some(region)
+    }
+}
+
 fn associated_identity_arguments(
     tys: &mut impl TyIntern, syntax: &ast::Generics, own: &Generics, own_scope: &Scope, shift: u32,
 ) -> Option<Vec<GenericArg>> {
@@ -5837,6 +5860,7 @@ pub struct GenTables {
     pub index: ImplIndex,
     pub trait_names: crate::driver::read_cover::NameMap<DefId>,
     pub imported_projections: Option<FxMap<Sym, Vec<ImportedProjection>>>,
+    pub generic_associated: crate::intern::FxSet<DefId>,
     pub trait_scopes: FxMap<DefId, Scope>,
     pub trait_methods: FxMap<DefId, TraitMethodTemplate>,
     /// Signatures of the lang trait methods, by method def
@@ -6107,6 +6131,7 @@ impl Default for GenTables {
             index: ImplIndex::new(),
             trait_names: crate::driver::read_cover::NameMap::new("trait"),
             imported_projections: None,
+            generic_associated: Default::default(),
             trait_scopes: FxMap::default(),
             trait_methods: FxMap::default(),
             lang_method_sigs: FxMap::default(),
@@ -6209,6 +6234,7 @@ impl GenTables {
             adt_lifetimes: &self.adt_lifetimes,
             trait_names: &NO_DEFS,
             imported_projections: None,
+            generic_associated: &self.generic_associated,
             aliases: &NO_TYS,
             generic_aliases: &NO_ALIASES,
             index: &self.index,
@@ -6226,6 +6252,7 @@ impl GenTables {
             adt_lifetimes: &self.adt_lifetimes,
             trait_names: &self.trait_names,
             imported_projections: self.imported_projections.as_ref(),
+            generic_associated: &self.generic_associated,
             aliases,
             generic_aliases: &self.generic_aliases,
             index: &self.index,
@@ -6346,7 +6373,11 @@ pub fn collect_trait_defs(p: &mut Program, errs: &mut Vec<Diag>) {
                 ));
                 continue;
             }
-            assoc_items.push((child_def_id(p.krate, def, &p.interner, at.name, crate::def::DefKind::Assoc), at.name, true));
+            let assoc = child_def_id(p.krate, def, &p.interner, at.name, crate::def::DefKind::Assoc);
+            if !at.generics.params.is_empty() {
+                p.gx.generic_associated.insert(assoc);
+            }
+            assoc_items.push((assoc, at.name, true));
         }
         for ac in &tdef.consts {
             if assoc_items.iter().any(|&(_, n, is_ty)| !is_ty && n == ac.name) || tdef.fns.iter().any(|f| f.name == ac.name) {
@@ -7487,9 +7518,6 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
         for (at_i, assoc_def) in assoc_defs {
             let ast::ItemKind::Trait(tdef) = &p.ast.items[item_i].kind else { unreachable!() };
             let at = &tdef.types[at_i];
-            if !at.generics.params.is_empty() {
-                errs.push(not_yet("L0621", at.generics.span, "generic associated types"));
-            }
             let self_args: Vec<GenericArg> = (0..generics.params.len() as u32)
                 .map(|i| {
                     let t = p.tys.intern(TyKind::Param(ParamId(i)));
@@ -7591,10 +7619,16 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
                         Err(diag) => errs.push(diag),
                     }
                 }
-                p.gx.trait_assoc_generics.insert(assoc_def, AssociatedTypeGenerics {
+                let declaration = AssociatedTypeGenerics {
                     parent: trait_def, generics: own, lifetimes: own_scope.lifetimes, arguments,
                     region_facts: own_scope.region_facts, region_predicates, bounds: item_bounds, declared_bounds, span: at_span,
-                });
+                };
+                if !at_params.params.is_empty() && (generics.params.len() != 1 || !scope.lifetimes.is_empty()
+                    || declaration.reference_family_lifetime(&p.tys, p.gx.lang.sized).is_none())
+                {
+                    errs.push(not_yet("L0621", at_params.span, "this generic associated type declaration"));
+                }
+                p.gx.trait_assoc_generics.insert(assoc_def, declaration);
             }
         }
         // Associated consts: resolve and store the type for impl
@@ -14143,10 +14177,13 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
         let global: Vec<_> = global.into_iter().map(|predicate| subst_predicate(&mut p.tys, predicate, &subst_args)).collect();
         check_impl_native_predicates(p, &rec, &trec, &global, &rec.generics.predicates, rec.span, false, errs);
         for (assoc, item) in items {
-            // The GAT declaration gate remains in force. Do not erase its
-            // own binder into an ordinary associated-type proof.
-            if !item.generics.params.is_empty() || !item.lifetimes.is_empty() { continue; }
             let Some(assignment) = p.gx.impl_assoc_generics.get(&(rec.def, assoc)).cloned() else { continue };
+            if p.gx.generic_associated.contains(&assoc) {
+                if item.reference_family_lifetime(&p.tys, p.gx.lang.sized).is_some() {
+                    check_reference_family_assignment(p, &rec, &assignment, errs);
+                }
+                continue;
+            }
             if !assignment.declaration.generics.params.is_empty() || !assignment.declaration.lifetimes.is_empty() { continue; }
             let mut environment = rec.generics.predicates.clone();
             environment.extend_from_slice(&assignment.declaration.generics.predicates);
@@ -14165,6 +14202,39 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
             check_impl_associated_outlives(p, &rec, &item, &assignment, errs);
         }
     }
+}
+
+fn check_reference_family_assignment(
+    p: &mut Program, rec: &crate::traits::index::ImplRecord, assignment: &ImplAssociatedType, errs: &mut Vec<Diag>,
+) {
+    let span = assignment.declaration.span;
+    let [GenericArg::Ty(receiver)] = p.tys.args(rec.trait_ref.args) else {
+        errs.push(not_yet("L0621", span, "generic associated type impl inputs"));
+        return;
+    };
+    let receiver = *receiver;
+    let declaration = &assignment.declaration;
+    let unit = matches!(p.tys.kind(receiver), TyKind::Adt(def, args)
+        if p.tys.args(args).is_empty() && p.adt_by_def(def).is_some_and(|index| {
+            let adt = p.adt(index);
+            !adt.is_enum && !adt.non_exhaustive && matches!(adt.variants.as_slice(),
+                [variant] if variant.shape == crate::check::collect::VariantShape::Unit)
+        }));
+    // The parent has no lifetime arguments. The early region is the
+    // first parameter of the impl item's own binder.
+    let region = Region::Param(0);
+    if !unit || !rec.generics.params.is_empty() || !rec.generics.predicates.is_empty()
+        || declaration.single_lifetime() != Some(region) || !declaration.region_predicates.is_empty()
+        || !declaration.region_facts.is_empty() || !declaration.generics.predicates.is_empty()
+        || !matches!(p.tys.kind(assignment.value), TyKind::Ref(actual, Mut::Shared, inner)
+            if actual == region && matches!(p.tys.kind(inner), TyKind::Int(_)))
+    {
+        errs.push(not_yet("L0621", span, "this generic associated type implementation"));
+        return;
+    }
+    errs.extend(crate::check::outlives::check_requirements(
+        p, &[receiver], &[], &[], &[Predicate::TypeOutlives(receiver, region)], span,
+    ));
 }
 
 fn check_impl_associated_outlives(

@@ -130,6 +130,7 @@ fn gen_digest(gx: &GenTables, out: &mut Vec<(&'static str, u64)>) {
         index: _,                 // same: impl records do not hold fn sigs
         trait_names: _,           // same
         imported_projections: _,  // same within one imported generation
+        generic_associated: _,    // same: associated declarations are never body-patched
         trait_scopes: _,          // same
         trait_methods: _,         // refuse: trait method decls are never patched
         lang_method_sigs: _,      // refuse: lang methods are never patched

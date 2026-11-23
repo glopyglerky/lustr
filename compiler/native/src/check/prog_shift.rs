@@ -105,6 +105,7 @@ fn shift_gen_tables(gx: &mut GenTables, sp: &mut dyn FnMut(&mut Span)) {
         index,
         trait_names: _,
         imported_projections: _, // no consumer spans
+        generic_associated: _, // definition identities do not move
         trait_scopes: _,
         trait_methods,
         lang_method_sigs: _,
