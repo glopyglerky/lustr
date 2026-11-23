@@ -447,8 +447,11 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool, family: Option<&Fami
             pending.extend(functions[index].calls.iter().filter_map(|call| by_identity.get(call).copied()));
         }
     }
-    if reachable.len() != functions.len() || functions.is_empty() {
-        return Err(Error::Unintegrated("unused private definition lint diagnostics or empty exported graph"));
+    if reachable.len() != functions.len() {
+        return Err(Error::Unintegrated("unused private definition lint diagnostics"));
+    }
+    if functions.is_empty() && family.is_none() {
+        return Err(Error::Unintegrated("empty exported graph"));
     }
     Ok(functions)
 }
