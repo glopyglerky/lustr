@@ -23,6 +23,7 @@ pub struct Sdk {
     pub(crate) dependencies: Vec<SdkDependency>,
     pub(crate) receipt_hash: [u8; 32],
     pub(crate) dependency_functions: BTreeSet<NativeId>,
+    pub(crate) direct_dependency: Option<[u8; 16]>,
     pub(crate) standard: bool,
     pub(crate) core_size_traits: Option<[usize; 2]>,
 }
@@ -48,7 +49,8 @@ impl Sdk {
                 return Err("metadata SDK dependency facts differ from the qualified scope".into());
             }
         }
-        Ok(Self { cfg_version, dependencies, receipt_hash, dependency_functions: BTreeSet::new(), standard: false, core_size_traits: None })
+        Ok(Self { cfg_version, dependencies, receipt_hash, dependency_functions: BTreeSet::new(),
+            direct_dependency: None, standard: false, core_size_traits: None })
     }
 
     /// Keep the language-item identities recorded by the authenticated core
@@ -76,24 +78,31 @@ impl Sdk {
         {
             return Err("standard metadata SDK facts differ from the pinned dependency closure".into());
         }
-        Ok(Self { cfg_version, dependencies, receipt_hash, dependency_functions: BTreeSet::new(), standard: true, core_size_traits: None })
+        Ok(Self { cfg_version, dependencies, receipt_hash, dependency_functions: BTreeSet::new(),
+            direct_dependency: None, standard: true, core_size_traits: None })
     }
 
     /// Join an actual direct leaf dependency to the observed pinned Cargo library closure.
     pub fn with_scalar_leaf(&self, leaf: &ScalarCrate<'_>) -> Option<Self> {
-        if self.dependencies.len() != 2 || self.dependencies.iter().any(|dep| dep.name == leaf.name) {
+        // The pinned compiler registers a no_std leaf after core for a
+        // no_std consumer, and after the implicit std closure for a std root.
+        let ordinal = match (self.standard, self.dependencies.len()) {
+            (false, 2) => 1,
+            (true, 19) => 19,
+            _ => return None,
+        };
+        if !leaf.dependencies.is_empty() || self.dependencies.iter().any(|dep| dep.name == leaf.name) {
             return None;
         }
         let mut context = self.clone();
-        // The explicit dependency is registered after core and before the
-        // compiler_builtins load is completed for this closed graph.
-        context.dependencies.insert(1, SdkDependency {
+        context.dependencies.insert(ordinal, SdkDependency {
             name: leaf.name.into(), hash: leaf.svh, host_hash: None,
             kind: 2, is_private: false, extra_filename: leaf.filename_suffix.into(),
         });
         context.dependency_functions = leaf.functions.iter().map(|function| NativeId {
             krate: leaf.stable_id, path: function.path_hash,
         }).collect();
+        context.direct_dependency = Some(leaf.svh);
         Some(context)
     }
 }

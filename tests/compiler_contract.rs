@@ -2906,3 +2906,59 @@ fn cargo_library_accepts_an_explicit_rust_archive() {
     let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
     assert!(trace.contains("\"entry\":\"rust-request\""), "{trace}");
 }
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn cargo_std_library_retains_a_native_no_std_dependency() {
+    let f = Fixture::new("cargo-std-library-dependency");
+    f.source("Cargo.toml", "[workspace]\nmembers=[\"app\",\"relay\",\"provider\"]\nresolver=\"3\"\n");
+    for (name, dependencies) in [
+        ("app", "[dependencies]\nrelay={path=\"../relay\"}\n"),
+        ("relay", "[dependencies]\nprovider={path=\"../provider\"}\n"),
+        ("provider", ""),
+    ] {
+        f.source(&format!("{name}/Cargo.toml"), &format!(
+            "[package]\nname=\"{name}\"\nversion=\"0.1.0\"\nedition=\"2024\"\n{dependencies}"));
+    }
+    let provider = "#![no_std]\npub fn mask(value: u64) -> u64 { value ^ 19 }\n";
+    f.source("provider/src/lib.rs", provider);
+    f.source("relay/src/lib.rs", "pub fn evaluate(value: u64) -> u64 { provider::mask(value) }\n");
+    f.source("app/src/main.rs", "fn main() { println!(\"{}\", relay::evaluate(57)); }\n");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let original = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let mut previous = None;
+    for (step, source, expected) in [
+        ("initial", provider.to_owned(), b"42\n".as_slice()),
+        ("provider-body-edit", provider.replace("19", "18"), b"43\n".as_slice()),
+    ] {
+        f.source("provider/src/lib.rs", &source);
+        let check = f.succeeds(&format!("{step}-check"), f.command("cargo").args([
+            "check", "--workspace", "--frozen", "--message-format=json",
+        ]));
+        let metadata = check.stdout.split(|&byte| byte == b'\n').find_map(|line| {
+            let record: serde_json::Value = serde_json::from_slice(line).ok()?;
+            if record["reason"] != "compiler-artifact" || record["target"]["name"] != "relay" {
+                return None;
+            }
+            record["filenames"].as_array()?.iter().filter_map(|filename| filename.as_str())
+                .find(|path| path.ends_with(".rmeta")).map(PathBuf::from)
+        }).expect("Cargo reported relay's metadata");
+        let facts = f.succeeds(&format!("{step}-original-reader"), Command::new(&original)
+            .env_remove("LD_LIBRARY_PATH").arg("-Zls=root").arg(&metadata));
+        let text = String::from_utf8(facts.stdout).unwrap();
+        assert!(text.lines().any(|line| line.starts_with("20 provider-")), "{text}");
+        let bytes = std::fs::read(metadata).unwrap();
+        let hash = <[u8; 16]>::try_from(&bytes[24..40]).unwrap();
+        if let Some(prior) = previous { assert_ne!(hash, prior); }
+        previous = Some(hash);
+        let run = f.succeeds(&format!("{step}-run"), f.command("cargo").args(["run", "-p", "app", "--frozen"]));
+        assert_eq!(run.stdout, expected);
+        let oracle = f.succeeds(&format!("{step}-original-run"), f.command("cargo")
+            .args(["run", "-p", "app", "--frozen"]).env("RUSTC", &original)
+            .env("CARGO_TARGET_DIR", f.root.join("original-target")));
+        assert_eq!(oracle.stdout, expected);
+    }
+    let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
+    assert!(!trace.contains("\"entry\":\"rust-complement\""), "{trace}");
+}

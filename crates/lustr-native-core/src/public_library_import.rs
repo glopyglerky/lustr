@@ -17,7 +17,7 @@ use crate::{
 };
 use lustr_metadata_encoder::{IntegerType, Sdk, read_executable_crate, read_link_crate, read_scalar_crate};
 
-use super::{Stamp, metadata_query::MetadataReader, stamp};
+use super::{Installed, Stamp, metadata_query::MetadataReader, stamp};
 
 fn native_integer_type(ty: IntegerType) -> ty::IntTy {
     match ty {
@@ -54,14 +54,16 @@ pub(super) struct Import {
     pub(super) metadata: Arc<[u8]>,
     pub(super) embedded_archive: Option<Arc<[u8]>>,
     pub(super) sdk: Sdk,
+    pub(super) standard_sdk: Option<Sdk>,
     interface_inputs: Vec<(PathBuf, Stamp)>,
 }
 
 impl Import {
     pub(super) fn read_for_library(
-        request: &ExternMetadata, sdk: &Sdk, reader: &MetadataReader, search_paths: &[PathBuf],
+        request: &ExternMetadata, installed: &Installed, search_paths: &[PathBuf],
     ) -> Result<Self, super::ImportFailure> {
-        Self::read_with_interface(request, sdk, None, def::CrateId(1), false, Some((reader, search_paths, false)))
+        Self::read_with_interface(request, &installed.sdk, installed.standard.as_deref(), def::CrateId(1),
+            false, Some((&installed.metadata_reader, search_paths, false)))
     }
 
     pub(super) fn read(
@@ -90,10 +92,10 @@ impl Import {
         let data: &[u8] = if from_archive { super::executable::embedded_metadata(&bytes)? } else { &bytes };
         let local = if executable {
             read_executable_crate(data, sdk)
+                .or_else(|| standard.and_then(|context| read_link_crate(data, context)).map(|leaf| (leaf, None)))
         } else {
             read_scalar_crate(data, sdk).map(|leaf| (leaf, None))
-        }
-        .or_else(|| standard.and_then(|context| read_link_crate(data, context)).map(|leaf| (leaf, None)));
+        };
         let Some((leaf, projection)) = local else {
             let Some((reader, search_paths, linking)) = reader else {
                 return Err("extern artifact has no represented interface in the pinned SDK".into());
@@ -133,6 +135,7 @@ impl Import {
                 metadata: bytes,
                 embedded_archive: None,
                 sdk: sdk.clone(),
+                standard_sdk: None,
                 interface_inputs: interface.inputs,
             });
         };
@@ -143,6 +146,9 @@ impl Import {
         }
         let context = if executable { sdk.clone() } else {
             sdk.with_scalar_leaf(&leaf).ok_or("extern metadata crate identity conflicts with the SDK")?
+        };
+        let standard_sdk = if executable { None } else {
+            standard.and_then(|context| context.with_scalar_leaf(&leaf))
         };
         let functions = leaf
             .functions
@@ -192,6 +198,7 @@ impl Import {
                 metadata: if from_archive { Arc::from(data) } else { bytes.clone() },
                 embedded_archive: from_archive.then_some(bytes),
                 sdk: context,
+                standard_sdk,
                 interface_inputs: Vec::new(),
         })
     }

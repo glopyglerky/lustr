@@ -174,7 +174,7 @@ impl Owner {
         installed.unchanged()?;
         let imported = if let Some(external) = &key.external {
             if req.session.krate.manifest_path.is_none() { return Err("extern metadata requires the actual Cargo unit".into()); }
-            Some(imports::Import::read_for_library(external, &installed.sdk, &installed.metadata_reader, &key.search_paths)?)
+            Some(imports::Import::read_for_library(external, &installed, &key.search_paths)?)
         } else { None };
         let context=Context{crate_name:key.crate_name.clone(),metadata:key.metadata.clone(),extra_filename:key.extra_filename.clone(),
             source:key.source_path.clone(),cwd:key.working_directory.to_str().ok_or("library cwd is not Unicode")?.into(),
@@ -210,7 +210,7 @@ impl Owner {
         // A malformed or changing input leaves the previous owner and checked
         // generation intact, and fails this request without compiler retry.
         let imported = key.external.as_ref().map(|input|
-            imports::Import::read_for_library(input, &self.installed.sdk, &self.installed.metadata_reader, &key.search_paths))
+            imports::Import::read_for_library(input, &self.installed, &key.search_paths))
             .transpose()?;
         let executable = key.executable_dependencies.as_ref()
             .map(|inputs| executable::ExecutableImports::open(inputs, &key.search_paths, &self.installed,
@@ -323,8 +323,10 @@ impl Owner {
                 .any(|id| imported.owns(*id)));
             import_used = used.is_some();
             let metadata_context = if state.standard {
-                if used.is_some() { return Err("std-root library metadata for a direct user dependency is not represented".into()); }
-                Some(self.installed.standard.as_deref().ok_or("standard metadata SDK receipt is not installed")?)
+                Some(match used {
+                    Some(imported) => imported.standard_sdk.as_ref().ok_or("the imported crate has no matching standard SDK context")?,
+                    None => self.installed.standard.as_deref().ok_or("standard metadata SDK receipt is not installed")?,
+                })
             } else {
                 used.map(|imported| &imported.sdk)
             };

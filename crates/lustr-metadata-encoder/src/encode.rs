@@ -553,6 +553,10 @@ fn semantic_fingerprint(input: &Input<'_>, sdk: &Sdk, link: bool) -> [u8; 16] {
         sdk.receipt_hash.as_slice()] {
         digest.write_u64(part.len() as u64); digest.write(part);
     }
+    if let Some(dependency) = sdk.direct_dependency {
+        digest.write(b"lustr-direct-dependency");
+        digest.write(&dependency);
+    }
     digest.write_u64(input.objects.len() as u64);
     for object in input.objects {
         digest.write_u64(object.member.len() as u64); digest.write(object.member.as_bytes());
