@@ -538,9 +538,10 @@ fn default_cargo_links_debug_from_a_native_no_std_provider() {
         }
     }
     let native = f.root.join("target/debug/debug-application");
-    let ran = f.succeeds("run", f.command("cargo").args(["run", "--offline", "--quiet", "-p", "debug-application"]).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    let run = ["run", "--offline", "--quiet", "-p", "debug-application"];
+    let ran = f.succeeds("run", f.command("cargo").args(run).env_remove("CARGO_PROFILE_DEV_DEBUG"));
     assert_eq!(ran.stdout, b"5\n");
-    let dwarf = f.succeeds("dwarf", Command::new("readelf").arg("--debug-dump=info").arg(native));
+    let dwarf = f.succeeds("dwarf", Command::new("readelf").arg("--debug-dump=info").arg(&native));
     let dwarf = String::from_utf8_lossy(&dwarf.stdout);
     for required in ["provider/src/lib.rs", "): evaluate", "): shift", "): input"] {
         assert!(dwarf.contains(required), "missing Rust library DWARF evidence {required}");
@@ -555,6 +556,21 @@ fn default_cargo_links_debug_from_a_native_no_std_provider() {
     }
     f.succeeds("independent-link", &mut command);
     assert_eq!(f.succeeds("independent-run", &mut Command::new(independently_linked)).stdout, ran.stdout);
+
+    let edited = "#![no_std]\nfn shift(input: u32) -> u32 { input ^ 3 }\npub fn evaluate(input: u32) -> u32 { shift(input) ^ 11 }\n";
+    f.source("provider/src/lib.rs", edited);
+    let changed = f.succeeds("dependency-body", f.command("cargo").args(run).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    assert_eq!(changed.stdout, b"4\n");
+    let valid = std::fs::read(&native).unwrap();
+    f.source("provider/src/lib.rs", "#![no_std]\npub fn evaluate(input: u32, mask: u32) -> u32 { input ^ mask }\n");
+    let rejected = f.invoke("dependency-signature", f.command("cargo").args(run).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    assert_eq!(rejected.status.code(), Some(101));
+    assert!(rejected.stdout.is_empty(), "an invalid executable ran");
+    assert!(String::from_utf8_lossy(&rejected.stderr).contains("L0105"));
+    assert_eq!(std::fs::read(&native).unwrap(), valid, "an incompatible dependency replaced the last valid executable");
+    f.source("provider/src/lib.rs", edited);
+    let repaired = f.succeeds("dependency-repair", f.command("cargo").args(run).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    assert_eq!(repaired.stdout, changed.stdout);
 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
