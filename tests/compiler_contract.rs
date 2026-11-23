@@ -2538,3 +2538,76 @@ fn native_library_selection_survives_process_startup() {
         assert!(!rejected.stderr.is_empty(), "{tool} lost the target-selection diagnostic");
     }
 }
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and binutils"]
+fn ordinary_cargo_compiles_a_native_function_with_rust_async_code() {
+    let f = Fixture::new("cargo-async-composition");
+    f.source("Cargo.toml", "[package]\nname=\"async_program\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    let source = r#"
+use std::{future::Future, pin::pin, task::{Context, Poll, Waker}};
+
+fn apply_mask(input: u64) -> u64 { input ^ 19 }
+
+async fn compute(input: u64) -> u64 {
+    let apply = std::hint::black_box(apply_mask as fn(u64) -> u64);
+    apply(std::future::ready(input).await)
+}
+
+fn main() {
+    let mut task = pin!(compute(57));
+    let mut context = Context::from_waker(Waker::noop());
+    let Poll::Ready(value) = task.as_mut().poll(&mut context) else { unreachable!() };
+    println!("{value}");
+}
+"#;
+    let path = f.source("src/main.rs", source);
+    let rust = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let cargo = |name: &str, original: bool, mixed: bool| {
+        let mut command = f.command("cargo");
+        command.env("CARGO_TARGET_DIR", f.root.join(name));
+        if mixed {
+            command.env("CARGO_PROFILE_DEV_DEBUG", "0");
+        }
+        if original {
+            command.env("RUSTC", &rust);
+        }
+        command
+    };
+    f.succeeds("lockfile", cargo("default", false, false).args(["generate-lockfile", "--offline"]));
+    f.succeeds("default-check", cargo("default", false, false).args(["check", "--frozen"]));
+    for (name, original, mixed) in [("default", false, false), ("mixed", false, true), ("original", true, true)] {
+        let result = f.succeeds(&format!("{name}-run"), cargo(name, original, mixed).args(["run", "--frozen"]));
+        assert_eq!(result.stdout, b"42\n");
+        let exe = f.root.join(name).join("debug/async_program");
+        let symbols = f.succeeds(&format!("{name}-symbols"), Command::new("nm").arg(exe));
+        let symbols = String::from_utf8(symbols.stdout).unwrap();
+        let native = symbols.lines().filter(|line| line.split_whitespace().last()
+            .and_then(|name| name.strip_prefix("f_")).is_some_and(|suffix| {
+                suffix.len() == 16 && suffix.bytes().all(|byte| byte.is_ascii_hexdigit())
+            })).count();
+        assert_eq!(native, usize::from(mixed && !original), "{name}");
+    }
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), source);
+    let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
+    assert!(trace.contains("\"entry\":\"rust-complement\""), "{trace}");
+
+    for (name, edit, diagnostic) in [
+        ("bad-native", source.replace("input ^ 19", "input ^ false"), "L0113"),
+        ("bad-rust", source.replace("async fn compute(input: u64) -> u64", "async fn compute(input: u64) -> u32"), "E0308"),
+    ] {
+        f.source("src/main.rs", &edit);
+        let result = f.invoke(name, cargo(name, false, true).args(["build", "--frozen"]));
+        assert_eq!(result.status.code(), Some(101));
+        assert!(String::from_utf8_lossy(&result.stderr).contains(diagnostic),
+            "{}", String::from_utf8_lossy(&result.stderr));
+        assert!(!f.root.join(name).join("debug/async_program").exists());
+    }
+    let traces = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
+    f.source("src/main.rs", "fn main() { let value: u64 = false; println!(\"{value}\"); }\n");
+    let result = f.invoke("ordinary-invalid", cargo("ordinary-invalid", false, true).args(["check", "--frozen"]));
+    assert_eq!(result.status.code(), Some(101));
+    let later = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
+    assert!(!later[traces.len()..].contains("\"entry\":\"rust-complement\""), "{later}");
+}

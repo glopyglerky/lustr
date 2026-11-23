@@ -52,6 +52,7 @@ impl Drop for Scratch {
 pub(crate) enum Artifact {
     Freestanding,
     StaticLibrary,
+    CargoUnit,
 }
 
 struct Composition {
@@ -208,7 +209,7 @@ fn bind(sess: &Session, item: &mut Item, symbol: &str, artifact: Artifact) -> Sy
     });
     let abi = Symbol::intern(match artifact {
         Artifact::Freestanding => "Rust",
-        Artifact::StaticLibrary => "C",
+        Artifact::StaticLibrary | Artifact::CargoUnit => "C",
     });
     let foreign = ItemKind::ForeignMod(ForeignMod {
         extern_span: span, safety: Safety::Unsafe(span),
@@ -235,11 +236,13 @@ fn bind(sess: &Session, item: &mut Item, symbol: &str, artifact: Artifact) -> Sy
 impl Callbacks for Composition {
     fn config(&mut self, config: &mut Config) {
         let early = EarlyDiagCtxt::new(ErrorOutputType::default());
-        let crate_type = match self.artifact {
-            Artifact::Freestanding => CrateType::Executable,
-            Artifact::StaticLibrary => CrateType::StaticLib,
+        let represented = match self.artifact {
+            Artifact::Freestanding => config.opts.crate_types == [CrateType::Executable],
+            Artifact::StaticLibrary => config.opts.crate_types == [CrateType::StaticLib],
+            Artifact::CargoUnit => matches!(config.opts.crate_types.as_slice(),
+                [] | [CrateType::Executable | CrateType::Rlib]),
         };
-        if config.opts.target_triple.tuple() != HOST || config.opts.crate_types != [crate_type]
+        if config.opts.target_triple.tuple() != HOST || !represented
         {
             early.early_fatal("the parsed request does not match the selected host artifact");
         }
@@ -279,7 +282,7 @@ impl Callbacks for Composition {
         let plain_policy = match self.artifact {
             Artifact::Freestanding => matches!(krate.attrs.as_slice(), [first, second]
                 if first.has_name(sym::no_std) && second.has_name(sym::no_main)),
-            Artifact::StaticLibrary => krate.attrs.is_empty()
+            Artifact::StaticLibrary | Artifact::CargoUnit => krate.attrs.is_empty()
                 || matches!(krate.attrs.as_slice(), [attr] if no_std && attr.has_name(sym::no_std)),
         };
         if self.input.is_none() || !plain_policy

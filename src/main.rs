@@ -25,6 +25,10 @@ mod lust {
     }
 
     impl Call {
+        pub fn requires_complement(&self, status: i32) -> bool {
+            self.0.session.library.is_some() && status == protocol::RUST_COMPLEMENT_REQUIRED
+        }
+
         pub fn needs_rust_artifact(&self) -> bool {
             matches!(self.0.cmd, protocol::Cmd::Build) && self.0.session.krate.target_kind == "lib" && self.0.session.library.is_none()
                 || !(self.0.session.target_triple.is_empty() || self.0.session.target_triple == protocol::host_triple())
@@ -353,6 +357,14 @@ fn main() -> ExitCode {
             }
         };
         if let Some((code, stdout, stderr)) = result {
+            if compiler_mode && call.requires_complement(code)
+                && let Some(compiler) = native_queries::host_proc_macro_compiler(&parent, lust::host_triple())
+            {
+                trace_entry("lustr", "rust-complement");
+                let error = Command::new(compiler).arg("--lustr-build-rust-unit").args(&args).exec();
+                eprintln!("cannot execute the complementary Rust compiler: {error}");
+                return ExitCode::from(2);
+            }
             trace_entry(if code == 0 { "lust" } else { "lust-failed" }, entry);
             native_diagnostic(&stderr);
             io::stdout().write_all(&stdout).expect("cannot write compiler stdout");

@@ -1343,13 +1343,20 @@ fn errors(diags: &mut [Diag], map: &SourceMap, src: &str, req: &Request) -> Resp
     // fresh session's (render order itself is `diag::diag_order`).
     let n = diag::dedup_exact(diags, map);
     let diags = &mut diags[..n];
+    let code = if cfg!(feature = "exclusive-native") && req.session.library.is_some()
+        && !diags.is_empty() && diags.iter().all(|diagnostic| diagnostic.code == "L0405")
+    {
+        crate::protocol::RUST_COMPLEMENT_REQUIRED
+    } else {
+        1
+    };
     #[cfg(feature="exclusive-native")]
     if req.session.library.is_some() && req.json {
-        return Response{code:1,stderr:diag::render_cargo(diags,map,src,req.max_errors),..Default::default()};
+        return Response{code,stderr:diag::render_cargo(diags,map,src,req.max_errors),..Default::default()};
     }
     let json = req.json;
     let text = diag::render(diags, map, src, json, req.max_errors);
-    let mut r = Response { code: 1, ..Default::default() };
+    let mut r = Response { code, ..Default::default() };
     if json {
         r.stdout = text;
     } else {

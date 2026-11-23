@@ -149,6 +149,9 @@ fn main() -> ExitCode {
     if args.get(1).is_some_and(|arg| arg == "--lustr-build-static-library") {
         return host_freestanding::run(host_freestanding::Artifact::StaticLibrary, &args[0], &args[2..]);
     }
+    if args.get(1).is_some_and(|arg| arg == "--lustr-build-rust-unit") {
+        return host_freestanding::run(host_freestanding::Artifact::CargoUnit, &args[0], &args[2..]);
+    }
     let record_spans = std::env::current_exe().ok().is_some_and(|path| {
         path.ancestors().nth(3).is_some_and(|directory| {
             directory.join("lustr-macro-expansion/bin/lustr-expand-proc-macro").is_file()

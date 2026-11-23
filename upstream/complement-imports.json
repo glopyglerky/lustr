@@ -328,10 +328,10 @@
     },
     {
       "id": "freestanding-executable-composition",
-      "missing_capability": "Final linking of freestanding Cargo executables and host Rust static library archives",
+      "missing_capability": "Freestanding and static library linking, and Rust coroutine analysis and lowering for ordinary Cargo units",
       "status": "implemented-partial",
       "owner": "Lust native item compiler and pinned Rust executable driver",
-      "semantic_boundary": "Lust checks and emits closed u64 bodies from original source spans in one object. The original Rust driver preserves function-item identities with ordinary forwarding bodies and handles the complementary source, metadata, dependency info and link.",
+      "semantic_boundary": "Lust checks and emits closed u64 bodies from original source spans in one object. The original Rust driver handles complementary source, metadata, dependency info and link. Ordinary Cargo compilation can select this composition after the native parser reports its async capability limit.",
       "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
       "upstream_paths": {
         "compiler/rustc_driver_impl/src/lib.rs": "28d3ed858c3db58e159cfe6a6e6e47fa15b64fe354e565a7c94ef24b563c7b44",
@@ -346,7 +346,7 @@
         ["freestanding-executable-composition", "native-freestanding-item via original Lust semantics and TinyCC"]
       ],
       "targets": "x86_64-unknown-linux-gnu host and target",
-      "features": ["Freestanding Cargo binary with no_std, no_main, panic=abort and explicit static relocation and link", "Cargo static library with Rust semantics and an independently linkable C entry"],
+      "features": ["Freestanding Cargo binary with no_std, no_main, panic=abort and explicit static relocation and link", "Cargo static library with Rust semantics and an independently linkable C entry", "Native parser capability handoff for ordinary Cargo units that use async"],
       "adapter": "tools/host-freestanding.rs",
       "licenses": ["MIT", "Apache-2.0"],
       "excluded_duplicate_phases": ["Rust analysis and code generation of selected native bodies"],

@@ -339,6 +339,10 @@ impl Client {
     }
 }
 
+/// A Cargo unit reached a native parser feature limit before semantic checking
+/// or emission. The caller may assign the unresolved work to its Rust engine.
+pub const RUST_COMPLEMENT_REQUIRED: i32 = 5;
+
 #[derive(Clone, Default)]
 pub struct Response {
     pub stdout: String,
