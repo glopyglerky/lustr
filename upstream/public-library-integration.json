@@ -167,7 +167,7 @@
     "compiler/native/src/cgen/ll.rs": "055c1c3b4f4b0c19e15d12ff8978454cc0a8d833d47b994e75927c9335d76849",
     "compiler/native/src/cgen/ll_debug.rs": "00dd973b114bb1a2cf8654c1a6d37280c21db0507ef5ad0552a92894affb9e5e",
     "compiler/native/src/check/collect.rs": "4754e5aacc6075981cf07a14757df5c9d7d5bd0cd3774d54a6830b827f24a5ca",
-    "compiler/native/src/cc.rs": "bae38b400f279361faa94f8245808e5d4764223e4978acfc4467d1b214179235",
+    "compiler/native/src/cc.rs": "beef715b5027b1cd3d9216718e15ffb042f0acd130fee252c656809a204cb075",
     "compiler/native/src/cc/pgo.rs": "dd19f652a689da79c852980d998865e412c420ad236e76e6528964b9977776d9",
     "compiler/native/src/ir.rs": "4e30b15220371609b9fb3bd0d74aca4ccfb675ed219bdd478d7921afaa408d85",
     "compiler/native/src/lower.rs": "6ba4820c522e06f16b6c9cef8b96f0bdf5f9578dcba273a317fa4a72727f5625",
