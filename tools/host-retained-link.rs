@@ -70,6 +70,7 @@ fn add_stamp(key: &mut Vec<u8>, path: &Path) -> io::Result<()> {
 }
 
 fn source_context(source: &str, bodies: &[Range<u32>], key: &mut Vec<u8>) -> Option<()> {
+    add(key, &(bodies.len() as u64).to_le_bytes());
     let mut previous = 0;
     for body in bodies {
         let start = body.start as usize;
@@ -185,7 +186,12 @@ impl Cache {
         let (mut modules, info, metadata, outputs) =
             CompiledModules::deserialize_rlink(sess, data).ok()?;
         let deps = dep_info(&outputs)?;
-        if !metadata.full().is_empty() || lines.next()? != hash(fs::read(&deps).ok()?) {
+        let OutFileName::Real(executable) = outputs.path(OutputType::Exe) else { return None };
+        let output = self.directory.parent()?;
+        if [&deps, &executable].into_iter().any(|path|
+            path.parent().and_then(|parent| parent.canonicalize().ok()).as_deref() != Some(output))
+            || !metadata.full().is_empty() || lines.next()? != hash(fs::read(&deps).ok()?)
+        {
             return None;
         }
         let objects = modules.modules.iter_mut().chain(modules.allocator_module.iter_mut());
