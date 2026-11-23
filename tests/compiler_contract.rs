@@ -2762,3 +2762,22 @@ fn main() { println!("{}", mask(bridge::convert(57).value())); }
         assert!(!f.root.join(name).join("debug/app").exists());
     }
 }
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn installed_rust_reports_the_requested_non_host_target() {
+    let f = Fixture::new("cargo-cross-target-discovery");
+    let original = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    for target in [vec!["--target", "wasm32-unknown-unknown"], vec!["--target=wasm32-unknown-unknown"]] {
+        let query = [
+            "-", "--crate-name", "probe", "--crate-type=cdylib",
+            "--print=file-names", "--print=cfg", "--print=split-debuginfo",
+        ];
+        let expected = f.succeeds("original-wasm-discovery",
+            Command::new(&original).current_dir(&f.root).env_remove("LD_LIBRARY_PATH").args(query).args(&target));
+        let answer = f.succeeds("lustr-wasm-discovery", f.command("rustc").args(query).args(&target));
+        assert_eq!(answer.stdout, expected.stdout);
+        assert!(String::from_utf8_lossy(&answer.stdout).contains("target_arch=\"wasm32\""));
+    }
+}

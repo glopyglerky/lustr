@@ -12,6 +12,16 @@ pub fn host_proc_macro_compiler(bin: &Path, host: &str) -> Option<PathBuf> {
     compiler.is_file().then_some(compiler)
 }
 
+fn information_query(args: &[OsString]) -> bool {
+    args.iter().any(|arg| arg == "--print" || arg.to_str().is_some_and(|s| s.starts_with("--print=")))
+}
+
+pub fn non_host_query(args: &[OsString], host: &str) -> bool {
+    information_query(args) && (args.windows(2).any(|pair| pair[0] == "--target" && pair[1] != host)
+        || args.iter().any(|arg| arg.to_str().and_then(|arg| arg.strip_prefix("--target="))
+            .is_some_and(|target| target != host)))
+}
+
 pub fn answer(args: &[OsString], bin: &Path, host: &str) -> Option<Result<(), String>> {
     if args == ["-vV"] || args == ["--version", "--verbose"] {
         println!("lustr {}", env!("CARGO_PKG_VERSION"));
@@ -22,7 +32,7 @@ pub fn answer(args: &[OsString], bin: &Path, host: &str) -> Option<Result<(), St
         println!("lustr-support: partial-native; Rust release names the declared semantics, not full coverage");
         return Some(Ok(()));
     }
-    if !args.iter().any(|arg| arg == "--print" || arg.to_str().is_some_and(|s| s.starts_with("--print="))) {
+    if !information_query(args) {
         return None;
     }
     Some(query(args, bin, host))
