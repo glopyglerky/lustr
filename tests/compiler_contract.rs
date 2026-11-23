@@ -537,7 +537,7 @@ fn default_cargo_links_debug_from_a_native_standard_provider() {
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
-fn ordinary_cargo_checks_associated_lifetimes_across_native_crates() {
+fn ordinary_cargo_checks_and_links_associated_lifetimes_across_native_crates() {
     let f = Fixture::new("associated-lifetime-workspace");
     f.source("Cargo.toml", "[workspace]\nmembers = [\"provider\", \"application\"]\nresolver = \"3\"\n");
     f.source("provider/Cargo.toml", "[package]\nname = \"typed-schema\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
@@ -574,6 +574,44 @@ fn ordinary_cargo_checks_associated_lifetimes_across_native_crates() {
     f.source("provider/src/lib.rs", provider);
     check("repair");
     assert!(original("original-reader-repair").status.success());
+
+    let build = f.succeeds("build", f.command("cargo").args([
+        "build", "--offline", "-p", "projection-app", "--message-format=json",
+    ]));
+    let artifacts = build.stdout.split(|&byte| byte == b'\n').find_map(|line| {
+        let record = serde_json::from_slice::<serde_json::Value>(line).ok()?;
+        if record["reason"] != "compiler-artifact" || record["target"]["name"] != "typed_schema" {
+            return None;
+        }
+        Some(record["filenames"].as_array()?.iter().filter_map(|path| path.as_str())
+            .map(PathBuf::from).collect::<Vec<_>>())
+    }).expect("native provider link artifacts");
+    let independent = f.root.join("independent-linked-reader");
+    let mut link = Command::new(&oracle);
+    link.env_remove("LD_LIBRARY_PATH").current_dir(&f.root)
+        .args(["--edition=2024", "--crate-name", "projection_reader"])
+        .arg(&source).arg("-o").arg(&independent);
+    for extension in ["rlib", "rmeta"] {
+        let artifact = artifacts.iter().find(|path| path.extension().is_some_and(|ext| ext == extension))
+            .expect("matching native provider artifact");
+        link.arg("--extern").arg(format!("api={}", artifact.display()));
+    }
+    f.succeeds("original-reader-link", &mut link);
+    let ran = f.succeeds("original-reader-run", &mut Command::new(independent));
+    assert_eq!(ran.stdout, b"17\n");
+
+    let run = ["run", "--offline", "--quiet", "-p", "projection-app"];
+    assert_eq!(f.succeeds("run", f.command("cargo").args(run)).stdout, ran.stdout);
+    let binary = f.root.join("target/debug/projection-app");
+    let valid = std::fs::read(&binary).unwrap();
+    f.source("provider/src/lib.rs", &provider.replace("u32", "u64"));
+    let rejected = f.invoke("changed-assignment-link", f.command("cargo").args(run));
+    assert_eq!(rejected.status.code(), Some(101));
+    assert!(String::from_utf8_lossy(&rejected.stderr).contains("L0110"));
+    assert!(rejected.stdout.is_empty());
+    assert_eq!(std::fs::read(&binary).unwrap(), valid);
+    f.source("provider/src/lib.rs", provider);
+    assert_eq!(f.succeeds("repaired-link", f.command("cargo").args(run)).stdout, ran.stdout);
 }
 
 
