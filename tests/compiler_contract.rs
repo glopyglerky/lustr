@@ -3006,3 +3006,51 @@ pub fn mask(value: u64) -> u64 { value ^ 19 }
         assert!(!f.root.join(lane).join("debug/app").exists());
     }
 }
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn cargo_libraries_with_unrepresented_native_metadata_keep_default_profiles() {
+    let f = Fixture::new("cargo-library-metadata-shapes");
+    f.source("Cargo.toml", "[workspace]\nmembers=[\"app\",\"nominal\",\"borrowed\",\"constant\",\"implementation\"]\nresolver=\"3\"\n");
+    for (name, source) in [
+        ("nominal", "#![no_std]\npub struct Number(pub u64);\n"),
+        ("borrowed", "#![no_std]\npub fn read(value: &u64) -> u64 { *value }\n"),
+        ("constant", "#![no_std]\npub const VALUES: [u64; 2] = [19, 23];\n"),
+        ("implementation", "#![no_std]\npub trait Count { fn count(self) -> u64; }\nimpl Count for u64 { fn count(self) -> u64 { self + 1 } }\n"),
+    ] {
+        f.source(&format!("{name}/Cargo.toml"), &format!(
+            "[package]\nname=\"{name}\"\nversion=\"0.1.0\"\nedition=\"2024\"\n"));
+        f.source(&format!("{name}/src/lib.rs"), source);
+    }
+    f.source("app/Cargo.toml", "[package]\nname=\"app\"\nversion=\"0.1.0\"\nedition=\"2024\"\n\n[dependencies]\nnominal={path=\"../nominal\"}\nborrowed={path=\"../borrowed\"}\nconstant={path=\"../constant\"}\nimplementation={path=\"../implementation\"}\n");
+    f.source("app/src/main.rs", r#"
+use implementation::Count;
+fn main() {
+    let total = nominal::Number(borrowed::read(&constant::VALUES[0]) + constant::VALUES[1]);
+    println!("{}", (total.0 - 1).count());
+}
+"#);
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let cargo = |lane: &str, original: bool| {
+        let mut command = f.command("cargo");
+        command.env("CARGO_TARGET_DIR", f.root.join(lane));
+        if original { command.env("RUSTC", &oracle); }
+        command
+    };
+    for (lane, original) in [("lustr", false), ("original", true)] {
+        f.succeeds(&format!("{lane}-check"), cargo(lane, original).args(["check", "--workspace", "--frozen"]));
+        let run = f.succeeds(&format!("{lane}-run"), cargo(lane, original).args(["run", "-p", "app", "--frozen"]));
+        assert_eq!(run.stdout, b"42\n");
+    }
+    f.source("borrowed/src/lib.rs", "#![no_std]\npub fn read(value: &u64) -> u64 { true }\n");
+    let trace_path = f.root.join("trace.jsonl");
+    let trace = std::fs::read(&trace_path).unwrap();
+    let rejected = f.invoke("native-body-error", cargo("lustr", false).args(["check", "--workspace", "--frozen"]));
+    assert_eq!(rejected.status.code(), Some(101));
+    assert!(String::from_utf8_lossy(&rejected.stderr).contains("expected `u64`, found `bool`"));
+    let updated = std::fs::read(trace_path).unwrap();
+    assert!(updated.starts_with(&trace));
+    assert_eq!(&updated[trace.len()..], b"{\"engine\":\"lust-failed\",\"entry\":\"daemon\"}\n");
+}

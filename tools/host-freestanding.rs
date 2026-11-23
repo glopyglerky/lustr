@@ -384,8 +384,14 @@ pub(crate) fn run(artifact: Artifact, program: &str, args: &[String]) -> ExitCod
 fn represents_native_codegen(args: &[String]) -> bool {
     let mut rest = args.iter().map(String::as_str);
     while let Some(arg) = rest.next() {
-        if arg.starts_with("-Z") {
-            return false;
+        if let Some(option) = arg.strip_prefix("-Z") {
+            let option = if option.is_empty() { rest.next().unwrap_or_default() } else { option };
+            // The original Rust linker owns the archive's metadata and its
+            // stub. This option does not change the native item's object.
+            if option.split_once('=').map(|(key, _)| key) != Some("embed-metadata") {
+                return false;
+            }
+            continue;
         }
         let codegen = if matches!(arg, "-C" | "--codegen") {
             rest.next()
@@ -394,7 +400,7 @@ fn represents_native_codegen(args: &[String]) -> bool {
         };
         if let Some(option) = codegen {
             let (key, value) = option.split_once('=').unwrap_or((option, ""));
-            if !matches!(key, "embed-bitcode" | "debuginfo" | "metadata" | "extra-filename"
+            if !matches!(key, "embed-bitcode" | "embed-metadata" | "debuginfo" | "metadata" | "extra-filename"
                 | "incremental" | "panic" | "strip" | "opt-level" | "overflow-checks"
                 | "debug-assertions" | "link-arg" | "relocation-model")
             {

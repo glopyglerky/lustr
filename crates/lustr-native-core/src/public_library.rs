@@ -440,7 +440,7 @@ impl Owner {
                 "owner_start_bound":true,"scope":"each native-object, native-definition, and artifact cache"},"native":native,"artifacts":self.artifacts.history()});
         }
         report["status"]=json!(response.code);
-        report["outcome"]=json!(if response.code==0{"emitted"}else if response.code==1{"rejected"}else if response.code==4{"integration-incomplete"}else{"failed"});
+        report["outcome"]=json!(if response.code==0{"emitted"}else if response.code==1{"rejected"}else if response.code==protocol::RUST_COMPLEMENT_REQUIRED{"requires-rust"}else if response.code==4{"integration-incomplete"}else{"failed"});
         report["native_diagnostics"]=json!(response.stderr);
         if observed && step.is_dir() {
             let evidence=(||->Result<(),String>{
