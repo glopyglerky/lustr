@@ -24669,6 +24669,28 @@ index d2a62c51af7e89975070edd9deeb82e17def6701..00000000000000000000000000000000
 -    &v[0]
 -}
 -fn main() { let mut v = Vec::new(); println!("{}", first_or_push(&mut v)); }
+diff --git a/tests/fail/trait_static_assoc_lifetime.rs b/tests/fail/trait_static_assoc_lifetime.rs
+index b5c1a6650347a16861c3fc8720c064929fb7b175..3bd3277c7ce04b2b204337675f8386cec6ebbce2 100644
+--- a/tests/fail/trait_static_assoc_lifetime.rs
++++ b/tests/fail/trait_static_assoc_lifetime.rs
+@@ -1,5 +1,5 @@
+-// expect: L0612
+-// rustc E0478: the binding of `Req: 'static` holds the impl's `'a`.
++// expect: L0617
++// rustc E0477: the binding of `Req: 'static` holds the impl's `'a`.
+ trait Search { type Req: 'static; }
+ struct S<'a>(&'a u8);
+ impl<'a> Search for S<'a> { type Req = S<'a>; }
+diff --git a/tests/fail/trait_static_assoc_param.rs b/tests/fail/trait_static_assoc_param.rs
+index 319c4d46c22f12313e42267f1fbf8518cb8e3819..0b5a6d3f0e2927632b7ba482c25468664cfd1f48 100644
+--- a/tests/fail/trait_static_assoc_param.rs
++++ b/tests/fail/trait_static_assoc_param.rs
+@@ -1,4 +1,4 @@
+-// expect: L0612
++// expect: L0617
+ // rustc E0310: the binding `Req = T` needs `T: 'static`.
+ trait Search { type Req: 'static; }
+ struct W<T>(T);
 diff --git a/tests/fail/trait_where_overflow_mutual.rs b/tests/fail/trait_where_overflow_mutual.rs
 deleted file mode 100644
 index daa041f6e175e9dd33907e7ce7a440d10c2e558b..0000000000000000000000000000000000000000
@@ -34984,6 +35006,27 @@ index 0000000000000000000000000000000000000000..1fdb726b5f9463d88ad3b019cbe5e31b
 +    assert_eq!(utf8, "a\u{00e9}\u{1f600}");
 +    println!("utf8 {} {}", utf8.len(), utf8.capacity());
 +}
+diff --git a/tests/pass/trait_lt_assoc_type.rs b/tests/pass/trait_lt_assoc_type.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..4e8afea12c503ccce00d377fe359782073b9379e
+--- /dev/null
++++ b/tests/pass/trait_lt_assoc_type.rs
+@@ -0,0 +1,15 @@
++// A lifetime-parameterized trait can declare an associated type and return a borrowed value.
++trait Source<'a> {
++    type Item;
++    fn first(&self) -> Option<&'a u8>;
++}
++struct S;
++impl<'a> Source<'a> for S {
++    type Item = u8;
++    fn first(&self) -> Option<&'a u8> {
++        None
++    }
++}
++fn main() {
++    println!("{:?}", S.first());
++}
 diff --git a/tests/pass/unicode_const_runtime_semantics.rs b/tests/pass/unicode_const_runtime_semantics.rs
 new file mode 100644
 index 0000000000000000000000000000000000000000..a91f5a767bc1344f49f79f07bd81c08097002a7e
@@ -35431,6 +35474,29 @@ index 0000000000000000000000000000000000000000..4b7db97dbb83232f2cde53d3d182c4df
 +    &v[0]
 +}
 +fn main() { let mut v = Vec::new(); println!("{}", first_or_push(&mut v)); }
+diff --git a/tests/reject/trait_lt_assoc_type.rs b/tests/reject/trait_lt_assoc_type.rs
+deleted file mode 100644
+index 9ec3e4be89b9503386c57cb6aad6b1bb2ca39dc6..0000000000000000000000000000000000000000
+--- a/tests/reject/trait_lt_assoc_type.rs
++++ /dev/null
+@@ -1,17 +0,0 @@
+-// expect: L0203
+-// Stated cut (L0203): an associated type in a trait with lifetime params.
+-// Valid Rust.
+-trait Source<'a> {
+-    type Item;
+-    fn first(&self) -> Option<&'a u8>;
+-}
+-struct S;
+-impl<'a> Source<'a> for S {
+-    type Item = u8;
+-    fn first(&self) -> Option<&'a u8> {
+-        None
+-    }
+-}
+-fn main() {
+-    println!("{:?}", S.first());
+-}
 diff --git a/tests/reject/trait_where_overflow_mutual.rs b/tests/reject/trait_where_overflow_mutual.rs
 new file mode 100644
 index 0000000000000000000000000000000000000000..754768ec0844b1416385c579b546527fcdb8ac28
