@@ -355,9 +355,19 @@ predicates when a generic consumer writes its projection. Pinned Rust rejected
 the missing `Copy` condition with E0277 while the installed preceding source
 accepted it. Associated bounds now retain their collection provenance and are
 checked in the item's own environment; its conditions do not become supertrait
-bounds. Six focused tests pass. Installed differential and linked-control
-qualification of this source is pending. General projection outlives and wider
-environments remain part of P1's required semantic service.
+bounds. On compiler source `d2edc3a3d2e504c52577d9dbdae5eb4795ff2065`, all six
+focused tests, 32 retained patch tests and the installed scalar history pass.
+Four valid/invalid predicate pairs match pinned Rust through the public CLI.
+The separate same-workspace abort/debug-disabled/non-incremental link control
+changes actual output from `63` to `127` on a provider edit with zero consumer
+body checks. See [verification](evidence/import-generation-20261123/verification.json).
+The broader traced campaign is unrun here because strace is unavailable.
+P1 remains ACTIVE; P2's scalar prerequisite is verified, while production GAT
+service/provider metadata and default build/run/debug/test remain unfinished.
+Next: consume the retained native item binders, bounds and predicates in the
+selective pinned normalization/WF/region service, then extend genuine provider
+metadata through ordinary default-profile Cargo check. Do not remove the GAT
+gate or substitute the independent full-SDK proof for that integration.
 
 The coordinator owns this register, shared-interface decisions and final
 integration. Worker A starts P1/P2; worker B starts P3; worker C starts P4 and

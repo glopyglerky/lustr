@@ -109,6 +109,28 @@ mistake and remains retained; the repaired valid cases and invalid consumer
 pass their independent expectations. Full projection outlives/environment
 checking and the selective upstream GAT service remain open.
 
+## Final bounded qualification
+
+[Verification](verification.json) binds compiler source
+`d2edc3a3d2e504c52577d9dbdae5eb4795ff2065`, actual package executable hashes,
+qualifier bytes, operation statuses, timings and original stream hashes.
+The final installed scalar Cargo history passes, including invalid-provider
+publication preservation, changed signatures, missing definitions, malformed
+inputs and repair. Actual no-op/compiler-repair requests retain unrelated bodies.
+Four valid/invalid ordinary predicate pairs match pinned Rust. The separate
+same-workspace abort/debug-disabled/non-incremental linked fixture produces
+`63`, `63`, then `127`; the provider edit rechecks zero consumer bodies and
+actually relinks the changed dependency. This is not default-profile linking.
+Six focused tests, all 32 final-source retained patch tests and 29 existing
+evaluator controls pass.
+
+The first cross-workspace linked fixture exposed the existing profile-context
+refusal; that scope remains unqualified. Its source and failure are retained.
+The broader traced campaign was not run because this environment has no
+strace; no fresh process-trace qualification is inferred from these checks.
+Production GAT service/provider metadata, default-profile build/run/debug/test,
+full replacement and performance qualification remain open. No release is made.
+
 GAT provider validation, selective upstream normalization/WF/region service,
 wider metadata and full Cargo/debug/runtime qualification remain unfinished.
 This slice makes no near-stock or full-replacement performance claim.

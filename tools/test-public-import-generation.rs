@@ -251,11 +251,14 @@ fn main() {
     // existing abort/debug-disabled link context. This does not qualify an
     // ordinary default-profile build or run.
     fs::create_dir_all(test.root.join("linked/src")).unwrap();
-    write(test.root.join("linked/Cargo.toml"), "[package]\nname = \"linked_generation\"\nversion = \"0.0.0\"\nedition = \"2024\"\n[dependencies]\nschema = { path = \"../workspace/provider\" }\n[profile.dev]\npanic = \"abort\"\ndebug = 0\nincremental = false\n");
+    fs::create_dir_all(test.root.join("linked/provider/src")).unwrap();
+    write(test.root.join("linked/Cargo.toml"), "[package]\nname = \"linked_generation\"\nversion = \"0.0.0\"\nedition = \"2024\"\n[workspace]\nmembers = [\"provider\"]\nresolver = \"3\"\n[dependencies]\nschema = { path = \"provider\" }\n[profile.dev]\npanic = \"abort\"\ndebug = 0\nincremental = false\n");
+    write(test.root.join("linked/provider/Cargo.toml"), "[package]\nname = \"schema\"\nversion = \"0.0.0\"\nedition = \"2024\"\n");
+    let linked_provider = test.root.join("linked/provider/src/lib.rs");
     write(test.root.join("linked/src/main.rs"), "fn main() { println!(\"{}\", schema::project(255u64)); }\n");
     test.reports();
     for (label, mask, expected) in [("cold", "63u64", b"63\n".as_slice()), ("noop", "63u64", b"63\n"), ("provider-edit", "127u64", b"127\n")] {
-        if label != "noop" { write(&provider, PROVIDER.replace("63u64", mask)); }
+        if label != "noop" { write(&linked_provider, PROVIDER.replace("63u64", mask)); }
         let mut command = test.command(test.package.join("bin/cargo"));
         command.current_dir(test.root.join("linked")).args(["run", "--offline", "--jobs", "1", "--target-dir"])
             .arg(test.root.join("linked-target")).arg("--config")
