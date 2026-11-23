@@ -32,12 +32,16 @@ fn new_workspace(path: &Path, referent: Option<&str>, consumer: &str) {
         path.join("schema/Cargo.toml"),
         "[package]\nname = \"schema\"\nversion = \"0.0.0\"\nedition = \"2024\"\n",
     ).unwrap();
+    fs::write(path.join("schema/src/lib.rs"), provider_source(referent)).unwrap();
+    fs::write(path.join("src/main.rs"), consumer).unwrap();
+}
+
+fn provider_source(referent: Option<&str>) -> String {
     let mut provider = String::from("#![no_std]\n\npub struct Codec;\npub trait Family {\n    type View<'a> where Self: 'a;\n}\n");
     if let Some(referent) = referent {
         provider.push_str(&format!("impl Family for Codec {{\n    type View<'a> = &'a {referent};\n}}\n"));
     }
-    fs::write(path.join("schema/src/lib.rs"), provider).unwrap();
-    fs::write(path.join("src/main.rs"), consumer).unwrap();
+    provider
 }
 
 fn recorded(command: &mut Command, root: &Path, label: &str, expected: i32) -> Output {
@@ -84,42 +88,40 @@ fn main() {
     );
     fs::create_dir(root).unwrap();
     let root = root.canonicalize().unwrap();
-    let (base, changed, missing) = (root.join("base"), root.join("changed"), root.join("missing"));
+    let base = root.join("base");
     new_workspace(&base, Some("u32"), CONSUMER);
-    new_workspace(&changed, Some("u64"), CONSUMER);
-    new_workspace(&missing, None, CONSUMER);
     let original = recorded(&mut cargo(&cargo_program, &rustc, &base, "run"), &root, "original", 0);
     assert_eq!(original.stdout, b"34 1\n");
-    let provider = |workspace: &Path, label| {
-        recorded(cargo(&cargo_program, &rustc, workspace, "build").current_dir(workspace.join("schema")), &root, label, 0);
+    let snapshot = |label: &str| {
         let mut artifacts = Vec::new();
-        metadata(&workspace.join("intermediates/debug/build/schema"), &mut artifacts);
+        metadata(&base.join("intermediates/debug/build/schema"), &mut artifacts);
         assert_eq!(artifacts.len(), 1, "{artifacts:?}");
-        artifacts.pop().unwrap()
+        let output = root.join(format!("{label}.rmeta"));
+        fs::copy(&artifacts[0], &output).unwrap();
+        output
     };
-    let mut base_artifacts = Vec::new();
-    metadata(&base.join("intermediates/debug/build/schema"), &mut base_artifacts);
-    assert_eq!(base_artifacts.len(), 1);
-    let base_artifact = &base_artifacts[0];
-    let changed_artifact = provider(&changed, "provider-edit");
-    let missing_artifact = provider(&missing, "provider-missing-impl");
-    for (fixture, label, diagnostic) in [
-        (&changed, "original-provider-edit", "E0308"),
-        (&missing, "original-provider-missing", "E0277"),
-    ] {
-        let tested = recorded(&mut cargo(&cargo_program, &rustc, fixture, "check"), &root, label, 101);
+    let base_artifact = snapshot("original-provider");
+    let provider = base.join("schema/src/lib.rs");
+    let edit = |referent, label, diagnostic| {
+        fs::write(&provider, provider_source(referent)).unwrap();
+        let tested = recorded(&mut cargo(&cargo_program, &rustc, &base, "build"), &root, label, 101);
         assert!(String::from_utf8_lossy(&tested.stderr).contains(diagnostic));
-    }
+        snapshot(label)
+    };
+    let changed_artifact = edit(Some("u64"), "original-provider-edit", "E0308");
+    let missing_artifact = edit(None, "original-provider-missing", "E0277");
+    fs::write(&provider, provider_source(Some("u32"))).unwrap();
 
     let executable = root.join("consumer");
     let source = base.join("src/main.rs");
     let samples = recorded(
         Command::new(&qualifier)
-            .arg("--projection").arg(&source).arg(base_artifact).arg(&executable).arg(root.join("history"))
-            .arg(base_artifact).arg(changed_artifact).arg(missing_artifact).arg(base_artifact).arg(base_artifact),
+            .arg("--projection").arg(&source).arg(&base_artifact).arg(&executable).arg(root.join("history"))
+            .arg(&base_artifact).arg(changed_artifact).arg(missing_artifact).arg(&base_artifact).arg(&base_artifact),
         &root, "native-history", 0,
     );
     let stderr = String::from_utf8(samples.stderr).unwrap();
+    let mut projection_identity = None;
     for (step, status, checked, queries) in [
         (0, 0, 3, 1), (1, 0, 0, 0), (2, 1, 2, 1),
         (3, 1, 0, 1), (4, 0, 2, 1), (5, 0, 0, 0),
@@ -127,7 +129,10 @@ fn main() {
         let expected = format!("step={step} native status={status} ");
         assert!(stderr.lines().any(|line| line.starts_with(&expected) && line.contains(&format!(" checked={checked} "))));
         let expected = format!("step={step} projection ");
-        assert!(stderr.lines().any(|line| line.starts_with(&expected) && line.contains(&format!("upstream-queries={queries} "))));
+        let projection = stderr.lines().find_map(|line| line.strip_prefix(&expected)).unwrap();
+        assert!(projection.contains(&format!("upstream-queries={queries} ")));
+        let (identity, _) = projection.split_once("}: ").unwrap();
+        assert_eq!(*projection_identity.get_or_insert(identity), identity, "provider edit changed the projection identity");
     }
     assert!(stderr.contains("step=4 native checked bodies=[\"fold\", \"main\"]"));
     assert!(stderr.contains("expected `&u64`, found `&u32`"));
@@ -143,7 +148,7 @@ fn main() {
     let output = root.join("refused-escape");
     let native_error = recorded(
         Command::new(qualifier).arg("--projection").arg(escaped.join("src/main.rs"))
-            .arg(base_artifact).arg(&output).arg(root.join("escape-state")),
+            .arg(&base_artifact).arg(&output).arg(root.join("escape-state")),
         &root, "native-escape", 1,
     );
     assert!(String::from_utf8_lossy(&native_error.stderr).contains("error[L0733]"));
