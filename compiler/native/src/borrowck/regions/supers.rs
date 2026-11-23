@@ -113,17 +113,7 @@ pub fn check_impl_supers(p: &Program) -> Vec<Diag> {
         if !rec.local || rec.synthetic != crate::traits::index::Synthetic::None {
             continue;
         }
-        let mut preds = p.regions.trait_preds.get(&rec.trait_def).cloned().unwrap_or_default();
-        for &(assoc, _) in &rec.assoc_tys {
-            if let Some(item) = p.gx.trait_assoc_generics.get(&assoc)
-                && item.generics.params.is_empty() && item.lifetimes.is_empty() {
-                preds.extend_from_slice(&item.region_predicates);
-                preds.extend(item.region_facts.iter().map(|&(a, b)| Predicate::Outlives(
-                    Region::Param(a), if b == crate::check::generics::STATIC_FACT { Region::Static } else { Region::Param(b) },
-                )));
-            }
-        }
-        if preds.is_empty() { continue; }
+        let preds = p.regions.trait_preds.get(&rec.trait_def).map_or(&[][..], Vec::as_slice);
         // An impl with no regions in its header, facts or where-clauses
         // (collect keeps none): its erased header, for `T: 'static` needs.
         let plain;
@@ -135,8 +125,24 @@ pub fn check_impl_supers(p: &Program) -> Vec<Diag> {
                 &plain
             }
         };
-        if let Some(d) = check_impl(p, rec, ir, &preds) {
+        if let Some(d) = check_impl(p, rec, ir, preds) {
             errs.push(d);
+        }
+        for &(assoc, _) in &rec.assoc_tys {
+            let Some(item) = p.gx.trait_assoc_generics.get(&assoc) else { continue };
+            if !item.generics.params.is_empty() || !item.lifetimes.is_empty() { continue; }
+            let Some(assignment) = p.gx.impl_assoc_generics.get(&(rec.def, assoc)) else { continue };
+            let mut local = ir.clone();
+            local.preds.extend_from_slice(&assignment.declaration.region_predicates);
+            local.facts.extend_from_slice(&assignment.declaration.region_facts);
+            let mut required = item.region_predicates.clone();
+            required.extend(item.region_facts.iter().map(|&(a, b)| Predicate::Outlives(
+                Region::Param(a), if b == crate::check::generics::STATIC_FACT { Region::Static } else { Region::Param(b) },
+            )));
+            if let Some(mut diagnostic) = check_impl(p, rec, &local, &required) {
+                diagnostic.span = assignment.declaration.span;
+                errs.push(diagnostic);
+            }
         }
     }
     errs

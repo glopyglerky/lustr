@@ -1440,6 +1440,7 @@ fn lang_impl_shape(p: &Program, rec: &crate::traits::index::ImplRecord) -> u64 {
     "lang-impl-shape-v1".hash(&mut h);
     hash_trait_ref(&mut h, p, tys, &rec.trait_ref);
     hash_generics(&mut h, p, &rec.generics);
+    hash_impl_associated_items(&mut h, p, rec);
     (rec.assoc_tys.len() as u64).hash(&mut h);
     for (d, t) in &rec.assoc_tys {
         hash_def_pub(&mut h, p, *d);
@@ -2052,6 +2053,7 @@ fn impl_content(p: &Program, def: DefId) -> u64 {
         }
     }
     hash_generics(&mut h, p, &rec.generics);
+    hash_impl_associated_items(&mut h, p, rec);
     (rec.assoc_tys.len() as u64).hash(&mut h);
     for (d, t) in &rec.assoc_tys {
         hash_def_pub(&mut h, p, *d);
@@ -2068,6 +2070,24 @@ fn impl_content(p: &Program, def: DefId) -> u64 {
         sig_fingerprint(p, *d).0.hash(&mut h);
     }
     h.finish()
+}
+
+/// Associated conditions do not participate in impl selection, but a reader
+/// of the selected impl's associated value must observe their exact generation.
+fn hash_impl_associated_items(h: &mut FxHasher, p: &Program, rec: &crate::traits::index::ImplRecord) {
+    rec.assoc_tys.len().hash(h);
+    for &(assoc, _) in &rec.assoc_tys {
+        hash_def_pub(h, p, assoc);
+        if let Some(item) = p.gx.impl_assoc_generics.get(&(rec.def, assoc)) {
+            1u8.hash(h);
+            hash_generics(h, p, &item.declaration.generics);
+            item.declaration.lifetimes.len().hash(h);
+            item.declaration.region_facts.hash(h);
+            item.declaration.region_predicates.len().hash(h);
+            for predicate in &item.declaration.region_predicates { hash_predicate(h, p, &p.tys, predicate); }
+            hash_ty(h, p, &p.tys, item.value);
+        } else { 0u8.hash(h); }
+    }
 }
 
 /// Folds one visibility into `h`: its form, and for `pub(in path)` the
@@ -4154,6 +4174,27 @@ fn main() {}
         };
         assert_eq!(hash("Copy"), hash("Copy"));
         assert_ne!(hash("Copy"), hash("Clone"));
+    }
+
+    #[test]
+    fn impl_associated_environment_enters_dependency_fingerprints() {
+        let source = "trait Family { type View where Self: Copy; } impl<T> Family for T { type View where T: Copy = u32; } fn spare(x: u32) -> u32 { x ^ 7 } fn main() {}";
+        let fingerprint = |source: &str| {
+            let mut result = None;
+            with_program(source, |interner, program| {
+                let family = program.gx.trait_names[&interner.intern("Family")];
+                let record = program.gx.index.all_impls().map(|(_, record)|record).find(|record|record.trait_def == family).unwrap();
+                let spare = program.def_id(program.fn_names[&interner.intern("spare")]);
+                result = Some((impl_content(program, record.def), lang_impl_shape(program, record), sig_fingerprint(program, spare)));
+            });
+            result.unwrap()
+        };
+        let original = fingerprint(source);
+        assert_eq!(fingerprint(&source.replace("x ^ 7", "x ^ 15")), original);
+        let changed = fingerprint(&source.replace("where T: Copy =", "where T: Copy + Clone ="));
+        assert_ne!(changed.0, original.0);
+        assert_ne!(changed.1, original.1);
+        assert_eq!(changed.2, original.2, "an unrelated signature is not the selected impl's item environment");
     }
 
     /// Non-generic instance keys hash exactly like today's disk-def slot

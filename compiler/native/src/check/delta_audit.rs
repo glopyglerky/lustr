@@ -135,6 +135,7 @@ fn gen_digest(gx: &GenTables, out: &mut Vec<(&'static str, u64)>) {
         lang_method_sigs: _,      // refuse: lang methods are never patched
         trait_assoc_defaults: _,  // same
         trait_assoc_generics: _,  // same: associated declarations are never body-patched
+        impl_assoc_generics: _,   // same: impl-associated declarations are never body-patched
         trait_unsafe: _,          // same
         trait_assoc_consts: _,    // same
         wf_headers: _,            // same (impl headers)

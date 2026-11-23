@@ -316,6 +316,23 @@ does not close the compiler task or disable continuation.
 
 ### Coordinator and resume record
 
+Current P0/P1 repair, base `d89969c0`: the P1/P2 worker owns conditional impl
+associated-item environments in `check/generics.rs`, native region validation,
+their dependency fingerprints and focused/public qualification. Independent
+pinned-Rust evidence accepts item-local `T: Copy` and `T: 'static` assignments
+that the preceding candidate rejects. Retain the item's real conditions and
+validate assignment and compatibility in that item's scope, preserving impl-wide
+requirements and sibling isolation. Repair this before widening admission.
+P3 debug spans/emission has a separate active owner and worktree; shared source
+manifests and publication require serial integration. No prior timed handoff
+is an implementation stopping condition for the resumed worker.
+The repair retains impl-associated predicates and regioned values separately,
+checks assignments and compatibility in their actual environments, and includes
+those facts in dependency fingerprints and retained span shifting. Twenty
+pinned valid/invalid reference cases passed before candidate comparison;
+installed candidate and retained checks are pending. See the
+[source-bound repair record](evidence/conditional-item-environments-20261123/README.md).
+
 23 November implementation continuation: P2's imported-generation update is
 ACTIVE on the `3507c74d` base. The public owner validates replacement metadata
 and archives before refreshing native declarations, replays actual dependency

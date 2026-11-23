@@ -5237,7 +5237,12 @@ fn collect_with_definitions_inner(
                             p.regions.impl_regions.insert(impl_def, head);
                         }
                     }
-                    required.extend(impl_scope.assoc_regioned.iter().map(|&(_, t)| t));
+                    // Trait-associated values are checked by finish_trait_impl
+                    // under each assignment's own conditions. Putting them in
+                    // the header's environment loses item-local outlives facts.
+                    if imp.trait_ref.is_none() {
+                        required.extend(impl_scope.assoc_regioned.iter().map(|&(_, t)| t));
+                    }
                     let item = crate::check::outlives::Item {
                         implied: impl_scope.header_regioned.clone(),
                         required,

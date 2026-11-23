@@ -110,6 +110,7 @@ fn shift_gen_tables(gx: &mut GenTables, sp: &mut dyn FnMut(&mut Span)) {
         lang_method_sigs: _,
         trait_assoc_defaults: _,
         trait_assoc_generics,
+        impl_assoc_generics,
         trait_unsafe: _,
         trait_assoc_consts: _,
         wf_headers,
@@ -187,6 +188,10 @@ fn shift_gen_tables(gx: &mut GenTables, sp: &mut dyn FnMut(&mut Span)) {
     for item in trait_assoc_generics.values_mut() {
         shift_generics(&mut item.generics, sp);
         sp(&mut item.span);
+    }
+    for item in impl_assoc_generics.values_mut() {
+        shift_generics(&mut item.declaration.generics, sp);
+        sp(&mut item.declaration.span);
     }
     trait_methods.values_mut().for_each(|t| shift_generics(&mut t.generics, sp));
     for (_, g, s) in wf_headers.iter_mut() {

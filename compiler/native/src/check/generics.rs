@@ -5644,6 +5644,15 @@ pub struct AssociatedTypeGenerics {
     pub span: Span,
 }
 
+/// One impl-associated assignment, kept in the impl's parameter namespace.
+/// Its conditions apply only to this definition, never the whole impl or a
+/// sibling item. The value keeps its actual regions for assignment checking.
+#[derive(Clone, Debug)]
+pub struct ImplAssociatedType {
+    pub declaration: AssociatedTypeGenerics,
+    pub value: Ty,
+}
+
 #[cfg(test)]
 mod associated_item_predicate_tests {
     use super::*;
@@ -5669,6 +5678,21 @@ mod associated_item_predicate_tests {
         // environment; it must not become an unconditional trait superbound.
         assert!(collect("trait Family { type View where Self: Copy; } impl<T: Copy> Family for T { type View = u32; } fn main() {}").is_ok());
         assert!(collect("trait Family { type View where Self: Copy; } struct NonCopy; fn main() {}").is_ok());
+    }
+
+    #[test]
+    fn impl_associated_conditions_are_local_and_compatible() {
+        let copy = "trait Family { type View: Copy where Self: Copy; } impl<T> Family for T { type View where T: Copy = T; } fn main() {}";
+        if let Err(errors) = collect(copy) { panic!("conditional assignment: {errors:?}"); }
+        let static_item = "trait Family { type View where Self: 'static; } impl<T> Family for T { type View where T: 'static = u32; } fn main() {}";
+        if let Err(errors) = collect(static_item) { panic!("conditional outlives: {errors:?}"); }
+        for source in [
+            "trait Family { type View; } impl<T> Family for T { type View where T: Copy = u32; } fn main() {}",
+            "trait Family { type View; } impl<T> Family for T { type View where T: 'static = u32; } fn main() {}",
+            "trait Family { type View where Self: Copy; type Other: Copy; } impl<T> Family for T { type View where T: Copy = u32; type Other = T; } fn main() {}",
+            "trait Family { type View where Self: 'static; type Other: 'static; } impl<T> Family for T { type View where T: 'static = u32; type Other = T; } fn main() {}",
+            "trait Family: Copy { type View where Self: Copy; } impl<T> Family for T { type View where T: Copy = u32; } fn main() {}",
+        ] { assert!(collect(source).is_err(), "incompatible or leaked item condition: {source}"); }
     }
 
     #[test]
@@ -5739,6 +5763,7 @@ pub struct GenTables {
     /// signature form (over the trait's params, Self at 0).
     pub trait_assoc_defaults: FxMap<DefId, Ty>,
     pub trait_assoc_generics: FxMap<DefId, AssociatedTypeGenerics>,
+    pub impl_assoc_generics: FxMap<(DefId, DefId), ImplAssociatedType>,
     /// User traits written `unsafe trait`: their impls must be
     /// `unsafe impl`, and no other impl may be.
     pub trait_unsafe: FxMap<DefId, bool>,
@@ -6003,6 +6028,7 @@ impl Default for GenTables {
             lang_method_sigs: FxMap::default(),
             trait_assoc_defaults: FxMap::default(),
             trait_assoc_generics: FxMap::default(),
+            impl_assoc_generics: FxMap::default(),
             trait_unsafe: FxMap::default(),
             trait_assoc_consts: FxMap::default(),
             wf_headers: Vec::new(),
@@ -7678,7 +7704,15 @@ pub(crate) fn insert_synthetic(
 fn static_header_regions(p: &mut Program, imp: &ast::ImplDef, rec: &TraitRecord, scope: &Scope, errs: &mut Vec<Diag>) {
     let self_param = p.tys.intern(TyKind::Param(ParamId(0)));
     let mut wants: Vec<Ty> = Vec::new();
-    for pred in &rec.generics.predicates {
+    let mut global = rec.generics.predicates.clone();
+    for &(assoc, _, _) in &rec.assoc_items {
+        if let Some(item) = p.gx.trait_assoc_generics.get(&assoc) {
+            for bound in &item.bounds {
+                if let Some(index) = global.iter().rposition(|predicate| predicate == bound) { global.remove(index); }
+            }
+        }
+    }
+    for pred in &global {
         let Predicate::TypeOutlives(x, Region::Static) = *pred else { continue };
         if x == self_param {
             wants.extend(scope.self_ty_regioned);
@@ -7767,17 +7801,65 @@ pub fn finish_trait_impl(
             ));
             continue;
         };
+        let mut item_scope = scope.clone();
+        item_scope.type_outlives = true;
+        let (own, own_scope, region_predicates) = {
+            let cx = p.gx.resolve_cx(&p.type_names, &p.aliases);
+            let (own, own_scope) = build_generics_shifted(
+                &p.ast, &p.interner, &p.known, &cx, &mut p.tys,
+                &at.generics, &at.where_clause, impl_generics.params.len() as u32, &item_scope, errs,
+            );
+            item_scope.lifetimes.extend_from_slice(&own_scope.lifetimes);
+            item_scope.type_params.extend_from_slice(&own_scope.type_params);
+            item_scope.const_params.extend_from_slice(&own_scope.const_params);
+            item_scope.param_tys.extend_from_slice(&own_scope.param_tys);
+            item_scope.assoc_srcs.extend_from_slice(&own_scope.assoc_srcs);
+            item_scope.region_facts.extend_from_slice(&own_scope.region_facts);
+            let (_, region_predicates) = regioned_bound_preds(
+                &p.ast, &p.interner, &p.known, &cx, &mut p.tys,
+                &item_scope, &at.generics, &at.where_clause, &[],
+            );
+            (own, own_scope, region_predicates)
+        };
         match at.default {
             Some(d) => {
                 // An assoc type's value elides no lifetime (rustc E0637);
                 // its names were checked by `resolve_scoped`.
-                let names: Vec<Sym> = scope.lifetimes.iter().map(|&(n, _)| n).collect();
+                let names: Vec<Sym> = item_scope.lifetimes.iter().map(|&(n, _)| n).collect();
                 if let Some(diag) = item_ty_lifetime_err(&p.ast, &p.interner, d, &names, false) {
                     errs.push(diag);
                 }
                 let cx = p.gx.resolve_cx(&p.type_names, &p.aliases);
-                match resolve_scoped(&p.ast, &p.interner, &p.known, &cx, &mut p.tys, d, scope) {
+                match resolve_scoped(&p.ast, &p.interner, &p.known, &cx, &mut p.tys, d, &item_scope) {
                     Ok(t) => assoc_tys.push((assoc, t)),
+                    Err(diag) => errs.push(diag),
+                }
+                let mut region_scope = item_scope.clone();
+                region_scope.regions = RegionMode::Keep { next: None, elided: Some(Region::Bound(0)) };
+                match resolve_scoped(&p.ast, &p.interner, &p.known, &cx, &mut p.tys, d, &region_scope) {
+                    Ok(value) => {
+                        let mut required = regioned_bound_tys(
+                            &p.ast, &p.interner, &p.known, &cx, &mut p.tys,
+                            &item_scope, &at.generics, &at.where_clause, &[],
+                        );
+                        required.push(value);
+                        let mut predicates = impl_generics.predicates.clone();
+                        predicates.extend_from_slice(&own.predicates);
+                        let outlives = crate::check::outlives::Item {
+                            implied: scope.header_regioned.clone(), required,
+                            facts: item_scope.region_facts.clone(), preds: predicates, span: at.span,
+                        };
+                        if crate::check::outlives::wanted(p, &outlives) {
+                            p.regions.outlives_items.push(outlives);
+                        }
+                        p.gx.impl_assoc_generics.insert((impl_def, assoc), ImplAssociatedType {
+                            declaration: AssociatedTypeGenerics {
+                                parent: impl_def, generics: own, lifetimes: own_scope.lifetimes,
+                                region_facts: own_scope.region_facts, region_predicates,
+                                bounds: Vec::new(), span: at.span,
+                            }, value,
+                        });
+                    }
                     Err(diag) => errs.push(diag),
                 }
             }
@@ -13916,30 +13998,94 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
         .collect();
     for rec in records {
         let Some(trec) = p.gx.index.trait_record(rec.trait_def).cloned() else { continue };
-        let mut predicates = trec.generics.predicates.clone();
-        for &(assoc, _) in &rec.assoc_tys {
-            if let Some(item) = p.gx.trait_assoc_generics.get(&assoc) {
-                // Generic associated items still fail their declaration gate;
-                // do not erase a binder to pretend they are ordinary types.
-                if item.generics.params.is_empty() && item.lifetimes.is_empty() {
-                    // Item outlives predicates are proved below the native
-                    // region boundary against the actual impl header. The
-                    // erased `self_ty` cannot distinguish &'static T from
-                    // a borrow of another lifetime.
-                    predicates.extend(item.generics.predicates.iter().copied()
-                        .filter(|predicate| !matches!(predicate, Predicate::TypeOutlives(..) | Predicate::Outlives(..))));
-                }
+        let subst_args: Vec<GenericArg> = p.tys.args(rec.trait_ref.args).to_vec();
+        let mut global = trec.generics.predicates.clone();
+        let items: Vec<_> = trec.assoc_items.iter().filter_map(|&(assoc, _, is_type)| {
+            is_type.then(|| p.gx.trait_assoc_generics.get(&assoc).cloned().map(|item| (assoc, item))).flatten()
+        }).collect();
+        // Associated bounds were appended during collection. Prove them in
+        // the environment of that assignment, keeping trait-wide obligations
+        // and all sibling environments separate.
+        for (_, item) in &items {
+            for bound in &item.bounds {
+                if let Some(index) = global.iter().rposition(|predicate| predicate == bound) { global.remove(index); }
             }
         }
-        if predicates.is_empty() {
-            continue;
+        let global: Vec<_> = global.into_iter().map(|predicate| subst_predicate(&mut p.tys, predicate, &subst_args)).collect();
+        check_impl_native_predicates(p, &rec, &trec, &global, &rec.generics.predicates, rec.span, false, errs);
+        for (assoc, item) in items {
+            // The GAT declaration gate remains in force. Do not erase its
+            // own binder into an ordinary associated-type proof.
+            if !item.generics.params.is_empty() || !item.lifetimes.is_empty() { continue; }
+            let Some(assignment) = p.gx.impl_assoc_generics.get(&(rec.def, assoc)).cloned() else { continue };
+            if !assignment.declaration.generics.params.is_empty() || !assignment.declaration.lifetimes.is_empty() { continue; }
+            let mut environment = rec.generics.predicates.clone();
+            environment.extend_from_slice(&assignment.declaration.generics.predicates);
+            let required: Vec<_> = item.generics.predicates.iter().chain(&item.bounds).copied()
+                .map(|predicate| subst_predicate(&mut p.tys, predicate, &subst_args))
+                .filter(|predicate| !matches!(predicate, Predicate::TypeOutlives(..) | Predicate::Outlives(..))).collect();
+            check_impl_native_predicates(p, &rec, &trec, &required, &environment, assignment.declaration.span, false, errs);
+            // Pinned compare_type_clause_entailment assumes impl-wide clauses
+            // plus the trait item's clauses before proving the impl item's
+            // own clauses. Assuming the latter would make the proof vacuous.
+            let mut allowed = rec.generics.predicates.clone();
+            allowed.extend(item.generics.predicates.iter().copied().map(|predicate| subst_predicate(&mut p.tys, predicate, &subst_args)));
+            let own: Vec<_> = assignment.declaration.generics.predicates.iter().copied()
+                .filter(|predicate| !matches!(predicate, Predicate::TypeOutlives(..) | Predicate::Outlives(..))).collect();
+            check_impl_native_predicates(p, &rec, &trec, &own, &allowed, assignment.declaration.span, true, errs);
+            check_impl_associated_outlives(p, &rec, &item, &assignment, errs);
         }
+    }
+}
+
+fn check_impl_associated_outlives(
+    p: &mut Program, rec: &crate::traits::index::ImplRecord, item: &AssociatedTypeGenerics,
+    assignment: &ImplAssociatedType, errs: &mut Vec<Diag>,
+) {
+    use crate::traits::index::subst_predicate;
+    let mut arguments = p.tys.args(rec.trait_ref.args).to_vec();
+    let header = p.regions.impl_regions.get(&rec.def).map_or_else(
+        || arguments.iter().filter_map(|arg| arg.as_ty()).collect(), |regions| regions.header.clone(),
+    );
+    for (argument, &actual) in arguments.iter_mut().filter(|arg| matches!(arg, GenericArg::Ty(_))).zip(&header) {
+        *argument = GenericArg::Ty(actual);
+    }
+    let self_ty = arguments.first().and_then(|arg| arg.as_ty()).unwrap_or(ERROR);
+    let bindings: Vec<_> = rec.assoc_tys.iter().map(|&(assoc, fallback)| {
+        (assoc, p.gx.impl_assoc_generics.get(&(rec.def, assoc)).map_or(fallback, |item| item.value))
+    }).collect();
+    let mut instantiate = |predicate| {
+        let predicate = subst_predicate(&mut p.tys, predicate, &arguments);
+        if let Predicate::TypeOutlives(value, region) = predicate {
+            Predicate::TypeOutlives(rewrite_impl_projections(p, value, self_ty, &bindings), region)
+        } else { predicate }
+    };
+    let required: Vec<_> = item.generics.predicates.iter().chain(&item.bounds).copied().map(&mut instantiate).collect();
+    let allowed: Vec<_> = item.generics.predicates.iter().copied().map(&mut instantiate).collect();
+    let base_facts = p.regions.impl_regions.get(&rec.def).map_or_else(Vec::new, |regions| regions.facts.clone());
+    let mut facts = base_facts.clone();
+    facts.extend_from_slice(&assignment.declaration.region_facts);
+    let mut environment = rec.generics.predicates.clone();
+    environment.extend_from_slice(&assignment.declaration.region_predicates);
+    errs.extend(crate::check::outlives::check_requirements(p, &header, &facts, &environment, &required, assignment.declaration.span));
+    let mut compatibility_environment = rec.generics.predicates.clone();
+    compatibility_environment.extend(allowed);
+    let mut own = assignment.declaration.region_predicates.clone();
+    own.extend(assignment.declaration.region_facts.iter().map(|&(a, b)| Predicate::Outlives(
+        Region::Param(a), if b == STATIC_FACT { Region::Static } else { Region::Param(b) },
+    )));
+    errs.extend(crate::check::outlives::check_requirements(p, &header, &base_facts, &compatibility_environment, &own, assignment.declaration.span));
+}
+
+fn check_impl_native_predicates(
+    p: &mut Program, rec: &crate::traits::index::ImplRecord, trec: &TraitRecord,
+    predicates: &[Predicate], environment: &[Predicate], span: Span, compatibility: bool, errs: &mut Vec<Diag>,
+) {
         let subst_args: Vec<GenericArg> = p.tys.args(rec.trait_ref.args).to_vec();
         let self_ty = subst_args.first().and_then(|g| g.as_ty()).unwrap_or(ERROR);
         let mut goals: Vec<TraitRef> = Vec::new();
         let mut statics: Vec<Ty> = Vec::new();
-        for &pred in &predicates {
-            let pred = subst_predicate(&mut p.tys, pred, &subst_args);
+        for &pred in predicates {
             // `trait Tr: 'static`: the impl's Self type must be `'static`;
             // `type Req: 'static`: the impl's binding of `Req` must be.
             if let Predicate::TypeOutlives(t, Region::Static) = pred {
@@ -13973,15 +14119,15 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
             goals.push(TraitRef { def: b.value.def, args, bindings });
         }
         if goals.is_empty() && statics.is_empty() {
-            continue;
+            return;
         }
-        let env = elaborate_env(&mut p.tys, &p.gx.index, &rec.generics.predicates);
+        let env = elaborate_env(&mut p.tys, &p.gx.index, environment);
         let dyn_self = p.gx.static_dyn_impls.contains(&rec.def);
         if statics.iter().any(|&t| !crate::check::object::header_type_static(p, &env, t, dyn_self)) {
             let tname = p.display_path(trec.name);
             errs.push(Diag::new(
                 "L0612",
-                rec.span,
+                span,
                 format!("this impl of `{tname}` does not satisfy the `'static` bound the trait requires"),
                 "Implement the trait for a type without references, or add `'static` bounds to the impl's type parameters.",
             ));
@@ -13992,13 +14138,13 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
                 let tname = p.display_path(trec.name);
                 errs.push(Diag::new(
                     "L0612",
-                    rec.span,
-                    format!("this impl of `{tname}` does not satisfy the `{gname}` bound the trait requires"),
+                    span,
+                    if compatibility { format!("associated type has a stricter `{gname}` requirement than trait `{tname}`") }
+                    else { format!("this impl of `{tname}` does not satisfy the `{gname}` bound the trait requires") },
                     format!("Add the `{gname}` impl or bound, or change the impl's types so the bound holds."),
                 ));
             }
         }
-    }
 }
 
 /// Supertrait cycles among user traits (rustc E0391): an edge
@@ -14946,9 +15092,16 @@ fn check_written_wf(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&crate:
         if rec.synthetic != Synthetic::None || !rec.local {
             continue;
         }
-        let mut tys: Vec<Ty> = p.tys.args(rec.trait_ref.args).iter().filter_map(|g| g.as_ty()).collect();
-        tys.extend(rec.assoc_tys.iter().map(|&(_, t)| t));
+        let tys: Vec<Ty> = p.tys.args(rec.trait_ref.args).iter().filter_map(|g| g.as_ty()).collect();
         items.push((at(tys, rec.span), Vec::new(), rec.generics.clone(), rec.span));
+        for &(assoc, value) in &rec.assoc_tys {
+            let mut environment = rec.generics.clone();
+            let span = if let Some(item) = p.gx.impl_assoc_generics.get(&(rec.def, assoc)) {
+                environment.predicates.extend_from_slice(&item.declaration.generics.predicates);
+                item.declaration.span
+            } else { rec.span };
+            items.push((at(vec![value], span), Vec::new(), environment, span));
+        }
     }
     for (ty, generics, span) in &p.gx.wf_headers {
         items.push((vec![(*ty, *span)], Vec::new(), generics.clone(), *span));
