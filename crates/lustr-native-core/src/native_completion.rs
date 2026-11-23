@@ -37,12 +37,17 @@ pub(crate) struct FamilyImplementation {
     pub referent: ProjectionReferent,
 }
 
+fn has_bare_carriage_return(source: &str) -> bool {
+    let bytes = source.as_bytes();
+    bytes.iter().enumerate().any(|(at, &byte)| byte == b'\r' && bytes.get(at + 1) != Some(&b'\n'))
+}
+
 pub(crate) fn complete_family(p: &check::collect::Program, map: &diag::SourceMap, source: &str) -> Result<Family, Error> {
     let unsupported = Error::Unintegrated("projection provider does not have the represented checked declaration inventory");
     let fail = Error::Failed("native projection provider identities do not join checked declarations");
     let items: Vec<_> = p.ast.items.iter().filter(|item| !matches!(item.kind, ast::ItemKind::Fn(_))).collect();
     if !p.imported_crates.is_empty() || !p.ast.stmt_items.is_empty()
-        || map.file_count() != 1 || !source.is_ascii() || source.as_bytes().contains(&b'\r')
+        || map.file_count() != 1 || !source.is_ascii() || has_bare_carriage_return(source)
         || items.len() < 2 || items.len() > 3 || items.iter().any(|item| !item.attrs.is_empty())
         || !matches!(p.ast.inner_attrs.as_slice(), [attr]
             if attr.path.as_slice().first().is_some_and(|segment| p.interner.get(segment.name) == "no_std"))
@@ -266,8 +271,8 @@ impl View<'_> {
 pub(crate) fn complete(prepared: View<'_>, generated: bool, family: Option<&Family>) -> Result<Vec<Function>, Error> {
     let p = prepared.program();
     let syntax = &p.ast;
-    if prepared.source().as_bytes().contains(&b'\r') {
-        return Err(Error::Unintegrated("normalized source byte/span mapping"));
+    if has_bare_carriage_return(prepared.source()) {
+        return Err(Error::Unintegrated("bare carriage return in source"));
     }
     if prepared.source_map().file_count() != 1 {
         return Err(Error::Unintegrated("multiple source-file metadata generations"));
@@ -527,8 +532,15 @@ fn doc_comment(program: &check::collect::Program, source: &str, attr: &ast::Attr
         return Err(unsupported);
     }
     let comment = program.ast.strings.get(index as usize).ok_or(Error::Failed("native doc comment text is missing"))?;
+    // The original lexer includes the CR in the span of a line comment.
+    // Rust's normalized source ends that comment immediately before the LF.
+    let end = if text.starts_with("///") && text.ends_with('\r') {
+        literal.span.hi - 1
+    } else {
+        literal.span.hi
+    };
     Ok(DocComment {
-        span: diag::Span::new(attr.span.file, attr.span.lo, literal.span.hi),
+        span: diag::Span::new(attr.span.file, attr.span.lo, end),
         text: comment.clone(),
         block: text.starts_with("/**"),
     })

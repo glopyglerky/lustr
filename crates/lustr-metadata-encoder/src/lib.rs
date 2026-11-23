@@ -313,7 +313,9 @@ fn validate(input: &Input<'_>, sdk: &Sdk, link: bool, projection: Option<&Projec
     }
     if input.source.len() > 2 * 1024 * 1024
         || input.source.starts_with('\u{feff}')
-        || input.source.as_bytes().contains(&b'\r')
+        || input.source.as_bytes().iter().enumerate().any(|(at, &byte)| {
+            byte == b'\r' && input.source.as_bytes().get(at + 1) != Some(&b'\n')
+        })
         || input.root_span != (Span { lo: 0, hi: input.source.len() as u32 })
     {
         return Err(failure("source normalization/span context is unrepresented"));
@@ -371,7 +373,14 @@ fn validate(input: &Input<'_>, sdk: &Sdk, link: bool, projection: Option<&Projec
                     written.strip_prefix("///")
                 }
             });
-            if doc.span.lo < doc_end || doc.span.hi > function.name_span.lo || spelled != Some(doc.text.as_str()) {
+            let spelling_matches = spelled.is_some_and(|spelling| {
+                if spelling.contains("\r\n") {
+                    spelling.replace("\r\n", "\n") == doc.text
+                } else {
+                    spelling == doc.text
+                }
+            });
+            if doc.span.lo < doc_end || doc.span.hi > function.name_span.lo || !spelling_matches {
                 return Err(failure("documentation differs from completed source"));
             }
             doc_end = doc.span.hi;

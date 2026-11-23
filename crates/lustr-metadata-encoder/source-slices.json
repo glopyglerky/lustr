@@ -367,10 +367,12 @@
         "RealFileName",
         "RealFileName::update_for_crate_metadata",
         "SourceFile::encode",
+        "SourceFile::normalized_byte_pos",
         "StableSourceFileId::from_filename_for_export",
+        "normalize_newlines",
         "SpanData"
       ],
-      "adaptation": "Preserve actual source path/working directory, exact ASCII/LF bytes, line differences and source spans. Non-ASCII/CR normalization is explicit unintegrated scope. No fabricated source or AST is used. POSIX absolute Unicode path component hashing is implemented with core string slices and differentially checked against the original host Path/OsStr identities.",
+      "adaptation": "Preserve the actual source path, working directory and raw byte hash. Adapt the original CRLF cumulative positions to safe string slices and encode normalized spans and line differences while keeping the original byte length. Standalone carriage return and BOM normalization remain outside the represented inputs. POSIX absolute Unicode path component hashing is implemented with core string slices and differentially checked against the original host Path/OsStr identities.",
       "semantic_owner": "required source provenance encoding",
       "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
     },
@@ -1077,11 +1079,11 @@
     "production_source_authored": true
   },
   "adapted_sources_sha256": {
-    "src/encode.rs": "4f6b6e9992656b817f78168cb2924dc286832b9c6292381f26428d2558fbb3d8",
+    "src/encode.rs": "524b078b5c5907bcaae8bdcf848134ee701f35018cf1980e4d1c401b1b760b7a",
     "src/encode_projection.rs": "15864ab3bf6aca54020e503cfb5b782bbd1a16d66f45bc84111ae4fa64116d48",
     "src/extern_metadata.rs": "fba900b9d714e3fdab380c363f5b532269d8bff385f75cea34d50d73a5fd910a",
     "src/identity.rs": "4d153100f5cfe9de796082d708518bd0d2cb4180fd17fffa9a84bd9b6b389f9f",
-    "src/lib.rs": "a8988df91e1736e27b56a0692d1395713dae6ded88e5f967bb3535de397fea5b",
+    "src/lib.rs": "0dc5a07c4e4636ab43f2c4bbd04b7d079ad567e4353383c9aee97057ae5b180c",
     "src/sdk.rs": "1ca10fbf946d09bc2af225c18b287d31ddd84b7162148d4339293970db0dc930",
     "src/table.rs": "5ad2fa46decc550bfd5f7d23cc051c7087d4ef1f5b361b154630c122097c92bb",
     "src/upstream/codec.rs": "916922c930d3dc46c7003d65d920b6c84efa780ac5b0c06eec1586ead0216a7a",

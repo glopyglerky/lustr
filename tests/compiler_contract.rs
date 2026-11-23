@@ -2925,6 +2925,50 @@ fn observed_test_body() { assert_eq!(6 * 7, 42); }
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn cargo_native_library_keeps_crlf_source_and_rust_metadata() {
+    let f = Fixture::new("cargo-native-crlf-library");
+    f.source("Cargo.toml", "[package]\nname=\"native_crlf\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    let source = "#![no_std]\n\n/// Identity.\n/** More\n * information. */\npub fn identity(value: u64) -> u64 {\n    value\n}\n";
+    let source_path = f.source("src/lib.rs", source);
+    let consumer = f.source("consumer.rs", "fn main() { assert_eq!(native_crlf::identity(42), 42); }\n");
+    let original = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    for (label, text) in [("lf", source.to_owned()), ("crlf", source.replace('\n', "\r\n"))] {
+        f.source("src/lib.rs", &text);
+        for (operation, extension) in [("check", ".rmeta"), ("build", ".rlib")] {
+            let stage = format!("{label}-{operation}");
+            let output = f.succeeds(&stage, f.command("cargo").args([operation, "--frozen", "--message-format=json"]));
+            assert_eq!(f.engine(), "lust");
+            let artifact = output.stdout.split(|&byte| byte == b'\n').find_map(|line| {
+                let record: serde_json::Value = serde_json::from_slice(line).ok()?;
+                if record["reason"] != "compiler-artifact" || record["target"]["name"] != "native_crlf" {
+                    return None;
+                }
+                record["filenames"].as_array()?.iter().filter_map(|filename| filename.as_str())
+                    .find(|path| path.ends_with(extension)).map(PathBuf::from)
+            }).expect("Cargo reported the native library artifact");
+            let program = f.root.join(format!("{stage}-consumer"));
+            let mut command = Command::new(&original);
+            command.current_dir(&f.root).env_remove("LD_LIBRARY_PATH")
+                .arg("--edition=2024").arg(&consumer)
+                .arg("--extern").arg(format!("native_crlf={}", artifact.display())).arg("-o").arg(&program);
+            if operation == "check" {
+                command.arg("--emit=metadata");
+            } else if artifact.with_extension("rmeta").is_file() {
+                command.arg("--extern").arg(format!("native_crlf={}", artifact.with_extension("rmeta").display()));
+            }
+            f.succeeds(&format!("{stage}-original-reader"), &mut command);
+            if operation == "build" {
+                f.succeeds(&format!("{stage}-original-run"), &mut Command::new(program));
+            }
+        }
+        assert_eq!(std::fs::read_to_string(&source_path).unwrap(), text);
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
 fn cargo_library_accepts_an_explicit_rust_archive() {
     let f = Fixture::new("cargo-explicit-rust-archive");
     let original = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");

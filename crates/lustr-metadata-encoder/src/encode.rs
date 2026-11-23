@@ -2,7 +2,7 @@
 // Original metadata v12 serialization algorithms, adapted to completed native
 // facts. The exact upstream functions and every semantic cut are recorded in
 // source-slices.json. There is no TyCtxt, HIR synthesis, or analysis callback.
-use alloc::{borrow::ToOwned, collections::{BTreeMap, BTreeSet}, string::String, vec::Vec};
+use alloc::{borrow::{Cow, ToOwned}, collections::{BTreeMap, BTreeSet}, string::String, vec::Vec};
 use core::hash::{Hash, Hasher};
 
 use md5::{Digest, Md5};
@@ -35,15 +35,17 @@ struct Context {
     symbols: BTreeMap<String, usize>,
     spans: BTreeMap<Span, usize>,
     tables: Vec<TableBuilder>,
+    normalized_positions: Vec<(u32, u32)>,
 }
 
 impl Context {
     fn empty() -> Self {
         Self { opaque: MemEncoder::new(), lazy_state: LazyState::NoNode,
-            symbols: BTreeMap::new(), spans: BTreeMap::new(), tables: Vec::new() }
+            symbols: BTreeMap::new(), spans: BTreeMap::new(), tables: Vec::new(), normalized_positions: Vec::new() }
     }
-    fn new() -> Self {
-        Self { tables: TABLE_FIELDS.iter().map(|_| TableBuilder::default()).collect(), ..Self::empty() }
+    fn new(normalized_positions: Vec<(u32, u32)>) -> Self {
+        Self { tables: TABLE_FIELDS.iter().map(|_| TableBuilder::default()).collect(),
+            normalized_positions, ..Self::empty() }
     }
     fn metadata_header(&mut self, sdk: &Sdk) {
         self.opaque.emit_raw_bytes(METADATA_HEADER);
@@ -106,6 +108,13 @@ impl Context {
         }
     }
     fn span(&mut self, span: Span) {
+        // SourceFile::normalized_byte_pos maps the native offsets in the
+        // original file to the coordinates serialized in Rust metadata.
+        let offset = |original| {
+            let count = self.normalized_positions.partition_point(|&(pos, diff)| pos + diff <= original);
+            original - count.checked_sub(1).map_or(0, |index| self.normalized_positions[index].1)
+        };
+        let span = Span { lo: offset(span.lo), hi: offset(span.hi) };
         if let Some(&last) = self.spans.get(&span) {
             let offset = self.opaque.position() - last;
             let relative = offset < last;
@@ -162,7 +171,8 @@ pub(crate) fn encode(
         }
     }
 
-    let mut cx = Context::new();
+    let (normalized_source, normalized_positions) = normalize_crlf(input.source);
+    let mut cx = Context::new(normalized_positions);
     cx.metadata_header(sdk);
 
     let dependencies = cx.array(&sdk.dependencies, |cx, dep| {
@@ -320,7 +330,7 @@ pub(crate) fn encode(
         cx.opaque.emit_usize(bytes.len()); cx.opaque.emit_raw_bytes(bytes);
         cx.opaque.emit_usize(0); // No nondeterministically allocated definitions.
     });
-    let source_file = cx.node(|cx| encode_source_file(cx, input, stable_id));
+    let source_file = cx.node(|cx| encode_source_file(cx, input, &normalized_source, stable_id));
     let mut source_map = TableBuilder::default(); source_map.set_position(0, source_file);
     let source_map = source_map.encode(&mut cx.opaque);
     // Original add_target_modifiers always records TargetFeatures, including
@@ -457,7 +467,27 @@ fn codegen_attrs(cx: &mut Context, inline_never: bool) {
     for _ in 0..6 { cx.opaque.emit_u8(0); } // Remaining six Option fields.
 }
 
-fn encode_source_file(cx: &mut Context, input: &Input<'_>, stable_id: u64) {
+/// rustc_span::normalize_newlines records the offset after each retained LF
+/// and the cumulative number of removed CR bytes. Borrow unchanged source.
+fn normalize_crlf(source: &str) -> (Cow<'_, str>, Vec<(u32, u32)>) {
+    let mut lines = source.match_indices("\r\n").peekable();
+    if lines.peek().is_none() {
+        return (Cow::Borrowed(source), Vec::new());
+    }
+    let mut normalized = String::with_capacity(source.len());
+    let mut positions = Vec::new();
+    let mut previous = 0;
+    for (start, _) in lines {
+        normalized.push_str(&source[previous..start]);
+        normalized.push('\n');
+        previous = start + 2;
+        positions.push((normalized.len() as u32, (previous - normalized.len()) as u32));
+    }
+    normalized.push_str(&source[previous..]);
+    (Cow::Owned(normalized), positions)
+}
+
+fn encode_source_file(cx: &mut Context, input: &Input<'_>, normalized_source: &str, stable_id: u64) {
     let source_path = input.source_path;
     let working_directory = input.working_directory;
     cx.opaque.emit_u8(0); // FileName::Real
@@ -471,15 +501,14 @@ fn encode_source_file(cx: &mut Context, input: &Input<'_>, stable_id: u64) {
     cx.opaque.emit_raw_bytes(&Md5::digest(input.source.as_bytes()));
     cx.opaque.emit_raw_bytes(&[0; 16]);
     cx.opaque.emit_u8(0); // checksum_hash None
-    cx.opaque.emit_u32(input.source.len() as u32);
+    cx.opaque.emit_u32(normalized_source.len() as u32);
     cx.opaque.emit_u32(input.source.len() as u32); // Original unnormalized_source_len.
 
-    // Original SourceFile difference-list encoding and UTF-8 byte positions.
-    // The admitted source requires no CRLF or BOM normalization.
+    // Original SourceFile difference-list encoding and normalized UTF-8 positions.
     let mut lines = vec![0u32];
     let mut multibyte = Vec::new();
-    for (index, ch) in input.source.char_indices() {
-        if ch == '\n' && index + 1 < input.source.len() {
+    for (index, ch) in normalized_source.char_indices() {
+        if ch == '\n' && index + 1 < normalized_source.len() {
             lines.push((index + 1) as u32);
         } else if !ch.is_ascii() {
             multibyte.push((index as u32, ch.len_utf8() as u8));
@@ -498,7 +527,11 @@ fn encode_source_file(cx: &mut Context, input: &Input<'_>, stable_id: u64) {
         cx.opaque.emit_u8(bytes);
     }
     cx.opaque.emit_raw_bytes(&source_file_id(input, stable_id));
-    cx.opaque.emit_usize(0); // normalized_pos
+    cx.opaque.emit_usize(cx.normalized_positions.len());
+    for &(position, difference) in &cx.normalized_positions {
+        cx.opaque.emit_u32(position);
+        cx.opaque.emit_u32(difference);
+    }
     cx.opaque.emit_u32(0); // local crate
 }
 
