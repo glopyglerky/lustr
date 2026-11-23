@@ -1,4 +1,9 @@
 [
+  {"case":"impl_regioned_condition_static_fact","status":0,"source":"trait Gate<A> {} trait Family<A> { type View; } impl<'a: 'static, T: Gate<&'a u8>> Family<&'a u8> for T { type View where T: Gate<&'static u8> = u32; } fn main() {}"},
+  {"case":"impl_regioned_condition_valid","status":0,"source":"trait Gate<A> {} trait Family<A> { type View; } impl<'a, T: Gate<&'a u8>> Family<&'a u8> for T { type View where T: Gate<&'a u8> = u32; } fn main() {}"},
+  {"case":"impl_regioned_condition_stricter","status":1,"source":"trait Gate<A> {} trait Family<A> { type View; } impl<'a, T: Gate<&'a u8>> Family<&'a u8> for T { type View where T: Gate<&'static u8> = u32; } fn main() {}"},
+  {"case":"regioned_condition_valid","status":0,"source":"trait Gate<A> {} trait Family<A> { type View where Self: Gate<A>; } impl<'a, T: Gate<&'a u8>> Family<&'a u8> for T { type View where T: Gate<&'a u8> = u32; } fn main() {}"},
+  {"case":"regioned_condition_stricter","status":1,"source":"trait Gate<A> {} trait Family<A> { type View where Self: Gate<A>; } impl<'a, T: Gate<&'a u8>> Family<&'a u8> for T { type View where T: Gate<&'static u8> = u32; } fn main() {}"},
   {"case":"conditional_copy","status":0,"source":"trait Family { type View where Self: Copy; } impl<T> Family for T { type View where T: Copy = u32; } fn main() {}"},
   {"case":"conditional_static","status":0,"source":"trait Family { type View where Self: 'static; } impl<T> Family for T { type View where T: 'static = u32; } fn main() {}"},
   {"case":"conditional_bound_value","status":0,"source":"trait Family { type View: Copy where Self: Copy; } impl<T> Family for T { type View where T: Copy = T; } fn main() {}"},

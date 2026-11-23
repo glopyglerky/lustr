@@ -95,6 +95,8 @@ fn main() {
     }
     let base = "trait Family { type View: Copy where Self: Copy; type Other: Copy; }\nimpl<T> Family for T { type View where T: Copy = T; type Other = u32; }\nfn read(value: <u32 as Family>::View) -> u32 { value }\nfn spare(value: u32) -> u32 { value ^ 7 }\nfn main() {}\n";
     let body_edit = base.replace("value ^ 7", "value ^ 15");
+    let region_base = "trait Gate<A> {}\ntrait Family<A> { type View; }\nimpl<'a, T: Gate<&'a u8>> Family<&'a u8> for T { type View where T: Gate<&'a u8> = u32; }\nfn spare(value: u32) -> u32 { value ^ 7 }\nfn main() {}\n";
+    let region_body = region_base.replace("value ^ 7", "value ^ 15");
     let mut history = Vec::new();
     for (label, content, status, max_checked) in [
         ("cold", base.to_owned(), 0, 3),
@@ -107,6 +109,12 @@ fn main() {
         ("sibling-repair", base.to_owned(), 0, 1),
         ("body-edit", body_edit.clone(), 0, 1),
         ("body-noop", body_edit, 0, 0),
+        ("region-cold", region_base.to_owned(), 0, 2),
+        ("region-noop", region_base.to_owned(), 0, 0),
+        ("region-invalid", region_base.replace("type View where T: Gate<&'a", "type View where T: Gate<&'static"), 1, 2),
+        ("region-repair", region_base.to_owned(), 0, 0),
+        ("region-body", region_body.clone(), 0, 1),
+        ("region-body-noop", region_body, 0, 0),
     ] {
         write(&source, content);
         test.reference(&format!("history-{label}-original"), &source, status);

@@ -340,6 +340,15 @@ ACTIVE: the next source action is the selective pinned service over the retained
 trait/impl-associated declarations and genuine provider metadata through the
 default Cargo path. GAT admission remains gated until that integration is checked.
 
+The next compatibility control demonstrated a related region-erasure defect on
+the same package: an item's `T: Gate<&'static u8>` was incorrectly accepted
+under an impl-wide `T: Gate<&'a u8>` assumption. Pinned Rust rejects it. The
+native region proof now distinguishes impl-side goals from trait-item allowed
+assumptions and preserves their frames; no item condition becomes a whole-impl
+fact. Nine focused tests and 27 independently fixed reference cases pass;
+installed qualification of this follow-up is pending. Original failed and
+passing records remain source-bound in the same repair evidence.
+
 23 November implementation continuation: P2's imported-generation update is
 ACTIVE on the `3507c74d` base. The public owner validates replacement metadata
 and archives before refreshing native declarations, replays actual dependency

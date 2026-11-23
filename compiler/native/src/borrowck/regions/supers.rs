@@ -106,7 +106,8 @@ struct Cx<'p> {
 pub fn check_impl_supers(p: &Program) -> Vec<Diag> {
     let mut errs = Vec::new();
     if p.regions.trait_preds.is_empty() && p.gx.trait_assoc_generics.values()
-        .all(|item| item.region_predicates.is_empty() && item.region_facts.is_empty()) {
+        .all(|item| item.region_predicates.is_empty() && item.region_facts.is_empty())
+        && p.gx.impl_assoc_generics.values().all(|item| item.declaration.region_predicates.is_empty()) {
         return errs;
     }
     for (_, rec) in p.gx.index.all_impls() {
@@ -143,12 +144,29 @@ pub fn check_impl_supers(p: &Program) -> Vec<Diag> {
                 diagnostic.span = assignment.declaration.span;
                 errs.push(diagnostic);
             }
+            // An impl item's requirements must follow from impl-wide facts
+            // and the trait item's own clauses. Read the former goals in the
+            // impl namespace and the latter assumptions in the trait frame.
+            // Erasing both sides would accept Gate<&'static T> from Gate<&'a T>.
+            if let Some(mut diagnostic) = check_impl_environment(
+                p, rec, ir, &assignment.declaration.region_predicates, &item.region_predicates, true,
+            ) {
+                diagnostic.span = assignment.declaration.span;
+                errs.push(diagnostic);
+            }
         }
     }
     errs
 }
 
 fn check_impl(p: &Program, rec: &crate::traits::index::ImplRecord, ir: &ImplRegions, preds: &[Predicate]) -> Option<Diag> {
+    check_impl_environment(p, rec, ir, preds, &[], false)
+}
+
+fn check_impl_environment(
+    p: &Program, rec: &crate::traits::index::ImplRecord, ir: &ImplRegions,
+    preds: &[Predicate], trait_assumptions: &[Predicate], impl_goals: bool,
+) -> Option<Diag> {
     let mut frame = Frame::default();
     for (j, &t) in ir.header.iter().enumerate() {
         frame.tys.insert(j as u32, Val(t, None));
@@ -169,6 +187,9 @@ fn check_impl(p: &Program, rec: &crate::traits::index::ImplRecord, ir: &ImplRegi
         .iter()
         .filter_map(|q| if let Predicate::Trait(b) = q { (b.count == 0).then_some((b.value, None)) } else { None })
         .collect();
+    own.extend(trait_assumptions.iter().filter_map(|q| {
+        if let Predicate::Trait(b) = q { (b.count == 0).then_some((b.value, Some(frame.clone()))) } else { None }
+    }));
     let mut i = 0;
     while i < own.len() && own.len() < 128 {
         let (cr, cf) = own[i].clone();
@@ -199,6 +220,22 @@ fn check_impl(p: &Program, rec: &crate::traits::index::ImplRecord, ir: &ImplRegi
     }
     let known = known_facts(p, ir);
     let mut cx = Cx { p, own, known, ambig: None, needs: Vec::new(), ty_needs: Vec::new(), steps: 0 };
+    let mut ty_known = known_ty_facts(p, ir);
+    // Compound outlives assumptions retain their real region components.
+    for predicate in trait_assumptions {
+        match *predicate {
+            Predicate::Outlives(a, b) => cx.known.push((re_in(a, &Some(frame.clone())), re_in(b, &Some(frame.clone())))),
+            Predicate::TypeOutlives(t, r) => {
+                let y = re_in(r, &Some(frame.clone()));
+                let (mut regions, mut params) = (Vec::new(), Vec::new());
+                cx.regions_in(Val(t, Some(frame.clone())), &mut regions, &mut params, 0);
+                cx.known.extend(regions.into_iter().map(|x| (x, y)));
+                ty_known.extend(params.into_iter().map(|x| (x, y)));
+            }
+            _ => {}
+        }
+    }
+    let goal_frame = if impl_goals { None } else { Some(frame) };
     let name = |d: DefId| p.gx.index.trait_record(d).map_or_else(|| "?".to_string(), |r| p.display_path(r.name));
     let mut bad = None;
     for pred in preds {
@@ -206,17 +243,17 @@ fn check_impl(p: &Program, rec: &crate::traits::index::ImplRecord, ir: &ImplRegi
         cx.ty_needs.clear();
         let goal = match *pred {
             Predicate::Trait(b) if b.count == 0 && !p.gx.lang.is_fn_family(b.value.def) => {
-                cx.oblige(b.value, &frame, 0);
+                cx.oblige(b.value, &goal_frame, 0);
                 b.value.def
             }
             Predicate::Outlives(a, b) => {
-                cx.needs.push((re_in(a, &Some(frame.clone())), re_in(b, &Some(frame.clone()))));
+                cx.needs.push((re_in(a, &goal_frame), re_in(b, &goal_frame)));
                 rec.trait_def
             }
             Predicate::TypeOutlives(t, r) => {
-                let y = re_in(r, &Some(frame.clone()));
+                let y = re_in(r, &goal_frame);
                 let (mut regions, mut params) = (Vec::new(), Vec::new());
-                cx.regions_in(Val(t, Some(frame.clone())), &mut regions, &mut params, 0);
+                cx.regions_in(Val(t, goal_frame.clone()), &mut regions, &mut params, 0);
                 cx.needs.extend(regions.into_iter().map(|region| (region, y)));
                 cx.ty_needs.extend(params.into_iter().map(|param| (param, y)));
                 rec.trait_def
@@ -239,7 +276,6 @@ fn check_impl(p: &Program, rec: &crate::traits::index::ImplRecord, ir: &ImplRegi
             bad = Some((goal, "a lifetime in the impl's header", y));
             break;
         }
-        let ty_known = known_ty_facts(p, ir);
         if let Some(&(_, y)) = cx.ty_needs.iter().find(|&&(j, y)| !ty_holds(&cx.known, &ty_known, j, y)) {
             bad = Some((goal, "a type parameter of the impl", y));
             break;
@@ -390,7 +426,7 @@ fn holds(known: &[(Re, Re)], x: Re, y: Re) -> bool {
 impl Cx<'_> {
     /// `args[0]: tr<args[1..]>` (read under `fr`) holds: add what the one
     /// impl that matches needs.
-    fn oblige(&mut self, tr: TraitRef, fr: &Rc<Frame>, depth: u32) {
+    fn oblige(&mut self, tr: TraitRef, fr: &Option<Rc<Frame>>, depth: u32) {
         let p = self.p;
         self.steps += 1;
         if depth > MAX_DEPTH || self.steps > 256 {
@@ -421,7 +457,7 @@ impl Cx<'_> {
         if args.iter().any(|g| !matches!(g, GenericArg::Ty(_))) {
             return;
         }
-        let acts: Vec<Val> = args.iter().filter_map(|g| g.as_ty()).map(|t| Val(t, Some(fr.clone()))).collect();
+        let acts: Vec<Val> = args.iter().filter_map(|g| g.as_ty()).map(|t| Val(t, fr.clone())).collect();
         let mut found: Option<(DefId, Match)> = None;
         for &id in p.gx.index.impls_of_trait(tr.def) {
             let rec = p.gx.index.get(id);
@@ -478,7 +514,7 @@ impl Cx<'_> {
                         self.ty_needs.push((j, y));
                     }
                 }
-                Predicate::Trait(b) if b.count == 0 => self.oblige(b.value, &sel, depth + 1),
+                Predicate::Trait(b) if b.count == 0 => self.oblige(b.value, &Some(sel.clone()), depth + 1),
                 _ => {}
             }
         }
@@ -514,7 +550,7 @@ impl Cx<'_> {
     /// assembled at all, and the one matching impl proves the
     /// bound instead. A candidate with a part this walk cannot
     /// read keeps the old rule: it proves, and adds nothing.
-    fn clause_proof(&self, tr: TraitRef, fr: &Rc<Frame>) -> ClauseProof {
+    fn clause_proof(&self, tr: TraitRef, fr: &Option<Rc<Frame>>) -> ClauseProof {
         let p = self.p;
         let oa = p.tys.args(tr.args).to_vec();
         // Per candidate: its needs, and whether it mentions an
@@ -536,7 +572,7 @@ impl Cx<'_> {
             let mut fit = Fit::Yes;
             for (g, h) in ca.iter().zip(&oa) {
                 let (Some(ct), Some(ot)) = (g.as_ty(), h.as_ty()) else { continue };
-                fit = fit.and(self.equate(Val(ct, cf.clone()), Val(ot, Some(fr.clone())), &mut m));
+                fit = fit.and(self.equate(Val(ct, cf.clone()), Val(ot, fr.clone()), &mut m));
             }
             match fit {
                 Fit::Yes => {

@@ -34,7 +34,8 @@ impl item's own parameter environment. Existing native proof/region operations
 remain the implementation owner. No new Rust compiler import, frontend, driver
 or fallback is introduced by this repair.
 
-`tools/fixtures/associated-item-environments.json` fixes 22 valid/invalid
+The first 22 cases in the initial version of
+`tools/fixtures/associated-item-environments.json` fix valid/invalid
 expectations, including conditional `Copy`/outlives, assigned-type bounds,
 whole-impl controls, stronger requirements, WF and sibling isolation. All 22
 pinned reference expectations passed before candidate comparison. The
@@ -72,3 +73,33 @@ This is a native semantic repair toward P1/P2. Production GAT service, genuine
 provider metadata through ordinary Cargo, wider environments, full compiler
 coverage and complete-work performance remain unfinished. Diagnostic warning
 parity is not inferred from matching semantic acceptance/rejection.
+
+## Regioned compatibility follow-up
+
+Five additional predeclared cases compare regioned trait arguments and an
+impl-wide outlives control. The preceding package passes the trait-item-clause
+pair, but incorrectly accepts the stricter item condition here:
+
+```rust
+trait Gate<A> {}
+trait Family<A> { type View; }
+impl<'a, T: Gate<&'a u8>> Family<&'a u8> for T {
+    type View where T: Gate<&'static u8> = u32;
+}
+fn main() {}
+```
+
+Pinned Rust rejects it with E0478; the source-bound candidate above returns
+success. The original paired streams and failed evaluator result are retained.
+The corresponding `&'a u8` condition is valid, as is the stricter spelling when
+the impl actually declares `'a: 'static`.
+
+The follow-up uses the existing native region proof engine with explicit
+optional frames: required impl-item clauses use the impl namespace, and allowed
+trait-item assumptions use the instantiated trait frame. Compound outlives
+assumptions contribute their actual region/type components. Ordinary supertrait
+checks retain their existing trait-side frame. This is native correctness work,
+with no upstream import or GAT gate change. Nine focused tests pass, and all
+27 pinned reference expectations pass before candidate comparison. The public
+qualifier adds six retained region-condition edit/rejection/repair states.
+Installed execution of the follow-up is pending.

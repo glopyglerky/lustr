@@ -5704,6 +5704,16 @@ mod associated_item_predicate_tests {
     }
 
     #[test]
+    fn impl_associated_compatibility_preserves_trait_argument_regions() {
+        let valid = "trait Gate<A> {} trait Family<A> { type View; } impl<'a, T: Gate<&'a u8>> Family<&'a u8> for T { type View where T: Gate<&'a u8> = u32; } fn main() {}";
+        if let Err(errors) = collect(valid) { panic!("same region condition: {errors:?}"); }
+        let invalid = valid.replace("type View where T: Gate<&'a", "type View where T: Gate<&'static");
+        let errors = collect(&invalid).err().expect("a stricter item condition must not erase its argument regions");
+        assert!(errors.iter().any(|error| error.code == "L0617"), "{errors:?}");
+        if let Err(errors) = collect(&invalid.replace("impl<'a,", "impl<'a: 'static,")) { panic!("impl-wide fact proves the condition: {errors:?}"); }
+    }
+
+    #[test]
     fn rejected_gat_retains_its_actual_binders_and_predicates() {
         let mut program = collect("trait Family { type View; } fn main() {}").unwrap();
         let interner = program.interner.clone();
