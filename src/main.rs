@@ -222,11 +222,11 @@ fn main() -> ExitCode {
         }
     }
     let parent = std::env::current_exe().unwrap().parent().unwrap().to_path_buf();
-    if compiler_mode && native_queries::non_host_query(&args, lust::host_triple())
+    if compiler_mode && native_queries::needs_rust_query(&args, lust::host_triple())
         && let Some(compiler) = native_queries::host_proc_macro_compiler(&parent, lust::host_triple())
     {
         // Resolve target facts before the native host query can consume stdin.
-        trace_entry("pinned-rust", "target-discovery");
+        trace_entry("pinned-rust", "rust-discovery");
         let error = Command::new(compiler).arg("--lustr-build-rust-unit").args(&args).exec();
         eprintln!("cannot query the installed Rust target: {error}");
         return ExitCode::from(2);

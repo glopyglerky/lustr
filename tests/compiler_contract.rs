@@ -2780,4 +2780,8 @@ fn installed_rust_reports_the_requested_non_host_target() {
         assert_eq!(answer.stdout, expected.stdout);
         assert!(String::from_utf8_lossy(&answer.stdout).contains("target_arch=\"wasm32\""));
     }
+    let original = f.succeeds("original-target-list",
+        Command::new(&original).current_dir(&f.root).env_remove("LD_LIBRARY_PATH").arg("--print=target-list"));
+    let answer = f.succeeds("lustr-target-list", f.command("rustc").args(["--print", "target-list"]));
+    assert_eq!(answer.stdout, original.stdout);
 }

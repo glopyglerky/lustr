@@ -16,10 +16,21 @@ fn information_query(args: &[OsString]) -> bool {
     args.iter().any(|arg| arg == "--print" || arg.to_str().is_some_and(|s| s.starts_with("--print=")))
 }
 
-pub fn non_host_query(args: &[OsString], host: &str) -> bool {
-    information_query(args) && (args.windows(2).any(|pair| pair[0] == "--target" && pair[1] != host)
-        || args.iter().any(|arg| arg.to_str().and_then(|arg| arg.strip_prefix("--target="))
-            .is_some_and(|target| target != host)))
+fn native_print(kind: &str) -> bool {
+    matches!(kind, "file-names" | "sysroot" | "split-debuginfo" | "crate-name" | "cfg")
+}
+
+pub fn needs_rust_query(args: &[OsString], host: &str) -> bool {
+    if !information_query(args) {
+        return false;
+    }
+    args.windows(2).any(|pair| {
+        pair[0] == "--target" && pair[1] != host
+            || pair[0] == "--print" && pair[1].to_str().is_none_or(|kind| !native_print(kind))
+    }) || args.iter().filter_map(|arg| arg.to_str()).any(|arg| {
+        arg.strip_prefix("--target=").is_some_and(|target| target != host)
+            || arg.strip_prefix("--print=").is_some_and(|kind| !native_print(kind))
+    })
 }
 
 pub fn answer(args: &[OsString], bin: &Path, host: &str) -> Option<Result<(), String>> {
@@ -107,7 +118,7 @@ fn query(args: &[OsString], bin: &Path, host: &str) -> Result<(), String> {
         }
     }
     for print in &prints {
-        if !matches!(*print, "file-names" | "sysroot" | "split-debuginfo" | "crate-name" | "cfg") {
+        if !native_print(print) {
             return Err(format!("native information query {print:?} is not integrated"));
         }
     }
