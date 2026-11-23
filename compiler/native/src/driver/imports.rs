@@ -17,15 +17,26 @@ pub struct Dependency {
     pub contents: Arc<[u8]>,
 }
 
-/// The full set of native declarations exposed by the scalar metadata reader.
+/// The checked declarations the Cargo metadata reader mounts for an executable.
 /// It does not expose implementation bodies, inlining, or const evaluation.
 #[derive(PartialEq, Eq)]
-pub struct ScalarDefinitions {
+pub struct CargoDefinitions {
     pub alias: String,
     pub crate_name: String,
     pub stable: def::StableCrateHash,
     pub index: def::CrateId,
     pub functions: Vec<ScalarFunction>,
+    pub projection: Option<ProjectionDefinition>,
+}
+
+/// A validated nongeneric receiver and an associated lifetime mapped to a
+/// shared integer reference. A missing implementation is itself a fact.
+#[derive(PartialEq, Eq)]
+pub struct ProjectionDefinition {
+    pub receiver: (String, def::DefPathHash),
+    pub family: (String, def::DefPathHash),
+    pub item: (String, def::DefPathHash),
+    pub referent: Option<ty::IntTy>,
 }
 
 #[derive(PartialEq, Eq)]
@@ -42,7 +53,7 @@ pub struct ScalarFunction {
 #[derive(PartialEq, Eq)]
 pub(crate) enum Generation {
     Inputs(Vec<Dependency>),
-    Scalar(Vec<Arc<ScalarDefinitions>>),
+    Cargo(Vec<Arc<CargoDefinitions>>),
 }
 
 /// Native-supported work whose joined context/profile is not implemented by
@@ -69,9 +80,9 @@ pub trait Definitions {
     /// Validate the installed semantic facts without executing an emitter.
     fn validate_checked(&self, program: &Program) -> Result<(), String>;
     fn dependencies(&self) -> Vec<Dependency>;
-    /// Executables use only admitted scalar declarations in checking. Their
-    /// raw metadata and archive inputs remain bound to artifact publication.
-    fn scalar_definitions(&self) -> Option<Vec<Arc<ScalarDefinitions>>> { None }
+    /// Validated definitions actually exposed to this executable's checker.
+    /// Exact metadata and archive inputs remain bound to artifact publication.
+    fn cargo_definitions(&self) -> Option<Vec<Arc<CargoDefinitions>>> { None }
     /// Transfer the immutable, single-use plan after semantic validation.
     /// Constructing or taking the plan must not emit code or materialize objects.
     fn take_emission(&self) -> Result<Box<dyn Emission + 'static>, String>;

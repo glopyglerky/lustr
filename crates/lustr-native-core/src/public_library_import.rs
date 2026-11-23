@@ -9,7 +9,7 @@ use crate::{
     diag::{Diag, Span},
     driver,
     driver::graph::Namespace,
-    driver::imports::{ScalarDefinitions, ScalarFunction},
+    driver::imports::{CargoDefinitions, ProjectionDefinition, ScalarFunction},
     intern::{Interner, Sym},
     protocol::ExternMetadata,
     resolve::imports::{Bind, DefInfo, ExternInfo, InsertOut, ResKind, ResolvedTables, Target, VisKind},
@@ -44,7 +44,7 @@ pub(super) struct Identity {
 }
 
 pub(super) struct Import {
-    pub(super) facts: Arc<ScalarDefinitions>,
+    pub(super) facts: Arc<CargoDefinitions>,
     pub(super) stamp: Stamp,
     pub(super) identity: Identity,
     pub(super) requires_abort: bool,
@@ -52,14 +52,6 @@ pub(super) struct Import {
     artifact_identity: String,
     pub(super) metadata: Arc<[u8]>,
     pub(super) sdk: Sdk,
-    projection: Option<Projection>,
-}
-
-struct Projection {
-    receiver: (String, def::DefPathHash),
-    family: (String, def::DefPathHash),
-    item: (String, def::DefPathHash),
-    referent: Option<ty::IntTy>,
 }
 
 impl Import {
@@ -103,21 +95,22 @@ impl Import {
         let dependencies = leaf.dependencies.iter().map(|dep| Identity {
             name: dep.name.into(), svh: dep.svh, suffix: dep.filename_suffix.into(),
         }).collect();
-        let facts = Arc::new(ScalarDefinitions {
-            alias: request.alias.clone(),
-            crate_name: identity.name.clone(),
-            stable: def::StableCrateHash(leaf.stable_id),
-            index,
-            functions,
-        });
         let projection = projection.map(|item| {
             let definition = |(name, hash): (&str, u64)| (name.into(), def::DefPathHash(hash));
-            Projection {
+            ProjectionDefinition {
                 receiver: definition(item.receiver),
                 family: definition(item.family),
                 item: definition(item.item),
                 referent: item.referent.map(native_integer_type),
             }
+        });
+        let facts = Arc::new(CargoDefinitions {
+            alias: request.alias.clone(),
+            crate_name: identity.name.clone(),
+            stable: def::StableCrateHash(leaf.stable_id),
+            index,
+            functions,
+            projection,
         });
         Ok(Self {
                 facts,
@@ -128,7 +121,6 @@ impl Import {
                 artifact_identity: path.to_str().ok_or("extern metadata path is not Unicode")?.into(),
                 metadata: data.into(),
                 sdk: context,
-                projection,
         })
     }
 
@@ -153,14 +145,14 @@ impl Import {
     }
 
     pub(super) fn is_scalar(&self) -> bool {
-        self.projection.is_none()
+        self.facts.projection.is_none()
     }
 
     fn flat_definition(&self, interner: &Interner, hash: def::DefPathHash) -> Sym {
         interner.intern(&format!("$lustr$extern${:016x}${:016x}", self.facts.stable.0, hash.0))
     }
 
-    fn projection_fact(&self, interner: &Interner, projection: &Projection) -> (Sym, ImportedProjection) {
+    fn projection_fact(&self, interner: &Interner, projection: &ProjectionDefinition) -> (Sym, ImportedProjection) {
         let family = self.flat_definition(interner, projection.family.1);
         let fact = ImportedProjection {
             definition: def::DiskDefId { krate: self.facts.stable, hash: projection.item.1 },
@@ -218,7 +210,7 @@ impl driver::imports::Definitions for Import {
         for function in &self.facts.functions {
             bind(&function.name, function.hash, ResKind::Fn, Namespace::Value, 1)?;
         }
-        if let Some(projection) = &self.projection {
+        if let Some(projection) = &self.facts.projection {
             bind(&projection.receiver.0, projection.receiver.1, ResKind::Adt, Namespace::Type, 0)?;
             bind(&projection.family.0, projection.family.1, ResKind::Trait, Namespace::Type, 0)?;
         }
@@ -265,7 +257,7 @@ impl driver::imports::Definitions for Import {
                 },
             );
         }
-        if let Some(projection) = &self.projection {
+        if let Some(projection) = &self.facts.projection {
             let (family, fact) = self.projection_fact(&program.interner, projection);
             program.gx.imported_projections.get_or_insert_with(Default::default).entry(family).or_default().push(fact);
         }
@@ -289,7 +281,7 @@ impl driver::imports::Definitions for Import {
                 return Err("checked extern signature or linkage changed".into());
             }
         }
-        if let Some(projection) = &self.projection {
+        if let Some(projection) = &self.facts.projection {
             let (family, expected) = self.projection_fact(&program.interner, projection);
             if !program.gx.imported_projections.as_ref().and_then(|map| map.get(&family)).is_some_and(|facts| {
                 facts.iter().any(|fact| fact.definition == expected.definition

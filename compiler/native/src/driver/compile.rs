@@ -3069,8 +3069,8 @@ pub(crate) fn prepare_projection_import<'a>(
 /// which results still hold. Only validated providers enter this boundary.
 fn update_imported_generation(session: &mut Session, definitions: &dyn super::imports::Definitions) {
     use super::imports::Generation;
-    let generation = match definitions.scalar_definitions() {
-        Some(facts) => Generation::Scalar(facts),
+    let generation = match definitions.cargo_definitions() {
+        Some(facts) => Generation::Cargo(facts),
         None => Generation::Inputs(definitions.dependencies()),
     };
     if session.imported_generation.as_ref().is_some_and(|previous| *previous != generation) {

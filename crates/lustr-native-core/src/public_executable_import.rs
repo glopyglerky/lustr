@@ -9,7 +9,7 @@ use crate::{
     check::collect::Program,
     def,
     diag::Diag,
-    driver::imports::{Definitions, Dependency, Emission, ScalarDefinitions},
+    driver::imports::{CargoDefinitions, Definitions, Dependency, Emission},
     intern::Interner,
     library_artifact::unit_object,
     protocol::{ExecutableExtern, ExternMetadata},
@@ -274,9 +274,8 @@ impl Definitions for ExecutableImports {
             .collect()
     }
 
-    fn scalar_definitions(&self) -> Option<Vec<Arc<ScalarDefinitions>>> {
-        self.direct_crates().iter().all(|item| item.definitions.is_scalar())
-            .then(|| self.direct_crates().iter().map(|item| item.definitions.facts.clone()).collect())
+    fn cargo_definitions(&self) -> Option<Vec<Arc<CargoDefinitions>>> {
+        Some(self.direct_crates().iter().map(|item| item.definitions.facts.clone()).collect())
     }
 
     fn take_emission(&self) -> Result<Box<dyn Emission + 'static>, String> {

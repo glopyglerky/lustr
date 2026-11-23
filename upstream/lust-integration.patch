@@ -10663,7 +10663,7 @@ index da28835400f894866adb85f436e2cbdf109797d7..c2a8d6a10a776fba1df984670ff8b994
          assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
          assert!(decode_response(b"short").is_none());
 diff --git a/src/driver/compile.rs b/src/driver/compile.rs
-index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..94a0305cf5a5ff95a3611bab8bcdc4c03a6f70b6 100644
+index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..f8c077fe1dbe913c1944643aafd41239cd9a2cdb 100644
 --- a/src/driver/compile.rs
 +++ b/src/driver/compile.rs
 @@ -30,7 +30,7 @@ use crate::check::collect::{self, LocalDefId};
@@ -11474,8 +11474,8 @@ index b929f7a5a0e948627add7f24d9ceab2bf9ec23eb..94a0305cf5a5ff95a3611bab8bcdc4c0
 +/// which results still hold. Only validated providers enter this boundary.
 +fn update_imported_generation(session: &mut Session, definitions: &dyn super::imports::Definitions) {
 +    use super::imports::Generation;
-+    let generation = match definitions.scalar_definitions() {
-+        Some(facts) => Generation::Scalar(facts),
++    let generation = match definitions.cargo_definitions() {
++        Some(facts) => Generation::Cargo(facts),
 +        None => Generation::Inputs(definitions.dependencies()),
 +    };
 +    if session.imported_generation.as_ref().is_some_and(|previous| *previous != generation) {
@@ -13276,10 +13276,10 @@ index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..8e8b82887f98f91af2e5d696eff62b10
                  }
 diff --git a/src/driver/imports.rs b/src/driver/imports.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..2945efaed1e2410acdd8f15beea4a88275b2b489
+index 0000000000000000000000000000000000000000..cd4a335766cc2a82013cf54c0c35908718d3acb7
 --- /dev/null
 +++ b/src/driver/imports.rs
-@@ -0,0 +1,78 @@
+@@ -0,0 +1,89 @@
 +//! Imported semantic definitions for one owned native request.
 +//!
 +//! The provider installs resolved definitions before collection checks any
@@ -13299,15 +13299,26 @@ index 0000000000000000000000000000000000000000..2945efaed1e2410acdd8f15beea4a882
 +    pub contents: Arc<[u8]>,
 +}
 +
-+/// The full set of native declarations exposed by the scalar metadata reader.
++/// The checked declarations the Cargo metadata reader mounts for an executable.
 +/// It does not expose implementation bodies, inlining, or const evaluation.
 +#[derive(PartialEq, Eq)]
-+pub struct ScalarDefinitions {
++pub struct CargoDefinitions {
 +    pub alias: String,
 +    pub crate_name: String,
 +    pub stable: def::StableCrateHash,
 +    pub index: def::CrateId,
 +    pub functions: Vec<ScalarFunction>,
++    pub projection: Option<ProjectionDefinition>,
++}
++
++/// A validated nongeneric receiver and an associated lifetime mapped to a
++/// shared integer reference. A missing implementation is itself a fact.
++#[derive(PartialEq, Eq)]
++pub struct ProjectionDefinition {
++    pub receiver: (String, def::DefPathHash),
++    pub family: (String, def::DefPathHash),
++    pub item: (String, def::DefPathHash),
++    pub referent: Option<ty::IntTy>,
 +}
 +
 +#[derive(PartialEq, Eq)]
@@ -13324,7 +13335,7 @@ index 0000000000000000000000000000000000000000..2945efaed1e2410acdd8f15beea4a882
 +#[derive(PartialEq, Eq)]
 +pub(crate) enum Generation {
 +    Inputs(Vec<Dependency>),
-+    Scalar(Vec<Arc<ScalarDefinitions>>),
++    Cargo(Vec<Arc<CargoDefinitions>>),
 +}
 +
 +/// Native-supported work whose joined context/profile is not implemented by
@@ -13351,9 +13362,9 @@ index 0000000000000000000000000000000000000000..2945efaed1e2410acdd8f15beea4a882
 +    /// Validate the installed semantic facts without executing an emitter.
 +    fn validate_checked(&self, program: &Program) -> Result<(), String>;
 +    fn dependencies(&self) -> Vec<Dependency>;
-+    /// Executables use only admitted scalar declarations in checking. Their
-+    /// raw metadata and archive inputs remain bound to artifact publication.
-+    fn scalar_definitions(&self) -> Option<Vec<Arc<ScalarDefinitions>>> { None }
++    /// Validated definitions actually exposed to this executable's checker.
++    /// Exact metadata and archive inputs remain bound to artifact publication.
++    fn cargo_definitions(&self) -> Option<Vec<Arc<CargoDefinitions>>> { None }
 +    /// Transfer the immutable, single-use plan after semantic validation.
 +    /// Constructing or taking the plan must not emit code or materialize objects.
 +    fn take_emission(&self) -> Result<Box<dyn Emission + 'static>, String>;
