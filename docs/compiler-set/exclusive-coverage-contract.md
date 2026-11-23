@@ -151,7 +151,11 @@ For a finite explicit graph, adjacency traversal costs `O(vertices + edges)`.
 Use this analysis to improve the cost and size of an integration. Revisit
 the closure when a changed adapter, feature or target changes its dependencies.
 The pinned Rust driver can supply complete Rust operations while the
-integration is developed and qualified.
+integration is developed and qualified. Record compatibility results that
+still run Lust-owned operations through the Rust driver as unfinished
+integration. When the artifact or runtime interface is missing, carry the
+existing Lust result into that interface and qualify the actual owner and
+work performed under the original Cargo settings.
 
 Every import needs a necessity witness that identifies its missing capability
 or a dependency path back to one. Record exact donor repository/revision,
