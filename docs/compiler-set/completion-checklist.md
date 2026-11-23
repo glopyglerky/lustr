@@ -421,6 +421,19 @@ selective pinned normalization/WF/region service, then extend genuine provider
 metadata through ordinary default-profile Cargo check. Do not remove the GAT
 gate or substitute the independent full-SDK proof for that integration.
 
+The installed compiler at `49ee309d` checks the unchanged shared-reference
+associated-type workspace through ordinary default-profile Cargo. Lustr
+validates the provider and emits its Rust metadata. Lustr and pinned Rust both
+accept the initial and repaired consumer, reject a changed referent and a
+missing implementation, and preserve the original metadata bytes after
+repair. Cargo skips compiler requests on a no-op. The consumer checks two of
+three bodies after repair. The separate retained consumer qualification also
+rejects a lifetime escape and preserves the valid outputs across malformed
+metadata. The regression suite exercises renamed crate and definition
+identities and different trait and impl lifetime names. Continue this
+provider/consumer path into linked Cargo builds and then wider predicates,
+receivers, and associated results.
+
 The coordinator owns this register, shared-interface decisions and final
 integration. Worker A starts P1/P2; worker B starts P3; worker C starts P4 and
 the runtime prerequisites it exposes. Use isolated worktrees and non-overlapping
