@@ -236,7 +236,6 @@ fn main() {
             "tools/host-proc-macro.rs",
             "tools/host-crate-interface.rs",
             "tools/host-freestanding.rs",
-            "tools/native-freestanding-item.rs",
             "tools/lust-upstream-check.rs",
             "tools/check-exclusive-coverage.py",
         ]),
@@ -337,19 +336,14 @@ fn main() {
         fs::create_dir_all(&bin).unwrap();
         symlink(sdk.join("lib"), component.join("lib")).unwrap();
         let compiler = bin.join("lustr-rustc-host-proc-macro");
-        let mut freestanding = cargo(&sdk, &repo, "crates/lustr-native-core/Cargo.toml",
-            "lustr-native-core", &work, "freestanding", profile);
-        freestanding.args(["--features", "native-qualification", "--example", "native-freestanding-item"])
-            .env("LUST_TCC_HOME", &tcc);
-        checked("freestanding-native-item-build", &mut freestanding, &logs);
-        let native_item = bin.join("native-freestanding-item");
-        copy(&work.join("freestanding-target").join(profile.directory()).join("examples/native-freestanding-item"),
-            &native_item);
-        let mut native_libs = std::ffi::OsString::from("-Lnative=");
-        native_libs.push(sdk.join("lib"));
-        checked("host-proc-macro-build", Command::new(sdk.join("bin/rustc"))
-            .args(["--edition=2024", "-Clink-arg=-Wl,-rpath,$ORIGIN/../lib"])
-            .arg(native_libs).arg(repo.join("tools/host-proc-macro.rs")).arg("-o").arg(&compiler), &logs);
+        let mut flags = std::ffi::OsString::from("-Clink-arg=-Wl,-rpath,$ORIGIN/../lib\x1f-Lnative=");
+        flags.push(sdk.join("lib"));
+        checked("host-proc-macro-build",
+            cargo(&sdk, &repo, "crates/lustr-native-core/Cargo.toml", "lustr-native-core", &work, "host-compiler", profile)
+                .args(["--features", "upstream-semantic", "--example", "host-proc-macro"])
+                .env("LUST_TCC_HOME", &tcc).env("CARGO_ENCODED_RUSTFLAGS", flags), &logs);
+        copy(&work.join("host-compiler-target").join(profile.directory()).join("examples/host-proc-macro"),
+            &compiler);
         let companion_version = checked("host-proc-macro-version", Command::new(&compiler).arg("-vV"), &logs);
         assert_eq!(companion_version, version, "the macro compiler must use the declared SDK");
         let licenses = component.join("licenses");
@@ -359,15 +353,14 @@ fn main() {
         }
         let notice = component.join("SOURCE.txt");
         record(&notice, format!(
-            "https://github.com/rust-lang/rust\nRevision {source}\nPinned Rust driver for host procedural macro crates, external declaration queries, freestanding executables and static libraries\n",
+            "https://github.com/rust-lang/rust\nRevision {source}\nPinned Rust driver for host macros, external declarations and composed Cargo units\nSelected Lust bodies use the matching native compiler and TinyCC in the same process.\n",
         ).as_bytes());
         let identity = checked("hash-host-proc-macro",
-            host_runtime::sha256_command().arg(&compiler).arg(&native_item).arg(notice), &logs);
+            host_runtime::sha256_command().arg(&compiler).arg(notice), &logs);
         let digest = std::str::from_utf8(&identity).unwrap().split_whitespace().next().unwrap();
         record(&component.join("metadata-interface.id"), format!("{digest}\n").as_bytes());
         runtime_identities.push(identity);
         fs::File::open(&compiler).unwrap().sync_all().unwrap();
-        fs::File::open(&native_item).unwrap().sync_all().unwrap();
         for path in [licenses, bin, component, package.join("libexec")] {
             fs::File::open(path).unwrap().sync_all().unwrap();
         }

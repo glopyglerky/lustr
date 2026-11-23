@@ -22,11 +22,10 @@ use rustc_target::callconv::{ArgAbi, PassMode};
 use std::{
     any::Any,
     fs,
-    io::{self, Write},
-    ops::Range,
+    io,
     os::unix::fs::DirBuilderExt,
     path::{Path, PathBuf},
-    process::{Command, ExitCode, Stdio},
+    process::ExitCode,
     sync::{Arc, OnceLock},
 };
 
@@ -61,7 +60,6 @@ struct Composition {
     native_codegen: bool,
     input: Option<PathBuf>,
     output: Option<PathBuf>,
-    producer: PathBuf,
     object: Arc<OnceLock<PathBuf>>,
     bindings: Vec<(Symbol, String)>,
     scratch: Option<Scratch>,
@@ -145,7 +143,9 @@ impl Composition {
             input.to_str().ok_or("native item source path must be UTF-8")?.to_owned(), "-o".into(),
             object.to_str().ok_or("native item output path must be UTF-8")?.to_owned(),
         ];
-        let report = sess.time("lustr_native_items", || self.native_items(&args, source, &extents, link, no_std))?;
+        let report = sess.time("lustr_native_items", || {
+            crate::native_object::complete_items(&args, source, &extents, link, no_std)
+        })?;
         if report.len() != items.len() {
             return Err("native object does not cover every selected definition".into());
         }
@@ -167,40 +167,6 @@ impl Composition {
         Ok((link.then_some(object), symbols))
     }
 
-    #[cfg(feature = "upstream-semantic")]
-    fn native_items(&self, args: &[String], source: &str, extents: &[Range<u32>], link: bool, no_std: bool)
-        -> Result<Vec<(String, String)>, String>
-    {
-        if !crate::embedding_environment_supported() {
-            return Err("the Rust host cannot use a native front arena".into());
-        }
-        crate::native_object::complete_items(args, source, extents, link, no_std)
-    }
-
-    #[cfg(not(feature = "upstream-semantic"))]
-    fn native_items(&self, args: &[String], source: &str, extents: &[Range<u32>], link: bool, no_std: bool)
-        -> Result<Vec<(String, String)>, String>
-    {
-        let mut command = Command::new(&self.producer);
-        command.arg(if link { "link" } else { "check" });
-        command.arg(if no_std { "no-std" } else { "std" });
-        for extent in extents {
-            command.args([extent.start.to_string(), extent.end.to_string()]);
-        }
-        let mut child = command.arg("--").args(args)
-            .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped())
-            .spawn().map_err(|error| format!("cannot start native item compiler: {error}"))?;
-        let sent = child.stdin.take().unwrap().write_all(source.as_bytes());
-        let result = child.wait_with_output().map_err(|error| format!("cannot read native item result: {error}"))?;
-        if !result.status.success() {
-            return Err(String::from_utf8_lossy(&result.stderr).into_owned());
-        }
-        sent.map_err(|error| format!("cannot send original source to native compiler: {error}"))?;
-        std::str::from_utf8(&result.stdout).map_err(|error| error.to_string())?.lines().map(|line| {
-            line.split_once(' ').map(|(name, symbol)| (name.to_owned(), symbol.to_owned()))
-                .ok_or_else(|| "invalid native object symbol response".to_owned())
-        }).collect()
-    }
 }
 
 // Preserve Rust's function-item identity. Rust lowers only the forwarding
@@ -266,7 +232,8 @@ impl Callbacks for Composition {
         {
             early.early_fatal("the parsed request does not match the selected host artifact");
         }
-        if !self.native_codegen || config.opts.test || config.opts.output_types.keys().any(|kind|
+        if !self.native_codegen || !crate::embedding_environment_supported()
+            || config.opts.test || config.opts.output_types.keys().any(|kind|
             !matches!(kind, OutputType::Exe | OutputType::Metadata | OutputType::DepInfo))
         {
             return;
@@ -410,7 +377,7 @@ pub(crate) fn run(artifact: Artifact, program: &str, args: &[String]) -> ExitCod
         }
         let mut callbacks = Composition {
             artifact, native_codegen: represents_native_codegen(args),
-            input: None, output: None, producer: bin.join("native-freestanding-item"),
+            input: None, output: None,
             object: Arc::default(), bindings: Vec::new(), scratch: None,
         };
         rustc_driver::compiler_entrypoint(&driver, &mut callbacks);

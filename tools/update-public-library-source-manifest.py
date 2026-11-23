@@ -37,7 +37,7 @@ FILES=[
  "tools/update-public-library-source-manifest.py","upstream/metadata-artifact-tools.json","upstream/metadata-dependency-closure.json",
  "upstream/rustdoc-test-builders.patch",
  "tools/host-proc-macro.rs","tools/host-crate-interface.rs","upstream/complement-imports.json","upstream/proc-macro-expansion.patch",
- "tools/host-freestanding.rs","tools/native-freestanding-item.rs",
+ "tools/host-freestanding.rs",
  "tools/proc-macro-expansion/client/Cargo.toml","tools/proc-macro-expansion/client/Cargo.lock",
  "tools/proc-macro-expansion/client/src/main.rs",
  "tools/proc-macro-expansion/server/Cargo.toml","tools/proc-macro-expansion/server/Cargo.lock",

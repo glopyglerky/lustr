@@ -50,7 +50,6 @@ PRODUCT_TARGETS = {
             ("native-phase-qualification", "native-qualification"),
             ("native-crate-qualification", "native-qualification"),
             ("native-consumer-qualification", "native-qualification"),
-            ("native-freestanding-item", "native-qualification"),
             ("host-proc-macro", "upstream-semantic"),
         ]},
     },

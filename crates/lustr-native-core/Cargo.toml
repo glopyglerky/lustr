@@ -42,11 +42,6 @@ path = "../../tools/native-consumer-qualification.rs"
 required-features = ["native-qualification"]
 
 [[example]]
-name = "native-freestanding-item"
-path = "../../tools/native-freestanding-item.rs"
-required-features = ["native-qualification"]
-
-[[example]]
 name = "host-proc-macro"
 path = "../../tools/host-proc-macro.rs"
 required-features = ["upstream-semantic"]

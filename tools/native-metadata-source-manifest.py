@@ -20,7 +20,7 @@ INPUTS = [
     "tools/check-exclusive-coverage.py", "tools/build-metadata-sdk-receipt.py",
     "tools/build-native-toolchain.rs", "tools/install-native-metadata-sdk.py",
     "tools/host-proc-macro.rs", "tools/host-crate-interface.rs",
-    "tools/host-freestanding.rs", "tools/native-freestanding-item.rs",
+    "tools/host-freestanding.rs",
     "tools/update-public-library-source-manifest.py",
     "tools/test-public-native-library.py", "tools/test-public-native-library-controls.py",
     "tools/test-rustc-profile-defaults.py", "tools/test-native-unwind-frames.py",
