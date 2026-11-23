@@ -3,7 +3,7 @@
 //! host runtime unit, rustc acceptance, retry or retained-object replay.
 //! This is not yet the full core/alloc library or Cargo metadata interface.
 use crate::{ast, borrowck, cgen, check, def, diag, intern, lexer, lower, parser, ty};
-use std::{collections::BTreeSet, fs, path::PathBuf, process::Command, sync::Arc};
+use std::{collections::BTreeSet, fs, ops::Range, path::PathBuf, process::Command, sync::Arc};
 use ty::TyIntern;
 
 struct Request { source: PathBuf, output: PathBuf, name: String, metadata: String, overflow: bool, debug: bool }
@@ -134,15 +134,41 @@ impl EmittedUnit {
     pub(crate) fn object(&self) -> &[u8] { &self.bytes }
     pub(crate) fn functions(&self) -> &[EmittedFunction] { &self.functions }
     pub(crate) fn helpers(&self) -> &BTreeSet<Vec<u8>> { &self.helpers }
+    pub(crate) fn publish_object(&self) -> Result<super::unit_publication::Publication, String> {
+        super::unit_publication::publish(&self.object, self.prepared.output())
+            .map_err(|error| format!("cannot publish native object: {error}"))
+    }
 }
 
 /// Prepare the existing freestanding object request. This is its only native
 /// frontend invocation; it does not query a Rust compiler or emit an object.
 pub(crate) fn prepare(args: &[String]) -> Result<PreparedUnit, String> {
-    prepare_request(request(args)?, false, true)
+    prepare_request(request(args)?, false, true, None)
 }
 
-fn prepare_request(r: Request, artifact: bool, capture: bool) -> Result<PreparedUnit, String> {
+/// The enclosing compiler has already assigned the other items to their
+/// owners. Keep the full original source and positions for this native item.
+pub(crate) fn prepare_item(args: &[String], source: &str, span: Range<u32>) -> Result<PreparedUnit, String> {
+    prepare_request(request(args)?, false, true, Some((source, span)))
+}
+
+fn item_tokens(mut lexed: lexer::Lexed, extent: Range<u32>) -> Result<lexer::Lexed, String> {
+    let tokens = &lexed.tokens;
+    let policy = tokens.get(..5).ok_or("missing original crate policy")?;
+    let start = tokens.partition_point(|token| token.span.hi <= extent.start);
+    let end = tokens.partition_point(|token| token.span.lo < extent.end);
+    let item = tokens.get(start..end).ok_or("native item range is out of order")?;
+    if !item.first().is_some_and(|token| token.span.lo == extent.start)
+        || !item.last().is_some_and(|token| token.span.hi == extent.end)
+        || start < policy.len()
+    {
+        return Err("native item range does not match whole original tokens".into());
+    }
+    lexed.tokens = policy.iter().chain(item).cloned().collect();
+    Ok(lexed)
+}
+
+fn prepare_request(r: Request, artifact: bool, capture: bool, item: Option<(&str, Range<u32>)>) -> Result<PreparedUnit, String> {
     if r.output.exists() { return Err("object output already exists; use a fresh path".into()); }
     let working_directory = capture.then(std::env::current_dir).transpose()
         .map_err(|error| format!("cannot retain native request working directory: {error}"))?;
@@ -150,7 +176,15 @@ fn prepare_request(r: Request, artifact: bool, capture: bool) -> Result<Prepared
     if source.len() > 2 * 1024 * 1024 { return Err("native object source exceeds current bound".into()); }
     let i = Arc::new(intern::Interner::default()); let k = Arc::new(intern::Known::new(&i));
     let mut map = diag::SourceMap::default(); let file = map.add_file(&r.source.to_string_lossy(), &source);
+    if item.as_ref().is_some_and(|(expected, _)| *expected != source) {
+        return Err("the original source changed since the item was selected".into());
+    }
     let lexed = lexer::lex(&source,file,0,&i).map_err(|e| diag::render(&mut vec![e], &map, &source, false, 20))?;
+    let selected = item.is_some();
+    let lexed = match item {
+        Some((_, extent)) => item_tokens(lexed, extent)?,
+        None => lexed,
+    };
     // This boundary consumes a real crate attribute and carries its policy
     // into a freestanding object pipeline. Other root attributes still need
     // their native policy interface; none are silently discarded.
@@ -187,6 +221,9 @@ fn prepare_request(r: Request, artifact: bool, capture: bool) -> Result<Prepared
     } else {
         let mut a=parser::parse_items(&lexed,5..t.len(),&i,&k).map_err(|e|diag::render(&mut vec![e],&map,&source,false,20))?;a.inner_attrs.insert(0,attr);(a,None)
     };
+    if selected && !matches!(a.items.as_slice(), [ast::Item { kind: ast::ItemKind::Fn(_), .. }]) {
+        return Err("the selected native item must be one function definition".into());
+    }
     if a.items.iter().chain(&a.stmt_items).any(|item|(!artifact&&matches!(item.vis,ast::Vis::Restricted{..})) || !matches!(item.kind,ast::ItemKind::Fn(_)|ast::ItemKind::Const(_)) && !(artifact && matches!(item.kind,ast::ItemKind::Struct(_)|ast::ItemKind::Enum(_))))
         || a.exprs.iter().any(|e|matches!(e,ast::Expr::Macro{..}|ast::Expr::MacroCall(_)))
     { return Err("native unit resolution/expansion is required for these items or macros".into()); }
@@ -343,7 +380,7 @@ fn emit_with_backend(prepared: PreparedUnit, artifact: Option<(&crate::native_cr
 }
 
 fn compile(r: Request, artifact: Option<(&crate::native_crate::Generation,&crate::native_crate::Backend)>) -> Result<Completion, String> {
-    let prepared = prepare_request(r, artifact.is_some(), false)?;
+    let prepared = prepare_request(r, artifact.is_some(), false, None)?;
     let EmittedUnit { prepared, object, scratch, bytes, runtime, .. } = emit_with_backend(prepared, artifact)?;
     let PreparedUnit { request: r, source, program: p, names, .. } = prepared;
     // A real object only. Do not emit an empty rmeta/rlib or report Cargo

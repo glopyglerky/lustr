@@ -27,7 +27,7 @@ mod qualification {
     use rustc_interface::interface;
     use rustc_middle::ty::TyCtxt;
     use rustc_session::config::Input;
-    use rustc_span::FileName;
+    use rustc_span::{FileName, SourceFileHash, SourceFileHashAlgorithm};
     use std::{ffi::OsString, path::PathBuf, sync::Arc};
 
     enum Imported {
@@ -131,6 +131,39 @@ mod qualification {
             if status > 1 { return Ok(status); }
         }
         Ok(status)
+    }
+
+    fn native_span(args: &[OsString]) -> Result<u8, String> {
+        let args: Vec<_> = args.iter().map(|arg| arg.to_str().ok_or("non-Unicode native span argument"))
+            .collect::<Result<_, _>>()?;
+        let [source, start, end, digest, output, name, metadata, overflow, assertions] = args.as_slice() else {
+            return Err("usage: --native-span SOURCE START END SHA256 OBJECT CRATE METADATA OVERFLOW ASSERTIONS".into());
+        };
+        let snapshot = std::fs::read_to_string(source).map_err(|error| error.to_string())?;
+        let actual = SourceFileHash::new_in_memory(SourceFileHashAlgorithm::Sha256, &snapshot).to_string();
+        if actual != *digest {
+            return Err("native span identifies another source snapshot".into());
+        }
+        let range = start.parse().map_err(|_| "invalid native item start")?
+            ..end.parse().map_err(|_| "invalid native item end")?;
+        let args = vec!["--crate-name".into(), (*name).into(), "--edition=2024".into(),
+            "--crate-type=lib".into(), "--emit=obj".into(), "--target=x86_64-unknown-linux-gnu".into(),
+            "-Cpanic=abort".into(), "-Copt-level=0".into(), "-Cdebuginfo=0".into(),
+            format!("-Cmetadata={metadata}"), format!("-Coverflow-checks={overflow}"),
+            format!("-Cdebug-assertions={assertions}"), (*source).into(), "-o".into(), (*output).into()];
+        let prepared = native_object::prepare_item(&args, &snapshot, range)?;
+        let emitted = native_object::emit(prepared)?;
+        let [function] = emitted.functions() else { return Err("expected one emitted native function".into()) };
+        let program = emitted.prepared().program();
+        let name = program.interner.get(program.fn_def(def::LocalDefId(0)).name);
+        let symbol = std::str::from_utf8(function.symbol()).map_err(|error| error.to_string())?;
+        match emitted.publish_object()? {
+            unit_publication::Publication::Durable => {
+                println!("native object export: {name} {symbol}");
+                Ok(0)
+            }
+            unit_publication::Publication::DurabilityUnknown(error) => Err(format!("native object publication durability unknown: {error}")),
+        }
     }
 
     struct Compile {
@@ -276,6 +309,12 @@ mod qualification {
         if arguments.first().is_some_and(|arg| arg == "--metadata-history") {
             return metadata_history(&arguments[1..]).unwrap_or_else(|error| {
                 eprintln!("metadata history: {error}");
+                3
+            });
+        }
+        if arguments.first().is_some_and(|arg| arg == "--native-span") {
+            return native_span(&arguments[1..]).unwrap_or_else(|error| {
+                eprintln!("native item span: {error}");
                 3
             });
         }
