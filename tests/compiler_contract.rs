@@ -707,6 +707,106 @@ edition = "2024"
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn ordinary_cargo_uses_generated_build_script_inputs() {
+    let f = Fixture::new("cargo-generated-input");
+    f.source("Cargo.toml", "[package]\nname = \"generated-value\"\nedition = \"2024\"\nversion = \"0.1.0\"\n");
+    f.source("build.rs", r#"
+fn main() {
+    let output = std::env::var("OUT_DIR").unwrap();
+    let source = std::fs::read_to_string("value.txt").unwrap();
+    let destination = format!("{output}/generated.rs");
+    std::fs::write(destination, source).unwrap();
+    println!("cargo::rerun-if-changed=value.txt");
+    println!("cargo::rustc-env=BUILD_LABEL=generated");
+}
+"#);
+    f.source("src/main.rs", r#"
+mod generated {
+    include!(concat!(env!("OUT_DIR"), "/generated.rs"));
+}
+
+fn main() {
+    let label = env!("BUILD_LABEL");
+    let value = generated::value();
+    println!("{label}:{value}");
+}
+"#);
+    let initial = "pub fn value() -> u32 { 5 }\n";
+    f.source("value.txt", initial);
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    f.succeeds("check", f.command("cargo").args(["check", "--frozen"]));
+    let run = ["run", "--frozen", "--quiet"];
+    let cold = f.succeeds("run", f.command("cargo").args(run));
+    assert_eq!(cold.stdout, b"generated:5\n");
+    let unchanged = f.succeeds("unchanged", f.command("cargo").args(run));
+    assert_eq!(unchanged.stdout, cold.stdout);
+
+    f.source("value.txt", "pub fn value() -> u32 { 7 }\n");
+    let edited = f.succeeds("edit", f.command("cargo").args(run));
+    assert_eq!(edited.stdout, b"generated:7\n");
+    let output = f.root.join("target/debug/generated-value");
+    let linked = std::fs::read(&output).unwrap();
+    f.source("value.txt", "pub fn value() -> u32 { \"invalid\" }\n");
+    let invalid = f.invoke("invalid", f.command("cargo").args(run));
+    assert_eq!(invalid.status.code(), Some(101));
+    assert!(invalid.stdout.is_empty());
+    assert!(String::from_utf8_lossy(&invalid.stderr).contains("generated.rs"));
+    assert_eq!(std::fs::read(output).unwrap(), linked);
+
+    f.source("value.txt", initial);
+    let repaired = f.succeeds("repair", f.command("cargo").args(run));
+    assert_eq!(repaired.stdout, cold.stdout);
+    let dep_info = std::fs::read_to_string(f.root.join("target/debug/generated-value.d")).unwrap();
+    assert!(dep_info.contains("value.txt") && dep_info.contains("generated.rs"));
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn ordinary_cargo_resolves_a_renamed_dependency_feature() {
+    let f = Fixture::new("cargo-dependency-feature");
+    f.source("Cargo.toml", "[workspace]\nmembers = [\"provider\", \"app\"]\nresolver = \"3\"\n");
+    f.source("provider/Cargo.toml", r#"
+[package]
+name = "profile-codec"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+shifted = []
+"#);
+    f.source("provider/src/lib.rs", r#"
+#![no_std]
+#[cfg(feature = "shifted")]
+pub fn transform(value: u32) -> u32 { value ^ 15 }
+#[cfg(not(feature = "shifted"))]
+pub fn transform(value: u32) -> u32 { value ^ 9 }
+"#);
+    f.source("app/Cargo.toml", r#"
+[package]
+name = "profile-reader"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+codec = { package = "profile-codec", path = "../provider" }
+
+[features]
+shifted = ["codec/shifted"]
+"#);
+    f.source("app/src/main.rs", "fn main() { let value = codec::transform(12); println!(\"{value}\"); }\n");
+    let run = ["run", "--offline", "--quiet", "-p", "profile-reader"];
+    let base = f.succeeds("default", f.command("cargo").args(run));
+    assert_eq!(base.stdout, b"5\n");
+    let shifted = f.succeeds("shifted", f.command("cargo").args(run).args(["--features", "shifted"]));
+    assert_eq!(shifted.stdout, b"3\n");
+    let reverted = f.succeeds("reverted", f.command("cargo").args(run));
+    assert_eq!(reverted.stdout, base.stdout);
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
 fn ordinary_cargo_preserves_resolved_features() {
     let f = Fixture::new("resolved-cargo-features");
     f.source("Cargo.toml", r#"
