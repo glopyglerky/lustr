@@ -2880,11 +2880,18 @@ fn cargo_library_accepts_an_explicit_rust_archive() {
     for (lane, oracle) in [("lustr", false), ("original", true)] {
         let output = f.root.join(lane);
         let mut cargo = f.command("cargo");
-        cargo.args(["rustc", "--lib", "--frozen", "--", "--extern", &dependency, "-Zembed-metadata=yes"])
+        cargo.args(["rustc", "--lib", "--frozen", "--message-format=json", "--", "--extern", &dependency, "-Zembed-metadata=yes"])
             .env("CARGO_TARGET_DIR", &output);
         if oracle { cargo.env("RUSTC", &original); }
-        f.succeeds(&format!("{lane}-consumer"), &mut cargo);
-        let library = output.join("debug/libarchive_consumer.rlib");
+        let compiled = f.succeeds(&format!("{lane}-consumer"), &mut cargo);
+        let library = compiled.stdout.split(|&byte| byte == b'\n').find_map(|line| {
+            let record: serde_json::Value = serde_json::from_slice(line).ok()?;
+            if record["reason"] != "compiler-artifact" || record["target"]["name"] != "archive_consumer" {
+                return None;
+            }
+            record["filenames"].as_array()?.iter().filter_map(|filename| filename.as_str())
+                .find(|path| path.ends_with(".rlib")).map(PathBuf::from)
+        }).expect("Cargo reported the archive consumer's actual library");
         assert!(library.is_file());
         let application = output.join("application");
         f.succeeds(&format!("{lane}-app-link"), Command::new(&original)
