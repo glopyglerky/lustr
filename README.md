@@ -45,7 +45,7 @@ paths and run these commands from the Lustr checkout.
 
 ```sh
 "$sdk/bin/rustc" --edition=2024 tools/build-native-toolchain.rs -o "$work/constructor"
-"$work/constructor" "$PWD" "$sdk" "$tinycc" "$work/lustr" --debug \
+"$work/constructor" "$PWD" "$sdk" "$tinycc" "$work/lustr" --release \
   --proc-macro-source "$bluefe" --rustdoc-source "$bluefe"
 ```
 
@@ -58,6 +58,12 @@ export RUSTC="$work/lustr/toolchain/bin/rustc"
 export RUSTDOC="$work/lustr/toolchain/bin/rustdoc"
 "$work/lustr/toolchain/bin/cargo" test
 ```
+
+The constructor records the compiler build profile in `BUILD-PROFILE.txt`.
+Use a matching SDK `rust-src` component for Cargo builds from standard library
+source. For example, `cargo build -Z build-std=core,alloc --target
+wasm32-unknown-unknown` rebuilds the required libraries for a WebAssembly
+`no_std` target. [Cargo standard library builds](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#build-std)
 
 ### Source-built procedural macro support
 
