@@ -314,7 +314,7 @@ fn executable_externs(arguments: Vec<&str>, check: bool) -> Option<Vec<Executabl
     }
     pairs.into_iter().map(|(alias, (metadata, archive))| {
         if let Some(metadata) = metadata {
-            (archive.is_none() == check).then_some(ExecutableExtern { metadata, archive })
+            (check || archive.is_some()).then_some(ExecutableExtern { metadata, archive })
         } else {
             let archive = archive?;
             let metadata = ExternMetadata { alias: alias.into(), artifact: archive.clone() };

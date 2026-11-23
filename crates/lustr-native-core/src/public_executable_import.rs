@@ -33,13 +33,18 @@ pub(super) struct ExecutableImports {
 
 impl ExecutableImports {
     pub(super) fn open(
-        inputs: &[ExecutableExtern], search_paths: &[PathBuf], sdk: &Sdk, standard: Option<&Sdk>, panic_abort: bool,
+        inputs: &[ExecutableExtern], search_paths: &[PathBuf], sdk: &Sdk, standard: Option<&Sdk>,
+        linking: bool, panic_abort: bool,
     ) -> Result<Self, String> {
         let mut crates = Vec::new();
         let mut indices = BTreeMap::new();
         let mut searched = Vec::new();
-        let linking = inputs.first().is_some_and(|input| input.archive.is_some());
         for input in inputs {
+            if let Some(archive) = &input.archive
+                && !archive.is_file()
+            {
+                return Err(format!("Cargo extern archive is not a file: {}", archive.display()));
+            }
             let index = crate_index(crates.len())?;
             let definitions = Import::read(&input.metadata, sdk, standard, index, true)?;
             if indices.insert(definitions.identity.clone(), crates.len()).is_some() {
@@ -66,7 +71,7 @@ impl ExecutableImports {
         for entry in &mut crates {
             let definitions = &entry.definitions;
             let input = &entry.input;
-            entry.archive = if let Some(path) = &input.archive {
+            entry.archive = if let Some(path) = input.archive.as_ref().filter(|_| linking) {
                 if !definitions.has_direct_integer_abi() {
                     return Err("unrepresented linked integer ABI in Cargo extern metadata".into());
                 }
@@ -118,8 +123,11 @@ impl ExecutableImports {
                 item.definitions.unchanged(&input.metadata.artifact)
                     && match (&item.archive, &input.archive) {
                         (Some((before, _)), Some(path)) => stamp(path).is_ok_and(|observed| &observed == before),
+                        // A metadata-only request checks each explicit path,
+                        // but reads no archive code when full metadata is supplied.
+                        (None, Some(path)) => path.is_file(),
                         (None, None) => true,
-                        _ => false,
+                        (Some(_), None) => false,
                     }
             })
             && self.searched.iter().all(|(path, old)| search_stamp(path).is_ok_and(|current| &current == old))

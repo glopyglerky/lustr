@@ -1508,6 +1508,84 @@ pub fn flip(value: u64) -> u64 { value ^ 1 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and Clang"]
+fn cargo_documentation_tests_use_native_link_and_check_requests() {
+    let f = Fixture::new("cargo-standalone-doctests");
+    f.source("Cargo.toml", "[package]\nname=\"doc_consumer\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    f.source("src/lib.rs", r#"
+#![no_std]
+
+/// Test the linked library.
+///
+/// ```standalone_crate
+/// assert_eq!(doc_consumer::flip(42), 43);
+/// ```
+///
+/// ```no_run,standalone_crate
+/// let value = doc_consumer::flip(42);
+/// panic!("no_run executed: {value}");
+/// ```
+pub fn flip(value: u64) -> u64 { value ^ 1 }
+"#);
+    let oracle = PathBuf::from(std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE"));
+    let mut flags = std::ffi::OsString::from("-Zunstable-options\x1f--test-builder\x1f");
+    flags.push(f.package.join("bin/rustc"));
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let run = f.succeeds("cargo-test-doc", f.command("cargo")
+        .env("RUSTDOC", oracle.with_file_name("rustdoc")).env("CARGO_ENCODED_RUSTDOCFLAGS", flags)
+        .args(["test", "--doc", "--frozen"]));
+    let output = String::from_utf8(run.stdout).unwrap();
+    assert!(output.contains("2 passed; 0 failed"), "{output}");
+    let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
+    assert_eq!(trace.lines().filter(|line| {
+        serde_json::from_str::<serde_json::Value>(line).is_ok_and(|record|
+            record["engine"] == "lust" && record["entry"] == "stdin")
+    }).count(), 2, "{trace}");
+
+    let build = f.succeeds("cargo-artifacts", f.command("cargo").args([
+        "build", "--frozen", "--message-format=json",
+    ]));
+    let metadata = build.stdout.split(|&byte| byte == b'\n').find_map(|line| {
+        let record = serde_json::from_slice::<serde_json::Value>(line).ok()?;
+        if record["reason"] != "compiler-artifact" || record["target"]["name"] != "doc_consumer" {
+            return None;
+        }
+        record["filenames"].as_array()?.iter().filter_map(|path| path.as_str())
+            .find(|path| path.ends_with(".rmeta")).map(PathBuf::from)
+    }).expect("Cargo documentation library metadata");
+    let archive = f.root.join("unused").join(metadata.file_name().unwrap()).with_extension("rlib");
+    std::fs::create_dir(archive.parent().unwrap()).unwrap();
+    std::fs::write(&archive, b"metadata-only requests do not read this archive").unwrap();
+    let artifact = f.source("probe.rs", "fn main() { assert_eq!(doc_consumer::flip(42), 43); }\n");
+    let check = |upstream: bool, output: &Path| {
+        let mut command = if upstream {
+            let mut command = Command::new(&oracle);
+            command.current_dir(&f.root).env_remove("LD_LIBRARY_PATH");
+            command
+        } else {
+            f.command("rustc")
+        };
+        command.args(["--edition=2024", "--emit=metadata", "--extern"])
+            .arg(format!("doc_consumer={}", metadata.display())).arg("--extern")
+            .arg(format!("doc_consumer={}", archive.display())).arg(&artifact).arg("-o").arg(output);
+        command
+    };
+    for (name, upstream) in [("native", false), ("original", true)] {
+        let output = f.root.join(format!("{name}-checked"));
+        f.succeeds(&format!("{name}-unused-archive"), &mut check(upstream, &output));
+        assert_eq!(std::fs::metadata(output).unwrap().len(), 0);
+    }
+    std::fs::remove_file(&archive).unwrap();
+    for (name, upstream) in [("native", false), ("original", true)] {
+        let output = f.root.join(format!("{name}-missing"));
+        let observed = f.invoke(&format!("{name}-missing-archive"), &mut check(upstream, &output));
+        assert!(!observed.status.success());
+        assert!(!output.exists());
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
 fn ordinary_cargo_resolves_a_renamed_dependency_feature() {
     let f = Fixture::new("cargo-dependency-feature");

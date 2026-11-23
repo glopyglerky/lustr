@@ -362,7 +362,7 @@ impl LibraryKey {
         }
         if let Some(dependencies) = &self.executable_dependencies {
             options.embed_metadata.is_none() && self.executable_outputs(path, check).is_some()
-                && dependencies.iter().all(|dependency| dependency.archive.is_none() == check)
+                && (check || dependencies.iter().all(|dependency| dependency.archive.is_some()))
         } else if check {
             options.embed_metadata.is_none() && output_parent(path, &self.metadata_name()).is_some()
         } else {

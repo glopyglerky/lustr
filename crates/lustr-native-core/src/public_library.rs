@@ -157,7 +157,7 @@ impl Owner {
                 return Err("Cargo executable artifacts require the selected unit".into());
             }
             Some(executable::ExecutableImports::open(dependencies, &key.search_paths, &installed.sdk,
-                installed.standard.as_deref(), req.session.profile.panic_abort)?)
+                installed.standard.as_deref(), req.cmd != driver::Cmd::Check, req.session.profile.panic_abort)?)
         } else { None };
         Ok(Self{installed,artifacts,identity:hash(req.session.describe().as_bytes()),imported,executable,binary_output:None})
     }
@@ -183,7 +183,7 @@ impl Owner {
         let imported = key.external.as_ref().map(|input| imports::Import::open(input, &self.installed.sdk)).transpose()?;
         let executable = key.executable_dependencies.as_ref()
             .map(|inputs| executable::ExecutableImports::open(inputs, &key.search_paths, &self.installed.sdk,
-                self.installed.standard.as_deref(), req.session.profile.panic_abort))
+                self.installed.standard.as_deref(), req.cmd != driver::Cmd::Check, req.session.profile.panic_abort))
             .transpose()?;
         if imported.as_ref().is_some_and(|value| !value.unchanged(&key.external.as_ref().unwrap().artifact))
             || executable.as_ref().is_some_and(|value| !value.unchanged(key.executable_dependencies.as_ref().unwrap())) {
