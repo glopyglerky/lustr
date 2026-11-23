@@ -172,7 +172,9 @@ pub(crate) fn encode(input: &Input<'_>, sdk: &Sdk, link: bool) -> Result<Encoded
     // the completed crate nor its dependencies define it. The admitted leaf
     // has no lang attributes and its pinned core/builtins pair has no provider.
     // This metadata fact is independent of whether the request emits code.
-    let missing_lang_items = cx.array(&[EH_PERSONALITY_LANG_ITEM], |cx, &item| cx.opaque.emit_u8(item));
+    let missing_lang_items = if sdk.standard { Array::EMPTY } else {
+        cx.array(&[EH_PERSONALITY_LANG_ITEM], |cx, &item| cx.opaque.emit_u8(item))
+    };
 
     // Deterministic original definitions: crate root plus every completed local
     // declaration, including private functions. The same mapping drives the

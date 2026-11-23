@@ -517,10 +517,22 @@ fn ordinary_cargo_links_rust_debug_information() {
 #[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE, Clang and ELF tools"]
 fn default_cargo_links_debug_from_a_native_no_std_provider() {
-    let f = Fixture::new("debug-workspace");
+    assert_linked_provider_workspace("debug-workspace", "#![no_std]\nfn shift(input: u32) -> u32 { input ^ 3 }\npub fn evaluate(input: u32) -> u32 { shift(input) ^ 10 }\n");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE, Clang and ELF tools"]
+fn default_cargo_links_debug_from_a_native_standard_provider() {
+    assert_linked_provider_workspace("debug-std-workspace", "fn shift(input: u32) -> u32 { let changed = input ^ 3; changed }\npub fn evaluate(input: u32) -> u32 { let result = shift(input) ^ 10; result }\n");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+fn assert_linked_provider_workspace(scope: &str, library_source: &str) {
+    let f = Fixture::new(scope);
     f.source("Cargo.toml", "[workspace]\nmembers = [\"provider\", \"application\"]\nresolver = \"3\"\n");
     f.source("provider/Cargo.toml", "[package]\nname = \"debug-provider\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
-    f.source("provider/src/lib.rs", "#![no_std]\nfn shift(input: u32) -> u32 { input ^ 3 }\npub fn evaluate(input: u32) -> u32 { shift(input) ^ 10 }\n");
+    f.source("provider/src/lib.rs", library_source);
     f.source("application/Cargo.toml", "[package]\nname = \"debug-application\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\ndebug-provider = { path = \"../provider\" }\n");
     let source = f.source("application/src/main.rs", "fn main() { let answer = debug_provider::evaluate(12); println!(\"{answer}\"); }\n");
     f.succeeds("check", f.command("cargo").args(["check", "--offline", "-p", "debug-application"]).env_remove("CARGO_PROFILE_DEV_DEBUG"));

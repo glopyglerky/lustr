@@ -269,7 +269,8 @@ fn prepare_request(r: Request, artifact: bool, capture: bool) -> Result<Prepared
             let generated_uses = generated.used.iter().map(|&slot| {
                 ((slot as usize) < p.fns.len()).then(|| p.disk_id(def::LocalDefId(slot)))
             }).collect();
-            accepted.push(AcceptedBody { local: body.fn_id, definition: p.disk_id(body.fn_id), body: f.def(&p.ast).body.unwrap(), expr_base, expressions: std::sync::Arc::new(expressions), lowered_calls, generated_uses });
+            accepted.push(AcceptedBody { local: body.fn_id, definition: p.disk_id(body.fn_id), body: f.def(&p.ast).body.unwrap(), expr_base,
+                expressions: std::sync::Arc::new(expressions), pat_base: 0, bindings: Default::default(), lowered_calls, generated_uses });
         }
         out.push(generated);
     }

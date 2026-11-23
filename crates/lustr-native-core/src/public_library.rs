@@ -32,6 +32,7 @@ fn stamp(path:&Path)->Result<Stamp,String>{
 }
 struct Installed {
     root:PathBuf, sdk:Arc<metadata::Sdk>, inputs:Vec<(PathBuf,Stamp)>, tools:Value,
+    standard: Option<Arc<metadata::Sdk>>,
     archive_inputs: Vec<ArchiveToolInput>,
     archive_verification: OnceLock<Result<(), String>>,
 }
@@ -58,6 +59,18 @@ impl Installed {
                 paths.push(root.join(dep[field]["path"].as_str().ok_or("SDK artifact path missing")?));
             }
         }
+        let standard_receipt = root.join(lustr_metadata_sdk::STANDARD_RECEIPT_PATH);
+        let standard = if standard_receipt.try_exists().map_err(|error| error.to_string())? {
+            let before = stamp(&standard_receipt)?;
+            let sdk = lustr_metadata_sdk::open_standard(&standard_receipt)?;
+            if stamp(&standard_receipt)? != before {
+                return Err("standard metadata SDK changed while loading".into());
+            }
+            paths.push(standard_receipt);
+            Some(Arc::new(sdk))
+        } else {
+            None
+        };
         let tool_path=root.join("lib/lustr-metadata/artifact-tools.json");
         let bytes=fs::read(&tool_path).map_err(|e|e.to_string())?;
         if bytes!=include_bytes!("../../../upstream/metadata-artifact-tools.json") {
@@ -87,7 +100,7 @@ impl Installed {
             if stamp(path)?!=*before {return Err("metadata SDK changed during owner initialization".into());}
         }
         SDK_LOADS.fetch_add(1,Ordering::Relaxed);
-        Ok(Arc::new(Self { root, sdk, inputs, tools: json!(tools), archive_inputs, archive_verification: OnceLock::new() }))
+        Ok(Arc::new(Self { root, sdk, standard, inputs, tools: json!(tools), archive_inputs, archive_verification: OnceLock::new() }))
     }
     fn unchanged(&self)->Result<(),String>{
         for (path,loaded) in &self.inputs {
@@ -141,7 +154,7 @@ impl Owner {
         let artifacts=Service::new(installed.sdk.clone(),installed.root.clone(),context)?;
         let executable = if let Some(dependencies) = &key.executable_dependencies {
             if req.session.krate.manifest_path.is_none() { return Err("executable artifacts require the actual Cargo unit".into()); }
-            Some(executable::ExecutableImports::open(dependencies, &installed.sdk, req.session.profile.panic_abort)?)
+            Some(executable::ExecutableImports::open(dependencies, &installed.sdk, installed.standard.as_deref(), req.session.profile.panic_abort)?)
         } else { None };
         Ok(Self{installed,artifacts,identity:hash(req.session.describe().as_bytes()),imported,executable,binary_output:None})
     }
@@ -166,7 +179,8 @@ impl Owner {
         // generation intact, and fails this request without compiler retry.
         let imported = key.external.as_ref().map(|input| imports::Import::open(input, &self.installed.sdk)).transpose()?;
         let executable = key.executable_dependencies.as_ref()
-            .map(|inputs| executable::ExecutableImports::open(inputs, &self.installed.sdk, req.session.profile.panic_abort)).transpose()?;
+            .map(|inputs| executable::ExecutableImports::open(inputs, &self.installed.sdk, self.installed.standard.as_deref(), req.session.profile.panic_abort))
+            .transpose()?;
         if imported.as_ref().is_some_and(|value| !value.unchanged(&key.external.as_ref().unwrap().artifact))
             || executable.as_ref().is_some_and(|value| !value.unchanged(key.executable_dependencies.as_ref().unwrap())) {
             return Err("extern inputs changed during generation refresh".into());
@@ -271,7 +285,12 @@ impl Owner {
             let used = self.imported.as_ref().filter(|imported| functions.iter().flat_map(|function| function.calls())
                 .any(|id| imported.owns(*id)));
             import_used = used.is_some();
-            let metadata_context = used.map(|imported| &imported.sdk);
+            let metadata_context = if state.standard {
+                if used.is_some() { return Err("std-root library metadata for a direct user dependency is not represented".into()); }
+                Some(self.installed.standard.as_deref().ok_or("standard metadata SDK receipt is not installed")?)
+            } else {
+                used.map(|imported| &imported.sdk)
+            };
             let (linked, checked_metadata) = if check {
                 (None, Some(self.artifacts.check_metadata(
                     state.generation, &state.source, functions, metadata_context,

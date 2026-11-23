@@ -93,3 +93,23 @@ facts to the native serializer; it must not call this construction tool on a
 user request. This SDK identity proof does not establish consumer declaration,
 privacy or lint completion, native instance ownership, valid produced metadata,
 retained integration, full Rust coverage or release admission.
+
+## Standard-prelude scalar libraries
+
+The pinned SDK's original reader reported 19 dependencies for the unchanged
+standard-prelude scalar provider. The corresponding `no_std` provider has
+two. The standard root has no missing weak language item. The explicit
+`no_std` root has the existing missing `EhPersonality` item. The
+[standard receipt](standard-receipt.json) records the observed identities,
+order, conditional dependency, and artifact hashes.
+
+Construction verifies both original artifacts for every standard dependency
+and installs the small receipt. Native requests use its data in the existing
+metadata encoder and decoder. The scalar machine code comes from Lust's
+checked bodies. The added source support retains actual pattern binding IDs
+and resolves immutable integer locals through the native checker.
+
+The installed compiler contract checks a standard-prelude provider and
+application through unmodified default Cargo check, build, and run. A
+separate pinned Rust invocation links against the genuine native provider
+archive and metadata. The scope covers the represented scalar leaves.

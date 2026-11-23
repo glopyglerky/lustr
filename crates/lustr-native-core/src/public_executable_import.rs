@@ -29,14 +29,14 @@ pub(super) struct ExecutableImports {
 }
 
 impl ExecutableImports {
-    pub(super) fn open(inputs: &[ExecutableExtern], sdk: &Sdk, panic_abort: bool) -> Result<Self, String> {
+    pub(super) fn open(inputs: &[ExecutableExtern], sdk: &Sdk, standard: Option<&Sdk>, panic_abort: bool) -> Result<Self, String> {
         let mut crates = Vec::new();
         let mut objects = Vec::new();
         let mut defined = BTreeSet::new();
         let mut required = BTreeSet::new();
         for (index, input) in inputs.iter().enumerate() {
             let index = def::CrateId(u32::try_from(index + 1).map_err(|_| "too many Cargo crate identities")?);
-            let definitions = Import::read(&input.metadata, sdk, index, true)?;
+            let definitions = Import::read(&input.metadata, sdk, standard, index, true)?;
             let archive = if let Some(path) = &input.archive {
                 if !definitions.has_direct_integer_abi() {
                     return Err("unrepresented linked integer ABI in Cargo extern metadata".into());

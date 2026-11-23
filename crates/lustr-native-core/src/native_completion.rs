@@ -98,6 +98,8 @@ pub(crate) struct AcceptedBody {
     pub(crate) body: ast::BlockId,
     pub(crate) expr_base: u32,
     pub(crate) expressions: std::sync::Arc<Vec<ExpressionResolution>>,
+    pub(crate) pat_base: u32,
+    pub(crate) bindings: std::sync::Arc<[Option<u32>]>,
     pub(crate) lowered_calls: Option<BTreeSet<def::DiskDefId>>,
     pub(crate) generated_uses: Option<BTreeSet<def::DiskDefId>>,
 }
@@ -108,6 +110,7 @@ pub(crate) struct AcceptedBody {
 pub(crate) enum ExpressionResolution {
     None,
     Parameter(usize),
+    Local(u32),
     Function(def::DiskDefId),
     ImportedFunction(def::DiskDefId),
     PrimitiveOperands,
@@ -120,6 +123,9 @@ impl AcceptedBody {
     pub(crate) fn body(&self) -> ast::BlockId { self.body }
     pub(crate) fn expression(&self, id: ast::ExprId) -> Option<ExpressionResolution> {
         self.expressions.get(id.0.checked_sub(self.expr_base)? as usize).copied()
+    }
+    fn binding(&self, id: ast::PatId) -> Option<u32> {
+        self.bindings.get(id.0.checked_sub(self.pat_base)? as usize).copied().flatten()
     }
     pub(crate) fn lowered_calls(&self) -> Option<&BTreeSet<def::DiskDefId>> { self.lowered_calls.as_ref() }
     /// Actual source-function slots printed by the generator, including this
@@ -170,8 +176,9 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool) -> Result<Vec<Functi
     {
         return Err(Error::Unintegrated("non-function definitions, nested syntax or additional lint obligations"));
     }
-    if syntax.inner_attrs.len() != 1
-        || !syntax.inner_attrs[0].path.as_slice().first().is_some_and(|segment| p.interner.get(segment.name) == "no_std")
+    if !(!generated && syntax.inner_attrs.is_empty()
+        || syntax.inner_attrs.len() == 1
+            && syntax.inner_attrs[0].path.as_slice().first().is_some_and(|segment| p.interner.get(segment.name) == "no_std"))
     {
         return Err(Error::Failed("native root policy differs from its admitted source"));
     }
@@ -246,23 +253,42 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool) -> Result<Vec<Functi
             parameters.push(Parameter { name: name.into(), span, ty: integer_type(p.tys.kind(checked_type))? });
         }
         let block = syntax.block(body.body());
-        if !block.stmts.is_empty() || !block.inner_attrs.is_empty() || !block.tail_attrs.is_empty() {
+        if !block.inner_attrs.is_empty() || !block.tail_attrs.is_empty() {
             return Err(Error::Unintegrated("statement, block or lint-scope obligations"));
         }
         let tail = block.tail.ok_or(Error::Unintegrated("non-expression function body"))?;
-        let mut expressions = BTreeSet::new();
-        let mut used_parameters = BTreeSet::new();
-        let mut calls = BTreeSet::new();
-        expression(p, body, tail, 0, &mut expressions, &mut used_parameters, &mut calls)?;
-        if expressions.iter().copied().ne(function.exprs.0..function.exprs.1) {
+        let mut reads = BodyReads::default();
+        for statement in &block.stmts {
+            let ast::Stmt::Let { pat, init: Some(init), els: None, attrs, .. } = statement else {
+                return Err(Error::Unintegrated("statement or lint-scope obligations"));
+            };
+            let ast::Pat::Binding { name, mutable: false, by_ref: false } = syntax.pat(*pat) else {
+                return Err(Error::Unintegrated("local pattern or mutation obligations"));
+            };
+            let name = p.interner.get(*name);
+            if !attrs.is_empty() || !snake_case(name) {
+                return Err(Error::Unintegrated("binding attribute or naming lint obligations"));
+            }
+            let local = body.binding(*pat).ok_or(Error::Unintegrated("non-primitive or unbound checked local"))?;
+            expression(p, body, *init, 0, &mut reads)?;
+            if reads.locals.insert(local, name.starts_with('_')).is_some() {
+                return Err(Error::Failed("two declarations name the same checked local"));
+            }
+        }
+        expression(p, body, tail, 0, &mut reads)?;
+        if reads.expressions.iter().copied().ne(function.exprs.0..function.exprs.1) {
             return Err(Error::Unintegrated("unrepresented native expressions in the accepted body"));
         }
-        if parameters.iter().enumerate().any(|(index, parameter)| !used_parameters.contains(&index) && !parameter.name.starts_with('_')) {
+        if parameters.iter().enumerate().any(|(index, parameter)| !reads.parameters.contains(&index) && !parameter.name.starts_with('_')) {
             return Err(Error::Unintegrated("unused parameter lint diagnostics"));
         }
-        if used_parameters.iter().any(|&index| index >= parameters.len()) {
+        if reads.parameters.iter().any(|&index| index >= parameters.len()) {
             return Err(Error::Failed("native parameter resolution names another binding"));
         }
+        if reads.locals.values().any(|&used_or_ignored| !used_or_ignored) {
+            return Err(Error::Unintegrated("unused local lint diagnostics"));
+        }
+        let calls = reads.calls;
         if body.lowered_calls() != Some(&calls) {
             return Err(Error::Unintegrated("checked and lowered body call graphs do not have the same represented edges"));
         }
@@ -355,20 +381,26 @@ pub(crate) fn require_direct_integer_abi(functions: &[Function]) -> Result<(), E
     Ok(())
 }
 
+#[derive(Default)]
+struct BodyReads {
+    expressions: BTreeSet<u32>,
+    parameters: BTreeSet<usize>,
+    locals: BTreeMap<u32, bool>,
+    calls: BTreeSet<def::DiskDefId>,
+}
+
 fn expression(
     p: &check::collect::Program,
     body: &AcceptedBody,
     id: ast::ExprId,
     depth: usize,
-    seen: &mut BTreeSet<u32>,
-    parameters: &mut BTreeSet<usize>,
-    calls: &mut BTreeSet<def::DiskDefId>,
+    reads: &mut BodyReads,
 ) -> Result<(), Error> {
     use ExpressionResolution as Resolution;
     if depth > 128 {
         return Err(Error::Unintegrated("metadata expression nesting bound"));
     }
-    if !seen.insert(id.0) {
+    if !reads.expressions.insert(id.0) {
         return Err(Error::Failed("native expression ownership is duplicated"));
     }
     let actual = body.expression(id).ok_or(Error::Failed("accepted expression has no native checked result"))?;
@@ -377,22 +409,25 @@ fn expression(
         ast::Expr::Unary { op: ast::UnOp::Neg, expr }
             if matches!(p.ast.exprs.get(expr.0 as usize), Some(ast::Expr::Int(_, _))) =>
         {
-            expression(p, body, *expr, depth + 1, seen, parameters, calls)?;
+            expression(p, body, *expr, depth + 1, reads)?;
         }
         ast::Expr::Path(path) if path.len() == 1 && !path[0].has_args() => match actual {
             Resolution::Parameter(parameter) => {
-                parameters.insert(parameter);
+                reads.parameters.insert(parameter);
             }
-            _ => return Err(Error::Unintegrated("non-parameter value resolution")),
+            Resolution::Local(local) => {
+                *reads.locals.get_mut(&local).ok_or(Error::Unintegrated("local value resolution outside the completed bindings"))? = true;
+            }
+            _ => return Err(Error::Unintegrated("unrepresented value resolution")),
         },
         ast::Expr::Binary { op: ast::BinOp::BitAnd | ast::BinOp::BitOr | ast::BinOp::BitXor, lhs, rhs }
             if actual == Resolution::PrimitiveOperands =>
         {
-            expression(p, body, *lhs, depth + 1, seen, parameters, calls)?;
-            expression(p, body, *rhs, depth + 1, seen, parameters, calls)?;
+            expression(p, body, *lhs, depth + 1, reads)?;
+            expression(p, body, *rhs, depth + 1, reads)?;
         }
         ast::Expr::Call { callee, args } => {
-            if !seen.insert(callee.0) {
+            if !reads.expressions.insert(callee.0) {
                 return Err(Error::Failed("native callee expression ownership is duplicated"));
             }
             if !matches!(p.ast.exprs.get(callee.0 as usize), Some(ast::Expr::Path(path)) if path.len() == 1 && !path[0].has_args()) {
@@ -405,9 +440,9 @@ fn expression(
                 (_, Resolution::ImportedFunction(function)) => function,
                 _ => return Err(Error::Unintegrated("call lacks an actual native function resolution")),
             };
-            calls.insert(function);
+            reads.calls.insert(function);
             for argument in args {
-                expression(p, body, *argument, depth + 1, seen, parameters, calls)?;
+                expression(p, body, *argument, depth + 1, reads)?;
             }
         }
         _ => return Err(Error::Unintegrated("body operation or applicable lint completion")),

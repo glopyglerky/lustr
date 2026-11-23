@@ -30,7 +30,7 @@ use crate::check::collect::{self, LocalDefId};
 use crate::def::{self, CrateIds, DiskDefId, StableCrateHash};
 use crate::diag::{self, Diag, FileId, LineIndex, SourceMap};
 use crate::expand;
-use crate::intern::{FxMap, Interner, Sym};
+use crate::intern::{FxMap, Interner, Known, Sym};
 use crate::lexer;
 use crate::stdload::StdPlan;
 use crate::scan;
@@ -2476,8 +2476,11 @@ fn resolved_setup(
         front.resolve_cache.set_merged(front.ast.clone(), front.ast_gen);
         let out = if caches.library.is_some() {
             let mut mount = |tables: &mut crate::resolve::imports::ResolvedTables| imports.unwrap().mount(tables, &front.interner);
+            let parse = |lexed: &lexer::Lexed, interner: &Interner, known: &Known| {
+                super::library::parse_root(lexed, interner, known, key.library.is_some())
+            };
             worklist::resolve_native_library(&input, &front.interner, &front.known, &mut front.resolve_cache,
-                &super::library::parse_root, imports.map(|_| &mut mount as _))
+                &parse, imports.map(|_| &mut mount as _))
         } else if let Some(imports) = imports {
             let mut mount = |tables: &mut crate::resolve::imports::ResolvedTables| imports.mount(tables, &front.interner);
             if key.library.as_ref().is_some_and(|key| key.is_executable()) {
@@ -5124,7 +5127,10 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
                 if req.cmd != Cmd::Check { super::library::completion::require_direct_integer_abi(&functions)?; }
                 Ok(functions)
             }) {
-            Ok(functions) => { super::library::remember(caches, functions.clone()); Some(functions) }
+            Ok(functions) => {
+                super::library::remember(caches, functions.clone(), program.ast.inner_attrs.is_empty());
+                Some(functions)
+            }
             Err(error) => {
                 let code = match error { super::library::completion::Error::Unintegrated(_) => 4, _ => 3 };
                 drop(results); drop(reemit);

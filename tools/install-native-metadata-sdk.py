@@ -3,6 +3,7 @@
 import hashlib, json, shutil, struct, sys
 from pathlib import Path
 SDK_RECEIPT="4e400b263bf9923616dea44ead2d77213703177d3bfaf6becd6a19a4c5a657a7"
+STANDARD_RECEIPT="fa35ba66edb2400611692c9c64a7575e0658b9876a03b0be0531aa4ed6658e9d"
 
 def digest(data):
     return hashlib.sha256(data).hexdigest()
@@ -48,13 +49,16 @@ def install(repo,sdk,package):
     if digest(raw)!=SDK_RECEIPT:
         raise ValueError("original SDK receipt changed")
     facts=json.loads(raw)
+    standard=(receipt.parent/"standard-receipt.json").read_bytes()
+    if digest(standard)!=STANDARD_RECEIPT:
+        raise ValueError("standard metadata SDK receipt changed")
     tool_path=repo/"upstream/metadata-artifact-tools.json"
     tool_raw=tool_path.read_bytes()
     tools=json.loads(tool_raw)
     if tools["rust_revision"]!=facts["rust_revision"] or tools["target"]!=facts["target"]:
         raise ValueError("artifact-tool source/target changed")
     copied=[]
-    def copy_record(record):
+    def read_record(record):
         relative=Path(record["path"])
         if relative.is_absolute() or ".." in relative.parts:
             raise ValueError("closure path escapes package")
@@ -64,6 +68,9 @@ def install(repo,sdk,package):
         data=source.read_bytes()
         if len(data)!=record["size"] or digest(data)!=record["sha256"]:
             raise ValueError("closure bytes differ: "+str(relative))
+        return relative,source,data
+    def copy_record(record):
+        relative,source,data=read_record(record)
         output=package/relative
         output.parent.mkdir(parents=True,exist_ok=True)
         with output.open("xb") as file:
@@ -76,6 +83,14 @@ def install(repo,sdk,package):
     for dependency in facts["dependencies"]:
         for field in ("artifact","link_artifact"):
             copy_record(dependency[field])
+    # Std-root scalar artifacts reference the actual pinned metadata IDs.
+    # Their native bodies have no code from this standard dependency closure.
+    for dep in json.loads(standard)["dependencies"]:
+        _,_,metadata=read_record(dep["artifact"])
+        _,_,archive=read_record(dep["link_artifact"])
+        if (metadata[:8]!=b"rust\0\0\0\x0c" or metadata[24:40].hex()!=dep["svh_le_hex"]
+                or not archive.startswith(b"!<arch>\n")):
+            raise ValueError("standard metadata and link artifacts disagree: "+dep["name"])
     pending=[]
     dependency_edges=[]
     host_libraries=set()
@@ -108,6 +123,7 @@ def install(repo,sdk,package):
     directory=package/"lib/lustr-metadata"
     directory.mkdir(parents=True,exist_ok=False)
     (directory/"sdk-receipt.json").write_bytes(raw)
+    (directory/"standard-sdk-receipt.json").write_bytes(standard)
     (directory/"artifact-tools.json").write_bytes(tool_raw)
     notices=directory/"licenses"
     notices.mkdir()
@@ -121,7 +137,8 @@ def install(repo,sdk,package):
              "host_abi_libraries":sorted(host_libraries),"host_abi_interpreters":interpreters,
              "host_abi_note":"Names and interpreter paths are bound by the pinned copied ELF bytes; system library bytes remain host ABI inputs and are not compiler SDK payloads."}
     (directory/"installed-closure.json").write_text(json.dumps(closure,indent=2)+"\n")
-    print(json.dumps({"sdk_receipt_sha256":digest(raw),"tool_manifest_sha256":digest(tool_raw),"closure":closure},indent=2))
+    print(json.dumps({"sdk_receipt_sha256":digest(raw),"standard_sdk_receipt_sha256":digest(standard),
+                      "tool_manifest_sha256":digest(tool_raw),"closure":closure},indent=2))
 
 if __name__=="__main__":
     install(*(Path(arg).resolve(strict=True) for arg in sys.argv[1:]))
