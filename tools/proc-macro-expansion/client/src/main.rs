@@ -10,7 +10,7 @@ use span::{
 use std::cell::RefCell;
 use std::error::Error;
 use std::io;
-use tt::{Delimiter, Leaf, LitKind, TopSubtreeBuilder};
+use tt::{DelimSpan, Delimiter, DelimiterKind, Leaf, LitKind, Spacing, TokenTree, TopSubtree};
 
 #[derive(Deserialize, Serialize)]
 struct Range {
@@ -18,10 +18,11 @@ struct Range {
     end: u32,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize)]
 struct Token {
     text: String,
     range: Range,
+    punctuation: bool,
 }
 
 #[derive(Deserialize)]
@@ -35,7 +36,7 @@ struct Request {
     call: Range,
     consumer_source: String,
     environment: Vec<(String, String)>,
-    tokens: Vec<Token>,
+    arguments: Range,
 }
 
 fn snapshot_slice<'a>(source: &'a str, range: &Range) -> Option<&'a str> {
@@ -48,6 +49,38 @@ fn root_span(file_id: EditionedFileId, range: &Range) -> Span {
         anchor: SpanAnchor { file_id, ast_id: ROOT_ERASED_FILE_AST_ID },
         ctx: SyntaxContext::root(Edition::Edition2024),
     }
+}
+
+fn arguments(request: &Request, call: Span) -> Result<TopSubtree, &'static str> {
+    let source = snapshot_slice(&request.consumer_source, &request.arguments)
+        .ok_or("invalid procedural macro argument range")?;
+    let tree = syntax_bridge::parse_to_token_tree(Edition::Edition2024, call.anchor, call.ctx, source)
+        .ok_or("cannot tokenize procedural macro arguments")?;
+    let base = span::TextSize::from(request.arguments.start);
+    let shift = |span: &mut Span| {
+        span.range = TextRange::new(span.range.start() + base, span.range.end() + base);
+    };
+    let tokens = tree.view().as_token_trees().iter_flat_tokens().map(|mut tree| {
+        match &mut tree {
+            TokenTree::Leaf(Leaf::Ident(token)) => shift(&mut token.span),
+            TokenTree::Leaf(Leaf::Literal(token)) => shift(&mut token.span),
+            TokenTree::Leaf(Leaf::Punct(token)) => shift(&mut token.span),
+            TokenTree::Subtree(group) => {
+                shift(&mut group.delimiter.open);
+                shift(&mut group.delimiter.close);
+            }
+        }
+        tree
+    }).collect();
+    let mut input = TopSubtree::from_serialized(tokens);
+    if input.top_subtree().delimiter.kind == DelimiterKind::Invisible {
+        input.set_top_subtree_delimiter_span(DelimSpan::from_single(call));
+    } else {
+        // The upstream converter omits the invisible root when the source is
+        // one group. Preserve that group's own opening and closing spans.
+        input = TopSubtree::from_token_trees(Delimiter::invisible_spanned(call), input.as_token_trees());
+    }
+    Ok(input)
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -73,23 +106,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     let def_site = root_span(provider, &request.definition);
     let call_site = root_span(consumer, &request.call);
-    let input = request.tokens.iter().map(|token| {
-        if snapshot_slice(&request.consumer_source, &token.range) != Some(&token.text)
-            || token.range.start < request.call.start || token.range.end > request.call.end
-        {
-            return Err("procedural macro input token is outside the call snapshot");
-        }
-        let literal = tt::token_to_literal(&token.text, root_span(consumer, &token.range));
-        if literal.kind != LitKind::Integer || !literal.suffix().is_empty() {
-            return Err("unrepresented procedural macro input token");
-        }
-        Ok(Leaf::Literal(literal))
-    }).collect::<Result<Vec<_>, _>>()?;
-    let mut tree = TopSubtreeBuilder::new(Delimiter::invisible_spanned(call_site));
-    for leaf in input {
-        tree.push(leaf);
-    }
-    let input = tree.build();
+    let input = arguments(&request, call_site)?;
     let callback = |request_kind| match request_kind {
         SubRequest::SourceText { file_id, ast_id, start, end }
             if ast_id == ROOT_ERASED_FILE_AST_ID.into_raw() =>
@@ -114,23 +131,28 @@ fn main() -> Result<(), Box<dyn Error>> {
     ).map_err(|error| error.to_string())?
         .map_err(|error| format!("procedural macro panicked: {error}"))?;
     let tokens = expanded.view().strip_invisible().iter_flat_tokens().map(|token| {
-        let tt::TokenTree::Leaf(Leaf::Literal(literal)) = token else {
-            return Err("unrepresented returned procedural macro token");
+        let (text, span, punctuation) = match token {
+            TokenTree::Leaf(Leaf::Literal(literal)) if literal.kind == LitKind::Integer => {
+                (literal.to_string(), literal.span, false)
+            }
+            TokenTree::Leaf(Leaf::Punct(token)) if token.spacing == Spacing::Alone => {
+                (token.char.to_string(), token.span, true)
+            }
+            _ => return Err("unrepresented returned procedural macro token"),
         };
-        if literal.kind != LitKind::Integer || !literal.suffix().is_empty()
-            || literal.span.anchor.file_id != consumer
-            || literal.span.anchor.ast_id != ROOT_ERASED_FILE_AST_ID
-            || literal.span.ctx != SyntaxContext::root(Edition::Edition2024)
+        if span.anchor.file_id != consumer
+            || span.anchor.ast_id != ROOT_ERASED_FILE_AST_ID
+            || span.ctx != SyntaxContext::root(Edition::Edition2024)
         {
             return Err("unrepresented returned value or span");
         }
-        let range = Range { start: literal.span.range.start().into(), end: literal.span.range.end().into() };
+        let range = Range { start: span.range.start().into(), end: span.range.end().into() };
         if snapshot_slice(&request.consumer_source, &range).is_none()
             || range.start < request.call.start || range.end > request.call.end
         {
             return Err("returned span is outside the consumer call");
         }
-        Ok(Token { text: literal.text().to_owned(), range })
+        Ok(Token { text, range, punctuation })
     }).collect::<Result<Vec<_>, _>>()?;
     let observed = observed.into_inner().ok_or("missing procedural macro dependency report")?;
     serde_json::to_writer(io::stdout().lock(), &serde_json::json!({

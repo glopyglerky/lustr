@@ -12,8 +12,8 @@ use serde_json::{Value, json};
 use crate::{
     diag::{CtxtId, Diag, Span},
     driver::imports::Dependency,
-    expand::{Call, ExpandCtx, ProceduralExpansion, ProceduralMacros, Tt, tok_text},
-    lexer::{Tok, Token},
+    expand::{Call, ExpandCtx, ProceduralExpansion, ProceduralMacros, Tt},
+    lexer::{Delim, Tok, Token},
     protocol::ExecutableExtern,
 };
 
@@ -198,18 +198,20 @@ impl HostMacros {
         if call.span.ctxt != CtxtId::ROOT {
             return Err("source expansion from a non-root context is unrepresented".into());
         }
-        let tokens = call.inner.iter().map(|tree| {
-            let Tt::Tok(token) = tree else { return Err("unrepresented macro argument group"); };
-            if !matches!(token.tok, Tok::Int(_, None, _))
-                || token.span.ctxt != CtxtId::ROOT || token.span.file != call.span.file
-            {
-                return Err("unrepresented procedural macro input token");
-            }
-            Ok(json!({
-                "text": tok_text(&token.tok, strings, ctx.interner),
-                "range": {"start": token.span.lo, "end": token.span.hi},
-            }))
-        }).collect::<Result<Vec<_>, _>>()?;
+        let group = call.group_span;
+        let bounds = group.lo as usize..group.hi as usize;
+        let (open, close) = match call.delim {
+            Delim::Paren => ('(', ')'),
+            Delim::Bracket => ('[', ']'),
+            Delim::Brace => ('{', '}'),
+        };
+        if group.ctxt != CtxtId::ROOT || group.file != call.span.file
+            || ctx.source_file != Some(group.file)
+            || group.lo < call.span.lo || group.hi > call.span.hi
+            || ctx.src.get(bounds).is_none_or(|text| !text.starts_with(open) || !text.ends_with(close))
+        {
+            return Err("unrepresented macro argument source".into());
+        }
         let mut environment: BTreeMap<String, String> = match &ctx.client.env {
             Some(environment) => environment.iter().cloned().collect(),
             None => std::env::vars_os().filter_map(|(name, value)| {
@@ -225,7 +227,7 @@ impl HostMacros {
             "consumer_source": ctx.src,
             "environment": environment.into_iter().collect::<Vec<_>>(),
             "call": {"start": call.span.lo, "end": call.span.hi},
-            "tokens": tokens,
+            "arguments": {"start": group.lo + 1, "end": group.hi - 1},
         });
         let mut child = Command::new(&self.client).env_clear().env("RUST_ANALYZER_USE_POSTCARD", "1")
             .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn()?;
@@ -263,17 +265,20 @@ fn returned_token(
     let [token, end] = lexed.tokens.as_slice() else {
         return Err("procedural macro returned an unrepresented token spelling".into());
     };
-    let Tok::Int(value, None, spelling) = token.tok else {
-        return Err("procedural macro returned an unrepresented token kind".into());
-    };
+    let punctuation = value["punctuation"].as_bool().ok_or("missing procedural macro token kind")?;
+    let mut token_kind = token.tok;
+    if punctuation {
+        if text.len() != 1 || !text.as_bytes()[0].is_ascii_punctuation() {
+            return Err("unrepresented procedural macro punctuation".into());
+        }
+    } else if !matches!(token_kind, Tok::Int(..)) {
+        return Err("procedural macro returned an unrepresented literal kind".into());
+    }
     if end.tok != Tok::Eof {
         return Err("procedural macro returned trailing tokens".into());
     }
-    let spelling = spelling.map(|index| {
-        let slot = strings.len() as u32;
-        strings.push(lexed.strings[index as usize].clone());
-        slot
-    });
+    token_kind.shift_strings(strings.len() as u32);
+    strings.extend(lexed.strings);
     let span = Span::new(call.span.file, lo, hi);
-    Ok(Tt::Tok(Token { tok: Tok::Int(value, None, spelling), span }))
+    Ok(Tt::Tok(Token { tok: token_kind, span }))
 }

@@ -1705,11 +1705,20 @@ proc-macro = true
     f.source("provider/src/lib.rs", r#"
 #![feature(proc_macro_tracked_env, proc_macro_tracked_path)]
 
-use proc_macro::{TokenStream, tracked};
+use proc_macro::{TokenStream, TokenTree, tracked};
+
+#[proc_macro]
+pub fn increment(mut input: TokenStream) -> TokenStream {
+    input.extend("+ 1".parse::<TokenStream>().unwrap());
+    input
+}
 
 #[proc_macro]
 pub fn value(input: TokenStream) -> TokenStream {
-    let token = input.into_iter().next().unwrap();
+    let Some(TokenTree::Group(group)) = input.into_iter().next() else { panic!("expected a group") };
+    assert_eq!(group.span_open().source_text().as_deref(), Some("("));
+    assert_eq!(group.span_close().source_text().as_deref(), Some(")"));
+    let token = group.stream().into_iter().next().unwrap();
     assert_eq!(token.span().source_text().as_deref(), Some("0x2a"));
     assert!(std::env::var_os("RUST_ANALYZER_USE_POSTCARD").is_none());
     assert!(std::env::var_os("RUST_ANALYZER_INTERNALS_DO_NOT_USE").is_none());
@@ -1720,8 +1729,8 @@ pub fn value(input: TokenStream) -> TokenStream {
 }
 "#);
     f.source("src/main.rs", r#"
-fn independent() -> u32 { 17 }
-fn expanded() -> u32 { host_macro::value!(0x2a) }
+fn independent() -> u32 { host_macro::increment!(16) }
+fn expanded() -> u32 { host_macro::value!((0x2a)) }
 fn main() { println!("{} {}", independent(), expanded()); }
 "#);
     f.source("asset.txt", "1\n");

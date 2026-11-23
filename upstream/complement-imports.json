@@ -308,7 +308,7 @@
       "missing_capability": "Execute a selected host procedural macro and pass its tokens to native checking",
       "status": "implemented-partial",
       "owner": "Pinned Rust Analyzer worker with Lustr's native expansion context",
-      "semantic_boundary": "Cargo-selected host artifact, original definition span, source queries, integer tokens and observed Cargo dependency inputs",
+      "semantic_boundary": "Cargo-selected host artifact, original definition span, original source token trees, represented literal and punctuation output, and observed Cargo dependency inputs",
       "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
       "upstream_paths": {
         "src/tools/rust-analyzer/crates/proc-macro-api/src/lib.rs": "2e2dceb85444dd2e07377183855e7c47e4e2eae2b87280fc8417e4f1e8e33a87",
@@ -317,6 +317,7 @@
         "src/tools/rust-analyzer/crates/proc-macro-api/src/bidirectional_protocol/msg.rs": "41c453c9992fd0a62ea83eefc6159cec83f49c88bed6292284e62e27d66e27f0",
         "src/tools/rust-analyzer/crates/proc-macro-srv/src/token_stream.rs": "ce142608f7ad9bbd1380e425d3284c91a7a504f9ee5d5760dde87fde2286d4d1",
         "src/tools/rust-analyzer/crates/proc-macro-srv-cli/src/main.rs": "6c580ce94a71f9cb1e7b506d260d28532757f07ea252bf1b0044737b2ff9677c",
+        "src/tools/rust-analyzer/crates/syntax-bridge/src/lib.rs": "9c41440ff557f40f0480397375f1d0d2b357cb288c1c30f203e7b1b881b2094a",
         "compiler/rustc_expand/src/proc_macro_server.rs": "af97126cf80003d963f231e87da36a35df63eaba355366393178f8ac3dc50a72",
         "compiler/rustc_metadata/src/rmeta/encoder.rs": "7f740fbaf9e81f4d518a95eeab485059c4f1a88c636df3104af03ec2817f5b73"
       },
@@ -324,6 +325,7 @@
         ["lustr-expand-proc-macro", "proc-macro-api"],
         ["lustr-expand-proc-macro", "paths"],
         ["lustr-expand-proc-macro", "span"],
+        ["lustr-expand-proc-macro", "syntax-bridge"],
         ["lustr-expand-proc-macro", "tt"],
         ["proc-macro-srv-cli", "proc-macro-api"],
         ["proc-macro-srv-cli", "proc-macro-srv"],
@@ -337,8 +339,8 @@
       "qualification": "Default Cargo check and run with an observed source-reading function-like macro, and tracked input, failure and repair histories. Wider token, hygiene, macro forms and elapsed performance remain open.",
       "closure_sha256": {
         "upstream/proc-macro-expansion.patch": "93637fe6bcfe94113178ae87f41281a78c820a1c562671babab76d38a57dafa7",
-        "tools/proc-macro-expansion/client/Cargo.toml": "c94b6e8ce6da029626d3bc3ac3054eb10aa46fe4d7d901a490fc340eec813bad",
-        "tools/proc-macro-expansion/client/Cargo.lock": "baa27c2e39cf0cba3110adeb33929820fd17338aa74b372f5c90e2203f0d4ac5",
+        "tools/proc-macro-expansion/client/Cargo.toml": "e29dc1b0b694f174165744795bf3c3c436c4af52843d3e41a50cf6edc568d2c9",
+        "tools/proc-macro-expansion/client/Cargo.lock": "29c454cf78102050615d752a7f662d766159e2ee553af1f1494c97383908619d",
         "tools/proc-macro-expansion/server/Cargo.toml": "204413094ed7bc3abf672d35902583a948801ead82c323799ce80e92490d2753",
         "tools/proc-macro-expansion/server/Cargo.lock": "d48eddcebfdb746ef0a0e957d6f5cbb7e647798e98c247614b43672ec283ab99"
       }

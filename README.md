@@ -48,11 +48,11 @@ constructor builds the expansion worker and includes it in the resulting
 toolchain. Ordinary Cargo commands then use the pinned Rust implementation to
 build the host macro crate and Lust to check and link its consumer.
 
-The current adapter covers directly qualified function-like calls with integer
-input and output tokens. Source-text queries and explicitly tracked file and
-environment reads work through this path. General token trees, attribute and
-derive macros, additional span and hygiene operations, and performance
-qualification remain open.
+The current adapter covers directly qualified function-like calls with source
+token trees and expansions containing integer literals and single punctuation
+tokens. Source-text queries and explicitly tracked file and environment reads
+work through this path. General expansion output, attribute and derive macros,
+additional span and hygiene operations, and performance qualification remain open.
 
 The [completion checklist](docs/compiler-set/completion-checklist.md#execution-queue)
 is the sole work register. It now includes an ordered execution queue, source

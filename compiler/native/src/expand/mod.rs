@@ -654,6 +654,8 @@ pub struct ExpandCtx<'a> {
     /// the rustc process. Empty off the Cargo path (single file, std).
     pub cargo_env: Vec<(String, String)>,
     pub src: &'a str,
+    /// The native source-map entry that owns `src`.
+    pub source_file: Option<crate::diag::FileId>,
     pub cfg: builtin::CfgEnv,
     /// The module path (from the crate root) of the file being expanded.
     /// Empty for a crate root file and for single-file programs. The
@@ -734,6 +736,7 @@ impl<'a> ExpandCtx<'a> {
             real_path: file_path.to_path_buf(),
             cargo_env: Vec::new(),
             src,
+            source_file: None,
             cfg: builtin::CfgEnv { test, debug_assertions: true, facts: Vec::new(), panic_unwind: false, core_prelude: false, explicit_std: false },
             module_path: Vec::new(),
             crate_name: None,

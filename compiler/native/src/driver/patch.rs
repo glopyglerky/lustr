@@ -1734,6 +1734,7 @@ fn expand_pure(
         // an include) records a non-`Dropped` dep and the patch gives up.
         cargo_env: Vec::new(),
         src: text,
+        source_file: None,
         cfg: crate::resolve::worklist::expand_cfg(env),
         module_path: base.tables.modules[module.0 as usize].path.clone(),
         crate_name: Some(crate_name.clone()),
