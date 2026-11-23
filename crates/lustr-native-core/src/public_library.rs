@@ -171,7 +171,7 @@ impl Owner {
         installed.unchanged()?;
         let imported = if let Some(external) = &key.external {
             if req.session.krate.manifest_path.is_none() { return Err("extern metadata requires the actual Cargo unit".into()); }
-            Some(imports::Import::open(external, &installed.sdk)?)
+            Some(imports::Import::read_for_library(external, &installed.sdk, &installed.root, &key.search_paths)?)
         } else { None };
         let context=Context{crate_name:key.crate_name.clone(),metadata:key.metadata.clone(),extra_filename:key.extra_filename.clone(),
             source:key.source_path.clone(),cwd:key.working_directory.to_str().ok_or("library cwd is not Unicode")?.into(),
@@ -207,7 +207,9 @@ impl Owner {
         // Validate the entire replacement before publishing any new facts.
         // A malformed or changing input leaves the previous owner and checked
         // generation intact, and fails this request without compiler retry.
-        let imported = key.external.as_ref().map(|input| imports::Import::open(input, &self.installed.sdk)).transpose()?;
+        let imported = key.external.as_ref().map(|input|
+            imports::Import::read_for_library(input, &self.installed.sdk, &self.installed.root, &key.search_paths))
+            .transpose()?;
         let executable = key.executable_dependencies.as_ref()
             .map(|inputs| executable::ExecutableImports::open(inputs, &key.search_paths, &self.installed.sdk,
                 self.installed.standard.as_deref(), req.cmd != driver::Cmd::Check, req.session.profile.panic_abort,

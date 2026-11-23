@@ -1,6 +1,6 @@
 //! Build the partial native Lustr entry and runtime from checked source.
-//! The pinned Rust SDK bootstraps the compiler; it is never a packaged fallback.
-//! No complete Rust-replacement package is admitted by this constructor.
+//! The pinned Rust SDK bootstraps the compiler and supplies the matching sysroot.
+//! The installed Rust component is built from the declared implementation.
 use std::{
     fs,
     io::Write,
@@ -294,14 +294,13 @@ fn main() {
     fs::create_dir(&package).unwrap();
     fs::write(
         package.join("PARTIAL-NATIVE-COMPILER"),
-        "Native Lustr development build. Complementary compilation and complete-replacement release are unavailable.\n",
+        "Source-built Lustr toolchain. Complete Rust coverage and replacement release qualification are open.\n",
     )
     .unwrap();
     fs::create_dir(package.join("bin")).unwrap();
     fs::create_dir(package.join("lib")).unwrap();
-    // Cargo is the build orchestrator and package selector. The bounded
-    // metadata SDK adds only core/builtins data and artifact-tool dependencies;
-    // no Rust compiler, compiler driver or research caller is packaged.
+    // Cargo remains the build orchestrator. The host Rust component below
+    // uses the matching SDK libraries and sysroot for complementary work.
     symlink(sdk.join("bin/cargo"), package.join("bin/cargo")).unwrap();
     fs::create_dir(package.join("lib/lust")).unwrap();
     symlink(repo.join("compiler/native/library"), package.join("lib/lust/library")).unwrap();
@@ -517,13 +516,13 @@ fn main() {
         }
     }
     let mixed_route = if host == "x86_64-unknown-linux-gnu" {
-        "native Lust and the pinned Rust host proc-macro compiler; general complementary compilation unavailable"
+        "native Lust and the pinned Rust driver for host macros, metadata queries and complementary compiler requests"
     } else {
         "exclusive native Lust; complementary compilation unavailable"
     };
     record(&output.join("NATIVE-BUILD-RECEIPT.txt"), native_output.as_bytes());
     let mut manifest = format!(
-        "Partial native development build; complementary compilation and full-replacement release are unavailable.\nReferenced source={}, SDK={}, TinyCC={}\nNative build={}\nCargo artifact profile={}\nHost={}\nRoute={}\nSDK receipt={}\n",
+        "Source-built Lustr toolchain; complete Rust coverage and replacement release qualification are open.\nReferenced source={}, SDK={}, TinyCC={}\nNative build={}\nCargo artifact profile={}\nHost={}\nRoute={}\nSDK receipt={}\n",
         repo.display(),
         sdk.display(),
         tcc.display(),

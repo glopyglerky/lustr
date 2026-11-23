@@ -89,7 +89,9 @@ fn decode(output: &[u8], artifact: &[u8], mut sdk_inputs: BTreeMap<PathBuf, Stam
     Some(Interface { name: name.into(), suffix: suffix.into(), stable, svh, requires_abort, functions, inputs })
 }
 
-pub(super) fn read(installation: &Path, alias: &str, path: &Path, bytes: &[u8]) -> Result<Interface, ImportFailure> {
+pub(super) fn read(
+    installation: &Path, alias: &str, path: &Path, bytes: &[u8], search_paths: &[PathBuf],
+) -> Result<Interface, ImportFailure> {
     let root = installation.join("libexec/lustr-host-proc-macro");
     let compiler = root.join("bin/lustr-rustc-host-proc-macro");
     let receipt = root.join("metadata-interface.id");
@@ -114,6 +116,7 @@ pub(super) fn read(installation: &Path, alias: &str, path: &Path, bytes: &[u8]) 
         }
     }
     let answer = Command::new(&compiler).arg("--lustr-read-crate-interface").arg(alias).arg(path)
+        .args(search_paths)
         .env_remove("LD_LIBRARY_PATH").output().map_err(|error| format!("start Rust metadata reader: {error}"))?;
     if answer.status.code() == Some(crate::protocol::RUST_COMPLEMENT_REQUIRED) {
         let expected = format!("lustr-extern-requires-rust-v1\0sha256={}", hash(bytes));

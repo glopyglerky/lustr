@@ -8,6 +8,7 @@ struct Request {
     alias: String,
     artifact: PathBuf,
     sdk_lib: PathBuf,
+    search_paths: BTreeSet<PathBuf>,
     interface: Option<Interface>,
 }
 
@@ -45,6 +46,7 @@ impl Request {
         use rustc_hir::def::{DefKind, Res};
         let mut owner = None;
         let mut dependencies = BTreeSet::new();
+        let mut needs_dependency_context = false;
         for &krate in tcx.crates(()) {
             let source = tcx.used_crate_source(krate);
             if [source.rmeta.as_ref(), source.rlib.as_ref()].into_iter().flatten().any(|path| path == &self.artifact) {
@@ -56,13 +58,18 @@ impl Request {
             for path in source.paths() {
                 let path = path.canonicalize()?;
                 if !path.starts_with(&self.sdk_lib) {
-                    return Err("the external declarations use metadata outside the installed Rust SDK".into());
+                    if !path.parent().is_some_and(|directory| self.search_paths.contains(directory)) {
+                        return Err("the loaded metadata is outside the installed SDK and supplied dependency search paths".into());
+                    }
+                    needs_dependency_context = true;
                 }
                 dependencies.insert(path);
             }
         }
         let krate = owner.ok_or("Rust did not load the requested metadata")?;
-        if !tcx.trait_impls_in_crate(krate).is_empty() {
+        // The native scalar view cannot represent this graph. Rust has
+        // resolved the supplied metadata identities and will own the request.
+        if needs_dependency_context || !tcx.trait_impls_in_crate(krate).is_empty() {
             return Ok(Interface::RequiresRust);
         }
         let root = DefId { krate, index: CRATE_DEF_INDEX };
@@ -151,7 +158,9 @@ impl rustc_driver::Callbacks for Request {
 }
 
 fn inspect(args: &[String]) -> Result<ExitCode, Box<dyn std::error::Error>> {
-    let [alias, path] = args else { return Err("expected one extern name and metadata file".into()); };
+    let [alias, path, search_paths @ ..] = args else {
+        return Err("expected one extern name and metadata file".into());
+    };
     if alias.is_empty() || !alias.bytes().enumerate().all(|(index, byte)| {
         byte == b'_' || byte.is_ascii_alphabetic() || index != 0 && byte.is_ascii_digit()
     }) {
@@ -165,11 +174,18 @@ fn inspect(args: &[String]) -> Result<ExitCode, Box<dyn std::error::Error>> {
     let exe = std::env::current_exe()?;
     let sdk = exe.parent().and_then(Path::parent).ok_or("host SDK root is absent")?.to_owned();
     let sdk_lib = sdk.join("lib").canonicalize()?;
-    let params = vec!["rustc".into(), artifact.to_str().ok_or("extern path is not Unicode")?.into(),
+    let mut params = vec!["rustc".into(), artifact.to_str().ok_or("extern path is not Unicode")?.into(),
         "--edition=2024".into(), "--crate-name=lustr_metadata_client".into(), "--crate-type=lib".into(),
         "--emit=metadata".into(), "--sysroot".into(), sdk.to_str().ok_or("SDK path is not Unicode")?.into(),
         "--extern".into(), format!("{alias}={}", artifact.display())];
-    let mut request = Request { alias: alias.clone(), artifact, sdk_lib, interface: None };
+    let mut directories = BTreeSet::new();
+    for path in search_paths {
+        params.extend(["-L".into(), format!("dependency={path}")]);
+        if let Ok(directory) = Path::new(path).canonicalize() {
+            directories.insert(directory);
+        }
+    }
+    let mut request = Request { alias: alias.clone(), artifact, sdk_lib, search_paths: directories, interface: None };
     let result = rustc_driver::catch_with_exit_code(|| rustc_driver::compiler_entrypoint(&params, &mut request));
     if result != ExitCode::SUCCESS {
         return Ok(result);

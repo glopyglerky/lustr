@@ -2711,3 +2711,54 @@ fn main() {
     assert!(String::from_utf8_lossy(&response.stderr).contains("E0308"));
     assert!(!f.root.join("invalid/debug/edition_fixture").exists());
 }
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn ordinary_cargo_resolves_transitive_rust_metadata() {
+    let f = Fixture::new("cargo-rust-transitive-context");
+    f.source("Cargo.toml", "[workspace]\nmembers=[\"app\",\"bridge\",\"provider\"]\nresolver=\"3\"\n");
+    for (name, versioned) in [
+        ("app", "[dependencies]\nbridge={path=\"../bridge\"}\n"),
+        ("bridge", "[dependencies]\nprovider={path=\"../provider\"}\n"),
+        ("provider", ""),
+    ] {
+        f.source(&format!("{name}/Cargo.toml"), &format!(
+            "[package]\nname=\"{name}\"\nversion=\"0.1.0\"\nedition=\"2024\"\n{versioned}"));
+    }
+    f.source("provider/src/lib.rs", r#"
+pub struct Counter(pub u64);
+pub trait Value { fn value(self) -> u64; }
+impl Value for Counter { fn value(self) -> u64 { self.0 } }
+pub async fn value(counter: Counter) -> u64 { counter.value() }
+"#);
+    f.source("bridge/src/lib.rs", r#"
+pub use provider::Value;
+pub fn convert(value: u64) -> provider::Counter { provider::Counter(value) }
+"#);
+    f.source("app/src/main.rs", r#"
+use bridge::Value;
+fn mask(value: u64) -> u64 { value ^ 19 }
+fn main() { println!("{}", mask(bridge::convert(57).value())); }
+"#);
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let cargo = |name: &str, original: bool| {
+        let mut command = f.command("cargo");
+        command.env("CARGO_TARGET_DIR", f.root.join(name)).env("CARGO_PROFILE_DEV_DEBUG", "0");
+        if original { command.env("RUSTC", &oracle); }
+        command
+    };
+    for (name, original) in [("lustr", false), ("original", true)] {
+        f.succeeds(&format!("{name}-check"), cargo(name, original).args(["check", "--workspace", "--frozen"]));
+        let result = f.succeeds(&format!("{name}-run"), cargo(name, original).args(["run", "-p", "app", "--frozen"]));
+        assert_eq!(result.stdout, b"42\n");
+    }
+    f.source("bridge/src/lib.rs", "pub fn convert(value: u64) -> provider::Counter { provider::Counter(value == 0) }\n");
+    for (name, original) in [("lustr-invalid", false), ("original-invalid", true)] {
+        let result = f.invoke(name, cargo(name, original).args(["check", "--workspace", "--frozen"]));
+        assert_eq!(result.status.code(), Some(101));
+        assert!(String::from_utf8_lossy(&result.stderr).contains("E0308"));
+        assert!(!f.root.join(name).join("debug/app").exists());
+    }
+}

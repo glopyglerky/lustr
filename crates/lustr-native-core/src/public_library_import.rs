@@ -58,8 +58,10 @@ pub(super) struct Import {
 }
 
 impl Import {
-    pub(super) fn open(request: &ExternMetadata, sdk: &Sdk) -> Result<Self, String> {
-        Self::read(request, sdk, None, def::CrateId(1), false)
+    pub(super) fn read_for_library(
+        request: &ExternMetadata, sdk: &Sdk, installation: &Path, search_paths: &[PathBuf],
+    ) -> Result<Self, super::ImportFailure> {
+        Self::read_with_interface(request, sdk, None, def::CrateId(1), false, Some((installation, search_paths, false)))
     }
 
     pub(super) fn read(
@@ -72,14 +74,14 @@ impl Import {
 
     pub(super) fn read_for_cargo(
         request: &ExternMetadata, sdk: &Sdk, standard: Option<&Sdk>, index: def::CrateId, installation: &Path,
-        linking: bool,
+        search_paths: &[PathBuf], linking: bool,
     ) -> Result<Self, super::ImportFailure> {
-        Self::read_with_interface(request, sdk, standard, index, true, Some((installation, linking)))
+        Self::read_with_interface(request, sdk, standard, index, true, Some((installation, search_paths, linking)))
     }
 
     fn read_with_interface(
         request: &ExternMetadata, sdk: &Sdk, standard: Option<&Sdk>, index: def::CrateId,
-        executable: bool, installation: Option<(&Path, bool)>,
+        executable: bool, installation: Option<(&Path, &[PathBuf], bool)>,
     ) -> Result<Self, super::ImportFailure> {
         let path = &request.artifact;
         let before = stamp(path)?;
@@ -93,10 +95,10 @@ impl Import {
         }
         .or_else(|| standard.and_then(|context| read_link_crate(data, context)).map(|leaf| (leaf, None)));
         let Some((leaf, projection)) = local else {
-            let Some((installation, linking)) = installation else {
+            let Some((installation, search_paths, linking)) = installation else {
                 return Err("extern artifact has no represented interface in the pinned SDK".into());
             };
-            let interface = super::metadata_query::read(installation, &request.alias, path, &bytes);
+            let interface = super::metadata_query::read(installation, &request.alias, path, &bytes, search_paths);
             if stamp(path)? != before {
                 return Err("extern metadata generation changed during the Rust query".into());
             }
@@ -106,8 +108,8 @@ impl Import {
             if path.file_name().is_none_or(|name| name != filename.as_str()) {
                 return Err("extern metadata filename or generation changed".into());
             }
-            if linking {
-                return Err(super::ImportFailure::RequiresRust("the original Rust archive requires its linker context"));
+            if !executable || linking {
+                return Err(super::ImportFailure::RequiresRust("the original Rust crate requires its artifact context"));
             }
             let facts = Arc::new(CargoDefinitions {
                 alias: request.alias.clone(), crate_name: interface.name.clone(), stable: interface.stable,

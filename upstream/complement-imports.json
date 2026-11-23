@@ -308,11 +308,12 @@
       "missing_capability": "Read scalar declarations from Rust metadata outside the native encoding subset",
       "status": "implemented-partial",
       "owner": "Pinned Rust metadata loader and declaration queries",
-      "semantic_boundary": "Check-only scalar declarations from one actual Cargo metadata input with its installed SDK dependencies",
+      "semantic_boundary": "Check-only scalar declarations from an actual Cargo metadata input with installed SDK dependencies. The original Rust loader resolves dependencies in Cargo's search paths; a graph outside the scalar interface stays with the pinned compiler.",
       "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
       "upstream_paths": {
         "compiler/rustc_metadata/src/rmeta/decoder.rs": "40d024ce058a7e363e192ac11f783c9d91e182ce0d7e3147e1e926f2073db0e2",
         "compiler/rustc_metadata/src/locator.rs": "3e91bea232fdf8b8b01858bb55fb923f63f8c3ea66071cfc8eda9e9cebb9d758",
+        "compiler/rustc_metadata/src/creader.rs": "5ad69fef2068ce2cff4a1ab21659359270770e4ee69fa840558a29a3fb706539",
         "compiler/rustc_middle/src/queries.rs": "e6d27d3e01b5a726d69b7ee54bcdd0db46114d13d80579e2cb2e617e34db1028"
       },
       "dependency_edges": [
