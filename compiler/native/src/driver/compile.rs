@@ -2906,6 +2906,33 @@ impl PreparedRequest<'_> {
         &self.state.as_ref().expect("checked request is consumed").imported_dependencies
     }
 
+    /// Keep the freshly checked native bodies when publication can reuse the
+    /// executable bytes. A later relink may still need to generate their code.
+    #[cfg(feature = "exclusive-native")]
+    pub(crate) fn retain_executable_ir(&mut self) {
+        let state = self.state.as_mut().expect("checked request is consumed");
+        if state.program.gx.has_generics { return; }
+        let front = &self.session.front;
+        let caches = &mut self.session.caches;
+        let mut file_hashes = FxMap::default();
+        for (&i, (body, _)) in state.work.iter().zip(&mut state.results) {
+            let slot = front.fn_slot[i] as usize;
+            if caches.has_out[slot] { continue; }
+            let Some(body) = body.take() else { continue };
+            let body = body.attach(&state.program);
+            let file = state.program.fn_def(LocalDefId(i as u32)).name_span.file;
+            let hash = *file_hashes.entry(file).or_insert_with(|| file_text_hash(&state.map, file));
+            let fingerprint = super::ir_cache::ir_fingerprint(
+                &state.program, &body, &state.map, state.fn_lines_all[i],
+            );
+            let mut cached = super::ir_cache::cache_body(
+                &state.program, &body, hash, slot as u32, Vec::new(), fingerprint,
+            );
+            cached.pending_codegen = true;
+            caches.slot_ir[slot] = Some(cached);
+        }
+    }
+
     /// Consume the same checked state once. A check finishes without emitting;
     /// a build enters the original generator, object builder and linker.
     pub fn emit(mut self) -> Response {
@@ -3070,6 +3097,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
         return Preparation::Failed(Response {code:3, stderr:"public library request context is not represented\n".into(), ..Default::default()});
     }
     let rust_debug = req.cmd == Cmd::Build && req.library_options.debug.native_rust();
+    let public_executable = req.session.library.as_ref().is_some_and(|key| key.is_executable());
     let cargo_test = req.session.library.is_some() && req.session.krate.test;
     if session.caches.library.is_some() && (req.cc || req.debug || req.emit_c.is_some() || req.harness || req.run_args.is_some()) {
         return Preparation::Failed(Response {code:3, stderr:"native library output context changed\n".into(), ..Default::default()});
@@ -4562,7 +4590,9 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
                 continue;
             }
             let s = slot(i);
-            if !caches.has_out[s] && caches.library.is_none() {
+            let pending = public_executable && caches.ok[s]
+                && caches.slot_ir[s].as_ref().is_some_and(|body| body.pending_codegen);
+            if !caches.has_out[s] && caches.library.is_none() && !pending {
                 continue;
             }
             let Some(Some(cached)) = caches.slot_ir.get(s) else {
@@ -4576,7 +4606,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
             };
             let moved = cached.slot_at_gen != s as u32
                 || cached.used_at_gen.iter().any(|(disk, at_gen)| front.slot_of.get(disk) != Some(at_gen));
-            if !moved && (caches.library.is_none() || caches.has_out[s]) {
+            if !moved && !pending && (caches.library.is_none() || caches.has_out[s]) {
                 continue;
             }
             let file = program.fn_def(LocalDefId(i as u32)).name_span.file;
@@ -4638,7 +4668,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
     let mut work = changed.clone();
     work.extend(reemit_failed.iter().copied());
     if req.cmd == Cmd::Build {
-        if library {
+        if library || public_executable {
             let rebuilt: std::collections::BTreeSet<_> = reemit.iter().map(|(i,_)|*i).collect();
             work.extend((0..program.fns.len()).filter(|&i| !caches.has_out[slot(i)] && !in_changed[i] && !rebuilt.contains(&i)));
         } else {
@@ -4837,6 +4867,14 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
     // A skipped slot keeps its last marks; one that needed a check lost
     // its C above, so the next build checks it.
     work.retain(|&i| !program.check_skips(LocalDefId(i as u32)));
+    if public_executable {
+        for &i in &work {
+            let cached = &mut caches.slot_ir[slot(i)];
+            if cached.as_ref().is_some_and(|body| body.pending_codegen) {
+                *cached = None;
+            }
+        }
+    }
     if super::item_oracle::on() {
         let (build, tables) = (req.cmd == Cmd::Build, resolved_tables.as_ref());
         let (lines, hashes) = (&fn_lines_all, &body_hashes_all);

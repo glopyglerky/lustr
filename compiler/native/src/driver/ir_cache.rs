@@ -505,6 +505,8 @@ pub(crate) struct CachedBody {
     pub used_at_gen: Vec<(DiskDefId, u32)>,
     /// `ir_fingerprint` of the source body; a rebuild must match it.
     pub ir_fp: u64,
+    /// This checked body was saved when a cached executable was republished.
+    pub pending_codegen: bool,
     arg_count: usize,
     tys: Vec<TyTree>,
     locals: Vec<(u32, bool, Option<String>, Option<Span>)>,
@@ -615,6 +617,7 @@ enum CachedTerm {
 #[derive(Clone, Debug)]
 enum CachedTarget {
     Fn(DiskDefId),
+    NativeFn(DiskDefId),
     Builtin(Builtin),
     Intrinsic(u32),
     Indirect(Local),
@@ -970,7 +973,8 @@ pub(crate) fn cache_body(p: &Program, body: &Body, file_hash: u64, slot: u32, us
                         CallTarget::Intrinsic(i) => CachedTarget::Intrinsic(*i),
                         CallTarget::Indirect(l) => CachedTarget::Indirect(*l),
                         CallTarget::Dyn(k) => CachedTarget::Dyn(*k),
-                        CallTarget::NativeFn(_) => CachedTarget::NativeUnsupported,
+                        CallTarget::NativeFn(def) => p.native_fn(*def)
+                            .map_or(CachedTarget::NativeUnsupported, |(_, _, link)| CachedTarget::NativeFn(link.id)),
                     },
                     args: args.iter().map(|a| cache_operand(&mut b, p, a)).collect(),
                     dest: dest.clone(),
@@ -987,7 +991,8 @@ pub(crate) fn cache_body(p: &Program, body: &Body, file_hash: u64, slot: u32, us
         .collect();
     let stmt_unwind = body.stmt_unwind.clone();
     let promoted = body.promoted.clone();
-    CachedBody { file_hash, slot_at_gen: slot, used_at_gen, ir_fp, arg_count: body.arg_count, tys: b.out, locals, blocks, stmt_unwind, promoted }
+    CachedBody { file_hash, slot_at_gen: slot, used_at_gen, ir_fp, pending_codegen: false,
+        arg_count: body.arg_count, tys: b.out, locals, blocks, stmt_unwind, promoted }
 }
 
 /// Rebuilds one cached body against today's program. None when any
@@ -1164,6 +1169,13 @@ pub(crate) fn rebuild<'p>(p: &'p Program, cached: &CachedBody, fn_id: LocalDefId
                     CachedTarget::Intrinsic(i) => CallTarget::Intrinsic(*i),
                     CachedTarget::Indirect(l) => CallTarget::Indirect(*l),
                     CachedTarget::Dyn(k) => CallTarget::Dyn(*k),
+                    CachedTarget::NativeFn(id) => {
+                        let (&krate, _) = p.imported_crates.iter().find(|(_, stable)| **stable == id.krate)?;
+                        let def = DefId { krate, hash: id.hash };
+                        let (_, _, linkage) = p.native_fn(def)?;
+                        if linkage.id != *id { return None; }
+                        CallTarget::NativeFn(def)
+                    }
                     CachedTarget::NativeUnsupported => return None,
                 },
                 args: args.iter().map(|a| operand(&mut intern, &mut tys, &strings, a)).collect::<Option<Vec<_>>>()?,

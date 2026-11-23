@@ -421,7 +421,7 @@ impl Owner {
                 let mut environment = BTreeMap::new();
                 let mut unused = Vec::new();
                 let mut response = match driver::prepare_library_import(&staged, session, executable) {
-                    driver::Preparation::Ready(prepared) => {
+                    driver::Preparation::Ready(mut prepared) => {
                         let observed = prepared.executable_source_inputs()?;
                         inputs.extend(observed.files);
                         environment = observed.environment;
@@ -440,6 +440,7 @@ impl Owner {
                             && cached.environment == environment {
                             write_new(&staged.out, &cached.bytes)?;
                             fs::set_permissions(&staged.out, fs::Permissions::from_mode(cached.mode)).map_err(|error|error.to_string())?;
+                            prepared.retain_executable_ir();
                             reused = true;
                             driver::Response::default()
                         } else {
