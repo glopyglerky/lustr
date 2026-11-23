@@ -645,8 +645,8 @@ fn read_scalar_function<'a>(krate: &IndexedCrate<'a>, index: usize) -> Option<Op
     let function_name = key.symbol()?;
     (valid_identifier(function_name) && key.leb()? == 0).then_some(())?;
 
-    (krate.array("attributes", index)?.1 == 0
-        && krate.value::<1>("constness", index)? == [1]
+    read_function_doc_comments(krate, index)?;
+    (krate.value::<1>("constness", index)? == [1]
         && krate.record("generics_of", index)?.take(7)? == [0; 7]
         && krate.record("explicit_clauses_of", index)?.take(2)? == [0; 2]).then_some(())?;
     let mut codegen = krate.record("codegen_fn_attrs", index)?;
@@ -661,6 +661,39 @@ fn read_scalar_function<'a>(krate: &IndexedCrate<'a>, index: usize) -> Option<Op
     let path_hash = u64::from_le_bytes(krate.value("def_path_hashes", index)?);
     (path_hash == crate::identity::function_path_hash(krate.identity.stable_id, function_name)).then_some(())?;
     Some(Some(ScalarFunction { name: function_name, parameters, result, path_hash }))
+}
+
+fn read_function_doc_comments(krate: &IndexedCrate<'_>, index: usize) -> Option<()> {
+    let (at, count) = krate.array("attributes", index)?;
+    (count <= krate.data.len().saturating_sub(at) / 7).then_some(())?;
+    let mut attributes = Read::new(krate.data, at);
+    for _ in 0..count {
+        // Parsed(DocComment { style: Outer, kind: Sugared(Line or Block) }).
+        (attributes.take(4)? == [0, schema::DOC_COMMENT, 0, 0] && attributes.byte()? <= 1).then_some(())?;
+        let start = attributes.at;
+        let tag = attributes.byte()?;
+        match tag & 3 {
+            // Local root-context span. Smaller lengths are in the tag.
+            0 if tag & 4 != 0 => {
+                let lo = attributes.leb()?;
+                let len = if tag >> 3 == 31 { attributes.leb()? } else { usize::from(tag >> 3) };
+                u32::try_from(lo.checked_add(len)?).ok()?;
+                u32::try_from(attributes.leb()?).ok()?;
+            }
+            3 => {
+                let width = usize::from(tag >> 3);
+                (1..=8).contains(&width).then_some(())?;
+                let mut bytes = [0; 8];
+                bytes[..width].copy_from_slice(attributes.take(width)?);
+                let value = usize::try_from(u64::from_le_bytes(bytes)).ok()?;
+                let previous = if tag & 4 == 0 { value } else { start.checked_sub(value)? };
+                (previous > 0 && previous < start).then_some(())?;
+            }
+            _ => return None,
+        }
+        attributes.symbol()?;
+    }
+    Some(())
 }
 
 fn only_implicit_prelude_reexport(data: &[u8], value: [u8; 16], dependency: &str) -> Option<bool> {

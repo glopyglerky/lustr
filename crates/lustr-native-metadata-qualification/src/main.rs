@@ -198,6 +198,11 @@ fn compile(source: &Path, root: &Path, receipt: &Path, sysroot: &Path, report: &
             name_span: span(function.name_span()),
             span: span(function.span()),
             public: function.visibility() == native_consumer::Visibility::Public,
+            docs: function.docs().iter().map(|doc| metadata::DocComment {
+                span: span(doc.span),
+                text: doc.text.clone(),
+                block: doc.block,
+            }).collect(),
             parameters: function
                 .parameters()
                 .iter()

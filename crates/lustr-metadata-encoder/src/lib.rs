@@ -140,9 +140,16 @@ impl IntegerType {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct DocComment {
+    pub span: Span,
+    pub text: String,
+    pub block: bool,
+}
+
 /// A completed ordinary, safe, nongeneric primitive-integer declaration.
-/// Absence of other declarations, attributes and body obligations is proved by
-/// the native completion producer; a success exit code cannot create that proof.
+/// The native completion producer supplies the original documentation and
+/// checks the remaining declaration and body obligations.
 #[derive(Clone, Debug)]
 pub struct Function {
     pub definition: NativeId,
@@ -150,6 +157,7 @@ pub struct Function {
     pub name_span: Span,
     pub span: Span,
     pub public: bool,
+    pub docs: Vec<DocComment>,
     pub parameters: Vec<Parameter>,
     pub result: IntegerType,
     pub calls: Vec<NativeId>,
@@ -352,6 +360,20 @@ fn validate(input: &Input<'_>, sdk: &Sdk, link: bool, projection: Option<&Projec
             || function.parameters.len() > 254
         {
             return Err(failure("definition identity, order, name or span differs from completed source"));
+        }
+        let mut doc_end = last_span_end;
+        for doc in &function.docs {
+            let spelled = text(doc.span).and_then(|written| {
+                if doc.block {
+                    written.strip_prefix("/**")?.strip_suffix("*/")
+                } else {
+                    written.strip_prefix("///")
+                }
+            });
+            if doc.span.lo < doc_end || doc.span.hi > function.name_span.lo || spelled != Some(doc.text.as_str()) {
+                return Err(failure("documentation differs from completed source"));
+            }
+            doc_end = doc.span.hi;
         }
         last_span_end = function.span.hi;
         if link && !function.result.has_direct_native_abi() {

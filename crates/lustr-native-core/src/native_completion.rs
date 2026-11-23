@@ -139,6 +139,14 @@ impl Parameter {
 }
 
 /// Every field comes from one actual collected/checked native declaration.
+/// A retained source doc comment attached to a completed declaration.
+#[derive(Clone)]
+pub(crate) struct DocComment {
+    pub(crate) span: diag::Span,
+    pub(crate) text: String,
+    pub(crate) block: bool,
+}
+
 /// Original Rust definition indices are deliberately absent: the metadata
 /// context must create those identities and retain an explicit mapping.
 #[derive(Clone)]
@@ -149,6 +157,7 @@ pub(crate) struct Function {
     name_span: diag::Span,
     span: diag::Span,
     visibility: Visibility,
+    docs: Vec<DocComment>,
     parameters: Vec<Parameter>,
     result: ty::IntTy,
     calls: BTreeSet<def::DiskDefId>,
@@ -172,6 +181,9 @@ impl Function {
     }
     pub(crate) fn visibility(&self) -> Visibility {
         self.visibility
+    }
+    pub(crate) fn docs(&self) -> &[DocComment] {
+        &self.docs
     }
     pub(crate) fn parameters(&self) -> &[Parameter] {
         &self.parameters
@@ -306,8 +318,8 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool, family: Option<&Fami
         {
             return Err(Error::Failed("native body/declaration joining is not one-to-one"));
         }
-        if !item.attrs.is_empty()
-            || !function.attrs.is_empty()
+        if item.attrs.len() != function.attrs.len()
+            || item.attrs.iter().zip(&function.attrs).any(|(item, function)| item.span != function.span)
             || function.is_test
             || function.qual != ast::FnQual::default()
             || function.self_param.is_some()
@@ -324,6 +336,7 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool, family: Option<&Fami
             ast::Vis::Private => Visibility::Private,
             ast::Vis::Restricted { .. } => return Err(Error::Unintegrated("restricted visibility metadata")),
         };
+        let docs = function.attrs.iter().map(|attr| doc_comment(p, prepared.source(), attr)).collect::<Result<Vec<_>, _>>()?;
         if info.params.len() != function.params.len()
             || function.params.len() > 64
             || function.ret.is_none()
@@ -401,6 +414,7 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool, family: Option<&Fami
             name_span: function.name_span,
             span: item.span,
             visibility,
+            docs,
             parameters,
             result,
             calls,
@@ -454,6 +468,30 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool, family: Option<&Fami
         return Err(Error::Unintegrated("empty exported graph"));
     }
     Ok(functions)
+}
+
+fn doc_comment(program: &check::collect::Program, source: &str, attr: &ast::Attr) -> Result<DocComment, Error> {
+    use crate::lexer::{Tok, TokenTree};
+    let unsupported = Error::Unintegrated("attribute requires cross-crate metadata beyond a source doc comment");
+    let [name] = attr.path.as_slice() else { return Err(unsupported); };
+    if program.interner.get(name.name) != "doc" || !matches!(attr.style, ast::AttrStyle::Outer)
+        || attr.span.file != diag::FileId(0) || attr.span.ctxt != diag::CtxtId::ROOT
+    {
+        return Err(unsupported);
+    }
+    let ast::AttrInput::List(_, tokens) = &attr.input else { return Err(unsupported); };
+    let [TokenTree::Token(eq), TokenTree::Token(literal)] = tokens.as_slice() else { return Err(unsupported); };
+    let Tok::DocStr(index) = literal.tok else { return Err(unsupported); };
+    let Some(text) = source.get(attr.span.lo as usize..literal.span.hi as usize) else { return Err(unsupported); };
+    if eq.tok != Tok::Eq || !(text.starts_with("///") || text.starts_with("/**") && text.ends_with("*/")) {
+        return Err(unsupported);
+    }
+    let comment = program.ast.strings.get(index as usize).ok_or(Error::Failed("native doc comment text is missing"))?;
+    Ok(DocComment {
+        span: diag::Span::new(attr.span.file, attr.span.lo, literal.span.hi),
+        text: comment.clone(),
+        block: text.starts_with("/**"),
+    })
 }
 
 fn snake_case(name: &str) -> bool {

@@ -1468,6 +1468,41 @@ fn rustc_resolves_transitive_rust_archives_without_metadata_sidecars() {
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and Clang"]
+fn cargo_preserves_original_function_documentation_in_rust_metadata() {
+    let f = Fixture::new("documented-library");
+    f.source("Cargo.toml", "[package]\nname=\"documented\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    f.source("src/lib.rs", r#"
+#![no_std]
+/// Line documentation from original Rust.
+/** Block documentation from original Rust. */
+pub fn flip(value: u64) -> u64 { value ^ 1 }
+"#);
+    f.source("src/main.rs", "fn main() { let value = documented::flip(42); println!(\"{value}\"); }\n");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let app = f.succeeds("native-app", f.command("cargo").args(["run", "--frozen", "--quiet"]));
+    assert_eq!(app.stdout, b"43\n");
+
+    let mut metadata = std::fs::read_dir(f.root.join("target/debug/deps")).unwrap()
+        .map(|entry| entry.unwrap().path())
+        .filter(|path| path.file_name().and_then(|name| name.to_str())
+            .is_some_and(|name| name.starts_with("libdocumented-") && name.ends_with(".rmeta")));
+    let metadata_path = metadata.next().expect("actual documented library metadata");
+    assert!(metadata.next().is_none());
+    let exported = f.source("reexport.rs", "pub use documented::flip;\n");
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let docs = f.root.join("rendered");
+    f.succeeds("original-rustdoc-render", Command::new(PathBuf::from(oracle).with_file_name("rustdoc"))
+        .current_dir(&f.root).env_remove("LD_LIBRARY_PATH")
+        .args(["--edition=2024", "--crate-name", "reexporter", "--extern"])
+        .arg(format!("documented={}", metadata_path.display())).arg("--out-dir").arg(&docs).arg(exported));
+    let html = std::fs::read_to_string(docs.join("reexporter/fn.flip.html")).unwrap();
+    assert!(html.contains("Line documentation from original Rust."));
+    assert!(html.contains("Block documentation from original Rust."));
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
 fn ordinary_cargo_resolves_a_renamed_dependency_feature() {
     let f = Fixture::new("cargo-dependency-feature");

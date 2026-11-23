@@ -218,9 +218,13 @@ pub(crate) fn encode(
         cx.table("def_kind").set(index, &[12]); // FixedSizeEncoding: Fn + 1.
         cx.fact("def_span", index, |cx| cx.span(function.span));
         cx.fact("def_ident_span", index, |cx| cx.span(function.name_span));
-        // NoStd is not cross-crate encoded upstream; function attributes are
-        // actually absent in this completed scope, including doc/lint attrs.
-        cx.array_fact::<()>("attributes", index, &[], |_, _| unreachable!());
+        // Rust retains source doc comments for downstream exported definitions.
+        let docs = if function.public { function.docs.as_slice() } else { &[] };
+        cx.array_fact("attributes", index, docs, |cx, doc| {
+            cx.opaque.emit_raw_bytes(&[0, schema::DOC_COMMENT, 0, 0, u8::from(doc.block)]);
+            cx.span(doc.span);
+            cx.symbol(&doc.text);
+        });
         cx.fact("visibility", index, |cx| {
             cx.opaque.emit_u8(if function.public { 0 } else { 1 });
             if !function.public { cx.local_def(0); }

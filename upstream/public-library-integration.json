@@ -72,6 +72,27 @@
     {
       "repository": "rust-lang/rust",
       "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_attr_ir/src/attr.rs",
+      "sha256": "cc70605cd3eb285592beafaea8970c0ea0f1bb1e54f57416dbbb12ecfa9da8b2",
+      "role": "Original parsed attribute wrapper and cross-crate documentation accessor"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_attr_ir/src/data_structures.rs",
+      "sha256": "6b61fd75a4a88bb80dfdcc71bdb5325c9083bfa99f5bf03baa9c19250a0852ba",
+      "role": "Original DocComment variant and field order in the pinned attribute schema"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_ast/src/token.rs",
+      "sha256": "d99c9f5a247cb2f24b759fa719d0c1c884970f32f7ade2b08424a2bea69d3fa9",
+      "role": "Original sugared line and block doc comment kinds"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
       "path": "compiler/rustc_metadata/src/locator.rs",
       "sha256": "3e91bea232fdf8b8b01858bb55fb923f63f8c3ea66071cfc8eda9e9cebb9d758",
       "role": "Original crate-location rules prefer a matching metadata file and can read full metadata from a matching Rust library"
@@ -258,8 +279,8 @@
     "crates/lustr-native-core/Cargo.lock": "bc7c64836b4b04b12031fdeb3a3bb90b9a723a40208b39379f8cd54ba96b4372",
     "crates/lustr-native-core/src/library_history.rs": "b9b5599d739bd221cfcdb59280f456c2556859d0dc400b8b1afe57407678354f",
     "crates/lustr-native-core/src/native_library.rs": "68fffd34b8201c1f6ac959b734e8102d8d0c1738493bdae26bad26ac450000dd",
-    "crates/lustr-native-core/src/native_completion.rs": "318ebab5e5b3b526848018e9bdaf3836c04674b93f387fee42f09ff2549d1d26",
-    "crates/lustr-native-core/src/library_artifact.rs": "93189c2688a2ca58e946737e30c037ac0cfc00bb107c62c69ad16ffc86b0506c",
+    "crates/lustr-native-core/src/native_completion.rs": "05a2ef2b898f18b9cfce8899147d4091308051e0b8fdb4888e3b550225555184",
+    "crates/lustr-native-core/src/library_artifact.rs": "a3a386c92fb497269dc14e4856e29e3d21ea447d0448c1dbc8525f5013664f90",
     "crates/lustr-native-core/src/metadata_archive.rs": "4906cce455716560344bdb329c3bcbc563da21e8c615c357583c038a90e11dfa",
     "crates/lustr-native-core/src/public_library.rs": "35c6ecd43abe3980a108b5f42fc8e650bf21cc28e79454ce6c2288db28c9fcb9",
     "crates/lustr-native-core/src/public_library_import.rs": "6d4b404ef0db75f6021cb178546bab3be073ddd69eb28afaed45b4d9bc45b242",
@@ -268,9 +289,9 @@
     "crates/lustr-native-core/src/unit_publication.rs": "035ee3f6a763a9562348f50476815bd24e7b6bc67a1a14a69edcd2fe8f44ae05",
     "crates/lustr-native-core/LICENSE-LLVM": "8d85c1057d742e597985c7d4e6320b015a9139385cff4cbae06ffc0ebe89afee",
     "crates/lustr-metadata-encoder/Cargo.toml": "0f63faa420b6c2e1ec91739f61f7ee77ee874233399ed8e744783325168493c2",
-    "crates/lustr-metadata-encoder/src/lib.rs": "fc70a340c6186bb696ee33468568b0cfe82e346dc626f47966724fbf34786e8c",
-    "crates/lustr-metadata-encoder/src/encode.rs": "afae5780bf65afbd0dedf8db36e3570c485c892efae197c1e190366ddb10af73",
-    "crates/lustr-metadata-encoder/src/extern_metadata.rs": "ac05b641e6e6a137e851c543b7ef617bea728fe9d2fc262529cedb2a50d35b93",
+    "crates/lustr-metadata-encoder/src/lib.rs": "41d5e33b8b0c094e159d7271fd57caf8da5bee0dcb87e85de87a1fa19e62c976",
+    "crates/lustr-metadata-encoder/src/encode.rs": "28193a09e4ec67915f1b980c9754a92f42027f14ffa7c45fb301fa7065715a9c",
+    "crates/lustr-metadata-encoder/src/extern_metadata.rs": "427503c0b24c51b0ba7c9337a27c629df062471e6cca37e2dddd322bdf4d87a6",
     "crates/lustr-metadata-encoder/src/sdk.rs": "bcb43af0564553d2e2636f25a7aa6c06f81a8eb19997f4a2324c3071b1fb025f",
     "crates/lustr-metadata-encoder/src/upstream/predefined_symbols.rs": "ed7963c315a7e9ac5a51a206cc68a78e4a741291d344c74bab1dbf1fde7cf645",
     "crates/lustr-metadata-sdk/Cargo.toml": "1251d90b032c4d77d9ef6768642ba959679a183a23f4c3d5e15748c4a02cac6a",
@@ -279,7 +300,7 @@
     "tools/native-test-runtime.rs": "928a07c0e01caaa520b6bdb6e0746e5c047f34e47a7574fc416d70ed30685ed7",
     "tools/install-native-metadata-sdk.py": "6a5e8f7728888dfb7e24ab05389ce0675a0ebbb8cd22f7a7582c9e467717b0e2",
     "tools/check-exclusive-coverage.py": "fca596f1b08f7517de13e9f77035afb4fbaeb21578992d383b905df9ad0c88b3",
-    "tools/update-public-library-source-manifest.py": "714bf98d4df7ca717126fc98e5188b49f73f905020cb6419ec8dfe008f61ac0b",
+    "tools/update-public-library-source-manifest.py": "0c2e7737ed712622eef1a0e5e0e981c471655afee839f5f52848a9e4f192251f",
     "upstream/metadata-artifact-tools.json": "d1bd48f3b362645dce89172ce862f66189a1847c26e443f1861f9222021af9ff",
     "upstream/metadata-dependency-closure.json": "a5b2d8cccb4594fa2bfe56c33d202c4e6a1f88a1e09105bac8c4f1ab1e0ca32e",
     "docs/compiler-set/evidence/metadata-sdk-receipt-20261120/receipt.json": "4e400b263bf9923616dea44ead2d77213703177d3bfaf6becd6a19a4c5a657a7",

@@ -1,6 +1,9 @@
 // Copyright the Rust Project Developers. Licensed under MIT OR Apache-2.0.
 // Source: rust-lang/rust@5b7b37aefcb5b2fba3c2392bc9065b9e4602d494/compiler/rustc_metadata/src/rmeta/mod.rs
 // Schema names/order extracted exactly; TyCtxt-bound semantic payload types are replaced by the checked native adapter, not imported.
+/// AttributeKind::DocComment in the pinned rustc_attr_ir enum.
+pub const DOC_COMMENT: u8 = 21;
+
 /// Exact original table order. Unsupported categories remain absent only after native completion.
 pub const TABLE_FIELDS: &[&str] = &[
     "intrinsic",
