@@ -49,6 +49,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
 }
 
 pub use compile::{Preparation, PreparedRequest};
+#[cfg(feature = "exclusive-native")]
+pub(crate) use compile::compile_stdin;
 
 /// Prepare an ordinary native request without generating C, objects or a link.
 /// The owned continuation retains the actual checked program and body arenas.

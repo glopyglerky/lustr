@@ -676,11 +676,13 @@ pub struct ClientView {
     /// the shown dir joined with the rest, as rustc shows paths relative
     /// to the root path it was given. None shows paths as they are.
     pub shown_root: Option<(std::path::PathBuf, std::path::PathBuf)>,
+    /// The lexical root used for module lookup when the source arrived on stdin.
+    pub anonymous_root: Option<std::path::PathBuf>,
 }
 
 impl ClientView {
     /// This process's env, paths shown as they are.
-    pub const PROCESS: ClientView = ClientView { env: None, shown_root: None };
+    pub const PROCESS: ClientView = ClientView { env: None, shown_root: None, anonymous_root: None };
 
     /// The value of env var `name` for `env!` and `option_env!`.
     pub fn env_var(&self, name: &str) -> Option<String> {
@@ -1237,6 +1239,7 @@ pub struct Expander<'a> {
     /// `include!` swaps these.
     cur_file: String,
     cur_real: std::path::PathBuf,
+    cur_anonymous: bool,
     cur_src: String,
     /// The file id of the tokens being expanded (the first input token's),
     /// so `assert_msg` can tell a macro body in this file from one in
@@ -1379,6 +1382,8 @@ impl<'a> Expander<'a> {
             module: ctx.module_path.clone(),
             cur_file: ctx.file_path.clone(),
             cur_real: ctx.real_path.clone(),
+            cur_anonymous: ctx.module_path.is_empty()
+                && ctx.client.anonymous_root.as_deref() == Some(ctx.real_path.as_path()),
             cur_src: ctx.src.to_string(),
             root_file: None,
             shadowed_crates: Vec::new(),
@@ -1459,6 +1464,7 @@ impl<'a> Expander<'a> {
 
     /// The current file as `file!` shows it, recorded as a `Dep::Shown`.
     pub fn read_dep_shown(&mut self) -> String {
+        if self.cur_anonymous { return "<anon>".into(); }
         let path = self.cur_file.clone();
         let shown = self.ctx.client.shown(&path);
         self.fold_dep("shown", shown.as_bytes());

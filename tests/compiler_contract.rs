@@ -78,6 +78,66 @@ fn rustc_preserves_an_explicit_host_target_and_uncolored_diagnostics() {
     }
 }
 
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn rustc_compiles_anonymous_stdin_with_its_original_source_behavior() {
+    use std::process::Stdio;
+
+    let f = Fixture::new("rustc-stdin");
+    let text = f.source("present.txt", "actual input\n");
+    f.source("side.rs", "pub fn number() -> u32 { 42 }\n");
+    let source = f.source("stdin.txt", r#"
+mod side;
+fn main() {
+    println!("{}:{}:{}", file!(), module_path!(), side::number());
+    print!("{}", include_str!(env!("LUSTR_STDIN_TEST_INCLUDE")));
+}
+"#);
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let original = || {
+        let mut command = Command::new(&oracle);
+        command.current_dir(&f.root).env_remove("LD_LIBRARY_PATH");
+        command
+    };
+    let input = |command: &mut Command, output: &Path| {
+        command.args(["--edition=2024", "-"]).arg("-o").arg(output)
+            .env("LUSTR_STDIN_TEST_INCLUDE", &text).stdin(Stdio::from(std::fs::File::open(&source).unwrap()));
+    };
+    for (name, mut command) in [("native", f.command("rustc")), ("original", original())] {
+        let output = f.root.join(name);
+        input(&mut command, &output);
+        f.succeeds(&format!("{name}-build"), &mut command);
+        assert_eq!(f.succeeds(name, &mut Command::new(output)).stdout, b"<anon>:rust_out:42\nactual input\n");
+    }
+    f.source("stdin.txt", "fn main() { println!(\"{}:{}\", file!(), module_path!()); }\n");
+    for (name, mut command) in [("native", f.command("rustc")), ("original", original())] {
+        let cwd = f.root.join(format!("{name}-default-output"));
+        std::fs::create_dir(&cwd).unwrap();
+        command.current_dir(&cwd).args(["--edition=2024", "-"])
+            .stdin(Stdio::from(std::fs::File::open(&source).unwrap()));
+        f.succeeds(&format!("{name}-default-build"), &mut command);
+        assert_eq!(f.succeeds(&format!("{name}-default-run"), &mut Command::new(cwd.join("rust_out"))).stdout,
+            b"<anon>:rust_out\n");
+    }
+    f.source("stdin.txt", "fn main() { println!(\"{}\", include_str!(\"present.txt\")); }\n");
+    for (name, mut command) in [("native", f.command("rustc")), ("original", original())] {
+        let output = f.root.join(format!("{name}-invalid"));
+        input(&mut command, &output);
+        let response = f.invoke(&format!("{name}-invalid"), &mut command);
+        assert_eq!(response.status.code(), Some(1));
+        assert!(String::from_utf8_lossy(&response.stderr).contains("non-file source `<anon>`"));
+        assert!(!output.exists());
+    }
+    std::fs::write(&source, [0xff]).unwrap();
+    let mut command = f.command("rustc");
+    input(&mut command, &f.root.join("invalid-utf8"));
+    let response = f.invoke("invalid-utf8", &mut command);
+    assert_eq!(response.status.code(), Some(1));
+    assert!(String::from_utf8_lossy(&response.stderr).contains("did not contain valid UTF-8"));
+    assert!(!f.root.join("invalid-utf8").exists());
+    assert!(!f.root.join("<anon>").exists());
+}
+
 impl Fixture {
     fn new(scope: &str) -> Self {
         let f = Self {

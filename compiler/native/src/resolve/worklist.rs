@@ -699,7 +699,7 @@ pub(crate) fn check_cfg_names(lexed: &lexer::Lexed, env: &CfgEnv, interner: &Int
 /// Builds a source map from discovered (path, text, file id) triples: an id no triple has
 /// gets an empty file, and of two triples with one id the map keeps the first (the text
 /// keeps both). The files' line indexes are made on the pool (`SourceMap::with_texts`).
-fn make_map(seen: &[(PathBuf, String, FileId)]) -> (SourceMap, String) {
+fn make_map(seen: &[(PathBuf, String, FileId)], anonymous: Option<FileId>) -> (SourceMap, String) {
     let mut sorted: Vec<&(PathBuf, String, FileId)> = seen.iter().collect();
     sorted.sort_by_key(|(_, _, f)| f.0);
     let mut files: Vec<(String, &str)> = Vec::with_capacity(sorted.len());
@@ -709,7 +709,8 @@ fn make_map(seen: &[(PathBuf, String, FileId)]) -> (SourceMap, String) {
             files.push((String::new(), ""));
         }
         if files.len() as u32 == file_id.0 {
-            files.push((path.to_string_lossy().into_owned(), text));
+            let name = if Some(*file_id) == anonymous { "<anon>".to_owned() } else { path.to_string_lossy().into_owned() };
+            files.push((name, text));
         }
         all.push_str(text);
         all.push('\n');
@@ -1939,7 +1940,8 @@ fn resolve_crate_seeded(
     // that cannot be read, a non-2024 source dependency): the selected
     // crate's root file at the span's default file id.
     let build_err = |d: Diag| -> ResolveError {
-        let (map, all_text) = make_map(&[(input.root_path.clone(), input.root_text.clone(), FileId(0))]);
+        let (map, all_text) = make_map(&[(input.root_path.clone(), input.root_text.clone(), FileId(0))],
+            input.client.anonymous_root.as_ref().map(|_| FileId(0)));
         ResolveError { map, all_text, std_asks: StdPlan::default(), platform_asks: None, diags: vec![d] }
     };
     let mut by_key: FxMap<String, usize> = FxMap::default();
@@ -2011,6 +2013,7 @@ fn resolve_crate_seeded(
         order.insert(at, sj);
     }
     let mut shared = SharedFiles::default();
+    let anonymous = input.client.anonymous_root.as_ref().map(|path| shared.file_id(path, ROOT_MODULE));
     // Every file an earlier resolve canonicalized, read again now in
     // parallel: discovery walks the module tree one file at a time and
     // finds these texts here (a CI checkout is not in the page cache, and
@@ -2128,7 +2131,7 @@ fn resolve_crate_seeded(
                 add_asks(j, e.std_asks);
                 all_seen.extend(seen_whole(e.seen, j, std_job, input));
                 cache.unpacked.clear();
-                let (map, all_text) = make_map(&all_seen);
+                let (map, all_text) = make_map(&all_seen, anonymous);
                 return Err(ResolveError { map, all_text, std_asks, platform_asks, diags: e.diags });
             }
         }
@@ -2141,7 +2144,7 @@ fn resolve_crate_seeded(
     // The source map builds beside the merged Ast (each 10-70 ms on tsgo).
     let old = cache.merged.as_ref().map(|m| &*m.0);
     let ((map, all_text), (ast, spans)) = std::thread::scope(|s| {
-        let map = s.spawn(|| make_map(&all_seen));
+        let map = s.spawn(|| make_map(&all_seen, anonymous));
         let ast = Ast::concat_parts(chunks, old);
         (map.join().unwrap_or_else(|p| std::panic::resume_unwind(p)), ast)
     });

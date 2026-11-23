@@ -163,7 +163,7 @@ fn client_view(req: &Request) -> expand::ClientView {
         (Some(typed), None) => req.file.parent().zip(typed.parent()).map(|(abs, shown)| (abs.to_path_buf(), shown.to_path_buf())),
         _ => None,
     };
-    expand::ClientView { env: req.client.env.clone().map(std::sync::Arc::new), shown_root }
+    expand::ClientView { env: req.client.env.clone().map(std::sync::Arc::new), shown_root, anonymous_root: None }
 }
 
 /// Wall time per stage.
@@ -3002,7 +3002,16 @@ pub(super) fn prepare_observed<'a>(req: &'a Request, session: &'a mut Session, o
     if session.imported_request {
         return Preparation::Failed(Response { code: 3, stderr: "error: imported semantic state cannot be reused without its dependency generation\n".into(), ..Default::default() });
     }
-    prepare_with_definitions(req, session, observer, None)
+    prepare_with_definitions(req, session, observer, None, None)
+}
+
+#[cfg(feature = "exclusive-native")]
+pub(crate) fn compile_stdin(req: &Request, session: &mut Session, source: String) -> Response {
+    match prepare_with_definitions(req, session, None, None, Some(source)) {
+        Preparation::Ready(prepared) => prepared.emit(),
+        Preparation::Complete(response) | Preparation::Rejected(response)
+        | Preparation::Failed(response) | Preparation::IntegrationIncomplete(response) => response,
+    }
 }
 
 pub(super) fn prepare_imported<'a>(req: &'a Request, session: &'a mut Session, definitions: &dyn super::imports::Definitions) -> Result<Preparation<'a>, super::imports::Unintegrated> {
@@ -3036,7 +3045,7 @@ pub(super) fn prepare_imported<'a>(req: &'a Request, session: &'a mut Session, d
         fn take_emission(&self) -> Result<Box<dyn super::imports::Emission + 'static>, String> { self.inner.take_emission() }
     }
     let guard = Guard { inner: definitions, failed: std::cell::Cell::new(false) };
-    let outcome = prepare_with_definitions(req, session, None, Some(&guard));
+    let outcome = prepare_with_definitions(req, session, None, Some(&guard), None);
     Ok(match outcome {
         Preparation::Rejected(mut response) if guard.failed.get() => {
             response.code = 3;
@@ -3062,7 +3071,7 @@ pub(crate) fn prepare_projection_import<'a>(
         return Err(super::imports::Unintegrated("projection imports require a standalone retained research session"));
     }
     update_imported_generation(session, definitions);
-    Ok(prepare_with_definitions(req, session, None, Some(definitions)))
+    Ok(prepare_with_definitions(req, session, None, Some(definitions), None))
 }
 
 /// Refresh declarations under stable definition identities. Native body reads,
@@ -3096,7 +3105,7 @@ pub(crate) fn prepare_library_import<'a>(req: &'a Request, session: &'a mut Sess
     // actual readers without discarding unrelated bodies on an import edit.
     // General disk-cache keys do not yet encode this imported generation.
     update_imported_generation(session, definitions);
-    prepare_with_definitions(req, session, None, Some(definitions))
+    prepare_with_definitions(req, session, None, Some(definitions), None)
 }
 
 fn cargo_codegen(req: &Request) -> Option<(crate::protocol::OptLevel, crate::protocol::library_contract::Strip)> {
@@ -3105,7 +3114,9 @@ fn cargo_codegen(req: &Request) -> Option<(crate::protocol::OptLevel, crate::pro
         .then_some((key.optimization, req.library_options.debug.strip))
 }
 
-fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, observer: Option<&dyn super::PhaseObserver>, imports: Option<&dyn super::imports::Definitions>) -> Preparation<'a> {
+fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, observer: Option<&dyn super::PhaseObserver>,
+    imports: Option<&dyn super::imports::Definitions>, stdin_source: Option<String>,
+) -> Preparation<'a> {
     // A public library key belongs only to the product owner. Refuse it before
     // entering research graph selection, which retains its original probe.
     // The separate retained research library uses no public LibraryKey.
@@ -3173,10 +3184,16 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
             ..Default::default()
         });
     }
-    let path = req.file.to_string_lossy().to_string();
-    let mut src = match std::fs::read_to_string(&req.file) {
-        Ok(s) => s,
-        Err(e) => return Preparation::finished(Response { stderr: format!("error: cannot read {path}: {e}\n"), code: 2, ..Default::default() }),
+    let anonymous = stdin_source.is_some();
+    let path = if anonymous { "<anon>".to_owned() } else { req.file.to_string_lossy().into_owned() };
+    let mut src = match stdin_source {
+        Some(source) => source,
+        None => match std::fs::read_to_string(&req.file) {
+            Ok(source) => source,
+            Err(error) => return Preparation::finished(Response {
+                stderr: format!("error: cannot read {path}: {error}\n"), code: 2, ..Default::default(),
+            }),
+        },
     };
     // The crate identity for stable defs comes from the session's key (its
     // package and target identity, `Session::crate_ids`). For a single-file
@@ -3217,6 +3234,7 @@ fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, obse
     }
     let session_key = session.key.clone();
     session.front.client = client_view(req);
+    if anonymous { session.front.client.anonymous_root = Some(req.file.clone()); }
     let Session { front, caches, std_cache, disk_cache, .. } = session;
     // The last check's answer, kept only for this same request (a no-op
     // check reuses it on the resolver path; anything else recomputes).
@@ -6926,7 +6944,7 @@ mod tests {
     /// is installed, and a workspace file relative to the workspace root.
     #[test]
     fn location_paths_do_not_hold_the_install_path() {
-        let client = expand::ClientView { env: None, shown_root: None };
+        let client = expand::ClientView::PROCESS;
         let at = |lust: &str, p: &str| location_path(&format!("{lust}{p}"), &Path::new(lust).join("library"), Some(Path::new("/ws")), &client);
         for lust in ["/opt/lust", "/home/u/tools/lust-0.2"] {
             assert_eq!(at(lust, "/library/deps/bumpalo/src/lib.rs"), "library/deps/bumpalo/src/lib.rs");

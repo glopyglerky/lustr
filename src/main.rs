@@ -237,10 +237,29 @@ fn main() -> ExitCode {
     if !compiler_mode && !native_cli && lustr_compiler::cargo_command(&args) {
         return incomplete_integration("Cargo compilation and alternate compiler selection");
     }
+    let rust = (!native_cli).then(|| lustr_compiler::native_request(&args)).flatten();
+    if let Some(request) = rust.as_ref().filter(|request| request.stdin) {
+        let mut command = Command::new(parent.join("lust-core"));
+        command.arg("--lustr-stdin-source").args(&request.args).stdin(std::process::Stdio::inherit());
+        match owned_child::output(&mut command) {
+            Ok(output) => {
+                trace_entry(if output.status.success() { "lust" } else { "lust-failed" }, "stdin");
+                native_diagnostic(&output.stderr);
+                io::stdout().write_all(&output.stdout).expect("cannot write compiler stdout");
+                io::stderr().write_all(&output.stderr).expect("cannot write compiler stderr");
+                if let Some(signal) = output.status.signal() { propagate_signal(signal); }
+                std::process::exit(output.status.code().unwrap_or(2));
+            }
+            Err(error) => {
+                eprintln!("cannot execute native Lust for stdin: {error}");
+                return ExitCode::from(2);
+            }
+        }
+    }
     let native = if native_cli {
         args.iter().map(|a| a.to_str().map(str::to_owned)).collect::<Option<Vec<_>>>()
     } else {
-        lustr_compiler::native_request(&args).map(|r| r.args)
+        rust.map(|r| r.args)
     };
     let prepared = native.and_then(|args| lust::prepare(&args).map(|call| (args, call)));
     if native_cli && prepared.is_none() {

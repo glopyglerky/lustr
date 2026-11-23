@@ -370,6 +370,10 @@ fn literal_string(st: &Expander, trees: &[Tt]) -> Option<(String, Span)> {
 /// absolute `rel` (the `concat!(env!("OUT_DIR"), ...)` form) replaces
 /// the base, as `Path::join` does. Returns the resolved path and bytes.
 fn read_include(st: &mut Expander, rel: &str, span: Span) -> Result<(std::path::PathBuf, Vec<u8>), Diag> {
+    if st.cur_anonymous && std::path::Path::new(rel).is_relative() {
+        return Err(err(C_INCLUDE, span, "cannot resolve relative path in non-file source `<anon>`",
+            "Use an absolute path for the included file."));
+    }
     let base = st.cur_real.parent().map_or_else(|| std::path::PathBuf::from("."), |p| p.to_path_buf());
     let path = base.join(rel);
     match std::fs::read(&path) {
@@ -803,10 +807,12 @@ fn include_macro(st: &mut Expander, name: &str, call: &Call, depth: u32) -> Resu
             }
             let old_file = std::mem::replace(&mut st.cur_file, path.to_string_lossy().to_string());
             let old_real = std::mem::replace(&mut st.cur_real, path.clone());
+            let old_anonymous = std::mem::replace(&mut st.cur_anonymous, false);
             let old_src = std::mem::replace(&mut st.cur_src, text);
             let expanded = st.expand_list(trees, depth + 1, true, false, 0);
             st.cur_file = old_file;
             st.cur_real = old_real;
+            st.cur_anonymous = old_anonymous;
             st.cur_src = old_src;
             expanded
         }

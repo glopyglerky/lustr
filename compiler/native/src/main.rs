@@ -415,6 +415,8 @@ fn main() {
         Some("explain") => std::process::exit(explain::run(&args[1..])),
         Some("capabilities") => std::process::exit(capabilities::run(&args[1..])),
         Some("expand") => std::process::exit(expand::run_expand(&args[1..])),
+        #[cfg(feature = "exclusive-native")]
+        Some("--lustr-stdin-source") => compile_stdin_source(&args[1..]),
         _ => {}
     }
     // A CI job may check its sources out while lust restores its front image
@@ -555,4 +557,40 @@ fn main() {
             std::process::exit(2);
         }
     }
+}
+
+#[cfg(feature = "exclusive-native")]
+fn compile_stdin_source(args: &[String]) -> ! {
+    use std::io::Read;
+    let mut source = String::new();
+    if std::io::stdin().read_to_string(&mut source).is_err() {
+        eprintln!("error: couldn't read from stdin, as it did not contain valid UTF-8");
+        std::process::exit(1);
+    }
+    if std::env::var_os("UNSTABLE_RUSTDOC_TEST_PATH").is_some() {
+        eprintln!("lustr: Rustdoc source coordinates are not integrated");
+        std::process::exit(2);
+    }
+    let Some(Invocation::Compile { mut req, run: false, args: run_args }) = protocol::parse_args(args)
+        else {
+            eprintln!("error: invalid native stdin compiler request");
+            std::process::exit(2);
+        };
+    if req.session.library.is_some() || req.session.krate.manifest_path.is_some() || req.cc
+        || req.emit_c.is_some() || req.file.file_name().is_none_or(|name| name != "<anon>")
+    {
+        eprintln!("error: stdin requires a standalone native Rust request");
+        std::process::exit(2);
+    }
+    req.session.krate.target_name = "rust_out".into();
+    own_env(&mut req);
+    if source.len() < BIG_FILE as usize { tcc::set_huge_pages(false); } else { pool::small_pages_in_parallel(); }
+    let dir = std::env::temp_dir().join(format!("lust-{}-stdin", std::process::id()));
+    let mut session = driver::Session::new(dir, false, req.session.clone());
+    session.cache_tried = true;
+    session.caches.leak_at_exit = true;
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| driver::compile_stdin(&req, &mut session, source)));
+    remove_obj_dir(session.obj_dir());
+    let result = result.unwrap_or_else(|payload| std::panic::resume_unwind(payload));
+    protocol::finish(result, false, &req.out, &run_args)
 }

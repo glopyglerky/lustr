@@ -244,7 +244,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
                 archive.into()]);
         }
     }
-    Some(Native {args:native,output})
+    Some(Native {args:native,output,stdin:false})
 }
 
 fn executable_externs(arguments: Vec<&str>, check: bool) -> Option<Vec<ExecutableExtern>> {

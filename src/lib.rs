@@ -11,6 +11,7 @@ pub use library_contract::supported_host as public_library_host_supported;
 pub struct Native {
     pub args: Vec<String>,
     pub output: PathBuf,
+    pub stdin: bool,
 }
 
 /// Line-based Rust argument files, adapted from rustc_driver_impl/src/args.rs
@@ -131,7 +132,7 @@ pub fn native_request(args: &[OsString]) -> Option<Native> {
                 "opt-level=0" | "debuginfo=0" => {}
                 _ => return None,
             }
-        } else if arg.starts_with('-') || !arg.ends_with(".rs") || input.is_some() {
+        } else if (arg != "-" && (arg.starts_with('-') || !arg.ends_with(".rs"))) || input.is_some() {
             return None;
         } else {
             input = Some(arg.to_owned());
@@ -142,16 +143,20 @@ pub fn native_request(args: &[OsString]) -> Option<Native> {
         return None;
     }
     let input = input?;
-    let output = output.unwrap_or_else(|| PathBuf::from(&input).file_stem().map(PathBuf::from).unwrap());
+    let stdin = input == "-";
+    let output = output.unwrap_or_else(|| {
+        if stdin { PathBuf::from("rust_out") } else { PathBuf::from(&input).file_stem().map(PathBuf::from).unwrap() }
+    });
     // Pinned rustc's Session::overflow_checks inherits the effective debug
     // assertion setting unless overflow checks were explicitly supplied.
     // Resolve the Rust request here, before the native profile defaults apply.
     if !explicit_overflow_checks && let Some(debug) = debug_assertions {
         settings.extend(["-C".to_owned(), format!("overflow-checks={debug}")]);
     }
-    let mut native = vec!["build".to_owned(), input, "-o".to_owned(), output.to_str()?.to_owned(), "--no-default-features".to_owned()];
+    let source = if stdin { "<anon>".to_owned() } else { input };
+    let mut native = vec!["build".to_owned(), source, "-o".to_owned(), output.to_str()?.to_owned(), "--no-default-features".to_owned()];
     native.extend(settings);
-    Some(Native { args: native, output })
+    Some(Native { args: native, output, stdin })
 }
 
 pub fn native_command(args: &[OsString]) -> Option<Vec<OsString>> {
