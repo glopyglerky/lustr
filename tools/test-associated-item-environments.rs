@@ -20,7 +20,7 @@ impl Run {
             .env("HOME", self.root.join("home")).env("CARGO_HOME", self.root.join("cargo-home"))
             .env("TMPDIR", self.root.join("tmp")).env("LANG", "C").env("LC_ALL", "C")
             .env("LUST_CACHE_DIR", self.root.join("cache")).env("LUST_DAEMON_SOCKET", self.root.join("s"))
-            .env("LUST_DAEMON_IDLE", "300");
+            .env("LUST_DAEMON_IDLE", "300").env("LUST_STATS", "1");
         command
     }
     fn run(&mut self, label: &str, command: &mut Command, expected: i32) -> Vec<u8> {

@@ -1,0 +1,833 @@
+{
+  "candidate_sha256": {
+    "lust": "cb2f450afc7843ea5f99b59e263644ad9f803e0d0cfca9def7c14a01e2a3659c",
+    "lust-core": "9cbc6834ed6c63ea85392f8aa3ec1712f7c132d9f01b12ae80779820ec2aa08a",
+    "lustr": "71365ede953383fd02acb605880b719c78645a109e94b453cb8f93982cfc4d04"
+  },
+  "fresh_process_trace_qualified": false,
+  "full_compiler_qualification": false,
+  "history": [
+    {
+      "case": "cold",
+      "records": [
+        {
+          "artifact_reused": false,
+          "checked_bodies": null,
+          "checked_definitions": [
+            "project"
+          ],
+          "counts": {
+            "archive_builds": 0,
+            "checked_bodies": 1,
+            "compiled_objects": 0,
+            "generated_bodies": 0,
+            "metadata_encodes": 1,
+            "reused_objects": 0,
+            "sdk_loads": 1
+          },
+          "crate": "schema",
+          "generation": 1,
+          "output_reused": false,
+          "phase": "complete",
+          "schema": "lustr-public-scalar-library-v1",
+          "status": 0
+        },
+        {
+          "artifact_reused": false,
+          "checked_bodies": null,
+          "checked_definitions": [
+            "read",
+            "spare"
+          ],
+          "counts": {
+            "archive_builds": 0,
+            "checked_bodies": 2,
+            "compiled_objects": 0,
+            "generated_bodies": 0,
+            "metadata_encodes": 1,
+            "reused_objects": 0,
+            "sdk_loads": 1
+          },
+          "crate": "reader",
+          "generation": 1,
+          "output_reused": false,
+          "phase": "complete",
+          "schema": "lustr-public-scalar-library-v1",
+          "status": 0
+        }
+      ]
+    },
+    {
+      "case": "request-noop",
+      "records": [
+        {
+          "artifact_reused": true,
+          "checked_bodies": null,
+          "checked_definitions": [],
+          "counts": {
+            "archive_builds": 0,
+            "checked_bodies": 0,
+            "compiled_objects": 0,
+            "generated_bodies": 0,
+            "metadata_encodes": 0,
+            "reused_objects": 0,
+            "sdk_loads": 1
+          },
+          "crate": "reader",
+          "generation": 1,
+          "output_reused": true,
+          "phase": "complete",
+          "schema": "lustr-public-scalar-library-v1",
+          "status": 0
+        }
+      ]
+    },
+    {
+      "case": "invalid-provider-request",
+      "records": [
+        {
+          "artifact_reused": false,
+          "checked_bodies": null,
+          "checked_definitions": [
+            "project"
+          ],
+          "counts": {
+            "archive_builds": 0,
+            "checked_bodies": 1,
+            "compiled_objects": 0,
+            "generated_bodies": 0,
+            "metadata_encodes": 0,
+            "reused_objects": 0,
+            "sdk_loads": 1
+          },
+          "crate": "schema",
+          "generation": 2,
+          "output_reused": null,
+          "phase": "native-prepare",
+          "schema": "lustr-public-scalar-library-v1",
+          "status": 1
+        }
+      ]
+    },
+    {
+      "case": "invalid-provider",
+      "records": [
+        {
+          "artifact_reused": false,
+          "checked_bodies": null,
+          "checked_definitions": [
+            "project"
+          ],
+          "counts": {
+            "archive_builds": 0,
+            "checked_bodies": 1,
+            "compiled_objects": 0,
+            "generated_bodies": 0,
+            "metadata_encodes": 0,
+            "reused_objects": 0,
+            "sdk_loads": 1
+          },
+          "crate": "schema",
+          "generation": 2,
+          "output_reused": null,
+          "phase": "native-prepare",
+          "schema": "lustr-public-scalar-library-v1",
+          "status": 1
+        }
+      ]
+    },
+    {
+      "case": "provider-repair",
+      "records": [
+        {
+          "artifact_reused": false,
+          "checked_bodies": null,
+          "checked_definitions": [
+            "project"
+          ],
+          "counts": {
+            "archive_builds": 0,
+            "checked_bodies": 1,
+            "compiled_objects": 0,
+            "generated_bodies": 0,
+            "metadata_encodes": 1,
+            "reused_objects": 0,
+            "sdk_loads": 1
+          },
+          "crate": "schema",
+          "generation": 3,
+          "output_reused": false,
+          "phase": "complete",
+          "schema": "lustr-public-scalar-library-v1",
+          "status": 0
+        },
+        {
+          "artifact_reused": true,
+          "checked_bodies": null,
+          "checked_definitions": [],
+          "counts": {
+            "archive_builds": 0,
+            "checked_bodies": 0,
+            "compiled_objects": 0,
+            "generated_bodies": 0,
+            "metadata_encodes": 0,
+            "reused_objects": 0,
+            "sdk_loads": 1
+          },
+          "crate": "reader",
+          "generation": 1,
+          "output_reused": false,
+          "phase": "complete",
+          "schema": "lustr-public-scalar-library-v1",
+          "status": 0
+        }
+      ]
+    },
+    {
+      "case": "provider-body",
+      "records": [
+        {
+          "artifact_reused": false,
+          "checked_bodies": null,
+          "checked_definitions": [
+            "project"
+          ],
+          "counts": {
+            "archive_builds": 0,
+            "checked_bodies": 1,
+            "compiled_objects": 0,
+            "generated_bodies": 0,
+            "metadata_encodes": 1,
+            "reused_objects": 0,
+            "sdk_loads": 1
+          },
+          "crate": "schema",
+          "generation": 4,
+          "output_reused": false,
+          "phase": "complete",
+          "schema": "lustr-public-scalar-library-v1",
+          "status": 0
+        },
+        {
+          "artifact_reused": false,
+          "checked_bodies": null,
+          "checked_definitions": [],
+          "counts": {
+            "archive_builds": 0,
+            "checked_bodies": 0,
+            "compiled_objects": 0,
+            "generated_bodies": 0,
+            "metadata_encodes": 1,
+            "reused_objects": 0,
+            "sdk_loads": 1
+          },
+          "crate": "reader",
+          "generation": 2,
+          "output_reused": false,
+          "phase": "complete",
+          "schema": "lustr-public-scalar-library-v1",
+          "status": 0
+        }
+      ]
+    },
+    {
+      "case": "provider-type",
+      "records": [
+        {
+          "artifact_reused": false,
+          "checked_bodies": null,
+          "checked_definitions": [
+            "project"
+          ],
+          "counts": {
+            "archive_builds": 0,
+            "checked_bodies": 1,
+            "compiled_objects": 0,
+            "generated_bodies": 0,
+            "metadata_encodes": 1,
+            "reused_objects": 0,
+            "sdk_loads": 1
+          },
+          "crate": "schema",
+          "generation": 5,
+          "output_reused": false,
+          "phase": "complete",
+          "schema": "lustr-public-scalar-library-v1",
+          "status": 0
+        },
+        {
+          "artifact_reused": false,
+          "checked_bodies": null,
+          "checked_definitions": [
+            "read"
+          ],
+          "counts": {
+            "archive_builds": 0,
+            "checked_bodies": 1,
+            "compiled_objects": 0,
+            "generated_bodies": 0,
+            "metadata_encodes": 0,
+            "reused_objects": 0,
+            "sdk_loads": 1
+          },
+          "crate": "reader",
+          "generation": 3,
+          "output_reused": null,
+          "phase": "native-prepare",
+          "schema": "lustr-public-scalar-library-v1",
+          "status": 1
+        }
+      ]
+    },
+    {
+      "case": "type-repair",
+      "records": [
+        {
+          "artifact_reused": false,
+          "checked_bodies": null,
+          "checked_definitions": [
+            "project"
+          ],
+          "counts": {
+            "archive_builds": 0,
+            "checked_bodies": 1,
+            "compiled_objects": 0,
+            "generated_bodies": 0,
+            "metadata_encodes": 1,
+            "reused_objects": 0,
+            "sdk_loads": 1
+          },
+          "crate": "schema",
+          "generation": 6,
+          "output_reused": false,
+          "phase": "complete",
+          "schema": "lustr-public-scalar-library-v1",
+          "status": 0
+        },
+        {
+          "artifact_reused": false,
+          "checked_bodies": null,
+          "checked_definitions": [
+            "read"
+          ],
+          "counts": {
+            "archive_builds": 0,
+            "checked_bodies": 1,
+            "compiled_objects": 0,
+            "generated_bodies": 0,
+            "metadata_encodes": 1,
+            "reused_objects": 0,
+            "sdk_loads": 1
+          },
+          "crate": "reader",
+          "generation": 4,
+          "output_reused": false,
+          "phase": "complete",
+          "schema": "lustr-public-scalar-library-v1",
+          "status": 0
+        }
+      ]
+    },
+    {
+      "case": "repaired-noop",
+      "records": [
+        {
+          "artifact_reused": true,
+          "checked_bodies": null,
+          "checked_definitions": [],
+          "counts": {
+            "archive_builds": 0,
+            "checked_bodies": 0,
+            "compiled_objects": 0,
+            "generated_bodies": 0,
+            "metadata_encodes": 0,
+            "reused_objects": 0,
+            "sdk_loads": 1
+          },
+          "crate": "reader",
+          "generation": 4,
+          "output_reused": true,
+          "phase": "complete",
+          "schema": "lustr-public-scalar-library-v1",
+          "status": 0
+        }
+      ]
+    },
+    {
+      "case": "missing-definition",
+      "records": [
+        {
+          "artifact_reused": false,
+          "checked_bodies": null,
+          "checked_definitions": [
+            "renamed_definition"
+          ],
+          "counts": {
+            "archive_builds": 0,
+            "checked_bodies": 1,
+            "compiled_objects": 0,
+            "generated_bodies": 0,
+            "metadata_encodes": 1,
+            "reused_objects": 0,
+            "sdk_loads": 1
+          },
+          "crate": "schema",
+          "generation": 7,
+          "output_reused": false,
+          "phase": "complete",
+          "schema": "lustr-public-scalar-library-v1",
+          "status": 0
+        },
+        {
+          "artifact_reused": false,
+          "checked_bodies": null,
+          "checked_definitions": [],
+          "counts": {
+            "archive_builds": 0,
+            "checked_bodies": 0,
+            "compiled_objects": 0,
+            "generated_bodies": 0,
+            "metadata_encodes": 0,
+            "reused_objects": 0,
+            "sdk_loads": 1
+          },
+          "crate": "reader",
+          "generation": 4,
+          "output_reused": null,
+          "phase": "native-prepare",
+          "schema": "lustr-public-scalar-library-v1",
+          "status": 1
+        }
+      ]
+    },
+    {
+      "case": "definition-repair",
+      "records": [
+        {
+          "artifact_reused": false,
+          "checked_bodies": null,
+          "checked_definitions": [
+            "project"
+          ],
+          "counts": {
+            "archive_builds": 0,
+            "checked_bodies": 1,
+            "compiled_objects": 0,
+            "generated_bodies": 0,
+            "metadata_encodes": 1,
+            "reused_objects": 0,
+            "sdk_loads": 1
+          },
+          "crate": "schema",
+          "generation": 8,
+          "output_reused": false,
+          "phase": "complete",
+          "schema": "lustr-public-scalar-library-v1",
+          "status": 0
+        },
+        {
+          "artifact_reused": false,
+          "checked_bodies": null,
+          "checked_definitions": [],
+          "counts": {
+            "archive_builds": 0,
+            "checked_bodies": 0,
+            "compiled_objects": 0,
+            "generated_bodies": 0,
+            "metadata_encodes": 1,
+            "reused_objects": 0,
+            "sdk_loads": 1
+          },
+          "crate": "reader",
+          "generation": 5,
+          "output_reused": false,
+          "phase": "complete",
+          "schema": "lustr-public-scalar-library-v1",
+          "status": 0
+        }
+      ]
+    },
+    {
+      "case": "definition-repair-noop",
+      "records": [
+        {
+          "artifact_reused": true,
+          "checked_bodies": null,
+          "checked_definitions": [],
+          "counts": {
+            "archive_builds": 0,
+            "checked_bodies": 0,
+            "compiled_objects": 0,
+            "generated_bodies": 0,
+            "metadata_encodes": 0,
+            "reused_objects": 0,
+            "sdk_loads": 1
+          },
+          "crate": "reader",
+          "generation": 5,
+          "output_reused": true,
+          "phase": "complete",
+          "schema": "lustr-public-scalar-library-v1",
+          "status": 0
+        }
+      ]
+    },
+    {
+      "case": "malformed-repair",
+      "records": [
+        {
+          "artifact_reused": true,
+          "checked_bodies": null,
+          "checked_definitions": [],
+          "counts": {
+            "archive_builds": 0,
+            "checked_bodies": 0,
+            "compiled_objects": 0,
+            "generated_bodies": 0,
+            "metadata_encodes": 0,
+            "reused_objects": 0,
+            "sdk_loads": 1
+          },
+          "crate": "reader",
+          "generation": 5,
+          "output_reused": true,
+          "phase": "complete",
+          "schema": "lustr-public-scalar-library-v1",
+          "status": 0
+        }
+      ]
+    },
+    {
+      "case": "linked-cold",
+      "records": [
+        {
+          "artifact_reused": false,
+          "checked_bodies": 1,
+          "checked_definitions": null,
+          "counts": null,
+          "crate": null,
+          "generation": null,
+          "output_reused": null,
+          "phase": null,
+          "schema": "lustr-public-executable-v1",
+          "status": 0
+        },
+        {
+          "artifact_reused": false,
+          "checked_bodies": null,
+          "checked_definitions": [
+            "project"
+          ],
+          "counts": {
+            "archive_builds": 1,
+            "checked_bodies": 1,
+            "compiled_objects": 1,
+            "generated_bodies": 1,
+            "metadata_encodes": 1,
+            "reused_objects": 0,
+            "sdk_loads": 1
+          },
+          "crate": "schema",
+          "generation": 1,
+          "output_reused": false,
+          "phase": "complete",
+          "schema": "lustr-public-scalar-library-v1",
+          "status": 0
+        }
+      ]
+    },
+    {
+      "case": "linked-noop",
+      "records": []
+    },
+    {
+      "case": "linked-provider-edit",
+      "records": [
+        {
+          "artifact_reused": false,
+          "checked_bodies": 0,
+          "checked_definitions": null,
+          "counts": null,
+          "crate": null,
+          "generation": null,
+          "output_reused": null,
+          "phase": null,
+          "schema": "lustr-public-executable-v1",
+          "status": 0
+        },
+        {
+          "artifact_reused": false,
+          "checked_bodies": null,
+          "checked_definitions": [
+            "project"
+          ],
+          "counts": {
+            "archive_builds": 1,
+            "checked_bodies": 1,
+            "compiled_objects": 1,
+            "generated_bodies": 1,
+            "metadata_encodes": 1,
+            "reused_objects": 0,
+            "sdk_loads": 1
+          },
+          "crate": "schema",
+          "generation": 2,
+          "output_reused": false,
+          "phase": "complete",
+          "schema": "lustr-public-scalar-library-v1",
+          "status": 0
+        }
+      ]
+    }
+  ],
+  "linked_control_profile": {
+    "debug": 0,
+    "incremental": false,
+    "panic": "abort"
+  },
+  "operations": {
+    "cargo-noop": {
+      "code": 0,
+      "elapsed_ns": 18567806,
+      "stderr_sha256": "6d77f64dfc8c5325b90fdbe05d8be367bdd578bcccec24f275c5ffee7d03dd6e",
+      "stdout_sha256": "4bed4b6ad0aa0294ff2833973ba295095192721148e2339721cdd65da5daebe0"
+    },
+    "cold": {
+      "code": 0,
+      "elapsed_ns": 1517151253,
+      "stderr_sha256": "b3ff498519a7394d813c038d5b78ebf7c65cb3fec0fbc319a299c1d4a92a0fc3",
+      "stdout_sha256": "0b3842f83ad1b3998178f1856ec313195c5fe8443449e4f222cbcd3bec2a5423"
+    },
+    "definition-repair": {
+      "code": 0,
+      "elapsed_ns": 106906022,
+      "stderr_sha256": "9d715b814fd5fb4d028f57c40c08ab0044e54cb0e1687ce71a466dcf418d588d",
+      "stdout_sha256": "0b3842f83ad1b3998178f1856ec313195c5fe8443449e4f222cbcd3bec2a5423"
+    },
+    "definition-repair-noop": {
+      "code": 0,
+      "elapsed_ns": 4334150,
+      "stderr_sha256": "b11492231c669dd42f7c42eadd90057a9475652389a07bf0c1756b0631a1b1f5",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "invalid-provider": {
+      "code": 101,
+      "elapsed_ns": 19789926,
+      "stderr_sha256": "ebe133541c03e0aa1606a2c5612693cf568f499e175f534c4fee74d082833f89",
+      "stdout_sha256": "23cac0e06e2d82ea40a06ebb438a206ecb1724745a69160fa0b33caf44b11ef6"
+    },
+    "invalid-provider-request": {
+      "code": 1,
+      "elapsed_ns": 81312076,
+      "stderr_sha256": "83e083e52f6f326b0d904e85e40170dce242b395514d1e36d9682ca2a4db4eaa",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "linked-cold": {
+      "code": 0,
+      "elapsed_ns": 4013705668,
+      "stderr_sha256": "ae1b3bcc6cc07a27f2fe5cbda00561e3da73ad1f0b2b608e70209d6fdba4654e",
+      "stdout_sha256": "eecd262c3ecab667b61ebb70835f3b181a1d1530d3ebc0ef99a3a8dc3d5b193f"
+    },
+    "linked-noop": {
+      "code": 0,
+      "elapsed_ns": 14703494,
+      "stderr_sha256": "82ff4c7bd57a61b827352bca8f9f80c60665ee06b8da338f9f54b335b82fbbe8",
+      "stdout_sha256": "eecd262c3ecab667b61ebb70835f3b181a1d1530d3ebc0ef99a3a8dc3d5b193f"
+    },
+    "linked-provider-edit": {
+      "code": 0,
+      "elapsed_ns": 109284585,
+      "stderr_sha256": "aa5d3a62ea4020b6408187efcc7d70eb32bee542ab2c1300e96cc33ed019efc2",
+      "stdout_sha256": "743c7850cccfba5e53a9002663ec1ddd1079315a98bdbfdde10e6044f56abefe"
+    },
+    "malformed-input": {
+      "code": 3,
+      "elapsed_ns": 3353824,
+      "stderr_sha256": "7e74902837aca5d51797df94d74cd4208f9d713e7446abb43627a1b9e6bfd47e",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "malformed-repair": {
+      "code": 0,
+      "elapsed_ns": 8583554,
+      "stderr_sha256": "b11492231c669dd42f7c42eadd90057a9475652389a07bf0c1756b0631a1b1f5",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "missing-definition": {
+      "code": 101,
+      "elapsed_ns": 76942993,
+      "stderr_sha256": "58568e72638e2351ce2add710905df8deee6f65c0e2c142cda22a3f0f4511471",
+      "stdout_sha256": "c7cb3da0fabe81395a2cec7f2d7a37096c698507c0b0910f3d1fdc42d42d2f9d"
+    },
+    "original-missing-definition": {
+      "code": 1,
+      "elapsed_ns": 36800655,
+      "stderr_sha256": "8cefecf2021b0e83daa04e8e3ebcdf9df0ad9d224fe5da34bea175a0e60e85f2",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "original-reads-native-provider": {
+      "code": 0,
+      "elapsed_ns": 21775169,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "original-reads-updated-provider": {
+      "code": 0,
+      "elapsed_ns": 18764603,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "original-type-mismatch": {
+      "code": 1,
+      "elapsed_ns": 24739642,
+      "stderr_sha256": "5415636c1fe8d7a21e8c8c34d99584f3f432deef8607e6005a2cf0b9afaf6b56",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predicate-copy-invalid-native": {
+      "code": 1,
+      "elapsed_ns": 31160859,
+      "stderr_sha256": "ebeb5b3d6d84e345e50216586c43ebd2434476531b538650cc33e5cf32fcc325",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predicate-copy-invalid-original": {
+      "code": 1,
+      "elapsed_ns": 31787968,
+      "stderr_sha256": "79dbba8ba3e9e8822c1bbbb7e77ae1cd93c1b9dda88ea5aa8950e7f481ca654a",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predicate-copy-valid-native": {
+      "code": 0,
+      "elapsed_ns": 24327683,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predicate-copy-valid-original": {
+      "code": 0,
+      "elapsed_ns": 23339989,
+      "stderr_sha256": "17b764ef610dc50b5dd74851bdf5d334ad68f0c970c7769e105eb1a0e337fd90",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predicate-outlives-invalid-native": {
+      "code": 1,
+      "elapsed_ns": 22167785,
+      "stderr_sha256": "ec29a3bf2642e95e92dec55d697fac6d8c2842b7ae0c58c7628c910841d48083",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predicate-outlives-invalid-original": {
+      "code": 1,
+      "elapsed_ns": 19331311,
+      "stderr_sha256": "a711a08680e48ed78e4bf583c63955555d33b5ec6f82cb538d46ed1711682c28",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predicate-outlives-valid-native": {
+      "code": 0,
+      "elapsed_ns": 19530579,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predicate-outlives-valid-original": {
+      "code": 0,
+      "elapsed_ns": 19555165,
+      "stderr_sha256": "0d98792dd8493c64932060c276dc14283f858b491631d5444ebeb47042c98d40",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predicate-projection-invalid-native": {
+      "code": 1,
+      "elapsed_ns": 19707185,
+      "stderr_sha256": "d2ddf1db005f4516a26a6c86f5829a933e8b85956190281bf028a5fd82e18a6a",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predicate-projection-invalid-original": {
+      "code": 1,
+      "elapsed_ns": 34344071,
+      "stderr_sha256": "aa474863d5869d98110858f0a6acdeff872b29e715a0733843dcee07d0726050",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predicate-projection-valid-native": {
+      "code": 0,
+      "elapsed_ns": 24958721,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predicate-projection-valid-original": {
+      "code": 0,
+      "elapsed_ns": 20777021,
+      "stderr_sha256": "25541bfe22bd29311887295dec72d9e62b302c28f6187d5b421e327c248375d3",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predicate-region-trait-invalid-native": {
+      "code": 1,
+      "elapsed_ns": 22074809,
+      "stderr_sha256": "0ad333b52434b61026830efdd19550f8ada4d4dec8d643e03f5c4493305f6800",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predicate-region-trait-invalid-original": {
+      "code": 1,
+      "elapsed_ns": 20977420,
+      "stderr_sha256": "95bcc7a84d6e6ec49cd094770af4dfaa635a829df621b98c4e8a9224d8312198",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predicate-region-trait-valid-native": {
+      "code": 0,
+      "elapsed_ns": 22773572,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predicate-region-trait-valid-original": {
+      "code": 0,
+      "elapsed_ns": 21539650,
+      "stderr_sha256": "9fe1a3050a1d225803bc6a9e667290987be05cf3cd8a4ba4a0d080075fbe7bd6",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "provider-body": {
+      "code": 0,
+      "elapsed_ns": 71196859,
+      "stderr_sha256": "c5aa362cddd0c3cbaac7cab71ef0acd5ead1e0d161b16a8107a3c568d241e069",
+      "stdout_sha256": "0b3842f83ad1b3998178f1856ec313195c5fe8443449e4f222cbcd3bec2a5423"
+    },
+    "provider-repair": {
+      "code": 0,
+      "elapsed_ns": 62490204,
+      "stderr_sha256": "4488c34bcdaa5df022937f2f00156c5080e7b419d375f04647937f1fb93d92dd",
+      "stdout_sha256": "0b3842f83ad1b3998178f1856ec313195c5fe8443449e4f222cbcd3bec2a5423"
+    },
+    "provider-type": {
+      "code": 101,
+      "elapsed_ns": 74110370,
+      "stderr_sha256": "dab1842cf04b31be2a84fbbe1d8c1640e7efb98919820f1efb53ac96f34d0fdc",
+      "stdout_sha256": "7b0e863b67bf2a9da0122e73d19cd1d30513d7d63fcbf8e32a8a010beff3c61c"
+    },
+    "repaired-noop": {
+      "code": 0,
+      "elapsed_ns": 6651402,
+      "stderr_sha256": "b11492231c669dd42f7c42eadd90057a9475652389a07bf0c1756b0631a1b1f5",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "request-noop": {
+      "code": 0,
+      "elapsed_ns": 93796650,
+      "stderr_sha256": "b11492231c669dd42f7c42eadd90057a9475652389a07bf0c1756b0631a1b1f5",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "type-repair": {
+      "code": 0,
+      "elapsed_ns": 86162785,
+      "stderr_sha256": "d55ec53c6f1694129bcf348dea235ad5354210cc46177379f99b9ee5526bb4ee",
+      "stdout_sha256": "0b3842f83ad1b3998178f1856ec313195c5fe8443449e4f222cbcd3bec2a5423"
+    }
+  },
+  "ordinary_predicate_pairs": 4,
+  "passed": true,
+  "performance_qualified": false,
+  "qualifier_sha256": "d7fc9651c9202d45ab4e96450a7bd9af99a713153926affe216cb70faae6ef2e",
+  "remaining": [
+    "selective pinned normalization/WF/region service",
+    "GAT provider metadata through ordinary Cargo",
+    "default-profile build/run/debug/test",
+    "broader traced campaign; strace unavailable in this execution environment"
+  ],
+  "rust_revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "schema": "lustr-import-generation-verification-v1",
+  "scope": "default-profile scalar Cargo check and retained native import-generation history; not GAT-service or full replacement qualification",
+  "source_commit": "2ea271861092e2d4c191c61528f47948ab7fbc55",
+  "source_tree": "7322376aaeb6f575be765637b04d8ae8bd61cc2a"
+}

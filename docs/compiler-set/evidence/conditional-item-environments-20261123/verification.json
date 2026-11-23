@@ -1,0 +1,694 @@
+{
+  "candidate_sha256": {
+    "lust": "cb2f450afc7843ea5f99b59e263644ad9f803e0d0cfca9def7c14a01e2a3659c",
+    "lust-core": "9cbc6834ed6c63ea85392f8aa3ec1712f7c132d9f01b12ae80779820ec2aa08a",
+    "lustr": "71365ede953383fd02acb605880b719c78645a109e94b453cb8f93982cfc4d04"
+  },
+  "cases": [
+    {
+      "case": "conditional_copy",
+      "source": "trait Family { type View where Self: Copy; } impl<T> Family for T { type View where T: Copy = u32; } fn main() {}",
+      "status": 0
+    },
+    {
+      "case": "conditional_static",
+      "source": "trait Family { type View where Self: 'static; } impl<T> Family for T { type View where T: 'static = u32; } fn main() {}",
+      "status": 0
+    },
+    {
+      "case": "conditional_bound_value",
+      "source": "trait Family { type View: Copy where Self: Copy; } impl<T> Family for T { type View where T: Copy = T; } fn main() {}",
+      "status": 0
+    },
+    {
+      "case": "whole_impl_control",
+      "source": "trait Family { type View: Copy where Self: Copy; } impl<T: Copy> Family for T { type View = T; } fn main() {}",
+      "status": 0
+    },
+    {
+      "case": "sibling_valid",
+      "source": "trait Family { type View where Self: Copy; type Other: Copy; } impl<T> Family for T { type View where T: Copy = u32; type Other = u32; } fn main() {}",
+      "status": 0
+    },
+    {
+      "case": "item_wf_valid",
+      "source": "struct Need<T: Copy>(T); trait Family { type View where Self: Copy; } impl<T> Family for T { type View where T: Copy = Need<T>; } fn main() {}",
+      "status": 0
+    },
+    {
+      "case": "redundant_clone",
+      "source": "trait Family { type View where Self: Copy; } impl<T> Family for T { type View where T: Copy + Clone = u32; } fn main() {}",
+      "status": 0
+    },
+    {
+      "case": "conditional_ref_static",
+      "source": "trait Family { type View where Self: 'static; } impl<'a> Family for &'a u8 { type View where 'a: 'static = u32; } fn main() {}",
+      "status": 0
+    },
+    {
+      "case": "conditional_value_static",
+      "source": "trait Family { type View: 'static where Self: 'static; } impl<T> Family for T { type View where T: 'static = T; } fn main() {}",
+      "status": 0
+    },
+    {
+      "case": "conditional_borrowed_assignment",
+      "source": "trait Family { type View where Self: 'static; } impl<T> Family for T { type View where T: 'static = &'static T; } fn main() {}",
+      "status": 0
+    },
+    {
+      "case": "sibling_borrowed_assignment",
+      "source": "trait Family { type View where Self: 'static; type Other; } impl<T> Family for T { type View where T: 'static = u32; type Other = &'static T; } fn main() {}",
+      "status": 1
+    },
+    {
+      "case": "missing_copy",
+      "source": "trait Family { type View where Self: Copy; } impl<T> Family for T { type View = u32; } fn main() {}",
+      "status": 1
+    },
+    {
+      "case": "invalid_assigned_value",
+      "source": "struct NonCopy; trait Family { type View: Copy where Self: Copy; } impl<T> Family for T { type View where T: Copy = NonCopy; } fn main() {}",
+      "status": 1
+    },
+    {
+      "case": "extra_copy",
+      "source": "trait Family { type View; } impl<T> Family for T { type View where T: Copy = u32; } fn main() {}",
+      "status": 1
+    },
+    {
+      "case": "extra_static",
+      "source": "trait Family { type View; } impl<T> Family for T { type View where T: 'static = u32; } fn main() {}",
+      "status": 1
+    },
+    {
+      "case": "sibling_copy_isolation",
+      "source": "trait Family { type View where Self: Copy; type Other: Copy; } impl<T> Family for T { type View where T: Copy = u32; type Other = T; } fn main() {}",
+      "status": 1
+    },
+    {
+      "case": "sibling_static_isolation",
+      "source": "trait Family { type View where Self: 'static; type Other: 'static; } impl<T> Family for T { type View where T: 'static = u32; type Other = T; } fn main() {}",
+      "status": 1
+    },
+    {
+      "case": "whole_impl_isolation",
+      "source": "trait Family: Copy { type View where Self: Copy; } impl<T> Family for T { type View where T: Copy = u32; } fn main() {}",
+      "status": 1
+    },
+    {
+      "case": "missing_static",
+      "source": "trait Family { type View where Self: 'static; } impl<T> Family for T { type View = u32; } fn main() {}",
+      "status": 1
+    },
+    {
+      "case": "weaker_clone",
+      "source": "trait Family { type View where Self: Copy; } impl<T> Family for T { type View where T: Clone = u32; } fn main() {}",
+      "status": 1
+    },
+    {
+      "case": "stronger_ord",
+      "source": "trait Family { type View where Self: Copy; } impl<T> Family for T { type View where T: Copy + Ord = u32; } fn main() {}",
+      "status": 1
+    },
+    {
+      "case": "invalid_ref_static",
+      "source": "trait Family { type View where Self: 'static; } impl<'a> Family for &'a u8 { type View = u32; } fn main() {}",
+      "status": 1
+    }
+  ],
+  "fresh_process_trace_qualified": false,
+  "full_compiler_qualification": false,
+  "history": [
+    {
+      "case": "cold",
+      "checked": 3,
+      "status": 0
+    },
+    {
+      "case": "noop",
+      "checked": 0,
+      "status": 0
+    },
+    {
+      "case": "referent-invalid",
+      "checked": null,
+      "status": 1
+    },
+    {
+      "case": "referent-repair",
+      "checked": 1,
+      "status": 0
+    },
+    {
+      "case": "condition-invalid",
+      "checked": null,
+      "status": 1
+    },
+    {
+      "case": "condition-repair",
+      "checked": 0,
+      "status": 0
+    },
+    {
+      "case": "sibling-invalid",
+      "checked": null,
+      "status": 1
+    },
+    {
+      "case": "sibling-repair",
+      "checked": 0,
+      "status": 0
+    },
+    {
+      "case": "body-edit",
+      "checked": 1,
+      "status": 0
+    },
+    {
+      "case": "body-noop",
+      "checked": 0,
+      "status": 0
+    }
+  ],
+  "operations": [
+    {
+      "case": "original-conditional_copy",
+      "code": 0,
+      "elapsed_ns": 19543787,
+      "expected": 0,
+      "stderr_sha256": "f8bea10eaf6b219476805a56572567c9ea278271db5c0de6a7901c7d2b65b1bc",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "original-conditional_static",
+      "code": 0,
+      "elapsed_ns": 20991301,
+      "expected": 0,
+      "stderr_sha256": "a5ff8478e217ddb8b512ce42ac1b40bb2b43c271150fd5fc9bf369e7f114fae6",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "original-conditional_bound_value",
+      "code": 0,
+      "elapsed_ns": 18273587,
+      "expected": 0,
+      "stderr_sha256": "6c2cd34f2153fd2a2289501efc1a3a5245d45fe9c125db78e70fd4c26eb46fdc",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "original-whole_impl_control",
+      "code": 0,
+      "elapsed_ns": 19137767,
+      "expected": 0,
+      "stderr_sha256": "fb46bb0330ec213a43fd5713a0d68ac5bb3c671445fea7fea3ad2865da333621",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "original-sibling_valid",
+      "code": 0,
+      "elapsed_ns": 19837107,
+      "expected": 0,
+      "stderr_sha256": "0b55cded62ceab228a5dace8c4542521a8138437eae6df7cf3ba45399119a971",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "original-item_wf_valid",
+      "code": 0,
+      "elapsed_ns": 20150454,
+      "expected": 0,
+      "stderr_sha256": "3b7fc84d6cf12d4f729b7567e7fef826d4b8bda200af9fa5444b51c12307bd9d",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "original-redundant_clone",
+      "code": 0,
+      "elapsed_ns": 19244537,
+      "expected": 0,
+      "stderr_sha256": "00854a90d34905f007127340203e8a7f8502d690e38b7ffb52a1ec09f3e1aa23",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "original-conditional_ref_static",
+      "code": 0,
+      "elapsed_ns": 19569976,
+      "expected": 0,
+      "stderr_sha256": "981a454b0102233b1a94ee0133d326b7897c8129360c08597f906bc67ec27d92",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "original-conditional_value_static",
+      "code": 0,
+      "elapsed_ns": 19459539,
+      "expected": 0,
+      "stderr_sha256": "c53c62633d93731ac62dfec9d6d96e997e9c07d203acd69c6ed1b5513cb45b64",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "original-conditional_borrowed_assignment",
+      "code": 0,
+      "elapsed_ns": 18221225,
+      "expected": 0,
+      "stderr_sha256": "9f3ad6912888cdf1bf6f571b6f191c14d96090d3bdd36699bc5ff4eec3b211b8",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "original-sibling_borrowed_assignment",
+      "code": 1,
+      "elapsed_ns": 20573480,
+      "expected": 1,
+      "stderr_sha256": "aace1ca361a6edd383c5408d2396c101d1f74adb1c07d4eec1ceb6a59a8ebbf4",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "original-missing_copy",
+      "code": 1,
+      "elapsed_ns": 28814462,
+      "expected": 1,
+      "stderr_sha256": "8393a8a843729261cc696bbddb61807dc57834320a0a3ad740521e3e3876a14d",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "original-invalid_assigned_value",
+      "code": 1,
+      "elapsed_ns": 29095167,
+      "expected": 1,
+      "stderr_sha256": "9c728ae346019d9dace81bebc6644cfe5af039a25bac9d4d9d7225318e35c306",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "original-extra_copy",
+      "code": 1,
+      "elapsed_ns": 25246046,
+      "expected": 1,
+      "stderr_sha256": "19ea79ff8f6840957f47a45ebe16d41d577dd71ef85c6151b529a62e8f8dba2a",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "original-extra_static",
+      "code": 1,
+      "elapsed_ns": 18581635,
+      "expected": 1,
+      "stderr_sha256": "5a8897a87f9855e4f9472d376a683e4adf63af849d30995c6a8fdb52b0320395",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "original-sibling_copy_isolation",
+      "code": 1,
+      "elapsed_ns": 28970916,
+      "expected": 1,
+      "stderr_sha256": "a63575b5365729488b6e12d2dde4cb91d902f35bcaa0f2bc177a4128ecbe5d7a",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "original-sibling_static_isolation",
+      "code": 1,
+      "elapsed_ns": 22267033,
+      "expected": 1,
+      "stderr_sha256": "a39ceed31877580b099466956381acffb20f95fac1a29f75a01cd0ac61b61638",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "original-whole_impl_isolation",
+      "code": 1,
+      "elapsed_ns": 30324957,
+      "expected": 1,
+      "stderr_sha256": "10ce8ca3badea02bd13c3f3f7c4ecd1a985d13712f7922299b84d82ef29ccfec",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "original-missing_static",
+      "code": 1,
+      "elapsed_ns": 23553960,
+      "expected": 1,
+      "stderr_sha256": "51877607a2ffeec63468c83b16a1ddea25a4a7acd49664e525194b0fa4bc0d7e",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "original-weaker_clone",
+      "code": 1,
+      "elapsed_ns": 31050369,
+      "expected": 1,
+      "stderr_sha256": "a079cfc7797080e51ccc7b6647eda4448640066a4d0a7d99b82919ab36b89d1b",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "original-stronger_ord",
+      "code": 1,
+      "elapsed_ns": 26571495,
+      "expected": 1,
+      "stderr_sha256": "5ff02ea2b6f1cff16ed907c2ff90f6ffb3242477c3be1a107023b0db65be7406",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "original-invalid_ref_static",
+      "code": 1,
+      "elapsed_ns": 19212482,
+      "expected": 1,
+      "stderr_sha256": "f2d6d7d8ef7dbbbc855da00645c7c077f9b90a7a5ae9221fb577aedf093ca049",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "native-conditional_copy",
+      "code": 0,
+      "elapsed_ns": 36225926,
+      "expected": 0,
+      "stderr_sha256": "270f0a8eea7f8ec77e2b06450c3e3df5f288c283582d523bb85eb6b5aeaf215d",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "native-conditional_static",
+      "code": 0,
+      "elapsed_ns": 35598385,
+      "expected": 0,
+      "stderr_sha256": "cb54c5d1b68ba86fb97d57dc0b8c833e7a1067ab75ef6848d36b22ffd1dbefd7",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "native-conditional_bound_value",
+      "code": 0,
+      "elapsed_ns": 29911676,
+      "expected": 0,
+      "stderr_sha256": "1c8491ab4a2352464a219493b2a412fac8bbd3af7862c64a449a47dc5b0b45db",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "native-whole_impl_control",
+      "code": 0,
+      "elapsed_ns": 36414667,
+      "expected": 0,
+      "stderr_sha256": "f721b6bc42a5d7d8b544dd0c98fa4139b2f87d53b127828e51dacfe7567d5f04",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "native-sibling_valid",
+      "code": 0,
+      "elapsed_ns": 28873602,
+      "expected": 0,
+      "stderr_sha256": "b030486762a64e6caa06f66a0aadce02231b912f18952404ae3c04cb06cce513",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "native-item_wf_valid",
+      "code": 0,
+      "elapsed_ns": 29390220,
+      "expected": 0,
+      "stderr_sha256": "7582ea998f39382707f223105d6ff9accf8e9d615eb2d854e49a7ce1a498cff6",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "native-redundant_clone",
+      "code": 0,
+      "elapsed_ns": 34689576,
+      "expected": 0,
+      "stderr_sha256": "cf24e4b976f612354b1661a486419e6e127ecb8d1d2cb2ff652ae500623500bd",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "native-conditional_ref_static",
+      "code": 0,
+      "elapsed_ns": 36336453,
+      "expected": 0,
+      "stderr_sha256": "7307ab40fd834b3879f0cbb375ec60c623f3831703a54b9f16739f5d3c125e5c",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "native-conditional_value_static",
+      "code": 0,
+      "elapsed_ns": 36305830,
+      "expected": 0,
+      "stderr_sha256": "c0d253809687372a623db99cb4c27e8128d94f38ad1d8740c1478b33c17a49c7",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "native-conditional_borrowed_assignment",
+      "code": 0,
+      "elapsed_ns": 36604929,
+      "expected": 0,
+      "stderr_sha256": "fb6c7ea8ae9e94552f7d2a29c7333d62f2fb49d31d00bcfd80dcb1c3e3da3a70",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "native-sibling_borrowed_assignment",
+      "code": 1,
+      "elapsed_ns": 37594393,
+      "expected": 1,
+      "stderr_sha256": "2693548bb29052a67d5a5c51ed552a09fb59edb61c8de006977d7bc19d7ec894",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "native-missing_copy",
+      "code": 1,
+      "elapsed_ns": 28156632,
+      "expected": 1,
+      "stderr_sha256": "d6a1d4f3b03c60b635112decee63915343101b879e86211ffeb50c8d6704b48a",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "native-invalid_assigned_value",
+      "code": 1,
+      "elapsed_ns": 30180081,
+      "expected": 1,
+      "stderr_sha256": "a13c07b15332e1087bde276fb937a094086a9f107f8b26a9919db39747e465e1",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "native-extra_copy",
+      "code": 1,
+      "elapsed_ns": 31056879,
+      "expected": 1,
+      "stderr_sha256": "e91c5755c81e4af7684fe71db678007b646f9d289a2330dc7729eb767a392e7a",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "native-extra_static",
+      "code": 1,
+      "elapsed_ns": 31205657,
+      "expected": 1,
+      "stderr_sha256": "c3762fb76106ce5a73ab0290dd4c7b9cfd135dca09d0bd0b2f2ba0f0e9e9ca78",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "native-sibling_copy_isolation",
+      "code": 1,
+      "elapsed_ns": 33616693,
+      "expected": 1,
+      "stderr_sha256": "55336fa9cc1a07947f16248a53a95077fbdef509891afa02935bfef76afc75e8",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "native-sibling_static_isolation",
+      "code": 1,
+      "elapsed_ns": 43964753,
+      "expected": 1,
+      "stderr_sha256": "f73b52919f63e11e72be0fa2ed0fbe6181fa4cc3fece86025065761d71cd5838",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "native-whole_impl_isolation",
+      "code": 1,
+      "elapsed_ns": 32949608,
+      "expected": 1,
+      "stderr_sha256": "327864ebb3a03116f0f54afc71ade868240a0a45e8531e6b4fdafd8372ffa68a",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "native-missing_static",
+      "code": 1,
+      "elapsed_ns": 35944086,
+      "expected": 1,
+      "stderr_sha256": "e0c7301faf21377523baa00816ac90fe2f56e617e3a315164070a70b1a230c4b",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "native-weaker_clone",
+      "code": 1,
+      "elapsed_ns": 44785828,
+      "expected": 1,
+      "stderr_sha256": "8b810bc5ac819528b79f6fc480f88b6d764f39003c3cbfe3b3d29641f41a3658",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "native-stronger_ord",
+      "code": 1,
+      "elapsed_ns": 35085269,
+      "expected": 1,
+      "stderr_sha256": "e29223f93bd029c54edfaa41dfb7ca818a40397a2575ac3d2af54509488ffebe",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "native-invalid_ref_static",
+      "code": 1,
+      "elapsed_ns": 36615833,
+      "expected": 1,
+      "stderr_sha256": "99cfbb03d1ed78d72ba4bf5c154638f01e842e221852a27b481c0eb17788549f",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "history-cold-original",
+      "code": 0,
+      "elapsed_ns": 17433014,
+      "expected": 0,
+      "stderr_sha256": "b8944d53e2aeb995da8828e43cd20d25a3fd94ae2377891dc2e88ec00fca1a9e",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "history-cold-native",
+      "code": 0,
+      "elapsed_ns": 34298357,
+      "expected": 0,
+      "stderr_sha256": "970376bf4a2cbc6e8acb7f175dfba8f4e31f82a91f4e1034d015dba0ebe19822",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "history-noop-original",
+      "code": 0,
+      "elapsed_ns": 27824093,
+      "expected": 0,
+      "stderr_sha256": "b8944d53e2aeb995da8828e43cd20d25a3fd94ae2377891dc2e88ec00fca1a9e",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "history-noop-native",
+      "code": 0,
+      "elapsed_ns": 1910805,
+      "expected": 0,
+      "stderr_sha256": "2b00e9dd8de6f36d71fc78126e3a80eaa6c663976cabccdcf6fd8cc19b53b4a2",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "history-referent-invalid-original",
+      "code": 1,
+      "elapsed_ns": 34261932,
+      "expected": 1,
+      "stderr_sha256": "9926df1b7b4b8c17b4044db2d600b888f8f089886bf446a029f60be8535d1631",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "history-referent-invalid-native",
+      "code": 1,
+      "elapsed_ns": 24748164,
+      "expected": 1,
+      "stderr_sha256": "3366a941939836425ca41d2a033a004b407d7785e810da624841f6b677d42489",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "history-referent-repair-original",
+      "code": 0,
+      "elapsed_ns": 22249202,
+      "expected": 0,
+      "stderr_sha256": "b8944d53e2aeb995da8828e43cd20d25a3fd94ae2377891dc2e88ec00fca1a9e",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "history-referent-repair-native",
+      "code": 0,
+      "elapsed_ns": 31415285,
+      "expected": 0,
+      "stderr_sha256": "45d98938f08fdbb8973658f99a564485e93a6cd395ae62b0f14af3009fcabb40",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "history-condition-invalid-original",
+      "code": 1,
+      "elapsed_ns": 48357924,
+      "expected": 1,
+      "stderr_sha256": "d09a51d1b1bc716488d0d6aa202720ef2fc6b3a732e1c4f6745713dfd6fa00d2",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "history-condition-invalid-native",
+      "code": 1,
+      "elapsed_ns": 38299447,
+      "expected": 1,
+      "stderr_sha256": "d789b77cf3018c11e49c45cea7c3d67de59970c3c365de1855f1840ab5e44108",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "history-condition-repair-original",
+      "code": 0,
+      "elapsed_ns": 19726819,
+      "expected": 0,
+      "stderr_sha256": "b8944d53e2aeb995da8828e43cd20d25a3fd94ae2377891dc2e88ec00fca1a9e",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "history-condition-repair-native",
+      "code": 0,
+      "elapsed_ns": 24320290,
+      "expected": 0,
+      "stderr_sha256": "2b8481ccb05b0f699da2912ddf9889b04d7ed3c9eadc0e9d092c6129444f58ce",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "history-sibling-invalid-original",
+      "code": 1,
+      "elapsed_ns": 36671958,
+      "expected": 1,
+      "stderr_sha256": "7a788045d5c3b452ca59b4849c085dc82f5393a2505f78adf12ab05079a05258",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "history-sibling-invalid-native",
+      "code": 1,
+      "elapsed_ns": 34095061,
+      "expected": 1,
+      "stderr_sha256": "a3b0bf658fb38fc7dc3b2bd767bdbbabf13097f8b5053b7865c2ebeda12269f3",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "history-sibling-repair-original",
+      "code": 0,
+      "elapsed_ns": 18859783,
+      "expected": 0,
+      "stderr_sha256": "b8944d53e2aeb995da8828e43cd20d25a3fd94ae2377891dc2e88ec00fca1a9e",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "history-sibling-repair-native",
+      "code": 0,
+      "elapsed_ns": 17468979,
+      "expected": 0,
+      "stderr_sha256": "f835c29f37a59d5518b5f0008acd6e530ccb4987634a8a238192b8b7d27e05b0",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "history-body-edit-original",
+      "code": 0,
+      "elapsed_ns": 22474306,
+      "expected": 0,
+      "stderr_sha256": "0498b2d4bf5d63bb83f82fa908143b83a10a9462296430e5b10ac2d0232589ab",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "history-body-edit-native",
+      "code": 0,
+      "elapsed_ns": 3788493,
+      "expected": 0,
+      "stderr_sha256": "532cd38a0106bc979ea810fd94d945c3e39144caa61e8c72e981f79425012a42",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "history-body-noop-original",
+      "code": 0,
+      "elapsed_ns": 25826598,
+      "expected": 0,
+      "stderr_sha256": "0498b2d4bf5d63bb83f82fa908143b83a10a9462296430e5b10ac2d0232589ab",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "history-body-noop-native",
+      "code": 0,
+      "elapsed_ns": 16161227,
+      "expected": 0,
+      "stderr_sha256": "00f4b713487a96b5584e9c7ef82b6521aa2ccc7e7b7097bb324fc789d70f555d",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "passed": true,
+  "performance_qualified": false,
+  "qualifier_sha256": "76dc4cd2de788aad9cb899fde900780394566e09d957efb4627c1a9e5e60d998",
+  "rust_revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "schema": "lustr-associated-item-environments-v1",
+  "source_commit": "2ea271861092e2d4c191c61528f47948ab7fbc55",
+  "source_tree": "7322376aaeb6f575be765637b04d8ae8bd61cc2a"
+}

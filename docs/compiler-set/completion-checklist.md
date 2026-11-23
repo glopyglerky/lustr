@@ -328,10 +328,17 @@ manifests and publication require serial integration. No prior timed handoff
 is an implementation stopping condition for the resumed worker.
 The repair retains impl-associated predicates and regioned values separately,
 checks assignments and compatibility in their actual environments, and includes
-those facts in dependency fingerprints and retained span shifting. Twenty
-pinned valid/invalid reference cases passed before candidate comparison;
-installed candidate and retained checks are pending. See the
+those facts in dependency fingerprints and retained span shifting. Qualified
+compiler source `2ea27186` passes 22 independent pinned/native fresh cases,
+ten retained edit/failure/repair states, eight focused native tests and all
+32 retained patch tests. Its installed scalar Cargo/import history passes
+38 operations, including independent metadata reading. The first qualifier's
+missing-counter observation failure remains preserved. See the
 [source-bound repair record](evidence/conditional-item-environments-20261123/README.md).
+The demonstrated conditional-environment regression is repaired. P1/P2 remain
+ACTIVE: the next source action is the selective pinned service over the retained
+trait/impl-associated declarations and genuine provider metadata through the
+default Cargo path. GAT admission remains gated until that integration is checked.
 
 23 November implementation continuation: P2's imported-generation update is
 ACTIVE on the `3507c74d` base. The public owner validates replacement metadata
