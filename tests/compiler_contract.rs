@@ -535,6 +535,47 @@ fn default_cargo_links_debug_from_a_native_standard_provider() {
 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn ordinary_cargo_checks_associated_lifetimes_across_native_crates() {
+    let f = Fixture::new("associated-lifetime-workspace");
+    f.source("Cargo.toml", "[workspace]\nmembers = [\"provider\", \"application\"]\nresolver = \"3\"\n");
+    f.source("provider/Cargo.toml", "[package]\nname = \"typed-schema\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    let provider = "#![no_std]\npub struct Token;\npub trait Access {\n    type Borrowed<'a> where Self: 'a;\n}\nimpl Access for Token {\n    type Borrowed<'r> = &'r u32;\n}\n";
+    f.source("provider/src/lib.rs", provider);
+    f.source("application/Cargo.toml", "[package]\nname = \"projection-app\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\napi = { package = \"typed-schema\", path = \"../provider\" }\n");
+    let source = f.source("application/src/main.rs", "use api::{Access, Token};\nfn value(input: <Token as Access>::Borrowed<'_>) -> u32 { *input }\nfn main() { println!(\"{}\", value(&17)); }\n");
+    let request = ["check", "--offline", "-p", "projection-app", "--message-format=json"];
+    let check = |label| f.succeeds(label, f.command("cargo").args(request));
+    let first = check("check");
+    let metadata = first.stdout.split(|&byte| byte == b'\n').find_map(|line| {
+        let record = serde_json::from_slice::<serde_json::Value>(line).ok()?;
+        if record["reason"] != "compiler-artifact" || record["target"]["name"] != "typed_schema" {
+            return None;
+        }
+        record["filenames"].as_array()?.iter().filter_map(|path| path.as_str())
+            .find(|path| path.ends_with(".rmeta")).map(PathBuf::from)
+    }).expect("native provider metadata artifact");
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let original = |label| f.invoke(label, Command::new(&oracle).env_remove("LD_LIBRARY_PATH").current_dir(&f.root)
+        .args(["--edition=2024", "--crate-name", "projection_reader", "--emit=metadata"])
+        .arg(&source).arg("--extern").arg(format!("api={}", metadata.display()))
+        .arg("-o").arg(f.root.join("independent-reader.rmeta")));
+    assert!(original("original-reader").status.success());
+    f.source("provider/src/lib.rs", &provider.replace("u32", "u64"));
+    let changed = f.invoke("changed-assignment", f.command("cargo").args(request));
+    assert_eq!(changed.status.code(), Some(101));
+    assert!(String::from_utf8_lossy(&changed.stderr).contains("L0110"));
+    let changed = original("original-reader-changed");
+    assert_eq!(changed.status.code(), Some(1));
+    assert!(String::from_utf8_lossy(&changed.stderr).contains("E0308"));
+    f.source("provider/src/lib.rs", provider);
+    check("repair");
+    assert!(original("original-reader-repair").status.success());
+}
+
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 fn assert_linked_provider_workspace(scope: &str, library_source: &str) {
     let f = Fixture::new(scope);
     f.source("Cargo.toml", "[workspace]\nmembers = [\"provider\", \"application\"]\nresolver = \"3\"\n");
