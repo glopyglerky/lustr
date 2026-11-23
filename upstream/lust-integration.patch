@@ -20354,7 +20354,7 @@ index fc01334135114510c734e64d61334ecbfc3ce108..247c3b8dcf032bdc1f57382d0112f4a6
  pub mod stdpaths;
  pub mod worklist;
 diff --git a/src/resolve/worklist.rs b/src/resolve/worklist.rs
-index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..251be4b27c170379846233d4f73b30c563adc7c1 100644
+index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..df7bffa38deb69a83847fb1b48cfcae8ea442c8a 100644
 --- a/src/resolve/worklist.rs
 +++ b/src/resolve/worklist.rs
 @@ -32,7 +32,7 @@ use crate::driver::graph::Namespace;
@@ -20382,6 +20382,15 @@ index 7dd3e09954baaad15ad4e506d5313b89ae3380b1..251be4b27c170379846233d4f73b30c5
      root_path: PathBuf,
      root_text: String,
      env: CfgEnv,
+@@ -263,7 +265,7 @@ fn lex_file(text: &str, file: FileId, interner: &Interner) -> Result<lexer::Lexe
+ 
+ /// Joins piece lexes in order: one final `Eof`, and string-table indexes
+ /// (`Tok::shift_strings`) moved past the strings of earlier pieces.
+-fn join_lexed(parts: Vec<lexer::Lexed>) -> lexer::Lexed {
++pub(crate) fn join_lexed(parts: Vec<lexer::Lexed>) -> lexer::Lexed {
+     let mut out = lexer::Lexed { tokens: Vec::with_capacity(parts.iter().map(|p| p.tokens.len()).sum()), strings: Vec::new() };
+     let last = parts.len() - 1;
+     for (k, mut part) in parts.into_iter().enumerate() {
 @@ -353,7 +355,7 @@ fn starts_item(toks: &[lexer::Token], i: usize, union: Sym) -> bool {
          | Tok::Unsafe
          | Tok::Async => true,

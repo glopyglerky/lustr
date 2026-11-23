@@ -16,7 +16,7 @@ use rustc_session::{
     CodegenBackendInit, EarlyDiagCtxt, EarlySession, IncrCompSession, Session,
     config::{DebugInfo, ErrorOutputType, Input, OptLevel, OutFileName, OutputFilenames, OutputType},
 };
-use rustc_span::{Ident, SourceFileHash, SourceFileHashAlgorithm, Symbol, edition::Edition, kw, sym};
+use rustc_span::{Ident, SourceFileHash, SourceFileHashAlgorithm, Span, Symbol, edition::Edition, kw, sym};
 use rustc_structures::CrateType;
 use rustc_target::callconv::{ArgAbi, PassMode};
 use std::{
@@ -153,7 +153,7 @@ fn native_function(item: &Item) -> Option<&rustc_ast::Fn> {
 
 impl Composition {
     fn complete_items(
-        &self, sess: &Session, input: &Path, items: &[&Item], directory: &Path, no_std: bool,
+        &self, sess: &Session, input: &Path, items: &[&Item], directory: &Path, no_std: Option<Span>,
     ) -> Result<(Option<PathBuf>, Vec<String>), String> {
         let file = sess.source_map().lookup_source_file(items[0].span.lo());
         let source = file.src.as_ref().ok_or("missing original source snapshot")?;
@@ -164,12 +164,13 @@ impl Composition {
         let metadata = format!("{name}/{:?}/{:?}", sess.opts.crate_types, sess.opts.cg.metadata);
         let digest = SourceFileHash::new_in_memory(SourceFileHashAlgorithm::Sha256, &metadata).to_string();
         let metadata = digest.strip_prefix("sha256=").ok_or("unexpected native crate digest encoding")?;
-        let mut extents = Vec::with_capacity(items.len());
-        for item in items {
-            sess.source_map().span_to_snippet(item.span)
+        let extent = |span: Span| {
+            sess.source_map().span_to_snippet(span)
                 .map_err(|error| format!("cannot select the original item: {error:?}"))?;
-            extents.push(file.relative_position(item.span.lo()).0..file.relative_position(item.span.hi()).0);
-        }
+            Ok::<_, String>(file.relative_position(span.lo()).0..file.relative_position(span.hi()).0)
+        };
+        let extents = items.iter().map(|item| extent(item.span)).collect::<Result<Vec<_>, _>>()?;
+        let policy_span = no_std.map(extent).transpose()?;
         let args = [
             "--crate-name".to_owned(), name.to_owned(), "--edition=2024".into(), "--crate-type=lib".into(),
             "--emit=obj".into(), "--target=x86_64-unknown-linux-gnu".into(), "-Cpanic=abort".into(),
@@ -180,7 +181,7 @@ impl Composition {
             object.to_str().ok_or("native item output path must be UTF-8")?.to_owned(),
         ];
         let report = sess.time("lustr_native_items", || {
-            crate::native_object::complete_items(&args, source, &extents, link, no_std)
+            crate::native_object::complete_items(&args, source, &extents, link, policy_span)
         })?;
         if report.len() != items.len() {
             return Err("native object does not cover every selected definition".into());
@@ -292,7 +293,8 @@ impl Callbacks for Composition {
 
     fn after_crate_root_parsing(&mut self, compiler: &Compiler, krate: &mut rustc_ast::Crate) -> Compilation {
         let sess = &compiler.sess;
-        let no_std = krate.attrs.iter().any(|attr| attr.is_word() && attr.has_name(sym::no_std));
+        let no_std_attr = krate.attrs.iter().find(|attr| attr.is_word() && attr.has_name(sym::no_std));
+        let no_std = no_std_attr.is_some();
         if matches!(self.artifact, Artifact::Freestanding)
             && (sess.panic_strategy().unwinds() || !no_std
                 || !krate.attrs.iter().any(|attr| attr.is_word() && attr.has_name(sym::no_main)))
@@ -330,7 +332,7 @@ impl Callbacks for Composition {
                 .unwrap_or_else(|error| sess.dcx().fatal(format!("cannot create native item work directory: {error}")));
             let input = self.input.as_deref().unwrap();
             let items: Vec<_> = selected.iter().map(|(_, item)| *item).collect();
-            let (object, symbols) = self.complete_items(sess, input, &items, &directory.0, no_std)
+            let (object, symbols) = self.complete_items(sess, input, &items, &directory.0, no_std_attr.map(|attr| attr.span))
                 .unwrap_or_else(|error| sess.dcx().span_fatal(first.span, error));
             let indices: Vec<_> = selected.into_iter().map(|(index, _)| index).collect();
             for (index, symbol) in indices.into_iter().zip(symbols) {

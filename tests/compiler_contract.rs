@@ -1401,9 +1401,16 @@ fn main() { assert_eq!(evaluate(57), 42); }
     };
     f.succeeds("lockfile", cargo("mixed", false, "0").args(["generate-lockfile", "--offline"]));
     f.succeeds("default-check", cargo("default", false, "2").args(["check", "--frozen"]));
-    for (name, original, debug, expected) in [
-        ("mixed", false, "0", 1), ("original", true, "0", 0), ("default", false, "2", 0),
+    let extended = format!("{source}\nmod extra {{\u{{000b}}pub fn original_whitespace() {{}} }}\n/*{}*/\n",
+        ".".repeat(2 * 1024 * 1024));
+    for (name, original, debug, expected, contents) in [
+        ("mixed", false, "0", 1, source),
+        ("original", true, "0", 0, source),
+        ("default", false, "2", 0, source),
+        ("mixed-extended", false, "0", 1, extended.as_str()),
+        ("original-extended", true, "0", 0, extended.as_str()),
     ] {
+        f.source("src/lib.rs", contents);
         f.succeeds(&format!("{name}-build"), cargo(name, original, debug).args(["build", "--frozen"]));
         let dir = f.root.join(name).join("debug");
         let lib = dir.join("libentrypoints.a");
@@ -1419,8 +1426,8 @@ fn main() { assert_eq!(evaluate(57), 42); }
             .current_dir(&f.root).env_remove("LD_LIBRARY_PATH").arg("--edition=2024")
             .arg(&consumer).arg("-L").arg(format!("native={}", dir.display())).arg("-o").arg(&exe));
         f.succeeds(&format!("{name}-run"), &mut Command::new(exe));
+        assert_eq!(std::fs::read_to_string(&lib).unwrap(), contents);
     }
-    assert_eq!(std::fs::read_to_string(&lib).unwrap(), source);
     for (name, invalid, diagnostic) in [
         ("native-error", source.replace("input ^ 19", "input ^ false"), "src/lib.rs:4:"),
         ("rust-error", source.replace("-> u64 {\n    let apply", "-> u32 {\n    let apply"), "E0308"),

@@ -265,7 +265,7 @@ fn lex_file(text: &str, file: FileId, interner: &Interner) -> Result<lexer::Lexe
 
 /// Joins piece lexes in order: one final `Eof`, and string-table indexes
 /// (`Tok::shift_strings`) moved past the strings of earlier pieces.
-fn join_lexed(parts: Vec<lexer::Lexed>) -> lexer::Lexed {
+pub(crate) fn join_lexed(parts: Vec<lexer::Lexed>) -> lexer::Lexed {
     let mut out = lexer::Lexed { tokens: Vec::with_capacity(parts.iter().map(|p| p.tokens.len()).sum()), strings: Vec::new() };
     let last = parts.len() - 1;
     for (k, mut part) in parts.into_iter().enumerate() {

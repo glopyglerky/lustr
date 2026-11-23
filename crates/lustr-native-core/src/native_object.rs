@@ -152,7 +152,7 @@ pub(crate) fn prepare(args: &[String]) -> Result<PreparedUnit, String> {
 /// owners. Keep the full original source and positions for this native item.
 pub(crate) fn prepare_item(args: &[String], source: &str, span: Range<u32>) -> Result<PreparedUnit, String> {
     prepare_request(request(args)?, false, true, Some(ItemSelection {
-        source, spans: &[span], total_scalars: false, no_std: true,
+        source, spans: &[span], total_scalars: false, policy_span: None,
     }))
 }
 
@@ -161,16 +161,16 @@ struct ItemSelection<'a> {
     source: &'a str,
     spans: &'a [Range<u32>],
     total_scalars: bool,
-    no_std: bool,
+    policy_span: Option<&'a Range<u32>>,
 }
 
 /// Check the original items in one native unit. A link request also emits and
 /// publishes the object containing the checked symbols.
 pub(crate) fn complete_items(
-    args: &[String], source: &str, spans: &[Range<u32>], link: bool, no_std: bool,
+    args: &[String], source: &str, spans: &[Range<u32>], link: bool, policy_span: Option<Range<u32>>,
 ) -> Result<Vec<(String, String)>, String> {
     let prepared = prepare_request(request(args)?, false, true, Some(ItemSelection {
-        source, spans, total_scalars: true, no_std,
+        source, spans, total_scalars: true, policy_span: policy_span.as_ref(),
     }))?;
     let program = prepared.program();
     let mut bindings = Vec::with_capacity(spans.len());
@@ -216,22 +216,52 @@ fn item_tokens(mut lexed: lexer::Lexed, extents: &[Range<u32>], policy_len: usiz
     Ok(lexed)
 }
 
+fn lex_selected_items(
+    selected: ItemSelection<'_>, map: &diag::SourceMap, file: diag::FileId, interner: &intern::Interner,
+) -> Result<lexer::Lexed, String> {
+    if selected.spans.is_empty() {
+        return Err("no selected native items".into());
+    }
+    let mut parts = Vec::with_capacity(selected.spans.len() + usize::from(selected.policy_span.is_some()));
+    let mut previous_end = 0;
+    for extent in selected.policy_span.into_iter().chain(selected.spans) {
+        let text = selected.source.get(extent.start as usize..extent.end as usize)
+            .filter(|text| !text.is_empty() && extent.start >= previous_end)
+            .ok_or("native item does not match an ordered original source range")?;
+        let part = lexer::lex(text, file, extent.start, interner)
+            .map_err(|error| diag::render(&mut vec![error], map, selected.source, false, 20))?;
+        if !part.tokens.first().is_some_and(|token| token.span.lo == extent.start)
+            || !part.tokens.iter().rev().nth(1).is_some_and(|token| token.span.hi == extent.end)
+        {
+            return Err("native item range does not match whole original tokens".into());
+        }
+        previous_end = extent.end;
+        parts.push(part);
+    }
+    Ok(crate::resolve::worklist::join_lexed(parts))
+}
+
 fn prepare_request(r: Request, artifact: bool, capture: bool, items: Option<ItemSelection<'_>>) -> Result<PreparedUnit, String> {
     if r.output.exists() { return Err("object output already exists; use a fresh path".into()); }
     let working_directory = capture.then(std::env::current_dir).transpose()
         .map_err(|error| format!("cannot retain native request working directory: {error}"))?;
     let source = fs::read_to_string(&r.source).map_err(|e| format!("cannot read source: {e}"))?;
-    if source.len() > SOURCE_LIMIT { return Err("native object source exceeds current bound".into()); }
+    let selected_items = items.filter(|selected| selected.total_scalars);
+    let source_limit = if selected_items.is_some() { u32::MAX as usize } else { SOURCE_LIMIT };
+    if source.len() > source_limit { return Err("native object source exceeds current bound".into()); }
     let i = Arc::new(intern::Interner::default()); let k = Arc::new(intern::Known::new(&i));
     let mut map = diag::SourceMap::default(); let file = map.add_file(&r.source.to_string_lossy(), &source);
     if items.is_some_and(|selected| selected.source != source) {
         return Err("the original source changed since the item was selected".into());
     }
-    let lexed = lexer::lex(&source,file,0,&i).map_err(|e| diag::render(&mut vec![e], &map, &source, false, 20))?;
-    let policy_len = if items.is_none_or(|selected| selected.no_std) { 5 } else { 0 };
-    let lexed = match items {
-        Some(selected) => item_tokens(lexed, selected.spans, policy_len)?,
-        None => lexed,
+    let policy_len = if selected_items.is_none_or(|selected| selected.policy_span.is_some()) { 5 } else { 0 };
+    let lexed = if let Some(selected) = selected_items {
+        // Rust owns the rest of the crate. Only check the original source
+        // ranges assigned to Lust, keeping their absolute diagnostic spans.
+        lex_selected_items(selected, &map, file, &i)?
+    } else {
+        let lexed = lexer::lex(&source,file,0,&i).map_err(|e| diag::render(&mut vec![e], &map, &source, false, 20))?;
+        if let Some(selected) = items { item_tokens(lexed, selected.spans, policy_len)? } else { lexed }
     };
     // This boundary consumes a real crate attribute and carries its policy
     // into a freestanding object pipeline. Other root attributes still need
