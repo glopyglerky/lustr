@@ -17,7 +17,7 @@ use crate::{
 };
 use lustr_metadata_encoder::{IntegerType, Sdk, read_executable_crate, read_link_crate, read_scalar_crate};
 
-use super::{Stamp, stamp};
+use super::{Stamp, metadata_query::MetadataReader, stamp};
 
 fn native_integer_type(ty: IntegerType) -> ty::IntTy {
     match ty {
@@ -59,9 +59,9 @@ pub(super) struct Import {
 
 impl Import {
     pub(super) fn read_for_library(
-        request: &ExternMetadata, sdk: &Sdk, installation: &Path, search_paths: &[PathBuf],
+        request: &ExternMetadata, sdk: &Sdk, reader: &MetadataReader, search_paths: &[PathBuf],
     ) -> Result<Self, super::ImportFailure> {
-        Self::read_with_interface(request, sdk, None, def::CrateId(1), false, Some((installation, search_paths, false)))
+        Self::read_with_interface(request, sdk, None, def::CrateId(1), false, Some((reader, search_paths, false)))
     }
 
     pub(super) fn read(
@@ -73,15 +73,15 @@ impl Import {
     }
 
     pub(super) fn read_for_cargo(
-        request: &ExternMetadata, sdk: &Sdk, standard: Option<&Sdk>, index: def::CrateId, installation: &Path,
+        request: &ExternMetadata, sdk: &Sdk, standard: Option<&Sdk>, index: def::CrateId, reader: &MetadataReader,
         search_paths: &[PathBuf], linking: bool,
     ) -> Result<Self, super::ImportFailure> {
-        Self::read_with_interface(request, sdk, standard, index, true, Some((installation, search_paths, linking)))
+        Self::read_with_interface(request, sdk, standard, index, true, Some((reader, search_paths, linking)))
     }
 
     fn read_with_interface(
         request: &ExternMetadata, sdk: &Sdk, standard: Option<&Sdk>, index: def::CrateId,
-        executable: bool, installation: Option<(&Path, &[PathBuf], bool)>,
+        executable: bool, reader: Option<(&MetadataReader, &[PathBuf], bool)>,
     ) -> Result<Self, super::ImportFailure> {
         let path = &request.artifact;
         let before = stamp(path)?;
@@ -95,10 +95,10 @@ impl Import {
         }
         .or_else(|| standard.and_then(|context| read_link_crate(data, context)).map(|leaf| (leaf, None)));
         let Some((leaf, projection)) = local else {
-            let Some((installation, search_paths, linking)) = installation else {
+            let Some((reader, search_paths, linking)) = reader else {
                 return Err("extern artifact has no represented interface in the pinned SDK".into());
             };
-            let interface = super::metadata_query::read(installation, &request.alias, path, &bytes, search_paths);
+            let interface = reader.read(&request.alias, path, &bytes, search_paths);
             let observed = stamp(path)?;
             if observed != before {
                 // Cargo may hard-link published metadata while it is being

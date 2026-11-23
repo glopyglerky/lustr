@@ -1,6 +1,6 @@
 //! Read exact imported declarations through the installed Rust service.
 use crate::{def, driver::imports::ScalarFunction, ty::IntTy};
-use std::{collections::{BTreeMap, BTreeSet}, fs, path::{Path, PathBuf}, process::Command};
+use std::{collections::{BTreeMap, BTreeSet}, fs, path::{Path, PathBuf}, process::Command, sync::OnceLock};
 
 use super::{ImportFailure, Stamp, hash, stamp};
 
@@ -89,56 +89,72 @@ fn decode(output: &[u8], artifact: &[u8], mut sdk_inputs: BTreeMap<PathBuf, Stam
     Some(Interface { name: name.into(), suffix: suffix.into(), stable, svh, requires_abort, functions, inputs })
 }
 
-pub(super) fn read(
-    installation: &Path, alias: &str, path: &Path, bytes: &[u8], search_paths: &[PathBuf],
-) -> Result<Interface, ImportFailure> {
-    let root = installation.join("libexec/lustr-host-proc-macro");
-    let compiler = root.join("bin/lustr-rustc-host-proc-macro");
-    let receipt = root.join("metadata-interface.id");
-    let owned = [&compiler, &receipt];
-    let before = owned.iter().map(|file| stamp(file)).collect::<Result<Vec<_>, _>>()?;
-    let expected = fs::read_to_string(&receipt).map_err(|error| format!("read installed metadata reader identity: {error}"))?;
-    let compiler_bytes = fs::read(&compiler).map_err(|error| format!("read installed metadata reader: {error}"))?;
-    if expected.trim_end() != hash(&compiler_bytes) {
-        return Err("installed metadata reader identity changed".into());
+pub(super) struct MetadataReader {
+    root: PathBuf,
+    inputs: OnceLock<Result<[(PathBuf, Stamp); 2], String>>,
+}
+
+impl MetadataReader {
+    pub(super) fn new(installation: &Path) -> Self {
+        Self { root: installation.join("libexec/lustr-host-proc-macro"), inputs: OnceLock::new() }
     }
-    let sdk = root.join("lib").canonicalize().map_err(|error| format!("resolve installed metadata SDK: {error}"))?;
-    let library = sdk.join("rustlib").join(crate::protocol::host_triple()).join("lib");
-    let mut sdk_inputs = BTreeMap::new();
-    for entry in fs::read_dir(library).map_err(|error| format!("read installed target metadata: {error}"))? {
-        let path = entry.map_err(|error| error.to_string())?.path();
-        if path.extension().is_some_and(|ext| matches!(ext.to_str(), Some("rmeta" | "rlib" | "so"))) {
-            let path = path.canonicalize().map_err(|error| error.to_string())?;
-            if !path.starts_with(&sdk) {
-                return Err("installed metadata target escapes its SDK".into());
+
+    fn verify(&self) -> Result<[(PathBuf, Stamp); 2], String> {
+        let compiler = self.root.join("bin/lustr-rustc-host-proc-macro");
+        let receipt = self.root.join("metadata-interface.id");
+        let inputs = [(compiler.clone(), stamp(&compiler)?), (receipt.clone(), stamp(&receipt)?)];
+        let expected = fs::read_to_string(receipt).map_err(|error| format!("read installed metadata reader identity: {error}"))?;
+        let compiler_bytes = fs::read(compiler).map_err(|error| format!("read installed metadata reader: {error}"))?;
+        if expected.trim_end() != hash(&compiler_bytes) {
+            return Err("installed metadata reader identity changed".into());
+        }
+        require_unchanged(&inputs)?;
+        Ok(inputs)
+    }
+
+    pub(super) fn read(
+        &self, alias: &str, path: &Path, bytes: &[u8], search_paths: &[PathBuf],
+    ) -> Result<Interface, ImportFailure> {
+        let inputs = self.inputs.get_or_init(|| self.verify()).as_ref().map_err(Clone::clone)?;
+        require_unchanged(inputs)?;
+        let sdk = self.root.join("lib").canonicalize().map_err(|error| format!("resolve installed metadata SDK: {error}"))?;
+        let library = sdk.join("rustlib").join(crate::protocol::host_triple()).join("lib");
+        let mut sdk_inputs = BTreeMap::new();
+        for entry in fs::read_dir(library).map_err(|error| format!("read installed target metadata: {error}"))? {
+            let path = entry.map_err(|error| error.to_string())?.path();
+            if path.extension().is_some_and(|ext| matches!(ext.to_str(), Some("rmeta" | "rlib" | "so"))) {
+                let path = path.canonicalize().map_err(|error| error.to_string())?;
+                if !path.starts_with(&sdk) {
+                    return Err("installed metadata target escapes its SDK".into());
+                }
+                sdk_inputs.insert(path.clone(), stamp(&path)?);
             }
-            sdk_inputs.insert(path.clone(), stamp(&path)?);
         }
-    }
-    let answer = Command::new(&compiler).arg("--lustr-read-crate-interface").arg(alias).arg(path)
-        .args(search_paths)
-        .env_remove("LD_LIBRARY_PATH").output().map_err(|error| format!("start Rust metadata reader: {error}"))?;
-    if answer.status.code() == Some(crate::protocol::RUST_COMPLEMENT_REQUIRED) {
-        let expected = format!("lustr-extern-requires-rust-v1\0sha256={}", hash(bytes));
-        if answer.stdout != expected.as_bytes() || !answer.stderr.is_empty() {
-            return Err("invalid Rust metadata capability response".into());
-        }
-        for (file, prior) in owned.into_iter().zip(&before) {
-            if stamp(file)? != *prior {
-                return Err("installed metadata reader changed during import".into());
+        let answer = Command::new(&inputs[0].0).arg("--lustr-read-crate-interface").arg(alias).arg(path)
+            .args(search_paths)
+            .env_remove("LD_LIBRARY_PATH").output().map_err(|error| format!("start Rust metadata reader: {error}"))?;
+        require_unchanged(inputs)?;
+        if answer.status.code() == Some(crate::protocol::RUST_COMPLEMENT_REQUIRED) {
+            let expected = format!("lustr-extern-requires-rust-v1\0sha256={}", hash(bytes));
+            if answer.stdout != expected.as_bytes() || !answer.stderr.is_empty() {
+                return Err("invalid Rust metadata capability response".into());
             }
+            return Err(ImportFailure::RequiresRust("the original Rust dependency requires its compiler context"));
         }
-        return Err(ImportFailure::RequiresRust("the original Rust dependency requires its compiler context"));
+        if !answer.status.success() {
+            return Err(format!("Rust metadata reader did not represent the extern: {}", String::from_utf8_lossy(&answer.stderr).trim_end()).into());
+        }
+        let mut interface = decode(&answer.stdout, bytes, sdk_inputs).ok_or("invalid installed Rust metadata response")?;
+        interface.inputs.extend_from_slice(inputs);
+        Ok(interface)
     }
-    if !answer.status.success() {
-        return Err(format!("Rust metadata reader did not represent the extern: {}", String::from_utf8_lossy(&answer.stderr).trim_end()).into());
-    }
-    let mut interface = decode(&answer.stdout, bytes, sdk_inputs).ok_or("invalid installed Rust metadata response")?;
-    for (file, prior) in owned.into_iter().zip(before) {
-        if stamp(file)? != prior {
+}
+
+fn require_unchanged(inputs: &[(PathBuf, Stamp); 2]) -> Result<(), String> {
+    for (file, prior) in inputs {
+        if stamp(file)? != *prior {
             return Err("installed metadata reader changed during import".into());
         }
-        interface.inputs.push((file.clone(), prior));
     }
-    Ok(interface)
+    Ok(())
 }

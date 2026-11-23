@@ -49,7 +49,7 @@ fn write_new(path:&Path,bytes:&[u8])->Result<(),String>{
     let mut file=fs::OpenOptions::new().write(true).create_new(true).open(path).map_err(|e|format!("create {}: {e}",path.display()))?;
     file.write_all(bytes).map_err(|e|format!("write {}: {e}",path.display()))
 }
-#[derive(PartialEq,Eq)]
+#[derive(Clone,PartialEq,Eq)]
 struct Stamp(u64,u64,u64,i64,i64,i64,i64);
 fn stamp(path:&Path)->Result<Stamp,String>{
     let m=fs::symlink_metadata(path).map_err(|e|format!("metadata SDK input {}: {e}",path.display()))?;
@@ -61,6 +61,7 @@ struct Installed {
     standard: Option<Arc<metadata::Sdk>>,
     archive_inputs: Vec<ArchiveToolInput>,
     archive_verification: OnceLock<Result<(), String>>,
+    metadata_reader: metadata_query::MetadataReader,
 }
 
 struct ArchiveToolInput {
@@ -126,7 +127,9 @@ impl Installed {
             if stamp(path)?!=*before {return Err("metadata SDK changed during owner initialization".into());}
         }
         SDK_LOADS.fetch_add(1,Ordering::Relaxed);
-        Ok(Arc::new(Self { root, sdk, standard, inputs, tools: json!(tools), archive_inputs, archive_verification: OnceLock::new() }))
+        let metadata_reader = metadata_query::MetadataReader::new(&root);
+        Ok(Arc::new(Self { root, sdk, standard, inputs, tools: json!(tools), archive_inputs,
+            archive_verification: OnceLock::new(), metadata_reader }))
     }
     fn unchanged(&self)->Result<(),String>{
         for (path,loaded) in &self.inputs {
@@ -171,7 +174,7 @@ impl Owner {
         installed.unchanged()?;
         let imported = if let Some(external) = &key.external {
             if req.session.krate.manifest_path.is_none() { return Err("extern metadata requires the actual Cargo unit".into()); }
-            Some(imports::Import::read_for_library(external, &installed.sdk, &installed.root, &key.search_paths)?)
+            Some(imports::Import::read_for_library(external, &installed.sdk, &installed.metadata_reader, &key.search_paths)?)
         } else { None };
         let context=Context{crate_name:key.crate_name.clone(),metadata:key.metadata.clone(),extra_filename:key.extra_filename.clone(),
             source:key.source_path.clone(),cwd:key.working_directory.to_str().ok_or("library cwd is not Unicode")?.into(),
@@ -182,9 +185,8 @@ impl Owner {
             if req.session.krate.manifest_path.is_none() && !key.standalone {
                 return Err("Cargo executable artifacts require the selected unit".into());
             }
-            Some(executable::ExecutableImports::open(dependencies, &key.search_paths, &installed.sdk,
-                installed.standard.as_deref(), req.cmd != driver::Cmd::Check, req.session.profile.panic_abort,
-                &installed.root, &key.working_directory)?)
+            Some(executable::ExecutableImports::open(dependencies, &key.search_paths, &installed,
+                req.cmd != driver::Cmd::Check, req.session.profile.panic_abort, &key.working_directory)?)
         } else { None };
         Ok(Self{installed,artifacts,identity:hash(req.session.describe().as_bytes()),imported,executable,binary_output:None})
     }
@@ -208,12 +210,11 @@ impl Owner {
         // A malformed or changing input leaves the previous owner and checked
         // generation intact, and fails this request without compiler retry.
         let imported = key.external.as_ref().map(|input|
-            imports::Import::read_for_library(input, &self.installed.sdk, &self.installed.root, &key.search_paths))
+            imports::Import::read_for_library(input, &self.installed.sdk, &self.installed.metadata_reader, &key.search_paths))
             .transpose()?;
         let executable = key.executable_dependencies.as_ref()
-            .map(|inputs| executable::ExecutableImports::open(inputs, &key.search_paths, &self.installed.sdk,
-                self.installed.standard.as_deref(), req.cmd != driver::Cmd::Check, req.session.profile.panic_abort,
-                &self.installed.root, &key.working_directory))
+            .map(|inputs| executable::ExecutableImports::open(inputs, &key.search_paths, &self.installed,
+                req.cmd != driver::Cmd::Check, req.session.profile.panic_abort, &key.working_directory))
             .transpose()?;
         if imported.as_ref().is_some_and(|value| !value.unchanged(&key.external.as_ref().unwrap().artifact))
             || executable.as_ref().is_some_and(|value| !value.unchanged(key.executable_dependencies.as_ref().unwrap(), req.cmd != driver::Cmd::Check)) {
