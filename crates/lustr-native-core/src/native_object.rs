@@ -173,7 +173,7 @@ fn prepare_request(r: Request, artifact: bool, capture: bool) -> Result<Prepared
         // generations. Refuse them before treating this closed image as deps0.
         if t.windows(2).any(|w|matches!(w[0].tok,lexer::Tok::Ident(_, _))&&w[1].tok==lexer::Tok::Bang){return Err("native producer needs macro semantic/input records".into());}
         if t.iter().any(|t|t.tok==lexer::Tok::Extern){return Err("native producer needs extern dependency/ABI semantic records".into());}
-        let input=crate::resolve::worklist::CrateInput{root_path:r.source.clone(),root_text:source.clone(),env:crate::resolve::cfg::CfgEnv::new("x86_64-unknown-linux-gnu",&[],false,crate::protocol::ProfileFlags{panic_abort:true,overflow_checks:r.overflow,debug_assertions:r.debug}),crate_ids:ids,crate_name:r.name.clone(),cargo_env:Vec::new(),deps:Vec::new(),client:Default::default(),std_splice_lo:None,display_root:None};
+        let input=crate::resolve::worklist::CrateInput{procedural_macros:None,root_path:r.source.clone(),root_text:source.clone(),env:crate::resolve::cfg::CfgEnv::new("x86_64-unknown-linux-gnu",&[],false,crate::protocol::ProfileFlags{panic_abort:true,overflow_checks:r.overflow,debug_assertions:r.debug}),crate_ids:ids,crate_name:r.name.clone(),cargo_env:Vec::new(),deps:Vec::new(),client:Default::default(),std_splice_lo:None,display_root:None};
         let parse=|l:&lexer::Lexed,i:&intern::Interner,k:&intern::Known| {
             // Consume the original, already admitted crate-policy attribute
             // as syntax, preserving its exact span and AST record. This is

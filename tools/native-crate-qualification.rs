@@ -31,7 +31,7 @@ fn args(source:&std::path::Path,output:&std::path::Path,metadata:&str)->Vec<Stri
     format!("-Cmetadata={metadata}"),"-o".into(),output.to_str().unwrap().into(),
 ]}
 fn input(root:&std::path::Path,text:&str,ids:def::CrateIds)->resolve::worklist::CrateInput{
-    resolve::worklist::CrateInput {root_path:root.join("consumer.rs"),root_text:text.into(),env:resolve::cfg::CfgEnv::new("x86_64-unknown-linux-gnu",&[],false,protocol::ProfileFlags::DEV),
+    resolve::worklist::CrateInput {procedural_macros:None,root_path:root.join("consumer.rs"),root_text:text.into(),env:resolve::cfg::CfgEnv::new("x86_64-unknown-linux-gnu",&[],false,protocol::ProfileFlags::DEV),
         crate_ids:ids,crate_name:"consumer".into(),cargo_env:Vec::new(),deps:Vec::new(),client:Default::default(),std_splice_lo:None,display_root:None}
 }
 fn resolve_ok(store:&native_crate::CrateStore,input:&resolve::worklist::CrateInput,i:&intern::Interner,k:&intern::Known)->resolve::worklist::ResolvedCrate{
