@@ -1,6 +1,12 @@
 //! Parse the actual Rust compiler request used by the pinned Cargo leaf unit.
 //! Unsupported options remain refusals; this adapter never reads Rust source.
-use crate::{Native, library_contract::{DebugInfo, ExecutableExtern, ExternMetadata, LibraryKey, LibraryOptions, SDK_RECEIPT, SplitDebug, Strip, TARGET}};
+use crate::{
+    Native,
+    library_contract::{
+        DebugInfo, ExecutableExtern, ExternMetadata, LibraryKey, LibraryOptions,
+        SDK_RECEIPT, SplitDebug, Strip, TARGET, cargo_feature_name,
+    },
+};
 use std::{collections::{BTreeMap,BTreeSet}, ffi::OsString, path::PathBuf};
 
 pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
@@ -18,6 +24,7 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     let mut error_format = None;
     let mut json = None;
     let mut check_cfg = Vec::new();
+    let mut features = BTreeSet::new();
     let mut search_paths = Vec::new();
     let mut externs = Vec::new();
     let mut codegen = BTreeMap::new();
@@ -40,8 +47,13 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
             test = true;
         }
         else if arg == "--cfg" || arg.starts_with("--cfg=") {
-            if value("--cfg")? != "test" { return None; }
-            custom_test = true;
+            let cfg = value("--cfg")?;
+            if cfg == "test" {
+                custom_test = true;
+            } else {
+                let name = cargo_feature_name(cfg.strip_prefix("feature=")?)?;
+                features.insert(name);
+            }
         }
         else if arg == "--edition" || arg.starts_with("--edition=") { unique(&mut edition,"--edition")?; }
         else if arg == "--target" || arg.starts_with("--target=") { unique(&mut target,"--target")?; }
@@ -177,6 +189,15 @@ pub(crate) fn parse(args: &[OsString]) -> Option<Native> {
     if let Some(manifest_dir) = std::env::var_os("CARGO_MANIFEST_DIR") {
         let manifest = PathBuf::from(manifest_dir).join("Cargo.toml");
         native.extend(["--manifest-path".into(),std::path::absolute(manifest).ok()?.to_str()?.into()]);
+        // Cargo already resolved the active features, including the literal
+        // "default" feature when enabled. Keep that set through planning
+        // and prevent Lust's developer config from substituting another set.
+        native.push("--no-default-features".into());
+        if !features.is_empty() {
+            native.extend(["--features".into(), features.into_iter().collect::<Vec<_>>().join(",")]);
+        }
+    } else if !features.is_empty() {
+        return None;
     }
     if cargo_json { native.push("--json".into()); }
     if let Some(embed) = options.embed_metadata {

@@ -673,6 +673,50 @@ fn ordinary_cargo_links_a_transitive_native_library() {
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn ordinary_cargo_preserves_resolved_features() {
+    let f = Fixture::new("resolved-cargo-features");
+    f.source("Cargo.toml", r#"
+[package]
+name = "resolved-cargo-features"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = ["shifted"]
+shifted = []
+"#);
+    let source = r#"
+#[cfg(feature = "shifted")]
+fn result() -> u32 { 9 }
+#[cfg(not(feature = "shifted"))]
+fn result() -> u32 { 7 }
+fn main() { println!("{}", result()); }
+"#;
+    f.source("src/main.rs", source);
+    let run = ["run", "--offline", "--quiet"];
+    let defaults = f.succeeds("default", f.command("cargo").args(run));
+    assert_eq!(defaults.stdout, b"9\n");
+    let disabled = f.succeeds("no-default", f.command("cargo").args(run).arg("--no-default-features"));
+    assert_eq!(disabled.stdout, b"7\n");
+    let selected = f.succeeds("explicit", f.command("cargo").args(run).args(["--no-default-features", "--features", "shifted"]));
+    assert_eq!(selected.stdout, b"9\n");
+
+    f.source("src/main.rs", &source.replace("{ 9 }", "{ \"invalid\" }"));
+    let rejected = f.invoke("invalid-feature", f.command("cargo").args(run));
+    assert_eq!(rejected.status.code(), Some(101));
+    assert!(rejected.stdout.is_empty());
+    assert!(String::from_utf8_lossy(&rejected.stderr).contains("u32"));
+    let unaffected = f.succeeds("disabled-feature", f.command("cargo").args(run).arg("--no-default-features"));
+    assert_eq!(unaffected.stdout, b"7\n");
+
+    f.source("src/main.rs", source);
+    let repaired = f.succeeds("feature-repair", f.command("cargo").args(run));
+    assert_eq!(repaired.stdout, b"9\n");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
 fn default_debug_cargo_preserves_unwind_behavior() {
     let f = Fixture::new("debug-panic");
     f.source("Cargo.toml", "[package]\nname = \"debug-panic\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");

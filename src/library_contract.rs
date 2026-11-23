@@ -6,6 +6,25 @@ pub const SDK_RECEIPT: &str = "4e400b263bf9923616dea44ead2d77213703177d3bfaf6bec
 pub const TARGET: &str = "x86_64-unknown-linux-gnu";
 pub const SDK_RECEIPT_PATH: &str = "lib/lustr-metadata/sdk-receipt.json";
 
+/// A quoted Cargo feature name that can be passed back to Cargo as one
+/// unqualified feature, with no decoding or reinterpretation.
+pub(crate) fn cargo_feature_name(literal: &str) -> Option<&str> {
+    let name = literal.strip_prefix('"')?.strip_suffix('"')?;
+    (!name.is_empty() && !name.starts_with('-')
+        && !name.chars().any(|c| c.is_whitespace() || c.is_control() || matches!(c, ',' | '/' | '"' | '\\')))
+        .then_some(name)
+}
+
+fn cargo_check_cfg(value: &str) -> bool {
+    if value == "cfg(docsrs,test)" {
+        return true;
+    }
+    let Some(features) = value.strip_prefix("cfg(feature, values(").and_then(|s| s.strip_suffix("))")) else {
+        return false;
+    };
+    features.is_empty() || features.split(',').all(|literal| cargo_feature_name(literal.trim()).is_some())
+}
+
 /// This artifact adapter has only the actual Linux GNU x64 host implementation.
 /// An omitted rustc --target denotes that compiled host; it is never relabeled.
 pub const fn supported_host()->bool {
@@ -192,7 +211,7 @@ impl LibraryKey {
             && self.source_path.to_str().is_some_and(|s| !s.contains(['\0','\n','\r']))
             && self.working_directory.to_str().is_some_and(|s| !s.contains(['\0','\n','\r']))
             && self.check_cfg.len() <= 2
-            && self.check_cfg.iter().all(|s| matches!(s.as_str(), "cfg(docsrs,test)" | "cfg(feature, values())"))
+            && self.check_cfg.iter().all(|s| cargo_check_cfg(s))
             && self.search_paths.iter().all(|p| p.is_absolute())
             && self.external.as_ref().is_none_or(ExternMetadata::valid)
             && self.executable_dependencies.as_ref().is_none_or(|dependencies| {

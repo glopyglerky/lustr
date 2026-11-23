@@ -2213,7 +2213,8 @@ fn resolved_setup(
                 // Cargo metadata names the actual script target in every
                 // build mode; UnitInfo's planned script is product-only.
                 || unit.package.targets.iter().any(|target|target.kind.iter().any(|kind|kind=="custom-build"))
-                || !unit.features.is_empty() {
+                || unit.features.len() != key.features.len()
+                || unit.features.iter().any(|feature| key.features.binary_search(feature).is_err()) {
                 return Err(code2("public scalar-library integration requires the matching Cargo dependency and script-free unit".into()));
             }
         } else if imports.is_some() {
