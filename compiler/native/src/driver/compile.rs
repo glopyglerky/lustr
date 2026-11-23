@@ -5231,7 +5231,10 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
                     // The native checks succeeded, but this library cannot
                     // be encoded by the native artifact service. No native
                     // artifact has been emitted for this request.
-                    super::library::completion::Error::Unintegrated(_) => crate::protocol::RUST_COMPLEMENT_REQUIRED,
+                    super::library::completion::Error::Unintegrated(_) if cfg!(feature = "exclusive-native") => {
+                        crate::protocol::RUST_COMPLEMENT_REQUIRED
+                    }
+                    super::library::completion::Error::Unintegrated(_) => 4,
                     super::library::completion::Error::Failed(_) => 3,
                 };
                 drop(results); drop(reemit);
