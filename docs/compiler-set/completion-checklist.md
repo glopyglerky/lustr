@@ -5,12 +5,15 @@ Reviewed 22 November 2026. This is the single work register for the
 is full rustc replacement with exclusive Lust ownership of covered work and
 only necessary upstream complementary implementation. Full Rust stays in blueFe.
 
-Current reviewed source: [PR #33](https://github.com/glopyglerky/lustr/pull/33),
-`514dfe1ef8b49160bf5c09458981768fbf4f2386`. Its
-[public scalar hosted checkpoint](native-cargo-continuation.md#verified-hosted-checkpoint)
-passed on the exact matching tree; the broader Linux/macOS matrix was pending
-when observed. The PR remained unmerged. No full-Rust or matched speed pass is
-claimed. Refresh live source and CI before updating status.
+Planning baseline: [PR #33](https://github.com/glopyglerky/lustr/pull/33),
+`bc38dece7a734b97c0108582b7f61f98ccb819db`, tree
+`82afa54968f68dbbb5f99540fffc1e67ebc7d3d5`. The PR is unmerged at this review.
+The [continuation review](evidence/continuous-completion-20261122/README.md)
+separates the latest retained projection proof, earlier public executable
+qualification and still-failing default Cargo operations. At 01:57 UTC on
+23 November, the latest head had 18 successful jobs and three running jobs;
+those observations do not qualify this planning commit or the full product.
+Refresh the live source and its checks on every continuation.
 
 Historical baselines remain `next` at
 `7cea76c9d3adc587b54ccff168fe07efafd40309`, PR #32 at
@@ -19,6 +22,338 @@ at `2fbafe391fdf3d0a59b8cc24e9b0f55be3570cbd`. The
 [cleanup record](exclusive-coverage-cleanup.md) preserves their relationship to
 the active implementation correction. The [architecture plan](architecture-plan.md)
 orders the work below without introducing another register.
+
+## Execution queue
+
+This queue makes sections 0–7 executable; it does not replace their completion
+conditions. Status means **READY**, **ACTIVE**, **WAITING**, **VERIFYING** or
+**DONE**. READY means useful implementation can start, not that every acceptance
+dependency is already implemented. WAITING rows name the specific prerequisite
+for their next integration step. DONE requires the stated public behavior and
+source-bound evidence. Research, implementation, installed-path qualification
+and release qualification are distinct states inside each package.
+
+The immediate product milestone is one unchanged small Cargo workspace whose
+provider and consumer are compiled by installed Lustr, with ordinary `cargo
+check`, `build`, `run` and `test`, correct Rust debugging, valid and invalid
+semantic cases, and retained edits. It is an integration milestone, not the
+definition of full Rust coverage. Preserve the original manifest, source,
+dependencies and profiles. `debug=0`, abort-only execution, prebuilt stock
+provider metadata and standalone qualifiers remain separately scoped controls.
+
+| Priority / package | State at this planning baseline | Dependency and next implementation action | Completion sections |
+| --- | --- | --- | --- |
+| P0. Repair demonstrated regressions | READY when a concrete regression is observed | Preserve the failing source/input/result; repair the actual owner and rerun the affected witness. Keep existing profile, API, artifact and unwind gates. Otherwise select P1/P3/P4. | 0, 6 |
+| P1. Admit the retained projection service | READY | Replace the proof's full-SDK query with a justified pinned upstream service over native-owned facts. Retain the proven lifetime relationship and stable identities. | 1, 2, 4 |
+| P2. Use the service through ordinary Cargo | WAITING for P1's typed service interface; narrow provider metadata work may start now | Produce the provider's genuine metadata with Lustr; connect public import refresh to the retained Owner/Session. Do not wait for P1's final DONE: its service is admitted with P2's first installed Cargo check. Then close linked build/run after P3 and the necessary P5 ABI/unwind work. | 2, 3, 4, 5 |
+| P3. Finish Rust debugging and default builds | READY, parallel with P1 | Replace boolean debug admission with represented levels; carry original Rust source/type/location facts into real object debug data. Use the existing default-profile failure as the first acceptance fixture. | 3, 5, 6 |
+| P4. Implement Cargo test artifacts and harness semantics | READY for harness work; final default test acceptance needs P3 and the relevant P5 runtime contract | Carry `--test` through the public request, retained protocol and native preparation; implement genuine harness behavior and test selection. | 3, 5, 6 |
+| P5. Complete native artifacts and the shared runtime boundary | READY for P2/P4 prerequisites; broad widening follows P2's integrated check | Extend real completed declarations, metadata, instances and ABI beyond flat integers; implement cross-boundary panic/drop/allocation and downstream interoperability. | 1, 3 |
+| P6. Close remaining Rust and Cargo capabilities | WAITING for the first integrated service to establish the reusable boundary; inventory and specific dependency research may proceed | Take the first real missing operation in the coverage matrix; import its necessary upstream algorithm, wire its public caller and close the whole feature path. | 1, 2, 3, 5 |
+| P7. Qualify retained correctness across the coverage matrix | READY for every implemented row; final closure depends on P1–P6 | Pair fresh and retained outcomes for real semantic edits, invalidation, repair, failure and restart; preserve unaffected work. | 4, 6 |
+| P8. Qualify platforms, options and exact packages | READY for implemented cells; final closure depends on P1–P7 | Bind a package to the pinned SDK and declared host/target/edition/profile matrix; close each missing or untested cell without narrowing the agreed compiler goal. | 5, 6 |
+| P9. Measure and improve complete work | READY for measurement infrastructure and each working operation; final claim depends on P1–P8 | Freeze workload frequencies and matched baselines, measure full public requests, identify dominant costs, then optimize the owning stage. | 7 |
+| P10. Complete replacement qualification and publication handoff | WAITING for P1–P9 | Independently review exact release candidate, every remaining coverage cell and matched overall speed; prepare the concrete package and release record. Publish only with authorization. | 0–7 |
+
+### P1. Retained upstream projection service
+
+Keep the completed proof. Its important pieces are
+[`Definitions`](../../compiler/native/src/driver/imports.rs),
+[`prepare_projection_import`](../../compiler/native/src/driver/compile.rs),
+the native imported projection in
+[`generics.rs`](../../compiler/native/src/check/generics.rs), and the
+[retained qualifier](../../tools/test-native-projection-retention.rs).
+The full-driver implementation in
+[`native-projection-qualification.rs`](../../tools/native-projection-qualification.rs)
+remains an independent research/reference path, not a product dependency.
+
+The first admitted contract may stay narrow: a concrete nongeneric receiver, a
+trait with only `Self`, one associated lifetime parameter and an empty parameter
+environment, with all declared well-formedness/outlives predicates validated.
+Prove that every supplied lifetime maps to a shared reference to the represented
+integer. Preserve the caller's actual region. Wider environments and results
+remain unintegrated until their facts and obligations are represented.
+Separate stable crate/definition identity from the generation of its observed
+facts; do not use fresh identity to disguise invalidation. Represent success,
+missing impl, unsupported shape, invalid constraints and implementation failure
+separately. Generalization must carry real type/const/region arguments,
+environment, universes, obligations and diagnostics; it cannot replace these
+with a boolean, a string or a fabricated successful check.
+
+The provider is part of this work: native parsing already retains associated
+item generics, but the native declaration checker still rejects the GAT shape.
+Expose the normally collected trait/impl/associated-type declarations and their
+binders/predicates to this same semantic service. Do not finish only imported
+consumer projections while leaving the provider compiled by stock Rust.
+In particular, the current associated-item collection discards `at_where` while
+rejecting GAT declarations. Removing that rejection without carrying the actual
+`where Self: 'a` and other predicates into validation would be incorrect.
+
+Trace the pinned normalization, well-formedness, candidate and region operations
+to the smallest viable upstream interface. Evaluate the existing generic type
+IR/solver adapters against this exact operation; they are a seam to verify,
+not a promised drop-in. Record every retained source/dependency edge, license,
+feature/target mode, native adapter and actual caller in the existing import
+inventory. If a proposed cut requires duplicate native frontend stages, change
+the adapter and retry the same semantic witness. This decision does not require
+another user approval or a new architecture project.
+
+Pass when the admitted service preserves the current valid, changed-referent,
+missing-impl, lifetime-escape, repair and no-op outcomes without the research
+driver in product construction. Add controls for changed impl candidates,
+negative lookups, malformed/stale metadata, binder identity and unsupported
+shapes. Valid shapes outside the admitted representation remain open coverage;
+their explicit integration-incomplete refusal verifies only that boundary.
+Measure query/setup/conversion work, including failures. Then continue
+directly to P2. Its metadata work can already proceed against the typed service
+interface; do not wait for P1's final DONE. P1's production admission and P2's
+initial public integration close together at the first installed Cargo check.
+Passing another isolated query does not close that integration.
+
+### P2. Ordinary Cargo provider and consumer
+
+Start with the existing `schema`/`Codec`/`Family::View<'a>` consumer, then rename
+the crate and definitions and add an unrelated second dependency so fixed names
+cannot substitute for resolution. The first complete slice is metadata-only
+checking; generic MIR serialization and all library formats are not prerequisites
+for this slice.
+
+Extend the real native completed-definition inventory in
+[`native_completion.rs`](../../crates/lustr-native-core/src/native_completion.rs)
+for the exact struct, trait, associated type, impl, generics and predicates that
+this provider requires. Connect their truthful records to
+[`lustr-metadata-encoder`](../../crates/lustr-metadata-encoder/src/lib.rs) and its
+external metadata/schema readers. Keep declaration, visibility and validity
+proofs real. The same installed Lustr must build the provider metadata; supplying
+stock-built metadata only proves consumption and cannot close this package.
+Require pinned Rust to read the Lustr-produced provider metadata and check its
+unchanged consumer as part of this first metadata-only gate. Lustr's encoder
+and reader agreeing with each other is not an independent artifact proof.
+Include an independently established invalid provider declaration or impl, such
+as an associated-type assignment violating its declared bound. Require rejection
+before metadata publication; consumer-only errors do not prove provider validity.
+
+Wire the existing
+[`public_library_import`](../../crates/lustr-native-core/src/public_library_import.rs),
+[`public_executable_import`](../../crates/lustr-native-core/src/public_executable_import.rs),
+[`Owner`](../../crates/lustr-native-core/src/public_library.rs) and native
+[`Session`](../../compiler/native/src/driver/session.rs). The product daemon
+currently replaces a session when imported input changes. Introduce a validated
+import-generation update in that existing path: capture exact dependency bytes,
+refresh affected facts/signatures, invalidate actual readers and retain unrelated
+bodies. Do not simply remove `import_is_current` checks. Negative impl facts,
+SDK/configuration identities, failure and publication state must participate.
+
+Pass first through the installed `RUSTC` entry and ordinary pinned Cargo `check`
+with unchanged default profiles. Then pass `build` and `run` through that same
+route as P3 and the required P5 work land. Require cold/no-op/provider-type edit,
+missing impl, lifetime escape, repair and unrelated-body edit. The fully unchanged
+source, request, context and imported generation do no upstream normalization
+or native body checking; a native body edit must still check the affected body.
+changed facts recheck real dependents and leave `spare` cached. Compare actual
+results and diagnostic causes against pinned Rust; preserve the last valid
+output on failure. Trace candidate children and product source closure so a
+stock compiler or whole-driver library cannot satisfy the test invisibly.
+Distinguish Cargo not invoking the compiler from a real unchanged compiler
+request reusing its owner. Exercise both; an absent invocation cannot prove the
+retained compiler's zero-query/zero-body behavior.
+
+The public acceptance commands, run from the unchanged fixture with an actual
+constructed candidate at `PACKAGE`, are:
+
+```sh
+RUSTC="$PACKAGE/bin/rustc" "$PACKAGE/bin/cargo" check --workspace --offline
+RUSTC="$PACKAGE/bin/rustc" "$PACKAGE/bin/cargo" build --workspace --offline
+RUSTC="$PACKAGE/bin/rustc" "$PACKAGE/bin/cargo" run --offline
+RUSTC="$PACKAGE/bin/rustc" "$PACKAGE/bin/cargo" test --workspace --no-run --offline
+RUSTC="$PACKAGE/bin/rustc" "$PACKAGE/bin/cargo" test --workspace --offline
+```
+
+These are required future product outcomes, not commands that pass at this
+baseline. Record actual tool/SDK identities and effective configuration, remove
+unintended compiler wrappers in the controlled fixture, and keep a separate
+matched pinned-Rust reference. A prewarmed package, altered profile or changed
+source must be labeled as a different case. Do not claim a command ran from a
+plan, synthetic argv test or compiler child that never executed.
+
+### P3. Rust debugging and ordinary default builds
+
+Keep panic propagation, stack walking and Rust source debugging as three
+separate obligations. Existing `.eh_frame` and caught-panic results do not
+provide Rust line tables, lexical scopes, variables or types.
+
+Start at [`library_request.rs`](../../src/library_request.rs),
+[`lib.rs`](../../src/lib.rs),
+[`library_contract.rs`](../../src/library_contract.rs), native request/protocol,
+source maps, checked IR and TinyCC/object emission. Preserve requested debug
+levels, split-debug behavior, path remapping and option precedence. Carry source
+files, original spans, scopes, types, parameters and local-location ranges through
+retained emission. `#line` alone is insufficient. Correctly key cached objects
+and debug artifacts by the facts they actually use.
+
+First test whether the current emitter can expose the required code addresses
+and variable locations. Keep a small comparison behind the same native checked
+body/instance boundary if a necessary debug facility is missing. Select a backend
+or narrow imported emission component using correct default build/debug behavior,
+construction and compile/link cost, generated runtime and target coverage.
+Do not replace or duplicate the native frontend; extend its source/IR debug facts
+as required. Do not silently drop requested debug data. A justified
+codegen change is allowed; repeated line-table-only demos are not completion.
+
+Pass an unchanged default-profile binary and a path-dependency workspace under
+`cargo build` and `cargo run`. Debug the original Rust: source breakpoint,
+step/next/finish, parameter and local inspection, reference/type display and
+backtrace across the relevant boundaries. Repeat after body and signature edits,
+module movement and output relocation; reject stale debug generations. Keep the
+existing corrupted-CFI controls. Run the declared GDB/LLDB and platform cells as
+they become implemented; do not label one Linux debugger pass universal support.
+
+### P4. Cargo test mode
+
+Translate `--test` into an actual retained artifact mode through public argument
+handling, the protocol, session identity and native preparation. The existing
+`lust test` runner is not the Cargo test interface. Its one-child-per-test
+behavior cannot stand in for the requested harness. Preserve `cfg(test)`, unit
+and integration targets, generated entry, `harness=false`, test listing/filtering,
+ignored tests, `should_panic` and `Result`/`Termination` behavior. Use necessary
+pinned upstream harness/runtime implementation through the same native-owned
+body and instance pipeline; do not delegate test compilation to rustc.
+
+Verify named tests, counts, output and exit status against the pinned harness,
+including an ordinary failing assertion, wrong/missing expected panic, panic
+payload, destructor order, nested catch and a test returning failure. An earlier
+compile error cannot satisfy an expected runtime failure. Cover parallel test
+execution, flags after `--`, dependencies and doctests/rustdoc in their proper
+tooling rows. Never rerun an already executed test as compiler fallback.
+
+Pass `cargo test --no-run`, then actual `cargo test` on the unchanged default
+workspace. Add and remove a test while retained state lives; verify discovery,
+body invalidation and absence of stale tests. Continue to P5/P6 when this works.
+
+### P5–P8. Full language, artifacts, retention and platforms
+
+Expand using one capability matrix, linked from this checklist, whose rows bind
+the pinned language/library operation, actual native support, bridge support,
+complement owner if needed, public caller, valid and invalid witnesses, retained
+history, artifact/runtime obligations and supported target/profile cells.
+Populate it from pinned Lust and Rust sources and tests before candidate runs.
+Unknown, excluded, filtered and untested cases remain visible work. Do not turn
+the current scalar grammar or a handpicked successful crate corpus into the
+definition of Rust.
+
+Work in dependency order, taking the narrow P2/P4 prerequisites first:
+
+1. Native declaration/ABI and metadata: remaining integer widths, aggregates,
+   enums, references/slices, methods, generics, traits, exported/inline bodies,
+   associated items and real monomorphized instances. Preserve privacy, lints,
+   layouts, symbols and crate/dependency identity. Validate independent pinned
+   Rust consumers of Lustr artifacts and Lustr consumers of Rust artifacts.
+2. Shared runtime: real standard-library linkage, allocations and deallocation,
+   drop flags/glue, partial initialization, foreign calls, native/imported panic
+   propagation, threads and terminal double panic. The current native pending
+   panic mechanism requires an explicit ABI/runtime bridge; CFI alone cannot
+   make it compatible with a separately linked Rust unwinder.
+3. Complementary semantics: expansion/hygiene and proc macros; general trait
+   selection/projections/coherence; typed control flow, move/borrow/region facts;
+   const evaluation and type-level constants; closures/async/coroutines; unsafe,
+   intrinsics, SIMD/assembly and target-specific requirements. Reuse the justified
+   upstream implementation. Each row includes declaration, checking, lowering,
+   emission, metadata, runtime and invalidation, not just syntax acceptance.
+4. Cargo/tool integration: real workspace graphs, features, build scripts,
+   host/target separation, environment/generated inputs, path/registry/git
+   dependencies, custom profiles, optimization/LTO, diagnostics/JSON/dep-info,
+   `rlib`/`staticlib`/`cdylib`/`dylib`/proc-macro outputs and rustdoc/doctests.
+5. Retained and package qualification: fresh/retained equivalence for every
+   integrated row, positive and negative reads, impl/const/layout/drop changes,
+   macro and environment changes, undo/repair, eviction/restart, concurrent
+   requests and failed object/link/publication. Bind installed bytes, SDK,
+   source/import manifests, licenses, relocation and offline reconstruction to
+   actual compiler-host/output-target/profile/edition cells in section 6.
+
+Use upstream UI/run/run-make/incremental tests, native regression histories and
+unchanged real projects. Freeze expected behavior and test selection independently
+of the candidate. Repair failures in their owner and keep taking the next row.
+The coverage matrix and operational queue are parts of this register, not new
+roadmaps or separate competing task systems. A package can advance in small
+commits; its DONE state cannot precede its public integration evidence.
+
+### P9–P10. Complete-work speed and release qualification
+
+Establish measurements as soon as an operation works. Keep pristine Lust,
+integrated Lust, packaged Lustr and matching pinned stock rustc comparisons
+separate. Freeze representative workloads, operation frequencies, cache states,
+profile/debug/panic/target settings and sampling before looking at results.
+Measure startup, transport, all semantic work, conversion, emission, metadata,
+linking and requested program/test execution together. Also retain phase data,
+memory/daemon growth, tails, maxima, errors, source identities and slower cases.
+
+For operation counts `n_i`, the observed workload speed ratio is
+`sum(n_i * mean(T_rustc_i)) / sum(n_i * mean(T_lustr_i))`, with a paired
+uncertainty assessment and all required successful work included. Ratios from
+unrelated microbenchmarks and zero/one checked-body counts do not prove this
+result. Failed or unsupported workload operations cannot be discarded to obtain
+a gain. Follow section 7 and the performance policy for the exact assessment.
+
+Profile the dominant excess cost, make the smallest owning-stage correction,
+preserve a failing/slower predecessor, then repeat the affected matched
+comparison. Do not postpone all speed work until coverage is complete, and do
+not demand an unrelated whole-compiler benchmark for every documentation change.
+Near-stock native/complement targets are separate optimization claims. Full
+correctness plus matched overall speedup qualifies the first replacement; perfect
+subset parity, a `no_std` rewrite and socket removal are not extra release holds.
+
+The current source gate deliberately admits only an unavailable release with
+`full_rust_coverage=false`. P10 must replace that temporary refusal-only policy
+with independently checked positive admission bound to the actual package,
+coverage and performance evidence. A green refusal test or a flipped inventory
+flag is not completion.
+
+When sections 0–7 close, independently review the exact installable candidate,
+publishable evidence and unresolved inventory, prepare the release and request
+only any publication authority that is still missing. PR #33 may be integrated
+under its applicable review/checks before that product milestone; its merge
+does not close the compiler task or disable continuation.
+
+### Coordinator and resume record
+
+The coordinator owns this register, shared-interface decisions and final
+integration. Worker A starts P1/P2; worker B starts P3; worker C starts P4 and
+the runtime prerequisites it exposes. Use isolated worktrees and non-overlapping
+path ownership. Agree a shared protocol/IR change before parallel edits. Finished
+workers review or implement the next dependency-ready slice; CI running on one
+slice does not idle all workers. Use the [AGENTS continuation loop](../../AGENTS.md#continue-implementation-across-checkpoints).
+Serialize coordinator invocations through the existing authorized continuation
+and its private active-session claim before dispatching workers. A Git expected-head
+check protects publication but does not prevent duplicate builds. Reconcile an
+unknown command/session outcome before launching a replacement.
+
+At every handoff update the following record here, preserving original logs in
+the source-bound evidence path and private runtime command/session details in
+the existing local checkpoint. A missing active worker means unclaimed work,
+not completed work. A dispatch acknowledgment means submitted, not executed.
+
+Each active slice adds a short row with: package and owner; base and current SHA;
+owned paths; exact unchanged acceptance operation; state and actual last result;
+evidence link; next action/command; dependency or successor. Keep command/session
+IDs and private paths in the private checkpoint. A worker must not mark a package
+DONE because only one research or implementation substep passed.
+
+| Resume field | State when this plan was prepared |
+| --- | --- |
+| Integration source | PR #33 live branch; planning baseline `bc38dece7a734b97c0108582b7f61f98ccb819db`. Resolve the current head before editing. |
+| Last actual semantic result | Retained projection history `[3,0,2,0,2,0]` checked bodies and `[1,0,1,1,1,0]` upstream queries; standalone research entry; no product promotion. |
+| Active implementation claim | None made by this planning change. Claim the next slice before modifying shared paths. |
+| First next action | P1: inspect the exact query closure and implement its native-owned service adapter; in parallel P3: carry requested debug levels and original Rust debug facts through the public request/IR. |
+| First next public witness | P2 metadata-only default Cargo provider/consumer check; P3 default-profile build/run; P4 default test compile and real harness outcomes. |
+| Pending validation | Refresh exact-head hosted checks. Existing prior-source passes remain attached to their own sources. |
+| External blocker | None demonstrated for writing the next code slice. Selective solver integration and missing debug/test behavior are engineering work, not reasons to ask for another continue. |
+| End condition | Sections 0–7 qualified, complete-work speed established, concrete release handoff complete; actual publication follows its authorization. |
+
+After implementing and validating a slice, update its state and next action and
+continue in the same session. If a runtime ends, save the unfinished diff,
+immutable head, test identity, exact next command and running-command identity
+before yielding. The authorized continuation resumes this record, reconciles
+live work and proceeds. It must not merely watch CI or issue another summary.
 
 ## 0. Correct active direction and reconcile existing work
 

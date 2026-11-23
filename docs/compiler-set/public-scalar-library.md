@@ -7,9 +7,11 @@ in [run 45073103551, job 137364264163](https://github.com/glopyglerky/lustr/acti
 The [source/artifact checkpoint](native-cargo-continuation.md#verified-hosted-checkpoint)
 and [22 November audit](evidence/compiler-review-20261122/README.md) retain the
 exact evidence and limits. Full Rust coverage, release admission and equivalent
-complete-work performance remain open. A subsequently identified profile-default
-defect is being corrected and validated separately; it was outside the passing
-hosted campaign and cannot inherit its result.
+complete-work performance remain open. The subsequently identified profile-default
+defect is corrected and separately qualified; it was outside that original
+hosted campaign. The [later executable review](evidence/executable-unwind-review-20261122/README.md)
+and [current continuation review](evidence/continuous-completion-20261122/README.md)
+record subsequent work without transferring the older result to a new source.
 
 ## Compiler and request ownership
 

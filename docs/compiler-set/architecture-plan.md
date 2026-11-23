@@ -22,14 +22,24 @@ completes this architecture. A missing implementation must remain visible.
 ## Current source and continuation
 
 Reviewed 22 November 2026 at
-[`514dfe1ef8b49160bf5c09458981768fbf4f2386`](https://github.com/glopyglerky/lustr/tree/514dfe1ef8b49160bf5c09458981768fbf4f2386)
+[`bc38dece7a734b97c0108582b7f61f98ccb819db`](https://github.com/glopyglerky/lustr/tree/bc38dece7a734b97c0108582b7f61f98ccb819db)
 on the still-unmerged [PR #33](https://github.com/glopyglerky/lustr/pull/33).
-The [public scalar hosted checkpoint](native-cargo-continuation.md#verified-hosted-checkpoint)
-passed on its exact source tree. It includes genuine scalar libraries,
-metadata-only checks, bounded dependency composition and scalar executables.
-Unwind-mode leaf libraries require debug information disabled. The broader
-Linux/macOS workflow matrix was pending when observed, and no matched speed
-result qualifies this candidate.
+The [execution queue](completion-checklist.md#execution-queue) identifies
+dependencies, source entry points, public acceptance and the next ready action.
+It remains part of the single work register. The
+[continuation review](evidence/continuous-completion-20261122/README.md) binds this
+planning baseline and separates current implementation from prior-source evidence.
+
+Genuine scalar libraries, metadata-only checks, bounded dependency composition
+and scalar executables are implemented. The
+[930b384a executable audit](evidence/executable-unwind-review-20261122/README.md)
+qualifies dependency-free unwind executables with `debug=0`, including native
+panic behavior and independent frame observations within their stated limits.
+The latest retained associated-type proof goes further: a genuine dependency
+fact reaches native consumers and changes only affected body checks while
+unrelated work stays cached. Its standalone research entry still uses a full
+SDK query, refuses Cargo manifests and does not establish an admitted product
+service. Default debug builds, Cargo tests and complete-work speed remain open.
 
 The first scalar metadata join is implemented. The earlier
 [PR #32 metadata dependency failure](https://github.com/glopyglerky/lustr/blob/cb0721d49be95ec3f34a113c2354bc9d2a38bbf3/docs/compiler-set/shared-consumer-metadata.md)
@@ -42,10 +52,11 @@ The [audit record](evidence/compiler-review-20261122/README.md) separately
 qualifies the overflow/default-option and SDK-construction corrections: a full
 rebuild, 24 paired profile cases, the unchanged public campaign and actual DWARF
 walks with corruption controls. Preserve these gates and resolve demonstrated
-correctness failures before widening admission. Start ordinary Cargo/debug
-completion and the first general mixed semantic
-service in parallel. Establish that semantic boundary before another broad
-scalar-widening campaign; the sequence below makes this dependency explicit.
+correctness failures before widening admission. Continue ordinary Cargo/debug
+completion, production admission of the retained semantic service, and test
+harness work in parallel. Integrate the demonstrated boundary into ordinary
+Cargo before broad scalar widening; do not repeat the old missing-consumption
+probe or stop after another standalone proof.
 
 ## The concrete conflicting direction
 
@@ -82,30 +93,33 @@ does not make the operation complementary, and a missing bridge does not shrink
 Lust's supported set. Shared prerequisites have one authoritative result even
 when native and complementary consumers both read it.
 
-This is a necessary architecture, not a proof of full coverage. The first
-general mixed program must demonstrate the interfaces. Do not spend all future
-work extending isolated scalar fixtures while leaving this dependency unresolved.
+This is a necessary architecture, not a proof of full coverage. The retained
+projection proof demonstrates one semantic crossing. Its product import closure,
+provider compilation and Cargo-owned retained session are the next interfaces
+to complete. Do not spend all future work extending isolated fixtures while
+leaving those public integration dependencies unresolved.
 
 ## Implementation sequence
 
-The sequence below maps to the existing checklist numbers. It adds concrete
-dependencies and acceptance examples without opening another status register.
-Preserve usable implementations and exact predecessor evidence at every step.
+The sequence below maps to the existing checklist numbers. Detailed executable
+packages P0–P10, their state and the resume cursor live only in the
+[checklist queue](completion-checklist.md#execution-queue). Preserve usable
+implementations and exact predecessor evidence at every step.
 
 | Sequence | Checklist items | Work and completion witness |
 | --- | --- | --- |
 | Preserve corrected behavior | 0, 6 | Keep the qualified profile/default and construction repairs, extend coverage to retained profile transitions, and resolve reproduced semantic regressions. Check explicit and omitted flags against the pinned compiler and actual program behavior. |
 | Start ordinary dev completion | 3, 5, 6 | Build, run, check and test a small unchanged Cargo workspace with normal dev settings. Finish executable unwind and Rust source debugging; do not edit the user's manifest to obtain a pass. Run this work alongside the next row. |
-| Prove the general semantic boundary early | 2, 3, 4 | Before broad scalar widening, choose a concrete missing capability from an unchanged mixed fixture and integrate its upstream service into the native state. Demonstrate valid and invalid trait/projection/generic/borrow cases, retained reuse and precise cross-boundary invalidation. |
-| Expand the existing native bridge | 1, 3 | Once the mixed boundary passes, carry donor-supported integers, aggregates, enums, references, methods, generics and traits through that same checked state, real metadata and downstream libraries. Implement narrow bridge prerequisites for the early fixture as needed. Document unsupported ABI/profile cells separately. |
+| Admit the demonstrated semantic boundary | 2, 3, 4 | P1/P2: replace the proof's full-SDK query with a justified selective service; compile the GAT provider and consumer through installed Cargo check, then build/run. Preserve real predicates, lifetimes, invalid controls and precise retained invalidation. |
+| Expand the existing native bridge | 1, 3 | P5: after the integrated semantic check passes, carry donor-supported integers, aggregates, enums, references, methods, generics and traits through the same checked state, real metadata and downstream libraries. Implement P2/P4's narrow metadata/ABI prerequisites immediately. Document unsupported ABI/profile cells separately. |
 | Close the complete Rust/build graph | 1, 2, 3, 5 | Integrate remaining macro, const, region, unsafe/FFI, async, standard-library and Cargo obligations through justified imports. Preserve real dependencies, proc macros, build scripts and all required crate types. |
 | Qualify retained behavior and targets | 4, 6 | Run applicable cold/warm/restart/edit/failure histories and the complete declared host/target/profile matrix with genuine packages and independent results. |
 | Qualify and publish the replacement | 7 | Demonstrate matched overall speedup on the predeclared full workload and exact package. Publish all slower cases and continue optimizing toward stock-Lust speed. |
 
 Measure each material integration boundary as it lands. Complete-package speed
 qualification is the final consolidation, not the first performance experiment.
-Ordinary Cargo/debug work need not wait for the first mixed semantic service,
-and that service must not wait for a broad scalar campaign to finish. Further
+Ordinary Cargo/debug and test-harness work need not wait for the admitted mixed
+semantic service, and that service must not wait for a broad scalar campaign. Further
 independent services or targets may proceed in parallel after their shared
 interfaces and owners are fixed. Work must preserve correctness dependencies
 and one public compiler route.
@@ -159,20 +173,17 @@ a prior negative lookup; a const can change an array type and ABI; a proc macro
 can create any of those definitions. Use one set of identities and record these
 dependencies. This is the central feasibility test for the full compiler.
 
-The first imported semantic fixture should be small enough to diagnose and
-complete enough to cross that boundary. It must include an unchanged dependency,
-native-owned work, a genuinely complementary operation, invalid-program controls
-and an edit that changes the imported fact's consumers. Select the missing
-operation from that fixture's actual failure, not an arbitrary list of crates.
-The boundary passes only when a native-owned body consumes a genuinely imported
-semantic fact, the complete unchanged program executes correctly, invalid
-controls are rejected for the right reason, and an edit to that fact invalidates
-its consumers while preserving unrelated work. Record the actual import closure
-and phase costs. If this requires duplicate native stages, fabricated checked
-facts or whole-program analysis, stop broad widening and redesign the failing
-identity/query/typed-body adapter. Re-run that same fixture and its controls
-before admission. Do not resolve a failed boundary with a hidden compiler
-fallback or another scalar-only result.
+The associated-type fixture now demonstrates the bounded consumer crossing:
+native bodies consume a shared-reference family with its supplied lifetime,
+invalid changes are rejected, and affected consumers invalidate while `spare`
+stays cached. Carry that fixture into the public path. The provider's GAT
+declaration and predicates must be checked by the admitted service from the
+existing native parse, and genuine metadata must be emitted by Lustr. Start
+with default-profile Cargo check, which does not require all generic runtime
+bodies; then extend the same request to build/run and tests. Record the actual
+import closure and complete costs. If an adapter needs duplicate native stages,
+fabricated checked facts or whole-program analysis, redesign that adapter and
+retry the same operation. Continue independent debug/test work during the repair.
 
 ## Importing the complement
 
@@ -292,6 +303,18 @@ Preserve means, tails, maxima, memory, errors and all slower cases. Zero or one
 rebuilt object is mechanism evidence; it is not a measured speedup.
 
 ## Completion and publication
+
+Follow the [continuous implementation rules](../../AGENTS.md#continue-implementation-across-checkpoints).
+A proof, successful test, commit, push or PR merge is a checkpoint. The
+coordinator advances the queue immediately, retaining source-bound evidence and
+an exact resume record at runtime boundaries. Instructions cannot keep a stopped
+runtime alive; the authorized continuation mechanism must resume the same queue
+without creating competing writers or merely reporting CI.
+
+Bounded PR integration follows its applicable review, checks and authorization.
+It does not require all future compiler work to be finished, and it does not
+establish release qualification. After an authorized merge, verify the live
+integration source contains the correction and continue the next ready package.
 
 A qualified replacement must satisfy the full exclusive coverage contract,
 correctness, actual artifact integration, target/runtime behavior and the

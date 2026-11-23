@@ -1,0 +1,172 @@
+{
+  "schema": "lustr-executable-frame-review-v1",
+  "source_identity": [
+    "930b384ad03a26fe141d10be4e261bd82a60be76",
+    "0de8622237295e2607b7ffed22359749c2e4bc1a"
+  ],
+  "native_tree": "8b535898c1a1df6d4c046b75289702c8bd7f6265",
+  "campaign_report_sha256": "a95bf74f64ef54a79075eb62d1b8273a7bd6192a7b0eab19a43c52dd818d0dd0",
+  "source_revision_record_sha256": "1925e02541ed657ee10b474032cccedaa8bd495d8e9c34dbba764dbabbac9fab",
+  "construction_component_record_sha256": "0e882b9d0d257d2e75a173342c10a869e9ae6680a77432f0b83304445da31b54",
+  "native_build_receipt_sha256": "985c6cf509dca2a0b6ad312d8d6084bc8eeb0aac624abe459c191abbba88210a",
+  "package_binary_sha256": {
+    "bin/lustr": "f3a001e7a04cd2a74cd6f2bca06210969a6e07a8d064d1d340a27c0c9e59f7f9",
+    "bin/lust-core": "d6c756ae6cd109a8aba7f7b81cbfd58a5018350a2f157373133c60bcb8f44c16",
+    "lib/lustr-native.id": "4aec6707b06b43eca2865cf77761f00336bd38877ac6ad8ed344576ddf65ceee"
+  },
+  "gdb_version": "GNU gdb (GDB) 17.2",
+  "gdb_sha256": "24a698c69ab1053b4bdfac5817c4855846f407b1d46265a92847280ef460e787",
+  "native_frame_sequence_qualified": true,
+  "negative_control_rejected": true,
+  "full_system_unwind_qualified": false,
+  "rust_source_debug_qualified": false,
+  "installed_ci_gate": false,
+  "scope": "Eleven native frames through generated main at the first stdout write; names, Rust source DWARF, and libc/system caller CFI are outside this observation.",
+  "method": "Stop at write, read its live return address from the stack, stop at that native return PC, record the native RBP return-address chain independently, then disable every GDB unwinder except dwarf2 and compare backtrace PCs against that unchanged reference.",
+  "outer_boundary": {
+    "frame_level": 11,
+    "pc": 140737348008961,
+    "explanation": "After printing all eleven required native frames, GDB could not unwind the libc caller beyond generated main with only dwarf2 enabled. The diagnostic is retained; it does not qualify a full-system unwind."
+  },
+  "mutation": {
+    "operation": "DW_CFA_def_cfa_offset",
+    "file_offset": 17675,
+    "before": 16,
+    "after": 127,
+    "changed_byte_count": 1,
+    "unchanged_fde_count": 1236,
+    "normal_output_unchanged": true
+  },
+  "cases": [
+    {
+      "label": "positive-cli",
+      "binary_sha256": "d74af20a632abc70006be19c466caaddaf14de52b96b0147ad2c514f7bf0083d",
+      "observed_native_frames": [
+        [
+          0,
+          4389165
+        ],
+        [
+          1,
+          4389802
+        ],
+        [
+          2,
+          4389908
+        ],
+        [
+          3,
+          4491008
+        ],
+        [
+          4,
+          4493285
+        ],
+        [
+          5,
+          4657777
+        ],
+        [
+          6,
+          4643944
+        ],
+        [
+          7,
+          4658620
+        ],
+        [
+          8,
+          4662653
+        ],
+        [
+          9,
+          4659919
+        ],
+        [
+          10,
+          4375482
+        ]
+      ],
+      "reference_native_pcs": [
+        4389165,
+        4389802,
+        4389908,
+        4491008,
+        4493285,
+        4657777,
+        4643944,
+        4658620,
+        4662653,
+        4659919,
+        4375482
+      ],
+      "same_native_pc_sequence": true,
+      "only_enabled_unwinder": "dwarf2",
+      "outer_boundary_diagnostic": "Required frame unwinder may have been disabled, see 'maint info frame-unwinders'",
+      "normal_runtime_exit_status": 0,
+      "normal_runtime_stdout": "drop:edited\ndrop:middle\ncaught\ndrop:outer\n",
+      "normal_runtime_stderr": ""
+    },
+    {
+      "label": "negative-cli",
+      "binary_sha256": "837e9fc6ee155508d8d4c293e2a3429147affc2b6700a67be2803bf716b692e8",
+      "observed_native_frames": [
+        [
+          0,
+          4389165
+        ]
+      ],
+      "reference_native_pcs": [
+        4389165,
+        4389802,
+        4389908,
+        4491008,
+        4493285,
+        4657777,
+        4643944,
+        4658620,
+        4662653,
+        4659919,
+        4375482
+      ],
+      "same_native_pc_sequence": false,
+      "only_enabled_unwinder": "dwarf2",
+      "outer_boundary_diagnostic": null,
+      "normal_runtime_exit_status": 0,
+      "normal_runtime_stdout": "drop:edited\ndrop:middle\ncaught\ndrop:outer\n",
+      "normal_runtime_stderr": ""
+    }
+  ],
+  "earlier_collector_attempts": [
+    "The first fwrite breakpoint was unused; the program completed normally before collection.",
+    "Python frame-object lookup attempted the libc caller after ten recorded native frames; the CLI backtrace records all eleven native frames before the same outer-boundary diagnostic."
+  ],
+  "files": {
+    "original": "d74af20a632abc70006be19c466caaddaf14de52b96b0147ad2c514f7bf0083d",
+    "positive.gdb": "eeb3cbe7584ec2f3ed9efdebf77b192c2fc890b14d8d3ad668515b47a1bc5b94",
+    "positive.log": "b4c861667c91bb2b2a4bced19f6e189fbd44e04497db832dfb7268e596b9285c",
+    "positive-write.gdb": "9cec4be8a7d61a145b22c7d0b2dfbb3db86e9a309e6b85b8837e07c5555fbd14",
+    "positive-write.log": "daead3181580540f7285e25ad0a9e13ba8ca32718fe616929eb4ee6fd0075f3f",
+    "positive-write.json": "ddea42bce6af6e3de854119913f4feaf321eea300b6d556eaa855583bb513461",
+    "corrupt-cfa": "837e9fc6ee155508d8d4c293e2a3429147affc2b6700a67be2803bf716b692e8",
+    "positive-final-runtime.stdout": "869b979bc56d5803095833522dfc4c80fca33073d35a0206b285838f0779e80d",
+    "positive-final-runtime.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "positive-final.gdb": "d87c67093ba64c240c99f35c318b7ff5aa74562acc46faa209c304eee041ebb7",
+    "positive-final.log": "3b21c0b9fd6dc39ab2390e6521a0db0881f9d77a3ef9841072f6125a037cc89d",
+    "negative-final-runtime.stdout": "869b979bc56d5803095833522dfc4c80fca33073d35a0206b285838f0779e80d",
+    "negative-final-runtime.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "negative-final.gdb": "73e96876ada51ae570aafc11aa1c6b291d6e88d5b080338f68b0ed2cb4ac0ac7",
+    "negative-final.log": "d24f50f7b2b17fa49b4ef01a2b634404b856c5d22c2461a38bf8ec3b54166bcd",
+    "positive-cli.gdb": "afed30b06aa91ea7ae42ecabc4aae04bfff958114153ae4378e09c073745ccb1",
+    "positive-cli.log": "ef6444c4cf7bb116601918ab366da7f180c84517b307e7d83305a7f824d4c967",
+    "positive-cli.json": "8cc00d12bc6f74b3e351fad688af2ce8da9753f387d251e020d6bed049b8d619",
+    "negative-cli.gdb": "9e5df3afedec3b256a5fa8a99d2317a7b288dac53f3e063277dc2b242be64806",
+    "negative-cli.log": "17bfa850cf9fc32fd703ca35bf4783ef9641580b061a521cbeb492f977d1c275",
+    "negative-cli.json": "fd3dde515d6694d4caa2a4b565a17a8f99b152709063e17da676088c7c1859fd"
+  },
+  "raw_report_sha256": "b13f533a7423a99462329c4435e23886bab10a558f27d04a36bdd8c73e831cb0",
+  "verification": {
+    "all_recorded_remote_file_hashes_verified": true,
+    "downloaded_report_and_eight_log_script_runtime_files_verified": true
+  }
+}

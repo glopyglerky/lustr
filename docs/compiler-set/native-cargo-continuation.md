@@ -5,6 +5,22 @@ This continues [PR #33](https://github.com/glopyglerky/lustr/pull/33) under the
 Lust-owned integration uncovered by independent retained-result qualification.
 It is not a complete Rust compiler, a new complementary owner, or a release.
 
+## Current continuation
+
+The latest implementation reviewed for the execution plan is
+`bc38dece7a734b97c0108582b7f61f98ccb819db`. The
+[continuation review](evidence/continuous-completion-20261122/README.md) records
+its retained associated-type proof and remaining public gaps. The
+[execution queue](completion-checklist.md#execution-queue) is the active resume
+point; the checkpoints below retain their original source/date scope.
+
+The later [930b384a audit](evidence/executable-unwind-review-20261122/README.md)
+qualifies dependency-free Linux x86-64 unwind executables with `debug=0`.
+Dependency-bearing unwind and Rust source debug information remain open.
+The latest associated-type qualifier consumes genuine dependency metadata in a
+retained native session, but is not ordinary Cargo integration or selective
+product admission. Do not rerun the older missing-consumption probe as new work.
+
 ## Authored public scalar-library path
 
 Reviewed at published source
@@ -45,7 +61,7 @@ admitted operations and semantic restrictions in detail.
 | `cargo build --lib` | Genuine metadata, archive and dep-info for the flat `no_std` scalar library. Leaf libraries accept abort or unwind with debug information disabled. | Wider declarations, generic bodies, full native ABI and default debug information. |
 | `cargo check --lib` | Genuine metadata-only output, including default dev checking and represented integer signatures. | Arbitrary crate semantics and dependency graphs. |
 | `--extern` dependencies | Pinned metadata identities and scalar declarations enter Lust's resolver; native archives compose with separately checked consumers. | General dependencies, feature combinations, proc macros and build scripts in this artifact path. |
-| `cargo run --bin` | Hosted scalar executable using the bounded native libraries, with abort and no debug information. | Default-profile unwind executables and complete source-level debugging. |
+| `cargo run --bin` | The 514dfe1e checkpoint covers hosted scalar executables with abort and no debug information. The later 930b384a evidence adds dependency-free unwind executables with `debug=0`. | Default debug information, dependency-bearing unwind and complete source-level debugging. |
 | `cargo check --bin` | Actual scalar dependency metadata, dep-info and the pinned compiler's empty executable metadata output, without code generation. | General binary/project coverage. |
 | Retained requests | Cold, no-op, edits, invalid-input recovery, dependency changes and represented module/include/environment observations have their campaign controls. | Full semantic invalidation and all donor-supported histories. |
 

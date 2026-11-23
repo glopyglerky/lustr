@@ -3,7 +3,7 @@
 The [exclusive coverage contract](exclusive-coverage-contract.md) defines the
 only goal. This document separates the required interfaces from observed code.
 Reviewed 22 November 2026 at
-`514dfe1ef8b49160bf5c09458981768fbf4f2386`. Refresh source and CI identities before
+`bc38dece7a734b97c0108582b7f61f98ccb819db`. Refresh source and CI identities before
 new claims. The [architecture plan](architecture-plan.md) defines continuation;
 the [checklist](completion-checklist.md) is the single work register.
 
@@ -42,13 +42,20 @@ second frontend over covered work.
 | Merged [PR #31](https://github.com/glopyglerky/lustr/pull/31), [2fbafe39](https://github.com/glopyglerky/lustr/tree/2fbafe391fdf3d0a59b8cc24e9b0f55be3570cbd) | Reconciles active requirements and source/history evidence. | Changes no product source and does not qualify a package. |
 | [PR #33](https://github.com/glopyglerky/lustr/pull/33), [514dfe1e](https://github.com/glopyglerky/lustr/tree/514dfe1ef8b49160bf5c09458981768fbf4f2386) | Retired public retries and whole-compiler packaging; selective scalar metadata and retained native artifacts now serve real Cargo library/check/dependency/executable requests. Unwind leaf libraries require no debug information. | The public scalar hosted job passed on the matching tree. Full complementary semantics, default-profile executables/debugging, broad platform qualification and matched speed remain unfinished. |
 
+The latest [retained projection review](evidence/continuous-completion-20261122/README.md)
+adds a real native consumer of an upstream associated-type fact, retained query
+reuse and precise dependency invalidation in a standalone qualifier. Production
+Cargo admission, provider compilation and the selective query closure remain
+open. The [execution queue](completion-checklist.md#execution-queue) names the
+next source changes. The preceding table preserves older source-bound snapshots.
+
 Current implementation paths:
 
-- [Public request entry](https://github.com/glopyglerky/lustr/blob/514dfe1ef8b49160bf5c09458981768fbf4f2386/src/main.rs).
-- [Retained native artifact host](https://github.com/glopyglerky/lustr/blob/514dfe1ef8b49160bf5c09458981768fbf4f2386/crates/lustr-native-core/src/public_library.rs).
-- [Native preparation](https://github.com/glopyglerky/lustr/blob/514dfe1ef8b49160bf5c09458981768fbf4f2386/crates/lustr-native-core/src/mixed_unit.rs).
-- [Selective metadata encoder](https://github.com/glopyglerky/lustr/blob/514dfe1ef8b49160bf5c09458981768fbf4f2386/crates/lustr-metadata-encoder/src/lib.rs).
-- [Independent public evaluator](https://github.com/glopyglerky/lustr/blob/514dfe1ef8b49160bf5c09458981768fbf4f2386/tools/test-public-native-library.py).
+- [Public request entry](https://github.com/glopyglerky/lustr/blob/bc38dece7a734b97c0108582b7f61f98ccb819db/src/main.rs).
+- [Retained native artifact host](https://github.com/glopyglerky/lustr/blob/bc38dece7a734b97c0108582b7f61f98ccb819db/crates/lustr-native-core/src/public_library.rs).
+- [Native preparation](https://github.com/glopyglerky/lustr/blob/bc38dece7a734b97c0108582b7f61f98ccb819db/crates/lustr-native-core/src/mixed_unit.rs).
+- [Selective metadata encoder](https://github.com/glopyglerky/lustr/blob/bc38dece7a734b97c0108582b7f61f98ccb819db/crates/lustr-metadata-encoder/src/lib.rs).
+- [Independent public evaluator](https://github.com/glopyglerky/lustr/blob/bc38dece7a734b97c0108582b7f61f98ccb819db/tools/test-public-native-library.py).
 
 The earlier mixed driver and emission filter remain linked from historical
 PR #32 records. They are not current public entry points. Omitting native

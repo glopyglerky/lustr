@@ -1,0 +1,292 @@
+{
+  "schema": "lustr-executable-unwind-review-v1",
+  "date": "2026-11-22",
+  "review_baseline": "bc8a7adb36fcae44f0bca686d503714646f21b5d",
+  "reviewed_source": {
+    "commit": "930b384ad03a26fe141d10be4e261bd82a60be76",
+    "tree": "0de8622237295e2607b7ffed22359749c2e4bc1a",
+    "native_tree": "8b535898c1a1df6d4c046b75289702c8bd7f6265",
+    "hosted_merge_commit": "fc77881243e36849fe1d87b1d22ba572c0197900",
+    "merge_tree_equals_reviewed_tree": true,
+    "pristine_lust_commit": "240e08d91d4aed0299639f6f11fd522912b248f9",
+    "pristine_lust_tree": "0ab1b09815802894e6078de0af59273cbdf46cb0",
+    "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+    "rust_sdk": "nightly-2026-11-09"
+  },
+  "preserved_failed_predecessor": {
+    "commit": "5c769ab5b36da48f8efd96bad88787b831840525",
+    "compiler_set_run": 45083831224,
+    "exclusive_job": 137397777628,
+    "broad_ci_run": 45083831116,
+    "observed_first_failure": "E0061: TinyCC link changed from three to four arguments; unchanged publication/signing caller supplied three",
+    "complete_job_log_sha256": "9b2cad4eac6e0e1242864bb24060ca70b04dbec6bc3b92093ff7154f8ed74050",
+    "correction": "930b384a restores three-argument link with previous options and adds link_with_frames for the newly admitted executable path"
+  },
+  "hosted_public_evidence": {
+    "workflow_run": 45084610787,
+    "job": 137400268103,
+    "artifact_id": 14778558073,
+    "artifact_size_bytes": 70099429,
+    "artifact_sha256": "137742eb4d514115bf258413dda5b255e4ebfc76b0d405e25c4b7bc76c1da586",
+    "artifact_digest_verified_locally": true,
+    "complete_job_log_sha256": "9b014e18c852d3a18c11b6cb27a9c0eea4f25b9faf587ef6e514897e19bd740b",
+    "source_manifest_sha256": "b61f1528628531aa31b0e80e42ab218e46b53f724173dea3c2eedf26a97888b9",
+    "source_and_stream_verification": {
+      "source_files_verified": 13122,
+      "source_errors": [],
+      "command_records": 328,
+      "command_streams_verified": 749,
+      "command_errors": [],
+      "tree_matches": true,
+      "native_tree_matches": true
+    },
+    "campaign_report_sha256": "f0795a3028a9f5320583bdd851abd54672a1507f221145e36d769f2f38c23ff5",
+    "profile_report_sha256": "3a951ec3c6ae899029be2ed0f5614e04c432f152ad3574a41d6398161fa9aeb8",
+    "frame_report_sha256": "90554b712175229b4fa58608794ad4ff5f6d8d0f936998e876778e43c9d069fd",
+    "tool_identities": [
+      {
+        "name": "lustr",
+        "sha256": "e0b475cc8b0cbe79a357c8b5c5bc615285a806d31986111f3f4ff733fac20aef",
+        "size": 16048448
+      },
+      {
+        "name": "rustc",
+        "sha256": "e0b475cc8b0cbe79a357c8b5c5bc615285a806d31986111f3f4ff733fac20aef",
+        "size": 16048448
+      },
+      {
+        "name": "lust",
+        "sha256": "808caf2e016a418b1c82f75ecc49d8d7770fe58fafee67f374eaca9bd179d9d8",
+        "size": 7138184
+      },
+      {
+        "name": "lust-core",
+        "sha256": "7f70c8903c80b71e8201cf81cda6d8fe02c1cb326a495f47003d4525b5a52c02",
+        "size": 330185200
+      },
+      {
+        "name": "cargo",
+        "sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+        "size": 36722856
+      },
+      {
+        "name": "llvm-ar",
+        "sha256": "c43dcd1bf79f4df283e4599a1c9ef6c0d71d68d74b1a276fd748a7c4f98eb96b",
+        "size": 136504
+      },
+      {
+        "name": "llvm-objcopy",
+        "sha256": "a8afaf147c812f54faaa9d47a59be44361dd086a125f25685519ac79f6695cc5",
+        "size": 296072
+      },
+      {
+        "name": "tcc",
+        "sha256": "12e511a2ef68c91b466c09ee303268ee5dc9edc78e0a81be6ac31d4b35dd516c",
+        "size": 356008
+      },
+      {
+        "name": "rustc",
+        "sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+        "size": 646208
+      },
+      {
+        "name": "test-public-native-library.py",
+        "sha256": "1c09a1945298a84d9200046894e3b0d63a32a06695a8838f6826a3a53c375f51",
+        "size": 185547
+      },
+      {
+        "name": "sdk-receipt.json",
+        "sha256": "4e400b263bf9923616dea44ead2d77213703177d3bfaf6becd6a19a4c5a657a7",
+        "size": 12412
+      }
+    ]
+  },
+  "hosted_results": {
+    "public_campaign_passed": true,
+    "functional_passed": true,
+    "exec_trace_qualified": true,
+    "retained_public_integration": true,
+    "runtime_assertions": 4194432,
+    "independent_rust_consumers": 16,
+    "unwind_executable": {
+      "history": [
+        {
+          "case": "cold",
+          "checked_bodies": 17,
+          "executable_sha256": "9ce474c92b021d2244b5989a2ad515180829cf375c4d9af78381c5097c55ea24",
+          "frame_ranges": 1235,
+          "status": 0
+        },
+        {
+          "case": "noop",
+          "checked_bodies": 0,
+          "executable_sha256": "9ce474c92b021d2244b5989a2ad515180829cf375c4d9af78381c5097c55ea24",
+          "frame_ranges": null,
+          "status": 0
+        },
+        {
+          "case": "edit",
+          "checked_bodies": 1,
+          "executable_sha256": "619e2dbadfa3438bb0836c7464f1cce6451feee82fbcc1aeed32fca93b86bc96",
+          "frame_ranges": 1235,
+          "status": 0
+        },
+        {
+          "case": "invalid",
+          "checked_bodies": null,
+          "executable_sha256": "619e2dbadfa3438bb0836c7464f1cce6451feee82fbcc1aeed32fca93b86bc96",
+          "frame_ranges": null,
+          "status": 101
+        },
+        {
+          "case": "repair",
+          "checked_bodies": 1,
+          "executable_sha256": "619e2dbadfa3438bb0836c7464f1cce6451feee82fbcc1aeed32fca93b86bc96",
+          "frame_ranges": null,
+          "status": 0
+        }
+      ],
+      "passed": true
+    },
+    "unwind_library": {
+      "history": [
+        {
+          "case": "cold",
+          "compiled_objects": 3,
+          "status": 0
+        },
+        {
+          "case": "noop",
+          "compiled_objects": 0,
+          "status": 0
+        },
+        {
+          "case": "edit",
+          "compiled_objects": 1,
+          "status": 0
+        },
+        {
+          "case": "invalid",
+          "compiled_objects": 0,
+          "status": 101
+        },
+        {
+          "case": "repair",
+          "compiled_objects": 0,
+          "status": 0
+        }
+      ],
+      "passed": true
+    },
+    "profile_cases_passed": 24,
+    "profile_cases_total": 24,
+    "profile_no_fallback_observed": true,
+    "library_dwarf_walks_passed": 6,
+    "library_corrupted_cfi_controls_rejected": 2,
+    "library_gdb_version": "GNU gdb (Ubuntu 15.1-1ubuntu1~24.04.1) 15.1",
+    "public_evaluator_controls": 29,
+    "profile_evaluator_controls": 3,
+    "library_frame_evaluator_controls": 11
+  },
+  "evaluator_sha256": {
+    "tools/build-metadata-sdk-receipt.py": "eac23167bfc612bdd0ba6becfe6ed50922145bf59690619cbd744597b4228f8b",
+    "tools/test-native-consumer-metadata.py": "fa6a51108c4d2721b1bfe320ef591cebbeb0f8275354c3d527bae275947a223e",
+    "tools/test-public-native-library.py": "1c09a1945298a84d9200046894e3b0d63a32a06695a8838f6826a3a53c375f51",
+    "tools/test-retained-native-metadata.py": "ad469a5469c81793601623fa6444d42effb22c148e34b595aeb3e3a141d1632d",
+    "tools/test-native-unwind-frames.py": "5a118f118191ca64541deb0433f7489e124559a0399f2fec8c0461caffe5cfd2",
+    "tools/test-rustc-profile-defaults.py": "2e8af2810be7213d6ff215a6bdd006a71a9903cd40260544cde12d373f33dd60"
+  },
+  "scope": {
+    "host": "x86_64-unknown-linux-gnu",
+    "edition": "2024",
+    "opt_level": 0,
+    "debug_info": 0,
+    "cargo_dependencies": 0,
+    "panic_strategy": "unwind",
+    "panic_runtime": "existing native explicit panic propagation",
+    "new_executable_frame_checks": "nonempty disjoint linked FDE ranges and GNU_EH_FRAME; separate library debugger gate does not qualify arbitrary executable frames",
+    "full_rust_coverage": false,
+    "default_profile_build_run_test_qualified": false,
+    "rust_source_debug_qualified": false,
+    "cross_crate_unwind_qualified": false,
+    "mixed_semantic_service_integrated": false,
+    "performance_qualified": false,
+    "release_admission": false
+  },
+  "hosted_checks_observed": {
+    "observed_at_utc": "2026-11-23T01:19:50Z",
+    "commit": "930b384ad03a26fe141d10be4e261bd82a60be76",
+    "total": 21,
+    "success": 20,
+    "in_progress": 1,
+    "failure": 0,
+    "compiler_set_run": 45084610787,
+    "compiler_set_all_ten_jobs_passed": true,
+    "broad_linux_job": 137400267793,
+    "broad_linux_result": "success",
+    "broad_macos_job": 137400267609,
+    "broad_macos_result": "in_progress",
+    "both_platform_signing_steps_passed": true,
+    "all_checks_passed": false
+  },
+  "independent_runtime_review": {
+    "summary": "runtime-review.json",
+    "summary_sha256": "67d81861c02ab3e6b95a10213d3ca80d7e768f1b50e816fee344bf8f283d7e74",
+    "harness": "runtime-review.py",
+    "harness_sha256": "d9983c990931b8f898b36620a0bdf0f0473b19a95568df93cf04ec7e9890d666",
+    "passed": true,
+    "totals": {
+      "paired_cases": 14,
+      "compilations": 28,
+      "program_executions": 26,
+      "successful_program_executions": 20,
+      "expected_sigabrt_executions": 6,
+      "expected_type_rejections": 2
+    },
+    "retained_body_counts": [
+      [
+        16
+      ],
+      [
+        0
+      ],
+      [
+        16
+      ],
+      [
+        0
+      ],
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [],
+      [
+        1
+      ]
+    ],
+    "same_recorded_native_owner_across_cases": true,
+    "invalid_artifact_bytes_checked_by": "hosted public campaign, not this supplementary runtime harness"
+  },
+  "independent_executable_frame_review": {
+    "summary": "executable-frames.json",
+    "summary_sha256": "7abd4fb705ccc4308750a1648db2ba125a47f13fbc3724034344875ef70585ef",
+    "native_frames": 11,
+    "native_pc_sequence_matches_independent_live_stack": true,
+    "only_enabled_unwinder": "dwarf2",
+    "corrupted_cfi_control_rejected": true,
+    "normal_runtime_unchanged_under_cfi_corruption": true,
+    "full_system_unwind_qualified": false,
+    "installed_ci_gate": false
+  },
+  "associated_type_review": {
+    "note": "associated-type-boundary.md",
+    "sha256": "0cee5da7494d0825ca9574953e0e56198d8bed4fc5a7940d58899880e44859f1",
+    "status": "separate archived upstream query; no native consumer, retained invalidation or product admission",
+    "missing_context": "lifetime-parameterized generic associated type",
+    "archived_probe_execution_replayed_by_this_review": false,
+    "complete_probe_command_sdk_metadata_binding_available": false
+  }
+}

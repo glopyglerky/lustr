@@ -13,59 +13,54 @@ resume after closure.
 
 ## Start from the implementation source
 
-The current compiler audit pins published PR #33 head
-[`514dfe1e`](https://github.com/glopyglerky/lustr/tree/514dfe1ef8b49160bf5c09458981768fbf4f2386).
-Its [public scalar hosted checkpoint](native-cargo-continuation.md#verified-hosted-checkpoint)
-passed on the matching tree, and its original evidence artifact was independently
-downloaded and verified. The [22 November review](evidence/compiler-review-20261122/README.md)
-records the separate regression probe, qualified repairs and revised plan. The earlier
-repository-wide documentation audit remains pinned to
-[`ea26fe16`](https://github.com/glopyglerky/lustr/tree/ea26fe16636d390763257a19c19df3db992cdbcb).
-Refresh the live head and its evidence before continuing. Governing documentation
-was merged into the default branch separately from the compiler correction;
-PR #33 remained unmerged at this review. A documentation
-merge, closed predecessor PR or preview release must not be taken as the current
-implementation source. Preserve unique work, then continue on the same corrective
-PR while it remains unmerged. After merge, use the verified integration source
-that contains it. No second compiler direction or plan is opened by this audit.
+The latest planning review pins
+[`bc38dece`](https://github.com/glopyglerky/lustr/tree/bc38dece7a734b97c0108582b7f61f98ccb819db),
+tree `82afa54968f68dbbb5f99540fffc1e67ebc7d3d5`. It includes the retained
+associated-type proof after the executable-unwind and TinyCC API corrections.
+The development checkout was clean at that source when inspected. The PR remains
+unmerged. The [continuation review](evidence/continuous-completion-20261122/README.md)
+records the exact scope; earlier evidence retains its own source identities.
+Refresh the live head before implementation or publication.
 
-The [documentation disposition](documentation-disposition.json) inventories all
-396 baseline Markdown files. The
-[audit findings](sole-goal-audit.md#repository-documentation-and-entry-point-audit)
-record the corrected live instructions and explicit review limits. Historical
-coordinator/full-SDK install and benchmark acquisition recipes are removed from
-active guidance; their exact originals and failed results remain in Git and
-the immutable evidence collections. No preview package is a current replacement
-recommendation. Required CI evidence is not a claim of server-enforced merge or
-release protection.
+The earlier [repository documentation audit](sole-goal-audit.md#repository-documentation-and-entry-point-audit)
+starts at `ea26fe16636d390763257a19c19df3db992cdbcb`; it is not a permanent checkout
+instruction. The [documentation disposition](documentation-disposition.json)
+accounts for that baseline. Historical full-SDK/coordinator recipes, closed
+predecessor PRs and old preview packages do not select the current architecture.
 
 ## Current public integration and remaining work
 
-The public entry now connects real Cargo requests to retained native checking,
-scalar Rust metadata/archive output, metadata-only library/binary checks,
-bounded `--extern` dependency ingestion and hosted scalar executables. The
-unwind leaf-library route requires debug information disabled. Default-profile
-executables and Rust source debugging remain open, along with general Rust,
-dependency/proc-macro and target/profile coverage. The broad Linux/macOS workflow
-matrix was still pending when the public checkpoint was observed.
+The installed entry handles represented scalar Cargo requests through retained
+native checking and genuine Rust metadata/archive output. Linux x86-64 leaf
+libraries and dependency-free executables now support unwind with `debug=0`.
+The [930b384a review](evidence/executable-unwind-review-20261122/README.md) records
+its hosted and additional runtime evidence separately from the latest source.
+The prior [profile/construction audit](evidence/compiler-review-20261122/README.md)
+retains the effective-overflow and SDK-loader corrections and their controls.
 
-A focused profile-default probe found three overflow-behavior mismatches in
-the 24-case baseline, while the pinned Rust reference passed all 24 cases.
-Both entry adapters are corrected and all 24 paired cases now pass. A second
-SDK-loader defect in the build-time identity query is fixed. The complete
-constructor, unchanged public Cargo campaign and six DWARF walks with two
-corruption controls pass on the repaired package. Five focused Rust unit tests
-also pass. The [audit record](evidence/compiler-review-20261122/README.md)
-binds the local tested commit and byte-identical published source tree, package
-and evaluator identities. These results are separate from new-head hosted
-checks. No compiler-speed claim is made.
+At `bc38dece`, the standalone projection qualifier carries a real dependency
+associated-type result into native signatures, retains unaffected bodies across
+dependency changes, rejects missing impls and lifetime escapes, and preserves
+output on failure. It still invokes a full SDK query on a metadata stub and
+requires a standalone abort-mode request. The provider metadata is produced by
+pinned Rust in the qualifier. This is useful research evidence; ordinary Cargo
+integration, candidate-produced provider metadata and selective product admission
+remain unfinished.
 
-The [architecture plan](architecture-plan.md) continues the same native compiler
-through ordinary Cargo workflows, wider native artifacts and selective semantic
-services sharing its retained facts. The [completion checklist](completion-checklist.md)
-is the sole work register. The first scalar metadata join is completed within
-its qualified scope; do not repeat the predecessor's failed probe as the next
-task or restore its whole-consumer frontend to extend coverage.
+The next parallel work is explicit in the
+[execution queue](completion-checklist.md#execution-queue): admit and integrate
+that semantic service, finish default-profile Rust debugging, and implement the
+Cargo test artifact/harness. The ordinary product import-change path must retain
+unaffected bodies instead of replacing the whole session. Wider Rust artifacts,
+shared runtime/ABI, language/build graph coverage, targets and complete-work speed
+follow through the same compiler.
+
+The [continuous implementation rules](../../AGENTS.md#continue-implementation-across-checkpoints)
+turn each proof, test, commit and push into the next task transition. Keep one
+coordinator and one register. A bounded PR may merge under its applicable checks
+and authorization before the full product is ready; that merge does not end
+continuation. Full replacement release requires the complete correctness,
+ownership, package and matched overall-speed evidence.
 
 ## Earlier source-bound implementation and evidence
 

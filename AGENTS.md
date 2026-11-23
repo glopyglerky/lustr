@@ -57,6 +57,80 @@ passing compatibility tests and historical release assets cannot change this goa
   independent result checks where their verdicts do not establish this contract.
   Record excluded histories as unqualified scope, with source-bound reasons.
 
+## Continue implementation across checkpoints
+
+The user's standing instruction is to complete this compiler, not to stop after
+each proof, passing test, commit or push. Use the execution queue in the
+[completion checklist](docs/compiler-set/completion-checklist.md#execution-queue)
+as the only work register. The numbered completion conditions below that queue
+remain authoritative; a small work package is a step toward them.
+
+1. Read the live integration head and the queue's resume record. Inspect relevant
+   local work and active commands before starting another writer or build.
+   Preserve dirty work, existing sessions and failed evidence. Use an isolated
+   worktree when the current checkout has another owner.
+2. Choose the highest-priority dependency-ready package. Continue an owned
+   unfinished package first. A proven regression in affected behavior takes
+   priority over widening that behavior. Claim a concrete slice with its base
+   SHA, owned paths, acceptance operation and next action. Do not wait for the
+   user to choose routine implementation details.
+3. Implement through the public compiler path. A bounded research qualifier may
+   answer a specific blocking question, but its successful result immediately
+   feeds integration into the existing pipeline. Do not substitute more demos,
+   plan rewrites, repeated source audits or evaluator controls for integration.
+4. Run focused checks for the changed behavior and its actual dependency risks.
+   Preserve independent valid/invalid expectations and original failures. Run
+   the relevant broader gate when its dependency surface changed or the gate
+   is required. Do not repeatedly rerun an unchanged large campaign while other
+   ready implementation work waits.
+5. Review the diff, update source/import declarations where required, commit
+   source-bound evidence, and publish to the live integration branch with a
+   fresh expected-head check. Keep failed, pending and passing checks distinct.
+   Reconcile a concurrent advance without force-pushing over it.
+6. Update the same queue and resume record, then immediately select the next
+   ready slice. A progress report is not a request for permission to continue.
+   Pending hosted checks do not prevent independent implementation. A failed
+   check creates a repair task; preserve its log and diagnose the real failure.
+
+The Compiler set workflow cancels a preceding run on the same PR when a new push
+arrives. Batch related pushes or implement the next slice locally while the
+needed qualification runs. Do not keep cancelling the candidate you intend to
+qualify. If a new source deliberately supersedes it, record the cancellation and
+qualify the new source rather than transferring the old result.
+
+Use one integration coordinator and up to three independent workers where useful.
+Assign non-overlapping source ownership; shared semantic interfaces and final
+publication have one owner. A worker's completion returns work to the coordinator,
+which reviews, integrates and assigns the next ready slice. An idle or blocked
+worker takes independent ready work. Do not let every worker edit the same driver,
+protocol, queue or source manifest concurrently.
+
+Keep progress messages concise: what changed, what evidence establishes, and what
+is being implemented next. Do not ask for another "continue" after success, an
+ordinary failure, uncertainty that can be researched, or context compaction.
+Checkpoint before a runtime limit with the exact worktree/head, unfinished diff,
+command/session identities, original logs, last executed result, next command and
+blocked dependencies. Store private machine details in the existing private
+runtime checkpoint, never in public Git files. Re-read that checkpoint on resume;
+do not start a second copy of a command whose outcome is still unknown.
+
+An unattended run may pause only for missing required authority or access, an
+out-of-scope irreversible action, all ready work being blocked by documented
+external dependencies, a user stop, or an actual runtime/resource limit. Finish
+independent authorized work first. Report the exact blocker and smallest action
+needed; a hard compiler problem is work to investigate, not an approval request.
+No instruction file can keep a terminated runtime executing: use the authorized
+existing continuation mechanism for subsequent sessions and report its actual
+state. Never claim background execution from a plan or dispatch acknowledgment.
+
+PR integration and product release are separate decisions. A bounded corrective
+PR can be reviewed under its applicable checks while the full compiler is still
+unfinished. Merge only with existing authorization and protections; a merge is
+not task completion. Continue from the verified merged source. Package release
+still requires the full contract and measured overall speedup, plus publication
+authorization. Do not invent a requirement that PR #33 remain open until all
+Rust work is finished.
+
 ## Establish source and evidence before continuing
 
 Treat governing instructions and implementation source as separate identities.
