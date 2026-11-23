@@ -3,7 +3,7 @@
 use super::{Array, Context};
 use crate::identity::{lifetime_path_hash, sole_impl_hash, type_path_hash, unit_constructor_hash};
 use crate::upstream::{codec::Encoder, odht_writer::HashTableOwned};
-use crate::{NamedDefinition, ProjectionFamily, Sdk, Span};
+use crate::{NamedDefinition, ProjectionFamily, ProjectionReferent, Sdk, Span};
 use alloc::{string::String, vec::Vec};
 
 const RECEIVER: u32 = 1;
@@ -258,7 +258,14 @@ pub(super) fn encode_family(
     cx.fact("type_of", ASSIGNMENT as usize, |cx| {
         cx.opaque.emit_u8(12);
         early_region(cx, 0, &implementation.lifetime);
-        cx.opaque.emit_raw_bytes(&implementation.referent.metadata_tags());
+        match implementation.referent {
+            ProjectionReferent::Integer(kind) => cx.opaque.emit_raw_bytes(&kind.metadata_tags()),
+            ProjectionReferent::Str => cx.opaque.emit_u8(7),
+            ProjectionReferent::IntegerSlice(element) => {
+                cx.opaque.emit_u8(10);
+                cx.opaque.emit_raw_bytes(&element.metadata_tags());
+            }
+        }
         cx.opaque.emit_u8(0);
     });
     let candidates = cx.array(&[IMPLEMENTATION], |cx, id| {

@@ -550,6 +550,46 @@ fn ordinary_cargo_links_code_from_the_same_crate_as_an_associated_type() {
 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn ordinary_cargo_preserves_unsized_referents_of_associated_types() {
+    let f = Fixture::new("unsized-association");
+    f.source("Cargo.toml", "[package]\nname = \"unsized-app\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\nschema = { path = \"schema\" }\n");
+    f.source("schema/Cargo.toml", "[package]\nname = \"schema\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    let provider = |pointee| format!("#![no_std]\npub struct Token;\npub trait Access {{\n    type Borrowed<'a> where Self: 'a;\n}}\nimpl Access for Token {{\n    type Borrowed<'r> = &'r {pointee};\n}}\n");
+    let app = |argument| format!("use schema::{{Access, Token}};\nfn measure(input: <Token as Access>::Borrowed<'_>) -> usize {{ input.len() }}\nfn main() {{ println!(\"{{}}\", measure({argument})); }}\n");
+    let run = ["run", "--offline", "--quiet"];
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let original = || {
+        let mut command = f.command("cargo");
+        command.env("RUSTC", &oracle).env("CARGO_TARGET_DIR", f.root.join("original-target"));
+        command
+    };
+
+    f.source("schema/src/lib.rs", &provider("[u8]"));
+    f.source("src/main.rs", &app("&[1u8, 2, 3]"));
+    assert_eq!(f.succeeds("slice", f.command("cargo").args(run)).stdout, b"3\n");
+    assert_eq!(f.succeeds("original-slice", original().args(run)).stdout, b"3\n");
+    let binary = f.root.join("target/debug/unsized-app");
+    let valid = std::fs::read(&binary).unwrap();
+
+    f.source("schema/src/lib.rs", &provider("[u16]"));
+    let failure = f.invoke("changed-slice-element", f.command("cargo").args(run));
+    assert_eq!(failure.status.code(), Some(101));
+    assert!(failure.stdout.is_empty());
+    assert!(String::from_utf8_lossy(&failure.stderr).contains("L0110"));
+    assert_eq!(std::fs::read(&binary).unwrap(), valid);
+    let failure = f.invoke("original-changed-slice-element", original().args(run));
+    assert_eq!(failure.status.code(), Some(101));
+    assert!(String::from_utf8_lossy(&failure.stderr).contains("E0308"));
+
+    f.source("schema/src/lib.rs", &provider("str"));
+    f.source("src/main.rs", &app("\"hello\""));
+    assert_eq!(f.succeeds("string", f.command("cargo").args(run)).stdout, b"5\n");
+    assert_eq!(f.succeeds("original-string", original().args(run)).stdout, b"5\n");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 fn assert_associated_lifetime_workspace(scope: &str, code: &str, body: &str, expected: &[u8]) {
     let f = Fixture::new(scope);
     f.source("Cargo.toml", "[workspace]\nmembers = [\"provider\", \"application\"]\nresolver = \"3\"\n");

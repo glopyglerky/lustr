@@ -1524,7 +1524,39 @@ pub struct ImportedProjection {
     pub definition: crate::def::DiskDefId,
     pub receiver: Sym,
     pub item: Sym,
-    pub shared_integer_referent: Option<IntTy>,
+    pub referent: Option<ProjectionReferent>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ProjectionReferent {
+    Integer(IntTy),
+    IntegerSlice(IntTy),
+    Str,
+}
+
+impl ProjectionReferent {
+    pub(crate) fn from_type(tys: &impl TyIntern, ty: Ty) -> Option<Self> {
+        match tys.kind(ty) {
+            TyKind::Int(kind) => Some(Self::Integer(kind)),
+            TyKind::Str => Some(Self::Str),
+            TyKind::Slice(element) => match tys.kind(element) {
+                TyKind::Int(kind) => Some(Self::IntegerSlice(kind)),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+
+    fn intern(self, tys: &mut impl TyIntern) -> Ty {
+        match self {
+            Self::Integer(kind) => tys.intern(TyKind::Int(kind)),
+            Self::Str => tys.intern(TyKind::Str),
+            Self::IntegerSlice(kind) => {
+                let element = tys.intern(TyKind::Int(kind));
+                tys.intern(TyKind::Slice(element))
+            }
+        }
+    }
 }
 
 /// The anonymous consts (`ast::Ast::anon_consts`) that collect met in
@@ -3663,13 +3695,13 @@ pub fn resolve_scoped(
                     && let Some(fact) = imported.iter().find(|fact| fact.receiver == receiver.name && fact.item == item.name)
                 {
                     let region = scope_region(interner, scope, Some(*lifetime), span)?;
-                    let Some(referent) = fact.shared_integer_referent else {
+                    let Some(referent) = fact.referent else {
                         return Err(Diag::new(
                             "L0110", span, "the imported associated type has no matching trait implementation",
                             "Use a type that implements the trait, or add the required implementation.",
                         ));
                     };
-                    let referent = tys.intern(TyKind::Int(referent));
+                    let referent = referent.intern(tys);
                     return Ok(tys.intern(TyKind::Ref(region, Mut::Shared, referent)));
                 }
                 return Err(not_yet("L0621", span, "this imported associated type application"));
@@ -14227,7 +14259,7 @@ fn check_reference_family_assignment(
         || declaration.single_lifetime() != Some(region) || !declaration.region_predicates.is_empty()
         || !declaration.region_facts.is_empty() || !declaration.generics.predicates.is_empty()
         || !matches!(p.tys.kind(assignment.value), TyKind::Ref(actual, Mut::Shared, inner)
-            if actual == region && matches!(p.tys.kind(inner), TyKind::Int(_)))
+            if actual == region && ProjectionReferent::from_type(&p.tys, inner).is_some())
     {
         errs.push(not_yet("L0621", span, "this generic associated type implementation"));
         return;

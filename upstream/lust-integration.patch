@@ -6875,7 +6875,7 @@ index f31b8af0e01c3261fd76f2a4e82954e9de656aca..629b1471654155f02430dd628fc2ae12
          })
      }
 diff --git a/src/check/generics.rs b/src/check/generics.rs
-index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45cd89a2dc 100644
+index 084f420a96af81551cafc7aa39f3f8c23edf4d25..2ff51e6d4c263137b19fbc5df4f215c923d12e82 100644
 --- a/src/check/generics.rs
 +++ b/src/check/generics.rs
 @@ -1414,6 +1414,8 @@ pub struct Scope {
@@ -6904,7 +6904,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
      /// Type aliases by name (collect pass 1.5). A generic alias's target
      /// is over its own params (`Param(i)`).
      pub aliases: &'x crate::driver::read_cover::NameMap<Ty>,
-@@ -1510,6 +1518,15 @@ pub struct ResolveCx<'x> {
+@@ -1510,6 +1518,47 @@ pub struct ResolveCx<'x> {
      pub(crate) anon_wants: Option<&'x AnonWants>,
  }
  
@@ -6914,13 +6914,45 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
 +    pub definition: crate::def::DiskDefId,
 +    pub receiver: Sym,
 +    pub item: Sym,
-+    pub shared_integer_referent: Option<IntTy>,
++    pub referent: Option<ProjectionReferent>,
++}
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub enum ProjectionReferent {
++    Integer(IntTy),
++    IntegerSlice(IntTy),
++    Str,
++}
++
++impl ProjectionReferent {
++    pub(crate) fn from_type(tys: &impl TyIntern, ty: Ty) -> Option<Self> {
++        match tys.kind(ty) {
++            TyKind::Int(kind) => Some(Self::Integer(kind)),
++            TyKind::Str => Some(Self::Str),
++            TyKind::Slice(element) => match tys.kind(element) {
++                TyKind::Int(kind) => Some(Self::IntegerSlice(kind)),
++                _ => None,
++            },
++            _ => None,
++        }
++    }
++
++    fn intern(self, tys: &mut impl TyIntern) -> Ty {
++        match self {
++            Self::Integer(kind) => tys.intern(TyKind::Int(kind)),
++            Self::Str => tys.intern(TyKind::Str),
++            Self::IntegerSlice(kind) => {
++                let element = tys.intern(TyKind::Int(kind));
++                tys.intern(TyKind::Slice(element))
++            }
++        }
++    }
 +}
 +
  /// The anonymous consts (`ast::Ast::anon_consts`) that collect met in
  /// signatures, by value id, with the type each must have when the
  /// position gives one. check/const_body.rs checks each as a body.
-@@ -3385,7 +3402,7 @@ fn resolve_trait_path_args(
+@@ -3385,7 +3434,7 @@ fn resolve_trait_path_args(
                          inputs.push(GenericArg::Const(c));
                      }
                      AstArg::Binding { name, span: bspan, kind } => {
@@ -6929,7 +6961,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
                              Diag::new(
                                  "L0102",
                                  *bspan,
-@@ -3394,7 +3411,15 @@ fn resolve_trait_path_args(
+@@ -3394,7 +3443,15 @@ fn resolve_trait_path_args(
                              )
                          })?;
                          let bound = match kind {
@@ -6946,7 +6978,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
                              ast::BindingKind::EqConst(e) => {
                                  GenericArg::Const(resolve_const_arg(ast, interner, known, tys, scope, *e, *bspan)?)
                              }
-@@ -3622,6 +3647,33 @@ pub fn resolve_scoped(
+@@ -3622,6 +3679,33 @@ pub fn resolve_scoped(
              Ok(tys.intern(TyKind::FnPtr(sig)))
          }
          TyExpr::QPath { self_ty, trait_path, segs } => {
@@ -6966,13 +6998,13 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
 +                    && let Some(fact) = imported.iter().find(|fact| fact.receiver == receiver.name && fact.item == item.name)
 +                {
 +                    let region = scope_region(interner, scope, Some(*lifetime), span)?;
-+                    let Some(referent) = fact.shared_integer_referent else {
++                    let Some(referent) = fact.referent else {
 +                        return Err(Diag::new(
 +                            "L0110", span, "the imported associated type has no matching trait implementation",
 +                            "Use a type that implements the trait, or add the required implementation.",
 +                        ));
 +                    };
-+                    let referent = tys.intern(TyKind::Int(referent));
++                    let referent = referent.intern(tys);
 +                    return Ok(tys.intern(TyKind::Ref(region, Mut::Shared, referent)));
 +                }
 +                return Err(not_yet("L0621", span, "this imported associated type application"));
@@ -6980,7 +7012,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
              let base = resolve_scoped(ast, interner, known, cx, tys, *self_ty, scope)?;
              if trait_path.is_empty() {
                  return assoc_projection(cx, tys, scope, base, segs, span, interner);
-@@ -3685,7 +3737,7 @@ fn assoc_projection(
+@@ -3685,7 +3769,7 @@ fn assoc_projection(
      }
  }
  
@@ -6989,7 +7021,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
  /// through its supertraits as rustc does for a trait reference's
  /// binding (`ExactSizeIterator<Item = ..>` names
  /// `Iterator::Item`). A qualified path must name the defining
-@@ -3693,8 +3745,8 @@ fn assoc_projection(
+@@ -3693,8 +3777,8 @@ fn assoc_projection(
  /// this. None when no supertrait path names it, or when two
  /// different items of the name are reachable (rustc reports
  /// that binding ambiguous).
@@ -7000,7 +7032,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
      let mut seen: Vec<DefId> = Vec::new();
      let mut stack = vec![trait_def];
      while let Some(def) = stack.pop() {
-@@ -3705,8 +3757,8 @@ fn assoc_in_supers(cx: &ResolveCx, tys: &impl TyIntern, trait_def: DefId, name:
+@@ -3705,8 +3789,8 @@ fn assoc_in_supers(cx: &ResolveCx, tys: &impl TyIntern, trait_def: DefId, name:
          let rec = cx.index.trait_record(def)?;
          if let Some(d) = rec.assoc_by_name(name) {
              match found {
@@ -7011,7 +7043,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
                  Some(_) => return None,
              }
          }
-@@ -3741,6 +3793,12 @@ fn projection_of(
+@@ -3741,6 +3825,12 @@ fn projection_of(
              "Check the spelling against the trait definition.",
          )
      })?;
@@ -7024,7 +7056,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
      Ok(tys.intern(TyKind::Projection(AssocId(assoc), tr.args)))
  }
  
-@@ -4537,7 +4595,10 @@ pub(crate) fn resolve_path_ty(
+@@ -4537,7 +4627,10 @@ pub(crate) fn resolve_path_ty(
                              })
                              .collect()
                      })
@@ -7036,7 +7068,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
                  let min = g_ast.map_or(n_params, crate::check::defaults::required);
                  resolve_generic_args(
                      ast,
-@@ -4563,6 +4624,27 @@ pub(crate) fn resolve_path_ty(
+@@ -4563,6 +4656,27 @@ pub(crate) fn resolve_path_ty(
                  _ => &[],
              };
              check_const_arg_types(ast, interner, known, cx, tys, scope, g, written, &gargs, span)?;
@@ -7064,7 +7096,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
          }
          // Omitted trailing params take their defaults.
          let n_written = gargs.iter().filter(|g| !matches!(g, GenericArg::Lifetime(_))).count();
-@@ -5562,10 +5644,223 @@ pub struct InstanceInfo {
+@@ -5562,10 +5676,223 @@ pub struct InstanceInfo {
  /// by check, mono, and the driver. Parallel vecs are indexed by
  /// the session-local `AdtId` / `LocalDefId` of the compat tables
  /// in `Program`, including the instances mono appends.
@@ -7288,7 +7320,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
      pub trait_scopes: FxMap<DefId, Scope>,
      pub trait_methods: FxMap<DefId, TraitMethodTemplate>,
      /// Signatures of the lang trait methods, by method def
-@@ -5575,6 +5870,8 @@ pub struct GenTables {
+@@ -5575,6 +5902,8 @@ pub struct GenTables {
      /// Associated type defaults from trait definitions, in trait
      /// signature form (over the trait's params, Self at 0).
      pub trait_assoc_defaults: FxMap<DefId, Ty>,
@@ -7297,7 +7329,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
      /// User traits written `unsafe trait`: their impls must be
      /// `unsafe impl`, and no other impl may be.
      pub trait_unsafe: FxMap<DefId, bool>,
-@@ -5833,10 +6130,14 @@ impl Default for GenTables {
+@@ -5833,10 +6162,14 @@ impl Default for GenTables {
              lang: LangTraits::new(),
              index: ImplIndex::new(),
              trait_names: crate::driver::read_cover::NameMap::new("trait"),
@@ -7312,7 +7344,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
              trait_unsafe: FxMap::default(),
              trait_assoc_consts: FxMap::default(),
              wf_headers: Vec::new(),
-@@ -5929,8 +6230,11 @@ impl GenTables {
+@@ -5929,8 +6262,11 @@ impl GenTables {
          ResolveCx {
              type_names: &NO_ADTS,
              adt_info: &self.adt_info,
@@ -7324,7 +7356,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
              aliases: &NO_TYS,
              generic_aliases: &NO_ALIASES,
              index: &self.index,
-@@ -5944,8 +6248,11 @@ impl GenTables {
+@@ -5944,8 +6280,11 @@ impl GenTables {
          ResolveCx {
              type_names,
              adt_info: &self.adt_info,
@@ -7336,7 +7368,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
              aliases,
              generic_aliases: &self.generic_aliases,
              index: &self.index,
-@@ -6051,16 +6358,6 @@ pub fn collect_trait_defs(p: &mut Program, errs: &mut Vec<Diag>) {
+@@ -6051,16 +6390,6 @@ pub fn collect_trait_defs(p: &mut Program, errs: &mut Vec<Diag>) {
              .collect();
          if !lts.is_empty() {
              p.gx.adt_lifetimes.insert(def, lts);
@@ -7353,7 +7385,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
          }
          // Associated items: types live in the type namespace, consts and
          // methods in the value namespace. A second item of one name in one
-@@ -6076,7 +6373,11 @@ pub fn collect_trait_defs(p: &mut Program, errs: &mut Vec<Diag>) {
+@@ -6076,7 +6405,11 @@ pub fn collect_trait_defs(p: &mut Program, errs: &mut Vec<Diag>) {
                  ));
                  continue;
              }
@@ -7366,7 +7398,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
          }
          for ac in &tdef.consts {
              if assoc_items.iter().any(|&(_, n, is_ty)| !is_ty && n == ac.name) || tdef.fns.iter().any(|f| f.name == ac.name) {
-@@ -6154,6 +6455,25 @@ fn valid_receiver(tys: &impl TyIntern, t: Ty, self_ty: Ty) -> bool {
+@@ -6154,6 +6487,25 @@ fn valid_receiver(tys: &impl TyIntern, t: Ty, self_ty: Ty) -> bool {
      }
  }
  
@@ -7392,7 +7424,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
  /// Resolves one fn signature in template form: self parameter,
  /// params, and return, under the combined scope. Handles
  /// `impl Trait` argument sugar by growing the generics. Returns
-@@ -6236,7 +6556,7 @@ pub fn resolve_fn_sig(
+@@ -6236,7 +6588,7 @@ pub fn resolve_fn_sig(
              let lhs = apit_param(ast, interner, known, cx, tys, &mut generics, &mut scope, bounds, ast.ty_span(n), errs);
              scope.apit.push((n, lhs));
          }
@@ -7401,7 +7433,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
              // No Sized check here: a declaration with no body may
              // name unsized params (rustc allows it). The value
              // positions of a fn with a body are `check_written_wf`'s.
-@@ -6308,7 +6628,7 @@ pub fn resolve_fn_sig(
+@@ -6308,7 +6660,7 @@ pub fn resolve_fn_sig(
                  }
              }
          }
@@ -7410,7 +7442,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
              errs.push(d);
              ERROR
          }),
-@@ -6580,7 +6900,7 @@ fn region_sig(
+@@ -6580,7 +6932,7 @@ fn region_sig(
          let t = if let TyExpr::ImplTrait { .. } = ast.ty(param.ty) {
              *params.get(skip + i)?
          } else {
@@ -7419,7 +7451,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
          };
          for _ in names.len()..counter.load(Ordering::Relaxed) as usize {
              names.push(format!("the lifetime of parameter {}", i + 1));
-@@ -6615,7 +6935,7 @@ fn region_sig(
+@@ -6615,7 +6967,7 @@ fn region_sig(
          // goes to `RegionTables::opaque_sigs`, whose rules never read
          // the return.
          Some(t) if opaque_caps.is_some() || matches!(ast.ty(t), TyExpr::ImplTrait { .. }) => UNIT,
@@ -7428,7 +7460,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
              Ok(t) => t,
              Err(d) => {
                  if d.code == "L0202" {
-@@ -7198,9 +7518,6 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
+@@ -7198,9 +7550,6 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
          for (at_i, assoc_def) in assoc_defs {
              let ast::ItemKind::Trait(tdef) = &p.ast.items[item_i].kind else { unreachable!() };
              let at = &tdef.types[at_i];
@@ -7438,7 +7470,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
              let self_args: Vec<GenericArg> = (0..generics.params.len() as u32)
                  .map(|i| {
                      let t = p.tys.intern(TyKind::Param(ParamId(i)));
-@@ -7211,13 +7528,42 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
+@@ -7211,13 +7560,42 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
              let proj = p.tys.intern(TyKind::Projection(AssocId(assoc_def), trait_args));
              let at_bounds = at.bounds.clone();
              let at_where = at.where_clause.clone();
@@ -7482,7 +7514,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
                  }
                  // An associated type has an implicit `Sized` bound
                  // unless the trait writes `type A: ?Sized` (rustc
-@@ -7230,8 +7576,36 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
+@@ -7230,8 +7608,36 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
                      let args = p.tys.intern_args(&[GenericArg::Ty(proj)]);
                      preds.push(Predicate::Trait(Binder::plain(TraitRef { def: cx.lang.sized, args, bindings: EMPTY_BINDINGS })));
                  }
@@ -7520,7 +7552,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
                  if at_default.is_some() {
                      // Associated type defaults are unstable in
                      // rustc (E0658); rule zero rejects them.
-@@ -7245,6 +7619,16 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
+@@ -7245,6 +7651,16 @@ pub fn build_trait_tables(p: &mut Program, errs: &mut Vec<Diag>) {
                          Err(diag) => errs.push(diag),
                      }
                  }
@@ -7537,7 +7569,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
              }
          }
          // Associated consts: resolve and store the type for impl
-@@ -7469,7 +7853,15 @@ pub(crate) fn insert_synthetic(
+@@ -7469,7 +7885,15 @@ pub(crate) fn insert_synthetic(
  fn static_header_regions(p: &mut Program, imp: &ast::ImplDef, rec: &TraitRecord, scope: &Scope, errs: &mut Vec<Diag>) {
      let self_param = p.tys.intern(TyKind::Param(ParamId(0)));
      let mut wants: Vec<Ty> = Vec::new();
@@ -7554,7 +7586,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
          let Predicate::TypeOutlives(x, Region::Static) = *pred else { continue };
          if x == self_param {
              wants.extend(scope.self_ty_regioned);
-@@ -7558,19 +7950,81 @@ pub fn finish_trait_impl(
+@@ -7558,19 +7982,81 @@ pub fn finish_trait_impl(
              ));
              continue;
          };
@@ -7638,7 +7670,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
              }
              None => errs.push(Diag::new(
                  "L0110",
-@@ -11002,7 +11456,11 @@ fn instance_adt_id(p: &mut Program, def: DefId, args: ArgsId) -> AdtId {
+@@ -11002,7 +11488,11 @@ fn instance_adt_id(p: &mut Program, def: DefId, args: ArgsId) -> AdtId {
      let mut key = p.instance_key_hash(&crate::driver::graph::InstanceKey { def, args }).0;
      let at = loop {
          let at = (p.gx.inst_order.base + p.gx.inst_order.place_of(key)) as usize;
@@ -7651,7 +7683,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
              break at;
          }
          key = key.rotate_left(17) ^ 0x9e37_79b9_7f4a_7c15;
-@@ -13176,6 +13634,12 @@ fn made_among(p: &Program, t: Ty, before: &[AdtId], depth: u32) -> bool {
+@@ -13176,6 +13666,12 @@ fn made_among(p: &Program, t: Ty, before: &[AdtId], depth: u32) -> bool {
  
  /// `ensure_adt_instances_in` for types already in the global
  /// store (signatures and fields at collect time).
@@ -7664,7 +7696,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
  fn ensure_global_adt_instances(p: &mut Program, t: Ty, depth: u32) {
      if depth > 32 {
          return;
-@@ -13697,15 +14161,144 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
+@@ -13697,15 +14193,144 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
          .collect();
      for rec in records {
          let Some(trec) = p.gx.index.trait_record(rec.trait_def).cloned() else { continue };
@@ -7736,7 +7768,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
 +        || declaration.single_lifetime() != Some(region) || !declaration.region_predicates.is_empty()
 +        || !declaration.region_facts.is_empty() || !declaration.generics.predicates.is_empty()
 +        || !matches!(p.tys.kind(assignment.value), TyKind::Ref(actual, Mut::Shared, inner)
-+            if actual == region && matches!(p.tys.kind(inner), TyKind::Int(_)))
++            if actual == region && ProjectionReferent::from_type(&p.tys, inner).is_some())
 +    {
 +        errs.push(not_yet("L0621", span, "this generic associated type implementation"));
 +        return;
@@ -7813,7 +7845,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
              // `trait Tr: 'static`: the impl's Self type must be `'static`;
              // `type Req: 'static`: the impl's binding of `Req` must be.
              if let Predicate::TypeOutlives(t, Region::Static) = pred {
-@@ -13739,15 +14332,15 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
+@@ -13739,15 +14364,15 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
              goals.push(TraitRef { def: b.value.def, args, bindings });
          }
          if goals.is_empty() && statics.is_empty() {
@@ -7832,7 +7864,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
                  format!("this impl of `{tname}` does not satisfy the `'static` bound the trait requires"),
                  "Implement the trait for a type without references, or add `'static` bounds to the impl's type parameters.",
              ));
-@@ -13758,13 +14351,13 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
+@@ -13758,13 +14383,13 @@ fn check_impl_obligations(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&
                  let tname = p.display_path(trec.name);
                  errs.push(Diag::new(
                      "L0612",
@@ -7849,7 +7881,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
  }
  
  /// Supertrait cycles among user traits (rustc E0391): an edge
-@@ -14472,6 +15065,15 @@ fn wf_goals(p: &mut Program, adt_idx: &FxMap<DefId, usize>, t: Ty, seen: &mut Ve
+@@ -14472,6 +15097,15 @@ fn wf_goals(p: &mut Program, adt_idx: &FxMap<DefId, usize>, t: Ty, seen: &mut Ve
              if let Some(def) = p.gx.index.trait_of_assoc(assoc.0) {
                  out.push(TraitRef { def, args: a, bindings: EMPTY_BINDINGS });
              }
@@ -7865,7 +7897,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
              in_args(p, seen, out, sized, a);
          }
          TyKind::FnDef(_, a) | TyKind::Closure(_, a) | TyKind::Opaque(_, a) => in_args(p, seen, out, sized, a),
-@@ -14703,9 +15305,16 @@ fn check_written_wf(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&crate:
+@@ -14703,9 +15337,16 @@ fn check_written_wf(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&crate:
          if rec.synthetic != Synthetic::None || !rec.local {
              continue;
          }
@@ -7884,7 +7916,7 @@ index 084f420a96af81551cafc7aa39f3f8c23edf4d25..80fdcd6102904070aacb3b2a21490c45
      }
      for (ty, generics, span) in &p.gx.wf_headers {
          items.push((vec![(*ty, *span)], Vec::new(), generics.clone(), *span));
-@@ -14728,6 +15337,25 @@ fn check_written_wf(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&crate:
+@@ -14728,6 +15369,25 @@ fn check_written_wf(p: &mut Program, errs: &mut Vec<Diag>, reach: Option<&crate:
              .collect();
          let args = p.tys.intern_args(&own);
          generics.predicates.push(Predicate::Trait(Binder::plain(TraitRef { def: rec.def, args, bindings: EMPTY_BINDINGS })));
@@ -13270,7 +13302,7 @@ index bd3d7ac482d7f4eb3367e07afe41af095f72f11f..8e8b82887f98f91af2e5d696eff62b10
                  }
 diff --git a/src/driver/imports.rs b/src/driver/imports.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..cd4a335766cc2a82013cf54c0c35908718d3acb7
+index 0000000000000000000000000000000000000000..0b47bafa02b7a6088b6dca482f0a6427ca4be696
 --- /dev/null
 +++ b/src/driver/imports.rs
 @@ -0,0 +1,89 @@
@@ -13284,7 +13316,7 @@ index 0000000000000000000000000000000000000000..cd4a335766cc2a82013cf54c0c359087
 +
 +use std::sync::Arc;
 +
-+use crate::{check::collect::Program, def, diag::Diag, intern::Interner, resolve::imports::ResolvedTables, ty};
++use crate::{check::{collect::Program, generics::ProjectionReferent}, def, diag::Diag, intern::Interner, resolve::imports::ResolvedTables, ty};
 +
 +/// An immutable metadata, compiler, or object input consumed by the provider.
 +#[derive(PartialEq, Eq)]
@@ -13306,13 +13338,13 @@ index 0000000000000000000000000000000000000000..cd4a335766cc2a82013cf54c0c359087
 +}
 +
 +/// A validated nongeneric receiver and an associated lifetime mapped to a
-+/// shared integer reference. A missing implementation is itself a fact.
++/// shared reference. A missing implementation is itself a fact.
 +#[derive(PartialEq, Eq)]
 +pub struct ProjectionDefinition {
 +    pub receiver: (String, def::DefPathHash),
 +    pub family: (String, def::DefPathHash),
 +    pub item: (String, def::DefPathHash),
-+    pub referent: Option<ty::IntTy>,
++    pub referent: Option<ProjectionReferent>,
 +}
 +
 +#[derive(PartialEq, Eq)]

@@ -330,12 +330,19 @@ impl<'a> IndexedCrate<'a> {
         })
     }
 
-    fn shared_integer(&self, item: usize, lifetime: (usize, &str)) -> Option<crate::IntegerType> {
+    fn shared_referent(&self, item: usize, lifetime: (usize, &str)) -> Option<crate::ProjectionReferent> {
+        use crate::ProjectionReferent;
         self.record("type_of", item)?.decode_abbreviated(|ty| {
             // Ref, ReEarlyParam, actual associated assignment binder slot.
             (ty.byte()? == 12).then_some(())?;
             ty.early_region(lifetime)?;
-            let referent = ty.integer_type()?;
+            let referent = ty.decode_abbreviated(|referent| match referent.byte()? {
+                tag @ (2 | 3) => crate::IntegerType::from_metadata_tags(&[tag, referent.byte()?])
+                    .map(ProjectionReferent::Integer),
+                7 => Some(ProjectionReferent::Str),
+                10 => referent.integer_type().map(ProjectionReferent::IntegerSlice),
+                _ => None,
+            })?;
             (ty.byte()? == 0).then_some(referent) // Mutability::Not
         })
     }
@@ -386,7 +393,7 @@ pub struct ProjectionDefinitions<'a> {
     pub receiver: (&'a str, u64),
     pub family: (&'a str, u64),
     pub item: (&'a str, u64),
-    pub referent: Option<crate::IntegerType>,
+    pub referent: Option<crate::ProjectionReferent>,
     pub code_free: bool,
 }
 
@@ -479,7 +486,7 @@ fn read_projection_definitions<'a>(krate: &mut IndexedCrate<'a>, sdk: &Sdk) -> O
         let lifetime = krate.own_lifetime(assignment, implementation, 0)?;
         let mut clauses = krate.record("explicit_clauses_of", assignment)?;
         (clauses.byte()? == 1 && clauses.local_def()? == implementation && clauses.leb()? == 0).then_some(())?;
-        Some(krate.shared_integer(assignment, lifetime)?)
+        Some(krate.shared_referent(assignment, lifetime)?)
     };
     let identity = |index, parent| Some((
         krate.type_name(index, parent)?,

@@ -87,7 +87,15 @@ pub struct ProjectionImplementation {
     pub item: NamedDefinition,
     pub lifetime: String,
     pub lifetime_span: Span,
-    pub referent: IntegerType,
+    pub referent: ProjectionReferent,
+}
+
+/// Pointees reconstructed from the checked associated assignment.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ProjectionReferent {
+    Integer(IntegerType),
+    IntegerSlice(IntegerType),
+    Str,
 }
 
 /// Primitive integer identities in the pinned Rust TyKind and IntTy/UintTy orders.

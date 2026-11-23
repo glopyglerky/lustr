@@ -224,6 +224,9 @@ fn mapped_functions(functions:&[Function])->Vec<metadata::Function> {
 }
 
 fn mapped_family(family: &Family) -> metadata::ProjectionFamily {
+    use crate::check::generics::ProjectionReferent;
+    let integer = |kind: crate::ty::IntTy| metadata::IntegerType::from_rust_name(kind.name())
+        .expect("completed associated integer type");
     let definition = |item: &FamilyDefinition| metadata::NamedDefinition {
         name: item.name.clone(), name_span: span(item.name_span), span: span(item.span),
     };
@@ -233,7 +236,11 @@ fn mapped_family(family: &Family) -> metadata::ProjectionFamily {
         implementation: family.implementation.as_ref().map(|implementation| metadata::ProjectionImplementation {
             span: span(implementation.span), item: definition(&implementation.item),
             lifetime: implementation.lifetime.name.clone(), lifetime_span: span(implementation.lifetime.span),
-            referent: metadata::IntegerType::from_rust_name(implementation.referent.name()).expect("completed associated integer type"),
+            referent: match implementation.referent {
+                ProjectionReferent::Integer(kind) => metadata::ProjectionReferent::Integer(integer(kind)),
+                ProjectionReferent::IntegerSlice(kind) => metadata::ProjectionReferent::IntegerSlice(integer(kind)),
+                ProjectionReferent::Str => metadata::ProjectionReferent::Str,
+            },
         }),
     }
 }

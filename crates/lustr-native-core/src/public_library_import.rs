@@ -4,7 +4,7 @@ use std::{path::Path, sync::Arc};
 
 use crate::{
     borrowck::RegionSig,
-    check::{collect::Program, generics::ImportedProjection},
+    check::{collect::Program, generics::{ImportedProjection, ProjectionReferent}},
     def,
     diag::{Diag, Span},
     driver,
@@ -103,7 +103,11 @@ impl Import {
                 receiver: definition(item.receiver),
                 family: definition(item.family),
                 item: definition(item.item),
-                referent: item.referent.map(native_integer_type),
+                referent: item.referent.map(|referent| match referent {
+                    lustr_metadata_encoder::ProjectionReferent::Integer(kind) => ProjectionReferent::Integer(native_integer_type(kind)),
+                    lustr_metadata_encoder::ProjectionReferent::IntegerSlice(kind) => ProjectionReferent::IntegerSlice(native_integer_type(kind)),
+                    lustr_metadata_encoder::ProjectionReferent::Str => ProjectionReferent::Str,
+                }),
             }
         });
         let facts = Arc::new(CargoDefinitions {
@@ -157,7 +161,7 @@ impl Import {
             definition: def::DiskDefId { krate: self.facts.stable, hash: projection.item.1 },
             receiver: self.flat_definition(interner, projection.receiver.1),
             item: interner.intern(&projection.item.0),
-            shared_integer_referent: projection.referent,
+            referent: projection.referent,
         };
         (family, fact)
     }
@@ -285,7 +289,7 @@ impl driver::imports::Definitions for Import {
             if !program.gx.imported_projections.as_ref().and_then(|map| map.get(&family)).is_some_and(|facts| {
                 facts.iter().any(|fact| fact.definition == expected.definition
                     && fact.receiver == expected.receiver && fact.item == expected.item
-                    && fact.shared_integer_referent == expected.shared_integer_referent)
+                    && fact.referent == expected.referent)
             }) {
                 return Err("checked projection differs from the imported definition".into());
             }

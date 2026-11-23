@@ -8,7 +8,7 @@
 
 use std::sync::Arc;
 
-use crate::{check::collect::Program, def, diag::Diag, intern::Interner, resolve::imports::ResolvedTables, ty};
+use crate::{check::{collect::Program, generics::ProjectionReferent}, def, diag::Diag, intern::Interner, resolve::imports::ResolvedTables, ty};
 
 /// An immutable metadata, compiler, or object input consumed by the provider.
 #[derive(PartialEq, Eq)]
@@ -30,13 +30,13 @@ pub struct CargoDefinitions {
 }
 
 /// A validated nongeneric receiver and an associated lifetime mapped to a
-/// shared integer reference. A missing implementation is itself a fact.
+/// shared reference. A missing implementation is itself a fact.
 #[derive(PartialEq, Eq)]
 pub struct ProjectionDefinition {
     pub receiver: (String, def::DefPathHash),
     pub family: (String, def::DefPathHash),
     pub item: (String, def::DefPathHash),
-    pub referent: Option<ty::IntTy>,
+    pub referent: Option<ProjectionReferent>,
 }
 
 #[derive(PartialEq, Eq)]

@@ -6,7 +6,7 @@
 //! Missing declaration, lint, type, or body representation remains integration
 //! work. It never transfers a native-owned function to another body compiler.
 
-use crate::{ast, check, def, diag, ty};
+use crate::{ast, check::{self, generics::ProjectionReferent}, def, diag, ty};
 use std::collections::{BTreeMap, BTreeSet};
 use ty::TyIntern;
 
@@ -34,7 +34,7 @@ pub(crate) struct FamilyImplementation {
     pub span: diag::Span,
     pub item: FamilyDefinition,
     pub lifetime: FamilyDefinition,
-    pub referent: ty::IntTy,
+    pub referent: ProjectionReferent,
 }
 
 pub(crate) fn complete_family(p: &check::collect::Program, map: &diag::SourceMap, source: &str) -> Result<Family, Error> {
@@ -99,7 +99,7 @@ pub(crate) fn complete_family(p: &check::collect::Program, map: &diag::SourceMap
             if actual != region { return Err(fail); }
             Some(FamilyImplementation {
                 span: implementation.span, item: named(value.name, value.name_span, value.span),
-                lifetime: impl_lifetime, referent: integer_type(p.tys.kind(inner))?,
+                lifetime: impl_lifetime, referent: ProjectionReferent::from_type(&p.tys, inner).ok_or(fail)?,
             })
         }
         _ => return Err(unsupported),
