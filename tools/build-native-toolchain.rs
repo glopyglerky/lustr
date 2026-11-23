@@ -234,6 +234,7 @@ fn main() {
             "tools/selection-toolchain-receipt.rs",
             "tools/host-sdk.rs",
             "tools/host-proc-macro.rs",
+            "tools/host-crate-interface.rs",
             "tools/lust-upstream-check.rs",
             "tools/check-exclusive-coverage.py",
         ]),
@@ -348,14 +349,17 @@ fn main() {
         }
         let notice = component.join("SOURCE.txt");
         record(&notice, format!(
-            "https://github.com/rust-lang/rust\nRevision {source}\nPinned Rust driver for host procedural macro crates\n",
+            "https://github.com/rust-lang/rust\nRevision {source}\nPinned Rust driver for host procedural macro crates and external declaration queries\n",
         ).as_bytes());
+        let identity = checked("hash-host-proc-macro",
+            host_runtime::sha256_command().arg(&compiler).arg(notice), &logs);
+        let digest = std::str::from_utf8(&identity).unwrap().split_whitespace().next().unwrap();
+        record(&component.join("metadata-interface.id"), format!("{digest}\n").as_bytes());
+        runtime_identities.push(identity);
         fs::File::open(&compiler).unwrap().sync_all().unwrap();
         for path in [licenses, bin, component, package.join("libexec")] {
             fs::File::open(path).unwrap().sync_all().unwrap();
         }
-        runtime_identities.push(checked("hash-host-proc-macro",
-            host_runtime::sha256_command().arg(&compiler).arg(notice), &logs));
         checked("metadata-sdk-package", Command::new("python3").arg(repo.join("tools/install-native-metadata-sdk.py"))
             .arg(&repo).arg(&sdk).arg(&package), &logs);
         for tool in ["llvm-ar","llvm-objcopy"] {

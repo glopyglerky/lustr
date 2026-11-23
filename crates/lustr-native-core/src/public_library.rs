@@ -15,6 +15,8 @@ mod imports;
 mod executable;
 #[path="public_macro_import.rs"]
 mod macros;
+#[path="public_metadata_query.rs"]
+mod metadata_query;
 static REQUESTS:AtomicU64=AtomicU64::new(0);
 static SDK_LOADS:AtomicU64=AtomicU64::new(0);
 static OWNER_START:OnceLock<Option<String>>=OnceLock::new();

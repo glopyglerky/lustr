@@ -1,8 +1,10 @@
 //! Run the pinned Rust implementation for host procedural macro crates.
 #![feature(rustc_private)]
 
+extern crate rustc_abi;
 extern crate rustc_attr_ir;
 extern crate rustc_driver;
+extern crate rustc_hir;
 extern crate rustc_interface;
 extern crate rustc_middle;
 extern crate rustc_span;
@@ -12,6 +14,9 @@ extern crate rustc_structures;
 use rustc_session::{EarlyDiagCtxt, config};
 use rustc_structures::CrateType;
 use std::process::ExitCode;
+
+#[path = "host-crate-interface.rs"]
+mod host_crate_interface;
 
 rustc_driver::override_c_allocator_in_binary!();
 
@@ -125,6 +130,10 @@ fn write_receipt(artifact: &Path, definitions: &[Definition]) -> io::Result<()> 
 fn main() -> ExitCode {
     let diagnostics = EarlyDiagCtxt::new(config::ErrorOutputType::default());
     rustc_driver::init_rustc_env_logger(&diagnostics);
+    let args = rustc_driver::args::raw_args(&diagnostics);
+    if args.get(1).is_some_and(|arg| arg == "--lustr-read-crate-interface") {
+        return host_crate_interface::run(&args[2..]);
+    }
     rustc_driver::install_ice_hook(rustc_driver::DEFAULT_BUG_REPORT_URL, |_| ());
     rustc_driver::install_ctrlc_handler();
     let record_spans = std::env::current_exe().ok().is_some_and(|path| {
@@ -134,7 +143,7 @@ fn main() -> ExitCode {
     });
     let mut host = HostProcMacro { record_spans, output: None, definitions: Vec::new() };
     let status = rustc_driver::catch_with_exit_code(|| {
-        rustc_driver::compiler_entrypoint(&rustc_driver::args::raw_args(&diagnostics), &mut host);
+        rustc_driver::compiler_entrypoint(&args, &mut host);
     });
     if status == ExitCode::SUCCESS
         && let Some(path) = host.output

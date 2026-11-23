@@ -48,7 +48,11 @@ impl ExecutableImports {
                 return Err(format!("Cargo extern archive is not a file: {}", archive.display()));
             }
             let index = crate_index(crates.len())?;
-            let definitions = Import::read(&input.metadata, sdk, standard, index, true)?;
+            let definitions = if linking {
+                Import::read(&input.metadata, sdk, standard, index, true)?
+            } else {
+                Import::read_for_check(&input.metadata, sdk, standard, index, installation)?
+            };
             if indices.insert(definitions.identity.clone(), crates.len()).is_some() {
                 return Err("duplicate Cargo extern crate identity".into());
             }

@@ -304,6 +304,29 @@
       "qualification": "Cargo provider artifact, independent pinned Rust consumer execution, and rejection of a regular binary in the host tool"
     },
     {
+      "id": "external-scalar-interface",
+      "missing_capability": "Read scalar declarations from Rust metadata outside the native encoding subset",
+      "status": "implemented-partial",
+      "owner": "Pinned Rust metadata loader and declaration queries",
+      "semantic_boundary": "Check-only scalar declarations from one actual Cargo metadata input with its installed SDK dependencies",
+      "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "upstream_paths": {
+        "compiler/rustc_metadata/src/rmeta/decoder.rs": "40d024ce058a7e363e192ac11f783c9d91e182ce0d7e3147e1e926f2073db0e2",
+        "compiler/rustc_metadata/src/locator.rs": "3e91bea232fdf8b8b01858bb55fb923f63f8c3ea66071cfc8eda9e9cebb9d758",
+        "compiler/rustc_middle/src/queries.rs": "e6d27d3e01b5a726d69b7ee54bcdd0db46114d13d80579e2cb2e617e34db1028"
+      },
+      "dependency_edges": [
+        ["external-scalar-interface", "existing host Rust driver component"],
+        ["existing host Rust driver component", "matching LLVM and Rust SDK sysroot"]
+      ],
+      "targets": "x86_64-unknown-linux-gnu host",
+      "features": ["standalone metadata, nongeneric safe Rust integer signatures"],
+      "adapter": "tools/host-crate-interface.rs",
+      "licenses": ["MIT", "Apache-2.0"],
+      "excluded_duplicate_phases": ["consumer parsing", "consumer type checking", "consumer lowering and emission"],
+      "qualification": "Standalone shared native checks and dependency edit controls. Installed Cargo checking and linker integration are separately qualified."
+    },
+    {
       "id": "proc-macro-expansion",
       "missing_capability": "Execute a selected host procedural macro and pass its tokens to native checking",
       "status": "implemented-partial",

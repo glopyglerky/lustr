@@ -1,6 +1,6 @@
 //! Join the real Cargo metadata artifact to the original native resolver.
 
-use std::{path::Path, sync::Arc};
+use std::{path::{Path, PathBuf}, sync::Arc};
 
 use crate::{
     borrowck::RegionSig,
@@ -54,6 +54,7 @@ pub(super) struct Import {
     pub(super) metadata: Arc<[u8]>,
     pub(super) embedded_archive: Option<Arc<[u8]>>,
     pub(super) sdk: Sdk,
+    interface_inputs: Vec<(PathBuf, Stamp)>,
 }
 
 impl Import {
@@ -65,18 +66,58 @@ impl Import {
         request: &ExternMetadata, sdk: &Sdk, standard: Option<&Sdk>, index: def::CrateId,
         executable: bool,
     ) -> Result<Self, String> {
+        Self::read_with_interface(request, sdk, standard, index, executable, None)
+    }
+
+    pub(super) fn read_for_check(
+        request: &ExternMetadata, sdk: &Sdk, standard: Option<&Sdk>, index: def::CrateId, installation: &Path,
+    ) -> Result<Self, String> {
+        Self::read_with_interface(request, sdk, standard, index, true, Some(installation))
+    }
+
+    fn read_with_interface(
+        request: &ExternMetadata, sdk: &Sdk, standard: Option<&Sdk>, index: def::CrateId,
+        executable: bool, installation: Option<&Path>,
+    ) -> Result<Self, String> {
         let path = &request.artifact;
         let before = stamp(path)?;
         let bytes: Arc<[u8]> = std::fs::read(path).map_err(|e| format!("read extern input {}: {e}", path.display()))?.into();
         let from_archive = executable && path.extension().is_some_and(|ext| ext == "rlib");
         let data: &[u8] = if from_archive { super::executable::embedded_metadata(&bytes)? } else { &bytes };
-        let (leaf, projection) = if executable {
+        let local = if executable {
             read_executable_crate(data, sdk)
         } else {
             read_scalar_crate(data, sdk).map(|leaf| (leaf, None))
         }
-        .or_else(|| standard.and_then(|context| read_link_crate(data, context)).map(|leaf| (leaf, None)))
-        .ok_or("extern artifact has no represented interface in the pinned SDK")?;
+        .or_else(|| standard.and_then(|context| read_link_crate(data, context)).map(|leaf| (leaf, None)));
+        let Some((leaf, projection)) = local else {
+            let Some(installation) = installation.filter(|_| path.extension().is_some_and(|ext| ext == "rmeta")) else {
+                return Err("extern artifact has no represented interface in the pinned SDK".into());
+            };
+            let interface = super::metadata_query::read(installation, &request.alias, path, &bytes)?;
+            let filename = format!("lib{}{}.rmeta", interface.name, interface.suffix);
+            if path.file_name().is_none_or(|name| name != filename.as_str()) || stamp(path)? != before {
+                return Err("extern metadata filename or generation changed".into());
+            }
+            let facts = Arc::new(CargoDefinitions {
+                alias: request.alias.clone(), crate_name: interface.name.clone(), stable: interface.stable,
+                index, functions: interface.functions, projection: None,
+            });
+            return Ok(Self {
+                facts, stamp: before,
+                identity: Identity { name: interface.name, svh: interface.svh, suffix: interface.suffix },
+                requires_abort: interface.requires_abort,
+                code_free: false,
+                // Original Rust loaded these standard dependencies from the SDK.
+                // They remain bound as inputs and introduce no native user modules.
+                dependencies: Vec::new(),
+                artifact_identity: path.to_str().ok_or("extern metadata path is not Unicode")?.into(),
+                metadata: bytes,
+                embedded_archive: None,
+                sdk: sdk.clone(),
+                interface_inputs: interface.inputs,
+            });
+        };
         let extension = if from_archive { "rlib" } else { "rmeta" };
         let expected = format!("lib{}{}.{extension}", leaf.name, leaf.filename_suffix);
         if path.file_name().is_none_or(|name| name != expected.as_str()) || stamp(path)? != before {
@@ -133,11 +174,15 @@ impl Import {
                 metadata: if from_archive { Arc::from(data) } else { bytes.clone() },
                 embedded_archive: from_archive.then_some(bytes),
                 sdk: context,
+                interface_inputs: Vec::new(),
         })
     }
 
     pub(super) fn unchanged(&self, path: &Path) -> bool {
         stamp(path).is_ok_and(|observed| observed == self.stamp)
+            && self.interface_inputs.iter().all(|(path, expected)| {
+                stamp(path).is_ok_and(|actual| actual == *expected)
+            })
     }
 
     pub(super) fn owns(&self, id: def::DiskDefId) -> bool {
