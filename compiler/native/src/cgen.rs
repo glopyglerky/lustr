@@ -1051,7 +1051,7 @@ pub struct FnOut {
     /// code retains this result with the body it describes.
     pub mixed_total: bool,
     /// This body keeps its C ABI wrapper for its test Termination entry.
-    test_termination: bool,
+    pub(crate) test_termination: bool,
     /// The fn's C text (`code_text`, `code_len`, `has_code`).
     pub text: CText,
     pub glue: HashSet<(Glue, CTy)>,
