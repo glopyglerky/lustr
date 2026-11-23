@@ -132,3 +132,21 @@ parameter, a const parameter, `Gate<&'a T>`, an associated result outlives bound
 where predicates and a lifetime fact. The existing L0621 admission gate is
 explicitly asserted. No installed execution or new service qualification is
 transferred from the preceding compiler source to this slice.
+
+Compiler source `7569bf35cb74b9335372fe940e3c92a97c9e7816` has now been
+constructed and checked separately. It passes ten focused and 32 retained
+patch tests, all 27 ordinary fresh differential cases and 16 retained states
+(86 operations), plus the 38-operation default-profile scalar Cargo/import
+regression. All three executable hashes match their construction receipts.
+See [`declaration-verification.json`](declaration-verification.json) and
+[`declaration-import-verification.json`](declaration-import-verification.json).
+
+The broader GAT declaration used by the new collection test is independently
+accepted by pinned Rust and still rejected by installed Lustr. L0621 remains,
+along with legacy L0612/L0203 diagnostics on this unintegrated declaration.
+This is an explicit valid-program coverage frontier, without a supported-GAT
+claim or a passing rejection exception. Its original source and streams are
+retained; their hashes are in
+[`declaration-frontier.json`](declaration-frontier.json). The selective pinned
+normalization/WF/region caller and genuine GAT provider metadata still need
+implementation and joint installed qualification.

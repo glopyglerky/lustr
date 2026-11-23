@@ -359,8 +359,14 @@ application. A generic bound no longer resolves solely in the parent's scope.
 These facts enter declaration fingerprints; they are inputs for the semantic
 service and metadata producer, not a successful GAT provider proof. Ten focused
 tests pass, including the normal collector's retained `Gate<&'a T>` bound,
-`Self: 'a`, `T: 'a` and lifetime fact. Installed ordinary-path regression checking
-of this source is next; the GAT gate remains active.
+`Self: 'a`, `T: 'a` and lifetime fact. Source `7569bf35` also passes all 32 native
+patch tests, the installed 27-case/16-state ordinary regression and 38-operation
+scalar Cargo/import history. The broader GAT declaration is independently valid
+in pinned Rust but remains rejected by Lustr (L0621 plus legacy declaration
+diagnostics), explicitly unqualified language scope. The next P1 source action is
+the pinned early-argument/region instantiation and obligation service consuming
+these actual declarations; its successful result must feed P2 metadata, and
+substitution alone cannot close admission. Keep the GAT gate until that join.
 
 23 November implementation continuation: P2's imported-generation update is
 ACTIVE on the `3507c74d` base. The public owner validates replacement metadata

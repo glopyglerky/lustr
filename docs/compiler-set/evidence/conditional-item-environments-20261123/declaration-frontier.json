@@ -1,0 +1,12 @@
+{
+  "schema": "lustr-gat-declaration-frontier-v1",
+  "source_commit": "7569bf35cb74b9335372fe940e3c92a97c9e7816",
+  "rust_revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "qualified_feature_support": false,
+  "classification": "valid Rust remains outside implemented GAT integration; rejection is not passing language coverage",
+  "source": "trait Gate<X> {}\ntrait Family {\n    type View<'a, T: Copy, const N: usize>: Gate<&'a T> + 'a\n    where Self: 'a, T: 'a, 'a: 'static;\n}\nfn main() {}\n",
+  "source_sha256": "759a018fe9ff1dced9f7c77e65a8d6e4cc7f15ef7a3d92ede18a1eafa32cdc3e",
+  "reference": {"code": 0, "stream_sha256": "54ac17b5506068a56952d6cef8aab14ae9c86df88e2a9ade572839e56b197771"},
+  "candidate": {"code": 1, "diagnostics": ["L0612", "L0621", "L0203"], "stream_sha256": "d9dccda23c34fe787349d3564b58c103ed4dd8bfb372ebb6befb1f56716bd63a"},
+  "candidate_identities": "declaration-verification.json"
+}
