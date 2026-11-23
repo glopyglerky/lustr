@@ -154,7 +154,29 @@ impl Owner {
             _ => false,
         }
     }
+    fn refresh_imports(&mut self, req: &driver::Request) -> Result<(), String> {
+        self.installed.unchanged()?;
+        if self.import_is_current(req) { return Ok(()); }
+        let key = req.session.library.as_ref().ok_or("library identity absent")?;
+        // Validate the entire replacement before publishing any new facts.
+        // A malformed or changing input leaves the previous owner and checked
+        // generation intact, and fails this request without compiler retry.
+        let imported = key.external.as_ref().map(|input| imports::Import::open(input, &self.installed.sdk)).transpose()?;
+        let executable = key.executable_dependencies.as_ref()
+            .map(|inputs| executable::ExecutableImports::open(inputs, &self.installed.sdk)).transpose()?;
+        if imported.as_ref().is_some_and(|value| !value.unchanged(&key.external.as_ref().unwrap().artifact))
+            || executable.as_ref().is_some_and(|value| !value.unchanged(key.executable_dependencies.as_ref().unwrap())) {
+            return Err("extern inputs changed during generation refresh".into());
+        }
+        self.imported = imported;
+        self.executable = executable;
+        // The binary includes dependency code even when its own source and
+        // semantic reads are unchanged. Relink on every validated input edit.
+        self.binary_output = None;
+        Ok(())
+    }
     pub(crate) fn compile(&mut self,req:&driver::Request,session:&mut driver::Session)->driver::Response {
+        if let Err(error) = self.refresh_imports(req) { return failed(req, &error); }
         let serial=REQUESTS.fetch_add(1,Ordering::Relaxed)+1;
         if self.executable.is_some() {
             return self.compile_executable(req, session, serial);

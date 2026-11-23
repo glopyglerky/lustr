@@ -2,9 +2,9 @@
 //!
 //! The provider installs resolved definitions before collection checks any
 //! initializer or body. It supplies actual compiler facts, never declarations
-//! generated as source. The first boundary is deliberately one request in a
-//! fresh session: retained imports need a joined dependency generation before
-//! they may authorize another request or a disk-cache answer.
+//! generated as source. Retained owners bind exact validated dependency bytes
+//! to declaration refresh and native read replay. Disk-cache restoration of
+//! imported generations remains unavailable.
 
 use crate::{check::collect::Program, diag::Diag, intern::Interner, resolve::imports::ResolvedTables};
 

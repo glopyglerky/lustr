@@ -2990,7 +2990,7 @@ pub(crate) fn prepare_projection_import<'a>(
     session: &'a mut Session,
     definitions: &dyn super::imports::Definitions,
 ) -> Result<Preparation<'a>, super::imports::Unintegrated> {
-    let previous = session.projection_inputs.as_ref();
+    let previous = session.imported_inputs.as_ref();
     if req.session != session.key || !session.caches.persistent || session.caches.output != super::OutputKind::Standalone
         || previous.is_none() && (session.imported_request || session.front.env_hash.is_some()
             || !session.front.src.is_empty() || !session.front.slot_of.is_empty())
@@ -2999,8 +2999,16 @@ pub(crate) fn prepare_projection_import<'a>(
         || crate::image::state_dir().is_some() || std::env::var_os("LUST_FRONT_ARENA").is_some() {
         return Err(super::imports::Unintegrated("projection imports require a standalone retained research session"));
     }
+    update_imported_generation(session, definitions);
+    Ok(prepare_with_definitions(req, session, None, Some(definitions)))
+}
+
+/// Refresh declarations under stable definition identities. Native body reads,
+/// slots and emitted objects survive; their normal full-mode replay determines
+/// which results still hold. Only validated providers enter this boundary.
+fn update_imported_generation(session: &mut Session, definitions: &dyn super::imports::Definitions) {
     let inputs = definitions.dependencies();
-    if let Some(previous) = previous
+    if let Some(previous) = &session.imported_inputs
         && !(inputs.len() == previous.len() && inputs.iter().zip(previous).all(|(a, b)| {
             a.identity == b.identity && a.contents == b.contents
         }))
@@ -3015,18 +3023,17 @@ pub(crate) fn prepare_projection_import<'a>(
         super::patch::drop_kept(&mut session.front, &mut session.caches);
     }
     session.imported_request = true;
-    session.projection_inputs = Some(inputs);
+    session.imported_inputs = Some(inputs);
     session.cache_tried = true;
     session.disk_cache = None;
-    Ok(prepare_with_definitions(req, session, None, Some(definitions)))
 }
 
 #[cfg(feature = "exclusive-native")]
 pub(crate) fn prepare_library_import<'a>(req: &'a Request, session: &'a mut Session, definitions: &dyn super::imports::Definitions) -> Preparation<'a> {
-    // The public owner resets this retained session if the exact input artifact
-    // changes. The general disk cache does not encode this input generation.
-    session.cache_tried = true;
-    session.disk_cache = None;
+    // The owner has validated the exact current metadata/archive bytes. Refresh
+    // actual readers without discarding unrelated bodies on an import edit.
+    // General disk-cache keys do not yet encode this imported generation.
+    update_imported_generation(session, definitions);
     prepare_with_definitions(req, session, None, Some(definitions))
 }
 
@@ -5456,7 +5463,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
     // their objects, in the session and in the disk unit cache.
     let standalone = caches.output == super::session::OutputKind::Standalone;
     let retain_standalone = req.session.library.as_ref().is_some_and(|key| key.is_executable())
-        || session.projection_inputs.is_some();
+        || session.imported_inputs.is_some();
     // Cargo's dependency-free unwind binaries use the existing native panic
     // propagation. TinyCC's own linker also preserves its multi-body frame
     // relocations, which cannot be passed to another linker in this form.

@@ -454,9 +454,9 @@ pub struct Session {
     pub(crate) cache_tried: bool,
     /// Ordinary requests cannot consume a session's imported state.
     pub(crate) imported_request: bool,
-    /// Metadata-only research imports have no code objects. Their snapshots
-    /// determine when native signatures and the existing body reads must refresh.
-    pub(crate) projection_inputs: Option<Vec<super::imports::Dependency>>,
+    /// Exact validated imported inputs for the retained generation. Changed
+    /// bytes force declaration refresh and replay of native semantic reads.
+    pub(crate) imported_inputs: Option<Vec<super::imports::Dependency>>,
 }
 
 impl Front {
@@ -597,7 +597,7 @@ impl Session {
             disk_cache: None,
             cache_tried: artifact_mode,
             imported_request: false,
-            projection_inputs: None,
+            imported_inputs: None,
         }
     }
     pub fn obj_dir(&self) -> &Path {

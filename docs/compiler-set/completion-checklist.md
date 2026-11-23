@@ -316,6 +316,18 @@ does not close the compiler task or disable continuation.
 
 ### Coordinator and resume record
 
+23 November implementation continuation: P2's imported-generation update is
+ACTIVE on the `3507c74d` base. The public owner validates replacement metadata
+and archives before refreshing native declarations, replays actual dependency
+reads and retains unrelated bodies. Exact input bytes participate in that
+generation; disk restoration remains disabled. The installed scalar
+default-profile Cargo check/edit history is the first acceptance operation.
+The new Rust qualifier is `tools/test-public-import-generation.rs`; execution
+is pending at this source checkpoint. This is a P2 prerequisite, not admission
+of the P1 GAT service or completion of P2. Next: construct this exact candidate,
+run the valid/type-change/malformed-input/repair histories and pinned Rust
+metadata consumer, then continue the native declaration/predicate service.
+
 The coordinator owns this register, shared-interface decisions and final
 integration. Worker A starts P1/P2; worker B starts P3; worker C starts P4 and
 the runtime prerequisites it exposes. Use isolated worktrees and non-overlapping

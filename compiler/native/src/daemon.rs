@@ -915,11 +915,11 @@ fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Re
     if req.session.library.is_some() {
         entry.served+=1;
         if entry.recompute_next {entry.recompute_next=false;replace_session(entry,&req.session);}
-        if req.session.library.as_ref().is_some_and(|key| key.external.is_some() || key.is_executable())
-            && entry.library.as_ref().is_some_and(|owner| owner.as_ref().ok().is_none_or(|owner| !owner.import_is_current(req))) {
-            replace_session(entry, &req.session);
-        }
         let result=std::panic::catch_unwind(std::panic::AssertUnwindSafe(||{
+            // A failed initial load published no imported facts. Allow the
+            // next independent request to repair it without replacing native
+            // state; existing owners validate their own generation refresh.
+            if entry.library.as_ref().is_some_and(|owner| owner.is_err()) { entry.library = None; }
             if entry.library.is_none(){entry.library=Some(crate::public_library::Owner::new(req));}
             match entry.library.as_mut().unwrap() {
                 Ok(owner)=>owner.compile(req,&mut entry.session),
