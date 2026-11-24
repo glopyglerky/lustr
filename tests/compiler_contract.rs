@@ -2738,6 +2738,88 @@ mod tests {
         assert!(native_unit.contains("apply_mask") && native_unit.contains("src/main.rs"), "{native_unit}");
         assert_eq!(std::fs::read_to_string(path).unwrap(), encoded);
     }
+
+    let root_test = source.split_once("#[cfg(test)]").unwrap().0.to_owned() + r#"
+#[test]
+fn native_value_in_the_rust_test_harness() {
+    assert_eq!(apply_mask(57), 42);
+}
+"#;
+    f.source("src/main.rs", &root_test);
+    let ran = f.succeeds("root-test", cargo("root-test", false, false)
+        .args(["test", "--frozen", "--", "--exact", "native_value_in_the_rust_test_harness"]));
+    assert!(String::from_utf8_lossy(&ran.stdout).contains("native_value_in_the_rust_test_harness ... ok"));
+    let artifacts = f.succeeds("root-test-artifact", cargo("root-test", false, false)
+        .args(["test", "--no-run", "--frozen", "--message-format=json"]));
+    let artifact = artifacts.stdout.split(|&byte| byte == b'\n').find_map(|line| {
+        let record: serde_json::Value = serde_json::from_slice(line).ok()?;
+        (record["reason"] == "compiler-artifact" && record["profile"]["test"] == true)
+            .then(|| record["executable"].as_str().map(PathBuf::from)).flatten()
+    }).expect("Cargo reported the root test executable");
+    let debug = f.succeeds("root-test-debug", Command::new("readelf")
+        .args(["--debug-dump=info", "--wide"]).arg(artifact));
+    assert!(String::from_utf8_lossy(&debug.stdout).lines().any(|line| line.contains("DW_AT_producer") && line.contains("Lustr")));
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and binutils"]
+fn rust_attribute_named_test_can_change_the_mixed_crate_namespace() {
+    let f = Fixture::new("mixed-test-macro-shadow");
+    f.source("Cargo.toml", r#"
+[package]
+name = "shadowed_test"
+version = "0.1.0"
+edition = "2024"
+[dependencies]
+test_attr = { path = "attr" }
+"#);
+    f.source("attr/Cargo.toml", r#"
+[package]
+name = "test_attr"
+version = "0.1.0"
+edition = "2024"
+[lib]
+proc-macro = true
+"#);
+    f.source("attr/src/lib.rs", r##"
+use proc_macro::TokenStream;
+#[proc_macro_attribute]
+pub fn test(_: TokenStream, _: TokenStream) -> TokenStream {
+    r#"
+#[allow(non_camel_case_types)]
+struct u64(::core::primitive::u64);
+
+impl ::core::ops::BitXor<::core::primitive::u64> for u64 {
+    type Output = Self;
+    fn bitxor(self, rhs: ::core::primitive::u64) -> Self {
+        Self(self.0 ^ (rhs << 1))
+    }
+}
+"#.parse().unwrap()
+}
+"##);
+    f.source("src/main.rs", r#"
+use test_attr::test;
+
+#[test]
+fn generates_a_type() {}
+
+fn apply_mask(input: u64) -> u64 { input ^ 19 }
+fn main() { println!("{}", apply_mask(u64(57)).0); }
+"#);
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let lustr = f.succeeds("lustr-run", f.command("cargo").args(["run", "--frozen"]));
+    let original = f.succeeds("original-run", f.command("cargo")
+        .env("CARGO_TARGET_DIR", f.root.join("original"))
+        .env("RUSTC", std::env::var_os("LUSTR_TEST_ORACLE").unwrap())
+        .args(["run", "--frozen"]));
+    assert_eq!(lustr.stdout, b"31\n");
+    assert_eq!(lustr.stdout, original.stdout);
+    let symbols = f.succeeds("symbols", Command::new("nm").arg(f.root.join("target/debug/shadowed_test")));
+    assert!(!String::from_utf8_lossy(&symbols.stdout).lines().any(|line|
+        line.split_whitespace().last().is_some_and(|name|
+            name.len() == 18 && name.strip_prefix("f_").is_some_and(|suffix| suffix.bytes().all(|byte| byte.is_ascii_hexdigit())))));
 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]

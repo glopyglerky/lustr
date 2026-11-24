@@ -75,38 +75,41 @@ fn unqualified_u64(ty: &Ty) -> bool {
             if segment.ident.name == sym::u64 && segment.args.is_none()))
 }
 
-fn imports_u64(tree: &UseTree, parent: Option<Symbol>) -> bool {
+fn imports_name(tree: &UseTree, parent: Option<Symbol>, expected: Symbol) -> bool {
     match &tree.kind {
         UseTreeKind::Glob(_) => true,
         UseTreeKind::Simple(_) => match tree.ident().name {
-            kw::SelfLower => parent == Some(sym::u64),
-            name => name == sym::u64,
+            kw::SelfLower => parent == Some(expected),
+            name => name == expected,
         },
         UseTreeKind::Nested { items, .. } => {
             let parent = tree.prefix.segments.last().map(|segment| segment.ident.name).or(parent);
-            items.iter().any(|item| imports_u64(&item.inner, parent))
+            items.iter().any(|item| imports_name(&item.inner, parent, expected))
         }
     }
 }
 
-fn may_expand(attr: &rustc_ast::Attribute) -> bool {
+fn may_expand(attr: &rustc_ast::Attribute, prelude_test: bool) -> bool {
+    if prelude_test && attr.is_word() && attr.has_name(sym::test) {
+        return false;
+    }
     !attr.is_doc_comment() && attr.name().is_none_or(|name| {
         !rustc_feature::is_builtin_attr_name(name)
             || matches!(name, sym::cfg_attr | sym::derive | sym::prelude_import)
     })
 }
 
-fn may_shadow_u64(item: &Item) -> bool {
-    if item.attrs.iter().any(may_expand) {
+fn may_shadow_u64(item: &Item, prelude_test: bool) -> bool {
+    if item.attrs.iter().any(|attr| may_expand(attr, prelude_test)) {
         return true;
     }
     match &item.kind {
-        ItemKind::Use(tree) => imports_u64(tree, None),
+        ItemKind::Use(tree) => imports_name(tree, None, sym::u64),
         ItemKind::MacCall(_) | ItemKind::DelegationMac(_) => true,
         ItemKind::ForeignMod(module) => module.items.iter().any(|item| {
             matches!(item.kind, ForeignItemKind::MacCall(_))
                 || item.kind.ident().is_some_and(|ident| ident.name == sym::u64)
-                || item.attrs.iter().any(may_expand)
+                || item.attrs.iter().any(|attr| may_expand(attr, false))
         }),
         kind => kind.ident().is_some_and(|ident| ident.name == sym::u64),
     }
@@ -351,8 +354,19 @@ impl Callbacks for Composition<'_> {
         };
         // The native body uses the primitive ABI. Keep the original Rust
         // body if expansion or resolution could rebind the unqualified type.
+        // The pinned prelude's test attribute removes the function outside
+        // test mode and adds its harness descriptor in test mode.
+        // Its name can also denote an imported attribute macro.
+        let prelude_test = [sym::std, sym::core].into_iter().all(|name| sess.opts.externs.get(name.as_str()).is_none())
+            && !krate.items.iter().any(|item| {
+                item.attrs.iter().any(|attr| attr.has_name(sym::macro_use))
+                    || match &item.kind {
+                        ItemKind::Use(tree) => imports_name(tree, None, sym::test),
+                        kind => kind.ident().is_some_and(|ident| matches!(ident.name, sym::test | sym::std | sym::core)),
+                    }
+            });
         if sess.opts.externs.get("u64").is_some_and(|external| external.add_prelude)
-            || krate.items.iter().any(|item| may_shadow_u64(item))
+            || krate.items.iter().any(|item| may_shadow_u64(item, prelude_test))
         {
             return Compilation::Continue;
         }
