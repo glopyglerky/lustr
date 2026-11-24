@@ -32,6 +32,7 @@ pub fn needs_rust_query(args: &[OsString], host: &str) -> bool {
     }) || args.iter().filter_map(|arg| arg.to_str()).any(|arg| {
         arg.strip_prefix("--target=").is_some_and(|target| target != host)
             || arg.strip_prefix("--print=").is_some_and(|kind| !native_print(kind))
+            || arg.starts_with("-Z")
             || arg.strip_prefix("-C").filter(|option| !option.is_empty())
                 .or_else(|| arg.strip_prefix("--codegen="))
                 .is_some_and(|option| discovery_codegen_option(option).is_err())

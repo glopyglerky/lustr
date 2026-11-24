@@ -516,9 +516,9 @@ fn represents_native_codegen(args: &[String]) -> bool {
     while let Some(arg) = rest.next() {
         if let Some(option) = arg.strip_prefix("-Z") {
             let option = if option.is_empty() { rest.next().unwrap_or_default() } else { option };
-            // The original Rust linker owns the archive's metadata and its
-            // stub. This option does not change the native item's object.
-            if option.split_once('=').map(|(key, _)| key) != Some("embed-metadata") {
+            // The original Rust driver owns archive metadata and dep-info.
+            // These options leave the native item's object unchanged.
+            if !matches!(option.split_once('=').map(|(key, _)| key), Some("embed-metadata" | "checksum-hash-algorithm")) {
                 return false;
             }
             continue;

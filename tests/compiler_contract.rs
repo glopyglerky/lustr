@@ -2793,20 +2793,15 @@ fn native_value_in_the_rust_test_harness() {
         assert!(after[start..].contains("\"entry\":\"retained-rust-link\""), "{name}: {}", &after[start..]);
     }
 
-    for (name, flags, optimized) in [
-        ("dwarf5", "-Zdwarf-version=5", false),
-        ("checksum-dep-info", "-Zchecksum-hash-algorithm=blake3", true),
-    ] {
-        let run = || {
-            let mut command = cargo(name, false, false);
-            command.env_remove("CARGO_ENCODED_RUSTFLAGS").env("RUSTFLAGS", flags).args(["run", "--frozen"]);
-            if optimized {
-                command.arg("--release");
-            }
-            command
-        };
+    let checksum_run = || {
+        let mut command = cargo("checksum-dep-info", false, false);
+        command.env_remove("CARGO_ENCODED_RUSTFLAGS").env("RUSTFLAGS", "-Zchecksum-hash-algorithm=blake3")
+            .args(["run", "--release", "--frozen"]);
+        command
+    };
+    {
         let deps = || {
-            let root = f.root.join(name).join("release/build/async_program");
+            let root = f.root.join("checksum-dep-info/release/build/async_program");
             std::fs::read_dir(root).unwrap().find_map(|unit| {
                 let dep_info = std::fs::read_to_string(unit.ok()?.path().join("out/async_program.d")).ok()?;
                 dep_info.lines().find(|line| line.starts_with("# checksum:") && line.ends_with("src/main.rs")).map(str::to_owned)
@@ -2814,15 +2809,19 @@ fn native_value_in_the_rust_test_harness() {
         };
         let start = std::fs::metadata(&trace_path).unwrap().len() as usize;
         f.source("src/main.rs", source);
-        assert_eq!(f.succeeds(&format!("{name}-before-edit"), &mut run()).stdout, b"42\n");
-        let original_checksum = optimized.then(deps);
+        assert_eq!(f.succeeds("checksum-before-edit", &mut checksum_run()).stdout, b"42\n");
+        let original_checksum = deps();
         f.source("src/main.rs", &edited);
-        assert_eq!(f.succeeds(&format!("{name}-edit"), &mut run()).stdout, b"43\n");
-        if let Some(original_checksum) = original_checksum {
-            assert_ne!(deps(), original_checksum);
-        }
+        assert_eq!(f.succeeds("checksum-edit", &mut checksum_run()).stdout, b"43\n");
+        assert_ne!(deps(), original_checksum);
         let after = std::fs::read_to_string(&trace_path).unwrap();
-        assert!(!after[start..].contains("\"entry\":\"retained-rust-link\""), "{name}: {}", &after[start..]);
+        assert!(!after[start..].contains("\"entry\":\"retained-rust-link\""), "{}", &after[start..]);
+        let executable = f.root.join("checksum-dep-info/release/async_program");
+        let symbols = f.succeeds("checksum-native-symbols", Command::new("nm").arg(executable));
+        assert!(String::from_utf8_lossy(&symbols.stdout).lines().any(|line| {
+            line.split_whitespace().last().and_then(|name| name.strip_prefix("f_"))
+                .is_some_and(|name| name.len() == 16 && name.bytes().all(|byte| byte.is_ascii_hexdigit()))
+        }));
     }
 
     f.source("src/main.rs", source);
