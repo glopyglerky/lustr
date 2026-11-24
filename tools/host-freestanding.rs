@@ -398,13 +398,14 @@ impl Callbacks for Composition<'_> {
                 let word = PrimTy::Uint(ty::UintTy::U64);
                 if signature.args != [word] || signature.result != word { return None; }
             }
-            signature.types().all(|ty| {
+            let resolved_primitives = signature.types().all(|ty| {
                 let name = ty.name();
                 *primitive_bindings.entry(name).or_insert_with(|| {
                     sess.opts.externs.get(name.as_str()).is_none_or(|external| !external.add_prelude)
                         && !krate.items.iter().any(|item| may_shadow_primitive(item, name, prelude_test))
                 })
-            }).then_some((index, item.as_ref(), signature))
+            });
+            resolved_primitives.then_some((index, item.as_ref(), signature))
         }).collect();
         if let Some((_, first, _)) = selected.first() {
             let codegen = crate::native_object::ItemCodegen {
