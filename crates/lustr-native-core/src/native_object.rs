@@ -3,7 +3,7 @@
 //! host runtime unit, rustc acceptance, retry or retained-object replay.
 //! This is not yet the full core/alloc library or Cargo metadata interface.
 use crate::{ast, borrowck, cgen, check, def, diag, intern, lexer, lower, parser, ty};
-use std::{collections::BTreeSet, fs, ops::Range, path::PathBuf, process::Command, sync::Arc};
+use std::{collections::BTreeSet, fs, ops::Range, path::{Path, PathBuf}, process::Command, sync::Arc};
 use ty::TyIntern;
 
 pub(crate) const SOURCE_LIMIT: usize = 2 * 1024 * 1024;

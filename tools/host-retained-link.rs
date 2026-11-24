@@ -12,7 +12,7 @@ use rustc_span::{SourceFile, SourceFileHash, SourceFileHashAlgorithm};
 use rustc_structures::CrateType;
 use std::{
     fs::{self, File, OpenOptions},
-    io::{self, Read, Seek, SeekFrom},
+    io::{self, Read, Seek, SeekFrom, Write},
     ops::Range,
     os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt},
     path::{Path, PathBuf},
