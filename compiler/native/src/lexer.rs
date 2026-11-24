@@ -766,7 +766,7 @@ pub fn lex(src: &str, file: FileId, base: u32, interner: &Interner) -> Result<Le
     let b = src.as_bytes();
     let mut tokens = Vec::with_capacity(src.len() / 4);
     let mut strings = Vec::new();
-    let mut i = 0usize;
+    let mut i = if base == 0 && src.starts_with('\u{feff}') { 3 } else { 0 };
     // Local cache in front of the shared interner, so repeated names skip its lock.
     let mut cache: FxMap<&str, Sym> = FxMap::default();
     let err = |start: usize, end: usize, msg: &str| {
@@ -776,8 +776,8 @@ pub fn lex(src: &str, file: FileId, base: u32, interner: &Interner) -> Result<Le
     // skipped, as in rustc. `#!` followed (after spaces) by `[` is an inner
     // attribute, not a shebang. Only a file's first bytes qualify: `base`
     // is zero exactly for a whole file, not for a chunk of one.
-    if base == 0 && b.get(..2) == Some(b"#!") {
-        let mut j = 2;
+    if base == 0 && b.get(i..i + 2) == Some(b"#!") {
+        let mut j = i + 2;
         while matches!(b.get(j), Some(b' ' | b'\t')) {
             j += 1;
         }

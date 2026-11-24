@@ -53,6 +53,7 @@ struct HostProcMacro {
     record_spans: bool,
     output: Option<PathBuf>,
     definitions: Vec<Definition>,
+    attributes: Vec<String>,
 }
 
 impl rustc_driver::Callbacks for HostProcMacro {
@@ -83,7 +84,11 @@ impl rustc_driver::Callbacks for HostProcMacro {
         let source_map = tcx.sess.source_map();
         for &definition in &tcx.resolutions(()).proc_macros {
             let id = tcx.local_def_id_to_hir_id(definition);
-            if !rustc_attr_ir::find_attr!(tcx.hir_attrs(id), ProcMacro) {
+            let attrs = tcx.hir_attrs(id);
+            if rustc_attr_ir::find_attr!(attrs, ProcMacroAttribute) {
+                self.attributes.push(tcx.hir_name(id).to_string());
+            }
+            if !rustc_attr_ir::find_attr!(attrs, ProcMacro) {
                 continue;
             }
             let span = tcx.hir_span(id);
@@ -114,7 +119,7 @@ fn write_string(out: &mut impl Write, value: &str) -> io::Result<()> {
     out.write_all(value.as_bytes())
 }
 
-fn write_receipt(artifact: &Path, definitions: &[Definition]) -> io::Result<()> {
+fn write_receipt(artifact: &Path, definitions: &[Definition], attributes: &[String]) -> io::Result<()> {
     let mut filename = artifact.as_os_str().to_owned();
     filename.push(".lustr-spans");
     let mut temporary = filename.clone();
@@ -122,7 +127,7 @@ fn write_receipt(artifact: &Path, definitions: &[Definition]) -> io::Result<()> 
     let digest = SourceFileHash::new(SourceFileHashAlgorithm::Sha256, fs::File::open(artifact)?)?;
     let mut out = fs::File::create_new(&temporary)?;
     let result = (|| {
-        out.write_all(b"lustr-proc-macro-spans-v2\0")?;
+        out.write_all(b"lustr-proc-macro-spans-v3\0")?;
         write_string(&mut out, &digest.to_string())?;
         out.write_all(&u32::try_from(definitions.len()).map_err(io::Error::other)?.to_le_bytes())?;
         for definition in definitions {
@@ -131,6 +136,10 @@ fn write_receipt(artifact: &Path, definitions: &[Definition]) -> io::Result<()> 
             out.write_all(&definition.start.to_le_bytes())?;
             out.write_all(&definition.end.to_le_bytes())?;
             write_string(&mut out, &definition.source_digest)?;
+        }
+        out.write_all(&u32::try_from(attributes.len()).map_err(io::Error::other)?.to_le_bytes())?;
+        for attribute in attributes {
+            write_string(&mut out, attribute)?;
         }
         out.sync_all()?;
         fs::rename(&temporary, filename)?;
@@ -163,13 +172,13 @@ fn main() -> ExitCode {
             directory.join("lustr-macro-expansion/bin/lustr-expand-proc-macro").is_file()
         })
     });
-    let mut host = HostProcMacro { record_spans, output: None, definitions: Vec::new() };
+    let mut host = HostProcMacro { record_spans, output: None, definitions: Vec::new(), attributes: Vec::new() };
     let status = rustc_driver::catch_with_exit_code(|| {
         rustc_driver::compiler_entrypoint(&args, &mut host);
     });
     if status == ExitCode::SUCCESS
         && let Some(path) = host.output
-        && let Err(error) = write_receipt(&path, &host.definitions)
+        && let Err(error) = write_receipt(&path, &host.definitions, &host.attributes)
     {
         eprintln!("cannot record host procedural macro definitions: {error}");
         return ExitCode::FAILURE;

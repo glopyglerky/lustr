@@ -312,7 +312,6 @@ fn validate(input: &Input<'_>, sdk: &Sdk, link: bool, projection: Option<&Projec
         return Err(failure("absolute Unicode source path is required"));
     }
     if input.source.len() > 2 * 1024 * 1024
-        || input.source.starts_with('\u{feff}')
         || input.source.as_bytes().iter().enumerate().any(|(at, &byte)| {
             byte == b'\r' && input.source.as_bytes().get(at + 1) != Some(&b'\n')
         })

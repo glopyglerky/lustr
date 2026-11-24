@@ -212,7 +212,7 @@ impl LineIndex {
     pub fn new(src: &str) -> LineIndex {
         // `match_indices` with a char pattern uses memchr, which is much faster than a byte loop.
         let mut starts = Vec::with_capacity(src.len() / 32);
-        starts.push(0);
+        starts.push(if src.starts_with('\u{feff}') { 3 } else { 0 });
         starts.extend(src.match_indices('\n').map(|(i, _)| i as u32 + 1));
         let mut wide = Vec::new();
         wide_chars(src, 0, &mut wide);
@@ -231,6 +231,10 @@ impl LineIndex {
     /// The index after an edit replaced `old[a..old_b]` with `new[a..new_b]`: line starts before
     /// the edit are kept, starts inside it are recomputed, and starts after it are shifted.
     pub fn splice(&self, new: &str, a: usize, old_b: usize, new_b: usize) -> LineIndex {
+        let start = if new.starts_with('\u{feff}') { 3 } else { 0 };
+        if self.starts[0] != start || a < start as usize {
+            return Self::new(new);
+        }
         let delta = new_b as i64 - old_b as i64;
         let keep = self.starts.partition_point(|&s| s as usize <= a);
         let mut starts = Vec::with_capacity(self.starts.len() + 16);
@@ -247,8 +251,8 @@ impl LineIndex {
     }
 
     pub fn line_col(&self, offset: u32) -> (u32, u32) {
-        let line = self.starts.partition_point(|&s| s <= offset) - 1;
-        (line as u32 + 1, offset - self.starts[line] + 1)
+        let line = self.starts.partition_point(|&s| s <= offset).saturating_sub(1);
+        (line as u32 + 1, offset.saturating_sub(self.starts[line]) + 1)
     }
     /// 1-based line and display column of byte `offset`: rustc's
     /// `col_display + 1`, where a tab counts 4 and each char its width.
@@ -256,7 +260,7 @@ impl LineIndex {
         let (line, col) = self.line_col(offset);
         let start = self.starts[line as usize - 1];
         let lo = self.wide.partition_point(|&(o, _)| o < start);
-        let hi = self.wide.partition_point(|&(o, _)| o < offset);
+        let hi = self.wide.partition_point(|&(o, _)| o < offset).max(lo);
         let extra: i32 = self.wide_sum[hi] - self.wide_sum[lo];
         (line, (col as i32 + extra).max(1) as u32)
     }

@@ -373,7 +373,7 @@
       "missing_capability": "Execute a selected host procedural macro and pass its tokens to native checking",
       "status": "implemented-partial",
       "owner": "Pinned Rust Analyzer worker with Lustr's native expansion context",
-      "semantic_boundary": "Cargo-selected host artifacts loaded by a request-scoped worker, source token trees and distinct hygiene sites, represented call-site identifiers, literals, punctuation spacing and visible output groups, and observed Cargo dependency inputs",
+      "semantic_boundary": "Cargo-selected host artifacts loaded by a request-scoped worker, source token trees and distinct hygiene sites, represented call-site identifiers, literals, punctuation spacing and visible output groups, and observed Cargo dependency inputs. The original Rust producer also records procedural attribute exports with the artifact digest. An unresolved import of an actual attribute export requests the Rust macro context before native body checking. Existing native bindings and missing export diagnostics retain their original resolution.",
       "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
       "upstream_paths": {
         "src/tools/rust-analyzer/crates/proc-macro-api/src/lib.rs": "2e2dceb85444dd2e07377183855e7c47e4e2eae2b87280fc8417e4f1e8e33a87",
@@ -389,6 +389,8 @@
         "src/tools/rust-analyzer/crates/span/src/hygiene.rs": "49df630a5a23fae699568d6e53928d3081f6f17ba827334c68b6f5e261e38b5c",
         "compiler/rustc_expand/src/base.rs": "23f513fe11bab27c7b4c9d2c55acf1af702a480e522240e7ed79900e11f13d92",
         "compiler/rustc_expand/src/proc_macro_server.rs": "af97126cf80003d963f231e87da36a35df63eaba355366393178f8ac3dc50a72",
+        "compiler/rustc_attr_ir/src/data_structures.rs": "6b61fd75a4a88bb80dfdcc71bdb5325c9083bfa99f5bf03baa9c19250a0852ba",
+        "compiler/rustc_builtin_macros/src/proc_macro_harness.rs": "fe874513e66ffed418d2a80cdaef110d595bc80b3e817c04f83e0ff24300c4b9",
         "compiler/rustc_metadata/src/rmeta/encoder.rs": "7f740fbaf9e81f4d518a95eeab485059c4f1a88c636df3104af03ec2817f5b73"
       },
       "dependency_edges": [

@@ -171,7 +171,7 @@ pub(crate) fn encode(
         }
     }
 
-    let (normalized_source, normalized_positions) = normalize_crlf(input.source);
+    let (normalized_source, normalized_positions) = normalize_source(input.source);
     let mut cx = Context::new(normalized_positions);
     cx.metadata_header(sdk);
 
@@ -467,21 +467,29 @@ fn codegen_attrs(cx: &mut Context, inline_never: bool) {
     for _ in 0..6 { cx.opaque.emit_u8(0); } // Remaining six Option fields.
 }
 
-/// rustc_span::normalize_newlines records the offset after each retained LF
-/// and the cumulative number of removed CR bytes. Borrow unchanged source.
-fn normalize_crlf(source: &str) -> (Cow<'_, str>, Vec<(u32, u32)>) {
+/// rustc_span records the removed BOM at position zero and the running
+/// difference after each retained LF. Borrow when no newline is changed.
+fn normalize_source(source: &str) -> (Cow<'_, str>, Vec<(u32, u32)>) {
+    let mut positions = Vec::new();
+    let mut bom = 0;
+    let source = if let Some(text) = source.strip_prefix('\u{feff}') {
+        bom = 3;
+        positions.push((0, bom));
+        text
+    } else {
+        source
+    };
     let mut lines = source.match_indices("\r\n").peekable();
     if lines.peek().is_none() {
-        return (Cow::Borrowed(source), Vec::new());
+        return (Cow::Borrowed(source), positions);
     }
     let mut normalized = String::with_capacity(source.len());
-    let mut positions = Vec::new();
     let mut previous = 0;
     for (start, _) in lines {
         normalized.push_str(&source[previous..start]);
         normalized.push('\n');
         previous = start + 2;
-        positions.push((normalized.len() as u32, (previous - normalized.len()) as u32));
+        positions.push((normalized.len() as u32, bom + (previous - normalized.len()) as u32));
     }
     normalized.push_str(&source[previous..]);
     (Cow::Owned(normalized), positions)

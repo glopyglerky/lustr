@@ -625,6 +625,8 @@ pub fn compile_ast_macro(def: &MacroRulesDef, exported: bool, strings: &[String]
 pub trait ProceduralMacros: Send + Sync {
     fn expand(&self, call: &Call, ctx: &ExpandCtx<'_>, strings: &mut Vec<String>)
         -> Option<Result<ProceduralExpansion, Diag>>;
+
+    fn exports_attribute(&self, _alias: &str, _name: &str) -> bool { false }
 }
 
 pub struct ProceduralExpansion {
@@ -1525,7 +1527,9 @@ impl<'a> Expander<'a> {
         let upto = lo.min(src.len());
         let line = src[..upto].iter().filter(|&&b| b == b'\n').count() as u32 + 1;
         let line_start = src[..upto].iter().rposition(|&b| b == b'\n').map_or(0, |p| p + 1);
-        let col = self.cur_src[line_start..upto].chars().count() as u32 + 1;
+        let prefix = &self.cur_src[line_start..upto];
+        let prefix = if line_start == 0 { prefix.strip_prefix('\u{feff}').unwrap_or(prefix) } else { prefix };
+        let col = prefix.chars().count() as u32 + 1;
         (line, col)
     }
 

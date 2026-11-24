@@ -2820,6 +2820,18 @@ fn main() { println!("{}", apply_mask(u64(57)).0); }
     assert!(!String::from_utf8_lossy(&symbols.stdout).lines().any(|line|
         line.split_whitespace().last().is_some_and(|name|
             name.len() == 18 && name.strip_prefix("f_").is_some_and(|suffix| suffix.bytes().all(|byte| byte.is_ascii_hexdigit())))));
+    let trace = f.root.join("trace.jsonl");
+    let original_trace = std::fs::read_to_string(&trace).unwrap();
+    assert!(original_trace.contains("\"entry\":\"rust-complement\""));
+    let path = f.root.join("src/main.rs");
+    let original_source = std::fs::read_to_string(&path).unwrap();
+    f.source("src/main.rs", &original_source.replace("test_attr::test", "test_attr::missing"));
+    let refused = f.invoke("missing", f.command("cargo").args(["check", "--frozen"]));
+    assert_eq!(refused.status.code(), Some(101));
+    assert!(String::from_utf8_lossy(&refused.stderr).contains("unresolved import"));
+    let later = std::fs::read_to_string(trace).unwrap();
+    assert!(!later[original_trace.len()..].contains("\"entry\":\"rust-complement\""), "{later}");
+    f.source("src/main.rs", &original_source);
 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
@@ -3078,7 +3090,12 @@ fn cargo_native_library_keeps_crlf_source_and_rust_metadata() {
     let consumer = f.source("consumer.rs", "fn main() { assert_eq!(native_crlf::identity(42), 42); }\n");
     let original = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
     f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
-    for (label, text) in [("lf", source.to_owned()), ("crlf", source.replace('\n', "\r\n"))] {
+    for (label, text) in [
+        ("lf", source.to_owned()),
+        ("crlf", source.replace('\n', "\r\n")),
+        ("bom", format!("\u{feff}{source}")),
+        ("bom-crlf", format!("\u{feff}{}", source.replace('\n', "\r\n"))),
+    ] {
         f.source("src/lib.rs", &text);
         for (operation, extension) in [("check", ".rmeta"), ("build", ".rlib")] {
             let stage = format!("{label}-{operation}");

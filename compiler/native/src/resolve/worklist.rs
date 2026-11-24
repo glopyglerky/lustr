@@ -4059,7 +4059,7 @@ fn resolve_one(
         );
     }
     lap!("resolve: strip+register");
-    match run_imports(tables, &imports, interner) {
+    match run_imports(tables, &imports, interner, input.procedural_macros.as_deref()) {
         Ok(ds) => inner_diags.extend(ds),
         Err(e) => inner_diags.push(Diag::new("L0506", Span::default(), e, "This is a lust bug; report it.")),
     }

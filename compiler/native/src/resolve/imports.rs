@@ -2443,7 +2443,10 @@ pub fn flatten_use(tree: &ast::UseTree, module: ModuleId, vis: VisKind, out: &mu
 /// rewrite pass leaves those paths to the std compat layer, and binding
 /// queries for them answer through the extern flat record the worklist
 /// adds.
-pub fn run_imports(tables: &mut ResolvedTables, imports: &[Import], interner: &Interner) -> Result<Vec<Diag>, String> {
+pub fn run_imports(
+    tables: &mut ResolvedTables, imports: &[Import], interner: &Interner,
+    procedural_macros: Option<&dyn crate::expand::ProceduralMacros>,
+) -> Result<Vec<Diag>, String> {
     let self_sym = interner.intern("self");
     let mut diags = Vec::new();
     let mut pending: Vec<(usize, &Import)> = imports.iter().enumerate().collect();
@@ -2554,6 +2557,17 @@ pub fn run_imports(tables: &mut ResolvedTables, imports: &[Import], interner: &I
     crate::resolve::order::report_order_imports(tables, imports, interner, &mut diags, &seen);
     for (i, imp) in &pending {
         if resolved[*i] {
+            continue;
+        }
+        if let ImportKind::Single { path, .. } = &imp.kind
+            && let [alias, name] = path.as_slice()
+            && let Some(provider) = procedural_macros
+            && provider.exports_attribute(interner.get(*alias), interner.get(*name))
+            && matches!(tables.resolve_path(imp.module, &path[..1], Namespace::Type, PathMode::Use,
+                imp.leading_colon, interner), PathRes::Absent)
+        {
+            diags.push(Diag::new("L0809", imp.span, "Rust procedural attribute import requires macro resolution", "")
+                .requiring_rust_complement());
             continue;
         }
         let (path, glob) = match &imp.kind {

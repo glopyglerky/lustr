@@ -50,6 +50,7 @@ struct HostArtifact {
     receipt_stamp: Stamp,
     receipt_bytes: Arc<[u8]>,
     definitions: BTreeMap<String, Definition>,
+    attributes: BTreeSet<String>,
 }
 
 pub(super) struct HostMacros {
@@ -198,8 +199,11 @@ impl HostArtifact {
         if stamp(path)? != artifact_stamp || stamp(&receipt)? != receipt_stamp {
             return Err("procedural macro inputs changed while being opened".into());
         }
-        let mut reader = data.strip_prefix(b"lustr-proc-macro-spans-v2\0")
-            .ok_or("invalid procedural macro span receipt")?;
+        let (mut reader, has_attributes) = if let Some(reader) = data.strip_prefix(b"lustr-proc-macro-spans-v3\0") {
+            (reader, true)
+        } else {
+            (data.strip_prefix(b"lustr-proc-macro-spans-v2\0").ok_or("invalid procedural macro span receipt")?, false)
+        };
         if text(&mut reader)? != format!("sha256={}", hash(&bytes)) {
             return Err("procedural macro span receipt identifies different artifact bytes".into());
         }
@@ -216,11 +220,19 @@ impl HostArtifact {
                 return Err("invalid procedural macro definition span".into());
             }
         }
+        let mut attributes = BTreeSet::new();
+        if has_attributes {
+            for _ in 0..number(&mut reader)? {
+                if !attributes.insert(text(&mut reader)?) {
+                    return Err("duplicate procedural attribute export".into());
+                }
+            }
+        }
         if !reader.is_empty() {
             return Err("trailing bytes in procedural macro span receipt".into());
         }
         Ok(Self { input: input.clone(), bytes, artifact_stamp, receipt, receipt_stamp,
-            receipt_bytes: data, definitions })
+            receipt_bytes: data, definitions, attributes })
     }
 }
 
@@ -238,6 +250,10 @@ fn text(reader: &mut &[u8]) -> Result<String, String> {
 }
 
 impl ProceduralMacros for HostMacros {
+    fn exports_attribute(&self, alias: &str, name: &str) -> bool {
+        self.artifacts.get(alias).is_some_and(|artifact| artifact.attributes.contains(name))
+    }
+
     fn expand(&self, call: &Call, ctx: &ExpandCtx<'_>, strings: &mut Vec<String>)
         -> Option<Result<ProceduralExpansion, Diag>>
     {
