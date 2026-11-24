@@ -1,5 +1,6 @@
-//! Reuse the pinned Rust link inputs for a freestanding executable whose only
-//! edits are in already assigned, closed Lust bodies.
+//! Reuse the pinned Rust link inputs for an executable whose only edits are
+//! in already assigned, closed Lust bodies.
+use crate::host_freestanding::Artifact;
 use rustc_codegen_ssa::{CompiledModule, CompiledModules, CrateInfo};
 use rustc_errors::{DiagInner, ErrorGuaranteed, TRACK_DIAGNOSTIC};
 use rustc_metadata::EncodedMetadata;
@@ -8,6 +9,7 @@ use rustc_session::{
     config::{OutFileName, OutputFilenames, OutputType},
 };
 use rustc_span::{SourceFileHash, SourceFileHashAlgorithm};
+use rustc_structures::CrateType;
 use std::{
     fs::{self, File, OpenOptions},
     io,
@@ -168,19 +170,25 @@ fn is_output_file(path: &Path) -> bool {
 impl Cache {
     pub(super) fn open(
         sess: &Session,
+        artifact: Artifact,
         output: &Path,
         args: &[String],
         source: &str,
         bodies: &[Range<u32>],
         symbols: &[String],
     ) -> Option<Self> {
-        // The first retained contract covers the existing freestanding
-        // request. Extra Rust externs and library search paths need their
-        // own resolved-input records before they can share it.
+        // Extra Rust externs and library search paths need their own
+        // resolved-input records. Debug objects can carry the original file
+        // checksum even when a changed body keeps its coordinates.
+        let link_args_match = match artifact {
+            Artifact::Freestanding => sess.opts.cg.link_args == ["-nostdlib", "-static"],
+            Artifact::CargoUnit => sess.opts.crate_types == [CrateType::Executable]
+                && !sess.opts.test && sess.opts.cg.link_args.is_empty(),
+        };
         if sess.opts.externs.iter().next().is_some()
             || !sess.opts.search_paths.is_empty()
             || sess.io.output_file.is_some()
-            || sess.opts.cg.link_args != ["-nostdlib", "-static"]
+            || !link_args_match
             || sess.opts.output_types.len() != 2
             || !sess.opts.output_types.contains_key(&OutputType::Exe)
             || !sess.opts.output_types.contains_key(&OutputType::DepInfo)

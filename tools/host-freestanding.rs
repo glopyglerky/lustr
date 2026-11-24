@@ -382,7 +382,7 @@ impl Callbacks for Composition<'_> {
                 .unwrap_or_else(|error| sess.dcx().span_fatal(first.span, error));
             if let Some(object) = object {
                 self.object.set(object).expect("one native object per invocation");
-                if matches!(self.artifact, Artifact::Freestanding) {
+                if !rust_debug {
                     let file = sess.source_map().lookup_source_file(first.span.lo());
                     let bodies = items.iter().map(|item| {
                         let span = native_function(item).unwrap().body.as_ref().unwrap().span;
@@ -392,7 +392,7 @@ impl Callbacks for Composition<'_> {
                     // coordinates for the persisted artifacts.
                     if file.normalized_pos.is_empty()
                         && let Some(cache) = file.src.as_ref().and_then(|source|
-                            host_retained_link::Cache::open(sess, self.output.as_deref().unwrap(), self.args, source, &bodies, &symbols))
+                            host_retained_link::Cache::open(sess, self.artifact, self.output.as_deref().unwrap(), self.args, source, &bodies, &symbols))
                     {
                         let outputs = rustc_interface::util::build_output_filenames(&krate.attrs, sess);
                         if let OutFileName::Real(deps) = outputs.path(OutputType::DepInfo)

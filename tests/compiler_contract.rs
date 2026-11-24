@@ -2759,6 +2759,34 @@ fn native_value_in_the_rust_test_harness() {
     let debug = f.succeeds("root-test-debug", Command::new("readelf")
         .args(["--debug-dump=info", "--wide"]).arg(artifact));
     assert!(String::from_utf8_lossy(&debug.stdout).lines().any(|line| line.contains("DW_AT_producer") && line.contains("Lustr")));
+
+    let trace_path = f.root.join("trace.jsonl");
+    let before = std::fs::read_to_string(&trace_path).unwrap();
+    assert!(before.contains("\"entry\":\"retained-rust-link-captured\""), "{before}");
+    let edited = source.replace("input ^ 19", "input ^ 18");
+    f.source("src/main.rs", &edited);
+    let release = || {
+        let mut command = cargo("release", false, false);
+        command.args(["run", "--release", "--frozen"]);
+        command
+    };
+    assert_eq!(f.succeeds("release-body-edit", &mut release()).stdout, b"43\n");
+    let after = std::fs::read_to_string(&trace_path).unwrap();
+    assert!(after[before.len()..].contains("\"entry\":\"retained-rust-link\""), "{after}");
+
+    f.source("src/main.rs", &edited.replace("compute(57)", "compute(58)"));
+    assert_eq!(f.succeeds("release-rust-edit", &mut release()).stdout, b"40\n");
+    let changed = std::fs::read_to_string(&trace_path).unwrap();
+    assert!(!changed[after.len()..].contains("\"entry\":\"retained-rust-link\""), "{changed}");
+
+    let release_artifact = f.root.join("release/release/async_program");
+    let existing = std::fs::read(&release_artifact).unwrap();
+    f.source("src/main.rs", &edited.replace("input ^ 18", "input ^ false"));
+    let rejected = f.invoke("release-invalid", &mut release());
+    assert_eq!(rejected.status.code(), Some(101));
+    assert!(rejected.stdout.is_empty());
+    assert_eq!(std::fs::read(release_artifact).unwrap(), existing);
+    f.source("src/main.rs", &root_test);
 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
