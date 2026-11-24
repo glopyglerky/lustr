@@ -180,8 +180,8 @@ impl ItemCodegen {
     }
 }
 
-/// Check the original items in one native unit. A link request also emits and
-/// publishes the object containing the checked symbols.
+/// Check the original definitions and their declarations in one native unit.
+/// A link request also publishes the object containing the checked functions.
 pub(crate) fn complete_items(
     args: &[String], source: &str, spans: &[Range<u32>], link: bool, policy_span: Option<Range<u32>>,
     codegen: ItemCodegen, original_matches: Option<&dyn Fn(&str) -> bool>,
@@ -190,9 +190,9 @@ pub(crate) fn complete_items(
         source, original_matches, spans, total_scalars: true, policy_span: policy_span.as_ref(), codegen: link.then_some(codegen),
     }))?;
     let program = prepared.program();
-    let mut bindings = Vec::with_capacity(spans.len());
-    if prepared.names.fns.len() != spans.len() {
-        return Err("native unit does not cover every selected definition".into());
+    let mut bindings = Vec::with_capacity(program.fns.len());
+    if prepared.names.fns.len() != program.fns.len() {
+        return Err("native unit does not provide a symbol for every checked function".into());
     }
     for (index, symbol) in prepared.names.fns.iter().enumerate() {
         let id = def::LocalDefId(index as u32);

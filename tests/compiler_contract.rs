@@ -2921,6 +2921,75 @@ fn main() {
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and binutils"]
+fn mixed_native_function_retains_original_rust_type_alias() {
+    let f = Fixture::new("mixed-native-type-alias");
+    f.source("Cargo.toml", "[package]\nname='alias_program'\nversion='0.1.0'\nedition='2024'\n");
+    let source = r#"
+use std::future::Future;
+use std::pin::pin;
+use std::task::{Context, Poll, Waker};
+
+fn mask(input: Word) -> Word { input ^ 19 }
+type Word = u64;
+
+async fn calculate() -> Word {
+    mask(std::future::ready(257).await)
+}
+
+fn main() {
+    let mut task = pin!(calculate());
+    let mut cx = Context::from_waker(Waker::noop());
+    let Poll::Ready(value) = task.as_mut().poll(&mut cx) else { unreachable!() };
+    println!("{value}");
+}
+"#;
+    f.source("src/main.rs", source);
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let rust = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let run = || {
+        let mut command = f.command("cargo");
+        command.args(["run", "--frozen"]);
+        command
+    };
+    assert_eq!(f.succeeds("native-first", &mut run()).stdout, b"274\n");
+    let binary = f.root.join("target/debug/alias_program");
+    let symbols = f.succeeds("symbols", Command::new("nm").arg(&binary));
+    assert!(String::from_utf8_lossy(&symbols.stdout).lines().any(|line| {
+        line.split_whitespace().last().and_then(|name| name.strip_prefix("f_"))
+            .is_some_and(|suffix| suffix.len() == 16 && suffix.bytes().all(|b| b.is_ascii_hexdigit()))
+    }));
+    let original = f.succeeds("original", f.command("cargo").env("RUSTC", &rust)
+        .env("CARGO_TARGET_DIR", f.root.join("oracle")).args(["run", "--frozen"]));
+    assert_eq!(original.stdout, b"274\n");
+
+    let trace = f.root.join("trace.jsonl");
+    let first = std::fs::read_to_string(&trace).unwrap();
+    let edited = source.replace("input ^ 19", "input ^ 18");
+    f.source("src/main.rs", &edited);
+    assert_eq!(f.succeeds("native-edit", &mut run()).stdout, b"275\n");
+    let later = std::fs::read_to_string(&trace).unwrap();
+    assert!(later[first.len()..].contains("\"entry\":\"retained-rust-link\""), "{later}");
+
+    let narrow = edited.replace("type Word = u64", "type Word = u16");
+    f.source("src/main.rs", &narrow);
+    assert_eq!(f.succeeds("alias-edit", &mut run()).stdout, b"275\n");
+    let changed = std::fs::read_to_string(&trace).unwrap();
+    assert!(!changed[later.len()..].contains("\"entry\":\"retained-rust-link\""), "{changed}");
+
+    let previous = std::fs::read(&binary).unwrap();
+    f.source("src/main.rs", &narrow.replace("type Word = u16", "type Word = u8"));
+    let invalid = f.invoke("bad-alias", &mut run());
+    assert_eq!(invalid.status.code(), Some(101));
+    assert!(invalid.stdout.is_empty());
+    assert!(String::from_utf8_lossy(&invalid.stderr).contains("literal out of range"));
+    assert_eq!(std::fs::read(binary).unwrap(), previous);
+    f.source("src/main.rs", &narrow);
+    assert_eq!(f.succeeds("repaired", &mut run()).stdout, b"275\n");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and binutils"]
 fn rust_attribute_named_test_can_change_the_mixed_crate_namespace() {
     let f = Fixture::new("mixed-test-macro-shadow");
     f.source("Cargo.toml", r#"

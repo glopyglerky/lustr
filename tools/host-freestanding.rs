@@ -3,7 +3,7 @@
 use crate::host_retained_link;
 use rustc_abi::CanonAbi;
 use rustc_ast::{
-    AttrStyle, BinOpKind, BindingMode, BlockCheckMode, Expr, ExprKind, FnRetTy,
+    AttrStyle, BinOpKind, BindingMode, BlockCheckMode, Defaultness, Expr, ExprKind, FnRetTy,
     ForeignItemKind, ForeignMod, Item, ItemKind, PatKind, Safety, Stmt, StmtKind, StrLit,
     StrStyle, Ty, TyKind, UseTree, UseTreeKind, Visibility, VisibilityKind, token::LitKind,
 };
@@ -24,7 +24,7 @@ use rustc_structures::CrateType;
 use rustc_target::callconv::{ArgAbi, ArgExtension, PassMode};
 use std::{
     any::Any,
-    collections::HashMap,
+    collections::{BTreeSet, HashMap},
     fs,
     io,
     os::unix::fs::DirBuilderExt,
@@ -72,11 +72,14 @@ struct Composition<'a> {
     scratch: Option<Scratch>,
 }
 
-fn primitive_integer(ty: &Ty) -> Option<PrimTy> {
+fn type_name(ty: &Ty) -> Option<Symbol> {
     let TyKind::Path(None, path) = &ty.kind else { return None };
     let [segment] = path.segments.as_slice() else { return None };
-    if segment.args.is_some() { return None; }
-    match PrimTy::from_name(segment.ident.name)? {
+    segment.args.is_none().then_some(segment.ident.name)
+}
+
+fn primitive_integer(name: Symbol) -> Option<PrimTy> {
+    match PrimTy::from_name(name)? {
         PrimTy::Int(ty::IntTy::I128) | PrimTy::Uint(ty::UintTy::U128) => None,
         primitive @ (PrimTy::Int(_) | PrimTy::Uint(_)) => Some(primitive),
         _ => None,
@@ -86,6 +89,7 @@ fn primitive_integer(ty: &Ty) -> Option<PrimTy> {
 struct IntegerSignature {
     args: Vec<PrimTy>,
     result: PrimTy,
+    declarations: BTreeSet<usize>,
 }
 
 impl IntegerSignature {
@@ -100,6 +104,18 @@ fn integer_bits(ty: PrimTy) -> u64 {
         PrimTy::Uint(ty) => ty.bit_width().unwrap_or(64),
         _ => unreachable!("a native integer signature contains only integers"),
     }
+}
+
+fn written_alias(item: &Item) -> Option<(Symbol, PrimTy)> {
+    let ItemKind::TyAlias(alias) = &item.kind else { return None };
+    if !item.attrs.is_empty() || !matches!(alias.defaultness, Defaultness::Final)
+        || !alias.generics.params.is_empty() || !alias.generics.where_clause.is_empty()
+        || !alias.after_where_clause.is_empty() || !alias.bounds.is_empty()
+        || PrimTy::from_name(alias.ident.name).is_some()
+    {
+        return None;
+    }
+    Some((alias.ident.name, primitive_integer(type_name(alias.ty.as_deref()?)?)?))
 }
 
 fn imports_name(tree: &UseTree, parent: Option<Symbol>, expected: Symbol) -> bool {
@@ -164,7 +180,7 @@ fn closed_expression(expression: &Expr, parameters: &[Ident]) -> Option<bool> {
     }
 }
 
-fn native_function(item: &Item) -> Option<IntegerSignature> {
+fn native_function(item: &Item, aliases: &HashMap<Symbol, Option<(usize, PrimTy)>>) -> Option<IntegerSignature> {
     let ItemKind::Fn(function) = &item.kind else { return None };
     if !item.attrs.is_empty() || function.sig.header.has_qualifiers()
         || !matches!(item.vis.kind, VisibilityKind::Public | VisibilityKind::Inherited)
@@ -174,15 +190,26 @@ fn native_function(item: &Item) -> Option<IntegerSignature> {
         return None;
     }
     let FnRetTy::Ty(result) = &function.sig.decl.output else { return None };
+    let mut declarations = BTreeSet::new();
+    let mut resolved_type = |ty: &Ty| {
+        let name = type_name(ty)?;
+        if let Some(primitive) = primitive_integer(name) {
+            return Some(primitive);
+        }
+        let (index, primitive) = aliases.get(&name).copied().flatten()?;
+        declarations.insert(index);
+        Some(primitive)
+    };
     let mut parameters = Vec::with_capacity(function.sig.decl.inputs.len());
     let mut args = Vec::with_capacity(function.sig.decl.inputs.len());
     for parameter in &function.sig.decl.inputs {
         let PatKind::Ident(BindingMode::NONE, name, None) = parameter.pat.kind else { return None };
         if !parameter.attrs.is_empty() { return None; }
         parameters.push(name);
-        args.push(primitive_integer(&parameter.ty)?);
+        args.push(resolved_type(&parameter.ty)?);
     }
-    let signature = IntegerSignature { args, result: primitive_integer(result)? };
+    let result = resolved_type(result)?;
+    let signature = IntegerSignature { args, result, declarations };
     let body = function.body.as_ref()?;
     let [statement] = body.stmts.as_slice() else { return None };
     let StmtKind::Expr(expression) = &statement.kind else { return None };
@@ -194,7 +221,7 @@ impl Composition<'_> {
     fn complete_items(
         &self, sess: &Session, input: &Path, items: &[&Item], directory: &Path, no_std: Option<Span>,
         codegen: crate::native_object::ItemCodegen,
-    ) -> Result<(Option<PathBuf>, Vec<String>), String> {
+    ) -> Result<(Option<PathBuf>, Vec<(String, String)>), String> {
         let file = sess.source_map().lookup_source_file(items[0].span.lo());
         let source = file.src.as_ref().ok_or("missing original source snapshot")?;
         let verify_original = |text: &str| {
@@ -228,25 +255,10 @@ impl Composition<'_> {
         let report = sess.time("lustr_native_items", || {
             crate::native_object::complete_items(&args, source, &extents, link, policy_span, codegen, original_matches)
         })?;
-        if report.len() != items.len() {
-            return Err("native object does not cover every selected definition".into());
-        }
-        let mut symbols = Vec::with_capacity(items.len());
-        for (item, (name, symbol)) in items.iter().zip(report) {
-            let ItemKind::Fn(function) = &item.kind else { unreachable!() };
-            if name != function.ident.name.as_str()
-                || !symbol.starts_with("f_")
-                || !symbol.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_')
-                || symbols.contains(&symbol)
-            {
-                return Err("invalid native object symbol binding".into());
-            }
-            symbols.push(symbol);
-        }
         if object.is_file() != link {
             return Err("native compiler produced the wrong artifact for this request".into());
         }
-        Ok((link.then_some(object), symbols))
+        Ok((link.then_some(object), report))
     }
 
 }
@@ -392,8 +404,16 @@ impl Callbacks for Composition<'_> {
                     }
             });
         let mut primitive_bindings = HashMap::new();
+        let mut aliases = HashMap::new();
+        if matches!(self.artifact, Artifact::CargoUnit) {
+            for (index, item) in krate.items.iter().enumerate() {
+                if let Some((name, primitive)) = written_alias(item) {
+                    aliases.entry(name).and_modify(|prior| *prior = None).or_insert(Some((index, primitive)));
+                }
+            }
+        }
         let selected: Vec<_> = krate.items.iter().enumerate().filter_map(|(index, item)| {
-            let signature = native_function(item)?;
+            let signature = native_function(item, &aliases)?;
             if matches!(self.artifact, Artifact::Freestanding) {
                 let word = PrimTy::Uint(ty::UintTy::U64);
                 if signature.args != [word] || signature.result != word { return None; }
@@ -417,13 +437,30 @@ impl Callbacks for Composition<'_> {
             let directory = Scratch::create(self.output.as_deref().unwrap())
                 .unwrap_or_else(|error| sess.dcx().fatal(format!("cannot create native item work directory: {error}")));
             let input = self.input.as_deref().unwrap();
-            let items: Vec<_> = selected.iter().map(|(_, item, _)| *item).collect();
-            let (object, symbols) = self.complete_items(sess, input, &items, &directory.0, no_std_attr.map(|attr| attr.span), codegen)
+            let context: BTreeSet<_> = selected.iter().flat_map(|(index, _, signature)|
+                std::iter::once(*index).chain(signature.declarations.iter().copied())).collect();
+            let items: Vec<_> = context.into_iter().map(|index| krate.items[index].as_ref()).collect();
+            let (object, report) = self.complete_items(sess, input, &items, &directory.0, no_std_attr.map(|attr| attr.span), codegen)
                 .unwrap_or_else(|error| sess.dcx().span_fatal(first.span, error));
+            if report.len() != selected.len() {
+                sess.dcx().span_fatal(first.span, "native object does not cover every selected definition");
+            }
+            let mut symbols = Vec::with_capacity(selected.len());
+            for ((_, item, _), (name, symbol)) in selected.iter().zip(report) {
+                let ItemKind::Fn(function) = &item.kind else { unreachable!() };
+                if name != function.ident.name.as_str()
+                    || !symbol.starts_with("f_")
+                    || !symbol.bytes().all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+                    || symbols.contains(&symbol)
+                {
+                    sess.dcx().span_fatal(item.span, "invalid native object symbol binding");
+                }
+                symbols.push(symbol);
+            }
             if let Some(object) = object {
                 self.object.set(object).expect("one native object per invocation");
                 let file = sess.source_map().lookup_source_file(first.span.lo());
-                let bodies = items.iter().map(|item| {
+                let bodies = selected.iter().map(|(_, item, _)| {
                     let ItemKind::Fn(function) = &item.kind else { unreachable!() };
                     let span = function.body.as_ref().unwrap().span;
                     file.relative_position(span.lo()).0..file.relative_position(span.hi()).0
