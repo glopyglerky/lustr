@@ -17,7 +17,7 @@ use crate::{
     protocol::ExecutableExtern,
 };
 
-use super::{Stamp, hash, stamp};
+use super::{ImportFailure, Stamp, hash, stamp};
 
 struct Definition {
     filename: PathBuf,
@@ -132,22 +132,32 @@ impl Drop for MacroRequest<'_> {
 impl HostMacros {
     pub(super) fn open(
         inputs: &[ExecutableExtern], installation: &Path, cwd: &Path,
-    ) -> Result<Option<Arc<Self>>, String> {
+    ) -> Result<Option<Arc<Self>>, ImportFailure> {
+        let mut providers = inputs.iter().filter(|input| input.is_host_macro()).peekable();
+        if providers.peek().is_none() {
+            return Ok(None);
+        }
+        let runtime = installation.join("libexec/lustr-macro-expansion");
+        match fs::symlink_metadata(&runtime) {
+            Ok(_) => {}
+            Err(error) if error.kind() == io::ErrorKind::NotFound => {
+                return Err(ImportFailure::RequiresRust(
+                    "the installation has no native procedural macro expansion service".into(),
+                ));
+            }
+            Err(error) => return Err(format!("inspect the native procedural macro service: {error}").into()),
+        }
+        let client = runtime.join("bin/lustr-expand-proc-macro");
+        let server = runtime.join("bin/rust-analyzer-proc-macro-srv");
+        if !client.is_file() || !server.is_file() {
+            return Err("installed native procedural macro expansion service is incomplete".into());
+        }
         let mut artifacts = BTreeMap::new();
-        for input in inputs.iter().filter(|input| input.is_host_macro()) {
+        for input in providers {
             let artifact = HostArtifact::open(input)?;
             if artifacts.insert(input.metadata.alias.clone(), artifact).is_some() {
                 return Err("duplicate host procedural macro alias".into());
             }
-        }
-        if artifacts.is_empty() {
-            return Ok(None);
-        }
-        let runtime = installation.join("libexec/lustr-macro-expansion");
-        let client = runtime.join("bin/lustr-expand-proc-macro");
-        let server = runtime.join("bin/rust-analyzer-proc-macro-srv");
-        if !client.is_file() || !server.is_file() {
-            return Err("host procedural macro expansion is unavailable in this installation".into());
         }
         Ok(Some(Arc::new(Self { client, server, cwd: cwd.into(), artifacts, used: Mutex::default(), worker: Mutex::default() })))
     }

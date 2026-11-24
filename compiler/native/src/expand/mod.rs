@@ -2149,11 +2149,11 @@ impl<'a> Expander<'a> {
             if let Some((_, content, end)) = use_span_at(trees, cursor) {
                 if enabled && !conditional_attributes {
                     let path = &trees[content..end - 1];
-                    // The parser's actual import leaves include renames.
-                    // A group with `self` or a glob can bind another crate
-                    // name without an explicit leaf.
-                    closed_scope &= !path.iter().any(|tree| matches!(tree, Tt::Delim(..)) || tree.is_tok(Tok::Star));
-                    for (segments, leading, _) in collect_use_sites(path, &[], self.ctx.interner) {
+                    closed_scope &= !implicit_use_bindings(path);
+                    for (segments, leading, imported) in collect_use_sites(path, &[], self.ctx.interner) {
+                        // The actual import leaves include nested groups and
+                        // renames whose names can shadow the host crate.
+                        closed_scope &= !provider.has_crate_alias(self.ctx.interner.get(imported));
                         if let [alias, name] = segments.as_slice()
                             && provider.exports_attribute(&alias.text, &name.text)
                         {
@@ -5383,6 +5383,16 @@ fn collect_use_sites(trees: &[Tt], prefix: &[Seg], interner: &Interner) -> Vec<(
         out.push((segs, leading_colon, last));
     }
     out
+}
+
+// Globs and `use module::{self}` can bind a crate alias without an
+// explicit named leaf in collect_use_sites.
+fn implicit_use_bindings(trees: &[Tt]) -> bool {
+    trees.iter().enumerate().any(|(index, tree)| match tree {
+        Tt::Delim(Delim::Brace, group, _) => implicit_use_bindings(group),
+        _ => tree.is_tok(Tok::Star) || tree.is_tok(Tok::SelfLower)
+            && trees.get(index + 1).is_none_or(|next| !next.is_tok(Tok::PathSep)),
+    })
 }
 
 #[cfg(test)]

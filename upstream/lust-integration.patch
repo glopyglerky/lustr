@@ -15384,7 +15384,7 @@ index eca21eee99e20a7497754158516c42a8ed50ef06..1bcfa9836f71eff0998f871c3165447e
                      Some(Tok::Plus) => {
                          out.pop();
 diff --git a/src/expand/mod.rs b/src/expand/mod.rs
-index 618adcd9383382846b7ac027b4f257a55c3d1d37..89a8b4767edf87f5390623f817d69d780b1f88c4 100644
+index 618adcd9383382846b7ac027b4f257a55c3d1d37..0378ac5d1a1037daa5221f54c9e9d17afa81f4aa 100644
 --- a/src/expand/mod.rs
 +++ b/src/expand/mod.rs
 @@ -226,7 +226,8 @@ pub fn hash_token(h: &mut impl Hasher, tok: &Token, strings: &[String]) {
@@ -15790,11 +15790,11 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..89a8b4767edf87f5390623f817d69d78
 +            if let Some((_, content, end)) = use_span_at(trees, cursor) {
 +                if enabled && !conditional_attributes {
 +                    let path = &trees[content..end - 1];
-+                    // The parser's actual import leaves include renames.
-+                    // A group with `self` or a glob can bind another crate
-+                    // name without an explicit leaf.
-+                    closed_scope &= !path.iter().any(|tree| matches!(tree, Tt::Delim(..)) || tree.is_tok(Tok::Star));
-+                    for (segments, leading, _) in collect_use_sites(path, &[], self.ctx.interner) {
++                    closed_scope &= !implicit_use_bindings(path);
++                    for (segments, leading, imported) in collect_use_sites(path, &[], self.ctx.interner) {
++                        // The actual import leaves include nested groups and
++                        // renames whose names can shadow the host crate.
++                        closed_scope &= !provider.has_crate_alias(self.ctx.interner.get(imported));
 +                        if let [alias, name] = segments.as_slice()
 +                            && provider.exports_attribute(&alias.text, &name.text)
 +                        {
@@ -16051,7 +16051,24 @@ index 618adcd9383382846b7ac027b4f257a55c3d1d37..89a8b4767edf87f5390623f817d69d78
                  }
                  let written_lit = is_str_lit_arg(&call.inner);
                  let msg = if name == "assert" { builtin::assert_message(self, &call.inner, call.span)? } else { Vec::new() };
-@@ -5319,7 +5475,7 @@ mod tests {
+@@ -5229,6 +5385,16 @@ fn collect_use_sites(trees: &[Tt], prefix: &[Seg], interner: &Interner) -> Vec<(
+     out
+ }
+ 
++// Globs and `use module::{self}` can bind a crate alias without an
++// explicit named leaf in collect_use_sites.
++fn implicit_use_bindings(trees: &[Tt]) -> bool {
++    trees.iter().enumerate().any(|(index, tree)| match tree {
++        Tt::Delim(Delim::Brace, group, _) => implicit_use_bindings(group),
++        _ => tree.is_tok(Tok::Star) || tree.is_tok(Tok::SelfLower)
++            && trees.get(index + 1).is_none_or(|next| !next.is_tok(Tok::PathSep)),
++    })
++}
++
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+@@ -5319,7 +5485,7 @@ mod tests {
          let ctx = ExpandCtx::for_file(&interner, &known, std::path::Path::new("test.rs"), src, false);
          let out = expand_lexed(lexed, &ctx).expect("expansion");
          let tmps: Vec<CtxtId> =

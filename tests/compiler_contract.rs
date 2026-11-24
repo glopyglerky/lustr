@@ -2987,7 +2987,8 @@ fn main() { println!("{}", apply_mask(u64(57)).0); }
     assert_eq!(refused.status.code(), Some(101));
     assert!(String::from_utf8_lossy(&refused.stderr).contains("unresolved import"));
     let later = std::fs::read_to_string(trace).unwrap();
-    assert!(!later[original_trace.len()..].contains("\"entry\":\"rust-complement\""), "{later}");
+    let native_expansion = f.package.join("libexec/lustr-macro-expansion/bin/lustr-expand-proc-macro").is_file();
+    assert_eq!(later[original_trace.len()..].contains("\"entry\":\"rust-complement\""), !native_expansion, "{later}");
     f.source("src/main.rs", &original_source);
 }
 
@@ -3038,6 +3039,7 @@ pub fn test(_: TokenStream, item: TokenStream) -> TokenStream {
     let rust = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
     for (form, attribute, expected) in [
         ("imported", "use trace_macros::test;\n#[test]", &["attribute", "function-like"][..]),
+        ("grouped", "use trace_macros::{test};\n#[test]", &["attribute", "function-like"][..]),
         ("qualified", "#[trace_macros::test]", &["attribute", "function-like"][..]),
         ("disabled", "#[cfg(any())]\n#[trace_macros::test]", &["function-like"][..]),
     ] {
