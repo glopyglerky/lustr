@@ -431,6 +431,10 @@ fn prepare_request(r: Request, artifact: bool, capture: bool, items: Option<Item
         if total && !crate::driver::library::total_scalar_body(&body) {
             return Err("the checked native body needs an unrepresented runtime operation".into());
         }
+        if selected_items.is_some_and(|selection| selection.codegen.is_none()) {
+            // A mixed Cargo check needs the checked types and symbols only.
+            continue;
+        }
         let mut generated = cgen::names::with(Some(&names), || {
             if let Some(codegen) = llvm_codegen {
                 cgen::gen_fn_cargo_llvm(&p, &body, &map, first_line, &slots, codegen.rust_debug, true)
