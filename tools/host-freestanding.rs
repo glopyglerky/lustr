@@ -108,7 +108,7 @@ fn integer_bits(ty: PrimTy) -> u64 {
 
 fn written_alias(item: &Item) -> Option<(Symbol, PrimTy)> {
     let ItemKind::TyAlias(alias) = &item.kind else { return None };
-    if !item.attrs.is_empty() || !matches!(alias.defaultness, Defaultness::Final)
+    if !item.attrs.is_empty() || !matches!(alias.defaultness, Defaultness::Implicit)
         || !alias.generics.params.is_empty() || !alias.generics.where_clause.is_empty()
         || !alias.after_where_clause.is_empty() || !alias.bounds.is_empty()
         || PrimTy::from_name(alias.ident.name).is_some()
