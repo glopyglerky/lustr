@@ -152,15 +152,24 @@ pub(crate) fn prepare(args: &[String]) -> Result<PreparedUnit, String> {
 /// owners. Keep the full original source and positions for this native item.
 pub(crate) fn prepare_item(args: &[String], source: &str, span: Range<u32>) -> Result<PreparedUnit, String> {
     prepare_request(request(args)?, false, true, Some(ItemSelection {
-        source, original_matches: None, spans: &[span], total_scalars: false, policy_span: None, codegen: None,
+        source, original_matches: None, items: &[SelectedItem { span, kind: SelectedKind::Function }],
+        total_scalars: false, policy_span: None, codegen: None,
     }))
 }
+
+pub(crate) struct SelectedItem {
+    pub(crate) span: Range<u32>,
+    pub(crate) kind: SelectedKind,
+}
+
+#[derive(Clone, Copy)]
+pub(crate) enum SelectedKind { Function, TypeAlias }
 
 #[derive(Clone, Copy)]
 struct ItemSelection<'a> {
     source: &'a str,
     original_matches: Option<&'a dyn Fn(&str) -> bool>,
-    spans: &'a [Range<u32>],
+    items: &'a [SelectedItem],
     total_scalars: bool,
     policy_span: Option<&'a Range<u32>>,
     codegen: Option<ItemCodegen>,
@@ -183,11 +192,11 @@ impl ItemCodegen {
 /// Check the original definitions and their declarations in one native unit.
 /// A link request also publishes the object containing the checked functions.
 pub(crate) fn complete_items(
-    args: &[String], source: &str, spans: &[Range<u32>], link: bool, policy_span: Option<Range<u32>>,
+    args: &[String], source: &str, items: &[SelectedItem], link: bool, policy_span: Option<Range<u32>>,
     codegen: ItemCodegen, original_matches: Option<&dyn Fn(&str) -> bool>,
 ) -> Result<Vec<(String, String)>, String> {
     let prepared = prepare_request(request(args)?, false, true, Some(ItemSelection {
-        source, original_matches, spans, total_scalars: true, policy_span: policy_span.as_ref(), codegen: link.then_some(codegen),
+        source, original_matches, items, total_scalars: true, policy_span: policy_span.as_ref(), codegen: link.then_some(codegen),
     }))?;
     let program = prepared.program();
     let mut bindings = Vec::with_capacity(program.fns.len());
@@ -212,12 +221,13 @@ pub(crate) fn complete_items(
     Ok(bindings)
 }
 
-fn item_tokens(mut lexed: lexer::Lexed, extents: &[Range<u32>], policy_len: usize) -> Result<lexer::Lexed, String> {
+fn item_tokens(mut lexed: lexer::Lexed, items: &[SelectedItem], policy_len: usize) -> Result<lexer::Lexed, String> {
     let tokens = &lexed.tokens;
     let policy = tokens.get(..policy_len).ok_or("missing original crate policy")?;
     let mut selected = policy.to_vec();
     let mut previous_end = policy.len();
-    for extent in extents {
+    for item in items {
+        let extent = &item.span;
         let start = tokens.partition_point(|token| token.span.hi <= extent.start);
         let end = tokens.partition_point(|token| token.span.lo < extent.end);
         let item = tokens.get(start..end).ok_or("native item range is out of order")?;
@@ -237,12 +247,12 @@ fn item_tokens(mut lexed: lexer::Lexed, extents: &[Range<u32>], policy_len: usiz
 fn lex_selected_items(
     selected: ItemSelection<'_>, map: &diag::SourceMap, file: diag::FileId, interner: &intern::Interner,
 ) -> Result<lexer::Lexed, String> {
-    if selected.spans.is_empty() {
+    if selected.items.is_empty() {
         return Err("no selected native items".into());
     }
-    let mut parts = Vec::with_capacity(selected.spans.len() + usize::from(selected.policy_span.is_some()));
+    let mut parts = Vec::with_capacity(selected.items.len() + usize::from(selected.policy_span.is_some()));
     let mut previous_end = 0;
-    for extent in selected.policy_span.into_iter().chain(selected.spans) {
+    for extent in selected.policy_span.into_iter().chain(selected.items.iter().map(|item| &item.span)) {
         let text = selected.source.get(extent.start as usize..extent.end as usize)
             .filter(|text| !text.is_empty() && extent.start >= previous_end)
             .ok_or("native item does not match an ordered original source range")?;
@@ -297,7 +307,7 @@ fn prepare_request(r: Request, artifact: bool, capture: bool, items: Option<Item
         lex_selected_items(selected, &map, file, &i)?
     } else {
         let lexed = lexer::lex(&source,file,0,&i).map_err(|e| diag::render(&mut vec![e], &map, &source, false, 20))?;
-        if let Some(selected) = items { item_tokens(lexed, selected.spans, policy_len)? } else { lexed }
+        if let Some(selected) = items { item_tokens(lexed, selected.items, policy_len)? } else { lexed }
     };
     // This boundary consumes a real crate attribute and carries its policy
     // into a freestanding object pipeline. Other root attributes still need
@@ -353,12 +363,27 @@ fn prepare_request(r: Request, artifact: bool, capture: bool, items: Option<Item
         (a, None)
     };
     if let Some(selected) = items
-        && (selected.spans.is_empty() || a.items.len() != selected.spans.len()
-            || a.items.iter().any(|item| !matches!(item.kind, ast::ItemKind::Fn(_))))
+        && (selected.items.is_empty() || a.items.len() != selected.items.len()
+            || !a.items.iter().zip(selected.items).all(|(item, selected)| matches!(
+                (&item.kind, selected.kind),
+                (ast::ItemKind::Fn(_), SelectedKind::Function) | (ast::ItemKind::Type(_), SelectedKind::TypeAlias)
+            )))
     {
-        return Err("each selected native item must be one function definition".into());
+        return Err("each selected native range must match its original function or type declaration".into());
     }
-    if a.items.iter().chain(&a.stmt_items).any(|item|(!artifact&&matches!(item.vis,ast::Vis::Restricted{..})) || !matches!(item.kind,ast::ItemKind::Fn(_)|ast::ItemKind::Const(_)) && !(artifact && matches!(item.kind,ast::ItemKind::Struct(_)|ast::ItemKind::Enum(_))))
+    let needs_resolution = |item: &ast::Item, selected_declarations: bool| {
+        if !artifact && matches!(item.vis, ast::Vis::Restricted { .. }) {
+            return true;
+        }
+        match item.kind {
+            ast::ItemKind::Fn(_) | ast::ItemKind::Const(_) => false,
+            ast::ItemKind::Type(_) => !selected_declarations,
+            ast::ItemKind::Struct(_) | ast::ItemKind::Enum(_) => !artifact,
+            _ => true,
+        }
+    };
+    if a.items.iter().any(|item| needs_resolution(item, selected_items.is_some()))
+        || a.stmt_items.iter().any(|item| needs_resolution(item, false))
         || a.exprs.iter().any(|e|matches!(e,ast::Expr::Macro{..}|ast::Expr::MacroCall(_)))
     { return Err("native unit resolution/expansion is required for these items or macros".into()); }
     // The resolver must have bound each qualified path to a real local def.

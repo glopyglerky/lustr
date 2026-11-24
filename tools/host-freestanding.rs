@@ -241,7 +241,15 @@ impl Composition<'_> {
                 .map_err(|error| format!("cannot select the original item: {error:?}"))?;
             Ok::<_, String>(file.relative_position(span.lo()).0..file.relative_position(span.hi()).0)
         };
-        let extents = items.iter().map(|item| extent(item.span)).collect::<Result<Vec<_>, _>>()?;
+        use crate::native_object::{SelectedItem, SelectedKind};
+        let selected = items.iter().map(|item| {
+            let kind = match item.kind {
+                ItemKind::Fn(_) => SelectedKind::Function,
+                ItemKind::TyAlias(_) => SelectedKind::TypeAlias,
+                _ => return Err("unsupported native item selection kind".into()),
+            };
+            Ok::<_, String>(SelectedItem { span: extent(item.span)?, kind })
+        }).collect::<Result<Vec<_>, _>>()?;
         let policy_span = no_std.map(extent).transpose()?;
         let args = [
             "--crate-name".to_owned(), name.to_owned(), "--edition=2024".into(), "--crate-type=lib".into(),
@@ -253,7 +261,7 @@ impl Composition<'_> {
             object.to_str().ok_or("native item output path must be UTF-8")?.to_owned(),
         ];
         let report = sess.time("lustr_native_items", || {
-            crate::native_object::complete_items(&args, source, &extents, link, policy_span, codegen, original_matches)
+            crate::native_object::complete_items(&args, source, &selected, link, policy_span, codegen, original_matches)
         })?;
         if object.is_file() != link {
             return Err("native compiler produced the wrong artifact for this request".into());
