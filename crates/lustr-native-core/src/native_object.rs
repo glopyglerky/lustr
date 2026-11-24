@@ -437,7 +437,8 @@ fn prepare_request(r: Request, artifact: bool, capture: bool, items: Option<Item
         }
         let mut generated = cgen::names::with(Some(&names), || {
             if let Some(codegen) = llvm_codegen {
-                cgen::gen_fn_cargo_llvm(&p, &body, &map, first_line, &slots, codegen.rust_debug, true)
+                let debug = codegen.rust_debug.then_some(codegen.optimization != crate::protocol::OptLevel::None);
+                cgen::gen_fn_cargo_llvm(&p, &body, &map, first_line, &slots, debug, true)
             } else if total {
                 cgen::gen_fn_total(&p, &body, &map, first_line, &slots)
             } else {

@@ -471,7 +471,7 @@ impl FnGen<'_, '_> {
     /// Generates fn `fl_<id>` and its C side (helpers, the C ABI wrapper `f_<id>`, the
     /// trampoline) into `self.out`. Returns the LLVM definition and declarations, or an
     /// internal error.
-    pub(super) fn function_ll(&mut self, rust_debug: bool, scalar_export: bool) -> Result<LlFn, String> {
+    pub(super) fn function_ll(&mut self, debug_optimized: Option<bool>, scalar_export: bool) -> Result<LlFn, String> {
         let p = self.p;
         let fid = self.body.fn_id;
         let slot = self.slots.of(fid);
@@ -479,7 +479,8 @@ impl FnGen<'_, '_> {
         let linkage = body_symbol(&tag, scalar_export);
         // Archive publication can rename the scalar object symbol. Its source
         // subprogram must not advertise the pre-publication linkage name.
-        let mut debug = if rust_debug { Some(DebugFn::new(self, (!scalar_export).then_some(linkage.as_str()))?) } else { None };
+        let mut debug = debug_optimized.map(|optimized|
+            DebugFn::new(self, (!scalar_export).then_some(linkage.as_str()), optimized)).transpose()?;
         let n = self.body.blocks.len();
         let mut reachable = vec![false; n];
         let mut stack = vec![0usize];

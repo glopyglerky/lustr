@@ -40,7 +40,7 @@ pub(super) struct DebugFn {
 }
 
 impl DebugFn {
-    pub(super) fn new(function: &FnGen<'_, '_>, linkage: Option<&str>) -> Result<Self, String> {
+    pub(super) fn new(function: &FnGen<'_, '_>, linkage: Option<&str>, optimized: bool) -> Result<Self, String> {
         let mut debug = Self {
             entries: vec![String::new()],
             files: BTreeMap::new(),
@@ -56,7 +56,7 @@ impl DebugFn {
         let def = function.p.fn_def(function.body.fn_id);
         let (file, line, _) = debug.source(function, def.name_span).ok_or("Rust debug function has no source location")?;
         debug.entries[0] = format!(
-            "distinct !DICompileUnit(language: DW_LANG_Rust, file: !%{file}, producer: \"Lustr\", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug)"
+            "distinct !DICompileUnit(language: DW_LANG_Rust, file: !%{file}, producer: \"Lustr\", isOptimized: {optimized}, runtimeVersion: 0, emissionKind: FullDebug)"
         );
         let name = function.p.display_path(function.p.fn_info(function.body.fn_id).name);
         let mut types = Vec::new();
@@ -74,8 +74,9 @@ impl DebugFn {
         }
         let signature = debug.push(format!("!DISubroutineType(types: !{{{}}})", types.join(", ")));
         let linkage = linkage.map_or_else(String::new, |name| format!(", linkageName: {}", quote(name)));
+        let optimization_flag = if optimized { " | DISPFlagOptimized" } else { "" };
         debug.subprogram = debug.push(format!(
-            "distinct !DISubprogram(name: {}{linkage}, scope: !%{file}, file: !%{file}, line: {line}, type: !%{signature}, scopeLine: {line}, spFlags: DISPFlagDefinition, unit: !%0)",
+            "distinct !DISubprogram(name: {}{linkage}, scope: !%{file}, file: !%{file}, line: {line}, type: !%{signature}, scopeLine: {line}, spFlags: DISPFlagDefinition{optimization_flag}, unit: !%0)",
             quote(&name)
         ));
         for (i, local) in function.body.locals.iter().enumerate().skip(1) {

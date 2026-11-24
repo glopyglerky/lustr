@@ -335,7 +335,6 @@ impl Callbacks for Composition<'_> {
         };
         if self.input.is_none() || !plain_policy
             || matches!(self.artifact, Artifact::Freestanding) && (sess.opts.optimize != OptLevel::No || rust_debug)
-            || rust_debug && sess.opts.optimize != OptLevel::No
             || sess.opts.edition != Edition::Edition2024 || sess.opts.crate_name.is_none()
             || sess.opts.lint_opts.iter().any(|(lint, _)| lint != "unused_crate_dependencies")
         {

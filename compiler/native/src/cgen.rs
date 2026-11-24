@@ -2472,20 +2472,20 @@ fn trampoline(p: &Program, f: LocalDefId, slot: u32) -> String {
 /// Generates C for one function body. `base_line` is the line of its `fn` keyword, in the
 /// file that defines it; `slots` maps every LocalDefId to its slot in `lust_fns`.
 pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32]) -> FnOut {
-    gen_fn_policy(p, body, map, base_line, slots, false, false, false)
+    gen_fn_policy(p, body, map, base_line, slots, false, None, false)
 }
 
 /// Generate a body already proved total by the mixed object boundary.
 pub fn gen_fn_total(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32]) -> FnOut {
-    gen_fn_policy(p, body, map, base_line, slots, true, false, false)
+    gen_fn_policy(p, body, map, base_line, slots, true, None, false)
 }
 
-pub(crate) fn gen_fn_cargo_llvm(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32], rust_debug: bool, scalar_library: bool) -> FnOut {
-    let source = rust_debug.then(|| rust_debug_source(p, body.fn_id, map)).flatten();
-    if rust_debug && source.is_none() && !shipped_debug_body(p, body.fn_id) {
+pub(crate) fn gen_fn_cargo_llvm(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32], debug_optimized: Option<bool>, scalar_library: bool) -> FnOut {
+    let source = debug_optimized.and_then(|_| rust_debug_source(p, body.fn_id, map));
+    if debug_optimized.is_some() && source.is_none() && !shipped_debug_body(p, body.fn_id) {
         return FnOut { error: Some("Rust debug function source cannot be bound to the native body".into()), ..Default::default() };
     }
-    let mut output = gen_fn_policy(p, body, map, base_line, slots, scalar_library, rust_debug, scalar_library);
+    let mut output = gen_fn_policy(p, body, map, base_line, slots, scalar_library, debug_optimized, scalar_library);
     output.rust_debug_source = source;
     output
 }
@@ -2509,7 +2509,7 @@ fn shipped_debug_body(p: &Program, id: LocalDefId) -> bool {
     p.std_source_span(p.fn_def(id).name_span) || p.fn_shipped_crate(id).is_some()
 }
 
-fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32], nounwind: bool, rust_debug: bool, scalar_library: bool) -> FnOut {
+fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32], nounwind: bool, debug_optimized: Option<bool>, scalar_library: bool) -> FnOut {
     if !has_generated_body(p, body.fn_id) {
         return FnOut { error: Some(no_body_error(p, body, body.fn_id)), ..Default::default() };
     }
@@ -2542,10 +2542,10 @@ fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slot
     }
     // The LLVM backend writes the C side (prelude and trampoline included) itself.
     let mut llfn = None;
-    if rust_debug || scalar_library || ll::on(p) {
+    if debug_optimized.is_some() || scalar_library || ll::on(p) {
         // Only the requested Rust crate has a debug source contract.
         // The text of shipped std shims is not part of that crate's file.
-        let debug = rust_debug && !shipped_debug_body(p, body.fn_id);
+        let debug = debug_optimized.filter(|_| !shipped_debug_body(p, body.fn_id));
         match g.function_ll(debug, scalar_library) {
             Ok(f) => llfn = Some(f),
             Err(e) => return FnOut { error: Some(e), ..Default::default() },

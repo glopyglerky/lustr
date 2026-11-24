@@ -5387,7 +5387,7 @@ fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> 
                     let total = library_functions.is_some() || mixed && super::mixed::total(b);
                     let mut output = if rust_debug || library_llvm.contains(&b.fn_id) {
                         cgen::gen_fn_cargo_llvm(&program, b, &map, line_base_of(front, *i),
-                            &front.fn_slot, rust_debug, library_functions.is_some())
+                            &front.fn_slot, rust_debug.then_some(cargo_codegen.is_some()), library_functions.is_some())
                     } else if total {
                         cgen::gen_fn_total(&program, b, &map, line_base_of(front, *i), &front.fn_slot)
                     } else {

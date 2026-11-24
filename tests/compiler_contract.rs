@@ -2650,11 +2650,21 @@ mod tests {
     };
     f.succeeds("lockfile", cargo("default", false, false).args(["generate-lockfile", "--offline"]));
     f.succeeds("default-check", cargo("default", false, false).args(["check", "--frozen"]));
-    for (name, original, debug_zero) in [("default", false, false), ("mixed", false, true),
-        ("release", false, false), ("original", true, true)] {
+    for (name, original, debug_zero) in [
+        ("default", false, false), ("mixed", false, true), ("release", false, false),
+        ("optimized-debug", false, false), ("original", true, true),
+    ] {
         let mut command = cargo(name, original, debug_zero);
         command.args(["run", "--frozen"]);
-        let profile = if name == "release" { command.arg("--release"); "release" } else { "debug" };
+        if name == "optimized-debug" {
+            command.env("CARGO_PROFILE_RELEASE_DEBUG", "2");
+        }
+        let profile = if matches!(name, "release" | "optimized-debug") {
+            command.arg("--release");
+            "release"
+        } else {
+            "debug"
+        };
         let result = f.succeeds(&format!("{name}-run"), &mut command);
         assert_eq!(result.stdout, b"42\n");
         let exe = f.root.join(name).join(profile).join("async_program");
@@ -2665,8 +2675,8 @@ mod tests {
                 suffix.len() == 16 && suffix.bytes().all(|byte| byte.is_ascii_hexdigit())
             })).collect();
         assert_eq!(native.len(), usize::from(!original), "{name}");
-        if name == "default" {
-            let debug = f.succeeds("native-debug-records",
+        if matches!(name, "default" | "optimized-debug") {
+            let debug = f.succeeds(&format!("{name}-native-debug-records"),
                 Command::new("readelf").args(["--debug-dump=info", "--wide"]).arg(&exe));
             let info = String::from_utf8_lossy(&debug.stdout);
             let native_unit = info.split("Compilation Unit @").find(|unit|
