@@ -112,7 +112,6 @@ fn dep_info(outputs: &OutputFilenames) -> Option<PathBuf> {
 }
 
 pub(super) fn trace(entry: &str) {
-    use io::Write;
     if let Some(path) = std::env::var_os("LUSTR_TRACE_PATH")
         && let Ok(mut file) = OpenOptions::new().create(true).append(true).open(path)
     {
@@ -161,7 +160,7 @@ pub(super) fn cargo_unit_dir(output: &Path) -> Option<&Path> {
     Some(unit)
 }
 
-const NATIVE_RECORD: &str = "lustr-mixed-native-object-v1";
+const NATIVE_RECORD: &str = "lustr-mixed-native-object-v2";
 
 pub(super) struct NativeObjectPending {
     record: PathBuf,
@@ -223,7 +222,9 @@ impl NativeToolInputs {
         let mut environment: Vec<_> = std::env::vars_os().collect();
         if environment.iter().any(|(name, _)| {
             let bytes = name.as_encoded_bytes();
-            bytes.starts_with(b"CCC_") || bytes.starts_with(b"LD_")
+            // Cargo supplies LD_LIBRARY_PATH even when the caller did not.
+            // Its value and the actual loaded paths both enter the key.
+            bytes.starts_with(b"CCC_") || (bytes.starts_with(b"LD_") && name != "LD_LIBRARY_PATH")
         }) {
             return None;
         }
@@ -263,6 +264,15 @@ impl NativeToolInputs {
             .env("LC_ALL", "C").stdin(std::process::Stdio::null()).output().ok()?;
         let diagnostics = std::str::from_utf8(&recipe.stderr).ok()?;
         if !recipe.status.success() || diagnostics.lines().any(|line| line.starts_with("Configuration file:")) {
+            return None;
+        }
+        // PATH can contain a non-executable file named clang before the
+        // real compiler. Bind the file we stamped to the actual recipe.
+        let mut compilers = diagnostics.lines().filter_map(|line| {
+            let (program, _) = line.trim_start().strip_prefix('"')?.split_once("\" \"-cc1\" ")?;
+            Some(program)
+        });
+        if Path::new(compilers.next()?).canonicalize().ok()? != clang || compilers.next().is_some() {
             return None;
         }
         let mut key = Vec::new();

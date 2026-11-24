@@ -327,7 +327,7 @@
     "upstream/complement-imports.json": "9ab257dde42dce0739a50855394ab8ffbb401f6bc286467bd713acd26dc95b6e",
     "upstream/proc-macro-expansion.patch": "a7f4f05d73321d640fd131211e53f532c84c27c13cc7aaba3ba27828d6a1a004",
     "tools/host-freestanding.rs": "6b753cf8d3fdcd1ed2618406324cf079f1c91beb454d5b8df41ec9ef2e5fa399",
-    "tools/host-retained-link.rs": "b187d30a4a3a5bb6dda08b8593bba39befb3411d14b11b2e673da4cf6ffb81fd",
+    "tools/host-retained-link.rs": "cf8e2c1a0583674c8f4def35642e665f57101145c24bfbd5bdc13944326dc9c3",
     "tools/proc-macro-expansion/client/Cargo.toml": "7b0709ed816f2f215df9b5f787d26239e96b33bc43384a51b56c4451927f9a52",
     "tools/proc-macro-expansion/client/Cargo.lock": "db15c149da01521cf567dc9733c6aafc3f11075218f919235c6153e8e688e45f",
     "tools/proc-macro-expansion/client/src/main.rs": "f0db17206d69543930db2756276c044562818bd130c378de0019ab3bac0b4555",
