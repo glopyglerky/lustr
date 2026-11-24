@@ -112,9 +112,14 @@ impl Drop for Worker {
 pub(super) struct MacroRequest<'a>(&'a HostMacros);
 
 impl MacroRequest<'_> {
-    pub(super) fn finish(&self) -> io::Result<()> {
+    pub(super) fn finish(&self) -> io::Result<bool> {
         let worker = self.0.worker.lock().unwrap().take();
-        worker.map_or(Ok(()), |mut worker| worker.finish())
+        if let Some(mut worker) = worker {
+            worker.finish()?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 }
 
@@ -252,6 +257,14 @@ fn text(reader: &mut &[u8]) -> Result<String, String> {
 impl ProceduralMacros for HostMacros {
     fn exports_attribute(&self, alias: &str, name: &str) -> bool {
         self.artifacts.get(alias).is_some_and(|artifact| artifact.attributes.contains(name))
+    }
+
+    fn has_attributes(&self) -> bool {
+        self.artifacts.values().any(|artifact| !artifact.attributes.is_empty())
+    }
+
+    fn has_crate_alias(&self, alias: &str) -> bool {
+        self.artifacts.contains_key(alias)
     }
 
     fn expand(&self, call: &Call, ctx: &ExpandCtx<'_>, strings: &mut Vec<String>)

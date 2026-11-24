@@ -2875,6 +2875,75 @@ fn main() { println!("{}", apply_mask(u64(57)).0); }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and LUSTR_TEST_ORACLE"]
+fn ordinary_cargo_runs_mixed_procedural_macros_once() {
+    let f = Fixture::new("cargo-procedural-macro-effects");
+    f.source("Cargo.toml", r#"
+[package]
+name = "macro_effects"
+version = "0.1.0"
+edition = "2024"
+[dependencies]
+trace_macros = { path = "macros" }
+"#);
+    f.source("macros/Cargo.toml", r#"
+[package]
+name = "trace_macros"
+version = "0.1.0"
+edition = "2024"
+[lib]
+proc-macro = true
+"#);
+    f.source("macros/src/lib.rs", r#"
+use proc_macro::TokenStream;
+use std::{fs::OpenOptions, io::Write};
+
+fn record(marker: &[u8]) {
+    let path = std::env::var_os("MACRO_ONCE_RECORD").unwrap();
+    OpenOptions::new().create(true).append(true).open(path).unwrap().write_all(marker).unwrap();
+}
+
+#[proc_macro]
+pub fn mark(_: TokenStream) -> TokenStream {
+    record(b"function-like\n");
+    "7u64".parse().unwrap()
+}
+
+#[proc_macro_attribute]
+pub fn test(_: TokenStream, item: TokenStream) -> TokenStream {
+    record(b"attribute\n");
+    item
+}
+"#);
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let rust = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    for (form, attribute, expected) in [
+        ("imported", "use trace_macros::test;\n#[test]", &["attribute", "function-like"][..]),
+        ("qualified", "#[trace_macros::test]", &["attribute", "function-like"][..]),
+        ("disabled", "#[cfg(any())]\n#[trace_macros::test]", &["function-like"][..]),
+    ] {
+        f.source("src/main.rs", &format!(
+            "{attribute}\nfn annotated() {{}}\nfn main() {{ println!(\"{{}}\", trace_macros::mark!()); }}\n"
+        ));
+        for (engine, oracle) in [("lustr", false), ("rust", true)] {
+            let label = format!("{form}-{engine}");
+            let record = f.root.join(format!("{label}.effects"));
+            let mut cargo = f.command("cargo");
+            cargo.env("CARGO_TARGET_DIR", f.root.join(&label)).env("MACRO_ONCE_RECORD", &record);
+            if oracle {
+                cargo.env("RUSTC", &rust);
+            }
+            assert_eq!(f.succeeds(&label, cargo.args(["run", "--frozen"])).stdout, b"7\n");
+            let effects = std::fs::read_to_string(record).unwrap();
+            let mut effects = effects.lines().collect::<Vec<_>>();
+            effects.sort_unstable();
+            assert_eq!(effects, expected, "{label}");
+        }
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and binutils"]
 fn ordinary_cargo_uses_the_rust_context_for_unrepresented_dependencies() {
     let f = Fixture::new("cargo-rust-dependency-context");

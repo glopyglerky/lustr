@@ -498,9 +498,8 @@ impl Owner {
                 let mut unused = Vec::new();
                 let macro_request = executable.macro_request();
                 let preparation = driver::prepare_library_import(&staged, session, executable, stdin);
-                if let Some(macro_request) = macro_request {
-                    macro_request.finish().map_err(|error| error.to_string())?;
-                }
+                let ran_procedural_macro = macro_request.map(|request| request.finish())
+                    .transpose().map_err(|error| error.to_string())?.unwrap_or(false);
                 let mut response = match preparation {
                     driver::Preparation::Ready(mut prepared) => {
                         let observed = prepared.executable_source_inputs()?;
@@ -534,6 +533,10 @@ impl Owner {
                     driver::Preparation::Complete(response) | driver::Preparation::Rejected(response)
                         | driver::Preparation::Failed(response) | driver::Preparation::IntegrationIncomplete(response) => response,
                 };
+                if response.code == protocol::RUST_COMPLEMENT_REQUIRED && ran_procedural_macro {
+                    response.code = 4;
+                    response.stderr.push_str("error: the Rust complement cannot resume this request after native procedural macro execution\n");
+                }
                 if response.code != 0 { return Ok(response); }
                 if !key.executable_dependencies.as_ref().is_some_and(|inputs| executable.unchanged(inputs, !check)) {
                     return Err("Cargo executable dependency changed during checking or linking".into());

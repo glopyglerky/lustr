@@ -627,6 +627,8 @@ pub trait ProceduralMacros: Send + Sync {
         -> Option<Result<ProceduralExpansion, Diag>>;
 
     fn exports_attribute(&self, _alias: &str, _name: &str) -> bool { false }
+    fn has_attributes(&self) -> bool { false }
+    fn has_crate_alias(&self, _alias: &str) -> bool { false }
 }
 
 pub struct ProceduralExpansion {
@@ -1051,7 +1053,9 @@ fn crate_name_facts(tokens: &[Token], ctx: &ExpandCtx, root: bool) -> (Vec<Sym>,
         match t.tok {
             Tok::LBrace | Tok::LParen | Tok::LBracket => depth += 1,
             Tok::RBrace | Tok::RParen | Tok::RBracket => depth = depth.saturating_sub(1),
-            Tok::Ident(s, _) if matches!(interner.get(s), "std" | "core" | "alloc") || ctx.extern_crates.contains(&s) => {
+            Tok::Ident(s, _) if matches!(interner.get(s), "std" | "core" | "alloc")
+                || ctx.extern_crates.contains(&s)
+                || ctx.procedural_macros.is_some_and(|provider| provider.has_crate_alias(interner.get(s))) => {
                 let prev = i.checked_sub(1).map(|j| tokens[j].tok);
                 let next = tokens.get(i + 1).map(|n| n.tok);
                 let binds = matches!(prev, Some(Tok::Mod | Tok::As | Tok::Struct | Tok::Enum | Tok::Trait | Tok::Type))
@@ -1836,7 +1840,8 @@ fn expand_macros(lexed: Lexed, ctx: &ExpandCtx, seeds: &[MacroSeed], extra: &[Ma
         return Err(d);
     }
     // Parser-handled macros still need normal name resolution in core's prelude.
-    if !ctx.cfg.core_prelude && !needs_expansion(&lexed.tokens, ctx.interner)
+    let has_attributes = ctx.procedural_macros.is_some_and(|provider| provider.has_attributes());
+    if !ctx.cfg.core_prelude && !has_attributes && !needs_expansion(&lexed.tokens, ctx.interner)
         && !seeds_bind_parser_name(&lexed.tokens, seeds, extra, ctx.interner)
     {
         return Ok((lexed, Vec::new()));
@@ -1858,6 +1863,9 @@ fn expand_macros(lexed: Lexed, ctx: &ExpandCtx, seeds: &[MacroSeed], extra: &[Ma
         st.seed_macro(&extra[i])?;
     }
     let tts: Vec<Tt> = trees.iter().map(tt_from_tree).collect();
+    if has_attributes {
+        st.preflight_host_attributes(&tts)?;
+    }
     // Only the crate root's `#![recursion_limit]` counts, as in rustc,
     // where a module's copy is an unused attribute.
     let limit = if ctx.module_path.is_empty() { scan_recursion_limit(&tts, &st.strings, ctx.interner)? } else { None };
@@ -2093,6 +2101,85 @@ impl builtin::CfgRead for Expander<'_> {
 }
 
 impl<'a> Expander<'a> {
+    /// Find written procedural attribute operations before executing any
+    /// external macro. Bare imports need a closed module name scope.
+    fn preflight_host_attributes(&mut self, trees: &[Tt]) -> Result<(), Diag> {
+        let Some(provider) = self.ctx.procedural_macros else { return Ok(()) };
+        let mut closed_scope = self.ctx.module_path.is_empty();
+        let mut imported_attribute = None;
+        let mut cursor = 0;
+        let required = |span| Diag::new("L0809", span, "Rust procedural attribute requires macro expansion", "")
+            .requiring_rust_complement();
+        while cursor < trees.len() {
+            let mut enabled = true;
+            let mut conditional_attributes = false;
+            let mut namespace_effects = false;
+            let mut qualified = None;
+            while let Some(attr) = attr_at(trees, cursor, self.ctx.interner) {
+                cursor = attr.end;
+                match attr.path.as_str() {
+                    "cfg" => enabled &= builtin::eval_cfg(&attr.inner, &self.ctx.cfg, self, attr.span)?,
+                    "cfg_attr" => conditional_attributes = true,
+                    "test" | "doc" | "no_std" => {}
+                    path => {
+                        let absolute = path.starts_with("::");
+                        let path = path.strip_prefix("::").unwrap_or(path);
+                        if !attr.inner_attr
+                            && let Some((alias, name)) = path.split_once("::")
+                            && !matches!(alias, "rustfmt" | "clippy")
+                            && provider.exports_attribute(alias, name)
+                            && (absolute || !self.shadowed_crates.iter().any(|&sym| self.ctx.interner.get(sym) == alias))
+                        {
+                            qualified = Some((absolute, attr.span));
+                        } else {
+                            namespace_effects = true;
+                        }
+                    }
+                }
+            }
+            if enabled && !conditional_attributes && let Some((absolute, span)) = qualified {
+                if absolute {
+                    return Err(required(span));
+                }
+                imported_attribute = Some(span);
+            }
+            if enabled {
+                closed_scope &= !namespace_effects && !conditional_attributes;
+            }
+            if let Some((_, content, end)) = use_span_at(trees, cursor) {
+                if enabled && !conditional_attributes {
+                    let path = &trees[content..end - 1];
+                    // The parser's actual import leaves include renames.
+                    // A group with `self` or a glob can bind another crate
+                    // name without an explicit leaf.
+                    closed_scope &= !path.iter().any(|tree| matches!(tree, Tt::Delim(..)) || tree.is_tok(Tok::Star));
+                    for (segments, leading, _) in collect_use_sites(path, &[], self.ctx.interner) {
+                        if let [alias, name] = segments.as_slice()
+                            && provider.exports_attribute(&alias.text, &name.text)
+                        {
+                            if leading {
+                                return Err(required(name.span));
+                            }
+                            if !self.shadowed_crates.contains(&alias.sym) {
+                                imported_attribute = Some(name.span);
+                            }
+                        }
+                    }
+                }
+                cursor = end;
+            } else if let Some(end) = item_end(trees, cursor, self.ctx.interner) {
+                cursor = end;
+            } else {
+                // A macro or unknown item could declare a local crate name.
+                return Ok(());
+            }
+        }
+        if closed_scope && let Some(span) = imported_attribute {
+            return Err(required(span));
+        }
+        Ok(())
+    }
+
     /// Finds macro definitions and module-level `use` items anywhere in
     /// the file before the main walk. Path forms (`crate::name!`) and
     /// imports apply to a whole module, not from a text point, so uses
