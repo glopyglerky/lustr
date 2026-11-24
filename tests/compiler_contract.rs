@@ -2762,7 +2762,8 @@ fn native_value_in_the_rust_test_harness() {
 
     let trace_path = f.root.join("trace.jsonl");
     let before = std::fs::read_to_string(&trace_path).unwrap();
-    assert!(before.contains("\"entry\":\"retained-rust-link-captured\""), "{before}");
+    assert!(before.contains("\"entry\":\"retained-rust-link-captured\""),
+        "ordinary release did not capture Rust link inputs: {before}");
     let edited = source.replace("input ^ 19", "input ^ 18");
     f.source("src/main.rs", &edited);
     let release = || {
