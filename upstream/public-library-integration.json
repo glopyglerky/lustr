@@ -324,7 +324,7 @@
     "upstream/rustdoc-test-builders.patch": "4be4ebb9006f3e31b1c831d242a10c321b540a8888c752760f6400f305997ca7",
     "tools/host-proc-macro.rs": "a77f7780236a0e8ccb7ef77ec5f56dc8f6b0192742b1ae2016fecb9b6d634921",
     "tools/host-crate-interface.rs": "ec692d711ca90056d8dac1c3ff0d8c3d568efd5f2e04d4366b3ddf567601f618",
-    "upstream/complement-imports.json": "f2093fc3bb2e49cdb6675184414779769e7dfa95cd415652aeebe204c985fc3c",
+    "upstream/complement-imports.json": "f3c49ff72e13125fedb9db6fbeca1d133c0141d976e1543a71c43cb459b8edcf",
     "upstream/proc-macro-expansion.patch": "a7f4f05d73321d640fd131211e53f532c84c27c13cc7aaba3ba27828d6a1a004",
     "tools/host-freestanding.rs": "a369d8945c562e69bb1f9994c48c4b68f6ce7bb7ec764daae8ced6c2f82904ac",
     "tools/host-retained-link.rs": "eda556504a72f0dc47980d657454b1577190450273e3179dab1b5bc5408466cd",

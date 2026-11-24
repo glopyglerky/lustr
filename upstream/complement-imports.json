@@ -334,7 +334,7 @@
       "missing_capability": "Freestanding and static library linking, and Rust coroutine analysis and lowering for ordinary Cargo units",
       "status": "implemented-partial",
       "owner": "Lust native item compiler and pinned Rust executable driver",
-      "semantic_boundary": "Lust checks and emits closed u64 bodies from original source spans in one object. The original Rust driver handles complementary source, metadata, dependency info and link. Selection uses the actual compiler options, a native parser capability limit or a verified Rust dependency requiring additional declaration or linker semantics.",
+      "semantic_boundary": "Lust checks and emits closed u64 bodies from the original Rust source map in one object. For normalized spans it checks the on-disk byte identity before using the parsed text. The pinned Rust prelude and test expander supply the ordinary root test attributes when no other macro can bind that name. The original Rust driver handles complementary source, metadata, dependency info and link. Selection uses the actual compiler options, a native parser capability limit or a verified Rust dependency requiring additional declaration or linker semantics.",
       "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
       "upstream_paths": {
         "compiler/rustc_driver_impl/src/lib.rs": "28d3ed858c3db58e159cfe6a6e6e47fa15b64fe354e565a7c94ef24b563c7b44",
@@ -347,6 +347,12 @@
         "compiler/rustc_interface/src/queries.rs": "895925b776a1d68985faaf77f335e6956f0d4dc09c9d39332351da5bc7bdb8eb",
         "compiler/rustc_interface/src/util.rs": "a72d09c63337f969f489d5ef4f8ac4266c0516c6126603b34be05500dbf6f90e",
         "compiler/rustc_builtin_macros/src/source_util.rs": "800e0f9277ade2a55cf35bae7b42276d4ea5e8d1e33da9b94064ace8586f2b48",
+        "compiler/rustc_span/src/lib.rs": "9682c3b7d227039f040afff82aae4d2fd8133692bc9ef84f0974323f8a0acca0",
+        "compiler/rustc_builtin_macros/src/test.rs": "f26f895561f7143380c03bd3ca58bf7688963b1c0eb79318974ccee75aa64549",
+        "compiler/rustc_builtin_macros/src/standard_library_imports.rs": "5b7dcce14ba82562155de2caf21a14f7e96c6a49286bc509d813ef63461128c2",
+        "compiler/rustc_resolve/src/ident.rs": "06fe56fd4fbba547519ca71b0727c5aa2f658eba1834797751c136dbbb72c9c6",
+        "library/std/src/prelude/v1.rs": "55355b2a275997afb57bf6f7c37718786fc1ba8edb6dd003bd3c306d153e1dd2",
+        "library/core/src/prelude/v1.rs": "ce64d1454ad46c78243f9122cb8c0f44cb64eb21f27ed37354bb6f4a735d7321",
         "compiler/rustc_codegen_ssa/src/back/link.rs": "0cfbc38cf0c66133b3f7dc10bd558d1fb4773fc1c09054c48a32bc694902a191",
         "compiler/rustc_codegen_llvm/src/lib.rs": "c45084d828a300d94700752fb3f523c3fc1411e0def9eccaf3672479dc548c13"
       },
