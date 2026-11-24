@@ -2953,13 +2953,20 @@ fn main() {
     };
     assert_eq!(f.succeeds("native-first", &mut run()).stdout, b"274\n");
     let binary = f.root.join("target/debug/alias_program");
-    let symbols = f.succeeds("symbols", Command::new("nm").arg(&binary));
-    assert!(String::from_utf8_lossy(&symbols.stdout).lines().any(|line| {
-        line.split_whitespace().last().and_then(|name| name.strip_prefix("f_"))
-            .is_some_and(|suffix| suffix.len() == 16 && suffix.bytes().all(|b| b.is_ascii_hexdigit()))
-    }));
-    let original = f.succeeds("original", f.command("cargo").env("RUSTC", &rust)
-        .env("CARGO_TARGET_DIR", f.root.join("oracle")).args(["run", "--frozen"]));
+    let has_native_body = |label: &str| {
+        let symbols = f.succeeds(label, Command::new("nm").arg(&binary));
+        assert!(String::from_utf8_lossy(&symbols.stdout).lines().any(|line| {
+            line.split_whitespace().last().and_then(|name| name.strip_prefix("f_"))
+                .is_some_and(|suffix| suffix.len() == 16 && suffix.bytes().all(|b| b.is_ascii_hexdigit()))
+        }), "{label}");
+    };
+    has_native_body("initial-symbols");
+    let oracle = || {
+        let mut command = f.command("cargo");
+        command.env("RUSTC", &rust).env("CARGO_TARGET_DIR", f.root.join("oracle")).args(["run", "--frozen"]);
+        command
+    };
+    let original = f.succeeds("original", &mut oracle());
     assert_eq!(original.stdout, b"274\n");
 
     let trace = f.root.join("trace.jsonl");
@@ -2973,6 +2980,7 @@ fn main() {
     let narrow = edited.replace("type Word = u64", "type Word = u16");
     f.source("src/main.rs", &narrow);
     assert_eq!(f.succeeds("alias-edit", &mut run()).stdout, b"275\n");
+    has_native_body("changed-alias-symbols");
     let changed = std::fs::read_to_string(&trace).unwrap();
     assert!(!changed[later.len()..].contains("\"entry\":\"retained-rust-link\""), "{changed}");
 
@@ -2982,9 +2990,14 @@ fn main() {
     assert_eq!(invalid.status.code(), Some(101));
     assert!(invalid.stdout.is_empty());
     assert!(String::from_utf8_lossy(&invalid.stderr).contains("literal out of range"));
-    assert_eq!(std::fs::read(binary).unwrap(), previous);
+    let rejected_by_rust = f.invoke("original-bad-alias", &mut oracle());
+    assert_eq!(rejected_by_rust.status.code(), Some(101));
+    assert!(rejected_by_rust.stdout.is_empty());
+    assert!(String::from_utf8_lossy(&rejected_by_rust.stderr).contains("literal out of range"));
+    assert_eq!(std::fs::read(&binary).unwrap(), previous);
     f.source("src/main.rs", &narrow);
     assert_eq!(f.succeeds("repaired", &mut run()).stdout, b"275\n");
+    has_native_body("repaired-symbols");
 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
