@@ -47,7 +47,8 @@ pub(crate) fn complete_family(p: &check::collect::Program, map: &diag::SourceMap
     let fail = Error::Failed("native projection provider identities do not join checked declarations");
     let items: Vec<_> = p.ast.items.iter().filter(|item| !matches!(item.kind, ast::ItemKind::Fn(_))).collect();
     if !p.imported_crates.is_empty() || !p.ast.stmt_items.is_empty()
-        || map.file_count() != 1 || !source.is_ascii() || has_bare_carriage_return(source)
+        || map.file_count() != 1 || !source.strip_prefix('\u{feff}').unwrap_or(source).is_ascii()
+        || has_bare_carriage_return(source)
         || items.len() < 2 || items.len() > 3 || items.iter().any(|item| !item.attrs.is_empty())
         || !matches!(p.ast.inner_attrs.as_slice(), [attr]
             if attr.path.as_slice().first().is_some_and(|segment| p.interner.get(segment.name) == "no_std"))
@@ -444,10 +445,11 @@ pub(crate) fn complete(prepared: View<'_>, generated: bool, family: Option<&Fami
     }
     functions.sort_by_key(|function| function.span.lo);
     let source = prepared.source();
-    if !source.is_ascii() {
+    let content = source.strip_prefix('\u{feff}').unwrap_or(source);
+    if !content.is_ascii() {
         // The admitted comments have no identifier or lint obligations.
         // Non-ASCII code still requires the corresponding source records.
-        let mut cursor = 0;
+        let mut cursor = source.len() - content.len();
         for doc in functions.iter().flat_map(|function| &function.docs) {
             if source.get(cursor..doc.span.lo as usize).is_none_or(|text| !text.is_ascii()) {
                 return Err(Error::Unintegrated("Unicode source outside completed function documentation"));
