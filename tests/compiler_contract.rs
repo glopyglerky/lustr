@@ -2967,6 +2967,7 @@ pub fn test(_: TokenStream, item: TokenStream) -> TokenStream {
     item
 }
 "#);
+    f.source("src/main.rs", "fn main() {}\n");
     f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
     let rust = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
     for (form, attribute, expected) in [
